@@ -623,9 +623,31 @@ next() {
     logged=$(logged_issues "$dir")
     ruled=$(ruled_issues "$dir")
     answered=$(answered_issues "$dir")
-    # `<issue> ruling`, `<issue> blocked` or `<issue> -`, from the last `|` field of the line.
-    sed -n 's/^[0-9][0-9]*\. #\([0-9][0-9]*\) .*|[[:space:]]*\(ruling\|blocked\).*$/\1 \2/p; t; s/^[0-9][0-9]*\. #\([0-9][0-9]*\).*/\1 -/p' "$dir/queue.md" > "$dir/.next.$$"
-    while read -r issue mark; do
+    # `<issue> <ruling|-> <blocked|->`, from the `;`-separated marks of the
+    # last `|` field. A line can carry both: in run 20261012-1113 a sed that
+    # took only the first mark read `ruling; blocked (#1721)` as `ruling`, and
+    # the owner's answer would have released an issue whose blocker was open.
+    awk -F'|' '/^[0-9]+\. #[0-9]+/ {
+        match($0, /#[0-9]+/); issue = substr($0, RSTART + 1, RLENGTH - 1)
+        r = "-"; b = "-"
+        if (NF > 1) {
+            n = split($NF, marks, ";")
+            for (k = 1; k <= n; k++) {
+                m = marks[k]; sub(/^[ \t]+/, "", m)
+                if (m ~ /^ruling([^a-z]|$)/) r = "ruling"
+                if (m ~ /^blocked([^a-z]|$)/) b = "blocked"
+            }
+        }
+        print issue, r, b
+    }' "$dir/queue.md" > "$dir/.next.$$"
+    # A queue with issue lines that none of them parses is a queue written in
+    # the wrong shape, not an empty one (run 20261012-1113 wrote `1 | #502 |`).
+    if [ ! -s "$dir/.next.$$" ] && grep -q '#[0-9]' "$dir/queue.md"; then
+        rm -f "$dir/.next.$$"
+        echo "run-dir: $dir/queue.md names issues but holds no line of the form \`<k>. #<issue> <title> | ...\` (.claude/agents/hw-queue.md)." >&2
+        exit 1
+    fi
+    while read -r issue mark blocked; do
         [ -e "$dir/claims/issues/$issue" ] && continue
         [ -e "$dir/handover/$issue" ] && continue
         case " $logged " in *" $issue "*) continue ;; esac
@@ -634,7 +656,7 @@ next() {
         if [ "$mark" = ruling ] && [ "$kind" != open ]; then
             case " $answered " in *" $issue "*) ;; *) continue ;; esac
         fi
-        [ "$mark" = blocked ] && [ "$kind" != open ] && continue
+        [ "$blocked" = blocked ] && [ "$kind" != open ] && continue
         rm -f "$dir/.next.$$"
         echo "$issue"
         return 0
