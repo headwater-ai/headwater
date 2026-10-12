@@ -45,11 +45,18 @@ fail() {
 }
 
 # q <run> <issue> [field=value]...: one queue entry through the verb, with
-# every field `queue` needs and the fields a case adds. No case types a queue.
+# the fields a case names and a default for every other field `queue` needs.
+# `queue` refuses a field named twice, so a default is added only where the
+# case names none. No case types a queue.
 q() {
     qrun=$1 n=$2
     shift 2
-    sh "$tool" queue "$qrun" "$n" "title=Issue $n" milestone=none reader=x artifacts=x scope=narrow "$@" >/dev/null 2>"$scratch/qerr" ||
+    for default in "title=Issue $n" milestone=none reader=x artifacts=x scope=narrow; do
+        named=0
+        for pair in "$@"; do [ "${pair%%=*}" = "${default%%=*}" ] && named=1; done
+        [ "$named" = 1 ] || set -- "$@" "$default"
+    done
+    sh "$tool" queue "$qrun" "$n" "$@" >/dev/null 2>"$scratch/qerr" ||
         fail "the queue verb took #$n" "$(cat "$scratch/qerr")"
 }
 
@@ -525,9 +532,16 @@ case $(cat "$scratch/err") in *'scope='*) pass '  and names the field' ;; *) fai
 sh "$tool" queue two-answers 9 title=x milestone=none reader=x artifacts=x scope=narrow mark=rulng >/dev/null 2>"$scratch/err"; status=$?
 same 'a queue call carrying an unknown mark exits 2' 2 "$status"
 case $(cat "$scratch/err") in *'mark=rulng'*) pass '  and names the mark' ;; *) fail '  and names the mark' "$(cat "$scratch/err")" ;; esac
+# Each bad value replaces the good one, so the refusal is the value's own
+# and not the one for a field named twice.
 for call in 'scope=both' 'blocked=x' 'colour=red' 'title='; do
-    sh "$tool" queue two-answers 9 title=x milestone=none reader=x artifacts=x scope=narrow "$call" >/dev/null 2>"$scratch/err"; status=$?
-    same "a queue call carrying \`$call\` exits 2" 2 "$status"
+    set --
+    for pair in title=x milestone=none reader=x artifacts=x scope=narrow; do
+        [ "${pair%%=*}" = "${call%%=*}" ] || set -- "$@" "$pair"
+    done
+    sh "$tool" queue two-answers 9 "$@" "$call" >/dev/null 2>"$scratch/err"; status=$?
+    case $(cat "$scratch/err") in *'given twice'*) twice=1 ;; *) twice=0 ;; esac
+    same "a queue call carrying \`$call\` exits 2, for its own reason" '2 0' "$status $twice"
 done
 sh "$tool" queue two-answers x9 title=x milestone=none reader=x artifacts=x scope=narrow >/dev/null 2>&1; status=$?
 same 'a queue call whose issue is not a number exits 2' 2 "$status"
@@ -587,8 +601,13 @@ same 'the same pull request at the same commit is refused with exit 2' 2 "$statu
 sh "$tool" integrate ints 1723 issue=none branch=1723-queue sha=def5678 ruling='MERGE again, after an ejection' footprint=tools/run/run-dir.sh >/dev/null 2>&1; status=$?
 same '  and a new ruling of it at a new head is appended' '0 3' "$status $(wc -l < "$ints/integrate.jsonl" | tr -d ' ')"
 for call in 'issue=x' 'sha=XYZ1234' 'sha=abc' 'branch=a b' 'colour=red'; do
-    sh "$tool" integrate ints 1731 issue=1 branch=b sha=abc1234 ruling=r footprint=f "$call" >/dev/null 2>&1; status=$?
-    same "integrate carrying \`$call\` exits 2" 2 "$status"
+    set --
+    for pair in issue=1 branch=b sha=abc1234 ruling=r footprint=f; do
+        [ "${pair%%=*}" = "${call%%=*}" ] || set -- "$@" "$pair"
+    done
+    sh "$tool" integrate ints 1731 "$@" "$call" >/dev/null 2>"$scratch/err"; status=$?
+    case $(cat "$scratch/err") in *'given twice'*) twice=1 ;; *) twice=0 ;; esac
+    same "integrate carrying \`$call\` exits 2, for its own reason" '2 0' "$status $twice"
 done
 sh "$tool" integrate ints 1731 issue=1 branch=b sha=abc1234 ruling=r >/dev/null 2>"$scratch/err"; status=$?
 same 'integrate missing the footprint exits 2' 2 "$status"
@@ -623,6 +642,27 @@ sh "$tool" stage ints 6 ruled-merge pr=1740 >/dev/null 2>&1
 same '  and one that is not queued still goes to integrate' '6 ruled-merge integrate' "$(sh "$tool" resume ints 2>&1 | grep '^6 ')"
 sh "$tool" stage ints 1724 ruled-merge >/dev/null 2>&1
 same '  and an issue queued under its own number is queued, with no pr on its handover' '1724 ruled-merge queued' "$(sh "$tool" resume ints 2>&1 | grep '^1724 ')"
+# Verify-1 of PR #1726: an ejected pull request's re-ruling read as queued,
+# so a parent that restarted before appending it was told to do nothing, and
+# the pull request never merged.
+sh "$tool" integrate ints 1750 issue=17 branch=b17 sha=aaa1750 ruling=MERGE footprint=f >/dev/null 2>&1
+sh "$tool" integrate ints 1750 issue=17 branch=b17 sha=aaa1750 ruling=ejected footprint=f >/dev/null 2>&1
+sh "$tool" stage ints 17 ruled-merge pr=1750 >/dev/null 2>&1
+same 'resume sends a ruled-merge whose pull request was last ejected to integrate, not queued' '17 ruled-merge integrate' "$(sh "$tool" resume ints 2>&1 | grep '^17 ')"
+sh "$tool" integrate ints 1750 issue=17 branch=b17 sha=bbb1750 ruling=MERGE footprint=f >/dev/null 2>&1
+same '  and once it is ruled again at its new head, it is queued' '17 ruled-merge queued' "$(sh "$tool" resume ints 2>&1 | grep '^17 ')"
+sh "$tool" stage ints 18 ruled-merge >/dev/null 2>&1
+sh "$tool" integrate ints 1760 issue=18 branch=b18 sha=aaa1760 ruling=ejected footprint=f >/dev/null 2>&1
+same '  and an ejected issue with no pr on its handover goes to integrate too' '18 ruled-merge integrate' "$(sh "$tool" resume ints 2>&1 | grep '^18 ')"
+for verb in "queue ints 19 title=a milestone=none reader=x artifacts=x scope=narrow title=b" \
+    "owe ints 19 title=a question=q 'options=a | defer' unblocks=u title=b" \
+    "integrate ints 1770 issue=19 branch=b sha=abc1234 ruling=r footprint=f sha=abc5678"; do
+    eval "sh \"\$tool\" $verb" >/dev/null 2>"$scratch/err"; status=$?
+    case $(cat "$scratch/err") in *'given twice'*) said=1 ;; *) said=0 ;; esac
+    same "${verb%% *} refuses a field named twice with exit 2, and says so" '2 1' "$status $said"
+done
+sh "$tool" queue ints 19 'title=a | b' milestone=none reader=x artifacts=x scope=narrow >/dev/null 2>&1; status=$?
+same 'queue refuses a title that holds `|`, which separates the columns of queue.md' 2 "$status"
 
 printf '\n# an OWNER line an old ledger carries in is read like one decide --owner writes\n'
 imp=$(sh "$tool" start imported 2>/dev/null)

@@ -766,6 +766,13 @@ rule() {
 
 # One value of a key=value argument: present, one line. The key is checked by
 # the caller, which knows its own keys.
+# A field that holds one value is refused when a call names it twice, rather
+# than letting the last value win in silence. `seen` is reset by each caller.
+once() {
+    case " $seen " in *" $1 "*) refuse "\`$1=\` is given twice, and the field holds one value." ;; esac
+    seen="$seen $1"
+}
+
 pair_value() {
     case $1 in *=?*) ;; *) refuse "\`$1\` is not key=value with a value." ;; esac
     case ${1#*=} in *"$nl"*) refuse "the value of \`${1%%=*}\` is more than one line." ;; esac
@@ -799,11 +806,16 @@ queue() {
         exit 1
     fi
     entry=$(jq -cn --argjson n "$issue" '{issue: $n, ruling: false, blocked: [], notes: []}')
+    seen=''
     for pair in "$@"; do
         pair_value "$pair"
         key=${pair%%=*} value=${pair#*=}
+        case $key in blocked|note|mark) ;; *) once "$key" ;; esac
         case $key in
-            title|milestone|reader|artifacts) filter='.[$k] = $v' ;;
+            title|milestone|reader|artifacts)
+                # `|` separates the columns of the rendered queue.md.
+                case $value in *'|'*) refuse "the value of \`$key\` holds \`|\`, which separates the columns of queue.md." ;; esac
+                filter='.[$k] = $v' ;;
             scope)
                 case $value in wide|narrow) ;; *) refuse "\`scope=$value\`: the scope is \`wide\` or \`narrow\`." ;; esac
                 filter='.scope = $v' ;;
@@ -930,9 +942,11 @@ owe() {
     need_dir "$dir"
     need_issue "$issue" 'an issue'
     entry=$(jq -cn --argjson n "$issue" '{issue: $n}')
+    seen=''
     for pair in "$@"; do
         pair_value "$pair"
         key=${pair%%=*} value=${pair#*=}
+        once "$key"
         case $key in
             title|question|unblocks) filter='.[$k] = $v' ;;
             options)
@@ -993,9 +1007,11 @@ integrate() {
     need_dir "$dir"
     need_issue "$pr" 'a pull request'
     entry=$(jq -cn --argjson n "$pr" '{pr: $n}')
+    seen=''
     for pair in "$@"; do
         pair_value "$pair"
         key=${pair%%=*} value=${pair#*=}
+        once "$key"
         case $key in
             issue)
                 [ "$value" = none ] || need_issue "$value" 'an issue'
@@ -1041,10 +1057,18 @@ integrations() {
 
 # Whether integrate.jsonl already holds a ruling for this issue or this pull
 # request, so a resumed parent is not told to append it twice.
+#
+# It reads the last entry for the pull request, or for the issue where the
+# handover names no pull request. One whose last ruling is `ejected` is not
+# held: the parent owes a new ruling at the new head, and a resumed parent
+# told `queued` would never append it, so the pull request would never merge
+# (verify-1 of PR #1726).
 integrate_holds() {
     [ -s "$1/integrate.jsonl" ] || return 1
     need_jq
-    jq -se --argjson i "$2" --arg p "${3:-}" 'any(.[]; .issue == $i or ($p != "" and .pr == ($p | tonumber)))' "$1/integrate.jsonl" >/dev/null 2>&1
+    jq -se --argjson i "$2" --arg p "${3:-}" '
+        [.[] | select(if $p != "" then .pr == ($p | tonumber) else .issue == $i end)] | last
+        | . != null and .ruling != "ejected"' "$1/integrate.jsonl" >/dev/null 2>&1
 }
 
 # What a resumed parent does with each open handover, one line per issue:
