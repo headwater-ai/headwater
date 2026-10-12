@@ -164,7 +164,7 @@ compliant() {
 population() {
     (
         cd "$1" || exit 1
-        find .claude tools -type f -not -path './.claude/worktrees/*' 2>/dev/null
+        find .claude tools -type f -not -path '.claude/worktrees/*' 2>/dev/null
     ) | while IFS= read -r p; do
         is_script "$1" "$p" || continue
         grep -qF 'target/release/headwater' "$1/$p" 2>/dev/null && printf '%s\n' "$p"
@@ -304,6 +304,100 @@ cp target/release/libheadwater_node.so target/release/headwater.node
 EOF
 noflag=$(noncompliant "$scratch/tree" | grep -E 'tools/repo/developing-fixtures\.sh|tools/engine/language-spike/build\.sh')
 same "the two allowlisted files are never flagged" "" "$noflag"
+
+# A nested worktree under `.claude/worktrees/` is another branch checked out
+# inside this tree, not this repository's own file. `find` prints its paths
+# with no `./` prefix, so an exclusion written as `./.claude/worktrees/*`
+# never matched, and on a checkout that held agent worktrees this suite
+# failed on 26 paths that were not its own (#990).
+mkdir -p "$scratch/tree/.claude/worktrees/x/tools/repo"
+cat >"$scratch/tree/.claude/worktrees/x/tools/repo/nested-consumer.sh" <<'EOF'
+#!/bin/sh
+bin="$root/engine/target/release/headwater"
+EOF
+same "a single-profile script inside a nested worktree is not in the population" \
+    "" "$(population "$scratch/tree" | grep -F '.claude/worktrees/')"
+rm -rf "$scratch/tree/.claude/worktrees"
+
+echo
+echo "the files #990 moved onto the shared resolver"
+
+# Clause 1 of #990: each of these files gets its engine from
+# `hw_resolve_engine_bin` and carries no profile comparison of its own. The
+# population judge above accepts an inline copy as compliant, so it cannot
+# see a file that goes back to its own copy. This list can.
+for migrated in \
+    .claude/hooks/lib.sh \
+    .claude/hooks/fixtures-live.sh \
+    .claude/skills/fixtures.sh \
+    tools/repo/readme-fixtures.sh \
+    tools/repo/diataxis-facet-fixtures.sh \
+    tools/repo/diataxis-fixtures.sh \
+    tools/repo/decision-record-fixtures.sh \
+    tools/engine/color-fixtures.sh \
+    tools/site/refresh-figures.sh \
+    tools/probe/probe-record.sh \
+    tools/probe/probe-record-fixtures.sh \
+    tools/probe/probe-transform.sh; do
+    if ! grep -q 'hw_resolve_engine_bin' "$root/$migrated"; then
+        fail "$migrated resolves through the shared resolver" "it does not call hw_resolve_engine_bin"
+    elif grep -qE 'dev-release/headwater"? *-nt|release/headwater"? *-nt|\[ -x "?\$[A-Za-z_]*dev' "$root/$migrated"; then
+        fail "$migrated resolves through the shared resolver" "it still carries its own profile comparison"
+    else
+        pass "$migrated resolves through the shared resolver"
+    fi
+done
+
+echo
+echo "sourcing the resolver leaves nothing a child process inherits"
+
+# Clause 4 of #990: `.claude/hooks/fixtures-live.sh` sources the resolver
+# because the resolver's own contract says sourcing it sets no variable a
+# child could inherit. This case holds that contract. It runs a clean shell,
+# captures what a child sees before and after the resolver is sourced and
+# called, and requires the two to be byte-identical. A root with both
+# profiles built takes every branch of the function.
+mkdir -p "$scratch/eng/engine/target/release" "$scratch/eng/engine/target/dev-release"
+printf '#!/bin/sh\n' >"$scratch/eng/engine/target/release/headwater"
+printf '#!/bin/sh\n' >"$scratch/eng/engine/target/dev-release/headwater"
+chmod +x "$scratch/eng/engine/target/release/headwater" "$scratch/eng/engine/target/dev-release/headwater"
+cat >"$scratch/child-env.sh" <<'EOF'
+# child-env.sh RESOLVER ROOT OUT — write what a child sees before and after.
+env | sort >"$3.before"
+. "$1"
+hw_resolve_engine_bin "$2" >/dev/null
+hw_resolve_engine_missing_message "$2" >/dev/null
+env | sort >"$3.after"
+EOF
+
+# inherits RESOLVER — empty when a child sees the same environment before and
+# after RESOLVER is sourced and called; otherwise the lines that changed.
+inherits() {
+    rm -f "$scratch/env.before" "$scratch/env.after"
+    env -i PATH="$PATH" HOME="$HOME" sh "$scratch/child-env.sh" "$1" "$scratch/eng" "$scratch/env" || {
+        echo "child-env.sh did not run"
+        return
+    }
+    diff "$scratch/env.before" "$scratch/env.after" | grep '^[<>]'
+}
+
+same "sourcing and calling the real resolver changes nothing a child inherits" \
+    "" "$(inherits "$root/tools/repo/resolve-engine.sh")"
+same "and the child never sees HEADWATER_HOOK_ROOT" \
+    "0" "$(grep -c '^HEADWATER_HOOK_ROOT=' "$scratch/env.after")"
+
+# The probe must be able to see an export, or its silence above proves
+# nothing. Two copies of the resolver each export one variable, and each must
+# show up.
+sed 's/^\( *\)_hw_resolve_root=\$1$/\1_hw_resolve_root=$1; export _hw_resolve_root/' \
+    "$root/tools/repo/resolve-engine.sh" >"$scratch/resolve-export.sh"
+same "a resolver that exports its own variable is caught" \
+    "> _hw_resolve_root=$scratch/eng" "$(inherits "$scratch/resolve-export.sh")"
+sed 's/^\( *\)_hw_resolve_root=\$1$/\1_hw_resolve_root=$1; HEADWATER_HOOK_ROOT=$1; export HEADWATER_HOOK_ROOT/' \
+    "$root/tools/repo/resolve-engine.sh" >"$scratch/resolve-hook-root.sh"
+inherits "$scratch/resolve-hook-root.sh" >/dev/null
+same "a resolver that exports HEADWATER_HOOK_ROOT is caught" \
+    "1" "$(grep -c '^HEADWATER_HOOK_ROOT=' "$scratch/env.after")"
 
 echo
 echo "$passed passed, $failed failed"
