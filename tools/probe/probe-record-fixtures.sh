@@ -1734,9 +1734,13 @@ if [ -x "$engine" ] && [ -f "$root/.headwater/taxonomy.lock" ]; then
 
     # The confinement hides this checkout from the session, so the live case
     # runs the hook from a workspace that carries its own engine, as
-    # `campaign.sh` builds one.
-    mkdir -p "$scratch/live-ws/.claude" "$scratch/live-ws/engine/target/dev-release"
+    # `campaign.sh` builds one. `campaign.sh` archives the whole tree, so its
+    # workspace also holds `tools/repo/resolve-engine.sh`, which `hw_engine`
+    # in `lib.sh` delegates to since #990. This one copies it too, or the hook
+    # finds no engine and the case reads a silent hook.
+    mkdir -p "$scratch/live-ws/.claude" "$scratch/live-ws/engine/target/dev-release" "$scratch/live-ws/tools/repo"
     cp -a "$root/.claude/hooks" "$scratch/live-ws/.claude/hooks"
+    cp "$root/tools/repo/resolve-engine.sh" "$scratch/live-ws/tools/repo/resolve-engine.sh"
     cp "$engine" "$scratch/live-ws/engine/target/dev-release/headwater"
     cat > "$scratch/bin/claude" <<'STUB'
 #!/bin/sh
