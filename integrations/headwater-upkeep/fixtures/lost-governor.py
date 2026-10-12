@@ -28,10 +28,13 @@
 #              empty route report for it measures nothing, and Touched says
 #              so rather than "no document governs it now"
 #
-# Two more paths hold a space for the same reason: the changed path
-# `src/a b.rs` and the deleted path `src/e f.rs`. Route writes no pointer for
-# either, and Unmeasured says that whether a document governs it is not
-# measured, rather than that no governs edge names it.
+# Three more paths hold whitespace for the same reason: the changed path
+# `src/a b.rs`, the changed path `src/g\u00a0h.rs` with a no-break space,
+# which Rust's `char::is_whitespace` also splits at, and the deleted path
+# `src/e f.rs`. Route writes no pointer for any of them, and Unmeasured says
+# that whether a document governs it is not measured, rather than that no
+# governs edge names it. The change also edits `src/c d.rs`, so Unmeasured
+# names it too, and defers to Touched.
 #
 # A second path of gone.tsv, `src/not-a-document.rs`, has no explain report,
 # as when `explain` refuses a path that is not a document.
@@ -101,6 +104,7 @@ def route_governed(path, doc, ident):
 
 
 NO_EDGE = {"pointers": [], "ungoverned": []}
+NBSP = "src/g\u00a0h.rs"
 
 
 def part(text, name):
@@ -131,14 +135,16 @@ def main():
         write(os.path.join(work, "route-lost", "2.json"), json.dumps(NO_EDGE))
         # The shape route really writes for a path it split into words.
         write(os.path.join(work, "route-lost", "3.json"), json.dumps(NO_EDGE))
-        write(os.path.join(work, "changed.txt"), "src/lit.rs\nsrc/a b.rs\n")
-        write(os.path.join(work, "routes.tsv"), "1\tsrc/lit.rs\n2\tsrc/a b.rs\n")
+        write(os.path.join(work, "changed.txt"), f"src/lit.rs\nsrc/a b.rs\n{NBSP}\nsrc/c d.rs\n")
+        write(os.path.join(work, "routes.tsv"), f"1\tsrc/lit.rs\n2\tsrc/a b.rs\n3\t{NBSP}\n4\tsrc/c d.rs\n")
+        write(os.path.join(work, "route", "3.json"), json.dumps(NO_EDGE))
+        write(os.path.join(work, "route", "4.json"), json.dumps(NO_EDGE))
         write(os.path.join(work, "route", "1.json"), json.dumps(NO_EDGE))
         write(os.path.join(work, "route", "2.json"), json.dumps(NO_EDGE))
         write(os.path.join(work, "routes-base.tsv"), "1\tsrc/e f.rs\n")
         write(os.path.join(work, "route-base", "1.json"), json.dumps(NO_EDGE))
         write(os.path.join(work, "check.exit"), "0\n")
-        write(os.path.join(work, "check.json"), json.dumps({"change": {"unmatched": ["src/lit.rs", "src/a b.rs"]}, "findings": []}))
+        write(os.path.join(work, "check.json"), json.dumps({"change": {"unmatched": ["src/lit.rs", "src/a b.rs", NBSP, "src/c d.rs"]}, "findings": []}))
         write(os.path.join(work, "base-check.json"), json.dumps({"findings": []}))
         out = os.path.join(tmp, "report.md")
         subprocess.run([sys.executable, report, work, out], check=True)
@@ -175,12 +181,15 @@ def main():
         said = [l for l in unmeasured.splitlines() if l.startswith(f"- `{path}`:")]
         if any(a in l for l in said for a in absent):
             failed.append(f"space: Unmeasured says no edge names {path}, and route cannot read a path with a space")
-    for path in ("src/a b.rs", "src/e f.rs"):
+    for path in ("src/a b.rs", NBSP, "src/e f.rs"):
         said = [l for l in unmeasured.splitlines() if l.startswith(f"- `{path}`:")]
         if len(said) != 1 or "not measured" not in said[0]:
-            failed.append(f"space: Unmeasured does not name {path} once as not measured")
-    if "A governs edge reaches 0 of the 2 other path(s) by name, and `route` cannot read 1 of them" not in text:
-        failed.append("summary: the opening sentence does not count src/a b.rs as a path route cannot read")
+            failed.append(f"space: Unmeasured does not name {path!r} once as not measured")
+    said = [l for l in unmeasured.splitlines() if l.startswith("- `src/c d.rs`:")]
+    if len(said) != 1 or "whitespace" not in said[0] or "Touched names" not in said[0]:
+        failed.append("space: Unmeasured does not name src/c d.rs once as unreadable by route, deferring to Touched")
+    if "A governs edge reaches 0 of the 4 other path(s) by name, and `route` cannot read 3 of them" not in text:
+        failed.append("summary: the opening sentence does not count the 3 changed paths route cannot read")
 
     for f in failed:
         print(f"FAIL {f}", file=sys.stderr)
