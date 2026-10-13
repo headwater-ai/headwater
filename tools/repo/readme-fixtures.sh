@@ -4467,8 +4467,9 @@ echo "the APT block the page offers, against the job that runs it"
 # Group 10 holds what the APT block names and fetches nothing. What holds the
 # block itself is `.github/workflows/readme-apt.yml`: it runs the block on a
 # clean container of each distribution the page names as its floor, against
-# the published repository at `https://headwater.tools/apt`, every day and after
-# each release deploys the site (#1408). That job cannot run on a pull request,
+# the published repository at `https://headwater.tools/apt`, every day through
+# `install-routes.yml` (#1490) and after each release deploys the site
+# (#1408). That job cannot run on a pull request,
 # because it depends on networks this repository does not own. So this group
 # holds, on every push, the two things that would let the job pass while it
 # held nothing:
@@ -4487,6 +4488,8 @@ echo "the APT block the page offers, against the job that runs it"
 
 apt_block="$root/tools/repo/readme-apt-block.sh"
 apt_job="$root/.github/workflows/readme-apt.yml"
+# The workflow that schedules this job; a case below points it at a copy.
+routes_job="$root/.github/workflows/install-routes.yml"
 
 # readme_apt_floor README — the oldest Debian and the oldest Ubuntu the page
 # names, one per line, as `debian:N` and `ubuntu:X.Y`. Nothing when the
@@ -4558,8 +4561,15 @@ readme_apt_judge() {
     if grep -q 'apt-get install -y headwater' "$2"; then
         echo "$(basename "$2") carries its own copy of the block"
     fi
-    if ! grep -qE '^[ ]{2}schedule:' "$2"; then
-        echo "$(basename "$2") runs on no schedule, so nothing finds a distribution that moved"
+    # The schedule lives in install-routes.yml, which calls this job and opens
+    # an issue when it fails (#1490). A schedule here as well would run the
+    # block twice a day, and its own red would open nothing.
+    if grep -vE '^[ ]*#' "$2" | grep -qE '^[ ]{2}schedule:'; then
+        echo "$(basename "$2") runs on a schedule of its own, so its red opens no issue"
+    fi
+    if ! grep -vE '^[ ]*#' "$routes_job" 2>/dev/null | grep -qE '^[ ]{2}schedule:' ||
+        ! grep -qE '^    uses: \./\.github/workflows/readme-apt\.yml$' "$routes_job" 2>/dev/null; then
+        echo "no scheduled workflow calls $(basename "$2"), so nothing finds a distribution that moved"
     fi
 }
 
@@ -4669,6 +4679,27 @@ readme_apt_provoke "a job whose run body turns off -e and ends on echo is red" \
 \1sh -e readme-apt-block.sh\
 \1echo done/' \
     "readme-apt.yml has steps other than checkout, extract, and \`sh -e\` of the block"
+# The schedule moved to install-routes.yml (#1490). A schedule put back here
+# runs the block twice a day, and its red opens nothing.
+readme_apt_provoke "a job with a schedule of its own again is red" \
+    's/^on:$/on:\
+  schedule:\
+    - cron: '"'"'17 6 * * *'"'"'/' \
+    "readme-apt.yml runs on a schedule of its own, so its red opens no issue"
+# install-routes.yml stops calling this job, and nothing schedules it.
+if [ -f "$routes_job" ]; then
+    sed 's|^    uses: \./\.github/workflows/readme-apt\.yml$|    uses: ./.github/workflows/readme-apt-old.yml|' \
+        "$routes_job" >"$scratch/apt-job/install-routes.yml"
+else
+    : >"$scratch/apt-job/install-routes.yml"
+fi
+apt_routes_saved=$routes_job
+routes_job="$scratch/apt-job/install-routes.yml"
+apt_planted "an install-routes.yml that no longer calls readme-apt.yml is red" \
+    "$apt_routes_saved" "$routes_job" \
+    "no scheduled workflow calls readme-apt.yml, so nothing finds a distribution that moved" \
+    "$(readme_apt_judge "$readme" "$apt_job" | tr '\n' '|' | sed 's/|$//')"
+routes_job=$apt_routes_saved
 
 # The release job that calls the workflow, with an `if:` that skips it.
 if [ -f "$root/.github/workflows/release.yml" ]; then
@@ -4872,6 +4903,462 @@ case $(engine_pin_judge "$engine_tag" "$scratch/engine-tag/notags") in
         fail "  a clone with no tags fails, and says to fetch them" \
             "got \`$(engine_pin_judge "$engine_tag" "$scratch/engine-tag/notags")\`" ;;
 esac
+
+echo
+echo "every install route the page documents runs on a schedule, and a failure opens an issue"
+
+# Group 14 (#1490). `.github/workflows/install-routes.yml` runs each install
+# route of `## Obtaining a named version` on a clean image every day, ends each
+# in `headwater --version`, and opens or updates one issue labeled `bug` when a
+# route fails. No pull request runs it, because it depends on networks this
+# repository does not own, and HW-PD-0012 rules that such a workflow is held by
+# fixtures that read its text. This group holds what would let the schedule
+# stay green while a route the page documents broke:
+#
+#   - THE DECISIVE CASE: a route of the page that no job runs. The population
+#     comes from the page: every fence of the section, named by the paragraph
+#     before it, and the two routes the section states in prose, the macOS
+#     archive (`aarch64-apple-darwin`) and the Debian 11 file
+#     (`apt-get install ./headwater_<version>_...deb`). Each is a route of
+#     `tools/repo/readme-install-block.sh`, and a job calls the extractor for
+#     it, or calls `readme-apt.yml` for the APT fence.
+#   - a failure that opens nothing: the report job needs every route job, hands
+#     the script each one's result, runs on `failure()` and may write issues,
+#     and no job can pass when its route fails.
+#
+# Group 12 holds that `readme-apt.yml` has no schedule of its own and that this
+# workflow calls it.
+
+routes_extractor="$root/tools/repo/readme-install-block.sh"
+routes_issue="$root/tools/repo/install-route-issue.sh"
+
+# install_routes_needed README EXTRACTOR — one line for each route the page
+# documents: the extractor's route, or `unmatched <paragraph>` for a fence
+# that no route of the extractor reads, with the paragraph's bold opening.
+install_routes_needed() {
+    _table=$(sh "$2" --routes 2>/dev/null)
+    awk '
+        /^## / { section = ($0 == "## Obtaining a named version"); next }
+        !section { next }
+        /^[ \t]*```/ { if (!fence) print last; fence = !fence; next }
+        fence { next }
+        /[^ \t]/ { last = $0 }
+    ' "$1" | while IFS= read -r _para; do
+        _route=$(printf '%s\n' "$_table" | while read -r _name _opener; do
+            case $_para in
+                "$_opener"*) echo "$_name"; break ;;
+            esac
+        done)
+        if [ -n "$_route" ]; then
+            echo "$_route"
+        else
+            echo "unmatched $(printf '%s\n' "$_para" | sed 's/^\(\*\*[^*]*\*\*\).*/\1/' | cut -c1-80)"
+        fi
+    done
+    _section=$(awk '/^## / { s = ($0 == "## Obtaining a named version"); next } s' "$1")
+    if printf '%s\n' "$_section" | grep -q 'aarch64-apple-darwin'; then
+        echo archive-macos
+    fi
+    if printf '%s\n' "$_section" | grep -q 'apt-get install \./headwater_<version>_'; then
+        echo deb-file
+    fi
+}
+
+# install_routes_jobs WORKFLOW — one line for each job:
+# `id|routes|calls-apt|runs-version|is-report|needs|if|issues-write|compares-version|gh-token`,
+# with comments skipped. `needs` is read from a flow list on one line.
+install_routes_jobs() {
+    awk '
+        function flush() {
+            if (id != "") print id "|" routes "|" apt "|" ver "|" report "|" needs "|" cond "|" iw "|" cmp "|" tok
+            id = ""; routes = ""; apt = 0; ver = 0; report = 0; needs = ""; cond = ""; iw = 0; cmp = 0; tok = 0
+        }
+        /^jobs:[ \t]*$/ { in_jobs = 1; next }
+        in_jobs && /^[^ #]/ { flush(); in_jobs = 0 }
+        !in_jobs { next }
+        /^  [A-Za-z0-9_-]+:[ \t]*$/ { flush(); id = $1; sub(/:$/, "", id); next }
+        id == "" || /^[ \t]*#/ { next }
+        {
+            if (match($0, /sh tools\/repo\/readme-install-block\.sh README\.md [a-z-]+/)) {
+                n = split(substr($0, RSTART, RLENGTH), w, " ")
+                routes = routes " " w[n]
+            }
+            if ($0 ~ /^    uses: \.\/\.github\/workflows\/readme-apt\.yml$/) apt = 1
+            if ($0 ~ /headwater"? --version/) ver = 1
+            if ($0 ~ /if \[ "\$printed" != "[^"]+" \]; then/) cmp = 1
+            if ($0 ~ /sh tools\/repo\/install-route-issue\.sh/) report = 1
+            if ($0 ~ /^    needs:/) {
+                needs = $0; sub(/^    needs:[ \t]*/, "", needs)
+                gsub(/\[/, "", needs); gsub(/\]/, "", needs); gsub(/ /, "", needs)
+            }
+            if ($0 ~ /^    if:/) { cond = $0; sub(/^    if:[ \t]*/, "", cond) }
+            if ($0 ~ /^      issues: write[ \t]*$/) iw = 1
+            if ($0 ~ /^          GH_TOKEN: \$\{\{ (github\.token|secrets\.GITHUB_TOKEN) \}\}[ \t]*$/) tok = 1
+        }
+        END { flush() }
+    ' "$1"
+}
+
+# install_routes_block WORKFLOW JOB — the lines of one job, comments skipped.
+install_routes_block() {
+    awk -v job="  $2:" '
+        $0 == job { s = 1; next }
+        s && /^  [A-Za-z0-9_-]+:[ \t]*$/ { exit }
+        s && !/^[ \t]*#/
+    ' "$1"
+}
+
+# install_routes_compared WORKFLOW JOB — `ok` when the job compares the
+# version it printed with a value it read from the page or the registry, and
+# fails on a difference. The right-hand side of `if [ "$printed" != "..." ]`
+# is followed back through its assignments, at most four, to a line that runs
+# the extractor's `release` route, reads `route.sh`, or runs `cargo search
+# headwater-cli`. A comparison with `$printed` itself, or with a value typed
+# into the job, is `bad`: either passes on any version.
+install_routes_compared() {
+    _blk=$(install_routes_block "$1" "$2")
+    _line=$(printf '%s\n' "$_blk" | grep -E 'if \[ "\$printed" != "[^"]+" \]; then' | head -n 1)
+    [ -n "$_line" ] || { echo bad; return; }
+    printf '%s\n' "$_blk" | grep -A1 -F "$_line" | sed -n 2p | grep -qE '&& exit 1$' || { echo bad; return; }
+    _var=$(printf '%s\n' "$_line" | sed -n 's/.*!= "\$[{]\{0,1\}\([A-Za-z_][A-Za-z0-9_]*\).*/\1/p')
+    _hops=0
+    while [ "$_hops" -lt 4 ]; do
+        if [ -z "$_var" ] || [ "$_var" = printed ]; then
+            echo bad
+            return
+        fi
+        _def=$(printf '%s\n' "$_blk" | grep -E "(^|[ ])$_var=" | grep -v 'if \[' | head -n 1)
+        case $_def in
+            "") echo bad; return ;;
+            *'readme-install-block.sh README.md release'* | *'route.sh'* | *'cargo search headwater-cli'*)
+                echo ok; return ;;
+        esac
+        _var=$(printf '%s\n' "$_def" | sed -n "s/.*$_var=\"\{0,1\}\\\$[{]\{0,1\}\([A-Za-z_][A-Za-z0-9_]*\).*/\1/p")
+        _hops=$((_hops + 1))
+    done
+    echo bad
+}
+
+# install_routes_judge README WORKFLOW EXTRACTOR — one line for each defect,
+# and nothing for a set that holds.
+install_routes_judge() {
+    if [ ! -f "$2" ]; then
+        echo "no scheduled workflow runs the install routes: $(basename "$2") is missing"
+        return
+    fi
+    _wf=$(basename "$2")
+    _jobs=$(install_routes_jobs "$2")
+    # The extractor reads one fence for each route, so a second fence that
+    # maps to the same route is a block no job runs.
+    install_routes_needed "$1" "$3" | grep -v '^unmatched ' | sort | uniq -d | while IFS= read -r _r; do
+        echo "the page has more than one fence for the $_r route, and readme-install-block.sh reads only the first"
+    done
+    install_routes_needed "$1" "$3" | sort -u | while IFS= read -r _r; do
+        case $_r in
+            unmatched\ *)
+                echo "the page's paragraph \`${_r#unmatched }\` has a fence of commands, and no route of readme-install-block.sh reads it" ;;
+            apt)
+                printf '%s\n' "$_jobs" | awk -F'|' '$3 == 1 { f = 1 } END { exit !f }' ||
+                    echo "the page's apt route is run by no job of $_wf" ;;
+            *)
+                printf '%s\n' "$_jobs" | awk -F'|' -v r="$_r" '(" " $2 " ") ~ (" " r " ") { f = 1 } END { exit !f }' ||
+                    echo "the page's $_r route is run by no job of $_wf" ;;
+        esac
+    done
+    # A route job runs `headwater --version` and compares what it printed with
+    # the version its route installs: `--version` alone passes on any version.
+    printf '%s\n' "$_jobs" | awk -F'|' '$2 != "" && $4 != 1 { print "the job " $1 " of '"$_wf"' runs a route and never runs headwater --version" }'
+    for _id in $(printf '%s\n' "$_jobs" | awk -F'|' '$2 != "" { print $1 }'); do
+        [ "$(install_routes_compared "$2" "$_id")" = ok ] ||
+            echo "the job $_id of $_wf never compares the version it printed with the one its route installs"
+    done
+    # The page says the Debian 11 command needs no network, so the job gives
+    # its container none and fails on any interface but `lo`.
+    if printf '%s\n' "$_jobs" | awk -F'|' '(" " $2 " ") ~ / deb-file / { f = 1 } END { exit !f }'; then
+        if ! awk '/^  deb-file:[ \t]*$/ { s = 1; next } s && /^  [A-Za-z0-9_-]+:[ \t]*$/ { s = 0 } s && !/^[ \t]*#/' "$2" |
+            grep -qE 'docker run --rm --network none .* debian:11 ' ||
+            ! awk '/^  deb-file:[ \t]*$/ { s = 1; next } s && /^  [A-Za-z0-9_-]+:[ \t]*$/ { s = 0 } s && !/^[ \t]*#/' "$2" |
+            grep -qF 'if [ "$nets" != "lo " ]; then'; then
+            echo "the deb-file job of $_wf does not run debian:11 with no network and check that it has none"
+        fi
+    fi
+    _code=$(grep -vE '^[ ]*#' "$2")
+    if ! printf '%s\n' "$_code" | grep -qE '^  schedule:' || ! printf '%s\n' "$_code" | grep -qE "^    - cron: '[^']+'$"; then
+        echo "$_wf runs on no schedule"
+    fi
+    if printf '%s\n' "$_code" | grep -qE '^  (pull_request|pull_request_target|push):'; then
+        echo "$_wf runs on a push or a pull request, and a route that fails there is not a defect of the change"
+    fi
+    if printf '%s\n' "$_code" | grep -qE '\|\|[ ]*(true|:)|continue-on-error'; then
+        echo "$_wf has a step or a job that can pass when its route fails"
+    fi
+    if printf '%s\n' "$_code" | grep -qE 'runs-on:.*self-hosted'; then
+        echo "$_wf runs on the self-hosted runner, where a scheduled job competes with the merge queue"
+    fi
+    _report=$(printf '%s\n' "$_jobs" | awk -F'|' '$5 == 1')
+    if [ "$(printf '%s\n' "$_report" | grep -c .)" -ne 1 ]; then
+        echo "no one job of $_wf runs tools/repo/install-route-issue.sh"
+        return
+    fi
+    _rid=${_report%%|*}
+    _needs=$(printf '%s\n' "$_report" | cut -d'|' -f6)
+    [ "$(printf '%s\n' "$_report" | cut -d'|' -f7)" = "failure()" ] ||
+        echo "the report job of $_wf does not run on failure()"
+    [ "$(printf '%s\n' "$_report" | cut -d'|' -f8)" = 1 ] ||
+        echo "the report job of $_wf cannot write issues"
+    # The stub `gh` of 14e needs no token, so this line is what holds the
+    # report job's own: without it the live `gh` files nothing.
+    [ "$(printf '%s\n' "$_report" | cut -d'|' -f10)" = 1 ] ||
+        echo "the report job of $_wf hands gh no GH_TOKEN"
+    for _id in $(printf '%s\n' "$_jobs" | cut -d'|' -f1); do
+        [ "$_id" = "$_rid" ] && continue
+        case ",$_needs," in
+            *",$_id,"*) ;;
+            *) echo "the report job of $_wf does not need $_id, so its failure opens no issue" ;;
+        esac
+        grep -qF "$_id=\${{ needs.$_id.result }}" "$2" ||
+            echo "the report job of $_wf does not hand install-route-issue.sh the result of $_id"
+    done
+}
+
+mkdir -p "$scratch/routes"
+
+# routes_joined — the judge's lines on standard input, joined by `|`.
+routes_joined() {
+    tr '\n' '|' | sed 's/|$//'
+}
+
+# 14a. The real page against the real workflow.
+same "every install route of the page is a job of install-routes.yml, and a failure opens an issue" "" \
+    "$(install_routes_judge "$readme" "$routes_job" "$routes_extractor" | routes_joined)"
+routes_count=$(install_routes_needed "$readme" "$routes_extractor" | grep -vc '^unmatched ')
+more_than "  the page documents more than four install routes" 4 "$routes_count"
+same "  the routes the page documents are the six the extractor reads" \
+    "apt archive archive-macos cargo deb-file source" \
+    "$(install_routes_needed "$readme" "$routes_extractor" | sort | tr '\n' ' ' | sed 's/ $//')"
+
+# 14b. THE DECISIVE CASE. A copy of the workflow with the cargo job deleted.
+if [ -f "$routes_job" ]; then
+    awk '/^  cargo:[ \t]*$/ { skip = 1; next } skip && /^  [A-Za-z0-9_-]+:[ \t]*$/ { skip = 0 } !skip' \
+        "$routes_job" >"$scratch/routes/no-cargo.yml"
+else
+    : >"$scratch/routes/no-cargo.yml"
+fi
+apt_planted "a workflow with the cargo job deleted is red, and names the cargo route" \
+    "$routes_job" "$scratch/routes/no-cargo.yml" \
+    "the page's cargo route is run by no job of no-cargo.yml" \
+    "$(install_routes_judge "$readme" "$scratch/routes/no-cargo.yml" "$routes_extractor" | routes_joined)"
+
+# 14b, the page side. A fifth fenced install paragraph that no route reads.
+awk '/^## Status$/ { print "**Install it with Homebrew.** A tap carries the formula."; print ""; print "```"; print "brew install headwater"; print "```"; print "" } { print }' \
+    "$readme" >"$scratch/routes/homebrew.md"
+apt_planted "a page with a fifth fenced install paragraph that no route reads is red, and names it" \
+    "$readme" "$scratch/routes/homebrew.md" \
+    "the page's paragraph \`**Install it with Homebrew.**\` has a fence of commands, and no route of readme-install-block.sh reads it" \
+    "$(install_routes_judge "$scratch/routes/homebrew.md" "$routes_job" "$routes_extractor" | routes_joined)"
+
+# 14b, a second fence for one route: a paragraph whose opening words match
+# the archive route's, with a fence of its own.
+awk '/^## Status$/ { print "**Download the binary for Windows.** The archive is a zip."; print ""; print "```"; print "curl -fsSLO https://example.invalid/headwater.zip"; print "```"; print "" } { print }' \
+    "$readme" >"$scratch/routes/second-archive.md"
+apt_planted "a page with a second fence for the archive route is red, and names it" \
+    "$readme" "$scratch/routes/second-archive.md" \
+    "the page has more than one fence for the archive route, and readme-install-block.sh reads only the first" \
+    "$(install_routes_judge "$scratch/routes/second-archive.md" "$routes_job" "$routes_extractor" | routes_joined)"
+
+# 14b, the prose routes. The macOS job deleted, and the Debian 11 file job.
+if [ -f "$routes_job" ]; then
+    awk '/^  (archive-macos|deb-file):[ \t]*$/ { skip = 1; next } skip && /^  [A-Za-z0-9_-]+:[ \t]*$/ { skip = 0 } !skip' \
+        "$routes_job" >"$scratch/routes/no-prose.yml"
+else
+    : >"$scratch/routes/no-prose.yml"
+fi
+apt_planted "a workflow without the macOS and Debian 11 jobs is red, and names both routes" \
+    "$routes_job" "$scratch/routes/no-prose.yml" \
+    "the page's archive-macos route is run by no job of no-prose.yml|the page's deb-file route is run by no job of no-prose.yml" \
+    "$(install_routes_judge "$readme" "$scratch/routes/no-prose.yml" "$routes_extractor" | routes_joined)"
+
+# 14c. The report job, provoked. Each arm is one edit to a copy of the real
+# workflow, and each would leave a failed route with no issue.
+# install_routes_provoke NAME SED EXPECTED
+install_routes_provoke() {
+    if [ -f "$routes_job" ]; then
+        sed "$2" "$routes_job" >"$scratch/routes/install-routes.yml"
+    else
+        : >"$scratch/routes/install-routes.yml"
+    fi
+    apt_planted "$1" "$routes_job" "$scratch/routes/install-routes.yml" "$3" \
+        "$(install_routes_judge "$readme" "$scratch/routes/install-routes.yml" "$routes_extractor" | routes_joined)"
+}
+install_routes_provoke "a report job that does not need the source job is red" \
+    '/^    needs: \[/s/, *source//' \
+    "the report job of install-routes.yml does not need source, so its failure opens no issue"
+install_routes_provoke "a report job that does not hand over the cargo result is red" \
+    '/cargo=\${{ needs\.cargo\.result }}/s/cargo=\${{ needs\.cargo\.result }} *//' \
+    "the report job of install-routes.yml does not hand install-route-issue.sh the result of cargo"
+install_routes_provoke "a report job that runs on always() is red" \
+    's/^    if: failure()$/    if: always()/' \
+    "the report job of install-routes.yml does not run on failure()"
+install_routes_provoke "a report job that hands gh no token is red" \
+    '/^          GH_TOKEN: /d' \
+    "the report job of install-routes.yml hands gh no GH_TOKEN"
+install_routes_provoke "an archive job that compares the version with itself is red" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/if \[ "\$printed" != "\${tag#v}" \]; then/if [ "$printed" != "$printed" ]; then/' \
+    "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "a source job that compares the version with a typed value is red" \
+    '/^  source:$/,/^  [a-z-]*:$/s/^\( *\)tag=\$(sed .*/\1tag=v0.5.0/' \
+    "the job source of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "a Debian 11 job that compares with its own printed value is red" \
+    's/if \[ "\$printed" != "\$WANT" \]; then/if [ "$printed" != "$printed" ]; then/' \
+    "the job deb-file of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "a cargo job whose comparison exits 0 is red" \
+    '/^  cargo:$/,/^  [a-z-]*:$/s/installed binary prints .\$printed.\(.*\) && exit 1$/installed binary prints \1 \&\& exit 0/' \
+    "the job cargo of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "a report job that cannot write issues is red" \
+    's/^      issues: write$/      issues: read/' \
+    "the report job of install-routes.yml cannot write issues"
+install_routes_provoke "a route job marked continue-on-error is red" \
+    's/^\(    timeout-minutes: .*\)$/\1\
+    continue-on-error: true/' \
+    "install-routes.yml has a step or a job that can pass when its route fails"
+install_routes_provoke "a route job whose run ends in || true is red" \
+    's/^\( *\)sh -e route\.sh$/\1sh -e route.sh || true/' \
+    "install-routes.yml has a step or a job that can pass when its route fails"
+install_routes_provoke "a workflow with no schedule is red" \
+    '/^  schedule:$/,/^    - cron:/d' \
+    "install-routes.yml runs on no schedule"
+install_routes_provoke "a workflow that also runs on pull_request is red" \
+    's/^  workflow_dispatch:$/  workflow_dispatch:\
+  pull_request:/' \
+    "install-routes.yml runs on a push or a pull request, and a route that fails there is not a defect of the change"
+install_routes_provoke "a workflow on the self-hosted runner is red" \
+    '0,/^    runs-on: ubuntu-24.04$/s//    runs-on: self-hosted/' \
+    "install-routes.yml runs on the self-hosted runner, where a scheduled job competes with the merge queue"
+install_routes_provoke "a route job that never runs headwater --version is red" \
+    '/^  source:$/,/^  [a-z-]*:$/s/headwater" --version/headwater" --help/' \
+    "the job source of install-routes.yml runs a route and never runs headwater --version"
+install_routes_provoke "a route job that prints the version and never compares it is red" \
+    '/^  cargo:$/,/^  [a-z-]*:$/{/if \[ "\$printed" != /,/^ *fi$/d;}' \
+    "the job cargo of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "a Debian 11 job whose container has the network is red" \
+    's/docker run --rm --network none /docker run --rm /' \
+    "the deb-file job of install-routes.yml does not run debian:11 with no network and check that it has none"
+install_routes_provoke "a Debian 11 job that never checks its container has no network is red" \
+    '/^  deb-file:$/,/^  [a-z-]*:$/{/if \[ "\$nets" != "lo " \]; then/,/^ *fi$/d;}' \
+    "the deb-file job of install-routes.yml does not run debian:11 with no network and check that it has none"
+
+# 14d. The extractor prints each route from the page, and refuses a page whose
+# paragraph, fence or sentence is gone, because `sh -e` of an empty script
+# exits 0.
+routes_release=$(sh "$routes_extractor" "$readme" release 2>/dev/null)
+routes_tag=${routes_release##*/}
+same "the extractor names the release the archive fence downloads, the tag the page pins" \
+    "$engine_tag" "$routes_tag"
+same "  the archive route prints the page's three lines, ending in the tar line" \
+    "3|mkdir -p ~/.local/bin|tar -xzf headwater-$routes_tag-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater" \
+    "$(sh "$routes_extractor" "$readme" archive 2>/dev/null | awk 'NR == 1 { f = $0 } { l = $0 } END { print NR "|" f "|" l }')"
+same "  the macOS route is the archive route with aarch64-apple-darwin and no musl" \
+    "3|0|2" \
+    "$(sh "$routes_extractor" "$readme" archive-macos 2>/dev/null | awk '/x86_64-unknown-linux-musl/ { m++ } /aarch64-apple-darwin/ { a++ } END { print NR "|" m + 0 "|" a + 0 }')"
+same "  the Debian 11 route installs the file the release uploads, with no sudo" \
+    "apt-get install ./headwater_${routes_tag#v}_amd64.deb" \
+    "$(sh "$routes_extractor" "$readme" deb-file 2>/dev/null)"
+same "  the apt route is the block readme-apt-block.sh prints" \
+    "$(sh "$apt_block" "$readme" 2>/dev/null)" "$(sh "$routes_extractor" "$readme" apt 2>/dev/null)"
+
+# routes_refused NAME PAGE ROUTE — the extractor prints nothing and exits 1.
+routes_refused() {
+    sh "$routes_extractor" "$2" "$3" >"$scratch/routes/refused.out" 2>/dev/null
+    _status=$?
+    apt_planted "$1" "$readme" "$2" "0|1" \
+        "$(wc -c <"$scratch/routes/refused.out" | tr -d ' ')|$_status"
+}
+grep -v '^\*\*Download the binary' "$readme" >"$scratch/routes/no-archive.md"
+routes_refused "  the archive route on a page with no archive paragraph prints nothing and exits 1" \
+    "$scratch/routes/no-archive.md" archive
+sed 's/put `aarch64-apple-darwin` where the block says/use `aarch64-apple-darwin` in place of/' "$readme" >"$scratch/routes/no-subst.md"
+routes_refused "  the macOS route on a page that states no substitution prints nothing and exits 1" \
+    "$scratch/routes/no-subst.md" archive-macos
+sed 's/where the block says `x86_64-unknown-linux-musl`/where the block says `x86_64-unknown-linux-gnu`/' "$readme" >"$scratch/routes/wrong-subst.md"
+routes_refused "  the macOS route on a page whose substitution names no text of the fence prints nothing and exits 1" \
+    "$scratch/routes/wrong-subst.md" archive-macos
+# A paragraph with the archive opening words above the section, with a fence
+# of its own. The route reads the section, so it prints the section's fence.
+awk '/^## Obtaining a named version$/ { print "**Download the binary from a mirror.**"; print ""; print "```"; print "echo not the route"; print "```"; print "" } { print }' \
+    "$readme" >"$scratch/routes/early.md"
+apt_planted "  the archive route reads the section, not a paragraph above it with the same opening" \
+    "$readme" "$scratch/routes/early.md" \
+    "mkdir -p ~/.local/bin" "$(sh "$routes_extractor" "$scratch/routes/early.md" archive 2>/dev/null | sed -n 1p)"
+sed 's/`sudo apt-get install \.\/headwater_<version>_amd64\.deb`/the package/' "$readme" >"$scratch/routes/no-deb.md"
+routes_refused "  the Debian 11 route on a page that gives no file command prints nothing and exits 1" \
+    "$scratch/routes/no-deb.md" deb-file
+awk '/^\*\*The alternative, if you already have a Rust toolchain/ { print; skip = 1; next } skip && /^```/ { n++; if (n == 2) skip = 0; next } !skip' \
+    "$readme" >"$scratch/routes/no-cargo-fence.md"
+routes_refused "  the cargo route on a page whose cargo fence is gone prints nothing and exits 1" \
+    "$scratch/routes/no-cargo-fence.md" cargo
+
+# 14e. The issue script against a stub `gh` on PATH. Each case has its own
+# directory, so no case reads another's log.
+# routes_issue_case DIR OPEN-NUMBER LIST-FAILS ARGS... — runs the script in
+# DIR, which holds the stub's log and the body it was handed, and prints
+# `<status>|<gh subcommands, comma-joined>|<create flags>|<first body line>`.
+routes_issue_case() {
+    _dir=$1
+    shift
+    mkdir -p "$_dir/bin"
+    cat >"$_dir/bin/gh" <<'STUB'
+#!/bin/sh
+printf '%s\n' "$*" >>"$STUB_DIR/log"
+case "$1 $2" in
+    "issue list")
+        [ "$STUB_LIST_FAILS" = 1 ] && exit 1
+        [ -n "$STUB_OPEN" ] && printf '%s\n' "$STUB_OPEN"
+        exit 0 ;;
+    "issue create" | "issue comment")
+        while [ $# -gt 0 ]; do
+            [ "$1" = "--body-file" ] && cp "$2" "$STUB_DIR/body"
+            shift
+        done ;;
+esac
+STUB
+    chmod +x "$_dir/bin/gh"
+    _open=$1
+    _fails=$2
+    shift 2
+    STUB_DIR=$_dir STUB_OPEN=$_open STUB_LIST_FAILS=$_fails GITHUB_REPOSITORY=acme/widget \
+        GH_TOKEN=$routes_gh_token GITHUB_TOKEN= \
+        PATH="$_dir/bin:$PATH" sh "$routes_issue" "$@" >/dev/null 2>&1
+    _status=$?
+    printf '%s|%s|%s|%s\n' "$_status" \
+        "$(cut -d' ' -f1-2 "$_dir/log" 2>/dev/null | tr ' ' '-' | tr '\n' ',' | sed 's/,$//')" \
+        "$(grep '^issue create' "$_dir/log" 2>/dev/null | grep -o -- '--label [a-z]*' | tr ' ' '=')" \
+        "$(sed -n 1p "$_dir/body" 2>/dev/null)"
+}
+# The token the stub is handed; the stub reads none, and one case unsets it.
+routes_gh_token=stub
+routes_none="$scratch/routes/issue-none"
+same "the issue script with no open issue creates one labeled bug whose body opens with ELI5" \
+    "0|issue-list,issue-create|--label=bug|## ELI5" \
+    "$(routes_issue_case "$routes_none" '' 0 https://example.invalid/run/1 archive=success cargo=failure source=cancelled)"
+same "  its body names each job that did not succeed and none that did" \
+    "1|0|1" \
+    "$(grep -c '`cargo`: failure' "$routes_none/body")|$(grep -c '`archive`' "$routes_none/body")|$(grep -c '`source`: cancelled' "$routes_none/body")"
+routes_open="$scratch/routes/issue-open"
+same "  with one open issue it comments on it and creates nothing" \
+    "0|issue-list,issue-comment||The scheduled run https://example.invalid/run/1 failed again." \
+    "$(routes_issue_case "$routes_open" 42 0 https://example.invalid/run/1 archive=success cargo=failure)"
+same "  the comment goes on the open issue the list names" \
+    "issue comment 42" "$(grep -o '^issue comment [0-9]*' "$routes_open/log")"
+routes_dropped="$scratch/routes/issue-dropped"
+same "  a list in which every job succeeded still files, and says the report job dropped the failure" \
+    "0|issue-list,issue-create|--label=bug|## ELI5|1" \
+    "$(routes_issue_case "$routes_dropped" '' 0 https://example.invalid/run/1 archive=success cargo=success)|$(grep -c 'dropped the one that did' "$routes_dropped/body" 2>/dev/null)"
+same "  a gh that cannot list issues exits 1 and files nothing" \
+    "1|issue-list||" \
+    "$(routes_issue_case "$scratch/routes/issue-nolist" '' 1 https://example.invalid/run/1 cargo=failure)"
+same "  with no token it exits 2 and calls no gh" \
+    "2|||" \
+    "$(routes_gh_token=; routes_issue_case "$scratch/routes/issue-notoken" '' 0 https://example.invalid/run/1 cargo=failure)"
 
 echo
 echo "$passed passed, $failed failed"
