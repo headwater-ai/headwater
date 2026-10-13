@@ -344,6 +344,8 @@ This class dates from 2026-08-26. Before that date, such a finding was filed as 
 - [HW-OBL-0236](../obligations/0236-six-questions-from-run-20261002-1233-about-when-an-edge-ages-and-what-a-moved-rule-owes.md) — Six questions from run 20261002-1233 about when an edge ages and what a moved rule owes
 - [HW-OBL-0237](../obligations/0237-eighteen-findings-that-the-paid-layer-campaign-of-run-20261003-1026-left-in-the-probe-recorder-and-the-campaign-driver.md) — Eighteen findings that the paid layer campaign of run 20261003-1026 left in the probe recorder and the campaign driver
 - [HW-OBL-0238](../obligations/0238-four-findings-that-the-spec-6-trim-of-1572-left-in-two-decisions-and-their-test.md) — Four findings that the spec 6 trim of #1572 left in two decisions and their test
+- [HW-OBL-0241](../obligations/0241-three-questions-from-run-20261012-2342-about-an-engine-range-a-tree-outside-every-root-and-a-decision-nobody-accepted.md) — Three questions from run 20261012-2342 about an engine range, a tree outside every root and a decision nobody accepted
+- [HW-OBL-0242](../obligations/0242-three-edges-and-a-comment-that-trail-a-change-of-run-20261012-2342.md) — Three edges and a comment that trail a change of run 20261012-2342
 
 ## What the first typing of this corpus found
 
