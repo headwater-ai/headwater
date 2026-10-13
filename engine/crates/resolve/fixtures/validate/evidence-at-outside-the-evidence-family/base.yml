@@ -1,0 +1,90 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# A relation outside the `evidence` family declares `evidence_at`. Only an
+# evidence relation has an end that is the evidence, and the one reader of the
+# member, `warrant.evidence.unsupported`, reads it on evidence relations alone.
+# So on `cites`, an `association` relation, the member says something that
+# nothing reads, and validate refuses it at `relations.cites.evidence_at`.
+#
+# **The passing side is in the same file**, and the pairing is the point. Three
+# `evidence` relations declare the member three ways: `supports` names `from`,
+# `rests_on` names `to`, and `bears_on` declares none. None of them is refused.
+# A rule that refused the member on every family, or that refused one of its
+# two values, fails this case, because the record then carries a line for an
+# evidence relation.
+
+taxonomy: acme/fixture
+version: 1.0.0
+
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+
+vocabularies:
+  lifecycle_state:
+    - {value: draft,      role: initial}
+    - {value: current,    role: live}
+    - {value: superseded, role: terminal-retained}
+
+facets:
+  status:
+    role: state
+    values: $vocabularies.lifecycle_state
+    required: true
+    volatility: mutable
+    guidance:
+      draft: it is being argued over, and nothing may rely on it
+      current: it states what holds now
+      superseded: a later decision replaced it
+  sequence:
+    type: integer
+    required: true
+    volatility: stable
+
+regimes:
+  lifecycle:
+    standard:
+      initial: draft
+      transitions: {draft: [current], current: [superseded]}
+      retain_terminal: true
+
+kinds:
+  decision:
+    purpose: rationale
+    lifecycle: standard
+    facets: {require: [status, sequence]}
+
+relations:
+  cites:
+    family: association
+    from: [decision]
+    to: [decision]
+    created_by: author
+    evidence_at: from
+  supports:
+    family: evidence
+    from: [decision]
+    to: [decision]
+    created_by: author
+    evidence_at: from
+  rests_on:
+    family: evidence
+    from: [decision]
+    to: [decision]
+    created_by: author
+    evidence_at: to
+  bears_on:
+    family: evidence
+    from: [decision]
+    to: [decision]
+    created_by: author
+
+shelves:
+  decisions:
+    path: docs/decisions/**
+    homogeneous: true
+    kind: decision
+    layout: "{sequence:02d}-{slug}.md"
+
+core:
+  requires:
+    - facet_role: state
