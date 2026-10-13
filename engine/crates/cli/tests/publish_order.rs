@@ -474,8 +474,10 @@ fn the_index_gate_refuses_a_dependency_whose_release_version_is_yanked() {
 // path dependency resolves by path. It fails only at the publish, on a tag, when
 // the crate that names the stale entry asks crates.io for a version that was
 // published a release ago (#1315). This is the same shape as the publish order
-// above, a hand-kept list that nothing held against the declaration, and it is
-// recorded against HW-OBL-0172 for the same reason.
+// above, and as the constants HW-OBL-0172 records: a hand-kept list that nothing
+// held against the declaration. Step 1 of the release guide
+// (`HW-PHOW-cut-a-release`) states the invariant, and the guide's `traces_to`
+// names this file and `engine/Cargo.toml`.
 
 /// Every `[workspace.dependencies]` entry on a workspace member whose `version`
 /// differs from `[workspace.package] version` or is missing, as one line per
