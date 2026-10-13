@@ -19,11 +19,121 @@
 //! in the commit gate of every clone. The third case holds `taxonomy resolve`
 //! to the overlap of the corpus range and the package range.
 
-mod common;
-
-use common::Root;
 use headwater_resolve::release::{self, satisfies};
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::process::Command;
+
+/// The repository this test tree sits in.
+fn repository() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../..")
+        .canonicalize()
+        .expect("the repository root resolves")
+}
+
+/// A resolved corpus that a strict check passes, in the shape `adoption.rs`
+/// builds: the vendored package, the library without its doctrine pages, this
+/// repository's declaration and overlay, and a stub for each path outside the
+/// corpus root that the overlay names.
+///
+/// `label` names the case, because cargo runs the cases of one target as
+/// threads of one process.
+struct Root {
+    at: PathBuf,
+}
+
+impl Root {
+    fn new(label: &str) -> Root {
+        let at = std::env::temp_dir().join(format!(
+            "headwater-cli-engine-requirement-{}-{label}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&at);
+        std::fs::create_dir_all(&at).expect("the root is made");
+
+        let repository = repository();
+        copy(
+            &repository.join(headwater_resolve::package::PACKAGES),
+            &at.join(headwater_resolve::package::PACKAGES),
+        );
+        copy(
+            &repository.join("docs/taxonomies"),
+            &at.join("docs/taxonomies"),
+        );
+        let library = at.join("docs/taxonomies");
+        let _ = std::fs::remove_file(library.join("README.md"));
+        for entry in std::fs::read_dir(&library).expect("the copied library reads") {
+            let _ = std::fs::remove_file(entry.expect("the entry reads").path().join("doctrine.md"));
+        }
+        for name in ["taxonomy.yml", "overlay.yml"] {
+            let to = at.join(".headwater").join(name);
+            std::fs::create_dir_all(to.parent().expect("it has a parent"))
+                .expect("the declaration directory is there");
+            std::fs::copy(repository.join(".headwater").join(name), to)
+                .expect("the declaration copies");
+        }
+        for entry in [
+            "README.md",
+            ".github/CONTRIBUTING.md",
+            ".github/SECURITY.md",
+            ".github/ISSUE_TEMPLATE/issue.md",
+        ] {
+            let to = at.join(entry);
+            std::fs::create_dir_all(to.parent().expect("it has a parent"))
+                .expect("the directory is there");
+            std::fs::write(to, "# A stub\n\nThis file stands in for the real one.\n")
+                .expect("the stub writes");
+        }
+
+        let root = Root { at };
+        set_engine(&root.at, None);
+        let resolved = root.run(&["taxonomy", "resolve"]);
+        assert_eq!(resolved.code, Some(0), "the fixture resolves: {resolved:?}");
+        root
+    }
+
+    fn run(&self, arguments: &[&str]) -> Ran {
+        let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+            .args(arguments)
+            .arg("--root")
+            .arg(&self.at)
+            .output()
+            .expect("the binary runs");
+        Ran {
+            code: output.status.code(),
+            out: String::from_utf8_lossy(&output.stdout).into_owned(),
+            err: String::from_utf8_lossy(&output.stderr).into_owned(),
+        }
+    }
+}
+
+impl Drop for Root {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.at);
+    }
+}
+
+/// The two streams held apart. The requirement is reported on standard error
+/// alone, so a case that merged them could not tell a report from the output.
+#[derive(Debug)]
+struct Ran {
+    code: Option<i32>,
+    out: String,
+    err: String,
+}
+
+fn copy(from: &Path, to: &Path) {
+    std::fs::create_dir_all(to).expect("the directory is there");
+    for entry in std::fs::read_dir(from).expect("the fixture directory reads") {
+        let entry = entry.expect("the entry reads");
+        let target = to.join(entry.file_name());
+        if entry.file_type().expect("the entry has a type").is_dir() {
+            copy(&entry.path(), &target);
+        } else {
+            std::fs::copy(entry.path(), &target).expect("the fixture copies");
+        }
+    }
+}
 
 /// The phrase the one line carries, so a case can count the lines.
 const ASKS: &str = "this corpus asks for engine";
