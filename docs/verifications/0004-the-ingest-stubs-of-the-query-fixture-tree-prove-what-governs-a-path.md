@@ -45,6 +45,6 @@ The recorded report is what makes a missing governor visible. A change that drop
 
 This document governs the two stubs only. The documents under `query/` and the other files of the fixture tree serve many other reads in the same two test files, so this document is not their design.
 
-The tests do not cover a governor reached through a symlink, or a path that a `..` segment takes outside the root and back in. `headwater explain` on a code path gives the same governors from the command line, and this design does not test that route.
+The checked-in tree holds no symlink. One test adds links to a copy of the tree, and it covers a governor that a link inside the root reaches ([#1433](https://github.com/headwater-ai/headwater/issues/1433)). The tests do not cover a path that a `..` segment takes outside the root and back in. `headwater explain` on a code path gives the same governors from the command line, and this design does not test that route.
 
 Comments in both test files cite `HW-VER-0004`, and either one binds the `cited_in` edge onto its file.
