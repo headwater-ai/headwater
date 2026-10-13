@@ -523,7 +523,13 @@ class AnExportOfAnotherMajorIsRefused(unittest.TestCase):
         self.refused(self.set_versions("2.0", "1.3"), ["'2.0'", "major 2", "major 1 only"])
 
     def test_a_major_compares_as_a_number_and_not_as_text(self):
-        self.refused(self.set_versions("10.0", "10.0"), ["'10.0'", "major 10", "major 1 only"])
+        self.refused(
+            self.set_versions("10.0", "10.0"), ["'10.0'", "major 10", "major 1 only", "built for major 10"]
+        )
+
+    def test_a_major_below_1_is_refused_by_the_floor_and_not_the_ceiling(self):
+        stderr = self.refused(self.set_versions("0.9", "0.9"), ["`version` '0.9'", "below 1.1"])
+        self.assertNotIn("major 0", stderr)
 
     def test_a_version_with_no_minor_is_read_by_its_major(self):
         self.refused(self.set_versions("2", "2"), ["'2'", "major 2", "major 1 only"])
@@ -531,11 +537,12 @@ class AnExportOfAnotherMajorIsRefused(unittest.TestCase):
     def test_a_version_that_is_not_a_number_is_refused(self):
         for text in ("x.1", "two.0", "", "1.x"):
             with self.subTest(version=text):
-                self.refused(self.set_versions(text, "1.3"), ["%r" % text, "not a version"])
+                self.refused(self.set_versions(text, "1.3"), ["`version` %r" % text, "not a version"])
 
     def test_an_export_with_no_version_falls_back_to_export_version(self):
-        self.refused(self.set_versions(None, "1.0"), ["'1.0'", "below 1.1"])
-        self.refused(self.set_versions(None, "2.0"), ["'2.0'", "major 2"])
+        self.refused(self.set_versions(None, "1.0"), ["`export_version` '1.0'", "below 1.1"])
+        self.refused(self.set_versions(None, "2.0"), ["'2.0'", "major 2", "built for major 2"])
+        self.refused(self.set_versions(None, "x.1"), ["`export_version` 'x.1'", "not a version"])
 
     def test_an_export_with_neither_member_is_refused(self):
         self.refused(self.set_versions(None, None), ["no `version`"])
