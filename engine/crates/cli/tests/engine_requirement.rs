@@ -63,7 +63,8 @@ impl Root {
         let library = at.join("docs/taxonomies");
         let _ = std::fs::remove_file(library.join("README.md"));
         for entry in std::fs::read_dir(&library).expect("the copied library reads") {
-            let _ = std::fs::remove_file(entry.expect("the entry reads").path().join("doctrine.md"));
+            let _ =
+                std::fs::remove_file(entry.expect("the entry reads").path().join("doctrine.md"));
         }
         for name in ["taxonomy.yml", "overlay.yml"] {
             let to = at.join(".headwater").join(name);
@@ -151,7 +152,10 @@ fn set_engine(at: &Path, range: Option<&str>) {
         .collect();
     if let Some(range) = range {
         kept = kept.replacen("\ncorpus:", &format!("\nengine: \"{range}\"\n\ncorpus:"), 1);
-        assert!(kept.contains("\nengine: "), "the declaration has a corpus block");
+        assert!(
+            kept.contains("\nengine: "),
+            "the declaration has a corpus block"
+        );
     }
     std::fs::write(&path, kept).expect("the declaration writes");
 }
@@ -164,6 +168,22 @@ fn caret() -> String {
     } else {
         format!(">={major}.{minor} <{}", major + 1)
     }
+}
+
+/// Standard output without the read set's digest of the declaration.
+///
+/// The read set records a digest of `.headwater/taxonomy.yml` as an input, and
+/// a case that edits the file moves that one line for a reason that is not the
+/// requirement. Every other byte of standard output stays.
+fn without_declaration_digest(out: &str) -> String {
+    out.lines()
+        .filter(|line| {
+            !line
+                .trim_start()
+                .starts_with("input .headwater/taxonomy.yml ")
+        })
+        .map(|line| format!("{line}\n"))
+        .collect()
 }
 
 /// The lines of standard error that report the requirement.
@@ -195,7 +215,17 @@ fn an_engine_outside_the_corpus_range_is_reported_and_fails_a_strict_check() {
             "{pass}: {}",
             lines[0]
         );
-        assert_eq!(strict.out, plain.out, "{pass}: standard output does not move");
+        assert_eq!(
+            without_declaration_digest(&strict.out),
+            without_declaration_digest(&plain.out),
+            "{pass}: standard output does not move"
+        );
+        // The second run is served from the cache, and the requirement is read
+        // off the declaration and never out of a cached verdict, so it holds
+        // there too.
+        if pass == "warm" {
+            assert!(strict.err.contains(" 0 evaluated"), "warm: {}", strict.err);
+        }
     }
 
     let advisory = root.run(&["check"]);
@@ -227,14 +257,19 @@ fn an_unreadable_corpus_range_is_refused() {
 /// line in the same commit.
 #[test]
 fn this_repository_asks_for_the_engine_it_builds() {
-    let declaration = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../.headwater/taxonomy.yml");
+    let declaration =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../.headwater/taxonomy.yml");
     let text = std::fs::read_to_string(&declaration).expect("the declaration reads");
     let ranges: Vec<&str> = text
         .lines()
         .filter_map(|line| line.strip_prefix("engine:"))
         .map(|value| value.trim().trim_matches('"'))
         .collect();
-    assert_eq!(ranges.len(), 1, ".headwater/taxonomy.yml declares one `engine:` line");
+    assert_eq!(
+        ranges.len(),
+        1,
+        ".headwater/taxonomy.yml declares one `engine:` line"
+    );
     assert_eq!(
         satisfies(ranges[0], release::ENGINE),
         Ok(true),

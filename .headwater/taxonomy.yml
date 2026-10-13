@@ -22,6 +22,14 @@ taxonomy:
   bundles: [design-spec, evidence-and-obligation, decision-record]
   overlay: .headwater/overlay.yml
 
+# The engine this corpus asks for, in the range syntax of `requires_engine`
+# (spec 7, Consuming). A check by an engine outside it says so, and
+# `check --strict` fails. A release that moves the minor version of the engine
+# moves this line in the same commit
+# (docs/process/how-to/cut-a-release.md, step 1), and
+# `engine/crates/cli/tests/engine_requirement.rs` fails until it does.
+engine: ">=0.5 <0.6"
+
 # No waiver stands here for `pin.current` any more. Until #336 this repository
 # consumed the package it publishes from source under `packages/`, which
 # carried no release record for the digest above to name. #336 moved the

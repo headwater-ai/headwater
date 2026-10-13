@@ -1265,6 +1265,7 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
     if !repository.resolution.founded.is_empty() {
         eprint!("{}", repository.resolution.foundings());
     }
+    report_engine(&repository.consumer);
     let sources = match headwater_resolve::package::sources(root, &repository.consumer) {
         Ok(sources) => sources,
         Err(errors) => {
@@ -3870,6 +3871,44 @@ struct Loaded {
     resolvers: Resolvers,
 }
 
+/// The engine range the corpus asks for, where this engine is outside it.
+///
+/// `consumer()` already refused a range this engine cannot read, so a range
+/// that reaches here reads, and an error from it would be a second parser
+/// disagreeing with the first. It is read as unmet rather than as met, so the
+/// disagreement fails a strict run instead of passing it.
+fn engine_unmet(consumer: &headwater_resolve::package::Consumer) -> Option<&str> {
+    let range = consumer.engine.as_deref()?;
+    match headwater_resolve::release::satisfies(range, headwater_resolve::release::ENGINE) {
+        Ok(true) => None,
+        Ok(false) | Err(_) => Some(range),
+    }
+}
+
+/// Say once, on standard error, that this engine is outside the range the
+/// corpus asks for (#1600).
+///
+/// Every verb that reads the corpus passes through here, and `mcp` and `lsp`
+/// load more than once in one process, so the line prints once per process:
+/// standard error is the operator's log there. The exit status is not this
+/// function's to decide. `check --strict` fails on it, and every other verb
+/// exits as it did.
+fn report_engine(consumer: &headwater_resolve::package::Consumer) {
+    static REPORTED: std::sync::Once = std::sync::Once::new();
+    if let Some(range) = engine_unmet(consumer) {
+        REPORTED.call_once(|| {
+            eprintln!(
+                "headwater: {}",
+                err(&format!(
+                    "this corpus asks for engine \"{range}\" in {}, and this is engine {}",
+                    headwater_resolve::package::CONSUMER,
+                    headwater_resolve::release::ENGINE
+                ))
+            );
+        });
+    }
+}
+
 fn load(root: &Path) -> Result<Loaded, ExitCode> {
     let lock = match headwater_lock::at(root) {
         Ok(lock) => lock,
@@ -3898,6 +3937,7 @@ fn load_against(root: &Path, bound: Bound) -> Result<Loaded, ExitCode> {
             return Err(ExitCode::FAILURE);
         }
     };
+    report_engine(&consumer);
     let corpus = Corpus::declared(root, &consumer.corpus_root, &consumer.exclusions);
     let resolved = &bound.taxonomy;
     let taxonomy = match Taxonomy::read(resolved) {
@@ -6788,6 +6828,10 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
         Err(code) => return Ok(code),
     };
     headwater_check::phase::mark("load");
+    // An engine outside the range the corpus asks for. `load` already said so
+    // on standard error, and a strict run fails on it below, after the report,
+    // so the findings still reach a reader who runs the wrong engine.
+    let engine_unmet = engine_unmet(&loaded.consumer).is_some();
     let Loaded {
         bound,
         consumer: _,
@@ -6913,7 +6957,9 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
         return Ok(ExitCode::FAILURE);
     }
 
-    if strict && run.has_errors() {
+    // The thirteenth reason under *Exit status*: a strict run by an engine the
+    // corpus did not ask for is not a gate the corpus passed.
+    if strict && (run.has_errors() || engine_unmet) {
         return Ok(ExitCode::FAILURE);
     }
     Ok(ExitCode::SUCCESS)
@@ -8281,6 +8327,21 @@ fn merge_driver(current: &Path, path: &str) -> ExitCode {
 }
 
 /// The half of `init` that writes the consumer declaration and the overlay.
+/// The caret range of a version: the releases a corpus started on it can take
+/// without a change it did not ask for (#1600).
+///
+/// Below 1.0 a minor release may break, so `0.5.0` gives `>=0.5 <0.6`. From
+/// 1.0 only a major release may, so `1.4.2` gives `>=1.4 <2`. A version this
+/// engine cannot read is its own version, which `release::ENGINE` always is,
+/// so the fallback is the pin of the version as written.
+fn caret(version: &str) -> String {
+    match headwater_resolve::release::parts(version) {
+        Ok((0, minor, _)) => format!(">=0.{minor} <0.{}", minor + 1),
+        Ok((major, minor, _)) => format!(">={major}.{minor} <{}", major + 1),
+        Err(_) => version.to_string(),
+    }
+}
+
 fn bind(root: &Path, corpus_root: Option<String>, package: Option<String>) -> ExitCode {
     let declaration = root.join(headwater_resolve::package::CONSUMER);
     if declaration.exists() {
@@ -8367,12 +8428,17 @@ taxonomy:
              \x20 version: 0.0.0\n",
         ),
     }
+    let engine = caret(headwater_resolve::release::ENGINE);
     declaration_text.push_str(&format!(
         "\
   # A bundle is an optional part of the package, and a selection is add-only.
   # INTERVIEW: which traditions does this corpus already follow?
   bundles: []
   overlay: .headwater/overlay.yml
+
+# The engine this corpus asks for, in the range syntax of `requires_engine`.
+# A check by an engine outside it says so, and `check --strict` fails.
+engine: \"{engine}\"
 
 corpus:
   # Proposed from this tree: the directory holding the most Markdown.
