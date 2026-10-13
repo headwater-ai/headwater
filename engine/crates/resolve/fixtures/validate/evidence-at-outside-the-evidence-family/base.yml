@@ -7,6 +7,10 @@
 # nothing reads, and validate refuses it at `relations.cites.evidence_at`.
 # `follows`, a `succession` relation that names `to`, is refused the same way,
 # so a rule that refused one family, or one of the two values, fails the case.
+# `refines` (`derivation`) and `part_of` (`composition`) are the two
+# nucleus–satellite families, and each names its nucleus so that no other
+# clause of the rule fires. A rule that refused only the multinuclear families,
+# or that skipped one family by name, fails the case on them.
 #
 # **The passing side is in the same file**, and the pairing is the point. Three
 # `evidence` relations declare the member three ways: `supports` names `from`,
@@ -66,6 +70,20 @@ relations:
     family: succession
     from: [decision]
     to: [decision]
+    created_by: author
+    evidence_at: to
+  refines:
+    family: derivation
+    from: [decision]
+    to: [decision]
+    nucleus: to
+    created_by: author
+    evidence_at: from
+  part_of:
+    family: composition
+    from: [decision]
+    to: [decision]
+    nucleus: to
     created_by: author
     evidence_at: to
   supports:
