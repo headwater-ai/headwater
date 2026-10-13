@@ -828,6 +828,83 @@ fn a_corpus_with_no_purposes_still_offers_a_named_document() {
         "{}",
         route.render(PLAIN)
     );
+
+    // The anchored pointer comes first and the named one after it, on the
+    // branch that ranks nothing. `NoPurposeMatched` returns the same list,
+    // built once, so this holds both branches.
+    let route = surface.route(ANCHORED_AND_NAMED, Budget::default());
+    assert_eq!(
+        paths_of(&route),
+        [
+            "query/specs/ingest.md",
+            "query/decisions/edge-throttling.md"
+        ],
+        "{}",
+        route.render(PLAIN)
+    );
+}
+
+/// A task that names a path only `query/specs/ingest.md` governs, and repeats
+/// the name of a different document, `query/decisions/edge-throttling.md`.
+const ANCHORED_AND_NAMED: &str = "Throttling at the edge, and src/ingest";
+
+fn paths_of(route: &headwater_query::Route) -> Vec<&str> {
+    route.pointers.iter().map(|p| p.path.as_str()).collect()
+}
+
+/// Anchored pointers come first, then named ones, then ranked ones, on the
+/// branch that ranks.
+#[test]
+fn an_anchored_pointer_comes_before_a_named_one_and_both_before_the_ranked() {
+    let built = fixture_tree();
+    let surface = built.surface();
+    let route = surface.route(ANCHORED_AND_NAMED, Budget::default());
+    assert!(!route.matched.is_empty(), "{}", route.render(PLAIN));
+    let paths = paths_of(&route);
+    assert_eq!(
+        paths[..2],
+        [
+            "query/specs/ingest.md",
+            "query/decisions/edge-throttling.md"
+        ],
+        "{}",
+        route.render(PLAIN)
+    );
+    assert!(
+        matches!(route.evidence[0], headwater_query::Evidence::Named { .. }),
+        "{}",
+        route.render(PLAIN)
+    );
+    assert!(
+        route.evidence[2..]
+            .iter()
+            .all(|e| matches!(e, headwater_query::Evidence::Ranked { .. })),
+        "{}",
+        route.render(PLAIN)
+    );
+}
+
+/// Two named pointers are in derived reading precedence, as every other block
+/// of a route is, and not in census order. HW-DR-0109 constrains HW-DR-0070,
+/// so a task that repeats both titles is offered HW-DR-0109 first, although
+/// its path sorts after HW-DR-0070's.
+#[test]
+fn named_pointers_are_offered_in_reading_precedence() {
+    let built = this_repository();
+    let surface = built.surface();
+    let route = surface.route(
+        "The matched purposes take turns at a route budget, and each pointer states what reached it. \
+         A task that repeats the declared name of a document names that document.",
+        Budget::default(),
+    );
+    let named = named_by_the_task(&route);
+    assert_eq!(named.len(), 2, "{}", route.render(PLAIN));
+    assert!(
+        named[0].starts_with("docs/decisions/0109-")
+            && named[1].starts_with("docs/decisions/0070-"),
+        "{}",
+        route.render(PLAIN)
+    );
 }
 
 /// The three sentence queries of #1470, and why the name step does not reach

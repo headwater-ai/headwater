@@ -42,7 +42,7 @@ The rule is stated, not tuned:
 
 The rule asks for a run and not a set. [HW-DR-0071](0071-a-route-offers-a-document-and-never-a-heading-inside-it.md) measured that function words reach wrong documents at every threshold. A set rule lets the function words of a name match wherever a task scatters them. With a set rule, the fixture task `why is throttling applied at the edge` names the decision called `Throttling at the edge`. With a run rule, it does not.
 
-A named pointer goes after the anchored pointers and before the ranked ones. The budget never removes it, but it takes a place that a ranked pointer would otherwise take, as an anchored pointer does. A document that is both anchored and named is offered once, as anchored. The pointer states `repeats its name` with the words, and in JSON its `evidence.by` is `name`. This adds a third value to a set that the contract closed at two, so the route document moves to version `1.1`.
+A named pointer goes after the anchored pointers and before the ranked ones. The budget never removes it, but it takes a place that a ranked pointer would otherwise take, as an anchored pointer does. A document that is both anchored and named is offered once, as anchored. Derived reading precedence orders the named pointers among themselves, as it orders the other blocks. The pointer states `repeats its name` with the words, and in JSON its `evidence.by` is `name`. This adds a third value to a set that the contract closed at two, so the route document moves to version `1.1`.
 
 This record constrains HW-DR-0070 and does not replace it. The turns still order every ranked pointer.
 

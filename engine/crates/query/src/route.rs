@@ -519,7 +519,11 @@ impl Surface<'_> {
         // nothing was inferred and the purpose gate below has nothing to
         // decide. A document already anchored keeps its anchored evidence and
         // is offered once.
-        let named = self.named_documents(task, &anchored, &mut evidence);
+        // The named set is in derived reading precedence, as each other block
+        // of the route is: a successor before what it superseded, and a
+        // governing document before the one it governs.
+        let mut named = self.named_documents(task, &anchored, &mut evidence);
+        self.by_precedence(&mut named);
 
         // The budget never reaches this set, on any of the three branches
         // below. An anchor is an identity and the budget caps the ranking, so
@@ -532,12 +536,12 @@ impl Surface<'_> {
 
         // The budget reaches the named set no more than the anchored one, and
         // for the same reason: it caps the ranking, and nobody ranked these.
+        // A route that ranks nothing offers the two blocks as one list,
+        // anchored first, built once here so that the two branches which
+        // return it cannot disagree on the order.
+        let alone = identified(&anchored, &named);
         if self.shape().purposes.is_empty() {
-            return route.on_anchors_alone(
-                identified(&anchored, &named),
-                &evidence,
-                Silence::NoPurposes,
-            );
+            return route.on_anchors_alone(alone, &evidence, Silence::NoPurposes);
         }
         if terms.is_empty() {
             route.silence = Some(Silence::NoTerms);
@@ -570,11 +574,7 @@ impl Surface<'_> {
             }
         }
         if route.matched.is_empty() {
-            return route.on_anchors_alone(
-                identified(&anchored, &named),
-                &evidence,
-                Silence::NoPurposeMatched,
-            );
+            return route.on_anchors_alone(alone, &evidence, Silence::NoPurposeMatched);
         }
         route
             .matched
@@ -680,9 +680,7 @@ impl Surface<'_> {
             .into_iter()
             .map(|candidate| candidate.pointer)
             .collect();
-        let mut named = named;
         self.by_precedence(&mut anchored);
-        self.by_precedence(&mut named);
         self.by_precedence(&mut offered);
         route.pointers = anchored;
         route.pointers.extend(named);
@@ -1657,6 +1655,12 @@ mod tests {
         // Only one leading number comes off, and only at the front.
         assert_eq!(name_words("2026 2027 plan"), Some(owned(&["2027", "plan"])));
         assert_eq!(name_words("Phase 2 plan"), Some(owned(&["phase", "plan"])));
+        // A word that holds a digit and a letter is a word of the name. Only a
+        // word made only of digits is the number.
+        assert_eq!(
+            name_words("2xx retry policy"),
+            Some(owned(&["2xx", "retry", "policy"]))
+        );
     }
 
     /// A task names a document when it holds the words of the name as a run,
