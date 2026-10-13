@@ -2030,7 +2030,11 @@ fn capture_states_the_count_of_denominators_it_pooled_across() {
     .expect("the store writes");
     let ran = root.run(&["capture"]);
     assert_eq!(ran.code, Some(0), "{}{}", ran.out, ran.err);
-    assert!(ran.says("4 readings"), "it read every reading:\n{}", ran.out);
+    assert!(
+        ran.says("4 readings"),
+        "it read every reading:\n{}",
+        ran.out
+    );
     assert!(
         ran.says("3 taxonomies produced these readings"),
         "it counts distinct locks, not readings:\n{}",
