@@ -28,6 +28,8 @@ It proposes the corpus root from the directory with the most Markdown files unle
 
 It writes questions that the tree cannot answer into the overlay. It does not resolve the taxonomy, fetch a package or write a lock.
 
+The declaration states the engines that the corpus asks for, on one top-level `engine` line. The value is the caret range of the engine that ran `init`. For engine 0.5.x the line is `engine: ">=0.5 <0.6"`, and for engine 1.4.x it is `engine: ">=1.4 <2"`. A later engine outside that range says so on every run, and `headwater check --strict` fails on it. Move the line when you take a newer engine on purpose. [Spec 7](../spec/07-distribution-and-federation.md#consuming) states the key.
+
 ### The git step
 
 `--git` is the step that makes a merge safe for the derived files of the repository. It appends one line of the form `<path> -merge` to `.gitattributes` for each fold that a producer the tree holds writes. `headwater taxonomy resolve` writes `.headwater/taxonomy.lock`, which carries a digest over its whole text and is always a fold. `headwater generate` writes each file that carries the generated-file marker. Such a file is a fold only where its opening states a count or a digest. [`headwater derived`](headwater-derived.md) computes that shape. It keeps every other line of `.gitattributes` byte for byte, and it writes no line that the file already declares. So a second run writes nothing. The step asks `git check-attr` for the attributes. Where git does not answer, the step reads the root `.gitattributes` alone and reads no nested `.gitattributes`. A nested file that the step did not read can already declare a path below its directory. So the step writes no line for that path. It names each such path and the nested file on standard error. A `<path> merge=headwater-regenerate` line that an earlier release committed gets a `-merge` line after it, and git takes the later line.
@@ -119,7 +121,7 @@ The command reads no environment variable. Under `--git`, it runs `git` from the
 
 | Path | How this verb treats it |
 |---|---|
-| `.headwater/taxonomy.yml` | Written as the consumer declaration. |
+| `.headwater/taxonomy.yml` | Written as the consumer declaration, with the `engine` range of the engine that ran the verb. |
 | `.headwater/overlay.yml` | Written with interview prompts. |
 | Repository directories | Read to propose the corpus root and package location. Under `--git`, read to find each file that carries the generated-file marker. |
 | `.gitattributes` | Under `--git`, read, and appended to with one line for each derived file that it does not declare. |

@@ -2,7 +2,7 @@
 id: HW-IFACE-headwater-check
 status: current
 status_since: 2026-09-06
-summary: "What headwater check reads, what goes to each of its two streams, and the twelve causes behind its one non-zero exit."
+summary: "What headwater check reads, what goes to each of its two streams, and the thirteen causes behind its one non-zero exit."
 last_verified: 2026-10-01
 title: "headwater check"
 provenance:
@@ -65,6 +65,8 @@ The program exclusion applies only to a whole bare token, so `mkdocs/build.sh` c
 
 **`.headwater/taxonomy.yml` reads, and it names the corpus root and the exclusions.** A corpus root that no directory answers is an empty census rather than a refusal.
 
+**The `engine` key of `.headwater/taxonomy.yml` states the engines that the corpus asks for.** When this engine is outside that range, the verb writes one line on standard error that names the range and the version of this engine. The report on standard output does not change. Without `--strict`, the exit status does not change either. With `--strict`, the run writes the report and then exits 1. A gate must not pass on an engine that the corpus did not ask for. A range that the engine cannot read stops the load, as any declaration that does not read does. [Spec 7](../spec/07-distribution-and-federation.md#consuming) states the key, and `engine/crates/cli/tests/engine_requirement.rs` holds this paragraph.
+
 **A language regime can list paths outside the corpus root, and the census reports them on their own line.** The line reads `outside the corpus root: 4 paths, ste_house 4`, with the number of paths that each regime binds. Such a path is not a row of the census. So it does not change the count of files under the root or the coverage account. The three language rules read it and no other rule does ([HW-DR-0084](../decisions/0084-a-language-rule-reaches-front-door-prose-outside-the-corpus-root-and-no-other-rule-does.md)). The report names under that line each pattern that matches no file and each pattern that the record refuses. Each of these is also an error of `language.outside_root.refused`, so `--strict` fails on it. A symlink is never followed: a listed path that is a link, or that a wildcard matches as a link, is refused and reads nothing. A corpus that lists no such path prints no line.
 
 **The host states a date, or `--now` states one.** The clock is read once, in this verb, before any check runs. [Spec 12](../spec/12-check-layer.md) makes the date an injected value rather than a call inside a check. One corpus, one lock and one date therefore write one set of bytes. A host with no readable clock and no `--now` is refused rather than guessed at.
@@ -95,7 +97,7 @@ The program exclusion applies only to a whole bare token, so `mkdocs/build.sh` c
 
 **0** where the run completed and no reason below applied. A finding of any severity, including an error, leaves the status at 0 unless `--strict` was passed.
 
-**1** for each of the twelve reasons below. There is no third status, so a caller reads the message to tell them apart.
+**1** for each of the thirteen reasons below. There is no third status, so a caller reads the message to tell them apart.
 
 | The reason | Where it is decided |
 |---|---|
@@ -111,8 +113,9 @@ The program exclusion applies only to a whole bare token, so `mkdocs/build.sh` c
 | `--register` names a file that could not be written | after the report is written |
 | `--fix` was passed and a file refused its patch | after the report is written |
 | `--strict` was passed and at least one finding is an error | the last reading of the verb |
+| `--strict` was passed and this engine is outside the `engine` range that `.headwater/taxonomy.yml` declares | the last reading of the verb |
 
-Two of those are worth separating. **A refused patch is not a finding**, so no absence of `--strict` softens it. The verb was asked to write and did not, and a caller who read a 0 would believe a corpus was fixed. And **the report is written before the last five rows are decided**. A run that exits 1 for one of those five still put a complete report on standard output. That holds in `text`, `json`, `sarif` and `markdown` alike.
+Two of those are worth separating. **A refused patch is not a finding**, so no absence of `--strict` softens it. The verb was asked to write and did not, and a caller who read a 0 would believe a corpus was fixed. And **the report is written before the last six rows are decided**. A run that exits 1 for one of those six still put a complete report on standard output. That holds in `text`, `json`, `sarif` and `markdown` alike.
 
 **The first six rows are refusals, and a refusal writes nothing to standard output.** The account of a refusal is one English sentence on standard error, under `--json` and `--format json` alike. So the property is that a refusal writes no document, and not that a non-zero exit writes none. [HW-DR-0043](../decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md) rules it, and `a_refusal_writes_no_document_and_accounts_for_itself_on_the_other_stream` in `engine/crates/cli/tests/json.rs` holds both halves.
 

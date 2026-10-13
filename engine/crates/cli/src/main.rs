@@ -194,7 +194,7 @@ fn main() -> ExitCode {
 
 fn entered() -> ExitCode {
     // `clap` exits **2** on a parse error, and this binary has one failing
-    // status and it is 1: `docs/interfaces/headwater-check.md` lists twelve
+    // status and it is 1: `docs/interfaces/headwater-check.md` lists thirteen
     // reasons for it under "There is no third status", and a 2 anywhere makes
     // that sentence false. `Command` exposes no setting for the error exit
     // code, so the only route is `try_parse` and never letting `clap` call
@@ -6741,7 +6741,7 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
 /// `print!` and `eprint!` panic on a full disk, and the panic message goes to
 /// standard error, so a stream that failed there read as exit 101 with nothing
 /// said ([#1095](https://github.com/headwater-ai/headwater/issues/1095)).
-/// `docs/interfaces/headwater-check.md` states the exit as 1, the twelfth
+/// `docs/interfaces/headwater-check.md` states the exit as 1, the seventh
 /// reason under *Exit status*.
 fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
     let Asked {
