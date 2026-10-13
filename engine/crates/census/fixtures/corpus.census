@@ -228,6 +228,8 @@ docs/decisions/0107-the-process-shelves-stay-published-in-a-labeled-section-of-t
   typed: decision
 docs/decisions/0108-the-site-sidebar-lists-a-shelf-in-path-order-and-the-shelf-index-keeps-the-reading-order.md
   typed: decision
+docs/decisions/0109-a-task-that-repeats-the-declared-name-of-a-document-names-that-document.md
+  typed: decision
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md

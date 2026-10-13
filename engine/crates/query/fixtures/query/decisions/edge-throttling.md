@@ -3,6 +3,7 @@ id: DR-FIX-0031
 status: current
 status_since: 2026-02-01
 summary: why throttling is applied at the edge and not per service
+title: "31 — Throttling at the edge"
 provenance:
   warrant: accepted
   accepted_by: the fixture tree

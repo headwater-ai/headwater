@@ -43,7 +43,14 @@ use headwater_yaml::json::Json;
 /// is pinning this module. `1.0` is the first. A member added to an element, as
 /// `reach` and then `targets` (#1092) were, removes nothing a `1.0` reader
 /// reads, so neither moved it.
-pub const VERSION: &str = "1.0";
+///
+/// `1.1` added a third value of `evidence.by` on a route pointer: `name`, with
+/// a `words` member, for a document the task named by its declared name
+/// (HW-DR-0109). It moved the version where a member did not, because the
+/// contract page closed the set at `anchor` and `terms`, so a `1.0` reader may
+/// read every pointer that is not `anchor` as ranked and look for a `rank` that
+/// this pointer has none of. A `1.0` document never writes `name`.
+pub const VERSION: &str = "1.1";
 
 /// One route as JSON.
 pub fn route(route: &Route) -> String {
@@ -247,6 +254,9 @@ fn of_evidence(evidence: &Evidence) -> Json {
                 ),
             ),
         ]),
+        Evidence::Titled { words } => {
+            Json::object([("by", Json::string("name")), ("words", strings(words))])
+        }
         Evidence::Ranked { terms, rank, of } => Json::object([
             ("by", Json::string("terms")),
             ("terms", strings(terms)),

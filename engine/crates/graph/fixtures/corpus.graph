@@ -548,6 +548,8 @@ anchors
   code_path `engine/crates/query/src/json.rs` via source-tree
     cited by HW-DR-0070
   code_path `engine/crates/query/src/json.rs` via source-tree
+    cited by HW-DR-0109
+  code_path `engine/crates/query/src/json.rs` via source-tree
     cited by HW-IFACE-headwater-explain
   code_path `engine/crates/query/src/json.rs` via source-tree
     cited by HW-IFACE-headwater-route
@@ -575,6 +577,8 @@ anchors
     cited by HW-DR-0071
   code_path `engine/crates/query/src/route.rs` via source-tree
     cited by HW-DR-0074
+  code_path `engine/crates/query/src/route.rs` via source-tree
+    cited by HW-DR-0109
   code_path `engine/crates/query/src/route.rs` via source-tree
     cited by HW-IFACE-headwater-route
   code_path `engine/crates/query/tests/mcp.rs` via source-tree

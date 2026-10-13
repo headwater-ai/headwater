@@ -1542,20 +1542,17 @@ const PAREN_PATH: &str = "query/decisions/a (draft) note.md";
 
 /// A private copy of the fixture tree with one more document at
 /// [`PAREN_PATH`], named `name`, summarized by `summary`, and governing
-/// `src/ingest/mod.rs`. The checked-in taxonomy declares no facet in the `name`
-/// role, so the copy declares one, and a pointer then renders as
-/// `path (name) — summary`.
+/// `src/ingest/mod.rs`. The checked-in taxonomy declares `title` in the `name`
+/// role (HW-DR-0109 added it, for the title case of the recorded reads), so a
+/// pointer renders as `path (name) — summary`.
 fn a_corpus_with_one_named_document(case: &str, name: &str, summary: &str) -> (Scratch, Built) {
     let scratch = Scratch::of(&fixtures_dir(), case);
-    let taxonomy = scratch.0.join("query.taxonomy.yml");
-    let declared = std::fs::read_to_string(&taxonomy).expect("the fixture taxonomy");
-    let scent = "  summary:\n    role: scent\n    required: true\n";
-    assert!(declared.contains(scent), "the taxonomy declares a scent");
-    std::fs::write(
-        &taxonomy,
-        declared.replacen(scent, &format!("{scent}  title:\n    role: name\n"), 1),
-    )
-    .expect("the taxonomy");
+    let declared = std::fs::read_to_string(scratch.0.join("query.taxonomy.yml"))
+        .expect("the fixture taxonomy");
+    assert!(
+        declared.contains("  title:\n    role: name\n"),
+        "the fixture taxonomy declares a facet in the name role"
+    );
     std::fs::write(
         scratch.0.join(PAREN_PATH),
         format!(

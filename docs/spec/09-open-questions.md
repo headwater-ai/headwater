@@ -345,6 +345,10 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 [HW-DR-0069](../decisions/0069-a-paragraph-limit-counts-sentences-under-the-language-rule-and-never-words.md) (superseded) — No word-length rule joins the check layer. The six-sentence limit of the standard the house regime declares lands as a fifth defect of the language rule, advisory permanently. The paragraph that raised the question is a hand-kept index, and a derived list repairs it where no lexical rule reads it.
 
+## 109 — A task that repeats the declared name of a document names that document
+
+[HW-DR-0109](../decisions/0109-a-task-that-repeats-the-declared-name-of-a-document-names-that-document.md) — A route offers a document whose declared name a task repeats as a run of two or more words. It comes before the purposes and outside the budget. Before this rule, 45 of 133 decision records missed the default five for their own title. (asserted, and no human has accepted it)
+
 ## 70 — The matched purposes take turns at a route budget, and each pointer states what reached it
 
 [HW-DR-0070](../decisions/0070-the-matched-purposes-take-turns-at-a-route-budget-and-each-pointer-states-what-reached-it.md) — The purposes a task matches take turns at the route budget, and the kinds of one purpose take turns inside it. Each pointer states the task terms that reached it and its rank in the order by score. No pointer carries a score or a confidence.

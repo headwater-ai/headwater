@@ -211,6 +211,13 @@ pub enum Evidence {
         /// Empty where no such edge is suspect (#953).
         suspect: Vec<Suspect>,
     },
+    /// The task repeated the declared name of the document. Nothing was
+    /// ranked ([HW-DR-0109](../../../../docs/decisions/0109-a-task-that-repeats-the-declared-name-of-a-document-names-that-document.md)).
+    Titled {
+        /// The words of the name, less a leading number, that the task holds
+        /// in this order and next to each other.
+        words: Vec<String>,
+    },
     /// A distinctive term of the task reached the document under a matched
     /// purpose.
     Ranked {
@@ -265,6 +272,7 @@ impl Evidence {
                 }
                 text
             }
+            Evidence::Titled { words } => format!("repeats its name, {}", words.join(" ")),
             Evidence::Ranked { terms, rank, of } => {
                 format!("matched {}, rank {rank} of {of}", terms.join(" "))
             }
@@ -505,6 +513,18 @@ impl Surface<'_> {
             }
         }
 
+        // Step 0, second half. A document the task named by its declared name
+        // (HW-DR-0109). This is an identity for the reason an anchor is: the
+        // author declared the name, and the task repeats it word for word, so
+        // nothing was inferred and the purpose gate below has nothing to
+        // decide. A document already anchored keeps its anchored evidence and
+        // is offered once.
+        // The named set is in derived reading precedence, as each other block
+        // of the route is: a successor before what it superseded, and a
+        // governing document before the one it governs.
+        let mut named = self.named_documents(task, &anchored, &mut evidence);
+        self.by_precedence(&mut named);
+
         // The budget never reaches this set, on any of the three branches
         // below. An anchor is an identity and the budget caps the ranking, so
         // removing a document nobody ranked has no declared basis — which is
@@ -514,8 +534,14 @@ impl Surface<'_> {
         // and this is the step that answers the same question, so the two
         // surfaces have to agree.
 
+        // The budget reaches the named set no more than the anchored one, and
+        // for the same reason: it caps the ranking, and nobody ranked these.
+        // A route that ranks nothing offers the two blocks as one list,
+        // anchored first, built once here so that the two branches which
+        // return it cannot disagree on the order.
+        let alone = identified(&anchored, &named);
         if self.shape().purposes.is_empty() {
-            return route.on_anchors_alone(anchored, &evidence, Silence::NoPurposes);
+            return route.on_anchors_alone(alone, &evidence, Silence::NoPurposes);
         }
         if terms.is_empty() {
             route.silence = Some(Silence::NoTerms);
@@ -548,7 +574,7 @@ impl Surface<'_> {
             }
         }
         if route.matched.is_empty() {
-            return route.on_anchors_alone(anchored, &evidence, Silence::NoPurposeMatched);
+            return route.on_anchors_alone(alone, &evidence, Silence::NoPurposeMatched);
         }
         route
             .matched
@@ -589,7 +615,7 @@ impl Surface<'_> {
                 continue;
             }
             let pointer = self.pointer(document);
-            if anchored.contains(&pointer) {
+            if anchored.contains(&pointer) || named.contains(&pointer) {
                 continue;
             }
             candidates.push(Candidate {
@@ -600,7 +626,7 @@ impl Surface<'_> {
                 terms: scored.terms,
             });
         }
-        if candidates.is_empty() && anchored.is_empty() {
+        if candidates.is_empty() && anchored.is_empty() && named.is_empty() {
             route.silence = Some(Silence::NoDocumentReached);
             return route;
         }
@@ -634,7 +660,7 @@ impl Surface<'_> {
         //
         // The count is taken before the cut, because the cut is what destroys
         // the length that answers "were there more".
-        let ranked = budget.pointers.saturating_sub(anchored.len());
+        let ranked = budget.pointers.saturating_sub(anchored.len() + named.len());
         route.withheld = candidates.len().saturating_sub(ranked);
         candidates.truncate(ranked);
 
@@ -657,9 +683,42 @@ impl Surface<'_> {
         self.by_precedence(&mut anchored);
         self.by_precedence(&mut offered);
         route.pointers = anchored;
+        route.pointers.extend(named);
         route.pointers.extend(offered);
         route.evidence = evidence_for(&route.pointers, &evidence);
         route
+    }
+
+    /// The documents whose declared name the task repeats, in census order,
+    /// less those already anchored. Each one adds its evidence to `evidence`.
+    ///
+    /// The rule is [`name_words`] and [`repeats`], and HW-DR-0109 states it.
+    fn named_documents(
+        &self,
+        task: &str,
+        anchored: &[Pointer],
+        evidence: &mut Vec<(String, Evidence)>,
+    ) -> Vec<Pointer> {
+        let task = words(task);
+        let mut named: Vec<Pointer> = Vec::new();
+        for document in self.documents() {
+            let Some(name) = self.name(&document) else {
+                continue;
+            };
+            let Some(name) = name_words(&name) else {
+                continue;
+            };
+            if !repeats(&task, &name) {
+                continue;
+            }
+            let pointer = self.pointer(&document);
+            if anchored.contains(&pointer) || named.contains(&pointer) {
+                continue;
+            }
+            evidence.push((pointer.path.clone(), Evidence::Titled { words: name }));
+            named.push(pointer);
+        }
+        named
     }
 
     /// The anchors of the graph that the task named outright.
@@ -1072,6 +1131,59 @@ struct Weighted {
 /// missing one.
 fn holds(text: &str, term: &str) -> bool {
     terms(text).iter().any(|word| word == term)
+}
+
+/// The words of a text, lowercased, in the order written, with every repeat
+/// kept.
+///
+/// [`terms`] splits the same way and keeps the first of each word, which is
+/// right for a score and wrong for a phrase: "the X of the Y" has to stay five
+/// words long for [`repeats`] to find it.
+fn words(text: &str) -> Vec<String> {
+    text.split(|c: char| !c.is_alphanumeric())
+        .filter(|word| word.chars().count() >= 2)
+        .map(str::to_lowercase)
+        .collect()
+}
+
+/// The words a task has to repeat to name a document by its declared name, or
+/// nothing where the name can name nothing (HW-DR-0109).
+///
+/// One leading word made only of digits comes off, because the decision
+/// shelves number their titles (`12 — Migration path for an existing corpus`)
+/// and a person who types the title leaves the number out. A name of fewer
+/// than two words remaining names nothing: one word is a term, and a term that
+/// the name holds is a lexical hit that the purpose gate decides, not an
+/// identity.
+fn name_words(name: &str) -> Option<Vec<String>> {
+    let mut words = words(name);
+    if words
+        .first()
+        .is_some_and(|word| word.chars().all(|c| c.is_ascii_digit()))
+    {
+        words.remove(0);
+    }
+    (words.len() >= 2).then_some(words)
+}
+
+/// Whether the task holds the words of a name in the same order and next to
+/// each other.
+///
+/// A run and not a set. A set of words lets the function words of a name match
+/// wherever a task scatters them, and HW-DR-0071 measured that function words
+/// reach wrong documents at every threshold. A run of two or more words is a
+/// phrase the author wrote, so `fix the format` repeats no name and
+/// `schema format` repeats one.
+fn repeats(task: &[String], name: &[String]) -> bool {
+    !name.is_empty() && task.windows(name.len()).any(|window| window == name)
+}
+
+/// The anchored pointers and then the named ones, as one list for a route that
+/// offers nothing ranked.
+fn identified(anchored: &[Pointer], named: &[Pointer]) -> Vec<Pointer> {
+    let mut pointers = anchored.to_vec();
+    pointers.extend(named.iter().cloned());
+    pointers
 }
 
 /// The scalar facet values of a document, as one string.
@@ -1505,5 +1617,81 @@ mod tests {
             route.render(ColorMode::Plain),
             "a silent route paints nothing but escapes either"
         );
+    }
+
+    fn owned(words: &[&str]) -> Vec<String> {
+        words.iter().map(|word| (*word).to_string()).collect()
+    }
+
+    /// The name rule, on the edges HW-DR-0109 states: the number comes off, a
+    /// name of fewer than two words names nothing, and case and punctuation do
+    /// not count.
+    #[test]
+    fn a_name_loses_its_leading_number_and_must_keep_two_words() {
+        assert_eq!(
+            name_words("12 — Migration path for an existing corpus"),
+            Some(owned(&[
+                "migration",
+                "path",
+                "for",
+                "an",
+                "existing",
+                "corpus"
+            ]))
+        );
+        assert_eq!(
+            name_words("Relation storage"),
+            Some(owned(&["relation", "storage"]))
+        );
+        // An empty name, a name that is only its number, a name of one word
+        // once the number is off, and a name whose only other word is one
+        // character long: each names nothing.
+        assert_eq!(name_words(""), None);
+        assert_eq!(name_words("   "), None);
+        assert_eq!(name_words("12 —"), None);
+        assert_eq!(name_words("12"), None);
+        assert_eq!(name_words("12 — Scope"), None);
+        assert_eq!(name_words("12 — A"), None);
+        // Only one leading number comes off, and only at the front.
+        assert_eq!(name_words("2026 2027 plan"), Some(owned(&["2027", "plan"])));
+        assert_eq!(name_words("Phase 2 plan"), Some(owned(&["phase", "plan"])));
+        // A word that holds a digit and a letter is a word of the name. Only a
+        // word made only of digits is the number.
+        assert_eq!(
+            name_words("2xx retry policy"),
+            Some(owned(&["2xx", "retry", "policy"]))
+        );
+    }
+
+    /// A task names a document when it holds the words of the name as a run,
+    /// and a set of the same words scattered through it is not a run.
+    #[test]
+    fn a_task_repeats_a_name_only_as_a_run_of_its_words() {
+        let name = name_words("2 — Schema format").expect("two words");
+        assert!(repeats(&words("Schema format"), &name));
+        assert!(repeats(
+            &words("why did we pick this SCHEMA-FORMAT?"),
+            &name
+        ));
+        assert!(!repeats(&words("fix the format of the schema"), &name));
+        assert!(!repeats(&words("format schema"), &name));
+        assert!(!repeats(&words("schema"), &name));
+
+        // A near-verbatim title of another record does not name this one: the
+        // run breaks where the two titles differ.
+        let other = name_words("Throttling at the edge").expect("three words");
+        assert!(!repeats(&words("throttling at the gateway edge"), &other));
+        assert!(repeats(
+            &words("throttling at the edge, per service"),
+            &other
+        ));
+
+        // A repeated function word stays in the run, so a task of the same
+        // words in a different shape does not match.
+        let nested = name_words("The X of the Y").expect("three words of two characters");
+        assert_eq!(nested, owned(&["the", "of", "the"]));
+        assert!(!repeats(&words("the of"), &nested));
+        assert!(!repeats(&[], &nested));
+        assert!(!repeats(&words("anything"), &[]));
     }
 }

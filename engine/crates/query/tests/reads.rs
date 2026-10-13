@@ -52,14 +52,17 @@ const PLAIN: ColorMode = ColorMode::Plain;
 /// satellite outscores its nucleus; a procedure task whose purpose only one
 /// kind serves; a task that reaches the corpus through a code path rather than
 /// through any prose; a task no purpose answers; and a task whose purpose
-/// matches and whose terms reach no document, which is the confidence gate.
-const TASKS: [&str; 6] = [
+/// matches and whose terms reach no document, which is the confidence gate;
+/// and the declared name of a decision, whose words match `behavior` alone, so
+/// that only the name step offers the decision (HW-DR-0109).
+const TASKS: [&str; 7] = [
     "why is throttling applied at the edge",
     "what does the ingest service do",
     "how do I rotate the keys",
     "add rate limiting to src/ingest/rate_limit.rs",
     "deploy the cluster to another region",
     "what may I rely on when the tide comes in",
+    "Throttling at the edge",
 ];
 
 fn fixtures_dir() -> PathBuf {
@@ -492,6 +495,488 @@ fn a_task_that_matches_several_purposes_is_offered_more_than_one_kind() {
         assert!((1..=*of).contains(rank), "{}", route.render(PLAIN));
     }
 }
+
+/// The declared name of a record, with the number its title opens with
+/// removed, as a person who copied the title out of the page would type it.
+///
+/// Written here rather than taken from the route, because the property below
+/// is that the route answers a title, and a test that stripped the number with
+/// the route's own function could not see that function go wrong. The shape is
+/// the one the decision shelves use: `12 — Migration path for an existing
+/// corpus`, or a title with no number at all on the process shelf.
+fn title_as_typed(name: &str) -> String {
+    let rest = name.trim_start_matches(|c: char| c.is_ascii_digit());
+    if rest.len() == name.len() {
+        return name.to_string();
+    }
+    rest.trim_start()
+        .trim_start_matches(['—', '-'])
+        .trim_start()
+        .to_string()
+}
+
+/// Every decision record is offered, inside the default budget, for its own
+/// title (#1470).
+///
+/// The title is the facet in the `name` role, so a person or an agent who
+/// copies it into a route has named the record. Before HW-DR-0109 the record
+/// still had to win the purpose gate, and a title whose words matched no
+/// `rationale` question offered no decision at all: HW-DR-0004
+/// (`relation storage`) matched no purpose, and HW-DR-0101 stood 6th with a
+/// budget of 100,000.
+///
+/// Every record on both shelves is read, and a record with no name is a
+/// failure here, not a skip: a record the property cannot be asked of is a
+/// record nobody could reach by its title.
+///
+/// One record is outside the property by the rule and is named here with the
+/// reason, in [`ONE_WORD_TITLES`]. A miss on any other record fails.
+///
+/// The test is also the measurement, with one line per record of its place in
+/// the default budget and what reached it:
+///
+///     cargo test -p headwater-query --test reads every_decision_record -- --nocapture
+#[test]
+fn every_decision_record_is_offered_for_its_own_title_inside_the_default_budget() {
+    let built = this_repository();
+    let surface = built.surface();
+    let mut asked = 0;
+    let mut missed: Vec<String> = Vec::new();
+    let mut one_word: Vec<&str> = Vec::new();
+    for document in surface.documents() {
+        if document.kind != "decision" && document.kind != "process_decision" {
+            continue;
+        }
+        asked += 1;
+        let Some(name) = surface.name(&document) else {
+            missed.push(format!("{} declares no name", document.path));
+            continue;
+        };
+        let task = title_as_typed(&name);
+        let route = surface.route(&task, Budget::default());
+        let offered = route
+            .pointers
+            .iter()
+            .position(|pointer| pointer.path == document.path);
+        // The measurement #1470 asks for, one line per record: its place in the
+        // default five and what reached it. `-- --nocapture` prints it.
+        println!(
+            "{}\t{}\t{}",
+            document.path,
+            offered.map_or("-".to_string(), |at| (at + 1).to_string()),
+            offered.map_or("-", |at| match route.evidence[at] {
+                headwater_query::Evidence::Named { .. } => "anchor",
+                headwater_query::Evidence::Titled { .. } => "name",
+                headwater_query::Evidence::Ranked { .. } => "terms",
+            })
+        );
+        if offered.is_none() {
+            if ONE_WORD_TITLES.contains(&document.path) {
+                one_word.push(document.path);
+                continue;
+            }
+            let place = surface
+                .route(&task, Budget { pointers: 100_000 })
+                .pointers
+                .iter()
+                .position(|pointer| pointer.path == document.path)
+                .map_or("not offered".to_string(), |at| {
+                    format!("offered {}", at + 1)
+                });
+            missed.push(format!("{} for {task:?}: {place}", document.path));
+        }
+    }
+    assert!(asked > 100, "only {asked} decision records were read");
+    assert!(
+        missed.is_empty(),
+        "{} of {asked} decision records are outside the default budget for their own title:\n{}",
+        missed.len(),
+        missed.join("\n")
+    );
+    // A listed record that the route now offers is a stale list, and so is one
+    // that left the shelf.
+    assert_eq!(
+        one_word, ONE_WORD_TITLES,
+        "the records outside the property by the rule"
+    );
+}
+
+/// The paths of a route whose pointer the name step offered.
+fn named_by_the_task(route: &headwater_query::Route) -> Vec<&str> {
+    route
+        .pointers
+        .iter()
+        .zip(&route.evidence)
+        .filter(|(_, evidence)| matches!(evidence, headwater_query::Evidence::Titled { .. }))
+        .map(|(pointer, _)| pointer.path.as_str())
+        .collect()
+}
+
+/// The sentence queries that #1470 measures, the two tasks of this corpus that
+/// the tests above route, and the documents each one names by name.
+///
+/// A name pointer here is earned only where the task holds a declared name as
+/// a run of words. The first sentence holds `taxonomy resolution`, the name of
+/// the subsystem spec it asks about, the second holds `headwater mcp`, and the
+/// third holds `headwater export`. The two tasks of this corpus hold no name.
+/// The six tasks of the fixture tree are held by the recorded reads, where only
+/// the title task carries a `repeats its name` line.
+const NAMED: [(&str, &[&str]); 5] = [
+    (
+        "add a technical design spec for the taxonomy resolution subsystem",
+        &["docs/subsystems/taxonomy-resolution.md"],
+    ),
+    (
+        "an editor integration starts headwater mcp for each query instead of embedding the engine library",
+        &["docs/interfaces/headwater-mcp.md"],
+    ),
+    (
+        "headwater export now withholds every write when the run refuses before its first write, matching the order generate already uses",
+        &["docs/interfaces/headwater-export.md"],
+    ),
+    (
+        "why does the engine read the lock rather than the taxonomy sources",
+        &[],
+    ),
+    (
+        "Decide which shelf a new document belongs on, and where its identifier comes from.",
+        &[],
+    ),
+];
+
+/// A task gains a name pointer only for a name it repeats (HW-DR-0109).
+#[test]
+fn a_task_names_only_the_documents_whose_name_it_repeats() {
+    let built = this_repository();
+    let surface = built.surface();
+    for (task, named) in NAMED {
+        let route = surface.route(task, Budget::default());
+        assert_eq!(named_by_the_task(&route), named, "{}", route.render(PLAIN));
+    }
+}
+
+/// A named pointer comes after the anchored ones and before the ranked ones,
+/// once, and JSON writes its evidence as `by: name` with the words, in a
+/// document of version `1.1` (HW-DR-0109).
+#[test]
+fn a_named_pointer_is_offered_once_before_the_ranked_ones_and_written_as_by_name() {
+    let built = fixture_tree();
+    let surface = built.surface();
+    let route = surface.route("Throttling at the edge", Budget::default());
+    assert_eq!(
+        named_by_the_task(&route),
+        ["query/decisions/edge-throttling.md"],
+        "{}",
+        route.render(PLAIN)
+    );
+    assert_eq!(
+        route.pointers[0].path,
+        "query/decisions/edge-throttling.md",
+        "{}",
+        route.render(PLAIN)
+    );
+    let json = headwater_query::json::route(&route);
+    let value = headwater_yaml::load(&json).expect("the route parses").value;
+    let at = |path: &[&str]| -> String {
+        let mut value = &value;
+        for key in path {
+            value = match value {
+                headwater_yaml::Value::Map(map) => &map.get(key).expect(key).value,
+                headwater_yaml::Value::Seq(items) => {
+                    &items[key.parse::<usize>().expect("an index")].value
+                }
+                headwater_yaml::Value::Scalar(_) => panic!("{key} under a scalar"),
+            };
+        }
+        match value {
+            headwater_yaml::Value::Scalar(scalar) => scalar.text.clone(),
+            headwater_yaml::Value::Seq(items) => items
+                .iter()
+                .map(|item| item.value.as_scalar().expect("a word").text.clone())
+                .collect::<Vec<_>>()
+                .join(" "),
+            headwater_yaml::Value::Map(_) => panic!("a mapping at {path:?}"),
+        }
+    };
+    assert_eq!(at(&["version"]), "1.1", "{json}");
+    assert_eq!(at(&["pointers", "0", "evidence", "by"]), "name", "{json}");
+    assert_eq!(
+        at(&["pointers", "0", "evidence", "words"]),
+        "throttling at the edge",
+        "{json}"
+    );
+
+    // Once, in a route of this corpus where the named record also reaches the
+    // ranked list: `rationale` matches the title of HW-DR-0070.
+    let built = this_repository();
+    let surface = built.surface();
+    let route = surface.route(
+        "The matched purposes take turns at a route budget, and each pointer states what reached it",
+        Budget { pointers: 100_000 },
+    );
+    let mut paths: Vec<&str> = route.pointers.iter().map(|p| p.path.as_str()).collect();
+    let offered = paths.len();
+    paths.sort_unstable();
+    paths.dedup();
+    assert_eq!(paths.len(), offered, "a document is offered twice");
+}
+
+/// A named pointer takes a place of the budget, as an anchored one does, and
+/// the budget never removes it.
+#[test]
+fn a_named_pointer_takes_a_place_of_the_budget_and_is_never_cut() {
+    let built = fixture_tree();
+    let surface = built.surface();
+    let task = "Throttling at the edge";
+    // The task reaches one ranked document as well, so a budget of one holds
+    // the named pointer and withholds the ranked one.
+    let route = surface.route(task, Budget { pointers: 1 });
+    assert_eq!(
+        route
+            .pointers
+            .iter()
+            .map(|p| p.path.as_str())
+            .collect::<Vec<_>>(),
+        ["query/decisions/edge-throttling.md"],
+        "{}",
+        route.render(PLAIN)
+    );
+    assert_eq!(route.withheld, 1, "{}", route.render(PLAIN));
+    let route = surface.route(task, Budget { pointers: 0 });
+    assert_eq!(
+        named_by_the_task(&route),
+        ["query/decisions/edge-throttling.md"],
+        "{}",
+        route.render(PLAIN)
+    );
+}
+
+/// A document that the task both anchors and names is offered once, with the
+/// anchored evidence.
+#[test]
+fn a_document_both_anchored_and_named_is_offered_once_as_anchored() {
+    let built = fixture_tree();
+    let surface = built.surface();
+    let route = surface.route(
+        "Throttling at the edge in src/ingest/rate_limit.rs",
+        Budget::default(),
+    );
+    let at: Vec<usize> = route
+        .pointers
+        .iter()
+        .enumerate()
+        .filter(|(_, p)| p.path == "query/decisions/edge-throttling.md")
+        .map(|(at, _)| at)
+        .collect();
+    assert_eq!(at.len(), 1, "{}", route.render(PLAIN));
+    assert!(
+        matches!(
+            route.evidence[at[0]],
+            headwater_query::Evidence::Named { .. }
+        ),
+        "{}",
+        route.render(PLAIN)
+    );
+    assert!(
+        named_by_the_task(&route).is_empty(),
+        "{}",
+        route.render(PLAIN)
+    );
+}
+
+/// A corpus that declares no purpose still answers a task that repeats a name,
+/// as it answers a task that names a path.
+#[test]
+fn a_corpus_with_no_purposes_still_offers_a_named_document() {
+    let source = std::fs::read_to_string(fixtures_dir().join("query.taxonomy.yml"))
+        .expect("the fixture taxonomy");
+    let mut stripped = String::new();
+    let mut in_purposes = false;
+    for line in source.lines() {
+        if line == "purposes:" {
+            in_purposes = true;
+            continue;
+        }
+        if in_purposes && !line.is_empty() && !line.starts_with(' ') {
+            in_purposes = false;
+        }
+        if in_purposes || line.trim_start().starts_with("purpose:") {
+            continue;
+        }
+        stripped.push_str(line);
+        stripped.push('\n');
+    }
+    let root = headwater_yaml::load(&stripped)
+        .expect("the stripped taxonomy loads")
+        .value
+        .as_map()
+        .expect("a mapping")
+        .clone();
+    let corpus = Corpus::new(fixtures_dir(), "query");
+    let built = Built::over(&corpus, &root);
+    let surface = built.surface();
+    let route = surface.route("Throttling at the edge", Budget::default());
+    assert_eq!(
+        route.silence,
+        None,
+        "the route is silent: {}",
+        route.render(PLAIN)
+    );
+    assert_eq!(
+        named_by_the_task(&route),
+        ["query/decisions/edge-throttling.md"],
+        "{}",
+        route.render(PLAIN)
+    );
+
+    // The anchored pointer comes first and the named one after it, on the
+    // branch that ranks nothing. `NoPurposeMatched` returns the same list,
+    // built once, so this holds both branches.
+    let route = surface.route(ANCHORED_AND_NAMED, Budget::default());
+    assert_eq!(
+        paths_of(&route),
+        [
+            "query/specs/ingest.md",
+            "query/decisions/edge-throttling.md"
+        ],
+        "{}",
+        route.render(PLAIN)
+    );
+}
+
+/// A task that names a path only `query/specs/ingest.md` governs, and repeats
+/// the name of a different document, `query/decisions/edge-throttling.md`.
+const ANCHORED_AND_NAMED: &str = "Throttling at the edge, and src/ingest";
+
+fn paths_of(route: &headwater_query::Route) -> Vec<&str> {
+    route.pointers.iter().map(|p| p.path.as_str()).collect()
+}
+
+/// Anchored pointers come first, then named ones, then ranked ones, on the
+/// branch that ranks.
+#[test]
+fn an_anchored_pointer_comes_before_a_named_one_and_both_before_the_ranked() {
+    let built = fixture_tree();
+    let surface = built.surface();
+    let route = surface.route(ANCHORED_AND_NAMED, Budget::default());
+    assert!(!route.matched.is_empty(), "{}", route.render(PLAIN));
+    let paths = paths_of(&route);
+    assert_eq!(
+        paths[..2],
+        [
+            "query/specs/ingest.md",
+            "query/decisions/edge-throttling.md"
+        ],
+        "{}",
+        route.render(PLAIN)
+    );
+    assert!(
+        matches!(route.evidence[0], headwater_query::Evidence::Named { .. }),
+        "{}",
+        route.render(PLAIN)
+    );
+    assert!(
+        route.evidence[2..]
+            .iter()
+            .all(|e| matches!(e, headwater_query::Evidence::Ranked { .. })),
+        "{}",
+        route.render(PLAIN)
+    );
+}
+
+/// Two named pointers are in derived reading precedence, as every other block
+/// of a route is, and not in census order. HW-DR-0109 constrains HW-DR-0070,
+/// so a task that repeats both titles is offered HW-DR-0109 first, although
+/// its path sorts after HW-DR-0070's.
+#[test]
+fn named_pointers_are_offered_in_reading_precedence() {
+    let built = this_repository();
+    let surface = built.surface();
+    let route = surface.route(
+        "The matched purposes take turns at a route budget, and each pointer states what reached it. \
+         A task that repeats the declared name of a document names that document.",
+        Budget::default(),
+    );
+    let named = named_by_the_task(&route);
+    assert_eq!(named.len(), 2, "{}", route.render(PLAIN));
+    assert!(
+        named[0].starts_with("docs/decisions/0109-")
+            && named[1].starts_with("docs/decisions/0070-"),
+        "{}",
+        route.render(PLAIN)
+    );
+}
+
+/// The three sentence queries of #1470, and why the name step does not reach
+/// the documents that each one still misses.
+///
+/// Each miss has one cause, and it is the purpose gate: the verbs of the
+/// sentence ("add", "starts", "uses") match `evidence` and `procedure` above
+/// the purpose the target serves, so the target competes late in the turns or
+/// not at all. No sentence repeats the name of the document it misses, so the
+/// name step has nothing to offer for it. A change to purpose scoring would be
+/// the remedy, and #1470 records the cases rather than that change.
+///
+/// Measured on this branch, budget 100,000: HW-DR-0102 was not offered,
+/// because `rationale` did not match; spec 6 stood 51st, rank 178 of 291; and
+/// `headwater-generate.md` stood 9th, rank 174 of 373. The first sentence's
+/// target, `taxonomy-resolution.md`, and the third's `headwater-export.md` are
+/// now offered first by name.
+#[test]
+fn three_sentence_queries_miss_by_the_purpose_gate_and_not_by_the_name_step() {
+    let built = this_repository();
+    let surface = built.surface();
+    let misses: [(&str, &str); 3] = [
+        (NAMED[1].0, "docs/decisions/0102-"),
+        (NAMED[1].0, "docs/spec/06-"),
+        (NAMED[2].0, "docs/interfaces/headwater-generate.md"),
+    ];
+    for (task, target) in misses {
+        let route = surface.route(task, Budget::default());
+        assert!(
+            !route.pointers.iter().any(|p| p.path.starts_with(target)),
+            "{target} is now in the default five, so the case is stale:\n{}",
+            route.render(PLAIN)
+        );
+        let target_document = surface
+            .documents()
+            .into_iter()
+            .find(|document| document.path.starts_with(target))
+            .unwrap_or_else(|| panic!("{target} is on the tree"));
+        let purpose = surface
+            .pointer(&target_document)
+            .purpose
+            .unwrap_or_else(|| panic!("{target} serves a purpose"));
+        let top = route.matched.first().expect("a purpose matched");
+        let score = route
+            .matched
+            .iter()
+            .find(|matched| matched.purpose == purpose)
+            .map_or(0, |matched| matched.score);
+        assert!(
+            score < top.score,
+            "{target} serves `{purpose}`, which scored {score} against {} for `{}`, \
+             so the purpose gate is not the cause",
+            top.score,
+            top.purpose
+        );
+        let words = surface
+            .name(&target_document)
+            .map(|name| name.to_lowercase())
+            .unwrap_or_default();
+        assert!(
+            !task.to_lowercase().contains(&words) || words.is_empty(),
+            "the task repeats the name of {target}"
+        );
+    }
+}
+
+/// The decision records whose title, less its number, is one word. HW-DR-0109
+/// rules that a one-word name names nothing: one word is a term, and the
+/// purpose gate decides a term. `naming` is not a word of any `rationale`
+/// question, so the title `10 — Naming` matches no purpose that a decision
+/// serves, and the route offers no decision for it.
+const ONE_WORD_TITLES: [&str; 1] = ["docs/decisions/0010-naming.md"];
 
 /// Derived reading precedence orders the list, and it outranks the score.
 ///
