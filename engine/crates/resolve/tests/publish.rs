@@ -4301,6 +4301,7 @@ fn hand_editing_the_vendored_taxonomy_source_moves_the_digest_a_lock_would_hold(
         overlay: None,
         corpus_root: "docs".to_string(),
         exclusions: Vec::new(),
+        engine: None,
     };
 
     // The digest a `taxonomy resolve` run would have recorded in the lock for
@@ -4765,6 +4766,7 @@ fn two_directories_declaring_one_name_are_caught_by_sources_too() {
         overlay: None,
         corpus_root: "docs".to_string(),
         exclusions: Vec::new(),
+        engine: None,
     };
 
     let refused = package::sources(&root, &consumer).expect_err(

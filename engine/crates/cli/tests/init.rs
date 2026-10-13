@@ -100,7 +100,31 @@ const DECLARATION_TAIL: &str = r"# A bundle is an optional part of the package, 
   bundles: []
   overlay: .headwater/overlay.yml
 
-corpus:
+";
+
+/// The engine range the declaration asks for, between the `taxonomy:` block
+/// and the `corpus:` block (#1600).
+///
+/// The value is the caret range of the engine that ran `init`, so it is built
+/// from the engine version constant rather than written here: a literal would fail
+/// this target on the next release for a reason that is not a defect.
+fn engine_line() -> String {
+    let (major, minor, _) = headwater_resolve::release::parts(headwater_resolve::release::ENGINE)
+        .expect("this engine has a version");
+    let range = if major == 0 {
+        format!(">=0.{minor} <0.{}", minor + 1)
+    } else {
+        format!(">={major}.{minor} <{}", major + 1)
+    };
+    format!(
+        "# The engine this corpus asks for, in the range syntax of `requires_engine`.\n\
+         # A check by an engine outside it says so, and `check --strict` fails.\n\
+         engine: \"{range}\"\n\n"
+    )
+}
+
+/// The `corpus:` block, the last thing the declaration carries.
+const DECLARATION_CORPUS: &str = r"corpus:
   # Proposed from this tree: the directory holding the most Markdown.
   root: docs
   # An exclusion states a reason. A pattern with none is a silent pass with a
@@ -380,7 +404,10 @@ fn publish_maintained_source_into(out: &Path) -> String {
 fn the_declaration_of_a_tree_with_no_package_is_written_byte_for_byte() {
     let root = Root::over("declaration-no-package");
     root.init();
-    let expected = format!("{DECLARATION_HEAD}{NO_PACKAGE_VERSION}{DECLARATION_TAIL}");
+    let expected = format!(
+        "{DECLARATION_HEAD}{NO_PACKAGE_VERSION}{DECLARATION_TAIL}{}{DECLARATION_CORPUS}",
+        engine_line()
+    );
     assert_eq!(
         root.read(".headwater/taxonomy.yml"),
         expected,
@@ -412,7 +439,10 @@ fn the_declaration_of_a_tree_with_a_package_pins_the_version_that_package_declar
     let root = Root::with_package("declaration-with-package");
     let version = root.declared_version();
     root.init();
-    let expected = format!("{DECLARATION_HEAD}  version: {version}\n{DECLARATION_TAIL}");
+    let expected = format!(
+        "{DECLARATION_HEAD}  version: {version}\n{DECLARATION_TAIL}{}{DECLARATION_CORPUS}",
+        engine_line()
+    );
     assert_eq!(
         root.read(".headwater/taxonomy.yml"),
         expected,

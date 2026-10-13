@@ -176,6 +176,7 @@ pub fn sources(
         overlay: None,
         corpus_root: String::new(),
         exclusions: Vec::new(),
+        engine: None,
     };
     package::sources_at(root, directory, manifest, &consumer)
 }

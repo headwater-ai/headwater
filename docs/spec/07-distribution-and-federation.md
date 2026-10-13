@@ -178,7 +178,11 @@ taxonomy:
   digest: sha256:6c2f…
   profile: service-repo
   overlay: .headwater/overlay.yml
+
+engine: ">=0.5 <0.6"
 ```
+
+**The `engine` key states the engines that this corpus asks for.** It is one top-level line, so a shell script can read it before any engine is installed. Its value is a range in the syntax of a package's `requires_engine` (see [Publishing](#publishing)). An exact version is a range of one comparator. A corpus that declares no `engine` key asks for no range. The engine refuses a value that it cannot read, because a range read as no range is a claim that the engine dropped. `headwater init` writes the caret range of the engine that ran it: `>=0.5 <0.6` for engine 0.5.x, and `>=1.4 <2` for engine 1.4.x. Every verb that reads the corpus compares the range with its own version. When the engine is outside the range, the verb writes one line on standard error that names both, and its exit status does not change. `headwater check --strict` fails on that line, so a gate cannot pass on an engine that the corpus did not ask for. `headwater taxonomy resolve` also refuses a corpus range that has no version in common with the `requires_engine` of the package, and it names both ranges. `headwater check` reads the lock and not the package, so it does not make that comparison.
 
 **Two packages answer this declaration, and the `bundles` key is what separates them.** A composer takes `headwater/standard`, names the bundles it wants, and owns the selection from then on. A batteries-included adopter takes `headwater/starter`, which is the flattened form of the [starter assembly](#the-starter-kit-is-an-assembly), and names no bundles at all. A flattened package ships no bundle directory, so a selection against one is refused rather than ignored. `package::selected` reports `this selects N bundles and <package> ships none`, and a case in `engine/crates/resolve/tests/publish.rs` holds that refusal. The two forms differ in who owns the upgrade and in nothing else the engine reads.
 

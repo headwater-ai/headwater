@@ -286,7 +286,7 @@ fn the_two_spellings_of_one_target_write_the_same_bytes() {
 /// and this verb surface has just gained a second name for one value.
 ///
 /// Exit exactly 1 and never `clap`'s own 2: `docs/interfaces/headwater-check.md`
-/// states twelve reasons for exit 1 under *"There is no third status"*.
+/// states thirteen reasons for exit 1 under *"There is no third status"*.
 #[test]
 fn a_command_line_that_names_one_target_twice_is_refused() {
     for (name, base) in both_spellings() {
@@ -318,8 +318,8 @@ fn a_command_line_that_names_one_target_twice_is_refused() {
 /// with no value, a rung the ladder does not name, a pair of flags the parser
 /// holds in conflict, or a choice the engine will not make for a caller.
 ///
-/// `check` is deliberately absent past the parse conflict, because five of its
-/// twelve exit-1 reasons are decided *after* the report is on standard output.
+/// `check` is deliberately absent past the parse conflict, because six of its
+/// thirteen exit-1 reasons are decided *after* the report is on standard output.
 /// [`a_run_that_completed_and_then_failed_still_wrote_its_document`] holds that
 /// half, and the pair of them is the boundary rather than either alone.
 fn refusals() -> Vec<(&'static str, Vec<&'static str>)> {
@@ -426,8 +426,8 @@ fn a_refusal_writes_no_document_and_accounts_for_itself_on_the_other_stream() {
 ///
 /// "Standard output is empty when the status is 1" is **false** for `check`.
 /// `docs/interfaces/headwater-check.md` states it under *Exit status*: the
-/// report is written before the last five of the twelve reasons are decided, so
-/// a run that exits 1 for one of those five still put a whole report there.
+/// report is written before the last six of the thirteen reasons are decided, so
+/// a run that exits 1 for one of those six still put a whole report there.
 /// Without this case, a future change that suppressed the report on any
 /// non-zero exit would pass the case above and break the contract.
 ///

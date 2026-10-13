@@ -780,6 +780,7 @@ fn taxonomy_consumer() -> headwater_resolve::package::Consumer {
         overlay: None,
         corpus_root: "docs".to_string(),
         exclusions: Vec::new(),
+        engine: None,
     }
 }
 
