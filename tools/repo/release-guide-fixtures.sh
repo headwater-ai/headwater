@@ -1851,9 +1851,10 @@ for path in $trace_required; do
 done
 
 # t2. A guide with one path removed is red, and the finding names that path
-# and only that path.
+# and only that path. The arms name the two paths themselves and do not read
+# `trace_required`, so a path dropped from that list does not drop its arm too.
 mkdir -p "$scratch/t2"
-for path in $trace_required; do
+for path in engine/crates/cli/tests/publish_order.rs engine/Cargo.toml; do
     grep -v "^[[:space:]]*- $path[[:space:]]*\$" "$root/$guide_rel" > "$scratch/t2/guide.md"
     if cmp -s "$root/$guide_rel" "$scratch/t2/guide.md"; then
         fail "a guide whose traces_to drops $path is red" "the plant changed nothing in the guide"
@@ -1873,6 +1874,33 @@ else
         "traces_to does not name engine/crates/cli/tests/publish_order.rs|traces_to does not name engine/Cargo.toml" \
         "$(trace_misses "$scratch/t2/guide.md" | tr '\n' '|' | sed 's/|$//')"
 fi
+
+# t4. A third traces_to entry beside the two is green: the group requires the
+# two paths and does not fix the whole list.
+sed 's|^\([[:space:]]*\)- engine/Cargo.toml[[:space:]]*$|&\
+\1- engine/crates/cli/Cargo.toml|' "$root/$guide_rel" > "$scratch/t2/guide.md"
+if cmp -s "$root/$guide_rel" "$scratch/t2/guide.md"; then
+    fail "a guide that traces to a third path beside the two is green" "the plant changed nothing in the guide"
+else
+    same "a guide that traces to a third path beside the two is green" "" \
+        "$(trace_misses "$scratch/t2/guide.md" | tr '\n' '|' | sed 's/|$//')"
+fi
+
+# t5. An entry that only contains a path is not that path. A guide that
+# traces to `engine/Cargo.toml.orig` in place of the manifest is red.
+sed 's|^\([[:space:]]*- engine/Cargo.toml\)[[:space:]]*$|\1.orig|' "$root/$guide_rel" > "$scratch/t2/guide.md"
+if cmp -s "$root/$guide_rel" "$scratch/t2/guide.md"; then
+    fail "a guide that traces to engine/Cargo.toml.orig in place of the manifest is red" "the plant changed nothing in the guide"
+else
+    same "a guide that traces to engine/Cargo.toml.orig in place of the manifest is red" \
+        "traces_to does not name engine/Cargo.toml" \
+        "$(trace_misses "$scratch/t2/guide.md" | tr '\n' '|' | sed 's/|$//')"
+fi
+
+# t6. A guide with no front matter is red, never skipped.
+grep -v '^---$' "$root/$guide_rel" > "$scratch/t2/guide.md"
+same "a guide with no front matter is red" "the guide has no front matter" \
+    "$(trace_misses "$scratch/t2/guide.md" | tr '\n' '|' | sed 's/|$//')"
 
 echo
 echo "$passed passed, $failed failed"
