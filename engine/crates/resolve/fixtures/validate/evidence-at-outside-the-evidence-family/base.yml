@@ -5,6 +5,8 @@
 # member, `warrant.evidence.unsupported`, reads it on evidence relations alone.
 # So on `cites`, an `association` relation, the member says something that
 # nothing reads, and validate refuses it at `relations.cites.evidence_at`.
+# `follows`, a `succession` relation that names `to`, is refused the same way,
+# so a rule that refused one family, or one of the two values, fails the case.
 #
 # **The passing side is in the same file**, and the pairing is the point. Three
 # `evidence` relations declare the member three ways: `supports` names `from`,
@@ -60,6 +62,12 @@ relations:
     to: [decision]
     created_by: author
     evidence_at: from
+  follows:
+    family: succession
+    from: [decision]
+    to: [decision]
+    created_by: author
+    evidence_at: to
   supports:
     family: evidence
     from: [decision]

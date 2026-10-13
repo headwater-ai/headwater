@@ -1,1 +1,2 @@
 the resolved taxonomy `relations.cites.evidence_at`: relation coherence: names `from`, and this relation is of the `association` family. Only a relation of the `evidence` family has an end that is the evidence, and nothing reads the member on another family
+the resolved taxonomy `relations.follows.evidence_at`: relation coherence: names `to`, and this relation is of the `succession` family. Only a relation of the `evidence` family has an end that is the evidence, and nothing reads the member on another family
