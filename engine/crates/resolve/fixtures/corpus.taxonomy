@@ -886,6 +886,7 @@ relations:
   records:
     cardinality: many
     created_by: generator
+    evidence_at: from
     family: evidence
     from:
       - probe_transcript

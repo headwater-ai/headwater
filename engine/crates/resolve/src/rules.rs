@@ -164,7 +164,8 @@ pub const RULES: [(&str, Ran); 23] = [
         "relation coherence",
         Ran::Partly {
             decides: "a nucleus–satellite relation names its nucleus and a multinuclear one \
-                      names none, `inherits` names facets that both ends carry, and \
+                      names none, `inherits` names facets that both ends carry, only a \
+                      relation of the `evidence` family declares `evidence_at`, and \
                       `on_target.set_state` names a state that every kind at the `to` end can \
                       stand in",
             waits: "\"a family's default is not contradicted without explicit override\" states \
@@ -1618,6 +1619,25 @@ fn relation_coherence(view: &View, out: &mut Vec<ResolveError>) {
                 ),
             )),
             _ => {}
+        }
+
+        // `evidence_at` says which end of an evidence relation is the
+        // evidence. Another family has no such end, and the one reader of the
+        // member, `headwater_check::basis`, reads it on evidence relations
+        // alone, so on another family it states something nothing reads
+        // (HW-DR-0103).
+        if family != "evidence" {
+            if let Some(end) = text(body, "evidence_at") {
+                out.push(refusal(
+                    RULE,
+                    &at("evidence_at"),
+                    format!(
+                        "names `{end}`, and this relation is of the `{family}` family. Only a \
+                         relation of the `evidence` family has an end that is the evidence, and \
+                         nothing reads the member on another family"
+                    ),
+                ));
+            }
         }
 
         // `on_target.set_state` names a state that every kind at the `to` end

@@ -258,6 +258,14 @@ add:
   # instrument. A skill file sits outside the corpus root, so a relation that
   # named only a governed document could not point at one and that measurement
   # would have no probe. The anchor resolver already reaches it.
+  #
+  # No `evidence_at`, and the reason is the relation's meaning. A probe tests
+  # whether a session reaches the document or the path that it names. The
+  # probe makes no claim that the subject supports, and the subject makes no
+  # claim that the probe supports, so neither end is the evidence for the
+  # other. Declaring `from` made seven probes at `asserted` the evidence for
+  # the documents they examine, and added seven `warrant.evidence.unsupported`
+  # findings that no reader could act on (#1562). HW-DR-0103 records this.
   relations.examines:
     family: evidence
     from: [probe]
@@ -267,12 +275,17 @@ add:
 
   # `generator`, and the word is the whole argument of this layer. A transcript
   # that a person or an agent typed is a self-report, and spec 5 refuses one.
+  #
+  # The transcript at the source end is the evidence for what the probe at the
+  # target end claims, so the relation declares `evidence_at: from` (#1562,
+  # HW-DR-0103).
   relations.records:
     family: evidence
     from: [probe_transcript]
     to:   [probe]
     cardinality: many
     created_by: generator
+    evidence_at: from
 
   shelves.probes:
     title: Probes
