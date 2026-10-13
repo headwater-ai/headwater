@@ -648,7 +648,17 @@ mod tests {
         later.date = Date::parse("2026-08-29").expect("a date");
         assert_eq!(append(&scratch, &later), Ok(Appended::Written));
         let (readings, _) = load(&scratch).expect("it loads");
-        assert_eq!(readings, vec![a_reading(), later]);
+        assert_eq!(readings, vec![a_reading(), later.clone()]);
+        let _ = std::fs::remove_dir_all(&scratch);
+
+        // The other order. A reading dated before one the store already holds
+        // is still a second measurement, so a key that compared dates by order
+        // rather than by equality would hold it and lose it.
+        std::fs::create_dir_all(&scratch).expect("a scratch directory");
+        assert_eq!(append(&scratch, &later), Ok(Appended::Written));
+        assert_eq!(append(&scratch, &a_reading()), Ok(Appended::Written));
+        let (readings, _) = load(&scratch).expect("it loads");
+        assert_eq!(readings, vec![later, a_reading()]);
         let _ = std::fs::remove_dir_all(&scratch);
     }
 
