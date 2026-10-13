@@ -149,9 +149,8 @@ fn only_the_binary_reaches_the_crate_that_opens_a_socket() {
 #[cfg(all(target_os = "linux", feature = "fetch"))]
 #[test]
 fn the_binary_with_the_fetch_asks_the_linker_for_every_network_call() {
-    let found = relocations::network_relocations(std::path::Path::new(env!(
-        "CARGO_BIN_EXE_headwater"
-    )));
+    let found =
+        relocations::network_relocations(std::path::Path::new(env!("CARGO_BIN_EXE_headwater")));
     let wanted: BTreeSet<String> = relocations::NETWORK
         .iter()
         .map(|name| name.to_string())

@@ -92,9 +92,8 @@ fn a_binary_without_the_fetch_refuses_an_upper_case_http_location() {
 #[cfg(target_os = "linux")]
 #[test]
 fn a_binary_without_the_fetch_asks_the_linker_for_no_network_call() {
-    let found = relocations::network_relocations(std::path::Path::new(env!(
-        "CARGO_BIN_EXE_headwater"
-    )));
+    let found =
+        relocations::network_relocations(std::path::Path::new(env!("CARGO_BIN_EXE_headwater")));
     assert!(
         found.is_empty(),
         "the binary built without the fetch can open a network socket, because a \

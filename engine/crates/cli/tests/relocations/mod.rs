@@ -93,5 +93,9 @@ Relocation section '.rela.dyn' at offset 0x1 contains 3 entries:
     assert!(read.contains("socket"), "{read:?}");
     assert!(read.contains("socketpair"), "{read:?}");
     assert!(!read.contains("connect"), "{read:?}");
-    assert_eq!(read.len(), 2, "a relative relocation names no symbol: {read:?}");
+    assert_eq!(
+        read.len(),
+        2,
+        "a relative relocation names no symbol: {read:?}"
+    );
 }
