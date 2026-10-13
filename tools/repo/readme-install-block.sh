@@ -122,7 +122,9 @@ case $route in
         from=$(printf '%s\n' "$line" | sed -n 's/.*put `\([^`]*\)` where the block says `\([^`]*\)`.*/\2/p')
         [ -n "$to" ] && [ -n "$from" ] ||
             refuse "the archive paragraph states no substitution of the form \"put \`A\` where the block says \`B\`\""
+        # An empty `from` would match everywhere and never end the loop.
         out=$(printf '%s\n' "$block" | awk -v from="$from" -v to="$to" '
+            from == "" { print; next }
             {
                 rest = $0; line = ""
                 while ((i = index(rest, from)) > 0) {

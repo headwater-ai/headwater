@@ -4965,13 +4965,13 @@ install_routes_needed() {
 }
 
 # install_routes_jobs WORKFLOW — one line for each job:
-# `id|routes|calls-apt|runs-version|is-report|needs|if|issues-write`, with
+# `id|routes|calls-apt|runs-version|is-report|needs|if|issues-write|compares-version`, with
 # comments skipped. `needs` is read from a flow list on one line.
 install_routes_jobs() {
     awk '
         function flush() {
-            if (id != "") print id "|" routes "|" apt "|" ver "|" report "|" needs "|" cond "|" iw
-            id = ""; routes = ""; apt = 0; ver = 0; report = 0; needs = ""; cond = ""; iw = 0
+            if (id != "") print id "|" routes "|" apt "|" ver "|" report "|" needs "|" cond "|" iw "|" cmp
+            id = ""; routes = ""; apt = 0; ver = 0; report = 0; needs = ""; cond = ""; iw = 0; cmp = 0
         }
         /^jobs:[ \t]*$/ { in_jobs = 1; next }
         in_jobs && /^[^ #]/ { flush(); in_jobs = 0 }
@@ -4984,7 +4984,8 @@ install_routes_jobs() {
                 routes = routes " " w[n]
             }
             if ($0 ~ /^    uses: \.\/\.github\/workflows\/readme-apt\.yml$/) apt = 1
-            if ($0 ~ /--version/) ver = 1
+            if ($0 ~ /headwater"? --version/) ver = 1
+            if ($0 ~ /if \[ "\$printed" != "[^"]+" \]; then/) cmp = 1
             if ($0 ~ /sh tools\/repo\/install-route-issue\.sh/) report = 1
             if ($0 ~ /^    needs:/) {
                 needs = $0; sub(/^    needs:[ \t]*/, "", needs)
@@ -5018,7 +5019,20 @@ install_routes_judge() {
                     echo "the page's $_r route is run by no job of $_wf" ;;
         esac
     done
-    printf '%s\n' "$_jobs" | awk -F'|' '$2 != "" && $4 != 1 { print "the job " $1 " of '"$_wf"' runs a route and never runs headwater --version" }'
+    # A route job runs `headwater --version` and compares what it printed with
+    # the version its route installs: `--version` alone passes on any version.
+    printf '%s\n' "$_jobs" | awk -F'|' '$2 != "" && $4 != 1 { print "the job " $1 " of '"$_wf"' runs a route and never runs headwater --version" }
+        $2 != "" && $9 != 1 { print "the job " $1 " of '"$_wf"' never compares the version it printed with the one its route installs" }'
+    # The page says the Debian 11 command needs no network, so the job gives
+    # its container none and fails on any interface but `lo`.
+    if printf '%s\n' "$_jobs" | awk -F'|' '(" " $2 " ") ~ / deb-file / { f = 1 } END { exit !f }'; then
+        if ! awk '/^  deb-file:[ \t]*$/ { s = 1; next } s && /^  [A-Za-z0-9_-]+:[ \t]*$/ { s = 0 } s && !/^[ \t]*#/' "$2" |
+            grep -qE 'docker run --rm --network none .* debian:11 ' ||
+            ! awk '/^  deb-file:[ \t]*$/ { s = 1; next } s && /^  [A-Za-z0-9_-]+:[ \t]*$/ { s = 0 } s && !/^[ \t]*#/' "$2" |
+            grep -qF 'if [ "$nets" != "lo " ]; then'; then
+            echo "the deb-file job of $_wf does not run debian:11 with no network and check that it has none"
+        fi
+    fi
     _code=$(grep -vE '^[ ]*#' "$2")
     if ! printf '%s\n' "$_code" | grep -qE '^  schedule:' || ! printf '%s\n' "$_code" | grep -qE "^    - cron: '[^']+'$"; then
         echo "$_wf runs on no schedule"
@@ -5144,8 +5158,17 @@ install_routes_provoke "a workflow on the self-hosted runner is red" \
     '0,/^    runs-on: ubuntu-24.04$/s//    runs-on: self-hosted/' \
     "install-routes.yml runs on the self-hosted runner, where a scheduled job competes with the merge queue"
 install_routes_provoke "a route job that never runs headwater --version is red" \
-    '/^  source:$/,/^  [a-z-]*:$/s/--version/--help/' \
+    '/^  source:$/,/^  [a-z-]*:$/s/headwater" --version/headwater" --help/' \
     "the job source of install-routes.yml runs a route and never runs headwater --version"
+install_routes_provoke "a route job that prints the version and never compares it is red" \
+    '/^  cargo:$/,/^  [a-z-]*:$/{/if \[ "\$printed" != /,/^ *fi$/d;}' \
+    "the job cargo of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "a Debian 11 job whose container has the network is red" \
+    's/docker run --rm --network none /docker run --rm /' \
+    "the deb-file job of install-routes.yml does not run debian:11 with no network and check that it has none"
+install_routes_provoke "a Debian 11 job that never checks its container has no network is red" \
+    '/^  deb-file:$/,/^  [a-z-]*:$/{/if \[ "\$nets" != "lo " \]; then/,/^ *fi$/d;}' \
+    "the deb-file job of install-routes.yml does not run debian:11 with no network and check that it has none"
 
 # 14d. The extractor prints each route from the page, and refuses a page whose
 # paragraph, fence or sentence is gone, because `sh -e` of an empty script
@@ -5179,6 +5202,16 @@ routes_refused "  the archive route on a page with no archive paragraph prints n
 sed 's/put `aarch64-apple-darwin` where the block says/use `aarch64-apple-darwin` in place of/' "$readme" >"$scratch/routes/no-subst.md"
 routes_refused "  the macOS route on a page that states no substitution prints nothing and exits 1" \
     "$scratch/routes/no-subst.md" archive-macos
+sed 's/where the block says `x86_64-unknown-linux-musl`/where the block says `x86_64-unknown-linux-gnu`/' "$readme" >"$scratch/routes/wrong-subst.md"
+routes_refused "  the macOS route on a page whose substitution names no text of the fence prints nothing and exits 1" \
+    "$scratch/routes/wrong-subst.md" archive-macos
+# A paragraph with the archive opening words above the section, with a fence
+# of its own. The route reads the section, so it prints the section's fence.
+awk '/^## Obtaining a named version$/ { print "**Download the binary from a mirror.**"; print ""; print "```"; print "echo not the route"; print "```"; print "" } { print }' \
+    "$readme" >"$scratch/routes/early.md"
+apt_planted "  the archive route reads the section, not a paragraph above it with the same opening" \
+    "$readme" "$scratch/routes/early.md" \
+    "mkdir -p ~/.local/bin" "$(sh "$routes_extractor" "$scratch/routes/early.md" archive 2>/dev/null | sed -n 1p)"
 sed 's/`sudo apt-get install \.\/headwater_<version>_amd64\.deb`/the package/' "$readme" >"$scratch/routes/no-deb.md"
 routes_refused "  the Debian 11 route on a page that gives no file command prints nothing and exits 1" \
     "$scratch/routes/no-deb.md" deb-file
