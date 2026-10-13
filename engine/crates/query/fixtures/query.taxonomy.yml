@@ -36,6 +36,12 @@ facets:
   summary:
     role: scent
     required: true
+  # The declared name. One decision carries it, and its title loses the purpose
+  # gate as a task: `throttling at the edge` matches `behavior` alone, so no
+  # decision is a ranked candidate for it, and only the name step offers the
+  # record its own title (HW-DR-0109).
+  title:
+    role: name
 
 anchors:
   code_path: {resolver: source-tree}

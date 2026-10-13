@@ -52,14 +52,17 @@ const PLAIN: ColorMode = ColorMode::Plain;
 /// satellite outscores its nucleus; a procedure task whose purpose only one
 /// kind serves; a task that reaches the corpus through a code path rather than
 /// through any prose; a task no purpose answers; and a task whose purpose
-/// matches and whose terms reach no document, which is the confidence gate.
-const TASKS: [&str; 6] = [
+/// matches and whose terms reach no document, which is the confidence gate;
+/// and the declared name of a decision, whose words match `behavior` alone, so
+/// that only the name step offers the decision (HW-DR-0109).
+const TASKS: [&str; 7] = [
     "why is throttling applied at the edge",
     "what does the ingest service do",
     "how do I rotate the keys",
     "add rate limiting to src/ingest/rate_limit.rs",
     "deploy the cluster to another region",
     "what may I rely on when the tide comes in",
+    "Throttling at the edge",
 ];
 
 fn fixtures_dir() -> PathBuf {
@@ -491,6 +494,78 @@ fn a_task_that_matches_several_purposes_is_offered_more_than_one_kind() {
         );
         assert!((1..=*of).contains(rank), "{}", route.render(PLAIN));
     }
+}
+
+/// The declared name of a record, with the number its title opens with
+/// removed, as a person who copied the title out of the page would type it.
+///
+/// Written here rather than taken from the route, because the property below
+/// is that the route answers a title, and a test that stripped the number with
+/// the route's own function could not see that function go wrong. The shape is
+/// the one the decision shelves use: `12 — Migration path for an existing
+/// corpus`, or a title with no number at all on the process shelf.
+fn title_as_typed(name: &str) -> String {
+    let rest = name.trim_start_matches(|c: char| c.is_ascii_digit());
+    if rest.len() == name.len() {
+        return name.to_string();
+    }
+    rest.trim_start()
+        .trim_start_matches(['—', '-'])
+        .trim_start()
+        .to_string()
+}
+
+/// Every decision record is offered, inside the default budget, for its own
+/// title (#1470).
+///
+/// The title is the facet in the `name` role, so a person or an agent who
+/// copies it into a route has named the record. Before HW-DR-0109 the record
+/// still had to win the purpose gate, and a title whose words matched no
+/// `rationale` question offered no decision at all: HW-DR-0004
+/// (`relation storage`) matched no purpose, and HW-DR-0101 stood 6th with a
+/// budget of 100,000.
+///
+/// Every record on both shelves is read, and a record with no name is a
+/// failure here, not a skip: a record the property cannot be asked of is a
+/// record nobody could reach by its title.
+#[test]
+fn every_decision_record_is_offered_for_its_own_title_inside_the_default_budget() {
+    let built = this_repository();
+    let surface = built.surface();
+    let mut asked = 0;
+    let mut missed: Vec<String> = Vec::new();
+    for document in surface.documents() {
+        if document.kind != "decision" && document.kind != "process_decision" {
+            continue;
+        }
+        asked += 1;
+        let Some(name) = surface.name(&document) else {
+            missed.push(format!("{} declares no name", document.path));
+            continue;
+        };
+        let task = title_as_typed(&name);
+        let route = surface.route(&task, Budget::default());
+        if !route
+            .pointers
+            .iter()
+            .any(|pointer| pointer.path == document.path)
+        {
+            let place = surface
+                .route(&task, Budget { pointers: 100_000 })
+                .pointers
+                .iter()
+                .position(|pointer| pointer.path == document.path)
+                .map_or("not offered".to_string(), |at| format!("offered {}", at + 1));
+            missed.push(format!("{} for {task:?}: {place}", document.path));
+        }
+    }
+    assert!(asked > 100, "only {asked} decision records were read");
+    assert!(
+        missed.is_empty(),
+        "{} of {asked} decision records are outside the default budget for their own title:\n{}",
+        missed.len(),
+        missed.join("\n")
+    );
 }
 
 /// Derived reading precedence orders the list, and it outranks the score.
