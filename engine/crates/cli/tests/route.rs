@@ -744,5 +744,20 @@ fn an_edit_through_a_symlink_onto_a_governed_file_names_the_governing_document()
         }
     }
     std::fs::remove_dir_all(&outside).expect("the outside directory removes");
+
+    // The governed spelling is itself a link onto an ungoverned file. The
+    // edge governs the link, so the route names its document and proposes no
+    // edge for the file the link leads to.
+    std::fs::remove_file(root.at.join("tools/governed.sh")).expect("the file removes");
+    symlink("unrelated.sh", root.at.join("tools/governed.sh")).expect("the governed link");
+    let ran = root.run(&["route", "edit", "tools/governed.sh", "--json"]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    if !ran.out.contains("\"id\": \"HW-DR-0002\"") {
+        wrong.push(format!("the governed link: no HW-DR-0002: {}", ran.out));
+    }
+    let member = ungoverned(&ran.out);
+    if member.contains("\"path\"") {
+        wrong.push(format!("the governed link: named as ungoverned: {member}"));
+    }
     assert!(wrong.is_empty(), "{}", wrong.join("\n"));
 }

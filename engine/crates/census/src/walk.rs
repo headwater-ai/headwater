@@ -281,11 +281,7 @@ pub fn real_within(root: &Path, relative: &str) -> Option<String> {
         .components()
         .map(|component| component.as_os_str().to_str())
         .collect();
-    let joined = parts?.join("/");
-    match joined.is_empty() {
-        true => None,
-        false => Some(joined),
-    }
+    Some(parts?.join("/"))
 }
 
 /// Whether `relative` under `root` resolves, through a symlink, to a place
