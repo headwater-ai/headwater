@@ -106,15 +106,11 @@ const DECLARATION_TAIL: &str = r"# A bundle is an optional part of the package, 
 /// and the `corpus:` block (#1600).
 ///
 /// The value is the caret range of the engine that ran `init`, so it is built
-/// from the workspace version rather than written here: a literal would fail
+/// from the engine version constant rather than written here: a literal would fail
 /// this target on the next release for a reason that is not a defect.
 fn engine_line() -> String {
-    let version = env!("CARGO_PKG_VERSION");
-    let mut parts = version
-        .split('.')
-        .map(|part| part.parse::<u64>().expect("a number"));
-    let major = parts.next().expect("a major");
-    let minor = parts.next().expect("a minor");
+    let (major, minor, _) = headwater_resolve::release::parts(headwater_resolve::release::ENGINE)
+        .expect("this engine has a version");
     let range = if major == 0 {
         format!(">=0.{minor} <0.{}", minor + 1)
     } else {
