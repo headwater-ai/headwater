@@ -228,6 +228,11 @@ fn an_engine_outside_the_corpus_range_is_reported_and_fails_a_strict_check() {
         }
     }
 
+    // `--fix` loads the corpus twice in one process, once to compose the
+    // patches and once for the report. The line prints once.
+    let fixing = root.run(&["check", "--fix"]);
+    assert_eq!(reports(&fixing.err).len(), 1, "one line: {}", fixing.err);
+
     let advisory = root.run(&["check"]);
     assert_eq!(advisory.code, Some(0), "{advisory:?}");
     let lines = reports(&advisory.err);

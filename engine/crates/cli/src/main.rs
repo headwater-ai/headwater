@@ -8850,3 +8850,25 @@ fn defect(message: &str) -> ExitCode {
     );
     ExitCode::FAILURE
 }
+
+#[cfg(test)]
+mod tests {
+    use super::caret;
+
+    /// The range `init` writes. Below 1.0 a minor release may break, and from
+    /// 1.0 only a major release may, so the two arms bound different parts.
+    #[test]
+    fn the_caret_range_init_writes() {
+        assert_eq!(caret("0.5.0"), ">=0.5 <0.6");
+        assert_eq!(caret("0.5.7"), ">=0.5 <0.6");
+        assert_eq!(caret("1.4.2"), ">=1.4 <2");
+        assert_eq!(caret("2.0.0"), ">=2.0 <3");
+        for version in ["0.5.0", "1.4.2", "2.0.0"] {
+            assert_eq!(
+                headwater_resolve::release::satisfies(&caret(version), version),
+                Ok(true),
+                "{version}"
+            );
+        }
+    }
+}
