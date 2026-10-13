@@ -5048,7 +5048,12 @@ install_routes_judge() {
     fi
     _wf=$(basename "$2")
     _jobs=$(install_routes_jobs "$2")
-    install_routes_needed "$1" "$3" | while IFS= read -r _r; do
+    # The extractor reads one fence for each route, so a second fence that
+    # maps to the same route is a block no job runs.
+    install_routes_needed "$1" "$3" | grep -v '^unmatched ' | sort | uniq -d | while IFS= read -r _r; do
+        echo "the page has more than one fence for the $_r route, and readme-install-block.sh reads only the first"
+    done
+    install_routes_needed "$1" "$3" | sort -u | while IFS= read -r _r; do
         case $_r in
             unmatched\ *)
                 echo "the page's paragraph \`${_r#unmatched }\` has a fence of commands, and no route of readme-install-block.sh reads it" ;;
@@ -5151,6 +5156,15 @@ apt_planted "a page with a fifth fenced install paragraph that no route reads is
     "$readme" "$scratch/routes/homebrew.md" \
     "the page's paragraph \`**Install it with Homebrew.**\` has a fence of commands, and no route of readme-install-block.sh reads it" \
     "$(install_routes_judge "$scratch/routes/homebrew.md" "$routes_job" "$routes_extractor" | routes_joined)"
+
+# 14b, a second fence for one route: a paragraph whose opening words match
+# the archive route's, with a fence of its own.
+awk '/^## Status$/ { print "**Download the binary for Windows.** The archive is a zip."; print ""; print "```"; print "curl -fsSLO https://example.invalid/headwater.zip"; print "```"; print "" } { print }' \
+    "$readme" >"$scratch/routes/second-archive.md"
+apt_planted "a page with a second fence for the archive route is red, and names it" \
+    "$readme" "$scratch/routes/second-archive.md" \
+    "the page has more than one fence for the archive route, and readme-install-block.sh reads only the first" \
+    "$(install_routes_judge "$scratch/routes/second-archive.md" "$routes_job" "$routes_extractor" | routes_joined)"
 
 # 14b, the prose routes. The macOS job deleted, and the Debian 11 file job.
 if [ -f "$routes_job" ]; then
