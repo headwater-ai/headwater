@@ -675,3 +675,74 @@ fn route_does_not_follow_a_caller_to_the_document_that_governs_it() {
         ran.out
     );
 }
+
+/// An edit through a symlink inside the root reads the file the link leads
+/// to, so the document that governs that file is named (#1433). A link onto
+/// an ungoverned file in scope proposes the edge for the file and never for
+/// the link. A link out of the root and a link that dangles keep the lexical
+/// answer, which HW-OBL-0061 and #1249 state.
+#[cfg(unix)]
+#[test]
+fn an_edit_through_a_symlink_onto_a_governed_file_names_the_governing_document() {
+    use std::os::unix::fs::symlink;
+    let root = root("route-symlink");
+    let name = root
+        .at
+        .file_name()
+        .and_then(|name| name.to_str())
+        .expect("the root has a name")
+        .to_string();
+    let outside = root.at.with_file_name(format!("{name}-outside"));
+    std::fs::create_dir_all(&outside).expect("the outside directory writes");
+    std::fs::write(outside.join("governed.sh"), "").expect("the outside file writes");
+    std::fs::write(root.at.join("tools/unrelated.sh"), "").expect("the ungoverned file writes");
+    symlink("governed.sh", root.at.join("tools/alias.sh")).expect("the file link writes");
+    symlink("alias.sh", root.at.join("tools/chain.sh")).expect("the chained link writes");
+    symlink("tools", root.at.join("linked")).expect("the directory link writes");
+    symlink("unrelated.sh", root.at.join("tools/alias-free.sh")).expect("the free link writes");
+    symlink(outside.join("governed.sh"), root.at.join("tools/out.sh"))
+        .expect("the out link writes");
+    symlink("missing.sh", root.at.join("tools/dangling.sh")).expect("the dangling link writes");
+
+    // (word, whether HW-DR-0002 is named by its anchor, the ungoverned path
+    // the route proposes an edge for)
+    let rows: [(&str, bool, Option<&str>); 6] = [
+        ("tools/alias.sh", true, None),
+        ("tools/chain.sh", true, None),
+        ("linked/governed.sh", true, None),
+        ("tools/alias-free.sh", false, Some("tools/unrelated.sh")),
+        ("tools/out.sh", false, Some("tools/out.sh")),
+        ("tools/dangling.sh", false, Some("tools/dangling.sh")),
+    ];
+    let mut wrong = Vec::new();
+    for (word, governed, proposed) in rows {
+        let ran = root.run(&["route", "edit", word, "--json"]);
+        assert_eq!(ran.code, Some(0), "{word}: {ran:?}");
+        let named =
+            ran.out.contains("\"id\": \"HW-DR-0002\"") && ran.out.contains("\"by\": \"anchor\"");
+        if named != governed {
+            wrong.push(format!(
+                "{word}: names HW-DR-0002 {named}, expected {governed}"
+            ));
+        }
+        let member = ungoverned(&ran.out);
+        match proposed {
+            None if member.contains("\"path\"") => {
+                wrong.push(format!("{word}: named as ungoverned: {member}"));
+            }
+            Some(path) if !member.contains(&format!("\"path\": \"{path}\"")) => {
+                wrong.push(format!("{word}: expected ungoverned {path}: {member}"));
+            }
+            _ => {}
+        }
+        if let Some(path) = proposed {
+            let text = root.run(&["route", "edit", word]);
+            let line = format!("      governs:\n        - {path}\n");
+            if !text.out.contains(&line) {
+                wrong.push(format!("{word}: no governs line for {path}: {}", text.out));
+            }
+        }
+    }
+    std::fs::remove_dir_all(&outside).expect("the outside directory removes");
+    assert!(wrong.is_empty(), "{}", wrong.join("\n"));
+}
