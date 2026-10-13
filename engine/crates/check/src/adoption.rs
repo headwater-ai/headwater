@@ -635,11 +635,19 @@ mod tests {
     /// the count from every adopter on the first run.
     #[test]
     fn an_empty_ledger_still_states_its_count() {
-        let rendered = Ledger::default().render(crate::paint::ColorMode::Plain);
-        assert_eq!(
-            rendered, "adoption\n  0 pairs open, 0 closed, holding 0 findings, in 0 tasks\n",
-            "an empty ledger prints its header and its count line, and nothing else"
-        );
+        // Both modes, because a terminal renders `Ansi` and a pipe renders
+        // `Plain`, and an empty ledger has no identifier to paint, so the two
+        // must agree byte for byte.
+        for mode in [
+            crate::paint::ColorMode::Plain,
+            crate::paint::ColorMode::Ansi,
+        ] {
+            assert_eq!(
+                Ledger::default().render(mode),
+                "adoption\n  0 pairs open, 0 closed, holding 0 findings, in 0 tasks\n",
+                "an empty ledger prints its header and its count line, and nothing else, under {mode:?}"
+            );
+        }
     }
 
     fn payload(source: &str) -> Mapping {

@@ -1987,6 +1987,13 @@ fn capture_pools_across_taxonomies_and_names_every_one() {
         "and it names the count of taxonomies it pooled across:\n{}",
         ran.out
     );
+    // With the three-lock case below, two counts hold the sentence, so no
+    // single literal can pass both (HW-OBL-0157).
+    assert!(
+        ran.says("across 2 denominators"),
+        "and the denominators it states are the two it pooled:\n{}",
+        ran.out
+    );
     for lock in ["sha256:aaaa", "sha256:bbbb"] {
         assert!(ran.says(lock), "and it names {lock}:\n{}", ran.out);
     }
