@@ -478,9 +478,85 @@ class TheCommandLine(unittest.TestCase):
 
     def test_refuses_an_export_below_version_1_1(self):
         export = load_fixture()
+        export["version"] = "1.0"
         export["export_version"] = "1.0"
         with self.assertRaises(dashboard.ExportRefused):
             dashboard.load(export, corpus_identity="fixture")
+
+
+class AnExportOfAnotherMajorIsRefused(unittest.TestCase):
+    """#1435: the dashboard reads `version`, and stops on a major above the one it reads.
+
+    docs/interfaces/headwater-export.md, *Raising the version*: a reader that
+    meets a major above the one it understands stops with a message. The
+    refusal is one stderr line and exit 2, with no page and no traceback.
+    """
+
+    def refused(self, mutate, names):
+        export = load_fixture()
+        mutate(export)
+        with tempfile.TemporaryDirectory() as scratch:
+            result, wrote = run_cli(export, scratch)
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
+        self.assertFalse(wrote, "a refused export must not write a page")
+        self.assertEqual(len(result.stderr.strip().splitlines()), 1, result.stderr)
+        for name in names:
+            self.assertIn(name, result.stderr)
+        return result.stderr
+
+    def set_versions(self, version, export_version):
+        def mutate(export):
+            for field, value in (("version", version), ("export_version", export_version)):
+                if value is None:
+                    del export[field]
+                else:
+                    export[field] = value
+
+        return mutate
+
+    def test_a_2_0_export_names_its_major_and_the_one_the_dashboard_reads(self):
+        # The decisive fixture: the engine writes both members from one constant.
+        self.refused(self.set_versions("2.0", "2.0"), ["'2.0'", "major 2", "major 1 only"])
+
+    def test_the_major_is_read_from_version_and_not_export_version(self):
+        self.refused(self.set_versions("2.0", "1.3"), ["'2.0'", "major 2", "major 1 only"])
+
+    def test_a_major_compares_as_a_number_and_not_as_text(self):
+        self.refused(
+            self.set_versions("10.0", "10.0"), ["'10.0'", "major 10", "major 1 only", "built for major 10"]
+        )
+
+    def test_a_major_below_1_is_refused_by_the_floor_and_not_the_ceiling(self):
+        stderr = self.refused(self.set_versions("0.9", "0.9"), ["`version` '0.9'", "below 1.1"])
+        self.assertNotIn("major 0", stderr)
+
+    def test_a_version_with_no_minor_is_read_by_its_major(self):
+        self.refused(self.set_versions("2", "2"), ["'2'", "major 2", "major 1 only"])
+
+    def test_a_version_that_is_not_a_number_is_refused(self):
+        for text in ("x.1", "two.0", "", "1.x"):
+            with self.subTest(version=text):
+                self.refused(self.set_versions(text, "1.3"), ["`version` %r" % text, "not a version"])
+
+    def test_an_export_with_no_version_falls_back_to_export_version(self):
+        self.refused(self.set_versions(None, "1.0"), ["`export_version` '1.0'", "below 1.1"])
+        self.refused(self.set_versions(None, "2.0"), ["'2.0'", "major 2", "built for major 2"])
+        self.refused(self.set_versions(None, "x.1"), ["`export_version` 'x.1'", "not a version"])
+
+    def test_an_export_with_neither_member_is_refused(self):
+        self.refused(self.set_versions(None, None), ["no `version`"])
+
+    def test_a_1_x_export_with_no_export_version_is_read(self):
+        export = load_fixture()
+        del export["export_version"]
+        export["version"] = "1.3"
+        model = dashboard.load(export, corpus_identity="fixture")
+        self.assertEqual(len(model.documents), 2)
+
+    def test_the_floor_message_names_the_field_it_read(self):
+        stderr = self.refused(self.set_versions("1.0", "1.0"), ["`version` '1.0'", "below 1.1"])
+        self.assertNotIn("export_version", stderr)
 
 
 def run_cli(export, scratch):
