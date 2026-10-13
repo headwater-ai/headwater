@@ -26,7 +26,7 @@ path = "src/main.rs"
 # `taxonomy vendor` (HW-DR-0075, decided in #959). The 0.2 bar is adoption from
 # the binary alone, and an adopter who has only the binary has no other way to
 # fetch a published taxonomy. `--no-default-features` is a distributor's
-# opt-out: the binary it builds opens no socket anywhere, and `vendor` refuses a
+# opt-out: the binary it builds opens no network socket, and `vendor` refuses a
 # location with one line that names the path form. `release.yml` builds with
 # the default features, so every released binary carries it.
 #
