@@ -3,8 +3,8 @@ route "why is throttling applied at the edge"
   distinctive why is throttling applied at edge
   purpose rationale 6
   purpose behavior 2
-  query/decisions/edge-throttling.md — why throttling is applied at the edge and
-    not per service
+  query/decisions/edge-throttling.md (31 — Throttling at the edge) — why
+    throttling is applied at the edge and not per service
     matched why is throttling applied at edge, rank 1 of 3
   query/specs/asserted-notes.md — what the ingest service does about throttling,
     as nobody has checked it [asserted: nobody accepted this document]
@@ -44,8 +44,8 @@ route "add rate limiting to src/ingest/rate_limit.rs"
   distinctive add rate limiting to src limit rs
   names the anchor src/ingest/rate_limit.rs
   purpose procedure 1
-  query/decisions/edge-throttling.md — why throttling is applied at the edge and
-    not per service
+  query/decisions/edge-throttling.md (31 — Throttling at the edge) — why
+    throttling is applied at the edge and not per service
     governs src/ingest/rate_limit.rs
   query/specs/ingest.md — what the ingest service does with a request, and the
     limits it holds
@@ -84,6 +84,17 @@ route "what may I rely on when the tide comes in"
     under a warrant nobody spelled right [warrant `acepted` is not one of the
     four values: no acceptance is read from it]
     matched what, rank 5 of 5
+
+route "Throttling at the edge"
+  terms throttling at the edge
+  distinctive throttling at edge
+  purpose behavior 1
+  query/decisions/edge-throttling.md (31 — Throttling at the edge) — why
+    throttling is applied at the edge and not per service
+    repeats its name, throttling at the edge
+  query/specs/asserted-notes.md — what the ingest service does about throttling,
+    as nobody has checked it [asserted: nobody accepted this document]
+    matched throttling, rank 1 of 1
 
 explain
   query/specs/api-design.md
@@ -148,9 +159,9 @@ resolve_identifier
   SPEC-FIX-orphan is not typed, and query/notes/orphan.md carries it untyped
 
 governing_docs_for_path
-  src/ingest/rate_limit.rs — query/decisions/edge-throttling.md — why throttling is applied at the edge and not per service
+  src/ingest/rate_limit.rs — query/decisions/edge-throttling.md (31 — Throttling at the edge) — why throttling is applied at the edge and not per service
   src/ingest/rate_limit.rs — query/specs/ingest.md — what the ingest service does with a request, and the limits it holds
-  src/ingest/mod.rs — query/decisions/edge-throttling.md — why throttling is applied at the edge and not per service
+  src/ingest/mod.rs — query/decisions/edge-throttling.md (31 — Throttling at the edge) — why throttling is applied at the edge and not per service
   src/ingest/mod.rs — query/specs/ingest.md — what the ingest service does with a request, and the limits it holds
   src/ingest — query/specs/ingest.md — what the ingest service does with a request, and the limits it holds
   src/nothing.rs is governed by nothing
