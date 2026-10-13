@@ -432,6 +432,24 @@ impl Surface<'_> {
     /// verb that holds the tree passes it here. [`Surface::route`] is this with
     /// a tree that holds nothing.
     pub fn route_in(&self, task: &str, budget: Budget, tree: &dyn Fn(&str) -> Entry) -> Route {
+        self.route_through(task, budget, tree, &|_| None)
+    }
+
+    /// Route a task description as [`Surface::route_in`] does, and read each
+    /// path of it through `real` as well (#1433). `real` gives the path of the
+    /// file a path reaches through the symlinks along it, where that file is
+    /// inside the root, and `None` for a link that dangles, loops or leads out
+    /// of the root. The documents that govern the real path are named beside
+    /// those that govern the path as written, and a path that nothing governs
+    /// is proposed as the real path, because an edge onto a link governs the
+    /// spelling and not the file.
+    pub fn route_through(
+        &self,
+        task: &str,
+        budget: Budget,
+        tree: &dyn Fn(&str) -> Entry,
+        real: &dyn Fn(&str) -> Option<String>,
+    ) -> Route {
         let terms = terms(task);
         let mut route = Route {
             task: task.to_string(),
@@ -457,8 +475,8 @@ impl Surface<'_> {
         // set: `governing_docs_for_path` deduplicates inside one anchor and
         // cannot see across them, so a document that governs two of the named
         // paths would otherwise be offered twice.
-        route.anchors = self.named_anchors(task, tree);
-        route.ungoverned = self.ungoverned_in_scope(task, tree);
+        route.anchors = self.named_anchors(task, tree, real);
+        route.ungoverned = self.ungoverned_in_scope(task, tree, real);
         let mut anchored: Vec<Pointer> = Vec::new();
         let mut evidence: Vec<(String, Evidence)> = Vec::new();
         for anchor in &route.anchors {
@@ -671,22 +689,33 @@ impl Surface<'_> {
             .collect()
     }
 
-    fn named_anchors(&self, task: &str, tree: &dyn Fn(&str) -> Entry) -> Vec<String> {
+    /// The anchors the task names. A path is read as written and, where it
+    /// reaches its file through a symlink inside the root, as that file too
+    /// (#1433), and each reading that an edge reaches is an anchor.
+    fn named_anchors(
+        &self,
+        task: &str,
+        tree: &dyn Fn(&str) -> Entry,
+        real: &dyn Fn(&str) -> Option<String>,
+    ) -> Vec<String> {
         let mut found: Vec<String> = Vec::new();
         for word in task.split_whitespace() {
             let Some(normalized) = self.read_path(word, tree) else {
                 continue;
             };
-            if found.contains(&normalized) {
-                continue;
-            }
-            let reached = self
-                .graph
-                .edges
-                .iter()
-                .any(|edge| edge.target.reaches(&normalized));
-            if reached {
-                found.push(normalized);
+            let resolved = real(&normalized).filter(|path| *path != normalized);
+            for path in std::iter::once(normalized).chain(resolved) {
+                if found.contains(&path) {
+                    continue;
+                }
+                let reached = self
+                    .graph
+                    .edges
+                    .iter()
+                    .any(|edge| edge.target.reaches(&path));
+                if reached {
+                    found.push(path);
+                }
             }
         }
         found
@@ -740,7 +769,17 @@ impl Surface<'_> {
     ///
     /// [`Scope`]: headwater_graph::scope::Scope
     /// [`Scope::declared`]: headwater_graph::scope::Scope::declared
-    fn ungoverned_in_scope(&self, task: &str, tree: &dyn Fn(&str) -> Entry) -> Vec<Ungoverned> {
+    ///
+    /// A path that reaches its file through a symlink inside the root is
+    /// tested as that file (#1433): it is not ungoverned where a document
+    /// governs either spelling, and the edge it proposes names the file and
+    /// never the link.
+    fn ungoverned_in_scope(
+        &self,
+        task: &str,
+        tree: &dyn Fn(&str) -> Entry,
+        real: &dyn Fn(&str) -> Option<String>,
+    ) -> Vec<Ungoverned> {
         let scope = headwater_graph::scope::Scope::declared(self.relations());
         let mut found: Vec<Ungoverned> = Vec::new();
         if scope.is_empty() {
@@ -757,6 +796,10 @@ impl Surface<'_> {
             if tree(&normalized) == Entry::Directory {
                 continue;
             }
+            if !self.governing_docs_for_path(&normalized).is_empty() {
+                continue;
+            }
+            let normalized = real(&normalized).unwrap_or(normalized);
             if found.iter().any(|seen| seen.path == normalized) {
                 continue;
             }

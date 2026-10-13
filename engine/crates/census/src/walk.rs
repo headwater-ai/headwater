@@ -263,6 +263,31 @@ pub fn within(root: &Path, corpus_root: &str, target: &str) -> Option<String> {
     }
 }
 
+/// The path, relative to `root`, of the file that `relative` reaches through
+/// every symlink along it, where that file exists and is under `root`.
+///
+/// `None` where nothing is at the end of the path, which a dangling link and
+/// a loop of links are, where the end is outside `root`, and where the root
+/// cannot be made canonical. A path with no link along it gives itself back.
+/// A query about a path reads this beside the lexical path, so an edit through
+/// a link inside the root reaches the documents that govern the file
+/// ([#1433](https://github.com/headwater-ai/headwater/issues/1433)). Neither
+/// [`typed`] nor [`within`] calls it: both stay lexical, as HW-OBL-0061 states.
+pub fn real_within(root: &Path, relative: &str) -> Option<String> {
+    let base = root.canonicalize().ok()?;
+    let real = root.join(relative).canonicalize().ok()?;
+    let inside = real.strip_prefix(&base).ok()?;
+    let parts: Option<Vec<&str>> = inside
+        .components()
+        .map(|component| component.as_os_str().to_str())
+        .collect();
+    let joined = parts?.join("/");
+    match joined.is_empty() {
+        true => None,
+        false => Some(joined),
+    }
+}
+
 /// Whether `relative` under `root` resolves, through a symlink, to a place
 /// that is neither under `root` nor, for a path under `corpus_root`, under
 /// where the corpus root leads. `relative` is what [`typed`] returned, so it
