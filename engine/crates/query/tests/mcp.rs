@@ -1150,6 +1150,10 @@ fn the_governing_and_route_tools_read_a_link_inside_the_root_as_its_file() {
     symlink("ingest", scratch.0.join("src/linked")).expect("the directory link");
     symlink("missing.rs", scratch.0.join("src/dangling.rs")).expect("the dangling link");
     symlink("/etc/passwd", scratch.0.join("src/out.rs")).expect("the out link");
+    // A link whose own spelling a pattern governs, onto a file nothing
+    // governs: the governors of the spelling are kept beside the file's.
+    std::fs::write(scratch.0.join("free.rs"), "").expect("the ungoverned file");
+    symlink("../../free.rs", scratch.0.join("src/ingest/free-link.rs")).expect("the free link");
     let built = fixture_tree_at(&scratch.0);
     let server = built.server(RECORDED_AT);
     let asked = |tool: &str, key: &str, target: &str| {
@@ -1185,6 +1189,17 @@ fn the_governing_and_route_tools_read_a_link_inside_the_root_as_its_file() {
         asked("governing_docs_for_path", "path", "src/out.rs").0,
         outside("src/out.rs"),
         "a link out of the root is refused in the one outside sentence"
+    );
+    let spelled = asked("governing_docs_for_path", "path", "src/ingest/absent.rs");
+    assert!(
+        !spelled.0.contains("no document governs"),
+        "the pattern governs a name under it: {}",
+        spelled.0
+    );
+    assert_eq!(
+        asked("governing_docs_for_path", "path", "src/ingest/free-link.rs"),
+        spelled,
+        "a governed link onto an ungoverned file keeps the governors of its spelling"
     );
 
     let (plain, _) = asked("route", "task", &format!("edit {code}"));

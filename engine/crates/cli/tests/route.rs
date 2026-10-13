@@ -745,6 +745,22 @@ fn an_edit_through_a_symlink_onto_a_governed_file_names_the_governing_document()
     }
     std::fs::remove_dir_all(&outside).expect("the outside directory removes");
 
+    // A root named as `.` from inside it, the way a person and the write hook
+    // name one, reads a link as the absolute root does. The link reading
+    // compares canonical paths, so a root as given would resolve no link.
+    let relative = root
+        .command()
+        .current_dir(&root.at)
+        .args(["route", "edit", "tools/alias.sh", "--json", "--root", "."])
+        .output()
+        .expect("the binary runs");
+    let relative = String::from_utf8_lossy(&relative.stdout);
+    if !relative.contains("\"id\": \"HW-DR-0002\"") || ungoverned(&relative).contains("\"path\"") {
+        wrong.push(format!(
+            "--root .: the link is not read as its file: {relative}"
+        ));
+    }
+
     // The governed spelling is itself a link onto an ungoverned file. The
     // edge governs the link, so the route names its document and proposes no
     // edge for the file the link leads to.

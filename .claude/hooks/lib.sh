@@ -376,8 +376,11 @@ hw_ungoverned_in_scope() {
     _engine=$(hw_engine) || return 1
     _route=$("$_engine" route --json --root "$hw_root" "$1" 2>/dev/null) || return 1
     _text=$(hw_field "$_route" text) || return 1
-    _block=$(printf '%s\n' "$_text" | awk -v head="  $1 is in the governed scope, and nothing governs it" '
-        $0 == head { on = 1; print; next }
+    # The route was asked about one path, so the one head line is the block,
+    # whatever path it names: an edit through a symlink inside the root is
+    # named by the file the link reaches, not by the link (#1433).
+    _block=$(printf '%s\n' "$_text" | awk '
+        /^  [^ ].* is in the governed scope, and nothing governs it$/ { on = 1; print; next }
         on && /^    / { print; next }
         { on = 0 }')
     [ -n "$_block" ] || return 1
