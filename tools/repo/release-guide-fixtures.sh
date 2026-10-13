@@ -1795,6 +1795,85 @@ same "a guide whose search follows a new step 10 is red" \
     "step 9 of $guide_rel carries no \`git grep -nE '...'\` search" \
     "$(step9_misses "$scratch/s7" | tr '\n' '|' | sed 's/|$//')"
 
+# ---------------------------------------------------------------------------
+# The guide traces to what holds step 1 (#1315).
+#
+# Step 1 says that each internal crate under `[workspace.dependencies]` names
+# the `[workspace.package]` version, and that a test in `publish_order.rs`
+# holds it. The account of that invariant is this guide, so its front matter
+# carries a `traces_to` edge to the test and to the manifest table. Without
+# the edge no document relation reaches either file for the invariant, and a
+# change to either one marks nothing suspect. `governs` is the wrong edge:
+# the guide does not rule the manifest, and HW-DR-0023 governs it already.
+#
+# trace_misses GUIDE — prints `traces_to does not name <path>` for each path
+# below that the `traces_to` list of GUIDE's front matter does not name, in
+# this order, and one line naming the fault when the front matter does not
+# parse. It prints nothing when both paths are named.
+trace_required='engine/crates/cli/tests/publish_order.rs engine/Cargo.toml'
+trace_misses_py='
+import sys, yaml
+text = open(sys.argv[1], encoding="utf-8").read()
+parts = text.split("\n---\n", 1)
+if not text.startswith("---\n") or len(parts) < 2:
+    print("the guide has no front matter")
+    sys.exit(0)
+try:
+    meta = yaml.safe_load(parts[0][4:]) or {}
+except yaml.YAMLError as e:
+    print("the front matter does not parse: %s" % str(e).replace("\n", " "))
+    sys.exit(0)
+rel = meta.get("relations") or {}
+named = rel.get("traces_to") or [] if isinstance(rel, dict) else []
+if isinstance(named, str):
+    named = [named]
+for path in sys.argv[2:]:
+    if path not in named:
+        print("traces_to does not name %s" % path)
+'
+trace_misses() {
+    # shellcheck disable=SC2086
+    python3 -c "$trace_misses_py" "$1" $trace_required
+}
+
+echo
+echo "the guide traces to what holds step 1"
+
+# t1. The real guide names both paths, and each path is a file in the tree.
+same "the guide's traces_to names publish_order.rs and engine/Cargo.toml" "" \
+    "$(trace_misses "$root/$guide_rel" | tr '\n' '|' | sed 's/|$//')"
+for path in $trace_required; do
+    if [ -f "$root/$path" ]; then
+        pass "the traces_to target $path is a file in the tree"
+    else
+        fail "the traces_to target $path is a file in the tree" "no file at $path"
+    fi
+done
+
+# t2. A guide with one path removed is red, and the finding names that path
+# and only that path.
+mkdir -p "$scratch/t2"
+for path in $trace_required; do
+    grep -v "^[[:space:]]*- $path[[:space:]]*\$" "$root/$guide_rel" > "$scratch/t2/guide.md"
+    if cmp -s "$root/$guide_rel" "$scratch/t2/guide.md"; then
+        fail "a guide whose traces_to drops $path is red" "the plant changed nothing in the guide"
+    else
+        same "a guide whose traces_to drops $path is red" \
+            "traces_to does not name $path" \
+            "$(trace_misses "$scratch/t2/guide.md" | tr '\n' '|' | sed 's/|$//')"
+    fi
+done
+
+# t3. The same two paths under `governs` and not `traces_to` are red on both.
+sed 's/^\([[:space:]]*\)traces_to:/\1governs:/' "$root/$guide_rel" > "$scratch/t2/guide.md"
+if cmp -s "$root/$guide_rel" "$scratch/t2/guide.md"; then
+    fail "a guide that governs the two paths in place of traces_to is red" "the plant changed nothing in the guide"
+else
+    same "a guide that governs the two paths in place of traces_to is red" \
+        "traces_to does not name engine/crates/cli/tests/publish_order.rs|traces_to does not name engine/Cargo.toml" \
+        "$(trace_misses "$scratch/t2/guide.md" | tr '\n' '|' | sed 's/|$//')"
+fi
+
 echo
 echo "$passed passed, $failed failed"
 [ "$failed" -eq 0 ]
