@@ -36,7 +36,7 @@ The rule cannot find the direction by reading the family. [Spec 2](../spec/02-ta
 3. `warrant.evidence.unsupported` reads the `evidence_basis` of the claimant and the warrant of the evidence, at the ends the relation declares. The finding still anchors at the half an author declared, whichever end is the claimant.
 4. `relations.discharges` in the `decision-record` bundle declares `evidence_at: from`. headwater/standard 4.15.0 publishes it.
 
-The member means something only on a relation of the `evidence` family. No rule refuses it on another family yet, and no reader reads it there.
+The member means something only on a relation of the `evidence` family. `taxonomy validate` refuses it on a relation of another family, under the `relation coherence` rule, because no reader reads it there (#1562).
 
 ## Consequences
 
@@ -44,4 +44,8 @@ An evaluation that declares `discharges` onto an obligation is the evidence for 
 
 The count of findings on this corpus does not move, because no document in it declares `discharges` today. The rule's version moves from 3 to 4, so a warm cache does not serve the old reading of a `discharges` pair.
 
-Three other relations of this repository's lock also point from the evidence to the subject: `assesses`, `examines` and `records`. None of them raises a finding on this corpus today. This decision does not declare `evidence_at` on them. For `examines`, it is not clear that either end makes a claim that the other end supports. Each one is a separate question, and the run's intake carries it.
+Three other evidence relations of this repository's lock had no `evidence_at`: `assesses`, `examines` and `records`. #1562 measured each one with `warrant.evidence.unsupported` on this corpus, which reports 67 findings with none of them declared.
+
+- `records` declares `evidence_at: from` in `.headwater/overlay.yml`. The transcript at the source end is the evidence for what the probe at the target end claims. The declaration adds six findings, one for each transcript of the 2026-10-05 campaign. Each transcript has the warrant `asserted`, and the probe that it records claims `evidenced`.
+- `examines` declares nothing. A probe tests whether a session reaches the document or the path that it names. Neither end makes a claim that the other end supports. A declaration of `from` added seven findings that make a probe the evidence for a specification, and no author can act on them.
+- `assesses` declares nothing. Either end can be the evidence. The review can support the document, or the document can support what the review says. Both readings give zero findings on this corpus. The relation is in the `design-spec` bundle, so a declaration costs a release of headwater/standard. Declare it when a corpus shows a finding that the two readings decide differently.

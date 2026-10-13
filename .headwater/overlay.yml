@@ -263,9 +263,10 @@ add:
   # whether a session reaches the document or the path that it names. The
   # probe makes no claim that the subject supports, and the subject makes no
   # claim that the probe supports, so neither end is the evidence for the
-  # other. Declaring `from` made seven probes at `asserted` the evidence for
-  # the documents they examine, and added seven `warrant.evidence.unsupported`
-  # findings that no reader could act on (#1562). HW-DR-0103 records this.
+  # other. A declaration of `from` added seven `warrant.evidence.unsupported`
+  # findings, each of which makes a probe at `asserted` the evidence for a
+  # document that it examines, and no author can act on one (#1562).
+  # HW-DR-0103 records this.
   relations.examines:
     family: evidence
     from: [probe]
