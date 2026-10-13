@@ -1801,15 +1801,27 @@ same "a guide whose search follows a new step 10 is red" \
 # Step 1 says that each internal crate under `[workspace.dependencies]` names
 # the `[workspace.package]` version, and that a test in `publish_order.rs`
 # holds it. The account of that invariant is this guide, so its front matter
-# carries a `traces_to` edge to the test and to the manifest table. Without
-# the edge no document relation reaches either file for the invariant, and a
-# change to either one marks nothing suspect. `governs` is the wrong edge:
-# the guide does not rule the manifest, and HW-DR-0023 governs it already.
+# carries a `traces_to` edge to the test and to the manifest table, and each
+# edge carries a `verified_revision`. `governs` is the wrong edge: the guide
+# does not rule the manifest, and HW-DR-0023 governs it already.
 #
-# trace_misses GUIDE — prints `traces_to does not name <path>` for each path
-# below that the `traces_to` list of GUIDE's front matter does not name, in
-# this order, and one line naming the fault when the front matter does not
-# parse. It prints nothing when both paths are named.
+# This group holds what the front matter says: both paths are named, and each
+# entry carries a `verified_revision`. It does not hold what `headwater check`
+# does with the revision. That check, `relation.target.suspect`, compares the
+# revision with the target's content and warns on the guide when the target
+# changes, and an edge with no revision gives it nothing to compare. This
+# suite does not run the engine, so it does not test that rule.
+#
+# The judge reads an entry in both forms the engine accepts: a bare path, and
+# a mapping whose `to` names the path. A bare path carries no revision, so it
+# is red on the second line below.
+#
+# trace_misses GUIDE — for each path below, in this order, prints
+# `traces_to does not name <path>` when no entry of the `traces_to` list of
+# GUIDE's front matter names it, and `traces_to <path> carries no
+# verified_revision` when the entry that names it has none. It prints one line
+# naming the fault when the front matter does not parse, and nothing when both
+# paths are named and pinned.
 trace_required='engine/crates/cli/tests/publish_order.rs engine/Cargo.toml'
 trace_misses_py='
 import sys, yaml
@@ -1824,12 +1836,21 @@ except yaml.YAMLError as e:
     print("the front matter does not parse: %s" % str(e).replace("\n", " "))
     sys.exit(0)
 rel = meta.get("relations") or {}
-named = rel.get("traces_to") or [] if isinstance(rel, dict) else []
-if isinstance(named, str):
-    named = [named]
+entries = rel.get("traces_to") or [] if isinstance(rel, dict) else []
+if not isinstance(entries, list):
+    entries = [entries]
+named = {}
+for entry in entries:
+    if isinstance(entry, str):
+        named.setdefault(entry, None)
+    elif isinstance(entry, dict) and isinstance(entry.get("to"), str):
+        rev = entry.get("verified_revision")
+        named[entry["to"]] = rev if isinstance(rev, str) and rev.startswith("sha256:") else named.get(entry["to"])
 for path in sys.argv[2:]:
     if path not in named:
         print("traces_to does not name %s" % path)
+    elif named[path] is None:
+        print("traces_to %s carries no verified_revision" % path)
 '
 trace_misses() {
     # shellcheck disable=SC2086
@@ -1854,8 +1875,25 @@ done
 # and only that path. The arms name the two paths themselves and do not read
 # `trace_required`, so a path dropped from that list does not drop its arm too.
 mkdir -p "$scratch/t2"
+
+# trace_drop PATH WHAT GUIDE — GUIDE with the entry `- to: PATH` changed:
+# WHAT is `entry` to remove the entry and its revision line, `revision` to
+# remove the revision line alone, and `bare` to write the entry as a bare path
+# with no revision.
+trace_drop() {
+    awk -v p="$1" -v what="$2" '
+        skip && /^[[:space:]]*verified_revision:/ { skip = 0; next }
+        { skip = 0 }
+        $0 ~ "^[[:space:]]*- to: " && $NF == p {
+            if (what == "entry") { skip = 1; next }
+            if (what == "revision") { skip = 1; print; next }
+            if (what == "bare") { sub(/- to: /, "- "); skip = 1; print; next }
+        }
+        { print }' "$3"
+}
+
 for path in engine/crates/cli/tests/publish_order.rs engine/Cargo.toml; do
-    grep -v "^[[:space:]]*- $path[[:space:]]*\$" "$root/$guide_rel" > "$scratch/t2/guide.md"
+    trace_drop "$path" entry "$root/$guide_rel" > "$scratch/t2/guide.md"
     if cmp -s "$root/$guide_rel" "$scratch/t2/guide.md"; then
         fail "a guide whose traces_to drops $path is red" "the plant changed nothing in the guide"
     else
@@ -1877,8 +1915,8 @@ fi
 
 # t4. A third traces_to entry beside the two is green: the group requires the
 # two paths and does not fix the whole list.
-sed 's|^\([[:space:]]*\)- engine/Cargo.toml[[:space:]]*$|&\
-\1- engine/crates/cli/Cargo.toml|' "$root/$guide_rel" > "$scratch/t2/guide.md"
+sed 's|^\([[:space:]]*\)- to: engine/Cargo.toml[[:space:]]*$|\1- to: engine/crates/cli/Cargo.toml\
+&|' "$root/$guide_rel" > "$scratch/t2/guide.md"
 if cmp -s "$root/$guide_rel" "$scratch/t2/guide.md"; then
     fail "a guide that traces to a third path beside the two is green" "the plant changed nothing in the guide"
 else
@@ -1888,7 +1926,7 @@ fi
 
 # t5. An entry that only contains a path is not that path. A guide that
 # traces to `engine/Cargo.toml.orig` in place of the manifest is red.
-sed 's|^\([[:space:]]*- engine/Cargo.toml\)[[:space:]]*$|\1.orig|' "$root/$guide_rel" > "$scratch/t2/guide.md"
+sed 's|^\([[:space:]]*- to: engine/Cargo.toml\)[[:space:]]*$|\1.orig|' "$root/$guide_rel" > "$scratch/t2/guide.md"
 if cmp -s "$root/$guide_rel" "$scratch/t2/guide.md"; then
     fail "a guide that traces to engine/Cargo.toml.orig in place of the manifest is red" "the plant changed nothing in the guide"
 else
@@ -1901,6 +1939,41 @@ fi
 grep -v '^---$' "$root/$guide_rel" > "$scratch/t2/guide.md"
 same "a guide with no front matter is red" "the guide has no front matter" \
     "$(trace_misses "$scratch/t2/guide.md" | tr '\n' '|' | sed 's/|$//')"
+
+# t7. An entry that names its path and carries no `verified_revision` is red,
+# and the finding names that path alone. The arms name the paths themselves.
+for path in engine/crates/cli/tests/publish_order.rs engine/Cargo.toml; do
+    trace_drop "$path" revision "$root/$guide_rel" > "$scratch/t2/guide.md"
+    if cmp -s "$root/$guide_rel" "$scratch/t2/guide.md"; then
+        fail "a guide whose $path entry has no verified_revision is red" "the plant changed nothing in the guide"
+    else
+        same "a guide whose $path entry has no verified_revision is red" \
+            "traces_to $path carries no verified_revision" \
+            "$(trace_misses "$scratch/t2/guide.md" | tr '\n' '|' | sed 's/|$//')"
+    fi
+done
+
+# t8. A bare path is an entry the engine reads, so the judge reads it as
+# naming the path, and it is red only because it carries no revision.
+trace_drop engine/Cargo.toml bare "$root/$guide_rel" > "$scratch/t2/guide.md"
+if cmp -s "$root/$guide_rel" "$scratch/t2/guide.md"; then
+    fail "a bare-path entry names its path and is red for its missing revision" "the plant changed nothing in the guide"
+else
+    same "a bare-path entry names its path and is red for its missing revision" \
+        "traces_to engine/Cargo.toml carries no verified_revision" \
+        "$(trace_misses "$scratch/t2/guide.md" | tr '\n' '|' | sed 's/|$//')"
+fi
+
+# t9. A revision that is not a `sha256:` digest is no revision.
+awk 'pin && /verified_revision:/ { sub(/sha256:[0-9a-f]*/, "pending") } { pin = ($0 ~ /- to: engine\/Cargo.toml$/); print }' \
+    "$root/$guide_rel" > "$scratch/t2/guide.md"
+if cmp -s "$root/$guide_rel" "$scratch/t2/guide.md"; then
+    fail "a revision that is not a sha256 digest is red" "the plant changed nothing in the guide"
+else
+    same "a revision that is not a sha256 digest is red" \
+        "traces_to engine/Cargo.toml carries no verified_revision" \
+        "$(trace_misses "$scratch/t2/guide.md" | tr '\n' '|' | sed 's/|$//')"
+fi
 
 echo
 echo "$passed passed, $failed failed"
