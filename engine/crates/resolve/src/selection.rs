@@ -239,6 +239,7 @@ pub fn for_recipe(root: &Path, directory: &Path, assembly: &str) -> Option<Advic
         overlay: None,
         corpus_root: String::new(),
         exclusions: Vec::new(),
+        engine: None,
     };
     let at = recipe
         .at

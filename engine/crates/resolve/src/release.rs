@@ -835,6 +835,65 @@ pub fn satisfies(range: &str, version: &str) -> Result<bool, String> {
     Ok(true)
 }
 
+/// Whether some version satisfies every comparator of two ranges at once.
+///
+/// A corpus states the engine it asks for, and a package states the engine it
+/// needs. When no version is inside both, no engine can resolve the pair, and
+/// a resolve refuses it with both ranges named rather than waiting for the
+/// engine that cannot exist. Both ranges are read with the parser
+/// [`satisfies`] uses, so a range one refuses the other refuses as well.
+///
+/// The two ranges are one list of comparators. Each `>x` becomes `>=` the next
+/// patch version, because versions are whole numbers. The greatest lower bound
+/// and the least upper bound then decide it, and an `=` pin must satisfy every
+/// other comparator.
+pub fn overlap(a: &str, b: &str) -> Result<bool, String> {
+    let mut floor = (0u64, 0u64, 0u64);
+    // The least upper bound and whether it is strict.
+    let mut ceiling: Option<((u64, u64, u64), bool)> = None;
+    let mut pins = Vec::new();
+    for range in [a, b] {
+        let mut comparators = 0;
+        for term in range.split_whitespace() {
+            comparators += 1;
+            let (operator, rest) = split_operator(term);
+            let bound = parse(rest)?;
+            match operator {
+                ">=" => floor = floor.max(bound),
+                ">" => floor = floor.max((bound.0, bound.1, bound.2.saturating_add(1))),
+                "<=" | "<" => {
+                    let strict = operator == "<";
+                    ceiling = Some(match ceiling {
+                        None => (bound, strict),
+                        Some((held, _)) if bound < held => (bound, strict),
+                        Some((held, held_strict)) if bound == held => {
+                            (held, held_strict || strict)
+                        }
+                        Some(kept) => kept,
+                    });
+                }
+                "=" => pins.push(bound),
+                _ => return Err(format!("`{term}` states no comparison this engine reads")),
+            }
+        }
+        if comparators == 0 {
+            return Err("it states no comparison at all".to_string());
+        }
+    }
+    let admits = |version: (u64, u64, u64)| {
+        version >= floor
+            && match ceiling {
+                None => true,
+                Some((bound, true)) => version < bound,
+                Some((bound, false)) => version <= bound,
+            }
+    };
+    if let Some(first) = pins.first() {
+        return Ok(pins.iter().all(|pin| pin == first) && admits(*first));
+    }
+    Ok(admits(floor))
+}
+
 fn split_operator(term: &str) -> (&str, &str) {
     for operator in [">=", "<=", ">", "<", "="] {
         if let Some(rest) = term.strip_prefix(operator) {
@@ -1072,6 +1131,26 @@ mod tests {
         assert_eq!(satisfies(">=0.1 <2", "0.1.0"), Ok(true));
         assert_eq!(satisfies("=1.0.0", "1.0.0"), Ok(true));
         assert_eq!(satisfies("1.0.0", "1.0.1"), Ok(false));
+    }
+
+    /// Two ranges overlap when one version satisfies both. The cases are the
+    /// edges: a strict floor that meets a strict ceiling, a pin outside the
+    /// other range, and two inclusive bounds that meet at one version.
+    #[test]
+    fn two_ranges_overlap_when_one_version_is_in_both() {
+        assert_eq!(overlap(">0.5.0", "<0.5.1"), Ok(false));
+        assert_eq!(overlap(">0.5.0", "<=0.5.1"), Ok(true));
+        assert_eq!(overlap(">=0.5 <0.6", ">=0.1 <2"), Ok(true));
+        assert_eq!(overlap(">=2", ">=0.1 <2"), Ok(false));
+        assert_eq!(overlap("=0.5.0", "<0.5"), Ok(false));
+        assert_eq!(overlap("0.5.0", ">=0.5 <0.6"), Ok(true));
+        assert_eq!(overlap("=0.5.0", "=0.5.1"), Ok(false));
+        assert_eq!(overlap("<=1.0", ">=1.0"), Ok(true));
+        assert_eq!(overlap("<1.0", ">=1.0"), Ok(false));
+        assert_eq!(overlap("<1.0 <=1.0", ">=1.0"), Ok(false));
+        assert_eq!(overlap("<=1.0 <1.0", ">=1.0"), Ok(false));
+        assert!(overlap("~1.4", ">=1").is_err());
+        assert!(overlap(">=1", "").is_err());
     }
 
     /// A range this engine cannot read is a refusal and never a pass. A range

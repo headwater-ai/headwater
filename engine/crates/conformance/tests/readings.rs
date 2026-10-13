@@ -69,6 +69,7 @@ fn consumer(version: &str, digest: Option<&str>) -> Consumer {
         overlay: None,
         corpus_root: "docs".to_string(),
         exclusions: Vec::new(),
+        engine: None,
     }
 }
 

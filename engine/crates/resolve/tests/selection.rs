@@ -205,6 +205,7 @@ fn consumer(bundles: &[&str], overlay: Option<&str>) -> Consumer {
         overlay: overlay.map(|path| path.to_string()),
         corpus_root: "docs".to_string(),
         exclusions: Vec::new(),
+        engine: None,
     }
 }
 

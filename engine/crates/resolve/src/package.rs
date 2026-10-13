@@ -127,7 +127,19 @@ pub struct Consumer {
     /// optional: an exclusion with none is a silent pass with a configuration
     /// file in front of it.
     pub exclusions: Vec<(String, String)>,
+    /// The engine range this corpus asks for, from the top-level `engine:` key,
+    /// in the syntax of a package's `requires_engine`.
+    ///
+    /// It is one line at the top level so that a shell can read it before any
+    /// engine is installed. Absent is no requirement. A value the engine cannot
+    /// read is refused by [`consumer`], for the reason
+    /// [`release::engine_range`] gives: an unreadable range read as no range is
+    /// a dropped claim.
+    pub engine: Option<String>,
 }
+
+/// The top-level key of the consumer declaration that states the engine range.
+pub const ENGINE: &str = "engine";
 
 /// The file that carries it.
 pub const CONSUMER: &str = ".headwater/taxonomy.yml";
@@ -185,6 +197,16 @@ pub fn consumer(root: &Path) -> Result<Consumer, Vec<ResolveError>> {
         }
     }
 
+    let engine = text(map, ENGINE);
+    if let Some(range) = &engine {
+        if let Err(why) = release::satisfies(range, release::ENGINE) {
+            return Err(refusal(
+                name,
+                &format!("`engine: \"{range}\"` is not a range this engine reads: {why}"),
+            ));
+        }
+    }
+
     Ok(Consumer {
         package,
         version,
@@ -193,6 +215,7 @@ pub fn consumer(root: &Path) -> Result<Consumer, Vec<ResolveError>> {
         overlay: text(taxonomy, "overlay"),
         corpus_root,
         exclusions,
+        engine,
     })
 }
 
@@ -211,6 +234,25 @@ pub fn sources(root: &Path, consumer: &Consumer) -> Result<Vec<Source>, Vec<Reso
     // hid the disagreement completely and pinning the other one reported it as
     // a wrong pin. See [`agrees`].
     let (base, contents) = base(root, &directory, &manifest, &consumer.package)?;
+
+    // The corpus states the engine it asks for and the package states the
+    // engine it needs. When no version is inside both, no engine can resolve
+    // the pair, and the refusal names both ranges.
+    if let (Some(asked), Some(needed)) = (&consumer.engine, text(&manifest, REQUIRES_ENGINE)) {
+        match release::overlap(asked, &needed) {
+            Ok(true) => {}
+            Ok(false) => {
+                return Err(refusal(
+                    CONSUMER,
+                    &format!(
+                        "this corpus asks for engine \"{asked}\", and {} needs engine \"{needed}\"; no engine is in both",
+                        consumer.package
+                    ),
+                ));
+            }
+            Err(why) => return Err(refusal(CONSUMER, &why)),
+        }
+    }
 
     let declared = text(&manifest, "version").unwrap_or_default();
     if declared != consumer.version {
