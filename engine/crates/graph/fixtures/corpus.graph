@@ -229,6 +229,8 @@ anchors
     cited by HW-REQ-0001
   code_path `engine/Cargo.toml` via source-tree
     cited by HW-DR-0023
+  code_path `engine/Cargo.toml` via source-tree
+    cited by HW-PHOW-cut-a-release
   code_path `engine/README.md` via source-tree
     cited by HW-DR-0029
   code_path `engine/crates/adapter/src/**` via source-tree
@@ -411,6 +413,8 @@ anchors
     cited by HW-DR-0022
   code_path `engine/crates/cli/tests/publish_order.rs` via source-tree
     cited by HW-PD-0011
+  code_path `engine/crates/cli/tests/publish_order.rs` via source-tree
+    cited by HW-PHOW-cut-a-release
   code_path `engine/crates/cli/tests/show.rs` via source-tree
     cited by HW-IFACE-headwater-explain
   code_path `engine/crates/cli/tests/sweep.rs` via source-tree
