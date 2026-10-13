@@ -197,7 +197,22 @@ pub fn consumer(root: &Path) -> Result<Consumer, Vec<ResolveError>> {
         }
     }
 
-    let engine = text(map, ENGINE);
+    // A present key whose value is not one scalar is refused, for the reason an
+    // unreadable range is: a list or a mapping read as no range is a dropped
+    // claim, and a gate would then pass on any engine.
+    let engine = match map.get(ENGINE) {
+        None => None,
+        Some(node) => match node.value.as_scalar() {
+            Some(scalar) => Some(scalar.text.clone()),
+            None => {
+                return Err(refusal(
+                    name,
+                    "`engine` is one range on one line, such as `engine: \">=0.5 <0.6\"`, \
+                     and this value is not one",
+                ));
+            }
+        },
+    };
     if let Some(range) = &engine {
         if let Err(why) = release::satisfies(range, release::ENGINE) {
             return Err(refusal(

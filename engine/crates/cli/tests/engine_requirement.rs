@@ -257,6 +257,28 @@ fn an_unreadable_corpus_range_is_refused() {
     assert!(ran.err.contains("engine: \"~0.5\""), "{}", ran.err);
 }
 
+/// A list or a mapping under `engine` is refused, never read as no range.
+#[test]
+fn an_engine_value_that_is_not_one_range_is_refused() {
+    for (case, value) in [("list", "[\">=0.6\"]"), ("mapping", "{range: \">=0.6\"}")] {
+        let root = Root::new(&format!("engine-requirement-{case}"));
+        set_engine(&root.at, None);
+        let path = root.at.join(".headwater/taxonomy.yml");
+        let text = std::fs::read_to_string(&path).expect("the declaration reads");
+        let text = text.replacen("\ncorpus:", &format!("\nengine: {value}\n\ncorpus:"), 1);
+        std::fs::write(&path, text).expect("the declaration writes");
+        for verb in [&["check", "--strict"][..], &["taxonomy", "resolve"][..]] {
+            let ran = root.run(verb);
+            assert_ne!(ran.code, Some(0), "{case} {verb:?}: {ran:?}");
+            assert!(
+                ran.err.contains("`engine` is one range on one line"),
+                "{case} {verb:?}: {}",
+                ran.err
+            );
+        }
+    }
+}
+
 /// This repository asks for the engine it builds. A bump of the workspace
 /// version past the range fails here, and the release guide says to move the
 /// line in the same commit.
@@ -296,7 +318,15 @@ fn a_resolve_refuses_a_corpus_range_the_package_range_does_not_meet() {
     assert!(refused.err.contains("\">=2\""), "{}", refused.err);
     assert!(refused.err.contains("\">=0.1 <2\""), "{}", refused.err);
 
+    // A range that overlaps the package range but excludes this engine
+    // resolves, and the resolve reports the engine once.
+    set_engine(&root.at, Some(">=0.6 <2"));
+    let reported = root.run(&["taxonomy", "resolve"]);
+    assert_eq!(reported.code, Some(0), "{reported:?}");
+    assert_eq!(reports(&reported.err).len(), 1, "{}", reported.err);
+
     set_engine(&root.at, Some(&caret()));
     let resolved = root.run(&["taxonomy", "resolve"]);
     assert_eq!(resolved.code, Some(0), "{resolved:?}");
+    assert!(reports(&resolved.err).is_empty(), "{}", resolved.err);
 }

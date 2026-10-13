@@ -8326,7 +8326,6 @@ fn merge_driver(current: &Path, path: &str) -> ExitCode {
     ExitCode::FAILURE
 }
 
-/// The half of `init` that writes the consumer declaration and the overlay.
 /// The caret range of a version: the releases a corpus started on it can take
 /// without a change it did not ask for (#1600).
 ///
@@ -8342,6 +8341,7 @@ fn caret(version: &str) -> String {
     }
 }
 
+/// The half of `init` that writes the consumer declaration and the overlay.
 fn bind(root: &Path, corpus_root: Option<String>, package: Option<String>) -> ExitCode {
     let declaration = root.join(headwater_resolve::package::CONSUMER);
     if declaration.exists() {

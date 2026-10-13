@@ -1140,6 +1140,9 @@ mod tests {
         assert_eq!(overlap(">0.5.0", "<=0.5.1"), Ok(true));
         assert_eq!(overlap(">=0.5 <0.6", ">=0.1 <2"), Ok(true));
         assert_eq!(overlap(">=2", ">=0.1 <2"), Ok(false));
+        // The least ceiling decides, whichever side states it first.
+        assert_eq!(overlap("<0.1", ">=0.1 <2"), Ok(false));
+        assert_eq!(overlap(">=0.1 <2", "<0.1"), Ok(false));
         assert_eq!(overlap("=0.5.0", "<0.5"), Ok(false));
         assert_eq!(overlap("0.5.0", ">=0.5 <0.6"), Ok(true));
         assert_eq!(overlap("=0.5.0", "=0.5.1"), Ok(false));
