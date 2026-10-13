@@ -655,6 +655,72 @@ fn a_task_names_only_the_documents_whose_name_it_repeats() {
     }
 }
 
+/// A named pointer comes after the anchored ones and before the ranked ones,
+/// once, and JSON writes its evidence as `by: name` with the words, in a
+/// document of version `1.1` (HW-DR-0109).
+#[test]
+fn a_named_pointer_is_offered_once_before_the_ranked_ones_and_written_as_by_name() {
+    let built = fixture_tree();
+    let surface = built.surface();
+    let route = surface.route("Throttling at the edge", Budget::default());
+    assert_eq!(
+        named_by_the_task(&route),
+        ["query/decisions/edge-throttling.md"],
+        "{}",
+        route.render(PLAIN)
+    );
+    assert_eq!(
+        route.pointers[0].path,
+        "query/decisions/edge-throttling.md",
+        "{}",
+        route.render(PLAIN)
+    );
+    let json = headwater_query::json::route(&route);
+    let value = headwater_yaml::load(&json).expect("the route parses").value;
+    let at = |path: &[&str]| -> String {
+        let mut value = &value;
+        for key in path {
+            value = match value {
+                headwater_yaml::Value::Map(map) => &map.get(key).expect(key).value,
+                headwater_yaml::Value::Seq(items) => {
+                    &items[key.parse::<usize>().expect("an index")].value
+                }
+                headwater_yaml::Value::Scalar(_) => panic!("{key} under a scalar"),
+            };
+        }
+        match value {
+            headwater_yaml::Value::Scalar(scalar) => scalar.text.clone(),
+            headwater_yaml::Value::Seq(items) => items
+                .iter()
+                .map(|item| item.value.as_scalar().expect("a word").text.clone())
+                .collect::<Vec<_>>()
+                .join(" "),
+            headwater_yaml::Value::Map(_) => panic!("a mapping at {path:?}"),
+        }
+    };
+    assert_eq!(at(&["version"]), "1.1", "{json}");
+    assert_eq!(at(&["pointers", "0", "evidence", "by"]), "name", "{json}");
+    assert_eq!(
+        at(&["pointers", "0", "evidence", "words"]),
+        "throttling at the edge",
+        "{json}"
+    );
+
+    // Once, in a route of this corpus where the named record also reaches the
+    // ranked list: `rationale` matches the title of HW-DR-0070.
+    let built = this_repository();
+    let surface = built.surface();
+    let route = surface.route(
+        "The matched purposes take turns at a route budget, and each pointer states what reached it",
+        Budget { pointers: 100_000 },
+    );
+    let mut paths: Vec<&str> = route.pointers.iter().map(|p| p.path.as_str()).collect();
+    let offered = paths.len();
+    paths.sort_unstable();
+    paths.dedup();
+    assert_eq!(paths.len(), offered, "a document is offered twice");
+}
+
 /// The three sentence queries of #1470, and why the name step does not reach
 /// the documents that each one still misses.
 ///
