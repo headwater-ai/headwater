@@ -565,6 +565,126 @@ fn an_overlay_address_the_new_base_takes_is_the_addressability_dimension() {
     );
 }
 
+/// A candidate that fails to resolve for a reason no overlay address names
+/// leaves `addressability` unmeasured too (#1561).
+///
+/// The consumer selects a bundle that the candidate does not ship, as it would
+/// after a release that retired one. The refusal is `SourceRefused`, which
+/// names no overlay address, so the addressability arm has no break to report
+/// and nothing it measured. The case above holds the five dimensions below a
+/// refusal that does name an address, and there `addressability` is `BROKEN`.
+/// This one holds the sixth. Reporting it as preserved here would claim that
+/// every address still resolves, out of a run that resolved nothing.
+///
+/// A package edit cannot provoke this: `taxonomy publish` resolves the
+/// package with every bundle it ships, so a base that drops a declaration a
+/// bundle reads, or a bundle another document links to, is refused before an
+/// artifact exists. The selection is the consumer's own, so the test edits it.
+#[test]
+fn a_candidate_refused_for_no_overlay_address_does_not_measure_addressability() {
+    let root = Root::new("addressability-unmeasured");
+    root.publish("1.0.0");
+    root.edit("version: 2.0.0", &[]);
+    let candidate = root.publish("2.0.0");
+    // The consumer now selects a bundle that the candidate does not ship. The
+    // lock is not re-resolved, so the previous side still reads.
+    let declaration = root.at.join(".headwater/taxonomy.yml");
+    let text = std::fs::read_to_string(&declaration).expect("the declaration reads");
+    let from = "  bundles: [design-spec,";
+    assert!(text.contains(from), "the declaration lists its bundles");
+    std::fs::write(
+        &declaration,
+        text.replacen(from, "  bundles: [retired-bundle, design-spec,", 1),
+    )
+    .expect("the declaration writes");
+
+    let ran = root.run(&[
+        "taxonomy",
+        "diff",
+        candidate.to_str().expect("utf-8"),
+        "--now",
+        "2026-08-01",
+    ]);
+    assert_eq!(
+        ran.code,
+        Some(1),
+        "a run that could not measure fails: {ran:?}"
+    );
+    ran.states_no_contradiction();
+    for dimension in [
+        "classification",
+        "instance_validity",
+        "consequence",
+        "projection",
+        "identifier",
+        "addressability",
+    ] {
+        assert!(
+            ran.dimension(dimension).starts_with("not measured"),
+            "`{dimension}` claims a reading out of a candidate that did not resolve: {ran:?}"
+        );
+    }
+    assert!(
+        ran.out.contains("no refusal named an overlay address"),
+        "the addressability line says why it was not measured: {ran:?}"
+    );
+    assert!(
+        ran.out.contains("retired-bundle"),
+        "the addressability line names the refusal: {ran:?}"
+    );
+}
+
+/// A candidate that resolves and loads, but whose `projections` declaration
+/// the generator refuses, leaves `projection` unmeasured (#1561).
+///
+/// The new base writes its one projection to `{shelf}/README.txt`. Publish and
+/// resolve accept the value, and `Projections::read` refuses it, because the
+/// census reads the generated-file marker in no `.txt` file (#1344). The other
+/// five dimensions are measured, so this is the one case where `projection`
+/// alone says it did not run. A report that called it preserved would say the
+/// new release generates what the old one did, out of a plan that was never
+/// built.
+#[test]
+fn a_projection_declaration_the_generator_refuses_does_not_measure_projection() {
+    let root = Root::new("projection-unmeasured");
+    root.publish("1.0.0");
+    root.edit(
+        "version: 2.0.0",
+        &[(
+            "  - {kind: shelf_index, for: [decisions, specifications], output: \
+             \"{shelf}/README.md\"}",
+            "  - {kind: shelf_index, for: [decisions, specifications], output: \
+             \"{shelf}/README.txt\"}",
+        )],
+    );
+    let candidate = root.publish("2.0.0");
+
+    let ran = root.run(&[
+        "taxonomy",
+        "diff",
+        candidate.to_str().expect("utf-8"),
+        "--now",
+        "2026-08-01",
+    ]);
+    ran.states_no_contradiction();
+    assert!(
+        ran.dimension("projection").starts_with("not measured"),
+        "`projection` claims a reading out of a plan that was never built: {ran:?}"
+    );
+    assert!(
+        ran.out.contains("a projection declaration did not read"),
+        "the projection line says why it was not measured: {ran:?}"
+    );
+    // The five that ran are measured, so the verdict is `Undecided` and the
+    // run exits 0: nothing that ran is broken. A projection called preserved
+    // would turn this into "no major required", which nothing measured.
+    assert!(
+        ran.out.contains("not every dimension ran"),
+        "the verdict says a dimension did not run: {ran:?}"
+    );
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+}
+
 /// `--to` is the assertion and never the address.
 ///
 /// This verb fetches nothing, so the directory decides which artifact is
