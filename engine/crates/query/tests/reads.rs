@@ -528,12 +528,21 @@ fn title_as_typed(name: &str) -> String {
 /// Every record on both shelves is read, and a record with no name is a
 /// failure here, not a skip: a record the property cannot be asked of is a
 /// record nobody could reach by its title.
+///
+/// One record is outside the property by the rule and is named here with the
+/// reason, in [`ONE_WORD_TITLES`]. A miss on any other record fails.
+///
+/// The test is also the measurement, with one line per record of its place in
+/// the default budget and what reached it:
+///
+///     cargo test -p headwater-query --test reads every_decision_record -- --nocapture
 #[test]
 fn every_decision_record_is_offered_for_its_own_title_inside_the_default_budget() {
     let built = this_repository();
     let surface = built.surface();
     let mut asked = 0;
     let mut missed: Vec<String> = Vec::new();
+    let mut one_word: Vec<&str> = Vec::new();
     for document in surface.documents() {
         if document.kind != "decision" && document.kind != "process_decision" {
             continue;
@@ -545,17 +554,35 @@ fn every_decision_record_is_offered_for_its_own_title_inside_the_default_budget(
         };
         let task = title_as_typed(&name);
         let route = surface.route(&task, Budget::default());
-        if !route
+        let offered = route
             .pointers
             .iter()
-            .any(|pointer| pointer.path == document.path)
-        {
+            .position(|pointer| pointer.path == document.path);
+        // The measurement #1470 asks for, one line per record: its place in the
+        // default five and what reached it. `-- --nocapture` prints it.
+        println!(
+            "{}\t{}\t{}",
+            document.path,
+            offered.map_or("-".to_string(), |at| (at + 1).to_string()),
+            offered.map_or("-", |at| match route.evidence[at] {
+                headwater_query::Evidence::Named { .. } => "anchor",
+                headwater_query::Evidence::Titled { .. } => "name",
+                headwater_query::Evidence::Ranked { .. } => "terms",
+            })
+        );
+        if offered.is_none() {
+            if ONE_WORD_TITLES.contains(&document.path) {
+                one_word.push(document.path);
+                continue;
+            }
             let place = surface
                 .route(&task, Budget { pointers: 100_000 })
                 .pointers
                 .iter()
                 .position(|pointer| pointer.path == document.path)
-                .map_or("not offered".to_string(), |at| format!("offered {}", at + 1));
+                .map_or("not offered".to_string(), |at| {
+                    format!("offered {}", at + 1)
+                });
             missed.push(format!("{} for {task:?}: {place}", document.path));
         }
     }
@@ -566,7 +593,138 @@ fn every_decision_record_is_offered_for_its_own_title_inside_the_default_budget(
         missed.len(),
         missed.join("\n")
     );
+    // A listed record that the route now offers is a stale list, and so is one
+    // that left the shelf.
+    assert_eq!(
+        one_word, ONE_WORD_TITLES,
+        "the records outside the property by the rule"
+    );
 }
+
+/// The paths of a route whose pointer the name step offered.
+fn named_by_the_task(route: &headwater_query::Route) -> Vec<&str> {
+    route
+        .pointers
+        .iter()
+        .zip(&route.evidence)
+        .filter(|(_, evidence)| matches!(evidence, headwater_query::Evidence::Titled { .. }))
+        .map(|(pointer, _)| pointer.path.as_str())
+        .collect()
+}
+
+/// The sentence queries that #1470 measures, the two tasks of this corpus that
+/// the tests above route, and the documents each one names by name.
+///
+/// A name pointer here is earned only where the task holds a declared name as
+/// a run of words. The first sentence holds `taxonomy resolution`, the name of
+/// the subsystem spec it asks about, the second holds `headwater mcp`, and the
+/// third holds `headwater export`. The two tasks of this corpus hold no name.
+/// The six tasks of the fixture tree are held by the recorded reads, where only
+/// the title task carries a `repeats its name` line.
+const NAMED: [(&str, &[&str]); 5] = [
+    (
+        "add a technical design spec for the taxonomy resolution subsystem",
+        &["docs/subsystems/taxonomy-resolution.md"],
+    ),
+    (
+        "an editor integration starts headwater mcp for each query instead of embedding the engine library",
+        &["docs/interfaces/headwater-mcp.md"],
+    ),
+    (
+        "headwater export now withholds every write when the run refuses before its first write, matching the order generate already uses",
+        &["docs/interfaces/headwater-export.md"],
+    ),
+    (
+        "why does the engine read the lock rather than the taxonomy sources",
+        &[],
+    ),
+    (
+        "Decide which shelf a new document belongs on, and where its identifier comes from.",
+        &[],
+    ),
+];
+
+/// A task gains a name pointer only for a name it repeats (HW-DR-0109).
+#[test]
+fn a_task_names_only_the_documents_whose_name_it_repeats() {
+    let built = this_repository();
+    let surface = built.surface();
+    for (task, named) in NAMED {
+        let route = surface.route(task, Budget::default());
+        assert_eq!(named_by_the_task(&route), named, "{}", route.render(PLAIN));
+    }
+}
+
+/// The three sentence queries of #1470, and why the name step does not reach
+/// the documents that each one still misses.
+///
+/// Each miss has one cause, and it is the purpose gate: the verbs of the
+/// sentence ("add", "starts", "uses") match `evidence` and `procedure` above
+/// the purpose the target serves, so the target competes late in the turns or
+/// not at all. No sentence repeats the name of the document it misses, so the
+/// name step has nothing to offer for it. A change to purpose scoring would be
+/// the remedy, and #1470 records the cases rather than that change.
+///
+/// Measured on this branch, budget 100,000: HW-DR-0102 was not offered,
+/// because `rationale` did not match; spec 6 stood 51st, rank 178 of 291; and
+/// `headwater-generate.md` stood 9th, rank 174 of 373. The first sentence's
+/// target, `taxonomy-resolution.md`, and the third's `headwater-export.md` are
+/// now offered first by name.
+#[test]
+fn three_sentence_queries_miss_by_the_purpose_gate_and_not_by_the_name_step() {
+    let built = this_repository();
+    let surface = built.surface();
+    let misses: [(&str, &str); 3] = [
+        (NAMED[1].0, "docs/decisions/0102-"),
+        (NAMED[1].0, "docs/spec/06-"),
+        (NAMED[2].0, "docs/interfaces/headwater-generate.md"),
+    ];
+    for (task, target) in misses {
+        let route = surface.route(task, Budget::default());
+        assert!(
+            !route.pointers.iter().any(|p| p.path.starts_with(target)),
+            "{target} is now in the default five, so the case is stale:\n{}",
+            route.render(PLAIN)
+        );
+        let target_document = surface
+            .documents()
+            .into_iter()
+            .find(|document| document.path.starts_with(target))
+            .unwrap_or_else(|| panic!("{target} is on the tree"));
+        let purpose = surface
+            .pointer(&target_document)
+            .purpose
+            .unwrap_or_else(|| panic!("{target} serves a purpose"));
+        let top = route.matched.first().expect("a purpose matched");
+        let score = route
+            .matched
+            .iter()
+            .find(|matched| matched.purpose == purpose)
+            .map_or(0, |matched| matched.score);
+        assert!(
+            score < top.score,
+            "{target} serves `{purpose}`, which scored {score} against {} for `{}`, \
+             so the purpose gate is not the cause",
+            top.score,
+            top.purpose
+        );
+        let words = surface
+            .name(&target_document)
+            .map(|name| name.to_lowercase())
+            .unwrap_or_default();
+        assert!(
+            !task.to_lowercase().contains(&words) || words.is_empty(),
+            "the task repeats the name of {target}"
+        );
+    }
+}
+
+/// The decision records whose title, less its number, is one word. HW-DR-0109
+/// rules that a one-word name names nothing: one word is a term, and the
+/// purpose gate decides a term. `naming` is not a word of any `rationale`
+/// question, so the title `10 — Naming` matches no purpose that a decision
+/// serves, and the route offers no decision for it.
+const ONE_WORD_TITLES: [&str; 1] = ["docs/decisions/0010-naming.md"];
 
 /// Derived reading precedence orders the list, and it outranks the score.
 ///
