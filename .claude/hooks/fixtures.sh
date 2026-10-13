@@ -672,6 +672,19 @@ if [ -x "$engine" ]; then
         expect 'an edit to a governed path whose edge recorded no revision is silent after the edit' \
             write.sh 0 '' \
             '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"tools/alpha.sh"}}'
+        # #1433: an edit through a symlink inside the root is an edit of the
+        # file the link reaches. A link onto a governed file names its
+        # document, and a link onto an ungoverned file in scope is advised
+        # for that file, never in silence.
+        : > "$reverse_root/tools/zz-free.sh"
+        ln -s alpha.sh "$reverse_root/tools/alpha-link.sh"
+        ln -s zz-free.sh "$reverse_root/tools/free-link.sh"
+        expect 'an edit through a link onto a governed file names the document that governs the file' \
+            write.sh 0 'docs/process/decisions/0001-alpha.md' \
+            '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"tools/alpha-link.sh"}}'
+        expect 'an edit through a link onto an ungoverned file in scope is advised for that file' \
+            write.sh 0 'tools/zz-free.sh is in the governed scope, and nothing governs it' \
+            '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"tools/free-link.sh"}}'
         HEADWATER_HOOK_ROOT="$root"
         export HEADWATER_HOOK_ROOT
     else

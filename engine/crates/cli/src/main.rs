@@ -4265,7 +4265,12 @@ fn route(root: &Path, task: &str, budget: Option<usize>, json: bool) -> ExitCode
         Ok(_) => headwater_query::Entry::File,
         Err(_) => headwater_query::Entry::Absent,
     };
-    let mut route = loaded.surface().route_in(task, budget, &tree);
+    // A path that reaches its file through a symlink inside the root is read as
+    // that file too, so an edit through the link names the documents that
+    // govern the file (#1433). A link that dangles, loops or leaves the root
+    // gives nothing, and the path is read as written.
+    let real = |path: &str| headwater_census::walk::real_within(&corpus.base, path);
+    let mut route = loaded.surface().route_through(task, budget, &tree, &real);
     // Git is read only where the route named an ungoverned path, so a route
     // that named none runs no version control command (#953).
     if !route.ungoverned.is_empty() {

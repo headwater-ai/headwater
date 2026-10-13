@@ -1132,6 +1132,97 @@ fn the_related_and_governing_tools_read_every_spelling_of_a_path_as_explain_does
     }
 }
 
+/// [#1433](https://github.com/headwater-ai/headwater/issues/1433): a path that
+/// reaches a governed file through a symlink inside the root is answered for
+/// that file by `governing_docs_for_path` and by `route`, as the verb answers
+/// it. A link that dangles keeps the lexical answer, and a link out of the
+/// root keeps the one outside sentence of #1249.
+#[cfg(unix)]
+#[test]
+fn the_governing_and_route_tools_read_a_link_inside_the_root_as_its_file() {
+    use std::os::unix::fs::symlink;
+    let scratch = Scratch::of(
+        &fixtures_dir(),
+        "the_governing_and_route_tools_read_a_link_inside_the_root_as_its_file",
+    );
+    symlink("ingest/mod.rs", scratch.0.join("src/alias.rs")).expect("the file link");
+    symlink("alias.rs", scratch.0.join("src/chain.rs")).expect("the chained link");
+    symlink("ingest", scratch.0.join("src/linked")).expect("the directory link");
+    symlink("missing.rs", scratch.0.join("src/dangling.rs")).expect("the dangling link");
+    symlink("/etc/passwd", scratch.0.join("src/out.rs")).expect("the out link");
+    // A link whose own spelling a pattern governs, onto a file nothing
+    // governs: the governors of the spelling are kept beside the file's.
+    std::fs::write(scratch.0.join("free.rs"), "").expect("the ungoverned file");
+    symlink("../../free.rs", scratch.0.join("src/ingest/free-link.rs")).expect("the free link");
+    let built = fixture_tree_at(&scratch.0);
+    let server = built.server(RECORDED_AT);
+    let asked = |tool: &str, key: &str, target: &str| {
+        let response = once(
+            &server,
+            &calling(tool, &format!(r#"{{"{key}":"{target}"}}"#)),
+        );
+        let text = content(&response).concat();
+        let structured = structured(&response).map(|answer| canonical(&answer.value));
+        (text, structured)
+    };
+
+    let code = "src/ingest/mod.rs";
+    let governed = asked("governing_docs_for_path", "path", code);
+    assert!(
+        !governed.0.contains("no document governs"),
+        "the file is governed: {}",
+        governed.0
+    );
+    for link in ["src/alias.rs", "src/chain.rs", "src/linked/mod.rs"] {
+        assert_eq!(
+            asked("governing_docs_for_path", "path", link),
+            governed,
+            "`governing_docs_for_path {link}` answers what `{code}` answers"
+        );
+    }
+    assert_eq!(
+        asked("governing_docs_for_path", "path", "src/dangling.rs").0,
+        "no document governs src/dangling.rs\n",
+        "a dangling link is read as written"
+    );
+    assert_eq!(
+        asked("governing_docs_for_path", "path", "src/out.rs").0,
+        outside("src/out.rs"),
+        "a link out of the root is refused in the one outside sentence"
+    );
+    let spelled = asked("governing_docs_for_path", "path", "src/ingest/absent.rs");
+    assert!(
+        !spelled.0.contains("no document governs"),
+        "the pattern governs a name under it: {}",
+        spelled.0
+    );
+    assert_eq!(
+        asked("governing_docs_for_path", "path", "src/ingest/free-link.rs"),
+        spelled,
+        "a governed link onto an ungoverned file keeps the governors of its spelling"
+    );
+
+    let (plain, _) = asked("route", "task", &format!("edit {code}"));
+    for link in ["src/alias.rs", "src/chain.rs", "src/linked/mod.rs"] {
+        let (through, _) = asked("route", "task", &format!("edit {link}"));
+        let pointers = |text: &str| -> Vec<String> {
+            text.lines()
+                .filter(|line| line.contains(" — "))
+                .map(str::to_string)
+                .collect()
+        };
+        assert!(
+            !pointers(&plain).is_empty(),
+            "the route names a pointer: {plain}"
+        );
+        assert_eq!(
+            pointers(&through),
+            pointers(&plain),
+            "`route edit {link}` names what `route edit {code}` names"
+        );
+    }
+}
+
 /// [#1314](https://github.com/headwater-ai/headwater/issues/1314): each path
 /// tool tells a client every spelling of a path that it answers. An assistant
 /// reads the argument's `description` in `tools/list` to choose what to send,
