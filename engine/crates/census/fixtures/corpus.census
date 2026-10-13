@@ -796,6 +796,10 @@ docs/obligations/0237-eighteen-findings-that-the-paid-layer-campaign-of-run-2026
   typed: obligation_record
 docs/obligations/0238-four-findings-that-the-spec-6-trim-of-1572-left-in-two-decisions-and-their-test.md
   typed: obligation_record
+docs/obligations/0241-three-questions-from-run-20261012-2342-about-an-engine-range-a-tree-outside-every-root-and-a-decision-nobody-accepted.md
+  typed: obligation_record
+docs/obligations/0242-three-edges-and-a-comment-that-trail-a-change-of-run-20261012-2342.md
+  typed: obligation_record
 docs/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/README.md
@@ -1219,6 +1223,8 @@ docs/process/obligations/0231-five-run-tooling-gaps-from-run-20261001-1107-filed
 docs/process/obligations/0233-thirteen-run-tooling-gaps-from-run-20261002-1233-filed-together.md
   typed: process_obligation
 docs/process/obligations/0239-three-run-tooling-gaps-from-run-20261003-1026-filed-together.md
+  typed: process_obligation
+docs/process/obligations/0240-five-run-tooling-gaps-from-run-20261012-2342-filed-together.md
   typed: process_obligation
 docs/process/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
