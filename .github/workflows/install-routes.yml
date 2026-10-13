@@ -1,0 +1,208 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Every install route of `README.md`, run as a reader runs it, every day
+# (#1490).
+#
+# `## Obtaining a named version` documents six routes: the static Linux
+# archive, the macOS archive, the APT block, the Debian package installed from
+# its file on Debian 11, `cargo install`, and a build from source at the tag.
+# Each job below runs one of them on a clean GitHub-hosted image, and each ends
+# in `headwater --version` and fails when the version printed is not the one
+# the route installs. A route breaks with no change here: a release asset
+# moves, a distribution's archive moves, a crate stops building on the newest
+# toolchain. The schedule is what finds it.
+#
+# `tools/repo/readme-install-block.sh` prints each route's commands from the
+# page, and it is the only copy of them outside the page. It exits nonzero when
+# a paragraph, its fence or the sentence a route reads is gone, because `sh -e`
+# of an empty script exits 0. The APT route is `readme-apt.yml`, which this
+# workflow calls and which has no schedule of its own.
+#
+# When a route job does not succeed, the `report` job opens one issue labeled
+# `bug`, or comments on it while it is open, through
+# `tools/repo/install-route-issue.sh`.
+#
+# Group 14 of `tools/repo/readme-fixtures.sh` holds, on every push, that each
+# route the page documents is a job here, that no job can pass when its route
+# fails, and that the report job needs every route job. HW-PD-0012 is why: no
+# pull request runs this workflow, so fixtures read its text.
+#
+# It is not a job of `ci.yml` and not a required check. It depends on
+# `github.com`, `crates.io`, `deb.debian.org`, `archive.ubuntu.com` and
+# `headwater.tools`, and an outage of any of them would stop the merge queue.
+# Every job runs on a GitHub-hosted runner, because a scheduled job on the
+# self-hosted runner competes with the merge queue.
+name: README install routes
+
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  archive:
+    name: The Linux archive block installs headwater into an empty home
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print the block the page shows
+        run: sh tools/repo/readme-install-block.sh README.md archive > route.sh
+      - name: Run the block, then the binary it installed
+        run: |
+          cat route.sh
+          release=$(sh tools/repo/readme-install-block.sh README.md release)
+          route="$PWD/route.sh"
+          export HOME="$RUNNER_TEMP/home"
+          mkdir -p "$HOME"
+          cd "$RUNNER_TEMP"
+          sh -e "$route"
+          tag=${release##*/}
+          printed=$("$HOME/.local/bin/headwater" --version | awk '{print $NF}')
+          if [ "$printed" != "${tag#v}" ]; then
+              echo "::error::the block downloads $tag and the binary prints '$printed'" && exit 1
+          fi
+          echo "the archive block installs $printed on $(grep PRETTY_NAME /etc/os-release)"
+
+  archive-macos:
+    name: The macOS archive block installs headwater into an empty home
+    runs-on: macos-14
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print the block the page shows, with the substitution it states
+        run: sh tools/repo/readme-install-block.sh README.md archive-macos > route.sh
+      - name: Run the block, then the binary it installed with only the system on its path
+        run: |
+          cat route.sh
+          release=$(sh tools/repo/readme-install-block.sh README.md release)
+          route="$PWD/route.sh"
+          export HOME="$RUNNER_TEMP/home"
+          mkdir -p "$HOME"
+          cd "$RUNNER_TEMP"
+          sh -e "$route"
+          tag=${release##*/}
+          printed=$(env -i PATH=/usr/bin:/bin "$HOME/.local/bin/headwater" --version | awk '{print $NF}')
+          if [ "$printed" != "${tag#v}" ]; then
+              echo "::error::the block downloads $tag and the binary prints '$printed'" && exit 1
+          fi
+          echo "the macOS block installs $printed on $(sw_vers -productVersion) $(uname -m)"
+
+  apt:
+    name: The README APT block
+    uses: ./.github/workflows/readme-apt.yml
+
+  deb-file:
+    name: The Debian package installs from its file on Debian 11 with no network
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print the command the page gives Debian 11
+        run: sh tools/repo/readme-install-block.sh README.md deb-file > route.sh
+      - name: Download the package on the host, then run the command in debian:11 with no network
+        # The page says to download the file on another machine and that the
+        # command needs no network, so the container gets none. The job reads
+        # `/sys/class/net` inside it and fails on any interface but `lo`.
+        run: |
+          cat route.sh
+          release=$(sh tools/repo/readme-install-block.sh README.md release)
+          deb=$(sed -n 's|.*\./\(headwater_[^ ]*\.deb\)$|\1|p' route.sh)
+          if [ -z "$deb" ]; then
+              echo "::error::the command names no package file" && exit 1
+          fi
+          tag=${release##*/}
+          mkdir -p "$RUNNER_TEMP/deb"
+          cp route.sh "$RUNNER_TEMP/deb/route.sh"
+          cd "$RUNNER_TEMP/deb"
+          curl -fsSLO "$release/$deb"
+          docker run --rm --network none -v "$PWD:/work" -w /work -e WANT="${tag#v}" debian:11 sh -ec '
+              nets=$(ls /sys/class/net | tr "\n" " ")
+              if [ "$nets" != "lo " ]; then
+                  echo "::error::the container has network interfaces $nets" && exit 1
+              fi
+              sh -e route.sh
+              printed=$(headwater --version | awk "{print \$NF}")
+              if [ "$printed" != "$WANT" ]; then
+                  echo "::error::the release is $WANT and the package installs a binary that prints $printed" && exit 1
+              fi
+              echo "the file route installs $printed with no network on $(grep PRETTY_NAME /etc/os-release)"
+          '
+
+  cargo:
+    name: cargo install headwater-cli installs the newest published version
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print the block the page shows
+        run: sh tools/repo/readme-install-block.sh README.md cargo > route.sh
+      - name: Run the block, then the binary it installed
+        # The page says the command installs "whatever the newest published
+        # version is", so the version to expect is the one the registry
+        # names, read before the install.
+        run: |
+          cat route.sh
+          route="$PWD/route.sh"
+          cd "$RUNNER_TEMP"
+          want=$(cargo search headwater-cli --limit 1 | sed -n 's/^headwater-cli = "\([^"]*\)".*/\1/p')
+          if [ -z "$want" ]; then
+              echo "::error::the registry names no version of headwater-cli" && exit 1
+          fi
+          sh -e "$route"
+          printed=$("${CARGO_HOME:-$HOME/.cargo}/bin/headwater" --version | awk '{print $NF}')
+          if [ "$printed" != "$want" ]; then
+              echo "::error::the registry names $want and the installed binary prints '$printed'" && exit 1
+          fi
+          echo "cargo install installs $printed with $(cargo --version)"
+
+  source:
+    name: The source block builds the tag it checks out
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print the block the page shows
+        run: sh tools/repo/readme-install-block.sh README.md source > route.sh
+      - name: Run the block, then the binary it built
+        run: |
+          cat route.sh
+          tag=$(sed -n 's/^git checkout \(v[^ ]*\)$/\1/p' route.sh)
+          if [ -z "$tag" ]; then
+              echo "::error::the block checks out no tag" && exit 1
+          fi
+          route="$PWD/route.sh"
+          cd "$RUNNER_TEMP"
+          sh -e "$route"
+          printed=$("$RUNNER_TEMP/headwater/engine/target/release/headwater" --version | awk '{print $NF}')
+          if [ "$printed" != "${tag#v}" ]; then
+              echo "::error::the block checks out $tag and the binary prints '$printed'" && exit 1
+          fi
+          echo "the source block builds $printed with $(cargo --version)"
+
+  report:
+    name: A failed route opens or updates one issue labeled bug
+    needs: [archive, archive-macos, apt, deb-file, cargo, source]
+    if: failure()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Open the issue, or comment on the open one
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          sh tools/repo/install-route-issue.sh
+          "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          archive=${{ needs.archive.result }}
+          archive-macos=${{ needs.archive-macos.result }}
+          apt=${{ needs.apt.result }}
+          deb-file=${{ needs.deb-file.result }}
+          cargo=${{ needs.cargo.result }}
+          source=${{ needs.source.result }}

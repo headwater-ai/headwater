@@ -4467,8 +4467,9 @@ echo "the APT block the page offers, against the job that runs it"
 # Group 10 holds what the APT block names and fetches nothing. What holds the
 # block itself is `.github/workflows/readme-apt.yml`: it runs the block on a
 # clean container of each distribution the page names as its floor, against
-# the published repository at `https://headwater.tools/apt`, every day and after
-# each release deploys the site (#1408). That job cannot run on a pull request,
+# the published repository at `https://headwater.tools/apt`, every day through
+# `install-routes.yml` (#1490) and after each release deploys the site
+# (#1408). That job cannot run on a pull request,
 # because it depends on networks this repository does not own. So this group
 # holds, on every push, the two things that would let the job pass while it
 # held nothing:

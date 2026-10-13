@@ -18,11 +18,14 @@
 # floor the page names is an image below and that this job calls the extractor
 # and carries no copy of the block.
 #
-# Three triggers:
+# Two triggers, `workflow_call` and `workflow_dispatch`, and three ways in:
 #
-#   - `schedule`, daily. A distribution's archive moves with no release and no
+#   - `workflow_call`, from `install-routes.yml`, which runs every install
+#     route of the page daily and opens or updates an issue labeled `bug` when
+#     one fails (#1490). A distribution's archive moves with no release and no
 #     pull request here, and that is how the block stopped working on Debian
-#     11. The schedule is what finds it.
+#     11. That schedule is what finds it, and this file has none of its own,
+#     so the block runs once a day and its failure opens an issue.
 #   - `workflow_call`, from `release.yml` after `deploy-site`, so each release
 #     runs the block against the repository it has just deployed.
 #   - `workflow_dispatch`, to run it by hand.
@@ -31,12 +34,11 @@
 # `deb.debian.org`, `archive.ubuntu.com` and `headwater.tools`, and an outage
 # of any of them would stop the merge queue. HW-PD-0015 rules out a path
 # filter as the way around that, because a skipped required check stays
-# pending. A failure here turns this job red and nothing else.
+# pending. Called by hand or from a release, a failure here turns this job red
+# and nothing else.
 name: README APT block
 
 on:
-  schedule:
-    - cron: '17 6 * * *'
   workflow_dispatch:
   workflow_call:
 

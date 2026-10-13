@@ -68,9 +68,11 @@ refuse() {
 
 [ -f "$readme" ] || refuse "no such file"
 
-# fence OPENER — the lines of the first fence after the paragraph that opens
-# with OPENER, inside `## Obtaining a named version`. The fence test is the one
-# `readme-apt-block.sh` uses.
+# fence OPENER — the lines of the fence that follows the paragraph that opens
+# with OPENER, inside `## Obtaining a named version`, with only blank lines
+# between the two. The fence test is the one `readme-apt-block.sh` uses. A
+# paragraph whose fence is gone prints nothing, rather than the fence of the
+# next paragraph.
 fence() {
     awk -v opener="$1" '
         /^## / { section = ($0 == "## Obtaining a named version"); next }
@@ -78,7 +80,8 @@ fence() {
         !seen && index($0, opener) == 1 { seen = 1; next }
         !seen { next }
         /^[ \t]*```/ { if (fence) exit; fence = 1; next }
-        fence { print }
+        fence { print; next }
+        /[^ \t]/ { exit }
     ' "$readme"
 }
 
