@@ -721,6 +721,115 @@ fn a_named_pointer_is_offered_once_before_the_ranked_ones_and_written_as_by_name
     assert_eq!(paths.len(), offered, "a document is offered twice");
 }
 
+/// A named pointer takes a place of the budget, as an anchored one does, and
+/// the budget never removes it.
+#[test]
+fn a_named_pointer_takes_a_place_of_the_budget_and_is_never_cut() {
+    let built = fixture_tree();
+    let surface = built.surface();
+    let task = "Throttling at the edge";
+    // The task reaches one ranked document as well, so a budget of one holds
+    // the named pointer and withholds the ranked one.
+    let route = surface.route(task, Budget { pointers: 1 });
+    assert_eq!(
+        route
+            .pointers
+            .iter()
+            .map(|p| p.path.as_str())
+            .collect::<Vec<_>>(),
+        ["query/decisions/edge-throttling.md"],
+        "{}",
+        route.render(PLAIN)
+    );
+    assert_eq!(route.withheld, 1, "{}", route.render(PLAIN));
+    let route = surface.route(task, Budget { pointers: 0 });
+    assert_eq!(
+        named_by_the_task(&route),
+        ["query/decisions/edge-throttling.md"],
+        "{}",
+        route.render(PLAIN)
+    );
+}
+
+/// A document that the task both anchors and names is offered once, with the
+/// anchored evidence.
+#[test]
+fn a_document_both_anchored_and_named_is_offered_once_as_anchored() {
+    let built = fixture_tree();
+    let surface = built.surface();
+    let route = surface.route(
+        "Throttling at the edge in src/ingest/rate_limit.rs",
+        Budget::default(),
+    );
+    let at: Vec<usize> = route
+        .pointers
+        .iter()
+        .enumerate()
+        .filter(|(_, p)| p.path == "query/decisions/edge-throttling.md")
+        .map(|(at, _)| at)
+        .collect();
+    assert_eq!(at.len(), 1, "{}", route.render(PLAIN));
+    assert!(
+        matches!(
+            route.evidence[at[0]],
+            headwater_query::Evidence::Named { .. }
+        ),
+        "{}",
+        route.render(PLAIN)
+    );
+    assert!(
+        named_by_the_task(&route).is_empty(),
+        "{}",
+        route.render(PLAIN)
+    );
+}
+
+/// A corpus that declares no purpose still answers a task that repeats a name,
+/// as it answers a task that names a path.
+#[test]
+fn a_corpus_with_no_purposes_still_offers_a_named_document() {
+    let source = std::fs::read_to_string(fixtures_dir().join("query.taxonomy.yml"))
+        .expect("the fixture taxonomy");
+    let mut stripped = String::new();
+    let mut in_purposes = false;
+    for line in source.lines() {
+        if line == "purposes:" {
+            in_purposes = true;
+            continue;
+        }
+        if in_purposes && !line.is_empty() && !line.starts_with(' ') {
+            in_purposes = false;
+        }
+        if in_purposes || line.trim_start().starts_with("purpose:") {
+            continue;
+        }
+        stripped.push_str(line);
+        stripped.push('\n');
+    }
+    let root = headwater_yaml::load(&stripped)
+        .expect("the stripped taxonomy loads")
+        .value
+        .as_map()
+        .expect("a mapping")
+        .clone();
+    let corpus = Corpus::new(fixtures_dir(), "query");
+    let built = Built::over(&corpus, &root);
+    let surface = built.surface();
+    let route = surface.route("Throttling at the edge", Budget::default());
+    assert_eq!(
+        route.silence,
+        None,
+        "the route is silent: {}",
+        route.render(PLAIN)
+    );
+    assert_eq!(
+        named_by_the_task(&route),
+        ["query/decisions/edge-throttling.md"],
+        "{}",
+        route.render(PLAIN)
+    );
+}
+
 /// The three sentence queries of #1470, and why the name step does not reach
 /// the documents that each one still misses.
 ///
