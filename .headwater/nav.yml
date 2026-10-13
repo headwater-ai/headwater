@@ -215,6 +215,7 @@ nav:
               - "106 — A governing document repoints a link to a rule that moved, and a record of a moment stays as written": "decisions/0106-a-governing-document-repoints-a-link-to-a-rule-that-moved-and-a-record-of-a-moment-stays-as-written.md"
               - "107 — The process shelves stay published, in a labeled section of the site that a search engine does not index": "decisions/0107-the-process-shelves-stay-published-in-a-labeled-section-of-the-site-that-a-search-engine-does-not-index.md"
               - "108 — The site sidebar lists a shelf in path order, and the shelf index keeps the reading order": "decisions/0108-the-site-sidebar-lists-a-shelf-in-path-order-and-the-shelf-index-keeps-the-reading-order.md"
+              - "109 — A task that repeats the declared name of a document names that document": "decisions/0109-a-task-that-repeats-the-declared-name-of-a-document-names-that-document.md"
           - "Evaluations":
               - "Evaluations": "evaluations/README.md"
               - "A probe task section is the prompt, so commentary under that heading is prompt": "evaluations/a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt.md"
