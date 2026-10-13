@@ -4965,13 +4965,13 @@ install_routes_needed() {
 }
 
 # install_routes_jobs WORKFLOW — one line for each job:
-# `id|routes|calls-apt|runs-version|is-report|needs|if|issues-write|compares-version`, with
-# comments skipped. `needs` is read from a flow list on one line.
+# `id|routes|calls-apt|runs-version|is-report|needs|if|issues-write|compares-version|gh-token`,
+# with comments skipped. `needs` is read from a flow list on one line.
 install_routes_jobs() {
     awk '
         function flush() {
-            if (id != "") print id "|" routes "|" apt "|" ver "|" report "|" needs "|" cond "|" iw "|" cmp
-            id = ""; routes = ""; apt = 0; ver = 0; report = 0; needs = ""; cond = ""; iw = 0; cmp = 0
+            if (id != "") print id "|" routes "|" apt "|" ver "|" report "|" needs "|" cond "|" iw "|" cmp "|" tok
+            id = ""; routes = ""; apt = 0; ver = 0; report = 0; needs = ""; cond = ""; iw = 0; cmp = 0; tok = 0
         }
         /^jobs:[ \t]*$/ { in_jobs = 1; next }
         in_jobs && /^[^ #]/ { flush(); in_jobs = 0 }
@@ -4993,9 +4993,50 @@ install_routes_jobs() {
             }
             if ($0 ~ /^    if:/) { cond = $0; sub(/^    if:[ \t]*/, "", cond) }
             if ($0 ~ /^      issues: write[ \t]*$/) iw = 1
+            if ($0 ~ /^          GH_TOKEN: \$\{\{ (github\.token|secrets\.GITHUB_TOKEN) \}\}[ \t]*$/) tok = 1
         }
         END { flush() }
     ' "$1"
+}
+
+# install_routes_block WORKFLOW JOB — the lines of one job, comments skipped.
+install_routes_block() {
+    awk -v job="  $2:" '
+        $0 == job { s = 1; next }
+        s && /^  [A-Za-z0-9_-]+:[ \t]*$/ { exit }
+        s && !/^[ \t]*#/
+    ' "$1"
+}
+
+# install_routes_compared WORKFLOW JOB — `ok` when the job compares the
+# version it printed with a value it read from the page or the registry, and
+# fails on a difference. The right-hand side of `if [ "$printed" != "..." ]`
+# is followed back through its assignments, at most four, to a line that runs
+# the extractor's `release` route, reads `route.sh`, or runs `cargo search
+# headwater-cli`. A comparison with `$printed` itself, or with a value typed
+# into the job, is `bad`: either passes on any version.
+install_routes_compared() {
+    _blk=$(install_routes_block "$1" "$2")
+    _line=$(printf '%s\n' "$_blk" | grep -E 'if \[ "\$printed" != "[^"]+" \]; then' | head -n 1)
+    [ -n "$_line" ] || { echo bad; return; }
+    printf '%s\n' "$_blk" | grep -A1 -F "$_line" | sed -n 2p | grep -qE '&& exit 1$' || { echo bad; return; }
+    _var=$(printf '%s\n' "$_line" | sed -n 's/.*!= "\$[{]\{0,1\}\([A-Za-z_][A-Za-z0-9_]*\).*/\1/p')
+    _hops=0
+    while [ "$_hops" -lt 4 ]; do
+        if [ -z "$_var" ] || [ "$_var" = printed ]; then
+            echo bad
+            return
+        fi
+        _def=$(printf '%s\n' "$_blk" | grep -E "(^|[ ])$_var=" | grep -v 'if \[' | head -n 1)
+        case $_def in
+            "") echo bad; return ;;
+            *'readme-install-block.sh README.md release'* | *'route.sh'* | *'cargo search headwater-cli'*)
+                echo ok; return ;;
+        esac
+        _var=$(printf '%s\n' "$_def" | sed -n "s/.*$_var=\"\{0,1\}\\\$[{]\{0,1\}\([A-Za-z_][A-Za-z0-9_]*\).*/\1/p")
+        _hops=$((_hops + 1))
+    done
+    echo bad
 }
 
 # install_routes_judge README WORKFLOW EXTRACTOR — one line for each defect,
@@ -5021,8 +5062,11 @@ install_routes_judge() {
     done
     # A route job runs `headwater --version` and compares what it printed with
     # the version its route installs: `--version` alone passes on any version.
-    printf '%s\n' "$_jobs" | awk -F'|' '$2 != "" && $4 != 1 { print "the job " $1 " of '"$_wf"' runs a route and never runs headwater --version" }
-        $2 != "" && $9 != 1 { print "the job " $1 " of '"$_wf"' never compares the version it printed with the one its route installs" }'
+    printf '%s\n' "$_jobs" | awk -F'|' '$2 != "" && $4 != 1 { print "the job " $1 " of '"$_wf"' runs a route and never runs headwater --version" }'
+    for _id in $(printf '%s\n' "$_jobs" | awk -F'|' '$2 != "" { print $1 }'); do
+        [ "$(install_routes_compared "$2" "$_id")" = ok ] ||
+            echo "the job $_id of $_wf never compares the version it printed with the one its route installs"
+    done
     # The page says the Debian 11 command needs no network, so the job gives
     # its container none and fails on any interface but `lo`.
     if printf '%s\n' "$_jobs" | awk -F'|' '(" " $2 " ") ~ / deb-file / { f = 1 } END { exit !f }'; then
@@ -5057,6 +5101,10 @@ install_routes_judge() {
         echo "the report job of $_wf does not run on failure()"
     [ "$(printf '%s\n' "$_report" | cut -d'|' -f8)" = 1 ] ||
         echo "the report job of $_wf cannot write issues"
+    # The stub `gh` of 14e needs no token, so this line is what holds the
+    # report job's own: without it the live `gh` files nothing.
+    [ "$(printf '%s\n' "$_report" | cut -d'|' -f10)" = 1 ] ||
+        echo "the report job of $_wf hands gh no GH_TOKEN"
     for _id in $(printf '%s\n' "$_jobs" | cut -d'|' -f1); do
         [ "$_id" = "$_rid" ] && continue
         case ",$_needs," in
@@ -5137,6 +5185,21 @@ install_routes_provoke "a report job that does not hand over the cargo result is
 install_routes_provoke "a report job that runs on always() is red" \
     's/^    if: failure()$/    if: always()/' \
     "the report job of install-routes.yml does not run on failure()"
+install_routes_provoke "a report job that hands gh no token is red" \
+    '/^          GH_TOKEN: /d' \
+    "the report job of install-routes.yml hands gh no GH_TOKEN"
+install_routes_provoke "an archive job that compares the version with itself is red" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/if \[ "\$printed" != "\${tag#v}" \]; then/if [ "$printed" != "$printed" ]; then/' \
+    "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "a source job that compares the version with a typed value is red" \
+    '/^  source:$/,/^  [a-z-]*:$/s/^\( *\)tag=\$(sed .*/\1tag=v0.5.0/' \
+    "the job source of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "a Debian 11 job that compares with its own printed value is red" \
+    's/if \[ "\$printed" != "\$WANT" \]; then/if [ "$printed" != "$printed" ]; then/' \
+    "the job deb-file of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "a cargo job whose comparison exits 0 is red" \
+    '/^  cargo:$/,/^  [a-z-]*:$/s/installed binary prints .\$printed.\(.*\) && exit 1$/installed binary prints \1 \&\& exit 0/' \
+    "the job cargo of install-routes.yml never compares the version it printed with the one its route installs"
 install_routes_provoke "a report job that cannot write issues is red" \
     's/^      issues: write$/      issues: read/' \
     "the report job of install-routes.yml cannot write issues"
@@ -5249,6 +5312,7 @@ STUB
     _fails=$2
     shift 2
     STUB_DIR=$_dir STUB_OPEN=$_open STUB_LIST_FAILS=$_fails GITHUB_REPOSITORY=acme/widget \
+        GH_TOKEN=$routes_gh_token GITHUB_TOKEN= \
         PATH="$_dir/bin:$PATH" sh "$routes_issue" "$@" >/dev/null 2>&1
     _status=$?
     printf '%s|%s|%s|%s\n' "$_status" \
@@ -5256,6 +5320,8 @@ STUB
         "$(grep '^issue create' "$_dir/log" 2>/dev/null | grep -o -- '--label [a-z]*' | tr ' ' '=')" \
         "$(sed -n 1p "$_dir/body" 2>/dev/null)"
 }
+# The token the stub is handed; the stub reads none, and one case unsets it.
+routes_gh_token=stub
 routes_none="$scratch/routes/issue-none"
 same "the issue script with no open issue creates one labeled bug whose body opens with ELI5" \
     "0|issue-list,issue-create|--label=bug|## ELI5" \
@@ -5276,6 +5342,9 @@ same "  a list in which every job succeeded still files, and says the report job
 same "  a gh that cannot list issues exits 1 and files nothing" \
     "1|issue-list||" \
     "$(routes_issue_case "$scratch/routes/issue-nolist" '' 1 https://example.invalid/run/1 cargo=failure)"
+same "  with no token it exits 2 and calls no gh" \
+    "2|||" \
+    "$(routes_gh_token=; routes_issue_case "$scratch/routes/issue-notoken" '' 0 https://example.invalid/run/1 cargo=failure)"
 
 echo
 echo "$passed passed, $failed failed"

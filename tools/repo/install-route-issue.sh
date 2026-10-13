@@ -31,6 +31,12 @@ if [ -z "$repo" ]; then
     echo "install-route-issue: GITHUB_REPOSITORY is not set, so no repository is named" >&2
     exit 2
 fi
+# In a workflow `gh` reads its token from `GH_TOKEN` and nothing else, so a
+# report job that hands it none files nothing. Say so before calling it.
+if [ -z "${GH_TOKEN:-}${GITHUB_TOKEN:-}" ]; then
+    echo "install-route-issue: neither GH_TOKEN nor GITHUB_TOKEN is set, so gh cannot write the issue" >&2
+    exit 2
+fi
 
 failed=""
 for pair in "$@"; do
