@@ -539,9 +539,9 @@ impl Ledger {
         use crate::paint::{paint, Role};
         use std::fmt::Write;
         let mut out = String::new();
-        if self.is_empty() {
-            return out;
-        }
+        // No early return when the ledger is empty: a run with no `adoption`
+        // block still states `0 pairs open`, because spec 7 asks for the count
+        // on every run (HW-OBL-0152).
         out.push_str("adoption\n");
         let _ = writeln!(
             out,

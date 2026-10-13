@@ -5240,7 +5240,7 @@ fn capture(root: &Path, format: Option<String>) -> ExitCode {
             many => {
                 println!(
                     "  {many} taxonomies produced these readings, so the aggregate above is \
-                     across two denominators and is not a trend"
+                     across {many} denominators and is not a trend"
                 );
                 for lock in &locks {
                     println!("    {lock}");
