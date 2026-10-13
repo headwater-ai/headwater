@@ -539,9 +539,9 @@ impl Ledger {
         use crate::paint::{paint, Role};
         use std::fmt::Write;
         let mut out = String::new();
-        if self.is_empty() {
-            return out;
-        }
+        // No early return when the ledger is empty: a run with no `adoption`
+        // block still states `0 pairs open`, because spec 7 asks for the count
+        // on every run (HW-OBL-0152).
         out.push_str("adoption\n");
         let _ = writeln!(
             out,
@@ -629,6 +629,26 @@ fn verb(count: usize, singular: &'static str, plural: &'static str) -> &'static 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// HW-OBL-0152: spec 7 requires the count on every run, and a run with no
+    /// `adoption` block is a run. A render that returns nothing at zero hides
+    /// the count from every adopter on the first run.
+    #[test]
+    fn an_empty_ledger_still_states_its_count() {
+        // Both modes, because a terminal renders `Ansi` and a pipe renders
+        // `Plain`, and an empty ledger has no identifier to paint, so the two
+        // must agree byte for byte.
+        for mode in [
+            crate::paint::ColorMode::Plain,
+            crate::paint::ColorMode::Ansi,
+        ] {
+            assert_eq!(
+                Ledger::default().render(mode),
+                "adoption\n  0 pairs open, 0 closed, holding 0 findings, in 0 tasks\n",
+                "an empty ledger prints its header and its count line, and nothing else, under {mode:?}"
+            );
+        }
+    }
 
     fn payload(source: &str) -> Mapping {
         headwater_yaml::load(source)

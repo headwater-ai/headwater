@@ -1,9 +1,9 @@
 ---
 id: HW-OBL-0152
-status: current
-status_since: 2026-09-06
+status: discharged
+status_since: 2026-10-13
 title: "Ledger::render() in adoption.rs has the same zero-count defect suppression.rs had before PR #450, still latent"
-summary: "adoption.rs::Ledger::render() drops its own header and count line whenever a corpus declares no adoption debt, the same shape PR #450 fixed in suppression.rs, and nothing reads the dropped text yet."
+summary: "adoption.rs::Ledger::render() dropped its header and count line whenever a corpus declared no adoption debt, the shape PR #450 fixed in suppression.rs. PR #1735 prints both at zero."
 provenance:
   warrant: accepted
   agency: agent
@@ -11,7 +11,7 @@ provenance:
   activity: draft
   accepted_by: j.baxter
   evidence_basis: evidenced
-last_verified: 2026-08-26
+last_verified: 2026-10-13
 waiting_on: build
 ---
 
@@ -21,7 +21,7 @@ waiting_on: build
 
 [PR #450](https://github.com/headwater-ai/headwater/pull/450) fixed `engine/crates/check/src/suppression.rs::Inventory::render()`. That function returned `String::new()` whenever a corpus declared zero suppression directives. It dropped the `suppressions` header and its `N findings hidden by M directives` count line from every text report. `tools/site/refresh-figures.sh` greped that line, and it broke outright once this corpus's suppression count reached zero. The pull request's adjudication stage read `engine/crates/check/src/adoption.rs::Ledger::render()` while it diagnosed the shape of the fix. It noted, without fixing, that this second function carries the identical pattern.
 
-This record reads the two functions side by side, rather than taking that note alone. `Ledger::is_empty()` (`adoption.rs:409-411`) returns true when `tasks`, `refused` and `unread` are all empty. `Ledger::render()` (`adoption.rs:463-468`) returns `String::new()` when `is_empty()` holds, before it ever writes the `"adoption\n"` header line. This is the same early-return-before-the-header shape `Inventory::render()` had. It feeds the same call site: `Run::render` at `lib.rs:932` writes `self.adoption.render()` right after `self.coverage.render()`, unconditionally, in every text-format run. The comment on that line quotes spec 7's "beside coverage" placement.
+This record reads the two functions side by side, rather than taking that note alone. `Ledger::is_empty()` returns true when `tasks`, `refused` and `unread` are all empty. `Ledger::render()` returns `String::new()` when `is_empty()` holds, before it ever writes the `"adoption\n"` header line. This is the same early-return-before-the-header shape `Inventory::render()` had. It feeds the same call site: `Run::render` in `lib.rs` writes `self.adoption.render()` right after `self.coverage.render()`, unconditionally, in every text-format run. The comment on that line quotes spec 7's "beside coverage" placement.
 
 `Ledger` is empty in two distinct states, and only one of them is rare. The first is a lock whose declared `adoption` block itself lists no tasks, no refused entries and no unread keys. Closing every pair of a task, or letting a task expire, does not produce this state on its own. Neither act removes the task's own entry from the lock, so `tasks` stays non-empty until a person deletes that entry by hand. This corpus's own lock still carries `AD-1`, with its one pair closed, so the corpus does not hit this state today. The second, far more common state is a lock that declares no `adoption` block at all. `lib.rs:727-729` shows that `apply()` runs unconditionally. When `declared.adoption` is `None`, the code hands `apply()` an empty `adoption::Declared::default()`, with all three fields empty, the same as a declared and empty block. This is every adopter before their first `headwater infer --write`, and this corpus itself, right up until it wrote `AD-1`.
 
@@ -38,3 +38,5 @@ This closes the way the suppression fix closed. Delete the `is_empty()` early re
 A fixture proves the fix. `engine/crates/check/fixtures/check.report` records a `headwater check` text report over the pinned fixture tree. The suppression fix re-blessed `corpus.checks`, which #1251 deleted. Point a recorded report at a corpus with no `adoption` block declared, the state this corpus itself carried before `AD-1` was written. Before the fix, the recorded report has no `adoption` block at all. After the fix, it gains the two-line block `adoption\n  0 pairs open, 0 closed, holding 0 findings, in 0 tasks`. That move is the same shape of evidence the suppression fix produced, and it discharges this record.
 
 This waits on an adopter. The fix is mechanical once decided, but nothing here reads the dropped text yet. No live consumer forces the decision the way `refresh-figures.sh` forced the suppression one. This is filed as a corpus record rather than a GitHub issue for that reason. The reader it serves is this engine's own internal correctness, not an outside adopter today.
+
+**This record is discharged.** [PR #1735](https://github.com/headwater-ai/headwater/pull/1735), under [#1495](https://github.com/headwater-ai/headwater/issues/1495), deletes the early return in `Ledger::render()` and keeps `Ledger::is_empty()`. The re-blessed `engine/crates/check/fixtures/check.report` gains the two-line block `adoption` and `0 pairs open, 0 closed, holding 0 findings, in 0 tasks`, and nothing else moves. `engine/crates/scaffold/fixtures/scaffold.pipeline` gains the same two lines. The unit case `an_empty_ledger_still_states_its_count` in `adoption.rs` fails without the change.

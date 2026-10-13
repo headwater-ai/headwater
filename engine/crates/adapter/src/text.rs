@@ -178,8 +178,9 @@ pub fn render_at(
 /// Empty when nothing escaped, and then the heading above it is not written
 /// either. The counts are stated regardless, in the census block's `escaped
 /// findings` line and in the adoption and suppression blocks, so a corpus that
-/// escapes nothing still says so. That is the same zero case `HW-OBL-0152`
-/// holds open against `Ledger::render`, and this does not close it.
+/// escapes nothing still says so. `Ledger::render` states the adoption count
+/// at zero since #1495 discharged `HW-OBL-0152`; this section stays empty,
+/// because the counts above already carry its zero.
 fn not_reported(run: &Run, mode: ColorMode) -> String {
     let mut out = String::new();
     for entry in reported(run) {
