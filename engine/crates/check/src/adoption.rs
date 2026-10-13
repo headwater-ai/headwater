@@ -630,6 +630,18 @@ fn verb(count: usize, singular: &'static str, plural: &'static str) -> &'static 
 mod tests {
     use super::*;
 
+    /// HW-OBL-0152: spec 7 requires the count on every run, and a run with no
+    /// `adoption` block is a run. A render that returns nothing at zero hides
+    /// the count from every adopter on the first run.
+    #[test]
+    fn an_empty_ledger_still_states_its_count() {
+        let rendered = Ledger::default().render(crate::paint::ColorMode::Plain);
+        assert_eq!(
+            rendered, "adoption\n  0 pairs open, 0 closed, holding 0 findings, in 0 tasks\n",
+            "an empty ledger prints its header and its count line, and nothing else"
+        );
+    }
+
     fn payload(source: &str) -> Mapping {
         headwater_yaml::load(source)
             .expect("the payload loads")

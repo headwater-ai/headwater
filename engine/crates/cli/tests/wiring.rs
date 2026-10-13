@@ -1992,6 +1992,89 @@ fn capture_pools_across_taxonomies_and_names_every_one() {
     }
 }
 
+/// `capture` states the number of denominators it pooled across, not "two".
+///
+/// # The defect this holds
+///
+/// HW-OBL-0157: the arm for more than one lock bound the count and then wrote
+/// the literal "across two denominators", so a store under 61 taxonomies said
+/// "61 taxonomies produced these readings, so the aggregate above is across
+/// two denominators". The case above uses two locks, where the literal and
+/// the count agree, so it could not see the defect.
+///
+/// The first store carries four readings under three locks, two of them under
+/// `sha256:aaaa`, so the count is of distinct locks and not of readings. The
+/// second store carries two readings under one lock, which is the arm that
+/// says the readings share a denominator.
+#[test]
+fn capture_states_the_count_of_denominators_it_pooled_across() {
+    let reading = |lock: &str, date: &str, id: &str| {
+        format!(
+            "{{\"lock\":\"{lock}\",\"date\":\"{date}\",\"kind\":\"decision\",\
+             \"document\":\"docs/decisions/0001-the-warrant-a-person-set.md\",\"id\":\"{id}\",\
+             \"fields\":[4,5],\"sections\":[3,3],\"identifier\":[1,1],\"edge_halves\":[0,0]}}\n"
+        )
+    };
+
+    let root = Root::over("change", "capture-states-its-denominators");
+    std::fs::write(
+        root.path(".headwater/capture-cost.jsonl"),
+        [
+            reading("sha256:aaaa", "2026-08-01", "DR-ONE"),
+            reading("sha256:bbbb", "2026-08-02", "DR-TWO"),
+            reading("sha256:cccc", "2026-08-03", "DR-THREE"),
+            reading("sha256:aaaa", "2026-08-04", "DR-FOUR"),
+        ]
+        .concat(),
+    )
+    .expect("the store writes");
+    let ran = root.run(&["capture"]);
+    assert_eq!(ran.code, Some(0), "{}{}", ran.out, ran.err);
+    assert!(ran.says("4 readings"), "it read every reading:\n{}", ran.out);
+    assert!(
+        ran.says("3 taxonomies produced these readings"),
+        "it counts distinct locks, not readings:\n{}",
+        ran.out
+    );
+    // The decision. This line fails against the literal "two".
+    assert!(
+        ran.says("across 3 denominators"),
+        "it states the number of denominators it pooled across:\n{}",
+        ran.out
+    );
+    assert!(
+        !ran.out.contains("two denominators"),
+        "it never says two when the count is three:\n{}",
+        ran.out
+    );
+    for lock in ["sha256:aaaa", "sha256:bbbb", "sha256:cccc"] {
+        assert!(ran.says(lock), "and it names {lock}:\n{}", ran.out);
+    }
+
+    let one = Root::over("change", "capture-shares-one-denominator");
+    std::fs::write(
+        one.path(".headwater/capture-cost.jsonl"),
+        [
+            reading("sha256:aaaa", "2026-08-01", "DR-ONE"),
+            reading("sha256:aaaa", "2026-08-02", "DR-TWO"),
+        ]
+        .concat(),
+    )
+    .expect("the store writes");
+    let ran = one.run(&["capture"]);
+    assert_eq!(ran.code, Some(0), "{}{}", ran.out, ran.err);
+    assert!(
+        ran.says("every reading was taken under sha256:aaaa, so they share a denominator"),
+        "two readings under one lock share its denominator:\n{}",
+        ran.out
+    );
+    assert!(
+        !ran.out.contains("taxonomies produced these readings"),
+        "and one lock is not a pool across taxonomies:\n{}",
+        ran.out
+    );
+}
+
 /// **The decisive case for the `check-rule` resolver.** A rule identifier this
 /// engine ships binds, and one it does not is refused by name.
 ///
