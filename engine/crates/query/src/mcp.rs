@@ -836,8 +836,12 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
             // The tool holds no tree, but it reads a link inside the root as
             // the verb does, so the two name one document for one edit (#1433).
             let real = |path: &str| headwater_census::walk::real_within(server.root, path);
-            let mut route =
-                surface.route_through(&argument, Budget::default(), &|_| crate::Entry::Absent, &real);
+            let mut route = surface.route_through(
+                &argument,
+                Budget::default(),
+                &|_| crate::Entry::Absent,
+                &real,
+            );
             // The verb's filter, on the verb's terms: git is read only where
             // the route named an ungoverned path (#953, #1161).
             if !route.ungoverned.is_empty() {
@@ -927,9 +931,8 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
             let governing = match &reached {
                 Some(relative) => {
                     let mut governing = surface.governing_docs_for_path(relative);
-                    let resolved =
-                        headwater_census::walk::real_within(server.root, relative)
-                            .filter(|path| path != relative);
+                    let resolved = headwater_census::walk::real_within(server.root, relative)
+                        .filter(|path| path != relative);
                     if let Some(path) = resolved {
                         for pointer in surface.governing_docs_for_path(&path) {
                             if !governing.iter().any(|seen| seen.path == pointer.path) {
