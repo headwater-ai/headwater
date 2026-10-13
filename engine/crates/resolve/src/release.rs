@@ -866,9 +866,7 @@ pub fn overlap(a: &str, b: &str) -> Result<bool, String> {
                     ceiling = Some(match ceiling {
                         None => (bound, strict),
                         Some((held, _)) if bound < held => (bound, strict),
-                        Some((held, held_strict)) if bound == held => {
-                            (held, held_strict || strict)
-                        }
+                        Some((held, held_strict)) if bound == held => (held, held_strict || strict),
                         Some(kept) => kept,
                     });
                 }
