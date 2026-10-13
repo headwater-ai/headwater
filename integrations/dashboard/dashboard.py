@@ -4,8 +4,8 @@
     python3 integrations/dashboard/dashboard.py \\
         --export export.json [--tree <checkout>] [--out dashboard.html]
 
-The input is the `json` target of a `graph_export` profile at
-`export_version` 1.1 or later. The output is one self-contained HTML page with
+The input is the `json` target of a `graph_export` profile at `version`
+1.1 or later, in major 1; an export of a higher major is refused. The output is one self-contained HTML page with
 three views: staleness (every document by `facets.last_verified`, oldest
 first), warrant (every document by its top-level `warrant`, with an absent key
 shown as "none stated"), and coverage (every `code_path` anchor that a
@@ -42,6 +42,8 @@ REFUSED_EDGE = (
 )
 NO_REFUSED_EDGE = "No governs edge binds nothing in this export."
 MINIMUM_EXPORT_VERSION = (1, 1)
+# The one major this dashboard reads. A higher major is refused, never rendered.
+SUPPORTED_MAJOR = 1
 WARRANT_ORDER = ["asserted", NONE_STATED, "proposed", "accepted"]
 
 
@@ -139,11 +141,23 @@ def load(export, corpus_identity):
         raise ExportRefused("a corpus identity is required; every row is keyed by it")
     if not isinstance(export, dict):
         raise ExportRefused("the export is not a JSON object")
-    version = _version(export.get("export_version"))
-    if version is None or version < MINIMUM_EXPORT_VERSION:
+    # `version` is the member to read (docs/interfaces/headwater-export.md). A
+    # 1.0 export has only `export_version`, so read that where `version` is absent.
+    field = "version" if "version" in export else "export_version"
+    if field not in export:
+        raise ExportRefused("the export has no `version` member; regenerate the export with a current engine")
+    text = export[field]
+    version = _version(text)
+    if not version:
+        raise ExportRefused("`%s` %r is not a version of the form MAJOR.MINOR" % (field, text))
+    if version[0] > SUPPORTED_MAJOR:
         raise ExportRefused(
-            "export_version %r is below 1.1; regenerate the export with a current engine"
-            % export.get("export_version")
+            "export version %r has major %d, and this dashboard reads major %d only; "
+            "use a dashboard built for major %d" % (text, version[0], SUPPORTED_MAJOR, version[0])
+        )
+    if version < MINIMUM_EXPORT_VERSION:
+        raise ExportRefused(
+            "`%s` %r is below 1.1; regenerate the export with a current engine" % (field, text)
         )
     graph = export.get("graph")
     if not isinstance(graph, dict):
@@ -439,7 +453,7 @@ def main(argv=None):
     import json
 
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--export", required=True, help="a graph_export json file, export_version 1.1 or later")
+    parser.add_argument("--export", required=True, help="a graph_export json file, version 1.1 or later, major 1")
     parser.add_argument("--tree", help="a checkout of the commit the export was generated from")
     parser.add_argument("--out", default="dashboard.html", help="the page to write (default: dashboard.html)")
     parser.add_argument(
