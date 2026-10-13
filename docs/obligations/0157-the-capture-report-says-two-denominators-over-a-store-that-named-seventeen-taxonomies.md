@@ -1,9 +1,9 @@
 ---
 id: HW-OBL-0157
-status: current
-status_since: 2026-09-06
-summary: "The capture report warns that its aggregate crosses two denominators, on a run whose own next line lists seventeen of them."
-last_verified: 2026-08-28
+status: discharged
+status_since: 2026-10-13
+summary: "The capture report warned that its aggregate crossed two denominators, on a run whose next line listed seventeen. PR #1735 makes the sentence state its own count."
+last_verified: 2026-10-13
 title: "The capture report says two denominators over a store that named seventeen taxonomies"
 waiting_on: build
 ---
@@ -31,3 +31,5 @@ The wider question is whether a run report should carry a number a reader can ch
 ## Discharge
 
 The branch interpolates its own count. A case reads the sentence back, over a store carrying readings under more than two locks.
+
+**This record is discharged.** [PR #1735](https://github.com/headwater-ai/headwater/pull/1735), under [#1495](https://github.com/headwater-ai/headwater/issues/1495), makes the arm for more than one lock write the count it binds. The case `capture_states_the_count_of_denominators_it_pooled_across` in `engine/crates/cli/tests/wiring.rs` writes four readings under three locks, and two of the readings share one lock. It reads back `3 taxonomies produced these readings` and `across 3 denominators`, and it fails without the change. Over this repository on 2026-10-13, before the change, the sentence named 61 taxonomies and still said two.
