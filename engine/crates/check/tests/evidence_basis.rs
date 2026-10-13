@@ -440,6 +440,63 @@ fn a_discharges_edge_written_as_its_inverse_is_reported_at_the_entry_that_wrote_
     );
 }
 
+/// The inverse half also holds a warrant outside the closed set.
+///
+/// `targets/obligation-by-inverse-guessed.md` claims `evidenced` and names
+/// `NOTE-FIX-guessed-evaluation-by-inverse`, whose warrant is `guessed` and
+/// which declares nothing. This is the closed-set twin of the asserted case
+/// above, and it holds the other arm of the rule. The remediation names the
+/// entry that the obligation wrote, `discharged_by`, in the obligation's file. A
+/// remediation that named `discharges`, or the evaluation's file, would point
+/// at an entry that nobody wrote (#1561, mutant M4).
+#[test]
+fn a_discharges_edge_written_as_its_inverse_from_a_warrant_outside_the_closed_set_names_that_entry()
+{
+    let run = run();
+    let reported = about(&run, "NOTE-FIX-guessed-evaluation-by-inverse");
+    assert_eq!(reported.len(), 1, "{:?}", refusals(&run));
+    assert!(
+        reported[0].starts_with("`NOTE-FIX-obligation-by-inverse-guessed` claims `evidenced`"),
+        "the obligation is the claimant whichever end wrote the entry: {}",
+        reported[0]
+    );
+    assert!(
+        reported[0].contains("`guessed`"),
+        "the value as written: {}",
+        reported[0]
+    );
+
+    let paths: Vec<&str> = refusals(&run)
+        .into_iter()
+        .filter(|(_, message)| message.contains("NOTE-FIX-guessed-evaluation-by-inverse"))
+        .map(|(path, _)| path)
+        .collect();
+    assert_eq!(
+        paths,
+        vec!["evidence-basis/targets/obligation-by-inverse-guessed.md"],
+        "the finding anchors at the entry that declares the edge"
+    );
+
+    let fixes = remediations(&run, "NOTE-FIX-guessed-evaluation-by-inverse");
+    assert_eq!(fixes.len(), 1, "{fixes:?}");
+    assert_remediation_ends(
+        fixes[0],
+        "evidence-basis/claims/guessed-evaluation-by-inverse.md",
+        "evidence-basis/targets/obligation-by-inverse-guessed.md",
+        (
+            "discharged_by",
+            "evidence-basis/targets/obligation-by-inverse-guessed.md",
+        ),
+    );
+    assert!(
+        fixes[0].starts_with(
+            "correct the warrant of evidence-basis/claims/guessed-evaluation-by-inverse.md"
+        ),
+        "the evidence is the document whose warrant is corrected: {}",
+        fixes[0]
+    );
+}
+
 /// The swapped reading also holds a warrant outside the closed set.
 ///
 /// `claims/misspelled-discharges-evidenced.md` writes `acepted` and discharges
@@ -775,12 +832,13 @@ fn an_edge_onto_an_anchor_reaches_no_instance_and_does_not_panic() {
 /// The whole corpus, in one assertion, so a case that stops being reported
 /// cannot hide behind a test that names only its own document.
 #[test]
-fn the_tree_reports_eight_documents_and_fourteen_edges() {
+fn the_tree_reports_nine_documents_and_fifteen_edges() {
     let run = run();
     let mut reported: Vec<&str> = refusals(&run).into_iter().map(|(path, _)| path).collect();
     reported.sort_unstable();
     let mut expected = vec![
         "evidence-basis/targets/obligation-by-inverse.md",
+        "evidence-basis/targets/obligation-by-inverse-guessed.md",
         "evidence-basis/claims/asserted-discharges-evidenced.md",
         "evidence-basis/claims/misspelled-discharges-evidenced.md",
         "evidence-basis/claims/onto-scaffolded-contract.md",

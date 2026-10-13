@@ -15,6 +15,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
+#[cfg(all(target_os = "linux", feature = "fetch"))]
+mod relocations;
+
 const FETCH: &str = "headwater-fetch";
 const CLI: &str = "headwater-cli";
 
@@ -133,5 +136,27 @@ fn only_the_binary_reaches_the_crate_that_opens_a_socket() {
         breaches.is_empty(),
         "a crate other than {CLI} links the network (HW-DR-0075):\n  {}",
         breaches.join("\n  ")
+    );
+}
+
+/// The control for `no_fetch.rs`, read off the binary rather than the lock.
+///
+/// The default binary carries the fetch, so the linker keeps a relocation
+/// against each network call, and the reader must find all three.
+/// `no_fetch.rs` asks the same reader of the binary built without the fetch
+/// and wants none. Without this case, a reader that saw nothing would pass
+/// that one on every binary (#1561).
+#[cfg(all(target_os = "linux", feature = "fetch"))]
+#[test]
+fn the_binary_with_the_fetch_asks_the_linker_for_every_network_call() {
+    let found =
+        relocations::network_relocations(std::path::Path::new(env!("CARGO_BIN_EXE_headwater")));
+    let wanted: BTreeSet<String> = relocations::NETWORK
+        .iter()
+        .map(|name| name.to_string())
+        .collect();
+    assert_eq!(
+        found, wanted,
+        "the default binary fetches, so a relocation names each network call"
     );
 }

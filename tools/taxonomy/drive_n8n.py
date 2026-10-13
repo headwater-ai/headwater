@@ -261,8 +261,17 @@ HELD_SECTION = "What a run reports"
 # Every form a page writes the count in: the singular, because an arm of one
 # instance is a count that moves like any other; a number with a thousands
 # separator, read whole so the finding names the number the page states; a
-# number in bold or italic, which this corpus writes; and a hyphen or a run of
-# spaces between the words.
+# number in bold or italic, which this corpus writes; a whole count inside a code
+# span; and a hyphen or a run of spaces between the words. A number that is the
+# tail of a word, as in `x12`, is not a count, and arm 8 holds both of the last
+# two directions (#1561).
+#
+# The regex does not read four forms, and they are out of scope: a count in
+# words ("eight check instances"); a capitalized "Check"; a count split across
+# two lines, because the guard reads one line at a time; and a code span around
+# the number or the words alone (`` `8` check instances ``). No page of the
+# three corpora writes any of them, and a page that did would state a count that
+# this guard does not name.
 AGGREGATE_COUNT = re.compile(r"(?<![\w,])[*_]*\d(?:[\d,]*\d)?[*_]*\s+check[\s-]+instances?\b")
 
 
@@ -471,8 +480,16 @@ def evaluation_figure_problems(root, text):
 
 
 PROVOKED_HELD = "A held run reads 8 check instances."
-PROVOKED_COUNTS = ("1,055 check instances", "1 check instance", "**12** check-instances", "_3_  check instances")
-PROVOKED_UNHELD = "A provoked run reads %s." % ", ".join(PROVOKED_COUNTS)
+PROVOKED_COUNTS = ("1,055 check instances", "1 check instance", "**12** check-instances", "_3_  check instances",
+                   "4 check  instances", "5 check instances")
+# Text beside the counts that is not a count, and that the guard must not name.
+# `x12` is the tail of a word, so a guard that named `12 check instances` out of
+# it has lost the lookbehind that keeps a number whole (#1561).
+PROVOKED_NOT_COUNTS = ("x12 check instances",)
+# What a guard without that lookbehind would name out of each of them.
+MISREAD = ("12 check instances",)
+PROVOKED_UNHELD = "A provoked run reads %s, and `5 check instances`, and not %s." % (
+    ", ".join(PROVOKED_COUNTS[:-1]), ", ".join(PROVOKED_NOT_COUNTS))
 
 
 def provoked_readme(text):
@@ -547,9 +564,12 @@ def provoke_unheld(root, corpora, scratch):
     done = subprocess.run([sys.executable, os.path.abspath(__file__), scratch, "--guard-only"],
                           capture_output=True, text=True)
     missed = [w for w in want if w not in done.stderr]
-    wrong = [l.strip() for l in done.stderr.splitlines() if "8 check instances" in l]
+    # A held count, or text that is not a count, named as one. A guard that
+    # dropped the lookbehind names `12 check instances` out of `x12`.
+    wrong = [l.strip() for l in done.stderr.splitlines()
+             if "8 check instances" in l or any("states `%s`" % m in l for m in MISREAD)]
     if done.returncode != 1 or missed or wrong:
-        raise Mismatch("three provoked READMEs and the provoked evaluation exit %d under `--guard-only`; unnamed: %r; a held count named: %r"
+        raise Mismatch("three provoked READMEs and the provoked evaluation exit %d under `--guard-only`; unnamed: %r; a held count or a non-count named: %r"
                        % (done.returncode, missed, wrong))
     # The evaluation's denominator: the same run with the page gone must fail
     # naming it, rather than pass over a page it never read.

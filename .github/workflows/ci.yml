@@ -274,7 +274,13 @@ jobs:
         # only without the `fetch` feature, so the workspace run below never
         # reaches it, and this step runs it by name. Its cases hold that
         # `taxonomy vendor` answers `https://` and `HTTP://` with the refusal
-        # that names the path form, and writes nothing (#1113).
+        # that names the path form, and writes nothing (#1113). One more case
+        # reads the dynamic relocations of the binary and fails if any names
+        # `socket`, `connect` or `getaddrinfo`, so the binary has no path that
+        # opens a network socket (#1561). `socketpair`, which std's
+        # `Command::spawn` uses for a local pair, is allowed.
+        # `tests/network_boundary.rs` holds the same reader against the default
+        # binary, where it must find all three.
         run: cargo test -p headwater-cli --no-default-features --locked --test no_fetch
         working-directory: engine
       - name: The fetch crate stays out of the binary without the fetch

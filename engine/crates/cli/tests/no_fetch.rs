@@ -2,7 +2,7 @@
 //! The binary built without the `fetch` feature refuses a location (#1113).
 //!
 //! `--no-default-features` is a distributor's opt-out, and HW-DR-0075 states
-//! what it builds: a binary that opens no socket, whose `taxonomy vendor`
+//! what it builds: a binary that opens no network socket, whose `taxonomy vendor`
 //! answers a location with one line that names the path form. Every other
 //! suite runs with the default features, so this file compiles only without
 //! them, and CI runs it by name:
@@ -16,6 +16,9 @@
 
 use std::path::PathBuf;
 use std::process::Command;
+
+#[cfg(target_os = "linux")]
+mod relocations;
 
 /// A digest of the right shape. `vendor` refuses an unpinned location before
 /// it reaches the fetch, so the pin is what lets the refusal under test speak.
@@ -73,4 +76,27 @@ fn a_binary_without_the_fetch_refuses_an_https_location() {
 #[test]
 fn a_binary_without_the_fetch_refuses_an_upper_case_http_location() {
     assert_refused("upper-http", "HTTP://127.0.0.1:9/x.zip");
+}
+
+/// The binary itself, and not only the two locations above: it has no path
+/// that resolves a host name or opens a network socket (#1561).
+///
+/// The cases above hold what `vendor` says. They pass a binary that refuses a
+/// location and still links a network client somewhere else, such as a
+/// dependency made non-optional or a `TcpStream::connect` in another verb. This
+/// case reads the dynamic relocations of the binary, which the linker writes
+/// only for code that survived the link, and wants none against `socket`,
+/// `connect` or `getaddrinfo`. `relocations/mod.rs` says why the symbol table
+/// cannot answer this and why `socketpair` is allowed. The control, which finds
+/// all three in the default binary, is in `network_boundary.rs`.
+#[cfg(target_os = "linux")]
+#[test]
+fn a_binary_without_the_fetch_asks_the_linker_for_no_network_call() {
+    let found =
+        relocations::network_relocations(std::path::Path::new(env!("CARGO_BIN_EXE_headwater")));
+    assert!(
+        found.is_empty(),
+        "the binary built without the fetch can open a network socket, because a \
+         relocation names {found:?}"
+    );
 }
