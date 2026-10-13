@@ -632,6 +632,26 @@ mod tests {
         let _ = std::fs::remove_dir_all(&scratch);
     }
 
+    /// The date half of the `(lock, date)` key. One tree, one taxonomy, two
+    /// dates: two measurements, so two lines. A writer that keyed a reading on
+    /// its lock alone would hold the second date's reading and lose it (#1561).
+    #[test]
+    fn a_reading_at_one_lock_on_a_second_date_is_appended() {
+        let scratch = Scratch(std::env::temp_dir().join(format!(
+            "headwater-adoption-reading-append-date-{}",
+            std::process::id()
+        )));
+        let _ = std::fs::remove_dir_all(&scratch);
+        std::fs::create_dir_all(&scratch).expect("a scratch directory");
+        assert_eq!(append(&scratch, &a_reading()), Ok(Appended::Written));
+        let mut later = a_reading();
+        later.date = Date::parse("2026-08-29").expect("a date");
+        assert_eq!(append(&scratch, &later), Ok(Appended::Written));
+        let (readings, _) = load(&scratch).expect("it loads");
+        assert_eq!(readings, vec![a_reading(), later]);
+        let _ = std::fs::remove_dir_all(&scratch);
+    }
+
     /// The fraction the obligation names, over the two directions that separate
     /// it: a payload that reached zero in time, and one that never did.
     #[test]
