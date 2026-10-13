@@ -15,7 +15,7 @@ It needs Python 3.7 or later and nothing else. 3.7 is the first version with `da
     headwater export --format json > export.json
     python3 integrations/dashboard/dashboard.py --export export.json --tree . --out dashboard.html
 
-- `--export` is the `json` target of a `graph_export` profile, at `export_version` 1.1 or later. This repository's own export is the worked example. The tests read the file that `HEADWATER_EXPORT` names, or compute one with the built engine, and `tools/repo/integrations-fixtures.sh` computes it for them. The tool refuses an earlier version.
+- `--export` is the `json` target of a `graph_export` profile, at `version` 1.1 or later, in major 1. This repository's own export is the worked example. The tests read the file that `HEADWATER_EXPORT` names, or compute one with the built engine, and `tools/repo/integrations-fixtures.sh` computes it for them. The tool refuses an earlier version. It also refuses an export of major 2 or higher with exit status 2 and one line that names the export's version and the major that the tool reads, because a new major can change what a member means.
 - `--tree` is optional. Give it a checkout of the commit that the export was generated from. In a git checkout the file list is `git ls-files`. In any other directory, it is every file except those under `.git`. Without `--tree`, the coverage view lists the governed paths and states no share.
 - `--out` is the page to write. The default is `dashboard.html` in the current directory.
 - `--corpus-identity` names the corpus that the export belongs to. The default is `local`.
