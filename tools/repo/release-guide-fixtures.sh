@@ -1824,7 +1824,7 @@ same "a guide whose search follows a new step 10 is red" \
 # paths are named and pinned.
 trace_required='engine/crates/cli/tests/publish_order.rs engine/Cargo.toml'
 trace_misses_py='
-import sys, yaml
+import posixpath, sys, yaml
 text = open(sys.argv[1], encoding="utf-8").read()
 parts = text.split("\n---\n", 1)
 if not text.startswith("---\n") or len(parts) < 2:
@@ -1841,11 +1841,13 @@ if not isinstance(entries, list):
     entries = [entries]
 named = {}
 for entry in entries:
+    # The engine reads `./x` and `x` as one path, so the judge does too.
     if isinstance(entry, str):
-        named.setdefault(entry, None)
+        named.setdefault(posixpath.normpath(entry), None)
     elif isinstance(entry, dict) and isinstance(entry.get("to"), str):
+        to = posixpath.normpath(entry["to"])
         rev = entry.get("verified_revision")
-        named[entry["to"]] = rev if isinstance(rev, str) and rev.startswith("sha256:") else named.get(entry["to"])
+        named[to] = rev if isinstance(rev, str) and rev.startswith("sha256:") else named.get(to)
 for path in sys.argv[2:]:
     if path not in named:
         print("traces_to does not name %s" % path)
@@ -1884,7 +1886,8 @@ trace_drop() {
     awk -v p="$1" -v what="$2" '
         skip && /^[[:space:]]*verified_revision:/ { skip = 0; next }
         { skip = 0 }
-        $0 ~ "^[[:space:]]*- to: " && $NF == p {
+        { f = $NF; while (f ~ /^\.\//) f = substr(f, 3) }
+        $0 ~ "^[[:space:]]*- to: " && f == p {
             if (what == "entry") { skip = 1; next }
             if (what == "revision") { skip = 1; print; next }
             if (what == "bare") { sub(/- to: /, "- "); skip = 1; print; next }
@@ -1915,7 +1918,7 @@ fi
 
 # t4. A third traces_to entry beside the two is green: the group requires the
 # two paths and does not fix the whole list.
-sed 's|^\([[:space:]]*\)- to: engine/Cargo.toml[[:space:]]*$|\1- to: engine/crates/cli/Cargo.toml\
+sed 's|^\([[:space:]]*\)- to: \(\./\)*engine/Cargo.toml[[:space:]]*$|\1- to: engine/crates/cli/Cargo.toml\
 &|' "$root/$guide_rel" > "$scratch/t2/guide.md"
 if cmp -s "$root/$guide_rel" "$scratch/t2/guide.md"; then
     fail "a guide that traces to a third path beside the two is green" "the plant changed nothing in the guide"
@@ -1926,7 +1929,7 @@ fi
 
 # t5. An entry that only contains a path is not that path. A guide that
 # traces to `engine/Cargo.toml.orig` in place of the manifest is red.
-sed 's|^\([[:space:]]*- to: engine/Cargo.toml\)[[:space:]]*$|\1.orig|' "$root/$guide_rel" > "$scratch/t2/guide.md"
+sed 's|^\([[:space:]]*- to: \(\./\)*engine/Cargo.toml\)[[:space:]]*$|\1.orig|' "$root/$guide_rel" > "$scratch/t2/guide.md"
 if cmp -s "$root/$guide_rel" "$scratch/t2/guide.md"; then
     fail "a guide that traces to engine/Cargo.toml.orig in place of the manifest is red" "the plant changed nothing in the guide"
 else
@@ -1964,8 +1967,19 @@ else
         "$(trace_misses "$scratch/t2/guide.md" | tr '\n' '|' | sed 's/|$//')"
 fi
 
+# t10. The engine reads `./engine/Cargo.toml` as `engine/Cargo.toml`, so a
+# pinned entry written with `./` names the manifest and is green. The plant
+# writes the entry with `./` whatever form the guide uses.
+sed 's|^\([[:space:]]*- to: \)\(\./\)*engine/Cargo.toml[[:space:]]*$|\1./engine/Cargo.toml|' "$root/$guide_rel" > "$scratch/t2/guide.md"
+if ! grep -q '^[[:space:]]*- to: \./engine/Cargo\.toml$' "$scratch/t2/guide.md"; then
+    fail "a pinned entry written as ./engine/Cargo.toml names the manifest" "the plant wrote no ./engine/Cargo.toml entry"
+else
+    same "a pinned entry written as ./engine/Cargo.toml names the manifest" "" \
+        "$(trace_misses "$scratch/t2/guide.md" | tr '\n' '|' | sed 's/|$//')"
+fi
+
 # t9. A revision that is not a `sha256:` digest is no revision.
-awk 'pin && /verified_revision:/ { sub(/sha256:[0-9a-f]*/, "pending") } { pin = ($0 ~ /- to: engine\/Cargo.toml$/); print }' \
+awk 'pin && /verified_revision:/ { sub(/sha256:[0-9a-f]*/, "pending") } { pin = ($0 ~ /- to: (\.\/)*engine\/Cargo.toml$/); print }' \
     "$root/$guide_rel" > "$scratch/t2/guide.md"
 if cmp -s "$root/$guide_rel" "$scratch/t2/guide.md"; then
     fail "a revision that is not a sha256 digest is red" "the plant changed nothing in the guide"
