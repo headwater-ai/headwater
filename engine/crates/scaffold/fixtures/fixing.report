@@ -12,6 +12,7 @@ findings before
   check/spec/01-one-half.md relation.reciprocity.missing `SPEC-FIX-one-half` declares `cites_evidence: EVAL-FIX-beta`, and `cites_evidence` requires both ends, so check/evaluations/beta.md owes `cited_by`
   check/spec/01-one-half.md language.controlled.not_met `ste_house` holds prose to 25 words a sentence, and this one has 34
   check/spec/03-no-instance.md coverage.document_unchecked this document is classified and all 4 of its check instances were skipped
+  check/spec/04-untyped.md shelf.discriminator.unresolved the shelf is heterogeneous and the document declares no `doc_type`, so no kind resolves and no check of a kind reaches this document
   check/spec/05-no-summary.md facet.required.missing `design_spec` requires the facet `summary`, and it is not declared
   check/spec/05-no-summary.md language.controlled.not_met `ste_house` holds prose to 25 words a sentence, and this one has 31
   check/spec/06-retired.md facet.value.not_permitted `status` admits draft, current, superseded, and this document declares `retired`
@@ -79,6 +80,7 @@ findings after
   check/evaluations/gamma.md shelf.placement_is_primary `evaluations` is homogeneous and carries the kind `evaluation`, and this document restates it as `doc_type: evaluation`
   check/spec/01-one-half.md language.controlled.not_met `ste_house` holds prose to 25 words a sentence, and this one has 34
   check/spec/03-no-instance.md coverage.document_unchecked this document is classified and all 4 of its check instances were skipped
+  check/spec/04-untyped.md shelf.discriminator.unresolved the shelf is heterogeneous and the document declares no `doc_type`, so no kind resolves and no check of a kind reaches this document
   check/spec/05-no-summary.md facet.required.missing `design_spec` requires the facet `summary`, and it is not declared
   check/spec/05-no-summary.md language.controlled.not_met `ste_house` holds prose to 25 words a sentence, and this one has 31
   check/spec/06-retired.md facet.value.not_permitted `status` admits draft, current, superseded, and this document declares `retired`

@@ -28,7 +28,7 @@
     "classified": 29,
     "checked": 29,
     "generated": 1,
-    "instances": 426,
+    "instances": 427,
     "skipped": 91,
     "skips": [
       {
@@ -717,6 +717,12 @@
       "obligations": []
     },
     {
+      "rule": "shelf.discriminator.unresolved",
+      "scope": "corpus",
+      "version": 1,
+      "obligations": []
+    },
+    {
       "rule": "identifier.claim.missing",
       "scope": "corpus",
       "version": 2,
@@ -991,6 +997,17 @@
       "column": 151,
       "message": "`ste_house` holds prose to 25 words a sentence, and this one has 34",
       "remediation": "split the sentence, or move a clause into its own sentence",
+      "fixable": false,
+      "escape": "none"
+    },
+    {
+      "rule": "shelf.discriminator.unresolved",
+      "severity": "error",
+      "path": "check/spec/04-untyped.md",
+      "line": 1,
+      "column": 1,
+      "message": "the shelf is heterogeneous and the document declares no `doc_type`, so no kind resolves and no check of a kind reaches this document",
+      "remediation": "set `doc_type` to one kind this shelf admits, as one word; `headwater explain check/spec/04-untyped.md` prints the shelf and its kinds",
       "fixable": false,
       "escape": "none"
     },
@@ -1801,7 +1818,7 @@
     },
     {
       "path": "check/spec/04-untyped.md",
-      "digest": "sha256:ef34b3e4254620599be769fb2e28826e330b9a6b8972ed7ef32d2d3baaeddf2b"
+      "digest": "sha256:6f9c76a6e1b6a236587c96e19fc84ee2181b0e65bc30be672104b98df6421680"
     },
     {
       "path": "check/spec/05-no-summary.md",

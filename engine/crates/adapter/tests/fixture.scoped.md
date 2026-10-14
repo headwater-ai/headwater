@@ -1,6 +1,6 @@
 ## `headwater check`
 
-66 findings, 39 of them errors across 29 of 31 documents, against `headwater/fixture` 1.0.0 at `105e82f4b4435094f6bfd8ba5b3c3f3380341b35aeebc9aca2c3d508726d1601`, evaluated at 2026-08-12.
+67 findings, 40 of them errors across 29 of 31 documents, against `headwater/fixture` 1.0.0 at `105e82f4b4435094f6bfd8ba5b3c3f3380341b35aeebc9aca2c3d508726d1601`, evaluated at 2026-08-12.
 
 **Scoped to a change.** This run was told what one change carries, so the checks that read the version a document stood at before it could run at all. 15 documents were named: 2 that the change adds, 1 with a prior version this run read, and 3 whose prior version did not read, so every check that needed one was skipped over it. The findings above are over the whole corpus, as they are in a run that names no change.
 
@@ -15,7 +15,7 @@
 - `check/spec/00-both-halves.markdown`
 - `engine/crates/check/src/change.rs`
 
-**Coverage.** This run saw 31 files and classified 29 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 426 check instances, and 91 of them reached no verdict.
+**Coverage.** This run saw 31 files and classified 29 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 427 check instances, and 91 of them reached no verdict.
 
 - 58 — this document declares no warrant, and an absent warrant is not a value outside the closed set
 - 1 — no `id` facet, which is the key this engine reads an identifier from and which no declaration states
@@ -40,6 +40,7 @@
 | error | `check/evaluations/gamma.md:9` | `relation.reciprocity.missing` | `EVAL-FIX-gamma` declares `cited_by: SPEC-FIX-both-halves`, and `cites_evidence` requires both ends, so check/spec/00-both-halves.md owes `cites_evidence` |
 | error | `check/spec/01-one-half.md:9` | `relation.reciprocity.missing` | `SPEC-FIX-one-half` declares `cites_evidence: EVAL-FIX-beta`, and `cites_evidence` requires both ends, so check/evaluations/beta.md owes `cited_by` |
 | warn | `check/spec/01-one-half.md:18` | `language.controlled.not_met` | `ste_house` holds prose to 25 words a sentence, and this one has 34 |
+| error | `check/spec/04-untyped.md:1` | `shelf.discriminator.unresolved` | the shelf is heterogeneous and the document declares no `doc_type`, so no kind resolves and no check of a kind reaches this document |
 | error | `check/spec/05-no-summary.md` | `facet.required.missing` | `design_spec` requires the facet `summary`, and it is not declared |
 | warn | `check/spec/05-no-summary.md:12` | `language.controlled.not_met` | `ste_house` holds prose to 25 words a sentence, and this one has 31 |
 | error | `check/spec/06-retired.md:4` | `facet.value.not_permitted` | `status` admits draft, current, superseded, and this document declares `retired` |
@@ -111,4 +112,4 @@
 
 </details>
 
-33 documents in the read set, and 7 barriers that no gate carries across a merge. 29 obligations, 23 verified.
+33 documents in the read set, and 8 barriers that no gate carries across a merge. 29 obligations, 23 verified.
