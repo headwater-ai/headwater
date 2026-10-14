@@ -542,6 +542,11 @@ impl Ledger {
         // No early return when the ledger is empty: a run with no `adoption`
         // block still states `0 pairs open`, because spec 7 asks for the count
         // on every run (HW-OBL-0152).
+        //
+        // Every line below carries its own `\n` inside the text it hands to
+        // `crate::fill::filled`, because the fill keeps a trailing newline and
+        // adds none. A line without one runs on into the next line, and the
+        // caller's next line after the last (#1495).
         out.push_str("adoption\n");
         let _ = writeln!(
             out,
@@ -726,12 +731,8 @@ tasks:
         );
         let (_, ledger) = apply(Vec::new(), read(&unread_only, &RULES), day("2026-08-13"));
         let unread = ledger.render(crate::paint::ColorMode::Plain);
-        assert!(unread.ends_with('\n'), "{unread:?}");
         assert!(
-            unread
-                .lines()
-                .last()
-                .is_some_and(|line| line.starts_with("  the block declares `to`")),
+            unread.ends_with("writes either into this block\n"),
             "{unread:?}"
         );
     }
