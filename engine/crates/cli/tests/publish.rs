@@ -1246,6 +1246,58 @@ fn a_projection_only_a_bundle_declares_is_refused_at_publish() {
     assert!(!out.exists(), "{stderr}");
 }
 
+/// Publish refuses whatever the generator's reader refuses, and not only the
+/// output extension of #1344, and it reports every refusal rather than the
+/// first (#1743, the first verify of PR #1749).
+///
+/// The first arm declares one projection with a `.md` output, which the
+/// extension rule passes, and `committed: false`, which the reader refuses for
+/// a reason of its own. The second arm adds a `.txt` projection in front of
+/// it, so the refusal must name both `projections.0` and `projections.1`.
+#[test]
+fn publish_refuses_every_projection_the_generator_refuses_and_names_each_one() {
+    let committed = "  - {kind: shelf_index, for: [specifications], output: \"{shelf}/README.md\", committed: false}\n";
+    let extension =
+        "  - {kind: shelf_index, for: [specifications], output: \"{shelf}/README.txt\"}\n";
+    for (label, declared, named) in [
+        (
+            "committed-only",
+            committed.to_string(),
+            vec!["projections.0"],
+        ),
+        (
+            "two-refused",
+            format!("{extension}{committed}"),
+            vec!["projections.0.output", "projections.1"],
+        ),
+    ] {
+        let root = Root::scratch(label);
+        let source = assembly_source(&root, Arm::Sound);
+        let taxonomy = source.join("taxonomy.yml");
+        let text = std::fs::read_to_string(&taxonomy).expect("the taxonomy reads");
+        write(&taxonomy, &format!("{text}projections:\n{declared}"));
+        let out = root.path().join("plain");
+
+        let (code, stdout, stderr) = publish_plain_from(root.path(), &source, &out);
+        assert_eq!(code, Some(1), "{label}: {stdout}\n{stderr}");
+        assert!(
+            stderr.contains("nothing was published"),
+            "{label}: {stderr}"
+        );
+        assert!(
+            stderr.contains("committed"),
+            "{label}: the refusal names the `committed` reason: {stderr}"
+        );
+        for name in named {
+            assert!(
+                stderr.contains(&format!("this taxonomy: `{name}")),
+                "{label}: the refusal names `{name}`: {stderr}"
+            );
+        }
+        assert!(!out.exists(), "{label}: {stderr}");
+    }
+}
+
 /// A recipe whose selection leaves a name dangling is refused at the publish.
 ///
 /// This is [#582](https://github.com/headwater-ai/headwater/issues/582), and
