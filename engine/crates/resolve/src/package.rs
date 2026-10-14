@@ -755,7 +755,7 @@ fn publish_assembly_referential(
     root: &Path,
     recipe: &crate::assembly::Assembly,
     flattened: &crate::flatten::Flattened,
-) -> Result<(), Vec<ResolveError>> {
+) -> Result<Mapping, Vec<ResolveError>> {
     let at = display(root, &recipe.at);
     let rendered = Source::from_text(&at, Role::Taxonomy, &flattened.taxonomy)?;
     let Some(taxonomy) = rendered.root.value.as_map() else {
@@ -771,7 +771,24 @@ fn publish_assembly_referential(
             "this recipe selects [{}], and that selection reads",
             recipe.from.bundles.join(", ")
         ),
-    )
+    )?;
+    Ok(taxonomy.clone())
+}
+
+/// Run a [`Gate`] over the taxonomy a publish would ship, and refuse with each
+/// message it returns, attributed to `at`.
+fn gated(at: &str, taxonomy: &Mapping, gate: Gate<'_>) -> Result<(), Vec<ResolveError>> {
+    gate(taxonomy).map_err(|messages| {
+        messages
+            .iter()
+            .map(|message| {
+                refusal_at(
+                    at,
+                    &format!("`headwater generate` would refuse this taxonomy: {message}"),
+                )
+            })
+            .collect()
+    })
 }
 
 /// The same resolution, for a caller that holds a package directory and nothing
@@ -1156,9 +1173,31 @@ fn find(root: &Path, name: &str) -> Result<(PathBuf, Mapping), Vec<ResolveError>
 ///
 /// [#271]: https://github.com/headwater-ai/headwater/issues/271
 /// [#355]: https://github.com/headwater-ai/headwater/issues/355
+///
+/// **This path runs no [`Gate`].** The generator's reader of `projections`
+/// lives in `headwater-generate`, which depends on this crate, so a library
+/// caller of this function has no generator to hand in. The CLI calls
+/// [`publish_delivered`] with one, and that is the path a release takes.
 pub fn publish(root: &Path, name: &str, out: &Path) -> Result<Release, Vec<ResolveError>> {
-    publish_delivered(root, name, out).map(|done| done.release)
+    publish_delivered(root, name, out, &|_| Ok(())).map(|done| done.release)
 }
+
+/// A reader of the taxonomy a publish would ship, handed in by a caller that
+/// can see more of the engine than this crate can.
+///
+/// `taxonomy publish` passes the generator's reader of `projections`
+/// ([#1743](https://github.com/headwater-ai/headwater/issues/1743)). The
+/// meta-schema reads `output` as a string, so before this a package could ship
+/// an output path that `headwater generate` refuses, and every consumer met the
+/// refusal after it had taken the version. `headwater-generate` depends on this
+/// crate, so a call the other way is a cycle the compiler refuses, and the
+/// reader comes in as a value, as [`crate::selection::derive`] takes its
+/// `dangling` reader.
+///
+/// `Err` carries one message for each declaration the reader refused, and the
+/// publish refuses with each one before it observes `--out`, so nothing is
+/// written.
+pub type Gate<'a> = &'a dyn Fn(&Mapping) -> Result<(), Vec<String>>;
 
 /// [`publish`], and it hands back how the artifact reached `--out` as well as
 /// the record.
@@ -1171,9 +1210,10 @@ pub fn publish_delivered(
     root: &Path,
     name: &str,
     out: &Path,
+    gate: Gate<'_>,
 ) -> Result<Published, Vec<ResolveError>> {
     let (directory, manifest) = find(root, name)?;
-    publish_at(root, &directory, &manifest, out)
+    publish_at(root, &directory, &manifest, out, gate)
 }
 
 /// Write the published artifact of a package whose directory the caller
@@ -1207,18 +1247,20 @@ pub fn publish_from(
     directory: &Path,
     out: &Path,
 ) -> Result<Release, Vec<ResolveError>> {
-    publish_from_delivered(root, directory, out).map(|done| done.release)
+    publish_from_delivered(root, directory, out, &|_| Ok(())).map(|done| done.release)
 }
 
 /// [`publish_from`], and it hands back how the artifact reached `--out` as well
-/// as the record. [`publish_delivered`] carries the argument for the pair.
+/// as the record. [`publish_delivered`] carries the argument for the pair, and
+/// [`Gate`] says what `gate` reads.
 pub fn publish_from_delivered(
     root: &Path,
     directory: &Path,
     out: &Path,
+    gate: Gate<'_>,
 ) -> Result<Published, Vec<ResolveError>> {
     let manifest = manifest_at(directory)?;
-    publish_at(root, directory, &manifest, out)
+    publish_at(root, directory, &manifest, out, gate)
 }
 
 /// What [`check_vendored`] found: the vendored copy it compared, the record a
@@ -1297,7 +1339,14 @@ impl Drop for Scratch {
 /// the source's `package:` name, found by the lookup `--package` makes, and it
 /// must carry a release record. [`release::diverged`] then reads the vendored
 /// bytes against the fresh record.
-pub fn check_vendored(root: &Path, directory: &Path) -> Result<Checked, Vec<ResolveError>> {
+///
+/// `gate` is the [`Gate`] a publish of the source runs, so the comparison
+/// refuses a source that `taxonomy publish` would refuse.
+pub fn check_vendored(
+    root: &Path,
+    directory: &Path,
+    gate: Gate<'_>,
+) -> Result<Checked, Vec<ResolveError>> {
     let manifest = manifest_at(directory)?;
     let source_manifest = directory.join(MANIFEST).display().to_string();
     let Some(name) = text(&manifest, "package") else {
@@ -1328,7 +1377,7 @@ pub fn check_vendored(root: &Path, directory: &Path) -> Result<Checked, Vec<Reso
 
     let scratch = Scratch::new()?;
     let out = scratch.0.join("artifact");
-    let published = publish_from_delivered(root, directory, &out)?;
+    let published = publish_from_delivered(root, directory, &out, gate)?;
     let moved = release::diverged(&vendored, &published.release).map_err(|error| {
         refusal(
             &display(root, &vendored),
@@ -1352,9 +1401,10 @@ pub fn publish_assembly(
     name: &str,
     assembly: &str,
     out: &Path,
+    gate: Gate<'_>,
 ) -> Result<Published, Vec<ResolveError>> {
     let (directory, manifest) = find(root, name)?;
-    publish_assembly_at(root, &directory, &manifest, assembly, out)
+    publish_assembly_at(root, &directory, &manifest, assembly, out, gate)
 }
 
 /// Write the flattened artifact a named assembly derives from a source
@@ -1364,9 +1414,10 @@ pub fn publish_assembly_from(
     directory: &Path,
     assembly: &str,
     out: &Path,
+    gate: Gate<'_>,
 ) -> Result<Published, Vec<ResolveError>> {
     let manifest = manifest_at(directory)?;
-    publish_assembly_at(root, directory, &manifest, assembly, out)
+    publish_assembly_at(root, directory, &manifest, assembly, out, gate)
 }
 
 /// What [`clear_killed`] removed.
@@ -1490,6 +1541,7 @@ fn publish_assembly_at(
     manifest: &Mapping,
     assembly: &str,
     out: &Path,
+    gate: Gate<'_>,
 ) -> Result<Published, Vec<ResolveError>> {
     let declared = manifest_name(root, directory);
     let contents = contents_of(manifest);
@@ -1499,7 +1551,10 @@ fn publish_assembly_at(
 
     let recipe = crate::assembly::read(root, directory, manifest, assembly)?;
     let flattened = crate::flatten::materialize(root, directory, manifest, &recipe)?;
-    publish_assembly_referential(root, &recipe, &flattened)?;
+    let taxonomy = publish_assembly_referential(root, &recipe, &flattened)?;
+    // The flattened taxonomy is what ships, so it is what the gate reads.
+    // Before `found::observe`, as on the plain path.
+    gated(&display(root, &recipe.at), &taxonomy, gate)?;
     let staged = stage_flattened(directory, &declared, &flattened)?;
     let found = found::observe(out).map_err(|why| refusal(&display(root, out), &why))?;
 
@@ -1542,6 +1597,7 @@ fn publish_at(
     directory: &Path,
     manifest: &Mapping,
     out: &Path,
+    gate: Gate<'_>,
 ) -> Result<Published, Vec<ResolveError>> {
     let declared = manifest_name(root, directory);
 
@@ -1612,6 +1668,13 @@ fn publish_at(
     // directory in existence and `found::Found`'s undo is never entangled with
     // it. Spec 7's "Nothing is written until everything is read" holds unchanged.
     crate::template::holds(root, directory, manifest, &widest.taxonomy)?;
+
+    // The widest set again, because a bundle can add a projection, and every
+    // bundle this package ships reaches some consumer. An index such as
+    // `projections.3` counts entries after the bundles merged, so it can differ
+    // from the index in the source file. The `output` value the message
+    // quotes is what a publisher searches the source for.
+    gated(&declared, &widest.taxonomy, gate)?;
 
     let found = found::observe(out).map_err(|why| refusal(&display(root, out), &why))?;
 

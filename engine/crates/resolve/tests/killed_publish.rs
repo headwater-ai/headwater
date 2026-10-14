@@ -425,7 +425,8 @@ fn is_a_mount_point(at: &Path) -> bool {
 /// One body, two routes to a mount point, so the assertions cannot drift apart
 /// between the case that runs here and the case that runs inside a namespace.
 fn a_direct_delivery_is_reported(root: &Path, out: &Path) {
-    let done = package::publish_delivered(root, "acme/fixture", out).expect("it publishes");
+    let done =
+        package::publish_delivered(root, "acme/fixture", out, &|_| Ok(())).expect("it publishes");
 
     // The artifact still arrives. The fallback is a weaker guarantee and not a
     // failure, and a case that let the publish fail would be measuring the
@@ -475,7 +476,8 @@ fn a_publish_onto_an_ordinary_path_is_delivered_by_a_rename() {
     let root = wide_publisher(&scratch);
     let out = scratch.path().join("artifact");
 
-    let done = package::publish_delivered(&root, "acme/fixture", &out).expect("it publishes");
+    let done =
+        package::publish_delivered(&root, "acme/fixture", &out, &|_| Ok(())).expect("it publishes");
     assert_eq!(done.delivery, package::Delivery::Renamed);
     assert_eq!(done.delivery.wire(), "renamed");
     assert!(
