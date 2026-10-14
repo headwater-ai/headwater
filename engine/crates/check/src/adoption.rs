@@ -601,7 +601,9 @@ impl Ledger {
                 }
             }
             out.push_str(&crate::fill::filled(
-                &format!("    {}\n", task.statement),
+                // A hand-written block scalar (`statement: |`) arrives with
+                // its own trailing newline, and the line owes exactly one.
+                &format!("    {}\n", task.statement.trim_end()),
                 crate::fill::WIDTH,
             ));
         }
