@@ -406,7 +406,11 @@ backticked() {
 # gets `missing` when no heading has its anchor, and otherwise `shared` or
 # `unshared` by whether the paragraph and the section share a backticked
 # name. A link to what a run does not report also gets `clean`, or `named`
-# when the paragraph names a rule of `### The findings a run reports`.
+# when the paragraph names a rule of `### The findings a run reports`. A link
+# to what a run reports is the mirror: it gets `cites` when the paragraph
+# names such a rule and `uncited` when it names none, and `denies` when the
+# paragraph still says that no rule reports or that the run is clean, the
+# words of the finding this group was written against (#1492), or `affirms`.
 link_cases() { # 1 = doctrine, 2 = README
     beacon_findings "$2" | cut -f1 | LC_ALL=C sort -u > "$scratch/lc-rules"
     doctrine_links "$1" > "$scratch/lc-links"
@@ -432,6 +436,20 @@ link_cases() { # 1 = doctrine, 2 = README
                 printf '%s\tclean\t%s\t\n' "$line" "$anchor"
             else
                 printf '%s\tnamed\t%s\t%s\n' "$line" "$anchor" "$named"
+            fi
+        fi
+        if [ "$anchor" = what-a-run-reports ]; then
+            named=$(LC_ALL=C comm -12 "$scratch/lc-para" "$scratch/lc-rules" | tr '\n' ' ')
+            if [ -n "$named" ]; then
+                printf '%s\tcites\t%s\t%s\n' "$line" "$anchor" "$named"
+            else
+                printf '%s\tuncited\t%s\t\n' "$line" "$anchor"
+            fi
+            denial=$(sed -n "${line}p" "$1" | grep -oiE 'no rule reports|the run is clean|reaches no check, so' | head -n 1)
+            if [ -z "$denial" ]; then
+                printf '%s\taffirms\t%s\t\n' "$line" "$anchor"
+            else
+                printf '%s\tdenies\t%s\t%s\n' "$line" "$anchor" "$denial"
             fi
         fi
     done < "$scratch/lc-links"
@@ -978,7 +996,9 @@ echo "case group 9 — every link from the doctrine into this README lands on a 
 # here (#1492). So each link must open a section of this README, and the
 # paragraph that holds the link must share at least one backticked name with
 # that section. A paragraph that sends the reader to what a run does not
-# report must not name a rule that the run reports.
+# report must not name a rule that the run reports. One that sends the reader
+# to what a run reports must name such a rule, and must not still say that no
+# rule reports or that the run is clean.
 link_cases "$root/$entry/doctrine.md" "$readme" > "$scratch/link-cases"
 if grep -q . "$scratch/link-cases"; then
     pass "the doctrine links into the fixtures README at least once ($(cut -f1 "$scratch/link-cases" | LC_ALL=C sort -u | grep -c .) read)"
@@ -992,6 +1012,10 @@ while IFS="$(printf '\t')" read -r line verdict anchor detail; do
         unshared) fail "doctrine line $line and README #$anchor name the same thing" "$detail" ;;
         clean) pass "doctrine line $line sends the reader to what a run does not report, and names no rule the run reports" ;;
         named) fail "doctrine line $line sends the reader to what a run does not report, and names no rule the run reports" "it names ${detail}which ### The findings a run reports lists" ;;
+        cites) pass "doctrine line $line sends the reader to what a run reports, and names a rule the run reports ($detail)" ;;
+        uncited) fail "doctrine line $line sends the reader to what a run reports, and names a rule the run reports" "it names none of ### The findings a run reports" ;;
+        affirms) pass "doctrine line $line sends the reader to what a run reports, and does not say the run reports nothing" ;;
+        denies) fail "doctrine line $line sends the reader to what a run reports, and does not say the run reports nothing" "it says \"$detail\"" ;;
     esac
 done < "$scratch/link-cases"
 
@@ -1000,7 +1024,9 @@ done < "$scratch/link-cases"
 # the real doctrine is correct. Each paragraph plants one defect or one trap:
 # 2 an anchor no heading has, 3 a section that shares no name, 4 a rule the
 # run reports, sent to what it does not report, 5 a name past a fenced line
-# that only looks like a heading, and 6 a link into another entry's README.
+# that only looks like a heading, 6 a link into another entry's README, and 7
+# a paragraph that names the rule and still says the run is clean. 3 also
+# names no rule while it links what a run reports.
 planted="$scratch/planted"
 mkdir -p "$planted"
 {
@@ -1021,16 +1047,17 @@ mkdir -p "$planted"
     echo '`later-name` and `OB-DR-9` are here.'
 } > "$planted/README.md"
 {
-    echo '1 names `conflicts_with` and links [it](fixtures/README.md#what-a-run-reports).'
+    echo '1 names `conflicts_with` and `relation.pair.invalid` and links [it](fixtures/README.md#what-a-run-reports).'
     echo '2 names `conflicts_with` and links [it](fixtures/README.md#no-such-heading).'
     echo '3 names `OB-DR-9` and links [it](fixtures/README.md#what-a-run-reports).'
     echo '4 names `OB-DR-1` and `relation.pair.invalid` and links [it](fixtures/README.md#what-a-run-does-not-report-and-should).'
     echo '5 names `fenced-name` and links [it](fixtures/README.md#what-a-run-does-not-report-and-should).'
     echo '6 names `other` and links [it](https://example.org/docs/taxonomies/diataxis/fixtures/README.md#later-about-later-name).'
+    echo '7 names `relation.pair.invalid`, says the run is clean, and links [it](fixtures/README.md#what-a-run-reports).'
 } > "$planted/doctrine.md"
 link_cases "$planted/doctrine.md" "$planted/README.md" | cut -f1,2 | tr '\t' ' ' | LC_ALL=C sort | tr '\n' ' ' > "$scratch/planted-verdicts"
 judge "over a planted doctrine, each defect is reported and each trap is not" \
-    "1 shared 2 missing 3 unshared 4 named 4 shared 5 clean 5 shared " \
+    "1 affirms 1 cites 1 shared 2 missing 3 affirms 3 uncited 3 unshared 4 named 4 shared 5 clean 5 shared 7 cites 7 denies 7 shared " \
     "$(cat "$scratch/planted-verdicts")"
 
 echo
