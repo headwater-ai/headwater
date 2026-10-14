@@ -669,7 +669,7 @@ nav:
           - "Two triggers, one verdict: how this repository's CI decides where a job runs and what it trusts": "process/evaluations/two-triggers-one-verdict-how-this-repository-s-ci-decides-where-a-job-runs-and-what-it-trusts.md"
       - "Process obligation records":
           - "Process obligation records": "process/obligations/README.md"
-          - "The CI job named \\\"(advisory)\\\" carries every blocking shell suite in the repository": "process/obligations/0145-the-ci-job-named-advisory-carries-every-blocking-shell-suite-in-the-repository.md"
+          - "The CI job named \"(advisory)\" carries every blocking shell suite in the repository": "process/obligations/0145-the-ci-job-named-advisory-carries-every-blocking-shell-suite-in-the-repository.md"
           - "The skills fixture suite passes on an empty input set, and always fails in a clone that has not built the engine": "process/obligations/0147-the-skills-fixture-suite-passes-on-an-empty-input-set-and-always-fails-in-a-clone-that-has-not-built-the-engine.md"
           - "Four inline gates in the workflow decide an exit status and no suite provokes one": "process/obligations/0173-four-inline-gates-in-the-workflow-decide-an-exit-status-and-no-suite-provokes-one.md"
           - "The value rule writes adopter on every self-audit record and most of them wait on a build": "process/obligations/0177-the-value-rule-writes-adopter-on-every-self-audit-record-and-most-of-them-wait-on-a-build.md"
