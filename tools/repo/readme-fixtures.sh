@@ -5287,6 +5287,38 @@ install_routes_provoke "a Debian 11 job whose container has the network is red" 
 install_routes_provoke "a Debian 11 job that never checks its container has no network is red" \
     '/^  deb-file:$/,/^  [a-z-]*:$/{/if \[ "\$nets" != "lo " \]; then/,/^ *fi$/d;}' \
     "the deb-file job of install-routes.yml does not run debian:11 with no network and check that it has none"
+# The five mutants that survived the second verify of PR #1730 (#1490). Each
+# keeps the comparison line as it is and breaks what feeds it.
+install_routes_provoke "an archive job that runs headwater --version and then sets printed to the tag is red" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/^\( *\)printed=\$("\$HOME\/\.local\/bin\/headwater" --version.*$/&\
+\1printed=${tag#v}/' \
+    "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "a Debian 11 job that runs headwater --version and then sets printed to WANT is red" \
+    '/^  deb-file:$/,/^  [a-z-]*:$/s/^\( *\)printed=\$(headwater --version.*$/&\
+\1printed=$WANT/' \
+    "the job deb-file of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "a cargo job that sets want to printed after the registry read is red" \
+    '/^  cargo:$/,/^  [a-z-]*:$/s/^\( *printed=\$(.*--version.*\)$/\1; want="$printed"/' \
+    "the job cargo of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "a report job whose GH_TOKEN is on the checkout step and not the step that runs the script is red" \
+    '/^  report:$/,${
+/^        env:$/d
+/^          GH_TOKEN: /d
+s/^      - uses: actions\/checkout@v4$/&\
+        env:\
+          GH_TOKEN: ${{ github.token }}/
+}' \
+    "the report job of install-routes.yml hands gh no GH_TOKEN"
+# A job-level `env:` reaches every step, the one that runs the script included.
+install_routes_provoke "a report job whose GH_TOKEN is in the job's own env is green" \
+    '/^  report:$/,${
+/^        env:$/d
+/^          GH_TOKEN: /d
+s/^    timeout-minutes: 5$/&\
+    env:\
+      GH_TOKEN: ${{ github.token }}/
+}' \
+    ""
 
 # 14d. The extractor prints each route from the page, and refuses a page whose
 # paragraph, fence or sentence is gone, because `sh -e` of an empty script
@@ -5340,9 +5372,15 @@ routes_refused "  the cargo route on a page whose cargo fence is gone prints not
 
 # 14e. The issue script against a stub `gh` on PATH. Each case has its own
 # directory, so no case reads another's log.
-# routes_issue_case DIR OPEN-NUMBER LIST-FAILS ARGS... — runs the script in
-# DIR, which holds the stub's log and the body it was handed, and prints
+# routes_issue_case DIR OPEN-ISSUES LIST-FAILS ARGS... — runs the script in
+# DIR, which holds the stub's log, the body it was handed and the title it
+# created under, and prints
 # `<status>|<gh subcommands, comma-joined>|<create flags>|<first body line>`.
+# OPEN-ISSUES is the JSON array of open `bug` issues, `number` and `title`,
+# that `gh issue list --json number,title` returns. The stub runs it through
+# `jq` with the script's own `--jq`, as `gh` does, so a filter that stops
+# selecting the title comments on the wrong issue (#1490). With no `jq` the
+# stub exits 1, and every case that lists goes red rather than skipping.
 routes_issue_case() {
     _dir=$1
     shift
@@ -5353,11 +5391,19 @@ printf '%s\n' "$*" >>"$STUB_DIR/log"
 case "$1 $2" in
     "issue list")
         [ "$STUB_LIST_FAILS" = 1 ] && exit 1
-        [ -n "$STUB_OPEN" ] && printf '%s\n' "$STUB_OPEN"
-        exit 0 ;;
+        _jq=
+        while [ $# -gt 0 ]; do
+            [ "$1" = "--jq" ] && _jq=$2
+            shift
+        done
+        command -v jq >/dev/null 2>&1 || { echo "stub gh: no jq" >&2; exit 1; }
+        [ -n "$_jq" ] || { echo "stub gh: no --jq" >&2; exit 1; }
+        printf '%s\n' "${STUB_OPEN:-[]}" | jq -r "$_jq"
+        exit ;;
     "issue create" | "issue comment")
         while [ $# -gt 0 ]; do
             [ "$1" = "--body-file" ] && cp "$2" "$STUB_DIR/body"
+            [ "$1" = "--title" ] && printf '%s\n' "$2" >"$STUB_DIR/title"
             shift
         done ;;
 esac
@@ -5377,19 +5423,38 @@ STUB
 }
 # The token the stub is handed; the stub reads none, and one case unsets it.
 routes_gh_token=stub
+# The title the script searches for, read from the script and not typed here,
+# so a create under another title and a search for another title cannot both
+# drift and agree.
+routes_title=$(sed -n 's/^title="\([^"]*\)"$/\1/p' "$routes_issue" 2>/dev/null)
+routes_decoy='{"number":7,"title":"Another failure labeled bug"}'
+routes_titled="{\"number\":42,\"title\":\"$routes_title\"}"
+same "the stub gh can run the script's --jq" \
+    "jq" "$(command -v jq >/dev/null 2>&1 && echo jq)"
+same "the issue script names one title to search for and to create under" \
+    "1" "$(sed -n 's/^title="\([^"]*\)"$/\1/p' "$routes_issue" 2>/dev/null | grep -c .)"
 routes_none="$scratch/routes/issue-none"
 same "the issue script with no open issue creates one labeled bug whose body opens with ELI5" \
     "0|issue-list,issue-create|--label=bug|## ELI5" \
-    "$(routes_issue_case "$routes_none" '' 0 https://example.invalid/run/1 archive=success cargo=failure source=cancelled)"
+    "$(routes_issue_case "$routes_none" '[]' 0 https://example.invalid/run/1 archive=success cargo=failure source=cancelled)"
 same "  its body names each job that did not succeed and none that did" \
     "1|0|1" \
     "$(grep -c '`cargo`: failure' "$routes_none/body")|$(grep -c '`archive`' "$routes_none/body")|$(grep -c '`source`: cancelled' "$routes_none/body")"
+same "  it creates the issue under the title it searches for, so the next run finds it" \
+    "$routes_title" "$(cat "$routes_none/title" 2>/dev/null)"
 routes_open="$scratch/routes/issue-open"
 same "  with one open issue it comments on it and creates nothing" \
     "0|issue-list,issue-comment||The scheduled run https://example.invalid/run/1 failed again." \
-    "$(routes_issue_case "$routes_open" 42 0 https://example.invalid/run/1 archive=success cargo=failure)"
+    "$(routes_issue_case "$routes_open" "[$routes_titled]" 0 https://example.invalid/run/1 archive=success cargo=failure)"
 same "  the comment goes on the open issue the list names" \
     "issue comment 42" "$(grep -o '^issue comment [0-9]*' "$routes_open/log")"
+routes_decoyed="$scratch/routes/issue-decoy"
+same "  with another open bug issue listed first it comments on the titled one" \
+    "0|issue-list,issue-comment|issue comment 42" \
+    "$(routes_issue_case "$routes_decoyed" "[$routes_decoy,$routes_titled]" 0 https://example.invalid/run/1 cargo=failure | cut -d'|' -f1-2)|$(grep -o '^issue comment [0-9]*' "$routes_decoyed/log")"
+same "  with only another open bug issue it creates its own and comments on none" \
+    "0|issue-list,issue-create|--label=bug" \
+    "$(routes_issue_case "$scratch/routes/issue-decoy-only" "[$routes_decoy]" 0 https://example.invalid/run/1 cargo=failure | cut -d'|' -f1-3)"
 routes_dropped="$scratch/routes/issue-dropped"
 same "  a list in which every job succeeded still files, and says the report job dropped the failure" \
     "0|issue-list,issue-create|--label=bug|## ELI5|1" \
