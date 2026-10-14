@@ -1140,6 +1140,50 @@ fn an_invalid_assembly_refuses_before_it_creates_output() {
     );
 }
 
+/// An assembly whose flattened taxonomy declares a projection the generator
+/// refuses does not publish, and the same recipe with an output the generator
+/// reads does (#1743).
+///
+/// The flattened taxonomy is what an assembly ships, so it is what the gate
+/// reads. The second half holds the gate to the extension and not to the
+/// presence of a `projections` key: the one edit between the two runs is
+/// `.txt` to `.md`.
+#[test]
+fn an_assembly_whose_projection_the_generator_refuses_does_not_publish() {
+    for (output, refused) in [("{shelf}/README.txt", true), ("{shelf}/README.md", false)] {
+        let root = Root::scratch("assembly-projection");
+        let source = assembly_source(&root, Arm::Sound);
+        let taxonomy = source.join("taxonomy.yml");
+        let text = std::fs::read_to_string(&taxonomy).expect("the taxonomy reads");
+        write(
+            &taxonomy,
+            &format!(
+                "{text}projections:\n  - {{kind: shelf_index, for: [specifications], output: \"{output}\"}}\n"
+            ),
+        );
+        let out = root.path().join("release");
+
+        let (code, stdout, stderr) = publish_assembly_from(root.path(), &source, &out);
+        if refused {
+            assert_eq!(code, Some(1), "{stdout}\n{stderr}");
+            assert!(stderr.contains("nothing was published"), "{stderr}");
+            assert!(stderr.contains("projections.0.output"), "{stderr}");
+            assert!(stderr.contains("README.txt"), "{stderr}");
+            assert!(
+                stderr.contains("assemblies/starter/assembly.yml"),
+                "the refusal names the recipe: {stderr}"
+            );
+            assert!(
+                !out.exists(),
+                "the refused run left partial output at {out:?}"
+            );
+        } else {
+            assert_eq!(code, Some(0), "{stdout}\n{stderr}");
+            assert!(out.join("taxonomy.yml").exists(), "{stdout}");
+        }
+    }
+}
+
 /// A recipe whose selection leaves a name dangling is refused at the publish.
 ///
 /// This is [#582](https://github.com/headwater-ai/headwater/issues/582), and
@@ -1659,6 +1703,34 @@ fn a_source_taxonomy_changed_without_a_republish_fails_publish_check_and_names_t
         before,
         snapshot(root.path()),
         "`--check` changed a file in the tree it was checking"
+    );
+}
+
+/// `--check` runs the publish that `taxonomy publish` runs, so it refuses a
+/// source whose projection the generator refuses, and says so rather than
+/// reporting a stale vendored copy (#1743).
+///
+/// The edit also moves `taxonomy.yml`, so a check without the gate fails too.
+/// What tells the two apart is the reason: the gate names the declaration.
+#[test]
+fn publish_check_refuses_a_source_whose_projection_the_generator_refuses() {
+    let root = publisher_and_consumer("check-projection");
+    let source = root.path().join("taxonomy-source/headwater-standard");
+    let taxonomy = source.join("taxonomy.yml");
+    let text = std::fs::read_to_string(&taxonomy).expect("the source taxonomy reads");
+    let from = "output: \"{shelf}/README.md\"}";
+    assert!(text.contains(from), "the source still declares `{from}`");
+    std::fs::write(
+        &taxonomy,
+        text.replacen(from, "output: \"{shelf}/README.txt\"}", 1),
+    )
+    .expect("the source taxonomy is edited");
+
+    let (code, stdout, stderr) = publish_check(root.path(), &source, &[]);
+    assert_eq!(code, Some(1), "{stdout}\n{stderr}");
+    assert!(
+        stderr.contains("projections.0.output") && stderr.contains("README.txt"),
+        "the refusal names the declaration and the value: {stderr}"
     );
 }
 

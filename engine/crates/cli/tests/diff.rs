@@ -644,6 +644,16 @@ fn a_candidate_refused_for_no_overlay_address_does_not_measure_addressability() 
 /// alone says it did not run. A report that called it preserved would say the
 /// new release generates what the old one did, out of a plan that was never
 /// built.
+///
+/// **`taxonomy publish` refuses this candidate since #1743**, and
+/// `a_package_whose_projection_the_generator_refuses_does_not_publish` holds
+/// that. The case stays because the path it guards stays: an artifact that an
+/// engine before #1743 published carries a release record that agrees with its
+/// bytes, and `diff` still reads it. So the candidate is published here through
+/// the library's `package::publish`, which runs no generator, and that stands
+/// for the older engine. Editing the CLI's artifact after the fact does not:
+/// `diff` refuses an artifact whose bytes left its own release record
+/// (`an_artifact_that_left_its_own_release_record_is_refused`).
 #[test]
 fn a_projection_declaration_the_generator_refuses_does_not_measure_projection() {
     let root = Root::new("projection-unmeasured");
@@ -657,7 +667,9 @@ fn a_projection_declaration_the_generator_refuses_does_not_measure_projection() 
              \"{shelf}/README.txt\"}",
         )],
     );
-    let candidate = root.publish("2.0.0");
+    let candidate = root.at.join("released").join("2.0.0");
+    headwater_resolve::package::publish(&root.at, "headwater/standard", &candidate)
+        .expect("the library path runs no generator, so the candidate publishes");
 
     let ran = root.run(&[
         "taxonomy",

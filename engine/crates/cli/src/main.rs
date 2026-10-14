@@ -1822,6 +1822,18 @@ fn conformance(root: &Path, level: Option<&str>, now: Option<Date>, json: bool) 
     }
 }
 
+/// The generator's reader of `projections`, as the gate every publish runs
+/// over the taxonomy it would ship (#1743).
+///
+/// It takes each `DeclarationError`'s message and not its `Display`, which
+/// puts a byte offset in front: in the widest set an offset can point into a
+/// bundle file, so it would name a place the publisher cannot find.
+fn projections_read(taxonomy: &headwater_yaml::Mapping) -> Result<(), Vec<String>> {
+    headwater_generate::Projections::read(taxonomy)
+        .map(|_| ())
+        .map_err(|errors| errors.into_iter().map(|error| error.message).collect())
+}
+
 /// `headwater taxonomy publish --from <dir> --check` (#1139).
 ///
 /// Whether the vendored copy of a package is what a fresh publish of its
@@ -1863,7 +1875,7 @@ fn publish_check(
         );
     };
 
-    let checked = match headwater_resolve::package::check_vendored(root, from) {
+    let checked = match headwater_resolve::package::check_vendored(root, from, &projections_read) {
         Ok(checked) => checked,
         Err(errors) => {
             eprintln!(
@@ -2040,10 +2052,19 @@ fn publish(
     // it, which is why nothing that reports to a person calls those.
     let published = match from {
         Some(directory) => match assembly {
-            Some(name) => {
-                headwater_resolve::package::publish_assembly_from(root, directory, name, out)
-            }
-            None => headwater_resolve::package::publish_from_delivered(root, directory, out),
+            Some(name) => headwater_resolve::package::publish_assembly_from(
+                root,
+                directory,
+                name,
+                out,
+                &projections_read,
+            ),
+            None => headwater_resolve::package::publish_from_delivered(
+                root,
+                directory,
+                out,
+                &projections_read,
+            ),
         },
         None => {
             let name = match package {
@@ -2066,10 +2087,19 @@ fn publish(
                 },
             };
             match assembly {
-                Some(assembly) => {
-                    headwater_resolve::package::publish_assembly(root, &name, assembly, out)
-                }
-                None => headwater_resolve::package::publish_delivered(root, &name, out),
+                Some(assembly) => headwater_resolve::package::publish_assembly(
+                    root,
+                    &name,
+                    assembly,
+                    out,
+                    &projections_read,
+                ),
+                None => headwater_resolve::package::publish_delivered(
+                    root,
+                    &name,
+                    out,
+                    &projections_read,
+                ),
             }
         }
     };
