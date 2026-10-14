@@ -65,6 +65,10 @@ USAGE
         [--jobs N] [--timeout S] [--nav PATH] [--dark-all]
         [--shots DIR] [--shoot REGEX]... [--json FILE]
 
+A `--shoot` pattern is searched in the served path of a page, such as
+`spec/` or `glossary/`, and the home page's path is `index.html`. HW-DR-0110
+rules which of these readings CI runs and which stay a run by hand.
+
 EXIT STATUS
 
     0  no page flagged
