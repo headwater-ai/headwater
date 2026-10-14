@@ -1217,6 +1217,35 @@ fn an_assembly_whose_projection_the_generator_refuses_does_not_publish() {
     }
 }
 
+/// A projection that only a bundle declares is refused at publish as well
+/// (#1743).
+///
+/// The base reads clean, so a gate that read the source taxonomy alone would
+/// pass this package. The gate reads the widest set, which is every bundle the
+/// package ships, because each of them reaches some consumer.
+#[test]
+fn a_projection_only_a_bundle_declares_is_refused_at_publish() {
+    let root = Root::scratch("bundle-projection");
+    let source = assembly_source(&root, Arm::Sound);
+    let bundle = source.join("bundles/beta/bundle.yml");
+    let text = std::fs::read_to_string(&bundle).expect("the bundle reads");
+    write(
+        &bundle,
+        &format!(
+            "{text}  projections:\n    - {{kind: shelf_index, for: [betas], output: \"{{shelf}}/README.txt\"}}\n"
+        ),
+    );
+    let out = root.path().join("plain");
+
+    let (code, stdout, stderr) = publish_plain_from(root.path(), &source, &out);
+    assert_eq!(code, Some(1), "{stdout}\n{stderr}");
+    assert!(
+        stderr.contains("this taxonomy: `projections.0.output`") && stderr.contains("README.txt"),
+        "the refusal names the declaration a bundle added: {stderr}"
+    );
+    assert!(!out.exists(), "{stderr}");
+}
+
 /// A recipe whose selection leaves a name dangling is refused at the publish.
 ///
 /// This is [#582](https://github.com/headwater-ai/headwater/issues/582), and
