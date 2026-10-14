@@ -4754,21 +4754,41 @@ apt_planted "the extractor on a page whose APT fence is gone prints nothing and 
 # The same page with a paragraph between the APT paragraph and its fence. The
 # fence is no longer the paragraph's next block, so the extractor refuses it,
 # as `fence()` in `tools/repo/readme-install-block.sh` refuses one.
+# Every shape of block counts, not only a line that opens with a letter.
+# apt_interposed NAME LINE — the page with LINE as a block between the APT
+# paragraph and its fence, refused.
+apt_interposed() {
+    awk -v line="$2" '
+        !seen && /^\*\*Install it with apt/ { seen = 1; print; print ""; print line; next }
+        { print }
+    ' "$readme" >"$scratch/apt-job/interposed.md"
+    if [ -f "$apt_block" ]; then
+        sh "$apt_block" "$scratch/apt-job/interposed.md" >"$scratch/apt-job/interposed.out" 2>/dev/null
+        apt_refused=$?
+    else
+        : >"$scratch/apt-job/interposed.out"
+        apt_refused=0
+    fi
+    apt_planted "$1" "$readme" "$scratch/apt-job/interposed.md" \
+        "0|nonzero" \
+        "$(wc -c <"$scratch/apt-job/interposed.out" | tr -d ' ')|$([ "$apt_refused" -ne 0 ] && echo nonzero || echo zero)"
+}
+apt_interposed "the extractor refuses a fence that is not the next block after the APT paragraph" \
+    "An interposed paragraph."
+apt_interposed "  and one after an interposed bold paragraph" "**Note.** An interposed paragraph."
+apt_interposed "  and one after an interposed list item" "- an interposed item"
+apt_interposed "  and one after an interposed HTML comment" "<!-- an interposed comment -->"
+# A second fence straight after the APT fence is not part of it: the extractor
+# stops at the APT fence's closing backquotes.
 awk '
-    !seen && /^\*\*Install it with apt/ { seen = 1; print; print ""; print "An interposed paragraph."; next }
+    !seen && /^\*\*Install it with apt/ { seen = 1 }
     { print }
-' "$readme" >"$scratch/apt-job/interposed.md"
-if [ -f "$apt_block" ]; then
-    sh "$apt_block" "$scratch/apt-job/interposed.md" >"$scratch/apt-job/interposed.out" 2>/dev/null
-    apt_refused=$?
-else
-    : >"$scratch/apt-job/interposed.out"
-    apt_refused=0
-fi
-apt_planted "the extractor refuses a fence that is not the next block after the APT paragraph" \
-    "$readme" "$scratch/apt-job/interposed.md" \
-    "0|nonzero" \
-    "$(wc -c <"$scratch/apt-job/interposed.out" | tr -d ' ')|$([ "$apt_refused" -ne 0 ] && echo nonzero || echo zero)"
+    seen == 1 && /^[ \t]*```/ { n++; if (n == 2) { print ""; print "```"; print "echo not the apt block"; print "```"; seen = 2 } }
+' "$readme" >"$scratch/apt-job/second-fence.md"
+apt_planted "the extractor stops at the APT fence's close when another fence follows it" \
+    "$readme" "$scratch/apt-job/second-fence.md" \
+    "8|headwater --version" \
+    "$(sh "$apt_block" "$scratch/apt-job/second-fence.md" 2>/dev/null | awk '{ l = $0 } END { print NR "|" l }')"
 
 # 12e. The page gives Debian 11 a route that works there: the Debian package
 # from the release page, installed from its file. The block stops on Debian 11
@@ -5351,6 +5371,31 @@ s/^\( *\)echo "the archive block installs/\1printed=$("$HOME\/.local\/bin\/headw
 &/
 }' \
     "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
+# The mutants of the first verify of PR #1752: the same classes, written so a
+# prefix of `;` or a space does not find them. Each assignment counts after any
+# character that cannot end a shell name, and the last `printed=` is the
+# `--version` pipe and nothing else.
+install_routes_provoke "an archive job whose printed runs --version into /dev/null and echoes the tag is red" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/--version | awk .{print \$NF}.)/--version >\/dev\/null; echo "${tag#v}")/' \
+    "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "an archive job that sets printed to the tag after && is red" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/^\( *\)printed=\$("\$HOME\/\.local\/bin\/headwater" --version.*$/&\
+\1[ -n "$printed" ]\&\&printed=${tag#v}/' \
+    "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "an archive job that sets printed to the tag after a tab is red" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/^\( *\)printed=\$("\$HOME\/\.local\/bin\/headwater" --version.*$/&\
+\1	printed=${tag#v}/' \
+    "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "a Debian 11 job whose printed runs --version into /dev/null and echoes WANT is red" \
+    '/^  deb-file:$/,/^  [a-z-]*:$/s/--version | awk "{print \\\$NF}")/--version >\/dev\/null; echo "$WANT")/' \
+    "the job deb-file of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "a cargo job that sets want to printed after && is red" \
+    '/^  cargo:$/,/^  [a-z-]*:$/s/^\( *printed=\$(.*--version.*\)$/\1\&\&want="$printed"/' \
+    "the job cargo of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "a cargo job that sets want to printed through eval is red" \
+    '/^  cargo:$/,/^  [a-z-]*:$/s/^\( *\)\(printed=\$(.*--version.*\)$/&\
+\1eval "want=\\$printed"/' \
+    "the job cargo of install-routes.yml never compares the version it printed with the one its route installs"
 # A job-level `env:` reaches every step, the one that runs the script included.
 install_routes_provoke "a report job whose GH_TOKEN is in the job's own env is green" \
     '/^  report:$/,${
@@ -5433,13 +5478,19 @@ printf '%s\n' "$*" >>"$STUB_DIR/log"
 case "$1 $2" in
     "issue list")
         [ "$STUB_LIST_FAILS" = 1 ] && exit 1
-        _jq=
+        _jq=; _state=; _label=
         while [ $# -gt 0 ]; do
             [ "$1" = "--jq" ] && _jq=$2
+            [ "$1" = "--state" ] && _state=$2
+            [ "$1" = "--label" ] && _label=$2
             shift
         done
         command -v jq >/dev/null 2>&1 || { echo "stub gh: no jq" >&2; exit 1; }
         [ -n "$_jq" ] || { echo "stub gh: no --jq" >&2; exit 1; }
+        # STUB_OPEN is the list of OPEN issues labeled bug, so a search of
+        # another state or label is a search this stub cannot answer.
+        [ "$_state" = open ] || { echo "stub gh: not --state open" >&2; exit 1; }
+        [ "$_label" = bug ] || { echo "stub gh: not --label bug" >&2; exit 1; }
         printf '%s\n' "${STUB_OPEN:-[]}" | jq -r "$_jq"
         exit ;;
     "issue create" | "issue comment")
@@ -5447,14 +5498,15 @@ case "$1 $2" in
             [ "$1" = "--body-file" ] && cp "$2" "$STUB_DIR/body"
             [ "$1" = "--title" ] && printf '%s\n' "$2" >"$STUB_DIR/title"
             shift
-        done ;;
+        done
+        if [ "$STUB_WRITE_FAILS" = 1 ]; then exit 1; fi ;;
 esac
 STUB
     chmod +x "$_dir/bin/gh"
     _open=$1
     _fails=$2
     shift 2
-    STUB_DIR=$_dir STUB_OPEN=$_open STUB_LIST_FAILS=$_fails GITHUB_REPOSITORY=acme/widget \
+    STUB_DIR=$_dir STUB_OPEN=$_open STUB_LIST_FAILS=$_fails STUB_WRITE_FAILS=${routes_write_fails:-0} GITHUB_REPOSITORY=acme/widget \
         GH_TOKEN=$routes_gh_token GITHUB_TOKEN= \
         PATH="$_dir/bin:$PATH" sh "$routes_issue" "$@" >/dev/null 2>&1
     _status=$?
@@ -5497,6 +5549,13 @@ same "  with another open bug issue listed first it comments on the titled one" 
 same "  with only another open bug issue it creates its own and comments on none" \
     "0|issue-list,issue-create|--label=bug" \
     "$(routes_issue_case "$scratch/routes/issue-decoy-only" "[$routes_decoy]" 0 https://example.invalid/run/1 cargo=failure | cut -d'|' -f1-3)"
+# A `gh` that cannot write: the report job goes red only if the script does.
+same "  a gh that cannot create the issue makes the script exit nonzero" \
+    "nonzero|issue-list,issue-create" \
+    "$(routes_write_fails=1; routes_issue_case "$scratch/routes/issue-create-fails" '[]' 0 https://example.invalid/run/1 cargo=failure | awk -F'|' '{ print ($1 == 0 ? "zero" : "nonzero") "|" $2 }')"
+same "  a gh that cannot comment makes the script exit nonzero" \
+    "nonzero|issue-list,issue-comment" \
+    "$(routes_write_fails=1; routes_issue_case "$scratch/routes/issue-comment-fails" "[$routes_titled]" 0 https://example.invalid/run/1 cargo=failure | awk -F'|' '{ print ($1 == 0 ? "zero" : "nonzero") "|" $2 }')"
 routes_dropped="$scratch/routes/issue-dropped"
 same "  a list in which every job succeeded still files, and says the report job dropped the failure" \
     "0|issue-list,issue-create|--label=bug|## ELI5|1" \
