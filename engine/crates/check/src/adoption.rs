@@ -542,6 +542,11 @@ impl Ledger {
         // No early return when the ledger is empty: a run with no `adoption`
         // block still states `0 pairs open`, because spec 7 asks for the count
         // on every run (HW-OBL-0152).
+        //
+        // Every line below carries its own `\n` inside the text it hands to
+        // `crate::fill::filled`, because the fill keeps a trailing newline and
+        // adds none. A line without one runs on into the next line, and the
+        // caller's next line after the last (#1495).
         out.push_str("adoption\n");
         let _ = writeln!(
             out,
@@ -596,20 +601,22 @@ impl Ledger {
                 }
             }
             out.push_str(&crate::fill::filled(
-                &format!("    {}", task.statement),
+                // A hand-written block scalar (`statement: |`) arrives with
+                // its own trailing newline, and the line owes exactly one.
+                &format!("    {}\n", task.statement.trim_end()),
                 crate::fill::WIDTH,
             ));
         }
         for refused in &self.refused {
             out.push_str(&crate::fill::filled(
-                &format!("  {} holds nothing: {}", refused.task, refused.why),
+                &format!("  {} holds nothing: {}\n", refused.task, refused.why),
                 crate::fill::WIDTH,
             ));
         }
         for unread in &self.unread {
             out.push_str(&crate::fill::filled(
                 &format!(
-                    "  the block declares `{}`, which nothing here reads: {}",
+                    "  the block declares `{}`, which nothing here reads: {}\n",
                     unread.key, unread.why
                 ),
                 crate::fill::WIDTH,
@@ -646,6 +653,122 @@ mod tests {
                 Ledger::default().render(mode),
                 "adoption\n  0 pairs open, 0 closed, holding 0 findings, in 0 tasks\n",
                 "an empty ledger prints its header and its count line, and nothing else, under {mode:?}"
+            );
+        }
+    }
+
+    /// #1495: `crate::fill::filled` adds no newline to text that had none, so
+    /// every line the ledger writes owes its own. Before the fix the task
+    /// statement, each refused line and each unread line ran on into the next
+    /// line, and `Report::render` glued the read-set summary onto the last of
+    /// them (`...a migration-pending finding31 documents in the read set`).
+    #[test]
+    fn every_ledger_line_ends_before_the_next_begins() {
+        let block = payload(
+            "\
+to: acme/x
+tasks:
+  - id: AD-1
+    statement: the corpus states no summary
+    owner: the docs guild
+    until: 2027-01-01
+    pairs:
+      - {path: docs/a.md, rule: facet.required.missing}
+  - id: AD-2
+    statement: a statement
+    owner: an owner
+    until: 2027-01-01
+    pairs: []
+",
+        );
+        let declared = read(&block, &RULES);
+        let (_, ledger) = apply(
+            vec![finding("docs/a.md", "facet.required.missing")],
+            declared,
+            day("2026-08-13"),
+        );
+        let plain = ledger.render(crate::paint::ColorMode::Plain);
+        assert_eq!(
+            plain,
+            "adoption\n  1 pairs open, 0 closed, holding 1 finding, in 1 task\n  AD-1 1 open, 0 closed, holding 1 finding, owner the docs guild, until\n    2027-01-01\n    the corpus states no summary\n  AD-2 holds nothing: it declares no pair, so it accounts for nothing\n  the block declares `to`, which nothing here reads: it names a migration state.\n    Spec 7 gives one a from-version and a to-version, and no verb of this engine\n    writes either into this block\n",
+            "each ledger line stands on its own line"
+        );
+
+        // Each kind of line, alone in a ledger, ends the render: a regression
+        // in one of the three format strings fails here on its own.
+        let open_only = one_task("      - {path: docs/a.md, rule: facet.required.missing}");
+        let (_, ledger) = apply(
+            vec![finding("docs/a.md", "facet.required.missing")],
+            read(&open_only, &RULES),
+            day("2026-08-13"),
+        );
+        let statement = ledger.render(crate::paint::ColorMode::Plain);
+        assert!(
+            statement.ends_with("    the corpus states no summary\n"),
+            "{statement:?}"
+        );
+
+        let refused_only = payload(
+            "\
+tasks:
+  - id: AD-2
+    statement: a statement
+    owner: an owner
+    until: 2027-01-01
+    pairs: []
+",
+        );
+        let (_, ledger) = apply(Vec::new(), read(&refused_only, &RULES), day("2026-08-13"));
+        let refused = ledger.render(crate::paint::ColorMode::Plain);
+        assert!(refused.ends_with("accounts for nothing\n"), "{refused:?}");
+
+        let unread_only = payload(
+            "\
+to: acme/x
+tasks:
+  - id: AD-1
+    statement: the corpus states no summary
+    owner: the docs guild
+    until: 2027-01-01
+    pairs:
+      - {path: docs/a.md, rule: facet.required.missing}
+",
+        );
+        let (_, ledger) = apply(Vec::new(), read(&unread_only, &RULES), day("2026-08-13"));
+        let unread = ledger.render(crate::paint::ColorMode::Plain);
+        assert!(
+            unread.ends_with("writes either into this block\n"),
+            "{unread:?}"
+        );
+    }
+
+    /// #1495 verify round 1: a hand-written block scalar (`statement: |` or
+    /// `>`) reaches the ledger with its own trailing newline. The line owes
+    /// exactly one newline, so the render adds no empty line after it.
+    #[test]
+    fn a_block_scalar_statement_adds_no_empty_line() {
+        for style in ["|", ">"] {
+            let block = payload(&format!(
+                "\
+tasks:
+  - id: AD-1
+    statement: {style}
+      the corpus states no summary
+    owner: the docs guild
+    until: 2027-01-01
+    pairs:
+      - {{path: docs/a.md, rule: facet.required.missing}}
+"
+            ));
+            let (_, ledger) = apply(
+                vec![finding("docs/a.md", "facet.required.missing")],
+                read(&block, &RULES),
+                day("2026-08-13"),
+            );
+            let plain = ledger.render(crate::paint::ColorMode::Plain);
+            assert!(
+                plain.ends_with("2027-01-01\n    the corpus states no summary\n"),
+                "under `statement: {style}`: {plain:?}"
             );
         }
     }
