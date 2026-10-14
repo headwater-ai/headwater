@@ -767,8 +767,20 @@ anchors
     cited by HW-DR-0097
   code_path `tools/site/refresh-site-tokens.sh` via source-tree
     cited by HW-DR-0050
+  code_path `tools/site/review-site.py` via source-tree
+    cited by HW-DR-0110
+  code_path `tools/site/review-site.py` via source-tree
+    cited by HW-REV-the-site-and-the-published-documentation-read-in-a-headless-browser
+  code_path `tools/site/site-figures-fixtures.sh` via source-tree
+    cited by HW-DR-0110
+  code_path `tools/site/site-figures-fixtures.sh` via source-tree
+    cited by HW-REV-the-site-and-the-published-documentation-read-in-a-headless-browser
   code_path `tools/site/site-noindex-fixtures.sh` via source-tree
     cited by HW-DR-0107
+  code_path `tools/site/site-review-fixtures.sh` via source-tree
+    cited by HW-DR-0110
+  code_path `tools/site/site-review-fixtures.sh` via source-tree
+    cited by HW-REV-the-site-and-the-published-documentation-read-in-a-headless-browser
   code_path `tools/site/site-tokens.css` via source-tree
     cited by HW-DR-0050
   code_path `tools/site/sitemap.py` via source-tree

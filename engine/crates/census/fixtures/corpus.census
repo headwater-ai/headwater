@@ -230,6 +230,8 @@ docs/decisions/0108-the-site-sidebar-lists-a-shelf-in-path-order-and-the-shelf-i
   typed: decision
 docs/decisions/0109-a-task-that-repeats-the-declared-name-of-a-document-names-that-document.md
   typed: decision
+docs/decisions/0110-a-headless-review-of-the-nine-hand-built-pages-joins-ci-and-the-review-of-the-generated-half-stays-a-run-by-hand.md
+  typed: decision
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md
@@ -1257,6 +1259,8 @@ docs/reviews/core-concepts-review-findings.md
 docs/reviews/core-concepts-review-prompt.md
   typed: review_prompt
 docs/reviews/ste-editorial-pass-findings.md
+  typed: review_record
+docs/reviews/the-site-and-the-published-documentation-read-in-a-headless-browser.md
   typed: review_record
 docs/reviews/the-sixty-four-restored-help-strings-checked-against-the-binary.md
   typed: review_record
