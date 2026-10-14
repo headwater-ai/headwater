@@ -5340,6 +5340,17 @@ s/^      - uses: actions\/checkout@v4$/&\
           GH_TOKEN: ${{ github.token }}/
 }' \
     "the report job of install-routes.yml hands gh no GH_TOKEN"
+install_routes_provoke "a report job whose GH_TOKEN is under a key of the step other than env is red" \
+    '/^  report:$/,$s/^        env:$/        with:/' \
+    "the report job of install-routes.yml hands gh no GH_TOKEN"
+# What runs after the comparison is not what it compared.
+install_routes_provoke "an archive job that sets printed to the tag before the comparison and runs --version only after it is red" \
+    '/^  archive:$/,/^  [a-z-]*:$/{
+s/^\( *\)printed=\$("\$HOME\/\.local\/bin\/headwater" --version.*$/\1printed=${tag#v}/
+s/^\( *\)echo "the archive block installs/\1printed=$("$HOME\/.local\/bin\/headwater" --version)\
+&/
+}' \
+    "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
 # A job-level `env:` reaches every step, the one that runs the script included.
 install_routes_provoke "a report job whose GH_TOKEN is in the job's own env is green" \
     '/^  report:$/,${
