@@ -76,7 +76,7 @@ The population of a lexical rule is the body and the facet the shape puts in the
 
 Every other role stays out, and a role is either prose or a label. A facet in the `name` role is a title that a reader scans, and it holds no verb. A sentence-length rule over a title reports a defect whose only repair is a rename. To hold a title to half the rules puts a third category between prose and label that nothing declares. A corpus that writes a sentence into a `name` facet reopens this, and this one does not.
 
-A finding in front matter carries no patch. `check --fix` reaches a run of prose and a relations block, and neither shape edits a mapping, which [HW-OBL-0103](../obligations/0103-the-front-matter-half-of-a-patch-has-no-writer.md) records. The remediation names the correction and a person writes it.
+A finding in the `scent` facet carries no patch. `check --fix` can replace the value of a declared facet, and the two lexical rules do not offer that replacement yet, which [HW-OBL-0103](../obligations/0103-the-front-matter-half-of-a-patch-has-no-writer.md) records. The remediation names the correction and a person writes it.
 
 **An origin is not a scope.** The origin says which part of the taxonomy a rule comes from, and the scope says what one instance of it covers. `identifier.claimed_twice` is Graph-origin, because the identifier index reports the collision, and it is corpus-scoped, because nothing smaller holds both claimants.
 
