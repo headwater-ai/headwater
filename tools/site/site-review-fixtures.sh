@@ -198,6 +198,48 @@ report "  and the page that shows every section and links only served pages is n
     "2 pages flagged, out of 3 served pages" "$scratch/out"
 absent "  and a page with no shelves navigation is not held to it" "clean.html: the navigation" "$scratch/out"
 
+echo "a host read through its sitemap, as the live site is"
+
+# 6. `--base` reads a host's `sitemap.xml` and fetches each page from it. The
+#    host here is a loopback server this suite starts. Its sitemap names one
+#    page, whose navigation links one page the sitemap leaves out and one that
+#    is not served at all. The first is read in a second round and named once.
+#    The second is the page's own defect.
+host="$scratch/host"
+page "$host" a/index.html \
+    '<nav aria-label="Shelves"><span class="hw-grp">Reference</span><a href="../a/">Guides</a><a href="../p/">Specification</a><a href="../gone/">Specification</a></nav>'
+page "$host" p/index.html \
+    '<nav aria-label="Shelves"><span class="hw-grp">Reference</span><a href="../a/">Guides</a><a href="../p/">Specification</a></nav>'
+printf '<urlset><url><loc>http://example.invalid/a/</loc></url></urlset>\n' >"$host/sitemap.xml"
+cat >"$scratch/serve.py" <<'PY'
+import functools, http.server, sys
+handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=sys.argv[1])
+handler.func.log_message = lambda *args: None
+server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
+with open(sys.argv[2], "w") as out:
+    out.write(str(server.server_address[1]))
+server.serve_forever()
+PY
+python3 "$scratch/serve.py" "$host" "$scratch/port" &
+server_pid=$!
+trap 'kill "$server_pid" 2>/dev/null; rm -rf "$scratch"' EXIT HUP INT TERM
+tries=0
+while [ ! -s "$scratch/port" ] && [ "$tries" -lt 50 ]; do
+    sleep 0.1
+    tries=$((tries + 1))
+done
+( cd "$root" && HEADWATER_CHROME="$browser" python3 "$tool" --base "http://127.0.0.1:$(cat "$scratch/port")/" \
+    --nav "$scratch/nav.yml" --jobs 4 >"$scratch/out" 2>"$scratch/err" )
+status=$?
+report "a page the sitemap leaves out is read in a second round" 1 "$status" \
+    "1 page the navigation links answer 200 and the page list does not name them, so they were read in a second round: p/" \
+    "$scratch/out"
+report "  and a link to a page the host does not serve is the page's defect" 1 "$status" \
+    "a/: a navigation link resolves to no served page: gone/" "$scratch/out"
+report "  over both pages, and only the one is flagged" 1 "$status" \
+    "1 page flagged, out of 2 served pages" "$scratch/out"
+kill "$server_pid" 2>/dev/null
+
 echo "screenshots, and only where asked"
 
 # 6. `--shoot` takes every reading of the pages it matches, and a screenshot of

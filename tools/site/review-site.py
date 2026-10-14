@@ -398,7 +398,15 @@ def nav_sections(path):
     return top, second
 
 
-def judge_nav(nav, sections, served, base_url):
+def judge_nav(nav, sections, served, base_url, source, unlisted):
+    """The flags the shelves navigation of one page raises.
+
+    A link to a page the page list does not name is fetched once. One that
+    answers 200 is served and is not this page's defect: it goes into
+    `unlisted`, which the run reports once, because what it says is that the
+    page list (on the live host, the sitemap) left out a page a reader can
+    reach. One that does not answer 200 is this page's defect.
+    """
     flags = []
     if nav is None:
         return flags
@@ -418,7 +426,12 @@ def judge_nav(nav, sections, served, base_url):
         if target is None or target in seen:
             continue
         seen.add(target)
-        if target not in served:
+        if target in served:
+            continue
+        status, _ = source.html(target)
+        if status == 200:
+            unlisted.add(target)
+        else:
             flags.append("a navigation link resolves to no served page: %s" % (target or "/"))
     return flags
 
@@ -441,7 +454,9 @@ def slug(path):
     return (name or "home").replace("/", "_")
 
 
-def review_page(path, base, browser, profiles, timeout, readings, shots, sections, served, base_url):
+def review_page(
+    path, base, browser, profiles, timeout, readings, shots, sections, served, base_url, source, unlisted
+):
     """Return (path, flags, readings-taken, records)."""
     flags = []
     records = []
@@ -474,7 +489,9 @@ def review_page(path, base, browser, profiles, timeout, readings, shots, section
         records.append(reading)
         flags.extend(judge(reading, size, scheme))
         if size == SIZES[0] and scheme == "light":
-            flags.extend(judge_nav(reading.get("nav"), sections, served, base_url))
+            flags.extend(
+                judge_nav(reading.get("nav"), sections, served, base_url, source, unlisted)
+            )
         if shoot and shots is not None:
             target = shots / ("%s--%dx%d-%s.png" % (slug(path), size[0], size[1], scheme))
             try:
@@ -643,38 +660,52 @@ def run(argv):
         schemes = SCHEMES if (shoot or options["dark_all"]) else ("light",)
         return [(size, scheme, shoot) for scheme in schemes for size in SIZES]
 
+    # Pages the navigation reaches and the page list does not name. They are
+    # read in a second round, so that a section the sitemap leaves out is still
+    # reviewed, and the run says how many there were.
+    unlisted = set()
     profiles = tempfile.mkdtemp(prefix="headwater-review-")
     try:
         server = serve(source)
         base = "http://127.0.0.1:%d/" % server.server_address[1]
+
+        def work(path):
+            return review_page(
+                path,
+                base,
+                browser,
+                profiles,
+                options["timeout"],
+                plan(path),
+                options["shots"],
+                sections,
+                served,
+                # A link on a fetched page resolves against its `<base href>`,
+                # which names the host and not the loopback port.
+                options["base"] or base,
+                source,
+                unlisted,
+            )
+
         try:
             with ThreadPoolExecutor(max_workers=options["jobs"]) as pool:
-                results = list(
-                    pool.map(
-                        lambda path: review_page(
-                            path,
-                            base,
-                            browser,
-                            profiles,
-                            options["timeout"],
-                            plan(path),
-                            options["shots"],
-                            sections,
-                            served,
-                            # A link on a fetched page resolves against its
-                            # `<base href>`, which names the host and not the
-                            # loopback port.
-                            options["base"] or base,
-                        ),
-                        pages,
-                    )
-                )
+                results = list(pool.map(work, pages))
+                extra = sorted(unlisted)
+                served.update(extra)
+                results.extend(pool.map(work, extra))
         finally:
             server.shutdown()
             server.server_close()
     finally:
         shutil.rmtree(profiles, ignore_errors=True)
 
+    if extra:
+        print(
+            "%d page%s the navigation links answer 200 and the page list does not "
+            "name them, so they were read in a second round: %s"
+            % (len(extra), "" if len(extra) == 1 else "s", ", ".join(extra))
+        )
+        print("")
     flagged = [(path, flags) for path, flags, _, _ in results if flags]
     readings = sum(taken for _, _, taken, _ in results)
     for path, flags in flagged:
