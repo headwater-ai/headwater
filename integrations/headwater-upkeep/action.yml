@@ -45,7 +45,9 @@ inputs:
     description: >-
       The `headwater-ai/headwater` release tag to install, for example
       `v0.4.0`, or `latest`. It resolves exactly as it does for
-      `integrations/headwater-check`. The engine verbs this action runs
+      `integrations/headwater-check`, so `latest` is the newest release that
+      the `engine:` range of `<root>/.headwater/taxonomy.yml` admits when the
+      corpus states one. The engine verbs this action runs
       (`change`, `check --change`, `route --json`, `explain --json`) are in
       v0.4.0. An engine whose `explain --json` lists the paths each pattern
       matches lets the report name every file a deleted document governed
@@ -107,6 +109,7 @@ runs:
       env:
         GH_TOKEN: ${{ inputs.github-token }}
         REQUESTED: ${{ inputs.version }}
+        ROOT: ${{ inputs.root }}
       run: sh "${{ github.action_path }}/../headwater-check/resolve-version.sh"
 
     - name: Download the release archive and verify its checksum

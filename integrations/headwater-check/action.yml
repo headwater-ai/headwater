@@ -52,7 +52,10 @@ inputs:
       different release stream and carries no engine binary) and that
       carries the `x86_64-unknown-linux-gnu` asset — a tag can exist with
       neither, and `v0.1.1` is a real one, so `latest` does not mean "the
-      newest tag" here.
+      newest tag" here. When `<root>/.headwater/taxonomy.yml` states an
+      `engine:` range, `latest` is the newest such release that the range
+      admits, and the job fails when no release does. A tag named here is
+      installed as named, and the engine then reports a range it is outside.
     required: false
     default: latest
   root:
@@ -116,6 +119,7 @@ runs:
       env:
         GH_TOKEN: ${{ inputs.github-token }}
         REQUESTED: ${{ inputs.version }}
+        ROOT: ${{ inputs.root }}
       run: sh "${{ github.action_path }}/resolve-version.sh"
 
     - name: Download the release archive and verify its checksum
