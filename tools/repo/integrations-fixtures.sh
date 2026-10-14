@@ -231,6 +231,32 @@ json4='[
 got=$(printf '%s' "$json4" | python3 "$resolver")
 same 'no matching release prints nothing rather than a wrong tag' '' "$got"
 
+# Shape 5 (#1600): a corpus that pins an older release. The corpus states
+# `engine: ">=0.4 <0.5"`, so the newest release is the wrong engine, and
+# `latest` must answer with the newest release the range admits.
+json5='[
+  {"tag_name": "v0.6.0", "assets": [
+    {"name": "headwater-v0.6.0-x86_64-unknown-linux-gnu.tar.gz"},
+    {"name": "headwater-v0.6.0-x86_64-unknown-linux-gnu.tar.gz.sha256"}
+  ]},
+  {"tag_name": "v0.5.0", "assets": [
+    {"name": "headwater-v0.5.0-x86_64-unknown-linux-gnu.tar.gz"},
+    {"name": "headwater-v0.5.0-x86_64-unknown-linux-gnu.tar.gz.sha256"}
+  ]},
+  {"tag_name": "v0.4.1", "assets": [
+    {"name": "headwater-v0.4.1-x86_64-unknown-linux-gnu.tar.gz"},
+    {"name": "headwater-v0.4.1-x86_64-unknown-linux-gnu.tar.gz.sha256"}
+  ]}
+]'
+same 'a corpus range picks the newest release it admits, not the newest release' 'v0.4.1' \
+    "$(printf '%s' "$json5" | python3 "$resolver" --range '>=0.4 <0.5')"
+same '  and with no range the newest release still wins' 'v0.6.0' \
+    "$(printf '%s' "$json5" | python3 "$resolver")"
+same '  and a range no release satisfies prints nothing rather than the newest' '' \
+    "$(printf '%s' "$json5" | python3 "$resolver" --range '>=9')"
+printf '%s' "$json5" | python3 "$resolver" --range '~0.4' >/dev/null 2>&1
+same '  and a range this syntax cannot read exits 2' 2 "$?"
+
 printf '\n# assert-no-inline-expression-in-run.py, against the real file and a reintroduced injection\n'
 
 scratch=$(mktemp -d) || exit 1
