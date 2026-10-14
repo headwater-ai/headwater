@@ -1177,6 +1177,36 @@ fn an_assembly_whose_projection_the_generator_refuses_does_not_publish() {
                 !out.exists(),
                 "the refused run left partial output at {out:?}"
             );
+
+            // The other two routes the CLI takes to a publish carry the gate as
+            // well: `--from` with no recipe, and a recipe of a package that
+            // `--package` finds under `.headwater/packages/`.
+            let plain = root.path().join("plain");
+            let (code, stdout, stderr) = publish_plain_from(root.path(), &source, &plain);
+            assert_eq!(code, Some(1), "{stdout}\n{stderr}");
+            assert!(
+                stderr.contains("this taxonomy: `projections.0.output`"),
+                "the plain `--from` publish names the declaration: {stderr}"
+            );
+            assert!(!plain.exists(), "{stderr}");
+
+            copy(&source, &root.path().join(".headwater/packages/acme-fixture"));
+            let found = root.path().join("found");
+            let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+                .args(["taxonomy", "publish", "--package", "acme/fixture"])
+                .args(["--assembly", "starter", "--out"])
+                .arg(&found)
+                .arg("--root")
+                .arg(root.path())
+                .output()
+                .expect("the binary runs");
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            assert_eq!(output.status.code(), Some(1), "{stderr}");
+            assert!(
+                stderr.contains("this taxonomy: `projections.0.output`"),
+                "the `--package --assembly` publish names the declaration: {stderr}"
+            );
+            assert!(!found.exists(), "{stderr}");
         } else {
             assert_eq!(code, Some(0), "{stdout}\n{stderr}");
             assert!(out.join("taxonomy.yml").exists(), "{stdout}");

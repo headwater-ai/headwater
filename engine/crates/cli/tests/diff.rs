@@ -721,8 +721,10 @@ fn a_package_whose_projection_the_generator_refuses_does_not_publish() {
     let ran = root.run(&["taxonomy", "publish", "--out", out.to_str().expect("utf-8")]);
     assert_eq!(ran.code, Some(1), "publish refuses the projection: {ran:?}");
     assert!(ran.err.contains("nothing was published"), "{ran:?}");
+    // The reader's message and not its `Display`, which puts a byte offset
+    // in front that can point into a bundle file the publisher cannot find.
     assert!(
-        ran.err.contains("projections.0.output"),
+        ran.err.contains("this taxonomy: `projections.0.output`"),
         "the refusal names the declaration: {ran:?}"
     );
     assert!(
