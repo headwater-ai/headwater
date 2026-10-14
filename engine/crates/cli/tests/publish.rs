@@ -1246,6 +1246,39 @@ fn a_projection_only_a_bundle_declares_is_refused_at_publish() {
     assert!(!out.exists(), "{stderr}");
 }
 
+/// An assembly whose selected bundle declares a projection the generator
+/// refuses does not publish (#1743, the parent's veto of PR #1749).
+///
+/// The base reads clean, so a gate that read the base source on the assembly
+/// path would pass this recipe. The gate there reads the flattened taxonomy,
+/// which is what ships and which carries what `beta` added.
+#[test]
+fn an_assembly_whose_selected_bundle_declares_a_refused_projection_does_not_publish() {
+    let root = Root::scratch("assembly-bundle-projection");
+    let source = assembly_source(&root, Arm::Sound);
+    let bundle = source.join("bundles/beta/bundle.yml");
+    let text = std::fs::read_to_string(&bundle).expect("the bundle reads");
+    write(
+        &bundle,
+        &format!(
+            "{text}  projections:\n    - {{kind: shelf_index, for: [betas], output: \"{{shelf}}/README.txt\"}}\n"
+        ),
+    );
+    let out = root.path().join("release");
+
+    let (code, stdout, stderr) = publish_assembly_from(root.path(), &source, &out);
+    assert_eq!(code, Some(1), "{stdout}\n{stderr}");
+    assert!(stderr.contains("nothing was published"), "{stderr}");
+    assert!(
+        stderr.contains("this taxonomy: `projections.0.output`") && stderr.contains("README.txt"),
+        "the refusal names the declaration the selected bundle added: {stderr}"
+    );
+    assert!(
+        !out.exists(),
+        "the refused run left partial output at {out:?}"
+    );
+}
+
 /// Publish refuses whatever the generator's reader refuses, and not only the
 /// output extension of #1344, and it reports every refusal rather than the
 /// first (#1743, the first verify of PR #1749).
