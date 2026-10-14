@@ -133,6 +133,16 @@ absent "  and it is not flagged at desktop width" "horizontal overflow at 1280x8
 report "  and the clean page beside it is not blamed" 1 "$status" \
     "1 page flagged, out of 2 served pages" "$scratch/out"
 
+# 1b. The width a page overflows is the width it has for content, not the
+#     window. A page tall enough to show a vertical scrollbar has 15 pixels
+#     less than the window on this browser, and an element 380 pixels wide
+#     overflows it at 390. A reading against `innerWidth` passes this page.
+tall="$scratch/tall"
+page "$tall" tall.html '<div style="width:380px;height:3000px">x</div>'
+status=$(run "$tall")
+report "an overflow narrower than the scrollbar is still flagged" 1 "$status" \
+    "tall.html: horizontal overflow at 390x844, light: scrollWidth 380 >" "$scratch/out"
+
 echo "the reading that must pass, over a stated denominator"
 
 # 2. Two clean pages. A review that flags everything is as useless as one
@@ -189,13 +199,17 @@ page "$nav" spec/index.html \
     '<nav aria-label="Shelves"><span class="hw-grp">Reference</span><a href="../guides/">Guides</a><a href="../spec/">Specification</a></nav>'
 page "$nav" short/index.html \
     '<nav aria-label="Shelves"><span class="hw-grp">Reference</span><a href="../guides/">Guides</a></nav>'
+page "$nav" nogroup/index.html \
+    '<nav aria-label="Shelves"><a href="../guides/">Guides</a><a href="../spec/">Specification</a></nav>'
 status=$(run "$nav" --nav "$scratch/nav.yml")
 report "a navigation link to no served page is flagged" 1 "$status" \
     "guides/: a navigation link resolves to no served page: gone/" "$scratch/out"
 report "  and a section of the nav file the page does not show is flagged" 1 "$status" \
     "short/: the navigation does not show the section \`Specification\` of nav.yml" "$scratch/out"
+report "  and a top-level section the page does not show is flagged" 1 "$status" \
+    "nogroup/: the navigation does not show the section \`Reference\` of nav.yml" "$scratch/out"
 report "  and the page that shows every section and links only served pages is not" 1 "$status" \
-    "2 pages flagged, out of 3 served pages" "$scratch/out"
+    "3 pages flagged, out of 4 served pages" "$scratch/out"
 absent "  and a page with no shelves navigation is not held to it" "clean.html: the navigation" "$scratch/out"
 
 echo "a host read through its sitemap, as the live site is"
@@ -286,6 +300,33 @@ report "a named browser that is not there exits 3" 3 "$status" "no browser at" "
 # 10. An unknown flag is refused rather than ignored.
 status=$(run "$clean" --not-a-flag)
 report "an unknown argument exits 2" 2 "$status" "unknown argument" "$scratch/err"
+
+echo "the judge, called directly"
+
+# 11. A dark reading that the page saw as light is a reading that did not
+#     take, and it is never judged as a light one. Nothing here can make the
+#     browser ignore the scheme on demand, so this case calls the judge on a
+#     literal reading instead, and says so.
+cat >"$scratch/judge.py" <<'PY'
+import importlib.util
+import sys
+
+spec = importlib.util.spec_from_file_location("review", sys.argv[1])
+review = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(review)
+
+reading = {"dark": False, "scrollWidth": 1000, "clientWidth": 390, "focus": None}
+flags = review.judge(reading, (390, 844), "dark")
+assert any("did not take" in f for f in flags), flags
+assert not any("overflow" in f for f in flags), flags
+print("ok")
+PY
+if python3 "$scratch/judge.py" "$tool" >"$scratch/out" 2>"$scratch/err"; then
+    tally "a dark reading the page saw as light is flagged as not taken, and not judged" yes ""
+else
+    tally "a dark reading the page saw as light is flagged as not taken, and not judged" no \
+        "$(tail -1 "$scratch/err")"
+fi
 
 echo
 echo "$passed passed, $failed failed"

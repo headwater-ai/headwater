@@ -31,7 +31,7 @@ These are the costs, measured on 2026-10-15 on an 18-core host with Chrome for T
 | reading | pages | readings | time |
 |---|---|---|---|
 | overflow and focus on the nine pages of `site/`, at both widths | 9 | 18 | 2.4 s |
-| the 29 cases of the fixtures of `review-site.py` | pages the suite writes | not counted | 7.6 s |
+| the 32 cases of the fixtures of `review-site.py` | pages the suite writes | not counted | 7.6 s |
 | the figures a hand-built page states, against their sources | 3 | none | 0.2 s |
 | overflow, focus and navigation on every page of the live host, with 8 browsers | 623 | 1286 | 60 s |
 
