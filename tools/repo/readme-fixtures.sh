@@ -4966,6 +4966,12 @@ echo "every install route the page documents runs on a schedule, and a failure o
 #   - a failure that opens nothing: the report job needs every route job, hands
 #     the script each one's result, runs on `failure()` and may write issues,
 #     and no job can pass when its route fails.
+#   - the mutants that survived the second verify of PR #1730: a job that runs
+#     `headwater --version` and then sets `printed` to the value it expects, a
+#     cargo job that sets `want` to `printed` after reading the registry, a
+#     `GH_TOKEN` on a step other than the one that runs the issue script, an
+#     issue script whose search no longer selects its title, and one that
+#     creates under a title it does not search for.
 #
 # Group 12 holds that `readme-apt.yml` has no schedule of its own and that this
 # workflow calls it.
@@ -5008,11 +5014,21 @@ install_routes_needed() {
 # install_routes_jobs WORKFLOW — one line for each job:
 # `id|routes|calls-apt|runs-version|is-report|needs|if|issues-write|compares-version|gh-token`,
 # with comments skipped. `needs` is read from a flow list on one line.
+# `gh-token` is 1 only when the step that runs `install-route-issue.sh` has
+# `GH_TOKEN` in its own `env:`, or the job has it in the job's `env:`. A token
+# on another step of the job reaches no `gh` the script runs (#1490).
 install_routes_jobs() {
     awk '
+        function flush_step() {
+            if (s_rep && s_tok) tok = 1
+            s_rep = 0; s_tok = 0; s_env = 0
+        }
         function flush() {
+            flush_step()
+            if (j_tok && report) tok = 1
             if (id != "") print id "|" routes "|" apt "|" ver "|" report "|" needs "|" cond "|" iw "|" cmp "|" tok
             id = ""; routes = ""; apt = 0; ver = 0; report = 0; needs = ""; cond = ""; iw = 0; cmp = 0; tok = 0
+            j_env = 0; j_tok = 0
         }
         /^jobs:[ \t]*$/ { in_jobs = 1; next }
         in_jobs && /^[^ #]/ { flush(); in_jobs = 0 }
@@ -5020,6 +5036,10 @@ install_routes_jobs() {
         /^  [A-Za-z0-9_-]+:[ \t]*$/ { flush(); id = $1; sub(/:$/, "", id); next }
         id == "" || /^[ \t]*#/ { next }
         {
+            if ($0 ~ /^      - /) flush_step()
+            if ($0 ~ /^    [A-Za-z_-]+:/) j_env = ($0 ~ /^    env:[ \t]*$/)
+            if ($0 ~ /^        [A-Za-z_-]+:/) s_env = ($0 ~ /^        env:[ \t]*$/)
+            if ($0 ~ /^      - [A-Za-z_-]+:/) s_env = 0
             if (match($0, /sh tools\/repo\/readme-install-block\.sh README\.md [a-z-]+/)) {
                 n = split(substr($0, RSTART, RLENGTH), w, " ")
                 routes = routes " " w[n]
@@ -5027,14 +5047,15 @@ install_routes_jobs() {
             if ($0 ~ /^    uses: \.\/\.github\/workflows\/readme-apt\.yml$/) apt = 1
             if ($0 ~ /headwater"? --version/) ver = 1
             if ($0 ~ /if \[ "\$printed" != "[^"]+" \]; then/) cmp = 1
-            if ($0 ~ /sh tools\/repo\/install-route-issue\.sh/) report = 1
+            if ($0 ~ /sh tools\/repo\/install-route-issue\.sh/) { report = 1; s_rep = 1 }
             if ($0 ~ /^    needs:/) {
                 needs = $0; sub(/^    needs:[ \t]*/, "", needs)
                 gsub(/\[/, "", needs); gsub(/\]/, "", needs); gsub(/ /, "", needs)
             }
             if ($0 ~ /^    if:/) { cond = $0; sub(/^    if:[ \t]*/, "", cond) }
             if ($0 ~ /^      issues: write[ \t]*$/) iw = 1
-            if ($0 ~ /^          GH_TOKEN: \$\{\{ (github\.token|secrets\.GITHUB_TOKEN) \}\}[ \t]*$/) tok = 1
+            if (s_env && $0 ~ /^          GH_TOKEN: \$\{\{ (github\.token|secrets\.GITHUB_TOKEN) \}\}[ \t]*$/) s_tok = 1
+            if (j_env && $0 ~ /^      GH_TOKEN: \$\{\{ (github\.token|secrets\.GITHUB_TOKEN) \}\}[ \t]*$/) j_tok = 1
         }
         END { flush() }
     ' "$1"
@@ -5056,11 +5077,21 @@ install_routes_block() {
 # the extractor's `release` route, reads `route.sh`, or runs `cargo search
 # headwater-cli`. A comparison with `$printed` itself, or with a value typed
 # into the job, is `bad`: either passes on any version.
+#
+# Each hop takes the LAST assignment of the variable before the comparison,
+# an assignment after a `;` on a line included, because that is the value the
+# comparison reads. And the last assignment of `printed` before the
+# comparison must be the one that runs `headwater ... --version`: a job that
+# runs the binary and then sets `printed` to the expected value compares the
+# expected value with itself (#1490).
 install_routes_compared() {
     _blk=$(install_routes_block "$1" "$2")
     _line=$(printf '%s\n' "$_blk" | grep -E 'if \[ "\$printed" != "[^"]+" \]; then' | head -n 1)
     [ -n "$_line" ] || { echo bad; return; }
     printf '%s\n' "$_blk" | grep -A1 -F "$_line" | sed -n 2p | grep -qE '&& exit 1$' || { echo bad; return; }
+    _before=$(printf '%s\n' "$_blk" | awk -v l="$_line" '$0 == l { exit } { print }')
+    printf '%s\n' "$_before" | grep -E '(^|[ ;])printed=' | tail -n 1 | grep -qE 'headwater"? --version' ||
+        { echo bad; return; }
     _var=$(printf '%s\n' "$_line" | sed -n 's/.*!= "\$[{]\{0,1\}\([A-Za-z_][A-Za-z0-9_]*\).*/\1/p')
     _hops=0
     while [ "$_hops" -lt 4 ]; do
@@ -5068,7 +5099,7 @@ install_routes_compared() {
             echo bad
             return
         fi
-        _def=$(printf '%s\n' "$_blk" | grep -E "(^|[ ])$_var=" | grep -v 'if \[' | head -n 1)
+        _def=$(printf '%s\n' "$_before" | grep -E "(^|[ ;])$_var=" | tail -n 1)
         case $_def in
             "") echo bad; return ;;
             *'readme-install-block.sh README.md release'* | *'route.sh'* | *'cargo search headwater-cli'*)
@@ -5277,7 +5308,7 @@ install_routes_provoke "a workflow on the self-hosted runner is red" \
     "install-routes.yml runs on the self-hosted runner, where a scheduled job competes with the merge queue"
 install_routes_provoke "a route job that never runs headwater --version is red" \
     '/^  source:$/,/^  [a-z-]*:$/s/headwater" --version/headwater" --help/' \
-    "the job source of install-routes.yml runs a route and never runs headwater --version"
+    "the job source of install-routes.yml runs a route and never runs headwater --version|the job source of install-routes.yml never compares the version it printed with the one its route installs"
 install_routes_provoke "a route job that prints the version and never compares it is red" \
     '/^  cargo:$/,/^  [a-z-]*:$/{/if \[ "\$printed" != /,/^ *fi$/d;}' \
     "the job cargo of install-routes.yml never compares the version it printed with the one its route installs"
@@ -5298,7 +5329,7 @@ install_routes_provoke "a Debian 11 job that runs headwater --version and then s
 \1printed=$WANT/' \
     "the job deb-file of install-routes.yml never compares the version it printed with the one its route installs"
 install_routes_provoke "a cargo job that sets want to printed after the registry read is red" \
-    '/^  cargo:$/,/^  [a-z-]*:$/s/^\( *printed=\$(.*--version.*\)$/\1; want="$printed"/' \
+    '/^  cargo:$/,/^  [a-z-]*:$/s/^\( *printed=\$(.*--version.*\)$/\1;want="$printed"/' \
     "the job cargo of install-routes.yml never compares the version it printed with the one its route installs"
 install_routes_provoke "a report job whose GH_TOKEN is on the checkout step and not the step that runs the script is red" \
     '/^  report:$/,${
