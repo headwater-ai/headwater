@@ -4729,6 +4729,47 @@ apt_planted "the extractor on a page with no APT paragraph prints nothing and ex
     "0|nonzero" \
     "$(wc -c <"$scratch/apt-job/no-paragraph.out" | tr -d ' ')|$([ "$apt_refused" -ne 0 ] && echo nonzero || echo zero)"
 
+# The page with the fence after the APT paragraph removed, through to its
+# closing backquotes, and nothing else changed. The next fence on the page is
+# another route's, and the extractor must not print it (#1490): a workflow that
+# runs it would go green on the cargo block while no APT command ran.
+awk '
+    !seen && /^\*\*Install it with apt/ { seen = 1; print; next }
+    seen == 1 && /^[ \t]*```/ { if (fence) { seen = 2; next } fence = 1; next }
+    seen == 1 && fence { next }
+    { print }
+' "$readme" >"$scratch/apt-job/no-fence.md"
+if [ -f "$apt_block" ]; then
+    sh "$apt_block" "$scratch/apt-job/no-fence.md" >"$scratch/apt-job/no-fence.out" 2>/dev/null
+    apt_refused=$?
+else
+    : >"$scratch/apt-job/no-fence.out"
+    apt_refused=0
+fi
+apt_planted "the extractor on a page whose APT fence is gone prints nothing and exits nonzero, not the next route's fence" \
+    "$readme" "$scratch/apt-job/no-fence.md" \
+    "0|nonzero" \
+    "$(wc -c <"$scratch/apt-job/no-fence.out" | tr -d ' ')|$([ "$apt_refused" -ne 0 ] && echo nonzero || echo zero)"
+
+# The same page with a paragraph between the APT paragraph and its fence. The
+# fence is no longer the paragraph's next block, so the extractor refuses it,
+# as `fence()` in `tools/repo/readme-install-block.sh` refuses one.
+awk '
+    !seen && /^\*\*Install it with apt/ { seen = 1; print; print ""; print "An interposed paragraph."; next }
+    { print }
+' "$readme" >"$scratch/apt-job/interposed.md"
+if [ -f "$apt_block" ]; then
+    sh "$apt_block" "$scratch/apt-job/interposed.md" >"$scratch/apt-job/interposed.out" 2>/dev/null
+    apt_refused=$?
+else
+    : >"$scratch/apt-job/interposed.out"
+    apt_refused=0
+fi
+apt_planted "the extractor refuses a fence that is not the next block after the APT paragraph" \
+    "$readme" "$scratch/apt-job/interposed.md" \
+    "0|nonzero" \
+    "$(wc -c <"$scratch/apt-job/interposed.out" | tr -d ' ')|$([ "$apt_refused" -ne 0 ] && echo nonzero || echo zero)"
+
 # 12e. The page gives Debian 11 a route that works there: the Debian package
 # from the release page, installed from its file. The block stops on Debian 11
 # at its first install, and no download tool installs there either, so the
