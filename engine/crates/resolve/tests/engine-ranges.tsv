@@ -1,0 +1,50 @@
+# The engine range syntax, one case per row: range<TAB>version<TAB>yes|no|error.
+#
+# `release::satisfies` is the definition, and `engine_ranges.rs` holds every
+# row against it. Two evaluators outside the engine read the same range before
+# any engine is installed: the Python one in
+# `integrations/headwater-check/resolve-latest.py`, which
+# `tools/repo/integrations-fixtures.sh` holds to this file, and the `awk` one in
+# `site/install.sh`, which `tools/repo/readme-fixtures.sh` holds to this file.
+# A row added here is a row all three must agree on.
+#
+# Lines that open with `#` and blank lines are not cases.
+>=0.5 <0.6	0.5.0	yes
+>=0.5 <0.6	0.5.9	yes
+>=0.5 <0.6	0.6.0	no
+>=0.5 <0.6	0.6	no
+>=0.5 <0.6	0.4.9	no
+>=0.5  <0.6	0.5.3	yes
+<0.6 >=0.5	0.7.0	no
+=0.5.0	0.5.0	yes
+=0.5.0	0.5.1	no
+=0.5	0.5.0	yes
+0.5.0	0.5.0	yes
+0.5.0	0.5.1	no
+>0.4.9 <=0.5.0	0.5.0	yes
+>0.4.9 <=0.5.0	0.5.1	no
+>0.5	0.5.0	no
+>0.5	0.5.1	yes
+<2	1.99.0	yes
+<2	2.0.0	no
+>=1.4	1.4	yes
+>=1.4	1.3.99	no
+>=0.6	0.10.0	yes
+<0.10	0.9.0	yes
+>=00.05	0.5.0	yes
+>=+0.5	0.5.0	yes
+<=18446744073709551615	0.5.0	yes
+<18446744073709551616	0.5.0	error
+>=9 ~0.5	0.5.0	no
+~0.5	0.5.0	error
+^0.5	0.5.0	error
+=>0.5	0.5.0	error
+>= 0.5	0.5.0	error
+>=0.5.0.1	0.5.0	error
+>=0.5.	0.5.0	error
+>=0.5a	0.5.0	error
+>=-1	0.5.0	error
+	0.5.0	error
+>=0.5	v0.5.0	error
+>=0.5	0.5.0.0	error
+>=0.5		error
