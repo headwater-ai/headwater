@@ -1740,6 +1740,42 @@ jobs:
             exit 0
           fi
           exit "$status"
+      - name: No hand-built page scrolls sideways at phone width
+        # The console check above reads one window size. A page wider than a
+        # phone has an empty console and passes it. `tools/site/review-site.py`
+        # reads the nine pages of `site/` at 1280 and 390 pixels wide, with
+        # their keyboard focus, and fails on a page that scrolls sideways.
+        # Measured at 2.4 s on 2026-10-15. The same tool over every generated
+        # page stays a run by hand: on that day it flagged 81 of 623 pages for
+        # one wide-table defect, and the decision record that ruled this step
+        # names the condition under which that reading joins CI. Exit 3 is the
+        # skip the step above takes, for the same reason.
+        run: |
+          status=0
+          python3 tools/site/review-site.py site || status=$?
+          if [ "$status" = 3 ]; then
+            echo "::warning title=Site review skipped::No Chrome or Chromium on this runner, so no hand-built page was read at phone width."
+            exit 0
+          fi
+          exit "$status"
+      - name: The site review flags what it claims to flag
+        # Spec 12 refuses a check that ships with no failing fixture. The suite
+        # serves a page 1000 pixels wide and asserts it is flagged at 390 and
+        # not at 1280, beside a clean page that is not flagged, and provokes
+        # the dark, focus and navigation readings the same way.
+        run: |
+          status=0
+          sh tools/site/site-review-fixtures.sh || status=$?
+          if [ "$status" = 3 ]; then
+            echo "::warning title=Site review fixtures skipped::No Chrome or Chromium on this runner, so none of these cases ran."
+            exit 0
+          fi
+          exit "$status"
+      - name: A figure a person typed on a hand-built page agrees with its source
+        # The release, the Rust floor and the platforms that `site/` names
+        # outside a `data-figure` element. The suite header names each source,
+        # and the review record of #1489 names what holds every other figure.
+        run: sh tools/site/site-figures-fixtures.sh
       - name: The first screen resolves, and says one true thing about its own tag
         # Two properties of the root `README.md`, and NOT its prose. Nothing
         # else here reads that file at all: `docs/` is the corpus root, so no

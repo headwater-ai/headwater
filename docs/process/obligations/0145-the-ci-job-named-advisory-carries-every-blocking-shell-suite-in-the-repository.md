@@ -3,7 +3,7 @@ id: HW-OBL-0145
 status: current
 status_since: 2026-09-06
 last_verified: 2026-09-21
-title: "The CI job named \\\"(advisory)\\\" carries every blocking shell suite in the repository"
+title: "The CI job named \"(advisory)\" carries every blocking shell suite in the repository"
 summary: "The CI job named advisory blocks on eleven of its own steps, not the two its name describes."
 provenance:
   warrant: accepted
@@ -15,7 +15,7 @@ provenance:
 waiting_on: adopter
 ---
 
-# The CI job named \"(advisory)\" carries every blocking shell suite in the repository
+# The CI job named "(advisory)" carries every blocking shell suite in the repository
 
 ## Context
 

@@ -452,3 +452,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 ## 106 — A governing document repoints a link to a rule that moved, and a record of a moment stays as written
 
 [HW-DR-0106](../decisions/0106-a-governing-document-repoints-a-link-to-a-rule-that-moved-and-a-record-of-a-moment-stays-as-written.md) — When a rule moves to a new home, a document that still governs changes its link to the home and keeps its claim. An evaluation, a review or a probe run stays as written, and its date or commit marks its moment (asserted, and no human has accepted it)
+
+## 110 — A headless review of the nine hand-built pages joins CI, and the review of the generated half stays a run by hand
+
+[HW-DR-0110](../decisions/0110-a-headless-review-of-the-nine-hand-built-pages-joins-ci-and-the-review-of-the-generated-half-stays-a-run-by-hand.md) — CI reads the nine hand-built pages at 390 and 1280 pixels wide for 2.4 seconds a run. The same reading over 623 generated pages flags 81 for one table defect, so it stays a run by hand until that defect is fixed. (asserted, and no human has accepted it)
