@@ -740,6 +740,37 @@ tasks:
         );
     }
 
+    /// #1495 verify round 1: a hand-written block scalar (`statement: |` or
+    /// `>`) reaches the ledger with its own trailing newline. The line owes
+    /// exactly one newline, so the render adds no empty line after it.
+    #[test]
+    fn a_block_scalar_statement_adds_no_empty_line() {
+        for style in ["|", ">"] {
+            let block = payload(&format!(
+                "\
+tasks:
+  - id: AD-1
+    statement: {style}
+      the corpus states no summary
+    owner: the docs guild
+    until: 2027-01-01
+    pairs:
+      - {{path: docs/a.md, rule: facet.required.missing}}
+"
+            ));
+            let (_, ledger) = apply(
+                vec![finding("docs/a.md", "facet.required.missing")],
+                read(&block, &RULES),
+                day("2026-08-13"),
+            );
+            let plain = ledger.render(crate::paint::ColorMode::Plain);
+            assert!(
+                plain.ends_with("2027-01-01\n    the corpus states no summary\n"),
+                "under `statement: {style}`: {plain:?}"
+            );
+        }
+    }
+
     fn payload(source: &str) -> Mapping {
         headwater_yaml::load(source)
             .expect("the payload loads")
