@@ -136,14 +136,21 @@ struct Ran {
 
 impl Ran {
     /// Every finding of this rule, as the text report prints it: the line
-    /// `<path>:<line>:<column> <severity>`, and the line `  <rule>: <message>`
-    /// under it, joined by a newline.
+    /// `<path>:<line>:<column> ✗ <severity>`, then a newline, then the rule,
+    /// the message and the fix with their wrapped lines joined by one space.
     fn of_rule(&self) -> Vec<String> {
-        let lines: Vec<&str> = self.out.lines().collect();
-        lines
-            .windows(2)
-            .filter(|pair| pair[1].starts_with(&format!("  {RULE}: ")))
-            .map(|pair| format!("{}\n{}", pair[0], pair[1]))
+        let lines: Vec<&str> = self.out.lines().map(str::trim).collect();
+        let opens = format!("{RULE}: ");
+        (1..lines.len())
+            .filter(|at| lines[*at].starts_with(&opens))
+            .map(|at| {
+                let body: Vec<&str> = lines[at..]
+                    .iter()
+                    .copied()
+                    .take_while(|line| !line.is_empty())
+                    .collect();
+                format!("{}\n{}", lines[at - 1], body.join(" "))
+            })
             .collect()
     }
 }
@@ -189,7 +196,7 @@ fn refused(ran: &Ran, line: usize) -> String {
         ran.out
     );
     let head = found[0].lines().next().expect("the finding has a location");
-    assert!(head.ends_with(" error"), "the finding is an error\n{head}");
+    assert!(head.ends_with("error"), "the finding is an error\n{head}");
     found[0].clone()
 }
 
@@ -237,6 +244,17 @@ fn an_admitted_value_raises_nothing() {
     root.write(PATH, &review("doc_type: review_record\n"));
     let ran = root.strict();
     assert!(ran.of_rule().is_empty(), "{}", ran.out);
+}
+
+/// The rule is one corpus instance in every run, whether or not any document
+/// stops, so a corpus with nothing to report still shows that it was checked.
+#[test]
+fn the_rule_is_one_instance_over_the_corpus() {
+    let root = Root::new("instance");
+    root.write(PATH, &review("doc_type: review_record\n"));
+    let ran = root.strict();
+    let counted = format!("1 instances of {RULE}");
+    assert!(ran.out.contains(&counted), "no `{counted}`\n{}", ran.out);
 }
 
 /// A path that no shelf claims is an ordinary state of a corpus, and it is
