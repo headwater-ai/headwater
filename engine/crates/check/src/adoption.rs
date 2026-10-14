@@ -601,20 +601,20 @@ impl Ledger {
                 }
             }
             out.push_str(&crate::fill::filled(
-                &format!("    {}", task.statement),
+                &format!("    {}\n", task.statement),
                 crate::fill::WIDTH,
             ));
         }
         for refused in &self.refused {
             out.push_str(&crate::fill::filled(
-                &format!("  {} holds nothing: {}", refused.task, refused.why),
+                &format!("  {} holds nothing: {}\n", refused.task, refused.why),
                 crate::fill::WIDTH,
             ));
         }
         for unread in &self.unread {
             out.push_str(&crate::fill::filled(
                 &format!(
-                    "  the block declares `{}`, which nothing here reads: {}",
+                    "  the block declares `{}`, which nothing here reads: {}\n",
                     unread.key, unread.why
                 ),
                 crate::fill::WIDTH,
