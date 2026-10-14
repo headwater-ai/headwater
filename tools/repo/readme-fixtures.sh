@@ -5111,6 +5111,13 @@ install_routes_block() {
     ' "$1"
 }
 
+# install_routes_sets NAME PREFIX — the lines of standard input that set NAME:
+# an assignment after PREFIX, a `for NAME in`, or a `read` whose last names
+# include NAME.
+install_routes_sets() {
+    grep -E "${2}$1=|(^|[^A-Za-z0-9_])for[[:blank:]]+$1[[:blank:]]+in([[:blank:]]|;|\$)|${2}(IFS=[^[:blank:]]*[[:blank:]]+)?read([[:blank:]]+-[A-Za-z]+)*([[:blank:]]+[A-Za-z_][A-Za-z0-9_]*)*[[:blank:]]+$1([[:blank:]]|<|;|\$)"
+}
+
 # install_routes_compared WORKFLOW JOB — `ok` when the job compares the
 # version it printed with a value it read from the page or the registry, and
 # fails on a difference. The right-hand side of `if [ "$printed" != "..." ]`
@@ -5119,26 +5126,35 @@ install_routes_block() {
 # headwater-cli`. A comparison with `$printed` itself, or with a value typed
 # into the job, is `bad`: either passes on any version.
 #
-# Each hop takes the LAST assignment of the variable before the comparison,
-# after any character that cannot end a shell name (a `;`, `&&`, a tab, a
-# quote), because that is the value the comparison reads. And the last
-# assignment of `printed` before the comparison must be exactly the pipe of
-# `headwater ... --version` into `awk '{print $NF}'`, with no `;`, `&`, `|` or
-# redirect before it and nothing after it: a job that runs the binary and
-# then sets `printed` to the expected value compares the expected value with
-# itself (#1490).
+# Each hop takes the LAST line before the comparison that sets the variable,
+# because that is the value the comparison reads. A line sets it where a
+# command starts: at the start of the line, after `;`, `&`, `|`, `(` or `{`,
+# after `then`, `do` or `else`, after `eval`, `export`, `local` or
+# `readonly` and an optional quote, or after `-e` or `--env` of `docker run`,
+# which sets it in the container; and a `for NAME in` or a `read ... NAME`
+# sets it too. Text that only names it, such as `echo "printed=$printed"`,
+# sets nothing.
+#
+# The last line that sets `printed` must set it to the `--version` pipe: a
+# command substitution, quoted or not, of `headwater ... --version`, stderr
+# optionally merged or dropped, into an `awk` that prints one field, with
+# nothing after it but a comment. A job that runs the binary and then sets
+# `printed` to the expected value compares the expected value with itself
+# (#1490).
 install_routes_compared() {
     _blk=$(install_routes_block "$1" "$2")
     _line=$(printf '%s\n' "$_blk" | grep -E 'if \[ "\$printed" != "[^"]+" \]; then' | head -n 1)
     [ -n "$_line" ] || { echo bad; return; }
     printf '%s\n' "$_blk" | grep -A1 -F "$_line" | sed -n 2p | grep -qE '&& exit 1$' || { echo bad; return; }
     _before=$(printf '%s\n' "$_blk" | awk -v l="$_line" '$0 == l { exit } { print }')
-    # From the last `printed=` on, the line is the `--version` pipe and nothing
-    # else: no `;`, `&` or redirect inside it, and nothing after it.
     _q="'"
-    printf '%s\n' "$_before" | grep -E '(^|[^A-Za-z0-9_])printed=' | tail -n 1 |
-        sed -E 's/^(.*[^A-Za-z0-9_])?printed=/printed=/' |
-        grep -qE '^printed=\$\([^;&|<>]*headwater"? --version \| awk ('"$_q"'\{print \$NF\}'"$_q"'|"\{print \\\$NF\}")\)[[:blank:]]*$' ||
+    _pre='(^[[:blank:]]*|[;&|(){][[:blank:]]*|(then|do|else|eval|export|local|readonly|-e|--env)[[:blank:]]+["'"$_q"']?)'
+    _set=$(printf '%s\n' "$_before" | install_routes_sets printed "$_pre" | tail -n 1)
+    # The line opens with the assignment, so nothing before it on the line
+    # can guard it or set `printed` first, and its command is one word that
+    # names `headwater`, after an optional `env`.
+    printf '%s\n' "$_set" | sed -E 's/^[[:blank:]]*((export|local|readonly)[[:blank:]]+)?printed=//; s/[[:blank:]]+#.*$//' |
+        grep -qE '^"?\$\((env([[:blank:]]+(-i|[A-Za-z_][A-Za-z0-9_]*=[^[:blank:];&|<>]*))*[[:blank:]]+)?"?[^[:blank:];&|<>"]*headwater"? --version([[:blank:]]+2>(&1|/dev/null))?[[:blank:]]*\|[[:blank:]]*awk[[:blank:]]+('"$_q"'\{[[:blank:]]*print[[:blank:]]+\$(NF|[0-9]+)[[:blank:]]*\}'"$_q"'|"\{[[:blank:]]*print[[:blank:]]+\\\$(NF|[0-9]+)[[:blank:]]*\}")\)"?[[:blank:]]*$' ||
         { echo bad; return; }
     _var=$(printf '%s\n' "$_line" | sed -n 's/.*!= "\$[{]\{0,1\}\([A-Za-z_][A-Za-z0-9_]*\).*/\1/p')
     _hops=0
@@ -5147,7 +5163,7 @@ install_routes_compared() {
             echo bad
             return
         fi
-        _def=$(printf '%s\n' "$_before" | grep -E "(^|[^A-Za-z0-9_])$_var=" | tail -n 1)
+        _def=$(printf '%s\n' "$_before" | install_routes_sets "$_var" "$_pre" | tail -n 1)
         case $_def in
             "") echo bad; return ;;
             *'readme-install-block.sh README.md release'* | *'route.sh'* | *'cargo search headwater-cli'*)
@@ -5477,6 +5493,19 @@ install_routes_provoke "a cargo job that sets want through read from a here-docu
 \1$printed\
 \1EOF/' \
     "the job cargo of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "an archive job that sets printed to the tag and comments the pipe out is red" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/^\( *\)\(printed=\$("\$HOME.*\)$/\1printed=${tag#v} # \2/' \
+    "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "an archive job whose pipe runs only behind false && is red" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/^\( *\)\(printed=\$("\$HOME.*\)$/\1printed=${tag#v}; false \&\& \2/' \
+    "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "an archive job whose pipe runs sh -c to echo the tag is red" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/printed=\$("\$HOME/printed=$(sh -c "echo ${tag#v}" "$HOME/' \
+    "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "an archive job that sets printed inside a case arm is red" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/^\( *\)printed=\$("\$HOME\/\.local\/bin\/headwater" --version.*$/&\
+\1case x in x) printed=${tag#v} ;; esac/' \
+    "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
 # A job-level `env:` reaches every step, the one that runs the script included.
 install_routes_provoke "a report job whose GH_TOKEN is in the job's own env is green" \
     '/^  report:$/,${
@@ -5604,7 +5633,8 @@ routes_gh_token=stub
 # so a create under another title and a search for another title cannot both
 # drift and agree.
 routes_title=$(sed -n 's/^title="\([^"]*\)"$/\1/p' "$routes_issue" 2>/dev/null)
-routes_decoy='{"number":7,"title":"Another failure labeled bug"}'
+# The decoy opens with the same words, so only the whole title tells them apart.
+routes_decoy='{"number":7,"title":"An install route of the site failed"}'
 routes_titled="{\"number\":42,\"title\":\"$routes_title\"}"
 same "the stub gh can run the script's --jq" \
     "jq" "$(command -v jq >/dev/null 2>&1 && echo jq)"
