@@ -189,6 +189,16 @@ PROBE = b"""<script>
 </script>
 """
 
+# The live host answers Python's default user agent with 403, measured on
+# 2026-10-15. `tools/site/check-live-site.py` names itself the same way.
+USER_AGENT = "headwater-review-site/1 (+https://headwater.tools/)"
+
+
+def fetch(url):
+    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    return urllib.request.urlopen(request, timeout=60)
+
+
 READING = re.compile(r'data-headwater-review="([A-Za-z0-9+/=]*)"')
 
 
@@ -240,7 +250,7 @@ class Source:
                 return self.cache[path]
         url = self.base + path
         try:
-            with urllib.request.urlopen(url, timeout=60) as response:
+            with fetch(url) as response:
                 answer = response.status, inject(response.read(), base_href=url)
         except urllib.error.HTTPError as error:
             answer = error.code, b""
@@ -379,22 +389,24 @@ def judge(reading, size, scheme):
     return flags
 
 
+# `headwater generate` writes `.headwater/nav.yml` in one fixed shape: a
+# top-level section at two spaces of indent, a second-level one at six, each a
+# double-quoted key that opens a list. Reading that shape by pattern keeps
+# PyYAML off the CI step that runs this tool, and the fixture suite's nav file
+# is written in the same shape.
+NAV_SECTION = re.compile(r'^( {2}| {6})- ("(?:[^"\\]|\\.)*"):\s*$')
+
+
 def nav_sections(path):
     """The top-level and second-level section names of a nav file."""
     if path is None or not path.is_file():
         return None
-    import yaml
-
-    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     top, second = [], []
-    for entry in data.get("nav") or []:
-        if not isinstance(entry, dict):
-            continue
-        for name, children in entry.items():
-            top.append(name)
-            for child in children if isinstance(children, list) else []:
-                if isinstance(child, dict):
-                    second.extend(child.keys())
+    for line in path.read_text(encoding="utf-8").splitlines():
+        found = NAV_SECTION.match(line)
+        if found:
+            name = json.loads(found.group(2))
+            (top if len(found.group(1)) == 2 else second).append(name)
     return top, second
 
 
@@ -625,7 +637,7 @@ def collect_directory(root):
 
 def collect_sitemap(base):
     try:
-        with urllib.request.urlopen(base + "sitemap.xml", timeout=60) as response:
+        with fetch(base + "sitemap.xml") as response:
             text = response.read().decode("utf-8", "replace")
     except OSError as error:
         raise Report(["could not read `%ssitemap.xml`: %s" % (base, error)])
