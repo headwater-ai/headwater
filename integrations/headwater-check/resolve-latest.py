@@ -39,11 +39,19 @@ import sys
 
 U64_MAX = 2**64 - 1
 OPERATORS = (">=", "<=", ">", "<", "=")
+# The characters Rust's `split_whitespace` and `trim` read as blank: Unicode
+# White_Space. Python's own `split()` and `strip()` also take U+001C to
+# U+001F, which the engine does not, so neither is used here.
+BLANKS = "\t\n\x0b\x0c\r \x85\xa0                　"
+
+
+def terms_of(range_):
+    return [term for term in re.split(f"[{BLANKS}]+", range_) if term]
 
 
 def parse(version):
     """One to three dot-separated whole numbers; an absent part is zero."""
-    trimmed = version.strip()
+    trimmed = version.strip(BLANKS)
     if not trimmed:
         raise ValueError("a version with no digits in it")
     split = trimmed.split(".")
@@ -52,9 +60,13 @@ def parse(version):
     parts = [0, 0, 0]
     for index, part in enumerate(split):
         # Rust's u64 parse: an optional `+`, then ASCII digits, below 2^64.
-        if not re.fullmatch(r"\+?[0-9]+", part) or int(part) > U64_MAX:
+        # Leading zeros go first, so a long run of them is no large number.
+        if not re.fullmatch(r"\+?[0-9]+", part):
             raise ValueError(f"`{trimmed}` is not three numbers")
-        parts[index] = int(part)
+        digits = part.lstrip("+").lstrip("0") or "0"
+        if len(digits) > 20 or int(digits) > U64_MAX:
+            raise ValueError(f"`{trimmed}` holds a number past 2^64")
+        parts[index] = int(digits)
     return tuple(parts)
 
 
@@ -69,7 +81,7 @@ def satisfies(range_, version):
     """True or False, or ValueError, as `release::satisfies` answers."""
     target = parse(version)
     comparators = 0
-    for term in range_.split():
+    for term in terms_of(range_):
         comparators += 1
         operator, rest = split_operator(term)
         bound = parse(rest)
@@ -89,7 +101,7 @@ def satisfies(range_, version):
 
 def check_range(range_):
     """Refuse a range any of whose comparators cannot be read."""
-    terms = range_.split()
+    terms = terms_of(range_)
     if not terms:
         raise ValueError("it states no comparison at all")
     for term in terms:

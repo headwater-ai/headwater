@@ -157,14 +157,38 @@ fn unquoted_engine_range(path: &Path) -> Option<String> {
         return None;
     }
     let text = std::fs::read_to_string(path).ok()?;
-    text.lines().find_map(|line| {
-        let value = line.strip_prefix(ENGINE)?.strip_prefix(':')?.trim();
-        let value = match value.find(" #") {
-            Some(comment) => value[..comment].trim_end(),
-            None => value,
-        };
-        value.starts_with('>').then(|| value.to_string())
-    })
+    let value = text
+        .lines()
+        .find_map(|line| line.strip_prefix(ENGINE)?.strip_prefix(':'))?
+        .trim();
+    // A comment opens at a `#` that follows a blank.
+    let comment = value
+        .char_indices()
+        .find(|&(at, character)| character == '#' && value[..at].ends_with([' ', '\t']))
+        .map(|(at, _)| at);
+    let value = match comment {
+        Some(at) => value[..at].trim_end(),
+        None => value,
+    };
+    let rest = value.strip_prefix('>')?;
+    // A header alone, such as `>`, `>-` or `>2+`, opens a folded block that
+    // loads, so a file that fails with one fails for another reason.
+    (!is_block_header(rest)).then(|| value.to_string())
+}
+
+/// Whether the text after a `>` is the rest of a YAML block scalar header: an
+/// optional indentation digit and an optional chomping sign, in either order.
+fn is_block_header(rest: &str) -> bool {
+    let mut digit = false;
+    let mut sign = false;
+    for character in rest.chars() {
+        match character {
+            '1'..='9' if !digit => digit = true,
+            '+' | '-' if !sign => sign = true,
+            _ => return false,
+        }
+    }
+    true
 }
 
 /// Read the consumer declaration of a repository.

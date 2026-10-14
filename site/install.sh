@@ -183,9 +183,16 @@ engine_range_of() {
 # cannot be read is an error wherever it stands.
 satisfies() {
     HW_RANGE=$1 HW_VERSION=$2 LC_ALL=C awk '
+        # The engine splits and trims on every Unicode white space character,
+        # so each one, as UTF-8 bytes, becomes a space before awk splits.
+        function blank(s,    i) {
+            for (i = 1; i <= nblanks; i++) gsub(blanks[i], " ", s)
+            return s
+        }
         function trim(s) {
-            sub(/^[ \t\r\n]+/, "", s)
-            sub(/[ \t\r\n]+$/, "", s)
+            s = blank(s)
+            sub(/^ +/, "", s)
+            sub(/ +$/, "", s)
             return s
         }
         function part(s) {
@@ -222,9 +229,10 @@ satisfies() {
             return 0
         }
         BEGIN {
+            nblanks = split("\011,\012,\013,\014,\015,\302\205,\302\240,\341\232\200,\342\200\200,\342\200\201,\342\200\202,\342\200\203,\342\200\204,\342\200\205,\342\200\206,\342\200\207,\342\200\210,\342\200\211,\342\200\212,\342\200\250,\342\200\251,\342\200\257,\342\201\237,\343\200\200", blanks, ",")
             every = ENVIRON["HW_EVERY"] == "1"
             if (!parse(ENVIRON["HW_VERSION"], target)) { print "error"; exit }
-            n = split(ENVIRON["HW_RANGE"], terms, " ")
+            n = split(blank(ENVIRON["HW_RANGE"]), terms, " ")
             answer = "yes"
             for (i = 1; i <= n; i++) {
                 term = terms[i]

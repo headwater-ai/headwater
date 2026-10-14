@@ -256,6 +256,23 @@ same '  and a range no release satisfies prints nothing rather than the newest' 
     "$(printf '%s' "$json5" | python3 "$resolver" --range '>=9')"
 printf '%s' "$json5" | python3 "$resolver" --range '~0.4' >/dev/null 2>&1
 same '  and a range this syntax cannot read exits 2' 2 "$?"
+printf '%s' "$json5" | python3 "$resolver" --range '>=0.4 ~0.5' >/dev/null 2>&1
+same '  and so does one whose second comparator cannot be read' 2 "$?"
+
+# Shape 6: a `v` tag that is no version, such as a pre-release, carries the
+# assets and sits first. A range cannot admit it, so it is skipped.
+json6='[
+  {"tag_name": "v0.6.0-rc1", "assets": [
+    {"name": "headwater-v0.6.0-rc1-x86_64-unknown-linux-gnu.tar.gz"},
+    {"name": "headwater-v0.6.0-rc1-x86_64-unknown-linux-gnu.tar.gz.sha256"}
+  ]},
+  {"tag_name": "v0.4.1", "assets": [
+    {"name": "headwater-v0.4.1-x86_64-unknown-linux-gnu.tar.gz"},
+    {"name": "headwater-v0.4.1-x86_64-unknown-linux-gnu.tar.gz.sha256"}
+  ]}
+]'
+same '  and a tag that is no version is never what a range picks' 'v0.4.1' \
+    "$(printf '%s' "$json6" | python3 "$resolver" --range '>=0.4')"
 
 # The same choice through resolve-version.sh, the script both actions run: a
 # stub `curl` on PATH serves shape 5 as the release list, and a scratch

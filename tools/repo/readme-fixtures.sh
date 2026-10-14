@@ -4454,6 +4454,24 @@ same "  and a range this syntax cannot read installs nothing and calls nothing" 
     "1|no|0|" "$(printf '%s' "$r" | cut -d'|' -f1-4)"
 same "  and the refusal says the range cannot be read" yes \
     "$(printf '%s' "$r" | grep -q 'the engine range "~0.4" in .* cannot be read' && echo yes || echo no)"
+# The default is in `>=0.5`, so a reading that stopped at the first
+# comparator would install it; the second cannot be read, so nothing is called.
+printf 'engine: ">=0.5 ~0.6"\n' >"$ih/corpus/.headwater/taxonomy.yml"
+r=$(install_run Linux x86_64)
+same "  and so is one whose second comparator cannot be read, before any call" \
+    "1|no|0|" "$(printf '%s' "$r" | cut -d'|' -f1-4)"
+
+printf 'version: 1\n  engine: ">=0.4 <0.5"\n' >"$ih/corpus/.headwater/taxonomy.yml"
+r=$(install_run Linux x86_64)
+same "  and an engine key that is not at the top level states no range" \
+    "0|yes|0|$ih_linux $ih_linux.sha256" "$(printf '%s' "$r" | cut -d'|' -f1-4)"
+
+# A range written with a no-break space between its comparators, which the
+# engine reads as a blank.
+printf 'engine: ">=0.4\302\240<0.5"\n' >"$ih/corpus/.headwater/taxonomy.yml"
+r=$(install_run Linux x86_64)
+same "  and a range split by a no-break space is read as the engine reads it" \
+    "0|yes|0|$ih_api $ih_gone $ih_old $ih_old.sha256" "$(printf '%s' "$r" | cut -d'|' -f1-4)"
 
 printf 'engine: ">=0.4 <0.5"\n' >"$ih/corpus/.headwater/taxonomy.yml"
 r=$(install_run Linux x86_64 "$site_tag")

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Every row of `engine-ranges.tsv` against `release::satisfies`.
 //!
 //! The table is the one statement of the engine range syntax that three
