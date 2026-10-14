@@ -4778,6 +4778,27 @@ apt_interposed "the extractor refuses a fence that is not the next block after t
 apt_interposed "  and one after an interposed bold paragraph" "**Note.** An interposed paragraph."
 apt_interposed "  and one after an interposed list item" "- an interposed item"
 apt_interposed "  and one after an interposed HTML comment" "<!-- an interposed comment -->"
+apt_interposed "  and one after an interposed indented line" "    an indented line"
+# An indented fence is a fence, as `apt_fence_lines` reads one.
+awk '
+    !seen && /^\*\*Install it with apt/ { seen = 1; print; next }
+    seen == 1 && /^```/ { n++; print "  " $0; if (n == 2) seen = 2; next }
+    { print }
+' "$readme" >"$scratch/apt-job/indented-fence.md"
+apt_planted "the extractor reads an indented APT fence" \
+    "$readme" "$scratch/apt-job/indented-fence.md" \
+    "8|headwater --version" \
+    "$(sh "$apt_block" "$scratch/apt-job/indented-fence.md" 2>/dev/null | awk '{ l = $0 } END { print NR "|" l }')"
+# The paragraph is the one that OPENS with the words. A sentence above it that
+# names them is not the paragraph.
+awk '
+    !seen && /^\*\*Install it with apt/ { seen = 1; print "See **Install it with apt** below."; print "" }
+    { print }
+' "$readme" >"$scratch/apt-job/named-above.md"
+apt_planted "the extractor reads the paragraph that opens with the words, not a line that names them" \
+    "$readme" "$scratch/apt-job/named-above.md" \
+    "8|headwater --version" \
+    "$(sh "$apt_block" "$scratch/apt-job/named-above.md" 2>/dev/null | awk '{ l = $0 } END { print NR "|" l }')"
 # A second fence straight after the APT fence is not part of it: the extractor
 # stops at the APT fence's closing backquotes.
 awk '
@@ -5412,6 +5433,50 @@ install_routes_provoke "a cargo job that sets want to printed through eval is re
     '/^  cargo:$/,/^  [a-z-]*:$/s/^\( *\)\(printed=\$(.*--version.*\)$/&\
 \1eval "want=\\$printed"/' \
     "the job cargo of install-routes.yml never compares the version it printed with the one its route installs"
+# Correct edits stay green: the judge reads an assignment only where a command
+# starts, and the `--version` pipe in the forms a person writes it.
+install_routes_provoke "an archive job that echoes printed=\$printed after the pipe is green" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/^\( *\)printed=\$("\$HOME\/\.local\/bin\/headwater" --version.*$/&\
+\1echo "printed=$printed"/' \
+    ""
+install_routes_provoke "an archive job whose pipe is quoted is green" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/^\( *\)printed=\(\$("\$HOME\/\.local\/bin\/headwater" --version.*)\)$/\1printed="\2"/' \
+    ""
+install_routes_provoke "an archive job whose --version also reads stderr is green" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/\(printed=\$("\$HOME\/\.local\/bin\/headwater" --version\) |/\1 2>\&1 |/' \
+    ""
+install_routes_provoke "an archive job whose awk program has spaces is green" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/\(printed=\$(.*\){print \$NF}/\1{ print $NF }/' \
+    ""
+install_routes_provoke "an archive job whose pipe line ends in a comment is green" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/^\( *printed=\$("\$HOME\/\.local\/bin\/headwater" --version.*\)$/\1  # the version the binary prints/' \
+    ""
+# Every other way a shell sets a variable, after the pipe, is red.
+install_routes_provoke "an archive job that sets printed through a for loop is red" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/^\( *\)printed=\$("\$HOME\/\.local\/bin\/headwater" --version.*$/&\
+\1for printed in "${tag#v}"; do :; done/' \
+    "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "an archive job that sets printed through read is red" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/^\( *\)printed=\$("\$HOME\/\.local\/bin\/headwater" --version.*$/&\
+\1echo "${tag#v}" > v.txt; read -r printed < v.txt/' \
+    "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "an archive job that sets printed through eval is red" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/^\( *\)printed=\$("\$HOME\/\.local\/bin\/headwater" --version.*$/&\
+\1eval "printed=${tag#v}"/' \
+    "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "an archive job whose pipe echoes the tag before --version is red" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/printed=\$("\$HOME/printed=$(echo "${tag#v}" || "$HOME/' \
+    "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "a cargo job that sets want through a for loop is red" \
+    '/^  cargo:$/,/^  [a-z-]*:$/s/^\( *\)\(printed=\$(.*--version.*\)$/&\
+\1for want in "$printed"; do :; done/' \
+    "the job cargo of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "a cargo job that sets want through read from a here-document is red" \
+    '/^  cargo:$/,/^  [a-z-]*:$/s/^\( *\)\(printed=\$(.*--version.*\)$/&\
+\1IFS= read -r want <<EOF\
+\1$printed\
+\1EOF/' \
+    "the job cargo of install-routes.yml never compares the version it printed with the one its route installs"
 # A job-level `env:` reaches every step, the one that runs the script included.
 install_routes_provoke "a report job whose GH_TOKEN is in the job's own env is green" \
     '/^  report:$/,${
@@ -5494,11 +5559,12 @@ printf '%s\n' "$*" >>"$STUB_DIR/log"
 case "$1 $2" in
     "issue list")
         [ "$STUB_LIST_FAILS" = 1 ] && exit 1
-        _jq=; _state=; _label=
+        _jq=; _state=; _label=; _limit=30
         while [ $# -gt 0 ]; do
             [ "$1" = "--jq" ] && _jq=$2
             [ "$1" = "--state" ] && _state=$2
             [ "$1" = "--label" ] && _label=$2
+            [ "$1" = "--limit" ] && _limit=$2
             shift
         done
         command -v jq >/dev/null 2>&1 || { echo "stub gh: no jq" >&2; exit 1; }
@@ -5507,7 +5573,8 @@ case "$1 $2" in
         # another state or label is a search this stub cannot answer.
         [ "$_state" = open ] || { echo "stub gh: not --state open" >&2; exit 1; }
         [ "$_label" = bug ] || { echo "stub gh: not --label bug" >&2; exit 1; }
-        printf '%s\n' "${STUB_OPEN:-[]}" | jq -r "$_jq"
+        # `gh` lists at most --limit issues (30 by default), then runs --jq.
+        printf '%s\n' "${STUB_OPEN:-[]}" | jq -c ".[:$_limit]" | jq -r "$_jq"
         exit ;;
     "issue create" | "issue comment")
         while [ $# -gt 0 ]; do
