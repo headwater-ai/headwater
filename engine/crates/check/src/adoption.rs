@@ -701,7 +701,10 @@ tasks:
             day("2026-08-13"),
         );
         let statement = ledger.render(crate::paint::ColorMode::Plain);
-        assert!(statement.ends_with("    the corpus states no summary\n"), "{statement:?}");
+        assert!(
+            statement.ends_with("    the corpus states no summary\n"),
+            "{statement:?}"
+        );
 
         let refused_only = payload(
             "\
