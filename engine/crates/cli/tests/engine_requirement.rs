@@ -300,7 +300,11 @@ fn a_declaration_that_fails_to_load_for_another_reason_is_not_told_to_quote_its_
     set_engine(&root.at, None);
     let path = root.at.join(".headwater/taxonomy.yml");
     let text = std::fs::read_to_string(&path).expect("the declaration reads");
-    let text = text.replacen("\ncorpus:", "\nengine: \"<0.6\"\nbroken: [unclosed\n\ncorpus:", 1);
+    let text = text.replacen(
+        "\ncorpus:",
+        "\nengine: \"<0.6\"\nbroken: [unclosed\n\ncorpus:",
+        1,
+    );
     std::fs::write(&path, text).expect("the declaration writes");
     let ran = root.run(&["check", "--strict"]);
     assert_ne!(ran.code, Some(0), "{ran:?}");
