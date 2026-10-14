@@ -236,7 +236,6 @@ The second said that a control declares one posture and that spec 4 writes two v
 - [HW-OBL-0188](../obligations/0188-the-negative-compliance-edge-and-the-governance-precedence-clause-contradict.md) — The negative compliance edge and the governance precedence clause contradict
 - [HW-OBL-0189](../obligations/0189-a-base-shelf-path-is-closed-to-every-later-entry-over-the-same-ground.md) — A base shelf path is closed to every later entry over the same ground
 - [HW-OBL-0190](../obligations/0190-a-voice-regime-carries-a-forbid-list-so-a-normative-keyword-rule-has-no-form.md) — A voice regime carries a forbid list, so a normative keyword rule has no form
-- [HW-OBL-0191](../obligations/0191-an-unknown-discriminator-value-removes-a-document-from-every-check-and-no-gate-reports-it.md) — An unknown discriminator value removes a document from every check and no gate reports it
 - [HW-OBL-0192](../obligations/0192-assumptions-that-a-library-entry-takes-where-the-specification-does-not-speak.md) — Assumptions that a library entry takes where the specification does not speak
 - [HW-OBL-0194](../obligations/0194-the-base-ships-one-voice-regime-and-a-prospective-document-has-none.md) — The base ships one voice regime and a prospective document has none
 - [HW-OBL-0195](../obligations/0195-a-requirement-has-no-identity-so-a-descoped-requirement-has-no-form.md) — A requirement has no identity, so a descoped requirement has no form
@@ -248,6 +247,8 @@ The second said that a control declares one posture and that spec 4 writes two v
 [HW-OBL-0085](../obligations/0085-headwater-init-cannot-reach-a-package-that-is-not-already.md) is discharged and it is not in the list above. [#959](https://github.com/headwater-ai/headwater/issues/959) gave the fetch a stated form: `headwater taxonomy vendor` takes an `https://` location and checks the digest of what it fetches. `headwater init` names that argument in the line it prints and in the comment it writes. A test in `engine/crates/cli/tests/init.rs` takes the route from a location to a resolved version. No released binary carries the fetch yet, and the record states what that costs a reader.
 
 [HW-OBL-0042](../obligations/0042-a-declared-invalid-when-reaches-no-check-and-two-live.md) is discharged and it is not in the list above. The base declared `invalid_when` on `conflicts_with`, and no rule read it. `relation.pair.invalid` now reports a pair of documents where the declared condition holds at both ends. It reads the facet that the condition names. [#1491](https://github.com/headwater-ai/headwater/issues/1491) holds seven more declarations that reach no check.
+
+[HW-OBL-0191](../obligations/0191-an-unknown-discriminator-value-removes-a-document-from-every-check-and-no-gate-reports-it.md) is discharged and it is not in the list above. A document whose discriminator named no kind left every check, and a strict run exited 0. `shelf.discriminator.unresolved` now reports that document as an error. It reads the census rows where kind resolution stopped at the discriminator.
 
 ## What else each decision left open
 

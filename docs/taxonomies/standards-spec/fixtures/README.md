@@ -27,13 +27,13 @@ The entry sits outside the corpus root on purpose. A run that walked it would co
 | `docs/component-specs/signing/functional.md` | `functional_spec` | The far end of planted defect 2, which owes a `realized_by` that nobody wrote |
 | `docs/component-specs/signing/technical.md` | `technical_spec` | Planted defect 2: it declares `realizes` and the other end does not name it back |
 | `docs/component-specs/webhooks/functional.md` | `functional_spec` | Planted defect 3: it is `current`, its `status_since` is old, and no technical spec realizes it |
-| `docs/component-specs/ingest/functional.md` | none | Planted defect 4: `spec_layer: interface_spec`, a value the shelf does not admit, which produces no finding at all |
+| `docs/component-specs/ingest/functional.md` | none | Planted defect 4: `spec_layer: interface_spec`, a value the shelf does not admit. On 2026-08-25 it produced no finding at all, and since [#1491](https://github.com/headwater-ai/headwater/issues/1491) it is a `shelf.discriminator.unresolved` error |
 
 ## What a run reports
 
 `headwater check --no-cache --now 2026-08-25` over the assembled root: **8 files under the corpus root, 7 typed, 1 untyped, 7 checked, 110 check instances, 3 findings.** The census reads 3 `functional_spec`, 2 `standard` and 2 `technical_spec`. The graph reads 7 nodes and 9 declared edge halves, all 9 of them to a document, and 0 prose links that did not resolve. `headwater check --strict` exits 1.
 
-Three of the four planted defects are the three findings. The fourth produces none, and the section below it is the sharpest thing this corpus measures.
+Three of the four planted defects are the three findings. On that date the fourth produced none, and the section below it is the sharpest thing this corpus measured.
 
 **Planted defect 1.** `docs/standards/logging-baseline.md` reports `section.required.missing`, an error, under `OB-SECT-1`:
 
@@ -55,9 +55,11 @@ The finding names the window, the elapsed days and the rationale the expectation
 
     untyped: `spec_layer: interface_spec` is not a kind this shelf admits (functional_spec, technical_spec)
 
-No rule reads the document after that. `engine/crates/check/src/coverage.rs` states the ruling in its own comment: "An **unclassified** document with no instance is not a finding here. It is already a row of the census with its own outcome, and a second report of one fact sends its author to two places."
+On 2026-08-25 no rule read the document after that. `engine/crates/check/src/coverage.rs` stated the ruling in its own comment: "An **unclassified** document with no instance is not a finding here. It is already a row of the census with its own outcome, and a second report of one fact sends its author to two places."
 
-**The control that makes this decisive.** Assemble the same root with `docs/component-specs/ingest/functional.md` as the only document and change nothing else. The run reports **1 file under the corpus root, 1 untyped, 0 classified, 0 checked, 2 check instances, 0 findings**, and `headwater check --strict` exits **0**. One typo in one discriminator value takes a whole document out of every rule this engine carries, and the commit gate passes.
+**The control that makes this decisive.** Assemble the same root with `docs/component-specs/ingest/functional.md` as the only document and change nothing else. The run reports **1 file under the corpus root, 1 untyped, 0 classified, 0 checked, 2 check instances, 0 findings**, and `headwater check --strict` exits **0**. One typo in one discriminator value took a whole document out of every rule this engine carried, and the commit gate passed.
+
+**What changed after the measurement.** [#1491](https://github.com/headwater-ai/headwater/issues/1491) added the rule `shelf.discriminator.unresolved`, which closes [HW-OBL-0191](../../../obligations/0191-an-unknown-discriminator-value-removes-a-document-from-every-check-and-no-gate-reports-it.md). The rule gives an error at the line of `spec_layer`, so a strict run over this document now exits 1. The numbers above are the run of 2026-08-25, and nobody has run the assembly again since the rule arrived.
 
 This is [finding 6](../doctrine.md#findings) of this entry. It is not a defect of the base package and it is not a defect of this bundle. It is a property of every heterogeneous shelf, and the design-spec entry's `spec_series` shelf has carried it since the library opened.
 

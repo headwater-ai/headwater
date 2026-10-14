@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0191
-status: current
-status_since: 2026-09-11
+status: discharged
+status_since: 2026-10-15
 summary: "A document whose discriminator value names no kind leaves every check, the census still carries the row, and a strict run exits 0."
 last_verified: 2026-09-11
 title: "An unknown discriminator value removes a document from every check and no gate reports it"
@@ -31,3 +31,7 @@ A typo in one metadata value is indistinguishable from a clean document at the g
 ## Discharge
 
 This record discharges when a check reports a document whose discriminator value resolves to no kind. The report has to reach the exit status of a strict run. A ruling that the silence is correct discharges it as well. [Spec 12](../spec/12-check-layer.md) then states the ruling where a reader of the check layer meets it.
+
+**`shelf.discriminator.unresolved` discharges this record ([#1754](https://github.com/headwater-ai/headwater/pull/1754), for [#1491](https://github.com/headwater-ai/headwater/issues/1491)).** The rule is corpus-scoped, and `headwater_check::discriminator` implements it. It reads the census rows where kind resolution stopped at step 3 of [spec 2](../spec/02-taxonomy-model.md#kind-resolution). That step stops for three causes: no discriminator, a value that the shelf does not admit, or a value that is not a scalar. Each such document gets one error, so a strict run fails. The finding anchors at the line of the value, or at line 1 when the value is missing. Its message is the census reason, and its remedy names the kinds that the shelf admits. A path that no shelf claims, a file with no front matter, a shelf tie and an abstract kind get no finding from this rule. `engine/crates/cli/tests/discriminator_unresolved.rs` holds each case. The rule adds one instance to a run, and it moves no coverage count, because a corpus-scoped instance routes to no document.
+
+Spec 2 says that the shelf declares the severity. No shelf schema has a field for it, so the severity is fixed at error. The new rule reaches no obligation yet. A control that binds it to OB-COV-1 belongs to the next release of `headwater/standard`.

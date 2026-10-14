@@ -230,7 +230,7 @@ Phase A emits a **census**: every file under the corpus root and what became of 
 
 That order is the direct answer to the silent-pass failure mode. The denominator is fixed before any checks start. Thus a document that fails to parse is counted, reported, and visibly unchecked. It does not drop out of the run and leave a clean result behind it.
 
-**A structural finding needs a rule before a gate can act on it.** Three of the four above are a census row. The coverage rule reads the census, so a document with no instance is a finding already. A dangling edge has no row, because a row is a file and an edge is not one. `relation.target.unresolved` is the rule that carries it. Its unit is one entry of one `relations:` block, because a target that binds to nothing has no second endpoint to pair with.
+**A structural finding needs a rule before a gate can act on it.** Three of the four above are a census row. A row is not a finding by itself, because the coverage rule reads only the typed rows. So an unclassifiable path left every check until `shelf.discriminator.unresolved` reported it. That rule is corpus-scoped, and it gives an error for each document whose discriminator is missing, names no kind, or is not a scalar. A path that no shelf claims is still a census row and no finding. A dangling edge has no row, because a row is a file and an edge is not one. `relation.target.unresolved` is the rule that carries it. Its unit is one entry of one `relations:` block, because a target that binds to nothing has no second endpoint to pair with.
 
 A defect that stops an edge from existing needs another grain. Five of them do that, and each leaves nothing to instantiate an edge-scoped rule over.
 

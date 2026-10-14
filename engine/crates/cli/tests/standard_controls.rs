@@ -97,7 +97,11 @@ fn every_lifecycle_rule_reaches_one_obligation_of_the_standard_package() {
 /// with the reason it stands outside the package. A rule is named here one at
 /// a time and never by a pattern, so a new rule that ships without a control
 /// fails the case below and names itself (#1492).
-const EXCEPTIONS: &[(&str, &str)] = &[];
+const EXCEPTIONS: &[(&str, &str)] = &[(
+    "shelf.discriminator.unresolved",
+    "new in #1491 (HW-OBL-0191); its control binds it to OB-COV-1 at the next release of \
+     headwater/standard, and the build of the rule does not publish the package",
+)];
 
 /// Every rule the engine carries reaches exactly one obligation of the
 /// maintained package, except the rules [`EXCEPTIONS`] names (#1492,
@@ -146,7 +150,11 @@ fn the_register_reader_names_the_rule_whose_control_is_removed() {
         assert_ne!(without, taxonomy, "the control is removed");
         std::fs::write(&path, without).expect("the package copy writes");
     });
-    assert_eq!(unbound_rules(&root), ["facet.value.blank"]);
+    let named: Vec<String> = unbound_rules(&root)
+        .into_iter()
+        .filter(|rule| !EXCEPTIONS.iter().any(|(excepted, _)| excepted == rule))
+        .collect();
+    assert_eq!(named, ["facet.value.blank"]);
 }
 
 /// The rules the register of one `headwater check` run names as reaching no
