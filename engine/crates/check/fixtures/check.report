@@ -1,4 +1,4 @@
-31 seen, 29 classified, 28 checked, 425 check instances
+31 seen, 29 classified, 28 checked, 426 check instances
       1 generated, held to regeneration by `headwater generate --check`
      58 skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
       1 skipped: no `id` facet, which is the key this engine reads an identifier from and which no declaration states
@@ -10,7 +10,7 @@
      30 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
 adoption
   0 pairs open, 0 closed, holding 0 findings, in 0 tasks
-31 documents in the read set, and 7 barriers that no gate carries across a merge
+31 documents in the read set, and 8 barriers that no gate carries across a merge
      28 instances of facet.required.missing
      28 instances of facet.value.not_permitted
      28 instances of facet.value.blank
@@ -26,6 +26,7 @@ adoption
      28 instances of relation.declaration.unusable
      28 instances of identifier.unusable
       1 instances of identifier.claimed_twice
+      1 instances of shelf.discriminator.unresolved
       1 instances of identifier.claim.missing
       1 instances of identifier.claim.stale
      21 instances of voice.forbidden_construction
@@ -91,6 +92,8 @@ rules, and for each the scope that binds it
     document scope, one document and its front matter, and what phase A could not make of it
   identifier.claimed_twice
     corpus scope, every row of the census, and what phase A could not make of each document's identity, and it is a barrier
+  shelf.discriminator.unresolved
+    corpus scope, every row of the census, and it is a barrier
   identifier.claim.missing
     corpus scope, every row of the census, and what phase A could not make of each document's identity, and the identifier claim store, and it is a barrier
   identifier.claim.stale
@@ -185,6 +188,7 @@ register
   warrant.evidence.unsupported reaches no obligation, so it names none
   lifecycle.state.set_twice reaches no obligation, so it names none
   identifier.claimed_twice reaches no obligation, so it names none
+  shelf.discriminator.unresolved reaches no obligation, so it names none
   identifier.claim.missing reaches no obligation, so it names none
   identifier.claim.stale reaches no obligation, so it names none
   surface.local_path.instructed reaches no obligation, so it names none
@@ -204,8 +208,8 @@ register
   harvest.pin.unread reaches no obligation, so it names none
   import.pin.unread reaches no obligation, so it names none
   relation.target.verification.suspect reaches no obligation, so it names none
-68 findings
-     40 ✗ error
+69 findings
+     41 ✗ error
      28 ▲ warn
 
 instances
@@ -825,6 +829,8 @@ instances
     passed
   identifier.claimed_twice check/evaluations/alpha.md + check/evaluations/beta.md + check/evaluations/delta.md + check/evaluations/epsilon.md + check/evaluations/eta.md + check/evaluations/gamma.md + check/evaluations/zeta.md + check/spec/00-both-halves.md + check/spec/01-one-half.md + check/spec/02-cited-only.md + check/spec/03-no-instance.md + check/spec/04-untyped.md + check/spec/05-no-summary.md + check/spec/06-retired.md + check/spec/07-prose-defects.md + check/spec/08-contract-met.md + check/spec/09-contract-missing.md + check/spec/10-suppressed.md + check/spec/11-identifier-mismatch.md + check/spec/13-dangling.md + check/spec/14-relations-not-a-mapping.md + check/spec/15-unusable-entries.md + check/spec/16-no-identifier.md + check/spec/17-identifier-not-a-word.md + check/spec/18-blank-facets.md + check/spec/20-fragment-target.md + check/spec/21-summary-facet-prose.md + check/spec/22-voice-facet-prose.md + check/spec/23-voice-empty-population.md + check/spec/24-voice-context-section.md
     passed
+  shelf.discriminator.unresolved check/evaluations/alpha.md + check/evaluations/beta.md + check/evaluations/delta.md + check/evaluations/epsilon.md + check/evaluations/eta.md + check/evaluations/gamma.md + check/evaluations/zeta.md + check/spec/00-both-halves.md + check/spec/01-one-half.md + check/spec/02-cited-only.md + check/spec/03-no-instance.md + check/spec/04-untyped.md + check/spec/05-no-summary.md + check/spec/06-retired.md + check/spec/07-prose-defects.md + check/spec/08-contract-met.md + check/spec/09-contract-missing.md + check/spec/10-suppressed.md + check/spec/11-identifier-mismatch.md + check/spec/13-dangling.md + check/spec/14-relations-not-a-mapping.md + check/spec/15-unusable-entries.md + check/spec/16-no-identifier.md + check/spec/17-identifier-not-a-word.md + check/spec/18-blank-facets.md + check/spec/20-fragment-target.md + check/spec/21-summary-facet-prose.md + check/spec/22-voice-facet-prose.md + check/spec/23-voice-empty-population.md + check/spec/24-voice-context-section.md
+    failed
   identifier.claim.missing check/evaluations/alpha.md + check/evaluations/beta.md + check/evaluations/delta.md + check/evaluations/epsilon.md + check/evaluations/eta.md + check/evaluations/gamma.md + check/evaluations/zeta.md + check/spec/00-both-halves.md + check/spec/01-one-half.md + check/spec/02-cited-only.md + check/spec/03-no-instance.md + check/spec/04-untyped.md + check/spec/05-no-summary.md + check/spec/06-retired.md + check/spec/07-prose-defects.md + check/spec/08-contract-met.md + check/spec/09-contract-missing.md + check/spec/10-suppressed.md + check/spec/11-identifier-mismatch.md + check/spec/13-dangling.md + check/spec/14-relations-not-a-mapping.md + check/spec/15-unusable-entries.md + check/spec/16-no-identifier.md + check/spec/17-identifier-not-a-word.md + check/spec/18-blank-facets.md + check/spec/20-fragment-target.md + check/spec/21-summary-facet-prose.md + check/spec/22-voice-facet-prose.md + check/spec/23-voice-empty-population.md + check/spec/24-voice-context-section.md + .headwater/ids
     failed
   identifier.claim.stale check/evaluations/alpha.md + check/evaluations/beta.md + check/evaluations/delta.md + check/evaluations/epsilon.md + check/evaluations/eta.md + check/evaluations/gamma.md + check/evaluations/zeta.md + check/spec/00-both-halves.md + check/spec/01-one-half.md + check/spec/02-cited-only.md + check/spec/03-no-instance.md + check/spec/04-untyped.md + check/spec/05-no-summary.md + check/spec/06-retired.md + check/spec/07-prose-defects.md + check/spec/08-contract-met.md + check/spec/09-contract-missing.md + check/spec/10-suppressed.md + check/spec/11-identifier-mismatch.md + check/spec/13-dangling.md + check/spec/14-relations-not-a-mapping.md + check/spec/15-unusable-entries.md + check/spec/16-no-identifier.md + check/spec/17-identifier-not-a-word.md + check/spec/18-blank-facets.md + check/spec/20-fragment-target.md + check/spec/21-summary-facet-prose.md + check/spec/22-voice-facet-prose.md + check/spec/23-voice-empty-population.md + check/spec/24-voice-context-section.md + .headwater/ids
@@ -1084,6 +1090,9 @@ check/spec/01-one-half.md:18:151 ▲ warn
 check/spec/03-no-instance.md ▲ warn
   coverage.document_unchecked: this document is classified and all 4 of its check instances were skipped
   fix: check that the shelf pattern claims the right files, and that the kind declares something a check reads
+check/spec/04-untyped.md:1:1 ✗ error
+  shelf.discriminator.unresolved: the shelf is heterogeneous and the document declares no `doc_type`, so no kind resolves and no check of a kind reaches this document
+  fix: set `doc_type` to one kind this shelf admits, as one word; `headwater explain check/spec/04-untyped.md` prints the shelf and its kinds
 check/spec/05-no-summary.md ✗ error
   facet.required.missing (OB-FIX-3): `design_spec` requires the facet `summary`, and it is not declared
   fix: add `summary:` to the front matter of check/spec/05-no-summary.md, with the value this document has

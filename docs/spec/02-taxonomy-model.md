@@ -651,7 +651,7 @@ Given a document path and its front matter, the engine resolves a kind in four s
 
 1. It matches the path against shelf patterns — the most specific wins, and ties are a schema-validation error, not a runtime coin-flip.
 2. If the shelf is homogeneous, it takes the declared kind.
-3. If the shelf is heterogeneous, it reads the discriminator facet. A missing or unrecognized value is a finding whose severity the shelf declares.
+3. If the shelf is heterogeneous, it reads the discriminator facet. A missing or unrecognized value is a finding whose severity the shelf declares. The rule `shelf.discriminator.unresolved` reports it. No shelf schema has a field for the severity yet, so the engine reports the finding as an error.
 4. It applies any path-pattern refinement that the shelf declares (for instance `functional.md` and `technical.md` resolve to different kinds within one component directory).
 
 `headwater explain <path>` prints this derivation — which shelf matched, which rule fired, and the kind's declared purpose. It also prints which facets and sections are consequently required, and which relations are permitted. Classification is never a black box, for a human or an agent.

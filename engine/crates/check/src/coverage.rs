@@ -26,9 +26,12 @@
 //! of OB-COV-2, and it is the reason coverage is a check rather than a
 //! statistic printed under one.
 //!
-//! An **unclassified** document with no instance is not a finding here. It is
-//! already a row of the census with its own outcome, and a second report of one
-//! fact sends its author to two places.
+//! An **unclassified** document with no instance is not a finding here, because
+//! this rule reads typed rows alone. It is a row of the census with its own
+//! outcome. Where that outcome is a discriminator that names no kind, the
+//! finding is [`crate::discriminator`]'s, at the line of the discriminator. A
+//! path that no shelf claims, and a file with no front matter, stay a census
+//! row and nothing more.
 
 //! # Corpus grain, and why no view enforces it
 //!

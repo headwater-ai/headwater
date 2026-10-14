@@ -1881,6 +1881,10 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             // documents that no edge connects. Nothing smaller than the corpus
             // holds both claimants of one identifier.
             Grain::Corpus,
+            // A document whose discriminator names no kind. It has no kind,
+            // so no document-scoped template reaches it, and the corpus is
+            // the grain that does (#1491, HW-OBL-0191).
+            Grain::Corpus,
             // The two rules over the identifier claim store. Each one decides
             // from the whole set of identifiers the corpus declares against
             // the whole store, and the store is one input outside the corpus

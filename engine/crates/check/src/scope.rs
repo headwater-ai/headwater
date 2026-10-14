@@ -753,6 +753,16 @@ pub trait CorpusCheck {
     /// the corpus told this run. See [`crate::state_set_twice`].
     const NEEDS_ORPHANED: bool = false;
 
+    /// Whether the view carries every document whose kind resolution stopped,
+    /// with the reason and the span the derivation recorded.
+    ///
+    /// It joins no cache key, on [`CorpusCheck::NEEDS_ANCHORS`]'s terms. A
+    /// stopped resolution is a reading of a row this instance already reads:
+    /// the row carries a document, so the read set names its bytes, and the
+    /// shelves that stopped it are in the lock, whose digest is in every key.
+    /// See [`crate::discriminator`].
+    const NEEDS_UNRESOLVED: bool = false;
+
     fn evaluate(&self, view: &CorpusView<'_>) -> Outcome;
 }
 
@@ -1432,7 +1442,21 @@ pub struct CorpusView<'a> {
     edges: Option<&'a [Edge]>,
     generated: Option<Vec<Generated<'a>>>,
     orphaned: Option<&'a std::collections::BTreeSet<String>>,
+    unresolved: Option<Vec<Unresolved<'a>>>,
     reads: Vec<Input>,
+}
+
+/// One document that carries front matter and whose kind resolution stopped,
+/// which the census counts as untyped and no document-scoped template reaches.
+#[derive(Clone, Copy, Debug)]
+pub struct Unresolved<'a> {
+    pub path: &'a str,
+    /// The step that stopped, as the census row states it.
+    pub reason: &'a headwater_census::resolve::Untyped,
+    /// Where the derivation anchored the stop. It is a span of the document
+    /// for a discriminator that was read, and a span of the lock for one that
+    /// was not, so a rule reads it together with the reason.
+    pub span: Option<Span>,
 }
 
 /// One document the census classified as generated and resolved a kind for,
@@ -1465,6 +1489,12 @@ impl<'a> CorpusView<'a> {
     /// a check that declared `NEEDS_ORPHANED`.
     pub fn orphaned(&self) -> Option<&'a std::collections::BTreeSet<String>> {
         self.orphaned
+    }
+
+    /// Every document whose kind resolution stopped, in census order, and only
+    /// for a check that declared `NEEDS_UNRESOLVED`.
+    pub fn unresolved(&self) -> Option<&[Unresolved<'a>]> {
+        self.unresolved.as_deref()
     }
 
     /// What the identifier index could not make of any document, and only for
@@ -1548,6 +1578,7 @@ impl<'a> CorpusView<'a> {
             edges: None,
             generated: None,
             orphaned: None,
+            unresolved: None,
             reads: Vec::new(),
         }
     }
@@ -1565,6 +1596,26 @@ impl<'a> CorpusView<'a> {
             edges: None,
             generated: None,
             orphaned: None,
+            unresolved: None,
+            reads: Vec::new(),
+        }
+    }
+
+    /// A view carrying nothing but the stopped resolutions, for the tests of
+    /// the rule that reads them. `cfg(test)` on [`CorpusView::only_links`]'s
+    /// terms.
+    #[cfg(test)]
+    pub(crate) fn only_unresolved(unresolved: Option<Vec<Unresolved<'a>>>) -> Self {
+        CorpusView {
+            identity: None,
+            departed: &[],
+            claims: None,
+            links: None,
+            anchors: None,
+            edges: None,
+            generated: None,
+            orphaned: None,
+            unresolved,
             reads: Vec::new(),
         }
     }
@@ -1585,6 +1636,7 @@ impl<'a> CorpusView<'a> {
             edges: None,
             generated: None,
             orphaned: None,
+            unresolved: None,
             reads: Vec::new(),
         }
     }
@@ -2194,6 +2246,30 @@ pub fn over_corpus<C: CorpusCheck>(
         },
         orphaned: match C::NEEDS_ORPHANED {
             true => Some(ctx.orphaned()),
+            false => None,
+        },
+        // Only the rows that carry a document, which are the rows already in
+        // `reads` above, so no input joins the read set with them. See
+        // `NEEDS_UNRESOLVED`. A row with no front matter that no shelf claims
+        // is also `Unresolved`, and it carries no document, so it is not here.
+        unresolved: match C::NEEDS_UNRESOLVED {
+            true => Some(
+                census
+                    .rows
+                    .iter()
+                    .filter(|row| row.document.is_some())
+                    .filter_map(|row| match &row.outcome {
+                        Classification::Untyped(
+                            headwater_census::census::Untyped::Unresolved { reason, derivation },
+                        ) => Some(Unresolved {
+                            path: &row.path,
+                            reason,
+                            span: derivation.span,
+                        }),
+                        _ => None,
+                    })
+                    .collect(),
+            ),
             false => None,
         },
         reads: reads.clone(),

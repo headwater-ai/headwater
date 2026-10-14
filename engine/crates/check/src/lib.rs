@@ -97,14 +97,21 @@
 //! than a check, and it now says which of the two facts about that grain was
 //! the reason.
 //!
-//! # Three phase-A outcomes stay in phase A, and one of them could not
+//! # Two phase-A outcomes stay in phase A, and two of them could not
 //!
 //! Spec 12 calls an unparseable file, an unclassifiable path, a dangling edge
 //! and an ambiguous shelf match *structural findings*. Three of the four are a
-//! census row. The census accounts for each one with the row that names the
-//! author who can act, [`coverage`] reads that census, and a document with no
-//! instance is already a finding. So this runner does not re-report them: a
-//! second report of one fact sends its author to two places.
+//! census row, and the census accounts for each one with the row that names
+//! the author who can act. An unparseable file and an ambiguous shelf match
+//! stay there: this runner does not re-report them, because a second report of
+//! one fact sends its author to two places.
+//!
+//! **An unclassifiable path was a row and no finding.** [`coverage`] reads
+//! typed rows alone, so a document on a heterogeneous shelf whose
+//! discriminator names no kind left every check, and a strict run exited 0
+//! over it (HW-OBL-0191). [`discriminator`] is the finding spec 2 states for
+//! that stop. A path that no shelf claims is still a census row and nothing
+//! more, because it is an ordinary state of a corpus.
 //!
 //! **A dangling edge is the member with no row, and that made it the member
 //! with no rule.** A row is a file and an edge is not one, so nothing in the
@@ -142,6 +149,7 @@ pub mod context;
 pub mod coverage;
 pub mod declaration;
 pub mod dependency;
+pub mod discriminator;
 pub mod duplicate;
 pub mod endpoint;
 pub mod facet_blank;
@@ -230,7 +238,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 48] = [
+pub const RULES: [&str; 49] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
@@ -251,6 +259,7 @@ pub const RULES: [&str; 48] = [
     declaration::RULE,
     identity::RULE,
     duplicate::RULE,
+    discriminator::RULE,
     claim::MISSING,
     claim::STALE,
     voice::RULE,
@@ -553,6 +562,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::corpus_scope::<duplicate::Duplicate>(),
             scope::corpus_version::<duplicate::Duplicate>(),
             scope::corpus_exports::<duplicate::Duplicate>(),
+        ),
+        (
+            discriminator::RULE,
+            scope::corpus_scope::<discriminator::Discriminator>(),
+            scope::corpus_version::<discriminator::Discriminator>(),
+            scope::corpus_exports::<discriminator::Discriminator>(),
         ),
         (
             claim::MISSING,
@@ -1035,6 +1050,16 @@ pub fn run(
     ));
     instances.extend(scope::over_corpus(
         &duplicates,
+        census,
+        graph,
+        claims,
+        ctx,
+        cache,
+    ));
+    // A document whose discriminator names no kind, which no template of a
+    // kind reaches. See [`discriminator`].
+    instances.extend(scope::over_corpus(
+        &discriminator::Discriminator,
         census,
         graph,
         claims,
