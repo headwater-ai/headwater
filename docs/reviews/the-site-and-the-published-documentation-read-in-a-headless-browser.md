@@ -60,7 +60,7 @@ Each page was read at 1280 and 390 pixels wide, in light and in dark. On every r
 | `site/compare/` | desktop and phone, light and dark | The brand glyph. |
 | `site/glossary/` | desktop and phone, light and dark | The brand glyph. |
 | `site/how-it-works/` | desktop and phone, light and dark | The brand glyph. |
-| `site/install/` | desktop and phone, light and dark | The brand glyph. Three system versions that nothing holds (see *Every figure on a hand-built page*). |
+| `site/install/` | desktop and phone, light and dark | The brand glyph. Four system versions that nothing holds (see *Every figure on a hand-built page*). |
 | `site/ns/` | desktop and phone, light and dark | The brand glyph. |
 | `site/proof/` | desktop and phone, light and dark | The brand glyph. A release typed outside a `data-figure` element, on a page that says nothing on it was typed by a person, now held. Flagged for the owner for its dark theme. |
 | `site/tutorial/` | desktop and phone, light and dark | The brand glyph. A count in prose that nothing holds. |
@@ -93,7 +93,7 @@ The nine pages outside these rows are the hand-built pages, and none of them was
 | `site/proof/` named the release `v0.5.0` outside a `data-figure` element, and nothing held it. | `site/proof/index.html` | Fixed in this change. `tools/site/site-figures-fixtures.sh` holds it against `README.md`. |
 | 81 of 623 pages scroll sideways at 390 px, 2 also at 1280 px. Every flag names a wide table that nothing contains. | the theme under `mkdocs/overrides/` | Intake, run 20261014-1040. |
 | The brand glyph U+1F704 renders as an empty box on a host with no font for the Alchemical Symbols block. | `.brand .glyph`, on both halves | Intake, run 20261014-1040. Flagged for the owner, who can say whether their own devices show it. |
-| Three system versions on the install page and a count in the tutorial's prose are held by nothing. | `site/install/index.html`, `docs/tutorials/your-first-governed-corpus.md` | Intake, run 20261014-1040, one line each. |
+| The four system versions on the install page and a count in the tutorial's prose are held by nothing. | `site/install/index.html`, `docs/tutorials/your-first-governed-corpus.md` | Intake, run 20261014-1040, one line each. |
 
 Each intake line goes to the product owner, who files the issue. The second half of this review writes each issue number into this table.
 
