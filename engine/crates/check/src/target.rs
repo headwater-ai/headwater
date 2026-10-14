@@ -10,11 +10,12 @@
 //! rule. So it carried no obligation and no severity, `--strict` exited 0 over
 //! it, and a gate went green across a corpus whose edges pointed at nothing.
 //!
-//! The other three structural outcomes do not have that hole. Each one is a
-//! census row, and [`crate::coverage`] reads the census: a file that did not
-//! classify is a document with no instance, and that is a finding. A dangling
+//! The other three structural outcomes are each a census row, and a dangling
 //! edge is the one member of the list with no row of its own, because a census
-//! row is a file and an edge is not one.
+//! row is a file and an edge is not one. A row is not a finding by itself:
+//! [`crate::coverage`] reads typed rows alone, so a file that did not classify
+//! had the same hole until [`crate::discriminator`] reported the discriminator
+//! stops of kind resolution (HW-OBL-0191).
 //!
 //! # The unit is the authored entry, not the Q4 pair
 //!
