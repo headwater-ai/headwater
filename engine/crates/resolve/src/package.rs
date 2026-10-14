@@ -149,8 +149,13 @@ pub const CONSUMER: &str = ".headwater/taxonomy.yml";
 ///
 /// `<` and `=` open a plain scalar and load, so only `>` needs this. A
 /// declaration that does not load for that reason keeps the loader's refusal,
-/// and this answers `None` for it.
+/// and this answers `None` for it. It opens a regular file alone: the loader
+/// refuses a named pipe there without opening it, and a read here would wait
+/// on the pipe for a writer that never comes.
 fn unquoted_engine_range(path: &Path) -> Option<String> {
+    if !std::fs::metadata(path).ok()?.is_file() {
+        return None;
+    }
     let text = std::fs::read_to_string(path).ok()?;
     text.lines().find_map(|line| {
         let value = line.strip_prefix(ENGINE)?.strip_prefix(':')?.trim();
