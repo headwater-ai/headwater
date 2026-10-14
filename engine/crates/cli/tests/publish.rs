@@ -1190,7 +1190,10 @@ fn an_assembly_whose_projection_the_generator_refuses_does_not_publish() {
             );
             assert!(!plain.exists(), "{stderr}");
 
-            copy(&source, &root.path().join(".headwater/packages/acme-fixture"));
+            copy(
+                &source,
+                &root.path().join(".headwater/packages/acme-fixture"),
+            );
             let found = root.path().join("found");
             let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
                 .args(["taxonomy", "publish", "--package", "acme/fixture"])
