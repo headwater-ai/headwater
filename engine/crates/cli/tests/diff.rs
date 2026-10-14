@@ -685,6 +685,41 @@ fn a_projection_declaration_the_generator_refuses_does_not_measure_projection() 
     assert_eq!(ran.code, Some(0), "{ran:?}");
 }
 
+/// A package whose `projections` declaration the generator refuses does not
+/// publish (#1743).
+///
+/// The meta-schema reads `output` as a string and nothing more, so before
+/// #1743 a release could ship `{shelf}/README.txt` and every consumer met the
+/// refusal at `headwater generate`, after it had already taken the version.
+/// Publish now runs `Projections::read` over the taxonomy it would ship, and
+/// refuses before it writes a byte, as every other refusal of publish does.
+#[test]
+fn a_package_whose_projection_the_generator_refuses_does_not_publish() {
+    let root = Root::new("projection-refused");
+    root.edit(
+        "version: 2.0.0",
+        &[(
+            "  - {kind: shelf_index, for: [decisions, specifications], output: \
+             \"{shelf}/README.md\"}",
+            "  - {kind: shelf_index, for: [decisions, specifications], output: \
+             \"{shelf}/README.txt\"}",
+        )],
+    );
+    let out = root.at.join("released").join("2.0.0");
+    let ran = root.run(&["taxonomy", "publish", "--out", out.to_str().expect("utf-8")]);
+    assert_eq!(ran.code, Some(1), "publish refuses the projection: {ran:?}");
+    assert!(ran.err.contains("nothing was published"), "{ran:?}");
+    assert!(
+        ran.err.contains("projections.0.output"),
+        "the refusal names the declaration: {ran:?}"
+    );
+    assert!(
+        ran.err.contains("README.txt"),
+        "the refusal names the value: {ran:?}"
+    );
+    assert!(!out.exists(), "nothing is written: {ran:?}");
+}
+
 /// `--to` is the assertion and never the address.
 ///
 /// This verb fetches nothing, so the directory decides which artifact is
