@@ -53,6 +53,11 @@ loopback port with a `<base href>` pointing back at the host, so that the
 page's own styles and scripts load from where a reader gets them. The second
 form is how the generated half is read on a host that cannot build it.
 
+Each reading loads the page in a frame of the reading's size, because full
+headless Chrome makes no window narrower than 500 pixels. `FRAME` says what
+was measured. A reading whose page saw any other width is reported as not
+taken, and never judged under its label.
+
 WHAT IT WRITES
 
 Screenshots, into `--shots` only, and a JSON file of every reading under
@@ -140,6 +145,7 @@ PROBE = b"""<script>
             scrollWidth: root.scrollWidth,
             clientWidth: root.clientWidth,
             innerWidth: window.innerWidth,
+            framed: window.parent !== window,
             culprits: [],
             focus: null,
             nav: null
@@ -168,6 +174,7 @@ PROBE = b"""<script>
                 visible: focusable.matches(':focus-visible'),
                 outlineStyle: style.outlineStyle,
                 outlineWidth: style.outlineWidth,
+                outlineColor: style.outlineColor,
                 boxShadow: style.boxShadow
             };
             focusable.blur();
@@ -184,8 +191,16 @@ PROBE = b"""<script>
                     function (a) { return [a.textContent.trim(), a.href]; })
             };
         }
-        root.setAttribute('data-headwater-review',
-            btoa(unescape(encodeURIComponent(JSON.stringify(out)))));
+        var encoded = btoa(unescape(encodeURIComponent(JSON.stringify(out))));
+        root.setAttribute('data-headwater-review', encoded);
+        // Inside the frame this tool serves, the reading goes up to the
+        // frame's page as well, because `--dump-dom` returns only that one.
+        if (window.parent !== window) {
+            try {
+                window.parent.document.documentElement.setAttribute(
+                    'data-headwater-review', encoded);
+            } catch (e) {}
+        }
     }
     read();
     window.addEventListener('load', function () { setTimeout(read, 50); });
@@ -204,6 +219,30 @@ def fetch(url):
 
 
 READING = re.compile(r'data-headwater-review="([A-Za-z0-9+/=]*)"')
+
+# Every reading loads the page inside a frame of the size the reading names,
+# and never as the window itself. Headless Chrome, the `chrome` binary that a
+# runner's `google-chrome` is, will not make a window narrower than 500 pixels:
+# asked for 390, it gave 500, measured on Chrome for Testing 153 on 2026-10-15.
+# The headless shell gives 390. A frame is 390 pixels wide in both, and a page
+# inside it sees 390 in its media queries, its layout and its scrollbar. The
+# frame's page carries no margin and no scroll of its own.
+FRAME = "__headwater_frame__"
+
+
+def frame_page(path, size):
+    """The page that holds one reading's frame."""
+    return (
+        '<!doctype html><html><head><meta charset="utf-8"><style>'
+        "html,body{margin:0;padding:0;overflow:hidden}"
+        "iframe{display:block;border:0}"
+        '</style></head><body><iframe src="/%s" width="%d" height="%d"></iframe></body></html>'
+        % (urllib.parse.quote(path), size[0], size[1])
+    ).encode("utf-8")
+
+
+def frame_url(base, path, size):
+    return "%s%s?w=%d&h=%d&p=%s" % (base, FRAME, size[0], size[1], urllib.parse.quote(path, safe=""))
 
 
 class Report(Exception):
@@ -279,6 +318,14 @@ class ProbeHandler(http.server.SimpleHTTPRequestHandler):
 
     def send_head(self):
         path = urllib.parse.unquote(self.path.split("?", 1)[0]).lstrip("/")
+        if path == FRAME:
+            query = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+            body = frame_page(query["p"][0] if "p" in query else "", (int(query["w"][0]), int(query["h"][0])))
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            return io.BytesIO(body)
         is_page = path == "" or path.endswith("/") or path.endswith(".html")
         if self.source.root is not None and not is_page:
             return super().send_head()
@@ -363,6 +410,21 @@ def judge(reading, size, scheme):
             % (where, "dark" if reading.get("dark") else "light")
         )
         return flags
+    # A reading taken at a width other than the one it is labeled with passes
+    # a page that overflows between the two, under that label. So it is not
+    # judged at all.
+    if not reading.get("framed"):
+        flags.append(
+            "the %s reading did not take: the page was not read inside the frame "
+            "of that size" % where
+        )
+        return flags
+    if reading.get("innerWidth") != size[0]:
+        flags.append(
+            "the %s reading did not take: the page saw a window %s pixels wide"
+            % (where, reading.get("innerWidth"))
+        )
+        return flags
     if reading["scrollWidth"] > reading["clientWidth"]:
         culprits = reading.get("culprits") or []
         flags.append(
@@ -376,15 +438,20 @@ def judge(reading, size, scheme):
         )
     focus = reading.get("focus")
     if focus and focus.get("took"):
-        no_outline = focus["outlineStyle"] == "none" or focus["outlineWidth"] in ("0px", "")
+        no_outline = (
+            focus["outlineStyle"] == "none"
+            or focus["outlineWidth"] in ("0px", "")
+            or focus.get("outlineColor") in ("transparent", "rgba(0, 0, 0, 0)")
+        )
         if no_outline and focus["boxShadow"] in ("none", ""):
             flags.append(
-                "no visible focus indicator on <%s> at %s: outline %s %s, box-shadow %s"
+                "no visible focus indicator on <%s> at %s: outline %s %s %s, box-shadow %s"
                 % (
                     focus["element"],
                     where,
                     focus["outlineStyle"],
                     focus["outlineWidth"],
+                    focus.get("outlineColor"),
                     focus["boxShadow"],
                 )
             )
@@ -477,8 +544,8 @@ def review_page(
     flags = []
     records = []
     taken = 0
-    url = base + path
     for size, scheme, shoot in readings:
+        url = frame_url(base, path, size)
         argv = browser_argv(browser, profile_dir(profiles), size, scheme)
         taken += 1
         try:

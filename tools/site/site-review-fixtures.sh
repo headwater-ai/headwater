@@ -129,6 +129,8 @@ status=$(run "$wide")
 report "a page wider than a phone is flagged" 1 "$status"
 report "  and it names the page and quotes the reading" 1 "$status" \
     "wide.html: horizontal overflow at 390x844, light: scrollWidth 1000 > 390" "$scratch/out"
+report "  and it names the element that reaches past the edge" 1 "$status" \
+    "scrollWidth 1000 > 390 (div to 1000)" "$scratch/out"
 absent "  and it is not flagged at desktop width" "horizontal overflow at 1280x800" "$scratch/out"
 report "  and the clean page beside it is not blamed" 1 "$status" \
     "1 page flagged, out of 2 served pages" "$scratch/out"
@@ -181,9 +183,13 @@ focus="$scratch/focus"
 page "$focus" ring.html '<a href="ring.html">a link</a>'
 page "$focus" bare.html '<a href="ring.html">a link</a>' \
     '<style>a:focus, a:focus-visible { outline: none; box-shadow: none }</style>'
+page "$focus" clear.html '<a href="ring.html">a link</a>' \
+    '<style>a:focus, a:focus-visible { outline: 2px solid transparent }</style>'
 status=$(run "$focus")
 report "a link with no visible focus is flagged" 1 "$status" \
     "bare.html: no visible focus indicator on <a> at 1280x800, light" "$scratch/out"
+report "  and so is a ring of full width drawn in a transparent color" 1 "$status" \
+    "clear.html: no visible focus indicator on <a> at 1280x800, light: outline solid 2px rgba(0, 0, 0, 0)" "$scratch/out"
 absent "  and a link with the browser's ring is not" "ring.html: no visible focus" "$scratch/out"
 
 echo "the navigation a reader sees, against \`.headwater/nav.yml\`"
@@ -201,6 +207,7 @@ page "$nav" short/index.html \
     '<nav aria-label="Shelves"><span class="hw-grp">Reference</span><a href="../guides/">Guides</a></nav>'
 page "$nav" nogroup/index.html \
     '<nav aria-label="Shelves"><a href="../guides/">Guides</a><a href="../spec/">Specification</a></nav>'
+page "$nav" plain/index.html '<p>a hand-built page carries no shelves navigation</p>'
 status=$(run "$nav" --nav "$scratch/nav.yml")
 report "a navigation link to no served page is flagged" 1 "$status" \
     "guides/: a navigation link resolves to no served page: gone/" "$scratch/out"
@@ -209,8 +216,8 @@ report "  and a section of the nav file the page does not show is flagged" 1 "$s
 report "  and a top-level section the page does not show is flagged" 1 "$status" \
     "nogroup/: the navigation does not show the section \`Reference\` of nav.yml" "$scratch/out"
 report "  and the page that shows every section and links only served pages is not" 1 "$status" \
-    "3 pages flagged, out of 4 served pages" "$scratch/out"
-absent "  and a page with no shelves navigation is not held to it" "clean.html: the navigation" "$scratch/out"
+    "3 pages flagged, out of 5 served pages" "$scratch/out"
+absent "  and a page with no shelves navigation is not held to it" "plain/: the navigation" "$scratch/out"
 
 echo "a host read through its sitemap, as the live site is"
 
@@ -285,6 +292,36 @@ report "a browser that loads nothing flags every page" 1 "$status" \
 report "  over every page, not some" 1 "$status" \
     "2 pages flagged, out of 2 served pages" "$scratch/out"
 
+# 7b. A browser that writes a clean reading and then crashes. The reading alone
+#     passes the page, so the exit status is the only thing that says the
+#     browser did not finish. The fake reads the width it was asked for, so
+#     that the reading is otherwise one this tool accepts.
+cat >"$scratch/crash.sh" <<'SH'
+#!/bin/sh
+width=0
+for arg in "$@"; do
+    case $arg in --window-size=*) width=${arg#--window-size=}; width=${width%%,*} ;; esac
+done
+case "$*" in
+    *--dump-dom*)
+        reading=$(printf '{"probe":"ran","dark":false,"scrollWidth":10,"clientWidth":10,"innerWidth":%s,"framed":true,"focus":null,"nav":null}' "$width" | base64 | tr -d '\n')
+        printf '<html data-headwater-review="%s"></html>' "$reading" ;;
+esac
+exit 139
+SH
+chmod +x "$scratch/crash.sh"
+status=$(run "$clean" --chrome "$scratch/crash.sh")
+report "a browser that crashes after a clean reading flags the page" 1 "$status" \
+    "a.html: the browser exited 139 at 1280x800, light" "$scratch/out"
+
+# 7c. A browser that never returns. Without the flag, a page whose every
+#     reading timed out has no flag at all and reads as clean.
+printf '#!/bin/sh\nexec sleep 30\n' >"$scratch/hang.sh"
+chmod +x "$scratch/hang.sh"
+status=$(run "$clean" --chrome "$scratch/hang.sh" --timeout 2)
+report "a browser that does not finish flags the page" 1 "$status" \
+    "a.html: the browser did not finish 1280x800, light in 2s" "$scratch/out"
+
 echo "the assumptions this tool states rather than reporting zero over"
 
 # 8. An empty directory is not a pass. HW-OBL-0165 is the reason.
@@ -315,16 +352,43 @@ spec = importlib.util.spec_from_file_location("review", sys.argv[1])
 review = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(review)
 
-reading = {"dark": False, "scrollWidth": 1000, "clientWidth": 390, "focus": None}
-flags = review.judge(reading, (390, 844), "dark")
-assert any("did not take" in f for f in flags), flags
+case = sys.argv[2]
+if case == "scheme":
+    reading = {"dark": False, "scrollWidth": 1000, "clientWidth": 390, "innerWidth": 390, "framed": True, "focus": None}
+    flags = review.judge(reading, (390, 844), "dark")
+    assert any("did not take" in f for f in flags), flags
+elif case == "unframed":
+    # A page read as the window and not in the frame took whatever width the
+    # browser gave the window, even when that width matches by chance.
+    reading = {"dark": False, "scrollWidth": 1000, "clientWidth": 390, "innerWidth": 390, "framed": False, "focus": None}
+    flags = review.judge(reading, (390, 844), "light")
+    assert any("not read inside the frame" in f for f in flags), flags
+else:
+    # Full headless Chrome makes no window narrower than 500 pixels. A page
+    # 450 pixels wide passes in that window, so a reading taken at 500 and
+    # labeled 390 must not be judged at all.
+    reading = {"dark": False, "scrollWidth": 450, "clientWidth": 500, "innerWidth": 500, "framed": True, "focus": None}
+    flags = review.judge(reading, (390, 844), "light")
+    assert any("did not take: the page saw a window 500 pixels wide" in f for f in flags), flags
 assert not any("overflow" in f for f in flags), flags
 print("ok")
 PY
-if python3 "$scratch/judge.py" "$tool" >"$scratch/out" 2>"$scratch/err"; then
+if python3 "$scratch/judge.py" "$tool" scheme >"$scratch/out" 2>"$scratch/err"; then
     tally "a dark reading the page saw as light is flagged as not taken, and not judged" yes ""
 else
     tally "a dark reading the page saw as light is flagged as not taken, and not judged" no \
+        "$(tail -1 "$scratch/err")"
+fi
+if python3 "$scratch/judge.py" "$tool" unframed >"$scratch/out" 2>"$scratch/err"; then
+    tally "a reading not taken inside the frame is flagged as not taken, and not judged" yes ""
+else
+    tally "a reading not taken inside the frame is flagged as not taken, and not judged" no \
+        "$(tail -1 "$scratch/err")"
+fi
+if python3 "$scratch/judge.py" "$tool" width >"$scratch/out" 2>"$scratch/err"; then
+    tally "a reading at a width other than its label is flagged as not taken, and not judged" yes ""
+else
+    tally "a reading at a width other than its label is flagged as not taken, and not judged" no \
         "$(tail -1 "$scratch/err")"
 fi
 

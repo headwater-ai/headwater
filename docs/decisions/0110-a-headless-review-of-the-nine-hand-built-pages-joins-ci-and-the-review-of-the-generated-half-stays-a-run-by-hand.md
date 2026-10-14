@@ -31,7 +31,7 @@ These are the costs, measured on 2026-10-15 on an 18-core host with Chrome for T
 | reading | pages | readings | time |
 |---|---|---|---|
 | overflow and focus on the nine pages of `site/`, at both widths | 9 | 18 | 2.4 s |
-| the 32 cases of the fixtures of `review-site.py` | pages the suite writes | not counted | 7.6 s |
+| the 38 cases of the fixtures of `review-site.py` | pages the suite writes | not counted | 13.5 s |
 | the figures a hand-built page states, against their sources | 3 | none | 0.2 s |
 | overflow, focus and navigation on every page of the live host, with 8 browsers | 623 | 1286 | 60 s |
 
@@ -45,7 +45,7 @@ Three steps join the CI job that runs the console check, beside it:
 2. `sh tools/site/site-review-fixtures.sh`. Spec 12 refuses a check that has no failing fixture. The decisive case is a page 1000 pixels wide, which the review must flag at 390 pixels and not at 1280.
 3. `sh tools/site/site-figures-fixtures.sh`. It fails when a hand-built page names a release, a Rust floor or a platform that disagrees with `README.md`, `engine/Cargo.toml` or `.github/workflows/release.yml`.
 
-The first two exit 3 when the runner has no browser. The step then writes a warning annotation and passes, as the console step does. The three add about 10 seconds to a run.
+The first two exit 3 when the runner has no browser. The step then writes a warning annotation and passes, as the console step does. The three add about 16 seconds to a run.
 
 The review of the generated half stays a run by hand, for two reasons. First, today it would fail every run on 81 pages for one defect that has its own fix. A gate that is red before anybody changes a page tells nobody anything. Second, the dark readings and the screenshots are for a person to read, and no exit status carries them.
 

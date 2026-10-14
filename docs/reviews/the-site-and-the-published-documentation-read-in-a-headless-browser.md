@@ -31,11 +31,11 @@ One existing machine reading came before this one. `tools/site/check-site-consol
 
 ## How the pages were read
 
-`tools/site/review-site.py` is the reader, and `tools/site/site-review-fixtures.sh` holds it. Each reading is one browser load at one window size and one color scheme. An injected probe records four things on each load:
+`tools/site/review-site.py` is the reader, and `tools/site/site-review-fixtures.sh` holds it. Each reading is one browser load at one size and one color scheme. The page loads inside a frame of the reading's size. Full headless Chrome makes no window narrower than 500 pixels, and a frame is 390 pixels wide in every browser. A reading whose page saw another width is flagged as not taken, and it is not judged. The first runs below loaded the page as the window in the headless shell, which gives 390 pixels. A second live run through the frame on the same day flagged the same 81 of 623 pages. An injected probe records four things on each load:
 
 - **Horizontal overflow.** The page's `scrollWidth` against its `clientWidth`, and the outermost elements past the right edge.
 - **The color scheme the page saw.** A dark reading that the page did not see as dark is flagged as a broken reading. Blink's `preferredColorScheme` setting is `0` for dark and `1` for light, measured on this host. The flag `--force-dark-mode` did nothing in the headless shell.
-- **Keyboard focus.** The probe focuses the first focusable element and reads its computed outline and box shadow. On this host the focus took on every reading, and `:focus-visible` matched, so the reading is reliable headless.
+- **Keyboard focus.** The probe focuses the first focusable element and reads its computed outline, the color of that outline and its box shadow. On this host the focus took on every reading, and `:focus-visible` matched, so the reading is reliable headless.
 - **The navigation.** On a generated page, every link in the shelves navigation must answer 200, and every top-level and second-level section of `.headwater/nav.yml` must appear in it by name.
 
 Two runs make the record:
@@ -123,7 +123,7 @@ On 2026-10-15 the nine pages carried 106 `data-figure` elements over 34 distinct
 | reading | what runs it | cost per run |
 |---|---|---|
 | HTTP 200, a probe that ran, and an empty console, on every served page | `tools/site/check-site-console.py`, in CI | 151 s on `486bd3d6`, and 14 s for its fixtures |
-| Overflow and focus on the nine hand-built pages, at both widths | `tools/site/review-site.py site`, in CI from this change | 2.4 s, and 7.6 s for its fixtures, measured on 2026-10-15 |
+| Overflow and focus on the nine hand-built pages, at both widths | `tools/site/review-site.py site`, in CI from this change | 2.4 s, and 13.5 s for the 38 cases of its fixtures, measured on 2026-10-15 |
 | Overflow, focus and navigation on every generated page, and dark readings and screenshots on a chosen set | `tools/site/review-site.py`, by hand | 60 s over the live host with 8 browsers, measured on 2026-10-15 |
 | The release, the Rust floor and the platforms that a hand-built page states | `tools/site/site-figures-fixtures.sh`, in CI from this change | 0.2 s |
 
