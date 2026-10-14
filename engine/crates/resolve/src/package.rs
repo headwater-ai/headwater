@@ -144,10 +144,72 @@ pub const ENGINE: &str = "engine";
 /// The file that carries it.
 pub const CONSUMER: &str = ".headwater/taxonomy.yml";
 
+/// The range of a top-level `engine:` line written without quotes and opening
+/// with `>`, the one way an adopter writes the line that YAML refuses.
+///
+/// `<` and `=` open a plain scalar and load, so only `>` needs this. A
+/// declaration that does not load for that reason keeps the loader's refusal,
+/// and this answers `None` for it. It opens a regular file alone: the loader
+/// refuses a named pipe there without opening it, and a read here would wait
+/// on the pipe for a writer that never comes.
+fn unquoted_engine_range(path: &Path) -> Option<String> {
+    if !std::fs::metadata(path).ok()?.is_file() {
+        return None;
+    }
+    let text = std::fs::read_to_string(path).ok()?;
+    let value = text
+        .lines()
+        .find_map(|line| line.strip_prefix(ENGINE)?.strip_prefix(':'))?
+        .trim();
+    // A comment opens at a `#` that follows a blank.
+    let comment = value
+        .char_indices()
+        .find(|&(at, character)| character == '#' && value[..at].ends_with([' ', '\t']))
+        .map(|(at, _)| at);
+    let value = match comment {
+        Some(at) => value[..at].trim_end(),
+        None => value,
+    };
+    let rest = value.strip_prefix('>')?;
+    // A header alone, such as `>`, `>-` or `>2+`, opens a folded block that
+    // loads, so a file that fails with one fails for another reason.
+    (!is_block_header(rest)).then(|| value.to_string())
+}
+
+/// Whether the text after a `>` is the rest of a YAML block scalar header: an
+/// optional indentation digit and an optional chomping sign, in either order.
+fn is_block_header(rest: &str) -> bool {
+    let mut digit = false;
+    let mut sign = false;
+    for character in rest.chars() {
+        match character {
+            '1'..='9' if !digit => digit = true,
+            '+' | '-' if !sign => sign = true,
+            _ => return false,
+        }
+    }
+    true
+}
+
 /// Read the consumer declaration of a repository.
 pub fn consumer(root: &Path) -> Result<Consumer, Vec<ResolveError>> {
     let path = root.join(CONSUMER);
-    let loaded = crate::source::load(&path)?;
+    let loaded = match crate::source::load(&path) {
+        Ok(loaded) => loaded,
+        Err(errors) => {
+            return Err(match unquoted_engine_range(&path) {
+                Some(range) => refusal(
+                    CONSUMER,
+                    &format!(
+                        "`{ENGINE}` states its range unquoted, and YAML reads an unquoted `>` as \
+                         the start of a folded block, so the file does not load; write the range \
+                         in quotes, `{ENGINE}: \"{range}\"`"
+                    ),
+                ),
+                None => errors,
+            });
+        }
+    };
     let name = CONSUMER;
     let map = loaded
         .value

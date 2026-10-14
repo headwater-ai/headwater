@@ -4341,6 +4341,13 @@ while [ $# -gt 1 ]; do
     shift
 done
 echo "$1" >>"$STUB_LOG"
+case "$1" in
+    https://api.github.com/*)
+        [ -n "${STUB_API:-}" ] || exit 22
+        cp "$STUB_API" "$out"
+        exit 0
+        ;;
+esac
 src="$STUB_REL/${1#https://github.com/headwater-ai/headwater/releases/download/}"
 [ -f "$src" ] || exit 22
 cp "$src" "$out"
@@ -4349,11 +4356,15 @@ chmod +x "$ih/stub/uname" "$ih/stub/curl"
 
 # install_run OS ARCH [VERSION] — runs the script in a fresh home and prints
 # `<status>|<binary present: yes or no>|<temp dirs left>|<curl calls>|<output>`.
+# It runs in $IR_CWD, by default a directory outside every corpus: the script
+# walks up from where it runs for a `.headwater/taxonomy.yml`, and from inside
+# this checkout it would find this repository's own.
+mkdir -p "$ih/nowhere"
 install_run() {
     rm -rf "$ih/home" "$ih/tmp" "$ih/log"
     mkdir -p "$ih/home" "$ih/tmp"
     : >"$ih/log"
-    ir_out=$(HOME="$ih/home" TMPDIR="$ih/tmp" PATH="$ih/stub:$PATH" \
+    ir_out=$(cd "${IR_CWD:-$ih/nowhere}" && HOME="$ih/home" TMPDIR="$ih/tmp" PATH="$ih/stub:$PATH" \
         STUB_OS="$1" STUB_ARCH="$2" STUB_LOG="$ih/log" STUB_REL="$ih/rel" \
         HEADWATER_VERSION="${3:-}" sh "$install_script" 2>&1)
     ir_status=$?
@@ -4398,6 +4409,108 @@ same "  and the refusal says so" yes \
 # and the call is the last line.
 same "  and the script's last line is the one call to its body" 'main "$@"' \
     "$(grep -v '^[[:space:]]*$' "$install_script" | tail -n 1)"
+
+# 11h, run inside a corpus that states the engine it asks for (#1600). The
+#      corpus is a scratch tree, and the script runs two directories below its
+#      root, so the case also holds the walk up. `v0.4.1` is planted as a
+#      release; `v0.4.2` is listed and has no archive, so the script must go
+#      on to the next release in the range rather than stop at it.
+mkdir -p "$ih/rel/v0.4.1" "$ih/corpus/.headwater" "$ih/corpus/docs/deep"
+for target in x86_64-unknown-linux-musl aarch64-apple-darwin; do
+    ih_archive="headwater-v0.4.1-$target.tar.gz"
+    tar -czf "$ih/rel/v0.4.1/$ih_archive" -C "$ih/bin" headwater
+    (cd "$ih/rel/v0.4.1" && sha256sum "$ih_archive" >"$ih_archive.sha256")
+done
+printf '[{"tag_name":"v9.0.0","assets":[]},{"tag_name":"taxonomy/headwater-standard/v0.4.9","assets":[]},{"tag_name":"%s","assets":[]},\n  {"tag_name": "v0.4.2", "assets": []},\n  {"tag_name": "v0.4.1", "assets": []}]\n' "$site_tag" >"$ih/releases.json"
+ih_api="https://api.github.com/repos/headwater-ai/headwater/releases?per_page=100"
+ih_old="https://github.com/headwater-ai/headwater/releases/download/v0.4.1/headwater-v0.4.1-x86_64-unknown-linux-musl.tar.gz"
+ih_gone="https://github.com/headwater-ai/headwater/releases/download/v0.4.2/headwater-v0.4.2-x86_64-unknown-linux-musl.tar.gz"
+STUB_API="$ih/releases.json"
+export STUB_API
+IR_CWD="$ih/corpus/docs/deep"
+
+printf 'version: 1\nengine: ">=0.4 <0.5"\n' >"$ih/corpus/.headwater/taxonomy.yml"
+r=$(install_run Linux x86_64)
+same "the install script inside a corpus that pins an older release installs that release, not its default" \
+    "0|yes|0|$ih_api $ih_gone $ih_old $ih_old.sha256" "$(printf '%s' "$r" | cut -d'|' -f1-4)"
+same "  and it says which file's requirement chose the version" yes \
+    "$(printf '%s' "$r" | grep -q "$ih/corpus/.headwater/taxonomy.yml asks for engine \">=0.4 <0.5\", so this installs v0.4.1" && echo yes || echo no)"
+
+printf "engine: '>=0.1'  # any release will do\n" >"$ih/corpus/.headwater/taxonomy.yml"
+r=$(install_run Linux x86_64)
+same "  and a range that admits the default installs the default with no call to the release list" \
+    "0|yes|0|$ih_linux $ih_linux.sha256" "$(printf '%s' "$r" | cut -d'|' -f1-4)"
+
+printf 'engine: ">=9 <9.0.0"\n' >"$ih/corpus/.headwater/taxonomy.yml"
+r=$(install_run Linux x86_64)
+same "  and a range no release satisfies installs nothing and downloads no archive" \
+    "1|no|0|$ih_api" "$(printf '%s' "$r" | cut -d'|' -f1-4)"
+same "  and the refusal names the range and the file" yes \
+    "$(printf '%s' "$r" | grep -q "satisfies the engine range \">=9 <9.0.0\" that $ih/corpus/.headwater/taxonomy.yml asks for" && echo yes || echo no)"
+
+printf 'engine: "~0.4"\n' >"$ih/corpus/.headwater/taxonomy.yml"
+r=$(install_run Linux x86_64)
+same "  and a range this syntax cannot read installs nothing and calls nothing" \
+    "1|no|0|" "$(printf '%s' "$r" | cut -d'|' -f1-4)"
+same "  and the refusal says the range cannot be read" yes \
+    "$(printf '%s' "$r" | grep -q 'the engine range "~0.4" in .* cannot be read' && echo yes || echo no)"
+# The default is in `>=0.5`, so a reading that stopped at the first
+# comparator would install it; the second cannot be read, so nothing is called.
+printf 'engine: ">=0.5 ~0.6"\n' >"$ih/corpus/.headwater/taxonomy.yml"
+r=$(install_run Linux x86_64)
+same "  and so is one whose second comparator cannot be read, before any call" \
+    "1|no|0|" "$(printf '%s' "$r" | cut -d'|' -f1-4)"
+
+printf 'version: 1\n  engine: ">=0.4 <0.5"\n' >"$ih/corpus/.headwater/taxonomy.yml"
+r=$(install_run Linux x86_64)
+same "  and an engine key that is not at the top level states no range" \
+    "0|yes|0|$ih_linux $ih_linux.sha256" "$(printf '%s' "$r" | cut -d'|' -f1-4)"
+
+# A range written with a no-break space between its comparators, which the
+# engine reads as a blank.
+printf 'engine: ">=0.4\302\240<0.5"\n' >"$ih/corpus/.headwater/taxonomy.yml"
+r=$(install_run Linux x86_64)
+same "  and a range split by a no-break space is read as the engine reads it" \
+    "0|yes|0|$ih_api $ih_gone $ih_old $ih_old.sha256" "$(printf '%s' "$r" | cut -d'|' -f1-4)"
+
+printf 'engine: ">=0.4 <0.5"\n' >"$ih/corpus/.headwater/taxonomy.yml"
+r=$(install_run Linux x86_64 "$site_tag")
+same "  and a HEADWATER_VERSION outside the range is installed as named" \
+    "0|yes|0|$ih_linux $ih_linux.sha256" "$(printf '%s' "$r" | cut -d'|' -f1-4)"
+same "  and the script says in one line that it is outside the range" yes \
+    "$(printf '%s' "$r" | grep -q "$site_tag is outside the engine range \">=0.4 <0.5\" that $ih/corpus/.headwater/taxonomy.yml asks for" && echo yes || echo no)"
+r=$(install_run Linux x86_64 v0.4.1)
+same "  and a HEADWATER_VERSION inside the range says nothing about the range" no \
+    "$(printf '%s' "$r" | grep -q 'outside the engine range' && echo yes || echo no)"
+
+STUB_API=''
+r=$(install_run Linux x86_64)
+same "  and a release list that cannot be read installs nothing and says so" \
+    "1|no|0|$ih_api" "$(printf '%s' "$r" | cut -d'|' -f1-4)"
+same "  and that refusal names the range" yes \
+    "$(printf '%s' "$r" | grep -q 'asks for engine ">=0.4 <0.5", which the default .* is outside, and the release list' && echo yes || echo no)"
+unset STUB_API IR_CWD
+
+# The awk reading of the range inside the script, against every row of the
+# engine's own table, so the script cannot read a range otherwise than the
+# engine does. The function is taken out of the script by name and run alone.
+sed -n '/^satisfies() {$/,/^}$/p' "$install_script" >"$ih/satisfies.sh"
+same "the install script carries the satisfies function this case reads" yes \
+    "$([ -s "$ih/satisfies.sh" ] && echo yes || echo no)"
+ih_table="$root/engine/crates/resolve/tests/engine-ranges.tsv"
+ih_rows=0
+ih_wrong=''
+while IFS= read -r line; do
+    case "$line" in '' | '#'*) continue ;; esac
+    ih_rows=$((ih_rows + 1))
+    t_range=$(printf '%s' "$line" | cut -f1)
+    t_version=$(printf '%s' "$line" | cut -f2)
+    t_want=$(printf '%s' "$line" | cut -f3)
+    t_got=$(. "$ih/satisfies.sh" && satisfies "$t_range" "$t_version")
+    [ "$t_got" = "$t_want" ] || ih_wrong="$ih_wrong [$t_range] [$t_version]: $t_got, the table says $t_want;"
+done <"$ih_table"
+same "  and it answers every row of engine-ranges.tsv as the engine does ($ih_rows rows)" '' "$ih_wrong"
+same "  and the table it read is not empty" yes "$([ "$ih_rows" -ge 20 ] && echo yes || echo no)"
 
 # 11i. The copy button beside the install line runs in the browser only if the
 #      page's content policy admits its script, and a policy that does not

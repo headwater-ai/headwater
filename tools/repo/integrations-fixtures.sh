@@ -231,6 +231,112 @@ json4='[
 got=$(printf '%s' "$json4" | python3 "$resolver")
 same 'no matching release prints nothing rather than a wrong tag' '' "$got"
 
+# Shape 5 (#1600): a corpus that pins an older release. The corpus states
+# `engine: ">=0.4 <0.5"`, so the newest release is the wrong engine, and
+# `latest` must answer with the newest release the range admits.
+json5='[
+  {"tag_name": "v0.6.0", "assets": [
+    {"name": "headwater-v0.6.0-x86_64-unknown-linux-gnu.tar.gz"},
+    {"name": "headwater-v0.6.0-x86_64-unknown-linux-gnu.tar.gz.sha256"}
+  ]},
+  {"tag_name": "v0.5.0", "assets": [
+    {"name": "headwater-v0.5.0-x86_64-unknown-linux-gnu.tar.gz"},
+    {"name": "headwater-v0.5.0-x86_64-unknown-linux-gnu.tar.gz.sha256"}
+  ]},
+  {"tag_name": "v0.4.1", "assets": [
+    {"name": "headwater-v0.4.1-x86_64-unknown-linux-gnu.tar.gz"},
+    {"name": "headwater-v0.4.1-x86_64-unknown-linux-gnu.tar.gz.sha256"}
+  ]}
+]'
+same 'a corpus range picks the newest release it admits, not the newest release' 'v0.4.1' \
+    "$(printf '%s' "$json5" | python3 "$resolver" --range '>=0.4 <0.5')"
+same '  and with no range the newest release still wins' 'v0.6.0' \
+    "$(printf '%s' "$json5" | python3 "$resolver")"
+same '  and a range no release satisfies prints nothing rather than the newest' '' \
+    "$(printf '%s' "$json5" | python3 "$resolver" --range '>=9')"
+printf '%s' "$json5" | python3 "$resolver" --range '~0.4' >/dev/null 2>&1
+same '  and a range this syntax cannot read exits 2' 2 "$?"
+printf '%s' "$json5" | python3 "$resolver" --range '>=0.4 ~0.5' >/dev/null 2>&1
+same '  and so does one whose second comparator cannot be read' 2 "$?"
+
+# Shape 6: a `v` tag that is no version, such as a pre-release, carries the
+# assets and sits first. A range cannot admit it, so it is skipped.
+json6='[
+  {"tag_name": "v0.6.0-rc1", "assets": [
+    {"name": "headwater-v0.6.0-rc1-x86_64-unknown-linux-gnu.tar.gz"},
+    {"name": "headwater-v0.6.0-rc1-x86_64-unknown-linux-gnu.tar.gz.sha256"}
+  ]},
+  {"tag_name": "v0.4.1", "assets": [
+    {"name": "headwater-v0.4.1-x86_64-unknown-linux-gnu.tar.gz"},
+    {"name": "headwater-v0.4.1-x86_64-unknown-linux-gnu.tar.gz.sha256"}
+  ]}
+]'
+same '  and a tag that is no version is never what a range picks' 'v0.4.1' \
+    "$(printf '%s' "$json6" | python3 "$resolver" --range '>=0.4')"
+
+# The same choice through resolve-version.sh, the script both actions run: a
+# stub `curl` on PATH serves shape 5 as the release list, and a scratch
+# corpus states the range in the line an adopter writes.
+rv=$(mktemp -d) || exit 1
+mkdir -p "$rv/stub" "$rv/corpus/.headwater" "$rv/bare"
+printf '%s' "$json5" >"$rv/releases.json"
+printf '#!/bin/sh\necho "$*" >>"%s/curl.log"\ncat "%s/releases.json"\n' "$rv" "$rv" >"$rv/stub/curl"
+chmod +x "$rv/stub/curl"
+# resolve_version REQUESTED ROOT — prints `<status>|<GITHUB_OUTPUT>|<stderr>`.
+resolve_version() {
+    : >"$rv/out"
+    rv_err=$(PATH="$rv/stub:$PATH" REQUESTED="$1" ROOT="$2" GITHUB_OUTPUT="$rv/out" GH_TOKEN='' \
+        sh "$root/integrations/headwater-check/resolve-version.sh" 2>&1 >/dev/null)
+    rv_status=$?
+    printf '%s|%s|%s\n' "$rv_status" "$(tr '\n' ' ' <"$rv/out" | sed 's/ $//')" "$(printf '%s' "$rv_err" | tr '\n' ' ')"
+}
+printf 'version: 1\nengine: ">=0.4 <0.5"\n' >"$rv/corpus/.headwater/taxonomy.yml"
+same 'resolve-version.sh resolves latest to the release the corpus range admits' '0|tag=v0.4.1' \
+    "$(resolve_version latest "$rv/corpus" | cut -d'|' -f1-2)"
+same '  and it asks GitHub for 100 releases a page' yes \
+    "$(grep -q 'releases?per_page=100' "$rv/curl.log" && echo yes || echo no)"
+same '  and a tag named in version is installed as named' '0|tag=v0.6.0' \
+    "$(resolve_version v0.6.0 "$rv/corpus" | cut -d'|' -f1-2)"
+printf "engine: '>=0.5 <0.6'  # the release line this corpus was written for\n" >"$rv/corpus/.headwater/taxonomy.yml"
+same '  and a single-quoted range with a comment after it is read' '0|tag=v0.5.0' \
+    "$(resolve_version latest "$rv/corpus" | cut -d'|' -f1-2)"
+printf 'engine: <0.5\n' >"$rv/corpus/.headwater/taxonomy.yml"
+same '  and so is an unquoted one' '0|tag=v0.4.1' \
+    "$(resolve_version latest "$rv/corpus" | cut -d'|' -f1-2)"
+printf 'engine: ">=9"\n' >"$rv/corpus/.headwater/taxonomy.yml"
+r=$(resolve_version latest "$rv/corpus")
+same '  and a range no release satisfies fails and writes no tag' '1|' "$(printf '%s' "$r" | cut -d'|' -f1-2)"
+same '  and the refusal names the range and the file' yes \
+    "$(printf '%s' "$r" | grep -q "::error::.*\">=9\".*$rv/corpus/.headwater/taxonomy.yml" && echo yes || echo no)"
+printf 'engine: "~0.4"\n' >"$rv/corpus/.headwater/taxonomy.yml"
+r=$(resolve_version latest "$rv/corpus")
+same '  and a range this syntax cannot read fails and says so' '1|' "$(printf '%s' "$r" | cut -d'|' -f1-2)"
+same '  and that refusal names the range' yes \
+    "$(printf '%s' "$r" | grep -q '::error::the engine range "~0.4" .*cannot be read' && echo yes || echo no)"
+same '  and a corpus with no taxonomy file gets the newest release, as before' '0|tag=v0.6.0' \
+    "$(resolve_version latest "$rv/bare" | cut -d'|' -f1-2)"
+printf 'version: 1\n  engine: ">=0.4 <0.5"\n' >"$rv/corpus/.headwater/taxonomy.yml"
+same '  and an engine key that is not at the top level states no range' '0|tag=v0.6.0' \
+    "$(resolve_version latest "$rv/corpus" | cut -d'|' -f1-2)"
+rm -rf "$rv"
+
+# Every row of the engine's own range table through the Python reading of
+# it, so that reading cannot drift from `release::satisfies` unwatched.
+table="$root/engine/crates/resolve/tests/engine-ranges.tsv"
+table_rows=0
+table_wrong=''
+while IFS= read -r line; do
+    case "$line" in '' | '#'*) continue ;; esac
+    table_rows=$((table_rows + 1))
+    t_range=$(printf '%s' "$line" | cut -f1)
+    t_version=$(printf '%s' "$line" | cut -f2)
+    t_want=$(printf '%s' "$line" | cut -f3)
+    t_got=$(python3 "$resolver" --satisfies "$t_range" "$t_version")
+    [ "$t_got" = "$t_want" ] || table_wrong="$table_wrong [$t_range] [$t_version]: $t_got, the table says $t_want;"
+done <"$table"
+same "resolve-latest.py answers every row of engine-ranges.tsv as the engine does ($table_rows rows)" '' "$table_wrong"
+same '  and the table it read is not empty' yes "$([ "$table_rows" -ge 20 ] && echo yes || echo no)"
+
 printf '\n# assert-no-inline-expression-in-run.py, against the real file and a reintroduced injection\n'
 
 scratch=$(mktemp -d) || exit 1
