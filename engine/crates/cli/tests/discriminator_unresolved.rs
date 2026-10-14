@@ -263,10 +263,18 @@ fn the_rule_is_one_instance_over_the_corpus() {
 fn a_path_no_shelf_claims_raises_nothing() {
     let root = Root::new("unshelved");
     root.write(
-        "notes/loose.md",
+        "docs/loose/loose.md",
         "---\ndoc_type: review_recrod\ntitle: Loose\n---\n\n# Loose\n",
     );
     let ran = root.strict();
+    // The census reached the file and stopped at step 1, so the control
+    // reads a real stop rather than a path outside the corpus root.
+    let census = ran.out.split_whitespace().collect::<Vec<_>>().join(" ");
+    assert!(
+        census.contains("docs/loose/loose.md untyped: no shelf pattern claims this path"),
+        "the census row for the unshelved file\n{}",
+        ran.out
+    );
     assert!(ran.of_rule().is_empty(), "{}", ran.out);
 }
 
@@ -277,5 +285,15 @@ fn a_file_with_no_front_matter_raises_nothing() {
     let root = Root::new("bare");
     root.write(PATH, "# A probe\n\nThis is a probe.\n");
     let ran = root.strict();
+    // The census reached the file on the shelf and found no block, so the
+    // control reads that row rather than a file the walk never saw.
+    let census = ran.out.split_whitespace().collect::<Vec<_>>().join(" ");
+    assert!(
+        census.contains(&format!(
+            "{PATH} untyped: no front matter, so nobody has typed this file"
+        )),
+        "the census row for the bare file\n{}",
+        ran.out
+    );
     assert!(ran.of_rule().is_empty(), "{}", ran.out);
 }
