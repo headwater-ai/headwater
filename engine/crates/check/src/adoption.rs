@@ -650,6 +650,92 @@ mod tests {
         }
     }
 
+    /// #1495: `crate::fill::filled` adds no newline to text that had none, so
+    /// every line the ledger writes owes its own. Before the fix the task
+    /// statement, each refused line and each unread line ran on into the next
+    /// line, and `Report::render` glued the read-set summary onto the last of
+    /// them (`...a migration-pending finding31 documents in the read set`).
+    #[test]
+    fn every_ledger_line_ends_before_the_next_begins() {
+        let block = payload(
+            "\
+to: acme/x
+tasks:
+  - id: AD-1
+    statement: the corpus states no summary
+    owner: the docs guild
+    until: 2027-01-01
+    pairs:
+      - {path: docs/a.md, rule: facet.required.missing}
+  - id: AD-2
+    statement: a statement
+    owner: an owner
+    until: 2027-01-01
+    pairs: []
+",
+        );
+        let declared = read(&block, &RULES);
+        let (_, ledger) = apply(
+            vec![finding("docs/a.md", "facet.required.missing")],
+            declared,
+            day("2026-08-13"),
+        );
+        let plain = ledger.render(crate::paint::ColorMode::Plain);
+        assert_eq!(
+            plain,
+            "adoption\n  1 pairs open, 0 closed, holding 1 finding, in 1 task\n  AD-1 1 open, 0 closed, holding 1 finding, owner the docs guild, until\n    2027-01-01\n    the corpus states no summary\n  AD-2 holds nothing: it declares no pair, so it accounts for nothing\n  the block declares `to`, which nothing here reads: it names a migration state.\n    Spec 7 gives one a from-version and a to-version, and no verb of this engine\n    writes either into this block\n",
+            "each ledger line stands on its own line"
+        );
+
+        // Each kind of line, alone in a ledger, ends the render: a regression
+        // in one of the three format strings fails here on its own.
+        let open_only = one_task("      - {path: docs/a.md, rule: facet.required.missing}");
+        let (_, ledger) = apply(
+            vec![finding("docs/a.md", "facet.required.missing")],
+            read(&open_only, &RULES),
+            day("2026-08-13"),
+        );
+        let statement = ledger.render(crate::paint::ColorMode::Plain);
+        assert!(statement.ends_with("    the corpus states no summary\n"), "{statement:?}");
+
+        let refused_only = payload(
+            "\
+tasks:
+  - id: AD-2
+    statement: a statement
+    owner: an owner
+    until: 2027-01-01
+    pairs: []
+",
+        );
+        let (_, ledger) = apply(Vec::new(), read(&refused_only, &RULES), day("2026-08-13"));
+        let refused = ledger.render(crate::paint::ColorMode::Plain);
+        assert!(refused.ends_with("accounts for nothing\n"), "{refused:?}");
+
+        let unread_only = payload(
+            "\
+to: acme/x
+tasks:
+  - id: AD-1
+    statement: the corpus states no summary
+    owner: the docs guild
+    until: 2027-01-01
+    pairs:
+      - {path: docs/a.md, rule: facet.required.missing}
+",
+        );
+        let (_, ledger) = apply(Vec::new(), read(&unread_only, &RULES), day("2026-08-13"));
+        let unread = ledger.render(crate::paint::ColorMode::Plain);
+        assert!(unread.ends_with('\n'), "{unread:?}");
+        assert!(
+            unread
+                .lines()
+                .last()
+                .is_some_and(|line| line.starts_with("  the block declares `to`")),
+            "{unread:?}"
+        );
+    }
+
     fn payload(source: &str) -> Mapping {
         headwater_yaml::load(source)
             .expect("the payload loads")
