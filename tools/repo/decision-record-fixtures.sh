@@ -371,6 +371,36 @@ beacon_absent() {
     ' "$readme"
 }
 
+# Each link of a doctrine into this entry's fixtures README, as its line
+# number and its anchor. A link into another entry's fixtures is not one.
+doctrine_links() {
+    grep -n -oE '(decision-record/fixtures/README\.md|\(fixtures/README\.md)#[A-Za-z0-9_-]+' "$1" |
+        sed -E 's/^([0-9]+):.*#/\1\t/'
+}
+
+# The README section that an anchor opens: its heading, through the line
+# before the next heading of the same or a higher level. The anchor is the
+# heading as GitHub writes it, lower case, punctuation other than `-` and `_`
+# dropped and each space a `-`. A heading inside a fence is not a heading.
+readme_section() {
+    awk -v want="$1" '
+        function slug(s) { s = tolower(s); gsub(/[^a-z0-9 _-]/, "", s); gsub(/ /, "-", s); return s }
+        /^```/ { fence = !fence }
+        !fence && /^#+ / {
+            level = index($0, " ") - 1
+            if (here && level <= hlevel) exit
+            if (!here && slug(substr($0, level + 2)) == want) { here = 1; hlevel = level }
+        }
+        here { print }
+    ' "$readme"
+}
+
+# Every backticked name of standard input, without its backticks, sorted and
+# unique.
+backticked() {
+    grep -oE '`[^`]+`' | tr -d '`' | LC_ALL=C sort -u
+}
+
 # Every identifier scheme of a written lock: name, pattern, namespace.
 lock_schemes() {
     awk '
@@ -903,6 +933,50 @@ if [ -f "$beacon_lock" ]; then
     cut -f1 "$scratch/beacon-reported" | LC_ALL=C sort | uniq -c |
         while read -r n rule; do echo "    $n  $rule"; done
 fi
+
+echo
+echo "case group 9 — every link from the doctrine into this README lands on a section about the same thing"
+# The doctrine ships in the package and sends an adopter to this README for
+# the evidence of a finding. A finding the engine has since disproved, linked
+# to a section that is now about something else, passed every other group
+# here (#1492). So each link must open a section of this README, and the
+# paragraph that holds the link must share at least one backticked name with
+# that section. A paragraph that sends the reader to what a run does not
+# report must not name a rule that the run reports.
+doctrine="$root/$entry/doctrine.md"
+doctrine_links "$doctrine" > "$scratch/doctrine-links"
+if [ -s "$scratch/doctrine-links" ]; then
+    pass "the doctrine links into the fixtures README at least once ($(grep -c . "$scratch/doctrine-links") read)"
+else
+    fail "the doctrine links into the fixtures README at least once" "no link to $entry/fixtures/README.md#<anchor> in $entry/doctrine.md"
+fi
+beacon_findings | cut -f1 | LC_ALL=C sort -u > "$scratch/reported-rules"
+while IFS="$(printf '\t')" read -r line anchor; do
+    [ -n "$anchor" ] || continue
+    readme_section "$anchor" > "$scratch/section"
+    if [ ! -s "$scratch/section" ]; then
+        fail "doctrine line $line links #$anchor, which opens a section of the README" "no heading of $entry/fixtures/README.md has that anchor"
+        continue
+    fi
+    sed -n "${line}p" "$doctrine" | backticked > "$scratch/para-names"
+    backticked < "$scratch/section" > "$scratch/section-names"
+    shared=$(LC_ALL=C comm -12 "$scratch/para-names" "$scratch/section-names" | head -n 3 | tr '\n' ' ')
+    if [ -n "$shared" ]; then
+        pass "doctrine line $line and README #$anchor name the same thing ($shared)"
+    else
+        fail "doctrine line $line and README #$anchor name the same thing" \
+            "the paragraph names $(tr '\n' ' ' < "$scratch/para-names")and the section names $(tr '\n' ' ' < "$scratch/section-names")"
+    fi
+    if [ "$anchor" = what-a-run-does-not-report-and-should ]; then
+        named=$(LC_ALL=C comm -12 "$scratch/para-names" "$scratch/reported-rules" | tr '\n' ' ')
+        if [ -z "$named" ]; then
+            pass "doctrine line $line sends the reader to what a run does not report, and names no rule the run reports"
+        else
+            fail "doctrine line $line sends the reader to what a run does not report, and names no rule the run reports" \
+                "it names ${named}which ### The findings a run reports lists"
+        fi
+    fi
+done < "$scratch/doctrine-links"
 
 echo
 echo "the run record of criterion 4, recorded and not asserted"
