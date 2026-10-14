@@ -5099,18 +5099,25 @@ install_routes_block() {
 # into the job, is `bad`: either passes on any version.
 #
 # Each hop takes the LAST assignment of the variable before the comparison,
-# an assignment after a `;` on a line included, because that is the value the
-# comparison reads. And the last assignment of `printed` before the
-# comparison must be the one that runs `headwater ... --version`: a job that
-# runs the binary and then sets `printed` to the expected value compares the
-# expected value with itself (#1490).
+# after any character that cannot end a shell name (a `;`, `&&`, a tab, a
+# quote), because that is the value the comparison reads. And the last
+# assignment of `printed` before the comparison must be exactly the pipe of
+# `headwater ... --version` into `awk '{print $NF}'`, with no `;`, `&`, `|` or
+# redirect before it and nothing after it: a job that runs the binary and
+# then sets `printed` to the expected value compares the expected value with
+# itself (#1490).
 install_routes_compared() {
     _blk=$(install_routes_block "$1" "$2")
     _line=$(printf '%s\n' "$_blk" | grep -E 'if \[ "\$printed" != "[^"]+" \]; then' | head -n 1)
     [ -n "$_line" ] || { echo bad; return; }
     printf '%s\n' "$_blk" | grep -A1 -F "$_line" | sed -n 2p | grep -qE '&& exit 1$' || { echo bad; return; }
     _before=$(printf '%s\n' "$_blk" | awk -v l="$_line" '$0 == l { exit } { print }')
-    printf '%s\n' "$_before" | grep -E '(^|[ ;])printed=' | tail -n 1 | grep -qE 'headwater"? --version' ||
+    # From the last `printed=` on, the line is the `--version` pipe and nothing
+    # else: no `;`, `&` or redirect inside it, and nothing after it.
+    _q="'"
+    printf '%s\n' "$_before" | grep -E '(^|[^A-Za-z0-9_])printed=' | tail -n 1 |
+        sed -E 's/^(.*[^A-Za-z0-9_])?printed=/printed=/' |
+        grep -qE '^printed=\$\([^;&|<>]*headwater"? --version \| awk ('"$_q"'\{print \$NF\}'"$_q"'|"\{print \\\$NF\}")\)[[:blank:]]*$' ||
         { echo bad; return; }
     _var=$(printf '%s\n' "$_line" | sed -n 's/.*!= "\$[{]\{0,1\}\([A-Za-z_][A-Za-z0-9_]*\).*/\1/p')
     _hops=0
@@ -5119,7 +5126,7 @@ install_routes_compared() {
             echo bad
             return
         fi
-        _def=$(printf '%s\n' "$_before" | grep -E "(^|[ ;])$_var=" | tail -n 1)
+        _def=$(printf '%s\n' "$_before" | grep -E "(^|[^A-Za-z0-9_])$_var=" | tail -n 1)
         case $_def in
             "") echo bad; return ;;
             *'readme-install-block.sh README.md release'* | *'route.sh'* | *'cargo search headwater-cli'*)
@@ -5366,9 +5373,15 @@ install_routes_provoke "a report job whose GH_TOKEN is under a key of the step o
 # What runs after the comparison is not what it compared.
 install_routes_provoke "an archive job that sets printed to the tag before the comparison and runs --version only after it is red" \
     '/^  archive:$/,/^  [a-z-]*:$/{
-s/^\( *\)printed=\$("\$HOME\/\.local\/bin\/headwater" --version.*$/\1printed=${tag#v}/
-s/^\( *\)echo "the archive block installs/\1printed=$("$HOME\/.local\/bin\/headwater" --version)\
-&/
+/^ *printed=\$("\$HOME\/\.local\/bin\/headwater" --version/{
+h
+s/^\( *\)printed=.*$/\1printed=${tag#v}/
+}
+/echo "the archive block installs/{
+x
+p
+x
+}
 }' \
     "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
 # The mutants of the first verify of PR #1752: the same classes, written so a
@@ -5389,6 +5402,9 @@ install_routes_provoke "an archive job that sets printed to the tag after a tab 
 install_routes_provoke "a Debian 11 job whose printed runs --version into /dev/null and echoes WANT is red" \
     '/^  deb-file:$/,/^  [a-z-]*:$/s/--version | awk "{print \\\$NF}")/--version >\/dev\/null; echo "$WANT")/' \
     "the job deb-file of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "an archive job whose --version pipe ends the step with && exit 0 is red" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/^\( *printed=\$("\$HOME\/\.local\/bin\/headwater" --version.*\)$/\1 \&\& exit 0/' \
+    "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
 install_routes_provoke "a cargo job that sets want to printed after && is red" \
     '/^  cargo:$/,/^  [a-z-]*:$/s/^\( *printed=\$(.*--version.*\)$/\1\&\&want="$printed"/' \
     "the job cargo of install-routes.yml never compares the version it printed with the one its route installs"
