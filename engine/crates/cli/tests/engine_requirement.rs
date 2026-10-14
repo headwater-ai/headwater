@@ -257,6 +257,56 @@ fn an_unreadable_corpus_range_is_refused() {
     assert!(ran.err.contains("engine: \"~0.5\""), "{}", ran.err);
 }
 
+/// An unquoted range that opens with `>` is not YAML a reader can load: YAML
+/// reads a `>` there as the start of a folded block. The refusal names the
+/// key and says to quote the range, rather than quoting the YAML parser
+/// alone (#1600).
+#[test]
+fn an_unquoted_range_that_opens_with_a_greater_than_sign_is_refused_with_the_quotes_it_needs() {
+    for (case, value) in [("floor", ">=0.6"), ("caret", ">=0.5 <0.6")] {
+        let root = Root::new(&format!("engine-requirement-unquoted-{case}"));
+        set_engine(&root.at, None);
+        let path = root.at.join(".headwater/taxonomy.yml");
+        let text = std::fs::read_to_string(&path).expect("the declaration reads");
+        let text = text.replacen("\ncorpus:", &format!("\nengine: {value}\n\ncorpus:"), 1);
+        std::fs::write(&path, text).expect("the declaration writes");
+        for verb in [&["check", "--strict"][..], &["taxonomy", "resolve"][..]] {
+            let ran = root.run(verb);
+            assert_ne!(ran.code, Some(0), "{case} {verb:?}: {ran:?}");
+            assert!(
+                ran.err.contains("`engine`") && ran.err.contains("quote"),
+                "{case} {verb:?}: {}",
+                ran.err
+            );
+            assert!(
+                ran.err.contains(&format!("engine: \"{value}\"")),
+                "{case} {verb:?}: the refusal shows the line as it must be written: {}",
+                ran.err
+            );
+            assert!(
+                !ran.err.contains("while scanning a block scalar"),
+                "{case} {verb:?}: the parser's own text is not the refusal: {}",
+                ran.err
+            );
+        }
+    }
+}
+
+/// A file that fails to load for another reason keeps the loader's own
+/// refusal, so the hint above is never a guess about an unrelated fault.
+#[test]
+fn a_declaration_that_fails_to_load_for_another_reason_is_not_told_to_quote_its_range() {
+    let root = Root::new("engine-requirement-other-load-failure");
+    set_engine(&root.at, None);
+    let path = root.at.join(".headwater/taxonomy.yml");
+    let text = std::fs::read_to_string(&path).expect("the declaration reads");
+    let text = text.replacen("\ncorpus:", "\nengine: \"<0.6\"\nbroken: [unclosed\n\ncorpus:", 1);
+    std::fs::write(&path, text).expect("the declaration writes");
+    let ran = root.run(&["check", "--strict"]);
+    assert_ne!(ran.code, Some(0), "{ran:?}");
+    assert!(!ran.err.contains("quote"), "{}", ran.err);
+}
+
 /// A list or a mapping under `engine` is refused, never read as no range.
 #[test]
 fn an_engine_value_that_is_not_one_range_is_refused() {

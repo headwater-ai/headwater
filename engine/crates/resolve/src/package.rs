@@ -144,10 +144,43 @@ pub const ENGINE: &str = "engine";
 /// The file that carries it.
 pub const CONSUMER: &str = ".headwater/taxonomy.yml";
 
+/// The range of a top-level `engine:` line written without quotes and opening
+/// with `>`, the one way an adopter writes the line that YAML refuses.
+///
+/// `<` and `=` open a plain scalar and load, so only `>` needs this. A
+/// declaration that does not load for that reason keeps the loader's refusal,
+/// and this answers `None` for it.
+fn unquoted_engine_range(path: &Path) -> Option<String> {
+    let text = std::fs::read_to_string(path).ok()?;
+    text.lines().find_map(|line| {
+        let value = line.strip_prefix(ENGINE)?.strip_prefix(':')?.trim();
+        let value = match value.find(" #") {
+            Some(comment) => value[..comment].trim_end(),
+            None => value,
+        };
+        value.starts_with('>').then(|| value.to_string())
+    })
+}
+
 /// Read the consumer declaration of a repository.
 pub fn consumer(root: &Path) -> Result<Consumer, Vec<ResolveError>> {
     let path = root.join(CONSUMER);
-    let loaded = crate::source::load(&path)?;
+    let loaded = match crate::source::load(&path) {
+        Ok(loaded) => loaded,
+        Err(errors) => {
+            return Err(match unquoted_engine_range(&path) {
+                Some(range) => refusal(
+                    CONSUMER,
+                    &format!(
+                        "`{ENGINE}` states its range unquoted, and YAML reads an unquoted `>` as \
+                         the start of a folded block, so the file does not load; write the range \
+                         in quotes, `{ENGINE}: \"{range}\"`"
+                    ),
+                ),
+                None => errors,
+            });
+        }
+    };
     let name = CONSUMER;
     let map = loaded
         .value
