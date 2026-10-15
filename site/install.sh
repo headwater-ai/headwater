@@ -17,7 +17,7 @@
 #     HEADWATER_VERSION       the release tag to install (default below)
 #     HEADWATER_INSTALL_DIR   where the binary goes (default ~/.local/bin)
 #
-#     curl -fsSL https://headwater.tools/install.sh | HEADWATER_VERSION=v0.5.0 sh
+#     curl -fsSL https://headwater.tools/install.sh | HEADWATER_VERSION=v0.6.0 sh
 #
 # Run inside a repository whose corpus states the engine it asks for, as a
 # range in the `engine:` line of `.headwater/taxonomy.yml`, it installs a
@@ -48,7 +48,7 @@
 set -eu
 
 main() {
-    version=${HEADWATER_VERSION:-v0.5.0}
+    version=${HEADWATER_VERSION:-v0.6.0}
     dir=${HEADWATER_INSTALL_DIR:-$HOME/.local/bin}
 
     os=$(uname -s)
