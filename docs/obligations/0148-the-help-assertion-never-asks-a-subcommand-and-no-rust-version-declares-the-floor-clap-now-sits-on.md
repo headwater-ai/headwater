@@ -4,7 +4,7 @@ status: discharged
 status_since: 2026-10-15
 last_verified: 2026-09-07
 title: "The help assertion never asks a subcommand, and no rust-version declares the floor clap now sits on"
-summary: "The help test pins only the root command, and no machine-readable rust-version stops clap's own margin from reaching zero."
+summary: "Every command line now answers --help and -h through the binary in a test, and the engine declares the rust-version floor that clap sits on."
 provenance:
   warrant: accepted
   agency: agent

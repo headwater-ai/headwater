@@ -4,7 +4,7 @@ status: discharged
 status_since: 2026-10-15
 last_verified: 2026-08-26
 title: "The cache-identity test reads the live working tree, so an edit during the run reports the correctness root as violated"
-summary: "The test proving cache and no-cache agree on a verdict reads the live working tree, and a concurrent edit reports the correctness root as violated."
+summary: "The cache-identity test read the live tree with no guard. It now takes a fingerprint of the tree around its runs, and it names an edit during the test."
 provenance:
   warrant: accepted
   agency: agent

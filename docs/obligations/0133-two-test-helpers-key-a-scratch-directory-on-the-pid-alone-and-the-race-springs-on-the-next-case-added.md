@@ -4,7 +4,7 @@ status: discharged
 status_since: 2026-10-15
 last_verified: 2026-08-26
 title: "Two test helpers key a scratch directory on the pid alone, and the race springs on the next case added"
-summary: "Two scratch-directory test helpers key on the process id alone, safe only while their files hold one test each."
+summary: "Two test helpers keyed a scratch path on the process id alone. Both now key on the process and the case or the call, and each file holds two cases."
 provenance:
   warrant: accepted
   agency: agent
