@@ -14,7 +14,6 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - HW-DR-0058
     - engine/crates/check/src/facet_blank.rs
 ---
 
