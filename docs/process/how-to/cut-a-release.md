@@ -3,14 +3,14 @@ id: HW-PHOW-cut-a-release
 status: current
 status_since: 2026-09-27
 summary: "Bump the version, push a v* or taxonomy tag, confirm the workflow each tag starts, and move the install text last."
-last_verified: 2026-09-30
+last_verified: 2026-10-15
 title: "Cut a release"
 relations:
   traces_to:
     - to: engine/crates/cli/tests/publish_order.rs
       verified_revision: sha256:9342c291fb4427e119d04533e0ae3d0d415a738ecbbda2b3b61946e540b7f496
     - to: engine/Cargo.toml
-      verified_revision: sha256:178ab87a1bdc5202735a3331b5553b2b82c51344280bcbcd536958a2b3c6b4e5
+      verified_revision: sha256:564cfbb08c550def9f4b597c617e847382f3575b38a318468222dfbb00c0692c
 provenance:
   warrant: asserted
   agency: agent
