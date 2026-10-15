@@ -36,7 +36,11 @@ fn retire(root: &Root) {
     let to = format!("{from}      - term: {TERM}\n        reason: a test retires it\n");
     std::fs::write(&overlay, text.replacen(from, &to, 1)).expect("the overlay writes");
     let resolved = root.run(&["taxonomy", "resolve"]);
-    assert_eq!(resolved.code, Some(0), "the lock resolves again: {resolved:?}");
+    assert_eq!(
+        resolved.code,
+        Some(0),
+        "the lock resolves again: {resolved:?}"
+    );
 }
 
 /// A warm `check` gives the verdict a cold one gives after the lock moves.
