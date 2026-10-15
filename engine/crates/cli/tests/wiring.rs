@@ -1072,6 +1072,146 @@ fn exactly_one_site_defines_the_engine_version_constant() {
     );
 }
 
+/// No binary builds a check cache with a rule-set digest of its own choosing
+/// (HW-OBL-0208, item 3).
+///
+/// The check cache keys every verdict on the identity of the rule set the
+/// binary compiles. A test cannot change that rule set in the binary it runs,
+/// so no run of `headwater` can show a call site that passed a frozen digest.
+/// `Cache::compiled` reads the digest itself, and `Cache::at`, which takes it
+/// as an argument, stays for the tests of the check crate, which hold two rule
+/// sets in one process.
+///
+/// So the case holds three things over every `src/` file outside the check
+/// crate. The CLI calls `Cache::compiled` once, in `Loaded::cache`, and that
+/// call is the one a test of `check` holds. No other file calls a
+/// constructor of the check cache except `Cache::disabled`: a name that a
+/// file imports as the check crate's `Cache`, under any alias, or the full
+/// path `headwater_check::Cache`, may be followed by `::compiled`,
+/// `::disabled` or `::path` alone. And no file names `rules_digest`. A
+/// fourth part reads `crates/check/src/cache.rs`, and holds that `Cache` has
+/// the three constructors `disabled`, `at` and `compiled`, so that a new
+/// constructor that takes a digest is a failure here and a reason to extend
+/// this case. A frozen lock digest inside `Loaded::cache` is held by
+/// `tests/cache_key.rs`.
+///
+/// `check --fix` builds a cache that the report run after it writes over, so
+/// a frozen key in the fix run alone costs time and moves no verdict, and no
+/// run can show it. That is why both runs share `Loaded::cache`.
+///
+/// The needles are split so that this file does not match them, although it
+/// is under `tests/` and the walk reads `src/` alone.
+#[test]
+fn the_cli_builds_its_check_cache_in_one_place_and_names_no_rule_set_digest() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let check = root.join("crates/check/src");
+    let allowed = ["compiled", "disabled", "path"];
+    let mut files = Vec::new();
+    source_files(&root.join("crates"), &mut files);
+    let mut sites: Vec<(PathBuf, usize, String)> = Vec::new();
+    let mut compiled = 0;
+    for path in files {
+        if path.starts_with(&check) || !path.components().any(|part| part.as_os_str() == "src") {
+            continue;
+        }
+        let Ok(text) = std::fs::read_to_string(&path) else {
+            continue;
+        };
+        let code: Vec<&str> = text
+            .lines()
+            .map(|line| match line.trim_start().starts_with("//") {
+                true => "",
+                false => line,
+            })
+            .collect();
+        // Every name this file binds to the check crate's `Cache`, read from
+        // its `use headwater_check` statements, plus the full path.
+        let mut names = vec![concat!("headwater_check::", "Cache").to_string()];
+        let joined = code.join("\n");
+        for statement in joined.split("use headwater_check").skip(1) {
+            let statement = statement.split(';').next().unwrap_or("");
+            let mut words = statement
+                .split(|c: char| !(c.is_alphanumeric() || c == '_'))
+                .filter(|word| !word.is_empty())
+                .peekable();
+            while let Some(word) = words.next() {
+                if word != "Cache" {
+                    continue;
+                }
+                match words.peek() {
+                    Some(&"as") => {
+                        words.next();
+                        if let Some(alias) = words.next() {
+                            names.push(alias.to_string());
+                        }
+                    }
+                    _ => names.push("Cache".to_string()),
+                }
+            }
+        }
+        for (index, line) in code.iter().enumerate() {
+            compiled += line.matches(concat!("Cache::", "compiled(")).count();
+            if line.contains(concat!("rules_", "digest")) {
+                sites.push((path.clone(), index + 1, "names the rule-set digest".into()));
+            }
+            for name in &names {
+                let needle = format!("{name}::");
+                let mut rest: &str = line;
+                while let Some(at) = rest.find(&needle) {
+                    let before = rest[..at].chars().next_back();
+                    let after = &rest[at + needle.len()..];
+                    rest = after;
+                    // `EmbedCache::open` and `headwater_embed::Cache::open` are
+                    // not the check crate's `Cache`.
+                    if before.is_some_and(|c| c.is_alphanumeric() || c == '_' || c == ':') {
+                        continue;
+                    }
+                    let called: String = after
+                        .chars()
+                        .take_while(|c| c.is_alphanumeric() || *c == '_')
+                        .collect();
+                    if !allowed.contains(&called.as_str()) {
+                        sites.push((path.clone(), index + 1, format!("calls {name}::{called}")));
+                    }
+                }
+            }
+        }
+    }
+    assert!(
+        sites.is_empty(),
+        "a source file outside the check crate builds a check cache through a constructor that \
+         takes the rule-set digest, or names that digest; call `Loaded::cache`: {sites:?}"
+    );
+    assert_eq!(
+        compiled, 1,
+        "`Loaded::cache` is the one place the CLI builds a check cache, so a test of `check` \
+         holds the cache of `check --fix` too"
+    );
+
+    let cache = std::fs::read_to_string(check.join("cache.rs")).expect("cache.rs reads");
+    let (_, body) = cache
+        .split_once("\nimpl Cache {")
+        .expect("cache.rs carries `impl Cache`");
+    let body = body.split("\n}\n").next().unwrap_or("");
+    // A signature that rustfmt wraps runs over several lines, so each one is
+    // read from its name to the brace that opens its body.
+    let mut constructors: Vec<&str> = body
+        .split("\n    pub fn ")
+        .skip(1)
+        .filter(|item| {
+            let signature = item.split('{').next().unwrap_or("");
+            signature.contains("-> Self") || signature.contains("-> Cache")
+        })
+        .filter_map(|item| item.split('(').next())
+        .collect();
+    constructors.sort_unstable();
+    assert_eq!(
+        constructors,
+        ["at", "compiled", "disabled"],
+        "the check cache gained or lost a constructor; extend this case to hold it"
+    );
+}
+
 /// A command line this binary cannot parse is refused in a few lines, and the
 /// grammar is one command away rather than under the sentence.
 ///

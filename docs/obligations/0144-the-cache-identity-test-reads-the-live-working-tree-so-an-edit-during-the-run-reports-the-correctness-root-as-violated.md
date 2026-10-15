@@ -1,10 +1,10 @@
 ---
 id: HW-OBL-0144
-status: current
-status_since: 2026-09-06
+status: discharged
+status_since: 2026-10-15
 last_verified: 2026-08-26
 title: "The cache-identity test reads the live working tree, so an edit during the run reports the correctness root as violated"
-summary: "The test proving cache and no-cache agree on a verdict reads the live working tree, and a concurrent edit reports the correctness root as violated."
+summary: "The cache-identity test read the live tree with no guard. It now takes a fingerprint of the tree around its runs, and it names an edit during the test."
 provenance:
   warrant: accepted
   agency: agent
@@ -37,4 +37,4 @@ The other corpus-reading assertions in the same file compare against recorded to
 
 This closes when the test proves the same claim without reading a tree an editor can move. A snapshot taken once and compared against itself three times would satisfy it. So would a check that names a mid-run edit as the cause, rather than rendering two disagreeing reports. Either fix must keep the tie the test's own doc comment protects. The report it compares stays a report of the same corpus as the property test beside it, now that #1251 deleted the recorded `corpus.checks`. `cargo test --workspace` staying green with an edit landing during the run is the practical proof the fix holds.
 
-This waits on an adopter to choose the fix and land it.
+The first slice of [#1494](https://github.com/headwater-ai/headwater/issues/1494) discharged this record on 2026-10-15 with the second fix. The test takes a fingerprint of the tree before the first run and after the last one, with `tree_fingerprint` in `engine/crates/check/tests/fixtures.rs`. The fingerprint is one digest over the path and digest of every census row, inside the corpus root and outside it, and the lock digest. When the two fingerprints differ, the test compares no report. It fails with a message that names an edit during the test as the cause. The test still reads the live tree through `corpus_run` and `cached_corpus_run`, so the tie that its doc comment protects stays. A script measured both sides by hand, because no automated case can time an edit. It ran the test binary and, one second later, put a paragraph under the first heading of `docs/spec/07-distribution-and-federation.md`. Without the fingerprint, the test failed on two reports that differed. With it, the test failed with the message that names the edit. An edit that is undone before the last run ends escapes the fingerprint, and the test then compares the reports.

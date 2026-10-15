@@ -1,10 +1,10 @@
 ---
 id: HW-OBL-0148
-status: current
-status_since: 2026-09-06
+status: discharged
+status_since: 2026-10-15
 last_verified: 2026-09-07
 title: "The help assertion never asks a subcommand, and no rust-version declares the floor clap now sits on"
-summary: "The help test pins only the root command, and no machine-readable rust-version stops clap's own margin from reaching zero."
+summary: "Every command line now answers --help and -h through the binary in a test, and the engine declares the rust-version floor that clap sits on."
 provenance:
   warrant: accepted
   agency: agent
@@ -39,4 +39,6 @@ Closing the first gap means deriving the help test's cases from `headwater_verbs
 
 The second gap needs nothing further. `cargo build` and `cargo test` succeed on current stable and inside the pinned image, and `cargo clippy --all-targets --locked -- -D warnings` reports nothing at the raised `msrv`.
 
-This document closes issue #334, recorded rather than planned. The first fix is not written, and this document stands as the debt until the corpus carries it.
+This document closes issue #334, recorded rather than planned.
+
+The first slice of [#1494](https://github.com/headwater-ai/headwater/issues/1494) discharged the first gap on 2026-10-15, so both gaps are closed. `every_command_line_answers_both_help_flags_through_the_binary` in `engine/crates/cli/tests/help.rs` takes its command lines from `Verb::forms` over `headwater_verbs::VERBS`. It runs each one through the binary with `--help` and with `-h`. Each run must exit 0, with an empty standard error and a non-empty standard output. A scratch mutation made the help answer of one command line exit 1, and the case failed with a message that named `headwater taxonomy resolve --help`.

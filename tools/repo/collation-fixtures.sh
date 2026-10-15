@@ -164,8 +164,11 @@ unpinned_lines() {
             # time with `;`, and the next pass reads that `;` as the opener
             # it is. Each pass removes one keyword, so the loop ends. And a
             # single `&` ends a background command and opens the next, so
-            # it is in `open`, which also covers `&&`.
-            open = "(^|[|;&(`\"!{})])[ \t]*"
+            # it is in `open`, which also covers `&&`. A closing brace is
+            # not: `}` ends a group and opens no command, and in a message
+            # such as "${count} sort keys" it sat right before `sort`
+            # (HW-OBL-0208).
+            open = "(^|[|;&(`\"!{)])[ \t]*"
             while (match(work, open "(if|then|elif|else|fi|do|done|for|while|until|case|esac)([^A-Za-z0-9_]|$)")) {
                 seg = substr(work, RSTART, RLENGTH)
                 end = ""
@@ -343,6 +346,17 @@ printf '#!/bin/sh\nfor f in a b; do if sort "$f"; then :; fi; done\nif true; the
 same "a keyword after a keyword, after && or &, after a pipe or a case arm, and a bare & before sort/comm all redden" \
     "$(awk 'NR > 1 { print FILENAME ":" NR ": " $0 }' "$scratch/arms/nested.sh" | tr '\n' '|')" \
     "$(unpinned_lines "$scratch/arms/nested.sh" | tr '\n' '|')"
+
+# HW-OBL-0208 found `}` in the opener class, so the closing brace of a
+# parameter expansion opened a command: `echo "${count} sort keys"` reddened
+# as an unpinned sort. A closing brace ends a group and opens nothing. The
+# first line must stay clean, and the second, a brace group that ends before
+# a pipe into sort, must still redden through the `|`.
+printf '#!/bin/sh\necho "${count} sort keys"\n{ cat a; } | sort\n' \
+    >"$scratch/arms/brace.sh"
+same "a closing brace before sort in a message stays clean, and a brace group piped to sort reddens" \
+    "$scratch/arms/brace.sh:3: { cat a; } | sort|" \
+    "$(unpinned_lines "$scratch/arms/brace.sh" | tr '\n' '|')"
 
 echo
 echo "$passed passed, $failed failed"

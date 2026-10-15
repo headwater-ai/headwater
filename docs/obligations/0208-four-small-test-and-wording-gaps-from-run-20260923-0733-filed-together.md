@@ -2,7 +2,7 @@
 id: HW-OBL-0208
 status: current
 status_since: 2026-09-26
-summary: "A collation opener class, a cache key's CLI wiring, a cache doc word and a recurring board-card gap, each with no reader outside this repository."
+summary: "Of four small gaps from one run, three are closed, and the recurring board-card gap waits on HW-OBL-0203."
 last_verified: 2026-09-23
 title: "Four small test and wording gaps from run 20260923-0733 filed together"
 waiting_on: build
@@ -16,20 +16,14 @@ The intake of run `20260923-0733` held four findings that name no reader outside
 
 ## Obligation
 
-**The collation opener class holds a character that opens no command.** `tools/repo/collation-fixtures.sh` puts `}` in the class of characters that may precede a `sort` or `comm` invocation. POSIX puts only a redirection or an operator after `}`, so the member catches no real command, and it causes the false positive on `echo "${count} sort keys"`. The member predates PR #1042, whose adjudication kept it out of scope. The same PR added `&` to the class, which makes `echo "a & comm b"` a new false positive. The merge accepted that one. Both errors are in the loud direction.
+**The board-card gap of HW-OBL-0203 recurred.** In this run, `board-move.sh` found no project-board card for #1030, #974, #975, #1038 and #976, and remainder issue #1051 was filed without one. [HW-OBL-0203](../process/obligations/0203-three-small-run-tooling-gaps-from-run-20260922-1121-filed-together.md) asks whether the gap is systemic. Six issues in one run is evidence that it is. This is the one gap of the four that is still owed.
 
-**No test holds the CLI wiring of a cache-key component.** PR #1045 (#1029) put the compiled rule set into the check-rule cache key. If `rules_digest()` is frozen at both call sites in `engine/crates/cli/src/main.rs` (near lines 5140 and 5418), all 23 `headwater-cli` test binaries stay green. The verifier suspects that the wiring of the lock digest has the same gap, and did not check it. The missing test is a class, not a line: a CLI-level test that a warm cache misses after a key input moves.
+The first slice of [#1494](https://github.com/headwater-ai/headwater/issues/1494) closed the other three on 2026-10-15.
 
-**The cache module states the wrong component's job.** The module comment of `engine/crates/check/src/cache.rs` says that the rules component catches a rule that "changed". The per-rule `VERSION` does that job. The rules component catches a rule that was added or removed.
-
-**The board-card gap of HW-OBL-0203 recurred.** In this run, `board-move.sh` found no project-board card for #1030, #974, #975, #1038 and #976, and remainder issue #1051 was filed without one. [HW-OBL-0203](../process/obligations/0203-three-small-run-tooling-gaps-from-run-20260922-1121-filed-together.md) asks whether the gap is systemic. Six issues in one run is evidence that it is.
+- **The collation opener class.** `}` left the class in `tools/repo/collation-fixtures.sh`, and a new arm holds `echo "${count} sort keys"` silent and a brace group piped to `sort` loud. With `}` put back, that arm fails. The `&` member stays, by the ruling at the merge of PR #1042.
+- **The cache module comment.** The module comment of `engine/crates/check/src/cache.rs` says that the rules component catches a rule that was added or removed. It says that the per-rule `VERSION` catches a rule that changed.
+- **The cache-key wiring.** The lock half is held through the binary. The case `a_warm_check_gives_the_cold_verdict_after_the_lock_moves` is in `engine/crates/cli/tests/cache_key.rs`. It retires a term in the taxonomy and changes no document. Then it holds that a warm `check` gives the report of a cold one. It fails when the lock digest is frozen where the CLI builds its cache. The rule-set half cannot be held this way, because a test cannot change the rule set of the binary that it runs. So it is held by structure. `Cache::compiled` reads `rules_digest` itself, and the CLI builds its cache in `Loaded::cache` alone. A case in `engine/crates/cli/tests/wiring.rs` holds both. It fails when a source outside the check crate calls a cache constructor other than `Cache::disabled`, under any alias or full path, outside `Loaded::cache`. It also fails on the name `rules_digest`, and on a constructor that the cache gains. `check --fix` builds its cache through the same `Loaded::cache`. A fix run with a frozen key alone moves no verdict, because the report run after it writes the cache file again. So no test of the binary could show that call site frozen. The one constructor call is what holds it.
 
 ## Discharge
 
-**The opener class** discharges when `}` leaves the class and a fixture holds the `echo "${count} sort keys"` line silent. The `&` member stays, by the ruling at the merge of PR #1042.
-
-**The cache-key wiring** discharges when a CLI-level test sees a warm cache miss after each key input moves, the rule set and the lock digest among them, and the test fails when either call site is frozen.
-
-**The cache comment** discharges when the module comment names addition and removal for the rules component and names `VERSION` for a changed rule.
-
-**The board-card recurrence** discharges with HW-OBL-0203's board-item gap, and adds nothing to that record's Discharge clause.
+This record discharges with the board-item gap of HW-OBL-0203, and adds nothing to the Discharge clause of that record.

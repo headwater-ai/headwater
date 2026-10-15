@@ -1,10 +1,10 @@
 ---
 id: HW-OBL-0133
-status: current
-status_since: 2026-09-06
+status: discharged
+status_since: 2026-10-15
 last_verified: 2026-08-26
 title: "Two test helpers key a scratch directory on the pid alone, and the race springs on the next case added"
-summary: "Two scratch-directory test helpers key on the process id alone, safe only while their files hold one test each."
+summary: "Two test helpers keyed a scratch path on the process id alone. Both now key on the process and the case or the call, and each file holds two cases."
 provenance:
   warrant: accepted
   agency: agent
@@ -31,4 +31,6 @@ Two other files, `engine/crates/import/tests/fixtures.rs` and `engine/crates/res
 
 ## Discharge
 
-This closes when no test helper keys a shared path on the process id alone. Either the two outlier files adopt the existing `{pid}-{case}` convention, or a single shared helper replaces all six hand-built call sites. The choice itself needs stating, whichever way it goes. A second `#[test]` added to one of the two affected files, as a fixture that would have raced and does not, stands as the proof. The issue records the trap rather than patching it, so nothing has discharged this obligation yet.
+This closes when no test helper keys a shared path on the process id alone. Either the two outlier files adopt the existing `{pid}-{case}` convention, or a single shared helper replaces all six hand-built call sites. The choice itself needs stating, whichever way it goes. A second `#[test]` added to one of the two affected files, as a fixture that would have raced and does not, stands as the proof.
+
+The first slice of [#1494](https://github.com/headwater-ai/headwater/issues/1494) discharged this record on 2026-10-15. `engine/crates/scaffold/tests/pipeline.rs` already keyed its directory on `{pid}-{test}` and held two cases, so an earlier change paid that half. `engine/crates/hash/tests/oracle.rs` now keys its subject file on the process and on a counter of calls, and it holds a second case, `a_second_implementation_agrees_on_subjects_of_many_blocks`. A scratch mutation put the key back to the process alone. The first case then failed in 3 of 3 runs, because the second case wrote over its subject file. The convention is the `{pid}-{case}` shape that the tree already used, and `DEVELOPING.md` states it under "The loop". Three other keys on the process identifier alone remain. They are in `engine/crates/cli/tests/width.rs`, `engine/crates/conformance/tests/rules.rs` and `engine/crates/check/tests/fixtures.rs`. Each one is inside one `#[test]` body and carries a label that no other case uses, so none of them is a shared helper.

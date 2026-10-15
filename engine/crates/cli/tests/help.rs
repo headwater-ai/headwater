@@ -430,3 +430,51 @@ fn every_global_answer_exits_zero_on_standard_output_alone() {
         );
     }
 }
+
+/// Every command line the table names answers both spellings of the help
+/// flag through the binary, with status 0 and standard output alone
+/// (HW-OBL-0148).
+///
+/// The case above spawns two command lines, and the long-description case
+/// renders every one in process, so a verb whose help exited non-zero
+/// through the binary passed both. The forms come from `Verb::forms`, so a
+/// verb added to the table is asked here with no edit to this file. Each
+/// form is one spawn per spelling, about 40 forms times two. The whole of
+/// this file ran in 0.14 s in a `dev-release` build on 2026-10-15.
+#[test]
+fn every_command_line_answers_both_help_flags_through_the_binary() {
+    let mut asked = 0;
+    for verb in headwater_verbs::VERBS {
+        for form in verb.forms() {
+            let words: Vec<&str> = form.split_whitespace().skip(1).collect();
+            for flag in ["--help", "-h"] {
+                let mut arguments = words.clone();
+                arguments.push(flag);
+                let label = format!("form-{}{flag}", words.join("-"));
+                let ran = ran(&label, &arguments);
+                let named = arguments.join(" ");
+                assert_eq!(
+                    ran.code,
+                    Some(0),
+                    "`headwater {named}`:\n{}{}",
+                    ran.out,
+                    ran.err
+                );
+                assert_eq!(
+                    ran.err, "",
+                    "`headwater {named}` writes nothing to standard error"
+                );
+                assert!(
+                    !ran.out.is_empty(),
+                    "`headwater {named}` writes an answer to standard output"
+                );
+                asked += 1;
+            }
+        }
+    }
+    let forms: usize = headwater_verbs::VERBS
+        .iter()
+        .map(|verb| verb.forms().len())
+        .sum();
+    assert_eq!(asked, forms * 2, "every form is asked with both spellings");
+}
