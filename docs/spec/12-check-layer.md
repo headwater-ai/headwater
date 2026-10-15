@@ -273,10 +273,12 @@ To regenerate a stale projection, to add a missing reciprocal link, and to norma
 
 ### What a patch may say
 
-Two shapes, and each one is a promise the engine can keep.
+Four shapes, and each one is a promise the engine can keep.
 
 - **A byte range of one file, and the text to put there.** The offsets come from the parser's spans, and the patch also states what the check believes lies at them.
 - **One edge half, as a relation and a target.** No offset, because the shape of the far document decides where the half goes.
+- **A new file, and its contents.** The belief is that the path is free. An occupied path is a refusal and never an overwrite.
+- **The value of a top-level scalar facet that the front matter already declares.** The patch states the value the check read for each facet, and it adds no key. A deletion, a re-order and an added key have no shape yet ([HW-OBL-0103](../obligations/0103-the-front-matter-half-of-a-patch-has-no-writer.md)).
 
 ### A patch is written, read back, and refused
 

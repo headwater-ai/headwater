@@ -24,7 +24,7 @@ CLAUDE.md rules American spelling everywhere, and `language.controlled.not_met` 
 
 The corpus owes one spelling of this concept.
 
-**The string is in a published, versioned format.** `Grain::name` in `engine/crates/check/src/scope.rs` writes `Grain::Neighbourhood { .. }` as the literal string `neighbourhood`. That string reaches cache keys and the read-set artifact. It also reaches `rules[].scope` of the JSON report, which [the `headwater check` contract](../interfaces/headwater-check.md#raising-the-version) defines, and the same member of the SARIF report. `engine/crates/adapter/tests/fixture.json` and `engine/crates/adapter/tests/fixture.sarif` pin it. The releases from v0.2.1 to v0.5.0 shipped this format.
+**The string is in a published, versioned format.** `Grain::name` in `engine/crates/check/src/scope.rs` writes `Grain::Neighbourhood { .. }` as the literal string `neighbourhood`. That string reaches cache keys. It also reaches `rules[].scope` of the JSON report, which [the `headwater check` contract](../interfaces/headwater-check.md#raising-the-version) defines, and the same member of the SARIF report. `engine/crates/adapter/tests/fixture.json` and `engine/crates/adapter/tests/fixture.sarif` pin it. Every release from v0.1.0 shipped this value.
 
 **A rename is the first change to that shape that adds no member.** The contract says that each version of the JSON shape added a member, and that each addition moved the minor. A renamed value removes a value that a reader may branch on. So a rename needs a decision on how the shape version moves: a minor raise, or a major raise to `2.0`.
 
