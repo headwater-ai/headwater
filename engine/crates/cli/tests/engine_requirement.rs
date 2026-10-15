@@ -391,8 +391,12 @@ fn a_resolve_refuses_a_corpus_range_the_package_range_does_not_meet() {
     assert!(refused.err.contains("\">=0.1 <2\""), "{}", refused.err);
 
     // A range that overlaps the package range but excludes this engine
-    // resolves, and the resolve reports the engine once.
-    set_engine(&root.at, Some(">=0.6 <2"));
+    // resolves, and the resolve reports the engine once. The floor is the
+    // minor above this engine, so the range moves with each release; a
+    // literal floor stopped excluding the engine at the 0.6.0 bump.
+    let (major, minor, _) = release::parts(release::ENGINE).expect("this engine has a version");
+    assert!(major < 2, "the package range of this fixture ends below 2");
+    set_engine(&root.at, Some(&format!(">={major}.{} <2", minor + 1)));
     let reported = root.run(&["taxonomy", "resolve"]);
     assert_eq!(reported.code, Some(0), "{reported:?}");
     assert_eq!(reports(&reported.err).len(), 1, "{}", reported.err);

@@ -28,7 +28,7 @@ taxonomy:
 # moves this line in the same commit
 # (docs/process/how-to/cut-a-release.md, step 1), and
 # `engine/crates/cli/tests/engine_requirement.rs` fails until it does.
-engine: ">=0.5 <0.6"
+engine: ">=0.6 <0.7"
 
 # No waiver stands here for `pin.current` any more. Until #336 this repository
 # consumed the package it publishes from source under `packages/`, which
