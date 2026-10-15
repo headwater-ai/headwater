@@ -1084,10 +1084,16 @@ fn exactly_one_site_defines_the_engine_version_constant() {
 /// `rules_digest`. `Cache::at` stays for the tests of the check crate, which
 /// hold two rule sets in one process.
 ///
+/// It also holds that the CLI calls `Cache::compiled` once, in
+/// `Loaded::cache`. `check --fix` builds a cache that the report run after it
+/// writes over, so a frozen lock digest in the fix run alone costs time and
+/// moves no verdict, and no run can show it. One constructor call for both
+/// runs means `tests/cache_key.rs`, which holds the report run, holds both.
+///
 /// The needles are escaped and split so that this file does not match them,
 /// although it is under `tests/` and the walk reads `src/` alone.
 #[test]
-fn no_binary_passes_the_check_cache_a_rule_set_digest() {
+fn the_cli_builds_its_check_cache_in_one_place_and_names_no_rule_set_digest() {
     let needles = [concat!("Cache::", "at("), concat!("rules_", "digest")];
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let check = root.join("crates/check/src");
@@ -1120,8 +1126,10 @@ fn no_binary_passes_the_check_cache_a_rule_set_digest() {
          call `Cache::compiled`, which reads it: {sites:?}"
     );
     assert_eq!(
-        compiled, 2,
-        "`check` and `check --fix` each build one cache through `Cache::compiled`"
+        compiled, 1,
+        "`Loaded::cache` is the one place the CLI builds a check cache, so a test of \
+         `check` holds the cache of `check --fix` too; a second `Cache::compiled` call \
+         is a call site that no run of the binary can show to be frozen"
     );
 }
 

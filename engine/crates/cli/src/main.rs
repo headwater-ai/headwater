@@ -4222,6 +4222,22 @@ impl Loaded {
     /// states. A taxonomy whose projections do not read hands the context back
     /// unchanged, because `headwater generate` reports that failure itself and
     /// a check that refused over it would report it a second time.
+    /// The check cache of one run over this corpus, or none for
+    /// `--no-cache`, and the one place this binary builds a cache.
+    ///
+    /// It reads the lock digest from the taxonomy this run bound, and
+    /// `Cache::compiled` reads the rule set the binary compiles, so no caller
+    /// passes either key input and no call site can freeze one (HW-OBL-0208).
+    /// `check` and `check --fix` both come here, so `tests/cache_key.rs`,
+    /// which holds the report run, holds the fix run as well, and
+    /// `tests/wiring.rs` holds that no second constructor call exists.
+    fn cache(&self, root: &Path, cached: bool) -> Cache {
+        match cached {
+            true => Cache::compiled(root, &self.bound.digest),
+            false => Cache::disabled(),
+        }
+    }
+
     /// One run of the check layer over this corpus, and the only call of
     /// `headwater_check::run` in this binary.
     ///
@@ -6576,10 +6592,7 @@ fn fix(
     cached: bool,
 ) -> Result<Fixed, ExitCode> {
     let loaded = load(root)?;
-    let mut cache = match cached {
-        true => Cache::compiled(root, &loaded.bound.digest),
-        false => Cache::disabled(),
-    };
+    let mut cache = loaded.cache(root, cached);
     let ctx = match change {
         None => ctx.clone(),
         Some(unbound) => ctx.clone().scoped_to(
@@ -6889,10 +6902,7 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
     // Phase B. The cache is keyed on the lock digest among other things, so a
     // taxonomy that moved invalidates every entry without anyone clearing a
     // directory.
-    let mut cache = match cached {
-        true => Cache::compiled(root, &bound.digest),
-        false => Cache::disabled(),
-    };
+    let mut cache = loaded.cache(root, cached);
     headwater_check::phase::mark("cache-read");
     let run = loaded.check(root, &loaded.declared(), &ctx, &mut cache);
     // Held until the report is out, and then said on standard error. See

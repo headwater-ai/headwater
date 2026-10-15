@@ -50,12 +50,10 @@ fn retire(root: &Root) {
 /// only component of that decision's keys that moves. A warm run whose cache
 /// was keyed on a frozen lock digest serves the first verdict again.
 ///
-/// `check --fix` builds a cache at a second call site, in `fix`, and no case
-/// here holds it, because no run can see it fail. The report run after the
-/// fix writes the cache file again, so the next fix reads keys that the
-/// report run made. A fix with a frozen digest misses every key and decides
-/// each verdict again, which costs time and moves no verdict. `wiring.rs`
-/// holds that call site by its source.
+/// `check --fix` builds its cache through the same `Loaded::cache`, and
+/// `wiring.rs` holds that the CLI has no other constructor call. No run can
+/// show a fix run with a frozen key alone, because the report run after it
+/// writes the cache file again, so the fix run only misses.
 #[test]
 fn a_warm_check_gives_the_cold_verdict_after_the_lock_moves() {
     let root = Root::new("cache-key-lock");
