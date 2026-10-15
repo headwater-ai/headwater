@@ -162,7 +162,7 @@
 <div class="wrap">
 
   <h1>Install Headwater</h1>
-  <p class="uri">version 0.5.0</p>
+  <p class="uri">version 0.6.0</p>
 
   <p>Headwater is one binary, <code>headwater</code>. You need no Rust toolchain to run it. On Linux x86_64 or macOS on Apple silicon, one line installs it:</p>
   <div class="install oneliner">
@@ -187,7 +187,7 @@
        its download lines, line for line, and its sources line, keyring URL,
        keyring path and package against the README, so a release that moves
        one and not the other is refused. The download lines were run against
-       the v0.5.0 release on 2026-09-29. Nobody has run the apt lines from
+       the v0.6.0 release on 2026-10-15. Nobody has run the apt lines from
        this page; the README says which images they install on. -->
 
   <h2 id="download">Download the binary</h2>
@@ -195,17 +195,17 @@
   <p class="platform">Linux x86_64</p>
   <div class="install">
     <div><span class="dim">$</span> mkdir -p ~/.local/bin</div>
-    <div><span class="dim">$</span> curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.5.0/headwater-v0.5.0-x86_64-unknown-linux-musl.tar.gz</div>
-    <div><span class="dim">$</span> tar -xzf headwater-v0.5.0-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater</div>
+    <div><span class="dim">$</span> curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.6.0/headwater-v0.6.0-x86_64-unknown-linux-musl.tar.gz</div>
+    <div><span class="dim">$</span> tar -xzf headwater-v0.6.0-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater</div>
   </div>
   <p class="platform">macOS on Apple silicon</p>
   <div class="install">
     <div><span class="dim">$</span> mkdir -p ~/.local/bin</div>
-    <div><span class="dim">$</span> curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.5.0/headwater-v0.5.0-aarch64-apple-darwin.tar.gz</div>
-    <div><span class="dim">$</span> tar -xzf headwater-v0.5.0-aarch64-apple-darwin.tar.gz -C ~/.local/bin headwater</div>
+    <div><span class="dim">$</span> curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.6.0/headwater-v0.6.0-aarch64-apple-darwin.tar.gz</div>
+    <div><span class="dim">$</span> tar -xzf headwater-v0.6.0-aarch64-apple-darwin.tar.gz -C ~/.local/bin headwater</div>
   </div>
-  <p>Then <code>headwater --version</code> prints <code>0.5.0</code>. If your shell says it cannot find <code>headwater</code>, <code>~/.local/bin</code> is not on your <code>PATH</code>: add it, or run <code>~/.local/bin/headwater</code> by its full path.</p>
-  <p class="small">Each archive has a <code>.sha256</code> file beside it on <a href="https://github.com/headwater-ai/headwater/releases/tag/v0.5.0">the release page</a>, which <code>sha256sum -c</code> reads on Linux and <code>shasum -a 256 -c</code> reads on macOS. The release also carries <code>headwater-v0.5.0-x86_64-unknown-linux-gnu.tar.gz</code>, an x86_64 Linux build that needs glibc 2.39 or later. The musl archive above needs no particular C library, so prefer it.</p>
+  <p>Then <code>headwater --version</code> prints <code>0.6.0</code>. If your shell says it cannot find <code>headwater</code>, <code>~/.local/bin</code> is not on your <code>PATH</code>: add it, or run <code>~/.local/bin/headwater</code> by its full path.</p>
+  <p class="small">Each archive has a <code>.sha256</code> file beside it on <a href="https://github.com/headwater-ai/headwater/releases/tag/v0.6.0">the release page</a>, which <code>sha256sum -c</code> reads on Linux and <code>shasum -a 256 -c</code> reads on macOS. The release also carries <code>headwater-v0.6.0-x86_64-unknown-linux-gnu.tar.gz</code>, an x86_64 Linux build that needs glibc 2.39 or later. The musl archive above needs no particular C library, so prefer it.</p>
 
   <h2 id="apt">Install with apt on Debian or Ubuntu</h2>
   <p>Every engine release builds the <code>headwater</code> package and publishes it to a signed APT repository at <code>https://headwater.tools/apt</code>. It is for <code>amd64</code> only. These lines run on Debian 12 or later and Ubuntu 20.04 or later, and after them <code>apt upgrade</code> brings each new release.</p>
@@ -220,7 +220,7 @@
     <div><span class="dim">$</span> headwater --version</div>
   </div>
   <p>The package installs the static Linux binary at <code>/usr/bin/headwater</code>, with the license and shell completions for bash, zsh and fish. Where you are already root and have no <code>sudo</code>, as in a container, remove <code>sudo</code> from each line.</p>
-  <p class="small">On Debian 11 the lines above stop at <code>ca-certificates curl</code>, because the Debian 11 security archive no longer serves those packages. The package itself still installs there. Download <code>headwater_0.5.0_amd64.deb</code> from <a href="https://github.com/headwater-ai/headwater/releases/tag/v0.5.0">the release page</a> on another machine, copy it across, and run <code>sudo apt-get install ./headwater_0.5.0_amd64.deb</code>. That needs no network, and a package installed this way gets no update from <code>apt upgrade</code>.</p>
+  <p class="small">On Debian 11 the lines above stop at <code>ca-certificates curl</code>, because the Debian 11 security archive no longer serves those packages. The package itself still installs there. Download <code>headwater_0.6.0_amd64.deb</code> from <a href="https://github.com/headwater-ai/headwater/releases/tag/v0.6.0">the release page</a> on another machine, copy it across, and run <code>sudo apt-get install ./headwater_0.6.0_amd64.deb</code>. That needs no network, and a package installed this way gets no update from <code>apt upgrade</code>.</p>
 
   <h2 id="cargo">Install with cargo</h2>
   <p>If you already have a Rust toolchain, every crate of the engine is on crates.io. This gets you the binary alone, at the newest published version, and needs no clone.</p>
@@ -230,7 +230,7 @@
   <p>This builds the tagged release from a clone. It needs a Rust toolchain at 1.91 or later.</p>
   <pre class="block"><span class="dim">$</span> git clone https://github.com/headwater-ai/headwater.git
 <span class="dim">$</span> cd headwater
-<span class="dim">$</span> git checkout v0.5.0
+<span class="dim">$</span> git checkout v0.6.0
 <span class="dim">$</span> cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locked</pre>
   <p>The binary lands at <code>engine/target/release/headwater</code>.</p>
 
