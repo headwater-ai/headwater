@@ -30,12 +30,22 @@
 //! go quiet by losing a dependency.
 
 use std::process::Command;
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+/// One number for each call of [`oracle`] in this process.
+static CALLS: AtomicUsize = AtomicUsize::new(0);
 
 /// What `sha256sum` makes of some bytes, or why it could not be asked.
+///
+/// The subject file is keyed on the process and on the call. Cargo runs the
+/// cases of this file as threads of one process, so a file keyed on the
+/// process alone is a file one case removes while another case hashes it
+/// (HW-OBL-0133).
 fn oracle(bytes: &[u8]) -> Result<String, String> {
     let dir = std::path::Path::new(env!("CARGO_TARGET_TMPDIR")).join("oracle");
     std::fs::create_dir_all(&dir).map_err(|error| error.to_string())?;
-    let path = dir.join(format!("subject-{}", std::process::id()));
+    let call = CALLS.fetch_add(1, Ordering::Relaxed);
+    let path = dir.join(format!("subject-{}-{call}", std::process::id()));
     std::fs::write(&path, bytes).map_err(|error| error.to_string())?;
 
     let ran = Command::new("sha256sum")
@@ -87,15 +97,40 @@ fn subjects() -> Vec<(String, Vec<u8>)> {
 /// implementations.
 #[test]
 fn a_second_implementation_agrees_on_every_subject() {
-    let required = std::env::var_os("HEADWATER_SHA256_ORACLE").is_some();
-
     let subjects = subjects();
     assert!(
         subjects.len() >= 16,
         "a cross-check over a handful of subjects is a cross-check that proves a handful"
     );
+    agree(&subjects);
+}
 
-    for (name, bytes) in &subjects {
+/// Subjects of many blocks hash to the same digits under both
+/// implementations.
+///
+/// The case above stops at 1000 bytes, which is sixteen blocks. These run to
+/// a quarter of a megabyte, where a defect in the length field of the padding
+/// would show. The case is also the second caller of [`oracle`] in this
+/// process, which is what keys its file on the call as well as the process.
+#[test]
+fn a_second_implementation_agrees_on_subjects_of_many_blocks() {
+    let subjects: Vec<(String, Vec<u8>)> = [4095usize, 4096, 4097, 65_536, 262_145]
+        .into_iter()
+        .map(|length| {
+            (
+                format!("{length} bytes"),
+                (0..length).map(|index| (index % 253) as u8).collect(),
+            )
+        })
+        .collect();
+    agree(&subjects);
+}
+
+/// Hold every subject against `sha256sum`, or skip on the terms the module
+/// doc states.
+fn agree(subjects: &[(String, Vec<u8>)]) {
+    let required = std::env::var_os("HEADWATER_SHA256_ORACLE").is_some();
+    for (name, bytes) in subjects {
         let theirs = match oracle(bytes) {
             Ok(digest) => digest,
             Err(reason) => {
