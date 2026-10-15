@@ -354,7 +354,7 @@ nav:
               - "The size of a committed snapshot with full requirement text": "obligations/0100-the-size-of-a-committed-snapshot-with-full-requirement-text.md"
               - "Whether the read set of a real corpus is small enough that publishing it is free": "obligations/0101-whether-the-read-set-of-a-real-corpus-is-small-enough.md"
               - "Two documents state what voids a verdict, and they do not agree": "obligations/0102-two-documents-state-what-voids-a-verdict-and-they-do-not.md"
-              - "The front-matter half of a patch has no writer": "obligations/0103-the-front-matter-half-of-a-patch-has-no-writer.md"
+              - "The front-matter half of a patch writes a value and no key": "obligations/0103-the-front-matter-half-of-a-patch-has-no-writer.md"
               - "A governs edge reaches the path it names and nothing under it": "obligations/0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md"
               - "Nothing plays the hook role that two relations name as their author": "obligations/0105-nothing-plays-the-hook-role-that-two-relations-name.md"
               - "A shelf layout names a file at birth and no rule reads it": "obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md"

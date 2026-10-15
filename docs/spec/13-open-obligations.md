@@ -216,7 +216,7 @@ The second said that a control declares one posture and that spec 4 writes two v
 - [HW-OBL-0088](../obligations/0088-correcting-an-identifier-is-mechanical-and-it-is-not-local.md) — Correcting an identifier is mechanical and it is not local
 - [HW-OBL-0089](../obligations/0089-a-profile-names-its-rules-and-never-states-them.md) — A profile names its rules and never states them
 - [HW-OBL-0090](../obligations/0090-one-rule-carries-four-sub-rules-and-a-suppression.md) — One rule carries four sub-rules, and a suppression cannot separate them
-- [HW-OBL-0103](../obligations/0103-the-front-matter-half-of-a-patch-has-no-writer.md) — The front-matter half of a patch has no writer
+- [HW-OBL-0103](../obligations/0103-the-front-matter-half-of-a-patch-has-no-writer.md) — The front-matter half of a patch writes a value and no key
 - [HW-OBL-0106](../obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md) — A shelf layout names a file at birth, and no rule reads it
 - [HW-OBL-0107](../obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md) — The base package ships a kind that the scaffolder refuses to write
 - [HW-OBL-0109](../obligations/0109-the-capture-cost-denominator-is-set-by-declaration-and-not-by-work.md) — The capture-cost denominator is set by declaration and not by work
