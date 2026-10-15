@@ -755,19 +755,54 @@ fn this_repository_holds_the_properties_no_corpus_edit_may_change() {
     assert!(totals.contains(" seen"), "{totals}");
 }
 
+/// One digest over what a run of this repository reads from the tree: the
+/// path and digest of every census row, inside the corpus root and outside it,
+/// and the lock digest.
+///
+/// It does not cover the source files that the comment scan reads. An edit
+/// under `docs/` moves the census, and that is the edit HW-OBL-0144 measured.
+fn tree_fingerprint(root: &Path) -> String {
+    let resolved = repository(root);
+    let taxonomy = Taxonomy::read(&resolved.resolution.taxonomy).expect("the taxonomy reads");
+    let taken = census::take(&corpus_of(root, &resolved), &taxonomy);
+    let mut text = String::new();
+    for (path, digest) in taken
+        .rows
+        .iter()
+        .map(|row| (&row.path, &row.digest))
+        .chain(taken.outside.rows.iter().map(|row| (&row.path, &row.digest)))
+    {
+        text.push_str(&format!("{path}\t{digest:?}\n"));
+    }
+    text.push_str(&headwater_lock::at(root).expect("the committed lock").digest);
+    headwater_hash::digest(text.as_bytes())
+}
+
 /// The differential of the correctness root, over the real corpus.
 ///
 /// `tests/cache.rs` holds the same property over the fixture tree, where a
 /// test may edit a document and re-run. This one runs it over the corpus the
 /// recorded report above is of, so the report and the property are about one
-/// set of numbers. The cache is written to this crate's target directory,
-/// because a test that wrote into `.headwater/` would leave a repository
-/// dirtier than it found it.
+/// set of numbers. The runs are `corpus_run` and `cached_corpus_run`, the same
+/// runs the recorded report reads, and that tie is the reason this case reads
+/// the live tree and not a copy. The cache is written to this crate's target
+/// directory, because a test that wrote into `.headwater/` would leave a
+/// repository dirtier than it found it.
+///
+/// The live tree can move while the three runs read it. A person or an agent
+/// who edits a document under `docs/` during `cargo test` moves it, and the
+/// reports then differ for a reason that is not the cache (HW-OBL-0144). So
+/// the case takes a fingerprint of the tree before the first run and after
+/// the last one. When the two differ, it fails with a message that names the
+/// edit and compares no report. An edit that is undone before the last run
+/// ends leaves the two equal, and the case then compares as before.
 #[test]
 fn this_repository_reports_the_same_run_from_a_cache_as_from_none() {
     let store = Path::new(env!("CARGO_TARGET_TMPDIR")).join("corpus-cache");
     let _ = std::fs::remove_dir_all(&store);
-    let lock = headwater_lock::at(&repository_root()).expect("the committed lock");
+    let tree = repository_root();
+    let before = tree_fingerprint(&tree);
+    let lock = headwater_lock::at(&tree).expect("the committed lock");
 
     let without = corpus_run();
 
@@ -778,6 +813,14 @@ fn this_repository_reports_the_same_run_from_a_cache_as_from_none() {
     let mut warm = Cache::at(&store, &lock.digest, &headwater_check::rules_digest());
     let second = cached_corpus_run(&mut warm);
 
+    assert_eq!(
+        before,
+        tree_fingerprint(&tree),
+        "a file in {} changed while the three runs read it, so their reports are \
+         not comparable. That is an edit during the test and not a cache defect. \
+         Run the test again on a tree that nothing edits.",
+        tree.display()
+    );
     let expected = without.render(Detail::Findings, ColorMode::Plain);
     assert_eq!(expected, first.render(Detail::Findings, ColorMode::Plain));
     assert_eq!(expected, second.render(Detail::Findings, ColorMode::Plain));
