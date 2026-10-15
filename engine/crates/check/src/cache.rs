@@ -129,8 +129,9 @@
 //! one process and a compiled constant is one array for the life of the
 //! binary. A binary has one rule set, so it calls [`Cache::compiled`], which
 //! reads [`rules_digest`] itself. A call site then has no rule-set argument
-//! to freeze, and `crates/cli/tests/wiring.rs` holds that the CLI names
-//! neither `Cache::at` nor `rules_digest`.
+//! to freeze. `crates/cli/tests/wiring.rs` holds that no source outside this
+//! crate calls `Cache::at` or names `rules_digest`, and that this type has no
+//! constructor that it does not know.
 //!
 //! # Why a skipped instance is never stored
 //!

@@ -4211,17 +4211,6 @@ impl Loaded {
         }
     }
 
-    /// The context a check run over this corpus takes, told which marked files
-    /// the projection plan claims no output for (#1137).
-    ///
-    /// Every call of `headwater_check::run` in this binary goes through here,
-    /// because the check crate cannot build the plan itself: the generate crate
-    /// depends on it. The plan costs about as much as the cached check it
-    /// feeds, so it is built only where the one rule that reads the set can
-    /// fire, which is a taxonomy with two setter relations that name two
-    /// states. A taxonomy whose projections do not read hands the context back
-    /// unchanged, because `headwater generate` reports that failure itself and
-    /// a check that refused over it would report it a second time.
     /// The check cache of one run over this corpus, or none for
     /// `--no-cache`, and the one place this binary builds a cache.
     ///
@@ -4230,7 +4219,8 @@ impl Loaded {
     /// passes either key input and no call site can freeze one (HW-OBL-0208).
     /// `check` and `check --fix` both come here, so `tests/cache_key.rs`,
     /// which holds the report run, holds the fix run as well, and
-    /// `tests/wiring.rs` holds that no second constructor call exists.
+    /// `tests/wiring.rs` holds that no other source names a constructor of
+    /// the check cache but `Cache::disabled`.
     fn cache(&self, root: &Path, cached: bool) -> Cache {
         match cached {
             true => Cache::compiled(root, &self.bound.digest),
@@ -4265,6 +4255,17 @@ impl Loaded {
         )
     }
 
+    /// The context a check run over this corpus takes, told which marked files
+    /// the projection plan claims no output for (#1137).
+    ///
+    /// Every call of `headwater_check::run` in this binary goes through here,
+    /// because the check crate cannot build the plan itself: the generate crate
+    /// depends on it. The plan costs about as much as the cached check it
+    /// feeds, so it is built only where the one rule that reads the set can
+    /// fire, which is a taxonomy with two setter relations that name two
+    /// states. A taxonomy whose projections do not read hands the context back
+    /// unchanged, because `headwater generate` reports that failure itself and
+    /// a check that refused over it would report it a second time.
     fn check_context(&self, ctx: Context, root: &Path) -> Context {
         if !headwater_check::state_set_twice::StateSetTwice::over(&self.relations, &self.shape)
             .can_clash()
