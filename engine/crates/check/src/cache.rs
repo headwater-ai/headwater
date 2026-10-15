@@ -112,9 +112,12 @@
 //! to
 //! [HW-OBL-0118](../../../../docs/obligations/0118-the-published-read-set-names-no-anchor-so-a-gate-decides-nothing-about-one.md).
 //! Without it, a verdict about a `check_rule` anchor keyed before an engine
-//! upgrade that dropped, renamed or changed the rule it names survives that
-//! upgrade, because the lock did not move and the rule's own `VERSION` is not
-//! read for a rule the new binary no longer registers.
+//! upgrade that added or removed the rule it names survives that upgrade,
+//! because the lock did not move and the rule's own `VERSION` is not read for
+//! a rule the new binary does not register. A rename is a remove and an add.
+//! A rule that stays in the set and changes what it decides is the other
+//! failure, and the rule's own `VERSION`, a component of every key, catches
+//! that one. This component does not.
 //!
 //! [`rules_digest`] hashes the sorted, joined text of the compiled rule list,
 //! so it changes on an add or a remove and stands still on a reorder: the
@@ -124,7 +127,10 @@
 //! already sets, rather than [`Cache::key`] reading `crate::RULES` itself,
 //! because the differential in `tests/cache.rs` has to hold two rule sets in
 //! one process and a compiled constant is one array for the life of the
-//! binary.
+//! binary. A binary has one rule set, so it calls [`Cache::compiled`], which
+//! reads [`rules_digest`] itself. A call site then has no rule-set argument
+//! to freeze, and `crates/cli/tests/wiring.rs` holds that the CLI names
+//! neither `Cache::at` nor `rules_digest`.
 //!
 //! # Why a skipped instance is never stored
 //!
@@ -273,6 +279,18 @@ impl Cache {
             used: BTreeMap::new(),
             report: Report::default(),
         }
+    }
+
+    /// The cache of a repository, keyed by the taxonomy lock and by the rule
+    /// set this binary compiles.
+    ///
+    /// This is [`Cache::at`] with [`rules_digest`] read here. A binary has one
+    /// rule set for its whole life, so a caller that is a binary has nothing
+    /// to pass, and a call site that passes nothing cannot pass a frozen
+    /// value. [`Cache::at`] stays for the test that holds two rule sets in one
+    /// process. See the module doc's seventh component.
+    pub fn compiled(root: &Path, lock: &str) -> Self {
+        Self::at(root, lock, &rules_digest())
     }
 
     pub fn path(root: &Path) -> PathBuf {
@@ -1117,6 +1135,39 @@ mod tests {
                 "component {index} is not keyed"
             );
         }
+    }
+
+    /// The constructor a binary calls keys on the rule set it compiles.
+    ///
+    /// `Cache::compiled` is `Cache::at` with `rules_digest()` read inside it,
+    /// so the two give one key. A constructor that read some other digest, or
+    /// none, would give a key that does not move when a rule enters or leaves
+    /// the set, which is the failure the seventh component closes.
+    #[test]
+    fn the_compiled_constructor_keys_on_the_compiled_rule_set() {
+        let scope = Scope::document(false, false, false, false);
+        let key = |cache: Cache| {
+            cache
+                .plain_key("r", 1, scope, "a.md", &inputs(Some("sha256:one")), None)
+                .expect("a key")
+        };
+        let nowhere = Path::new("/nonexistent");
+        let compiled = key(Cache::compiled(nowhere, "sha256:lock"));
+        assert_eq!(
+            compiled,
+            key(Cache::at(nowhere, "sha256:lock", &rules_digest())),
+            "the compiled constructor reads the compiled rule set"
+        );
+        assert_ne!(
+            compiled,
+            key(Cache::at(nowhere, "sha256:lock", "sha256:other-rules")),
+            "the compiled constructor does not key on another rule set"
+        );
+        assert_ne!(
+            compiled,
+            key(Cache::compiled(nowhere, "sha256:other-lock")),
+            "the compiled constructor keys on the lock it is given"
+        );
     }
 
     /// The injected clock is a component of the key of a check that reads it.

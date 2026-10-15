@@ -1072,6 +1072,59 @@ fn exactly_one_site_defines_the_engine_version_constant() {
     );
 }
 
+/// No binary builds a check cache with a rule-set digest of its own choosing
+/// (HW-OBL-0208, item 3).
+///
+/// The check cache keys every verdict on the identity of the rule set the
+/// binary compiles. A test cannot change that rule set in the binary it runs,
+/// so no run of `headwater` can show a call site that passed a frozen digest.
+/// `Cache::compiled` reads the digest itself, and this case holds that every
+/// source file outside the check crate calls that constructor and not
+/// `Cache::at`, which takes the digest as an argument, and that none names
+/// `rules_digest`. `Cache::at` stays for the tests of the check crate, which
+/// hold two rule sets in one process.
+///
+/// The needles are escaped and split so that this file does not match them,
+/// although it is under `tests/` and the walk reads `src/` alone.
+#[test]
+fn no_binary_passes_the_check_cache_a_rule_set_digest() {
+    let needles = [concat!("Cache::", "at("), concat!("rules_", "digest")];
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let check = root.join("crates/check/src");
+    let mut files = Vec::new();
+    source_files(&root.join("crates"), &mut files);
+    let mut sites: Vec<(PathBuf, usize, &str)> = Vec::new();
+    let mut compiled = 0;
+    for path in files {
+        if path.starts_with(&check) || !path.components().any(|part| part.as_os_str() == "src") {
+            continue;
+        }
+        let Ok(text) = std::fs::read_to_string(&path) else {
+            continue;
+        };
+        for (index, line) in text.lines().enumerate() {
+            if line.trim_start().starts_with("//") {
+                continue;
+            }
+            compiled += line.matches("Cache::compiled(").count();
+            for needle in needles {
+                if line.contains(needle) {
+                    sites.push((path.clone(), index + 1, needle));
+                }
+            }
+        }
+    }
+    assert!(
+        sites.is_empty(),
+        "a source file outside the check crate chooses the rule-set digest of a check cache; \
+         call `Cache::compiled`, which reads it: {sites:?}"
+    );
+    assert_eq!(
+        compiled, 2,
+        "`check` and `check --fix` each build one cache through `Cache::compiled`"
+    );
+}
+
 /// A command line this binary cannot parse is refused in a few lines, and the
 /// grammar is one command away rather than under the sentence.
 ///
