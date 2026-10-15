@@ -766,12 +766,13 @@ fn tree_fingerprint(root: &Path) -> String {
     let taxonomy = Taxonomy::read(&resolved.resolution.taxonomy).expect("the taxonomy reads");
     let taken = census::take(&corpus_of(root, &resolved), &taxonomy);
     let mut text = String::new();
-    for (path, digest) in taken
-        .rows
-        .iter()
-        .map(|row| (&row.path, &row.digest))
-        .chain(taken.outside.rows.iter().map(|row| (&row.path, &row.digest)))
-    {
+    for (path, digest) in taken.rows.iter().map(|row| (&row.path, &row.digest)).chain(
+        taken
+            .outside
+            .rows
+            .iter()
+            .map(|row| (&row.path, &row.digest)),
+    ) {
         text.push_str(&format!("{path}\t{digest:?}\n"));
     }
     text.push_str(&headwater_lock::at(root).expect("the committed lock").digest);
