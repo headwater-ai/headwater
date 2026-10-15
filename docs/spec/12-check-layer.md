@@ -76,7 +76,7 @@ The population of a lexical rule is the body and the facet the shape puts in the
 
 Every other role stays out, and a role is either prose or a label. A facet in the `name` role is a title that a reader scans, and it holds no verb. A sentence-length rule over a title reports a defect whose only repair is a rename. To hold a title to half the rules puts a third category between prose and label that nothing declares. A corpus that writes a sentence into a `name` facet reopens this, and this one does not.
 
-A finding in front matter carries no patch. `check --fix` reaches a run of prose and a relations block, and neither shape edits a mapping, which [HW-OBL-0103](../obligations/0103-the-front-matter-half-of-a-patch-has-no-writer.md) records. The remediation names the correction and a person writes it.
+A finding in the `scent` facet carries no patch. `check --fix` can replace the value of a declared facet, and the two lexical rules do not offer that replacement yet, which [HW-OBL-0103](../obligations/0103-the-front-matter-half-of-a-patch-has-no-writer.md) records. The remediation names the correction and a person writes it.
 
 **An origin is not a scope.** The origin says which part of the taxonomy a rule comes from, and the scope says what one instance of it covers. `identifier.claimed_twice` is Graph-origin, because the identifier index reports the collision, and it is corpus-scoped, because nothing smaller holds both claimants.
 
@@ -273,10 +273,12 @@ To regenerate a stale projection, to add a missing reciprocal link, and to norma
 
 ### What a patch may say
 
-Two shapes, and each one is a promise the engine can keep.
+Four shapes, and each one is a promise the engine can keep.
 
 - **A byte range of one file, and the text to put there.** The offsets come from the parser's spans, and the patch also states what the check believes lies at them.
 - **One edge half, as a relation and a target.** No offset, because the shape of the far document decides where the half goes.
+- **A new file, and its contents.** The belief is that the path is free. An occupied path is a refusal and never an overwrite.
+- **The value of a top-level scalar facet that the front matter already declares.** The patch states the value the check read for each facet, and it adds no key. A deletion, a re-order and an added key have no shape yet ([HW-OBL-0103](../obligations/0103-the-front-matter-half-of-a-patch-has-no-writer.md)).
 
 ### A patch is written, read back, and refused
 

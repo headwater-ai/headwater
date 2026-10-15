@@ -2,16 +2,15 @@
 id: HW-OBL-0118
 status: current
 status_since: 2026-08-14
-waiting_on: build
-summary: "The read set artifact holds one line per document, so an external anchor is on no line and a gate that compares listed hashes cannot see the target of one leave the tree."
-last_verified: 2026-09-23
+waiting_on: ruling
+summary: "The read set artifact lists documents and files, so an anchor target is on no line and a gate cannot see it leave the tree."
+last_verified: 2026-10-15
 title: "The published read set names no anchor, so a gate decides nothing about one"
 provenance:
-  warrant: proposed
+  warrant: asserted
   agency: mixed
   drafted_by: claude-opus-5
-  activity: measure+draft
-  accepted_by: j.baxter
+  activity: measure+draft+revise
   evidence_basis: evidenced
 relations:
   traces_to:
@@ -22,40 +21,36 @@ relations:
 
 ## Context
 
-[HW-OBL-0117](0117-a-cached-verdict-about-an-anchor-survives-the-change-that-falsifies-it.md) is the same gap in the cache key, and it is discharged. The key of an edge instance names the binding that the resolver returned, so two states of one anchor take separate entries.
+[Spec 12](../spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) gives the read set two uses. The first use is the cache key. [HW-OBL-0117](0117-a-cached-verdict-about-an-anchor-survives-the-change-that-falsifies-it.md) was the anchor gap in the key, and it is discharged: the key of an edge instance names the binding that the resolver returned. [#1029](https://github.com/headwater-ai/headwater/issues/1029) also put the identity of the compiled rule set into the key, through `headwater_check::rules_digest`.
 
-The key is one of the two uses that [spec 12](../spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) gives the read set. The other one is the artifact that `headwater check --read-set` writes and that `headwater gate` reads back. This record is about the second use, and the fix for the first one does not reach it. A key is computed inside one run, where a resolver has already answered. An artifact is read by a later process over a later tree, which has no answer of any resolver in front of it.
+The second use is the artifact that `headwater check --read-set` writes and that `headwater gate` reads back. This record is about the second use. A key is computed inside one run, where a resolver has already answered. A later process reads the artifact over a later tree, and no resolver has answered there.
 
 ## Obligation
 
-**A gate compares one hash for each line of the artifact, and no line of the artifact names an anchor.** `ReadSet::render` writes one `input` line for each document that an instance read. The answer of a resolver is not a document, so an anchor target is on no line. A gate therefore hashes nothing that moves when that target leaves the tree.
+**A gate compares one hash for each line of the artifact, and no line of the artifact names an anchor.** `ReadSet::render` writes `lock`, `clock`, `barrier`, `windowed`, `change-scoped`, `version` and `input` lines. An `input` line names a document or a file that a run read. The answer of a resolver is not such a file, so the target of an anchor is on no line. A gate hashes nothing that moves when that target leaves the tree. The `Reason` enum in `engine/crates/check/src/gate.rs` holds every reason a verdict does not carry, and no reason names an anchor. [#1345](https://github.com/headwater-ai/headwater/issues/1345) added imports snapshots as file lines and the reason `escaped`, and neither one names an anchor.
 
-The measurement is a hand run on 2026-08-14 over this repository, which declares thirteen anchor edges:
+**A barrier voids every gate over this corpus before the input comparison starts.** A corpus-grained rule, such as `identifier.claimed_twice`, runs on every run of this repository and writes a `barrier` line. `Verdict::carries` is then false. A hand run on 2026-10-15 shows it:
 
     $ headwater check --read-set /tmp/read-set
     $ grep -c 'hooks/lib.sh' /tmp/read-set
     0
-    $ mv .claude/hooks/lib.sh /tmp
     $ headwater gate --read-set /tmp/read-set
-    the verdicts this run reached do not carry to this tree
+    gate the verdicts this run reached do not carry to this tree
       identifier.claimed_twice is a barrier: its verdict is a predicate over the extent of the census, and a list of members states no extent
 
-**The barrier is what hides it, and the barrier is not a fix.** A corpus-scoped instance exists on every run, because `identifier.claimed_twice` takes one target that no declaration selects. So every artifact carries a `barrier` line, and `Verdict::carries` is false on every gate over this corpus. The answer is void before the input comparison begins. The limit above is real and it is unreachable through this verb today.
+`.claude/hooks/lib.sh` is the target of an anchor edge in this repository, and the artifact does not list it. The gap is real, and no gate can reach it while a barrier voids each answer.
 
-**What makes it reachable is a per-rule answer.** Spec 12 says that "a per-instance answer wants a per-instance artifact, and this is not one". Take a gate that voids the barrier alone and carries the verdicts of every rule that is no barrier. It reports that a `governs` verdict survives a tree that deleted the file the edge names. [#82](https://github.com/headwater-ai/headwater/issues/82) built the drift report as `relation.target.suspect`, and it reads a run rather than this artifact. So the finding is sound and a gate that carried it is the half this record still holds open.
+**A per-rule answer is what makes the gap reachable.** Spec 12 says that "a per-instance answer wants a per-instance artifact, and this is not one". Take a gate that voids the barrier rules alone and carries the verdicts of every other rule. That gate reports that a `governs` verdict survives a tree that deleted the file the edge names. `relation.target.suspect` reports the same drift, but it reads a run and not this artifact.
+
+**Two shapes can close the gap, and choosing one is a design decision.**
+
+- **The narrow shape is a line of its own.** The artifact gains a keyword for a target that no path names, with the anchor kind, the resolver and the binding. A gate that meets the keyword reports that it cannot decide, in the terms it already uses for an input with no hash. It costs one line for each anchor edge, and it decides nothing new.
+- **The wide shape is a digest from the resolver.** Each resolver states a digest over what it resolved against. A gate runs the resolvers again over the later tree and compares the digest. It decides the question rather than refusing it. But a gate then reads the tree and not a list, and spec 12 fixed the list as the whole test.
 
 ## Discharge
 
-Nothing discharges this yet, and two shapes are open.
+The question for a person: **does the read set gain an anchor line that a gate refuses, or a resolver digest that a gate compares?** The first is the narrow shape, and the second is the wide shape.
 
-**The narrow shape is a line of its own.** The artifact gains a keyword for a target that no path names, carrying the anchor kind, the resolver and the binding. A gate that meets that keyword reports that it cannot decide, on the terms it already uses for an input with no content hash. It costs one line for each anchor edge and it decides nothing new.
+A precondition comes before either shape can show a failing fixture. `headwater gate` must answer per rule, so that a barrier voids its own rules and not every verdict. Until then, no case in a suite can fail on an anchor, and the hand run above is the only evidence.
 
-**The wider shape is a resolver that states a digest over what it resolved against.** A gate re-runs the resolvers over the later tree and compares that digest. It decides the question rather than refusing it, and it makes a gate read the tree rather than a list. That list is the economy [spec 12](../spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) fixed as the whole test.
-
-**What no fixture here shows.** `engine/crates/check/src/gate.rs` holds every reason a verdict does not carry, and an anchor is not among them. No case can fail on this while a barrier voids each answer first. So the measurement above is a hand run rather than a case in a suite. A gate that reports per rule is what makes one possible.
-
-**[#855](https://github.com/headwater-ai/headwater/issues/855) widens this limit and closes none of it.** #855 admits a bound anchor as a neighbour. It carries the anchor's resolution into the neighbourhood-scoped cache key, the way `over_edges` already carries one into the edge-scoped key. Neither key carries the engine's own binary version. A verdict about a bound `check_rule` still survives an engine upgrade that drops the rule. Only the lock digest and the rule `VERSION` move. The compiled `RULES` list enters neither key. That gap is [#411](https://github.com/headwater-ai/headwater/issues/411)'s debt. #855 was asked to record it here, not to close it. No issue owns closing it yet. This record files it as intake for the product owner to triage.
-
-**2026-09-23: [#1029](https://github.com/headwater-ai/headwater/issues/1029) closes the cache-key gap above, and it closes nothing else in this record.** `Cache::key` now carries the identity of the compiled rule set. `headwater_check::rules_digest` hashes the sorted list of `crate::RULES`, so the value moves when a rule enters or leaves the set. `an_engine_upgrade_that_drops_a_rule_serves_nothing` in `engine/crates/check/tests/cache.rs` failed before the change with 280 hits and 0 misses. After the change it reports 0 hits and 280 misses. The obligation of this record is the artifact that a gate reads, and it stays open as measured.
-
-**2026-09-30: [#1345](https://github.com/headwater-ai/headwater/issues/1345) widens the read set and the gate, and it closes nothing in this record.** Each file of a committed imports snapshot now joins the read set as a file line. The gate now reports a listed path that resolves outside the repository root with the reason `escaped`, and it does not read that path. Neither change adds a line that names an anchor, so the gap that this record states stays open.
+This record is discharged when spec 12 states the ruling and the chosen shape ships. A gate that answers per rule then fails a fixture whose anchor target left the tree.
