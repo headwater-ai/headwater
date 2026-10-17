@@ -4842,6 +4842,88 @@ apt_planted "the extractor on a page with no APT paragraph prints nothing and ex
     "0|nonzero" \
     "$(wc -c <"$scratch/apt-job/no-paragraph.out" | tr -d ' ')|$([ "$apt_refused" -ne 0 ] && echo nonzero || echo zero)"
 
+# The page with the fence after the APT paragraph removed, through to its
+# closing backquotes, and nothing else changed. The next fence on the page is
+# another route's, and the extractor must not print it (#1490): a workflow that
+# runs it would go green on the cargo block while no APT command ran.
+awk '
+    !seen && /^\*\*Install it with apt/ { seen = 1; print; next }
+    seen == 1 && /^[ \t]*```/ { if (fence) { seen = 2; next } fence = 1; next }
+    seen == 1 && fence { next }
+    { print }
+' "$readme" >"$scratch/apt-job/no-fence.md"
+if [ -f "$apt_block" ]; then
+    sh "$apt_block" "$scratch/apt-job/no-fence.md" >"$scratch/apt-job/no-fence.out" 2>/dev/null
+    apt_refused=$?
+else
+    : >"$scratch/apt-job/no-fence.out"
+    apt_refused=0
+fi
+apt_planted "the extractor on a page whose APT fence is gone prints nothing and exits nonzero, not the next route's fence" \
+    "$readme" "$scratch/apt-job/no-fence.md" \
+    "0|nonzero" \
+    "$(wc -c <"$scratch/apt-job/no-fence.out" | tr -d ' ')|$([ "$apt_refused" -ne 0 ] && echo nonzero || echo zero)"
+
+# The same page with a paragraph between the APT paragraph and its fence. The
+# fence is no longer the paragraph's next block, so the extractor refuses it,
+# as `fence()` in `tools/repo/readme-install-block.sh` refuses one.
+# Every shape of block counts, not only a line that opens with a letter.
+# apt_interposed NAME LINE — the page with LINE as a block between the APT
+# paragraph and its fence, refused.
+apt_interposed() {
+    awk -v line="$2" '
+        !seen && /^\*\*Install it with apt/ { seen = 1; print; print ""; print line; next }
+        { print }
+    ' "$readme" >"$scratch/apt-job/interposed.md"
+    if [ -f "$apt_block" ]; then
+        sh "$apt_block" "$scratch/apt-job/interposed.md" >"$scratch/apt-job/interposed.out" 2>/dev/null
+        apt_refused=$?
+    else
+        : >"$scratch/apt-job/interposed.out"
+        apt_refused=0
+    fi
+    apt_planted "$1" "$readme" "$scratch/apt-job/interposed.md" \
+        "0|nonzero" \
+        "$(wc -c <"$scratch/apt-job/interposed.out" | tr -d ' ')|$([ "$apt_refused" -ne 0 ] && echo nonzero || echo zero)"
+}
+apt_interposed "the extractor refuses a fence that is not the next block after the APT paragraph" \
+    "An interposed paragraph."
+apt_interposed "  and one after an interposed bold paragraph" "**Note.** An interposed paragraph."
+apt_interposed "  and one after an interposed list item" "- an interposed item"
+apt_interposed "  and one after an interposed HTML comment" "<!-- an interposed comment -->"
+apt_interposed "  and one after an interposed indented line" "    an indented line"
+# An indented fence is a fence, as `apt_fence_lines` reads one.
+awk '
+    !seen && /^\*\*Install it with apt/ { seen = 1; print; next }
+    seen == 1 && /^```/ { n++; print "  " $0; if (n == 2) seen = 2; next }
+    { print }
+' "$readme" >"$scratch/apt-job/indented-fence.md"
+apt_planted "the extractor reads an indented APT fence" \
+    "$readme" "$scratch/apt-job/indented-fence.md" \
+    "8|headwater --version" \
+    "$(sh "$apt_block" "$scratch/apt-job/indented-fence.md" 2>/dev/null | awk '{ l = $0 } END { print NR "|" l }')"
+# The paragraph is the one that OPENS with the words. A sentence above it that
+# names them is not the paragraph.
+awk '
+    !seen && /^\*\*Install it with apt/ { seen = 1; print "See **Install it with apt** below."; print "" }
+    { print }
+' "$readme" >"$scratch/apt-job/named-above.md"
+apt_planted "the extractor reads the paragraph that opens with the words, not a line that names them" \
+    "$readme" "$scratch/apt-job/named-above.md" \
+    "8|headwater --version" \
+    "$(sh "$apt_block" "$scratch/apt-job/named-above.md" 2>/dev/null | awk '{ l = $0 } END { print NR "|" l }')"
+# A second fence straight after the APT fence is not part of it: the extractor
+# stops at the APT fence's closing backquotes.
+awk '
+    !seen && /^\*\*Install it with apt/ { seen = 1 }
+    { print }
+    seen == 1 && /^[ \t]*```/ { n++; if (n == 2) { print ""; print "```"; print "echo not the apt block"; print "```"; seen = 2 } }
+' "$readme" >"$scratch/apt-job/second-fence.md"
+apt_planted "the extractor stops at the APT fence's close when another fence follows it" \
+    "$readme" "$scratch/apt-job/second-fence.md" \
+    "8|headwater --version" \
+    "$(sh "$apt_block" "$scratch/apt-job/second-fence.md" 2>/dev/null | awk '{ l = $0 } END { print NR "|" l }')"
+
 # 12e. The page gives Debian 11 a route that works there: the Debian package
 # from the release page, installed from its file. The block stops on Debian 11
 # at its first install, and no download tool installs there either, so the
@@ -5038,6 +5120,12 @@ echo "every install route the page documents runs on a schedule, and a failure o
 #   - a failure that opens nothing: the report job needs every route job, hands
 #     the script each one's result, runs on `failure()` and may write issues,
 #     and no job can pass when its route fails.
+#   - the mutants that survived the second verify of PR #1730: a job that runs
+#     `headwater --version` and then sets `printed` to the value it expects, a
+#     cargo job that sets `want` to `printed` after reading the registry, a
+#     `GH_TOKEN` on a step other than the one that runs the issue script, an
+#     issue script whose search no longer selects its title, and one that
+#     creates under a title it does not search for.
 #
 # Group 12 holds that `readme-apt.yml` has no schedule of its own and that this
 # workflow calls it.
@@ -5080,11 +5168,21 @@ install_routes_needed() {
 # install_routes_jobs WORKFLOW — one line for each job:
 # `id|routes|calls-apt|runs-version|is-report|needs|if|issues-write|compares-version|gh-token`,
 # with comments skipped. `needs` is read from a flow list on one line.
+# `gh-token` is 1 only when the step that runs `install-route-issue.sh` has
+# `GH_TOKEN` in its own `env:`, or the job has it in the job's `env:`. A token
+# on another step of the job reaches no `gh` the script runs (#1490).
 install_routes_jobs() {
     awk '
+        function flush_step() {
+            if (s_rep && s_tok) tok = 1
+            s_rep = 0; s_tok = 0; s_env = 0
+        }
         function flush() {
+            flush_step()
+            if (j_tok && report) tok = 1
             if (id != "") print id "|" routes "|" apt "|" ver "|" report "|" needs "|" cond "|" iw "|" cmp "|" tok
             id = ""; routes = ""; apt = 0; ver = 0; report = 0; needs = ""; cond = ""; iw = 0; cmp = 0; tok = 0
+            j_env = 0; j_tok = 0
         }
         /^jobs:[ \t]*$/ { in_jobs = 1; next }
         in_jobs && /^[^ #]/ { flush(); in_jobs = 0 }
@@ -5092,6 +5190,10 @@ install_routes_jobs() {
         /^  [A-Za-z0-9_-]+:[ \t]*$/ { flush(); id = $1; sub(/:$/, "", id); next }
         id == "" || /^[ \t]*#/ { next }
         {
+            if ($0 ~ /^      - /) flush_step()
+            if ($0 ~ /^    [A-Za-z_-]+:/) j_env = ($0 ~ /^    env:[ \t]*$/)
+            if ($0 ~ /^        [A-Za-z_-]+:/) s_env = ($0 ~ /^        env:[ \t]*$/)
+            if ($0 ~ /^      - [A-Za-z_-]+:/) s_env = 0
             if (match($0, /sh tools\/repo\/readme-install-block\.sh README\.md [a-z-]+/)) {
                 n = split(substr($0, RSTART, RLENGTH), w, " ")
                 routes = routes " " w[n]
@@ -5099,14 +5201,15 @@ install_routes_jobs() {
             if ($0 ~ /^    uses: \.\/\.github\/workflows\/readme-apt\.yml$/) apt = 1
             if ($0 ~ /headwater"? --version/) ver = 1
             if ($0 ~ /if \[ "\$printed" != "[^"]+" \]; then/) cmp = 1
-            if ($0 ~ /sh tools\/repo\/install-route-issue\.sh/) report = 1
+            if ($0 ~ /sh tools\/repo\/install-route-issue\.sh/) { report = 1; s_rep = 1 }
             if ($0 ~ /^    needs:/) {
                 needs = $0; sub(/^    needs:[ \t]*/, "", needs)
                 gsub(/\[/, "", needs); gsub(/\]/, "", needs); gsub(/ /, "", needs)
             }
             if ($0 ~ /^    if:/) { cond = $0; sub(/^    if:[ \t]*/, "", cond) }
             if ($0 ~ /^      issues: write[ \t]*$/) iw = 1
-            if ($0 ~ /^          GH_TOKEN: \$\{\{ (github\.token|secrets\.GITHUB_TOKEN) \}\}[ \t]*$/) tok = 1
+            if (s_env && $0 ~ /^          GH_TOKEN: \$\{\{ (github\.token|secrets\.GITHUB_TOKEN) \}\}[ \t]*$/) s_tok = 1
+            if (j_env && $0 ~ /^      GH_TOKEN: \$\{\{ (github\.token|secrets\.GITHUB_TOKEN) \}\}[ \t]*$/) j_tok = 1
         }
         END { flush() }
     ' "$1"
@@ -5121,6 +5224,13 @@ install_routes_block() {
     ' "$1"
 }
 
+# install_routes_sets NAME PREFIX — the lines of standard input that set NAME:
+# an assignment after PREFIX, a `for NAME in`, or a `read` whose last names
+# include NAME.
+install_routes_sets() {
+    grep -E "${2}$1=|(^|[^A-Za-z0-9_])for[[:blank:]]+$1[[:blank:]]+in([[:blank:]]|;|\$)|${2}(IFS=[^[:blank:]]*[[:blank:]]+)?read([[:blank:]]+-[A-Za-z]+)*([[:blank:]]+[A-Za-z_][A-Za-z0-9_]*)*[[:blank:]]+$1([[:blank:]]|<|;|\$)"
+}
+
 # install_routes_compared WORKFLOW JOB — `ok` when the job compares the
 # version it printed with a value it read from the page or the registry, and
 # fails on a difference. The right-hand side of `if [ "$printed" != "..." ]`
@@ -5128,11 +5238,37 @@ install_routes_block() {
 # the extractor's `release` route, reads `route.sh`, or runs `cargo search
 # headwater-cli`. A comparison with `$printed` itself, or with a value typed
 # into the job, is `bad`: either passes on any version.
+#
+# Each hop takes the LAST line before the comparison that sets the variable,
+# because that is the value the comparison reads. A line sets it where a
+# command starts: at the start of the line, after `;`, `&`, `|`, `(` or `{`,
+# after `then`, `do` or `else`, after `eval`, `export`, `local` or
+# `readonly` and an optional quote, or after `-e` or `--env` of `docker run`,
+# which sets it in the container; and a `for NAME in` or a `read ... NAME`
+# sets it too. Text that only names it, such as `echo "printed=$printed"`,
+# sets nothing.
+#
+# The last line that sets `printed` must set it to the `--version` pipe: a
+# command substitution, quoted or not, of `headwater ... --version`, stderr
+# optionally merged or dropped, into an `awk` that prints one field, with
+# nothing after it but a comment. A job that runs the binary and then sets
+# `printed` to the expected value compares the expected value with itself
+# (#1490).
 install_routes_compared() {
     _blk=$(install_routes_block "$1" "$2")
     _line=$(printf '%s\n' "$_blk" | grep -E 'if \[ "\$printed" != "[^"]+" \]; then' | head -n 1)
     [ -n "$_line" ] || { echo bad; return; }
     printf '%s\n' "$_blk" | grep -A1 -F "$_line" | sed -n 2p | grep -qE '&& exit 1$' || { echo bad; return; }
+    _before=$(printf '%s\n' "$_blk" | awk -v l="$_line" '$0 == l { exit } { print }')
+    _q="'"
+    _pre='(^[[:blank:]]*|[;&|(){][[:blank:]]*|(then|do|else|eval|export|local|readonly|-e|--env)[[:blank:]]+["'"$_q"']?)'
+    _set=$(printf '%s\n' "$_before" | install_routes_sets printed "$_pre" | tail -n 1)
+    # The line opens with the assignment, so nothing before it on the line
+    # can guard it or set `printed` first, and its command is one word that
+    # names `headwater`, after an optional `env`.
+    printf '%s\n' "$_set" | sed -E 's/^[[:blank:]]*((export|local|readonly)[[:blank:]]+)?printed=//; s/[[:blank:]]+#.*$//' |
+        grep -qE '^"?\$\((env([[:blank:]]+(-i|[A-Za-z_][A-Za-z0-9_]*=[^[:blank:];&|<>]*))*[[:blank:]]+)?"?[^[:blank:];&|<>"]*headwater"? --version([[:blank:]]+2>(&1|/dev/null))?[[:blank:]]*\|[[:blank:]]*awk[[:blank:]]+('"$_q"'\{[[:blank:]]*print[[:blank:]]+\$(NF|[0-9]+)[[:blank:]]*\}'"$_q"'|"\{[[:blank:]]*print[[:blank:]]+\\\$(NF|[0-9]+)[[:blank:]]*\}")\)"?[[:blank:]]*$' ||
+        { echo bad; return; }
     _var=$(printf '%s\n' "$_line" | sed -n 's/.*!= "\$[{]\{0,1\}\([A-Za-z_][A-Za-z0-9_]*\).*/\1/p')
     _hops=0
     while [ "$_hops" -lt 4 ]; do
@@ -5140,7 +5276,7 @@ install_routes_compared() {
             echo bad
             return
         fi
-        _def=$(printf '%s\n' "$_blk" | grep -E "(^|[ ])$_var=" | grep -v 'if \[' | head -n 1)
+        _def=$(printf '%s\n' "$_before" | install_routes_sets "$_var" "$_pre" | tail -n 1)
         case $_def in
             "") echo bad; return ;;
             *'readme-install-block.sh README.md release'* | *'route.sh'* | *'cargo search headwater-cli'*)
@@ -5349,7 +5485,7 @@ install_routes_provoke "a workflow on the self-hosted runner is red" \
     "install-routes.yml runs on the self-hosted runner, where a scheduled job competes with the merge queue"
 install_routes_provoke "a route job that never runs headwater --version is red" \
     '/^  source:$/,/^  [a-z-]*:$/s/headwater" --version/headwater" --help/' \
-    "the job source of install-routes.yml runs a route and never runs headwater --version"
+    "the job source of install-routes.yml runs a route and never runs headwater --version|the job source of install-routes.yml never compares the version it printed with the one its route installs"
 install_routes_provoke "a route job that prints the version and never compares it is red" \
     '/^  cargo:$/,/^  [a-z-]*:$/{/if \[ "\$printed" != /,/^ *fi$/d;}' \
     "the job cargo of install-routes.yml never compares the version it printed with the one its route installs"
@@ -5359,6 +5495,140 @@ install_routes_provoke "a Debian 11 job whose container has the network is red" 
 install_routes_provoke "a Debian 11 job that never checks its container has no network is red" \
     '/^  deb-file:$/,/^  [a-z-]*:$/{/if \[ "\$nets" != "lo " \]; then/,/^ *fi$/d;}' \
     "the deb-file job of install-routes.yml does not run debian:11 with no network and check that it has none"
+# The five mutants that survived the second verify of PR #1730 (#1490). Each
+# keeps the comparison line as it is and breaks what feeds it.
+install_routes_provoke "an archive job that runs headwater --version and then sets printed to the tag is red" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/^\( *\)printed=\$("\$HOME\/\.local\/bin\/headwater" --version.*$/&\
+\1printed=${tag#v}/' \
+    "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "a Debian 11 job that runs headwater --version and then sets printed to WANT is red" \
+    '/^  deb-file:$/,/^  [a-z-]*:$/s/^\( *\)printed=\$(headwater --version.*$/&\
+\1printed=$WANT/' \
+    "the job deb-file of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "a cargo job that sets want to printed after the registry read is red" \
+    '/^  cargo:$/,/^  [a-z-]*:$/s/^\( *printed=\$(.*--version.*\)$/\1;want="$printed"/' \
+    "the job cargo of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "a report job whose GH_TOKEN is on the checkout step and not the step that runs the script is red" \
+    '/^  report:$/,${
+/^        env:$/d
+/^          GH_TOKEN: /d
+s/^      - uses: actions\/checkout@v4$/&\
+        env:\
+          GH_TOKEN: ${{ github.token }}/
+}' \
+    "the report job of install-routes.yml hands gh no GH_TOKEN"
+install_routes_provoke "a report job whose GH_TOKEN is under a key of the step other than env is red" \
+    '/^  report:$/,$s/^        env:$/        with:/' \
+    "the report job of install-routes.yml hands gh no GH_TOKEN"
+# What runs after the comparison is not what it compared.
+install_routes_provoke "an archive job that sets printed to the tag before the comparison and runs --version only after it is red" \
+    '/^  archive:$/,/^  [a-z-]*:$/{
+/^ *printed=\$("\$HOME\/\.local\/bin\/headwater" --version/{
+h
+s/^\( *\)printed=.*$/\1printed=${tag#v}/
+}
+/echo "the archive block installs/{
+x
+p
+x
+}
+}' \
+    "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
+# The mutants of the first verify of PR #1752: the same classes, written so a
+# prefix of `;` or a space does not find them. Each assignment counts after any
+# character that cannot end a shell name, and the last `printed=` is the
+# `--version` pipe and nothing else.
+install_routes_provoke "an archive job whose printed runs --version into /dev/null and echoes the tag is red" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/--version | awk .{print \$NF}.)/--version >\/dev\/null; echo "${tag#v}")/' \
+    "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "an archive job that sets printed to the tag after && is red" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/^\( *\)printed=\$("\$HOME\/\.local\/bin\/headwater" --version.*$/&\
+\1[ -n "$printed" ]\&\&printed=${tag#v}/' \
+    "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "an archive job that sets printed to the tag after a tab is red" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/^\( *\)printed=\$("\$HOME\/\.local\/bin\/headwater" --version.*$/&\
+\1	printed=${tag#v}/' \
+    "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "a Debian 11 job whose printed runs --version into /dev/null and echoes WANT is red" \
+    '/^  deb-file:$/,/^  [a-z-]*:$/s/--version | awk "{print \\\$NF}")/--version >\/dev\/null; echo "$WANT")/' \
+    "the job deb-file of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "an archive job whose --version pipe ends the step with && exit 0 is red" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/^\( *printed=\$("\$HOME\/\.local\/bin\/headwater" --version.*\)$/\1 \&\& exit 0/' \
+    "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "a cargo job that sets want to printed after && is red" \
+    '/^  cargo:$/,/^  [a-z-]*:$/s/^\( *printed=\$(.*--version.*\)$/\1\&\&want="$printed"/' \
+    "the job cargo of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "a cargo job that sets want to printed through eval is red" \
+    '/^  cargo:$/,/^  [a-z-]*:$/s/^\( *\)\(printed=\$(.*--version.*\)$/&\
+\1eval "want=\\$printed"/' \
+    "the job cargo of install-routes.yml never compares the version it printed with the one its route installs"
+# Correct edits stay green: the judge reads an assignment only where a command
+# starts, and the `--version` pipe in the forms a person writes it.
+install_routes_provoke "an archive job that echoes printed=\$printed after the pipe is green" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/^\( *\)printed=\$("\$HOME\/\.local\/bin\/headwater" --version.*$/&\
+\1echo "printed=$printed"/' \
+    ""
+install_routes_provoke "an archive job whose pipe is quoted is green" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/^\( *\)printed=\(\$("\$HOME\/\.local\/bin\/headwater" --version.*)\)$/\1printed="\2"/' \
+    ""
+install_routes_provoke "an archive job whose --version also reads stderr is green" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/\(printed=\$("\$HOME\/\.local\/bin\/headwater" --version\) |/\1 2>\&1 |/' \
+    ""
+install_routes_provoke "an archive job whose awk program has spaces is green" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/\(printed=\$(.*\){print \$NF}/\1{ print $NF }/' \
+    ""
+install_routes_provoke "an archive job whose pipe line ends in a comment is green" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/^\( *printed=\$("\$HOME\/\.local\/bin\/headwater" --version.*\)$/\1  # the version the binary prints/' \
+    ""
+# Every other way a shell sets a variable, after the pipe, is red.
+install_routes_provoke "an archive job that sets printed through a for loop is red" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/^\( *\)printed=\$("\$HOME\/\.local\/bin\/headwater" --version.*$/&\
+\1for printed in "${tag#v}"; do :; done/' \
+    "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "an archive job that sets printed through read is red" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/^\( *\)printed=\$("\$HOME\/\.local\/bin\/headwater" --version.*$/&\
+\1echo "${tag#v}" > v.txt; read -r printed < v.txt/' \
+    "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "an archive job that sets printed through eval is red" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/^\( *\)printed=\$("\$HOME\/\.local\/bin\/headwater" --version.*$/&\
+\1eval "printed=${tag#v}"/' \
+    "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "an archive job whose pipe echoes the tag before --version is red" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/printed=\$("\$HOME/printed=$(echo "${tag#v}" || "$HOME/' \
+    "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "a cargo job that sets want through a for loop is red" \
+    '/^  cargo:$/,/^  [a-z-]*:$/s/^\( *\)\(printed=\$(.*--version.*\)$/&\
+\1for want in "$printed"; do :; done/' \
+    "the job cargo of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "a cargo job that sets want through read from a here-document is red" \
+    '/^  cargo:$/,/^  [a-z-]*:$/s/^\( *\)\(printed=\$(.*--version.*\)$/&\
+\1IFS= read -r want <<EOF\
+\1$printed\
+\1EOF/' \
+    "the job cargo of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "an archive job that sets printed to the tag and comments the pipe out is red" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/^\( *\)\(printed=\$("\$HOME.*\)$/\1printed=${tag#v} # \2/' \
+    "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "an archive job whose pipe runs only behind false && is red" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/^\( *\)\(printed=\$("\$HOME.*\)$/\1printed=${tag#v}; false \&\& \2/' \
+    "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "an archive job whose pipe runs sh -c to echo the tag is red" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/printed=\$("\$HOME/printed=$(sh -c "echo ${tag#v}" "$HOME/' \
+    "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
+install_routes_provoke "an archive job that sets printed inside a case arm is red" \
+    '/^  archive:$/,/^  [a-z-]*:$/s/^\( *\)printed=\$("\$HOME\/\.local\/bin\/headwater" --version.*$/&\
+\1case x in x) printed=${tag#v} ;; esac/' \
+    "the job archive of install-routes.yml never compares the version it printed with the one its route installs"
+# A job-level `env:` reaches every step, the one that runs the script included.
+install_routes_provoke "a report job whose GH_TOKEN is in the job's own env is green" \
+    '/^  report:$/,${
+/^        env:$/d
+/^          GH_TOKEN: /d
+s/^    timeout-minutes: 5$/&\
+    env:\
+      GH_TOKEN: ${{ github.token }}/
+}' \
+    ""
 
 # 14d. The extractor prints each route from the page, and refuses a page whose
 # paragraph, fence or sentence is gone, because `sh -e` of an empty script
@@ -5412,9 +5682,15 @@ routes_refused "  the cargo route on a page whose cargo fence is gone prints not
 
 # 14e. The issue script against a stub `gh` on PATH. Each case has its own
 # directory, so no case reads another's log.
-# routes_issue_case DIR OPEN-NUMBER LIST-FAILS ARGS... — runs the script in
-# DIR, which holds the stub's log and the body it was handed, and prints
+# routes_issue_case DIR OPEN-ISSUES LIST-FAILS ARGS... — runs the script in
+# DIR, which holds the stub's log, the body it was handed and the title it
+# created under, and prints
 # `<status>|<gh subcommands, comma-joined>|<create flags>|<first body line>`.
+# OPEN-ISSUES is the JSON array of open `bug` issues, `number` and `title`,
+# that `gh issue list --json number,title` returns. The stub runs it through
+# `jq` with the script's own `--jq`, as `gh` does, so a filter that stops
+# selecting the title comments on the wrong issue (#1490). With no `jq` the
+# stub exits 1, and every case that lists goes red rather than skipping.
 routes_issue_case() {
     _dir=$1
     shift
@@ -5425,20 +5701,37 @@ printf '%s\n' "$*" >>"$STUB_DIR/log"
 case "$1 $2" in
     "issue list")
         [ "$STUB_LIST_FAILS" = 1 ] && exit 1
-        [ -n "$STUB_OPEN" ] && printf '%s\n' "$STUB_OPEN"
-        exit 0 ;;
+        _jq=; _state=; _label=; _limit=30
+        while [ $# -gt 0 ]; do
+            [ "$1" = "--jq" ] && _jq=$2
+            [ "$1" = "--state" ] && _state=$2
+            [ "$1" = "--label" ] && _label=$2
+            [ "$1" = "--limit" ] && _limit=$2
+            shift
+        done
+        command -v jq >/dev/null 2>&1 || { echo "stub gh: no jq" >&2; exit 1; }
+        [ -n "$_jq" ] || { echo "stub gh: no --jq" >&2; exit 1; }
+        # STUB_OPEN is the list of OPEN issues labeled bug, so a search of
+        # another state or label is a search this stub cannot answer.
+        [ "$_state" = open ] || { echo "stub gh: not --state open" >&2; exit 1; }
+        [ "$_label" = bug ] || { echo "stub gh: not --label bug" >&2; exit 1; }
+        # `gh` lists at most --limit issues (30 by default), then runs --jq.
+        printf '%s\n' "${STUB_OPEN:-[]}" | jq -c ".[:$_limit]" | jq -r "$_jq"
+        exit ;;
     "issue create" | "issue comment")
         while [ $# -gt 0 ]; do
             [ "$1" = "--body-file" ] && cp "$2" "$STUB_DIR/body"
+            [ "$1" = "--title" ] && printf '%s\n' "$2" >"$STUB_DIR/title"
             shift
-        done ;;
+        done
+        if [ "$STUB_WRITE_FAILS" = 1 ]; then exit 1; fi ;;
 esac
 STUB
     chmod +x "$_dir/bin/gh"
     _open=$1
     _fails=$2
     shift 2
-    STUB_DIR=$_dir STUB_OPEN=$_open STUB_LIST_FAILS=$_fails GITHUB_REPOSITORY=acme/widget \
+    STUB_DIR=$_dir STUB_OPEN=$_open STUB_LIST_FAILS=$_fails STUB_WRITE_FAILS=${routes_write_fails:-0} GITHUB_REPOSITORY=acme/widget \
         GH_TOKEN=$routes_gh_token GITHUB_TOKEN= \
         PATH="$_dir/bin:$PATH" sh "$routes_issue" "$@" >/dev/null 2>&1
     _status=$?
@@ -5449,19 +5742,46 @@ STUB
 }
 # The token the stub is handed; the stub reads none, and one case unsets it.
 routes_gh_token=stub
+# The title the script searches for, read from the script and not typed here,
+# so a create under another title and a search for another title cannot both
+# drift and agree.
+routes_title=$(sed -n 's/^title="\([^"]*\)"$/\1/p' "$routes_issue" 2>/dev/null)
+# The decoy opens with the same words, so only the whole title tells them apart.
+routes_decoy='{"number":7,"title":"An install route of the site failed"}'
+routes_titled="{\"number\":42,\"title\":\"$routes_title\"}"
+same "the stub gh can run the script's --jq" \
+    "jq" "$(command -v jq >/dev/null 2>&1 && echo jq)"
+same "the issue script names one title to search for and to create under" \
+    "1" "$(sed -n 's/^title="\([^"]*\)"$/\1/p' "$routes_issue" 2>/dev/null | grep -c .)"
 routes_none="$scratch/routes/issue-none"
 same "the issue script with no open issue creates one labeled bug whose body opens with ELI5" \
     "0|issue-list,issue-create|--label=bug|## ELI5" \
-    "$(routes_issue_case "$routes_none" '' 0 https://example.invalid/run/1 archive=success cargo=failure source=cancelled)"
+    "$(routes_issue_case "$routes_none" '[]' 0 https://example.invalid/run/1 archive=success cargo=failure source=cancelled)"
 same "  its body names each job that did not succeed and none that did" \
     "1|0|1" \
     "$(grep -c '`cargo`: failure' "$routes_none/body")|$(grep -c '`archive`' "$routes_none/body")|$(grep -c '`source`: cancelled' "$routes_none/body")"
+same "  it creates the issue under the title it searches for, so the next run finds it" \
+    "$routes_title" "$(cat "$routes_none/title" 2>/dev/null)"
 routes_open="$scratch/routes/issue-open"
 same "  with one open issue it comments on it and creates nothing" \
     "0|issue-list,issue-comment||The scheduled run https://example.invalid/run/1 failed again." \
-    "$(routes_issue_case "$routes_open" 42 0 https://example.invalid/run/1 archive=success cargo=failure)"
+    "$(routes_issue_case "$routes_open" "[$routes_titled]" 0 https://example.invalid/run/1 archive=success cargo=failure)"
 same "  the comment goes on the open issue the list names" \
     "issue comment 42" "$(grep -o '^issue comment [0-9]*' "$routes_open/log")"
+routes_decoyed="$scratch/routes/issue-decoy"
+same "  with another open bug issue listed first it comments on the titled one" \
+    "0|issue-list,issue-comment|issue comment 42" \
+    "$(routes_issue_case "$routes_decoyed" "[$routes_decoy,$routes_titled]" 0 https://example.invalid/run/1 cargo=failure | cut -d'|' -f1-2)|$(grep -o '^issue comment [0-9]*' "$routes_decoyed/log")"
+same "  with only another open bug issue it creates its own and comments on none" \
+    "0|issue-list,issue-create|--label=bug" \
+    "$(routes_issue_case "$scratch/routes/issue-decoy-only" "[$routes_decoy]" 0 https://example.invalid/run/1 cargo=failure | cut -d'|' -f1-3)"
+# A `gh` that cannot write: the report job goes red only if the script does.
+same "  a gh that cannot create the issue makes the script exit nonzero" \
+    "nonzero|issue-list,issue-create" \
+    "$(routes_write_fails=1; routes_issue_case "$scratch/routes/issue-create-fails" '[]' 0 https://example.invalid/run/1 cargo=failure | awk -F'|' '{ print ($1 == 0 ? "zero" : "nonzero") "|" $2 }')"
+same "  a gh that cannot comment makes the script exit nonzero" \
+    "nonzero|issue-list,issue-comment" \
+    "$(routes_write_fails=1; routes_issue_case "$scratch/routes/issue-comment-fails" "[$routes_titled]" 0 https://example.invalid/run/1 cargo=failure | awk -F'|' '{ print ($1 == 0 ? "zero" : "nonzero") "|" $2 }')"
 routes_dropped="$scratch/routes/issue-dropped"
 same "  a list in which every job succeeded still files, and says the report job dropped the failure" \
     "0|issue-list,issue-create|--label=bug|## ELI5|1" \
