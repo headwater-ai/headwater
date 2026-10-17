@@ -15,7 +15,10 @@
 # `claude` from the path.
 #
 # The spec is the batch driver's: one line per tier, arm, category and the
-# probes named out of the category.
+# probes named out of the category. A spec of `additive` lines (#1774) is
+# priced by round and checked by scenario tree, and
+# `tools/probe/additive-dry-run.sh`, which this file sources for it, states
+# how.
 #
 # **The power calculation.** `power:` in `.headwater/probe.yml` declares two
 # rates, a two-sided level and a power. The sessions each arm needs are
@@ -125,7 +128,11 @@ p2=$(power_field absent)
 alpha=$(power_field alpha)
 power=$(power_field power)
 pooled=$(sed -n 's/^pooled *//p' "$work/power")
-needed=$(awk -v p1="$p1" -v p2="$p2" -v alpha="$alpha" -v power="$power" '
+# fleiss <rate> <rate>: `<n0> <n>` for the two rates, at the declared level
+# and power. The rounds of the additive campaign use it too, so the formula
+# has one copy.
+fleiss() {
+awk -v p1="$1" -v p2="$2" -v alpha="$alpha" -v power="$power" '
     # The inverse of the standard normal distribution (Acklam), to about 1e-9.
     function qnorm(p,    q, r) {
         if (p < 0.02425) {
@@ -147,7 +154,9 @@ needed=$(awk -v p1="$p1" -v p2="$p2" -v alpha="$alpha" -v power="$power" '
         n0 = (za * sqrt(2 * pbar * (1 - pbar)) + zb * sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ^ 2 / d ^ 2
         n = n0 / 4 * (1 + sqrt(1 + 4 / (n0 * d))) ^ 2
         printf "%d %d\n", ceil(n0), ceil(n)
-    }')
+    }'
+}
+needed=$(fleiss "$p1" "$p2")
 n0=${needed% *}
 n=${needed#* }
 [ "$priced" = 1 ] || printf 'power: %s against %s at a two-sided level of %s and a power of %s needs %s sessions per arm, %s with the Fleiss continuity correction. A line of %s pools its probes into one rate and runs ceil(%s / k) repetitions of each of its k probes.\n' \
@@ -157,6 +166,22 @@ n=${needed#* }
 # `tools/probe/leak.py` reads them with, so the pooling gate and the leak check
 # agree on every YAML form of the key (verify round 5).
 kept_probes=$(python3 "$root/tools/probe/declared.py" "$declaration" leaks_kept) || finish $?
+
+# ---------------------------------------------------------------------------
+# The additive campaign (#1774): a spec of `additive scenario-<n> <round>`
+# lines. It is priced by round and checked by scenario tree, so it takes its
+# own path and returns. A spec that mixes it with another tier is refused.
+# ---------------------------------------------------------------------------
+awk 'NF && $1 !~ /^#/' "$spec" | awk '{ print NR, $0 }' > "$work/lines"
+additive_lines=$(awk '$2 == "additive"' "$work/lines" | wc -l | tr -d ' ')
+all_lines=$(wc -l < "$work/lines" | tr -d ' ')
+if [ "$additive_lines" != 0 ] && [ "$additive_lines" != "$all_lines" ]; then
+    echo "campaign: $spec mixes $additive_lines lines of the \`additive\` tier with $((all_lines - additive_lines)) of other tiers. An additive spec is priced by round, so it holds additive lines alone." >&2
+    finish 5
+fi
+if [ "$additive_lines" != 0 ]; then
+    . "$root/tools/probe/additive-dry-run.sh"
+fi
 
 # ---------------------------------------------------------------------------
 # The plan of every line.
