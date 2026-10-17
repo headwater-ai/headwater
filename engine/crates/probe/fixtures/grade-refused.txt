@@ -1,18 +1,20 @@
-Graded by grader 0.5.0.
+Graded by grader 0.5.1.
 A regression run in the present arm, on a-model at served version a-model-20260701.
 
 ## The verdicts
 
 - PROBE-FIX-answered (sufficiency, expects answered)
-    session 1: no verdict — the event carries no `answer` key, so nothing recorded what this form reads. An empty list is a recorded absence and a missing key is not one
+    session 1: no verdict — the event carries no `answer` key, so nothing recorded what this form reads. An empty list is a recorded absence and a missing key is not one; no call to a tool of an MCP server
 - PROBE-FIX-cited (sufficiency, expects cited)
-    session 1: no verdict — the event carries no `produced` key, so nothing recorded what this form reads. An empty list is a recorded absence and a missing key is not one
+    session 1: no verdict — the event carries no `produced` key, so nothing recorded what this form reads. An empty list is a recorded absence and a missing key is not one; no call to a tool of an MCP server
 - PROBE-FIX-not-opened (navigability, expects not_opened)
-    session 1: no verdict — it expects `not_opened` and the session recorded no tool call at all. A session that did nothing is not evidence that it avoided something
+    session 1: no verdict — it expects `not_opened` and the session recorded no tool call at all. A session that did nothing is not evidence that it avoided something; no call to a tool of an MCP server
 - PROBE-FIX-opened (discovery, expects opened)
-    session 1: no verdict — the event carries no `calls` key, so nothing recorded what this form reads. An empty list is a recorded absence and a missing key is not one
+    session 1: no verdict — the event carries no `calls` key, so nothing recorded what this form reads. An empty list is a recorded absence and a missing key is not one; calls to a tool of an MCP server not counted, because the session recorded no calls
 - PROBE-FIX-patched (sufficiency, expects patched)
-    session 1: no verdict — `out/patch.md` carries no `findings` key, so nothing says whether the oracle was ever run over it. `findings: []` is checked and clean
+    session 1: no verdict — `out/patch.md` carries no `findings` key, so nothing says whether the oracle was ever run over it. `findings: []` is checked and clean; no call to a tool of an MCP server
+
+4 of 4 sessions that recorded their calls made no call to a tool of an MCP server. 1 session recorded no calls and was not counted.
 
 ## The rate, and the denominator it is over
 

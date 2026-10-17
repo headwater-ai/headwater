@@ -28,104 +28,106 @@ The selection this transcript names is `sha256:fc04ac718a7df0b14774c28174a93f9d4
 
 The `read_set` digest above covers every probe of the selection and every document one of them examines, by path and content. This file names it as provenance and compares it with nothing, and the same holds for the lock and the selection: an edit to a document, a new probe or a moved lock leaves these bytes alone. `headwater generate` names each result whose recorded lock, read set or selection moved, and `headwater probe stale` takes the digest and reports which recorded results a change voided. Neither one fails for it.
 
-Graded by grader 0.5.0.
+Graded by grader 0.5.1.
 A campaign run in the absent arm, on claude-sonnet-5 at served version claude-sonnet-5.
 
 ## The verdicts
 
 - HW-PROBE-a-session-answers-from-the-register-without-opening-the-question-it-replaced (navigability, expects not_opened)
-    session L5-campaign-absent-p2-r1: satisfied — 4 recorded calls, and none named any of the 1 document
-    session L5-campaign-absent-p2-r10: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L5-campaign-absent-p2-r11: not satisfied — event 33, call 4 read `{"command":"grep -n -A3 -i \"scent\" \"/home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p2-r11/docs/spec/09-decisions.md\" 2>/dev/null\necho \"---09-open-questions---\"\ngrep -n -B2 -A5 -i \"scent\" \"/home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p2-r11/docs/spec/09-open-questions.md\" 2>/dev/null"}`
-    session L5-campaign-absent-p2-r12: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L5-campaign-absent-p2-r13: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L5-campaign-absent-p2-r14: satisfied — 6 recorded calls, and none named any of the 1 document
-    session L5-campaign-absent-p2-r15: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L5-campaign-absent-p2-r16: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L5-campaign-absent-p2-r17: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L5-campaign-absent-p2-r18: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L5-campaign-absent-p2-r19: satisfied — 4 recorded calls, and none named any of the 1 document
-    session L5-campaign-absent-p2-r2: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L5-campaign-absent-p2-r20: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L5-campaign-absent-p2-r21: satisfied — 4 recorded calls, and none named any of the 1 document
-    session L5-campaign-absent-p2-r22: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L5-campaign-absent-p2-r23: satisfied — 7 recorded calls, and none named any of the 1 document
-    session L5-campaign-absent-p2-r24: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L5-campaign-absent-p2-r25: satisfied — 4 recorded calls, and none named any of the 1 document
-    session L5-campaign-absent-p2-r26: satisfied — 4 recorded calls, and none named any of the 1 document
-    session L5-campaign-absent-p2-r27: satisfied — 4 recorded calls, and none named any of the 1 document
-    session L5-campaign-absent-p2-r28: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L5-campaign-absent-p2-r29: satisfied — 4 recorded calls, and none named any of the 1 document
-    session L5-campaign-absent-p2-r3: satisfied — 4 recorded calls, and none named any of the 1 document
-    session L5-campaign-absent-p2-r30: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L5-campaign-absent-p2-r4: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L5-campaign-absent-p2-r5: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L5-campaign-absent-p2-r6: satisfied — 3 recorded calls, and none named any of the 1 document
-    session L5-campaign-absent-p2-r7: not satisfied — event 58, call 4 read `{"command":"grep -n -i \"scent\" docs/spec/09-decisions.md docs/spec/02-taxonomy-model.md docs/spec/09-open-questions.md docs/spec/13-open-obligations.md docs/decisions/README.md 2>/dev/null"}`
-    session L5-campaign-absent-p2-r8: satisfied — 4 recorded calls, and none named any of the 1 document
-    session L5-campaign-absent-p2-r9: satisfied — 4 recorded calls, and none named any of the 1 document
+    session L5-campaign-absent-p2-r1: satisfied — 4 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-absent-p2-r10: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-absent-p2-r11: not satisfied — event 33, call 4 read `{"command":"grep -n -A3 -i \"scent\" \"/home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p2-r11/docs/spec/09-decisions.md\" 2>/dev/null\necho \"---09-open-questions---\"\ngrep -n -B2 -A5 -i \"scent\" \"/home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p2-r11/docs/spec/09-open-questions.md\" 2>/dev/null"}`; no call to a tool of an MCP server
+    session L5-campaign-absent-p2-r12: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-absent-p2-r13: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-absent-p2-r14: satisfied — 6 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-absent-p2-r15: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-absent-p2-r16: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-absent-p2-r17: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-absent-p2-r18: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-absent-p2-r19: satisfied — 4 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-absent-p2-r2: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-absent-p2-r20: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-absent-p2-r21: satisfied — 4 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-absent-p2-r22: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-absent-p2-r23: satisfied — 7 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-absent-p2-r24: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-absent-p2-r25: satisfied — 4 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-absent-p2-r26: satisfied — 4 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-absent-p2-r27: satisfied — 4 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-absent-p2-r28: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-absent-p2-r29: satisfied — 4 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-absent-p2-r3: satisfied — 4 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-absent-p2-r30: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-absent-p2-r4: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-absent-p2-r5: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-absent-p2-r6: satisfied — 3 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-absent-p2-r7: not satisfied — event 58, call 4 read `{"command":"grep -n -i \"scent\" docs/spec/09-decisions.md docs/spec/02-taxonomy-model.md docs/spec/09-open-questions.md docs/spec/13-open-obligations.md docs/decisions/README.md 2>/dev/null"}`; no call to a tool of an MCP server
+    session L5-campaign-absent-p2-r8: satisfied — 4 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-absent-p2-r9: satisfied — 4 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
 - HW-PROBE-an-agent-reaches-the-adjudication-from-the-document-that-lost-it (navigability, expects opened)
-    session L5-campaign-absent-p1-r1: satisfied — event 1, call 3: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r1/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L5-campaign-absent-p1-r10: satisfied — event 2, call 4: `Bash {"command":"cat docs/decisions/0008-probe-cost-and-cadence.md","description":"Read full decision doc HW-DR-0008"}`
-    session L5-campaign-absent-p1-r11: satisfied — event 3, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r11/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L5-campaign-absent-p1-r12: satisfied — event 4, call 5: `Read ./docs/decisions/0008-probe-cost-and-cadence.md`
-    session L5-campaign-absent-p1-r13: satisfied — event 5, call 3: `Read ./docs/decisions/0008-probe-cost-and-cadence.md`
-    session L5-campaign-absent-p1-r14: satisfied — event 6, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r14/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L5-campaign-absent-p1-r15: satisfied — event 7, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r15/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L5-campaign-absent-p1-r16: satisfied — event 8, call 5: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r16/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L5-campaign-absent-p1-r17: satisfied — event 9, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r17/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L5-campaign-absent-p1-r18: satisfied — event 10, call 3: `Read ./docs/decisions/0008-probe-cost-and-cadence.md`
-    session L5-campaign-absent-p1-r19: satisfied — event 11, call 5: `Read ./docs/decisions/0008-probe-cost-and-cadence.md`
-    session L5-campaign-absent-p1-r2: satisfied — event 12, call 3: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r2/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L5-campaign-absent-p1-r20: satisfied — event 13, call 3: `Read ./docs/decisions/0008-probe-cost-and-cadence.md`
-    session L5-campaign-absent-p1-r21: satisfied — event 14, call 4: `Read ./docs/decisions/0008-probe-cost-and-cadence.md`
-    session L5-campaign-absent-p1-r22: satisfied — event 15, call 2: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r22/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L5-campaign-absent-p1-r23: satisfied — event 16, call 5: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r23/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L5-campaign-absent-p1-r24: satisfied — event 17, call 5: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r24/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L5-campaign-absent-p1-r25: satisfied — event 18, call 5: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r25/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L5-campaign-absent-p1-r26: satisfied — event 19, call 2: `Read docs/decisions/0008-probe-cost-and-cadence.md`
-    session L5-campaign-absent-p1-r27: satisfied — event 20, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r27/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L5-campaign-absent-p1-r28: satisfied — event 21, call 3: `Read ./docs/decisions/0008-probe-cost-and-cadence.md`
-    session L5-campaign-absent-p1-r29: satisfied — event 22, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r29/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L5-campaign-absent-p1-r3: satisfied — event 23, call 3: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r3/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L5-campaign-absent-p1-r30: satisfied — event 24, call 5: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r30/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L5-campaign-absent-p1-r4: satisfied — event 25, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r4/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L5-campaign-absent-p1-r5: satisfied — event 26, call 3: `Bash {"command":"cat \"docs/decisions/0008-probe-cost-and-cadence.md\"","description":"Read decision doc 0008"}`
-    session L5-campaign-absent-p1-r6: satisfied — event 27, call 3: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r6/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L5-campaign-absent-p1-r7: satisfied — event 28, call 3: `Bash {"command":"cat \"/home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r7/docs/decisions/0008-probe-cost-and-cadence.md\"","description":"Show full decision record HW-DR-0008"}`
-    session L5-campaign-absent-p1-r8: satisfied — event 29, call 5: `Read ./docs/decisions/0008-probe-cost-and-cadence.md`
-    session L5-campaign-absent-p1-r9: satisfied — event 30, call 3: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r9/docs/decisions/0008-probe-cost-and-cadence.md`
+    session L5-campaign-absent-p1-r1: satisfied — event 1, call 3: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r1/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L5-campaign-absent-p1-r10: satisfied — event 2, call 4: `Bash {"command":"cat docs/decisions/0008-probe-cost-and-cadence.md","description":"Read full decision doc HW-DR-0008"}`; no call to a tool of an MCP server
+    session L5-campaign-absent-p1-r11: satisfied — event 3, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r11/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L5-campaign-absent-p1-r12: satisfied — event 4, call 5: `Read ./docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L5-campaign-absent-p1-r13: satisfied — event 5, call 3: `Read ./docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L5-campaign-absent-p1-r14: satisfied — event 6, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r14/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L5-campaign-absent-p1-r15: satisfied — event 7, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r15/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L5-campaign-absent-p1-r16: satisfied — event 8, call 5: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r16/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L5-campaign-absent-p1-r17: satisfied — event 9, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r17/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L5-campaign-absent-p1-r18: satisfied — event 10, call 3: `Read ./docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L5-campaign-absent-p1-r19: satisfied — event 11, call 5: `Read ./docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L5-campaign-absent-p1-r2: satisfied — event 12, call 3: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r2/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L5-campaign-absent-p1-r20: satisfied — event 13, call 3: `Read ./docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L5-campaign-absent-p1-r21: satisfied — event 14, call 4: `Read ./docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L5-campaign-absent-p1-r22: satisfied — event 15, call 2: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r22/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L5-campaign-absent-p1-r23: satisfied — event 16, call 5: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r23/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L5-campaign-absent-p1-r24: satisfied — event 17, call 5: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r24/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L5-campaign-absent-p1-r25: satisfied — event 18, call 5: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r25/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L5-campaign-absent-p1-r26: satisfied — event 19, call 2: `Read docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L5-campaign-absent-p1-r27: satisfied — event 20, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r27/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L5-campaign-absent-p1-r28: satisfied — event 21, call 3: `Read ./docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L5-campaign-absent-p1-r29: satisfied — event 22, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r29/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L5-campaign-absent-p1-r3: satisfied — event 23, call 3: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r3/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L5-campaign-absent-p1-r30: satisfied — event 24, call 5: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r30/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L5-campaign-absent-p1-r4: satisfied — event 25, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r4/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L5-campaign-absent-p1-r5: satisfied — event 26, call 3: `Bash {"command":"cat \"docs/decisions/0008-probe-cost-and-cadence.md\"","description":"Read decision doc 0008"}`; no call to a tool of an MCP server
+    session L5-campaign-absent-p1-r6: satisfied — event 27, call 3: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r6/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L5-campaign-absent-p1-r7: satisfied — event 28, call 3: `Bash {"command":"cat \"/home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r7/docs/decisions/0008-probe-cost-and-cadence.md\"","description":"Show full decision record HW-DR-0008"}`; no call to a tool of an MCP server
+    session L5-campaign-absent-p1-r8: satisfied — event 29, call 5: `Read ./docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L5-campaign-absent-p1-r9: satisfied — event 30, call 3: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L5-campaign-absent-p1-r9/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
 - HW-PROBE-what-a-session-writes-points-back-at-the-ruling-it-rests-on (navigability, expects cited)
-    session L5-campaign-absent-p3-r1: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L5-campaign-absent-p3-r10: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L5-campaign-absent-p3-r11: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L5-campaign-absent-p3-r12: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L5-campaign-absent-p3-r13: satisfied — event 65: `engine/crates/check/tests/fixtures.rs` cites HW-DR-0049
-    session L5-campaign-absent-p3-r14: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L5-campaign-absent-p3-r15: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L5-campaign-absent-p3-r16: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L5-campaign-absent-p3-r17: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L5-campaign-absent-p3-r18: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L5-campaign-absent-p3-r19: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L5-campaign-absent-p3-r2: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L5-campaign-absent-p3-r20: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L5-campaign-absent-p3-r21: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L5-campaign-absent-p3-r22: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L5-campaign-absent-p3-r23: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L5-campaign-absent-p3-r24: satisfied — event 77: `engine/crates/census/src/census.rs` cites HW-DR-0049
-    session L5-campaign-absent-p3-r25: satisfied — event 78: `engine/crates/census/src/census.rs` cites HW-DR-0049
-    session L5-campaign-absent-p3-r26: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L5-campaign-absent-p3-r27: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L5-campaign-absent-p3-r28: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L5-campaign-absent-p3-r29: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L5-campaign-absent-p3-r3: satisfied — event 83: `engine/README.md` cites HW-DR-0049
-    session L5-campaign-absent-p3-r30: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L5-campaign-absent-p3-r4: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L5-campaign-absent-p3-r5: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L5-campaign-absent-p3-r6: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L5-campaign-absent-p3-r7: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L5-campaign-absent-p3-r8: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L5-campaign-absent-p3-r9: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
+    session L5-campaign-absent-p3-r1: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L5-campaign-absent-p3-r10: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L5-campaign-absent-p3-r11: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L5-campaign-absent-p3-r12: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L5-campaign-absent-p3-r13: satisfied — event 65: `engine/crates/check/tests/fixtures.rs` cites HW-DR-0049; no call to a tool of an MCP server
+    session L5-campaign-absent-p3-r14: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L5-campaign-absent-p3-r15: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L5-campaign-absent-p3-r16: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L5-campaign-absent-p3-r17: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L5-campaign-absent-p3-r18: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L5-campaign-absent-p3-r19: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L5-campaign-absent-p3-r2: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L5-campaign-absent-p3-r20: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L5-campaign-absent-p3-r21: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L5-campaign-absent-p3-r22: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L5-campaign-absent-p3-r23: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L5-campaign-absent-p3-r24: satisfied — event 77: `engine/crates/census/src/census.rs` cites HW-DR-0049; no call to a tool of an MCP server
+    session L5-campaign-absent-p3-r25: satisfied — event 78: `engine/crates/census/src/census.rs` cites HW-DR-0049; no call to a tool of an MCP server
+    session L5-campaign-absent-p3-r26: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L5-campaign-absent-p3-r27: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L5-campaign-absent-p3-r28: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L5-campaign-absent-p3-r29: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L5-campaign-absent-p3-r3: satisfied — event 83: `engine/README.md` cites HW-DR-0049; no call to a tool of an MCP server
+    session L5-campaign-absent-p3-r30: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L5-campaign-absent-p3-r4: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L5-campaign-absent-p3-r5: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L5-campaign-absent-p3-r6: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L5-campaign-absent-p3-r7: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L5-campaign-absent-p3-r8: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L5-campaign-absent-p3-r9: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+
+90 of 90 sessions that recorded their calls made no call to a tool of an MCP server. 0 sessions recorded no calls.
 
 ## The rate, and the denominator it is over
 

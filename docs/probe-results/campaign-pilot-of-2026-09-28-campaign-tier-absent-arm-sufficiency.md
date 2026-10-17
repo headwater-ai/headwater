@@ -28,27 +28,29 @@ The selection this transcript names is `sha256:1d93b514529314b74499196391c68b4b3
 
 The `read_set` digest above covers every probe of the selection and every document one of them examines, by path and content. This file names it as provenance and compares it with nothing, and the same holds for the lock and the selection: an edit to a document, a new probe or a moved lock leaves these bytes alone. `headwater generate` names each result whose recorded lock, read set or selection moved, and `headwater probe stale` takes the digest and reports which recorded results a change voided. Neither one fails for it.
 
-Graded by grader 0.5.0.
+Graded by grader 0.5.1.
 A campaign run in the absent arm, on claude-sonnet-5 at served version claude-sonnet-5.
 
 ## The verdicts
 
 - HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer (sufficiency, expects answered)
-    session L2-campaign-absent-p1-r1: satisfied — event 1: answered `absent`
-    session L2-campaign-absent-p1-r2: not satisfied — the session ended with no answer
-    session L2-campaign-absent-p1-r3: satisfied — event 3: answered `absent`
+    session L2-campaign-absent-p1-r1: satisfied — event 1: answered `absent`; no call to a tool of an MCP server
+    session L2-campaign-absent-p1-r2: not satisfied — the session ended with no answer; no call to a tool of an MCP server
+    session L2-campaign-absent-p1-r3: satisfied — event 3: answered `absent`; no call to a tool of an MCP server
 - HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted (sufficiency, expects answered)
-    session L2-campaign-absent-p2-r1: not satisfied — event 4 answered `stamp`, and the probe expects `merge`
-    session L2-campaign-absent-p2-r2: satisfied — event 5: answered `merge`
-    session L2-campaign-absent-p2-r3: satisfied — event 6: answered `merge`
+    session L2-campaign-absent-p2-r1: not satisfied — event 4 answered `stamp`, and the probe expects `merge`; no call to a tool of an MCP server
+    session L2-campaign-absent-p2-r2: satisfied — event 5: answered `merge`; no call to a tool of an MCP server
+    session L2-campaign-absent-p2-r3: satisfied — event 6: answered `merge`; no call to a tool of an MCP server
 - HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request (sufficiency, expects answered)
-    session L2-campaign-absent-p3-r1: not satisfied — event 7 answered `current`, which the probe does not declare
-    session L2-campaign-absent-p3-r2: not satisfied — event 8 answered `current`, which the probe does not declare
-    session L2-campaign-absent-p3-r3: not satisfied — event 9 answered `current`, which the probe does not declare
+    session L2-campaign-absent-p3-r1: not satisfied — event 7 answered `current`, which the probe does not declare; no call to a tool of an MCP server
+    session L2-campaign-absent-p3-r2: not satisfied — event 8 answered `current`, which the probe does not declare; no call to a tool of an MCP server
+    session L2-campaign-absent-p3-r3: not satisfied — event 9 answered `current`, which the probe does not declare; no call to a tool of an MCP server
 - HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks (sufficiency, expects patched)
-    session L2-campaign-absent-p4-r1: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L2-campaign-absent-p4-r2: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L2-campaign-absent-p4-r3: not satisfied — the session produced no artifact, so the oracle had nothing to read
+    session L2-campaign-absent-p4-r1: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L2-campaign-absent-p4-r2: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L2-campaign-absent-p4-r3: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+
+12 of 12 sessions that recorded their calls made no call to a tool of an MCP server. 0 sessions recorded no calls.
 
 ## The rate, and the denominator it is over
 

@@ -28,19 +28,21 @@ The selection this transcript names is `sha256:8ec515cf6d769b34f8fc840d00f902606
 
 The `read_set` digest above covers every probe of the selection and every document one of them examines, by path and content. This file names it as provenance and compares it with nothing, and the same holds for the lock and the selection: an edit to a document, a new probe or a moved lock leaves these bytes alone. `headwater generate` names each result whose recorded lock, read set or selection moved, and `headwater probe stale` takes the digest and reports which recorded results a change voided. Neither one fails for it.
 
-Graded by grader 0.5.0.
+Graded by grader 0.5.1.
 A campaign run in the present arm, on claude-sonnet-5 at served version claude-sonnet-5.
 
 ## The verdicts
 
 - HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor (discovery, expects opened)
-    session L6-campaign-present-p1-r1: not satisfied — 19 recorded calls, and none named any of the 1 document
-    session L6-campaign-present-p1-r2: not satisfied — 15 recorded calls, and none named any of the 1 document
-    session L6-campaign-present-p1-r3: not satisfied — 14 recorded calls, and none named any of the 1 document
+    session L6-campaign-present-p1-r1: not satisfied — 19 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L6-campaign-present-p1-r2: not satisfied — 15 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L6-campaign-present-p1-r3: not satisfied — 14 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
 - HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens (discovery, expects opened)
-    session L6-campaign-present-p2-r1: not satisfied — 19 recorded calls, and none named any of the 1 document
-    session L6-campaign-present-p2-r2: not satisfied — 3 recorded calls, and none named any of the 1 document
-    session L6-campaign-present-p2-r3: not satisfied — 5 recorded calls, and none named any of the 1 document
+    session L6-campaign-present-p2-r1: not satisfied — 19 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L6-campaign-present-p2-r2: not satisfied — 3 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L6-campaign-present-p2-r3: not satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+
+6 of 6 sessions that recorded their calls made no call to a tool of an MCP server. 0 sessions recorded no calls.
 
 ## The rate, and the denominator it is over
 

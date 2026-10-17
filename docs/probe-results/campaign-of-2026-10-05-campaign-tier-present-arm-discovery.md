@@ -26,368 +26,370 @@ The selection this transcript names is `sha256:c84af3cc500bdabda0be3c6dd5e76b382
 
 The `read_set` digest above covers every probe of the selection and every document one of them examines, by path and content. This file names it as provenance and compares it with nothing, and the same holds for the lock and the selection: an edit to a document, a new probe or a moved lock leaves these bytes alone. `headwater generate` names each result whose recorded lock, read set or selection moved, and `headwater probe stale` takes the digest and reports which recorded results a change voided. Neither one fails for it.
 
-Graded by grader 0.5.0.
+Graded by grader 0.5.1.
 A campaign run in the present arm, on claude-sonnet-5 at served version claude-sonnet-5.
 
 ## The verdicts
 
 - HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor (discovery, expects opened)
-    session L1-campaign-present-p1-r1: satisfied — event 1, call 29: `Bash {"command":"cd /var/tmp/hw-1659/b/ws/L1-campaign-present-p1-r1 && grep -n \"facet.required.missing\\|facet.value.blank\\|dotted\" docs/spec/12-check-layer.md | head -20 && echo \"---glob rules reference---\" && find docs -iname \"*rule*\" && echo \"---\" && grep -rn \"rule-id\\|rule id\\|namespace\" docs/spec/12-check-layer.md | head -20"}`
-    session L1-campaign-present-p1-r10: not satisfied — 21 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r100: not satisfied — 13 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r101: not satisfied — 57 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r102: not satisfied — 23 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r103: satisfied — event 6, call 14: `Bash {"command":"grep -n \"five origins\\|origin\" docs/spec/12-check-layer.md | head -40","description":"Find the five origins section in spec 12"}`
-    session L1-campaign-present-p1-r104: satisfied — event 7, call 12: `Bash {"command":"sed -n '1,400p' /var/tmp/hw-1659/b/ws/L1-campaign-present-p1-r104/docs/spec/12-check-layer.md"}`
-    session L1-campaign-present-p1-r105: not satisfied — 17 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r106: satisfied — event 9, call 37: `Bash {"command":"sed -n '1,60p' docs/spec/12-check-layer.md | grep -n \"five origins\" -A 40","description":"Show five origins section of spec 12"}`
-    session L1-campaign-present-p1-r107: not satisfied — 16 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r108: not satisfied — 15 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r109: not satisfied — 16 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r11: satisfied — event 13, call 22: `Grep /var/tmp/hw-1659/b/ws/L1-campaign-present-p1-r11/docs/spec/12-check-layer.md`
-    session L1-campaign-present-p1-r110: not satisfied — 42 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r111: satisfied — event 15, call 29: `Bash {"command":"sed -n '230,275p' /var/tmp/hw-1659/b/ws/L1-campaign-present-p1-r111/docs/spec/12-check-layer.md"}`
-    session L1-campaign-present-p1-r112: not satisfied — 36 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r113: not satisfied — 17 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r114: not satisfied — 41 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r115: not satisfied — 30 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r116: not satisfied — 12 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r117: not satisfied — 48 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r118: not satisfied — 22 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r12: satisfied — event 23, call 12: `Bash {"command":"grep -n \"enum Severity\" -A 10 engine/crates/check/src/finding.rs 2>/dev/null; echo ---; grep -rn \"posture\" docs/spec/12-check-layer.md | head -30","description":"Check Severity enum definition and posture meaning in spec 12"}`
-    session L1-campaign-present-p1-r13: not satisfied — 24 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r14: not satisfied — 20 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r15: not satisfied — 15 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r16: not satisfied — 24 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r17: not satisfied — 25 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r18: not satisfied — 13 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r19: satisfied — event 30, call 18: `Bash {"command":"grep -n \"posture\\|Severity::\\|severity\" docs/spec/12-check-layer.md | head -40","description":"Check spec 12 for posture vs severity terminology"}`
-    session L1-campaign-present-p1-r2: not satisfied — 27 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r20: not satisfied — 23 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r21: satisfied — event 33, call 37: `Grep /var/tmp/hw-1659/b/ws/L1-campaign-present-p1-r21/docs/spec/12-check-layer.md`
-    session L1-campaign-present-p1-r22: not satisfied — 17 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r23: not satisfied — 18 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r24: not satisfied — 21 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r25: satisfied — event 37, call 14: `Bash {"command":"grep -n -i \"severity\\|fixab\\|mechanical\\|advisory\\|error.*warn.*info\\|posture\" /var/tmp/hw-1659/b/ws/L1-campaign-present-p1-r25/docs/spec/12-check-layer.md | head -80","description":"Scan spec 12 for severity and fixability language"}`
-    session L1-campaign-present-p1-r26: not satisfied — 15 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r27: not satisfied — 24 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r28: not satisfied — 25 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r29: not satisfied — 55 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r3: not satisfied — 37 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r30: not satisfied — 16 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r31: not satisfied — 31 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r32: not satisfied — 26 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r33: not satisfied — 17 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r34: not satisfied — 14 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r35: not satisfied — 28 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r36: not satisfied — 12 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r37: not satisfied — 21 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r38: not satisfied — 14 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r39: not satisfied — 33 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r4: not satisfied — 17 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r40: not satisfied — 46 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r41: not satisfied — 23 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r42: not satisfied — 22 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r43: not satisfied — 14 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r44: satisfied — event 58, call 22: `Bash {"command":"wc -l /var/tmp/hw-1659/b/ws/L1-campaign-present-p1-r44/docs/spec/12-check-layer.md /var/tmp/hw-1659/b/ws/L1-campaign-present-p1-r44/engine/crates/check/src/lib.rs","description":"Line counts for spec and lib.rs"}`
-    session L1-campaign-present-p1-r45: not satisfied — 17 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r46: not satisfied — 13 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r47: not satisfied — 16 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r48: not satisfied — 20 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r49: not satisfied — 15 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r5: not satisfied — 15 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r50: not satisfied — 13 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r51: not satisfied — 19 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r52: not satisfied — 27 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r53: not satisfied — 13 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r54: satisfied — event 69, call 15: `Bash {"command":"wc -l docs/spec/12-check-layer.md engine/crates/check/src/*.rs","description":"Line counts for check-layer spec and check crate source files"}`
-    session L1-campaign-present-p1-r55: not satisfied — 22 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r56: satisfied — event 71, call 19: `Bash {"command":"grep -n \"posture\" docs/spec/12-check-layer.md 2>/dev/null | head -20\necho ---\ngrep -rn \"posture\" .headwater/packages/headwater-standard/*.md docs/subsystems/*.md 2>/dev/null | head -10","description":"Check what control posture means relative to finding severity"}`
-    session L1-campaign-present-p1-r57: not satisfied — 18 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r58: not satisfied — 15 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r59: satisfied — event 74, call 41: `Grep docs/spec/12-check-layer.md`
-    session L1-campaign-present-p1-r6: not satisfied — 13 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r60: not satisfied — 18 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r61: not satisfied — 14 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r62: not satisfied — 56 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r63: not satisfied — 26 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r64: not satisfied — 20 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r65: not satisfied — 15 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r66: not satisfied — 11 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r67: not satisfied — 60 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r68: not satisfied — 33 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r69: not satisfied — 18 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r7: not satisfied — 11 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r70: not satisfied — 20 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r71: not satisfied — 13 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r72: satisfied — event 89, call 33: `Bash {"command":"grep -n \"the five origins\\|Document.origin\\|Shape.origin\\|### Severity\\|mechanical and total\\|fixability\" /var/tmp/hw-1659/b/ws/L1-campaign-present-p1-r72/docs/spec/12-check-layer.md | head -60"}`
-    session L1-campaign-present-p1-r73: not satisfied — 20 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r74: not satisfied — 22 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r75: not satisfied — 22 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r76: not satisfied — 9 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r77: not satisfied — 19 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r78: not satisfied — 17 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r79: not satisfied — 15 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r8: not satisfied — 26 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r80: not satisfied — 16 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r81: not satisfied — 21 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r82: not satisfied — 14 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r83: not satisfied — 12 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r84: not satisfied — 15 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r85: not satisfied — 16 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r86: satisfied — event 104, call 9: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p1-r86/docs/spec/12-check-layer.md`
-    session L1-campaign-present-p1-r87: not satisfied — 11 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r88: not satisfied — 113 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r89: not satisfied — 19 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r9: not satisfied — 19 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r90: not satisfied — 67 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r91: satisfied — event 110, call 20: `Grep /var/tmp/hw-1659/b/ws/L1-campaign-present-p1-r91/docs/spec/12-check-layer.md`
-    session L1-campaign-present-p1-r92: not satisfied — 24 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r93: not satisfied — 14 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r94: not satisfied — 17 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r95: not satisfied — 15 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r96: not satisfied — 16 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r97: not satisfied — 18 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r98: not satisfied — 15 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p1-r99: not satisfied — 19 recorded calls, and none named any of the 1 document
+    session L1-campaign-present-p1-r1: satisfied — event 1, call 29: `Bash {"command":"cd /var/tmp/hw-1659/b/ws/L1-campaign-present-p1-r1 && grep -n \"facet.required.missing\\|facet.value.blank\\|dotted\" docs/spec/12-check-layer.md | head -20 && echo \"---glob rules reference---\" && find docs -iname \"*rule*\" && echo \"---\" && grep -rn \"rule-id\\|rule id\\|namespace\" docs/spec/12-check-layer.md | head -20"}`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r10: not satisfied — 21 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r100: not satisfied — 13 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r101: not satisfied — 57 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r102: not satisfied — 23 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r103: satisfied — event 6, call 14: `Bash {"command":"grep -n \"five origins\\|origin\" docs/spec/12-check-layer.md | head -40","description":"Find the five origins section in spec 12"}`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r104: satisfied — event 7, call 12: `Bash {"command":"sed -n '1,400p' /var/tmp/hw-1659/b/ws/L1-campaign-present-p1-r104/docs/spec/12-check-layer.md"}`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r105: not satisfied — 17 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r106: satisfied — event 9, call 37: `Bash {"command":"sed -n '1,60p' docs/spec/12-check-layer.md | grep -n \"five origins\" -A 40","description":"Show five origins section of spec 12"}`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r107: not satisfied — 16 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r108: not satisfied — 15 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r109: not satisfied — 16 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r11: satisfied — event 13, call 22: `Grep /var/tmp/hw-1659/b/ws/L1-campaign-present-p1-r11/docs/spec/12-check-layer.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r110: not satisfied — 42 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r111: satisfied — event 15, call 29: `Bash {"command":"sed -n '230,275p' /var/tmp/hw-1659/b/ws/L1-campaign-present-p1-r111/docs/spec/12-check-layer.md"}`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r112: not satisfied — 36 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r113: not satisfied — 17 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r114: not satisfied — 41 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r115: not satisfied — 30 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r116: not satisfied — 12 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r117: not satisfied — 48 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r118: not satisfied — 22 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r12: satisfied — event 23, call 12: `Bash {"command":"grep -n \"enum Severity\" -A 10 engine/crates/check/src/finding.rs 2>/dev/null; echo ---; grep -rn \"posture\" docs/spec/12-check-layer.md | head -30","description":"Check Severity enum definition and posture meaning in spec 12"}`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r13: not satisfied — 24 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r14: not satisfied — 20 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r15: not satisfied — 15 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r16: not satisfied — 24 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r17: not satisfied — 25 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r18: not satisfied — 13 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r19: satisfied — event 30, call 18: `Bash {"command":"grep -n \"posture\\|Severity::\\|severity\" docs/spec/12-check-layer.md | head -40","description":"Check spec 12 for posture vs severity terminology"}`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r2: not satisfied — 27 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r20: not satisfied — 23 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r21: satisfied — event 33, call 37: `Grep /var/tmp/hw-1659/b/ws/L1-campaign-present-p1-r21/docs/spec/12-check-layer.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r22: not satisfied — 17 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r23: not satisfied — 18 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r24: not satisfied — 21 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r25: satisfied — event 37, call 14: `Bash {"command":"grep -n -i \"severity\\|fixab\\|mechanical\\|advisory\\|error.*warn.*info\\|posture\" /var/tmp/hw-1659/b/ws/L1-campaign-present-p1-r25/docs/spec/12-check-layer.md | head -80","description":"Scan spec 12 for severity and fixability language"}`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r26: not satisfied — 15 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r27: not satisfied — 24 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r28: not satisfied — 25 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r29: not satisfied — 55 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r3: not satisfied — 37 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r30: not satisfied — 16 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r31: not satisfied — 31 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r32: not satisfied — 26 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r33: not satisfied — 17 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r34: not satisfied — 14 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r35: not satisfied — 28 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r36: not satisfied — 12 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r37: not satisfied — 21 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r38: not satisfied — 14 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r39: not satisfied — 33 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r4: not satisfied — 17 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r40: not satisfied — 46 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r41: not satisfied — 23 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r42: not satisfied — 22 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r43: not satisfied — 14 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r44: satisfied — event 58, call 22: `Bash {"command":"wc -l /var/tmp/hw-1659/b/ws/L1-campaign-present-p1-r44/docs/spec/12-check-layer.md /var/tmp/hw-1659/b/ws/L1-campaign-present-p1-r44/engine/crates/check/src/lib.rs","description":"Line counts for spec and lib.rs"}`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r45: not satisfied — 17 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r46: not satisfied — 13 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r47: not satisfied — 16 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r48: not satisfied — 20 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r49: not satisfied — 15 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r5: not satisfied — 15 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r50: not satisfied — 13 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r51: not satisfied — 19 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r52: not satisfied — 27 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r53: not satisfied — 13 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r54: satisfied — event 69, call 15: `Bash {"command":"wc -l docs/spec/12-check-layer.md engine/crates/check/src/*.rs","description":"Line counts for check-layer spec and check crate source files"}`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r55: not satisfied — 22 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r56: satisfied — event 71, call 19: `Bash {"command":"grep -n \"posture\" docs/spec/12-check-layer.md 2>/dev/null | head -20\necho ---\ngrep -rn \"posture\" .headwater/packages/headwater-standard/*.md docs/subsystems/*.md 2>/dev/null | head -10","description":"Check what control posture means relative to finding severity"}`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r57: not satisfied — 18 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r58: not satisfied — 15 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r59: satisfied — event 74, call 41: `Grep docs/spec/12-check-layer.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r6: not satisfied — 13 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r60: not satisfied — 18 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r61: not satisfied — 14 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r62: not satisfied — 56 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r63: not satisfied — 26 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r64: not satisfied — 20 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r65: not satisfied — 15 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r66: not satisfied — 11 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r67: not satisfied — 60 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r68: not satisfied — 33 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r69: not satisfied — 18 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r7: not satisfied — 11 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r70: not satisfied — 20 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r71: not satisfied — 13 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r72: satisfied — event 89, call 33: `Bash {"command":"grep -n \"the five origins\\|Document.origin\\|Shape.origin\\|### Severity\\|mechanical and total\\|fixability\" /var/tmp/hw-1659/b/ws/L1-campaign-present-p1-r72/docs/spec/12-check-layer.md | head -60"}`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r73: not satisfied — 20 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r74: not satisfied — 22 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r75: not satisfied — 22 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r76: not satisfied — 9 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r77: not satisfied — 19 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r78: not satisfied — 17 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r79: not satisfied — 15 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r8: not satisfied — 26 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r80: not satisfied — 16 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r81: not satisfied — 21 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r82: not satisfied — 14 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r83: not satisfied — 12 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r84: not satisfied — 15 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r85: not satisfied — 16 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r86: satisfied — event 104, call 9: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p1-r86/docs/spec/12-check-layer.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r87: not satisfied — 11 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r88: not satisfied — 113 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r89: not satisfied — 19 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r9: not satisfied — 19 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r90: not satisfied — 67 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r91: satisfied — event 110, call 20: `Grep /var/tmp/hw-1659/b/ws/L1-campaign-present-p1-r91/docs/spec/12-check-layer.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r92: not satisfied — 24 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r93: not satisfied — 14 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r94: not satisfied — 17 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r95: not satisfied — 15 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r96: not satisfied — 16 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r97: not satisfied — 18 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r98: not satisfied — 15 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r99: not satisfied — 19 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
 - HW-PROBE-a-session-finds-a-ruling-from-a-task-in-plain-words (discovery, expects opened)
-    session L1-campaign-present-p2-r1: satisfied — event 119, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r1/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r10: satisfied — event 120, call 4: `Bash {"command":"find / -maxdepth 3 -iname \"*headwater*\" -type d 2>/dev/null; echo \"---\"; find / -path \"*/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md\" 2>/dev/null","description":"Locate repo root and the target decision file"}`
-    session L1-campaign-present-p2-r100: satisfied — event 121, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r100/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r101: satisfied — event 122, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r101/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r102: satisfied — event 123, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r102/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r103: satisfied — event 124, call 2: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r103/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r104: not satisfied — 1 recorded call, and none named any of the 2 documents
-    session L1-campaign-present-p2-r105: satisfied — event 126, call 5: `Read docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r106: satisfied — event 127, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r106/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r107: satisfied — event 128, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r107/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r108: satisfied — event 129, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r108/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r109: satisfied — event 130, call 7: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r109/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r11: satisfied — event 131, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r11/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r110: satisfied — event 132, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r110/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r111: satisfied — event 133, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r111/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r112: satisfied — event 134, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r112/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r113: satisfied — event 135, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r113/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r114: not satisfied — 2 recorded calls, and none named any of the 2 documents
-    session L1-campaign-present-p2-r115: satisfied — event 137, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r115/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r116: satisfied — event 138, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r116/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r117: satisfied — event 139, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r117/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r118: satisfied — event 140, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r118/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r12: satisfied — event 141, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r12/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r13: satisfied — event 142, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r13/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r14: satisfied — event 143, call 6: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r14/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r15: satisfied — event 144, call 6: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r15/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r16: satisfied — event 145, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r16/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r17: satisfied — event 146, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r17/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r18: satisfied — event 147, call 3: `Bash {"command":"sed -n '1,80p' docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md"}`
-    session L1-campaign-present-p2-r19: satisfied — event 148, call 5: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r19/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r2: satisfied — event 149, call 2: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r2/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r20: satisfied — event 150, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r20/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r21: satisfied — event 151, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r21/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r22: satisfied — event 152, call 4: `Bash {"command":"cat docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md"}`
-    session L1-campaign-present-p2-r23: satisfied — event 153, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r23/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r24: satisfied — event 154, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r24/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r25: satisfied — event 155, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r25/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r26: satisfied — event 156, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r26/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r27: not satisfied — 2 recorded calls, and none named any of the 2 documents
-    session L1-campaign-present-p2-r28: satisfied — event 158, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r28/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r29: satisfied — event 159, call 2: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r29/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r3: satisfied — event 160, call 5: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r3/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r30: satisfied — event 161, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r30/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r31: satisfied — event 162, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r31/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r32: satisfied — event 163, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r32/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r33: satisfied — event 164, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r33/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r34: satisfied — event 165, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r34/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r35: satisfied — event 166, call 2: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r35/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r36: satisfied — event 167, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r36/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r37: satisfied — event 168, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r37/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r38: satisfied — event 169, call 2: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r38/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r39: satisfied — event 170, call 2: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r39/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r4: satisfied — event 171, call 2: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r4/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r40: satisfied — event 172, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r40/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r41: satisfied — event 173, call 5: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r41/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r42: satisfied — event 174, call 6: `Bash {"command":"./engine/target/dev-release/headwater explain docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md --root . 2>&1 | head -60","description":"Explain the candidate decision document"}`
-    session L1-campaign-present-p2-r43: satisfied — event 175, call 6: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r43/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r44: satisfied — event 176, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r44/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r45: satisfied — event 177, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r45/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r46: satisfied — event 178, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r46/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r47: satisfied — event 179, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r47/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r48: satisfied — event 180, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r48/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r49: not satisfied — 2 recorded calls, and none named any of the 2 documents
-    session L1-campaign-present-p2-r5: satisfied — event 182, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r5/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r50: satisfied — event 183, call 6: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r50/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r51: satisfied — event 184, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r51/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r52: satisfied — event 185, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r52/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r53: satisfied — event 186, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r53/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r54: satisfied — event 187, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r54/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r55: satisfied — event 188, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r55/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r56: satisfied — event 189, call 2: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r56/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r57: satisfied — event 190, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r57/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r58: satisfied — event 191, call 2: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r58/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r59: satisfied — event 192, call 2: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r59/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r6: satisfied — event 193, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r6/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r60: satisfied — event 194, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r60/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r61: satisfied — event 195, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r61/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r62: satisfied — event 196, call 6: `Bash {"command":"test -f \"/var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r62/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md\" && echo EXISTS","description":"Verify the decision document path exists"}`
-    session L1-campaign-present-p2-r63: satisfied — event 197, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r63/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r64: satisfied — event 198, call 5: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r64/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r65: satisfied — event 199, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r65/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r66: satisfied — event 200, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r66/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r67: satisfied — event 201, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r67/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r68: satisfied — event 202, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r68/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r69: satisfied — event 203, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r69/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r7: satisfied — event 204, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r7/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r70: satisfied — event 205, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r70/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r71: satisfied — event 206, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r71/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r72: satisfied — event 207, call 5: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r72/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r73: satisfied — event 208, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r73/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r74: satisfied — event 209, call 5: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r74/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r75: satisfied — event 210, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r75/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r76: satisfied — event 211, call 2: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r76/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r77: satisfied — event 212, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r77/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r78: not satisfied — 1 recorded call, and none named any of the 2 documents
-    session L1-campaign-present-p2-r79: satisfied — event 214, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r79/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r8: satisfied — event 215, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r8/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r80: satisfied — event 216, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r80/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r81: satisfied — event 217, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r81/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r82: satisfied — event 218, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r82/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r83: satisfied — event 219, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r83/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r84: satisfied — event 220, call 6: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r84/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r85: satisfied — event 221, call 6: `Bash {"command":"./engine/target/dev-release/headwater explain docs/evaluations/why-corpus-counts-are-derived-not-stored.md --root . 2>&1 | head -80","description":"Explain the candidate document's kind, purpose, and relations"}`
-    session L1-campaign-present-p2-r86: satisfied — event 222, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r86/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r87: satisfied — event 223, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r87/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r88: satisfied — event 224, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r88/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r89: satisfied — event 225, call 2: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r89/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r9: satisfied — event 226, call 8: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r9/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r90: satisfied — event 227, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r90/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r91: satisfied — event 228, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r91/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r92: satisfied — event 229, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r92/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r93: satisfied — event 230, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r93/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r94: satisfied — event 231, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r94/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r95: satisfied — event 232, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r95/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r96: satisfied — event 233, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r96/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r97: satisfied — event 234, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r97/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r98: satisfied — event 235, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r98/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
-    session L1-campaign-present-p2-r99: satisfied — event 236, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r99/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`
+    session L1-campaign-present-p2-r1: satisfied — event 119, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r1/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r10: satisfied — event 120, call 4: `Bash {"command":"find / -maxdepth 3 -iname \"*headwater*\" -type d 2>/dev/null; echo \"---\"; find / -path \"*/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md\" 2>/dev/null","description":"Locate repo root and the target decision file"}`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r100: satisfied — event 121, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r100/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r101: satisfied — event 122, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r101/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r102: satisfied — event 123, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r102/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r103: satisfied — event 124, call 2: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r103/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r104: not satisfied — 1 recorded call, and none named any of the 2 documents; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r105: satisfied — event 126, call 5: `Read docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r106: satisfied — event 127, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r106/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r107: satisfied — event 128, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r107/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r108: satisfied — event 129, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r108/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r109: satisfied — event 130, call 7: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r109/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r11: satisfied — event 131, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r11/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r110: satisfied — event 132, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r110/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r111: satisfied — event 133, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r111/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r112: satisfied — event 134, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r112/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r113: satisfied — event 135, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r113/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r114: not satisfied — 2 recorded calls, and none named any of the 2 documents; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r115: satisfied — event 137, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r115/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r116: satisfied — event 138, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r116/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r117: satisfied — event 139, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r117/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r118: satisfied — event 140, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r118/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r12: satisfied — event 141, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r12/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r13: satisfied — event 142, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r13/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r14: satisfied — event 143, call 6: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r14/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r15: satisfied — event 144, call 6: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r15/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r16: satisfied — event 145, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r16/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r17: satisfied — event 146, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r17/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r18: satisfied — event 147, call 3: `Bash {"command":"sed -n '1,80p' docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md"}`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r19: satisfied — event 148, call 5: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r19/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r2: satisfied — event 149, call 2: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r2/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r20: satisfied — event 150, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r20/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r21: satisfied — event 151, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r21/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r22: satisfied — event 152, call 4: `Bash {"command":"cat docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md"}`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r23: satisfied — event 153, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r23/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r24: satisfied — event 154, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r24/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r25: satisfied — event 155, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r25/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r26: satisfied — event 156, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r26/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r27: not satisfied — 2 recorded calls, and none named any of the 2 documents; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r28: satisfied — event 158, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r28/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r29: satisfied — event 159, call 2: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r29/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r3: satisfied — event 160, call 5: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r3/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r30: satisfied — event 161, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r30/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r31: satisfied — event 162, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r31/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r32: satisfied — event 163, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r32/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r33: satisfied — event 164, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r33/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r34: satisfied — event 165, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r34/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r35: satisfied — event 166, call 2: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r35/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r36: satisfied — event 167, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r36/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r37: satisfied — event 168, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r37/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r38: satisfied — event 169, call 2: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r38/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r39: satisfied — event 170, call 2: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r39/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r4: satisfied — event 171, call 2: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r4/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r40: satisfied — event 172, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r40/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r41: satisfied — event 173, call 5: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r41/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r42: satisfied — event 174, call 6: `Bash {"command":"./engine/target/dev-release/headwater explain docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md --root . 2>&1 | head -60","description":"Explain the candidate decision document"}`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r43: satisfied — event 175, call 6: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r43/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r44: satisfied — event 176, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r44/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r45: satisfied — event 177, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r45/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r46: satisfied — event 178, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r46/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r47: satisfied — event 179, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r47/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r48: satisfied — event 180, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r48/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r49: not satisfied — 2 recorded calls, and none named any of the 2 documents; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r5: satisfied — event 182, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r5/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r50: satisfied — event 183, call 6: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r50/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r51: satisfied — event 184, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r51/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r52: satisfied — event 185, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r52/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r53: satisfied — event 186, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r53/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r54: satisfied — event 187, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r54/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r55: satisfied — event 188, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r55/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r56: satisfied — event 189, call 2: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r56/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r57: satisfied — event 190, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r57/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r58: satisfied — event 191, call 2: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r58/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r59: satisfied — event 192, call 2: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r59/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r6: satisfied — event 193, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r6/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r60: satisfied — event 194, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r60/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r61: satisfied — event 195, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r61/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r62: satisfied — event 196, call 6: `Bash {"command":"test -f \"/var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r62/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md\" && echo EXISTS","description":"Verify the decision document path exists"}`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r63: satisfied — event 197, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r63/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r64: satisfied — event 198, call 5: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r64/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r65: satisfied — event 199, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r65/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r66: satisfied — event 200, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r66/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r67: satisfied — event 201, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r67/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r68: satisfied — event 202, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r68/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r69: satisfied — event 203, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r69/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r7: satisfied — event 204, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r7/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r70: satisfied — event 205, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r70/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r71: satisfied — event 206, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r71/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r72: satisfied — event 207, call 5: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r72/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r73: satisfied — event 208, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r73/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r74: satisfied — event 209, call 5: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r74/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r75: satisfied — event 210, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r75/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r76: satisfied — event 211, call 2: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r76/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r77: satisfied — event 212, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r77/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r78: not satisfied — 1 recorded call, and none named any of the 2 documents; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r79: satisfied — event 214, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r79/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r8: satisfied — event 215, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r8/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r80: satisfied — event 216, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r80/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r81: satisfied — event 217, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r81/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r82: satisfied — event 218, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r82/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r83: satisfied — event 219, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r83/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r84: satisfied — event 220, call 6: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r84/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r85: satisfied — event 221, call 6: `Bash {"command":"./engine/target/dev-release/headwater explain docs/evaluations/why-corpus-counts-are-derived-not-stored.md --root . 2>&1 | head -80","description":"Explain the candidate document's kind, purpose, and relations"}`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r86: satisfied — event 222, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r86/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r87: satisfied — event 223, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r87/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r88: satisfied — event 224, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r88/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r89: satisfied — event 225, call 2: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r89/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r9: satisfied — event 226, call 8: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r9/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r90: satisfied — event 227, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r90/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r91: satisfied — event 228, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r91/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r92: satisfied — event 229, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r92/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r93: satisfied — event 230, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r93/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r94: satisfied — event 231, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r94/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r95: satisfied — event 232, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r95/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r96: satisfied — event 233, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r96/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r97: satisfied — event 234, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r97/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r98: satisfied — event 235, call 4: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r98/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r99: satisfied — event 236, call 3: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p2-r99/docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
 - HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens (discovery, expects opened)
-    session L1-campaign-present-p3-r1: not satisfied — 17 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r10: not satisfied — 12 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r100: not satisfied — 13 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r101: not satisfied — 13 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r102: not satisfied — 9 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r103: satisfied — event 242, call 16: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p3-r103/docs/obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md`
-    session L1-campaign-present-p3-r104: not satisfied — 9 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r105: not satisfied — 10 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r106: not satisfied — 13 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r107: not satisfied — 9 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r108: satisfied — event 247, call 21: `Bash {"command":"sed -n '1,40p' docs/obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md 2>/dev/null","description":"Read the specification-kind gap obligation record"}`
-    session L1-campaign-present-p3-r109: not satisfied — 13 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r11: not satisfied — 11 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r110: not satisfied — 11 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r111: not satisfied — 21 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r112: not satisfied — 9 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r113: not satisfied — 18 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r114: not satisfied — 24 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r115: not satisfied — 16 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r116: not satisfied — 11 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r117: not satisfied — 25 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r118: not satisfied — 16 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r12: not satisfied — 14 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r13: not satisfied — 10 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r14: not satisfied — 13 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r15: not satisfied — 13 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r16: not satisfied — 10 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r17: not satisfied — 11 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r18: not satisfied — 12 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r19: not satisfied — 9 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r2: not satisfied — 9 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r20: not satisfied — 17 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r21: not satisfied — 8 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r22: not satisfied — 11 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r23: not satisfied — 19 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r24: not satisfied — 17 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r25: not satisfied — 18 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r26: not satisfied — 10 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r27: not satisfied — 8 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r28: not satisfied — 2 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r29: satisfied — event 277, call 24: `Bash {"command":"ls /var/tmp/hw-1659/b/ws/L1-campaign-present-p3-r29/.headwater/ids 2>&1\necho \"---\"\n./engine/target/dev-release/headwater explain docs/obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md --root . 2>&1 | head -40","description":"Check claim store contents and explain an example document"}`
-    session L1-campaign-present-p3-r3: satisfied — event 278, call 9: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p3-r3/docs/obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md`
-    session L1-campaign-present-p3-r30: not satisfied — 8 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r31: not satisfied — 12 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r32: not satisfied — 10 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r33: not satisfied — 11 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r34: not satisfied — 11 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r35: not satisfied — 9 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r36: not satisfied — 20 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r37: not satisfied — 9 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r38: not satisfied — 4 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r39: not satisfied — 7 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r4: not satisfied — 14 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r40: not satisfied — 11 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r41: not satisfied — 6 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r42: not satisfied — 13 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r43: not satisfied — 13 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r44: not satisfied — 9 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r45: not satisfied — 11 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r46: not satisfied — 9 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r47: not satisfied — 16 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r48: not satisfied — 14 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r49: not satisfied — 21 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r5: not satisfied — 13 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r50: not satisfied — 2 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r51: not satisfied — 13 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r52: not satisfied — 21 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r53: not satisfied — 13 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r54: not satisfied — 17 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r55: not satisfied — 8 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r56: not satisfied — 17 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r57: not satisfied — 18 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r58: not satisfied — 13 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r59: not satisfied — 7 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r6: not satisfied — 14 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r60: not satisfied — 12 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r61: satisfied — event 313, call 18: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p3-r61/docs/obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md`
-    session L1-campaign-present-p3-r62: not satisfied — 14 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r63: not satisfied — 15 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r64: not satisfied — 19 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r65: not satisfied — 12 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r66: not satisfied — 18 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r67: not satisfied — 5 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r68: not satisfied — 2 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r69: not satisfied — 2 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r7: not satisfied — 14 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r70: not satisfied — 13 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r71: not satisfied — 10 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r72: not satisfied — 11 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r73: not satisfied — 14 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r74: not satisfied — 6 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r75: not satisfied — 12 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r76: not satisfied — 17 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r77: not satisfied — 13 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r78: not satisfied — 14 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r79: not satisfied — 10 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r8: not satisfied — 9 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r80: not satisfied — 16 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r81: not satisfied — 13 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r82: not satisfied — 13 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r83: not satisfied — 20 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r84: not satisfied — 12 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r85: not satisfied — 10 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r86: not satisfied — 9 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r87: satisfied — event 341, call 17: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p3-r87/docs/obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md`
-    session L1-campaign-present-p3-r88: not satisfied — 20 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r89: not satisfied — 12 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r9: not satisfied — 11 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r90: not satisfied — 11 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r91: not satisfied — 15 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r92: not satisfied — 17 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r93: not satisfied — 11 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r94: satisfied — event 349, call 12: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p3-r94/docs/obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md`
-    session L1-campaign-present-p3-r95: not satisfied — 13 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r96: not satisfied — 7 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r97: not satisfied — 9 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r98: not satisfied — 12 recorded calls, and none named any of the 1 document
-    session L1-campaign-present-p3-r99: not satisfied — 13 recorded calls, and none named any of the 1 document
+    session L1-campaign-present-p3-r1: not satisfied — 17 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r10: not satisfied — 12 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r100: not satisfied — 13 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r101: not satisfied — 13 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r102: not satisfied — 9 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r103: satisfied — event 242, call 16: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p3-r103/docs/obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r104: not satisfied — 9 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r105: not satisfied — 10 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r106: not satisfied — 13 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r107: not satisfied — 9 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r108: satisfied — event 247, call 21: `Bash {"command":"sed -n '1,40p' docs/obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md 2>/dev/null","description":"Read the specification-kind gap obligation record"}`; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r109: not satisfied — 13 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r11: not satisfied — 11 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r110: not satisfied — 11 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r111: not satisfied — 21 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r112: not satisfied — 9 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r113: not satisfied — 18 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r114: not satisfied — 24 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r115: not satisfied — 16 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r116: not satisfied — 11 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r117: not satisfied — 25 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r118: not satisfied — 16 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r12: not satisfied — 14 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r13: not satisfied — 10 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r14: not satisfied — 13 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r15: not satisfied — 13 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r16: not satisfied — 10 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r17: not satisfied — 11 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r18: not satisfied — 12 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r19: not satisfied — 9 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r2: not satisfied — 9 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r20: not satisfied — 17 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r21: not satisfied — 8 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r22: not satisfied — 11 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r23: not satisfied — 19 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r24: not satisfied — 17 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r25: not satisfied — 18 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r26: not satisfied — 10 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r27: not satisfied — 8 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r28: not satisfied — 2 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r29: satisfied — event 277, call 24: `Bash {"command":"ls /var/tmp/hw-1659/b/ws/L1-campaign-present-p3-r29/.headwater/ids 2>&1\necho \"---\"\n./engine/target/dev-release/headwater explain docs/obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md --root . 2>&1 | head -40","description":"Check claim store contents and explain an example document"}`; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r3: satisfied — event 278, call 9: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p3-r3/docs/obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r30: not satisfied — 8 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r31: not satisfied — 12 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r32: not satisfied — 10 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r33: not satisfied — 11 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r34: not satisfied — 11 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r35: not satisfied — 9 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r36: not satisfied — 20 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r37: not satisfied — 9 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r38: not satisfied — 4 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r39: not satisfied — 7 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r4: not satisfied — 14 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r40: not satisfied — 11 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r41: not satisfied — 6 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r42: not satisfied — 13 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r43: not satisfied — 13 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r44: not satisfied — 9 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r45: not satisfied — 11 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r46: not satisfied — 9 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r47: not satisfied — 16 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r48: not satisfied — 14 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r49: not satisfied — 21 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r5: not satisfied — 13 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r50: not satisfied — 2 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r51: not satisfied — 13 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r52: not satisfied — 21 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r53: not satisfied — 13 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r54: not satisfied — 17 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r55: not satisfied — 8 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r56: not satisfied — 17 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r57: not satisfied — 18 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r58: not satisfied — 13 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r59: not satisfied — 7 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r6: not satisfied — 14 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r60: not satisfied — 12 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r61: satisfied — event 313, call 18: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p3-r61/docs/obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r62: not satisfied — 14 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r63: not satisfied — 15 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r64: not satisfied — 19 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r65: not satisfied — 12 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r66: not satisfied — 18 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r67: not satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r68: not satisfied — 2 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r69: not satisfied — 2 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r7: not satisfied — 14 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r70: not satisfied — 13 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r71: not satisfied — 10 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r72: not satisfied — 11 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r73: not satisfied — 14 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r74: not satisfied — 6 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r75: not satisfied — 12 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r76: not satisfied — 17 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r77: not satisfied — 13 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r78: not satisfied — 14 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r79: not satisfied — 10 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r8: not satisfied — 9 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r80: not satisfied — 16 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r81: not satisfied — 13 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r82: not satisfied — 13 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r83: not satisfied — 20 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r84: not satisfied — 12 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r85: not satisfied — 10 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r86: not satisfied — 9 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r87: satisfied — event 341, call 17: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p3-r87/docs/obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r88: not satisfied — 20 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r89: not satisfied — 12 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r9: not satisfied — 11 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r90: not satisfied — 11 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r91: not satisfied — 15 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r92: not satisfied — 17 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r93: not satisfied — 11 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r94: satisfied — event 349, call 12: `Read /var/tmp/hw-1659/b/ws/L1-campaign-present-p3-r94/docs/obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r95: not satisfied — 13 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r96: not satisfied — 7 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r97: not satisfied — 9 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r98: not satisfied — 12 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r99: not satisfied — 13 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+
+354 of 354 sessions that recorded their calls made no call to a tool of an MCP server. 0 sessions recorded no calls.
 
 ## The rate, and the denominator it is over
 

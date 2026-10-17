@@ -869,6 +869,31 @@ fn holds(
     }
 }
 
+/// #1774, clause 9: the share of sessions that never called the MCP server is
+/// read from a committed result, not by a scan of its transcript.
+///
+/// The figure is the issue's own: in the 2026-10-03 `mcp` arm navigability
+/// run, 117 of 150 sessions made no call to a tool of an MCP server. An
+/// independent count over the transcript's `## Events` block gives the same
+/// figure. This test reads the committed result in this repository, so a
+/// regeneration that dropped the sentence, or a grader that counted the
+/// argument text or read a missing `calls` key as 0, fails here.
+#[test]
+fn a_committed_result_states_how_many_sessions_never_called_the_mcp_server() {
+    let result = Path::new(env!("CARGO_MANIFEST_DIR")).join(
+        "../../../docs/probe-results/campaign-of-2026-10-03-campaign-tier-mcp-arm-navigability.md",
+    );
+    let committed = std::fs::read_to_string(&result).expect("the committed result reads");
+    assert!(
+        committed.contains(
+            "117 of 150 sessions that recorded their calls made no call to a tool of an MCP \
+             server. 0 sessions recorded no calls.\n"
+        ),
+        "{} does not state the share of sessions that never called the server",
+        result.display()
+    );
+}
+
 /// #1481, the owner's ruling of 2026-10-03: a committed result pins only what it
 /// read, so an unrelated merge cannot eject a queued pull request.
 ///

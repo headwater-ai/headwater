@@ -28,17 +28,19 @@ The selection this transcript names is `sha256:fc04ac718a7df0b14774c28174a93f9d4
 
 The `read_set` digest above covers every probe of the selection and every document one of them examines, by path and content. This file names it as provenance and compares it with nothing, and the same holds for the lock and the selection: an edit to a document, a new probe or a moved lock leaves these bytes alone. `headwater generate` names each result whose recorded lock, read set or selection moved, and `headwater probe stale` takes the digest and reports which recorded results a change voided. Neither one fails for it.
 
-Graded by grader 0.5.0.
+Graded by grader 0.5.1.
 A campaign run in the present arm, on claude-sonnet-5 at served version claude-sonnet-5.
 
 ## The verdicts
 
 - HW-PROBE-a-session-answers-from-the-register-without-opening-the-question-it-replaced (navigability, expects not_opened)
-    session L4-campaign-present-p2-r1: satisfied — 4 recorded calls, and none named any of the 1 document
+    session L4-campaign-present-p2-r1: satisfied — 4 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
 - HW-PROBE-an-agent-reaches-the-adjudication-from-the-document-that-lost-it (navigability, expects opened)
-    session L4-campaign-present-p1-r1: satisfied — event 1, call 2: `Read /home/james/probe-batches/980-pilot2-2026-09-28/ws/L4-campaign-present-p1-r1/docs/decisions/0008-probe-cost-and-cadence.md`
+    session L4-campaign-present-p1-r1: satisfied — event 1, call 2: `Read /home/james/probe-batches/980-pilot2-2026-09-28/ws/L4-campaign-present-p1-r1/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
 - HW-PROBE-what-a-session-writes-points-back-at-the-ruling-it-rests-on (navigability, expects cited)
-    session L4-campaign-present-p3-r1: satisfied — event 3: `engine/README.md` cites HW-DR-0049
+    session L4-campaign-present-p3-r1: satisfied — event 3: `engine/README.md` cites HW-DR-0049; no call to a tool of an MCP server
+
+3 of 3 sessions that recorded their calls made no call to a tool of an MCP server. 0 sessions recorded no calls.
 
 ## The rate, and the denominator it is over
 

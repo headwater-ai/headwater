@@ -74,8 +74,10 @@ use headwater_check::paint::{paint, ColorMode, Role};
 /// change that alters a verdict or the rendered grade moves it, and a release
 /// does not, so a release leaves every committed result as it was (#1317). It
 /// started at `0.5.0` because the grading code of engine 0.5.0 graded every
-/// result committed at that time.
-pub const VERSION: &str = "0.5.0";
+/// result committed at that time. It moved to `0.5.1` when each session line
+/// started to state its calls to a tool of an MCP server (#1774): no verdict
+/// moved, and the rendered grade grew.
+pub const VERSION: &str = "0.5.1";
 
 /// The confidence coefficient of the reported interval, at 95%.
 const Z: f64 = 1.959_964;
@@ -540,7 +542,7 @@ impl Results {
                     session: session[0].session.clone(),
                     events,
                     verdict: verdict(selected, &session),
-                    mcp_calls: None,
+                    mcp_calls: recorded_mcp_calls(&session),
                 });
             }
             if sessions.is_empty() {
@@ -603,6 +605,53 @@ impl Results {
         self.rows
             .iter()
             .flat_map(|row| row.sessions.iter().map(|session| &session.verdict))
+    }
+
+    /// How many sessions that recorded their calls made no call to a tool of
+    /// an MCP server, over how many recorded their calls, and how many recorded
+    /// none and were not counted. The placeholder row of a probe that no
+    /// session ran is no session and is in none of the three.
+    pub fn mcp_counts(&self) -> (usize, usize, usize) {
+        let (mut none, mut counted, mut uncounted) = (0, 0, 0);
+        for graded in self.rows.iter().flat_map(|row| row.sessions.iter()) {
+            if graded.session.is_empty() {
+                continue;
+            }
+            match graded.mcp_calls {
+                None => uncounted += 1,
+                Some(count) => {
+                    counted += 1;
+                    if count == 0 {
+                        none += 1;
+                    }
+                }
+            }
+        }
+        (none, counted, uncounted)
+    }
+
+    /// The sentence that states [`Results::mcp_counts`] with its denominator,
+    /// and `None` where the transcript ran no session at all.
+    fn mcp_summary(&self) -> Option<String> {
+        let (none, counted, uncounted) = self.mcp_counts();
+        if counted + uncounted == 0 {
+            return None;
+        }
+        let first = match counted {
+            0 => "No session recorded its calls, so no session was counted for calls to a tool \
+                  of an MCP server."
+                .to_string(),
+            _ => format!(
+                "{none} of {counted} sessions that recorded their calls made no call to a tool of \
+                 an MCP server."
+            ),
+        };
+        let second = match uncounted {
+            0 => "0 sessions recorded no calls.".to_string(),
+            1 => "1 session recorded no calls and was not counted.".to_string(),
+            other => format!("{other} sessions recorded no calls and were not counted."),
+        };
+        Some(format!("{first} {second}"))
     }
 
     /// The satisfied rate with its interval, and `None` where nothing was
@@ -680,15 +729,30 @@ impl Results {
                     true => "no session".to_string(),
                     false => format!("session {}", graded.session),
                 };
+                let mcp = match (graded.session.is_empty(), graded.mcp_calls) {
+                    (true, _) => String::new(),
+                    (false, None) => "; calls to a tool of an MCP server not counted, because \
+                                      the session recorded no calls"
+                        .to_string(),
+                    (false, Some(0)) => "; no call to a tool of an MCP server".to_string(),
+                    (false, Some(count)) => format!(
+                        "; {} to a tool of an MCP server",
+                        crate::plural(count, "call")
+                    ),
+                };
                 let _ = writeln!(
                     out,
-                    "    {session}: {} — {}",
+                    "    {session}: {} — {}{mcp}",
                     graded.verdict.name(),
                     graded.verdict.because()
                 );
             }
         }
         let _ = writeln!(out);
+        if let Some(sentence) = self.mcp_summary() {
+            let _ = writeln!(out, "{sentence}");
+            let _ = writeln!(out);
+        }
 
         let _ = writeln!(
             out,
@@ -1094,6 +1158,29 @@ fn recorded_calls(session: &[&Event]) -> Option<usize> {
     }
     total
 }
+
+/// The recorded calls of the session to a tool of an MCP server, and `None`
+/// where no event recorded any calls.
+///
+/// HW-DR-0111 defines a call to the server as a call whose tool name starts
+/// with `mcp__`, and `tools/probe/probe-record.sh` counts a raw session the same
+/// way. The prefix is matched on the tool name alone and with its case: a
+/// `Bash` call whose argument names an MCP tool did not call the server.
+fn recorded_mcp_calls(session: &[&Event]) -> Option<usize> {
+    let mut total = None;
+    for event in session {
+        if let Some(calls) = &event.calls {
+            *total.get_or_insert(0) += calls
+                .iter()
+                .filter(|call| call.tool.starts_with(MCP_PREFIX))
+                .count();
+        }
+    }
+    total
+}
+
+/// The prefix of the name of every tool an MCP server serves to a session.
+const MCP_PREFIX: &str = "mcp__";
 
 /// Every recorded artifact of the session, and `None` where no event recorded
 /// the key.
@@ -1763,7 +1850,10 @@ mod tests {
             "b",
             Some(vec![
                 call("Read", r#"{"file_path":"x"}"#),
-                call("Bash", r#"{"command":"headwater mcp__headwater__explain x"}"#),
+                call(
+                    "Bash",
+                    r#"{"command":"headwater mcp__headwater__explain x"}"#,
+                ),
                 call("mcp_headwater_route", r#"{}"#),
                 call("MCP__headwater__x", r#"{}"#),
             ]),
@@ -1797,9 +1887,9 @@ mod tests {
 
         let rendered = results.render(ColorMode::Plain);
         for clause in [
-            "session a: not satisfied — 3 recorded calls, and none opened any of the 1 document; 2 calls to a tool of an MCP server\n",
-            "session b: not satisfied — 4 recorded calls, and none opened any of the 1 document; no call to a tool of an MCP server\n",
-            "session c: not satisfied — 0 recorded calls, and none opened any of the 1 document; no call to a tool of an MCP server\n",
+            "session a: not satisfied — 3 recorded calls, and none named any of the 1 document; 2 calls to a tool of an MCP server\n",
+            "session b: not satisfied — 4 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server\n",
+            "session c: not satisfied — 0 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server\n",
             "2 of 3 sessions that recorded their calls made no call to a tool of an MCP server. 1 session recorded no calls and was not counted.\n",
         ] {
             assert!(rendered.contains(clause), "missing {clause:?} in:\n{rendered}");

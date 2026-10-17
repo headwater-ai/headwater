@@ -26,73 +26,75 @@ The selection this transcript names is `sha256:18ec419cfebb740a16b74470a04e90ca1
 
 The `read_set` digest above covers every probe of the selection and every document one of them examines, by path and content. This file names it as provenance and compares it with nothing, and the same holds for the lock and the selection: an edit to a document, a new probe or a moved lock leaves these bytes alone. `headwater generate` names each result whose recorded lock, read set or selection moved, and `headwater probe stale` takes the digest and reports which recorded results a change voided. Neither one fails for it.
 
-Graded by grader 0.5.0.
+Graded by grader 0.5.1.
 A documentation run in the absent arm, on claude-sonnet-5 at served version claude-sonnet-5.
 
 ## The verdicts
 
 - HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted (sufficiency, expects answered)
-    session L14-documentation-absent-p1-r1: not satisfied — event 1 answered `stamp`, and the probe expects `merge`
-    session L14-documentation-absent-p1-r10: not satisfied — event 2 answered `stamp`, and the probe expects `merge`
-    session L14-documentation-absent-p1-r11: not satisfied — event 3 answered `stamp`, and the probe expects `merge`
-    session L14-documentation-absent-p1-r12: not satisfied — event 4 answered `stamp`, and the probe expects `merge`
-    session L14-documentation-absent-p1-r13: not satisfied — event 5 answered `stamp`, and the probe expects `merge`
-    session L14-documentation-absent-p1-r14: not satisfied — event 6 answered `stamp`, and the probe expects `merge`
-    session L14-documentation-absent-p1-r15: not satisfied — event 7 answered `stamp`, and the probe expects `merge`
-    session L14-documentation-absent-p1-r16: not satisfied — event 8 answered `stamp`, and the probe expects `merge`
-    session L14-documentation-absent-p1-r17: not satisfied — event 9 answered `stamp`, and the probe expects `merge`
-    session L14-documentation-absent-p1-r18: not satisfied — event 10 answered `stamp`, and the probe expects `merge`
-    session L14-documentation-absent-p1-r19: not satisfied — event 11 answered `stamp`, and the probe expects `merge`
-    session L14-documentation-absent-p1-r2: not satisfied — event 12 answered `stamp`, and the probe expects `merge`
-    session L14-documentation-absent-p1-r20: not satisfied — event 13 answered `stamp`, and the probe expects `merge`
-    session L14-documentation-absent-p1-r21: not satisfied — event 14 answered `stamp`, and the probe expects `merge`
-    session L14-documentation-absent-p1-r22: not satisfied — event 15 answered `stamp`, and the probe expects `merge`
-    session L14-documentation-absent-p1-r23: not satisfied — event 16 answered `stamp`, and the probe expects `merge`
-    session L14-documentation-absent-p1-r24: not satisfied — event 17 answered `stamp`, and the probe expects `merge`
-    session L14-documentation-absent-p1-r25: not satisfied — event 18 answered `stamp`, and the probe expects `merge`
-    session L14-documentation-absent-p1-r26: not satisfied — event 19 answered `stamp`, and the probe expects `merge`
-    session L14-documentation-absent-p1-r27: not satisfied — event 20 answered `stamp`, and the probe expects `merge`
-    session L14-documentation-absent-p1-r28: not satisfied — event 21 answered `stamp`, and the probe expects `merge`
-    session L14-documentation-absent-p1-r29: not satisfied — event 22 answered `stamp`, and the probe expects `merge`
-    session L14-documentation-absent-p1-r3: not satisfied — event 23 answered `stamp`, and the probe expects `merge`
-    session L14-documentation-absent-p1-r30: not satisfied — event 24 answered `stamp`, and the probe expects `merge`
-    session L14-documentation-absent-p1-r4: not satisfied — event 25 answered `stamp`, and the probe expects `merge`
-    session L14-documentation-absent-p1-r5: not satisfied — event 26 answered `stamp`, and the probe expects `merge`
-    session L14-documentation-absent-p1-r6: not satisfied — event 27 answered `stamp`, and the probe expects `merge`
-    session L14-documentation-absent-p1-r7: not satisfied — event 28 answered `stamp`, and the probe expects `merge`
-    session L14-documentation-absent-p1-r8: not satisfied — event 29 answered `stamp`, and the probe expects `merge`
-    session L14-documentation-absent-p1-r9: satisfied — event 30: answered `merge`
+    session L14-documentation-absent-p1-r1: not satisfied — event 1 answered `stamp`, and the probe expects `merge`; no call to a tool of an MCP server
+    session L14-documentation-absent-p1-r10: not satisfied — event 2 answered `stamp`, and the probe expects `merge`; no call to a tool of an MCP server
+    session L14-documentation-absent-p1-r11: not satisfied — event 3 answered `stamp`, and the probe expects `merge`; no call to a tool of an MCP server
+    session L14-documentation-absent-p1-r12: not satisfied — event 4 answered `stamp`, and the probe expects `merge`; no call to a tool of an MCP server
+    session L14-documentation-absent-p1-r13: not satisfied — event 5 answered `stamp`, and the probe expects `merge`; no call to a tool of an MCP server
+    session L14-documentation-absent-p1-r14: not satisfied — event 6 answered `stamp`, and the probe expects `merge`; no call to a tool of an MCP server
+    session L14-documentation-absent-p1-r15: not satisfied — event 7 answered `stamp`, and the probe expects `merge`; no call to a tool of an MCP server
+    session L14-documentation-absent-p1-r16: not satisfied — event 8 answered `stamp`, and the probe expects `merge`; no call to a tool of an MCP server
+    session L14-documentation-absent-p1-r17: not satisfied — event 9 answered `stamp`, and the probe expects `merge`; no call to a tool of an MCP server
+    session L14-documentation-absent-p1-r18: not satisfied — event 10 answered `stamp`, and the probe expects `merge`; no call to a tool of an MCP server
+    session L14-documentation-absent-p1-r19: not satisfied — event 11 answered `stamp`, and the probe expects `merge`; no call to a tool of an MCP server
+    session L14-documentation-absent-p1-r2: not satisfied — event 12 answered `stamp`, and the probe expects `merge`; no call to a tool of an MCP server
+    session L14-documentation-absent-p1-r20: not satisfied — event 13 answered `stamp`, and the probe expects `merge`; no call to a tool of an MCP server
+    session L14-documentation-absent-p1-r21: not satisfied — event 14 answered `stamp`, and the probe expects `merge`; no call to a tool of an MCP server
+    session L14-documentation-absent-p1-r22: not satisfied — event 15 answered `stamp`, and the probe expects `merge`; no call to a tool of an MCP server
+    session L14-documentation-absent-p1-r23: not satisfied — event 16 answered `stamp`, and the probe expects `merge`; no call to a tool of an MCP server
+    session L14-documentation-absent-p1-r24: not satisfied — event 17 answered `stamp`, and the probe expects `merge`; no call to a tool of an MCP server
+    session L14-documentation-absent-p1-r25: not satisfied — event 18 answered `stamp`, and the probe expects `merge`; no call to a tool of an MCP server
+    session L14-documentation-absent-p1-r26: not satisfied — event 19 answered `stamp`, and the probe expects `merge`; no call to a tool of an MCP server
+    session L14-documentation-absent-p1-r27: not satisfied — event 20 answered `stamp`, and the probe expects `merge`; no call to a tool of an MCP server
+    session L14-documentation-absent-p1-r28: not satisfied — event 21 answered `stamp`, and the probe expects `merge`; no call to a tool of an MCP server
+    session L14-documentation-absent-p1-r29: not satisfied — event 22 answered `stamp`, and the probe expects `merge`; no call to a tool of an MCP server
+    session L14-documentation-absent-p1-r3: not satisfied — event 23 answered `stamp`, and the probe expects `merge`; no call to a tool of an MCP server
+    session L14-documentation-absent-p1-r30: not satisfied — event 24 answered `stamp`, and the probe expects `merge`; no call to a tool of an MCP server
+    session L14-documentation-absent-p1-r4: not satisfied — event 25 answered `stamp`, and the probe expects `merge`; no call to a tool of an MCP server
+    session L14-documentation-absent-p1-r5: not satisfied — event 26 answered `stamp`, and the probe expects `merge`; no call to a tool of an MCP server
+    session L14-documentation-absent-p1-r6: not satisfied — event 27 answered `stamp`, and the probe expects `merge`; no call to a tool of an MCP server
+    session L14-documentation-absent-p1-r7: not satisfied — event 28 answered `stamp`, and the probe expects `merge`; no call to a tool of an MCP server
+    session L14-documentation-absent-p1-r8: not satisfied — event 29 answered `stamp`, and the probe expects `merge`; no call to a tool of an MCP server
+    session L14-documentation-absent-p1-r9: satisfied — event 30: answered `merge`; no call to a tool of an MCP server
 - HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request (sufficiency, expects answered)
-    session L14-documentation-absent-p2-r1: satisfied — event 31: answered `current HW-DR-0052`
-    session L14-documentation-absent-p2-r10: not satisfied — the session ended with no answer
-    session L14-documentation-absent-p2-r11: satisfied — event 33: answered `current HW-DR-0052`
-    session L14-documentation-absent-p2-r12: satisfied — event 34: answered `current HW-DR-0052`
-    session L14-documentation-absent-p2-r13: satisfied — event 35: answered `current HW-DR-0052`
-    session L14-documentation-absent-p2-r14: satisfied — event 36: answered `current HW-DR-0052`
-    session L14-documentation-absent-p2-r15: satisfied — event 37: answered `current HW-DR-0052`
-    session L14-documentation-absent-p2-r16: not satisfied — the session ended with no answer
-    session L14-documentation-absent-p2-r17: satisfied — event 39: answered `current HW-DR-0052`
-    session L14-documentation-absent-p2-r18: satisfied — event 40: answered `current HW-DR-0052`
-    session L14-documentation-absent-p2-r19: satisfied — event 41: answered `current HW-DR-0052`
-    session L14-documentation-absent-p2-r2: satisfied — event 42: answered `current HW-DR-0052`
-    session L14-documentation-absent-p2-r20: satisfied — event 43: answered `current HW-DR-0052`
-    session L14-documentation-absent-p2-r21: not satisfied — the session ended with no answer
-    session L14-documentation-absent-p2-r22: satisfied — event 45: answered `current HW-DR-0052`
-    session L14-documentation-absent-p2-r23: satisfied — event 46: answered `current HW-DR-0052`
-    session L14-documentation-absent-p2-r24: satisfied — event 47: answered `current HW-DR-0052`
-    session L14-documentation-absent-p2-r25: satisfied — event 48: answered `current HW-DR-0052`
-    session L14-documentation-absent-p2-r26: satisfied — event 49: answered `current HW-DR-0052`
-    session L14-documentation-absent-p2-r27: not satisfied — event 50 answered `draft HW-DR-0052`, and the probe expects `current HW-DR-0052`
-    session L14-documentation-absent-p2-r28: satisfied — event 51: answered `current HW-DR-0052`
-    session L14-documentation-absent-p2-r29: satisfied — event 52: answered `current HW-DR-0052`
-    session L14-documentation-absent-p2-r3: not satisfied — the session ended with no answer
-    session L14-documentation-absent-p2-r30: satisfied — event 54: answered `current HW-DR-0052`
-    session L14-documentation-absent-p2-r4: satisfied — event 55: answered `current HW-DR-0052`
-    session L14-documentation-absent-p2-r5: satisfied — event 56: answered `current HW-DR-0052`
-    session L14-documentation-absent-p2-r6: not satisfied — the session ended with no answer
-    session L14-documentation-absent-p2-r7: not satisfied — the session ended with no answer
-    session L14-documentation-absent-p2-r8: not satisfied — event 59 answered `draft HW-DR-0052`, and the probe expects `current HW-DR-0052`
-    session L14-documentation-absent-p2-r9: satisfied — event 60: answered `current HW-DR-0052`
+    session L14-documentation-absent-p2-r1: satisfied — event 31: answered `current HW-DR-0052`; no call to a tool of an MCP server
+    session L14-documentation-absent-p2-r10: not satisfied — the session ended with no answer; no call to a tool of an MCP server
+    session L14-documentation-absent-p2-r11: satisfied — event 33: answered `current HW-DR-0052`; no call to a tool of an MCP server
+    session L14-documentation-absent-p2-r12: satisfied — event 34: answered `current HW-DR-0052`; no call to a tool of an MCP server
+    session L14-documentation-absent-p2-r13: satisfied — event 35: answered `current HW-DR-0052`; no call to a tool of an MCP server
+    session L14-documentation-absent-p2-r14: satisfied — event 36: answered `current HW-DR-0052`; no call to a tool of an MCP server
+    session L14-documentation-absent-p2-r15: satisfied — event 37: answered `current HW-DR-0052`; no call to a tool of an MCP server
+    session L14-documentation-absent-p2-r16: not satisfied — the session ended with no answer; no call to a tool of an MCP server
+    session L14-documentation-absent-p2-r17: satisfied — event 39: answered `current HW-DR-0052`; no call to a tool of an MCP server
+    session L14-documentation-absent-p2-r18: satisfied — event 40: answered `current HW-DR-0052`; no call to a tool of an MCP server
+    session L14-documentation-absent-p2-r19: satisfied — event 41: answered `current HW-DR-0052`; no call to a tool of an MCP server
+    session L14-documentation-absent-p2-r2: satisfied — event 42: answered `current HW-DR-0052`; no call to a tool of an MCP server
+    session L14-documentation-absent-p2-r20: satisfied — event 43: answered `current HW-DR-0052`; no call to a tool of an MCP server
+    session L14-documentation-absent-p2-r21: not satisfied — the session ended with no answer; no call to a tool of an MCP server
+    session L14-documentation-absent-p2-r22: satisfied — event 45: answered `current HW-DR-0052`; no call to a tool of an MCP server
+    session L14-documentation-absent-p2-r23: satisfied — event 46: answered `current HW-DR-0052`; no call to a tool of an MCP server
+    session L14-documentation-absent-p2-r24: satisfied — event 47: answered `current HW-DR-0052`; no call to a tool of an MCP server
+    session L14-documentation-absent-p2-r25: satisfied — event 48: answered `current HW-DR-0052`; no call to a tool of an MCP server
+    session L14-documentation-absent-p2-r26: satisfied — event 49: answered `current HW-DR-0052`; no call to a tool of an MCP server
+    session L14-documentation-absent-p2-r27: not satisfied — event 50 answered `draft HW-DR-0052`, and the probe expects `current HW-DR-0052`; no call to a tool of an MCP server
+    session L14-documentation-absent-p2-r28: satisfied — event 51: answered `current HW-DR-0052`; no call to a tool of an MCP server
+    session L14-documentation-absent-p2-r29: satisfied — event 52: answered `current HW-DR-0052`; no call to a tool of an MCP server
+    session L14-documentation-absent-p2-r3: not satisfied — the session ended with no answer; no call to a tool of an MCP server
+    session L14-documentation-absent-p2-r30: satisfied — event 54: answered `current HW-DR-0052`; no call to a tool of an MCP server
+    session L14-documentation-absent-p2-r4: satisfied — event 55: answered `current HW-DR-0052`; no call to a tool of an MCP server
+    session L14-documentation-absent-p2-r5: satisfied — event 56: answered `current HW-DR-0052`; no call to a tool of an MCP server
+    session L14-documentation-absent-p2-r6: not satisfied — the session ended with no answer; no call to a tool of an MCP server
+    session L14-documentation-absent-p2-r7: not satisfied — the session ended with no answer; no call to a tool of an MCP server
+    session L14-documentation-absent-p2-r8: not satisfied — event 59 answered `draft HW-DR-0052`, and the probe expects `current HW-DR-0052`; no call to a tool of an MCP server
+    session L14-documentation-absent-p2-r9: satisfied — event 60: answered `current HW-DR-0052`; no call to a tool of an MCP server
+
+60 of 60 sessions that recorded their calls made no call to a tool of an MCP server. 0 sessions recorded no calls.
 
 ## The rate, and the denominator it is over
 

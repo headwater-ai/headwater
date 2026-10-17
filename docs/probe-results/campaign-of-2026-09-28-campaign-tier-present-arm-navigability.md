@@ -28,104 +28,106 @@ The selection this transcript names is `sha256:fc04ac718a7df0b14774c28174a93f9d4
 
 The `read_set` digest above covers every probe of the selection and every document one of them examines, by path and content. This file names it as provenance and compares it with nothing, and the same holds for the lock and the selection: an edit to a document, a new probe or a moved lock leaves these bytes alone. `headwater generate` names each result whose recorded lock, read set or selection moved, and `headwater probe stale` takes the digest and reports which recorded results a change voided. Neither one fails for it.
 
-Graded by grader 0.5.0.
+Graded by grader 0.5.1.
 A campaign run in the present arm, on claude-sonnet-5 at served version claude-sonnet-5.
 
 ## The verdicts
 
 - HW-PROBE-a-session-answers-from-the-register-without-opening-the-question-it-replaced (navigability, expects not_opened)
-    session L4-campaign-present-p2-r1: satisfied — 3 recorded calls, and none named any of the 1 document
-    session L4-campaign-present-p2-r10: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L4-campaign-present-p2-r11: satisfied — 3 recorded calls, and none named any of the 1 document
-    session L4-campaign-present-p2-r12: satisfied — 6 recorded calls, and none named any of the 1 document
-    session L4-campaign-present-p2-r13: satisfied — 4 recorded calls, and none named any of the 1 document
-    session L4-campaign-present-p2-r14: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L4-campaign-present-p2-r15: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L4-campaign-present-p2-r16: satisfied — 7 recorded calls, and none named any of the 1 document
-    session L4-campaign-present-p2-r17: satisfied — 3 recorded calls, and none named any of the 1 document
-    session L4-campaign-present-p2-r18: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L4-campaign-present-p2-r19: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L4-campaign-present-p2-r2: satisfied — 8 recorded calls, and none named any of the 1 document
-    session L4-campaign-present-p2-r20: not satisfied — event 43, call 5 read `{"command":"sed -n '1,20p' docs/spec/09-open-questions.md; echo ---; sed -n '115,140p' docs/spec/09-open-questions.md; echo ===DECISIONS===; sed -n '1,20p' docs/spec/09-decisions.md; echo ---; sed -n '128,140p' docs/spec/09-decisions.md","description":"Inspect open-questions and decisions spec files around Q20"}`
-    session L4-campaign-present-p2-r21: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L4-campaign-present-p2-r22: satisfied — 3 recorded calls, and none named any of the 1 document
-    session L4-campaign-present-p2-r23: not satisfied — event 46, call 6 read `{"command":"grep -n -i \"scent\" docs/spec/09-decisions.md docs/spec/09-open-questions.md","description":"Find mentions of scent in the decisions/open-questions spec files"}`
-    session L4-campaign-present-p2-r24: satisfied — 4 recorded calls, and none named any of the 1 document
-    session L4-campaign-present-p2-r25: satisfied — 6 recorded calls, and none named any of the 1 document
-    session L4-campaign-present-p2-r26: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L4-campaign-present-p2-r27: satisfied — 6 recorded calls, and none named any of the 1 document
-    session L4-campaign-present-p2-r28: satisfied — 4 recorded calls, and none named any of the 1 document
-    session L4-campaign-present-p2-r29: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L4-campaign-present-p2-r3: satisfied — 3 recorded calls, and none named any of the 1 document
-    session L4-campaign-present-p2-r30: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L4-campaign-present-p2-r4: satisfied — 3 recorded calls, and none named any of the 1 document
-    session L4-campaign-present-p2-r5: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L4-campaign-present-p2-r6: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L4-campaign-present-p2-r7: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L4-campaign-present-p2-r8: satisfied — 7 recorded calls, and none named any of the 1 document
-    session L4-campaign-present-p2-r9: satisfied — 5 recorded calls, and none named any of the 1 document
+    session L4-campaign-present-p2-r1: satisfied — 3 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L4-campaign-present-p2-r10: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L4-campaign-present-p2-r11: satisfied — 3 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L4-campaign-present-p2-r12: satisfied — 6 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L4-campaign-present-p2-r13: satisfied — 4 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L4-campaign-present-p2-r14: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L4-campaign-present-p2-r15: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L4-campaign-present-p2-r16: satisfied — 7 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L4-campaign-present-p2-r17: satisfied — 3 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L4-campaign-present-p2-r18: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L4-campaign-present-p2-r19: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L4-campaign-present-p2-r2: satisfied — 8 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L4-campaign-present-p2-r20: not satisfied — event 43, call 5 read `{"command":"sed -n '1,20p' docs/spec/09-open-questions.md; echo ---; sed -n '115,140p' docs/spec/09-open-questions.md; echo ===DECISIONS===; sed -n '1,20p' docs/spec/09-decisions.md; echo ---; sed -n '128,140p' docs/spec/09-decisions.md","description":"Inspect open-questions and decisions spec files around Q20"}`; no call to a tool of an MCP server
+    session L4-campaign-present-p2-r21: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L4-campaign-present-p2-r22: satisfied — 3 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L4-campaign-present-p2-r23: not satisfied — event 46, call 6 read `{"command":"grep -n -i \"scent\" docs/spec/09-decisions.md docs/spec/09-open-questions.md","description":"Find mentions of scent in the decisions/open-questions spec files"}`; no call to a tool of an MCP server
+    session L4-campaign-present-p2-r24: satisfied — 4 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L4-campaign-present-p2-r25: satisfied — 6 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L4-campaign-present-p2-r26: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L4-campaign-present-p2-r27: satisfied — 6 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L4-campaign-present-p2-r28: satisfied — 4 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L4-campaign-present-p2-r29: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L4-campaign-present-p2-r3: satisfied — 3 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L4-campaign-present-p2-r30: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L4-campaign-present-p2-r4: satisfied — 3 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L4-campaign-present-p2-r5: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L4-campaign-present-p2-r6: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L4-campaign-present-p2-r7: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L4-campaign-present-p2-r8: satisfied — 7 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L4-campaign-present-p2-r9: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
 - HW-PROBE-an-agent-reaches-the-adjudication-from-the-document-that-lost-it (navigability, expects opened)
-    session L4-campaign-present-p1-r1: satisfied — event 1, call 2: `Bash {"command":"cat \"docs/decisions/0008-probe-cost-and-cadence.md\""}`
-    session L4-campaign-present-p1-r10: satisfied — event 2, call 2: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r10/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L4-campaign-present-p1-r11: satisfied — event 3, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r11/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L4-campaign-present-p1-r12: satisfied — event 4, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r12/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L4-campaign-present-p1-r13: satisfied — event 5, call 2: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r13/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L4-campaign-present-p1-r14: satisfied — event 6, call 2: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r14/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L4-campaign-present-p1-r15: satisfied — event 7, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r15/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L4-campaign-present-p1-r16: satisfied — event 8, call 2: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r16/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L4-campaign-present-p1-r17: satisfied — event 9, call 7: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r17/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L4-campaign-present-p1-r18: satisfied — event 10, call 7: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r18/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L4-campaign-present-p1-r19: satisfied — event 11, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r19/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L4-campaign-present-p1-r2: satisfied — event 12, call 5: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r2/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L4-campaign-present-p1-r20: satisfied — event 13, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r20/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L4-campaign-present-p1-r21: satisfied — event 14, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r21/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L4-campaign-present-p1-r22: satisfied — event 15, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r22/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L4-campaign-present-p1-r23: satisfied — event 16, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r23/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L4-campaign-present-p1-r24: satisfied — event 17, call 5: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r24/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L4-campaign-present-p1-r25: satisfied — event 18, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r25/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L4-campaign-present-p1-r26: satisfied — event 19, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r26/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L4-campaign-present-p1-r27: satisfied — event 20, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r27/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L4-campaign-present-p1-r28: satisfied — event 21, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r28/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L4-campaign-present-p1-r29: satisfied — event 22, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r29/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L4-campaign-present-p1-r3: satisfied — event 23, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r3/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L4-campaign-present-p1-r30: satisfied — event 24, call 3: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r30/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L4-campaign-present-p1-r4: satisfied — event 25, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r4/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L4-campaign-present-p1-r5: satisfied — event 26, call 5: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r5/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L4-campaign-present-p1-r6: satisfied — event 27, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r6/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L4-campaign-present-p1-r7: satisfied — event 28, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r7/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L4-campaign-present-p1-r8: satisfied — event 29, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r8/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L4-campaign-present-p1-r9: satisfied — event 30, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r9/docs/decisions/0008-probe-cost-and-cadence.md`
+    session L4-campaign-present-p1-r1: satisfied — event 1, call 2: `Bash {"command":"cat \"docs/decisions/0008-probe-cost-and-cadence.md\""}`; no call to a tool of an MCP server
+    session L4-campaign-present-p1-r10: satisfied — event 2, call 2: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r10/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L4-campaign-present-p1-r11: satisfied — event 3, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r11/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L4-campaign-present-p1-r12: satisfied — event 4, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r12/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L4-campaign-present-p1-r13: satisfied — event 5, call 2: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r13/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L4-campaign-present-p1-r14: satisfied — event 6, call 2: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r14/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L4-campaign-present-p1-r15: satisfied — event 7, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r15/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L4-campaign-present-p1-r16: satisfied — event 8, call 2: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r16/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L4-campaign-present-p1-r17: satisfied — event 9, call 7: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r17/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L4-campaign-present-p1-r18: satisfied — event 10, call 7: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r18/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L4-campaign-present-p1-r19: satisfied — event 11, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r19/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L4-campaign-present-p1-r2: satisfied — event 12, call 5: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r2/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L4-campaign-present-p1-r20: satisfied — event 13, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r20/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L4-campaign-present-p1-r21: satisfied — event 14, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r21/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L4-campaign-present-p1-r22: satisfied — event 15, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r22/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L4-campaign-present-p1-r23: satisfied — event 16, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r23/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L4-campaign-present-p1-r24: satisfied — event 17, call 5: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r24/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L4-campaign-present-p1-r25: satisfied — event 18, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r25/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L4-campaign-present-p1-r26: satisfied — event 19, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r26/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L4-campaign-present-p1-r27: satisfied — event 20, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r27/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L4-campaign-present-p1-r28: satisfied — event 21, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r28/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L4-campaign-present-p1-r29: satisfied — event 22, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r29/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L4-campaign-present-p1-r3: satisfied — event 23, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r3/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L4-campaign-present-p1-r30: satisfied — event 24, call 3: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r30/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L4-campaign-present-p1-r4: satisfied — event 25, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r4/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L4-campaign-present-p1-r5: satisfied — event 26, call 5: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r5/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L4-campaign-present-p1-r6: satisfied — event 27, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r6/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L4-campaign-present-p1-r7: satisfied — event 28, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r7/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L4-campaign-present-p1-r8: satisfied — event 29, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r8/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L4-campaign-present-p1-r9: satisfied — event 30, call 4: `Read /home/james/probe-batches/980-full-2026-09-28/ws/L4-campaign-present-p1-r9/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
 - HW-PROBE-what-a-session-writes-points-back-at-the-ruling-it-rests-on (navigability, expects cited)
-    session L4-campaign-present-p3-r1: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L4-campaign-present-p3-r10: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L4-campaign-present-p3-r11: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L4-campaign-present-p3-r12: satisfied — event 64: `docs/evaluations/why-corpus-counts-are-derived-not-stored.md` cites HW-DR-0049
-    session L4-campaign-present-p3-r13: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L4-campaign-present-p3-r14: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L4-campaign-present-p3-r15: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L4-campaign-present-p3-r16: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L4-campaign-present-p3-r17: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L4-campaign-present-p3-r18: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L4-campaign-present-p3-r19: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L4-campaign-present-p3-r2: satisfied — event 72: `engine/crates/census/src/census.rs` cites HW-DR-0049
-    session L4-campaign-present-p3-r20: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L4-campaign-present-p3-r21: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L4-campaign-present-p3-r22: satisfied — event 75: `engine/crates/census/src/census.rs` cites HW-DR-0049
-    session L4-campaign-present-p3-r23: satisfied — event 76: `.github/workflows/ci.yml` cites HW-DR-0049
-    session L4-campaign-present-p3-r24: satisfied — event 77: `docs/evaluations/why-corpus-counts-are-derived-not-stored.md` cites HW-DR-0049
-    session L4-campaign-present-p3-r25: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L4-campaign-present-p3-r26: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L4-campaign-present-p3-r27: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L4-campaign-present-p3-r28: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L4-campaign-present-p3-r29: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L4-campaign-present-p3-r3: satisfied — event 83: `engine/crates/audit/src/render.rs` cites HW-DR-0049
-    session L4-campaign-present-p3-r30: satisfied — event 84: `docs/explanations/a-count-over-the-whole-corpus-is-worked-out-when-it-is-read-not-kept-in-a-committed-file.md` cites HW-DR-0049
-    session L4-campaign-present-p3-r4: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L4-campaign-present-p3-r5: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L4-campaign-present-p3-r6: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L4-campaign-present-p3-r7: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L4-campaign-present-p3-r8: satisfied — event 89: `engine/crates/census/src/census.rs` cites HW-DR-0049
-    session L4-campaign-present-p3-r9: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
+    session L4-campaign-present-p3-r1: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L4-campaign-present-p3-r10: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L4-campaign-present-p3-r11: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L4-campaign-present-p3-r12: satisfied — event 64: `docs/evaluations/why-corpus-counts-are-derived-not-stored.md` cites HW-DR-0049; no call to a tool of an MCP server
+    session L4-campaign-present-p3-r13: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L4-campaign-present-p3-r14: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L4-campaign-present-p3-r15: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L4-campaign-present-p3-r16: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L4-campaign-present-p3-r17: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L4-campaign-present-p3-r18: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L4-campaign-present-p3-r19: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L4-campaign-present-p3-r2: satisfied — event 72: `engine/crates/census/src/census.rs` cites HW-DR-0049; no call to a tool of an MCP server
+    session L4-campaign-present-p3-r20: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L4-campaign-present-p3-r21: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L4-campaign-present-p3-r22: satisfied — event 75: `engine/crates/census/src/census.rs` cites HW-DR-0049; no call to a tool of an MCP server
+    session L4-campaign-present-p3-r23: satisfied — event 76: `.github/workflows/ci.yml` cites HW-DR-0049; no call to a tool of an MCP server
+    session L4-campaign-present-p3-r24: satisfied — event 77: `docs/evaluations/why-corpus-counts-are-derived-not-stored.md` cites HW-DR-0049; no call to a tool of an MCP server
+    session L4-campaign-present-p3-r25: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L4-campaign-present-p3-r26: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L4-campaign-present-p3-r27: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L4-campaign-present-p3-r28: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L4-campaign-present-p3-r29: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L4-campaign-present-p3-r3: satisfied — event 83: `engine/crates/audit/src/render.rs` cites HW-DR-0049; no call to a tool of an MCP server
+    session L4-campaign-present-p3-r30: satisfied — event 84: `docs/explanations/a-count-over-the-whole-corpus-is-worked-out-when-it-is-read-not-kept-in-a-committed-file.md` cites HW-DR-0049; no call to a tool of an MCP server
+    session L4-campaign-present-p3-r4: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L4-campaign-present-p3-r5: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L4-campaign-present-p3-r6: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L4-campaign-present-p3-r7: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L4-campaign-present-p3-r8: satisfied — event 89: `engine/crates/census/src/census.rs` cites HW-DR-0049; no call to a tool of an MCP server
+    session L4-campaign-present-p3-r9: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+
+90 of 90 sessions that recorded their calls made no call to a tool of an MCP server. 0 sessions recorded no calls.
 
 ## The rate, and the denominator it is over
 
