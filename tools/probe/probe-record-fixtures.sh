@@ -4779,7 +4779,7 @@ if [ -x "$engine" ]; then
     present "each round's count is computed from its rates" "so ceil(219 / 4) = 55 repetitions of each probe" "$scratch/add.out"
     present "the ceiling of zero refuses every plan" "The ceiling refuses 46 of 46 plans" "$scratch/add.out"
     same "and it builds and checks each of the 14 scenario trees" "14" \
-        "$(sed -n 's/^tree additive \(scenario-[0-9]*\)[ :].*/\1/p' "$scratch/add.out" | sort -u | wc -l | tr -d ' ')"
+        "$(sed -n 's/^tree additive \(scenario-[0-9]*\)[ :].*/\1/p' "$scratch/add.out" | LC_ALL=C sort -u | wc -l | tr -d ' ')"
     present "a hit in the harness layer of scenario 13 prints as harness" \
         "leak check, scenario-13 tree: harness HW-PROBE-a-session-says-whether-a-command-or-a-hand-writes-a-governs-line .claude/skills/hw-corpus/SKILL.md HW-DR-0104" "$scratch/add.out"
     absent "and no scenario tree leaks" " tree: leak " "$scratch/add.out"
@@ -4814,7 +4814,7 @@ if [ -x "$engine" ]; then
         --spec "$additive_spec" > "$scratch/add-body.out" 2> "$scratch/add-body.err"
     same "a leak string in a skills-layer skill body fails the additive dry run with 8" "8" "$?"
     same "and it names every scenario that holds skills, and no other" "4 8 10 11 12 13" \
-        "$(sed -n "s/^leak check, scenario-\([0-9]*\) tree: leak .*headwater-orient\/SKILL.md $body_string$/\1/p" "$scratch/add-body.out" | sort -n | tr '\n' ' ' | sed 's/ $//')"
+        "$(sed -n "s/^leak check, scenario-\([0-9]*\) tree: leak .*headwater-orient\/SKILL.md $body_string$/\1/p" "$scratch/add-body.out" | LC_ALL=C sort -n | tr '\n' ' ' | sed 's/ $//')"
     present "and prints the round sums all the same" "total: 7112 sessions" "$scratch/add-body.out"
 
     # The hook's text: the pointer probe's route names its own target, and no
@@ -4827,7 +4827,7 @@ if [ -x "$engine" ]; then
         --spec "$additive_spec" > "$scratch/add-hook.out" 2> "$scratch/add-hook.err"
     same "a leak string in the hook's text fails the additive dry run with 8" "8" "$?"
     same "and it names every scenario that holds the hook, and no other" "5 7 9 10 11 12 13" \
-        "$(sed -n "s|^leak check, scenario-\([0-9]*\) tree: leak $pointer_probe hook:$pointer_probe $hook_string$|\1|p" "$scratch/add-hook.out" | sort -n | tr '\n' ' ' | sed 's/ $//')"
+        "$(sed -n "s|^leak check, scenario-\([0-9]*\) tree: leak $pointer_probe hook:$pointer_probe $hook_string$|\1|p" "$scratch/add-hook.out" | LC_ALL=C sort -n | tr '\n' ' ' | sed 's/ $//')"
     same "and no scenario leaks through another channel" "0" \
         "$(grep ' tree: leak ' "$scratch/add-hook.out" | grep -vc " hook:$pointer_probe ")"
 

@@ -444,8 +444,9 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 root,
                 tier.as_deref(),
                 arm.as_deref(),
-                category.as_deref(),
-                set,
+                // `--category` and `--set` are the one selection clap lets
+                // a caller name, so they travel as one argument.
+                (category.as_deref(), set),
                 seed,
                 exclude,
                 repetitions,
@@ -5594,8 +5595,7 @@ fn probe_plan_read(
     root: &Path,
     tier: Option<&str>,
     arm: Option<&str>,
-    category: Option<&str>,
-    set: Option<String>,
+    (category, set): (Option<&str>, Option<String>),
     seed: u64,
     exclude: Vec<String>,
     repetitions: Option<u32>,
