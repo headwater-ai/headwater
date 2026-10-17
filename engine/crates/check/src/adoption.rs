@@ -543,10 +543,14 @@ impl Ledger {
         // block still states `0 pairs open`, because spec 7 asks for the count
         // on every run (HW-OBL-0152).
         //
-        // Every line below carries its own `\n` inside the text it hands to
-        // `crate::fill::filled`, because the fill keeps a trailing newline and
-        // adds none. A line without one runs on into the next line, and the
-        // caller's next line after the last (#1495).
+        // Every line below is one logical line that ends in its own `\n`. A
+        // line without one runs on into the next line, and the caller's next
+        // line after the last (#1495).
+        //
+        // Nothing here fills a line. The text report indents the whole checks
+        // block and fills it once, at the width its caller states, so a fill
+        // here as well broke a line that fit at 80 again after that indent and
+        // kept `--wide` from the ledger (#1495).
         out.push_str("adoption\n");
         let _ = writeln!(
             out,
@@ -561,11 +565,9 @@ impl Ledger {
         for task in &self.tasks {
             match task.state {
                 State::Open => {
-                    // Fold first with the plain identifier, then substitute the painted one in place.
-                    // The fill measures lines in characters, and an ANSI escape sequence is
-                    // characters that occupy no column. Painting before the fold would push the
-                    // fold nine characters early (the length of `\033[35m` and `\033[0m`), so the
-                    // terminal and piped versions would break at different places.
+                    // Format the line with the plain identifier, then substitute the painted
+                    // one in place, so that the plain and the painted lines are the same text
+                    // apart from the escape sequences around the identifier.
                     let plain = format!(
                         "  {} {} open, {} closed, holding {} {}, owner {}, until {}\n",
                         task.id,
@@ -576,15 +578,14 @@ impl Ledger {
                         task.owner,
                         task.until
                     );
-                    let folded = crate::fill::filled(&plain, crate::fill::WIDTH);
-                    out.push_str(&folded.replacen(
+                    out.push_str(&plain.replacen(
                         &task.id,
                         &paint(Role::Obligation, &task.id, mode),
                         1,
                     ));
                 }
                 State::Expired => {
-                    // Fold first with the plain identifier, then substitute the painted one in place.
+                    // The plain identifier first, then the painted one in its place.
                     let plain = format!(
                         "  {} lapsed on {}, and the {} pairs it named are reported, owner {}\n",
                         task.id,
@@ -592,35 +593,26 @@ impl Ledger {
                         task.pairs.len(),
                         task.owner
                     );
-                    let folded = crate::fill::filled(&plain, crate::fill::WIDTH);
-                    out.push_str(&folded.replacen(
+                    out.push_str(&plain.replacen(
                         &task.id,
                         &paint(Role::Obligation, &task.id, mode),
                         1,
                     ));
                 }
             }
-            out.push_str(&crate::fill::filled(
-                // A hand-written block scalar (`statement: |`) arrives with
-                // its own trailing newline, and the line owes exactly one.
-                &format!("    {}\n", task.statement.trim_end()),
-                crate::fill::WIDTH,
-            ));
+            // A hand-written block scalar (`statement: |`) arrives with its own
+            // trailing newline, and the line owes exactly one.
+            let _ = writeln!(out, "    {}", task.statement.trim_end());
         }
         for refused in &self.refused {
-            out.push_str(&crate::fill::filled(
-                &format!("  {} holds nothing: {}\n", refused.task, refused.why),
-                crate::fill::WIDTH,
-            ));
+            let _ = writeln!(out, "  {} holds nothing: {}", refused.task, refused.why);
         }
         for unread in &self.unread {
-            out.push_str(&crate::fill::filled(
-                &format!(
-                    "  the block declares `{}`, which nothing here reads: {}\n",
-                    unread.key, unread.why
-                ),
-                crate::fill::WIDTH,
-            ));
+            let _ = writeln!(
+                out,
+                "  the block declares `{}`, which nothing here reads: {}",
+                unread.key, unread.why
+            );
         }
         out
     }
@@ -657,11 +649,17 @@ mod tests {
         }
     }
 
-    /// #1495: `crate::fill::filled` adds no newline to text that had none, so
-    /// every line the ledger writes owes its own. Before the fix the task
-    /// statement, each refused line and each unread line ran on into the next
-    /// line, and `Report::render` glued the read-set summary onto the last of
-    /// them (`...a migration-pending finding31 documents in the read set`).
+    /// #1495: every line the ledger writes owes its own newline. Before the
+    /// first fix the task statement, each refused line and each unread line
+    /// ran on into the next line, and `Report::render` glued the read-set
+    /// summary onto the last of them (`...a migration-pending finding31
+    /// documents in the read set`).
+    ///
+    /// The ledger writes each entry as one logical line and fills none of
+    /// them. The text report fills the whole checks block once, after its
+    /// two-column indent, at the width its caller states. A second fill inside
+    /// the ledger broke an 80-column line again after that indent and left its
+    /// last word alone on a line, and it kept `--wide` from the ledger.
     #[test]
     fn every_ledger_line_ends_before_the_next_begins() {
         let block = payload(
@@ -690,8 +688,8 @@ tasks:
         let plain = ledger.render(crate::paint::ColorMode::Plain);
         assert_eq!(
             plain,
-            "adoption\n  1 pairs open, 0 closed, holding 1 finding, in 1 task\n  AD-1 1 open, 0 closed, holding 1 finding, owner the docs guild, until\n    2027-01-01\n    the corpus states no summary\n  AD-2 holds nothing: it declares no pair, so it accounts for nothing\n  the block declares `to`, which nothing here reads: it names a migration state.\n    Spec 7 gives one a from-version and a to-version, and no verb of this engine\n    writes either into this block\n",
-            "each ledger line stands on its own line"
+            "adoption\n  1 pairs open, 0 closed, holding 1 finding, in 1 task\n  AD-1 1 open, 0 closed, holding 1 finding, owner the docs guild, until 2027-01-01\n    the corpus states no summary\n  AD-2 holds nothing: it declares no pair, so it accounts for nothing\n  the block declares `to`, which nothing here reads: it names a migration state. Spec 7 gives one a from-version and a to-version, and no verb of this engine writes either into this block\n",
+            "each ledger line stands on its own line, one logical line per entry and unfilled: the report fills it once, at the width its caller states"
         );
 
         // Each kind of line, alone in a ledger, ends the render: a regression
@@ -1225,13 +1223,13 @@ tasks:
     /// The terminal and piped outputs are the same bytes when both are
     /// rendered and the colored version has its SGR sequences stripped.
     ///
-    /// This ensures the line-folding code sees the right column count and the
-    /// two versions break at the same places. The fold measures lines in
-    /// characters, and an ANSI escape sequence is characters that occupy no
-    /// column: a task identifier painted before the fold would push the fold
-    /// nine characters early and leave a reset code counted as a word.
+    /// The ledger fills no line itself (#1495): the text report fills the
+    /// checks block once, after it is composed. So what this holds is that
+    /// painting changes nothing but the escape sequences around the task
+    /// identifier, and that the ledger hands the report the same words and the
+    /// same line breaks under either mode.
     #[test]
-    fn a_folded_ledger_breaks_where_a_plain_one_does() {
+    fn a_painted_ledger_is_the_plain_ledger_with_escapes_added() {
         let block = one_task("      - {path: docs/a.md, rule: facet.required.missing}");
         let declared = read(&block, &RULES);
         let (_, ledger) = apply(

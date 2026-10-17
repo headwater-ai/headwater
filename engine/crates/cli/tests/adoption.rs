@@ -270,7 +270,18 @@ impl Root {
     }
 
     fn run(&self, arguments: &[&str]) -> Ran {
-        let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        self.run_at(arguments, None)
+    }
+
+    /// A run with `COLUMNS` set to `columns`, or removed when it is `None`, so
+    /// that a `--wide` case reads the width it states and not the host's.
+    fn run_at(&self, arguments: &[&str], columns: Option<&str>) -> Ran {
+        let mut command = Command::new(env!("CARGO_BIN_EXE_headwater"));
+        match columns {
+            Some(value) => command.env("COLUMNS", value),
+            None => command.env_remove("COLUMNS"),
+        };
+        let output = command
             .args(arguments)
             .arg("--root")
             .arg(&self.at)
@@ -943,16 +954,28 @@ fn the_adoption_ledger_is_filled_once_and_no_word_stands_alone() {
         );
     }
     assert!(
-        block
-            .iter()
-            .any(|line| line.contains("it names a migration state.")),
-        "the phrase is broken across lines:\n{}",
+        block.iter().all(|line| line.chars().count() <= 80),
+        "a ledger line passes the default width:\n{}",
+        ran.out
+    );
+    let joined = block
+        .iter()
+        .map(|line| line.trim())
+        .collect::<Vec<_>>()
+        .join(" ");
+    assert!(
+        joined.contains(
+            "it names a migration state. Spec 7 gives one a from-version and a to-version, \
+             and no verb of this engine writes either into this block"
+        ),
+        "the fill lost or reordered a word of the unread line:\n{}",
         ran.out
     );
 
-    // At `--wide` the unread line is laid out at 120 columns, not at 80: the
-    // whole sentence up to `a to-version,` fits on its first line.
-    let wide = root.run(&["check", "--wide"]);
+    // At `--wide` in a 120-column terminal the unread line is laid out at 120
+    // columns, not at 80: its first line runs past 80 and holds the whole
+    // phrase `migration state. Spec 7 gives one`.
+    let wide = root.run_at(&["check", "--wide"], Some("120"));
     assert_eq!(wide.code, Some(0), "{}{}", wide.out, wide.err);
     let block = adoption_block(&wide.out);
     let first = block
@@ -960,7 +983,7 @@ fn the_adoption_ledger_is_filled_once_and_no_word_stands_alone() {
         .find(|line| line.contains("`to`"))
         .unwrap_or_else(|| panic!("no unread line:\n{}", wide.out));
     assert!(
-        first.contains("from-version and a to-version,"),
+        first.chars().count() > 80 && first.contains("migration state. Spec 7 gives one"),
         "`--wide` does not reach the ledger: {first:?}\n{}",
         wide.out
     );
