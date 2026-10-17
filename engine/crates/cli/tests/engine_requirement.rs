@@ -342,14 +342,21 @@ fn a_byte_order_mark_before_the_engine_line_does_not_hide_the_range() {
         "the check with the mark fails as it does without it"
     );
 
-    // The mark before `taxonomy:`, the order `init` writes.
+    // The mark before `taxonomy:`, the order `init` writes. The comment
+    // header goes, so that the mark sits on the key.
     set_engine(&root.at, Some(&caret()));
     let path = root.at.join(".headwater/taxonomy.yml");
     let text = std::fs::read_to_string(&path).expect("the declaration reads");
+    let at = text
+        .find("\ntaxonomy:")
+        .expect("the fixture has a taxonomy block");
     assert!(
-        text.starts_with("taxonomy:"),
-        "the fixture opens on taxonomy"
+        text[..at]
+            .lines()
+            .all(|line| line.is_empty() || line.starts_with('#')),
+        "only comments come before the taxonomy block"
     );
+    let text = &text[at + 1..];
     std::fs::write(&path, format!("\u{feff}{text}")).expect("the declaration writes");
     let admitted = root.run(&["check", "--strict"]);
     assert_eq!(admitted.code, Some(0), "{admitted:?}");
