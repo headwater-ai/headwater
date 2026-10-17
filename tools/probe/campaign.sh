@@ -115,7 +115,12 @@
 # leave it out and one line leaves out every other probe of the set.
 # `tools/probe/additive-campaign.spec` is that campaign. The dry run plans it;
 # the batch does not run it, because the plan refuses every line on the
-# additive tier's ceiling of zero until the owner rules on the total.
+# additive tier's ceiling of zero until the owner rules on the total. Each
+# invocation of an additive spec runs the dry run first, and a leak in any
+# scenario tree stops it with 8 before the harness is asked anything. Past
+# the ceiling, the batch refuses an additive line with 5: the per-round
+# counts, the scenario trees and `--set` for each recorded session are not
+# built yet.
 #
 # ## One pinned commit
 #
@@ -767,7 +772,7 @@ build_engine() {
 plan_line() {
     # shellcheck disable=SC2086
     set -- $1 "$2" "$3"
-    p_tier=$2 p_category=$4
+    p_tier=$2 p_arm=$3 p_category=$4
     shift 4
     p_excludes=
     while [ $# -gt 2 ]; do
@@ -775,6 +780,16 @@ plan_line() {
         shift
     done
     p_repetitions=$1 p_file=$2
+    # An additive line names a round in place of a category, and runs the
+    # round's set in its scenario arm (#1774).
+    if [ "$p_tier" = additive ]; then
+        p_set=$(python3 "$root/tools/probe/declared.py" "$root/.headwater/probe.yml" rounds \
+            | awk -v r="$p_category" '$1 == r { print $2 }')
+        # shellcheck disable=SC2086
+        "$engine" probe plan --root "$root" --tier "$p_tier" --arm "$p_arm" --set "${p_set:-$p_category}" \
+            $p_excludes ${p_repetitions:+--repetitions "$p_repetitions"} > "$p_file" 2>&1
+        return
+    fi
     # shellcheck disable=SC2086
     "$engine" probe plan --root "$root" --tier "$p_tier" --category "$p_category" $p_excludes \
         ${p_repetitions:+--repetitions "$p_repetitions"} > "$p_file" 2>&1
@@ -887,6 +902,26 @@ if [ -f "$out/head" ] && [ "$(cat "$out/head")" != "$head" ]; then
     echo "campaign: $out holds a batch of $(cat "$out/head"), and HEAD is $head. Use another directory." >&2
     exit 4
 fi
+# The leak gate of the additive campaign (#1774, clause 5). Tuning changes the
+# text a scenario puts in front of the model, so every invocation of an
+# additive spec runs its dry run first, with the engine just built, and a leak
+# in any scenario tree stops it with 8 before anything of the batch is
+# written, before the harness is asked for its version, and before any
+# session starts. A dry run that refuses for another reason stops it with its
+# own status. Until the owner rules on the total, the plan then refuses every
+# line on the additive tier's ceiling of zero.
+if awk 'NF && $1 !~ /^#/ { n++; if ($1 == "additive") a++ } END { exit !(n > 0 && a > 0) }' "$spec"; then
+    HW_CAMPAIGN_ENGINE=$engine sh "$root/tools/probe/campaign-dry-run.sh" "$spec" \
+        > "$out/leak-gate" 2> "$out/leak-gate.err"
+    gate_status=$?
+    if [ "$gate_status" != 0 ]; then
+        echo "campaign: the dry run of the additive spec exited $gate_status, so no session of this invocation starts:" >&2
+        grep -e ' tree: leak ' -e '^line [0-9]* pools ' -e ' is not its delta' -e 'listed no tool' -e ' did not build' \
+            -e 'is refused by the plan' "$out/leak-gate" >&2
+        cat "$out/leak-gate.err" >&2
+        exit "$gate_status"
+    fi
+fi
 # The count is the batch's, so a resumed invocation that gives none keeps the
 # one recorded, as it keeps the cap: its job list was made at that count.
 if [ -z "$repetitions" ] && [ -s "$out/repetitions" ]; then
@@ -978,6 +1013,15 @@ while IFS= read -r line; do
     done
 done < "$out/lines"
 sort -u "$out/pairs.tmp" > "$out/pairs" && rm -f "$out/pairs.tmp"
+# The batch does not yet run an additive line: it would plan each line at the
+# tier's declared count and not its round's, build no scenario tree, and record
+# each session with `--category`. The plan's ceiling of zero refuses every
+# additive line above, so this is reached only once the owner has ruled on
+# the total, and it then refuses rather than run the rounds wrong.
+if grep -q '^[0-9]* additive ' "$out/lines"; then
+    echo "campaign: the batch does not run additive lines yet: the per-round counts, the scenario trees and \`--set\` in probe-record.sh are owed by #1774 before the screening round." >&2
+    exit 5
+fi
 
 # The task of each probe: the body of `## Task` and nothing else (spec 15).
 for probe in $probes; do
