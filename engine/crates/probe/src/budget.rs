@@ -230,11 +230,11 @@ impl Budgets {
         };
         let mut delta = Vec::new();
         for layer in &self.layers {
+            // Two layers never hold one path from the present tree, because
+            // `layers` refuses it, so a path here is kept or removed alone.
             for path in &layer.paths {
                 let hold = if held(layer) {
                     Hold::Keeps
-                } else if kept_by_held(path) {
-                    continue;
                 } else {
                     Hold::Removes
                 };
@@ -1971,6 +1971,27 @@ scenarios:
             "the stand-in is neither written nor removed where the whole file is held: \
              {thirteen:?}"
         );
+        // The harness held without the hook: the stand-in is not removed
+        // either, because a removal runs before every write and would take
+        // the whole file the harness keeps.
+        let source = additive().replace(
+            "  13:\n",
+            "  14:\n    block: answer-once\n    base: 0\n    layers: [harness]\n  13:\n",
+        );
+        let alone = Budgets::read(&source).expect("reads");
+        let fourteen = alone.scenario_delta(14).expect("declared");
+        assert!(
+            fourteen.contains(&(Hold::Keeps, "harness", ".claude/settings.json")),
+            "{fourteen:?}"
+        );
+        assert!(
+            !fourteen.contains(&(Hold::Removes, "hook", ".claude/settings.json")),
+            "{fourteen:?}"
+        );
+        assert!(
+            fourteen.contains(&(Hold::Removes, "hook", ".claude/hooks/intent.sh")),
+            "{fourteen:?}"
+        );
         let six = budgets.scenario_delta(6).expect("declared");
         assert!(six.contains(&(Hold::Writes, "mcp", ".mcp.json")), "{six:?}");
         assert_eq!(budgets.scenario_delta(14), None);
@@ -2060,6 +2081,13 @@ scenarios:
                 ("claude-md", ".claude/hooks"),
                 ("hook", ".claude/hooks/intent.sh"),
             ),
+            // One path inside a path a later layer holds.
+            (
+                "    paths: [CLAUDE.md]\n",
+                "    paths: [CLAUDE.md, .githooks/pre-commit]\n",
+                ("claude-md", ".githooks/pre-commit"),
+                ("harness", ".githooks"),
+            ),
             // Two stand-ins for one path.
             (
                 "    arms: [.mcp.json]\n",
@@ -2087,6 +2115,20 @@ scenarios:
                 "{to}"
             );
         }
+    }
+
+    #[test]
+    fn a_path_that_shares_a_name_prefix_with_another_layers_path_is_not_claimed_twice() {
+        // `.githooks-old` is beside `.githooks`, not inside it.
+        let source = additive().replace(
+            "    paths: [CLAUDE.md]\n",
+            "    paths: [CLAUDE.md, .githooks-old, AGENTS.md.bak]\n",
+        );
+        let budgets = Budgets::read(&source).expect("reads");
+        assert_eq!(
+            budgets.layers[2].paths,
+            ["CLAUDE.md", ".githooks-old", "AGENTS.md.bak"]
+        );
     }
 
     #[test]
@@ -2174,13 +2216,16 @@ scenarios:
                 found: "pairwise".into()
             })
         );
-        let named = additive().replace("  13:\n", "  thirteen:\n");
-        assert_eq!(
-            Budgets::read(&named),
-            Err(Unreadable::ScenarioName {
-                found: "thirteen".into()
-            })
-        );
+        for found in ["thirteen", "013", "-1"] {
+            let named = additive().replace("  13:\n", &format!("  {found}:\n"));
+            assert_eq!(
+                Budgets::read(&named),
+                Err(Unreadable::ScenarioName {
+                    found: found.into()
+                }),
+                "{found}"
+            );
+        }
     }
 
     #[test]
