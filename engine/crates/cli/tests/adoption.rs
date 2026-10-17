@@ -270,7 +270,18 @@ impl Root {
     }
 
     fn run(&self, arguments: &[&str]) -> Ran {
-        let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        self.run_at(arguments, None)
+    }
+
+    /// A run with `COLUMNS` set to `columns`, or removed when it is `None`, so
+    /// that a `--wide` case reads the width it states and not the host's.
+    fn run_at(&self, arguments: &[&str], columns: Option<&str>) -> Ran {
+        let mut command = Command::new(env!("CARGO_BIN_EXE_headwater"));
+        match columns {
+            Some(value) => command.env("COLUMNS", value),
+            None => command.env_remove("COLUMNS"),
+        };
+        let output = command
             .args(arguments)
             .arg("--root")
             .arg(&self.at)
@@ -892,6 +903,102 @@ fn a_block_level_key_this_engine_does_not_read_is_named() {
         "and the tasks beside it are still read:\n{}",
         ran.out
     );
+}
+
+/// The lines of the `adoption` block in a text report, from its heading to the
+/// first line that is not indented under it.
+fn adoption_block(out: &str) -> Vec<&str> {
+    out.lines()
+        .skip_while(|line| *line != "  adoption")
+        .skip(1)
+        .take_while(|line| line.starts_with("    "))
+        .collect()
+}
+
+/// #1495: the ledger is filled once, by the report, at the width the caller
+/// states.
+///
+/// Before the fix `Ledger::render` filled each line at 80 columns, and the
+/// report then indented the checks block by two and filled it again. A ledger
+/// line the first fill left at 79 or 80 columns was 81 or 82 after the indent,
+/// so the second fill broke it once more and its last word stood on a line by
+/// itself: `...it names a migration` / `state.`. The same inner fill kept
+/// `--wide` from reaching the ledger at all.
+#[test]
+fn the_adoption_ledger_is_filled_once_and_no_word_stands_alone() {
+    let root = Root::new("ledger-filled-once");
+    root.author();
+    root.corpus();
+
+    let text = root.text();
+    root.write(&text.replacen(
+        "\nadoption:\n  tasks:\n",
+        "\nadoption:\n  to: 4.0.0\n  tasks:\n",
+        1,
+    ));
+
+    let ran = root.run(&["check"]);
+    assert_eq!(ran.code, Some(0), "{}{}", ran.out, ran.err);
+    let block = adoption_block(&ran.out);
+    assert!(
+        block.iter().any(|line| line.contains("`to`")),
+        "the block names the unread key:\n{}",
+        ran.out
+    );
+    for line in &block {
+        let words = line.split_whitespace().count();
+        assert!(
+            words > 1,
+            "a ledger line holds one word, {line:?}, so the ledger was filled twice:\n{}",
+            ran.out
+        );
+    }
+    assert!(
+        block.iter().all(|line| line.chars().count() <= 80),
+        "a ledger line passes the default width:\n{}",
+        ran.out
+    );
+    let joined = block
+        .iter()
+        .map(|line| line.trim())
+        .collect::<Vec<_>>()
+        .join(" ");
+    assert!(
+        joined.contains(
+            "it names a migration state. Spec 7 gives one a from-version and a to-version, \
+             and no verb of this engine writes either into this block"
+        ),
+        "the fill lost or reordered a word of the unread line:\n{}",
+        ran.out
+    );
+
+    // At `--wide` in a 120-column terminal the unread line is laid out at 120
+    // columns, not at 80: its first line runs past 80 and holds the whole
+    // phrase `migration state. Spec 7 gives one`.
+    let wide = root.run_at(&["check", "--wide"], Some("120"));
+    assert_eq!(wide.code, Some(0), "{}{}", wide.out, wide.err);
+    let block = adoption_block(&wide.out);
+    let first = block
+        .iter()
+        .find(|line| line.contains("`to`"))
+        .unwrap_or_else(|| panic!("no unread line:\n{}", wide.out));
+    assert!(
+        first.chars().count() > 80 && first.contains("migration state. Spec 7 gives one"),
+        "`--wide` does not reach the ledger: {first:?}\n{}",
+        wide.out
+    );
+    assert!(
+        block.iter().all(|line| line.chars().count() <= 120),
+        "{}",
+        wide.out
+    );
+    for line in &block {
+        assert!(
+            line.split_whitespace().count() > 1,
+            "a ledger line holds one word at `--wide`, {line:?}:\n{}",
+            wide.out
+        );
+    }
 }
 
 /// A key inside a task is a refusal rather than a note.
