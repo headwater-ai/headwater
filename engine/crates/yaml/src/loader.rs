@@ -443,6 +443,15 @@ mod tests {
         // One mark is dropped, and a second one is content.
         let root = load("\u{feff}\u{feff}engine: x\n").expect("loads");
         assert!(root.as_map().expect("a mapping").get("engine").is_none());
+        // A source that starts past byte 0 of its file, such as front matter
+        // after its `---` line, keeps a mark at its own start: it is not at
+        // byte 0 of the file.
+        let root = load_with(
+            "\u{feff}status: current\n",
+            Options::front_matter(Origin::new(2, 4)),
+        )
+        .expect("loads");
+        assert!(root.as_map().expect("a mapping").get("status").is_none());
     }
 
     fn kinds(source: &str) -> Vec<ErrorKind> {
