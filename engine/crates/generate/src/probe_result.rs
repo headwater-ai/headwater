@@ -462,8 +462,8 @@ impl Claim {
                  added the paths the `mcp` component's delta names, and the control is the \
                  `campaign` present arm. The documents are in both arms (spec 5)."
             }
-            Claim::Component(Arm::Present | Arm::Absent) => {
-                unreachable!("the present and absent arms are not components")
+            Claim::Component(Arm::Present | Arm::Absent | Arm::Scenario(_)) => {
+                unreachable!("the present, absent and scenario arms are not components")
             }
         }
     }

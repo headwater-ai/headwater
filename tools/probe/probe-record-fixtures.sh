@@ -4058,6 +4058,110 @@ else
     printf 'note no engine, so the MCP leak cases did not run.\n'
 fi
 
+# The scenario channels (#1774, clause 5). A scenario of the additive campaign
+# is checked over every skill description and body, and over the text the
+# intent hook injects for each probe's task. `--scenario` reads them, so the
+# always-loaded contract above keeps its meaning without it.
+HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak --scenario "$scratch/leak-body-s" "$status_probe" \
+    > "$scratch/scenario-nows.out" 2>&1
+same "--scenario refuses a workspace that is not a directory" "2" "$?"
+rm -rf "$scratch/leak-body-s"
+mkdir -p "$scratch/leak-body-s/.claude/skills/s"
+printf -- '---\nname: s\ndescription: Nothing to see.\n---\n\nThe ruling is HW-DR-0052.\n' \
+    > "$scratch/leak-body-s/.claude/skills/s/SKILL.md"
+HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak "$scratch/leak-body-s" "$status_probe" \
+    > "$scratch/body-s.out" 2>&1
+same "without --scenario a leak string in a skill body is still no leak" "0" "$?"
+HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak --scenario "$scratch/leak-body-s" "$status_probe" \
+    > "$scratch/body-s.out" 2>&1
+same "with --scenario a leak string in the body of a skill is a leak" "1" "$?"
+present "and names the skill file" "leak $status_probe .claude/skills/s/SKILL.md HW-DR-0052" "$scratch/body-s.out"
+HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak --config "$scratch/leak-config" --scenario "$scratch/leak-body-s" "$status_probe" \
+    > "$scratch/body-s2.out" 2>&1
+same "--scenario reads after --config too" "1" "$?"
+# An agent body is outside the clause, and is no leak even with --scenario.
+rm -rf "$scratch/leak-body-s/.claude/skills"
+mkdir -p "$scratch/leak-body-s/.claude/agents"
+printf -- '---\nname: a\ndescription: Nothing.\n---\n\nThe ruling is HW-DR-0052.\n' \
+    > "$scratch/leak-body-s/.claude/agents/a.md"
+HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak --scenario "$scratch/leak-body-s" "$status_probe" \
+    > "$scratch/agent-s.out" 2>&1
+same "with --scenario an agent body is still no leak, the known limit" "0" "$?"
+
+# The harness classification: a hit in a file of the `harness` layer, in a
+# tree that holds it, is internal text the seal cannot remove. It prints as
+# `harness` and does not fail the check. The same text in another skill is a
+# leak.
+rm -rf "$scratch/leak-harness"
+mkdir -p "$scratch/leak-harness/.claude/skills/hw-corpus" "$scratch/leak-harness/.claude/skills/other"
+printf -- '---\nname: hw-corpus\ndescription: Nothing.\n---\n\nThe ruling is HW-DR-0052.\n' \
+    > "$scratch/leak-harness/.claude/skills/hw-corpus/SKILL.md"
+HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak --scenario "$scratch/leak-harness" "$status_probe" \
+    > "$scratch/harness.out" 2>&1
+same "with --scenario a hit in a harness-layer skill body does not fail the check" "0" "$?"
+present "and prints as harness" "harness $status_probe .claude/skills/hw-corpus/SKILL.md HW-DR-0052" "$scratch/harness.out"
+cp "$scratch/leak-harness/.claude/skills/hw-corpus/SKILL.md" "$scratch/leak-harness/.claude/skills/other/SKILL.md"
+HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak --scenario "$scratch/leak-harness" "$status_probe" \
+    > "$scratch/harness2.out" 2>&1
+same "the same text in a skill of no harness path is a leak" "1" "$?"
+present "and names that skill" "leak $status_probe .claude/skills/other/SKILL.md HW-DR-0052" "$scratch/harness2.out"
+HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak "$scratch/leak-harness" "$status_probe" \
+    > "$scratch/harness3.out" 2>&1
+same "without --scenario the harness skill's body is not read at all" "0" "$?"
+absent "and nothing is printed for it" "harness $status_probe" "$scratch/harness3.out"
+
+# The hook's injected text. The tree's `.claude/hooks/intent.sh` runs as the
+# harness runs it, on the probe's `## Task`, read from this checkout, and its
+# standard output is the channel `hook:<probe>`. A stub hook stands in here,
+# and keeps what it was handed.
+ruling_probe=HW-PROBE-what-a-session-writes-points-back-at-the-ruling-it-rests-on
+rm -rf "$scratch/leak-hook"
+mkdir -p "$scratch/leak-hook/.claude/hooks"
+printf '#!/bin/sh\ncat > "%s"\nprintf "Pointer: the corpus-wide fold\\n"\nprintf "HW-DR-0049 on stderr\\n" >&2\n' \
+    "$scratch/hook-stdin" > "$scratch/leak-hook/.claude/hooks/intent.sh"
+sh "$seal" --leak "$scratch/leak-hook" "$ruling_probe" > "$scratch/hook0.out" 2>&1
+same "without --scenario the hook does not run" "0" "$?"
+rm -f "$scratch/hook-stdin"
+sh "$seal" --leak --scenario "$scratch/leak-hook" "$ruling_probe" > "$scratch/hook.out" 2>&1
+same "with --scenario a leak string in the hook's output is a leak" "1" "$?"
+present "and names the channel hook:<probe>" "leak $ruling_probe hook:$ruling_probe corpus-wide fold" "$scratch/hook.out"
+absent "and the hook's standard error is no channel" "HW-DR-0049" "$scratch/hook.out"
+task_line=$(awk '/^## Task/ { f = 1; next } /^## / { f = 0 } f && NF { print; exit }' \
+    "$root/docs/probes/what-a-session-writes-points-back-at-the-ruling-it-rests-on.md" | cut -c1-40)
+if [ -n "$task_line" ] && grep -qF "$task_line" "$scratch/hook-stdin" 2>/dev/null && grep -q '"UserPromptSubmit"' "$scratch/hook-stdin"; then
+    pass "the hook is handed the probe's task in a UserPromptSubmit envelope"
+else
+    fail "the hook is handed the probe's task in a UserPromptSubmit envelope" "$(head -c 300 "$scratch/hook-stdin" 2>/dev/null)"
+fi
+# A hook string of one probe is no leak for another: each probe's sessions
+# meet the text the hook injects for its own task.
+printf 'leaks:\n  %s: [Pointer]\n  %s: [nothing-matches-this]\n' "$status_probe" "$ruling_probe" > "$scratch/hook-probe.yml"
+HW_PROBE_YML="$scratch/hook-probe.yml" sh "$seal" --leak --scenario "$scratch/leak-hook" "$ruling_probe" \
+    > "$scratch/hook2.out" 2>&1
+same "a string of a probe not checked is no leak in another probe's hook text" "0" "$?"
+# A probe with no task in this checkout cannot be put to the hook, so the
+# scenario text is not whole.
+printf 'leaks:\n  HW-PROBE-no-such-probe: [Pointer]\n' > "$scratch/hook-probe.yml"
+HW_PROBE_YML="$scratch/hook-probe.yml" sh "$seal" --leak --scenario "$scratch/leak-hook" HW-PROBE-no-such-probe \
+    > "$scratch/hook3.out" 2>&1
+same "a probe whose task the checkout does not hold stops a scenario check with 3" "3" "$?"
+
+# `[]` is a declaration with no answer string: the two `opened` probes of the
+# additive set key on an act, and no string states it. The check prints
+# nothing for such a probe, and a probe with no entry is still undeclared.
+printf 'leaks:\n  HW-PROBE-x: []\n  HW-PROBE-y:\n' > "$scratch/empty-probe.yml"
+HW_PROBE_YML="$scratch/empty-probe.yml" sh "$seal" --leak "$scratch/leak-ws" HW-PROBE-x HW-PROBE-y HW-PROBE-z \
+    > "$scratch/empty.out" 2>&1
+same "a probe declared with [] does not fail the check" "0" "$?"
+absent "and is not printed as undeclared" "undeclared HW-PROBE-x" "$scratch/empty.out"
+present "an entry with no value is still undeclared" "undeclared HW-PROBE-y" "$scratch/empty.out"
+present "and a missing entry is still undeclared" "undeclared HW-PROBE-z" "$scratch/empty.out"
+sh "$seal" --leak "$scratch/leak-ws" \
+    HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor \
+    HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens \
+    "$ruling_probe" > "$scratch/set-declared.out" 2>&1
+absent "the committed declaration leaves no probe of the additive set undeclared" "undeclared" "$scratch/set-declared.out"
+
 # ---------------------------------------------------------------------------
 # The component arms (#1472). Each is built from the one present tree, and
 # `--diff` prints how it differs from that tree, against the committed
@@ -4651,6 +4755,177 @@ if [ -x "$engine" ]; then
     fi
 else
     printf 'note no engine, so the dry-run cases did not run.\n'
+fi
+
+# ---------------------------------------------------------------------------
+# The dry run of the additive campaign (#1774, clauses 5 and 7): the committed
+# spec priced by round, with one total, and the leak check run over every
+# scenario tree. A check that read only the present tree, or no skill body, or
+# no hook text, names the wrong scenarios below.
+# ---------------------------------------------------------------------------
+if [ -x "$engine" ]; then
+    mkdir -p "$scratch/dry-bin"
+    printf '#!/bin/sh\n: > "%s/claude-called"\nexit 7\n' "$scratch" > "$scratch/dry-bin/claude"
+    chmod +x "$scratch/dry-bin/claude"
+    rm -f "$scratch/claude-called"
+    additive_spec=$root/tools/probe/additive-campaign.spec
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$additive_spec" > "$scratch/add.out" 2> "$scratch/add.err"
+    same "the dry run of the additive campaign exits 0" "0" "$?"
+    present "it prints the screening round's sum" "round screening: 1008 sessions, \$504.00" "$scratch/add.out"
+    present "it prints the tuning round's sum at its most tries" "round tuning: 3024 sessions, \$1512.00 (3 tries at most)" "$scratch/add.out"
+    present "it prints the final round's sum" "round final: 3080 sessions, \$1540.00" "$scratch/add.out"
+    present "and one total" "total: 7112 sessions, \$3556.00" "$scratch/add.out"
+    present "each round's count is computed from its rates" "so ceil(219 / 4) = 55 repetitions of each probe" "$scratch/add.out"
+    present "the ceiling of zero refuses every plan" "The ceiling refuses 46 of 46 plans" "$scratch/add.out"
+    same "and it builds and checks each of the 14 scenario trees" "14" \
+        "$(sed -n 's/^tree additive \(scenario-[0-9]*\)[ :].*/\1/p' "$scratch/add.out" | LC_ALL=C sort -u | wc -l | tr -d ' ')"
+    present "a hit in the harness layer of scenario 13 prints as harness" \
+        "leak check, scenario-13 tree: harness HW-PROBE-a-session-says-whether-a-command-or-a-hand-writes-a-governs-line .claude/skills/hw-corpus/SKILL.md HW-DR-0104" "$scratch/add.out"
+    absent "and no scenario tree leaks" " tree: leak " "$scratch/add.out"
+
+    # additive_leaks <file> <probe> <string>: the committed declaration with
+    # one leak string, on one probe, and `[]` on every other probe of the sets.
+    additive_leaks() {
+        awk -v probe="$2" -v string="$3" '
+            /^leaks:/ { skip = 1; next }
+            /^leaks_kept:/ { skip = 1; next }
+            skip && /^[^ #]/ { skip = 0 }
+            skip { next }
+            { print }
+            /^  (tuning|held-out):/ { inset = 1; next }
+            inset && /^    - / { ids[++n] = substr($0, 7) }
+            inset && !/^    - / { inset = 0 }
+            END {
+                print "leaks:"
+                for (i = 1; i <= n; i++) {
+                    if (ids[i] == probe) printf "  %s: [\"%s\"]\n", ids[i], string
+                    else printf "  %s: []\n", ids[i]
+                }
+            }
+        ' "$root/.headwater/probe.yml" > "$1"
+    }
+    # The decisive case: the only leak string is in the body of a skill of the
+    # `skills` layer, and in no description, memory file or hook text.
+    body_string="Silence means the subject is not one a declared purpose answers"
+    additive_leaks "$scratch/add-body.yml" \
+        HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged "$body_string"
+    HW_PROBE_YML="$scratch/add-body.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$additive_spec" > "$scratch/add-body.out" 2> "$scratch/add-body.err"
+    same "a leak string in a skills-layer skill body fails the additive dry run with 8" "8" "$?"
+    same "and it names every scenario that holds skills, and no other" "4 8 10 11 12 13" \
+        "$(sed -n "s/^leak check, scenario-\([0-9]*\) tree: leak .*headwater-orient\/SKILL.md $body_string$/\1/p" "$scratch/add-body.out" | LC_ALL=C sort -n | tr '\n' ' ' | sed 's/ $//')"
+    present "and prints the round sums all the same" "total: 7112 sessions" "$scratch/add-body.out"
+
+    # The hook's text: the pointer probe's route names its own target, and no
+    # file of a hook scenario's always-loaded text or skill bodies does, but
+    # the harness skill `hw-corpus`, which prints as harness.
+    hook_string="docs/obligations/0107-the-base-package-ships"
+    pointer_probe=HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens
+    additive_leaks "$scratch/add-hook.yml" "$pointer_probe" "$hook_string"
+    HW_PROBE_YML="$scratch/add-hook.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$additive_spec" > "$scratch/add-hook.out" 2> "$scratch/add-hook.err"
+    same "a leak string in the hook's text fails the additive dry run with 8" "8" "$?"
+    same "and it names every scenario that holds the hook, and no other" "5 7 9 10 11 12 13" \
+        "$(sed -n "s|^leak check, scenario-\([0-9]*\) tree: leak $pointer_probe hook:$pointer_probe $hook_string$|\1|p" "$scratch/add-hook.out" | LC_ALL=C sort -n | tr '\n' ' ' | sed 's/ $//')"
+    same "and no scenario leaks through another channel" "0" \
+        "$(grep ' tree: leak ' "$scratch/add-hook.out" | grep -vc " hook:$pointer_probe ")"
+
+    # A scenario-13 line that pools a probe whose answer the harness layer
+    # states with another probe is refused with 8.
+    printf 'additive scenario-13 final\n' > "$scratch/add-pooled.spec"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/add-pooled.spec" > "$scratch/add-pooled.out" 2> "$scratch/add-pooled.err"
+    same "a scenario-13 line that pools a harness-leaked probe is refused with 8" "8" "$?"
+    present "and names the probe" \
+        "line 1 pools HW-PROBE-a-session-says-whether-a-command-or-a-hand-writes-a-governs-line, whose answer the harness layer of the scenario-13 tree states" \
+        "$scratch/add-pooled.out"
+    printf 'additive scenario-12 final\n' > "$scratch/add-twelve.spec"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/add-twelve.spec" > "$scratch/add-twelve.out" 2> "$scratch/add-twelve.err"
+    same "the same pooled line in scenario 12, which holds no harness, passes" "0" "$?"
+
+    # The refusals of a spec.
+    printf 'additive scenario-3 final\ncampaign present structural\n' > "$scratch/add-mixed.spec"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/add-mixed.spec" > /dev/null 2> "$scratch/add-mixed.err"
+    same "a spec that mixes additive lines with another tier is refused with 5" "5" "$?"
+    present "and the refusal says why" "mixes 1 lines of the \`additive\` tier with 1 of other tiers" "$scratch/add-mixed.err"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/add-twelve.spec" --repetitions 3 > /dev/null 2> "$scratch/add-reps.err"
+    same "an additive spec refuses --repetitions with 2" "2" "$?"
+    present "and says the rounds fix the count" "Each round's count is computed from its rates" "$scratch/add-reps.err"
+    printf 'additive scenario-3 pilot\n' > "$scratch/add-round.spec"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/add-round.spec" > "$scratch/add-round.out" 2> /dev/null
+    same "a line of a round that rounds: does not declare is refused with 5" "5" "$?"
+    present "and the refusal names the rounds declared" "declares no round \`pilot\`. It declares screening tuning final" "$scratch/add-round.out"
+    printf 'additive scenario-3 screening %s\n' "$pointer_probe" > "$scratch/add-outside.spec"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/add-outside.spec" > "$scratch/add-outside.out" 2> /dev/null
+    same "a line that leaves out a probe of another set is refused with 5" "5" "$?"
+    printf 'additive no-hook final\n' > "$scratch/add-arm.spec"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/add-arm.spec" > "$scratch/add-arm.out" 2> /dev/null
+    same "an additive line of a component arm is refused with 5" "5" "$?"
+    # The count is computed from the round's rates: other rates price another
+    # final round. And the plan's own count of a line's probes must agree with
+    # the set `declared.py` reads, so a declaration whose set the plan does
+    # not select is refused.
+    sed 's/^    rates: \[0\.90, 0\.80\]/    rates: [0.95, 0.80]/' "$root/.headwater/probe.yml" > "$scratch/add-rates.yml"
+    HW_PROBE_YML="$scratch/add-rates.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/add-twelve.spec" > "$scratch/add-rates.out" 2> /dev/null
+    present "other rates for the final round price another count" "0.95 against 0.8, needs 88 sessions per scenario" "$scratch/add-rates.out"
+    present "and plan it" "4 probes x 22 repetitions (round final, ceil(88 / 4)) = 88 sessions" "$scratch/add-rates.out"
+    awk '/^  tuning:/ && !done { print; getline; done = 1; next } { print }' "$root/.headwater/probe.yml" > "$scratch/add-short.yml"
+    printf 'additive scenario-12 screening\n' > "$scratch/add-short.spec"
+    HW_PROBE_YML="$scratch/add-short.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/add-short.spec" > "$scratch/add-short.out" 2> /dev/null
+    same "a set the plan counts otherwise than the declaration read is refused with 5" "5" "$?"
+    present "and the refusal names both counts" "the plan selects 4 probes, and the set tuning less the probes the line leaves out holds 3" "$scratch/add-short.out"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" \
+        > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
+    same "--priced reads each additive line" "0 46" "$? $(wc -l < "$scratch/add-priced.out" | tr -d ' ')"
+    same "and gives each its round's count" "18 18 55" \
+        "$(awk '$1 == 1 || $1 == 16 || $1 == 31 { print $3 }' "$scratch/add-priced.out" | tr '\n' ' ' | sed 's/ $//')"
+
+    # The batch runs the same check before each invocation (clause 5: "the
+    # check runs again before each round"). A stub `cargo` stands in for the
+    # build, with this checkout's engine where the build writes it, and a stub
+    # harness records any call. The batch needs a clean checkout.
+    if [ -z "$(git -C "$root" status --porcelain --untracked-files=no 2>/dev/null)" ]; then
+        mkdir -p "$scratch/gate-bin" "$scratch/gate-target/dev-release"
+        cp "$engine" "$scratch/gate-target/dev-release/headwater"
+        printf '#!/bin/sh\nexit 0\n' > "$scratch/gate-bin/cargo"
+        printf '#!/bin/sh\n: > "%s/claude-called"\nexit 7\n' "$scratch" > "$scratch/gate-bin/claude"
+        printf '#!/bin/sh\nexit 0\n' > "$scratch/gate-bin/bwrap"
+        chmod +x "$scratch/gate-bin/cargo" "$scratch/gate-bin/claude" "$scratch/gate-bin/bwrap"
+        rm -rf "$scratch/gate-out"
+        HW_PROBE_YML="$scratch/add-body.yml" CARGO_TARGET_DIR="$scratch/gate-target" PATH="$scratch/gate-bin:$PATH" \
+            sh "$root/tools/probe/campaign.sh" --out "$scratch/gate-out" --model claude-haiku-4-5 \
+            --spec "$additive_spec" > /dev/null 2> "$scratch/gate.err"
+        same "a batch of the additive spec stops with 8 on a leak in a scenario tree" "8" "$?"
+        present "and names the leak" "leak check, scenario-4 tree: leak HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged" "$scratch/gate.err"
+        same "and it asked the harness nothing, not even its version, and planned no line" "no no" \
+            "$([ -e "$scratch/gate-out/claude-version" ] && echo yes || echo no) $([ -e "$scratch/gate-out/lines" ] && echo yes || echo no)"
+        rm -rf "$scratch/gate-out"
+        CARGO_TARGET_DIR="$scratch/gate-target" PATH="$scratch/gate-bin:$PATH" \
+            sh "$root/tools/probe/campaign.sh" --out "$scratch/gate-out" --model claude-haiku-4-5 \
+            --spec "$additive_spec" > /dev/null 2> "$scratch/gate-clean.err"
+        same "with no leak the gate passes, and the ceiling of zero then refuses the batch with 5" "5" "$?"
+        present "and the refusal is the ceiling" "against a declared ceiling of \$0.00" "$scratch/gate-clean.err"
+        rm -rf "$scratch/gate-out"
+    else
+        printf 'note the checkout has uncommitted changes, so the batch leak gate cases did not run.\n'
+    fi
+
+    if [ -e "$scratch/claude-called" ]; then
+        fail "no additive dry run calls a model" "the harness on the path was called"
+    else
+        pass "no additive dry run calls a model"
+    fi
+else
+    printf 'note no engine, so the additive dry-run cases did not run.\n'
 fi
 
 present "the driver names the channel and never a file under ~/.claude/projects" \

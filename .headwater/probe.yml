@@ -76,6 +76,7 @@ folds:
   - integrations/vscode/test/fixtures/route-pointers.jsonl
   - integrations/vscode/test/fixtures/route-text-only.jsonl
   - tools/probe/layer-campaign.spec
+  - tools/probe/additive-campaign.spec
 
 # Answer keys: documents that an earlier session wrote in answer to a probe's
 # task, and that name neither the probe nor its slug, so the seal below would
@@ -117,7 +118,15 @@ answer_keys:
 # server. `tools/probe/leak.py` names each channel, and it reads this file and
 # the front matter with a YAML parser. It prints one line per hit and exits 1
 # on a leak string that `leaks_kept:` below does not keep. A probe with no
-# entry here is printed as `undeclared`, because the check cannot see it.
+# entry here is printed as `undeclared`, because the check cannot see it. A
+# probe whose entry is the empty sequence `[]` is declared with no answer
+# string, and the check prints nothing for it (#1774).
+#
+# `--scenario` reads more channels, for the trees of the additive campaign:
+# the whole `SKILL.md` of each skill, and the text the intent hook injects
+# for each probe's task where the tree holds the hook. A hit in a file of
+# the `harness` layer prints as `harness`, and does not fail the check.
+# `tools/probe/seal.sh` states that contract.
 leaks:
   HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request: [HW-DR-0052, "status: current"]
   HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted: [HW-DR-0052, HW-DR-0034, the merge activates, merged to main, merge onto `main`]
@@ -138,6 +147,19 @@ leaks:
   HW-PROBE-a-session-says-which-date-a-corrected-status-carries: [date of the correction, 66 documents standing at]
   HW-PROBE-a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced: [HW-DR-0020, where-scent-lives]
   HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded: [HW-DR-0087, No paragraph limit joins the language rule]
+  # The three probes of the additive campaign's set that declared none
+  # (#1774, clause 5). The ruling-cited probe keys on HW-DR-0049, so it
+  # takes the strings the plain-words probe declares for the same ruling.
+  HW-PROBE-what-a-session-writes-points-back-at-the-ruling-it-rests-on: [HW-DR-0049, corpus-wide fold, HW-EVAL-why-corpus-counts-are-derived]
+  # The cold-agent probe and the pointer probe key on `opened`: the key is an
+  # act, the opening of the target, and no string states it. So each declares
+  # the empty sequence, which the check reads as declared with no answer
+  # string, and a missing entry still prints `undeclared`. A string that
+  # named the target would be wrong for the pointer probe in particular: the
+  # hook's route for its task names HW-OBL-0107, its own target, and that
+  # pointer is the treatment the hook layer delivers, not a leak.
+  HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor: []
+  HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens: []
 
 # The probes whose leak string stays in the present arm on purpose (#1472, the second
 # outcome the issue offers). The leak string of the status probe is in the
@@ -173,6 +195,11 @@ leaks_kept:
 # repetitions above the ones a tier declares, so the count is priced by the
 # dry run and not run by anybody until a person raises what the tier may
 # spend.
+#
+# The additive campaign (#1774) sizes each of its rounds from two rates of its
+# own, under `rounds:` below, and takes the level and the power from here.
+# The dry run computes every count with the one formula it states, and
+# nobody types 18 or 55.
 power:
   present: 0.15
   absent: 0.08
@@ -343,6 +370,32 @@ tiers:
       - engine/crates/census/fixtures/corpus.census
       - site/tutorial/index.html
 
+  # The additive campaign (#1774): one `scenario-<n>` arm for each scenario
+  # declared under `scenarios:` below, each compared with its base. The plan
+  # is HW-DR-0111, and `tools/probe/additive-campaign.spec` is its batch.
+  #
+  # `repetitions` is the final round's count, 55, the largest any round runs.
+  # Every lower round passes `--repetitions` to the plan as a lowering, and
+  # `sh tools/probe/campaign.sh --dry-run` computes each round's count from
+  # its rates under `rounds:`. `max_turns` is the campaign tier's, for the
+  # reason given there.
+  #
+  # `session_cost_cents` is the declared rate of the paired tiers. The
+  # campaign of 2026-10-03 realized 35.0 cents a session: 149,681 cents over
+  # 4,280 sessions. At 50 cents the whole plan is 7,112 sessions and
+  # $3,556.00, and at 35.0 cents it is $2,489.20.
+  #
+  # The owner's ruling on the dry-run total sets this ceiling; deferred in run
+  # 20261017-0919, owner-question-mid-run. Until then it is zero, so the plan
+  # refuses every line of the additive tier on the ceiling, the dry run prints
+  # each line as refused, and nothing spends.
+  additive:
+    budget_cents: 0
+    session_cost_cents: 50
+    repetitions: 55
+    max_turns: 80
+    arms: [scenario-0, scenario-1, scenario-2, scenario-3, scenario-4, scenario-5, scenario-6, scenario-7, scenario-8, scenario-9, scenario-10, scenario-11, scenario-12, scenario-13]
+
 # **The additive campaign (#1774).** The arms above are each the present tree
 # with a part removed. The campaign of milestone 0.07 turns that around: it
 # starts from plain code and adds layers to it, so each layer is measured from
@@ -504,6 +557,44 @@ scenarios:
     block: answer-once
     base: 11
     layers: [docs, engine, claude-md, skills, hook, harness]
+
+# The common probe set of the additive campaign and its split, as HW-DR-0111
+# fixes them. `headwater probe plan --set <name>` selects one set across
+# categories. The engine refuses an empty set, a probe in both sets, and an
+# identifier that no probe document carries.
+sets:
+  tuning:
+    - HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged
+    - HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor
+    - HW-PROBE-a-session-follows-two-citations-from-a-record-the-task-does-not-name
+    - HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded
+  held-out:
+    - HW-PROBE-what-a-session-writes-points-back-at-the-ruling-it-rests-on
+    - HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens
+    - HW-PROBE-a-session-says-which-date-a-corrected-status-carries
+    - HW-PROBE-a-session-says-whether-a-command-or-a-hand-writes-a-governs-line
+
+# The rounds of the additive campaign. Each round names the set it runs, the
+# two pooled rates it is sized to separate, and the most tries it may take.
+# The level and the power are those of `power:` above. The dry run reads this
+# block with `tools/probe/declared.py` and computes each round's repetitions
+# with the formula `tools/probe/campaign-dry-run.sh` states: the sessions per
+# scenario over the set's probes, rounded up. The screening round and each
+# tuning try run the tuning set alone, and only the final round runs the
+# held-out set, so no held-out result exists before it.
+rounds:
+  screening:
+    set: tuning
+    rates: [0.625, 0.375]
+    tries: 1
+  tuning:
+    set: tuning
+    rates: [0.625, 0.375]
+    tries: 3
+  final:
+    set: held-out
+    rates: [0.90, 0.80]
+    tries: 1
 
 # The absent arm names a declared ablation (spec 5, "the counterfactual is not
 # a category, it is an arm of every probe... the absent arm names a declared

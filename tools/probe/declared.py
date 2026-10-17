@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-# Two keys of `.headwater/probe.yml` that the dry run of a campaign reads and
-# the engine does not: `power:` and `leaks_kept:` (#1472).
+# The keys of `.headwater/probe.yml` that the dry run of a campaign reads with
+# a YAML parser: `power:` and `leaks_kept:` (#1472), which the engine does not
+# read, and `rounds:` and `scenarios:` (#1774).
 #
 #     python3 tools/probe/declared.py <declaration> power
 #     python3 tools/probe/declared.py <declaration> leaks_kept
+#     python3 tools/probe/declared.py <declaration> rounds
+#     python3 tools/probe/declared.py <declaration> scenarios
 #
 # `power` prints `present <rate>`, `absent <rate>`, `alpha <level>`,
 # `power <power>` and `pooled <category>...`, one per line. Each of the four
@@ -16,6 +19,20 @@
 # YAML sequence form. The same key is read by `tools/probe/leak.py`, with the
 # same parser, so the leak check and the dry run never disagree about which
 # probe is kept (verify round 5: a flow sequence read as nothing).
+#
+# `rounds` prints one line per round of the additive campaign, in declared
+# order: `<round> <set> <rate> <rate> <tries> <probe>...`, the probes being
+# the members of the set under `sets:`. Each round names a set that `sets:`
+# declares, two rates that are YAML numbers strictly between 0 and 1 and
+# differ, and `tries`, a whole number above zero. The engine reads `sets:`
+# too, for `headwater probe plan --set`, and the dry run checks that the plan
+# of each line counts the probes this prints, so the two readers cannot
+# disagree unseen. A declaration with no `rounds:` prints nothing.
+#
+# `scenarios` prints one line per scenario under `scenarios:`: `<n> <base>
+# <layer>...`, with `-` for the base of a scenario that names none. The engine
+# refuses a malformed block when it reads the declaration, so this reads the
+# block for the dry run's per-scenario trees and nothing more.
 #
 # It reads with PyYAML and never with a hand-written reader, as the parent
 # ruled after verify round 3. It exits 0 when it printed the key, 2 when the
@@ -43,9 +60,50 @@ def number(block, key):
     return value
 
 
+def rate(round_name, value):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        refuse(f"a rate of the `{round_name}` round in .headwater/probe.yml is {value!r}, and it must be a number, not a string or a word")
+    if not 0 < value < 1:
+        refuse(f"a rate of the `{round_name}` round in .headwater/probe.yml is {value}, and it must lie strictly between 0 and 1")
+    return value
+
+
+def rounds(declared):
+    block = declared.get("rounds")
+    if block is None:
+        return 0
+    if not isinstance(block, dict):
+        refuse("`rounds:` in .headwater/probe.yml is not a mapping of round name to its set, rates and tries")
+    sets = declared.get("sets") or {}
+    if not isinstance(sets, dict):
+        refuse("`sets:` in .headwater/probe.yml is not a mapping of set name to probe identifiers")
+    for name, fields in block.items():
+        name = str(name)
+        if not isinstance(fields, dict):
+            refuse(f"the `{name}` round in .headwater/probe.yml is not a mapping of `set`, `rates` and `tries`")
+        unknown = sorted(str(key) for key in fields if key not in ("set", "rates", "tries"))
+        if unknown:
+            refuse(f"the `{name}` round in .headwater/probe.yml declares `{unknown[0]}`. A round declares `set`, `rates` and `tries`, and nothing else")
+        chosen = fields.get("set")
+        members = sets.get(chosen) if isinstance(chosen, str) else None
+        if not isinstance(members, list) or not members or not all(isinstance(entry, str) for entry in members):
+            refuse(f"the `{name}` round in .headwater/probe.yml runs the set {chosen!r}, and `sets:` declares no such set of probe identifiers")
+        rates = fields.get("rates")
+        if not isinstance(rates, list) or len(rates) != 2:
+            refuse(f"`rates` of the `{name}` round in .headwater/probe.yml is not a sequence of two rates")
+        high, low = (rate(name, value) for value in rates)
+        if high == low:
+            refuse(f"the two rates of the `{name}` round in .headwater/probe.yml are equal, so no difference is powered")
+        tries = fields.get("tries")
+        if isinstance(tries, bool) or not isinstance(tries, int) or tries < 1:
+            refuse(f"`tries` of the `{name}` round in .headwater/probe.yml is {tries!r}, and it must be a whole number above zero")
+        print(" ".join([name, chosen, str(high), str(low), str(tries)] + members))
+    return 0
+
+
 def main(argv):
-    if len(argv) != 2 or argv[1] not in ("power", "leaks_kept"):
-        refuse("usage: python3 tools/probe/declared.py <declaration> power|leaks_kept")
+    if len(argv) != 2 or argv[1] not in ("power", "leaks_kept", "rounds", "scenarios"):
+        refuse("usage: python3 tools/probe/declared.py <declaration> power|leaks_kept|rounds|scenarios")
     path, key = argv
     try:
         with open(path, encoding="utf-8-sig") as handle:
@@ -61,6 +119,22 @@ def main(argv):
             refuse("`leaks_kept` in .headwater/probe.yml is not a sequence of probe identifiers")
         for entry in kept:
             print(entry)
+        return 0
+
+    if key == "rounds":
+        return rounds(declared)
+
+    if key == "scenarios":
+        block = declared.get("scenarios") or {}
+        if not isinstance(block, dict):
+            refuse("`scenarios:` in .headwater/probe.yml is not a mapping of scenario number to its base and layers")
+        for number_, fields in block.items():
+            fields = fields if isinstance(fields, dict) else {}
+            base = fields.get("base")
+            layers = fields.get("layers") or []
+            if not isinstance(layers, list):
+                refuse(f"`layers` of scenario {number_} in .headwater/probe.yml is not a sequence of layer names")
+            print(" ".join([str(number_), "-" if base is None else str(base)] + [str(layer) for layer in layers]))
         return 0
 
     block = declared.get("power")

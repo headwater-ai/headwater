@@ -195,8 +195,8 @@ headwater taxonomy    validate | resolve [--check]
                     | graph [--view concrete|abstract] [--legend]
                     | kinds [--json]
 headwater coverage    [--format ...]
-headwater probe       plan [--tier regression|campaign|documentation] [--arm <arm>] [--delta]
-                           [--category <name>] [--seed <n>]
+headwater probe       plan [--tier regression|campaign|documentation|additive] [--arm <arm>] [--delta]
+                           [--category <name>|--set <name>] [--seed <n>]
                     | plan --scenario <n> --delta
                     | plan --instrument
                     | plan --folds

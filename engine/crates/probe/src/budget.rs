@@ -80,6 +80,13 @@ impl Envelope {
         match arm {
             Arm::Present => &[],
             Arm::Absent => &self.ablation,
+            // A scenario's tree is plain code with layers added, and plain code
+            // lacks `docs/`. The plan's examined-target rule reads this, and it
+            // would refuse every document-keyed probe in scenario 0. HW-DR-0111
+            // keeps those probes in the set, with scenario 0 at zero by
+            // construction as the floor scenario 1 is compared with, so a
+            // scenario arm removes nothing as the rule reads it (#1774).
+            Arm::Scenario(_) => &[],
             _ if arm.adds() => &[],
             _ => self.delta(arm),
         }
@@ -126,6 +133,10 @@ pub struct Budgets {
     /// The `scenarios` mapping of the additive campaign (#1774), in declared
     /// order. Empty where the file declares none.
     pub scenarios: Vec<Scenario>,
+    /// The `sets` mapping of the additive campaign (#1774), in declared order:
+    /// each set's name and the probe identifiers it holds. `headwater probe
+    /// plan --set <name>` selects one. Empty where the file declares none.
+    pub sets: Vec<(String, Vec<String>)>,
 }
 
 /// One layer of the additive campaign (#1774): the paths it adds to plain
@@ -361,6 +372,24 @@ impl Budgets {
             None => Vec::new(),
             Some(declared) => scenarios(&declared.value, &layers)?,
         };
+        // A scenario arm names a scenario this file declares, or its tree is
+        // a delta nobody wrote (#1774).
+        for envelope in &tiers {
+            for arm in &envelope.arms {
+                if let Arm::Scenario(number) = arm {
+                    if !scenarios.iter().any(|scenario| scenario.number == *number) {
+                        return Err(Unreadable::ScenarioArmUndeclared {
+                            tier: envelope.tier.name(),
+                            arm: *arm,
+                        });
+                    }
+                }
+            }
+        }
+        let sets = match root.get("sets") {
+            None => Vec::new(),
+            Some(declared) => sets(&declared.value)?,
+        };
         Ok(Budgets {
             tiers,
             instrument,
@@ -368,8 +397,76 @@ impl Budgets {
             answer_keys,
             layers,
             scenarios,
+            sets,
         })
     }
+
+    /// The probes a declared set holds, or `None` for a set the file does not
+    /// declare.
+    pub fn set(&self, name: &str) -> Option<&[String]> {
+        self.sets
+            .iter()
+            .find(|(declared, _)| declared == name)
+            .map(|(_, members)| members.as_slice())
+    }
+}
+
+/// The `sets` mapping (#1774): each set's name and its probe identifiers.
+///
+/// A set is the probes a round of the additive campaign runs, and the
+/// held-out set is held out only while no probe of it is in the tuning set.
+/// So an identifier in two sets is refused, and so is an empty set, which
+/// plans a round of nothing. Whether each identifier names a probe document
+/// is the plan's question, because only the plan reads the corpus.
+fn sets(value: &Value) -> Result<Vec<(String, Vec<String>)>, Unreadable> {
+    let Some(block) = value.as_map() else {
+        return Err(Unreadable::Malformed(format!(
+            "`sets` in {PATH} is not a mapping of set name to a sequence of probe identifiers"
+        )));
+    };
+    let mut sets: Vec<(String, Vec<String>)> = Vec::new();
+    for entry in block {
+        let name = entry.key.value.as_str().to_string();
+        let Some(items) = entry.value.value.as_seq() else {
+            return Err(Unreadable::Malformed(format!(
+                "the `{}` set in {PATH} is not a sequence of probe identifiers",
+                name.escape_debug()
+            )));
+        };
+        let mut members: Vec<String> = Vec::new();
+        for item in items {
+            let probe = item
+                .value
+                .as_scalar()
+                .map(|scalar| scalar.text.clone())
+                .unwrap_or_default();
+            if probe.is_empty() || probe.chars().any(|c| c.is_control() || c.is_whitespace()) {
+                return Err(Unreadable::Malformed(format!(
+                    "the `{}` set in {PATH} holds `{}`, which is not a probe identifier",
+                    name.escape_debug(),
+                    probe.escape_debug()
+                )));
+            }
+            if let Some((other, _)) = sets
+                .iter()
+                .find(|(_, held)| held.iter().any(|held| held == &probe))
+            {
+                return Err(Unreadable::SetMemberInTwo {
+                    probe,
+                    first: other.clone(),
+                    second: name,
+                });
+            }
+            if !members.contains(&probe) {
+                members.push(probe);
+            }
+        }
+        if members.is_empty() {
+            return Err(Unreadable::SetEmpty { set: name });
+        }
+        sets.push((name, members));
+    }
+    Ok(sets)
 }
 
 fn envelope(tier: Tier, fields: &Mapping) -> Result<Envelope, Unreadable> {
@@ -426,6 +523,18 @@ fn envelope(tier: Tier, fields: &Mapping) -> Result<Envelope, Unreadable> {
             tier: name,
             field: "arms",
         });
+    }
+    // #1774: the additive tier runs scenario arms and nothing else, because
+    // each scenario is compared with its declared base and a present or
+    // component arm has no base. No other tier runs a scenario arm, because
+    // its tree is plain code with layers added, and that is not the present
+    // tree any other arm's delta is taken from.
+    if let Some(arm) = arms
+        .iter()
+        .copied()
+        .find(|arm| arm.is_scenario() != (tier == Tier::Additive))
+    {
+        return Err(Unreadable::ArmOutsideItsTier { tier: name, arm });
     }
     // Spec 5: "A campaign runs as one batch, or it is not one measurement", and
     // the pair is what an efficacy claim rests on. A campaign declaring one arm
@@ -927,6 +1036,22 @@ pub enum Unreadable {
         added: Vec<String>,
         dropped: Vec<String>,
     },
+    ArmOutsideItsTier {
+        tier: &'static str,
+        arm: Arm,
+    },
+    ScenarioArmUndeclared {
+        tier: &'static str,
+        arm: Arm,
+    },
+    SetEmpty {
+        set: String,
+    },
+    SetMemberInTwo {
+        probe: String,
+        first: String,
+        second: String,
+    },
 }
 
 impl std::fmt::Display for Unreadable {
@@ -1150,6 +1275,42 @@ impl std::fmt::Display for Unreadable {
                     listed(dropped)
                 )
             }
+            Unreadable::ArmOutsideItsTier { tier, arm } if arm.is_scenario() => write!(
+                f,
+                "the `{tier}` tier names the arm `{}`. A scenario arm is plain code with layers \
+                 added, and only the `additive` tier runs one",
+                arm.name()
+            ),
+            Unreadable::ArmOutsideItsTier { tier, arm } => write!(
+                f,
+                "the `{tier}` tier names the arm `{}`. The `additive` tier runs scenario arms \
+                 alone, `scenario-<n>`, because each scenario is compared with its declared \
+                 base and this arm has none",
+                arm.name()
+            ),
+            Unreadable::ScenarioArmUndeclared { tier, arm } => write!(
+                f,
+                "the `{tier}` tier names the arm `{}`, and `scenarios` in {PATH} declares no \
+                 such scenario, so nothing says which layers its tree holds",
+                arm.name()
+            ),
+            Unreadable::SetEmpty { set } => write!(
+                f,
+                "the `{}` set in {PATH} holds no probe, so a round over it plans nothing",
+                set.escape_debug()
+            ),
+            Unreadable::SetMemberInTwo {
+                probe,
+                first,
+                second,
+            } => write!(
+                f,
+                "`{}` is in the `{}` set and the `{}` set in {PATH}. A probe is in one set, or \
+                 a round over one set reads a result the other set holds out",
+                probe.escape_debug(),
+                first.escape_debug(),
+                second.escape_debug()
+            ),
         }
     }
 }
@@ -2244,5 +2405,216 @@ scenarios:
                 found: "MCP server".into()
             })
         );
+    }
+
+    // --- the additive tier, its scenario arms and its sets (#1774) ----------
+
+    /// The declaration with an additive tier that runs `arms`, the layers and
+    /// scenarios of `ADDITIVE`, and `sets` after them.
+    fn additive_tier(arms: &str, sets: &str) -> String {
+        format!(
+            "{GOOD}  additive:\n    budget_cents: 0\n    session_cost_cents: 50\n    \
+             repetitions: 55\n    max_turns: 80\n    arms: {arms}\n{ADDITIVE}{sets}"
+        )
+    }
+
+    const SETS: &str = "\
+sets:
+  tuning: [HW-PROBE-one, HW-PROBE-two]
+  held-out:
+    - HW-PROBE-three
+";
+
+    #[test]
+    fn a_scenario_arm_reads_back_to_the_name_it_was_written_as() {
+        assert_eq!(Arm::read("scenario-3"), Some(Arm::Scenario(3)));
+        assert_eq!(Arm::Scenario(3).name(), "scenario-3");
+        assert_eq!(Arm::read("scenario-13"), Some(Arm::Scenario(13)));
+        for unnamed in [
+            "scenario-03",
+            "scenario-",
+            "scenario--1",
+            "scenario-x",
+            "scenario-+3",
+        ] {
+            assert_eq!(Arm::read(unnamed), None, "`{unnamed}` names no arm");
+        }
+        assert!(!Arm::Scenario(0).is_component());
+        assert!(!Arm::ALL.contains(&Arm::Scenario(0)));
+        assert_eq!(Tier::read("additive"), Some(Tier::Additive));
+        assert!(!Tier::Additive.pairs_arms());
+    }
+
+    #[test]
+    fn an_additive_tier_reads_its_scenario_arms_and_a_ceiling_of_zero() {
+        let budgets = Budgets::read(&additive_tier(
+            "[scenario-0, scenario-1, scenario-13]",
+            SETS,
+        ))
+        .expect("reads");
+        let envelope = budgets.of(Tier::Additive).expect("the additive tier");
+        assert_eq!(
+            envelope.arms,
+            vec![Arm::Scenario(0), Arm::Scenario(1), Arm::Scenario(13)]
+        );
+        assert_eq!(envelope.budget, 0, "a ceiling nobody approved is zero");
+        assert_eq!(envelope.repetitions, 55);
+        assert!(
+            envelope.removes(Arm::Scenario(0)).is_empty(),
+            "the examined-target rule reads no removal for a scenario arm"
+        );
+        assert_eq!(
+            budgets.sets,
+            vec![
+                (
+                    "tuning".to_string(),
+                    vec!["HW-PROBE-one".to_string(), "HW-PROBE-two".to_string()]
+                ),
+                ("held-out".to_string(), vec!["HW-PROBE-three".to_string()]),
+            ]
+        );
+        assert_eq!(
+            budgets.set("held-out"),
+            Some(&["HW-PROBE-three".to_string()][..])
+        );
+        assert_eq!(budgets.set("final"), None);
+    }
+
+    #[test]
+    fn the_additive_tier_refuses_every_arm_that_is_not_a_scenario() {
+        for (arm, found) in [
+            ("present", Arm::Present),
+            ("absent", Arm::Absent),
+            ("no-hook", Arm::NoHook),
+            ("mcp", Arm::Mcp),
+        ] {
+            let source = additive_tier(&format!("[scenario-0, {arm}]"), "");
+            assert_eq!(
+                Budgets::read(&source),
+                Err(Unreadable::ArmOutsideItsTier {
+                    tier: "additive",
+                    arm: found
+                }),
+                "{arm}"
+            );
+        }
+        let refusal = Budgets::read(&additive_tier("[present]", "")).expect_err("refused");
+        assert!(
+            refusal.to_string().contains("scenario arms alone"),
+            "{refusal}"
+        );
+    }
+
+    #[test]
+    fn every_other_tier_refuses_a_scenario_arm() {
+        let regression = additive().replace(
+            "    repetitions: 1\n    arms: [present]\n",
+            "    repetitions: 1\n    arms: [scenario-1]\n",
+        );
+        assert_eq!(
+            Budgets::read(&regression),
+            Err(Unreadable::ArmOutsideItsTier {
+                tier: "regression",
+                arm: Arm::Scenario(1)
+            })
+        );
+        for tier in ["campaign", "documentation"] {
+            let source = additive().replacen(
+                "    arms: [present, absent]\n",
+                "    arms: [present, absent, scenario-1]\n",
+                if tier == "campaign" { 1 } else { 2 },
+            );
+            // `replacen` with 2 also writes the campaign's line, and the
+            // campaign is read first, so the documentation case reads the
+            // campaign's refusal unless the campaign line is put back.
+            let source = if tier == "documentation" {
+                source.replacen(
+                    "    arms: [present, absent, scenario-1]\n",
+                    "    arms: [present, absent]\n",
+                    1,
+                )
+            } else {
+                source
+            };
+            assert_eq!(
+                Budgets::read(&source),
+                Err(Unreadable::ArmOutsideItsTier {
+                    tier,
+                    arm: Arm::Scenario(1)
+                }),
+                "{tier}"
+            );
+            let refusal = Budgets::read(&source).expect_err("refused").to_string();
+            assert!(
+                refusal.contains("only the `additive` tier runs one"),
+                "{refusal}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_scenario_arm_the_file_does_not_declare_is_refused() {
+        assert_eq!(
+            Budgets::read(&additive_tier("[scenario-0, scenario-14]", "")),
+            Err(Unreadable::ScenarioArmUndeclared {
+                tier: "additive",
+                arm: Arm::Scenario(14)
+            })
+        );
+        // With no `scenarios` at all, scenario 0 is undeclared too.
+        let source = format!(
+            "{GOOD}  additive:\n    budget_cents: 0\n    session_cost_cents: 50\n    \
+             repetitions: 55\n    arms: [scenario-0]\n"
+        );
+        assert_eq!(
+            Budgets::read(&source),
+            Err(Unreadable::ScenarioArmUndeclared {
+                tier: "additive",
+                arm: Arm::Scenario(0)
+            })
+        );
+    }
+
+    #[test]
+    fn a_set_that_is_empty_or_shares_a_probe_with_another_is_refused() {
+        assert_eq!(
+            Budgets::read(&additive_tier("[scenario-0]", "sets:\n  tuning: []\n")),
+            Err(Unreadable::SetEmpty {
+                set: "tuning".into()
+            })
+        );
+        assert_eq!(
+            Budgets::read(&additive_tier(
+                "[scenario-0]",
+                "sets:\n  tuning: [HW-PROBE-one, HW-PROBE-two]\n  \
+                 held-out: [HW-PROBE-three, HW-PROBE-two]\n"
+            )),
+            Err(Unreadable::SetMemberInTwo {
+                probe: "HW-PROBE-two".into(),
+                first: "tuning".into(),
+                second: "held-out".into()
+            })
+        );
+        for malformed in [
+            "sets: [tuning]\n",
+            "sets:\n  tuning: HW-PROBE-one\n",
+            "sets:\n  tuning: [\"HW-PROBE one\"]\n",
+            "sets:\n  tuning: [\"\"]\n",
+        ] {
+            assert!(
+                matches!(
+                    Budgets::read(&additive_tier("[scenario-0]", malformed)),
+                    Err(Unreadable::Malformed(_))
+                ),
+                "{malformed}"
+            );
+        }
+        let refusal = Budgets::read(&additive_tier(
+            "[scenario-0]",
+            "sets:\n  tuning: [HW-PROBE-one]\n  held-out: [HW-PROBE-one]\n",
+        ))
+        .expect_err("refused")
+        .to_string();
+        assert!(refusal.contains("A probe is in one set"), "{refusal}");
     }
 }

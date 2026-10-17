@@ -1568,8 +1568,16 @@ fn a_documentation_plan_refuses_a_probe_whose_document_its_absent_arm_removes() 
 fn a_probe_whose_document_the_instrument_removes_is_refused_at_every_tier() {
     let source =
         std::fs::read_to_string(fixtures_dir().join("probe.yml")).expect("the budget declaration");
-    let budgets = Budgets::read(&format!("instrument: [corpus/probes]\n{source}"))
-        .expect("the declaration reads");
+    // The additive tier (#1774) is declared too, with the one scenario it
+    // needs, so that its scenario arm is held to the instrument as every arm
+    // is: the examined-target rule it skips is the layers', not this one.
+    let budgets = Budgets::read(&format!(
+        "instrument: [corpus/probes]\n{source}  additive:\n    budget_cents: 0\n    \
+         session_cost_cents: 50\n    repetitions: 55\n    arms: [scenario-0]\n\
+         layers:\n  docs:\n    paths: [corpus]\n\
+         scenarios:\n  0:\n    block: answer-once\n    layers: []\n"
+    ))
+    .expect("the declaration reads");
     for tier in Tier::ALL {
         let plan = plan_against(tier, &budgets);
         assert_eq!(
@@ -2882,4 +2890,191 @@ fn the_repetitions_narrowing_lowers_the_count_and_never_raises_it() {
         },
     );
     assert_eq!(none.refusal, Some(Refusal::RepetitionsZero));
+}
+
+// --- the additive tier (#1774) ----------------------------------------------
+
+/// A transcript of the additive tier names its scenario arm, and intake reads
+/// both, so a session of the campaign can be recorded at all. A misspelled
+/// scenario is still refused, and the refusal of a tier names all four.
+#[test]
+fn intake_reads_the_additive_tier_and_a_scenario_arm() {
+    let source = transcript("transcript.md").replace(
+        "tier: regression\narm: present\nat:",
+        "tier: additive\narm: scenario-3\nat:",
+    );
+    let record = record_of(&source);
+    let identity = record.identity.as_ref().expect("the identity reads");
+    assert_eq!(identity.tier, Tier::Additive);
+    assert_eq!(identity.arm, Arm::Scenario(3));
+
+    let misspelled = transcript("transcript.md").replace(
+        "tier: regression\narm: present\nat:",
+        "tier: additive\narm: scenario-03\nat:",
+    );
+    let refused = record_of(&misspelled).render(ColorMode::Plain);
+    assert!(refused.contains("`scenario-03` is not an arm"), "{refused}");
+
+    let tier = transcript("transcript.md").replace(
+        "tier: regression\narm: present\nat:",
+        "tier: additives\narm: present\nat:",
+    );
+    let refused = record_of(&tier).render(ColorMode::Plain);
+    assert!(
+        refused.contains("The tiers are `regression`, `campaign`, `documentation` and `additive`"),
+        "{refused}"
+    );
+}
+
+/// The fixture declaration with an additive tier over two scenarios, a layer
+/// that holds the whole fixture corpus, and `sets` after them.
+fn additive_budgets(sets: &str) -> Budgets {
+    let source =
+        std::fs::read_to_string(fixtures_dir().join("probe.yml")).expect("the budget declaration");
+    let source = format!(
+        "{source}  additive:\n    budget_cents: 0\n    session_cost_cents: 50\n    \
+         repetitions: 55\n    max_turns: 80\n    arms: [scenario-0, scenario-1]\n\
+         layers:\n  docs:\n    paths: [corpus]\n\
+         scenarios:\n  0:\n    block: answer-once\n    layers: []\n  \
+         1:\n    block: answer-once\n    base: 0\n    layers: [docs]\n{sets}"
+    );
+    Budgets::read(&source).expect("the declaration with an additive tier reads")
+}
+
+const FIXTURE_SETS: &str = "sets:\n  tuning: [PROBE-FIX-opened, PROBE-FIX-cited]\n  \
+                            held-out: [PROBE-FIX-answered]\n";
+
+fn additive_plan(budgets: &Budgets, tier: Tier, narrowing: &Narrowing) -> Plan {
+    let root = taxonomy_map();
+    let taken = fixture_census(&root);
+    let graph = fixture_graph(&root, &taken);
+    Plan::over(
+        &taken,
+        &graph,
+        &Config::default(),
+        budgets,
+        LOCK,
+        tier,
+        narrowing,
+    )
+}
+
+/// `--set` selects the probes of one declared set across categories, and a
+/// document-keyed probe plans in scenario 0, which removes every path of
+/// every layer: HW-DR-0111 keeps it there at zero by construction, as the
+/// floor scenario 1 is compared with. The ceiling of zero refuses the run
+/// and still prices it.
+#[test]
+fn a_set_selects_its_probes_across_categories_and_scenario_0_keeps_a_document_keyed_probe() {
+    let budgets = additive_budgets(FIXTURE_SETS);
+    let plan = additive_plan(
+        &budgets,
+        Tier::Additive,
+        &Narrowing {
+            arm: Some(Arm::Scenario(0)),
+            set: Some("tuning".into()),
+            repetitions: Some(18),
+            ..Narrowing::default()
+        },
+    );
+    let ids: Vec<&str> = plan.selected.iter().map(|it| it.id.as_str()).collect();
+    assert_eq!(ids, vec!["PROBE-FIX-cited", "PROBE-FIX-opened"]);
+    assert_eq!(plan.arms, vec![Arm::Scenario(0)]);
+    assert_eq!(
+        plan.refusal,
+        Some(Refusal::OverBudget {
+            sessions: 36,
+            projected: 1800,
+            budget: 0,
+        }),
+        "the one refusal is the ceiling nobody has approved"
+    );
+    let rendered = plan.render(ColorMode::Plain);
+    assert!(rendered.contains("arms: [scenario-0]"), "{rendered}");
+    assert!(rendered.contains("tier: additive"), "{rendered}");
+
+    // The held-out set holds the third probe alone.
+    let held_out = additive_plan(
+        &budgets,
+        Tier::Additive,
+        &Narrowing {
+            arm: Some(Arm::Scenario(1)),
+            set: Some("held-out".into()),
+            ..Narrowing::default()
+        },
+    );
+    let ids: Vec<&str> = held_out.selected.iter().map(|it| it.id.as_str()).collect();
+    assert_eq!(ids, vec!["PROBE-FIX-answered"]);
+}
+
+#[test]
+fn a_set_the_file_does_not_declare_or_that_names_no_probe_is_refused() {
+    let budgets = additive_budgets(FIXTURE_SETS);
+    let plan = additive_plan(
+        &budgets,
+        Tier::Additive,
+        &Narrowing {
+            set: Some("final".into()),
+            ..Narrowing::default()
+        },
+    );
+    assert_eq!(
+        plan.refusal,
+        Some(Refusal::SetUndeclared {
+            set: "final".into(),
+            declared: vec!["tuning".into(), "held-out".into()],
+        })
+    );
+    let named = plan.render(ColorMode::Plain);
+    assert!(named.contains("`--set final` names no set"), "{named}");
+
+    let budgets = additive_budgets("sets:\n  tuning: [PROBE-FIX-opened, PROBE-FIX-gone]\n");
+    let plan = additive_plan(
+        &budgets,
+        Tier::Additive,
+        &Narrowing {
+            set: Some("tuning".into()),
+            ..Narrowing::default()
+        },
+    );
+    assert_eq!(
+        plan.refusal,
+        Some(Refusal::SetMemberUnknown {
+            set: "tuning".into(),
+            probe: "PROBE-FIX-gone".into(),
+        })
+    );
+}
+
+/// The additive tier plans only the scenario arms it declares, and no other
+/// tier plans a scenario arm.
+#[test]
+fn a_scenario_arm_plans_only_in_the_additive_tier_and_only_where_it_is_declared() {
+    let budgets = additive_budgets(FIXTURE_SETS);
+    for (tier, arm) in [
+        (Tier::Additive, Arm::Present),
+        (Tier::Additive, Arm::Absent),
+        (Tier::Additive, Arm::Mcp),
+        (Tier::Additive, Arm::Scenario(7)),
+        (Tier::Campaign, Arm::Scenario(0)),
+        (Tier::Regression, Arm::Scenario(0)),
+        (Tier::Documentation, Arm::Scenario(1)),
+    ] {
+        let plan = additive_plan(
+            &budgets,
+            tier,
+            &Narrowing {
+                arm: Some(arm),
+                ..Narrowing::default()
+            },
+        );
+        assert!(
+            matches!(plan.refusal, Some(Refusal::ArmNotDeclared { .. })),
+            "{} {}: {:?}",
+            tier.name(),
+            arm.name(),
+            plan.refusal
+        );
+        assert!(plan.arms.is_empty());
+    }
 }

@@ -1103,19 +1103,21 @@ pub enum ProbeWord {
     Plan {
         #[arg(
             long,
-            value_name = "regression|campaign|documentation",
+            value_name = "regression|campaign|documentation|additive",
             help = "which tier of `.headwater/probe.yml` to plan against. A tier declares the \
                     ceiling, the session cost, the repetitions, the arms and the ablation its \
                     absent arm removes, and the plan is projected against them. A paired tier \
                     refuses a probe whose predicate names a document its own ablation removes. \
-                    `regression` by default"
+                    The `additive` tier runs one `scenario-<n>` arm for each scenario it \
+                    names, and no scenario arm is held to that rule. `regression` by default"
         )]
         tier: Option<String>,
         #[arg(
             long,
-            value_name = "present|absent|no-hook|no-skills|no-claude-md|mcp",
+            value_name = "present|absent|no-hook|no-skills|no-claude-md|mcp|scenario-<n>",
             help = "narrow the selection to one arm the tier declares. Every arm the tier \
-                    declares under `arms` by default. \
+                    declares under `arms` by default. A `scenario-<n>` arm is the additive \
+                    tier's alone. \
                     An arm the tier does not declare refuses the run rather than planning \
                     another one, and the refusal names the arms the tier declares"
         )]
@@ -1185,6 +1187,16 @@ pub enum ProbeWord {
                     refused rather than planned as a run of nothing"
         )]
         category: Option<String>,
+        #[arg(
+            long,
+            value_name = "name",
+            conflicts_with = "category",
+            help = "narrow the selection to the probes of one set that `sets` in \
+                    `.headwater/probe.yml` declares, across categories. A set the file does not \
+                    declare is refused, and so is a set that names an identifier no probe \
+                    document carries. It is refused beside `--category`"
+        )]
+        set: Option<String>,
         // Zero is the default and it is a value like any other. The seed is
         // the caller's, so a run that states none states zero, and a run that
         // repeats a seed repeats a selection.

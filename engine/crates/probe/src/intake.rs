@@ -211,10 +211,13 @@ impl std::fmt::Display for Refusal {
                 "it was planned against taxonomy {claimed} and this tree carries {tree}, and no \
                  read set was composed over its probes to show that the move left them alone"
             ),
-            Refusal::UnknownTier(found) => write!(
-                f,
-                "`{found}` is not a tier. The tiers are `regression` and `campaign`"
-            ),
+            Refusal::UnknownTier(found) => {
+                write!(
+                    f,
+                    "`{found}` is not a tier. The tiers are {}",
+                    Tier::listed()
+                )
+            }
             Refusal::UnknownArm(found) => {
                 write!(f, "`{found}` is not an arm. The arms are {}", Arm::listed())
             }
