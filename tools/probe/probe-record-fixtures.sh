@@ -4757,6 +4757,131 @@ else
     printf 'note no engine, so the dry-run cases did not run.\n'
 fi
 
+# ---------------------------------------------------------------------------
+# The dry run of the additive campaign (#1774, clauses 5 and 7): the committed
+# spec priced by round, with one total, and the leak check run over every
+# scenario tree. A check that read only the present tree, or no skill body, or
+# no hook text, names the wrong scenarios below.
+# ---------------------------------------------------------------------------
+if [ -x "$engine" ]; then
+    mkdir -p "$scratch/dry-bin"
+    printf '#!/bin/sh\n: > "%s/claude-called"\nexit 7\n' "$scratch" > "$scratch/dry-bin/claude"
+    chmod +x "$scratch/dry-bin/claude"
+    rm -f "$scratch/claude-called"
+    additive_spec=$root/tools/probe/additive-campaign.spec
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$additive_spec" > "$scratch/add.out" 2> "$scratch/add.err"
+    same "the dry run of the additive campaign exits 0" "0" "$?"
+    present "it prints the screening round's sum" "round screening: 1008 sessions, \$504.00" "$scratch/add.out"
+    present "it prints the tuning round's sum at its most tries" "round tuning: 3024 sessions, \$1512.00 (3 tries at most)" "$scratch/add.out"
+    present "it prints the final round's sum" "round final: 3080 sessions, \$1540.00" "$scratch/add.out"
+    present "and one total" "total: 7112 sessions, \$3556.00" "$scratch/add.out"
+    present "each round's count is computed from its rates" "so ceil(219 / 4) = 55 repetitions of each probe" "$scratch/add.out"
+    present "the ceiling of zero refuses every plan" "The ceiling refuses 46 of 46 plans" "$scratch/add.out"
+    same "and it builds and checks each of the 14 scenario trees" "14" \
+        "$(sed -n 's/^tree additive \(scenario-[0-9]*\)[ :].*/\1/p' "$scratch/add.out" | sort -u | wc -l | tr -d ' ')"
+    present "a hit in the harness layer of scenario 13 prints as harness" \
+        "leak check, scenario-13 tree: harness HW-PROBE-a-session-says-whether-a-command-or-a-hand-writes-a-governs-line .claude/skills/hw-corpus/SKILL.md HW-DR-0104" "$scratch/add.out"
+    absent "and no scenario tree leaks" " tree: leak " "$scratch/add.out"
+
+    # additive_leaks <file> <probe> <string>: the committed declaration with
+    # one leak string, on one probe, and `[]` on every other probe of the sets.
+    additive_leaks() {
+        awk -v probe="$2" -v string="$3" '
+            /^leaks:/ { skip = 1; next }
+            /^leaks_kept:/ { skip = 1; next }
+            skip && /^[^ #]/ { skip = 0 }
+            skip { next }
+            { print }
+            /^  (tuning|held-out):/ { inset = 1; next }
+            inset && /^    - / { ids[++n] = substr($0, 7) }
+            inset && !/^    - / { inset = 0 }
+            END {
+                print "leaks:"
+                for (i = 1; i <= n; i++) {
+                    if (ids[i] == probe) printf "  %s: [\"%s\"]\n", ids[i], string
+                    else printf "  %s: []\n", ids[i]
+                }
+            }
+        ' "$root/.headwater/probe.yml" > "$1"
+    }
+    # The decisive case: the only leak string is in the body of a skill of the
+    # `skills` layer, and in no description, memory file or hook text.
+    body_string="Silence means the subject is not one a declared purpose answers"
+    additive_leaks "$scratch/add-body.yml" \
+        HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged "$body_string"
+    HW_PROBE_YML="$scratch/add-body.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$additive_spec" > "$scratch/add-body.out" 2> "$scratch/add-body.err"
+    same "a leak string in a skills-layer skill body fails the additive dry run with 8" "8" "$?"
+    same "and it names every scenario that holds skills, and no other" "4 8 10 11 12 13" \
+        "$(sed -n "s/^leak check, scenario-\([0-9]*\) tree: leak .*headwater-orient\/SKILL.md $body_string$/\1/p" "$scratch/add-body.out" | sort -n | tr '\n' ' ' | sed 's/ $//')"
+    present "and prints the round sums all the same" "total: 7112 sessions" "$scratch/add-body.out"
+
+    # The hook's text: the pointer probe's route names its own target, and no
+    # file of a hook scenario's always-loaded text or skill bodies does, but
+    # the harness skill `hw-corpus`, which prints as harness.
+    hook_string="docs/obligations/0107-the-base-package-ships"
+    pointer_probe=HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens
+    additive_leaks "$scratch/add-hook.yml" "$pointer_probe" "$hook_string"
+    HW_PROBE_YML="$scratch/add-hook.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$additive_spec" > "$scratch/add-hook.out" 2> "$scratch/add-hook.err"
+    same "a leak string in the hook's text fails the additive dry run with 8" "8" "$?"
+    same "and it names every scenario that holds the hook, and no other" "5 7 9 10 11 12 13" \
+        "$(sed -n "s/^leak check, scenario-\([0-9]*\) tree: leak $pointer_probe hook:$pointer_probe $hook_string$/\1/p" "$scratch/add-hook.out" | sort -n | tr '\n' ' ' | sed 's/ $//')"
+    same "and no scenario leaks through another channel" "0" \
+        "$(grep ' tree: leak ' "$scratch/add-hook.out" | grep -vc " hook:$pointer_probe ")"
+
+    # A scenario-13 line that pools a probe whose answer the harness layer
+    # states with another probe is refused with 8.
+    printf 'additive scenario-13 final\n' > "$scratch/add-pooled.spec"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/add-pooled.spec" > "$scratch/add-pooled.out" 2> "$scratch/add-pooled.err"
+    same "a scenario-13 line that pools a harness-leaked probe is refused with 8" "8" "$?"
+    present "and names the probe" \
+        "line 1 pools HW-PROBE-a-session-says-whether-a-command-or-a-hand-writes-a-governs-line, whose answer the harness layer of the scenario-13 tree states" \
+        "$scratch/add-pooled.out"
+    printf 'additive scenario-12 final\n' > "$scratch/add-twelve.spec"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/add-twelve.spec" > "$scratch/add-twelve.out" 2> "$scratch/add-twelve.err"
+    same "the same pooled line in scenario 12, which holds no harness, passes" "0" "$?"
+
+    # The refusals of a spec.
+    printf 'additive scenario-3 final\ncampaign present structural\n' > "$scratch/add-mixed.spec"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/add-mixed.spec" > /dev/null 2> "$scratch/add-mixed.err"
+    same "a spec that mixes additive lines with another tier is refused with 5" "5" "$?"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/add-twelve.spec" --repetitions 3 > /dev/null 2> "$scratch/add-reps.err"
+    same "an additive spec refuses --repetitions with 2" "2" "$?"
+    present "and says the rounds fix the count" "Each round's count is computed from its rates" "$scratch/add-reps.err"
+    printf 'additive scenario-3 pilot\n' > "$scratch/add-round.spec"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/add-round.spec" > "$scratch/add-round.out" 2> /dev/null
+    same "a line of a round that rounds: does not declare is refused with 5" "5" "$?"
+    present "and the refusal names the rounds declared" "declares no round \`pilot\`. It declares screening tuning final" "$scratch/add-round.out"
+    printf 'additive scenario-3 screening %s\n' "$pointer_probe" > "$scratch/add-outside.spec"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/add-outside.spec" > "$scratch/add-outside.out" 2> /dev/null
+    same "a line that leaves out a probe of another set is refused with 5" "5" "$?"
+    printf 'additive no-hook final\n' > "$scratch/add-arm.spec"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/add-arm.spec" > "$scratch/add-arm.out" 2> /dev/null
+    same "an additive line of a component arm is refused with 5" "5" "$?"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" \
+        > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
+    same "--priced reads each additive line" "0 46" "$? $(wc -l < "$scratch/add-priced.out" | tr -d ' ')"
+    same "and gives each its round's count" "18 18 55" \
+        "$(awk '$1 == 1 || $1 == 16 || $1 == 31 { print $3 }' "$scratch/add-priced.out" | tr '\n' ' ' | sed 's/ $//')"
+
+    if [ -e "$scratch/claude-called" ]; then
+        fail "no additive dry run calls a model" "the harness on the path was called"
+    else
+        pass "no additive dry run calls a model"
+    fi
+else
+    printf 'note no engine, so the additive dry-run cases did not run.\n'
+fi
+
 present "the driver names the channel and never a file under ~/.claude/projects" \
     "output-format stream-json" "$driver"
 present "the driver requires --verbose, which the harness requires" \
