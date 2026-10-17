@@ -232,6 +232,8 @@ docs/decisions/0109-a-task-that-repeats-the-declared-name-of-a-document-names-th
   typed: decision
 docs/decisions/0110-a-headless-review-of-the-nine-hand-built-pages-joins-ci-and-the-review-of-the-generated-half-stays-a-run-by-hand.md
   typed: decision
+docs/decisions/0111-the-additive-campaign-adds-six-layers-to-plain-code-in-fourteen-scenarios-and-registers-one-comparison-each.md
+  typed: decision
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md
