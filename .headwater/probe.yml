@@ -347,7 +347,7 @@ tiers:
 # with a part removed. The campaign of milestone 0.07 turns that around: it
 # starts from plain code and adds layers to it, so each layer is measured from
 # the bottom of the stack as well as from the top. The plan is
-# docs/decisions/0140-the-additive-campaign-adds-six-layers-to-plain-code-in-fourteen-scenarios-and-registers-one-comparison-each.md,
+# docs/decisions/0111-the-additive-campaign-adds-six-layers-to-plain-code-in-fourteen-scenarios-and-registers-one-comparison-each.md,
 # and these two mappings are its data. The engine reads them, and `sh
 # tools/probe/ablate.sh --scenario <n> <workspace>` builds a scenario's tree
 # from `headwater probe plan --scenario <n> --delta`, so no script parses
