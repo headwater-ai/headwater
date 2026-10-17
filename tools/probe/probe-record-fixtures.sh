@@ -4275,11 +4275,16 @@ scenario_tree() {
         site/tutorial/index.html engine/target/dev-release/headwater .githooks/pre-commit \
         .claude/skills/headwater-orient/SKILL.md .claude/skills/hw-corpus/SKILL.md \
         .claude/agents/headwater-maintainer.md .claude/agents/hw-build.md .claude/commands/next.md \
-        .claude/hooks/intent.sh .claude/hooks/lib.sh .claude/hooks/write.sh; do
+        .claude/hooks/intent.sh .claude/hooks/lib.sh .claude/hooks/write.sh \
+        .github/agents/headwater-maintainer.agent.md .github/hooks/hooks.json .github/prompts/next.prompt.md; do
         mkdir -p "$scratch/scen/$(dirname "$held")"
         printf 'held %s\n' "$held" > "$scratch/scen/$held"
     done
     cp "$root/.claude/settings.json" "$scratch/scen/.claude/settings.json"
+    # The Copilot copy of the standing instructions is a link to CLAUDE.md, so
+    # a scenario that keeps it holds a second path to CLAUDE.md that --diff
+    # cannot see: the link itself does not change.
+    ln -s ../CLAUDE.md "$scratch/scen/.github/copilot-instructions.md"
     # Every other path a layer names, so each layer is in the tree.
     while IFS=' ' read -r sign layer path; do
         [ "$sign" = - ] || continue
@@ -4348,8 +4353,11 @@ sh "$ablate" --scenario 0 "$scratch/scen-zero" > /dev/null 2> "$scratch/scen-zer
 same "ablate.sh --scenario 0 builds plain code" "0" "$?"
 left=
 for headwater_path in docs .headwater CLAUDE.md AGENTS.md .claude .agents .codex .githooks .mcp.json \
-    engine/crates/census/fixtures/corpus.census site/tutorial engine/target; do
-    [ -e "$scratch/scen-zero/$headwater_path" ] && left="$left $headwater_path"
+    engine/crates/census/fixtures/corpus.census site/tutorial engine/target \
+    .github/copilot-instructions.md .github/agents .github/hooks .github/prompts; do
+    if [ -e "$scratch/scen-zero/$headwater_path" ] || [ -L "$scratch/scen-zero/$headwater_path" ]; then
+        left="$left $headwater_path"
+    fi
 done
 same "and it holds no Headwater path, and no directory one left empty" "" "$left"
 if [ -f "$scratch/scen-zero/src/main.rs" ] && [ -f "$scratch/scen-zero/engine/crates/census/src/lib.rs" ] &&
@@ -4383,6 +4391,20 @@ if cmp -s "$root/.claude/settings.json" "$scratch/scen-thirteen/.claude/settings
 else
     fail "and its settings.json is the whole file" "it differs from .claude/settings.json"
 fi
+# Scenario 2 adds CLAUDE.md to the documents, and only that one path to it:
+# the Copilot link to CLAUDE.md is the harness's.
+cp -a "$scratch/scen" "$scratch/scen-two"
+sh "$ablate" --scenario 2 "$scratch/scen-two" > /dev/null 2> "$scratch/scen-two.err"
+same "ablate.sh --scenario 2 builds the standing-instructions scenario" "0" "$?"
+if [ -f "$scratch/scen-two/CLAUDE.md" ] && [ ! -e "$scratch/scen-two/.github/copilot-instructions.md" ] &&
+    [ ! -L "$scratch/scen-two/.github/copilot-instructions.md" ] && [ ! -e "$scratch/scen-two/AGENTS.md" ] &&
+    [ ! -e "$scratch/scen-two/.github/agents" ] && [ -f "$scratch/scen-two/.github/workflows/ci.yml" ]; then
+    pass "and it holds CLAUDE.md once, with no Codex or Copilot copy, and keeps the workflows"
+else
+    fail "and it holds CLAUDE.md once, with no Codex or Copilot copy, and keeps the workflows" \
+        "$(cd "$scratch/scen-two" && find CLAUDE.md AGENTS.md .github 2>/dev/null | LC_ALL=C sort | tr '\n' ' ')"
+fi
+rm -rf "$scratch/scen-two"
 
 # The refusals, each before anything is removed.
 sh "$ablate" --scenario 14 "$scratch/scen" > /dev/null 2> "$scratch/scen-14.err"

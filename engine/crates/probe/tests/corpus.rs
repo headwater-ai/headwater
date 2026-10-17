@@ -1067,13 +1067,21 @@ fn every_harness_file_belongs_to_a_layer() {
 
     // What git ignores under `.claude/`: the local state, the agents' trees,
     // and the local settings file.
+    // Under `.github/`, what serves GitHub and not a session: the workflows,
+    // the images, the issue template and the two community files. The
+    // Copilot copies of the harness sit beside them and are walked (#1774).
     let ignored = [
         ".claude/state",
         ".claude/worktrees",
         ".claude/settings.local.json",
+        ".github/workflows",
+        ".github/assets",
+        ".github/ISSUE_TEMPLATE",
+        ".github/CONTRIBUTING.md",
+        ".github/SECURITY.md",
     ];
     let mut files = Vec::new();
-    let mut pending: Vec<String> = [".claude", ".agents", ".codex", ".githooks"]
+    let mut pending: Vec<String> = [".claude", ".agents", ".codex", ".githooks", ".github"]
         .iter()
         .map(|d| d.to_string())
         .collect();

@@ -365,7 +365,11 @@ tiers:
 # `.agents/skills` goes with `skills`, because `headwater init --harness`
 # writes it. `AGENTS.md` and `.codex` are the Codex copies of the standing
 # instructions and the hook, so they go with the rest of the harness, and
-# scenario 2 differs from scenario 1 by one copy of `CLAUDE.md`.
+# scenario 2 differs from scenario 1 by one copy of `CLAUDE.md`. The Copilot
+# copies under `.github/` go with the harness for the same reason:
+# `copilot-instructions.md` links to `CLAUDE.md`, `hooks/hooks.json` wires the
+# hooks, and `agents/` and `prompts/` bind the agents and commands. No
+# `headwater init --harness` writes them, the maintainer's binding included.
 #
 # The hook layer holds one `UserPromptSubmit` entry, so it writes its own
 # `.claude/settings.json`. The rest of the harness holds the whole file. The
@@ -435,6 +439,10 @@ layers:
       - .githooks
       - AGENTS.md
       - .codex
+      - .github/copilot-instructions.md
+      - .github/agents
+      - .github/prompts
+      - .github/hooks
 
 # The fourteen scenarios of milestone 0.07, #1780 to #1793. Each but scenario
 # 0 names one base, and the difference from that base is the one comparison
