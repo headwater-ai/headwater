@@ -1906,6 +1906,40 @@ mod tests {
         );
     }
 
+    /// A probe that no session ran has a placeholder row, and that row is no
+    /// session: it is in no MCP count, it gets no clause, and a result with
+    /// only such rows states no MCP sentence. A count that took the row for
+    /// an unwatched session would report one session that "recorded no
+    /// calls" in a transcript that ran none.
+    #[test]
+    fn a_probe_no_session_ran_is_in_no_mcp_count() {
+        let selected = opened_over_one_document();
+        let record = Record {
+            identity: None,
+            read: 0,
+            probes: Vec::new(),
+            sessions: 0,
+            calls: 0,
+            events: Vec::new(),
+            rejected: Vec::new(),
+            refusal: None,
+            declared: 1,
+            lock_moved: None,
+            read_set_moved: None,
+        };
+        let results = Results::over(&record, std::slice::from_ref(&selected));
+        assert_eq!(
+            results.rows[0].sessions[0].verdict,
+            Verdict::Refused(Refusal::NotRun)
+        );
+        assert_eq!(results.mcp_counts(), (0, 0, 0));
+        let rendered = results.render(ColorMode::Plain);
+        assert!(
+            !rendered.contains("MCP server"),
+            "a transcript that ran no session states nothing about MCP calls:\n{rendered}"
+        );
+    }
+
     /// The interval is the reason a result is readable over quarters, and its
     /// one hard property is that it stays inside zero and one where a normal
     /// interval does not.
