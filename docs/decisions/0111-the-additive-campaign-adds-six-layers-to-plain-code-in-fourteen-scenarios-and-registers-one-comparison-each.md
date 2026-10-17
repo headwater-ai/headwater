@@ -116,7 +116,7 @@ Every count comes from the formula that `tools/probe/campaign-dry-run.sh` states
 | each tuning try, at most 3 | the 4 tuning probes | 72 | 18 | 25 points, as the screening round |
 | final | the 4 held-out probes | 220 | 55 | 15 points anywhere, 0.425 against 0.575 needs 187, and 10 points from 0.80 to 0.90, which needs 219 |
 
-So the final round separates any scenario from its base by 15 points of the pooled rate. Where the rates sit near 0.85, it separates them by 10 points. Every verdict rests on the pooled rate. A cell of one probe in one scenario has 18 or 55 sessions, and at those counts it is not a finding. Over the 14 scenarios, the plan is 1,008 screening sessions, 3,024 tuning sessions at most, and 3,080 final sessions. The dry run of the next slice of #1774 prices that total, and the owner rules on it before anything spends.
+So the final round separates any scenario from its base by 15 points of the pooled rate. Where the rates sit near 0.85, it separates them by 10 points. Every verdict rests on the pooled rate. A cell of one probe in one scenario has 18 or 55 sessions, and at those counts it is not a finding. Over the 14 scenarios, the plan is 1,008 screening sessions, 3,024 tuning sessions at most, and 3,080 final sessions. The dry run prices that total, and the owner rules on it before anything spends.
 
 ### Two tables, one verdict
 
@@ -145,6 +145,21 @@ The campaign runs on `claude-sonnet-5`, the model of the 2026-10-03 records, and
 
 A file added to the harness later is in no layer until somebody declares it, so plain code would hold it. A test of the engine walks `.claude/`, `.agents/`, `.codex/`, `.githooks/` and `.github/`, and it fails on a file that no layer holds. In `.github/`, it skips only the five entries that serve GitHub.
 
-This record does not run anything. The probe documents still state their task and key under the headings `Task` and `Expectation`, and the next slice of #1774 restates them. The leak check over the text of each scenario and the one ceiling are later slices of #1774. So is the count of server calls in each generated result.
+This record does not run anything. The probe documents still state their task and key under the headings `Task` and `Expectation`, and a later slice of #1774 restates them. The count of server calls in each generated result is a later slice too.
+
+`.headwater/probe.yml` declares the `additive` tier, its arms `scenario-0` to `scenario-13`, the two sets and the three rounds. `headwater probe plan --arm scenario-<n> --set <name>` plans one scenario over one set. `tools/probe/additive-campaign.spec` holds one line for each scenario and round. `sh tools/probe/campaign.sh --dry-run --spec tools/probe/additive-campaign.spec` computes each round's count from the rates of the round. It prints this total:
+
+    round screening: 1008 sessions, $504.00
+    round tuning: 3024 sessions, $1512.00 (3 tries at most)
+    round final: 3080 sessions, $1540.00
+    total: 7112 sessions, $3556.00
+
+That is at the declared 50 cents a session. At the 35.0 cents a session of 2026-10-03, the total is $2,489.20. The owner's ruling on the total was deferred in run 20261017-0919. The tier's ceiling is zero until the ruling, so the plan refuses every line. The "one ceiling" clause of #1774 stays open until the ruling is quoted on that issue.
+
+The dry run builds the tree of each scenario and runs the leak check over it. The check reads the always-loaded text, the body of each skill, and the text the intent hook injects for the task of each probe. A leak stops the dry run with 8. A batch of the spec runs the same check before each invocation, so the check runs again before each round.
+
+**The harness block of scenario 13.** The clause names the internal skill `hw-corpus`. The measured text of scenario 13 also states answers in `ste-editor`, `headwater-engine`, `hw-run-policy` and `hw-verification-bar`. This record reads the clause as the whole `harness` layer. The reason is the same for each file: the seal cannot remove internal harness text. The check prints a hit there as `harness`, and the dry run refuses a line that pools such a probe with another probe. So scenario 13 runs three probes on lines of their own. This reading opens again if an outside reader can see the body of a harness skill, because the text is then not internal.
+
+**Scenario 0 is the floor.** Scenario 0 holds no `docs/`. So a probe whose key needs a document under `docs/` is at zero there by construction. That is the floor that scenario 1 is compared with, and it is not a defect of the set.
 
 A probe at the ceiling of 2026-10-03 stays out of the set even where it sits lower in plain code. Its gain from the bottom is real and unmeasured here. The set opens again if a held-out probe sits at the ceiling in the base of a scenario. That probe can then show no gain there.

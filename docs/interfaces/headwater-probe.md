@@ -18,8 +18,9 @@ relations:
 
 ## Synopsis
 
-    headwater probe plan [--tier regression|campaign|documentation] [--arm present|absent|no-hook|no-skills|no-claude-md|mcp]
-                          [--category name] [--exclude probe]... [--repetitions n] [--seed n]
+    headwater probe plan [--tier regression|campaign|documentation|additive]
+                          [--arm present|absent|no-hook|no-skills|no-claude-md|mcp|scenario-<n>]
+                          [--category name | --set name] [--exclude probe]... [--repetitions n] [--seed n]
     headwater probe plan [--tier regression|campaign|documentation] --arm <arm> --delta
     headwater probe plan --scenario <n> --delta
     headwater probe plan --instrument
@@ -49,8 +50,9 @@ All subcommands require a readable `.headwater/probe.yml`, a readable taxonomy l
 
 | Subcommand | Options | What it does |
 |---|---|---|
-| `plan` | `--tier <regression\|campaign\|documentation>` | Select the tier. The default is `regression`. A paired tier refuses a probe whose predicate names a document that its own ablation removes. Every tier refuses one whose document sits under the `instrument`, which every arm removes. |
-| `plan` | `--arm <present\|absent\|no-hook\|no-skills\|no-claude-md\|mcp>` | Narrow the declared arms to one arm. An arm the tier does not declare refuses the run and names the arms it does declare. A paired tier refuses a narrowing to one arm that it declares. |
+| `plan` | `--tier <regression\|campaign\|documentation\|additive>` | Select the tier. The default is `regression`. A paired tier refuses a probe whose predicate names a document that its own ablation removes. Every tier refuses one whose document sits under the `instrument`, which every arm removes. The `additive` tier runs the scenarios of the additive campaign, one `scenario-<n>` arm at a time, and it does not pair arms. It does not apply the ablation rule to a scenario arm, because scenario 0 removes `docs/` and is the floor of the campaign. |
+| `plan` | `--arm <present\|absent\|no-hook\|no-skills\|no-claude-md\|mcp\|scenario-<n>>` | Narrow the declared arms to one arm. An arm the tier does not declare refuses the run and names the arms it does declare. A paired tier refuses a narrowing to one arm that it declares. A `scenario-<n>` arm names scenario `<n>` of the `scenarios` mapping. Only the `additive` tier declares one, and the `additive` tier declares no other arm. |
+| `plan` | `--set <name>` | Narrow the selection to the probes of one set of the `sets` mapping of `.headwater/probe.yml`, across categories. A set that the file does not declare refuses the run and names the sets it does declare. It cannot be used with `--category`. The file is refused whole when a set is empty or when two sets hold one probe. |
 | `plan` | `--delta` | Plan nothing, and print the delta of the `--arm` arm against the present tree, as the tier declares it. Each line is `- <path>` for a path that the arm removes, or `+ <path>` for a path that it adds. The option reads `.headwater/probe.yml` and does not load the corpus. It needs `--arm` or `--scenario`. A script that builds the tree of an arm reads this output, so that the script does not parse the declaration again. |
 | `plan` | `--scenario <n>` | With `--delta`, plan nothing, and print how the tree of scenario `<n>` differs from the present tree. The `layers` and `scenarios` mappings of `.headwater/probe.yml` declare the scenario. A line `- <layer> <path>` names a path that the scenario removes. A line `= <layer> <path>` names a path that it keeps from the present tree. A line `+ <layer> <path>` names a path that it writes from a copy that the repository keeps for the layer. Scenario 0 is plain code, so it removes the path of every layer. The option reads `.headwater/probe.yml` and does not load the corpus. A scenario that the file does not declare is refused with status 1. It needs `--delta`, and it cannot be used with `--arm`, `--instrument`, `--folds` or `--answer-keys`. A script that builds the tree of a scenario reads this output, so that the script does not parse the declaration. |
 | `plan` | `--instrument` | Plan nothing, and print each path of the `instrument` sequence of `.headwater/probe.yml` on its own line. Every arm of every tier removes these paths. The option reads `.headwater/probe.yml` and does not load the corpus. It cannot be used with `--delta`. A script that removes the instrument from a tree reads this output, so that the script does not parse the declaration. A declaration with no `instrument` prints nothing. |
