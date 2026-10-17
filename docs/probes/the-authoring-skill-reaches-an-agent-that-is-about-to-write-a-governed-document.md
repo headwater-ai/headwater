@@ -31,7 +31,7 @@ The task states an intent and names no verb, no kind and no file. A session that
 
 ## Target
 
-The session must open [the authoring skill](../../.claude/skills/headwater-authoring/SKILL.md).
+The session must open the authoring skill at `.claude/skills/headwater-authoring/SKILL.md`. The site does not serve that file, so this section names it by its path and does not link it.
 
 ## Key
 

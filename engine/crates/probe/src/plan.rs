@@ -1572,7 +1572,15 @@ mod tests {
             under("Key"),
             (vec!["a".into(), "b".into(), "c".into()], vec!["b".into()])
         );
-        for old in ["Expectation", "Target", "Task", "Keys"] {
+        for old in [
+            "Expectation",
+            "Target",
+            "Task",
+            "Keys",
+            "key",
+            "KEY",
+            "The Key",
+        ] {
             assert_eq!(
                 under(old),
                 (Vec::new(), Vec::new()),

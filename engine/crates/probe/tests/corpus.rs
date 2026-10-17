@@ -317,15 +317,28 @@ fn links_in(text: &str) -> Vec<String> {
     out
 }
 
+/// The text of every inline code span in a text, as written.
+fn code_spans_in(text: &str) -> Vec<String> {
+    text.split('`')
+        .skip(1)
+        .step_by(2)
+        .map(str::to_string)
+        .collect()
+}
+
 /// Every probe on the shelf states one task, one target and one key (#1774,
 /// clause 3).
 ///
 /// The headings are exactly `Task`, `Target` and `Key`, in that order, so a
 /// probe left on the old `Expectation` heading fails here as well as in the
-/// grader. The `Target` section holds exactly one link, and the link resolves
-/// to a file of this repository. For the forms that are a predicate over what
-/// a session opened or cited, the target is one of the probe's `examines`
-/// entries, so the target and the key read the same document.
+/// grader. The `Target` section names exactly one file of this repository.
+/// A target under `docs/` is one link, and the link resolves to a file there.
+/// A target outside `docs/` is a code-path anchor that the site does not
+/// serve, and a link to it fails the strict site build, so it is named by
+/// exactly one code span holding its path from the repository root, and by no
+/// link. For the forms that are a predicate over what a session opened or
+/// cited, the target is one of the probe's `examines` entries, so the target
+/// and the key read the same document.
 ///
 /// `not_opened` is left out of that last clause on purpose: its target is the
 /// document a session answers from, and its `examines` entry is the document
@@ -353,9 +366,10 @@ fn every_probe_on_the_shelf_states_one_task_one_target_and_one_key() {
 
 /// What is wrong with the shape of one probe document, or `None`. `path` is
 /// the document's path from the repository root, on the probe shelf, because
-/// the link under `Target` resolves against that directory.
+/// a link under `Target` resolves against that directory.
 fn shape_finding(path: &str, source: &str) -> Option<String> {
     let root = repository_root();
+    let served = root.join("docs");
     let Ok(document) = headwater_doc::parse(source) else {
         return Some(format!("{path}: the front matter does not parse"));
     };
@@ -365,24 +379,54 @@ fn shape_finding(path: &str, source: &str) -> Option<String> {
             "{path} has the headings {headings:?}, not {SHAPE:?}"
         ));
     }
-    let links = links_in(section_of(source, "Target"));
-    let [link] = links.as_slice() else {
-        return Some(format!(
-            "{path} holds {} links under `## Target`, not one: {links:?}",
-            links.len()
-        ));
+    let section = section_of(source, "Target");
+    let links = links_in(section);
+    let (named, target) = match links.as_slice() {
+        [link] => {
+            let directory = root.join(path);
+            let directory = directory.parent().unwrap_or(&root);
+            let file = link.split('#').next().unwrap_or_default();
+            let Ok(target) = directory.join(file).canonicalize() else {
+                return Some(format!("{path} targets `{link}`, which is no file"));
+            };
+            if !target.starts_with(&served) {
+                return Some(format!(
+                    "{path} links `{link}`, which is outside `docs/`, so the site cannot serve \
+                     it. Name a target outside `docs/` by its path in one code span"
+                ));
+            }
+            if !target.is_file() {
+                return Some(format!("{path} targets `{link}`, which is not a file"));
+            }
+            (link.clone(), target)
+        }
+        [] => {
+            let files: Vec<String> = code_spans_in(section)
+                .into_iter()
+                .filter(|span| root.join(span).is_file())
+                .collect();
+            let [span] = files.as_slice() else {
+                return Some(format!(
+                    "{path} names {} files under `## Target` and links none, not one: \
+                     {files:?}",
+                    files.len()
+                ));
+            };
+            let target = root.join(span);
+            if target.starts_with(&served) {
+                return Some(format!(
+                    "{path} names `{span}` in a code span, and a target under `docs/` is a link"
+                ));
+            }
+            (span.clone(), target)
+        }
+        more => {
+            return Some(format!(
+                "{path} holds {} links under `## Target`, not one: {more:?}",
+                more.len()
+            ))
+        }
     };
-    let directory = root.join(path);
-    let directory = directory.parent().unwrap_or(&root);
-    let file = link.split('#').next().unwrap_or_default();
-    let Ok(target) = directory.join(file).canonicalize() else {
-        return Some(format!("{path} targets `{link}`, which is no file"));
-    };
-    if !target.starts_with(&root) || !target.is_file() {
-        return Some(format!(
-            "{path} targets `{link}`, which is no file of this repository"
-        ));
-    }
     let expectation = scalar(&document, "expectation");
     let names_documents = expectation.as_deref() == Some(Expectation::Opened.name())
         || expectation.as_deref() == Some(Expectation::Cited.name());
@@ -398,14 +442,14 @@ fn shape_finding(path: &str, source: &str) -> Option<String> {
         .ok()
         .and_then(|text| headwater_doc::parse(&text).ok())
         .and_then(|it| scalar(&it, "id"));
-    let named = examines
+    let matched = examines
         .iter()
         .any(|entry| *entry == relative || Some(entry) == id.as_ref());
-    if named {
+    if matched {
         None
     } else {
         Some(format!(
-            "{path} targets `{link}` (id {id:?}), which is none of its `examines` entries \
+            "{path} targets `{named}` (id {id:?}), which is none of its `examines` entries \
              {examines:?}"
         ))
     }
@@ -418,18 +462,23 @@ fn shape_finding(path: &str, source: &str) -> Option<String> {
 fn the_shape_refuses_each_way_a_probe_can_miss_it() {
     const RULING: &str = "../decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md";
     const OTHER: &str = "../decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md";
-    let probe = |expectation: &str, headings: &[(&str, &str)]| {
+    const SKILL: &str = ".claude/skills/headwater-authoring/SKILL.md";
+    let probe_examining = |examined: &str, expectation: &str, headings: &[(&str, &str)]| {
         let mut source = format!(
             "---\nid: HW-PROBE-synthetic\nexpectation: {expectation}\nrelations:\n  \
-             examines:\n    - HW-DR-0049\n---\n\n# A synthetic probe\n"
+             examines:\n    - {examined}\n---\n\n# A synthetic probe\n"
         );
         for (heading, body) in headings {
             source.push_str(&format!("\n## {heading}\n\n{body}\n"));
         }
         source
     };
+    let probe = |expectation: &str, headings: &[(&str, &str)]| {
+        probe_examining("HW-DR-0049", expectation, headings)
+    };
     let path = format!("{SHELF}/synthetic.md");
-    let one = format!("The ruling is [the ruling]({RULING}).");
+    let one =
+        format!("The ruling is [the ruling]({RULING}), at the end of one `superseded_by` edge.");
     let good = |expectation: &str, target: &str| {
         probe(
             expectation,
@@ -440,6 +489,26 @@ fn the_shape_refuses_each_way_a_probe_can_miss_it() {
             ],
         )
     };
+    let anchored = |expectation: &str, target: &str| {
+        probe_examining(
+            SKILL,
+            expectation,
+            &[
+                ("Task", "Say it."),
+                ("Target", target),
+                ("Key", "`opened`."),
+            ],
+        )
+    };
+    let skill = format!("The session must open the skill at `{SKILL}`.");
+
+    // A file that exists and is outside the repository, so that the check
+    // that the target is under `docs/` is the one that refuses it. One case
+    // of this process writes it, so the pid alone keeps it apart.
+    let outside =
+        std::env::temp_dir().join(format!("headwater-probe-shape-{}.md", std::process::id()));
+    std::fs::write(&outside, "---\nid: HW-DR-0049\n---\n").expect("a temp file");
+    let outside_link = format!("The [ruling]({}).", outside.display());
 
     for expectation in ["opened", "cited", "answered", "patched", "not_opened"] {
         assert_eq!(
@@ -448,6 +517,11 @@ fn the_shape_refuses_each_way_a_probe_can_miss_it() {
             "a sound `{expectation}` probe was refused"
         );
     }
+    assert_eq!(
+        shape_finding(&path, &anchored("opened", &skill)),
+        None,
+        "a sound probe that names an anchor outside `docs/` was refused"
+    );
 
     let refused = [
         (
@@ -477,9 +551,14 @@ fn the_shape_refuses_each_way_a_probe_can_miss_it() {
             "holds 2 links",
         ),
         (
-            "no link",
-            good("answered", "The ruling, named in words."),
-            "holds 0 links",
+            "no link and no file named",
+            good("answered", "The ruling, named in words and `code`."),
+            "names 0 files",
+        ),
+        (
+            "no link and two files named",
+            good("answered", &format!("`{SKILL}` or `CLAUDE.md`.")),
+            "names 2 files",
         ),
         (
             "a link to no file",
@@ -487,9 +566,27 @@ fn the_shape_refuses_each_way_a_probe_can_miss_it() {
             "which is no file",
         ),
         (
-            "a link out of the repository",
-            good("answered", "The [root](../../../)."),
-            "no file of this repository",
+            "a link to a directory under docs/",
+            good("answered", "The [shelf](../decisions/)."),
+            "which is not a file",
+        ),
+        (
+            "a link to a file of this repository outside docs/",
+            good("answered", "The [instructions](../../CLAUDE.md)."),
+            "outside `docs/`",
+        ),
+        (
+            "a link to a file outside the repository",
+            good("answered", &outside_link),
+            "outside `docs/`",
+        ),
+        (
+            "a document under docs/ named in a code span",
+            good(
+                "answered",
+                "The ruling at `docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`.",
+            ),
+            "a target under `docs/` is a link",
         ),
         (
             "an opened target the key does not read",
@@ -501,11 +598,20 @@ fn the_shape_refuses_each_way_a_probe_can_miss_it() {
             good("cited", &format!("The [record]({OTHER}).")),
             "none of its `examines` entries",
         ),
+        (
+            "an opened anchor the key does not read",
+            anchored("opened", "The session must open `CLAUDE.md`."),
+            "none of its `examines` entries",
+        ),
     ];
-    for (case, source, wanted) in refused {
-        let finding = shape_finding(&path, &source);
+    let findings: Vec<_> = refused
+        .iter()
+        .map(|(case, source, wanted)| (case, wanted, shape_finding(&path, source)))
+        .collect();
+    let _ = std::fs::remove_file(&outside);
+    for (case, wanted, finding) in findings {
         assert!(
-            finding.as_deref().is_some_and(|it| it.contains(wanted)),
+            finding.as_deref().is_some_and(|it| it.contains(*wanted)),
             "{case}: wanted a finding naming `{wanted}`, got {finding:?}"
         );
     }
