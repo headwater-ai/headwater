@@ -586,9 +586,12 @@ fn flags_in(span: &str) -> Vec<Flag> {
                 .get(index + 1)
                 .filter(|next| !next.starts_with('[') && !next.starts_with("--"))
                 .map(|next| {
-                    next.trim_end_matches(']')
-                        .trim_start_matches('<')
-                        .trim_end_matches('>')
+                    let next = next.trim_end_matches(']');
+                    // One pair of angle brackets, so a value that ends in its
+                    // own placeholder (`scenario-<n>`) keeps its closing one.
+                    next.strip_prefix('<')
+                        .and_then(|inner| inner.strip_suffix('>'))
+                        .unwrap_or(next)
                         .to_string()
                 })
         };
@@ -617,6 +620,10 @@ fn a_code_span_gives_each_flag_the_placeholder_written_after_it() {
     assert_eq!(
         flags_in("--format text|json|sarif|markdown"),
         vec![some("--format", "text|json|sarif|markdown")]
+    );
+    assert_eq!(
+        flags_in("--arm <present|scenario-<n>>"),
+        vec![some("--arm", "present|scenario-<n>")]
     );
     assert_eq!(
         flags_in("--strict --fix"),
