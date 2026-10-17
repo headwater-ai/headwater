@@ -1220,6 +1220,80 @@ tasks:
         assert!(ansi.contains("AD-1"), "{ansi:?}");
     }
 
+    /// #1495: each of the five kinds of ledger line stays one line however long
+    /// it is, so a fill restored on any one of them fails here. The open line,
+    /// the lapsed line, the statement, the refused line and the unread line
+    /// below each pass 80 columns.
+    #[test]
+    fn a_long_ledger_line_of_each_kind_is_left_for_the_report_to_fill() {
+        let block = payload(
+            "\
+to: acme/x
+tasks:
+  - id: AD-1
+    statement: the corpus states no summary on any of the documents that the design shelf holds, and each one owes one
+    owner: the documentation guild of the platform group
+    until: 2027-01-01
+    pairs:
+      - {path: docs/a.md, rule: facet.required.missing}
+  - id: AD-2
+    statement: a statement
+    owner: the documentation guild of the platform group, which owns the lapsed task
+    until: 2026-01-01
+    pairs:
+      - {path: docs/b.md, rule: facet.required.missing}
+  - id: AD-3-a-task-identifier-long-enough-to-pass-the-width-on-its-own
+    statement: a statement
+    owner: an owner
+    until: 2027-01-01
+    pairs: []
+",
+        );
+        let (_, ledger) = apply(
+            vec![
+                finding("docs/a.md", "facet.required.missing"),
+                finding("docs/b.md", "facet.required.missing"),
+            ],
+            read(&block, &RULES),
+            day("2026-08-13"),
+        );
+        for mode in [crate::paint::ColorMode::Plain, crate::paint::ColorMode::Ansi] {
+            let text = ledger.render(mode);
+            let lines: Vec<&str> = text.lines().collect();
+            let starts = [
+                "adoption",
+                "  1 pairs open, 0 closed, holding 1 finding, in 2 tasks",
+                "  AD-1",
+                "    the corpus states no summary",
+                "  AD-2",
+                "    a statement",
+                "  AD-3-a-task",
+                "  the block declares `to`",
+            ];
+            let plain = strip_ansi(&text);
+            let plain_lines: Vec<&str> = plain.lines().collect();
+            assert_eq!(
+                plain_lines.len(),
+                starts.len(),
+                "one line per entry under {mode:?}:\n{text}"
+            );
+            for (line, start) in plain_lines.iter().zip(starts) {
+                assert!(
+                    line.starts_with(start),
+                    "{line:?} does not start {start:?}"
+                );
+            }
+            for at in [2, 3, 4, 6, 7] {
+                assert!(
+                    plain_lines[at].chars().count() > 80,
+                    "line {at} is meant to pass 80 columns: {:?}",
+                    plain_lines[at]
+                );
+            }
+            assert_eq!(lines.len(), plain_lines.len());
+        }
+    }
+
     /// The terminal and piped outputs are the same bytes when both are
     /// rendered and the colored version has its SGR sequences stripped.
     ///
