@@ -75,14 +75,16 @@ pub fn load_with(source: &str, options: Options) -> Result<Spanned<Value>, Vec<L
     // first key: `engine` read as no range, and `taxonomy` as no block. The
     // origin moves past the mark, so every span stays in file coordinates, and
     // a line-1 column does not count it, as an editor shows the line. A mark
-    // anywhere else stays what it is.
+    // anywhere else stays what it is, and that includes the start of a source
+    // that begins past byte 0 of its file, such as front matter after `---`.
+    let at_file_start = options.origin.byte == 0;
     let (source, options) = match source.strip_prefix('\u{feff}') {
-        Some(rest) => {
+        Some(rest) if at_file_start => {
             let mut options = options;
             options.origin.byte += '\u{feff}'.len_utf8();
             (rest, options)
         }
-        None => (source, options),
+        _ => (source, options),
     };
     let offsets = ByteOffsets::new(source, options.origin);
     let mut events: Vec<(Ev, Span)> = Vec::new();
