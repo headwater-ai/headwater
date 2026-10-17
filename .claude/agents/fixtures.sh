@@ -10,7 +10,7 @@
 # definition's instructions, and a skill name nobody matches never loads. This
 # suite is what reports the drift.
 #
-# Fifteen cases, and this list is the one place that names them all:
+# Sixteen cases, and this list is the one place that names them all:
 #
 #     1   every agent a command or an agent dispatches is a definition
 #     2   every skill an agent invokes is a skill on this tree
@@ -27,6 +27,7 @@
 #     13  each throughput rule of 2026-10-01 has one owner
 #     14  every file under .claude is shipped or named as internal
 #     15  the first session hands the run to supervise.sh
+#     16  a one-line lesson is ruled Apply and applied at the end of the run
 #
 # The ceilings are the reason two of them exist. The parent's
 # context is the unit of cost ([HW-PD-0003]), so the command and the doctrine
@@ -884,6 +885,147 @@ printf -- '- **A parent restarts every few merges, and drains to zero first.** `
 case $(handover_misses "$scratch/restart-other.md") in
     *'nothing starts supervise.sh'*) pass 'and a handover under another rule is reported' ;;
     *) fail 'a handover under another rule is reported' 'the handover passed it' ;;
+esac
+
+# --- 16. a one-line lesson of a run is applied, and not only recorded --------
+
+# A run's intake line whose whole remedy is a line in an agent file, the run
+# policy, a command or a run script reached the obligation register and never
+# the file it would fix: five records held about nine such lines (#1483). Two
+# halves hold the mechanism. The product owner's `## Intake` tries an `Apply.`
+# ruling before `Fold.`, names the four paths it covers, and checks the line on
+# the current tree as Record does. The loop in next-run.md has a step after the
+# end-of-run product-owner pass that dispatches one `hw-iterate` for the APPLY
+# lines and sends what it could not apply to a process obligation record.
+printf '\n# a one-line lesson is ruled Apply and applied by one end-of-run pull request\n'
+# Prints the line number under `## Intake` of the first item whose bold lead is
+# the second argument, or nothing.
+intake_item_line() {
+    awk -v lead="**$2.**" '/^## / { inside = ($0 == "## Intake") ; next }
+        inside && index($0, lead) { print NR; exit }' "$1"
+}
+# Prints why the Apply ruling fails the requirement, or nothing when it holds.
+apply_misses() {
+    at=$(intake_item_line "$1" Apply)
+    if [ -z "$at" ]; then
+        printf 'no item under ## Intake has the bold lead Apply.' ; return
+    fi
+    fold_at=$(intake_item_line "$1" Fold)
+    if [ -n "$fold_at" ] && [ "$fold_at" -lt "$at" ]; then
+        printf 'the Apply ruling is not tried before Fold' ; return
+    fi
+    item=$(sed -n "${at}p" "$1")
+    for path in .claude/agents/ .claude/skills/hw-run-policy/ .claude/commands/ tools/run/; do
+        case $item in
+            *"\`$path\`"*) ;;
+            *) printf 'the Apply ruling does not name the path %s' "$path" ; return ;;
+        esac
+    done
+    clauses=$(printf '%s\n' "$item" | sed 's/\. /.\n/g; s/: /:\n/g; s/; /;\n/g; s/, and /,\nand /g')
+    if ! printf '%s\n' "$clauses" | grep -iw 'tree' | grep -qiwE 'opens?|reads?|confirms?|checks?|verify|verifies'; then
+        printf 'the Apply ruling does not check the line against the tree' ; return
+    fi
+}
+# Prints why the loop has no end-of-run lessons step, or nothing when it has.
+# The step is a numbered item under `## The loop` after the one that dispatches
+# `headwater-product-owner` at the end, and it names `hw-iterate`, the APPLY
+# lines and an obligation record for what it could not apply.
+lessons_step_misses() {
+    step=$(awk '/^## / { inside = ($0 == "## The loop") ; next }
+        inside && /^[0-9]+\. / && index($0, "`headwater-product-owner`") && index($0, "at the end") { po = 1 ; next }
+        inside && po && /^[0-9]+\. / && index($0, "`hw-iterate`") && index($0, "APPLY") { print ; exit }' "$1")
+    if [ -z "$step" ]; then
+        printf 'no step of ## The loop after the end-of-run product-owner pass dispatches hw-iterate for the APPLY lines' ; return
+    fi
+    if ! printf '%s\n' "$step" | grep -qiE 'could not apply|cannot apply'; then
+        printf 'the lessons step does not say where a line it could not apply goes' ; return
+    fi
+    if ! printf '%s\n' "$step" | grep -qiw 'obligation'; then
+        printf 'the lessons step does not send a line it could not apply to an obligation record'
+    fi
+}
+why=$(apply_misses "$agents/headwater-product-owner.md")
+if [ -z "$why" ]; then
+    pass 'the Apply ruling is tried first, names its paths and checks the tree'
+else
+    fail 'the Apply ruling is tried first, names its paths and checks the tree' "$why"
+fi
+why=$(lessons_step_misses "$commands/next-run.md")
+if [ -z "$why" ]; then
+    pass 'and next-run.md dispatches one hw-iterate for the APPLY lines after the last product-owner pass'
+else
+    fail 'next-run.md dispatches one hw-iterate for the APPLY lines after the last product-owner pass' "$why"
+fi
+# The arms, each a scratch file.
+apply_ok='1. **Apply.** The whole remedy is a line in `.claude/agents/`, `.claude/skills/hw-run-policy/`, `.claude/commands/` or `tools/run/`. Confirm the finding on the current tree first.'
+apply_arm() {
+    printf '## Intake\n\n%s\n\n## Report\n' "$1" > "$scratch/apply.md"
+    apply_misses "$scratch/apply.md"
+}
+why=$(apply_arm "$apply_ok
+2. **Fold.** An open issue covers it.")
+if [ -z "$why" ]; then
+    pass 'and an Apply ruling ahead of Fold holds'
+else
+    fail 'an Apply ruling ahead of Fold holds' "$why"
+fi
+why=$(apply_arm "1. **Fold.** An open issue covers it.
+2. **Record.** No reader.
+${apply_ok#1. }")
+case "$why" in
+    *'before Fold'*) pass 'and an Apply ruling after Record is reported' ;;
+    *) fail 'an Apply ruling after Record is reported' "reported: \`$why\`" ;;
+esac
+why=$(apply_arm '1. **Fold.** An open issue covers it.')
+case "$why" in
+    *'no item'*) pass 'and an Intake section with no Apply item is reported' ;;
+    *) fail 'an Intake section with no Apply item is reported' "reported: \`$why\`" ;;
+esac
+why=$(apply_arm '1. **Apply.** The whole remedy is a line in `.claude/agents/`, `.claude/commands/` or `tools/run/`. Confirm the finding on the current tree first.')
+case "$why" in
+    *'hw-run-policy'*) pass 'and an Apply ruling that leaves out the run policy is reported' ;;
+    *) fail 'an Apply ruling that leaves out the run policy is reported' "reported: \`$why\`" ;;
+esac
+why=$(apply_arm '1. **Apply.** The whole remedy is a line in `.claude/agents/`, `.claude/skills/hw-run-policy/`, `.claude/commands/` or `tools/run/`. Write `APPLY` beside it.')
+case "$why" in
+    *'against the tree'*) pass 'and an Apply ruling that does not check the tree is reported' ;;
+    *) fail 'an Apply ruling that does not check the tree is reported' "reported: \`$why\`" ;;
+esac
+step_po='6. **Every fifth merge, and at the end**, dispatch `headwater-product-owner`.'
+step_ok='7. **After that pass**, dispatch one `hw-iterate` for the `APPLY` lines. A line it could not apply goes to a process obligation record.'
+step_arm() {
+    printf '## The loop\n\n%s\n\n## The veto\n' "$1" > "$scratch/loop.md"
+    lessons_step_misses "$scratch/loop.md"
+}
+why=$(step_arm "$step_po
+$step_ok")
+if [ -z "$why" ]; then
+    pass 'and a lessons step after the last product-owner pass holds'
+else
+    fail 'a lessons step after the last product-owner pass holds' "$why"
+fi
+why=$(step_arm "$step_po")
+case "$why" in
+    *'no step'*) pass 'and a loop with no lessons step is reported' ;;
+    *) fail 'a loop with no lessons step is reported' "reported: \`$why\`" ;;
+esac
+why=$(step_arm "$step_ok
+$step_po")
+case "$why" in
+    *'no step'*) pass 'and a lessons step before the last product-owner pass is reported' ;;
+    *) fail 'a lessons step before the last product-owner pass is reported' "reported: \`$why\`" ;;
+esac
+why=$(step_arm "$step_po
+7. **After that pass**, dispatch one \`hw-iterate\` for the \`APPLY\` lines.")
+case "$why" in
+    *'could not apply'*) pass 'and a lessons step that loses what it could not apply is reported' ;;
+    *) fail 'a lessons step that loses what it could not apply is reported' "reported: \`$why\`" ;;
+esac
+# A lessons step under a heading other than The loop is not read.
+printf '## The loop\n\n%s\n\n## Stop\n\n%s\n' "$step_po" "$step_ok" > "$scratch/loop.md"
+case $(lessons_step_misses "$scratch/loop.md") in
+    *'no step'*) pass 'and a lessons step outside ## The loop is not read' ;;
+    *) fail 'a lessons step outside ## The loop is not read' 'it was read' ;;
 esac
 
 printf '\n%s passed, %s failed\n' "$passed" "$failed"

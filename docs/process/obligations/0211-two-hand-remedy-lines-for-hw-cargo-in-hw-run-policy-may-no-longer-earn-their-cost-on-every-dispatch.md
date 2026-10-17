@@ -1,9 +1,9 @@
 ---
 id: HW-OBL-0211
-status: current
-status_since: 2026-09-26
-summary: "Since #1047 and the link suite of #849, the two hw-cargo workarounds in hw-run-policy may be dead text that every build-order stage pays to read."
-last_verified: 2026-09-24
+status: discharged
+status_since: 2026-10-13
+summary: "The hw-cargo line in hw-run-policy was not dead text, because the tool still waited on slot 1 alone when every slot was busy. The tool now takes whichever slot frees first, and the line is gone."
+last_verified: 2026-10-13
 title: "Two hand-remedy lines for hw-cargo in hw-run-policy may not earn their cost on every dispatch"
 waiting_on: build
 ---
@@ -22,4 +22,4 @@ The same build found a reusable test method. A suite finds its script through `$
 
 ## Discharge
 
-This record discharges when a measurement on main shows whether `tools/hw-cargo` still needs each remedy, and each line that `tools/hw-cargo` does not need leaves the skill.
+The record is discharged on 2026-10-13, by the pull request for slice 1 of #1483. Both remedies were one line of the skill. A measurement on `main` at `c5469354` showed that `tools/hw-cargo` still needed it. A caller that found no free slot waited on slot 1 alone. That pull request makes the tool probe every slot once a second, so it takes whichever slot frees first. A case in `tools/hw-cargo-fixtures.sh` holds three slots, frees slot 2 first and requires the tool to take slot 2. It failed on the tool as it stood and passes on the fix. The line leaves `.claude/skills/hw-run-policy/SKILL.md` in the same change.

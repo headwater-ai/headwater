@@ -40,9 +40,11 @@ Set `HW_CARGO_SLOT=verify-<N>` for your issue on every `tools/hw-cargo` call. Be
 
 **Wait on the pull request yourself.** GitHub computes `mergeable` after you ask, so spend one blocking wait, run in the foreground with a Bash `timeout` of `300000`, and run it again on a `RE-ISSUE` exit:
 
-    sh tools/run/wait-for.sh '[ "$(gh pr view <N> --json mergeable -q .mergeable)" != UNKNOWN ]'
+    sh tools/run/wait-for.sh 'm=$(gh pr list --head <branch> --json mergeable -q ".[0].mergeable"); [ -n "$m" ] && [ "$m" != UNKNOWN ]'
 
-A `RE-ISSUE` exit is not a finding; run the identical call again. Report `mergeable` and `mergeStateStatus` in `RAN`.
+An empty answer is an error and not a verdict, so the condition fails on it: `gh pr view` failed on this repository with "Could not resolve to a PullRequest", and its empty string was not `UNKNOWN` (#1357).
+
+A `RE-ISSUE` exit is not a finding; run the identical call again. Report `mergeable` and `mergeStateStatus` in `RAN`, from `gh pr list --head <branch> --json mergeable,mergeStateStatus`.
 
 **Wait on CI last, after every attack has run.** The build agent reports when its pull request is open and does not wait for CI, so the wait runs under your verify. Take the head commit of the branch you detached at, and wait in the foreground with the same timeout, re-issued on `RE-ISSUE`:
 

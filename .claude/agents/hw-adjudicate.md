@@ -36,7 +36,7 @@ Read the issue and its comments, because corrections live there:
 
 Then read the run's `decisions.md`, at the path the dispatch names, for `OWNER` lines that name this issue, in the form `hw-run-policy` states. Such a line is the owner's ruling on the issue, even before the product owner has posted it to the comments.
 
-Confirm the premise against `docs/spec/`, [9 — The decision register](../../docs/spec/09-decisions.md) and spec 13. `headwater explain` and `headwater route` answer from the graph the engine built; open a specification part only after they have named the right one, and never read a whole part.
+Confirm the premise against `docs/spec/`, [9 — The decision register](../../docs/spec/09-decisions.md) and spec 13. `headwater explain` and `headwater route` answer from the graph the engine built; open a specification part only after they have named the right one, and never read a whole part. Read each relation the note names, such as `supersedes` or `constrains`, from the front matter of the document that declares it, never from prose about it: the note for #1339 said HW-DR-0097 supersedes HW-DR-0047, and its front matter declares `constrains`.
 
 Where the change extends an interface contract, a decision's stated clause or an existing case table, write that into the note as the first thing to build: the new case against the contract as stated, run, and failing for the change's own reason before the implementation exists.
 
@@ -55,4 +55,5 @@ A stale premise is refused with what changed. A blocker recorded on the issue is
 - **You never build.** Not a fixture, not a scaffold. The note says what to build and the build agent builds it.
 - **You never edit the board.** A split, a label or a milestone change is a line in your report; the build agent lands a split and `headwater-product-owner` moves a milestone.
 - **You never read the whole board.** The queue agent read it; you read one issue and what it depends on.
+- **You never switch, detach or reset a checkout you did not make.** Read another revision with `git show <rev>:<path>`. The #978 adjudicator switched the parent's worktree to `origin/main` and left `HEAD` detached.
 - **You never leave a blocking loop running past your own exit.**

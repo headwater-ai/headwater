@@ -1,9 +1,9 @@
 ---
 id: HW-OBL-0203
-status: current
-status_since: 2026-09-26
+status: discharged
+status_since: 2026-10-13
 summary: "A missing project-board item for two issues, an interactive-shell grep shadowed to basic-regex semantics, and a stale hook-exit-code comment have no reader outside this repository. This record files the three together under the intake cap."
-last_verified: 2026-09-23
+last_verified: 2026-10-13
 title: "Three small run-tooling gaps from run 20260922-1121, filed together"
 waiting_on: build
 ---
@@ -24,8 +24,10 @@ waiting_on: build
 
 ## Discharge
 
-**The board-item gap** discharges when `hw-build.md`'s claim-through-the-board step is confirmed to run for every claimed issue (or the two missing cards are added and the mechanism is watched over a further run to see whether the gap recurs).
+The record is discharged on 2026-10-13, by the pull request for slice 1 of #1483. Each item is paid, or it does not reproduce.
 
-**The `grep` shadowing** discharges when `hw-run-policy`'s environment section carries a line naming it, the same way its other host-specific traps are recorded. That way, the next interactive session reaching for `grep -E` is warned before it is bitten.
+**The board-item gap is paid by #1047.** Since `cd975fa3`, `tools/run/board-move.sh` finds the card with `gh project item-add`, which returns the card that exists or adds one. So a claim through that script cannot land without a card. On 2026-10-13, board 1 has a card for #847 at `Done`, and it has no card for #855. #855 closed on 2026-09-22, the day before #1047 merged, so its missing card is a record of the old gap and nothing reads it.
 
-**The stale comment** discharges when `.claude/hooks/intent.sh`'s shadow-log section is next touched. That touch must also correct the exit-code claim to name exit 2, not any non-zero exit, as the one code `UserPromptSubmit` treats as blocking.
+**The `grep` shadowing does not reproduce, and the skill line it asked for is not added.** On 2026-10-13, `type grep` in the agent's Bash tool shows a function that runs `ugrep -G` and then the caller's own options. A later `-E` overrides `-G`: `echo x | grep -E 'x+|y'` matches, and `echo ab | grep 'a|b'` does not. So `grep -E` keeps extended semantics. The same function also passes `--ignore-files` and `--exclude-dir=.git`, so a recursive `grep` skips the files that `.gitignore` names and the `.git` directory. That is a different trap, and this record does not carry it.
+
+**The stale comment is paid by #1390.** Since `a0736315`, the shadow-log section of `.claude/hooks/intent.sh` says that exit 2 is the one status that blocks a `UserPromptSubmit` hook, and it cites this record.

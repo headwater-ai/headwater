@@ -57,6 +57,8 @@
 #     sh tools/run/run-dir.sh lesson <dir> <file>    append a file of prose to lessons.md
 #     sh tools/run/run-dir.sh withdraw <dir> <match> <line>
 #                                               replace the one intake line that holds <match>
+#     sh tools/run/run-dir.sh applies <dir>          each intake line the product owner ruled APPLY,
+#                                                    then one count line, APPLY: <n>
 #
 # Every <dir>, for every subcommand but `start`, may be a bare run id, such as `20260927-0443`, which names that
 # run under the git common dir. A worktree-isolated parent's shell refuses a
@@ -275,6 +277,21 @@ withdraw() {
     fi
     match=$2 line=$3 awk 'index($0, ENVIRON["match"]) { print ENVIRON["line"]; next } { print }' "$file" > "$file.tmp" &&
         mv "$file.tmp" "$file"
+}
+
+# The product owner rules a one-line remedy by ending its intake line with
+# ` | APPLY` (`.claude/agents/headwater-product-owner.md`, `## Intake`). The
+# end-of-run lessons pull request reads the lines through this verb, so the
+# parent never reads intake.md whole. A line that only mentions APPLY in its
+# text is not ruled, because the ruling is the last field alone.
+applies() {
+    dir=$1
+    need_dir "$dir"
+    if [ ! -f "$dir/intake.md" ]; then
+        printf 'APPLY: 0\n'
+        return
+    fi
+    awk '/ [|] APPLY[[:space:]]*$/ { print; n++ } END { printf "APPLY: %d\n", n }' "$dir/intake.md"
 }
 
 start() {
@@ -1163,5 +1180,6 @@ case ${1:-} in
     integrations) [ $# -eq 2 ] || usage; integrations "$run" ;;
     lesson) [ $# -eq 3 ] || usage; lesson "$run" "$3" ;;
     withdraw) [ $# -eq 4 ] || usage; withdraw "$run" "$3" "$4" ;;
+    applies) [ $# -eq 2 ] || usage; applies "$run" ;;
     *) usage ;;
 esac
