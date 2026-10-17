@@ -5855,12 +5855,25 @@ apt_planted "  a README whose cargo fence lacks --locked is refused" "$readme" "
     "the cargo route runs \`cargo install headwater-cli\`, not \`$cargo_want\`, so it resolves dependencies fresh from the registry" \
     "$(cargo_route_judge "$scratch/cargo-locked/bare.md")"
 
+# cargo_site_judge README PAGE — `ok`, or how the page's cargo block differs
+# from the README's cargo command.
+cargo_site_judge() {
+    _readme_cmd=$(sh "$routes_extractor" "$1" cargo 2>/dev/null)
+    _page_cmd=$(cargo_site_block "$2")
+    if [ -n "$_readme_cmd" ] && [ "$_readme_cmd" = "$_page_cmd" ]; then
+        echo ok
+    else
+        echo "the install page's cargo block runs \`$_page_cmd\`, and the README's cargo route runs \`$_readme_cmd\`"
+    fi
+}
+
 cargo_install_page="$root/site/install/index.html"
 same "  the install page's cargo block is the README's cargo command" \
-    "$(sh "$routes_extractor" "$readme" cargo 2>/dev/null)" "$(cargo_site_block "$cargo_install_page")"
+    ok "$(cargo_site_judge "$readme" "$cargo_install_page")"
 sed 's|cargo install headwater-cli --locked</pre>|cargo install headwater-cli</pre>|' "$cargo_install_page" >"$scratch/cargo-locked/install.html"
 apt_planted "  an install page whose cargo block lacks --locked is refused" "$cargo_install_page" "$scratch/cargo-locked/install.html" \
-    "$cargo_want" "$(cargo_site_block "$scratch/cargo-locked/install.html")"
+    "the install page's cargo block runs \`cargo install headwater-cli\`, and the README's cargo route runs \`$cargo_want\`" \
+    "$(cargo_site_judge "$readme" "$scratch/cargo-locked/install.html")"
 
 for cargo_page in site/proof/index.html site/tutorial/index.html docs/tutorials/your-first-governed-corpus.md; do
     more_than "  $cargo_page prints the cargo command" 0 "$(grep -c 'cargo install headwater-cli' "$root/$cargo_page")"
