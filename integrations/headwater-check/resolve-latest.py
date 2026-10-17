@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 #
-# Read the JSON body of `GET /repos/headwater-ai/headwater/releases` (newest
-# first, which is the order that endpoint states) from standard input, and
-# print the first tag in the engine's own release stream that carries both
-# the archive and its checksum. Print nothing, and exit 0, when none does:
-# the caller (`resolve-version.sh`) decides that a "latest" no release
-# answers is a refusal, and this script's job is finding, not judging.
+# Read the JSON body of `GET /repos/headwater-ai/headwater/releases` from
+# standard input, and print the tag with the highest version in the engine's
+# own release stream that carries both the archive and its checksum. The list
+# order has no effect on the answer (#1756): the endpoint lists by publish
+# date, so a patch release of an older line can sit above a newer line. A tag
+# that is no version, such as the pre-release `v0.6.0-rc1`, is never the
+# answer, because a pre-release is not a release tag. Print nothing, and exit
+# 0, when no tag qualifies: the caller (`resolve-version.sh`) decides that a
+# "latest" no release answers is a refusal, and this script's job is finding,
+# not judging.
 #
-# With `--range RANGE`, the first such tag must also satisfy the engine range
-# a corpus states in the `engine:` line of `.headwater/taxonomy.yml` (#1600),
-# so a corpus that pins an older release gets that release and not the newest.
+# With `--range RANGE`, the tag must also satisfy the engine range a corpus
+# states in the `engine:` line of `.headwater/taxonomy.yml` (#1600), so a
+# corpus that pins an older line gets the highest release of that line and
+# not the newest release.
 # A range this syntax cannot read exits 2 with the reason on standard error,
 # before any release is looked at.
 #
@@ -130,6 +135,8 @@ def engine_line(path):
 
 
 def resolve_latest(releases, range_=None):
+    """The highest-versioned engine tag that qualifies, whatever the list order."""
+    candidates = []
     for release in releases:
         tag = release.get("tag_name", "")
         # The engine stream alone: "v<digit>...", never "taxonomy/...".
@@ -137,19 +144,21 @@ def resolve_latest(releases, range_=None):
             continue
         if len(tag) < 2 or not tag[1].isdigit():
             continue
-        if range_ is not None:
-            try:
-                if not satisfies(range_, tag[1:]):
-                    continue
-            except ValueError:
-                # A tag that is no version, such as a pre-release, is no
-                # answer to a range.
+        try:
+            version = parse(tag[1:])
+            if range_ is not None and not satisfies(range_, tag[1:]):
                 continue
+        except ValueError:
+            # A tag that is no version, such as a pre-release, is never an
+            # answer, with a range or without one.
+            continue
         names = {asset.get("name", "") for asset in release.get("assets", [])}
         want = f"headwater-{tag}-x86_64-unknown-linux-gnu.tar.gz"
         if want in names and f"{want}.sha256" in names:
-            return tag
-    return None
+            candidates.append((version, tag))
+    if not candidates:
+        return None
+    return max(candidates, key=lambda candidate: candidate[0])[1]
 
 
 def main(argv):

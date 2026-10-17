@@ -18,14 +18,15 @@
 # a query scoped to the `v*` stream cannot stop at the newest tag by name; it
 # has to confirm the asset this action needs is actually attached.
 #
-# So this walks the release list, newest first, filters to the engine's own
-# stream (a tag matching `v<digit>…`, which a `taxonomy/…` tag never does),
-# and stops at the first one that carries both the archive and its checksum.
+# So this reads the whole release list, filters to the engine's own stream (a
+# tag matching `v<digit>…`, which a `taxonomy/…` tag never does, and never a
+# pre-release), and picks the highest version that carries both the archive
+# and its checksum, wherever it sits in the list (#1756).
 #
 # A corpus can state the engine it asks for, as a range in the `engine:` line
-# of `$ROOT/.headwater/taxonomy.yml` (#1600). When it does, `latest` stops at
-# the first such release whose version the range admits, so a corpus that
-# pins an older release is checked by that release and not by the newest. A
+# of `$ROOT/.headwater/taxonomy.yml` (#1600). When it does, `latest` picks the
+# highest such release whose version the range admits, so a corpus that pins
+# an older line is checked by that line and not by the newest release. A
 # range no listed release satisfies is a refusal that names the range and the
 # file, never a fall back to the newest. The line is read before any engine
 # exists, so `resolve-latest.py` reads it and evaluates the range itself;
