@@ -252,7 +252,7 @@ tar -xzf headwater-v0.6.0-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headw
         <p>Each archive has a checksum file beside it on the release page. The name of the checksum file is the name of the archive with <code>.sha256</code> added. To verify the archive, download that file too and give it to <code>sha256sum -c</code>, or to <code>shasum -a 256 -c</code> on macOS.</p>
         <p class="check"><span class="checkword">Check</span> <span><code>headwater --version</code> prints a number.</span></p>
         <p>Many Linux distributions put <code>~/.local/bin</code> on your <code>PATH</code> when the directory exists at login. macOS does not. If your shell cannot find <code>headwater</code>, add <code>~/.local/bin</code> to your <code>PATH</code> in the startup file of your shell. Then open a new shell. You can also run the binary as <code>~/.local/bin/headwater</code>.</p>
-        <p>This installs version 0.6.0 of the engine. It does not install <code>taxonomy-source</code>, and step 3 fetches that. If you have a Rust toolchain, <code>cargo install headwater-cli</code> is an alternative route, and the README's <em>Obtaining a named version</em> section describes it.</p>
+        <p>This installs version 0.6.0 of the engine. It does not install <code>taxonomy-source</code>, and step 3 fetches that. If you have a Rust toolchain, <code>cargo install headwater-cli --locked</code> is an alternative route, and the README's <em>Obtaining a named version</em> section describes it.</p>
       </div>
     </div>
   </div>

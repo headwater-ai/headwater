@@ -223,8 +223,8 @@
   <p class="small">On Debian 11 the lines above stop at <code>ca-certificates curl</code>, because the Debian 11 security archive no longer serves those packages. The package itself still installs there. Download <code>headwater_0.6.0_amd64.deb</code> from <a href="https://github.com/headwater-ai/headwater/releases/tag/v0.6.0">the release page</a> on another machine, copy it across, and run <code>sudo apt-get install ./headwater_0.6.0_amd64.deb</code>. That needs no network, and a package installed this way gets no update from <code>apt upgrade</code>.</p>
 
   <h2 id="cargo">Install with cargo</h2>
-  <p>If you already have a Rust toolchain, every crate of the engine is on crates.io. This gets you the binary alone, at the newest published version, and needs no clone.</p>
-  <pre class="block"><span class="dim">$</span> cargo install headwater-cli</pre>
+  <p>If you already have a Rust toolchain, every crate of the engine is on crates.io. This gets you the binary alone, at the newest published version, and needs no clone. <code>--locked</code> builds it with the dependency versions the release was published with, so a later release or a yank of a dependency cannot break the install.</p>
+  <pre class="block"><span class="dim">$</span> cargo install headwater-cli --locked</pre>
 
   <h2 id="source">Build from source</h2>
   <p>This builds the tagged release from a clone. It needs a Rust toolchain at 1.91 or later.</p>

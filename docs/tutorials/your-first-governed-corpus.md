@@ -54,7 +54,7 @@ Each archive has a checksum file beside it on [the release page](https://github.
 
 Many Linux distributions put `~/.local/bin` on your `PATH` when the directory exists at login. macOS does not. If your shell cannot find `headwater`, add `~/.local/bin` to your `PATH` in the startup file of your shell. Then open a new shell. You can also run the binary as `~/.local/bin/headwater`.
 
-This installs version 0.6.0 of the engine. It does not install `taxonomy-source`, and step 3 fetches that. If you have a Rust toolchain, `cargo install headwater-cli` is an alternative route, and the README's *Obtaining a named version* section describes it.
+This installs version 0.6.0 of the engine. It does not install `taxonomy-source`, and step 3 fetches that. If you have a Rust toolchain, `cargo install headwater-cli --locked` is an alternative route, and the README's *Obtaining a named version* section describes it.
 
 ## Steps
 
