@@ -4867,6 +4867,21 @@ if [ -x "$engine" ]; then
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$scratch/add-arm.spec" > "$scratch/add-arm.out" 2> /dev/null
     same "an additive line of a component arm is refused with 5" "5" "$?"
+    # The count is computed from the round's rates: other rates price another
+    # final round. And the plan's own count of a line's probes must agree with
+    # the set `declared.py` reads, so a declaration whose set the plan does
+    # not select is refused.
+    sed 's/^    rates: \[0\.90, 0\.80\]/    rates: [0.95, 0.80]/' "$root/.headwater/probe.yml" > "$scratch/add-rates.yml"
+    HW_PROBE_YML="$scratch/add-rates.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/add-twelve.spec" > "$scratch/add-rates.out" 2> /dev/null
+    present "other rates for the final round price another count" "0.95 against 0.8, needs 88 sessions per scenario" "$scratch/add-rates.out"
+    present "and plan it" "4 probes x 22 repetitions (round final, ceil(88 / 4)) = 88 sessions" "$scratch/add-rates.out"
+    awk '/^  tuning:/ && !done { print; getline; done = 1; next } { print }' "$root/.headwater/probe.yml" > "$scratch/add-short.yml"
+    printf 'additive scenario-12 screening\n' > "$scratch/add-short.spec"
+    HW_PROBE_YML="$scratch/add-short.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$scratch/add-short.spec" > "$scratch/add-short.out" 2> /dev/null
+    same "a set the plan counts otherwise than the declaration read is refused with 5" "5" "$?"
+    present "and the refusal names both counts" "the plan selects 4 probes, and the set tuning less the probes the line leaves out holds 3" "$scratch/add-short.out"
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" \
         > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
     same "--priced reads each additive line" "0 46" "$? $(wc -l < "$scratch/add-priced.out" | tr -d ' ')"
