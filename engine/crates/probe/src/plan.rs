@@ -304,6 +304,11 @@ pub enum Refusal {
     /// and a misspelled identifier would then read as a probe kept out of a
     /// run it was never in (#980).
     ExcludedUnknown { probe: String },
+    /// The caller named a set the declaration does not declare under `sets`.
+    SetUndeclared { set: String, declared: Vec<String> },
+    /// A set names an identifier that no probe document of this corpus
+    /// carries (#1774).
+    SetMemberUnknown { set: String, probe: String },
     /// The caller asked for more repetitions than the tier declares.
     ///
     /// The narrowing may only lower the count. Raising it is spending more,
@@ -349,6 +354,10 @@ impl Refusal {
             // a run to be, like an arm the tier does not declare.
             Refusal::RepetitionsRaised { .. } | Refusal::RepetitionsZero => false,
             Refusal::ExcludedUnknown { .. } => true,
+            // A grade composes its selection with no narrowing, so neither is
+            // reachable from one, and each is about what a caller asked a run
+            // to be.
+            Refusal::SetUndeclared { .. } | Refusal::SetMemberUnknown { .. } => false,
             // A policy about which probes a paired run may carry, decided
             // after the whole selection is read, like a narrowed campaign.
             Refusal::AblatedExamined { .. } | Refusal::ComponentExamined { .. } => false,
@@ -527,6 +536,27 @@ impl std::fmt::Display for Refusal {
                 "`--exclude {probe}` names no probe of the selection, so the exclusion removes \
                  nothing and the run would be the one planned without it"
             ),
+            Refusal::SetUndeclared { set, declared } => {
+                let names: Vec<String> = declared.iter().map(|name| format!("`{name}`")).collect();
+                let carries = match names.is_empty() {
+                    true => "no set".to_string(),
+                    false => names.join(" and "),
+                };
+                write!(
+                    f,
+                    "`--set {}` names no set. `{}` declares {carries}",
+                    set.escape_debug(),
+                    crate::budget::PATH
+                )
+            }
+            Refusal::SetMemberUnknown { set, probe } => write!(
+                f,
+                "the `{}` set in `{}` names `{}`, and no probe document of this corpus carries \
+                 that identifier, so a round over the set would run fewer probes than it states",
+                set.escape_debug(),
+                crate::budget::PATH,
+                probe.escape_debug()
+            ),
             Refusal::RepetitionsRaised { asked, declared } => write!(
                 f,
                 "`--repetitions {asked}` is above the {declared} the tier declares. The narrowing \
@@ -630,6 +660,10 @@ pub struct Narrowing {
     /// comparison is the `tree` digest, which moves when the pilot's own
     /// transcripts are committed.
     pub repetitions: Option<u32>,
+    /// A set the declaration names under `sets`, whose probes are the
+    /// selection across categories (#1774). The CLI refuses it beside a
+    /// category, so the two never combine.
+    pub set: Option<String>,
 }
 
 /// The selection digest: the identifiers selected, in identifier order, one per
@@ -878,6 +912,30 @@ impl Plan {
                 return plan;
             }
         }
+        if let Some(set) = &narrowing.set {
+            let Some(members) = budgets.set(set) else {
+                plan.refusal = Some(Refusal::SetUndeclared {
+                    set: set.clone(),
+                    declared: budgets.sets.iter().map(|(name, _)| name.clone()).collect(),
+                });
+                return plan;
+            };
+            // Every identifier of the set names a probe document, or the round
+            // over it runs fewer probes than the set states and its rate pools
+            // a denominator nobody declared.
+            if let Some(missing) = members
+                .iter()
+                .find(|member| !plan.selected.iter().any(|selected| &selected.id == *member))
+            {
+                plan.refusal = Some(Refusal::SetMemberUnknown {
+                    set: set.clone(),
+                    probe: missing.clone(),
+                });
+                return plan;
+            }
+            plan.selected
+                .retain(|selected| members.contains(&selected.id));
+        }
         for excluded in &narrowing.exclude {
             let before = plan.selected.len();
             plan.selected.retain(|selected| &selected.id != excluded);
@@ -983,6 +1041,12 @@ impl Plan {
         // Every arm that removes paths is held to the same rule as the absent
         // arm: a component arm that removes a probe's document cannot measure
         // the probe either (#1472).
+        //
+        // A scenario arm of the additive tier is not held to it (#1774):
+        // `Envelope::removes` gives it nothing. Scenario 0 lacks `docs/`, so
+        // the rule would refuse every document-keyed probe of the set there,
+        // and HW-DR-0111 keeps them, at zero by construction in scenario 0,
+        // as the floor scenario 1 is compared with.
         for arm in plan.arms.clone() {
             let Some(refusal) = ablated_examined(&plan.selected, envelope.removes(arm)) else {
                 continue;

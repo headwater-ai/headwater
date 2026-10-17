@@ -436,6 +436,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 folds,
                 answer_keys,
                 category,
+                set,
                 seed,
                 exclude,
                 repetitions,
@@ -444,6 +445,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 tier.as_deref(),
                 arm.as_deref(),
                 category.as_deref(),
+                set,
                 seed,
                 exclude,
                 repetitions,
@@ -5593,6 +5595,7 @@ fn probe_plan_read(
     tier: Option<&str>,
     arm: Option<&str>,
     category: Option<&str>,
+    set: Option<String>,
     seed: u64,
     exclude: Vec<String>,
     repetitions: Option<u32>,
@@ -5603,8 +5606,8 @@ fn probe_plan_read(
             Some(tier) => tier,
             None => {
                 return Err(refuse(&format!(
-                    "`--tier {name}` names no tier. The tiers are `regression`, `campaign` and \
-                     `documentation`"
+                    "`--tier {name}` names no tier. The tiers are {}",
+                    headwater_probe::Tier::listed()
                 )))
             }
         },
@@ -5641,6 +5644,7 @@ fn probe_plan_read(
         seed,
         exclude,
         repetitions,
+        set,
     };
 
     let path = root.join(headwater_probe::budget::PATH);
