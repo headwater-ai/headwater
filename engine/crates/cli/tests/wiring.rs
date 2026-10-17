@@ -2391,6 +2391,122 @@ fn probe_plan_delta_prints_the_parsed_delta_of_each_arm() {
     assert_ne!(bare.code, Some(0), "{}{}", bare.out, bare.err);
 }
 
+/// `probe plan --scenario <n> --delta` prints the tree of one scenario of
+/// the additive campaign against the present tree, from the committed
+/// declaration and with no corpus, so that `tools/probe/ablate.sh` builds a
+/// scenario from it (#1774). The hook layer writes its one entry of
+/// `settings.json` where the rest of the harness is not held, and keeps the
+/// whole file where it is.
+#[test]
+fn probe_plan_scenario_delta_prints_what_a_scenario_holds() {
+    let at = std::env::temp_dir().join(format!(
+        "headwater-cli-wiring-{}-probe-scenario",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_dir_all(&at);
+    std::fs::create_dir_all(at.join(".headwater")).expect("the declaration directory is there");
+    let root = Root { at };
+    std::fs::copy(
+        repository().join(".headwater/probe.yml"),
+        root.path(".headwater/probe.yml"),
+    )
+    .expect("the declaration copies");
+
+    let five = root.run(&["probe", "plan", "--scenario", "5", "--delta"]);
+    assert_eq!(five.code, Some(0), "{}{}", five.out, five.err);
+    let lines: Vec<&str> = five.out.lines().collect();
+    for line in [
+        "= docs docs",
+        "+ hook .claude/settings.json",
+        "- harness .claude/settings.json",
+        "- mcp .mcp.json",
+        "- claude-md CLAUDE.md",
+    ] {
+        assert!(
+            lines.contains(&line),
+            "scenario 5 prints `{line}`:\n{}",
+            five.out
+        );
+    }
+    assert!(
+        lines
+            .iter()
+            .all(|line| line.starts_with("- ") || line.starts_with("= ") || line.starts_with("+ ")),
+        "{}",
+        five.out
+    );
+
+    let thirteen = root.run(&["probe", "plan", "--scenario", "13", "--delta"]);
+    assert_eq!(thirteen.code, Some(0), "{}{}", thirteen.out, thirteen.err);
+    let lines: Vec<&str> = thirteen.out.lines().collect();
+    assert!(
+        lines.contains(&"= harness .claude/settings.json"),
+        "{}",
+        thirteen.out
+    );
+    assert!(
+        !lines
+            .iter()
+            .any(|line| line.ends_with(" .claude/settings.json")
+                && line != &"= harness .claude/settings.json"),
+        "where the harness is held, it alone names settings.json:\n{}",
+        thirteen.out
+    );
+
+    let zero = root.run(&["probe", "plan", "--scenario", "0", "--delta"]);
+    assert_eq!(zero.code, Some(0), "{}{}", zero.out, zero.err);
+    assert!(
+        zero.out.lines().count() > 0 && zero.out.lines().all(|line| line.starts_with("- ")),
+        "plain code removes the path of every layer:\n{}",
+        zero.out
+    );
+
+    // A scenario the declaration does not carry is refused with status 1 and
+    // prints no path, because a script builds a tree from this output.
+    let fourteen = root.run(&["probe", "plan", "--scenario", "14", "--delta"]);
+    assert_eq!(fourteen.code, Some(1), "{}{}", fourteen.out, fourteen.err);
+    assert_eq!(fourteen.out, "", "a refused delta prints no path");
+    assert!(
+        fourteen.err.contains("declares no scenario 14"),
+        "{}",
+        fourteen.err
+    );
+
+    // `--scenario` needs `--delta`, and it cannot be used with `--arm`.
+    for words in [
+        &["probe", "plan", "--scenario", "5"][..],
+        &[
+            "probe",
+            "plan",
+            "--tier",
+            "campaign",
+            "--arm",
+            "no-hook",
+            "--scenario",
+            "5",
+            "--delta",
+        ][..],
+        &[
+            "probe",
+            "plan",
+            "--scenario",
+            "5",
+            "--instrument",
+            "--delta",
+        ][..],
+    ] {
+        let refused = root.run(words);
+        assert_eq!(
+            refused.code,
+            Some(1),
+            "{words:?}: {}{}",
+            refused.out,
+            refused.err
+        );
+        assert_eq!(refused.out, "", "{words:?}");
+    }
+}
+
 /// `probe plan --instrument` prints the `instrument` sequence the declaration
 /// parses, one path per line, in every form the engine accepts, so that
 /// `tools/probe/ablate.sh` reads it from here and parses no YAML itself
