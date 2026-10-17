@@ -358,10 +358,7 @@ fn every_probe_on_the_shelf_states_one_task_one_target_and_one_key() {
         };
         let file = link.split('#').next().unwrap_or_default();
         let Ok(target) = shelf.join(file).canonicalize() else {
-            bad.push(format!(
-                "{} targets `{link}`, which is no file",
-                probe.path
-            ));
+            bad.push(format!("{} targets `{link}`, which is no file", probe.path));
             continue;
         };
         let names_documents = probe.expectation.as_deref() == Some(Expectation::Opened.name())
