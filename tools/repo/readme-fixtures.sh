@@ -4441,6 +4441,10 @@ printf '\357\273\277engine: ">=0.4 <0.5"\n' >"$ih/corpus/.headwater/taxonomy.yml
 r=$(install_run Linux x86_64)
 same "  and a range behind a byte order mark installs the release it admits" \
     "0|yes|0|$ih_api $ih_gone $ih_old $ih_old.sha256" "$(printf '%s' "$r" | cut -d'|' -f1-4)"
+printf 'version: 1\n\357\273\277engine: ">=0.4 <0.5"\n' >"$ih/corpus/.headwater/taxonomy.yml"
+r=$(install_run Linux x86_64)
+same "  and a mark on a later line hides the key there, as it does in the engine" \
+    "0|yes|0|$ih_linux $ih_linux.sha256" "$(printf '%s' "$r" | cut -d'|' -f1-4)"
 
 printf "engine: '>=0.1'  # any release will do\n" >"$ih/corpus/.headwater/taxonomy.yml"
 r=$(install_run Linux x86_64)

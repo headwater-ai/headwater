@@ -440,6 +440,9 @@ mod tests {
         // A mark anywhere other than byte 0 stays part of what it is in.
         let root = load("id: y\n\u{feff}engine: x\n").expect("loads");
         assert!(root.as_map().expect("a mapping").get("engine").is_none());
+        // One mark is dropped, and a second one is content.
+        let root = load("\u{feff}\u{feff}engine: x\n").expect("loads");
+        assert!(root.as_map().expect("a mapping").get("engine").is_none());
     }
 
     fn kinds(source: &str) -> Vec<ErrorKind> {

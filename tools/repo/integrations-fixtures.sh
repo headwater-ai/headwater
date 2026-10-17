@@ -315,6 +315,9 @@ same '  and a range behind a byte order mark that no release satisfies fails and
 printf '\357\273\277engine: ">=0.4 <0.5"\n' >"$rv/corpus/.headwater/taxonomy.yml"
 same '  and a range behind a byte order mark resolves as it does without one' '0|tag=v0.4.1' \
     "$(resolve_version latest "$rv/corpus" | cut -d'|' -f1-2)"
+printf 'version: 1\n\357\273\277engine: ">=0.4 <0.5"\n' >"$rv/corpus/.headwater/taxonomy.yml"
+same '  and a mark on a later line hides the key there, as it does in the engine' '0|tag=v0.6.0' \
+    "$(resolve_version latest "$rv/corpus" | cut -d'|' -f1-2)"
 printf 'engine: "~0.4"\n' >"$rv/corpus/.headwater/taxonomy.yml"
 r=$(resolve_version latest "$rv/corpus")
 same '  and a range this syntax cannot read fails and says so' '1|' "$(printf '%s' "$r" | cut -d'|' -f1-2)"
