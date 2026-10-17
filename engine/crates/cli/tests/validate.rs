@@ -767,6 +767,59 @@ fn resolve_refuses_an_overlay_projection_the_generator_refuses() {
     }
 }
 
+/// The other direction of the attribution in the case above: a projection the
+/// base package declares and the generator refuses is named against the base,
+/// and not against the overlay that appends after it (#1758). The base's item
+/// is `projections.0`, so a replay that left the base's items out would name
+/// the overlay here.
+#[test]
+fn resolve_names_the_base_for_a_base_projection_the_generator_refuses() {
+    let root = Root::new("base-projection-refused");
+    let first = root.run(&["taxonomy", "resolve"]);
+    assert_eq!(first.code, Some(0), "the fixture resolves: {first:?}");
+    let lock = root.at.join(".headwater/taxonomy.lock");
+    let written = std::fs::read(&lock).expect("the fixture resolved once");
+
+    let base = root
+        .at
+        .join(".headwater/packages/headwater-standard/taxonomy.yml");
+    let text = std::fs::read_to_string(&base).expect("the base reads");
+    let anchor = "for: [decisions, specifications], output: \"{shelf}/README.md\"";
+    assert_eq!(
+        text.matches(anchor).count(),
+        1,
+        "the base declares its shelf index once"
+    );
+    std::fs::write(
+        &base,
+        text.replacen(
+            anchor,
+            "for: [decisions, specifications], output: \"{shelf}/INDEX.txt\"",
+            1,
+        ),
+    )
+    .expect("the base writes");
+
+    let resolved = root.run(&["taxonomy", "resolve"]);
+    assert_eq!(resolved.code, Some(1), "{resolved:?}");
+    assert!(
+        resolved
+            .err
+            .contains("headwater-standard/taxonomy.yml: `projections.0"),
+        "the refusal names the base against its own entry: {resolved:?}"
+    );
+    assert!(resolved.err.contains("INDEX.txt"), "{resolved:?}");
+    assert!(
+        !resolved.err.contains("overlay.yml"),
+        "the refusal names the base and not the overlay: {resolved:?}"
+    );
+    assert_eq!(
+        std::fs::read(&lock).expect("the lock is still there"),
+        written,
+        "no lock is written"
+    );
+}
+
 /// A taxonomy with no tree beside it is valid, and the verb says it did not
 /// count the scope (#951, owner ruling 2026-09-25: "a taxonomy published as
 /// its own repository has no tree, so `validate` skips the coverage count and
