@@ -76,6 +76,7 @@ folds:
   - integrations/vscode/test/fixtures/route-pointers.jsonl
   - integrations/vscode/test/fixtures/route-text-only.jsonl
   - tools/probe/layer-campaign.spec
+  - tools/probe/additive-campaign.spec
 
 # Answer keys: documents that an earlier session wrote in answer to a probe's
 # task, and that name neither the probe nor its slug, so the seal below would

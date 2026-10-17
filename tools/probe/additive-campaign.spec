@@ -17,10 +17,11 @@
 # probe on a line of its own runs as many sessions as a pooled one.
 #
 # **Scenario 13 holds the internal harness.** Its skill bodies state the
-# answer of three probes: `hw-corpus` holds HW-DR-0104, the governs-line
-# probe's ruling; `headwater-engine`, `hw-run-policy` and
-# `hw-verification-bar` hold HW-DR-0049, the ruling-cited probe's ruling; and
-# `ste-editor` holds HW-DR-0087, the adjudication probe's ruling. The leak
+# answer of three probes: `hw-corpus` names the governs-line probe's ruling;
+# `headwater-engine`, `hw-run-policy` and `hw-verification-bar` name the
+# ruling-cited probe's; and `ste-editor` names the adjudication probe's. The
+# dry run prints each such hit, and this header names no answer, because the
+# spec is a fold under `folds:` and a fold states none. The leak
 # check reads each skill body in a scenario tree and prints such a hit as
 # `harness`, and the dry run refuses a scenario-13 line that pools a probe
 # with a `harness` hit with another probe. So scenario 13 runs the
