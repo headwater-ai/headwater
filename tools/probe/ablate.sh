@@ -296,11 +296,15 @@ if [ "${1:-}" = --diff ] && [ "${2:-}" = --scenario ]; then
         exit 1
     fi
     sd_status=0
-    LC_ALL=C sort "$sd_scratch/found" | awk '
-        NR == FNR {
-            space = index($0, " ")
-            path[++paths] = substr($0, space + 1)
-            next
+    # The expected paths are read in BEGIN, because `NR == FNR` reads every
+    # found line as an expected path when the expected file is empty.
+    LC_ALL=C sort "$sd_scratch/found" | awk -v expected="$sd_scratch/expected" '
+        BEGIN {
+            while ((getline line < expected) > 0) {
+                space = index(line, " ")
+                path[++paths] = substr(line, space + 1)
+            }
+            close(expected)
         }
         {
             sign = substr($0, 1, 1)
@@ -326,7 +330,7 @@ if [ "${1:-}" = --diff ] && [ "${2:-}" = --scenario ]; then
             for (j = 1; j <= bad; j++) print unexpected[j]
             exit (bad > 0 ? 1 : 0)
         }
-    ' "$sd_scratch/expected" - || sd_status=1
+    ' || sd_status=1
     rm -rf "$sd_scratch"
     exit "$sd_status"
 fi

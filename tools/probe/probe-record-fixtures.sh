@@ -4413,7 +4413,26 @@ sh "$ablate" --diff --scenario 6 "$scratch/scen" 3 > "$scratch/scen-mcp.out" 2>&
 same "a present server file is replaced by the mcp layer's, and --diff passes it" "0" "$?"
 same "and names the one path" "+ .mcp.json" "$(cat "$scratch/scen-mcp.out")"
 rm -f "$scratch/scen/.mcp.json"
-rm -rf "$scratch/scen" "$scratch/scen-zero" "$scratch/scen-five" "$scratch/scen-thirteen" "$scratch/scen-missing"
+# A difference outside the expected paths fails --diff: plain code against
+# scenario 1 removes the documents, and nothing expects a removal.
+sh "$ablate" --diff --scenario 0 "$scratch/scen" 1 > "$scratch/scen-reverse.out" 2> "$scratch/scen-reverse.err"
+same "--diff --scenario fails a difference it does not expect" "1" "$?"
+present "and names it" "unexpected - docs/spec/05.md" "$scratch/scen-reverse.out"
+# A workspace that still holds the instrument loses it in every scenario,
+# also one that holds the documents layer.
+cp -a "$scratch/scen" "$scratch/scen-instrumented"
+mkdir -p "$scratch/scen-instrumented/docs/probes"
+printf 'probe\n' > "$scratch/scen-instrumented/docs/probes/p.md"
+sh "$ablate" --scenario 13 "$scratch/scen-instrumented" > /dev/null 2> "$scratch/scen-instrumented.err"
+same "ablate.sh --scenario 13 builds a workspace that holds the instrument" "0" "$?"
+if [ ! -e "$scratch/scen-instrumented/docs/probes" ] && [ -f "$scratch/scen-instrumented/docs/spec/05.md" ]; then
+    pass "and it removes the instrument and keeps the documents"
+else
+    fail "and it removes the instrument and keeps the documents" \
+        "$(cd "$scratch/scen-instrumented" && find docs -type f | LC_ALL=C sort | tr '\n' ' ')"
+fi
+rm -rf "$scratch/scen" "$scratch/scen-zero" "$scratch/scen-five" "$scratch/scen-thirteen" "$scratch/scen-missing" \
+    "$scratch/scen-instrumented"
 
 # ---------------------------------------------------------------------------
 # The dry run of the layer campaign (#1472): the committed spec, planned,
