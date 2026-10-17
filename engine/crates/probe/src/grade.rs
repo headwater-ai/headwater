@@ -372,6 +372,11 @@ pub struct Graded {
     /// The events this session's record came from, one-based, in order.
     pub events: Vec<usize>,
     pub verdict: Verdict,
+    /// The session's recorded calls to a tool of an MCP server, meaning a
+    /// tool whose name starts with `mcp__`, and `None` where no event of the
+    /// session recorded a `calls` key. `None` is never read as 0: a session
+    /// that nothing watched is not one that never called the server.
+    pub mcp_calls: Option<usize>,
 }
 
 /// One probe of the selection, and every session the transcript ran it in.
@@ -535,6 +540,7 @@ impl Results {
                     session: session[0].session.clone(),
                     events,
                     verdict: verdict(selected, &session),
+                    mcp_calls: None,
                 });
             }
             if sessions.is_empty() {
@@ -542,6 +548,7 @@ impl Results {
                     session: String::new(),
                     events: Vec::new(),
                     verdict: Verdict::Refused(Refusal::NotRun),
+                    mcp_calls: None,
                 });
             }
             results.rows.push(Row {
@@ -1729,6 +1736,86 @@ mod tests {
         );
     }
 
+    /// Each session states its calls to an MCP server, and the result states
+    /// how many sessions made none, over the sessions that recorded calls.
+    ///
+    /// The four sessions differ in what a careless count would get wrong.
+    /// Session `b` names `mcp__` only in a `Bash` argument and in two tool
+    /// names that are near the prefix and not on it, so a count that read
+    /// the argument or folded the case would report a call there. Session
+    /// `d` has no `calls` key, so nothing watched it, and a count of 0 there
+    /// would be the flattering error the test above guards for the rate: it
+    /// would add one more session that "never called the server".
+    #[test]
+    fn each_session_states_its_mcp_calls_and_an_unwatched_session_is_not_counted_as_zero() {
+        let selected = opened_over_one_document();
+        let a = event(
+            1,
+            "a",
+            Some(vec![
+                call("mcp__headwater__route", r#"{"question":"x"}"#),
+                call("mcp__headwater__explain", r#"{"path":"x"}"#),
+                call("Read", r#"{"file_path":"x"}"#),
+            ]),
+        );
+        let b = event(
+            2,
+            "b",
+            Some(vec![
+                call("Read", r#"{"file_path":"x"}"#),
+                call("Bash", r#"{"command":"headwater mcp__headwater__explain x"}"#),
+                call("mcp_headwater_route", r#"{}"#),
+                call("MCP__headwater__x", r#"{}"#),
+            ]),
+        );
+        let c = event(3, "c", Some(Vec::new()));
+        let d = event(4, "d", None);
+        let record = Record {
+            identity: None,
+            read: 4,
+            probes: vec!["PROBE-FIX-one".into()],
+            sessions: 4,
+            calls: 7,
+            events: vec![a, b, c, d],
+            rejected: Vec::new(),
+            refusal: None,
+            declared: 1,
+            lock_moved: None,
+            read_set_moved: None,
+        };
+        let results = Results::over(&record, std::slice::from_ref(&selected));
+        let counts: Vec<(&str, Option<usize>)> = results.rows[0]
+            .sessions
+            .iter()
+            .map(|graded| (graded.session.as_str(), graded.mcp_calls))
+            .collect();
+        assert_eq!(
+            counts,
+            vec![("a", Some(2)), ("b", Some(0)), ("c", Some(0)), ("d", None)],
+            "the tool name alone decides, its prefix is exactly `mcp__`, and no `calls` key is no count"
+        );
+
+        let rendered = results.render(ColorMode::Plain);
+        for clause in [
+            "session a: not satisfied — 3 recorded calls, and none opened any of the 1 document; 2 calls to a tool of an MCP server\n",
+            "session b: not satisfied — 4 recorded calls, and none opened any of the 1 document; no call to a tool of an MCP server\n",
+            "session c: not satisfied — 0 recorded calls, and none opened any of the 1 document; no call to a tool of an MCP server\n",
+            "2 of 3 sessions that recorded their calls made no call to a tool of an MCP server. 1 session recorded no calls and was not counted.\n",
+        ] {
+            assert!(rendered.contains(clause), "missing {clause:?} in:\n{rendered}");
+        }
+        let unwatched = rendered
+            .lines()
+            .find(|line| line.starts_with("    session d: "))
+            .expect("session d is printed");
+        assert!(
+            unwatched.ends_with(
+                "; calls to a tool of an MCP server not counted, because the session recorded no calls"
+            ),
+            "an unwatched session never reads as one that made no call: {unwatched}"
+        );
+    }
+
     /// The interval is the reason a result is readable over quarters, and its
     /// one hard property is that it stays inside zero and one where a normal
     /// interval does not.
@@ -1759,6 +1846,7 @@ mod tests {
                             }),
                             false => Verdict::NotSatisfied(Miss::NoAnswerGiven),
                         },
+                        mcp_calls: None,
                     })
                     .collect(),
             });
