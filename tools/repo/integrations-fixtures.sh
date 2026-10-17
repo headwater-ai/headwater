@@ -318,6 +318,18 @@ json7c='[
 ]'
 same '  and the highest version with no archive is passed over' 'v0.5.0' \
     "$(printf '%s' "$json7c" | python3 "$resolver" --range '>=0.5')"
+json7d='[
+  {"tag_name": "v0.4.9", "assets": [
+    {"name": "headwater-v0.4.9-x86_64-unknown-linux-gnu.tar.gz"},
+    {"name": "headwater-v0.4.9-x86_64-unknown-linux-gnu.tar.gz.sha256"}
+  ]},
+  {"tag_name": "v0.4.10", "assets": [
+    {"name": "headwater-v0.4.10-x86_64-unknown-linux-gnu.tar.gz"},
+    {"name": "headwater-v0.4.10-x86_64-unknown-linux-gnu.tar.gz.sha256"}
+  ]}
+]'
+same '  and versions compare by number, not by the text of the tag' 'v0.4.10' \
+    "$(printf '%s' "$json7d" | python3 "$resolver")"
 
 # The same choice through resolve-version.sh, the script both actions run: a
 # stub `curl` on PATH serves shape 5 as the release list, and a scratch

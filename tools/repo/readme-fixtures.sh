@@ -4415,8 +4415,8 @@ same "  and the script's last line is the one call to its body" 'main "$@"' \
 #      root, so the case also holds the walk up. `v0.4.1` is planted as a
 #      release; `v0.4.2` is listed and has no archive, so the script must go
 #      on to the next release in the range rather than stop at it.
-mkdir -p "$ih/rel/v0.4.1" "$ih/rel/v0.4.3" "$ih/corpus/.headwater" "$ih/corpus/docs/deep"
-for ih_rel in v0.4.1 v0.4.3; do
+mkdir -p "$ih/rel/v0.4.1" "$ih/rel/v0.4.9" "$ih/rel/v0.4.10" "$ih/corpus/.headwater" "$ih/corpus/docs/deep"
+for ih_rel in v0.4.1 v0.4.9 v0.4.10; do
     for target in x86_64-unknown-linux-musl aarch64-apple-darwin; do
         ih_archive="headwater-$ih_rel-$target.tar.gz"
         tar -czf "$ih/rel/$ih_rel/$ih_archive" -C "$ih/bin" headwater
@@ -4485,11 +4485,12 @@ r=$(install_run Linux x86_64)
 same "  and a range split by a no-break space is read as the engine reads it" \
     "0|yes|0|$ih_api $ih_gone $ih_old $ih_old.sha256" "$(printf '%s' "$r" | cut -d'|' -f1-4)"
 
-# A list whose order is not the version order (#1756): `v0.4.1` sits before
-# `v0.4.3`, and both have an archive. The script installs the highest version
-# in the range, and it downloads nothing of `v0.4.1`.
-printf '[{"tag_name":"v0.4.1","assets":[]},{"tag_name":"v0.4.3","assets":[]}]\n' >"$ih/releases-unordered.json"
-ih_new="https://github.com/headwater-ai/headwater/releases/download/v0.4.3/headwater-v0.4.3-x86_64-unknown-linux-musl.tar.gz"
+# A list whose order is not the version order (#1756): `v0.4.9` sits before
+# `v0.4.10`, and `v0.4.1` after it, and all three have an archive. The script
+# installs the highest version in the range, by number and not by the text of
+# the tag, and it downloads nothing of the other two.
+printf '[{"tag_name":"v0.4.9","assets":[]},{"tag_name":"v0.4.10","assets":[]},{"tag_name":"v0.4.1","assets":[]}]\n' >"$ih/releases-unordered.json"
+ih_new="https://github.com/headwater-ai/headwater/releases/download/v0.4.10/headwater-v0.4.10-x86_64-unknown-linux-musl.tar.gz"
 STUB_API="$ih/releases-unordered.json"
 printf 'engine: ">=0.4 <0.5"\n' >"$ih/corpus/.headwater/taxonomy.yml"
 r=$(install_run Linux x86_64)
