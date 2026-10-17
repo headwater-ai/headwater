@@ -488,6 +488,87 @@ pub fn resolve(sources: &[Source]) -> Result<Resolution, Vec<ResolveError>> {
     })
 }
 
+/// Which source wrote each item of the list at `path`, by its position in the
+/// resolved taxonomy, as an index into [`Resolution::sources`].
+///
+/// A reader that refuses `projections.<i>` counts the merged list, and the
+/// author it has to name is the source that wrote item `i` (#1758). The answer
+/// replays the operations that reach the list over the base's own items, which
+/// is the order [`apply`] grows it in: the base's items first, then each
+/// `add_to` appends, `add` and `override` replace, `remove_from` takes out the
+/// first item that is the same, and `remove` empties it.
+///
+/// `None` where the replay cannot answer: an operation rewrites a block above
+/// the list or a member below it, writes a list as something other than a
+/// list, or names an item the list does not hold. A caller then names every
+/// source that wrote to the list, rather than guessing one.
+pub fn list_owners(
+    start: &Mapping,
+    operations: &[Operation],
+    path: &[String],
+) -> Option<Vec<usize>> {
+    let mut items: Vec<(usize, Value)> = match merge::lookup(start, path) {
+        Some(found) => found
+            .value
+            .as_seq()?
+            .iter()
+            .map(|item| (0, item.value.clone()))
+            .collect(),
+        None => Vec::new(),
+    };
+    for operation in operations {
+        let at = operation.address.segments();
+        if at == path {
+            match (operation.kind, &operation.value) {
+                (OpKind::AddTo, Some(value)) => items.extend(
+                    merge::items_of(value)
+                        .into_iter()
+                        .map(|item| (operation.source, item.value)),
+                ),
+                (OpKind::Add | OpKind::Override, Some(value)) => {
+                    items = value
+                        .value
+                        .as_seq()?
+                        .iter()
+                        .map(|item| (operation.source, item.value.clone()))
+                        .collect();
+                }
+                (OpKind::RemoveFrom, Some(value)) => {
+                    for wanted in merge::items_of(value) {
+                        let index = items
+                            .iter()
+                            .position(|(_, item)| merge::same(item, &wanted.value))?;
+                        items.remove(index);
+                    }
+                }
+                (OpKind::Remove, _) => items.clear(),
+                (_, None) => return None,
+            }
+        } else if at.starts_with(path) || path.starts_with(at) {
+            return None;
+        }
+    }
+    Some(items.into_iter().map(|(source, _)| source).collect())
+}
+
+/// Every source that wrote to the list at `path`, in source order: the base
+/// where it declares the list, and each source with an operation on it.
+pub fn list_writers(start: &Mapping, operations: &[Operation], path: &[String]) -> Vec<usize> {
+    let mut writers: Vec<usize> = Vec::new();
+    if merge::lookup(start, path).is_some() {
+        writers.push(0);
+    }
+    for operation in operations {
+        let at = operation.address.segments();
+        if at.starts_with(path) || path.starts_with(at) {
+            writers.push(operation.source);
+        }
+    }
+    writers.sort_unstable();
+    writers.dedup();
+    writers
+}
+
 fn apply(
     start: &Mapping,
     operations: &[Operation],

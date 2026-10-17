@@ -1124,11 +1124,21 @@ fn validate(root: &Path) -> ExitCode {
     .map(|finding| format!("{}: {}", finding.rule, finding.message).replace('\n', "\n    "))
     .collect();
 
+    // The refusal `taxonomy resolve` makes before it writes a lock, so the two
+    // verbs cannot disagree about one set of sources (#1758).
+    let projection_refusals = projection_refusals(
+        &repository.resolution,
+        headwater_resolve::package::sources(root, &repository.consumer)
+            .ok()
+            .as_deref(),
+    );
+
     if findings.is_empty()
         && unmatched.is_empty()
         && unread.is_none()
         && outside_refusals.is_empty()
         && pin_refusals.is_empty()
+        && projection_refusals.is_empty()
     {
         println!("\n{} is valid", repository.consumer.package);
         return ExitCode::SUCCESS;
@@ -1160,6 +1170,14 @@ fn validate(root: &Path) -> ExitCode {
     }
     for refusal in &pin_refusals {
         eprintln!("  {}", err(refusal));
+    }
+    for refusal in &projection_refusals {
+        eprintln!(
+            "  {}",
+            err(&format!(
+                "a projection `headwater generate` refuses: {refusal}"
+            ))
+        );
     }
     advise(root, &repository.consumer);
     ExitCode::FAILURE
@@ -1273,6 +1291,25 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
             return ExitCode::FAILURE;
         }
     };
+    // The generator's reader of `projections`, over the resolved taxonomy and
+    // before any lock work, so the write path and `--check` both refuse a lock
+    // that `headwater generate` would refuse to read (#1758). The resolver's
+    // own rules read three of the generator's refusals and no more, so a
+    // declaration in any source could pass here and fail at the next verb.
+    let refused = projection_refusals(&repository.resolution, Some(&sources));
+    if !refused.is_empty() {
+        eprintln!(
+            "headwater: {}",
+            err(
+                "the taxonomy declares a projection that `headwater generate` refuses, so no \
+                 lock is written"
+            )
+        );
+        for refusal in &refused {
+            eprintln!("  {}", err(refusal));
+        }
+        return ExitCode::FAILURE;
+    }
     // The payload is the one authored part of the lock, so a resolve reads it
     // off the committed file and writes it back. A resolve that dropped it
     // would delete an adopter's accounting as a side effect of a taxonomy edit,
@@ -1832,6 +1869,79 @@ fn projections_read(taxonomy: &headwater_yaml::Mapping) -> Result<(), Vec<String
     headwater_generate::Projections::read(taxonomy)
         .map(|_| ())
         .map_err(|errors| errors.into_iter().map(|error| error.message).collect())
+}
+
+/// The generator's refusals of the resolved `projections`, each line prefixed
+/// with the source that wrote the refused entry (#1758).
+///
+/// `taxonomy resolve` and `taxonomy validate` read this before they reach a
+/// verdict, so neither writes or blesses a lock that `headwater generate` then
+/// refuses. The reader counts the merged list, so `projections.<i>` is mapped
+/// back to its author by [`headwater_resolve::list_owners`]. A message that
+/// carries no index, or an index the replay cannot answer, names every source
+/// that wrote to the list, and never none. Empty where the reader accepts.
+///
+/// `sources` is what `package::sources` read, whose first member is the base
+/// package; `None` where it did not read, and then the base's own items are
+/// unknown and every refusal names every writer.
+fn projection_refusals(
+    resolution: &headwater_resolve::Resolution,
+    sources: Option<&[headwater_resolve::Source]>,
+) -> Vec<String> {
+    let Err(messages) = projections_read(&resolution.taxonomy) else {
+        return Vec::new();
+    };
+    let path = ["projections".to_string()];
+    let empty = headwater_yaml::Mapping::default();
+    let base = sources
+        .and_then(|sources| sources.first())
+        .and_then(|base| base.root.value.as_map())
+        .unwrap_or(&empty);
+    let owners = sources
+        .and_then(|_| headwater_resolve::list_owners(base, &resolution.operations, &path))
+        .filter(|owners| {
+            resolution
+                .taxonomy
+                .get("projections")
+                .and_then(|node| node.value.as_seq())
+                .is_some_and(|items| items.len() == owners.len())
+        });
+    let mut writers = headwater_resolve::list_writers(base, &resolution.operations, &path);
+    if writers.is_empty() || sources.is_none() {
+        writers.insert(0, 0);
+        writers.dedup();
+    }
+    let name = |index: usize| {
+        resolution
+            .sources
+            .get(index)
+            .cloned()
+            .unwrap_or_else(|| "the resolved taxonomy".to_string())
+    };
+    let everyone = writers
+        .iter()
+        .map(|&index| name(index))
+        .collect::<Vec<_>>()
+        .join(", ");
+    messages
+        .into_iter()
+        .map(|message| {
+            let owner = projection_index(&message)
+                .and_then(|at| owners.as_ref().and_then(|owners| owners.get(at)).copied());
+            match owner {
+                Some(source) => format!("{}: {message}", name(source)),
+                None => format!("{everyone}: {message}"),
+            }
+        })
+        .collect()
+}
+
+/// The `<i>` of the first `` `projections.<i> `` a message of the generator's
+/// reader names, which counts the merged list.
+fn projection_index(message: &str) -> Option<usize> {
+    let (_, after) = message.split_once("`projections.")?;
+    let digits: String = after.chars().take_while(char::is_ascii_digit).collect();
+    digits.parse().ok()
 }
 
 /// `headwater taxonomy publish --from <dir> --check` (#1139).

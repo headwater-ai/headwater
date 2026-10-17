@@ -719,6 +719,21 @@ fn resolve_refuses_an_overlay_projection_the_generator_refuses() {
 
         let resolved = root.run(&["taxonomy", "resolve"]);
         let checked = root.run(&["taxonomy", "resolve", "--check"]);
+        // `taxonomy validate` reads the same sources, so it says not valid
+        // where resolve refuses, and never valid over a lock resolve refused.
+        let validated = root.run(&["taxonomy", "validate"]);
+        let flagged = "a projection `headwater generate` refuses: ";
+        if refused {
+            assert_eq!(validated.code, Some(1), "{output}: {validated:?}");
+            assert!(
+                validated
+                    .err
+                    .contains(&format!("{flagged}.headwater/overlay.yml: `projections.")),
+                "validate names the overlay: {validated:?}"
+            );
+        } else {
+            assert!(!validated.err.contains(flagged), "{output}: {validated:?}");
+        }
         if refused {
             assert_eq!(resolved.code, Some(1), "{output}: {resolved:?}");
             assert!(
