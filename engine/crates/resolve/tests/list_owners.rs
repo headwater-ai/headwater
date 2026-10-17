@@ -9,7 +9,8 @@
 use headwater_resolve::{list_owners, list_writers, operation, Operation, Role, Source};
 use headwater_yaml::Mapping;
 
-const BASE: &str = "projections:\n  - {kind: shelf_index, output: a.md}\n  - {kind: shelf_index, output: b.md}\n";
+const BASE: &str =
+    "projections:\n  - {kind: shelf_index, output: a.md}\n  - {kind: shelf_index, output: b.md}\n";
 
 fn base(text: &str) -> Mapping {
     Source::from_text("base.yml", Role::Taxonomy, text)
@@ -28,8 +29,8 @@ fn operations(overlays: &[&str]) -> Vec<Operation> {
         .iter()
         .enumerate()
         .flat_map(|(index, text)| {
-            let source = Source::from_text("overlay.yml", Role::Overlay, text)
-                .expect("the overlay loads");
+            let source =
+                Source::from_text("overlay.yml", Role::Overlay, text).expect("the overlay loads");
             operation::read(index + 1, &source.name, &source.root).expect("the operations read")
         })
         .collect()
@@ -59,7 +60,10 @@ fn a_base_with_no_list_starts_from_nothing() {
         list_owners(&base("kinds: {}\n"), &ops, &path()),
         Some(vec![])
     );
-    assert_eq!(list_writers(&base("kinds: {}\n"), &ops, &path()), Vec::<usize>::new());
+    assert_eq!(
+        list_writers(&base("kinds: {}\n"), &ops, &path()),
+        Vec::<usize>::new()
+    );
 }
 
 #[test]
@@ -73,7 +77,8 @@ fn remove_from_takes_out_the_item_that_is_the_same_and_shifts_the_rest() {
 
 #[test]
 fn remove_from_an_item_the_list_does_not_hold_cannot_be_answered() {
-    let ops = operations(&["remove_from:\n  projections:\n    - {kind: shelf_index, output: z.md}\n"]);
+    let ops =
+        operations(&["remove_from:\n  projections:\n    - {kind: shelf_index, output: z.md}\n"]);
     assert_eq!(list_owners(&base(BASE), &ops, &path()), None);
 }
 
