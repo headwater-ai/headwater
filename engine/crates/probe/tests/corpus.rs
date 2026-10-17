@@ -304,7 +304,10 @@ fn section_of<'a>(source: &'a str, heading: &str) -> &'a str {
     &rest[..end]
 }
 
-/// The destination of every inline Markdown link in a text, as written.
+/// The destination of every Markdown link in a text, as written: each inline
+/// link and each reference definition. A reference definition is a link the
+/// site build follows as surely as an inline one, so a check that reads only
+/// `](` lets a link out of `docs/` through.
 fn links_in(text: &str) -> Vec<String> {
     let mut out = Vec::new();
     let mut rest = text;
@@ -313,6 +316,15 @@ fn links_in(text: &str) -> Vec<String> {
         let end = after.find(')').unwrap_or(after.len());
         out.push(after[..end].to_string());
         rest = &after[end..];
+    }
+    for line in text.lines() {
+        let line = line.trim_start();
+        if let Some(label_end) = line.strip_prefix('[').and_then(|it| it.find("]:")) {
+            let destination = line[label_end + 3..].split_whitespace().next();
+            if let Some(destination) = destination {
+                out.push(destination.trim_matches(['<', '>']).to_string());
+            }
+        }
     }
     out
 }
@@ -326,6 +338,20 @@ fn code_spans_in(text: &str) -> Vec<String> {
         .collect()
 }
 
+/// Whether a code span is written as a path: it holds a `/`, or it ends in a
+/// file extension. `superseded_by` is not a path, and
+/// `.claude/skills/headwater-authoring/SKILL.md` is one. A span written as a
+/// path names a file under `Target` whether that file exists or not, so it is
+/// counted before it is resolved.
+fn is_path(span: &str) -> bool {
+    span.contains('/')
+        || span.rsplit_once('.').is_some_and(|(stem, extension)| {
+            !stem.is_empty()
+                && !extension.is_empty()
+                && extension.chars().all(|c| c.is_ascii_alphanumeric())
+        })
+}
+
 /// Every probe on the shelf states one task, one target and one key (#1774,
 /// clause 3).
 ///
@@ -336,8 +362,11 @@ fn code_spans_in(text: &str) -> Vec<String> {
 /// A target outside `docs/` is a code-path anchor that the site does not
 /// serve, and a link to it fails the strict site build, so it is named by
 /// exactly one code span holding its path from the repository root, and by no
-/// link. For the forms that are a predicate over what a session opened or
-/// cited, the target is one of the probe's `examines` entries, so the target
+/// link. Every link counts, inline or by reference definition, and so does
+/// every code span written as a path, whether its file exists or not. A path
+/// is resolved before it is judged, so it must stay inside the repository,
+/// and a detour into `docs/` is a target under `docs/`. For the forms that
+/// are a predicate over what a session opened or cited, the target is one of the probe's `examines` entries, so the target
 /// and the key read the same document.
 ///
 /// `not_opened` is left out of that last clause on purpose: its target is the
@@ -369,7 +398,6 @@ fn every_probe_on_the_shelf_states_one_task_one_target_and_one_key() {
 /// a link under `Target` resolves against that directory.
 fn shape_finding(path: &str, source: &str) -> Option<String> {
     let root = repository_root();
-    let served = root.join("docs");
     let Ok(document) = headwater_doc::parse(source) else {
         return Some(format!("{path}: the front matter does not parse"));
     };
@@ -381,51 +409,62 @@ fn shape_finding(path: &str, source: &str) -> Option<String> {
     }
     let section = section_of(source, "Target");
     let links = links_in(section);
-    let (named, target) = match links.as_slice() {
-        [link] => {
-            let directory = root.join(path);
-            let directory = directory.parent().unwrap_or(&root);
-            let file = link.split('#').next().unwrap_or_default();
-            let Ok(target) = directory.join(file).canonicalize() else {
-                return Some(format!("{path} targets `{link}`, which is no file"));
-            };
-            if !target.starts_with(&served) {
-                return Some(format!(
-                    "{path} links `{link}`, which is outside `docs/`, so the site cannot serve \
-                     it. Name a target outside `docs/` by its path in one code span"
-                ));
-            }
-            if !target.is_file() {
-                return Some(format!("{path} targets `{link}`, which is not a file"));
-            }
-            (link.clone(), target)
-        }
-        [] => {
-            let files: Vec<String> = code_spans_in(section)
-                .into_iter()
-                .filter(|span| root.join(span).is_file())
-                .collect();
-            let [span] = files.as_slice() else {
-                return Some(format!(
-                    "{path} names {} files under `## Target` and links none, not one: \
-                     {files:?}",
-                    files.len()
-                ));
-            };
-            let target = root.join(span);
-            if target.starts_with(&served) {
-                return Some(format!(
-                    "{path} names `{span}` in a code span, and a target under `docs/` is a link"
-                ));
-            }
-            (span.clone(), target)
-        }
-        more => {
+    let spans: Vec<String> = code_spans_in(section)
+        .into_iter()
+        .filter(|span| is_path(span))
+        .collect();
+    if links.len() + spans.len() != 1 {
+        if spans.is_empty() && !links.is_empty() {
             return Some(format!(
-                "{path} holds {} links under `## Target`, not one: {more:?}",
-                more.len()
-            ))
+                "{path} holds {} links under `## Target`, not one: {links:?}",
+                links.len()
+            ));
         }
+        return Some(format!(
+            "{path} names {} files under `## Target`, not one: links {links:?}, paths {spans:?}",
+            links.len() + spans.len()
+        ));
+    }
+    let Ok(home) = root.canonicalize() else {
+        return Some(format!("{path}: the repository root does not resolve"));
+    };
+    let served = home.join("docs");
+    let (named, target) = if let [link] = links.as_slice() {
+        let directory = root.join(path);
+        let directory = directory.parent().unwrap_or(&root);
+        let file = link.split('#').next().unwrap_or_default();
+        let Ok(target) = directory.join(file).canonicalize() else {
+            return Some(format!("{path} targets `{link}`, which is no file"));
+        };
+        if !target.starts_with(&served) {
+            return Some(format!(
+                "{path} links `{link}`, which is outside `docs/`, so the site cannot serve \
+                 it. Name a target outside `docs/` by its path in one code span"
+            ));
+        }
+        if !target.is_file() {
+            return Some(format!("{path} targets `{link}`, which is not a file"));
+        }
+        (link.clone(), target)
+    } else {
+        let span = &spans[0];
+        let Ok(target) = root.join(span).canonicalize() else {
+            return Some(format!("{path} names `{span}`, which is no file"));
+        };
+        if !target.starts_with(&home) {
+            return Some(format!(
+                "{path} names `{span}`, which is outside the repository"
+            ));
+        }
+        if !target.is_file() {
+            return Some(format!("{path} names `{span}`, which is not a file"));
+        }
+        if target.starts_with(&served) {
+            return Some(format!(
+                "{path} names `{span}` in a code span, and a target under `docs/` is a link"
+            ));
+        }
+        (span.clone(), target)
     };
     let expectation = scalar(&document, "expectation");
     let names_documents = expectation.as_deref() == Some(Expectation::Opened.name())
@@ -435,7 +474,7 @@ fn shape_finding(path: &str, source: &str) -> Option<String> {
     }
     let examines = examines_of(&document);
     let relative = target
-        .strip_prefix(&root)
+        .strip_prefix(&home)
         .map(|it| it.to_string_lossy().into_owned())
         .unwrap_or_default();
     let id = std::fs::read_to_string(&target)
@@ -587,6 +626,63 @@ fn the_shape_refuses_each_way_a_probe_can_miss_it() {
                 "The ruling at `docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`.",
             ),
             "a target under `docs/` is a link",
+        ),
+        (
+            "a link and a path in a code span",
+            good("answered", &format!("{one} The skill is at `{SKILL}`.")),
+            "names 2 files",
+        ),
+        (
+            "two paths in code spans, one of them no file",
+            good("answered", &format!("`{SKILL}` or `no/such/file.md`.")),
+            "names 2 files",
+        ),
+        (
+            "a path in a code span that names no file",
+            good("answered", "The session opens `no/such/file.md`."),
+            "which is no file",
+        ),
+        (
+            "an absolute path in a code span outside the repository",
+            good("answered", &format!("The file `{}`.", outside.display())),
+            "outside the repository",
+        ),
+        (
+            "a relative path in a code span that leaves the repository",
+            good(
+                "answered",
+                "The file `../../../../../../../../../../../../etc/hosts`.",
+            ),
+            "outside the repository",
+        ),
+        (
+            "a directory in a code span",
+            good("answered", "The shelf at `.claude/skills/`."),
+            "which is not a file",
+        ),
+        (
+            "a document under docs/ reached through a detour in a code span",
+            good(
+                "answered",
+                "The ruling at `.claude/../docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`.",
+            ),
+            "a target under `docs/` is a link",
+        ),
+        (
+            "a reference-style link out of docs/",
+            good(
+                "answered",
+                &format!("The [skill][skill].\n\n[skill]: ../../{SKILL}"),
+            ),
+            "outside `docs/`",
+        ),
+        (
+            "a reference-style link beside a path in a code span",
+            good(
+                "answered",
+                &format!("The [skill][skill] at `{SKILL}`.\n\n[skill]: ../../{SKILL}"),
+            ),
+            "names 2 files",
         ),
         (
             "an opened target the key does not read",
