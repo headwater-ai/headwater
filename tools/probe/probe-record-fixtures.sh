@@ -4223,6 +4223,199 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# The scenarios of the additive campaign (#1774). The decisive case: each
+# scenario's tree differs from its base by exactly the one layer the
+# milestone names, and scenario 0 holds no Headwater path, in a present tree
+# that holds the Codex copies, the census fixture, a built binary and the
+# whole `settings.json` with more than one hook. A builder that copies the
+# whole `settings.json` into the hook layer fails the third assertion, and
+# one that leaves `AGENTS.md` or `.agents/` in plain code fails the second.
+# Either is the #1712 problem: a scenario that differs from its base by more
+# than its named layer.
+#
+# The table is the milestone's, written here by hand, so a declaration that
+# drifts from it fails here as well as in the engine's own suite. The paths of
+# each layer are the committed declaration's, read from scenario 0's delta.
+# ---------------------------------------------------------------------------
+scenario_layers() {
+    case $1 in
+        0) echo "" ;;
+        1) echo "docs" ;;
+        2) echo "docs claude-md" ;;
+        3) echo "docs engine" ;;
+        4) echo "docs engine skills" ;;
+        5) echo "docs engine hook" ;;
+        6) echo "docs engine mcp" ;;
+        7) echo "docs engine hook mcp" ;;
+        8) echo "docs engine claude-md skills" ;;
+        9) echo "docs engine claude-md hook" ;;
+        10) echo "docs engine skills hook" ;;
+        11) echo "docs engine claude-md skills hook" ;;
+        12) echo "docs engine claude-md skills hook mcp" ;;
+        13) echo "docs engine claude-md skills hook harness" ;;
+    esac
+}
+scenario_base() {
+    case $1 in
+        1) echo 0 ;; 2|3) echo 1 ;; 4|5|6) echo 3 ;; 7|9|10) echo 5 ;; 8) echo 4 ;;
+        11) echo 10 ;; 12|13) echo 11 ;;
+    esac
+}
+scenario_tree() {
+    rm -rf "$scratch/scen"
+    mkdir -p "$scratch/scen"
+    # Plain code, which every scenario holds.
+    for plain in src/main.rs engine/Cargo.toml engine/crates/census/src/lib.rs tools/t.sh .github/workflows/ci.yml; do
+        mkdir -p "$scratch/scen/$(dirname "$plain")"
+        printf 'plain %s\n' "$plain" > "$scratch/scen/$plain"
+    done
+    # The shapes the adjudication of #1774 names.
+    for held in docs/spec/05.md docs/decisions/0001.md .headwater/taxonomy.lock CLAUDE.md AGENTS.md \
+        .agents/skills/x/SKILL.md .codex/hooks.json engine/crates/census/fixtures/corpus.census \
+        site/tutorial/index.html engine/target/dev-release/headwater .githooks/pre-commit \
+        .claude/skills/headwater-orient/SKILL.md .claude/skills/hw-corpus/SKILL.md \
+        .claude/agents/headwater-maintainer.md .claude/agents/hw-build.md .claude/commands/next.md \
+        .claude/hooks/intent.sh .claude/hooks/lib.sh .claude/hooks/write.sh; do
+        mkdir -p "$scratch/scen/$(dirname "$held")"
+        printf 'held %s\n' "$held" > "$scratch/scen/$held"
+    done
+    cp "$root/.claude/settings.json" "$scratch/scen/.claude/settings.json"
+    # Every other path a layer names, so each layer is in the tree.
+    while IFS=' ' read -r sign layer path; do
+        [ "$sign" = - ] || continue
+        [ "$layer" != mcp ] || continue
+        [ -e "$scratch/scen/$path" ] && continue
+        mkdir -p "$scratch/scen/$(dirname "$path")"
+        printf 'held %s\n' "$path" > "$scratch/scen/$path"
+    done < "$scratch/scen-zero.delta"
+}
+"$engine" probe plan --root "$root" --scenario 0 --delta > "$scratch/scen-zero.delta" 2> "$scratch/scen-zero.err"
+same "the engine prints plain code's delta" "0" "$?"
+scenario_tree
+if grep -q '"command":' "$scratch/scen/.claude/settings.json" &&
+    [ "$(grep -c '"command":' "$scratch/scen/.claude/settings.json")" -gt 1 ]; then
+    pass "the present tree's settings.json wires more than one hook"
+else
+    fail "the present tree's settings.json wires more than one hook" "$(cat "$scratch/scen/.claude/settings.json")"
+fi
+
+# Assertion 1: against plain code, each scenario differs by exactly the paths
+# of its layers, and against its base, by the paths of the one layer it adds.
+for n in 0 1 2 3 4 5 6 7 8 9 10 11 12 13; do
+    : > "$scratch/scen-expected"
+    for layer in $(scenario_layers "$n"); do
+        sed -n "s/^- $layer /+ /p" "$scratch/scen-zero.delta" >> "$scratch/scen-expected"
+    done
+    # The hook layer and the rest of the harness both name settings.json.
+    LC_ALL=C sort -u "$scratch/scen-expected" -o "$scratch/scen-expected"
+    sh "$ablate" --diff --scenario "$n" "$scratch/scen" > "$scratch/scen-diff.$n" 2> "$scratch/scen-diff.$n.err"
+    status=$?
+    if [ "$n" = 0 ]; then
+        same "scenario 0 against itself builds no difference and fails --diff" "1" "$status"
+        present "and says so" "no different from scenario 0" "$scratch/scen-diff.0.err"
+        continue
+    fi
+    same "ablate.sh --diff --scenario $n exits 0" "0" "$status"
+    same "and its difference from scenario 0 is exactly its layers' paths" \
+        "$(cat "$scratch/scen-expected")" "$(LC_ALL=C sort "$scratch/scen-diff.$n")"
+
+    base=$(scenario_base "$n")
+    added=
+    for layer in $(scenario_layers "$n"); do
+        case " $(scenario_layers "$base") " in
+            *" $layer "*) ;;
+            *) added="$added $layer" ;;
+        esac
+    done
+    added=$(echo $added)
+    sh "$ablate" --diff --scenario "$n" "$scratch/scen" "$base" > "$scratch/scen-base.$n" 2> "$scratch/scen-base.$n.err"
+    same "ablate.sh --diff --scenario $n against its base $base exits 0" "0" "$?"
+    same "and it adds one layer to its base" "1" "$(echo $added | wc -w | tr -d ' ')"
+    stray=$(while IFS=' ' read -r sign path; do
+        grep -qxF -- "- $added $path" "$scratch/scen-zero.delta" || printf '%s %s; ' "$sign" "$path"
+    done < "$scratch/scen-base.$n")
+    same "and every path it differs by belongs to the added layer, $added" "" "$stray"
+    if [ ! -s "$scratch/scen-base.$n" ]; then
+        fail "and it differs from its base at all" "it printed nothing"
+    fi
+done
+same "scenario 13 differs from 11 by the whole settings.json the harness holds" "~ .claude/settings.json" \
+    "$(grep -F 'settings.json' "$scratch/scen-base.13")"
+
+# Assertion 2: plain code holds no Headwater path.
+cp -a "$scratch/scen" "$scratch/scen-zero"
+sh "$ablate" --scenario 0 "$scratch/scen-zero" > /dev/null 2> "$scratch/scen-zero-build.err"
+same "ablate.sh --scenario 0 builds plain code" "0" "$?"
+left=
+for headwater_path in docs .headwater CLAUDE.md AGENTS.md .claude .agents .codex .githooks .mcp.json \
+    engine/crates/census/fixtures/corpus.census site/tutorial engine/target; do
+    [ -e "$scratch/scen-zero/$headwater_path" ] && left="$left $headwater_path"
+done
+same "and it holds no Headwater path, and no directory one left empty" "" "$left"
+if [ -f "$scratch/scen-zero/src/main.rs" ] && [ -f "$scratch/scen-zero/engine/crates/census/src/lib.rs" ] &&
+    [ -f "$scratch/scen-zero/tools/t.sh" ] && [ -f "$scratch/scen-zero/.github/workflows/ci.yml" ]; then
+    pass "and it keeps the code, the engine source included"
+else
+    fail "and it keeps the code, the engine source included" \
+        "$(cd "$scratch/scen-zero" && find . -type f | LC_ALL=C sort | tr '\n' ' ')"
+fi
+
+# Assertion 3: the hook layer wires the one hook, and the harness the rest.
+cp -a "$scratch/scen" "$scratch/scen-five"
+sh "$ablate" --scenario 5 "$scratch/scen-five" > /dev/null 2> "$scratch/scen-five.err"
+same "ablate.sh --scenario 5 builds the hook scenario" "0" "$?"
+same "and its settings.json wires exactly one hook" "1" \
+    "$(grep -c '"command":' "$scratch/scen-five/.claude/settings.json" 2>/dev/null)"
+present "and that hook is the UserPromptSubmit entry" '"UserPromptSubmit"' "$scratch/scen-five/.claude/settings.json"
+present "and it runs intent.sh" '.claude/hooks/intent.sh' "$scratch/scen-five/.claude/settings.json"
+if [ -f "$scratch/scen-five/.claude/hooks/intent.sh" ] && [ -f "$scratch/scen-five/.claude/hooks/lib.sh" ] &&
+    [ ! -e "$scratch/scen-five/.claude/hooks/write.sh" ] && [ ! -e "$scratch/scen-five/AGENTS.md" ]; then
+    pass "and it keeps the hook's two scripts and no other hook or Codex copy"
+else
+    fail "and it keeps the hook's two scripts and no other hook or Codex copy" \
+        "$(cd "$scratch/scen-five" && find .claude AGENTS.md -type f 2>/dev/null | LC_ALL=C sort | tr '\n' ' ')"
+fi
+cp -a "$scratch/scen" "$scratch/scen-thirteen"
+sh "$ablate" --scenario 13 "$scratch/scen-thirteen" > /dev/null 2> "$scratch/scen-thirteen.err"
+same "ablate.sh --scenario 13 builds the whole harness" "0" "$?"
+if cmp -s "$root/.claude/settings.json" "$scratch/scen-thirteen/.claude/settings.json"; then
+    pass "and its settings.json is the whole file"
+else
+    fail "and its settings.json is the whole file" "it differs from .claude/settings.json"
+fi
+
+# The refusals, each before anything is removed.
+sh "$ablate" --scenario 14 "$scratch/scen" > /dev/null 2> "$scratch/scen-14.err"
+same "ablate.sh refuses a scenario the declaration does not carry" "2" "$?"
+present "and the engine names the scenarios it does carry" "declares no scenario 14" "$scratch/scen-14.err"
+[ -f "$scratch/scen/CLAUDE.md" ] && pass "and it removes nothing" || fail "and it removes nothing" "CLAUDE.md is gone"
+sh "$ablate" --scenario 0 "$root/tools" > /dev/null 2> "$scratch/scen-inside.err"
+same "ablate.sh refuses to build a scenario inside this checkout" "6" "$?"
+mkdir -p "$scratch/scen/docs/probes"
+sh "$ablate" --diff --scenario 1 "$scratch/scen" > /dev/null 2> "$scratch/scen-instrument.err"
+same "--diff --scenario refuses a tree that still holds the instrument" "2" "$?"
+rm -rf "$scratch/scen/docs/probes"
+# A declaration whose hook layer writes a file `tools/probe/arms/` does not
+# hold is refused before the tree is touched.
+sed 's/^    arms: \[\.claude\/settings\.json\]$/    arms: [.claude\/settings.local.json]/' "$root/.headwater/probe.yml" \
+    > "$scratch/scen-missing-arm.yml"
+cp -a "$scratch/scen" "$scratch/scen-missing"
+HW_PROBE_YML="$scratch/scen-missing-arm.yml" sh "$ablate" --scenario 5 "$scratch/scen-missing" \
+    > /dev/null 2> "$scratch/scen-missing.err"
+same "ablate.sh refuses a written file that tools/probe/arms/ does not hold" "2" "$?"
+present "and names it" "tools/probe/arms/hook/.claude/settings.local.json is not there to copy" "$scratch/scen-missing.err"
+[ -f "$scratch/scen-missing/CLAUDE.md" ] && pass "and it removes nothing" || fail "and it removes nothing" "CLAUDE.md is gone"
+# A present tree that already holds a server file: plain code and scenario 3
+# remove it, and scenario 6 holds the mcp layer's file in its place, so 6
+# differs from 3 by the one path.
+printf '{}\n' > "$scratch/scen/.mcp.json"
+sh "$ablate" --diff --scenario 6 "$scratch/scen" 3 > "$scratch/scen-mcp.out" 2>&1
+same "a present server file is replaced by the mcp layer's, and --diff passes it" "0" "$?"
+same "and names the one path" "+ .mcp.json" "$(cat "$scratch/scen-mcp.out")"
+rm -f "$scratch/scen/.mcp.json"
+rm -rf "$scratch/scen" "$scratch/scen-zero" "$scratch/scen-five" "$scratch/scen-thirteen" "$scratch/scen-missing"
+
+# ---------------------------------------------------------------------------
 # The dry run of the layer campaign (#1472): the committed spec, planned,
 # priced, its trees built and diffed, and the leak check run, with a harness
 # on the path that records any call to it.

@@ -1145,7 +1145,7 @@ fn the_hook_layer_holds_the_one_entry_of_the_harness_settings() {
         entry(&whole, ".claude/settings.json")
     );
     assert_eq!(
-        layer.matches("\"command\"").count(),
+        layer.matches("\"command\":").count(),
         1,
         "the hook layer wires one hook: {layer}"
     );
