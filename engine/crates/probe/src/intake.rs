@@ -212,7 +212,11 @@ impl std::fmt::Display for Refusal {
                  read set was composed over its probes to show that the move left them alone"
             ),
             Refusal::UnknownTier(found) => {
-                write!(f, "`{found}` is not a tier. The tiers are {}", Tier::listed())
+                write!(
+                    f,
+                    "`{found}` is not a tier. The tiers are {}",
+                    Tier::listed()
+                )
             }
             Refusal::UnknownArm(found) => {
                 write!(f, "`{found}` is not an arm. The arms are {}", Arm::listed())
