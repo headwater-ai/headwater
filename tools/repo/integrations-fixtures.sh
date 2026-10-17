@@ -318,6 +318,17 @@ json7c='[
 ]'
 same '  and the highest version with no archive is passed over' 'v0.5.0' \
     "$(printf '%s' "$json7c" | python3 "$resolver" --range '>=0.5')"
+json7e='[
+  {"tag_name": "v0.5.1", "assets": [
+    {"name": "headwater-v0.5.1-x86_64-unknown-linux-gnu.tar.gz"}
+  ]},
+  {"tag_name": "v0.5.0", "assets": [
+    {"name": "headwater-v0.5.0-x86_64-unknown-linux-gnu.tar.gz"},
+    {"name": "headwater-v0.5.0-x86_64-unknown-linux-gnu.tar.gz.sha256"}
+  ]}
+]'
+same '  and the highest version with an archive and no checksum is passed over' 'v0.5.0' \
+    "$(printf '%s' "$json7e" | python3 "$resolver")"
 json7d='[
   {"tag_name": "v0.4.9", "assets": [
     {"name": "headwater-v0.4.9-x86_64-unknown-linux-gnu.tar.gz"},
