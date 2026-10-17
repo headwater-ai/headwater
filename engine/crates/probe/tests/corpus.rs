@@ -333,57 +333,13 @@ fn links_in(text: &str) -> Vec<String> {
 #[test]
 fn every_probe_on_the_shelf_states_one_task_one_target_and_one_key() {
     let root = repository_root();
-    let shelf = root.join(SHELF);
     let mut bad = Vec::new();
     let mut seen = 0;
     for probe in probes() {
         seen += 1;
-        let (source, document) = front_matter(&root.join(&probe.path));
-        let headings = headings_of(&document);
-        if headings != SHAPE {
-            bad.push(format!(
-                "{} has the headings {headings:?}, not {SHAPE:?}",
-                probe.path
-            ));
-            continue;
-        }
-        let links = links_in(section_of(&source, "Target"));
-        let [link] = links.as_slice() else {
-            bad.push(format!(
-                "{} holds {} links under `## Target`, not one: {links:?}",
-                probe.path,
-                links.len()
-            ));
-            continue;
-        };
-        let file = link.split('#').next().unwrap_or_default();
-        let Ok(target) = shelf.join(file).canonicalize() else {
-            bad.push(format!("{} targets `{link}`, which is no file", probe.path));
-            continue;
-        };
-        let names_documents = probe.expectation.as_deref() == Some(Expectation::Opened.name())
-            || probe.expectation.as_deref() == Some(Expectation::Cited.name());
-        if !names_documents {
-            continue;
-        }
-        let examines = examines_of(&document);
-        let relative = target
-            .strip_prefix(&root)
-            .map(|it| it.to_string_lossy().into_owned())
-            .unwrap_or_default();
-        let id = std::fs::read_to_string(&target)
-            .ok()
-            .and_then(|text| headwater_doc::parse(&text).ok())
-            .and_then(|it| scalar(&it, "id"));
-        let named = examines
-            .iter()
-            .any(|entry| *entry == relative || Some(entry) == id.as_ref());
-        if !named {
-            bad.push(format!(
-                "{} targets `{link}` (id {id:?}), which is none of its `examines` entries \
-                 {examines:?}",
-                probe.path
-            ));
+        let (source, _) = front_matter(&root.join(&probe.path));
+        if let Some(finding) = shape_finding(&probe.path, &source) {
+            bad.push(finding);
         }
     }
     assert!(seen > 0, "the shelf held no probe");
@@ -393,6 +349,166 @@ fn every_probe_on_the_shelf_states_one_task_one_target_and_one_key() {
         bad.len(),
         bad.join("\n")
     );
+}
+
+/// What is wrong with the shape of one probe document, or `None`. `path` is
+/// the document's path from the repository root, on the probe shelf, because
+/// the link under `Target` resolves against that directory.
+fn shape_finding(path: &str, source: &str) -> Option<String> {
+    let root = repository_root();
+    let Ok(document) = headwater_doc::parse(source) else {
+        return Some(format!("{path}: the front matter does not parse"));
+    };
+    let headings = headings_of(&document);
+    if headings != SHAPE {
+        return Some(format!(
+            "{path} has the headings {headings:?}, not {SHAPE:?}"
+        ));
+    }
+    let links = links_in(section_of(source, "Target"));
+    let [link] = links.as_slice() else {
+        return Some(format!(
+            "{path} holds {} links under `## Target`, not one: {links:?}",
+            links.len()
+        ));
+    };
+    let directory = root.join(path);
+    let directory = directory.parent().unwrap_or(&root);
+    let file = link.split('#').next().unwrap_or_default();
+    let Ok(target) = directory.join(file).canonicalize() else {
+        return Some(format!("{path} targets `{link}`, which is no file"));
+    };
+    if !target.starts_with(&root) || !target.is_file() {
+        return Some(format!(
+            "{path} targets `{link}`, which is no file of this repository"
+        ));
+    }
+    let expectation = scalar(&document, "expectation");
+    let names_documents = expectation.as_deref() == Some(Expectation::Opened.name())
+        || expectation.as_deref() == Some(Expectation::Cited.name());
+    if !names_documents {
+        return None;
+    }
+    let examines = examines_of(&document);
+    let relative = target
+        .strip_prefix(&root)
+        .map(|it| it.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    let id = std::fs::read_to_string(&target)
+        .ok()
+        .and_then(|text| headwater_doc::parse(&text).ok())
+        .and_then(|it| scalar(&it, "id"));
+    let named = examines
+        .iter()
+        .any(|entry| *entry == relative || Some(entry) == id.as_ref());
+    if named {
+        None
+    } else {
+        Some(format!(
+            "{path} targets `{link}` (id {id:?}), which is none of its `examines` entries \
+             {examines:?}"
+        ))
+    }
+}
+
+/// Each clause of the shape refuses the probe that misses it, and a probe
+/// that meets every clause passes. The shelf case above cannot show this,
+/// because a conforming shelf passes it whether or not a clause is checked.
+#[test]
+fn the_shape_refuses_each_way_a_probe_can_miss_it() {
+    const RULING: &str = "../decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md";
+    const OTHER: &str = "../decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md";
+    let probe = |expectation: &str, headings: &[(&str, &str)]| {
+        let mut source = format!(
+            "---\nid: HW-PROBE-synthetic\nexpectation: {expectation}\nrelations:\n  \
+             examines:\n    - HW-DR-0049\n---\n\n# A synthetic probe\n"
+        );
+        for (heading, body) in headings {
+            source.push_str(&format!("\n## {heading}\n\n{body}\n"));
+        }
+        source
+    };
+    let path = format!("{SHELF}/synthetic.md");
+    let one = format!("The ruling is [the ruling]({RULING}).");
+    let good = |expectation: &str, target: &str| {
+        probe(
+            expectation,
+            &[
+                ("Task", "Say it."),
+                ("Target", target),
+                ("Key", "`opened`."),
+            ],
+        )
+    };
+
+    for expectation in ["opened", "cited", "answered", "patched", "not_opened"] {
+        assert_eq!(
+            shape_finding(&path, &good(expectation, &one)),
+            None,
+            "a sound `{expectation}` probe was refused"
+        );
+    }
+
+    let refused = [
+        (
+            "the old heading",
+            probe(
+                "opened",
+                &[("Task", "Say it."), ("Target", &one), ("Expectation", "x")],
+            ),
+            "has the headings",
+        ),
+        (
+            "no target",
+            probe("opened", &[("Task", "Say it."), ("Key", "x")]),
+            "has the headings",
+        ),
+        (
+            "the headings out of order",
+            probe(
+                "opened",
+                &[("Task", "Say it."), ("Key", "x"), ("Target", &one)],
+            ),
+            "has the headings",
+        ),
+        (
+            "two links",
+            good("answered", &format!("{one} And [another]({OTHER}).")),
+            "holds 2 links",
+        ),
+        (
+            "no link",
+            good("answered", "The ruling, named in words."),
+            "holds 0 links",
+        ),
+        (
+            "a link to no file",
+            good("answered", "The [ruling](../decisions/no-such-record.md)."),
+            "which is no file",
+        ),
+        (
+            "a link out of the repository",
+            good("answered", "The [root](../../../)."),
+            "no file of this repository",
+        ),
+        (
+            "an opened target the key does not read",
+            good("opened", &format!("The [record]({OTHER}).")),
+            "none of its `examines` entries",
+        ),
+        (
+            "a cited target the key does not read",
+            good("cited", &format!("The [record]({OTHER}).")),
+            "none of its `examines` entries",
+        ),
+    ];
+    for (case, source, wanted) in refused {
+        let finding = shape_finding(&path, &source);
+        assert!(
+            finding.as_deref().is_some_and(|it| it.contains(wanted)),
+            "{case}: wanted a finding naming `{wanted}`, got {finding:?}"
+        );
+    }
 }
 
 /// The five shapes of a probe that a shallow strategy fails (#1472, clause 2).
