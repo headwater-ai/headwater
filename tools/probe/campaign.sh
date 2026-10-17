@@ -45,6 +45,18 @@
 # before it exits. With `--max-sessions <n>` it also prints the stagger as
 # `slices: <total> sessions in <slices> slices of at most <n>`.
 #
+# A spec of `additive` lines is the additive campaign (#1774), and
+# `tools/probe/additive-dry-run.sh` states how its dry run differs. It prices
+# each line at its round's count, computed from the round's rates, and prints
+# a sum for each round at its most tries and one total. It builds the tree of
+# each scenario of the spec with `ablate.sh --scenario`, prints its delta
+# against its declared base, lists the MCP tools where the scenario holds
+# `mcp`, and runs `seal.sh --leak --scenario` over that tree, which also reads
+# each skill body and the hook's text for each probe. It exits 8 on a leak, and
+# on a scenario-13 line that pools a probe whose answer the harness layer
+# states with another probe. It refuses `--repetitions` with 2, and a spec
+# that mixes additive lines with lines of another tier with 5.
+#
 # `--cap-cents` stops the batch below a figure a person agreed to for this batch
 # alone, such as a pilot, where the tier's ceiling is set for the full run. The
 # cap is cumulative over the batch directory, not per slice: a resumed run
@@ -91,6 +103,19 @@
 #
 # Each line is planned with `headwater probe plan` before anything is built,
 # and a line the plan refuses stops the batch before it spends anything.
+#
+# A line of the additive campaign (#1774) is a tier, a scenario arm, a round
+# under `rounds:` in `.headwater/probe.yml`, and any probes of the round's set
+# that the line leaves out, read as the `--exclude` of a category line is:
+#
+#     additive scenario-4  screening
+#     additive scenario-13 final HW-PROBE-a-session-says-whether-a-command-…
+#
+# So a probe runs on a line of its own where the other lines of the scenario
+# leave it out and one line leaves out every other probe of the set.
+# `tools/probe/additive-campaign.spec` is that campaign. The dry run plans it;
+# the batch does not run it, because the plan refuses every line on the
+# additive tier's ceiling of zero until the owner rules on the total.
 #
 # ## One pinned commit
 #

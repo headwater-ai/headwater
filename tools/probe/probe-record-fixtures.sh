@@ -4827,7 +4827,7 @@ if [ -x "$engine" ]; then
         --spec "$additive_spec" > "$scratch/add-hook.out" 2> "$scratch/add-hook.err"
     same "a leak string in the hook's text fails the additive dry run with 8" "8" "$?"
     same "and it names every scenario that holds the hook, and no other" "5 7 9 10 11 12 13" \
-        "$(sed -n "s/^leak check, scenario-\([0-9]*\) tree: leak $pointer_probe hook:$pointer_probe $hook_string$/\1/p" "$scratch/add-hook.out" | sort -n | tr '\n' ' ' | sed 's/ $//')"
+        "$(sed -n "s|^leak check, scenario-\([0-9]*\) tree: leak $pointer_probe hook:$pointer_probe $hook_string$|\1|p" "$scratch/add-hook.out" | sort -n | tr '\n' ' ' | sed 's/ $//')"
     same "and no scenario leaks through another channel" "0" \
         "$(grep ' tree: leak ' "$scratch/add-hook.out" | grep -vc " hook:$pointer_probe ")"
 
