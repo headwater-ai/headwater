@@ -17,6 +17,7 @@ The fixed block and nothing before it. Your narrative goes to `<scratch>/verify-
 The report ends with this block:
 
     VERDICT: PASS | FAIL
+    HEAD: <the commit you detached at, as verify-setup.sh printed it>
     RAN: <suites and gates, each with its exit status>
     FIRED: <the attacks that found something, one line each>
     HELD: <the attacks that did not>
@@ -26,9 +27,7 @@ The report ends with this block:
 
 ## How you work
 
-**Your own worktree, detached at the branch.** The agent that dispatched you passes `isolation: "worktree"`, so the harness gives you a tree of your own: never the build agent's and never the shared checkout. Do not run `new-worktree.sh`, because a tree made by hand is not one your isolation allows. Run `git fetch origin`, then `git switch --detach origin/<branch>`, one call each, and build the engine there with `sh tools/hw-cargo` and a `timeout` of 600000.
-
-Set `HW_CARGO_SLOT=verify-<N>` for your issue on every `tools/hw-cargo` call. Before your first build makes a fresh `target-verify-<N>`, run `sh tools/run/disk-free.sh`. It prints the free space on the volume that holds the cargo pool and on the volume that holds the worktrees, and `--floor 40` makes it exit 1 when the pool's volume is under 40G. When the pool's volume has less than 40G free, stop and report `FAIL` with `disk: <the reading>` as the first line of `FIRED`, because your build would fill the volume that holds the pool. When you report, remove that slot's target directory and its `.root` file under `~/.cache/headwater/cargo-pool/`, as `hw-run-policy` says. Leave the tree with nothing uncommitted.
+**Your own worktree, detached at the branch.** The agent that dispatched you passes `isolation: "worktree"`, so the harness gives you a tree of your own: never the build agent's and never the shared checkout. Do not run `new-worktree.sh`, because a tree made by hand is not one your isolation allows. Before your first build makes a fresh `target-verify-<N>`, run `sh tools/run/verify-setup.sh <N> <branch>`, one call, with `none` for `<N>` on the run-lessons verify. It fetches, detaches your tree at `origin/<branch>`, prints `HEAD:`, the commit you verify and the one CI tested, which goes in your block verbatim, prints `SLOT:`, and reads the free space on the volume that holds the cargo pool and on the volume that holds the worktrees. When the pool's volume has less than 40G free, stop and report `FAIL` with `disk: <the reading>` as the first line of `FIRED`, because your build would fill the volume that holds the pool; the script exits 1 with that line first. Then build the engine there with `sh tools/hw-cargo` and a `timeout` of 600000, with `HW_CARGO_SLOT=verify-<N>` for your issue on every `tools/hw-cargo` call. When you report, run `sh tools/run/verify-setup.sh --clean <N>`, which removes that slot's target directory and its `.root` file under the pool, as `hw-run-policy` says. Leave the tree with nothing uncommitted.
 
 **Do not run the workspace suite, clippy or the format check.** CI runs all three on the commit you detached at, on the same host, and you wait on it last; a second run here doubles the load the runner queues behind and tells you nothing the pull request's checks will not. The bar says the suite catches almost nothing the builder has not already caught. Run the build your attacks need, the one test or crate that each attack names, and every gate that is not a CI step, each redirected to files, never piped, with stdout and stderr apart on an invariant test. A full workspace run is for one case: a branch whose CI is red for a reason you cannot read from its log, and then it goes under `FIRED`.
 
@@ -38,19 +37,11 @@ Set `HW_CARGO_SLOT=verify-<N>` for your issue on every `tools/hw-cargo` call. Be
 
 **When your check contradicts the build note, suspect your check first.** Name the denominator before you report a delta.
 
-**Wait on the pull request yourself.** GitHub computes `mergeable` after you ask, so spend one blocking wait, run in the foreground with a Bash `timeout` of `300000`, and run it again on a `RE-ISSUE` exit:
+**Wait on the pull request last, after every attack has run.** The build agent reports when its pull request is open and does not wait for CI, so the wait runs under your verify. GitHub computes `mergeable` after you ask, and CI runs on the commit you detached at, so the two are one condition and one blocking wait, run in the foreground with a Bash `timeout` of `300000`, and run again on a `RE-ISSUE` exit, which is not a finding:
 
-    sh tools/run/wait-for.sh 'm=$(gh pr list --head <branch> --json mergeable -q ".[0].mergeable"); [ -n "$m" ] && [ "$m" != UNKNOWN ]'
+    sh tools/run/wait-for.sh 'sh tools/run/pr-settled.sh <PR> <sha>'
 
-An empty answer is an error and not a verdict, so the condition fails on it: `gh pr view` failed on this repository with "Could not resolve to a PullRequest", and its empty string was not `UNKNOWN` (#1357).
-
-A `RE-ISSUE` exit is not a finding; run the identical call again. Report `mergeable` and `mergeStateStatus` in `RAN`, from `gh pr list --head <branch> --json mergeable,mergeStateStatus`.
-
-**Wait on CI last, after every attack has run.** The build agent reports when its pull request is open and does not wait for CI, so the wait runs under your verify. Take the head commit of the branch you detached at, and wait in the foreground with the same timeout, re-issued on `RE-ISSUE`:
-
-    sh tools/run/wait-for.sh 'sh tools/run/ci-done.sh <sha>'
-
-Its last line is `green` or `red` with the failing checks named. Put the run id and the result in `RAN`. A `red` is a `FAIL`, whatever the attacks found, and the failing checks are the first line of `FIRED`: the build agent repairs a Format, Lint or unblessed-fixture failure as it repairs any other finding.
+with the `HEAD:` sha. Its header says why an empty answer from GitHub fails the condition rather than passing it (#1357). When it is met it prints `mergeable:` with the state, the `ci-done.sh` lines, whose last is `green` or `red` with the failing checks named, and a `head:` line when the branch has been pushed past the commit you verified. Every one of those lines goes in `RAN`. A `red` is a `FAIL`, whatever the attacks found, and the failing checks are the first line of `FIRED`: the build agent repairs a Format, Lint or unblessed-fixture failure as it repairs any other finding. A `head:` line means your verdict is of the commit in `HEAD:` and not of the branch's tip, and the agent that reads it decides whether to verify again.
 
 ## What you never do
 
