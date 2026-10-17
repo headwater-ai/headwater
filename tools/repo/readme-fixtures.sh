@@ -5126,6 +5126,13 @@ echo "every install route the page documents runs on a schedule, and a failure o
 #     `GH_TOKEN` on a step other than the one that runs the issue script, an
 #     issue script whose search no longer selects its title, and one that
 #     creates under a title it does not search for.
+#   - 14f (#1770): the cargo route installs with `--locked`, so it builds with
+#     the `Cargo.lock` the crate was published with, and a later release or a
+#     yank of a dependency cannot break it. A yank of `zip 5.1.1` broke a fresh
+#     resolve on 2026-10-16. The README fence carries the flag, the install
+#     page's `#cargo` block is that command, and no adopter page prints the
+#     command without the flag anywhere, in a fence or in prose. The pages it
+#     counts are the pages of the tree that print the command.
 #
 # Group 12 holds that `readme-apt.yml` has no schedule of its own and that this
 # workflow calls it.
@@ -5792,6 +5799,123 @@ same "  a gh that cannot list issues exits 1 and files nothing" \
 same "  with no token it exits 2 and calls no gh" \
     "2|||" \
     "$(routes_gh_token=; routes_issue_case "$scratch/routes/issue-notoken" '' 0 https://example.invalid/run/1 cargo=failure)"
+
+# 14f (#1770). The cargo route resolves nothing fresh from the registry. On
+# 2026-10-16 a yank of `zip 5.1.1` made `cargo install headwater-cli` fail to
+# resolve, while the lock published inside the crate still pinned that release.
+# `--locked` builds with that lock, and a yanked entry in it only warns.
+echo
+echo "the cargo route installs with the lock the crate was published with"
+
+cargo_want='cargo install headwater-cli --locked'
+mkdir -p "$scratch/cargo-locked"
+
+# cargo_route_judge README — `ok`, or the reason the page's cargo route can
+# break on a registry event.
+cargo_route_judge() {
+    _cmd=$(sh "$routes_extractor" "$1" cargo 2>/dev/null)
+    _n=$(printf '%s\n' "$_cmd" | grep -c .)
+    if [ "$_n" -ne 1 ]; then
+        echo "the cargo route prints $_n commands, not one"
+    elif [ "$_cmd" != "$cargo_want" ]; then
+        echo "the cargo route runs \`$_cmd\`, not \`$cargo_want\`, so it resolves dependencies fresh from the registry"
+    else
+        echo ok
+    fi
+}
+
+# cargo_site_block PAGE — the command in the `<pre class="block">` that follows
+# `<h2 id="cargo">`, prompt span stripped. `site_panel_of` reads only
+# `<div class="install">` panels, so this block needs a reader of its own.
+cargo_site_block() {
+    awk '
+        /<h2 id="cargo">/ { seen = 1; next }
+        seen && /<pre class="block">/ {
+            line = $0
+            sub(/.*<pre class="block">/, "", line)
+            sub(/<\/pre>.*/, "", line)
+            gsub(/<span class="dim">\$<\/span> */, "", line)
+            print line
+            exit
+        }
+        seen && /<h2 / { exit }
+    ' "$1"
+}
+
+# cargo_bare_count FILE — occurrences of `cargo install headwater-cli` not
+# followed by ` --locked`.
+cargo_bare_count() {
+    grep -o 'cargo install headwater-cli[^<`]*' "$1" | grep -vc '^cargo install headwater-cli --locked$'
+}
+
+same "  the README's cargo route carries --locked" \
+    ok "$(cargo_route_judge "$readme")"
+
+# THE DECISIVE CASE, planted: the README with the bare fence is refused.
+sed 's/^cargo install headwater-cli --locked$/cargo install headwater-cli/' "$readme" >"$scratch/cargo-locked/bare.md"
+apt_planted "  a README whose cargo fence lacks --locked is refused" "$readme" "$scratch/cargo-locked/bare.md" \
+    "the cargo route runs \`cargo install headwater-cli\`, not \`$cargo_want\`, so it resolves dependencies fresh from the registry" \
+    "$(cargo_route_judge "$scratch/cargo-locked/bare.md")"
+
+# cargo_site_judge README PAGE — `ok`, or how the page's cargo block differs
+# from the README's cargo command.
+cargo_site_judge() {
+    _readme_cmd=$(sh "$routes_extractor" "$1" cargo 2>/dev/null)
+    _page_cmd=$(cargo_site_block "$2")
+    if [ -n "$_readme_cmd" ] && [ "$_readme_cmd" = "$_page_cmd" ]; then
+        echo ok
+    else
+        echo "the install page's cargo block runs \`$_page_cmd\`, and the README's cargo route runs \`$_readme_cmd\`"
+    fi
+}
+
+cargo_install_page="$root/site/install/index.html"
+same "  the install page's cargo block is the README's cargo command" \
+    ok "$(cargo_site_judge "$readme" "$cargo_install_page")"
+sed 's|cargo install headwater-cli --locked</pre>|cargo install headwater-cli</pre>|' "$cargo_install_page" >"$scratch/cargo-locked/install.html"
+apt_planted "  an install page whose cargo block lacks --locked is refused" "$cargo_install_page" "$scratch/cargo-locked/install.html" \
+    "the install page's cargo block runs \`cargo install headwater-cli\`, and the README's cargo route runs \`$cargo_want\`" \
+    "$(cargo_site_judge "$readme" "$scratch/cargo-locked/install.html")"
+
+# The fence and the `#cargo` block are each one place on their page, so the
+# README and the install page go through the count too: a bare command in the
+# README's prose, or a second `<pre>` under `#cargo`, is refused there.
+cargo_pages='README.md site/install/index.html site/proof/index.html site/tutorial/index.html docs/tutorials/your-first-governed-corpus.md'
+
+# cargo_page_population ROOT — every adopter-facing page under ROOT that prints
+# the command, one per line, sorted. `docs/process/` is maintainer-side, and
+# `site/changelog/` is a dated history that keeps the command it shipped.
+cargo_page_population() {
+    (cd "$1" && grep -rl 'cargo install headwater-cli' README.md site docs/tutorials docs/how-to 2>/dev/null) \
+        | grep -v '^site/changelog/' | LC_ALL=C sort
+}
+
+# The list below is the population, so a page that starts to print the
+# command, or a page dropped from the list, is a red case and not a silence.
+same "  the pages 14f counts are every adopter page that prints the cargo command" \
+    "$(printf '%s\n' $cargo_pages | LC_ALL=C sort)" "$(cargo_page_population "$root")"
+mkdir -p "$scratch/cargo-pop/site/new" "$scratch/cargo-pop/docs/tutorials" "$scratch/cargo-pop/site/install" "$scratch/cargo-pop/site/proof" "$scratch/cargo-pop/site/tutorial"
+for cargo_page in $cargo_pages; do cp "$root/$cargo_page" "$scratch/cargo-pop/$cargo_page"; done
+printf '%s\n' '<code>cargo install headwater-cli --locked</code>' >"$scratch/cargo-pop/site/new/index.html"
+same "  a new page that prints the cargo command enters the population, so the list above no longer matches" \
+    "$(printf '%s\n' $cargo_pages site/new/index.html | LC_ALL=C sort)" "$(cargo_page_population "$scratch/cargo-pop")"
+
+for cargo_page in $cargo_pages; do
+    more_than "  $cargo_page prints the cargo command" 0 "$(grep -c 'cargo install headwater-cli' "$root/$cargo_page")"
+    same "  every cargo command in $cargo_page carries --locked" 0 "$(cargo_bare_count "$root/$cargo_page")"
+done
+cargo_tutorial="$root/docs/tutorials/your-first-governed-corpus.md"
+sed 's/`cargo install headwater-cli --locked`/`cargo install headwater-cli`/' "$cargo_tutorial" >"$scratch/cargo-locked/tutorial.md"
+apt_planted "  a tutorial whose cargo span lacks --locked is refused" "$cargo_tutorial" "$scratch/cargo-locked/tutorial.md" \
+    1 "$(cargo_bare_count "$scratch/cargo-locked/tutorial.md")"
+# A bare command in the README's prose, after a fence that carries the flag.
+sed 's/^cargo install headwater-cli --locked$/&\n```\n\nOr run `cargo install headwater-cli`.\n\n```/' "$readme" >"$scratch/cargo-locked/prose.md"
+apt_planted "  a README that also prints a bare cargo command in prose is refused" "$readme" "$scratch/cargo-locked/prose.md" \
+    1 "$(cargo_bare_count "$scratch/cargo-locked/prose.md")"
+# A second, bare `<pre>` under `#cargo`, after the block that carries the flag.
+sed 's|cargo install headwater-cli --locked</pre>|&\n  <pre class="block"><span class="dim">$</span> cargo install headwater-cli</pre>|' "$cargo_install_page" >"$scratch/cargo-locked/second.html"
+apt_planted "  an install page with a second, bare cargo block is refused" "$cargo_install_page" "$scratch/cargo-locked/second.html" \
+    1 "$(cargo_bare_count "$scratch/cargo-locked/second.html")"
 
 echo
 echo "$passed passed, $failed failed"

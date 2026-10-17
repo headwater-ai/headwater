@@ -40,10 +40,10 @@ The package installs the static Linux binary of the newest release at `/usr/bin/
 **The alternative, if you already have a Rust toolchain.** Every workspace crate is on crates.io, published in dependency order by `.github/workflows/publish-crates.yml`.
 
 ```
-cargo install headwater-cli
+cargo install headwater-cli --locked
 ```
 
-The command needs nothing this repository ships: no clone, no toolchain floor beyond what `cargo` itself resolves from the crate's declared `rust-version`. It gets you the `headwater` binary alone, at whatever the newest published version is.
+The command needs nothing this repository ships: no clone, no toolchain floor beyond what `cargo` itself resolves from the crate's declared `rust-version`. It gets you the `headwater` binary alone, at whatever the newest published version is. `--locked` builds it with the dependency versions that the release was published and tested with. A later release or a yank of a dependency then cannot break the install, and a yanked version only prints a warning.
 
 **A fixed version built from source, with the taxonomy package beside it.** `v0.6.0` is the newest tagged release, and the block below builds it from source. It needs a Rust toolchain at **1.91 or later**, a floor `engine/README.md` explains and `engine/Cargo.toml` declares.
 
