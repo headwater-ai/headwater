@@ -51,14 +51,37 @@
 #     sh tools/run/run-dir.sh owe <dir> <issue> title=… question=… options=<a>|<b>|defer unblocks=…
 #                                               append one ruling the owner owes, and render rulings.md
 #     sh tools/run/run-dir.sh rulings <dir>          render rulings.md, each block marked answered or not, and print it
-#     sh tools/run/run-dir.sh integrate <dir> <pr> issue=<N|none> branch=… sha=… ruling=… footprint=<a,b>
-#                                               append one merge ruling to integrate.jsonl
+#     sh tools/run/run-dir.sh integrate <dir> <pr> issue=<N|none> branch=… ruling=… footprint=<a,b> [sha=…]
+#                                               append one merge ruling to integrate.jsonl; without sha=, read the head from GitHub
 #     sh tools/run/run-dir.sh integrations <dir>     each ruled pull request the log has not recorded merged
 #     sh tools/run/run-dir.sh lesson <dir> <file>    append a file of prose to lessons.md
 #     sh tools/run/run-dir.sh withdraw <dir> <match> <line>
 #                                               replace the one intake line that holds <match>
 #     sh tools/run/run-dir.sh applies <dir>          each intake line the product owner ruled APPLY,
 #                                                    then one count line, APPLY: <n>
+#     sh tools/run/run-dir.sh dispatch <dir> <issue|none> <stage> [key=value]...
+#                                               compose the stage's dispatch in the issue's scratch directory, print its path
+#     sh tools/run/run-dir.sh accept <dir> <issue> branch=… note=… footprint=<a,b|none> [title=…] [attacks=…] [deadline=…]
+#                                               a BUILD report: the checkpoint, the claim and the hw-iterate dispatch, in one call
+#     sh tools/run/run-dir.sh po-rule <dir> <file>   record each RULING block of a file through owe
+#
+# `dispatch` is the one renderer of the dispatch template that
+# `.claude/commands/next-run.md` describes. A parent used to compose each
+# dispatch by hand with `Write`, from a template it had to keep in context,
+# and a worktree-isolated parent's shell refuses the compound forms that
+# would have scripted it. The fields, by stage:
+#
+#     adjudicate  issue, run, scratch, [deadline]
+#     iterate     + branch, note= (the adjudication) or handover= (a checkpoint), waits-on, [attacks]
+#     build       + branch, note or handover, waits-on, [attacks]
+#     verify      + branch, pr, slot, [note], [build] (the build note), [attacks]
+#     integrate   issue none; one `pull request:` line per ruling `integrations` prints
+#
+# `title=` is read from queue.jsonl when the call gives none. The scratch
+# directory is `$CLAUDE_JOB_DIR/tmp/issue-<N>/`, as the template states, and
+# `HEADWATER_SCRATCH` overrides its root for a fixture. An issue of `none`
+# with `iterate` or `build` is the run-lessons dispatch, whose note is the run
+# id and whose branch is `run-lessons-<run-id>`.
 #
 # Every <dir>, for every subcommand but `start`, may be a bare run id, such as `20260927-0443`, which names that
 # run under the git common dir. A worktree-isolated parent's shell refuses a
@@ -508,10 +531,17 @@ claim() {
     # quoted as one argument. That stores one joined slug, which collides with
     # nothing, and in run 20260923-0733 it hid three real overlaps until a
     # claim printed no WAITS-ON against an obvious one. Refuse before writing.
+    # A comma is the same mistake in the shape the `footprint=` field of
+    # `stage` and `integrate` uses: `claim <run> 41 b a,b` stored one slug
+    # `a,b` in run 20261012-1113 and printed `HELD: ... by #unknown` against
+    # nothing. No artifact of this repository has a comma in its path.
     for artifact in "$@"; do
         case "$artifact" in
             *[[:space:]]*)
                 echo "run-dir: \`$artifact\` holds whitespace. Pass each artifact as its own argument." >&2
+                exit 2 ;;
+            *,*)
+                echo "run-dir: \`$artifact\` holds a comma. Pass each artifact as its own argument, not the comma-joined footprint." >&2
                 exit 2 ;;
         esac
     done
@@ -520,17 +550,33 @@ claim() {
     waits=''
     for artifact in "$@"; do
         s=$(slug "$artifact")
-        if create_only "$dir/claims/artifacts/$s" "$(printf 'issue %s\nbranch %s\nartifact %s\n' "$issue" "$branch" "$artifact")"; then
+        content=$(printf 'issue %s\nbranch %s\nartifact %s\n' "$issue" "$branch" "$artifact")
+        if create_only "$dir/claims/artifacts/$s" "$content"; then
             printf 'CLAIMED: %s\n' "$artifact"
         else
+            # `create_only` opens the file and then writes it, so a reader
+            # between the two sees an empty file for a moment. Three reads a
+            # second apart outlast any live writer. A file still empty after
+            # that is a writer that died between open and write, and a claim
+            # is never empty ([HW-PD-0004]): this claimant takes it over,
+            # rather than waiting on `#unknown` forever.
             holder=$(sed -n 's/^issue //p' "$dir/claims/artifacts/$s" 2>/dev/null)
-            if [ "$holder" = "$issue" ]; then
+            tries=0
+            while [ -z "$holder" ] && [ "$tries" -lt 3 ]; do
+                sleep 1
+                tries=$((tries + 1))
+                holder=$(sed -n 's/^issue //p' "$dir/claims/artifacts/$s" 2>/dev/null)
+            done
+            if [ -z "$holder" ]; then
+                printf '%s' "$content" > "$dir/claims/artifacts/$s"
+                printf 'CLAIMED: %s (replaced an empty claim file)\n' "$artifact"
+            elif [ "$holder" = "$issue" ]; then
                 printf 'CLAIMED: %s (already held)\n' "$artifact"
             else
-                printf 'HELD: %s by #%s\n' "$artifact" "${holder:-unknown}"
+                printf 'HELD: %s by #%s\n' "$artifact" "$holder"
                 case " $waits " in
-                    *" ${holder:-unknown} "*) ;;
-                    *) waits="$waits ${holder:-unknown}" ;;
+                    *" $holder "*) ;;
+                    *) waits="$waits $holder" ;;
                 esac
             fi
         fi
@@ -1045,6 +1091,17 @@ integrate() {
         esac
         entry=$(printf '%s' "$entry" | jq -c --arg k "$key" --arg v "$value" "$filter") || exit 1
     done
+    # Without `sha=`, the head is read from GitHub, the one field, so the
+    # parent types the number it ruled on and never a commit it copied from a
+    # report. A head that cannot be read refuses the ruling rather than
+    # recording one at no commit.
+    if ! printf '%s' "$entry" | jq -e 'has("sha")' >/dev/null; then
+        head=$(gh api "repos/headwater-ai/headwater/pulls/$pr" --jq .head.sha 2>/dev/null)
+        case $head in
+            ''|*[!0-9a-f]*) refuse "the head of PR #$pr could not be read from GitHub (\`$head\`); pass \`sha=\` or retry." ;;
+        esac
+        entry=$(printf '%s' "$entry" | jq -c --arg v "$head" '.sha = $v') || exit 1
+    fi
     for key in $integrate_fields; do
         printf '%s' "$entry" | jq -e --arg k "$key" 'has($k)' >/dev/null ||
             refuse "the merge ruling for PR #$pr needs \`$key=\`, and the call carries none."
@@ -1117,10 +1174,11 @@ resume() {
         reached=$(sed -n 's/^stage //p' "$h")
         case $reached in
             adjudicated)
-                if [ -e "$dir/claims/issues/$issue" ]; then
+                footprint=$(sed -n 's/^footprint //p' "$h")
+                if [ -e "$dir/claims/issues/$issue" ] || [ "$footprint" = none ]; then
                     action=iterate
                 else
-                    action="claim $(sed -n 's/^footprint //p' "$h" | tr ',' ' ')"
+                    action="claim $(printf '%s' "$footprint" | tr ',' ' ')"
                 fi ;;
             built|verified-fail) action=iterate ;;
             verified-pass) action=rule ;;
@@ -1134,6 +1192,221 @@ resume() {
         esac
         printf '%s %s %s\n' "$issue" "$reached" "$action"
     done
+}
+
+# The dispatch of one stage, composed into the scratch directory and passed
+# to the Agent tool as a path. The template is stated in prose in
+# `.claude/commands/next-run.md`, and this verb is its one renderer, so a
+# field the parent would have typed by hand into each dispatch is typed
+# nowhere. `tools/run/run-dir-fixtures.sh` holds the rendered lines to the
+# fields the command names. A stage that lacks a field it needs is refused
+# before anything is written, and so is a field no stage reads.
+dispatch_stages='adjudicate iterate build verify integrate'
+dispatch_fields='title branch note handover pr build waits-on attacks deadline'
+
+scratch_root() {
+    if [ -n "${HEADWATER_SCRATCH:-}" ]; then
+        printf '%s' "$HEADWATER_SCRATCH"
+    elif [ -n "${CLAUDE_JOB_DIR:-}" ]; then
+        printf '%s/tmp' "$CLAUDE_JOB_DIR"
+    else
+        refuse "no CLAUDE_JOB_DIR and no HEADWATER_SCRATCH, so there is no scratch directory to compose a dispatch in."
+    fi
+}
+
+# dispatch_line <key> <value>: one line of the template, the key padded as
+# the template pads it. Nothing is printed for an empty value.
+dispatch_line() {
+    [ -n "$2" ] || return 0
+    printf '%-14s%s\n' "$1:" "$2"
+}
+
+dispatch() {
+    dir=$1 issue=$2 stage=$3
+    shift 3
+    need_dir "$dir"
+    case " $dispatch_stages " in
+        *" $stage "*) ;;
+        *) refuse "\`$stage\` is not a stage to dispatch. A stage is one of: $dispatch_stages." ;;
+    esac
+    [ "$issue" = none ] || need_issue "$issue" 'an issue'
+    runid=${dir##*/}
+    title='' branch='' note='' handover='' pr='' build='' waits='' attacks='' deadline=''
+    seen=''
+    for pair in "$@"; do
+        pair_value "$pair"
+        key=${pair%%=*} value=${pair#*=}
+        once "$key"
+        case $key in
+            title) title=$value ;;
+            branch) branch=$value ;;
+            note) note=$value ;;
+            handover) handover=$value ;;
+            pr) need_issue "$value" 'a pull request'; pr=$value ;;
+            build) build=$value ;;
+            waits-on) waits=$value ;;
+            attacks) attacks=$value ;;
+            deadline) need_issue "$value" 'a number of minutes'; deadline=$value ;;
+            *) refuse "\`$key\` is not a dispatch field. A field is one of: $dispatch_fields." ;;
+        esac
+    done
+    root_scratch=$(scratch_root) || exit 2
+    integrations_lines=''
+    case $stage in
+        adjudicate)
+            [ "$issue" != none ] || refuse "an adjudicate dispatch names an issue."
+            scratch="$root_scratch/issue-$issue" ;;
+        iterate|build)
+            if [ "$issue" = none ]; then
+                [ -n "$branch" ] || branch="run-lessons-$runid"
+                [ -n "$note" ] || note="the run id, $runid: \`sh tools/run/run-dir.sh applies $runid\` is the note"
+                scratch="$root_scratch/run-lessons-$runid"
+            else
+                [ -n "$branch" ] || refuse "a $stage dispatch needs \`branch=\`."
+                [ -n "$note$handover" ] || refuse "a $stage dispatch needs \`note=\` (the adjudication) or \`handover=\` (a checkpoint)."
+                scratch="$root_scratch/issue-$issue"
+            fi
+            [ -n "$waits" ] || waits=none ;;
+        verify)
+            [ -n "$branch" ] && [ -n "$pr" ] || refuse "a verify dispatch needs \`branch=\` and \`pr=\`."
+            if [ "$issue" = none ]; then scratch="$root_scratch/run-lessons-$runid"; else scratch="$root_scratch/issue-$issue"; fi ;;
+        integrate)
+            [ "$issue" = none ] || refuse "an integrate dispatch takes \`none\` for the issue and reads the integrator queue."
+            integrations_lines=$(integrations "$dir")
+            [ -n "$integrations_lines" ] || refuse "the integrator queue holds no ruling to dispatch: \`run-dir.sh integrations\` prints nothing."
+            scratch="$root_scratch/integrate-$(date -u +%H%M%S)" ;;
+    esac
+    if [ "$issue" != none ] && [ -z "$title" ] && [ -s "$dir/queue.jsonl" ] && command -v jq >/dev/null 2>&1; then
+        title=$(jq -r --argjson n "$issue" 'select(.issue == $n) | .title' "$dir/queue.jsonl" 2>/dev/null | head -n 1)
+    fi
+    case $issue in
+        none) if [ "$stage" = integrate ]; then issue_line="none (the integrator queue)"; else issue_line="none (run lessons $runid)"; fi ;;
+        *) issue_line="#$issue${title:+ $title}" ;;
+    esac
+    mkdir -p "$scratch" || exit 1
+    out="$scratch/dispatch-$stage.md"
+    {
+        dispatch_line issue "$issue_line"
+        dispatch_line run "$dir"
+        dispatch_line scratch "$scratch/"
+        dispatch_line branch "$branch"
+        [ -n "$pr" ] && dispatch_line 'pull request' "#$pr"
+        if [ -n "$integrations_lines" ]; then
+            printf '%s\n' "$integrations_lines" | while IFS= read -r line; do
+                dispatch_line 'pull request' "$line"
+            done
+        fi
+        dispatch_line 'waits-on' "$waits"
+        dispatch_line note "$note"
+        dispatch_line handover "$handover"
+        dispatch_line 'build note' "$build"
+        if [ "$stage" = verify ]; then
+            if [ "$issue" = none ]; then dispatch_line slot "HW_CARGO_SLOT=verify-lessons"; else dispatch_line slot "HW_CARGO_SLOT=verify-$issue"; fi
+        fi
+        dispatch_line attacks "$attacks"
+        [ -n "$deadline" ] && dispatch_line deadline "$deadline minutes"
+        dispatch_line report 'the fixed block your definition names and nothing before it'
+    } > "$out.$$" && mv "$out.$$" "$out" || { rm -f "$out.$$"; exit 1; }
+    printf 'DISPATCH: %s\n' "$out"
+}
+
+# What the parent does with a `VERDICT: BUILD` report, in one call: the
+# `adjudicated` checkpoint, the claim on the footprint, and the hw-iterate
+# dispatch carrying whatever `WAITS-ON` the claim printed. Three calls that
+# every BUILD report cost the parent, and the footprint typed once instead
+# of twice, in two shapes. In drain the checkpoint is written and nothing
+# else: `claim` writes nothing then, and the next session claims from the
+# checkpoint, as `resume` says.
+accept() {
+    dir=$1 issue=$2
+    shift 2
+    need_dir "$dir"
+    need_issue "$issue" 'an issue'
+    branch='' note='' footprint='' title='' attacks='' deadline=''
+    seen=''
+    for pair in "$@"; do
+        pair_value "$pair"
+        key=${pair%%=*} value=${pair#*=}
+        once "$key"
+        case $key in
+            branch) branch=$value ;;
+            note) note=$value ;;
+            footprint) footprint=$value ;;
+            title) title=$value ;;
+            attacks) attacks=$value ;;
+            deadline) deadline=$value ;;
+            *) refuse "\`$key\` is not an accept field. A field is one of: branch note footprint title attacks deadline." ;;
+        esac
+    done
+    [ -n "$branch" ] && [ -n "$note" ] && [ -n "$footprint" ] ||
+        refuse "accept needs \`branch=\`, \`note=\` and \`footprint=\`, from the BUILD report."
+    staged=$(stage "$dir" "$issue" adjudicated "note=$note" "branch=$branch" "footprint=$footprint") || exit $?
+    case $staged in
+        *DRAIN*) echo DRAIN; return 0 ;;
+    esac
+    waits=none
+    if [ "$footprint" != none ]; then
+        set -f
+        oldifs=$IFS
+        IFS=,
+        set -- $footprint
+        IFS=$oldifs
+        set +f
+        claimed=$(claim "$dir" "$issue" "$branch" "$@") || exit $?
+        printf '%s\n' "$claimed"
+        case $claimed in
+            DRAIN) return 0 ;;
+        esac
+        held=$(printf '%s\n' "$claimed" | sed -n 's/^WAITS-ON://p' | head -n 1)
+        [ -z "$held" ] || waits=$(printf '%s' "$held" | sed 's/ \([0-9]\)/ #\1/g; s/^ //')
+    fi
+    set -- "branch=$branch" "note=$note" "waits-on=$waits"
+    [ -z "$title" ] || set -- "$@" "title=$title"
+    [ -z "$attacks" ] || set -- "$@" "attacks=$attacks"
+    [ -z "$deadline" ] || set -- "$@" "deadline=$deadline"
+    dispatch "$dir" "$issue" iterate "$@"
+}
+
+# The rulings the owner owes, written as one file of blocks in the shape
+# the product owner's definition states, and recorded through `owe` one
+# block at a time. The product owner composes the file with `Write`, which
+# is how a long quoted field reaches the ledger without a shell argument
+# that worktree isolation refuses. Every block is checked before the first
+# is written, because `owe` appends and nothing rewrites: a file with one
+# bad block records nothing.
+po_rule() {
+    need_jq
+    dir=$1 file=$2
+    need_dir "$dir"
+    [ -s "$file" ] || { echo "run-dir: $file is not a file of RULING blocks." >&2; exit 1; }
+    us=$(printf '\037')
+    parsed=$(awk -v us="$us" '
+        function flush() { if (issue != "") printf "%s%s%s%s%s%s%s%s%s\n", issue, us, title, us, question, us, options, us, unblocks; issue = "" }
+        function trim(s) { sub(/^[ \t]+/, "", s); sub(/[ \t]+$/, "", s); return s }
+        /^RULING #[0-9]+/ { flush(); match($0, /#[0-9]+/); issue = substr($0, RSTART + 1, RLENGTH - 1); title = trim(substr($0, RSTART + RLENGTH)); question = options = unblocks = ""; next }
+        /^[ \t]*question:/ { sub(/^[ \t]*question:/, ""); question = trim($0); next }
+        /^[ \t]*options:/ { sub(/^[ \t]*options:/, ""); options = trim($0); next }
+        /^[ \t]*unblocks:/ { sub(/^[ \t]*unblocks:/, ""); unblocks = trim($0); next }
+        /^[ \t]*answered:/ { next }
+        /^[ \t]*$/ { next }
+        { printf "run-dir: line %d of the rulings file is not a RULING line or one of its fields: %s\n", NR, $0 > "/dev/stderr"; bad = 1 }
+        END { flush(); if (bad) exit 2 }
+    ' "$file") || exit 2
+    [ -n "$parsed" ] || refuse "$file holds no \`RULING #<N> <title>\` block."
+    n=0
+    printf '%s\n' "$parsed" | while IFS=$us read -r issue title question options unblocks; do
+        n=$((n + 1))
+        for field in title question options unblocks; do
+            eval "value=\$$field"
+            [ -n "$value" ] || refuse "RULING #$issue, block $n, lacks \`$field:\`, and nothing was recorded."
+        done
+        printf '%s' "$options" | jq -Re 'split("|") | map(gsub("^\\s+|\\s+$"; "")) | length >= 2 and all(. != "") and .[-1] == "defer"' >/dev/null ||
+            refuse "RULING #$issue, block $n: the options are at least two, separated by \`|\`, none empty, and the last is \`defer\`; nothing was recorded."
+    done || exit 2
+    printf '%s\n' "$parsed" | while IFS=$us read -r issue title question options unblocks; do
+        owe "$dir" "$issue" "title=$title" "question=$question" "options=$options" "unblocks=$unblocks" || exit 2
+    done || exit 2
+    printf 'PO-RULE: %s rulings recorded from %s\n' "$(printf '%s\n' "$parsed" | wc -l | tr -d ' ')" "$file"
 }
 
 # A resumed parent session names itself, so the review hook exempts it and a
@@ -1181,5 +1454,8 @@ case ${1:-} in
     lesson) [ $# -eq 3 ] || usage; lesson "$run" "$3" ;;
     withdraw) [ $# -eq 4 ] || usage; withdraw "$run" "$3" "$4" ;;
     applies) [ $# -eq 2 ] || usage; applies "$run" ;;
+    dispatch) [ $# -ge 4 ] || usage; shift 2; dispatch "$run" "$@" ;;
+    accept) [ $# -ge 4 ] || usage; shift 2; accept "$run" "$@" ;;
+    po-rule) [ $# -eq 3 ] || usage; po_rule "$run" "$3" ;;
     *) usage ;;
 esac

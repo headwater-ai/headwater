@@ -747,24 +747,26 @@ same '  but the next run hands the issue out again' 40 "$(sh "$tool" next "$runb
 sh "$tool" claim "$runb" 40 issue-40 f40 >/dev/null 2>&1
 same '  and the OWNER line of the earlier run still answers the ruling line' 41 "$(sh "$tool" next "$runb" 2>&1)"
 
-printf '\n# the stage form next-run.md gives the parent leaves a handover resume can act on\n'
+printf '\n# the accept form next-run.md gives the parent leaves a handover resume can act on\n'
 # Verify-2 of PR #1281: next-run.md told the parent to run a bare
 # `stage <run> <issue> adjudicated`. Followed into a drain, that left a
-# handover `resume` read as `claim ` with no artifacts and no note. This case
-# takes the form from next-run.md itself, fills its placeholders, and follows
-# it into a drain and a resume, so a command file that drops a field goes red.
+# handover `resume` read as `claim ` with no artifacts and no note. The form
+# is now `accept`, which writes the checkpoint, claims and dispatches in one
+# call. This case takes the form from next-run.md itself, fills its
+# placeholders, and follows it into a drain and a resume, so a command file
+# that drops a field goes red.
 cmd="$root/.claude/commands/next-run.md"
-form=$(grep -o 'run-dir\.sh stage <run> <issue> adjudicated[^`]*' "$cmd" | head -n 1)
-same 'next-run.md gives the parent a stage form for a BUILD report' 1 "$([ -n "$form" ] && echo 1 || echo 0)"
+form=$(grep -o 'run-dir\.sh accept <run> <issue> [^`]*' "$cmd" | head -n 1)
+same 'next-run.md gives the parent an accept form for a BUILD report' 1 "$([ -n "$form" ] && echo 1 || echo 0)"
 own=$(sh "$tool" start own-form 2>/dev/null)
 q "$own" 60
 touch "$own/drain"
-filled=$(printf '%s' "$form" | sed -e "s|^run-dir\.sh stage <run> <issue>|stage $own 60|" \
+filled=$(printf '%s' "$form" | sed -e "s|^run-dir\.sh accept <run> <issue>|accept $own 60|" \
     -e 's|<path>|/s/adjudication.md|g' -e 's|<name>|issue-60|g' -e 's|<a,b>|f60,g60|g')
 # shellcheck disable=SC2086
-sh "$tool" $filled >/dev/null 2>&1; status=$?
-same '  and in drain that form writes the checkpoint' '0 stage adjudicated' "$status $(head -n 1 "$own/handover/60" 2>/dev/null)"
-sh "$tool" claim "$own" 60 issue-60 f60 g60 >/dev/null 2>&1
+out=$(HEADWATER_SCRATCH="$scratch/accept-form" sh "$tool" $filled 2>&1); status=$?
+same '  and in drain that form writes the checkpoint and stops' '0 DRAIN stage adjudicated' "$status $out $(head -n 1 "$own/handover/60" 2>/dev/null)"
+same '  and claims nothing in drain' 0 "$(ls "$own/claims/artifacts" 2>/dev/null | grep -c .)"
 rm -f "$own/drain"
 same '  and the next session claims the footprint it names' '60 adjudicated claim f60 g60' "$(sh "$tool" resume "$own" 2>&1)"
 same '  and the note it names reaches hw-iterate' 'note /s/adjudication.md' "$(grep '^note ' "$own/handover/60" 2>/dev/null)"
@@ -793,6 +795,183 @@ same 'a veto writes verified-fail with the veto as the finding, and resume sends
     "$(sh "$tool" resume "$veto" 2>&1)|$(grep -E '^(verify|note|pr) ' "$veto/handover/50" | sort -r | paste -sd'|')"
 sh "$tool" stage "$veto" 50 ruled-merge >/dev/null 2>&1
 same 'resume, ruled-merge: integrate' '50 ruled-merge integrate' "$(sh "$tool" resume "$veto" 2>&1)"
+sh "$tool" stage "$veto" 51 adjudicated note=/s/adj51.md branch=issue-51 footprint=none >/dev/null 2>&1
+same 'resume, adjudicated with footprint none: iterate, with nothing to claim' '51 adjudicated iterate' "$(sh "$tool" resume "$veto" 2>&1 | grep '^51 ')"
+
+printf '\n# claim refuses a comma-joined footprint, and takes over an empty claim file\n'
+# Run 20261012-1113: `claim <run> 41 b a,b` stored one slug `a,b`, collided
+# with nothing, and a later claim printed `HELD: ... by #unknown` against an
+# empty file. Neither shape stores anything now.
+cm=$(sh "$tool" start comma 2>/dev/null)
+sh "$tool" claim "$cm" 41 issue-41 'f41,g41' >/dev/null 2>"$scratch/err"; status=$?
+same 'a comma in an artifact is refused with exit 2' 2 "$status"
+same '  and the refusal says what to pass' 1 "$(grep -c 'each artifact as its own argument' "$scratch/err")"
+same '  and nothing was claimed' 0 "$(ls "$cm/claims/artifacts" 2>/dev/null | grep -c .)"
+# An empty claim file is a writer that died between open and write. The slug
+# of `f41` is whatever the tool makes of it: claim `f41` once under #1, copy
+# its slug name, empty it, and claim it again under #41.
+sh "$tool" claim "$cm" 1 issue-1 f41 >/dev/null 2>&1
+slug41=$(grep -l '^artifact f41$' "$cm"/claims/artifacts/* | head -n 1)
+: > "$slug41"
+out=$(sh "$tool" claim "$cm" 41 issue-41 f41 2>&1); status=$?
+same 'an empty claim file is taken over after the retries, and says so' '0 CLAIMED: f41 (replaced an empty claim file)' "$status $out"
+same '  and the file now names the claimant' 'issue 41' "$(sed -n 's/^\(issue .*\)$/\1/p' "$slug41" | head -n 1)"
+same '  and no WAITS-ON names #unknown' 0 "$(printf '%s' "$out" | grep -c unknown)"
+
+printf '\n# integrate reads the head of the pull request when sha= is absent\n'
+# The parent types the number it ruled on, and the sha comes from the one
+# field on GitHub, never copied from a report. A fake `gh` on PATH answers
+# the pulls endpoint; an answer that is not a sha refuses.
+mkdir -p "$scratch/ghbin"
+cat > "$scratch/ghbin/gh" <<'EOF'
+#!/bin/sh
+printf '%s\n' "$*" >> "$GH_LOG"
+case "$*" in
+    *"/pulls/700 --jq .head.sha") printf '%s\n' "${GH_HEAD:-abcdef1234567}" ;;
+    *) exit 1 ;;
+esac
+EOF
+chmod +x "$scratch/ghbin/gh"
+ig=$(sh "$tool" start inthead 2>/dev/null)
+: > "$scratch/gh.log"
+out=$(PATH="$scratch/ghbin:$PATH" GH_LOG="$scratch/gh.log" sh "$tool" integrate "$ig" 700 issue=70 branch=issue-70 ruling=MERGE footprint=f70 2>&1); status=$?
+same 'integrate without sha= exits 0 and reads the head from the pulls endpoint' '0 1' "$status $(grep -c 'repos/headwater-ai/headwater/pulls/700 --jq .head.sha' "$scratch/gh.log")"
+same '  and the entry carries that sha' abcdef1234567 "$(jq -r 'select(.pr == 700) | .sha' "$ig/integrate.jsonl")"
+PATH="$scratch/ghbin:$PATH" GH_LOG="$scratch/gh.log" GH_HEAD='not a sha' sh "$tool" integrate "$ig" 700 issue=71 branch=issue-71 ruling=MERGE footprint=f71 >/dev/null 2>"$scratch/err"; status=$?
+same 'an answer that is not a sha refuses with exit 2' 2 "$status"
+same '  and says to pass sha= or retry' 1 "$(grep -c 'pass `sha=` or retry' "$scratch/err")"
+same '  and wrote no second entry' 1 "$(grep -c . "$ig/integrate.jsonl")"
+PATH="$scratch/ghbin:$PATH" GH_LOG="$scratch/gh.log" sh "$tool" integrate "$ig" 701 issue=72 branch=issue-72 ruling=MERGE footprint=f72 sha=1234567abc >/dev/null 2>&1; status=$?
+same 'with sha= given, gh is not asked' '0 0' "$status $(grep -c 'pulls/701' "$scratch/gh.log")"
+
+printf '\n# dispatch renders the fields of each stage, and refuses a stage that lacks one\n'
+# The dispatch template lived in next-run.md and the parent typed it into a
+# Write per stage. The verb is the one renderer. Each line below is a field
+# the command names, so a renderer that drops one goes red.
+export HEADWATER_SCRATCH="$scratch/dispatch"
+dp=$(sh "$tool" start dp 2>/dev/null)
+q "$dp" 80 'title=A titled issue'
+out=$(sh "$tool" dispatch "$dp" 80 adjudicate deadline=25 2>&1); status=$?
+same 'adjudicate: exit 0 and the DISPATCH line names the file' "0 DISPATCH: $scratch/dispatch/issue-80/dispatch-adjudicate.md" "$status $out"
+f="$scratch/dispatch/issue-80/dispatch-adjudicate.md"
+same '  issue line carries the number and the queue title' 'issue:        #80 A titled issue' "$(grep '^issue:' "$f")"
+same '  run line' "run:          $dp" "$(grep '^run:' "$f")"
+same '  scratch line' "scratch:      $scratch/dispatch/issue-80/" "$(grep '^scratch:' "$f")"
+same '  deadline line in minutes' 'deadline:     25 minutes' "$(grep '^deadline:' "$f")"
+same '  report line' 'report:       the fixed block your definition names and nothing before it' "$(grep '^report:' "$f")"
+same '  and no branch or note line for an adjudicate' 0 "$(grep -cE '^(branch|note|waits-on|slot):' "$f")"
+sh "$tool" dispatch "$dp" 80 iterate note=/s/adj.md >/dev/null 2>"$scratch/err"; status=$?
+same 'iterate without branch= is refused with exit 2' 2 "$status"
+same '  and names the field' 1 "$(grep -c 'needs `branch=`' "$scratch/err")"
+sh "$tool" dispatch "$dp" 80 iterate branch=issue-80 >/dev/null 2>"$scratch/err"; status=$?
+same 'iterate without note= or handover= is refused with exit 2' 2 "$status"
+sh "$tool" dispatch "$dp" 80 iterate branch=issue-80 note=/s/adj.md waits-on='#79' attacks='a, b' deadline=90 >/dev/null 2>&1
+f="$scratch/dispatch/issue-80/dispatch-iterate.md"
+same 'iterate: branch, waits-on, note, attacks and deadline lines' \
+    'branch:       issue-80|waits-on:     #79|note:         /s/adj.md|attacks:      a, b|deadline:     90 minutes' \
+    "$(grep -E '^(branch|waits-on|note|attacks|deadline):' "$f" | paste -sd'|')"
+sh "$tool" dispatch "$dp" 80 iterate branch=issue-80 handover="$dp/handover/80" >/dev/null 2>&1
+same 'iterate from a checkpoint: a handover line, waits-on none, and no note line' \
+    "handover:     $dp/handover/80|waits-on:     none|0" \
+    "$(grep -E '^(handover|waits-on):' "$f" | sort | paste -sd'|')|$(grep -c '^note:' "$f")"
+sh "$tool" dispatch "$dp" 80 build branch=issue-80 note=/s/adj.md attacks=x >/dev/null 2>&1
+same 'build: the same fields as an iterate' 'branch:       issue-80|note:         /s/adj.md|attacks:      x' \
+    "$(grep -E '^(branch|note|attacks):' "$scratch/dispatch/issue-80/dispatch-build.md" | paste -sd'|')"
+sh "$tool" dispatch "$dp" 80 verify branch=issue-80 >/dev/null 2>"$scratch/err"; status=$?
+same 'verify without pr= is refused with exit 2' 2 "$status"
+sh "$tool" dispatch "$dp" 80 verify branch=issue-80 pr=800 build=/s/build.md note=/s/adj.md attacks='mutant 3' >/dev/null 2>&1
+f="$scratch/dispatch/issue-80/dispatch-verify.md"
+same 'verify: pull request, note, build note, slot and attacks lines' \
+    'pull request: #800|note:         /s/adj.md|build note:   /s/build.md|slot:         HW_CARGO_SLOT=verify-80|attacks:      mutant 3' \
+    "$(grep -E '^(pull request|note|build note|slot|attacks):' "$f" | paste -sd'|')"
+sh "$tool" dispatch "$dp" none build >/dev/null 2>&1; status=$?
+f="$scratch/dispatch/run-lessons-dp/dispatch-build.md"
+same 'issue none with build: the run-lessons branch, note and scratch' \
+    "0|issue:        none (run lessons dp)|scratch:      $scratch/dispatch/run-lessons-dp/|branch:       run-lessons-dp" \
+    "$status|$(grep -E '^(issue|branch|scratch):' "$f" | paste -sd'|')"
+same '  and the note names the applies verb' 1 "$(grep -c '^note:.*run-dir.sh applies dp' "$f")"
+sh "$tool" dispatch "$dp" none verify branch=run-lessons-dp pr=801 >/dev/null 2>&1
+same 'issue none with verify: the lessons slot' 'slot:         HW_CARGO_SLOT=verify-lessons' "$(grep '^slot:' "$scratch/dispatch/run-lessons-dp/dispatch-verify.md")"
+sh "$tool" dispatch "$dp" none integrate >/dev/null 2>"$scratch/err"; status=$?
+same 'integrate with an empty integrator queue is refused with exit 2' 2 "$status"
+sh "$tool" integrate "$dp" 800 issue=80 branch=issue-80 ruling=MERGE footprint=f80 sha=abc1234 >/dev/null 2>&1
+sh "$tool" integrate "$dp" 801 issue=none branch=run-lessons-dp ruling=MERGE footprint=none sha=def5678 >/dev/null 2>&1
+out=$(sh "$tool" dispatch "$dp" none integrate 2>&1); status=$?
+f=${out#DISPATCH: }
+same 'integrate: exit 0, the issue line names the queue, and one pull request line per ruling' \
+    '0|issue:        none (the integrator queue)|2' \
+    "$status|$(grep '^issue:' "$f")|$(grep -c '^pull request:' "$f")"
+same '  and each pull request line is what integrations prints' "$(sh "$tool" integrations "$dp" | paste -sd'|')" "$(sed -n 's/^pull request: *//p' "$f" | paste -sd'|')"
+sh "$tool" dispatch "$dp" 80 integrate >/dev/null 2>"$scratch/err"; status=$?
+same 'integrate with an issue is refused with exit 2' 2 "$status"
+sh "$tool" dispatch "$dp" 80 adjudicate colour=red >/dev/null 2>"$scratch/err"; status=$?
+same 'a field no stage reads is refused with exit 2' 2 "$status"
+sh "$tool" dispatch "$dp" 80 polish >/dev/null 2>"$scratch/err"; status=$?
+same 'a stage that does not exist is refused with exit 2' 2 "$status"
+out=$(HEADWATER_SCRATCH= CLAUDE_JOB_DIR= sh "$tool" dispatch "$dp" 80 adjudicate 2>&1); status=$?
+same 'no scratch directory at all is refused with exit 2' 2 "$status"
+
+printf '\n# accept: checkpoint, claim and dispatch in one call\n'
+ac=$(sh "$tool" start ac 2>/dev/null)
+q "$ac" 90 'title=Ninety'; q "$ac" 91
+sh "$tool" claim "$ac" 91 issue-91 shared >/dev/null 2>&1
+out=$(sh "$tool" accept "$ac" 90 branch=issue-90 note=/s/adj90.md footprint=f90,shared attacks='attack one' 2>&1); status=$?
+same 'accept exits 0' 0 "$status"
+same '  and the checkpoint is adjudicated with every field' \
+    'stage adjudicated|branch issue-90|note /s/adj90.md|footprint f90,shared' \
+    "$(grep -E '^(stage|branch|note|footprint) ' "$ac/handover/90" | paste -sd'|')"
+same '  and the claim lines show what was claimed and what is held' 'CLAIMED: f90|HELD: shared by #91|WAITS-ON: 91' "$(printf '%s\n' "$out" | grep -E '^(CLAIMED|HELD|WAITS-ON)' | paste -sd'|')"
+same '  and the DISPATCH line names the iterate file' "DISPATCH: $scratch/dispatch/issue-90/dispatch-iterate.md" "$(printf '%s\n' "$out" | grep '^DISPATCH')"
+f="$scratch/dispatch/issue-90/dispatch-iterate.md"
+same '  and the dispatch carries the waits-on the claim printed, as issue references' 'waits-on:     #91' "$(grep '^waits-on:' "$f")"
+same '  and the branch, note, title and attacks' 'issue:        #90 Ninety|branch:       issue-90|note:         /s/adj90.md|attacks:      attack one' \
+    "$(grep -E '^(issue|branch|note|attacks):' "$f" | paste -sd'|')"
+q "$ac" 92
+out=$(sh "$tool" accept "$ac" 92 branch=issue-92 note=/s/adj92.md footprint=none 2>&1); status=$?
+same 'footprint none: no claim, waits-on none, and a dispatch' "0|waits-on:     none|0" \
+    "$status|$(grep '^waits-on:' "$scratch/dispatch/issue-92/dispatch-iterate.md")|$(printf '%s\n' "$out" | grep -c '^CLAIMED')"
+sh "$tool" accept "$ac" 92 branch=issue-92 note=/s/adj92.md >/dev/null 2>"$scratch/err"; status=$?
+same 'accept without footprint= is refused with exit 2' 2 "$status"
+
+printf '\n# po-rule records every block of a rulings file, or none\n'
+pr=$(sh "$tool" start porule 2>/dev/null)
+q "$pr" 95; q "$pr" 96
+cat > "$scratch/rulings.md" <<'EOF'
+RULING #95 Which install route
+  question: Keep the APT fence or drop it?
+  options: keep | drop | defer
+  unblocks: #95 and the install page
+
+RULING #96 Milestone of the LSP work
+  question: Is #96 in 0.7 or 0.8?
+  options: 0.7 | 0.8 | defer
+  unblocks: the 0.7 close
+  answered: not yet
+EOF
+out=$(sh "$tool" po-rule "$pr" "$scratch/rulings.md" 2>&1); status=$?
+same 'a good file records every block, through owe, and says how many' \
+    "0|OWED: #95, ruling 1|OWED: #96, ruling 2|PO-RULE: 2 rulings recorded from $scratch/rulings.md" "$status|$(printf '%s\n' "$out" | paste -sd'|')"
+same '  and the ledger holds both' '95 96' "$(jq -r 'select(.issue == 95 or .issue == 96) | .issue' "$pr/rulings.jsonl" | paste -sd' ')"
+same '  and the options reached the ledger whole, the last one defer' 'keep|drop|defer' "$(jq -r 'select(.issue == 95) | .options | join("|")' "$pr/rulings.jsonl" | head -n 1)"
+cat > "$scratch/rulings-bad.md" <<'EOF'
+RULING #97 A block with a bad option list
+  question: Is this recorded?
+  options: yes
+  unblocks: nothing
+
+RULING #98 A good block after a bad one
+  question: Is this recorded?
+  options: yes | no | defer
+  unblocks: nothing
+EOF
+sh "$tool" po-rule "$pr" "$scratch/rulings-bad.md" >/dev/null 2>"$scratch/err"; status=$?
+same 'a file with one bad block is refused with exit 2' 2 "$status"
+same '  and names the block' 1 "$(grep -c 'RULING #97, block 1' "$scratch/err")"
+same '  and records none of it, not even the good block' 0 "$(grep -cE '"issue":9[78]' "$pr/rulings.jsonl")"
+printf 'RULING #99 Stray\n  question: q\n  options: a | defer\n  unblocks: u\nthis line is prose\n' > "$scratch/rulings-prose.md"
+sh "$tool" po-rule "$pr" "$scratch/rulings-prose.md" >/dev/null 2>"$scratch/err"; status=$?
+same 'a line that is neither a RULING line nor a field is refused, with its number' '2 1' "$status $(grep -c 'line 5 of the rulings file' "$scratch/err")"
+unset HEADWATER_SCRATCH
 
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]

@@ -602,7 +602,7 @@ agents/hw-build.md|Hold a survivor with a test before you report, where you can.
 agents/hw-verify.md|Take the script from `main`, not from the branch: after `git fetch origin`, run `git show origin/main:tools/run/gh-issue.sh > <scratch>/gh-issue-main.sh`
 agents/hw-verify.md|A `PASS` requires exit 0. When the title says
 agents/hw-verify.md|When the title says `Closes #N` and the body says `Refs #N`, or the reverse, that is a `FAIL` of the body and not of the code.
-agents/hw-verify.md|Before your first build makes a fresh `target-verify-<N>`, run `sh tools/run/disk-free.sh`.
+agents/hw-verify.md|Before your first build makes a fresh `target-verify-<N>`, run `sh tools/run/verify-setup.sh <N> <branch>`
 agents/hw-verify.md|When the pool'"'"'s volume has less than 40G free, stop and report `FAIL` with `disk: <the reading>` as the first line of `FIRED`
 agents/hw-iterate.md|**Verify.** Before each verify, run `sh tools/run/disk-free.sh`
 agents/hw-iterate.md|The floor that `hw-verify` states is on the pool'"'"'s volume.

@@ -146,6 +146,57 @@ same '  and never calls claude' 0 "$(cat "$STUB/count" 2>/dev/null || echo 0)"
 sh "$tool" main x >/dev/null 2>&1; status=$?
 same 'an N that is not a number is refused with exit 2' 2 "$status"
 
+printf '\n# the main checkout is fast-forwarded before each session, and only by a fast-forward\n'
+# A bare origin, a main checkout cloned from it, and a worktree of that
+# checkout as the tree the sessions run in. A second clone pushes a commit;
+# the loop brings the main checkout to it before the first session starts.
+ffdir="$scratch/ff"
+mkdir -p "$ffdir"
+git init -q --bare "$ffdir/origin.git"
+git -C "$ffdir" clone -q "$ffdir/origin.git" main-checkout 2>/dev/null
+git -C "$ffdir/main-checkout" -c user.name=t -c user.email=t@t commit -q --allow-empty -m first
+git -C "$ffdir/main-checkout" branch -q -M main
+git -C "$ffdir/main-checkout" push -q -u origin main 2>/dev/null
+git -C "$ffdir/main-checkout" worktree add -q "$ffdir/wt" -b wt 2>/dev/null
+git -C "$ffdir" clone -q -b main "$ffdir/origin.git" other 2>/dev/null
+git -C "$ffdir/other" -c user.name=t -c user.email=t@t commit -q --allow-empty -m second
+git -C "$ffdir/other" push -q origin HEAD:main 2>/dev/null
+want=$(git -C "$ffdir/other" rev-parse --short HEAD)
+fresh ff
+printf 'call 1 140000\n' > "$STUB/1.sh"
+printf 'call 2 140000\n' > "$STUB/2.sh"
+out=$(HW_SUPERVISE_TREE="$ffdir/wt" sh "$tool" ff 2>&1)
+same 'the loop prints the fast-forward before the first session' "FAST-FORWARD: main at $want" "$(printf '%s\n' "$out" | grep '^FAST-FORWARD' | head -n 1)"
+same '  and the main checkout is at origin/main' "$want" "$(git -C "$ffdir/main-checkout" rev-parse --short HEAD)"
+same '  and still on main' main "$(git -C "$ffdir/main-checkout" symbolic-ref --short HEAD)"
+same '  and the worktree the sessions ran in did not move' wt "$(git -C "$ffdir/wt" symbolic-ref --short HEAD)"
+git -C "$ffdir/main-checkout" -c user.name=t -c user.email=t@t commit -q --allow-empty -m local-only
+git -C "$ffdir/other" -c user.name=t -c user.email=t@t commit -q --allow-empty -m third
+git -C "$ffdir/other" push -q origin HEAD:main 2>/dev/null
+local_sha=$(git -C "$ffdir/main-checkout" rev-parse --short HEAD)
+fresh ff2
+printf 'call 1 140000\n' > "$STUB/1.sh"
+printf 'call 2 140000\n' > "$STUB/2.sh"
+out=$(HW_SUPERVISE_TREE="$ffdir/wt" sh "$tool" ff2 2>&1)
+same 'a main checkout that has diverged is left where it is, and the loop says so' \
+    "FAST-FORWARD: skipped, $ffdir/main-checkout does not fast-forward to origin/main" "$(printf '%s\n' "$out" | grep '^FAST-FORWARD' | head -n 1)"
+same '  and its HEAD is untouched' "$local_sha" "$(git -C "$ffdir/main-checkout" rev-parse --short HEAD)"
+same '  and no rebase or merge is in progress' 0 "$(ls "$ffdir/main-checkout/.git" | grep -cE '^(MERGE_HEAD|rebase-merge|rebase-apply)$')"
+git -C "$ffdir/main-checkout" reset -q --hard origin/main
+: > "$ffdir/main-checkout/dirty"
+fresh ff3
+printf 'call 1 140000\n' > "$STUB/1.sh"
+printf 'call 2 140000\n' > "$STUB/2.sh"
+out=$(HW_SUPERVISE_TREE="$ffdir/wt" sh "$tool" ff3 2>&1)
+same 'a main checkout that is not clean is skipped' "FAST-FORWARD: skipped, $ffdir/main-checkout is not clean" "$(printf '%s\n' "$out" | grep '^FAST-FORWARD' | head -n 1)"
+rm -f "$ffdir/main-checkout/dirty"
+fresh ff4
+printf 'call 1 140000\n' > "$STUB/1.sh"
+printf 'call 2 140000\n' > "$STUB/2.sh"
+out=$(HW_SUPERVISE_FF=0 HW_SUPERVISE_TREE="$ffdir/wt" sh "$tool" ff4 2>&1)
+same 'HW_SUPERVISE_FF=0 turns it off' 'FAST-FORWARD: skipped, HW_SUPERVISE_FF=0' "$(printf '%s\n' "$out" | grep '^FAST-FORWARD' | head -n 1)"
+same 'a tree that is no worktree is skipped, and the loop runs' 1 "$(printf '%s\n' "$(sh "$tool" idle 2>&1)" | grep -c 'FAST-FORWARD: skipped, .* is not a worktree of a main checkout' | sed 's/^[1-9][0-9]*$/1/')"
+
 printf '\n# a signal to the loop leaves no session behind\n'
 fresh signal
 printf 'call 1 1000\nexec sleep 60\n' > "$STUB/1.sh"

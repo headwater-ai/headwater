@@ -65,13 +65,23 @@
 # over all of them; the loop prints that line when it stops.
 #
 # Run it from its own worktree (`sh tools/repo/new-worktree.sh`), never the
-# main checkout, which the integrator owns; HW_SUPERVISE_TREE names another
-# directory for the sessions to run in, and a main checkout is refused.
-# HW_SUPERVISE_CLAUDE names the binary (default `claude`), and
-# HW_SUPERVISE_ARGS adds arguments after the fixed ones, such as a permission
-# mode. `sh tools/run/supervise-fixtures.sh` holds every stop with a stub
-# `claude`, so no fixture calls a model. The loop leaves no process behind: a
-# signal to it ends the session it started.
+# main checkout; HW_SUPERVISE_TREE names another directory for the sessions
+# to run in, and a main checkout is refused. HW_SUPERVISE_CLAUDE names the
+# binary (default `claude`), and HW_SUPERVISE_ARGS adds arguments after the
+# fixed ones, such as a permission mode. `sh tools/run/supervise-fixtures.sh`
+# holds every stop with a stub `claude`, so no fixture calls a model. The
+# loop leaves no process behind: a signal to it ends the session it started.
+#
+# Before each session it fast-forwards the main checkout, the one the
+# worktree's git dir is nested under, to `origin/main`, and prints
+# `FAST-FORWARD: main at <sha>` or `FAST-FORWARD: skipped, <reason>`. The
+# move was the integrator's, after each merge, in a serial slot that cost
+# every run one stage's wait per pull request; here it costs nothing, and
+# the checkout is never touched while a session runs. The move matters
+# because `core.hooksPath` is absolute to that checkout: a stale one runs
+# stale hooks under every worktree. It is skipped, and said, when the
+# checkout is not on `main`, is not clean, or cannot fetch; it never
+# rebases, resets or stashes. HW_SUPERVISE_FF=0 turns it off.
 
 set -u
 
@@ -142,10 +152,40 @@ handovers_open() {
     return 1
 }
 
+# The main checkout is the directory whose `.git` is the worktree's common
+# dir. It moves only by a fast-forward, only on `main`, only when clean.
+fast_forward() {
+    [ "${HW_SUPERVISE_FF:-1}" != 0 ] || { echo "FAST-FORWARD: skipped, HW_SUPERVISE_FF=0"; return 0; }
+    main=${gitcommon%/.git}
+    if [ -z "$gitcommon" ] || [ "$main" = "$gitcommon" ] || [ ! -d "$main" ]; then
+        echo "FAST-FORWARD: skipped, $tree is not a worktree of a main checkout"
+        return 0
+    fi
+    branch=$(git -C "$main" symbolic-ref --short -q HEAD)
+    if [ "$branch" != main ]; then
+        echo "FAST-FORWARD: skipped, $main is on \`${branch:-a detached HEAD}\`, not main"
+        return 0
+    fi
+    if [ -n "$(git -C "$main" status --porcelain 2>/dev/null)" ]; then
+        echo "FAST-FORWARD: skipped, $main is not clean"
+        return 0
+    fi
+    if ! git -C "$main" fetch -q origin 2>/dev/null; then
+        echo "FAST-FORWARD: skipped, fetch from origin failed"
+        return 0
+    fi
+    if git -C "$main" merge -q --ff-only origin/main >/dev/null 2>&1; then
+        echo "FAST-FORWARD: main at $(git -C "$main" rev-parse --short HEAD)"
+    else
+        echo "FAST-FORWARD: skipped, $main does not fast-forward to origin/main"
+    fi
+}
+
 start_merges=$(merges)
 idle=0
 n=0
 while :; do
+    fast_forward
     total=$(( $(merges) - start_merges ))
     [ -n "$cap" ] && [ "$total" -ge "$cap" ] && stop "merges, $total of $cap reached"
     if [ -s "$run/usage.jsonl" ]; then

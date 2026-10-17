@@ -162,6 +162,26 @@ run closes 1050 > "$scratch/out"
 check_logged "a graphql call with the number as a typed variable" "api graphql -F n=1050"
 check_logged "  and the closingIssuesReferences field" "closingIssuesReferences"
 
+echo "list builds the one board read, open by default, and closed on request"
+run list > "$scratch/out"
+check_logged "open: the repo, the state, the limit and the four fields" "issue list --repo headwater-ai/headwater --state open --limit 200 --json number,title,labels,milestone"
+check_logged "  and a jq that joins the label names" '[.labels[].name] | join(",")'
+run list closed > "$scratch/out"
+check_logged "closed: the state, a larger limit and closedAt" "--state closed --limit 300 --json number,title,labels,milestone,closedAt"
+: > "$log"
+PATH="$fakebin:$PATH" LOG="$log" sh "$tool" list stale > "$scratch/out" 2>"$scratch/err"
+check_status "a state that is neither is refused" nonzero $?
+if [ ! -s "$log" ]; then
+    passed=$((passed + 1)); echo "  ok    and gh is never called"
+else
+    failed=$((failed + 1)); echo "  FAIL  and gh is never called"
+fi
+
+echo "milestones reads every milestone with its counts"
+run milestones > "$scratch/out"
+check_logged "the milestones endpoint, all states, one page of 100" "repos/headwater-ai/headwater/milestones?state=all&per_page=100"
+check_logged "  and a jq with the open and closed counts" 'open=\(.open_issues)\tclosed=\(.closed_issues)'
+
 echo "a non-numeric issue is refused before any gh call"
 : > "$log"
 PATH="$fakebin:$PATH" LOG="$log" sh "$tool" body abc > "$scratch/out" 2>"$scratch/err"
