@@ -717,7 +717,7 @@ fn a_call_that_named_no_document_of_this_corpus_is_reported_apart() {
 }
 
 /// The one call the committed transcript records, as it writes it.
-const THE_READ_CALL: &str = "    - tool: read\n      argument: corpus/probes/0002-answered.md\n      result: sha256:fc8ef4987672f249a06adb2faaa8f0fcf583aca537858a50ef561cea0d3f65c8\n";
+const THE_READ_CALL: &str = "    - tool: read\n      argument: corpus/probes/0002-answered.md\n      result: sha256:4ad8a68a9b14018c085d8cb9a67113d44e15eb624e8d383d7fc76fb5c3e6bc1b\n";
 
 /// The committed transcript at `dir` with its one call replaced by `calls`.
 fn with_calls(dir: &Path, calls: &str) -> String {
@@ -962,7 +962,7 @@ fn a_member_with_a_witness_is_reported_by_it_even_where_bash_named_it_first() {
     assert!(member.witness.is_some(), "{report}");
     assert!(
         report.contains(
-            "- corpus/probes/0002-answered.md (probe) sha256:fc8ef4987672f249a06adb2faaa8f0fcf583aca537858a50ef561cea0d3f65c8\n    event 1 call 2 observed the same identity, so this document stands\n"
+            "- corpus/probes/0002-answered.md (probe) sha256:4ad8a68a9b14018c085d8cb9a67113d44e15eb624e8d383d7fc76fb5c3e6bc1b\n    event 1 call 2 observed the same identity, so this document stands\n"
         ),
         "the witnessed member is not reported by its witness:\n{report}"
     );

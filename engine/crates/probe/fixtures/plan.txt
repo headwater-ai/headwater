@@ -4,9 +4,9 @@ A regression probe run over 5 of the 6 classified documents of this corpus.
 
 ```yaml
 lock: sha256:fixture
-tree: sha256:2de334d8720637c26eac65bddd85a9c5f5361aa7c10bcfe27b620bed42b1d050
+tree: sha256:7681b99cc61463b8aa136e5c6218de588dde95be355e2ce467e3124c54d574f5
 selection: sha256:acb39c7d95c364df7aa7c4fd5a084010f3fbe9aacbf0586dc93126281a77084e
-read_set: sha256:d7b774f43bd79e80eddc5ef245e810a57e399b39afb4e8016e158fdc2f0d3215
+read_set: sha256:19500706cc3600bf0e57d880ba5c297009770751c81463fce1ee6cd925d6336b
 seed: 0
 harness: 0.6.0
 tier: regression
@@ -49,11 +49,11 @@ Each session stops at a turn cap of 12, which the tier declares. A session the c
 
 5 documents the `read_set` digest above covers, which is every probe of the selection and every document one of them examines:
 
-- corpus/probes/0001-opened.md (probe) sha256:d096faf5e06e2dc870c3bf0fdb47fa2dd9c8c7883fd1f81d8fabaff7b36ccd9a
-- corpus/probes/0002-answered.md (probe) sha256:fc8ef4987672f249a06adb2faaa8f0fcf583aca537858a50ef561cea0d3f65c8
-- corpus/probes/0003-not-opened.md (probe) sha256:37cd08fc8245b8761ba676d7b5c8e7f400c114cfe6f2a2a84c46e5ac4bb7b569
-- corpus/probes/0004-cited.md (probe) sha256:331da3480aa9db35b12bd8987fc5cfcda0068010c4969fffbb064f4ac90b347e
-- corpus/probes/0005-patched.md (probe) sha256:7913d3261207265c4c9c430a4c89edf0746f3a610abee8230680c5057031454d
+- corpus/probes/0001-opened.md (probe) sha256:28bf168394e0844222a7cb698bb3813039432370f74c7bd03f295c6b11c6cdf4
+- corpus/probes/0002-answered.md (probe) sha256:4ad8a68a9b14018c085d8cb9a67113d44e15eb624e8d383d7fc76fb5c3e6bc1b
+- corpus/probes/0003-not-opened.md (probe) sha256:05abcf25ed7a471bc6efae8a9876276537dcc1fc9f649284aac849bc865dd694
+- corpus/probes/0004-cited.md (probe) sha256:69f4553f6eccc4e3fd84c90d23e2f70d7f4a6e83fcfbcb5b85754231893246c3
+- corpus/probes/0005-patched.md (probe) sha256:e648e0327dfb6a3683ea92ac1bf669a6f72b5275f69ef66adfda11a5263cf774
 
 A recorded result is stale when a document of this list moves, and it is not stale when any other document of this corpus moves. That is the whole of what the digest buys over the `tree` digest beside it, which moves on every commit.
 

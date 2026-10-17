@@ -29,7 +29,11 @@ Write up, for a later reader of this repository, why a count taken over the whol
 
 The task names no verb, no file and no kind. It asks for a piece of writing and for a pointer inside it.
 
-## Expectation
+## Target
+
+The artifact that the session writes must cite [the ruling](../decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md).
+
+## Key
 
 `cited` over `HW-DR-0049`. An artifact the session produced carries that identifier.
 

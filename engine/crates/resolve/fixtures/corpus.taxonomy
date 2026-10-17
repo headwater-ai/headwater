@@ -516,7 +516,8 @@ kinds:
     sections:
       require:
         - Task
-        - Expectation
+        - Target
+        - Key
     voice: declarative
     write_when: "a question about what an agent does with this corpus needs a repeatable test, with the task and the expected result written down"
   probe_result:

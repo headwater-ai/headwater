@@ -23,6 +23,10 @@ relations:
 
 Do the thing the document below governs.
 
-## Expectation
+## Target
+
+The document that the key reads.
+
+## Key
 
 `opened` over the document this probe names.

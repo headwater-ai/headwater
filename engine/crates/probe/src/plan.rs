@@ -46,8 +46,13 @@ pub const KIND: &str = "probe";
 /// is a predicate over.
 pub const EXAMINES: &str = "examines";
 
-/// The section a probe declares its expectation in, which the `probe` kind
-/// already requires.
+/// The section a probe declares its key in, which the `probe` kind already
+/// requires beside `Task` and `Target` (HW-DR-0111, "One probe shape").
+///
+/// It was `Expectation` until #1774, and that heading is not read as a second
+/// name: one heading is the rule, so a probe left on the old one declares no
+/// set and an `answered` probe of that shape refuses
+/// [`Refusal::AnswersUndeclared`] rather than passing.
 ///
 /// # The second conditional facet did not become a facet
 ///
@@ -65,7 +70,7 @@ pub const EXAMINES: &str = "examines";
 /// section carries a per-document closed set where a facet cannot**, and it
 /// costs the four other forms nothing. Whether `oracle` should follow it is a
 /// question for the record rather than for this crate.
-pub const EXPECTATION_SECTION: &str = "Expectation";
+pub const KEY_SECTION: &str = "Key";
 /// The key that names the closed answer set inside it.
 pub const ANSWERS: &str = "answers";
 /// The key that names, inside the same block, the values of that set which
@@ -177,7 +182,7 @@ pub struct Selected {
     /// other form.
     pub oracle: Option<String>,
     /// The closed set an `answered` expectation is graded against, sorted, and
-    /// empty for every other form. See [`EXPECTATION_SECTION`].
+    /// empty for every other form. See [`KEY_SECTION`].
     pub answers: Vec<String>,
     /// The values of `answers` that satisfy an `answered` expectation, sorted,
     /// and empty for every other form. A proper subset of `answers`, which the
@@ -452,7 +457,7 @@ impl std::fmt::Display for Refusal {
             Refusal::AnswersUndeclared { probe } => write!(
                 f,
                 "{probe} expects `answered` and declares no `{ANSWERS}` block under `## \
-                 {EXPECTATION_SECTION}`. The form is satisfied by one value of a closed set the \
+                 {KEY_SECTION}`. The form is satisfied by one value of a closed set the \
                  probe declares, so a probe without one is satisfied by every string a session \
                  returns"
             ),
@@ -1387,11 +1392,11 @@ pub struct ReadSet {
     pub anchors: Vec<String>,
 }
 
-/// A list a probe declares under its expectation, read from the parse the
+/// A list a probe declares under its key, read from the parse the
 /// census took: the closed answer set for [`ANSWERS`], and the values of it that
 /// satisfy for [`EXPECTED`].
 ///
-/// The first fenced block under `## [EXPECTATION_SECTION]`, loaded as YAML, and
+/// The first fenced block under `## [KEY_SECTION]`, loaded as YAML, and
 /// the `key` of it. Anything that does not read that way declares
 /// nothing, and the caller refuses an `answered` probe that declares nothing —
 /// so a malformed block and an absent one reach one refusal rather than one
@@ -1406,7 +1411,7 @@ pub fn declared_answers(document: &headwater_doc::Document, key: &str) -> Vec<St
     let mut under = false;
     for block in &document.body.blocks {
         match block.kind {
-            BlockKind::Heading(2) => under = block.text().trim() == EXPECTATION_SECTION,
+            BlockKind::Heading(2) => under = block.text().trim() == KEY_SECTION,
             BlockKind::Heading(_) => under = false,
             BlockKind::Code if under => {
                 let Ok(loaded) = headwater_yaml::load(&block.text()) else {
@@ -1543,6 +1548,46 @@ mod tests {
             "the oracle refusal reads this list, so a name in it is the arm that passes"
         );
         assert!(!headwater_check::RULES.contains(&"section.required.absent"));
+    }
+
+    /// The closed set is read under `## Key` and under no other heading, so a
+    /// probe left on the heading it had before #1774 declares nothing and
+    /// reaches [`Refusal::AnswersUndeclared`] rather than a silent pass.
+    #[test]
+    fn the_closed_set_is_read_under_key_and_never_under_the_old_heading() {
+        let block = "```yaml\nanswers: [a, b, c]\nexpected: [b]\n```\n";
+        let under = |heading: &str| {
+            let source = format!(
+                "---\nid: P\n---\n\n## Task\n\nSay which.\n\n## Target\n\nOne link.\n\n\
+                 ## {heading}\n\n{block}"
+            );
+            let document = headwater_doc::parse(&source).expect("the fixture parses");
+            (
+                declared_answers(&document, ANSWERS),
+                declared_answers(&document, EXPECTED),
+            )
+        };
+
+        assert_eq!(
+            under("Key"),
+            (vec!["a".into(), "b".into(), "c".into()], vec!["b".into()])
+        );
+        for old in [
+            "Expectation",
+            "Target",
+            "Task",
+            "Keys",
+            "key",
+            "KEY",
+            "The Key",
+        ] {
+            assert_eq!(
+                under(old),
+                (Vec::new(), Vec::new()),
+                "a block under `## {old}` declared answers"
+            );
+        }
+        assert_eq!(KEY_SECTION, "Key");
     }
 
     #[test]

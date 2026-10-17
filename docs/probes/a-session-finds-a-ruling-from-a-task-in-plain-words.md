@@ -28,7 +28,11 @@ relations:
 
 Two branches of this repository each add one page. Each branch also writes a new total into a shared file. Git merges the two branches with no conflict, and the total on the main branch is then wrong. Find the document of this repository that rules on how such a total is kept, and give its path.
 
-## Expectation
+## Target
+
+The session must open [the ruling](../decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md). The key also accepts the evaluation that the ruling cites.
+
+## Key
 
 `opened` over `HW-DR-0049` or over `HW-EVAL-why-corpus-counts-are-derived`. Either one satisfies the predicate. The decision is the ruling, and the evaluation is the measurement that the ruling cites.
 

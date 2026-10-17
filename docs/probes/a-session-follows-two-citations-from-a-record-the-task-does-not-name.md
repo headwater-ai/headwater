@@ -27,7 +27,11 @@ A decision record of this repository that is in force today lets the recorded te
 
 Answer on one line with the identifier of that record, in the form `HW-DR-NNNN`, and with nothing else. Your whole final message is that identifier.
 
-## Expectation
+## Target
+
+The answer is [the record in force](../decisions/0097-a-figure-on-a-hand-built-page-is-measured-when-the-site-is-published-and-the-committed-page-carries-none.md), at the end of the chain that the key describes.
+
+## Key
 
 The terminal answer is `HW-DR-0097`, the one expected value of the closed set below.
 

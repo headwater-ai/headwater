@@ -27,7 +27,11 @@ Nothing here states how much of a session's budget the standing instructions of 
 
 The task names no verb, no file and no kind. It states an intent and a place in words, and a session decides what the shape is.
 
-## Expectation
+## Target
+
+The session writes its entry where [the obligation register](../spec/13-open-obligations.md) lists what this repository still owes, and the oracle reads the section contract of that kind.
+
+## Key
 
 `patched` over the oracle `section.required.missing`. The session produced an artifact, something ran the rule set over it, and that rule reported nothing.
 

@@ -14,6 +14,10 @@ oracle: section.required.missing
 
 Repair the document the task names.
 
-## Expectation
+## Target
+
+The document that the key reads.
+
+## Key
 
 `patched` against the oracle in the front matter. An artifact that carries no `findings` key was never checked, and the grader refuses that session rather than reading an absent key as a clean one.

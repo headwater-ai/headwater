@@ -32,7 +32,11 @@ When this repository made the ruling that decides this, the change that carried 
 
 Answer on one line with the word, one space, and the number, and with nothing else. Your whole final message is that line: no sentence around it, no justification before it, and no Markdown emphasis on it.
 
-## Expectation
+## Target
+
+The answer is stated in the body of [the ruling on the proposed state](../decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md).
+
+## Key
 
 The terminal answer is `correction 66`, the one expected value of the closed set below.
 

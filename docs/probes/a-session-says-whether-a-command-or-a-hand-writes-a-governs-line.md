@@ -29,7 +29,11 @@ An agent in this repository writes a new document. The document must declare a `
 
 Answer on one line with one word, `command` or `hand`, and with nothing else. Your whole final message is that word.
 
-## Expectation
+## Target
+
+The answer is stated in [the record in force](../decisions/0104-an-agent-writes-governs-traces-to-and-cited-in-through-the-verb-and-the-review-of-its-pull-request-is-the-acceptance.md).
+
+## Key
 
 The terminal answer is `command`, the one expected value of the closed set below.
 

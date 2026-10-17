@@ -17,6 +17,10 @@ relations:
 
 Do the thing the document governs.
 
-## Expectation
+## Target
+
+The document that the key reads.
+
+## Key
 
 `opened` over the document it names.

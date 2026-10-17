@@ -30,7 +30,11 @@ In this repository, which event makes a document accepted? Answer `stamp` if it 
 
 Answer with one of those two words and with nothing else. Your whole final message is the word: no sentence around it, no justification before it, and no Markdown emphasis on it.
 
-## Expectation
+## Target
+
+The answer is stated in [the ruling on acceptance](../decisions/0034-q34-whether-acceptance-means-merged-to-main-and-what-an-agent-may-write-before-that.md).
+
+## Key
 
 The terminal answer is `merge`, the one expected value of the closed set below.
 

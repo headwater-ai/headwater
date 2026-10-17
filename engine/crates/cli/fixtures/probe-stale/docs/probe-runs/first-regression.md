@@ -29,7 +29,7 @@ served_version: a-model-20260701
 tree: sha256:fixture-tree
 lock: sha256:fixture
 selection: sha256:eb7ca2fb2297d11f1d0b84a9fa56f1b09986076f09136e8b5dd6c38e1583c9ba
-read_set: sha256:209ccb1b85fc4e2cd81e52611ac85a4c4900ad08af1d8ef1c9a6ed845e3318d9
+read_set: sha256:821d34b39db0c56bde848a123aadd59043fba66f246e2dd1b35de7161110340c
 seed: 0
 harness: 0.1.0
 tier: regression

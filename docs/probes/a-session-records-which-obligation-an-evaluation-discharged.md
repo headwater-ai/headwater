@@ -25,7 +25,11 @@ relations:
 
 The evaluation at `docs/evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md` is the measurement that discharged the obligation HW-OBL-0104. Record that fact in the front matter of the evaluation, with the relation that this repository declares for it.
 
-## Expectation
+## Target
+
+The oracle passes only when [the obligation](../obligations/0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md) at the other end of the relation carries the inverse half.
+
+## Key
 
 `patched` over the oracle `relation.reciprocity.missing`. The session produced an artifact, something ran the rule set over it, and that rule reported nothing over it.
 

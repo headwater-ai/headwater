@@ -21,7 +21,7 @@ served_version: a-model-20260701
 tree: sha256:fixture-tree
 lock: sha256:fixture
 selection: sha256:fixture-selection
-read_set: sha256:d7b774f43bd79e80eddc5ef245e810a57e399b39afb4e8016e158fdc2f0d3215
+read_set: sha256:19500706cc3600bf0e57d880ba5c297009770751c81463fce1ee6cd925d6336b
 seed: 0
 harness: 0.1.0
 tier: regression
@@ -41,7 +41,7 @@ cost_cents: 41
       result: sha256:a0
     - tool: read
       argument: /home/runner/repo/corpus/probes/0002-answered.md
-      result: sha256:fc8ef4987672f249a06adb2faaa8f0fcf583aca537858a50ef561cea0d3f65c8
+      result: sha256:4ad8a68a9b14018c085d8cb9a67113d44e15eb624e8d383d7fc76fb5c3e6bc1b
   produced: []
   answer: null
 - probe: PROBE-FIX-answered
@@ -49,7 +49,7 @@ cost_cents: 41
   calls:
     - tool: read
       argument: corpus/probes/0001-opened.md
-      result: sha256:d096faf5e06e2dc870c3bf0fdb47fa2dd9c8c7883fd1f81d8fabaff7b36ccd9a
+      result: sha256:28bf168394e0844222a7cb698bb3813039432370f74c7bd03f295c6b11c6cdf4
   produced: []
   answer: "no"
 - probe: PROBE-FIX-not-opened
@@ -57,7 +57,7 @@ cost_cents: 41
   calls:
     - tool: read
       argument: corpus/probes/0002-answered.md
-      result: sha256:fc8ef4987672f249a06adb2faaa8f0fcf583aca537858a50ef561cea0d3f65c8
+      result: sha256:4ad8a68a9b14018c085d8cb9a67113d44e15eb624e8d383d7fc76fb5c3e6bc1b
   produced: []
   answer: null
 - probe: PROBE-FIX-cited

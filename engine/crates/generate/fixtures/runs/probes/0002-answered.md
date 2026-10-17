@@ -14,7 +14,11 @@ oracle: "none"
 
 Say whether the cache may change a verdict. Answer `yes` or `no`.
 
-## Expectation
+## Target
+
+The document that the key reads.
+
+## Key
 
 `answered`, over the two values this block declares. A probe that named no set would be satisfied by every string a session returned.
 

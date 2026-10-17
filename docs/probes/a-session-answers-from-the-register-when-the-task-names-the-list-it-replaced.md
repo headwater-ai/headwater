@@ -27,7 +27,11 @@ relations:
 
 This project keeps its open questions, closed and redirected. Say what it decided on the open question of where scent lives, and name the record that decided it.
 
-## Expectation
+## Target
+
+The session answers from [the decision register](../spec/09-decisions.md). The key reads a different document, the superseded list that the session must not open.
+
+## Key
 
 `not_opened` over `HW-REG-open-questions`. The session answered and never opened the superseded list of open questions.
 

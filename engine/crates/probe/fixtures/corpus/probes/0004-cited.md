@@ -17,6 +17,10 @@ relations:
 
 Write the artifact the task asks for, and cite what governs it.
 
-## Expectation
+## Target
+
+The document that the key reads.
+
+## Key
 
 `cited` over the identifiers it names. The recorder writes every identifier it finds in the artifact and never the ones this probe declares, so the selecting and the comparing are both the grader's.
