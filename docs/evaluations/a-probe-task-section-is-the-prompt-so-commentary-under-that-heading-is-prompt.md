@@ -49,7 +49,7 @@ The second set of six numbers is the set the session of 2026-09-17 quoted back i
 
 The commentary did more than move a rank. It told the session that the text was a router input under measurement. The session of 2026-09-16 made no tool call and asked the user which document was meant. The session of 2026-09-17 read the commentary as the question. It ran `headwater route` on the task text, then wrote an accurate account of how the router resolves a purpose to a shelf. Neither session opened `HW-OBL-0107`, and the probe expects `opened` over it. The 2026-09-17 answer was a good answer to the paragraph that leaked, and the paragraph was addressed to a human reader.
 
-The remedy is the paragraph's removal from `## Task` to `## Expectation`, where it now stands.
+The remedy is the paragraph's removal from `## Task` to `## Expectation`. It stands there now, and #1774 renamed that section `## Key`.
 
 ## The adjudication probe: the target was the index rather than the record it points at
 
@@ -61,7 +61,7 @@ Four sessions are recorded against this probe. Three of them, on 2026-09-09, 202
 
 The remedy is `examines: [HW-REG-decisions, HW-DR-0008]`. `engine/crates/probe/src/grade.rs` satisfies `opened` where any recorded call names any examined document. So the widened edge grades the shorter route as a pass, and it still fails the session that opened neither.
 
-This probe carried a leaked commentary paragraph too, with a hand-counted figure of 136 citations inside it. The reading today is 133. That paragraph is now under `## Expectation`, and it states the command rather than the number.
+This probe carried a leaked commentary paragraph too, with a hand-counted figure of 136 citations inside it. The reading today is 133. That paragraph is now under `## Key`, which was `## Expectation` until #1774, and it states the command rather than the number.
 
 ## The tombstone probe: two sessions reached the answer and the recorder discarded it
 

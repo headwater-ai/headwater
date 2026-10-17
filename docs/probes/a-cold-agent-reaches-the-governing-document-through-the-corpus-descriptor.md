@@ -29,7 +29,11 @@ Add a rule to this engine that reports a document whose summary is empty. Say wh
 
 The session opens with `.headwater/corpus.json` and with no other pointer into the corpus. That is the state [Q14](../spec/09-decisions.md#q14--discovery-surface) claims the descriptor serves: a cold agent that has read one generated file and nothing else.
 
-## Expectation
+## Target
+
+The session must open [the check layer](../spec/12-check-layer.md), which states what a rule is, where it is declared and what makes it an error.
+
+## Key
 
 `opened` over `HW-SPEC-check-layer`. The transcript shows that the session read the document that states what a rule is, where it is declared and what makes it an error rather than advisory.
 

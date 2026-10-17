@@ -29,7 +29,11 @@ Say what this project decided about where scent lives, and name the record that 
 
 The task names no verb and no file. It asks for one settled answer, and this corpus states that answer in two places.
 
-## Expectation
+## Target
+
+The session answers from [the decision register](../spec/09-decisions.md). The key reads a different document, the superseded list that the session must not open.
+
+## Key
 
 `not_opened` over `HW-REG-open-questions`. The session answered and never opened the document that the decision register superseded.
 

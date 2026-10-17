@@ -85,7 +85,7 @@ kinds:
     is_a: governed_document
     identifier: {scheme: probe_id}
     facets: {require: [probe_category, expectation, oracle]}
-    sections: {require: [Task, Expectation]}
+    sections: {require: [Task, Target, Key]}
 
   probe_transcript:
     is_a: governed_document

@@ -17,6 +17,10 @@ relations:
 
 Do the thing, and do it without opening the document this probe names.
 
-## Expectation
+## Target
+
+The document that the key reads.
+
+## Key
 
 `not_opened` over the document it names. A session that recorded no tool call at all satisfies this predicate by doing nothing, so the grader refuses that session rather than counting it.

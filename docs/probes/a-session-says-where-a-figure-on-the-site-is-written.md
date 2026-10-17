@@ -27,7 +27,11 @@ A hand-built page of the website of this project shows a figure, such as the num
 
 Answer on one line with one word, `committed` or `published`, and with nothing else. Your whole final message is that word.
 
-## Expectation
+## Target
+
+The answer is stated in [the record in force](../decisions/0097-a-figure-on-a-hand-built-page-is-measured-when-the-site-is-published-and-the-committed-page-carries-none.md), which supersedes the record that a search by name reaches first.
+
+## Key
 
 The terminal answer is `published`, the one expected value of the closed set below.
 

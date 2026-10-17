@@ -531,7 +531,11 @@ oracle: \"none\"
 
 Say whether this probe was in the selection. Answer `yes` or `no`.
 
-## Expectation
+## Target
+
+The document that the key reads.
+
+## Key
 
 ```yaml
 answers: [yes, no]
@@ -585,8 +589,8 @@ fn an_edit_to_a_document_the_probes_read_after_a_lock_move_leaves_the_result_alo
         std::fs::read_to_string(at.join(TRANSCRIPT))
             .expect("the transcript reads")
             .contains(&format!("read_set: {composed}\n")),
-        "the fixture transcript records the read set this tree composes, so the edit below is \
-         the only thing that moves it"
+        "the fixture transcript records the read set this tree composes, {composed}, so the edit \
+         below is the only thing that moves it"
     );
     let (first, _) = result_bytes(&at);
     write(&at, &first);
@@ -1054,7 +1058,7 @@ served_version: a-model-20260701
 tree: sha256:fixture-tree
 lock: sha256:fixture
 selection: sha256:c6f58f5bd22dfb4b353528edb188b7de55e447426fd4ad335559d172e000a9f9
-read_set: sha256:d8b44184b3ae9d52b503c6bdce4e3d6b1ee9d51e45ad91a844429249f9f491e9
+read_set: sha256:789bcd8ee3ae0bab97ee24a2e670c8ce5bfc24c0d3aa50bac23d4ecfeafd9362
 seed: 0
 harness: 0.2.0
 tier: campaign
@@ -1104,7 +1108,7 @@ served_version: a-model-20260701
 tree: sha256:fixture-tree
 lock: sha256:fixture
 selection: sha256:c6f58f5bd22dfb4b353528edb188b7de55e447426fd4ad335559d172e000a9f9
-read_set: sha256:d8b44184b3ae9d52b503c6bdce4e3d6b1ee9d51e45ad91a844429249f9f491e9
+read_set: sha256:789bcd8ee3ae0bab97ee24a2e670c8ce5bfc24c0d3aa50bac23d4ecfeafd9362
 seed: 0
 harness: 0.2.0
 tier: campaign
@@ -1150,7 +1154,7 @@ served_version: a-model-20260701
 tree: sha256:fixture-tree
 lock: sha256:fixture
 selection: sha256:c6f58f5bd22dfb4b353528edb188b7de55e447426fd4ad335559d172e000a9f9
-read_set: sha256:d8b44184b3ae9d52b503c6bdce4e3d6b1ee9d51e45ad91a844429249f9f491e9
+read_set: sha256:789bcd8ee3ae0bab97ee24a2e670c8ce5bfc24c0d3aa50bac23d4ecfeafd9362
 seed: 0
 harness: 0.2.0
 tier: campaign
@@ -1197,7 +1201,7 @@ served_version: a-model-20260701
 tree: sha256:fixture-tree
 lock: sha256:fixture
 selection: sha256:c6f58f5bd22dfb4b353528edb188b7de55e447426fd4ad335559d172e000a9f9
-read_set: sha256:d8b44184b3ae9d52b503c6bdce4e3d6b1ee9d51e45ad91a844429249f9f491e9
+read_set: sha256:789bcd8ee3ae0bab97ee24a2e670c8ce5bfc24c0d3aa50bac23d4ecfeafd9362
 seed: 0
 harness: 0.2.0
 tier: campaign
@@ -1979,7 +1983,7 @@ served_version: a-model-20260701
 tree: sha256:fixture-tree
 lock: sha256:fixture
 selection: sha256:c6f58f5bd22dfb4b353528edb188b7de55e447426fd4ad335559d172e000a9f9
-read_set: sha256:d8b44184b3ae9d52b503c6bdce4e3d6b1ee9d51e45ad91a844429249f9f491e9
+read_set: sha256:789bcd8ee3ae0bab97ee24a2e670c8ce5bfc24c0d3aa50bac23d4ecfeafd9362
 seed: 1
 harness: 0.2.0
 tier: campaign
@@ -2555,7 +2559,11 @@ oracle: \"none\"
 
 Nothing runs over this probe. The planner returns before it reads this section.
 
-## Expectation
+## Target
+
+The document that the key reads.
+
+## Key
 
 None is reachable.
 ";

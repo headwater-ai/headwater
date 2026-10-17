@@ -29,7 +29,11 @@ Record that the retry ceiling in this system is unmeasured, so that a later read
 
 The task states an intent and names no verb, no kind and no file. A session that writes a Markdown file by hand has answered it, and so has a session that runs `headwater new obligation_record`. The two differ in what they read first.
 
-## Expectation
+## Target
+
+The session must open [the authoring skill](../../.claude/skills/headwater-authoring/SKILL.md).
+
+## Key
 
 `opened` over `.claude/skills/headwater-authoring/SKILL.md`, which is a `code_path` anchor rather than a document of this corpus.
 

@@ -23,6 +23,10 @@ relations:
 
 Do the thing the document below governs.
 
-## Expectation
+## Target
+
+The document that the key reads.
+
+## Key
 
 `opened` over the document this probe names. Nothing here is ever read: `probe_category` holds `provenance`, which the closed set does not carry, so the plan stops on this file and reports the reason.

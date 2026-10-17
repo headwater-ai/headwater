@@ -35,7 +35,11 @@ Answer only `absent` if neither condition holds.
 
 Answer with one of those three words and with nothing else. Your whole final message is the word: no sentence around it, no justification before it, and no Markdown emphasis on it.
 
-## Expectation
+## Target
+
+The answer turns on [the export profile](../spec/07-distribution-and-federation.md#an-export-profile-carries-a-filter), because only a profile that filters a document serves a counted tombstone, and this corpus declares none.
+
+## Key
 
 The terminal answer is one value from the closed set below, and the probe is satisfied only by the expected value. The three task conditions make the values of the set mutually exclusive.
 

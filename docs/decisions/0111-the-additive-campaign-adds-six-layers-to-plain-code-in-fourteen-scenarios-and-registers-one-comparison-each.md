@@ -79,7 +79,7 @@ The answer-once block answers each layer once. The interaction block measures a 
 
 ### One probe shape
 
-Every probe of the campaign has one shape. It has one task in plain words, one target document, and one key. The grader checks the key from the recorded transcript, with no model as a judge. The issue says "from tool calls alone". An `answered` key reads the final answer of the session and not a call, so this record reads the clause as the recorded transcript. The grader checks all five forms in this way, so each form is admitted: `opened`, `not_opened`, `cited`, `patched` and `answered`. Each probe document states its task, its target and its key under three headings of the same names. A later slice of #1774 makes the documents conform.
+Every probe of the campaign has one shape. It has one task in plain words, one target document, and one key. The grader checks the key from the recorded transcript, with no model as a judge. The issue says "from tool calls alone". An `answered` key reads the final answer of the session and not a call, so this record reads the clause as the recorded transcript. The grader checks all five forms in this way, so each form is admitted: `opened`, `not_opened`, `cited`, `patched` and `answered`. Each probe document states its task, its target and its key under three headings of the same names. The second slice of #1774 made the documents conform.
 
 ### The common probe set, and its split
 
@@ -101,8 +101,8 @@ Each set holds two recorded probes and two that no campaign has run. No probe in
 The other probes on the shelf are left out:
 
 - **At the ceiling.** Eight probes sat at 30 of 30 in the `present` arm. They are the tombstone, the citation, the unmeasured claim and the accepted event. They are also the status in a pull request, the register, the figure on the site and the adjudication. No scenario above its base can show a gain on a probe at the ceiling. #1720 added a harder probe beside four of them, and three of those four are in the set.
-- **Near the ceiling.** `a-session-finds-a-ruling-from-a-task-in-plain-words` was 113 of 118. A gain over its base could not pass five points.
-- **A second document in the key.** `a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced` keys on a document that the session must not open, and that document is not its target. So it has two documents and not one.
+- **Near the ceiling.** `a-session-finds-a-ruling-from-a-task-in-plain-words` was 113 of 118. A gain over its base could not pass five points. Its key also accepts two documents, the ruling and the evaluation that the ruling cites.
+- **A second document in the key.** `a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced` keys on a document that the session must not open, and that document is not its target. So it has two documents and not one. The adjudication probe, which is out for the ceiling, also keys on two documents: the decision register and the record that its Q8 row links.
 - **A target that some scenarios cannot hold.** `the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document` opens a file under `.claude/`, which the eight scenarios without the skills layer do not hold. Its rate there is zero by construction.
 - **Superseded.** `a-session-says-how-a-governs-line-reaches-a-document` is the record of the 2026-10-03 campaign, and its successor is in the set.
 
@@ -145,6 +145,6 @@ The campaign runs on `claude-sonnet-5`, the model of the 2026-10-03 records, and
 
 A file added to the harness later is in no layer until somebody declares it, so plain code would hold it. A test of the engine walks `.claude/`, `.agents/`, `.codex/`, `.githooks/` and `.github/`, and it fails on a file that no layer holds. In `.github/`, it skips only the five entries that serve GitHub.
 
-This record does not run anything. The probe documents still state their task and key under the headings `Task` and `Expectation`, and the next slice of #1774 restates them. The leak check over the text of each scenario and the one ceiling are later slices of #1774. So is the count of server calls in each generated result.
+This record does not run anything. The probe documents state their task, target and key under the headings `Task`, `Target` and `Key`, and the `probe` kind requires all three. The engine reads the closed set of an `answered` key under `Key` and under no other heading. A test of the engine holds each probe to one link under `Target`. For `opened` and `cited`, that link is one of the documents that the probe examines. The leak check over the text of each scenario and the one ceiling are later slices of #1774. So is the count of server calls in each generated result.
 
 A probe at the ceiling of 2026-10-03 stays out of the set even where it sits lower in plain code. Its gain from the bottom is real and unmeasured here. The set opens again if a held-out probe sits at the ceiling in the base of a scenario. That probe can then show no gain there.

@@ -27,7 +27,11 @@ relations:
 
 Decide which shelf a new document belongs on, and where its identifier comes from.
 
-## Expectation
+## Target
+
+The session must open [the document that the router ranks first](../obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md) for the task text.
+
+## Key
 
 `opened` over `HW-OBL-0107`. The session read the document that `headwater route` ranks first for the task text above.
 

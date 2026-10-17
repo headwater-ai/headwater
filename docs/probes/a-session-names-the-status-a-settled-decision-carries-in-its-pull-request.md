@@ -30,7 +30,11 @@ Which value does the `status` field in the front matter of that document carry i
 
 Answer on one line with the value, one space, and the identifier, and with nothing else. Your whole final message is that line: no sentence around it, no justification before it, and no Markdown emphasis on it.
 
-## Expectation
+## Target
+
+The answer is stated in [the ruling on the proposed state](../decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md).
+
+## Key
 
 The terminal answer is `current HW-DR-0052`, the one expected value of the closed set below.
 

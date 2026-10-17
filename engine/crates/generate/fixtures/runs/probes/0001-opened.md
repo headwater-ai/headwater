@@ -17,6 +17,10 @@ relations:
 
 Read the document this probe names, and say what it governs.
 
-## Expectation
+## Target
+
+The document that the key reads.
+
+## Key
 
 `opened` over the document it names. The transcript runs this probe three times, and the three sessions are what separate a verdict from a missing one.

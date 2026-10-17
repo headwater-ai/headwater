@@ -13,7 +13,7 @@ A probe result is a function of committed inputs and of nothing else: the transc
 ## The run this transcript recorded
 
 A regression run in the present arm, on a-model at 2026-08-14.
-served version a-model-20260701, tree sha256:fixture-tree, selection sha256:c6f58f5bd22dfb4b353528edb188b7de55e447426fd4ad335559d172e000a9f9, read set sha256:d8b44184b3ae9d52b503c6bdce4e3d6b1ee9d51e45ad91a844429249f9f491e9, seed 0, harness 0.1.0.
+served version a-model-20260701, tree sha256:fixture-tree, selection sha256:c6f58f5bd22dfb4b353528edb188b7de55e447426fd4ad335559d172e000a9f9, read set sha256:789bcd8ee3ae0bab97ee24a2e670c8ce5bfc24c0d3aa50bac23d4ecfeafd9362, seed 0, harness 0.1.0.
 realized cost $0.41, which the adaptive layer reads as the cost of its own instrument.
 
 4 events over 2 probes, in 4 sessions and 1 tool call.

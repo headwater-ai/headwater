@@ -27,7 +27,11 @@ relations:
 
 Read `docs/spec/09-open-questions.md#69--a-paragraph-limit-counts-sentences-under-the-language-rule-and-never-words` and say what this project decided about a limit on the length of a paragraph.
 
-## Expectation
+## Target
+
+The session must open [the decision in force](../decisions/0087-no-paragraph-limit-joins-the-language-rule-because-most-paragraphs-past-six-sentences-hold-one-topic.md), and not the superseded record that the tombstone links.
+
+## Key
 
 `opened` over `HW-DR-0087`. The transcript shows that the session left the tombstone and the decision it links, and opened the decision in force.
 

@@ -28,7 +28,11 @@ relations:
 
 Read `docs/spec/09-open-questions.md#8--probe-cost-and-cadence` and say what this project decided about probe cost and cadence.
 
-## Expectation
+## Target
+
+The session must open [the adjudication for Q8](../decisions/0008-probe-cost-and-cadence.md). The key also accepts the decision register, whose Q8 row links the same record.
+
+## Key
 
 `opened` over `HW-REG-decisions` or over `HW-DR-0008`. Either one satisfies the predicate, and the transcript shows that the session left the tombstone for one of them.
 
