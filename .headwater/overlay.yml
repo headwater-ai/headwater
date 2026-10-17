@@ -197,8 +197,12 @@ add:
     identifier: {scheme: probe_id}
     facets:
       require: [probe_category, expectation, oracle, title]
+    # One probe shape (HW-DR-0111, #1774): the prompt under Task, the one
+    # document that holds the answer under Target, and the key under Key.
+    # `headwater-probe` reads the closed answer set under Key and no other
+    # heading.
     sections:
-      require: [Task, Expectation]
+      require: [Task, Target, Key]
 
   # `title` is required for the reason every other shelf of this corpus requires
   # it: the facet in the `name` role is what a generated index, the navigation

@@ -66,7 +66,7 @@ struct Probe {
     path: String,
     id: Option<String>,
     expectation: Option<String>,
-    /// The closed set and the expected values under `## Expectation`, sorted.
+    /// The closed set and the expected values under `## Key`, sorted.
     answers: Vec<String>,
     expected: Vec<String>,
 }
@@ -275,6 +275,126 @@ fn every_answered_probe_on_the_shelf_expects_a_proper_part_of_its_set() {
         "{}.\nThe expected values are the answer key, and a key that holds every value of the set \
          passes every answer a recorder can extract.",
         bad.join("; ")
+    );
+}
+
+/// The three headings of a probe, in order (HW-DR-0111, "One probe shape").
+const SHAPE: [&str; 3] = ["Task", "Target", "Key"];
+
+/// The level-two headings of a document, in order.
+fn headings_of(document: &headwater_doc::Document) -> Vec<String> {
+    use headwater_doc::body::BlockKind;
+    document
+        .body
+        .blocks
+        .iter()
+        .filter(|block| matches!(block.kind, BlockKind::Heading(2)))
+        .map(|block| block.text().trim().to_string())
+        .collect()
+}
+
+/// The text under one level-two heading, up to the next one.
+fn section_of<'a>(source: &'a str, heading: &str) -> &'a str {
+    let open = format!("\n## {heading}\n");
+    let Some(start) = source.find(&open) else {
+        return "";
+    };
+    let rest = &source[start + open.len()..];
+    let end = rest.find("\n## ").unwrap_or(rest.len());
+    &rest[..end]
+}
+
+/// The destination of every inline Markdown link in a text, as written.
+fn links_in(text: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut rest = text;
+    while let Some(at) = rest.find("](") {
+        let after = &rest[at + 2..];
+        let end = after.find(')').unwrap_or(after.len());
+        out.push(after[..end].to_string());
+        rest = &after[end..];
+    }
+    out
+}
+
+/// Every probe on the shelf states one task, one target and one key (#1774,
+/// clause 3).
+///
+/// The headings are exactly `Task`, `Target` and `Key`, in that order, so a
+/// probe left on the old `Expectation` heading fails here as well as in the
+/// grader. The `Target` section holds exactly one link, and the link resolves
+/// to a file of this repository. For the forms that are a predicate over what
+/// a session opened or cited, the target is one of the probe's `examines`
+/// entries, so the target and the key read the same document.
+///
+/// `not_opened` is left out of that last clause on purpose: its target is the
+/// document a session answers from, and its `examines` entry is the document
+/// it must not open. `answered` and `patched` name no `examines` entry.
+#[test]
+fn every_probe_on_the_shelf_states_one_task_one_target_and_one_key() {
+    let root = repository_root();
+    let shelf = root.join(SHELF);
+    let mut bad = Vec::new();
+    let mut seen = 0;
+    for probe in probes() {
+        seen += 1;
+        let (source, document) = front_matter(&root.join(&probe.path));
+        let headings = headings_of(&document);
+        if headings != SHAPE {
+            bad.push(format!(
+                "{} has the headings {headings:?}, not {SHAPE:?}",
+                probe.path
+            ));
+            continue;
+        }
+        let links = links_in(section_of(&source, "Target"));
+        let [link] = links.as_slice() else {
+            bad.push(format!(
+                "{} holds {} links under `## Target`, not one: {links:?}",
+                probe.path,
+                links.len()
+            ));
+            continue;
+        };
+        let file = link.split('#').next().unwrap_or_default();
+        let Ok(target) = shelf.join(file).canonicalize() else {
+            bad.push(format!(
+                "{} targets `{link}`, which is no file",
+                probe.path
+            ));
+            continue;
+        };
+        let names_documents = probe.expectation.as_deref() == Some(Expectation::Opened.name())
+            || probe.expectation.as_deref() == Some(Expectation::Cited.name());
+        if !names_documents {
+            continue;
+        }
+        let examines = examines_of(&document);
+        let relative = target
+            .strip_prefix(&root)
+            .map(|it| it.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        let id = std::fs::read_to_string(&target)
+            .ok()
+            .and_then(|text| headwater_doc::parse(&text).ok())
+            .and_then(|it| scalar(&it, "id"));
+        let named = examines
+            .iter()
+            .any(|entry| *entry == relative || Some(entry) == id.as_ref());
+        if !named {
+            bad.push(format!(
+                "{} targets `{link}` (id {id:?}), which is none of its `examines` entries \
+                 {examines:?}",
+                probe.path
+            ));
+        }
+    }
+    assert!(seen > 0, "the shelf held no probe");
+    assert!(
+        bad.is_empty(),
+        "{} of {seen} probes do not state one task, one target and one key:\n{}",
+        bad.len(),
+        bad.join("\n")
     );
 }
 
