@@ -28,7 +28,7 @@ The grouped command validates taxonomy sources, resolves the lock, measures sche
 
 ## Description
 
-`validate` checks taxonomy sources without writing. `resolve` writes the validated `.headwater/taxonomy.lock`, or checks that the committed lock is current with `--check`. `audit` reports schema measurements and remains non-gating. `audit --record` also appends this run's adoption reading to `.headwater/adoption.jsonl`, which is the one write this word performs.
+`validate` checks taxonomy sources without writing. `resolve` writes the validated `.headwater/taxonomy.lock`, or checks that the committed lock is current with `--check`. `resolve` reads the resolved `projections` as `headwater generate` reads them, before it writes or compares a lock (#1758). Each projection that `generate` refuses is a line on standard error that names the source that wrote it. The run exits 1 and leaves the lock unchanged. `validate` reports the same lines and exits 1. `audit` reports schema measurements and remains non-gating. `audit --record` also appends this run's adoption reading to `.headwater/adoption.jsonl`, which is the one write this word performs.
 
 `audit --json` writes the run as one JSON document on standard output, in place of the report a person reads (#1573). The document holds the subject of the run and the governed scope, and no other reading of the report. A consumer reads the absence of a reading as "not carried", and never as zero. The members are these:
 
