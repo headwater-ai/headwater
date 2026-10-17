@@ -147,6 +147,8 @@ const ASKS: &str = "this corpus asks for engine";
 fn set_engine(at: &Path, range: Option<&str>) {
     let path = at.join(".headwater/taxonomy.yml");
     let text = std::fs::read_to_string(&path).expect("the declaration reads");
+    // A case that wrote a byte order mark leaves it on the first line.
+    let text = text.strip_prefix('\u{feff}').unwrap_or(&text);
     let mut kept: String = text
         .lines()
         .filter(|line| !line.starts_with("engine:"))
