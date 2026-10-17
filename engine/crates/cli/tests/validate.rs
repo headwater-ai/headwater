@@ -682,6 +682,144 @@ fn resolve_refuses_an_outside_root_pattern_that_leaves_the_repository() {
     }
 }
 
+/// A projection that an overlay adds and the generator refuses stops
+/// `taxonomy resolve` before it writes a lock, and the refusal names the
+/// overlay, the value and the generator's reason (#1758). The base package
+/// declares projections of its own, so a refusal that named the base, or every
+/// source, would name a file the author did not edit.
+///
+/// The second arm holds the gate to the extension and not to the presence of
+/// an overlay `projections` block: the one edit between the arms is `.txt` to
+/// `.md`.
+#[test]
+fn resolve_refuses_an_overlay_projection_the_generator_refuses() {
+    let anchor = "output: \"{shelf}/README.md\"";
+    for (label, output, refused) in [
+        ("overlay-projection-refused", "{shelf}/README.txt", true),
+        ("overlay-projection-sound", "{shelf}/README.md", false),
+    ] {
+        let root = Root::new(label);
+        let first = root.run(&["taxonomy", "resolve"]);
+        assert_eq!(first.code, Some(0), "the fixture resolves: {first:?}");
+        let lock = root.at.join(".headwater/taxonomy.lock");
+        let written = std::fs::read(&lock).expect("the fixture resolved once");
+
+        let overlay = root.at.join(".headwater/overlay.yml");
+        let text = std::fs::read_to_string(&overlay).expect("the overlay reads");
+        assert_eq!(
+            text.matches(anchor).count(),
+            1,
+            "the overlay declares the README projection once"
+        );
+        std::fs::write(
+            &overlay,
+            text.replacen(anchor, &format!("output: \"{output}\""), 1),
+        )
+        .expect("the overlay writes");
+
+        let resolved = root.run(&["taxonomy", "resolve"]);
+        let checked = root.run(&["taxonomy", "resolve", "--check"]);
+        // `taxonomy validate` reads the same sources, so it says not valid
+        // where resolve refuses, and never valid over a lock resolve refused.
+        let validated = root.run(&["taxonomy", "validate"]);
+        let flagged = "a projection `headwater generate` refuses: ";
+        if refused {
+            assert_eq!(validated.code, Some(1), "{output}: {validated:?}");
+            assert!(
+                validated
+                    .err
+                    .contains(&format!("{flagged}.headwater/overlay.yml: `projections.")),
+                "validate names the overlay: {validated:?}"
+            );
+        } else {
+            assert_eq!(validated.code, Some(0), "{output}: {validated:?}");
+            assert!(!validated.err.contains(flagged), "{output}: {validated:?}");
+        }
+        if refused {
+            assert_eq!(resolved.code, Some(1), "{output}: {resolved:?}");
+            assert!(
+                resolved.err.contains("headwater generate"),
+                "the refusal says which verb would refuse: {resolved:?}"
+            );
+            assert!(
+                resolved.err.contains("overlay.yml: `projections."),
+                "the refusal names the overlay against the entry: {resolved:?}"
+            );
+            assert!(
+                !resolved.err.contains("headwater-standard"),
+                "the refusal names the overlay and not the base: {resolved:?}"
+            );
+            assert!(resolved.err.contains("README.txt"), "{resolved:?}");
+            assert_eq!(
+                std::fs::read(&lock).expect("the lock is still there"),
+                written,
+                "{output}: no lock is written"
+            );
+            assert_eq!(checked.code, Some(1), "{output}: {checked:?}");
+            assert!(
+                checked.err.contains("overlay.yml: `projections."),
+                "--check names the overlay too: {checked:?}"
+            );
+        } else {
+            assert_eq!(resolved.code, Some(0), "{output}: {resolved:?}");
+            assert_eq!(checked.code, Some(0), "{output}: {checked:?}");
+        }
+    }
+}
+
+/// The other direction of the attribution in the case above: a projection the
+/// base package declares and the generator refuses is named against the base,
+/// and not against the overlay that appends after it (#1758). The base's item
+/// is `projections.0`, so a replay that left the base's items out would name
+/// the overlay here.
+#[test]
+fn resolve_names_the_base_for_a_base_projection_the_generator_refuses() {
+    let root = Root::new("base-projection-refused");
+    let first = root.run(&["taxonomy", "resolve"]);
+    assert_eq!(first.code, Some(0), "the fixture resolves: {first:?}");
+    let lock = root.at.join(".headwater/taxonomy.lock");
+    let written = std::fs::read(&lock).expect("the fixture resolved once");
+
+    let base = root
+        .at
+        .join(".headwater/packages/headwater-standard/taxonomy.yml");
+    let text = std::fs::read_to_string(&base).expect("the base reads");
+    let anchor = "for: [decisions, specifications], output: \"{shelf}/README.md\"";
+    assert_eq!(
+        text.matches(anchor).count(),
+        1,
+        "the base declares its shelf index once"
+    );
+    std::fs::write(
+        &base,
+        text.replacen(
+            anchor,
+            "for: [decisions, specifications], output: \"{shelf}/INDEX.txt\"",
+            1,
+        ),
+    )
+    .expect("the base writes");
+
+    let resolved = root.run(&["taxonomy", "resolve"]);
+    assert_eq!(resolved.code, Some(1), "{resolved:?}");
+    assert!(
+        resolved
+            .err
+            .contains("headwater-standard/taxonomy.yml: `projections.0"),
+        "the refusal names the base against its own entry: {resolved:?}"
+    );
+    assert!(resolved.err.contains("INDEX.txt"), "{resolved:?}");
+    assert!(
+        !resolved.err.contains("overlay.yml"),
+        "the refusal names the base and not the overlay: {resolved:?}"
+    );
+    assert_eq!(
+        std::fs::read(&lock).expect("the lock is still there"),
+        written,
+        "no lock is written"
+    );
+}
+
 /// A taxonomy with no tree beside it is valid, and the verb says it did not
 /// count the scope (#951, owner ruling 2026-09-25: "a taxonomy published as
 /// its own repository has no tree, so `validate` skips the coverage count and

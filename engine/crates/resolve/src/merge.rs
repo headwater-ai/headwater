@@ -337,7 +337,7 @@ pub fn same(a: &Value, b: &Value) -> bool {
 /// `add_to: {core.requires: [{purpose: procedure}]}` writes a list, and
 /// `add_to: {kinds.decision.sections.require: Rationale}` writes one item. The
 /// second is the same sugar a relation endpoint already takes.
-fn items_of(value: &Spanned<Value>) -> Vec<Spanned<Value>> {
+pub(crate) fn items_of(value: &Spanned<Value>) -> Vec<Spanned<Value>> {
     match &value.value {
         Value::Seq(items) => items.clone(),
         _ => vec![value.clone()],
