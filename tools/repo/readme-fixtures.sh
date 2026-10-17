@@ -5129,8 +5129,10 @@ echo "every install route the page documents runs on a schedule, and a failure o
 #   - 14f (#1770): the cargo route installs with `--locked`, so it builds with
 #     the `Cargo.lock` the crate was published with, and a later release or a
 #     yank of a dependency cannot break it. A yank of `zip 5.1.1` broke a fresh
-#     resolve on 2026-10-16. The README fence carries the flag, and every
-#     current page that prints the command prints the same one.
+#     resolve on 2026-10-16. The README fence carries the flag, the install
+#     page's `#cargo` block is that command, and no adopter page prints the
+#     command without the flag anywhere, in a fence or in prose. The pages it
+#     counts are the pages of the tree that print the command.
 #
 # Group 12 holds that `readme-apt.yml` has no schedule of its own and that this
 # workflow calls it.
@@ -5875,7 +5877,30 @@ apt_planted "  an install page whose cargo block lacks --locked is refused" "$ca
     "the install page's cargo block runs \`cargo install headwater-cli\`, and the README's cargo route runs \`$cargo_want\`" \
     "$(cargo_site_judge "$readme" "$scratch/cargo-locked/install.html")"
 
-for cargo_page in site/proof/index.html site/tutorial/index.html docs/tutorials/your-first-governed-corpus.md; do
+# The fence and the `#cargo` block are each one place on their page, so the
+# README and the install page go through the count too: a bare command in the
+# README's prose, or a second `<pre>` under `#cargo`, is refused there.
+cargo_pages='README.md site/install/index.html site/proof/index.html site/tutorial/index.html docs/tutorials/your-first-governed-corpus.md'
+
+# cargo_page_population ROOT — every adopter-facing page under ROOT that prints
+# the command, one per line, sorted. `docs/process/` is maintainer-side, and
+# `site/changelog/` is a dated history that keeps the command it shipped.
+cargo_page_population() {
+    (cd "$1" && grep -rl 'cargo install headwater-cli' README.md site docs/tutorials docs/how-to 2>/dev/null) \
+        | grep -v '^site/changelog/' | LC_ALL=C sort
+}
+
+# The list below is the population, so a page that starts to print the
+# command, or a page dropped from the list, is a red case and not a silence.
+same "  the pages 14f counts are every adopter page that prints the cargo command" \
+    "$(printf '%s\n' $cargo_pages | LC_ALL=C sort)" "$(cargo_page_population "$root")"
+mkdir -p "$scratch/cargo-pop/site/new" "$scratch/cargo-pop/docs/tutorials" "$scratch/cargo-pop/site/install" "$scratch/cargo-pop/site/proof" "$scratch/cargo-pop/site/tutorial"
+for cargo_page in $cargo_pages; do cp "$root/$cargo_page" "$scratch/cargo-pop/$cargo_page"; done
+printf '%s\n' '<code>cargo install headwater-cli --locked</code>' >"$scratch/cargo-pop/site/new/index.html"
+same "  a new page that prints the cargo command enters the population, so the list above no longer matches" \
+    "$(printf '%s\n' $cargo_pages site/new/index.html | LC_ALL=C sort)" "$(cargo_page_population "$scratch/cargo-pop")"
+
+for cargo_page in $cargo_pages; do
     more_than "  $cargo_page prints the cargo command" 0 "$(grep -c 'cargo install headwater-cli' "$root/$cargo_page")"
     same "  every cargo command in $cargo_page carries --locked" 0 "$(cargo_bare_count "$root/$cargo_page")"
 done
@@ -5883,6 +5908,14 @@ cargo_tutorial="$root/docs/tutorials/your-first-governed-corpus.md"
 sed 's/`cargo install headwater-cli --locked`/`cargo install headwater-cli`/' "$cargo_tutorial" >"$scratch/cargo-locked/tutorial.md"
 apt_planted "  a tutorial whose cargo span lacks --locked is refused" "$cargo_tutorial" "$scratch/cargo-locked/tutorial.md" \
     1 "$(cargo_bare_count "$scratch/cargo-locked/tutorial.md")"
+# A bare command in the README's prose, after a fence that carries the flag.
+sed 's/^cargo install headwater-cli --locked$/&\n```\n\nOr run `cargo install headwater-cli`.\n\n```/' "$readme" >"$scratch/cargo-locked/prose.md"
+apt_planted "  a README that also prints a bare cargo command in prose is refused" "$readme" "$scratch/cargo-locked/prose.md" \
+    1 "$(cargo_bare_count "$scratch/cargo-locked/prose.md")"
+# A second, bare `<pre>` under `#cargo`, after the block that carries the flag.
+sed 's|cargo install headwater-cli --locked</pre>|&\n  <pre class="block"><span class="dim">$</span> cargo install headwater-cli</pre>|' "$cargo_install_page" >"$scratch/cargo-locked/second.html"
+apt_planted "  an install page with a second, bare cargo block is refused" "$cargo_install_page" "$scratch/cargo-locked/second.html" \
+    1 "$(cargo_bare_count "$scratch/cargo-locked/second.html")"
 
 echo
 echo "$passed passed, $failed failed"
