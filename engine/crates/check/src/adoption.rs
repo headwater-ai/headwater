@@ -1257,7 +1257,10 @@ tasks:
             read(&block, &RULES),
             day("2026-08-13"),
         );
-        for mode in [crate::paint::ColorMode::Plain, crate::paint::ColorMode::Ansi] {
+        for mode in [
+            crate::paint::ColorMode::Plain,
+            crate::paint::ColorMode::Ansi,
+        ] {
             let text = ledger.render(mode);
             let lines: Vec<&str> = text.lines().collect();
             let starts = [
@@ -1278,10 +1281,7 @@ tasks:
                 "one line per entry under {mode:?}:\n{text}"
             );
             for (line, start) in plain_lines.iter().zip(starts) {
-                assert!(
-                    line.starts_with(start),
-                    "{line:?} does not start {start:?}"
-                );
+                assert!(line.starts_with(start), "{line:?} does not start {start:?}");
             }
             for at in [2, 3, 4, 6, 7] {
                 assert!(
