@@ -274,6 +274,86 @@ json6='[
 same '  and a tag that is no version is never what a range picks' 'v0.4.1' \
     "$(printf '%s' "$json6" | python3 "$resolver" --range '>=0.4')"
 
+# Shape 7 (#1756): the list order is not the version order. A patch release of
+# an older line, published after a newer line, sits first. The answer is the
+# highest version that qualifies, wherever it sits in the list.
+json7='[
+  {"tag_name": "v0.4.2", "assets": [
+    {"name": "headwater-v0.4.2-x86_64-unknown-linux-gnu.tar.gz"},
+    {"name": "headwater-v0.4.2-x86_64-unknown-linux-gnu.tar.gz.sha256"}
+  ]},
+  {"tag_name": "v0.5.0", "assets": [
+    {"name": "headwater-v0.5.0-x86_64-unknown-linux-gnu.tar.gz"},
+    {"name": "headwater-v0.5.0-x86_64-unknown-linux-gnu.tar.gz.sha256"}
+  ]},
+  {"tag_name": "v0.4.1", "assets": [
+    {"name": "headwater-v0.4.1-x86_64-unknown-linux-gnu.tar.gz"},
+    {"name": "headwater-v0.4.1-x86_64-unknown-linux-gnu.tar.gz.sha256"}
+  ]}
+]'
+same 'a range picks the highest version it admits, not the first in the list' 'v0.5.0' \
+    "$(printf '%s' "$json7" | python3 "$resolver" --range '>=0.4')"
+same '  and a narrower range picks the highest inside it' 'v0.4.2' \
+    "$(printf '%s' "$json7" | python3 "$resolver" --range '>=0.4 <0.5')"
+same '  and with no range the highest version wins, not the first' 'v0.5.0' \
+    "$(printf '%s' "$json7" | python3 "$resolver")"
+json7b='[
+  {"tag_name": "v0.6.0-rc1", "assets": [
+    {"name": "headwater-v0.6.0-rc1-x86_64-unknown-linux-gnu.tar.gz"},
+    {"name": "headwater-v0.6.0-rc1-x86_64-unknown-linux-gnu.tar.gz.sha256"}
+  ]},
+  {"tag_name": "v0.5.0", "assets": [
+    {"name": "headwater-v0.5.0-x86_64-unknown-linux-gnu.tar.gz"},
+    {"name": "headwater-v0.5.0-x86_64-unknown-linux-gnu.tar.gz.sha256"}
+  ]}
+]'
+same '  and with no range a pre-release is never the answer' 'v0.5.0' \
+    "$(printf '%s' "$json7b" | python3 "$resolver")"
+json7c='[
+  {"tag_name": "v0.5.1", "assets": []},
+  {"tag_name": "v0.5.0", "assets": [
+    {"name": "headwater-v0.5.0-x86_64-unknown-linux-gnu.tar.gz"},
+    {"name": "headwater-v0.5.0-x86_64-unknown-linux-gnu.tar.gz.sha256"}
+  ]}
+]'
+same '  and the highest version with no archive is passed over' 'v0.5.0' \
+    "$(printf '%s' "$json7c" | python3 "$resolver" --range '>=0.5')"
+json7e='[
+  {"tag_name": "v0.5.1", "assets": [
+    {"name": "headwater-v0.5.1-x86_64-unknown-linux-gnu.tar.gz"}
+  ]},
+  {"tag_name": "v0.5.0", "assets": [
+    {"name": "headwater-v0.5.0-x86_64-unknown-linux-gnu.tar.gz"},
+    {"name": "headwater-v0.5.0-x86_64-unknown-linux-gnu.tar.gz.sha256"}
+  ]}
+]'
+same '  and the highest version with an archive and no checksum is passed over' 'v0.5.0' \
+    "$(printf '%s' "$json7e" | python3 "$resolver")"
+json7d='[
+  {"tag_name": "v0.4.9", "assets": [
+    {"name": "headwater-v0.4.9-x86_64-unknown-linux-gnu.tar.gz"},
+    {"name": "headwater-v0.4.9-x86_64-unknown-linux-gnu.tar.gz.sha256"}
+  ]},
+  {"tag_name": "v0.4.10", "assets": [
+    {"name": "headwater-v0.4.10-x86_64-unknown-linux-gnu.tar.gz"},
+    {"name": "headwater-v0.4.10-x86_64-unknown-linux-gnu.tar.gz.sha256"}
+  ]}
+]'
+same '  and versions compare by number, not by the text of the tag' 'v0.4.10' \
+    "$(printf '%s' "$json7d" | python3 "$resolver")"
+json7f='[
+  {"tag_name": "v0.9.0", "assets": [
+    {"name": "headwater-v0.9.0-x86_64-unknown-linux-gnu.tar.gz"},
+    {"name": "headwater-v0.9.0-x86_64-unknown-linux-gnu.tar.gz.sha256"}
+  ]},
+  {"tag_name": "v1.0.0", "assets": [
+    {"name": "headwater-v1.0.0-x86_64-unknown-linux-gnu.tar.gz"},
+    {"name": "headwater-v1.0.0-x86_64-unknown-linux-gnu.tar.gz.sha256"}
+  ]}
+]'
+same '  and the major part of a version outranks the minor part' 'v1.0.0' \
+    "$(printf '%s' "$json7f" | python3 "$resolver")"
+
 # The same choice through resolve-version.sh, the script both actions run: a
 # stub `curl` on PATH serves shape 5 as the release list, and a scratch
 # corpus states the range in the line an adopter writes.

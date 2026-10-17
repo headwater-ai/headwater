@@ -265,8 +265,10 @@ readable() {
     HW_EVERY=1 satisfies "$1" 0
 }
 
-# Install the newest release that the range admits and that has an archive
-# for this machine, from the release list the GitHub API states newest first.
+# Install the release with the highest version that the range admits and that
+# has an archive for this machine. The GitHub API lists releases by publish
+# date, so a patch release of an older line can come before a newer line, and
+# the tags are sorted by version before the first fetch (#1756).
 install_from_range() {
     api="https://api.github.com/repos/headwater-ai/headwater/releases?per_page=100"
     if ! curl -fsSL -H "Accept: application/vnd.github+json" -o "$work/releases.json" "$api"; then
@@ -278,11 +280,20 @@ install_from_range() {
     # The engine's own stream alone: a `taxonomy/...` tag never opens with v.
     tr ',{}' '\n\n\n' <"$work/releases.json" |
         sed -n 's/^[[:space:]]*"tag_name"[[:space:]]*:[[:space:]]*"\(v[0-9][^"]*\)"[[:space:]]*$/\1/p' >"$work/tags"
+    # Keep the tags the range admits, highest version first. `satisfies`
+    # refuses a tag that is no version, so the sort sees numbers alone.
+    : >"$work/admitted"
     while IFS= read -r ir_tag; do
-        if [ "$(satisfies "$range" "${ir_tag#v}")" = yes ] && fetch "$ir_tag"; then
-            return 0
+        if [ "$(satisfies "$range" "${ir_tag#v}")" = yes ]; then
+            printf '%s\n' "${ir_tag#v}" >>"$work/admitted"
         fi
     done <"$work/tags"
+    sort -t. -k1,1nr -k2,2nr -k3,3nr "$work/admitted" >"$work/ordered"
+    while IFS= read -r ir_version; do
+        if fetch "v$ir_version"; then
+            return 0
+        fi
+    done <"$work/ordered"
     say "no release has an archive for $target and satisfies the engine range \"$range\" that $declaration asks for, so nothing was installed."
     say "Widen the range, or name a release in HEADWATER_VERSION. The releases are at https://github.com/headwater-ai/headwater/releases."
     exit 1
