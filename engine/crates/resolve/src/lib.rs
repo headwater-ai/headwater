@@ -109,6 +109,9 @@ pub struct Resolution {
     pub sources: Vec<String>,
     /// Every operation applied, in application order.
     pub operations: Vec<Operation>,
+    /// The base package's own declarations, before any operation applied:
+    /// what [`list_owners`] replays the operations over.
+    pub base: Mapping,
     /// Every operation that made the declaration it addresses into, rather
     /// than reaching into one that was there. See [`Founding`].
     pub founded: Vec<Founding>,
@@ -484,6 +487,7 @@ pub fn resolve(sources: &[Source]) -> Result<Resolution, Vec<ResolveError>> {
         taxonomy,
         sources: names,
         operations,
+        base: start,
         founded,
     })
 }

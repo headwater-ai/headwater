@@ -1126,12 +1126,7 @@ fn validate(root: &Path) -> ExitCode {
 
     // The refusal `taxonomy resolve` makes before it writes a lock, so the two
     // verbs cannot disagree about one set of sources (#1758).
-    let projection_refusals = projection_refusals(
-        &repository.resolution,
-        headwater_resolve::package::sources(root, &repository.consumer)
-            .ok()
-            .as_deref(),
-    );
+    let projection_refusals = projection_refusals(&repository.resolution);
 
     if findings.is_empty()
         && unmatched.is_empty()
@@ -1296,7 +1291,7 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
     // that `headwater generate` would refuse to read (#1758). The resolver's
     // own rules read three of the generator's refusals and no more, so a
     // declaration in any source could pass here and fail at the next verb.
-    let refused = projection_refusals(&repository.resolution, Some(&sources));
+    let refused = projection_refusals(&repository.resolution);
     if !refused.is_empty() {
         eprintln!(
             "headwater: {}",
@@ -1881,36 +1876,16 @@ fn projections_read(taxonomy: &headwater_yaml::Mapping) -> Result<(), Vec<String
 /// carries no index, or an index the replay cannot answer, names every source
 /// that wrote to the list, and never none. Empty where the reader accepts.
 ///
-/// `sources` is what `package::sources` read, whose first member is the base
-/// package; `None` where it did not read, and then the base's own items are
-/// unknown and every refusal names every writer.
-fn projection_refusals(
-    resolution: &headwater_resolve::Resolution,
-    sources: Option<&[headwater_resolve::Source]>,
-) -> Vec<String> {
+/// The writers are never empty where the reader refuses: a refusal needs a
+/// `projections` list, and the list is there only because the base declared
+/// it or an operation wrote it, and each of those is a writer.
+fn projection_refusals(resolution: &headwater_resolve::Resolution) -> Vec<String> {
     let Err(messages) = projections_read(&resolution.taxonomy) else {
         return Vec::new();
     };
     let path = ["projections".to_string()];
-    let empty = headwater_yaml::Mapping::default();
-    let base = sources
-        .and_then(|sources| sources.first())
-        .and_then(|base| base.root.value.as_map())
-        .unwrap_or(&empty);
-    let owners = sources
-        .and_then(|_| headwater_resolve::list_owners(base, &resolution.operations, &path))
-        .filter(|owners| {
-            resolution
-                .taxonomy
-                .get("projections")
-                .and_then(|node| node.value.as_seq())
-                .is_some_and(|items| items.len() == owners.len())
-        });
-    let mut writers = headwater_resolve::list_writers(base, &resolution.operations, &path);
-    if writers.is_empty() || sources.is_none() {
-        writers.insert(0, 0);
-        writers.dedup();
-    }
+    let owners = headwater_resolve::list_owners(&resolution.base, &resolution.operations, &path);
+    let writers = headwater_resolve::list_writers(&resolution.base, &resolution.operations, &path);
     let name = |index: usize| {
         resolution
             .sources
