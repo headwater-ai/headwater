@@ -4873,6 +4873,36 @@ if [ -x "$engine" ]; then
     same "and gives each its round's count" "18 18 55" \
         "$(awk '$1 == 1 || $1 == 16 || $1 == 31 { print $3 }' "$scratch/add-priced.out" | tr '\n' ' ' | sed 's/ $//')"
 
+    # The batch runs the same check before each invocation (clause 5: "the
+    # check runs again before each round"). A stub `cargo` stands in for the
+    # build, with this checkout's engine where the build writes it, and a stub
+    # harness records any call. The batch needs a clean checkout.
+    if [ -z "$(git -C "$root" status --porcelain --untracked-files=no 2>/dev/null)" ]; then
+        mkdir -p "$scratch/gate-bin" "$scratch/gate-target/dev-release"
+        cp "$engine" "$scratch/gate-target/dev-release/headwater"
+        printf '#!/bin/sh\nexit 0\n' > "$scratch/gate-bin/cargo"
+        printf '#!/bin/sh\n: > "%s/claude-called"\nexit 7\n' "$scratch" > "$scratch/gate-bin/claude"
+        printf '#!/bin/sh\nexit 0\n' > "$scratch/gate-bin/bwrap"
+        chmod +x "$scratch/gate-bin/cargo" "$scratch/gate-bin/claude" "$scratch/gate-bin/bwrap"
+        rm -rf "$scratch/gate-out"
+        HW_PROBE_YML="$scratch/add-body.yml" CARGO_TARGET_DIR="$scratch/gate-target" PATH="$scratch/gate-bin:$PATH" \
+            sh "$root/tools/probe/campaign.sh" --out "$scratch/gate-out" --model claude-haiku-4-5 \
+            --spec "$additive_spec" > /dev/null 2> "$scratch/gate.err"
+        same "a batch of the additive spec stops with 8 on a leak in a scenario tree" "8" "$?"
+        present "and names the leak" "leak check, scenario-4 tree: leak HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged" "$scratch/gate.err"
+        same "and it asked the harness nothing, not even its version, and planned no line" "no no" \
+            "$([ -e "$scratch/gate-out/claude-version" ] && echo yes || echo no) $([ -e "$scratch/gate-out/lines" ] && echo yes || echo no)"
+        rm -rf "$scratch/gate-out"
+        CARGO_TARGET_DIR="$scratch/gate-target" PATH="$scratch/gate-bin:$PATH" \
+            sh "$root/tools/probe/campaign.sh" --out "$scratch/gate-out" --model claude-haiku-4-5 \
+            --spec "$additive_spec" > /dev/null 2> "$scratch/gate-clean.err"
+        same "with no leak the gate passes, and the ceiling of zero then refuses the batch with 5" "5" "$?"
+        present "and the refusal is the ceiling" "against a declared ceiling of \$0.00" "$scratch/gate-clean.err"
+        rm -rf "$scratch/gate-out"
+    else
+        printf 'note the checkout has uncommitted changes, so the batch leak gate cases did not run.\n'
+    fi
+
     if [ -e "$scratch/claude-called" ]; then
         fail "no additive dry run calls a model" "the harness on the path was called"
     else
