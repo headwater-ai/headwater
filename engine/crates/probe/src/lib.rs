@@ -251,27 +251,46 @@ pub enum Tier {
     /// governance together; the documents alone are this tier's absent arm
     /// against the campaign's, from one batch on one model version.
     Documentation,
+    /// The additive campaign (#1774): plain code with layers added, one
+    /// scenario arm for each scenario `.headwater/probe.yml` declares. Each
+    /// scenario is compared with its declared base and not with a present
+    /// arm, so the tier runs no present arm and does not pair in the sense of
+    /// [`Tier::pairs_arms`].
+    Additive,
 }
 
 impl Tier {
-    pub const ALL: [Tier; 3] = [Tier::Regression, Tier::Campaign, Tier::Documentation];
+    pub const ALL: [Tier; 4] = [
+        Tier::Regression,
+        Tier::Campaign,
+        Tier::Documentation,
+        Tier::Additive,
+    ];
 
     pub fn name(self) -> &'static str {
         match self {
             Tier::Regression => "regression",
             Tier::Campaign => "campaign",
             Tier::Documentation => "documentation",
+            Tier::Additive => "additive",
         }
+    }
+
+    /// Every tier name, as a reader of a refusal needs them: `a`, `b` and `c`.
+    pub fn listed() -> String {
+        and_listed(Tier::ALL.iter().map(|tier| tier.name().to_string()))
     }
 
     /// Whether the tier runs the pair of arms and estimates a difference.
     ///
     /// Every site that treated the campaign as the one paired tier reads this
     /// instead, so that a paired tier cannot silently run one arm or go
-    /// unpaired in a result.
+    /// unpaired in a result. The additive tier compares each scenario with its
+    /// base, which the declaration names, and runs no present arm, so it is
+    /// not paired here.
     pub fn pairs_arms(self) -> bool {
         match self {
-            Tier::Regression => false,
+            Tier::Regression | Tier::Additive => false,
             Tier::Campaign | Tier::Documentation => true,
         }
     }
@@ -304,6 +323,21 @@ pub enum Arm {
     NoClaudeMd,
     /// The present tree with a project MCP server declared.
     Mcp,
+    /// The tree of one scenario of the additive campaign (#1774), named
+    /// `scenario-<n>`: plain code with the layers the scenario holds. Its
+    /// tree is built from `headwater probe plan --scenario <n> --delta`. It
+    /// is outside [`Arm::ALL`], because the scenarios are the declaration's
+    /// and not this engine's, so no loop over the components meets it.
+    Scenario(u32),
+}
+
+/// `a`, `b` and `c`, each in a code span.
+fn and_listed(names: impl Iterator<Item = String>) -> String {
+    let names: Vec<String> = names.map(|name| format!("`{name}`")).collect();
+    match names.split_last() {
+        Some((last, rest)) if !rest.is_empty() => format!("{} and {last}", rest.join(", ")),
+        _ => names.join(""),
+    }
 }
 
 impl Arm {
@@ -316,21 +350,33 @@ impl Arm {
         Arm::Mcp,
     ];
 
-    pub fn name(self) -> &'static str {
-        match self {
+    /// The prefix of a scenario arm's name.
+    pub const SCENARIO: &'static str = "scenario-";
+
+    pub fn name(self) -> std::borrow::Cow<'static, str> {
+        std::borrow::Cow::Borrowed(match self {
             Arm::Present => "present",
             Arm::Absent => "absent",
             Arm::NoHook => "no-hook",
             Arm::NoSkills => "no-skills",
             Arm::NoClaudeMd => "no-claude-md",
             Arm::Mcp => "mcp",
-        }
+            Arm::Scenario(number) => {
+                return std::borrow::Cow::Owned(format!("{}{number}", Arm::SCENARIO))
+            }
+        })
     }
 
     /// Whether the arm is one component of the layer, declared under
-    /// `components` with its delta, rather than the present or absent tree.
+    /// `components` with its delta, rather than the present or absent tree
+    /// or a scenario of the additive campaign.
     pub fn is_component(self) -> bool {
-        !matches!(self, Arm::Present | Arm::Absent)
+        !matches!(self, Arm::Present | Arm::Absent | Arm::Scenario(_))
+    }
+
+    /// Whether the arm is a scenario of the additive campaign.
+    pub fn is_scenario(self) -> bool {
+        matches!(self, Arm::Scenario(_))
     }
 
     /// Whether the arm's delta puts paths into the present tree rather than
@@ -339,19 +385,27 @@ impl Arm {
         matches!(self, Arm::Mcp)
     }
 
-    /// Every arm name, as a reader of a refusal needs them: `a`, `b` and `c`.
+    /// Every arm name, as a reader of a refusal needs them: `a`, `b` and `c`,
+    /// and the scenario form last.
     pub fn listed() -> String {
-        let names: Vec<String> = Arm::ALL
-            .iter()
-            .map(|arm| format!("`{}`", arm.name()))
-            .collect();
-        match names.split_last() {
-            Some((last, rest)) if !rest.is_empty() => format!("{} and {last}", rest.join(", ")),
-            _ => names.join(""),
-        }
+        and_listed(
+            Arm::ALL
+                .iter()
+                .map(|arm| arm.name().into_owned())
+                .chain(std::iter::once(format!("{}<n>", Arm::SCENARIO))),
+        )
     }
 
+    /// The arm a name names. A scenario arm is `scenario-` and a whole number
+    /// written as [`Arm::name`] writes it, so `scenario-03` names no arm and
+    /// a name reads back to the arm that wrote it.
     pub fn read(name: &str) -> Option<Arm> {
+        if let Some(number) = name.strip_prefix(Arm::SCENARIO) {
+            return match number.parse::<u32>() {
+                Ok(parsed) if parsed.to_string() == number => Some(Arm::Scenario(parsed)),
+                _ => None,
+            };
+        }
         Arm::ALL.into_iter().find(|it| it.name() == name)
     }
 }
