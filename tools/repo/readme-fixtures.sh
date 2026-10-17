@@ -4415,8 +4415,8 @@ same "  and the script's last line is the one call to its body" 'main "$@"' \
 #      root, so the case also holds the walk up. `v0.4.1` is planted as a
 #      release; `v0.4.2` is listed and has no archive, so the script must go
 #      on to the next release in the range rather than stop at it.
-mkdir -p "$ih/rel/v0.4.1" "$ih/rel/v0.4.11" "$ih/rel/v0.5.9" "$ih/rel/v0.5.10" "$ih/corpus/.headwater" "$ih/corpus/docs/deep"
-for ih_rel in v0.4.1 v0.4.11 v0.5.9 v0.5.10; do
+mkdir -p "$ih/rel/v0.4.1" "$ih/rel/v0.4.11" "$ih/rel/v0.5.9" "$ih/rel/v0.5.10" "$ih/rel/v98.9.0" "$ih/rel/v99.0.0" "$ih/corpus/.headwater" "$ih/corpus/docs/deep"
+for ih_rel in v0.4.1 v0.4.11 v0.5.9 v0.5.10 v98.9.0 v99.0.0; do
     for target in x86_64-unknown-linux-musl aarch64-apple-darwin; do
         ih_archive="headwater-$ih_rel-$target.tar.gz"
         tar -czf "$ih/rel/$ih_rel/$ih_archive" -C "$ih/bin" headwater
@@ -4496,6 +4496,15 @@ STUB_API="$ih/releases-unordered.json"
 printf 'engine: ">=0.4 <0.6"\n' >"$ih/corpus/.headwater/taxonomy.yml"
 r=$(install_run Linux x86_64)
 same "  and a list out of version order installs the highest release in the range, not the first" \
+    "0|yes|0|$ih_api $ih_new $ih_new.sha256" "$(printf '%s' "$r" | cut -d'|' -f1-4)"
+# The major part outranks the minor part: `v98.9.0` sits before `v99.0.0`, and
+# a sort that read the minor part first would install it. The majors sit far
+# above any default release, so the range never admits the default.
+printf '[{"tag_name":"v98.9.0","assets":[]},{"tag_name":"v99.0.0","assets":[]}]\n' >"$ih/releases-unordered.json"
+ih_new="https://github.com/headwater-ai/headwater/releases/download/v99.0.0/headwater-v99.0.0-x86_64-unknown-linux-musl.tar.gz"
+printf 'engine: ">=98.9 <99.1"\n' >"$ih/corpus/.headwater/taxonomy.yml"
+r=$(install_run Linux x86_64)
+same "  and the major part of a version outranks the minor part" \
     "0|yes|0|$ih_api $ih_new $ih_new.sha256" "$(printf '%s' "$r" | cut -d'|' -f1-4)"
 STUB_API="$ih/releases.json"
 
