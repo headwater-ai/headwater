@@ -4058,6 +4058,110 @@ else
     printf 'note no engine, so the MCP leak cases did not run.\n'
 fi
 
+# The scenario channels (#1774, clause 5). A scenario of the additive campaign
+# is checked over every skill description and body, and over the text the
+# intent hook injects for each probe's task. `--scenario` reads them, so the
+# always-loaded contract above keeps its meaning without it.
+HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak --scenario "$scratch/leak-body-s" "$status_probe" \
+    > "$scratch/scenario-nows.out" 2>&1
+same "--scenario refuses a workspace that is not a directory" "2" "$?"
+rm -rf "$scratch/leak-body-s"
+mkdir -p "$scratch/leak-body-s/.claude/skills/s"
+printf -- '---\nname: s\ndescription: Nothing to see.\n---\n\nThe ruling is HW-DR-0052.\n' \
+    > "$scratch/leak-body-s/.claude/skills/s/SKILL.md"
+HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak "$scratch/leak-body-s" "$status_probe" \
+    > "$scratch/body-s.out" 2>&1
+same "without --scenario a leak string in a skill body is still no leak" "0" "$?"
+HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak --scenario "$scratch/leak-body-s" "$status_probe" \
+    > "$scratch/body-s.out" 2>&1
+same "with --scenario a leak string in the body of a skill is a leak" "1" "$?"
+present "and names the skill file" "leak $status_probe .claude/skills/s/SKILL.md HW-DR-0052" "$scratch/body-s.out"
+HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak --config "$scratch/leak-config" --scenario "$scratch/leak-body-s" "$status_probe" \
+    > "$scratch/body-s2.out" 2>&1
+same "--scenario reads after --config too" "1" "$?"
+# An agent body is outside the clause, and is no leak even with --scenario.
+rm -rf "$scratch/leak-body-s/.claude/skills"
+mkdir -p "$scratch/leak-body-s/.claude/agents"
+printf -- '---\nname: a\ndescription: Nothing.\n---\n\nThe ruling is HW-DR-0052.\n' \
+    > "$scratch/leak-body-s/.claude/agents/a.md"
+HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak --scenario "$scratch/leak-body-s" "$status_probe" \
+    > "$scratch/agent-s.out" 2>&1
+same "with --scenario an agent body is still no leak, the known limit" "0" "$?"
+
+# The harness classification: a hit in a file of the `harness` layer, in a
+# tree that holds it, is internal text the seal cannot remove. It prints as
+# `harness` and does not fail the check. The same text in another skill is a
+# leak.
+rm -rf "$scratch/leak-harness"
+mkdir -p "$scratch/leak-harness/.claude/skills/hw-corpus" "$scratch/leak-harness/.claude/skills/other"
+printf -- '---\nname: hw-corpus\ndescription: Nothing.\n---\n\nThe ruling is HW-DR-0052.\n' \
+    > "$scratch/leak-harness/.claude/skills/hw-corpus/SKILL.md"
+HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak --scenario "$scratch/leak-harness" "$status_probe" \
+    > "$scratch/harness.out" 2>&1
+same "with --scenario a hit in a harness-layer skill body does not fail the check" "0" "$?"
+present "and prints as harness" "harness $status_probe .claude/skills/hw-corpus/SKILL.md HW-DR-0052" "$scratch/harness.out"
+cp "$scratch/leak-harness/.claude/skills/hw-corpus/SKILL.md" "$scratch/leak-harness/.claude/skills/other/SKILL.md"
+HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak --scenario "$scratch/leak-harness" "$status_probe" \
+    > "$scratch/harness2.out" 2>&1
+same "the same text in a skill of no harness path is a leak" "1" "$?"
+present "and names that skill" "leak $status_probe .claude/skills/other/SKILL.md HW-DR-0052" "$scratch/harness2.out"
+HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak "$scratch/leak-harness" "$status_probe" \
+    > "$scratch/harness3.out" 2>&1
+same "without --scenario the harness skill's body is not read at all" "0" "$?"
+absent "and nothing is printed for it" "harness $status_probe" "$scratch/harness3.out"
+
+# The hook's injected text. The tree's `.claude/hooks/intent.sh` runs as the
+# harness runs it, on the probe's `## Task`, read from this checkout, and its
+# standard output is the channel `hook:<probe>`. A stub hook stands in here,
+# and keeps what it was handed.
+ruling_probe=HW-PROBE-what-a-session-writes-points-back-at-the-ruling-it-rests-on
+rm -rf "$scratch/leak-hook"
+mkdir -p "$scratch/leak-hook/.claude/hooks"
+printf '#!/bin/sh\ncat > "%s"\nprintf "Pointer: the corpus-wide fold\\n"\nprintf "HW-DR-0049 on stderr\\n" >&2\n' \
+    "$scratch/hook-stdin" > "$scratch/leak-hook/.claude/hooks/intent.sh"
+sh "$seal" --leak "$scratch/leak-hook" "$ruling_probe" > "$scratch/hook0.out" 2>&1
+same "without --scenario the hook does not run" "0" "$?"
+rm -f "$scratch/hook-stdin"
+sh "$seal" --leak --scenario "$scratch/leak-hook" "$ruling_probe" > "$scratch/hook.out" 2>&1
+same "with --scenario a leak string in the hook's output is a leak" "1" "$?"
+present "and names the channel hook:<probe>" "leak $ruling_probe hook:$ruling_probe corpus-wide fold" "$scratch/hook.out"
+absent "and the hook's standard error is no channel" "HW-DR-0049" "$scratch/hook.out"
+task_line=$(awk '/^## Task/ { f = 1; next } /^## / { f = 0 } f && NF { print; exit }' \
+    "$root/docs/probes/what-a-session-writes-points-back-at-the-ruling-it-rests-on.md" | cut -c1-40)
+if [ -n "$task_line" ] && grep -qF "$task_line" "$scratch/hook-stdin" 2>/dev/null && grep -q '"UserPromptSubmit"' "$scratch/hook-stdin"; then
+    pass "the hook is handed the probe's task in a UserPromptSubmit envelope"
+else
+    fail "the hook is handed the probe's task in a UserPromptSubmit envelope" "$(head -c 300 "$scratch/hook-stdin" 2>/dev/null)"
+fi
+# A hook string of one probe is no leak for another: each probe's sessions
+# meet the text the hook injects for its own task.
+printf 'leaks:\n  %s: [Pointer]\n  %s: [nothing-matches-this]\n' "$status_probe" "$ruling_probe" > "$scratch/hook-probe.yml"
+HW_PROBE_YML="$scratch/hook-probe.yml" sh "$seal" --leak --scenario "$scratch/leak-hook" "$ruling_probe" \
+    > "$scratch/hook2.out" 2>&1
+same "a string of a probe not checked is no leak in another probe's hook text" "0" "$?"
+# A probe with no task in this checkout cannot be put to the hook, so the
+# scenario text is not whole.
+printf 'leaks:\n  HW-PROBE-no-such-probe: [Pointer]\n' > "$scratch/hook-probe.yml"
+HW_PROBE_YML="$scratch/hook-probe.yml" sh "$seal" --leak --scenario "$scratch/leak-hook" HW-PROBE-no-such-probe \
+    > "$scratch/hook3.out" 2>&1
+same "a probe whose task the checkout does not hold stops a scenario check with 3" "3" "$?"
+
+# `[]` is a declaration with no answer string: the two `opened` probes of the
+# additive set key on an act, and no string states it. The check prints
+# nothing for such a probe, and a probe with no entry is still undeclared.
+printf 'leaks:\n  HW-PROBE-x: []\n  HW-PROBE-y:\n' > "$scratch/empty-probe.yml"
+HW_PROBE_YML="$scratch/empty-probe.yml" sh "$seal" --leak "$scratch/leak-ws" HW-PROBE-x HW-PROBE-y HW-PROBE-z \
+    > "$scratch/empty.out" 2>&1
+same "a probe declared with [] does not fail the check" "0" "$?"
+absent "and is not printed as undeclared" "undeclared HW-PROBE-x" "$scratch/empty.out"
+present "an entry with no value is still undeclared" "undeclared HW-PROBE-y" "$scratch/empty.out"
+present "and a missing entry is still undeclared" "undeclared HW-PROBE-z" "$scratch/empty.out"
+sh "$seal" --leak "$scratch/leak-ws" \
+    HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor \
+    HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens \
+    "$ruling_probe" > "$scratch/set-declared.out" 2>&1
+absent "the committed declaration leaves no probe of the additive set undeclared" "undeclared" "$scratch/set-declared.out"
+
 # ---------------------------------------------------------------------------
 # The component arms (#1472). Each is built from the one present tree, and
 # `--diff` prints how it differs from that tree, against the committed

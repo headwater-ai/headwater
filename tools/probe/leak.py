@@ -44,6 +44,37 @@
 # Every text is compared with its whitespace runs, line breaks included, read
 # as one space, and so is every leak string. A literal block and a folded one
 # then match alike.
+#
+# **The scenario channels (#1774, clause 5).** `--scenario` checks the tree of
+# one scenario of the additive campaign, which the clause holds to more than
+# the always-loaded set:
+#
+# - each skill's whole `SKILL.md`, body and all, under its path. The clause
+#   names "every skill description and body". An agent body is not named, and
+#   it is not read, so a leak string there is the known limit:
+#   `.claude/agents/hw-adjudicate.md` holds HW-DR-0097 on 2026-10-18.
+# - where the tree holds `.claude/hooks/intent.sh`, the text it injects for
+#   each probe checked. The hook runs as the harness runs it: from the tree,
+#   with `CLAUDE_PROJECT_DIR` set to it, the tree's `headwater` first on
+#   `PATH`, and a `UserPromptSubmit` envelope on its standard input whose
+#   prompt is the probe's `## Task`. The task is read from this checkout's
+#   `docs/probes/<slug>.md`, because the seal removed the probe documents from
+#   the tree. Its standard output is the channel `hook:<probe>`, read against
+#   that probe's strings alone, because a session of one probe meets the text
+#   the hook injects for its own task. Its standard error is discarded. A probe
+#   whose task this checkout does not hold leaves the text not whole, and the
+#   check exits 3.
+# - a hit whose `<where>` is a path of the `harness` layer under `layers:` in
+#   the declaration, or a file under one, is internal harness text that the
+#   seal cannot remove. It prints as `harness <probe> <where> <string>` and does
+#   not fail the check. The dry run of the additive spec refuses a line that
+#   pools such a probe with another, as it refuses a pooled `leaks_kept` probe.
+#   A kept probe stays `kept`.
+#
+# **`[]` is declared with no answer string.** A probe whose `leaks:` entry is
+# the empty sequence prints nothing, because its key is an act, such as an
+# `opened` key, and no string states it. A probe with no entry, or an entry
+# with no value, still prints `undeclared`.
 import json
 import os
 import re
@@ -223,12 +254,87 @@ def mcp_tools(checkout, workspace):
     return None
 
 
+def task_of(checkout, probe):
+    # The probe's `## Task` section, from this checkout's probe document. The
+    # seal removed the probe documents from the tree the hook runs in.
+    slug = probe[len("HW-PROBE-") :] if probe.startswith("HW-PROBE-") else probe
+    path = os.path.join(checkout, "docs/probes", f"{slug}.md")
+    if not os.path.isfile(path):
+        return None
+    lines = []
+    inside = False
+    for line in read_text(path).split("\n"):
+        if re.match(r"^##\s+Task\s*$", line):
+            inside = True
+            continue
+        if inside and re.match(r"^#{1,2}\s", line):
+            break
+        if inside:
+            lines.append(line)
+    task = "\n".join(lines).strip()
+    return task or None
+
+
+def hook_text(workspace, task, probe):
+    # The text `.claude/hooks/intent.sh` injects for one prompt, run as the
+    # harness runs a `UserPromptSubmit` hook. `None` is a hook that did not run.
+    hook = os.path.join(workspace, ".claude/hooks/intent.sh")
+    env = dict(os.environ)
+    env["CLAUDE_PROJECT_DIR"] = workspace
+    engine_dirs = [
+        os.path.join(workspace, "engine/target/dev-release"),
+        os.path.join(workspace, "engine/target/release"),
+    ]
+    env["PATH"] = os.pathsep.join(engine_dirs + [env.get("PATH", "")])
+    env.pop("HEADWATER_HOOK_ROOT", None)
+    envelope = {
+        "hook_event_name": "UserPromptSubmit",
+        "session_id": f"leak-check-{probe}",
+        "cwd": workspace,
+        "prompt": task,
+    }
+    try:
+        ran = subprocess.run(
+            ["sh", hook],
+            input=json.dumps(envelope) + "\n",
+            capture_output=True,
+            text=True,
+            cwd=workspace,
+            env=env,
+            timeout=120,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return ran.stdout
+
+
+def harness_paths(declared):
+    layers = declared.get("layers") or {}
+    harness = layers.get("harness") if isinstance(layers, dict) else None
+    paths = (harness or {}).get("paths") if isinstance(harness, dict) else None
+    return [str(path).rstrip("/") for path in (paths or [])]
+
+
+def under(where, paths):
+    return any(where == path or where.startswith(path + "/") for path in paths)
+
+
 def main(argv):
-    usage = "usage: sh tools/probe/seal.sh --leak [--config <dir>] <workspace> <probe-id>..."
+    usage = "usage: sh tools/probe/seal.sh --leak [--config <dir>] [--scenario] <workspace> <probe-id>..."
     config = None
-    if len(argv) >= 3 and argv[1] == "--config":
-        config = argv[2]
-        argv = [argv[0]] + argv[3:]
+    scenario = False
+    checkout, rest = (argv[0], argv[1:]) if argv else ("", [])
+    while rest and rest[0] in ("--config", "--scenario"):
+        if rest[0] == "--scenario":
+            scenario = True
+            rest = rest[1:]
+            continue
+        if len(rest) < 2:
+            print(usage, file=sys.stderr)
+            return 2
+        config = rest[1]
+        rest = rest[2:]
+    argv = [checkout] + rest
     if len(argv) < 3:
         print(usage, file=sys.stderr)
         return 2
@@ -280,6 +386,13 @@ def main(argv):
             path = os.path.join(skills, name, "SKILL.md")
             if os.path.isfile(path):
                 loaded.listed(path, fallback=True)
+    # The skill bodies of a scenario tree (#1774, clause 5): the whole file,
+    # under its path, beside the listing above.
+    if scenario and os.path.isdir(skills):
+        for name in sorted(os.listdir(skills)):
+            path = os.path.join(skills, name, "SKILL.md")
+            if os.path.isfile(path):
+                loaded.add(path, read_text(path))
     for path in markdown_under(os.path.join(workspace, ".claude/agents")):
         loaded.listed(path, fallback=False)
     for path in markdown_under(os.path.join(workspace, ".claude/commands")):
@@ -294,21 +407,49 @@ def main(argv):
             return 3
         loaded.records.extend(tools)
 
+    # The hook channel: one text per probe, read against that probe alone.
+    hooked = {}
+    if scenario and os.path.isfile(os.path.join(workspace, ".claude/hooks/intent.sh")):
+        for probe in probes:
+            task = task_of(checkout, probe)
+            if task is None:
+                print(
+                    f"seal: {probe} has no `## Task` in {checkout}/docs/probes, so the text the hook injects for it cannot be read and the scenario text is not whole.",
+                    file=sys.stderr,
+                )
+                return 3
+            text = hook_text(workspace, task, probe)
+            if text is None:
+                print(f"seal: the hook of {workspace} did not run for {probe}, so the scenario text is not whole.", file=sys.stderr)
+                return 3
+            hooked[probe] = (f"hook:{probe}", flat(text))
+    harness = harness_paths(declared) if scenario else []
+
     found = 0
     for probe in probes:
-        strings = leaks.get(probe)
-        if isinstance(strings, str):
-            strings = [strings]
+        entry = leaks.get(probe)
+        # `[]` is a declaration with no answer string; a missing entry or one
+        # with no value is undeclared.
+        if isinstance(entry, list) and not entry:
+            continue
+        strings = [entry] if isinstance(entry, str) else entry
         strings = [flat(scalar(string)) for string in (strings or []) if flat(scalar(string))]
         if not strings:
             print(f"undeclared {probe}")
             continue
-        verdict = "kept" if probe in [str(entry) for entry in kept] else "leak"
+        is_kept = probe in [str(item) for item in kept]
+        records = loaded.records + ([hooked[probe]] if probe in hooked else [])
         seen = set()
         for string in strings:
-            for where, text in loaded.records:
+            for where, text in records:
                 if string in text and (where, string) not in seen:
                     seen.add((where, string))
+                    if is_kept:
+                        verdict = "kept"
+                    elif under(where, harness):
+                        verdict = "harness"
+                    else:
+                        verdict = "leak"
                     print(f"{verdict} {probe} {where} {string}")
                     if verdict == "leak":
                         found = 1
