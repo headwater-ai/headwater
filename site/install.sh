@@ -156,9 +156,14 @@ find_declaration() {
 }
 
 # The range in the first top-level `engine:` line of FILE, in double quotes,
-# single quotes or none, or nothing when FILE states none.
+# single quotes or none, or nothing when FILE states none. One byte order
+# mark at the start of line 1 is dropped first, as the engine's loader drops
+# it, so a range behind one is read (#1755). The mark is built with printf and
+# matched byte for byte in the C locale, because macOS sed and dash read no
+# `\xEF` escape.
 engine_range_of() {
-    er_value=$(sed -n 's/^engine:[[:space:]]*//p' "$1" | head -n 1 | tr -d '\r')
+    er_bom=$(printf '\357\273\277')
+    er_value=$(LC_ALL=C sed -n "1s/^$er_bom//; s/^engine:[[:space:]]*//p" "$1" | head -n 1 | tr -d '\r')
     case "$er_value" in
         \"*\"*)
             er_value=${er_value#\"}

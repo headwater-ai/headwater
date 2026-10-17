@@ -110,8 +110,10 @@ def check_range(range_):
 
 def engine_line(path):
     """The range in the first top-level `engine:` line of a taxonomy file."""
+    # `utf-8-sig` drops one byte order mark at the start of the file, as the
+    # engine's loader does, so a range on line 1 behind one is read (#1755).
     try:
-        with open(path, encoding="utf-8") as handle:
+        with open(path, encoding="utf-8-sig") as handle:
             lines = handle.read().splitlines()
     except OSError:
         return ""

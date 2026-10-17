@@ -4436,6 +4436,12 @@ same "the install script inside a corpus that pins an older release installs tha
 same "  and it says which file's requirement chose the version" yes \
     "$(printf '%s' "$r" | grep -q "$ih/corpus/.headwater/taxonomy.yml asks for engine \">=0.4 <0.5\", so this installs v0.4.1" && echo yes || echo no)"
 
+# A byte order mark before line 1 does not hide the range (#1755).
+printf '\357\273\277engine: ">=0.4 <0.5"\n' >"$ih/corpus/.headwater/taxonomy.yml"
+r=$(install_run Linux x86_64)
+same "  and a range behind a byte order mark installs the release it admits" \
+    "0|yes|0|$ih_api $ih_gone $ih_old $ih_old.sha256" "$(printf '%s' "$r" | cut -d'|' -f1-4)"
+
 printf "engine: '>=0.1'  # any release will do\n" >"$ih/corpus/.headwater/taxonomy.yml"
 r=$(install_run Linux x86_64)
 same "  and a range that admits the default installs the default with no call to the release list" \
