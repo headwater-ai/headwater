@@ -28,27 +28,29 @@ The selection this transcript names is `sha256:aa4aaa7375349b5c8cc667a1968191665
 
 The `read_set` digest above covers every probe of the selection and every document one of them examines, by path and content. This file names it as provenance and compares it with nothing, and the same holds for the lock and the selection: an edit to a document, a new probe or a moved lock leaves these bytes alone. `headwater generate` names each result whose recorded lock, read set or selection moved, and `headwater probe stale` takes the digest and reports which recorded results a change voided. Neither one fails for it.
 
-Graded by grader 0.5.0.
+Graded by grader 0.5.1.
 A regression run in the present arm, on claude-sonnet-5 at served version claude-sonnet-5.
 
 ## The verdicts
 
 - HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor (discovery, expects opened)
-    session regression-20260917b-descriptor: not satisfied — 13 recorded calls, and none named any of the 1 document
+    session regression-20260917b-descriptor: not satisfied — 13 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
 - HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer (sufficiency, expects answered)
-    session regression-20260917b-tombstone: satisfied — event 2: answered `absent`
+    session regression-20260917b-tombstone: satisfied — event 2: answered `absent`; no call to a tool of an MCP server
 - HW-PROBE-a-session-answers-from-the-register-without-opening-the-question-it-replaced (navigability, expects not_opened)
-    session regression-20260917b-register: satisfied — 3 recorded calls, and none named any of the 1 document
+    session regression-20260917b-register: satisfied — 3 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
 - HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks (sufficiency, expects patched)
-    session regression-20260917b-unmeasured: satisfied — event 4: `section.required.missing` reported nothing over `docs/obligations/0198-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-work-starts.md`
+    session regression-20260917b-unmeasured: satisfied — event 4: `section.required.missing` reported nothing over `docs/obligations/0198-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-work-starts.md`; no call to a tool of an MCP server
 - HW-PROBE-an-agent-reaches-the-adjudication-from-the-document-that-lost-it (navigability, expects opened)
-    session regression-20260917b-adjudication: satisfied — event 5, call 2: `Read /home/james/.cache/hw-probe-live-20260917b/workspace-adjudication/docs/decisions/0008-probe-cost-and-cadence.md`
+    session regression-20260917b-adjudication: satisfied — event 5, call 2: `Read /home/james/.cache/hw-probe-live-20260917b/workspace-adjudication/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
 - HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document (discovery, expects opened)
-    session regression-20260917b-skill-reach: not satisfied — 11 recorded calls, and none named any of the 1 document
+    session regression-20260917b-skill-reach: not satisfied — 11 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
 - HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens (discovery, expects opened)
-    session regression-20260917b-pointer: not satisfied — 16 recorded calls, and none named any of the 1 document
+    session regression-20260917b-pointer: not satisfied — 16 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
 - HW-PROBE-what-a-session-writes-points-back-at-the-ruling-it-rests-on (navigability, expects cited)
-    session regression-20260917b-cited: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
+    session regression-20260917b-cited: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+
+8 of 8 sessions that recorded their calls made no call to a tool of an MCP server. 0 sessions recorded no calls.
 
 ## The rate, and the denominator it is over
 

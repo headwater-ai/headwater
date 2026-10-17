@@ -24,17 +24,19 @@ The selection this transcript names is `sha256:c6f58f5bd22dfb4b353528edb188b7de5
 
 The `read_set` digest above covers every probe of the selection and every document one of them examines, by path and content. This file names it as provenance and compares it with nothing, and the same holds for the lock and the selection: an edit to a document, a new probe or a moved lock leaves these bytes alone. `headwater generate` names each result whose recorded lock, read set or selection moved, and `headwater probe stale` takes the digest and reports which recorded results a change voided. Neither one fails for it.
 
-Graded by grader 0.5.0.
+Graded by grader 0.5.1.
 A regression run in the present arm, on a-model at served version a-model-20260701.
 
 ## The verdicts
 
 - PROBE-FIX-answered (sufficiency, expects answered)
-    session watched: satisfied — event 4: answered `no`
+    session watched: satisfied — event 4: answered `no`; no call to a tool of an MCP server
 - PROBE-FIX-opened (discovery, expects opened)
-    session watched: satisfied — event 1, call 1: `read /home/runner/repo/runs/probes/0002-answered.md`
-    session watched-and-saw-nothing: not satisfied — 0 recorded calls, and none named any of the 1 document
-    session nothing-watched: no verdict — the event carries no `calls` key, so nothing recorded what this form reads. An empty list is a recorded absence and a missing key is not one
+    session watched: satisfied — event 1, call 1: `read /home/runner/repo/runs/probes/0002-answered.md`; no call to a tool of an MCP server
+    session watched-and-saw-nothing: not satisfied — 0 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session nothing-watched: no verdict — the event carries no `calls` key, so nothing recorded what this form reads. An empty list is a recorded absence and a missing key is not one; calls to a tool of an MCP server not counted, because the session recorded no calls
+
+3 of 3 sessions that recorded their calls made no call to a tool of an MCP server. 1 session recorded no calls and was not counted.
 
 ## The rate, and the denominator it is over
 

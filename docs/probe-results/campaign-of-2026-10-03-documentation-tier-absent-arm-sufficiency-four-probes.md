@@ -26,135 +26,137 @@ The selection this transcript names is `sha256:e259547ce18ab03325c4ba1efa9d0db2c
 
 The `read_set` digest above covers every probe of the selection and every document one of them examines, by path and content. This file names it as provenance and compares it with nothing, and the same holds for the lock and the selection: an edit to a document, a new probe or a moved lock leaves these bytes alone. `headwater generate` names each result whose recorded lock, read set or selection moved, and `headwater probe stale` takes the digest and reports which recorded results a change voided. Neither one fails for it.
 
-Graded by grader 0.5.0.
+Graded by grader 0.5.1.
 A documentation run in the absent arm, on claude-sonnet-5 at served version claude-sonnet-5.
 
 ## The verdicts
 
 - HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer (sufficiency, expects answered)
-    session L7-documentation-absent-p1-r1: satisfied — event 1: answered `absent`
-    session L7-documentation-absent-p1-r10: satisfied — event 2: answered `absent`
-    session L7-documentation-absent-p1-r11: satisfied — event 3: answered `absent`
-    session L7-documentation-absent-p1-r12: satisfied — event 4: answered `absent`
-    session L7-documentation-absent-p1-r13: satisfied — event 5: answered `absent`
-    session L7-documentation-absent-p1-r14: satisfied — event 6: answered `absent`
-    session L7-documentation-absent-p1-r15: satisfied — event 7: answered `absent`
-    session L7-documentation-absent-p1-r16: satisfied — event 8: answered `absent`
-    session L7-documentation-absent-p1-r17: satisfied — event 9: answered `absent`
-    session L7-documentation-absent-p1-r18: satisfied — event 10: answered `absent`
-    session L7-documentation-absent-p1-r19: satisfied — event 11: answered `absent`
-    session L7-documentation-absent-p1-r2: satisfied — event 12: answered `absent`
-    session L7-documentation-absent-p1-r20: satisfied — event 13: answered `absent`
-    session L7-documentation-absent-p1-r21: satisfied — event 14: answered `absent`
-    session L7-documentation-absent-p1-r22: satisfied — event 15: answered `absent`
-    session L7-documentation-absent-p1-r23: satisfied — event 16: answered `absent`
-    session L7-documentation-absent-p1-r24: satisfied — event 17: answered `absent`
-    session L7-documentation-absent-p1-r25: satisfied — event 18: answered `absent`
-    session L7-documentation-absent-p1-r26: satisfied — event 19: answered `absent`
-    session L7-documentation-absent-p1-r27: satisfied — event 20: answered `absent`
-    session L7-documentation-absent-p1-r28: satisfied — event 21: answered `absent`
-    session L7-documentation-absent-p1-r29: satisfied — event 22: answered `absent`
-    session L7-documentation-absent-p1-r3: satisfied — event 23: answered `absent`
-    session L7-documentation-absent-p1-r30: satisfied — event 24: answered `absent`
-    session L7-documentation-absent-p1-r4: satisfied — event 25: answered `absent`
-    session L7-documentation-absent-p1-r5: satisfied — event 26: answered `absent`
-    session L7-documentation-absent-p1-r6: satisfied — event 27: answered `absent`
-    session L7-documentation-absent-p1-r7: satisfied — event 28: answered `absent`
-    session L7-documentation-absent-p1-r8: satisfied — event 29: answered `absent`
-    session L7-documentation-absent-p1-r9: satisfied — event 30: answered `absent`
+    session L7-documentation-absent-p1-r1: satisfied — event 1: answered `absent`; no call to a tool of an MCP server
+    session L7-documentation-absent-p1-r10: satisfied — event 2: answered `absent`; no call to a tool of an MCP server
+    session L7-documentation-absent-p1-r11: satisfied — event 3: answered `absent`; no call to a tool of an MCP server
+    session L7-documentation-absent-p1-r12: satisfied — event 4: answered `absent`; no call to a tool of an MCP server
+    session L7-documentation-absent-p1-r13: satisfied — event 5: answered `absent`; no call to a tool of an MCP server
+    session L7-documentation-absent-p1-r14: satisfied — event 6: answered `absent`; no call to a tool of an MCP server
+    session L7-documentation-absent-p1-r15: satisfied — event 7: answered `absent`; no call to a tool of an MCP server
+    session L7-documentation-absent-p1-r16: satisfied — event 8: answered `absent`; no call to a tool of an MCP server
+    session L7-documentation-absent-p1-r17: satisfied — event 9: answered `absent`; no call to a tool of an MCP server
+    session L7-documentation-absent-p1-r18: satisfied — event 10: answered `absent`; no call to a tool of an MCP server
+    session L7-documentation-absent-p1-r19: satisfied — event 11: answered `absent`; no call to a tool of an MCP server
+    session L7-documentation-absent-p1-r2: satisfied — event 12: answered `absent`; no call to a tool of an MCP server
+    session L7-documentation-absent-p1-r20: satisfied — event 13: answered `absent`; no call to a tool of an MCP server
+    session L7-documentation-absent-p1-r21: satisfied — event 14: answered `absent`; no call to a tool of an MCP server
+    session L7-documentation-absent-p1-r22: satisfied — event 15: answered `absent`; no call to a tool of an MCP server
+    session L7-documentation-absent-p1-r23: satisfied — event 16: answered `absent`; no call to a tool of an MCP server
+    session L7-documentation-absent-p1-r24: satisfied — event 17: answered `absent`; no call to a tool of an MCP server
+    session L7-documentation-absent-p1-r25: satisfied — event 18: answered `absent`; no call to a tool of an MCP server
+    session L7-documentation-absent-p1-r26: satisfied — event 19: answered `absent`; no call to a tool of an MCP server
+    session L7-documentation-absent-p1-r27: satisfied — event 20: answered `absent`; no call to a tool of an MCP server
+    session L7-documentation-absent-p1-r28: satisfied — event 21: answered `absent`; no call to a tool of an MCP server
+    session L7-documentation-absent-p1-r29: satisfied — event 22: answered `absent`; no call to a tool of an MCP server
+    session L7-documentation-absent-p1-r3: satisfied — event 23: answered `absent`; no call to a tool of an MCP server
+    session L7-documentation-absent-p1-r30: satisfied — event 24: answered `absent`; no call to a tool of an MCP server
+    session L7-documentation-absent-p1-r4: satisfied — event 25: answered `absent`; no call to a tool of an MCP server
+    session L7-documentation-absent-p1-r5: satisfied — event 26: answered `absent`; no call to a tool of an MCP server
+    session L7-documentation-absent-p1-r6: satisfied — event 27: answered `absent`; no call to a tool of an MCP server
+    session L7-documentation-absent-p1-r7: satisfied — event 28: answered `absent`; no call to a tool of an MCP server
+    session L7-documentation-absent-p1-r8: satisfied — event 29: answered `absent`; no call to a tool of an MCP server
+    session L7-documentation-absent-p1-r9: satisfied — event 30: answered `absent`; no call to a tool of an MCP server
 - HW-PROBE-a-session-follows-a-citation-from-one-record-to-the-next (sufficiency, expects answered)
-    session L7-documentation-absent-p2-r1: not satisfied — event 31 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`
-    session L7-documentation-absent-p2-r10: satisfied — event 32: answered `HW-DR-0097`
-    session L7-documentation-absent-p2-r11: not satisfied — event 33 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`
-    session L7-documentation-absent-p2-r12: not satisfied — event 34 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`
-    session L7-documentation-absent-p2-r13: not satisfied — event 35 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`
-    session L7-documentation-absent-p2-r14: not satisfied — event 36 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`
-    session L7-documentation-absent-p2-r15: not satisfied — event 37 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`
-    session L7-documentation-absent-p2-r16: satisfied — event 38: answered `HW-DR-0097`
-    session L7-documentation-absent-p2-r17: satisfied — event 39: answered `HW-DR-0097`
-    session L7-documentation-absent-p2-r18: satisfied — event 40: answered `HW-DR-0097`
-    session L7-documentation-absent-p2-r19: satisfied — event 41: answered `HW-DR-0097`
-    session L7-documentation-absent-p2-r2: not satisfied — event 42 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`
-    session L7-documentation-absent-p2-r20: not satisfied — the session ended with no answer
-    session L7-documentation-absent-p2-r21: not satisfied — event 44 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`
-    session L7-documentation-absent-p2-r22: not satisfied — event 45 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`
-    session L7-documentation-absent-p2-r23: not satisfied — event 46 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`
-    session L7-documentation-absent-p2-r24: not satisfied — event 47 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`
-    session L7-documentation-absent-p2-r25: not satisfied — event 48 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`
-    session L7-documentation-absent-p2-r26: not satisfied — the session ended with no answer
-    session L7-documentation-absent-p2-r27: not satisfied — event 50 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`
-    session L7-documentation-absent-p2-r28: not satisfied — the session ended with no answer
-    session L7-documentation-absent-p2-r29: satisfied — event 52: answered `HW-DR-0097`
-    session L7-documentation-absent-p2-r3: not satisfied — event 53 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`
-    session L7-documentation-absent-p2-r30: not satisfied — the session ended with no answer
-    session L7-documentation-absent-p2-r4: not satisfied — event 55 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`
-    session L7-documentation-absent-p2-r5: satisfied — event 56: answered `HW-DR-0097`
-    session L7-documentation-absent-p2-r6: satisfied — event 57: answered `HW-DR-0097`
-    session L7-documentation-absent-p2-r7: not satisfied — event 58 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`
-    session L7-documentation-absent-p2-r8: not satisfied — event 59 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`
-    session L7-documentation-absent-p2-r9: not satisfied — event 60 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`
+    session L7-documentation-absent-p2-r1: not satisfied — event 31 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`; no call to a tool of an MCP server
+    session L7-documentation-absent-p2-r10: satisfied — event 32: answered `HW-DR-0097`; no call to a tool of an MCP server
+    session L7-documentation-absent-p2-r11: not satisfied — event 33 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`; no call to a tool of an MCP server
+    session L7-documentation-absent-p2-r12: not satisfied — event 34 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`; no call to a tool of an MCP server
+    session L7-documentation-absent-p2-r13: not satisfied — event 35 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`; no call to a tool of an MCP server
+    session L7-documentation-absent-p2-r14: not satisfied — event 36 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`; no call to a tool of an MCP server
+    session L7-documentation-absent-p2-r15: not satisfied — event 37 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`; no call to a tool of an MCP server
+    session L7-documentation-absent-p2-r16: satisfied — event 38: answered `HW-DR-0097`; no call to a tool of an MCP server
+    session L7-documentation-absent-p2-r17: satisfied — event 39: answered `HW-DR-0097`; no call to a tool of an MCP server
+    session L7-documentation-absent-p2-r18: satisfied — event 40: answered `HW-DR-0097`; no call to a tool of an MCP server
+    session L7-documentation-absent-p2-r19: satisfied — event 41: answered `HW-DR-0097`; no call to a tool of an MCP server
+    session L7-documentation-absent-p2-r2: not satisfied — event 42 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`; no call to a tool of an MCP server
+    session L7-documentation-absent-p2-r20: not satisfied — the session ended with no answer; no call to a tool of an MCP server
+    session L7-documentation-absent-p2-r21: not satisfied — event 44 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`; no call to a tool of an MCP server
+    session L7-documentation-absent-p2-r22: not satisfied — event 45 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`; no call to a tool of an MCP server
+    session L7-documentation-absent-p2-r23: not satisfied — event 46 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`; no call to a tool of an MCP server
+    session L7-documentation-absent-p2-r24: not satisfied — event 47 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`; no call to a tool of an MCP server
+    session L7-documentation-absent-p2-r25: not satisfied — event 48 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`; no call to a tool of an MCP server
+    session L7-documentation-absent-p2-r26: not satisfied — the session ended with no answer; no call to a tool of an MCP server
+    session L7-documentation-absent-p2-r27: not satisfied — event 50 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`; no call to a tool of an MCP server
+    session L7-documentation-absent-p2-r28: not satisfied — the session ended with no answer; no call to a tool of an MCP server
+    session L7-documentation-absent-p2-r29: satisfied — event 52: answered `HW-DR-0097`; no call to a tool of an MCP server
+    session L7-documentation-absent-p2-r3: not satisfied — event 53 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`; no call to a tool of an MCP server
+    session L7-documentation-absent-p2-r30: not satisfied — the session ended with no answer; no call to a tool of an MCP server
+    session L7-documentation-absent-p2-r4: not satisfied — event 55 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`; no call to a tool of an MCP server
+    session L7-documentation-absent-p2-r5: satisfied — event 56: answered `HW-DR-0097`; no call to a tool of an MCP server
+    session L7-documentation-absent-p2-r6: satisfied — event 57: answered `HW-DR-0097`; no call to a tool of an MCP server
+    session L7-documentation-absent-p2-r7: not satisfied — event 58 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`; no call to a tool of an MCP server
+    session L7-documentation-absent-p2-r8: not satisfied — event 59 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`; no call to a tool of an MCP server
+    session L7-documentation-absent-p2-r9: not satisfied — event 60 answered `HW-DR-0078`, and the probe expects `HW-DR-0097`; no call to a tool of an MCP server
 - HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks (sufficiency, expects patched)
-    session L7-documentation-absent-p3-r1: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p3-r10: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p3-r11: satisfied — event 63: `section.required.missing` reported nothing over `docs/spec/13-open-obligations.md`
-    session L7-documentation-absent-p3-r12: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p3-r13: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p3-r14: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p3-r15: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p3-r16: satisfied — event 68: `section.required.missing` reported nothing over `docs/obligations/0001-the-pre-task-cost-of-this-repositorys-standing-instructions-is-unmeasured.md`
-    session L7-documentation-absent-p3-r17: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p3-r18: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p3-r19: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p3-r2: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p3-r20: satisfied — event 73: `section.required.missing` reported nothing over `docs/spec/13-open-obligations.md`
-    session L7-documentation-absent-p3-r21: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p3-r22: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p3-r23: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p3-r24: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p3-r25: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p3-r26: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p3-r27: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p3-r28: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p3-r29: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p3-r3: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p3-r30: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p3-r4: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p3-r5: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p3-r6: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p3-r7: satisfied — event 88: `section.required.missing` reported nothing over `docs/process/obligations/0001-no-record-states-what-a-sessions-standing-instructions-cost-before-work-starts.md`
-    session L7-documentation-absent-p3-r8: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p3-r9: not satisfied — the session produced no artifact, so the oracle had nothing to read
+    session L7-documentation-absent-p3-r1: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r10: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r11: satisfied — event 63: `section.required.missing` reported nothing over `docs/spec/13-open-obligations.md`; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r12: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r13: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r14: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r15: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r16: satisfied — event 68: `section.required.missing` reported nothing over `docs/obligations/0001-the-pre-task-cost-of-this-repositorys-standing-instructions-is-unmeasured.md`; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r17: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r18: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r19: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r2: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r20: satisfied — event 73: `section.required.missing` reported nothing over `docs/spec/13-open-obligations.md`; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r21: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r22: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r23: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r24: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r25: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r26: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r27: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r28: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r29: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r3: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r30: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r4: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r5: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r6: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r7: satisfied — event 88: `section.required.missing` reported nothing over `docs/process/obligations/0001-no-record-states-what-a-sessions-standing-instructions-cost-before-work-starts.md`; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r8: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r9: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
 - HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged (sufficiency, expects patched)
-    session L7-documentation-absent-p4-r1: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p4-r10: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p4-r11: not satisfied — `relation.reciprocity.missing` reported over each of the 1 produced artifact
-    session L7-documentation-absent-p4-r12: not satisfied — `relation.reciprocity.missing` reported over each of the 1 produced artifact
-    session L7-documentation-absent-p4-r13: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p4-r14: not satisfied — `relation.reciprocity.missing` reported over each of the 1 produced artifact
-    session L7-documentation-absent-p4-r15: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p4-r16: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p4-r17: not satisfied — `relation.reciprocity.missing` reported over each of the 1 produced artifact
-    session L7-documentation-absent-p4-r18: satisfied — event 100: `relation.reciprocity.missing` reported nothing over `docs/evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md`
-    session L7-documentation-absent-p4-r19: not satisfied — `relation.reciprocity.missing` reported over each of the 1 produced artifact
-    session L7-documentation-absent-p4-r2: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p4-r20: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p4-r21: not satisfied — `relation.reciprocity.missing` reported over each of the 1 produced artifact
-    session L7-documentation-absent-p4-r22: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p4-r23: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p4-r24: not satisfied — `relation.reciprocity.missing` reported over each of the 1 produced artifact
-    session L7-documentation-absent-p4-r25: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p4-r26: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p4-r27: not satisfied — `relation.reciprocity.missing` reported over each of the 1 produced artifact
-    session L7-documentation-absent-p4-r28: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p4-r29: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p4-r3: not satisfied — `relation.reciprocity.missing` reported over each of the 1 produced artifact
-    session L7-documentation-absent-p4-r30: not satisfied — `relation.reciprocity.missing` reported over each of the 1 produced artifact
-    session L7-documentation-absent-p4-r4: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p4-r5: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p4-r6: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p4-r7: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p4-r8: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L7-documentation-absent-p4-r9: not satisfied — the session produced no artifact, so the oracle had nothing to read
+    session L7-documentation-absent-p4-r1: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r10: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r11: not satisfied — `relation.reciprocity.missing` reported over each of the 1 produced artifact; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r12: not satisfied — `relation.reciprocity.missing` reported over each of the 1 produced artifact; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r13: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r14: not satisfied — `relation.reciprocity.missing` reported over each of the 1 produced artifact; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r15: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r16: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r17: not satisfied — `relation.reciprocity.missing` reported over each of the 1 produced artifact; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r18: satisfied — event 100: `relation.reciprocity.missing` reported nothing over `docs/evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md`; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r19: not satisfied — `relation.reciprocity.missing` reported over each of the 1 produced artifact; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r2: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r20: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r21: not satisfied — `relation.reciprocity.missing` reported over each of the 1 produced artifact; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r22: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r23: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r24: not satisfied — `relation.reciprocity.missing` reported over each of the 1 produced artifact; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r25: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r26: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r27: not satisfied — `relation.reciprocity.missing` reported over each of the 1 produced artifact; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r28: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r29: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r3: not satisfied — `relation.reciprocity.missing` reported over each of the 1 produced artifact; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r30: not satisfied — `relation.reciprocity.missing` reported over each of the 1 produced artifact; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r4: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r5: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r6: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r7: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r8: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r9: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+
+120 of 120 sessions that recorded their calls made no call to a tool of an MCP server. 0 sessions recorded no calls.
 
 ## The rate, and the denominator it is over
 

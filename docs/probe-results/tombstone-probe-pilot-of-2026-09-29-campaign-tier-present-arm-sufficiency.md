@@ -26,22 +26,24 @@ The selection this transcript names is `sha256:5ae5921d66889c1262ef7918402f57485
 
 The `read_set` digest above covers every probe of the selection and every document one of them examines, by path and content. This file names it as provenance and compares it with nothing, and the same holds for the lock and the selection: an edit to a document, a new probe or a moved lock leaves these bytes alone. `headwater generate` names each result whose recorded lock, read set or selection moved, and `headwater probe stale` takes the digest and reports which recorded results a change voided. Neither one fails for it.
 
-Graded by grader 0.5.0.
+Graded by grader 0.5.1.
 A campaign run in the present arm, on claude-sonnet-5 at served version claude-sonnet-5.
 
 ## The verdicts
 
 - HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer (sufficiency, expects answered)
-    session L1-campaign-present-p1-r1: satisfied — event 1: answered `absent`
-    session L1-campaign-present-p1-r10: satisfied — event 2: answered `absent`
-    session L1-campaign-present-p1-r2: satisfied — event 3: answered `absent`
-    session L1-campaign-present-p1-r3: satisfied — event 4: answered `absent`
-    session L1-campaign-present-p1-r4: satisfied — event 5: answered `absent`
-    session L1-campaign-present-p1-r5: satisfied — event 6: answered `absent`
-    session L1-campaign-present-p1-r6: satisfied — event 7: answered `absent`
-    session L1-campaign-present-p1-r7: satisfied — event 8: answered `absent`
-    session L1-campaign-present-p1-r8: satisfied — event 9: answered `absent`
-    session L1-campaign-present-p1-r9: satisfied — event 10: answered `absent`
+    session L1-campaign-present-p1-r1: satisfied — event 1: answered `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r10: satisfied — event 2: answered `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r2: satisfied — event 3: answered `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r3: satisfied — event 4: answered `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r4: satisfied — event 5: answered `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r5: satisfied — event 6: answered `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r6: satisfied — event 7: answered `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r7: satisfied — event 8: answered `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r8: satisfied — event 9: answered `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r9: satisfied — event 10: answered `absent`; no call to a tool of an MCP server
+
+10 of 10 sessions that recorded their calls made no call to a tool of an MCP server. 0 sessions recorded no calls.
 
 ## The rate, and the denominator it is over
 

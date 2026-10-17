@@ -28,135 +28,137 @@ The selection this transcript names is `sha256:1d93b514529314b74499196391c68b4b3
 
 The `read_set` digest above covers every probe of the selection and every document one of them examines, by path and content. This file names it as provenance and compares it with nothing, and the same holds for the lock and the selection: an edit to a document, a new probe or a moved lock leaves these bytes alone. `headwater generate` names each result whose recorded lock, read set or selection moved, and `headwater probe stale` takes the digest and reports which recorded results a change voided. Neither one fails for it.
 
-Graded by grader 0.5.0.
+Graded by grader 0.5.1.
 A campaign run in the present arm, on claude-sonnet-5 at served version claude-sonnet-5.
 
 ## The verdicts
 
 - HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer (sufficiency, expects answered)
-    session L1-campaign-present-p1-r1: not satisfied — event 1 answered `present`, and the probe expects `absent`
-    session L1-campaign-present-p1-r10: satisfied — event 2: answered `absent`
-    session L1-campaign-present-p1-r11: not satisfied — event 3 answered `withheld`, and the probe expects `absent`
-    session L1-campaign-present-p1-r12: satisfied — event 4: answered `absent`
-    session L1-campaign-present-p1-r13: satisfied — event 5: answered `absent`
-    session L1-campaign-present-p1-r14: satisfied — event 6: answered `absent`
-    session L1-campaign-present-p1-r15: not satisfied — event 7 answered `withheld`, and the probe expects `absent`
-    session L1-campaign-present-p1-r16: not satisfied — event 8 answered `withheld`, and the probe expects `absent`
-    session L1-campaign-present-p1-r17: not satisfied — event 9 answered `withheld`, and the probe expects `absent`
-    session L1-campaign-present-p1-r18: satisfied — event 10: answered `absent`
-    session L1-campaign-present-p1-r19: not satisfied — event 11 answered `withheld`, and the probe expects `absent`
-    session L1-campaign-present-p1-r2: not satisfied — event 12 answered `withheld`, and the probe expects `absent`
-    session L1-campaign-present-p1-r20: not satisfied — event 13 answered `withheld`, and the probe expects `absent`
-    session L1-campaign-present-p1-r21: not satisfied — event 14 answered `withheld`, and the probe expects `absent`
-    session L1-campaign-present-p1-r22: not satisfied — event 15 answered `withheld`, and the probe expects `absent`
-    session L1-campaign-present-p1-r23: not satisfied — event 16 answered `withheld`, and the probe expects `absent`
-    session L1-campaign-present-p1-r24: not satisfied — event 17 answered `withheld`, and the probe expects `absent`
-    session L1-campaign-present-p1-r25: not satisfied — event 18 answered `withheld`, and the probe expects `absent`
-    session L1-campaign-present-p1-r26: satisfied — event 19: answered `absent`
-    session L1-campaign-present-p1-r27: satisfied — event 20: answered `absent`
-    session L1-campaign-present-p1-r28: not satisfied — event 21 answered `present`, and the probe expects `absent`
-    session L1-campaign-present-p1-r29: not satisfied — event 22 answered `withheld`, and the probe expects `absent`
-    session L1-campaign-present-p1-r3: satisfied — event 23: answered `absent`
-    session L1-campaign-present-p1-r30: satisfied — event 24: answered `absent`
-    session L1-campaign-present-p1-r4: satisfied — event 25: answered `absent`
-    session L1-campaign-present-p1-r5: satisfied — event 26: answered `absent`
-    session L1-campaign-present-p1-r6: satisfied — event 27: answered `absent`
-    session L1-campaign-present-p1-r7: not satisfied — event 28 answered `present`, and the probe expects `absent`
-    session L1-campaign-present-p1-r8: satisfied — event 29: answered `absent`
-    session L1-campaign-present-p1-r9: satisfied — event 30: answered `absent`
+    session L1-campaign-present-p1-r1: not satisfied — event 1 answered `present`, and the probe expects `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r10: satisfied — event 2: answered `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r11: not satisfied — event 3 answered `withheld`, and the probe expects `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r12: satisfied — event 4: answered `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r13: satisfied — event 5: answered `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r14: satisfied — event 6: answered `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r15: not satisfied — event 7 answered `withheld`, and the probe expects `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r16: not satisfied — event 8 answered `withheld`, and the probe expects `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r17: not satisfied — event 9 answered `withheld`, and the probe expects `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r18: satisfied — event 10: answered `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r19: not satisfied — event 11 answered `withheld`, and the probe expects `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r2: not satisfied — event 12 answered `withheld`, and the probe expects `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r20: not satisfied — event 13 answered `withheld`, and the probe expects `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r21: not satisfied — event 14 answered `withheld`, and the probe expects `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r22: not satisfied — event 15 answered `withheld`, and the probe expects `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r23: not satisfied — event 16 answered `withheld`, and the probe expects `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r24: not satisfied — event 17 answered `withheld`, and the probe expects `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r25: not satisfied — event 18 answered `withheld`, and the probe expects `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r26: satisfied — event 19: answered `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r27: satisfied — event 20: answered `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r28: not satisfied — event 21 answered `present`, and the probe expects `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r29: not satisfied — event 22 answered `withheld`, and the probe expects `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r3: satisfied — event 23: answered `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r30: satisfied — event 24: answered `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r4: satisfied — event 25: answered `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r5: satisfied — event 26: answered `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r6: satisfied — event 27: answered `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r7: not satisfied — event 28 answered `present`, and the probe expects `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r8: satisfied — event 29: answered `absent`; no call to a tool of an MCP server
+    session L1-campaign-present-p1-r9: satisfied — event 30: answered `absent`; no call to a tool of an MCP server
 - HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted (sufficiency, expects answered)
-    session L1-campaign-present-p2-r1: satisfied — event 31: answered `merge`
-    session L1-campaign-present-p2-r10: satisfied — event 32: answered `merge`
-    session L1-campaign-present-p2-r11: satisfied — event 33: answered `merge`
-    session L1-campaign-present-p2-r12: satisfied — event 34: answered `merge`
-    session L1-campaign-present-p2-r13: satisfied — event 35: answered `merge`
-    session L1-campaign-present-p2-r14: satisfied — event 36: answered `merge`
-    session L1-campaign-present-p2-r15: satisfied — event 37: answered `merge`
-    session L1-campaign-present-p2-r16: satisfied — event 38: answered `merge`
-    session L1-campaign-present-p2-r17: satisfied — event 39: answered `merge`
-    session L1-campaign-present-p2-r18: satisfied — event 40: answered `merge`
-    session L1-campaign-present-p2-r19: satisfied — event 41: answered `merge`
-    session L1-campaign-present-p2-r2: satisfied — event 42: answered `merge`
-    session L1-campaign-present-p2-r20: satisfied — event 43: answered `merge`
-    session L1-campaign-present-p2-r21: satisfied — event 44: answered `merge`
-    session L1-campaign-present-p2-r22: satisfied — event 45: answered `merge`
-    session L1-campaign-present-p2-r23: satisfied — event 46: answered `merge`
-    session L1-campaign-present-p2-r24: satisfied — event 47: answered `merge`
-    session L1-campaign-present-p2-r25: satisfied — event 48: answered `merge`
-    session L1-campaign-present-p2-r26: satisfied — event 49: answered `merge`
-    session L1-campaign-present-p2-r27: satisfied — event 50: answered `merge`
-    session L1-campaign-present-p2-r28: satisfied — event 51: answered `merge`
-    session L1-campaign-present-p2-r29: satisfied — event 52: answered `merge`
-    session L1-campaign-present-p2-r3: satisfied — event 53: answered `merge`
-    session L1-campaign-present-p2-r30: satisfied — event 54: answered `merge`
-    session L1-campaign-present-p2-r4: satisfied — event 55: answered `merge`
-    session L1-campaign-present-p2-r5: satisfied — event 56: answered `merge`
-    session L1-campaign-present-p2-r6: satisfied — event 57: answered `merge`
-    session L1-campaign-present-p2-r7: satisfied — event 58: answered `merge`
-    session L1-campaign-present-p2-r8: satisfied — event 59: answered `merge`
-    session L1-campaign-present-p2-r9: satisfied — event 60: answered `merge`
+    session L1-campaign-present-p2-r1: satisfied — event 31: answered `merge`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r10: satisfied — event 32: answered `merge`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r11: satisfied — event 33: answered `merge`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r12: satisfied — event 34: answered `merge`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r13: satisfied — event 35: answered `merge`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r14: satisfied — event 36: answered `merge`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r15: satisfied — event 37: answered `merge`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r16: satisfied — event 38: answered `merge`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r17: satisfied — event 39: answered `merge`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r18: satisfied — event 40: answered `merge`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r19: satisfied — event 41: answered `merge`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r2: satisfied — event 42: answered `merge`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r20: satisfied — event 43: answered `merge`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r21: satisfied — event 44: answered `merge`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r22: satisfied — event 45: answered `merge`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r23: satisfied — event 46: answered `merge`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r24: satisfied — event 47: answered `merge`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r25: satisfied — event 48: answered `merge`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r26: satisfied — event 49: answered `merge`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r27: satisfied — event 50: answered `merge`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r28: satisfied — event 51: answered `merge`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r29: satisfied — event 52: answered `merge`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r3: satisfied — event 53: answered `merge`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r30: satisfied — event 54: answered `merge`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r4: satisfied — event 55: answered `merge`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r5: satisfied — event 56: answered `merge`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r6: satisfied — event 57: answered `merge`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r7: satisfied — event 58: answered `merge`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r8: satisfied — event 59: answered `merge`; no call to a tool of an MCP server
+    session L1-campaign-present-p2-r9: satisfied — event 60: answered `merge`; no call to a tool of an MCP server
 - HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request (sufficiency, expects answered)
-    session L1-campaign-present-p3-r1: not satisfied — event 61 answered `current`, which the probe does not declare
-    session L1-campaign-present-p3-r10: not satisfied — event 62 answered `draft`, which the probe does not declare
-    session L1-campaign-present-p3-r11: not satisfied — event 63 answered `current`, which the probe does not declare
-    session L1-campaign-present-p3-r12: not satisfied — event 64 answered `current`, which the probe does not declare
-    session L1-campaign-present-p3-r13: not satisfied — event 65 answered `draft`, which the probe does not declare
-    session L1-campaign-present-p3-r14: not satisfied — event 66 answered `current`, which the probe does not declare
-    session L1-campaign-present-p3-r15: not satisfied — event 67 answered `current`, which the probe does not declare
-    session L1-campaign-present-p3-r16: not satisfied — event 68 answered `draft`, which the probe does not declare
-    session L1-campaign-present-p3-r17: not satisfied — event 69 answered `current`, which the probe does not declare
-    session L1-campaign-present-p3-r18: not satisfied — event 70 answered `current`, which the probe does not declare
-    session L1-campaign-present-p3-r19: not satisfied — event 71 answered `current`, which the probe does not declare
-    session L1-campaign-present-p3-r2: not satisfied — event 72 answered `current`, which the probe does not declare
-    session L1-campaign-present-p3-r20: not satisfied — event 73 answered `current`, which the probe does not declare
-    session L1-campaign-present-p3-r21: not satisfied — event 74 answered `current`, which the probe does not declare
-    session L1-campaign-present-p3-r22: not satisfied — event 75 answered `current`, which the probe does not declare
-    session L1-campaign-present-p3-r23: not satisfied — event 76 answered `current`, which the probe does not declare
-    session L1-campaign-present-p3-r24: not satisfied — event 77 answered `current`, which the probe does not declare
-    session L1-campaign-present-p3-r25: not satisfied — event 78 answered `current`, which the probe does not declare
-    session L1-campaign-present-p3-r26: not satisfied — event 79 answered `draft`, which the probe does not declare
-    session L1-campaign-present-p3-r27: not satisfied — event 80 answered `current`, which the probe does not declare
-    session L1-campaign-present-p3-r28: not satisfied — event 81 answered `draft`, which the probe does not declare
-    session L1-campaign-present-p3-r29: not satisfied — event 82 answered `current`, which the probe does not declare
-    session L1-campaign-present-p3-r3: not satisfied — event 83 answered `current`, which the probe does not declare
-    session L1-campaign-present-p3-r30: not satisfied — event 84 answered `draft`, which the probe does not declare
-    session L1-campaign-present-p3-r4: not satisfied — event 85 answered `draft`, which the probe does not declare
-    session L1-campaign-present-p3-r5: not satisfied — event 86 answered `current`, which the probe does not declare
-    session L1-campaign-present-p3-r6: not satisfied — event 87 answered `current`, which the probe does not declare
-    session L1-campaign-present-p3-r7: not satisfied — event 88 answered `draft`, which the probe does not declare
-    session L1-campaign-present-p3-r8: not satisfied — event 89 answered `draft`, which the probe does not declare
-    session L1-campaign-present-p3-r9: not satisfied — event 90 answered `current`, which the probe does not declare
+    session L1-campaign-present-p3-r1: not satisfied — event 61 answered `current`, which the probe does not declare; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r10: not satisfied — event 62 answered `draft`, which the probe does not declare; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r11: not satisfied — event 63 answered `current`, which the probe does not declare; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r12: not satisfied — event 64 answered `current`, which the probe does not declare; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r13: not satisfied — event 65 answered `draft`, which the probe does not declare; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r14: not satisfied — event 66 answered `current`, which the probe does not declare; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r15: not satisfied — event 67 answered `current`, which the probe does not declare; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r16: not satisfied — event 68 answered `draft`, which the probe does not declare; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r17: not satisfied — event 69 answered `current`, which the probe does not declare; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r18: not satisfied — event 70 answered `current`, which the probe does not declare; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r19: not satisfied — event 71 answered `current`, which the probe does not declare; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r2: not satisfied — event 72 answered `current`, which the probe does not declare; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r20: not satisfied — event 73 answered `current`, which the probe does not declare; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r21: not satisfied — event 74 answered `current`, which the probe does not declare; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r22: not satisfied — event 75 answered `current`, which the probe does not declare; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r23: not satisfied — event 76 answered `current`, which the probe does not declare; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r24: not satisfied — event 77 answered `current`, which the probe does not declare; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r25: not satisfied — event 78 answered `current`, which the probe does not declare; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r26: not satisfied — event 79 answered `draft`, which the probe does not declare; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r27: not satisfied — event 80 answered `current`, which the probe does not declare; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r28: not satisfied — event 81 answered `draft`, which the probe does not declare; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r29: not satisfied — event 82 answered `current`, which the probe does not declare; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r3: not satisfied — event 83 answered `current`, which the probe does not declare; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r30: not satisfied — event 84 answered `draft`, which the probe does not declare; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r4: not satisfied — event 85 answered `draft`, which the probe does not declare; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r5: not satisfied — event 86 answered `current`, which the probe does not declare; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r6: not satisfied — event 87 answered `current`, which the probe does not declare; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r7: not satisfied — event 88 answered `draft`, which the probe does not declare; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r8: not satisfied — event 89 answered `draft`, which the probe does not declare; no call to a tool of an MCP server
+    session L1-campaign-present-p3-r9: not satisfied — event 90 answered `current`, which the probe does not declare; no call to a tool of an MCP server
 - HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks (sufficiency, expects patched)
-    session L1-campaign-present-p4-r1: satisfied — event 91: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-any-work-starts.md`
-    session L1-campaign-present-p4-r10: satisfied — event 92: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-this-repository-s-standing-instructions-consume-before-any-work-starts.md`
-    session L1-campaign-present-p4-r11: satisfied — event 93: `section.required.missing` reported nothing over `docs/obligations/0224-the-standing-instruction-cost-of-a-session-is-named-and-never-measured.md`
-    session L1-campaign-present-p4-r12: satisfied — event 94: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-what-a-session-s-standing-instructions-cost-before-work-starts.md`
-    session L1-campaign-present-p4-r13: satisfied — event 95: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-of-this-repository-consume-before-any-work-starts.md`
-    session L1-campaign-present-p4-r14: satisfied — event 96: `section.required.missing` reported nothing over `docs/obligations/0224-claude-md-has-no-reading-of-the-session-budget-it-spends-before-a-dispatch-s-first-turn.md`
-    session L1-campaign-present-p4-r15: satisfied — event 97: `section.required.missing` reported nothing over `docs/obligations/0224-the-session-budget-cost-of-this-repository-s-standing-instructions-before-any-work-starts-is-unstated.md`
-    session L1-campaign-present-p4-r16: satisfied — event 98: `section.required.missing` reported nothing over `docs/obligations/0224-this-repository-s-standing-instructions-have-no-reading-of-the-session-budget-they-consume-before-work-starts.md`
-    session L1-campaign-present-p4-r17: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L1-campaign-present-p4-r18: satisfied — event 100: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-the-token-floor-claude-md-the-skills-and-the-hooks-spend-before-a-session-does-any-task-work.md`
-    session L1-campaign-present-p4-r19: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L1-campaign-present-p4-r2: satisfied — event 102: `section.required.missing` reported nothing over `docs/obligations/0224-this-repository-s-standing-instructions-have-no-measured-cost-before-a-session-opens-a-document.md`
-    session L1-campaign-present-p4-r20: satisfied — event 103: `section.required.missing` reported nothing over `docs/obligations/0224-the-standing-instructions-of-this-repository-spend-an-unmeasured-part-of-a-session-s-budget-before-work-starts.md`
-    session L1-campaign-present-p4-r21: satisfied — event 104: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-claude-md-and-its-named-skills-spend-before-any-work-starts.md`
-    session L1-campaign-present-p4-r22: satisfied — event 105: `section.required.missing` reported nothing over `docs/obligations/0224-the-standing-context-a-session-pays-before-any-work-starts-has-no-measured-size.md`
-    session L1-campaign-present-p4-r23: satisfied — event 106: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-of-this-repository-consume-before-any-work-starts.md`
-    session L1-campaign-present-p4-r24: satisfied — event 107: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-any-work-starts.md`
-    session L1-campaign-present-p4-r25: satisfied — event 108: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-of-this-repository-consume-before-any-work-starts.md`
-    session L1-campaign-present-p4-r26: satisfied — event 109: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-of-this-repository-consume-before-any-work-starts.md`
-    session L1-campaign-present-p4-r27: satisfied — event 110: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-any-work-starts.md`
-    session L1-campaign-present-p4-r28: satisfied — event 111: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-its-standing-instructions-consume-before-any-work-starts.md`
-    session L1-campaign-present-p4-r29: satisfied — event 112: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-of-this-repository-consume-before-any-work-starts.md`
-    session L1-campaign-present-p4-r3: satisfied — event 113: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-of-this-repository-consume-before-any-work-starts.md`
-    session L1-campaign-present-p4-r30: satisfied — event 114: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-of-this-repository-consume-before-any-work-starts.md`
-    session L1-campaign-present-p4-r4: satisfied — event 115: `section.required.missing` reported nothing over `docs/obligations/0224-the-session-budget-cost-of-this-repository-s-standing-instructions-before-any-work-starts-is-unmeasured.md`
-    session L1-campaign-present-p4-r5: satisfied — event 116: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-of-this-repository-consume-before-any-work-starts.md`
-    session L1-campaign-present-p4-r6: satisfied — event 117: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-of-this-repository-consume-before-any-work-starts.md`
-    session L1-campaign-present-p4-r7: satisfied — event 118: `section.required.missing` reported nothing over `docs/obligations/0224-the-session-budget-that-standing-instructions-consume-before-any-work-starts-is-unstated.md`
-    session L1-campaign-present-p4-r8: not satisfied — the session produced no artifact, so the oracle had nothing to read
-    session L1-campaign-present-p4-r9: satisfied — event 120: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-work-starts.md`
+    session L1-campaign-present-p4-r1: satisfied — event 91: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-any-work-starts.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r10: satisfied — event 92: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-this-repository-s-standing-instructions-consume-before-any-work-starts.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r11: satisfied — event 93: `section.required.missing` reported nothing over `docs/obligations/0224-the-standing-instruction-cost-of-a-session-is-named-and-never-measured.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r12: satisfied — event 94: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-what-a-session-s-standing-instructions-cost-before-work-starts.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r13: satisfied — event 95: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-of-this-repository-consume-before-any-work-starts.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r14: satisfied — event 96: `section.required.missing` reported nothing over `docs/obligations/0224-claude-md-has-no-reading-of-the-session-budget-it-spends-before-a-dispatch-s-first-turn.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r15: satisfied — event 97: `section.required.missing` reported nothing over `docs/obligations/0224-the-session-budget-cost-of-this-repository-s-standing-instructions-before-any-work-starts-is-unstated.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r16: satisfied — event 98: `section.required.missing` reported nothing over `docs/obligations/0224-this-repository-s-standing-instructions-have-no-reading-of-the-session-budget-they-consume-before-work-starts.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r17: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r18: satisfied — event 100: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-the-token-floor-claude-md-the-skills-and-the-hooks-spend-before-a-session-does-any-task-work.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r19: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r2: satisfied — event 102: `section.required.missing` reported nothing over `docs/obligations/0224-this-repository-s-standing-instructions-have-no-measured-cost-before-a-session-opens-a-document.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r20: satisfied — event 103: `section.required.missing` reported nothing over `docs/obligations/0224-the-standing-instructions-of-this-repository-spend-an-unmeasured-part-of-a-session-s-budget-before-work-starts.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r21: satisfied — event 104: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-claude-md-and-its-named-skills-spend-before-any-work-starts.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r22: satisfied — event 105: `section.required.missing` reported nothing over `docs/obligations/0224-the-standing-context-a-session-pays-before-any-work-starts-has-no-measured-size.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r23: satisfied — event 106: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-of-this-repository-consume-before-any-work-starts.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r24: satisfied — event 107: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-any-work-starts.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r25: satisfied — event 108: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-of-this-repository-consume-before-any-work-starts.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r26: satisfied — event 109: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-of-this-repository-consume-before-any-work-starts.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r27: satisfied — event 110: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-any-work-starts.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r28: satisfied — event 111: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-its-standing-instructions-consume-before-any-work-starts.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r29: satisfied — event 112: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-of-this-repository-consume-before-any-work-starts.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r3: satisfied — event 113: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-of-this-repository-consume-before-any-work-starts.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r30: satisfied — event 114: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-of-this-repository-consume-before-any-work-starts.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r4: satisfied — event 115: `section.required.missing` reported nothing over `docs/obligations/0224-the-session-budget-cost-of-this-repository-s-standing-instructions-before-any-work-starts-is-unmeasured.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r5: satisfied — event 116: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-of-this-repository-consume-before-any-work-starts.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r6: satisfied — event 117: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-of-this-repository-consume-before-any-work-starts.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r7: satisfied — event 118: `section.required.missing` reported nothing over `docs/obligations/0224-the-session-budget-that-standing-instructions-consume-before-any-work-starts-is-unstated.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r8: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r9: satisfied — event 120: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-work-starts.md`; no call to a tool of an MCP server
+
+120 of 120 sessions that recorded their calls made no call to a tool of an MCP server. 0 sessions recorded no calls.
 
 ## The rate, and the denominator it is over
 

@@ -26,73 +26,75 @@ The selection this transcript names is `sha256:8ec515cf6d769b34f8fc840d00f902606
 
 The `read_set` digest above covers every probe of the selection and every document one of them examines, by path and content. This file names it as provenance and compares it with nothing, and the same holds for the lock and the selection: an edit to a document, a new probe or a moved lock leaves these bytes alone. `headwater generate` names each result whose recorded lock, read set or selection moved, and `headwater probe stale` takes the digest and reports which recorded results a change voided. Neither one fails for it.
 
-Graded by grader 0.5.0.
+Graded by grader 0.5.1.
 A campaign run in the present arm, on claude-sonnet-5 at served version claude-sonnet-5.
 
 ## The verdicts
 
 - HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor (discovery, expects opened)
-    session L5-campaign-present-p1-r1: satisfied — event 1, call 27: `Bash {"command":"cd /home/james/.claude/jobs/1338ac1e/tmp/issue-1384/full/campaign/ws/L5-campaign-present-p1-r1 && sed -n '1,400p' docs/spec/12-check-layer.md 2>/dev/null | head -200","description":"Read spec 12 check layer doc"}`
-    session L5-campaign-present-p1-r10: not satisfied — 20 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p1-r11: not satisfied — 22 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p1-r12: satisfied — event 4, call 21: `Read /home/james/.claude/jobs/1338ac1e/tmp/issue-1384/full/campaign/ws/L5-campaign-present-p1-r12/docs/spec/12-check-layer.md`
-    session L5-campaign-present-p1-r13: not satisfied — 28 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p1-r14: not satisfied — 23 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p1-r15: not satisfied — 20 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p1-r16: satisfied — event 8, call 30: `Bash {"command":"cd /home/james/.claude/jobs/1338ac1e/tmp/issue-1384/full/campaign/ws/L5-campaign-present-p1-r16 && grep -n -i \"severity\\|error\\b\\|advisory\\|warn\\b\" docs/spec/12-check-layer.md | head -80"}`
-    session L5-campaign-present-p1-r17: satisfied — event 9, call 21: `Bash {"command":"grep -rn \"facet.value.blank\\|facet_blank\\|Blank::\" engine/crates/check/src/register.rs taxonomy-source/headwater-standard/taxonomy.yml docs/spec/12-check-layer.md 2>/dev/null","description":"Search for facet.value.blank registration and doc references"}`
-    session L5-campaign-present-p1-r18: not satisfied — 35 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p1-r19: not satisfied — 29 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p1-r2: not satisfied — 31 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p1-r20: not satisfied — 19 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p1-r21: not satisfied — 26 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p1-r22: not satisfied — 32 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p1-r23: not satisfied — 23 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p1-r24: not satisfied — 20 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p1-r25: not satisfied — 32 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p1-r26: not satisfied — 18 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p1-r27: not satisfied — 20 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p1-r28: not satisfied — 26 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p1-r29: satisfied — event 22, call 18: `Bash {"command":"grep -n \"facet.value.blank\\|facet_blank\" docs/spec/12-check-layer.md engine/crates/check/src/lib.rs engine/crates/cli/src/main.rs 2>/dev/null","description":"Find spec and registration references to the blank-facet rule"}`
-    session L5-campaign-present-p1-r3: not satisfied — 123 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p1-r30: satisfied — event 24, call 17: `Bash {"command":"grep -rln \"facet.value.blank\" docs/ 2>/dev/null; echo \"---lib.rs facet_blank registration---\"; grep -n \"facet_blank\" engine/crates/check/src/lib.rs; echo \"---spec 12 excerpt about generated rules---\"; grep -n \"generated\\|Shape-origin\\|declared in.*taxonomy\" docs/spec/12-check-layer.md | head -30","description":"Search docs for facet.value.blank rule catalog and generation description"}`
-    session L5-campaign-present-p1-r4: not satisfied — 8 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p1-r5: not satisfied — 33 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p1-r6: satisfied — event 27, call 38: `Bash {"command":"grep -n \"^#\\|fixability\\|Fixability\\|mechanical\" docs/spec/12-check-layer.md | head -60"}`
-    session L5-campaign-present-p1-r7: not satisfied — 26 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p1-r8: not satisfied — 29 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p1-r9: not satisfied — 22 recorded calls, and none named any of the 1 document
+    session L5-campaign-present-p1-r1: satisfied — event 1, call 27: `Bash {"command":"cd /home/james/.claude/jobs/1338ac1e/tmp/issue-1384/full/campaign/ws/L5-campaign-present-p1-r1 && sed -n '1,400p' docs/spec/12-check-layer.md 2>/dev/null | head -200","description":"Read spec 12 check layer doc"}`; no call to a tool of an MCP server
+    session L5-campaign-present-p1-r10: not satisfied — 20 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p1-r11: not satisfied — 22 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p1-r12: satisfied — event 4, call 21: `Read /home/james/.claude/jobs/1338ac1e/tmp/issue-1384/full/campaign/ws/L5-campaign-present-p1-r12/docs/spec/12-check-layer.md`; no call to a tool of an MCP server
+    session L5-campaign-present-p1-r13: not satisfied — 28 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p1-r14: not satisfied — 23 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p1-r15: not satisfied — 20 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p1-r16: satisfied — event 8, call 30: `Bash {"command":"cd /home/james/.claude/jobs/1338ac1e/tmp/issue-1384/full/campaign/ws/L5-campaign-present-p1-r16 && grep -n -i \"severity\\|error\\b\\|advisory\\|warn\\b\" docs/spec/12-check-layer.md | head -80"}`; no call to a tool of an MCP server
+    session L5-campaign-present-p1-r17: satisfied — event 9, call 21: `Bash {"command":"grep -rn \"facet.value.blank\\|facet_blank\\|Blank::\" engine/crates/check/src/register.rs taxonomy-source/headwater-standard/taxonomy.yml docs/spec/12-check-layer.md 2>/dev/null","description":"Search for facet.value.blank registration and doc references"}`; no call to a tool of an MCP server
+    session L5-campaign-present-p1-r18: not satisfied — 35 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p1-r19: not satisfied — 29 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p1-r2: not satisfied — 31 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p1-r20: not satisfied — 19 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p1-r21: not satisfied — 26 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p1-r22: not satisfied — 32 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p1-r23: not satisfied — 23 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p1-r24: not satisfied — 20 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p1-r25: not satisfied — 32 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p1-r26: not satisfied — 18 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p1-r27: not satisfied — 20 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p1-r28: not satisfied — 26 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p1-r29: satisfied — event 22, call 18: `Bash {"command":"grep -n \"facet.value.blank\\|facet_blank\" docs/spec/12-check-layer.md engine/crates/check/src/lib.rs engine/crates/cli/src/main.rs 2>/dev/null","description":"Find spec and registration references to the blank-facet rule"}`; no call to a tool of an MCP server
+    session L5-campaign-present-p1-r3: not satisfied — 123 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p1-r30: satisfied — event 24, call 17: `Bash {"command":"grep -rln \"facet.value.blank\" docs/ 2>/dev/null; echo \"---lib.rs facet_blank registration---\"; grep -n \"facet_blank\" engine/crates/check/src/lib.rs; echo \"---spec 12 excerpt about generated rules---\"; grep -n \"generated\\|Shape-origin\\|declared in.*taxonomy\" docs/spec/12-check-layer.md | head -30","description":"Search docs for facet.value.blank rule catalog and generation description"}`; no call to a tool of an MCP server
+    session L5-campaign-present-p1-r4: not satisfied — 8 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p1-r5: not satisfied — 33 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p1-r6: satisfied — event 27, call 38: `Bash {"command":"grep -n \"^#\\|fixability\\|Fixability\\|mechanical\" docs/spec/12-check-layer.md | head -60"}`; no call to a tool of an MCP server
+    session L5-campaign-present-p1-r7: not satisfied — 26 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p1-r8: not satisfied — 29 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p1-r9: not satisfied — 22 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
 - HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens (discovery, expects opened)
-    session L5-campaign-present-p2-r1: satisfied — event 31, call 20: `Bash {"command":"sed -n '1,30p' docs/obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md","description":"Read obligation 0107 for the specification-kind refusal example"}`
-    session L5-campaign-present-p2-r10: not satisfied — 11 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p2-r11: not satisfied — 22 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p2-r12: not satisfied — 13 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p2-r13: not satisfied — 3 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p2-r14: not satisfied — 14 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p2-r15: satisfied — event 37, call 21: `Read /home/james/.claude/jobs/1338ac1e/tmp/issue-1384/full/campaign/ws/L5-campaign-present-p2-r15/docs/obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md`
-    session L5-campaign-present-p2-r16: not satisfied — 11 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p2-r17: not satisfied — 11 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p2-r18: not satisfied — 10 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p2-r19: not satisfied — 10 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p2-r2: not satisfied — 14 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p2-r20: not satisfied — 19 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p2-r21: not satisfied — 29 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p2-r22: not satisfied — 8 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p2-r23: not satisfied — 15 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p2-r24: not satisfied — 15 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p2-r25: not satisfied — 7 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p2-r26: not satisfied — 10 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p2-r27: not satisfied — 20 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p2-r28: not satisfied — 16 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p2-r29: not satisfied — 9 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p2-r3: not satisfied — 1 recorded call, and none named any of the 1 document
-    session L5-campaign-present-p2-r30: not satisfied — 12 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p2-r4: not satisfied — 22 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p2-r5: not satisfied — 15 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p2-r6: not satisfied — 14 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p2-r7: not satisfied — 10 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p2-r8: not satisfied — 2 recorded calls, and none named any of the 1 document
-    session L5-campaign-present-p2-r9: not satisfied — 14 recorded calls, and none named any of the 1 document
+    session L5-campaign-present-p2-r1: satisfied — event 31, call 20: `Bash {"command":"sed -n '1,30p' docs/obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md","description":"Read obligation 0107 for the specification-kind refusal example"}`; no call to a tool of an MCP server
+    session L5-campaign-present-p2-r10: not satisfied — 11 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p2-r11: not satisfied — 22 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p2-r12: not satisfied — 13 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p2-r13: not satisfied — 3 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p2-r14: not satisfied — 14 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p2-r15: satisfied — event 37, call 21: `Read /home/james/.claude/jobs/1338ac1e/tmp/issue-1384/full/campaign/ws/L5-campaign-present-p2-r15/docs/obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md`; no call to a tool of an MCP server
+    session L5-campaign-present-p2-r16: not satisfied — 11 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p2-r17: not satisfied — 11 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p2-r18: not satisfied — 10 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p2-r19: not satisfied — 10 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p2-r2: not satisfied — 14 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p2-r20: not satisfied — 19 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p2-r21: not satisfied — 29 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p2-r22: not satisfied — 8 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p2-r23: not satisfied — 15 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p2-r24: not satisfied — 15 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p2-r25: not satisfied — 7 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p2-r26: not satisfied — 10 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p2-r27: not satisfied — 20 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p2-r28: not satisfied — 16 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p2-r29: not satisfied — 9 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p2-r3: not satisfied — 1 recorded call, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p2-r30: not satisfied — 12 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p2-r4: not satisfied — 22 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p2-r5: not satisfied — 15 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p2-r6: not satisfied — 14 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p2-r7: not satisfied — 10 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p2-r8: not satisfied — 2 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L5-campaign-present-p2-r9: not satisfied — 14 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+
+60 of 60 sessions that recorded their calls made no call to a tool of an MCP server. 0 sessions recorded no calls.
 
 ## The rate, and the denominator it is over
 

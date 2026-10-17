@@ -1,18 +1,20 @@
-Graded by grader 0.5.0.
+Graded by grader 0.5.1.
 A regression run in the absent arm, on a-model at served version a-model-20260701.
 
 ## The verdicts
 
 - PROBE-FIX-answered (sufficiency, expects answered)
-    session 1: not satisfied — event 2 answered `maybe`, which the probe does not declare
+    session 1: not satisfied — event 2 answered `maybe`, which the probe does not declare; no call to a tool of an MCP server
 - PROBE-FIX-cited (sufficiency, expects cited)
-    session 1: not satisfied — 1 produced artifact, and none cites any of the 1 identifier
+    session 1: not satisfied — 1 produced artifact, and none cites any of the 1 identifier; no call to a tool of an MCP server
 - PROBE-FIX-not-opened (navigability, expects not_opened)
-    session 1: not satisfied — event 3, call 1 read `corpus/probes/0001-opened.md`
+    session 1: not satisfied — event 3, call 1 read `corpus/probes/0001-opened.md`; no call to a tool of an MCP server
 - PROBE-FIX-opened (discovery, expects opened)
-    session 1: not satisfied — 1 recorded call, and none named any of the 1 document
+    session 1: not satisfied — 1 recorded call, and none named any of the 1 document; no call to a tool of an MCP server
 - PROBE-FIX-patched (sufficiency, expects patched)
-    session 1: not satisfied — `section.required.missing` reported over each of the 1 produced artifact
+    session 1: not satisfied — `section.required.missing` reported over each of the 1 produced artifact; no call to a tool of an MCP server
+
+5 of 5 sessions that recorded their calls made no call to a tool of an MCP server. 0 sessions recorded no calls.
 
 ## The rate, and the denominator it is over
 

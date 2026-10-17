@@ -28,19 +28,21 @@ The selection this transcript names is `sha256:2ae2482aea0cf2c00e83fac793d72d09c
 
 The `read_set` digest above covers every probe of the selection and every document one of them examines, by path and content. This file names it as provenance and compares it with nothing, and the same holds for the lock and the selection: an edit to a document, a new probe or a moved lock leaves these bytes alone. `headwater generate` names each result whose recorded lock, read set or selection moved, and `headwater probe stale` takes the digest and reports which recorded results a change voided. Neither one fails for it.
 
-Graded by grader 0.5.0.
+Graded by grader 0.5.1.
 A regression run in the present arm, on claude-haiku-4-5 at served version claude-haiku-4-5-20251001.
 
 ## The verdicts
 
 - HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor (discovery, expects opened)
-    session regression-20260911-cold-current: not satisfied — 37 recorded calls, and none named any of the 1 document
+    session regression-20260911-cold-current: not satisfied — 37 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
 - HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer (sufficiency, expects answered)
-    session regression-20260911-tombstone-current: not satisfied — event 2 answered `present`, and the probe expects `absent`
+    session regression-20260911-tombstone-current: not satisfied — event 2 answered `present`, and the probe expects `absent`; no call to a tool of an MCP server
 - HW-PROBE-an-agent-reaches-the-adjudication-from-the-document-that-lost-it (navigability, expects opened)
-    session regression-20260911-adjudication-current: not satisfied — 1 recorded call, and none named any of the 2 documents
+    session regression-20260911-adjudication-current: not satisfied — 1 recorded call, and none named any of the 2 documents; no call to a tool of an MCP server
 - HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document (discovery, expects opened)
-    session regression-20260911-authoring-clean: not satisfied — 3 recorded calls, and none named any of the 1 document
+    session regression-20260911-authoring-clean: not satisfied — 3 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+
+4 of 4 sessions that recorded their calls made no call to a tool of an MCP server. 0 sessions recorded no calls.
 
 ## The rate, and the denominator it is over
 

@@ -26,166 +26,168 @@ The selection this transcript names is `sha256:77ce7e13166fd99f67da4bb4ddd90eaa6
 
 The `read_set` digest above covers every probe of the selection and every document one of them examines, by path and content. This file names it as provenance and compares it with nothing, and the same holds for the lock and the selection: an edit to a document, a new probe or a moved lock leaves these bytes alone. `headwater generate` names each result whose recorded lock, read set or selection moved, and `headwater probe stale` takes the digest and reports which recorded results a change voided. Neither one fails for it.
 
-Graded by grader 0.5.0.
+Graded by grader 0.5.1.
 A campaign run in the absent arm, on claude-sonnet-5 at served version claude-sonnet-5.
 
 ## The verdicts
 
 - HW-PROBE-a-session-answers-from-the-register-without-opening-the-question-it-replaced (navigability, expects not_opened)
-    session L16-campaign-absent-p2-r1: satisfied — 4 recorded calls, and none named any of the 1 document
-    session L16-campaign-absent-p2-r10: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L16-campaign-absent-p2-r11: satisfied — 3 recorded calls, and none named any of the 1 document
-    session L16-campaign-absent-p2-r12: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L16-campaign-absent-p2-r13: satisfied — 6 recorded calls, and none named any of the 1 document
-    session L16-campaign-absent-p2-r14: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L16-campaign-absent-p2-r15: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L16-campaign-absent-p2-r16: satisfied — 4 recorded calls, and none named any of the 1 document
-    session L16-campaign-absent-p2-r17: satisfied — 4 recorded calls, and none named any of the 1 document
-    session L16-campaign-absent-p2-r18: satisfied — 6 recorded calls, and none named any of the 1 document
-    session L16-campaign-absent-p2-r19: satisfied — 6 recorded calls, and none named any of the 1 document
-    session L16-campaign-absent-p2-r2: satisfied — 4 recorded calls, and none named any of the 1 document
-    session L16-campaign-absent-p2-r20: satisfied — 3 recorded calls, and none named any of the 1 document
-    session L16-campaign-absent-p2-r21: satisfied — 3 recorded calls, and none named any of the 1 document
-    session L16-campaign-absent-p2-r22: satisfied — 4 recorded calls, and none named any of the 1 document
-    session L16-campaign-absent-p2-r23: satisfied — 6 recorded calls, and none named any of the 1 document
-    session L16-campaign-absent-p2-r24: satisfied — 7 recorded calls, and none named any of the 1 document
-    session L16-campaign-absent-p2-r25: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L16-campaign-absent-p2-r26: satisfied — 3 recorded calls, and none named any of the 1 document
-    session L16-campaign-absent-p2-r27: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L16-campaign-absent-p2-r28: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L16-campaign-absent-p2-r29: satisfied — 4 recorded calls, and none named any of the 1 document
-    session L16-campaign-absent-p2-r3: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L16-campaign-absent-p2-r30: satisfied — 8 recorded calls, and none named any of the 1 document
-    session L16-campaign-absent-p2-r4: satisfied — 4 recorded calls, and none named any of the 1 document
-    session L16-campaign-absent-p2-r5: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L16-campaign-absent-p2-r6: satisfied — 4 recorded calls, and none named any of the 1 document
-    session L16-campaign-absent-p2-r7: satisfied — 5 recorded calls, and none named any of the 1 document
-    session L16-campaign-absent-p2-r8: satisfied — 4 recorded calls, and none named any of the 1 document
-    session L16-campaign-absent-p2-r9: satisfied — 4 recorded calls, and none named any of the 1 document
+    session L16-campaign-absent-p2-r1: satisfied — 4 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L16-campaign-absent-p2-r10: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L16-campaign-absent-p2-r11: satisfied — 3 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L16-campaign-absent-p2-r12: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L16-campaign-absent-p2-r13: satisfied — 6 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L16-campaign-absent-p2-r14: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L16-campaign-absent-p2-r15: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L16-campaign-absent-p2-r16: satisfied — 4 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L16-campaign-absent-p2-r17: satisfied — 4 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L16-campaign-absent-p2-r18: satisfied — 6 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L16-campaign-absent-p2-r19: satisfied — 6 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L16-campaign-absent-p2-r2: satisfied — 4 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L16-campaign-absent-p2-r20: satisfied — 3 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L16-campaign-absent-p2-r21: satisfied — 3 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L16-campaign-absent-p2-r22: satisfied — 4 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L16-campaign-absent-p2-r23: satisfied — 6 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L16-campaign-absent-p2-r24: satisfied — 7 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L16-campaign-absent-p2-r25: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L16-campaign-absent-p2-r26: satisfied — 3 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L16-campaign-absent-p2-r27: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L16-campaign-absent-p2-r28: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L16-campaign-absent-p2-r29: satisfied — 4 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L16-campaign-absent-p2-r3: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L16-campaign-absent-p2-r30: satisfied — 8 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L16-campaign-absent-p2-r4: satisfied — 4 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L16-campaign-absent-p2-r5: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L16-campaign-absent-p2-r6: satisfied — 4 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L16-campaign-absent-p2-r7: satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L16-campaign-absent-p2-r8: satisfied — 4 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
+    session L16-campaign-absent-p2-r9: satisfied — 4 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server
 - HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document (navigability, expects answered)
-    session L16-campaign-absent-p3-r1: satisfied — event 61: answered `command`
-    session L16-campaign-absent-p3-r10: satisfied — event 62: answered `command`
-    session L16-campaign-absent-p3-r11: satisfied — event 63: answered `command`
-    session L16-campaign-absent-p3-r12: satisfied — event 64: answered `command`
-    session L16-campaign-absent-p3-r13: satisfied — event 65: answered `command`
-    session L16-campaign-absent-p3-r14: not satisfied — event 66 answered `hand`, and the probe expects `command`
-    session L16-campaign-absent-p3-r15: satisfied — event 67: answered `command`
-    session L16-campaign-absent-p3-r16: satisfied — event 68: answered `command`
-    session L16-campaign-absent-p3-r17: satisfied — event 69: answered `command`
-    session L16-campaign-absent-p3-r18: satisfied — event 70: answered `command`
-    session L16-campaign-absent-p3-r19: satisfied — event 71: answered `command`
-    session L16-campaign-absent-p3-r2: satisfied — event 72: answered `command`
-    session L16-campaign-absent-p3-r20: satisfied — event 73: answered `command`
-    session L16-campaign-absent-p3-r21: not satisfied — event 74 answered `hand`, and the probe expects `command`
-    session L16-campaign-absent-p3-r22: not satisfied — event 75 answered `hand`, and the probe expects `command`
-    session L16-campaign-absent-p3-r23: satisfied — event 76: answered `command`
-    session L16-campaign-absent-p3-r24: satisfied — event 77: answered `command`
-    session L16-campaign-absent-p3-r25: not satisfied — event 78 answered `hand`, and the probe expects `command`
-    session L16-campaign-absent-p3-r26: satisfied — event 79: answered `command`
-    session L16-campaign-absent-p3-r27: satisfied — event 80: answered `command`
-    session L16-campaign-absent-p3-r28: satisfied — event 81: answered `command`
-    session L16-campaign-absent-p3-r29: satisfied — event 82: answered `command`
-    session L16-campaign-absent-p3-r3: satisfied — event 83: answered `command`
-    session L16-campaign-absent-p3-r30: satisfied — event 84: answered `command`
-    session L16-campaign-absent-p3-r4: satisfied — event 85: answered `command`
-    session L16-campaign-absent-p3-r5: satisfied — event 86: answered `command`
-    session L16-campaign-absent-p3-r6: satisfied — event 87: answered `command`
-    session L16-campaign-absent-p3-r7: satisfied — event 88: answered `command`
-    session L16-campaign-absent-p3-r8: satisfied — event 89: answered `command`
-    session L16-campaign-absent-p3-r9: satisfied — event 90: answered `command`
+    session L16-campaign-absent-p3-r1: satisfied — event 61: answered `command`; no call to a tool of an MCP server
+    session L16-campaign-absent-p3-r10: satisfied — event 62: answered `command`; no call to a tool of an MCP server
+    session L16-campaign-absent-p3-r11: satisfied — event 63: answered `command`; no call to a tool of an MCP server
+    session L16-campaign-absent-p3-r12: satisfied — event 64: answered `command`; no call to a tool of an MCP server
+    session L16-campaign-absent-p3-r13: satisfied — event 65: answered `command`; no call to a tool of an MCP server
+    session L16-campaign-absent-p3-r14: not satisfied — event 66 answered `hand`, and the probe expects `command`; no call to a tool of an MCP server
+    session L16-campaign-absent-p3-r15: satisfied — event 67: answered `command`; no call to a tool of an MCP server
+    session L16-campaign-absent-p3-r16: satisfied — event 68: answered `command`; no call to a tool of an MCP server
+    session L16-campaign-absent-p3-r17: satisfied — event 69: answered `command`; no call to a tool of an MCP server
+    session L16-campaign-absent-p3-r18: satisfied — event 70: answered `command`; no call to a tool of an MCP server
+    session L16-campaign-absent-p3-r19: satisfied — event 71: answered `command`; no call to a tool of an MCP server
+    session L16-campaign-absent-p3-r2: satisfied — event 72: answered `command`; no call to a tool of an MCP server
+    session L16-campaign-absent-p3-r20: satisfied — event 73: answered `command`; no call to a tool of an MCP server
+    session L16-campaign-absent-p3-r21: not satisfied — event 74 answered `hand`, and the probe expects `command`; no call to a tool of an MCP server
+    session L16-campaign-absent-p3-r22: not satisfied — event 75 answered `hand`, and the probe expects `command`; no call to a tool of an MCP server
+    session L16-campaign-absent-p3-r23: satisfied — event 76: answered `command`; no call to a tool of an MCP server
+    session L16-campaign-absent-p3-r24: satisfied — event 77: answered `command`; no call to a tool of an MCP server
+    session L16-campaign-absent-p3-r25: not satisfied — event 78 answered `hand`, and the probe expects `command`; no call to a tool of an MCP server
+    session L16-campaign-absent-p3-r26: satisfied — event 79: answered `command`; no call to a tool of an MCP server
+    session L16-campaign-absent-p3-r27: satisfied — event 80: answered `command`; no call to a tool of an MCP server
+    session L16-campaign-absent-p3-r28: satisfied — event 81: answered `command`; no call to a tool of an MCP server
+    session L16-campaign-absent-p3-r29: satisfied — event 82: answered `command`; no call to a tool of an MCP server
+    session L16-campaign-absent-p3-r3: satisfied — event 83: answered `command`; no call to a tool of an MCP server
+    session L16-campaign-absent-p3-r30: satisfied — event 84: answered `command`; no call to a tool of an MCP server
+    session L16-campaign-absent-p3-r4: satisfied — event 85: answered `command`; no call to a tool of an MCP server
+    session L16-campaign-absent-p3-r5: satisfied — event 86: answered `command`; no call to a tool of an MCP server
+    session L16-campaign-absent-p3-r6: satisfied — event 87: answered `command`; no call to a tool of an MCP server
+    session L16-campaign-absent-p3-r7: satisfied — event 88: answered `command`; no call to a tool of an MCP server
+    session L16-campaign-absent-p3-r8: satisfied — event 89: answered `command`; no call to a tool of an MCP server
+    session L16-campaign-absent-p3-r9: satisfied — event 90: answered `command`; no call to a tool of an MCP server
 - HW-PROBE-a-session-says-where-a-figure-on-the-site-is-written (navigability, expects answered)
-    session L16-campaign-absent-p4-r1: satisfied — event 91: answered `published`
-    session L16-campaign-absent-p4-r10: satisfied — event 92: answered `published`
-    session L16-campaign-absent-p4-r11: satisfied — event 93: answered `published`
-    session L16-campaign-absent-p4-r12: satisfied — event 94: answered `published`
-    session L16-campaign-absent-p4-r13: satisfied — event 95: answered `published`
-    session L16-campaign-absent-p4-r14: satisfied — event 96: answered `published`
-    session L16-campaign-absent-p4-r15: satisfied — event 97: answered `published`
-    session L16-campaign-absent-p4-r16: satisfied — event 98: answered `published`
-    session L16-campaign-absent-p4-r17: satisfied — event 99: answered `published`
-    session L16-campaign-absent-p4-r18: satisfied — event 100: answered `published`
-    session L16-campaign-absent-p4-r19: satisfied — event 101: answered `published`
-    session L16-campaign-absent-p4-r2: satisfied — event 102: answered `published`
-    session L16-campaign-absent-p4-r20: satisfied — event 103: answered `published`
-    session L16-campaign-absent-p4-r21: satisfied — event 104: answered `published`
-    session L16-campaign-absent-p4-r22: satisfied — event 105: answered `published`
-    session L16-campaign-absent-p4-r23: satisfied — event 106: answered `published`
-    session L16-campaign-absent-p4-r24: satisfied — event 107: answered `published`
-    session L16-campaign-absent-p4-r25: satisfied — event 108: answered `published`
-    session L16-campaign-absent-p4-r26: satisfied — event 109: answered `published`
-    session L16-campaign-absent-p4-r27: satisfied — event 110: answered `published`
-    session L16-campaign-absent-p4-r28: satisfied — event 111: answered `published`
-    session L16-campaign-absent-p4-r29: satisfied — event 112: answered `published`
-    session L16-campaign-absent-p4-r3: not satisfied — the session ended with no answer
-    session L16-campaign-absent-p4-r30: satisfied — event 114: answered `published`
-    session L16-campaign-absent-p4-r4: satisfied — event 115: answered `published`
-    session L16-campaign-absent-p4-r5: satisfied — event 116: answered `published`
-    session L16-campaign-absent-p4-r6: satisfied — event 117: answered `published`
-    session L16-campaign-absent-p4-r7: satisfied — event 118: answered `published`
-    session L16-campaign-absent-p4-r8: satisfied — event 119: answered `published`
-    session L16-campaign-absent-p4-r9: satisfied — event 120: answered `published`
+    session L16-campaign-absent-p4-r1: satisfied — event 91: answered `published`; no call to a tool of an MCP server
+    session L16-campaign-absent-p4-r10: satisfied — event 92: answered `published`; no call to a tool of an MCP server
+    session L16-campaign-absent-p4-r11: satisfied — event 93: answered `published`; no call to a tool of an MCP server
+    session L16-campaign-absent-p4-r12: satisfied — event 94: answered `published`; no call to a tool of an MCP server
+    session L16-campaign-absent-p4-r13: satisfied — event 95: answered `published`; no call to a tool of an MCP server
+    session L16-campaign-absent-p4-r14: satisfied — event 96: answered `published`; no call to a tool of an MCP server
+    session L16-campaign-absent-p4-r15: satisfied — event 97: answered `published`; no call to a tool of an MCP server
+    session L16-campaign-absent-p4-r16: satisfied — event 98: answered `published`; no call to a tool of an MCP server
+    session L16-campaign-absent-p4-r17: satisfied — event 99: answered `published`; no call to a tool of an MCP server
+    session L16-campaign-absent-p4-r18: satisfied — event 100: answered `published`; no call to a tool of an MCP server
+    session L16-campaign-absent-p4-r19: satisfied — event 101: answered `published`; no call to a tool of an MCP server
+    session L16-campaign-absent-p4-r2: satisfied — event 102: answered `published`; no call to a tool of an MCP server
+    session L16-campaign-absent-p4-r20: satisfied — event 103: answered `published`; no call to a tool of an MCP server
+    session L16-campaign-absent-p4-r21: satisfied — event 104: answered `published`; no call to a tool of an MCP server
+    session L16-campaign-absent-p4-r22: satisfied — event 105: answered `published`; no call to a tool of an MCP server
+    session L16-campaign-absent-p4-r23: satisfied — event 106: answered `published`; no call to a tool of an MCP server
+    session L16-campaign-absent-p4-r24: satisfied — event 107: answered `published`; no call to a tool of an MCP server
+    session L16-campaign-absent-p4-r25: satisfied — event 108: answered `published`; no call to a tool of an MCP server
+    session L16-campaign-absent-p4-r26: satisfied — event 109: answered `published`; no call to a tool of an MCP server
+    session L16-campaign-absent-p4-r27: satisfied — event 110: answered `published`; no call to a tool of an MCP server
+    session L16-campaign-absent-p4-r28: satisfied — event 111: answered `published`; no call to a tool of an MCP server
+    session L16-campaign-absent-p4-r29: satisfied — event 112: answered `published`; no call to a tool of an MCP server
+    session L16-campaign-absent-p4-r3: not satisfied — the session ended with no answer; no call to a tool of an MCP server
+    session L16-campaign-absent-p4-r30: satisfied — event 114: answered `published`; no call to a tool of an MCP server
+    session L16-campaign-absent-p4-r4: satisfied — event 115: answered `published`; no call to a tool of an MCP server
+    session L16-campaign-absent-p4-r5: satisfied — event 116: answered `published`; no call to a tool of an MCP server
+    session L16-campaign-absent-p4-r6: satisfied — event 117: answered `published`; no call to a tool of an MCP server
+    session L16-campaign-absent-p4-r7: satisfied — event 118: answered `published`; no call to a tool of an MCP server
+    session L16-campaign-absent-p4-r8: satisfied — event 119: answered `published`; no call to a tool of an MCP server
+    session L16-campaign-absent-p4-r9: satisfied — event 120: answered `published`; no call to a tool of an MCP server
 - HW-PROBE-an-agent-reaches-the-adjudication-from-the-document-that-lost-it (navigability, expects opened)
-    session L16-campaign-absent-p1-r1: satisfied — event 1, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r1/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L16-campaign-absent-p1-r10: satisfied — event 2, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r10/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L16-campaign-absent-p1-r11: satisfied — event 3, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r11/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L16-campaign-absent-p1-r12: satisfied — event 4, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r12/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L16-campaign-absent-p1-r13: satisfied — event 5, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r13/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L16-campaign-absent-p1-r14: satisfied — event 6, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r14/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L16-campaign-absent-p1-r15: satisfied — event 7, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r15/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L16-campaign-absent-p1-r16: satisfied — event 8, call 6: `Read docs/decisions/0008-probe-cost-and-cadence.md`
-    session L16-campaign-absent-p1-r17: satisfied — event 9, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r17/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L16-campaign-absent-p1-r18: satisfied — event 10, call 5: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r18/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L16-campaign-absent-p1-r19: satisfied — event 11, call 6: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r19/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L16-campaign-absent-p1-r2: satisfied — event 12, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r2/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L16-campaign-absent-p1-r20: satisfied — event 13, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r20/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L16-campaign-absent-p1-r21: satisfied — event 14, call 6: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r21/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L16-campaign-absent-p1-r22: satisfied — event 15, call 4: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r22/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L16-campaign-absent-p1-r23: satisfied — event 16, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r23/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L16-campaign-absent-p1-r24: satisfied — event 17, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r24/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L16-campaign-absent-p1-r25: satisfied — event 18, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r25/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L16-campaign-absent-p1-r26: satisfied — event 19, call 4: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r26/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L16-campaign-absent-p1-r27: satisfied — event 20, call 6: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r27/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L16-campaign-absent-p1-r28: satisfied — event 21, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r28/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L16-campaign-absent-p1-r29: satisfied — event 22, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r29/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L16-campaign-absent-p1-r3: satisfied — event 23, call 3: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r3/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L16-campaign-absent-p1-r30: satisfied — event 24, call 4: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r30/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L16-campaign-absent-p1-r4: satisfied — event 25, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r4/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L16-campaign-absent-p1-r5: satisfied — event 26, call 5: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r5/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L16-campaign-absent-p1-r6: satisfied — event 27, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r6/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L16-campaign-absent-p1-r7: satisfied — event 28, call 5: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r7/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L16-campaign-absent-p1-r8: satisfied — event 29, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r8/docs/decisions/0008-probe-cost-and-cadence.md`
-    session L16-campaign-absent-p1-r9: satisfied — event 30, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r9/docs/decisions/0008-probe-cost-and-cadence.md`
+    session L16-campaign-absent-p1-r1: satisfied — event 1, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r1/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L16-campaign-absent-p1-r10: satisfied — event 2, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r10/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L16-campaign-absent-p1-r11: satisfied — event 3, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r11/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L16-campaign-absent-p1-r12: satisfied — event 4, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r12/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L16-campaign-absent-p1-r13: satisfied — event 5, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r13/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L16-campaign-absent-p1-r14: satisfied — event 6, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r14/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L16-campaign-absent-p1-r15: satisfied — event 7, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r15/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L16-campaign-absent-p1-r16: satisfied — event 8, call 6: `Read docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L16-campaign-absent-p1-r17: satisfied — event 9, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r17/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L16-campaign-absent-p1-r18: satisfied — event 10, call 5: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r18/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L16-campaign-absent-p1-r19: satisfied — event 11, call 6: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r19/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L16-campaign-absent-p1-r2: satisfied — event 12, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r2/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L16-campaign-absent-p1-r20: satisfied — event 13, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r20/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L16-campaign-absent-p1-r21: satisfied — event 14, call 6: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r21/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L16-campaign-absent-p1-r22: satisfied — event 15, call 4: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r22/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L16-campaign-absent-p1-r23: satisfied — event 16, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r23/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L16-campaign-absent-p1-r24: satisfied — event 17, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r24/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L16-campaign-absent-p1-r25: satisfied — event 18, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r25/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L16-campaign-absent-p1-r26: satisfied — event 19, call 4: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r26/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L16-campaign-absent-p1-r27: satisfied — event 20, call 6: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r27/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L16-campaign-absent-p1-r28: satisfied — event 21, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r28/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L16-campaign-absent-p1-r29: satisfied — event 22, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r29/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L16-campaign-absent-p1-r3: satisfied — event 23, call 3: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r3/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L16-campaign-absent-p1-r30: satisfied — event 24, call 4: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r30/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L16-campaign-absent-p1-r4: satisfied — event 25, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r4/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L16-campaign-absent-p1-r5: satisfied — event 26, call 5: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r5/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L16-campaign-absent-p1-r6: satisfied — event 27, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r6/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L16-campaign-absent-p1-r7: satisfied — event 28, call 5: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r7/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L16-campaign-absent-p1-r8: satisfied — event 29, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r8/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
+    session L16-campaign-absent-p1-r9: satisfied — event 30, call 2: `Read /var/tmp/hw-1659/a/ws/L16-campaign-absent-p1-r9/docs/decisions/0008-probe-cost-and-cadence.md`; no call to a tool of an MCP server
 - HW-PROBE-what-a-session-writes-points-back-at-the-ruling-it-rests-on (navigability, expects cited)
-    session L16-campaign-absent-p5-r1: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L16-campaign-absent-p5-r10: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L16-campaign-absent-p5-r11: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L16-campaign-absent-p5-r12: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L16-campaign-absent-p5-r13: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L16-campaign-absent-p5-r14: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L16-campaign-absent-p5-r15: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L16-campaign-absent-p5-r16: satisfied — event 128: `docs/explanations/why-a-corpus-wide-count-is-computed-on-read.md` cites HW-DR-0049
-    session L16-campaign-absent-p5-r17: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L16-campaign-absent-p5-r18: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L16-campaign-absent-p5-r19: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L16-campaign-absent-p5-r2: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L16-campaign-absent-p5-r20: satisfied — event 133: `docs/explanations/why-corpus-counts-are-derived-not-stored.md` cites HW-DR-0049
-    session L16-campaign-absent-p5-r21: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L16-campaign-absent-p5-r22: satisfied — event 135: `engine/crates/census/src/census.rs` cites HW-DR-0049
-    session L16-campaign-absent-p5-r23: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L16-campaign-absent-p5-r24: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L16-campaign-absent-p5-r25: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L16-campaign-absent-p5-r26: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L16-campaign-absent-p5-r27: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L16-campaign-absent-p5-r28: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L16-campaign-absent-p5-r29: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L16-campaign-absent-p5-r3: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L16-campaign-absent-p5-r30: satisfied — event 144: `engine/crates/census/src/census.rs` cites HW-DR-0049
-    session L16-campaign-absent-p5-r4: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L16-campaign-absent-p5-r5: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L16-campaign-absent-p5-r6: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
-    session L16-campaign-absent-p5-r7: satisfied — event 148: `docs/explanations/why-a-corpus-wide-count-is-derived-not-stored.md` cites HW-DR-0049
-    session L16-campaign-absent-p5-r8: satisfied — event 149: `engine/crates/census/src/census.rs` cites HW-DR-0049
-    session L16-campaign-absent-p5-r9: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier
+    session L16-campaign-absent-p5-r1: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L16-campaign-absent-p5-r10: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L16-campaign-absent-p5-r11: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L16-campaign-absent-p5-r12: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L16-campaign-absent-p5-r13: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L16-campaign-absent-p5-r14: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L16-campaign-absent-p5-r15: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L16-campaign-absent-p5-r16: satisfied — event 128: `docs/explanations/why-a-corpus-wide-count-is-computed-on-read.md` cites HW-DR-0049; no call to a tool of an MCP server
+    session L16-campaign-absent-p5-r17: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L16-campaign-absent-p5-r18: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L16-campaign-absent-p5-r19: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L16-campaign-absent-p5-r2: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L16-campaign-absent-p5-r20: satisfied — event 133: `docs/explanations/why-corpus-counts-are-derived-not-stored.md` cites HW-DR-0049; no call to a tool of an MCP server
+    session L16-campaign-absent-p5-r21: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L16-campaign-absent-p5-r22: satisfied — event 135: `engine/crates/census/src/census.rs` cites HW-DR-0049; no call to a tool of an MCP server
+    session L16-campaign-absent-p5-r23: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L16-campaign-absent-p5-r24: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L16-campaign-absent-p5-r25: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L16-campaign-absent-p5-r26: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L16-campaign-absent-p5-r27: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L16-campaign-absent-p5-r28: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L16-campaign-absent-p5-r29: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L16-campaign-absent-p5-r3: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L16-campaign-absent-p5-r30: satisfied — event 144: `engine/crates/census/src/census.rs` cites HW-DR-0049; no call to a tool of an MCP server
+    session L16-campaign-absent-p5-r4: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L16-campaign-absent-p5-r5: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L16-campaign-absent-p5-r6: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+    session L16-campaign-absent-p5-r7: satisfied — event 148: `docs/explanations/why-a-corpus-wide-count-is-derived-not-stored.md` cites HW-DR-0049; no call to a tool of an MCP server
+    session L16-campaign-absent-p5-r8: satisfied — event 149: `engine/crates/census/src/census.rs` cites HW-DR-0049; no call to a tool of an MCP server
+    session L16-campaign-absent-p5-r9: not satisfied — 0 produced artifacts, and none cites any of the 1 identifier; no call to a tool of an MCP server
+
+150 of 150 sessions that recorded their calls made no call to a tool of an MCP server. 0 sessions recorded no calls.
 
 ## The rate, and the denominator it is over
 

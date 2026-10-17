@@ -26,15 +26,17 @@ The selection this transcript names is `sha256:d0fddc9f0c2dd6ec76cbaa0a7a4839899
 
 The `read_set` digest above covers every probe of the selection and every document one of them examines, by path and content. This file names it as provenance and compares it with nothing, and the same holds for the lock and the selection: an edit to a document, a new probe or a moved lock leaves these bytes alone. `headwater generate` names each result whose recorded lock, read set or selection moved, and `headwater probe stale` takes the digest and reports which recorded results a change voided. Neither one fails for it.
 
-Graded by grader 0.5.0.
+Graded by grader 0.5.1.
 A regression run in the present arm, on claude-sonnet-5 at served version claude-sonnet-5.
 
 ## The verdicts
 
 - HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer (sufficiency, expects answered)
-    session L3-regression-present-p1-r1: satisfied — event 1: answered `absent`
+    session L3-regression-present-p1-r1: satisfied — event 1: answered `absent`; no call to a tool of an MCP server
 - HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks (sufficiency, expects patched)
-    session L3-regression-present-p2-r1: satisfied — event 2: `section.required.missing` reported nothing over `docs/process/obligations/0233-nothing-sums-what-a-session-s-standing-instructions-cost-before-its-first-turn.md`
+    session L3-regression-present-p2-r1: satisfied — event 2: `section.required.missing` reported nothing over `docs/process/obligations/0233-nothing-sums-what-a-session-s-standing-instructions-cost-before-its-first-turn.md`; no call to a tool of an MCP server
+
+2 of 2 sessions that recorded their calls made no call to a tool of an MCP server. 0 sessions recorded no calls.
 
 ## The rate, and the denominator it is over
 
