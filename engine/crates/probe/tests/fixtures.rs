@@ -2921,9 +2921,7 @@ fn intake_reads_the_additive_tier_and_a_scenario_arm() {
     );
     let refused = record_of(&tier).render(ColorMode::Plain);
     assert!(
-        refused.contains(
-            "The tiers are `regression`, `campaign`, `documentation` and `additive`"
-        ),
+        refused.contains("The tiers are `regression`, `campaign`, `documentation` and `additive`"),
         "{refused}"
     );
 }
