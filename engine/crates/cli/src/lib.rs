@@ -1097,6 +1097,9 @@ pub enum SweepWord {
 // The second word of `probe`.
 #[derive(Subcommand, Debug)]
 pub enum ProbeWord {
+    // `--delta` prints the delta of one arm or of one scenario, so it needs
+    // exactly one of the two (#1774).
+    #[command(group(clap::ArgGroup::new("delta_target").args(["arm", "scenario"]).multiple(false)))]
     Plan {
         #[arg(
             long,
@@ -1119,14 +1122,30 @@ pub enum ProbeWord {
         arm: Option<String>,
         #[arg(
             long,
-            requires = "arm",
+            requires = "delta_target",
             help = "plan nothing, and print how the tree of the `--arm` arm differs from the \
                     present tree, as the tier declares it: `- <path>` for each path the arm \
                     removes and `+ <path>` for each path it adds, one per line. It reads \
                     `.headwater/probe.yml` alone and loads no corpus. An arm the tier does not \
-                    run is refused with status 1"
+                    run is refused with status 1. With `--scenario` in place of `--arm`, it \
+                    prints the delta of that scenario"
         )]
         delta: bool,
+        #[arg(
+            long,
+            value_name = "n",
+            requires = "delta",
+            conflicts_with_all = ["instrument", "folds", "answer_keys"],
+            help = "with `--delta`, print how the tree of scenario <n> of the additive campaign \
+                    differs from the present tree, as the `layers` and `scenarios` of \
+                    `.headwater/probe.yml` declare it: `- <layer> <path>` for each path it \
+                    removes, `= <layer> <path>` for each path it keeps, and `+ <layer> <path>` \
+                    for each path it writes from `tools/probe/arms/<layer>/`, one per line. \
+                    Scenario 0 is plain code and removes the path of every layer. It reads \
+                    `.headwater/probe.yml` alone and loads no corpus. A scenario the file does \
+                    not declare is refused with status 1"
+        )]
+        scenario: Option<u32>,
         #[arg(
             long,
             conflicts_with = "delta",

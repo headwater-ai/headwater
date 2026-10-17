@@ -11,7 +11,13 @@
 #     sh tools/probe/ablate.sh <tier> <workspace> [<arm>]
 #     sh tools/probe/ablate.sh --present <workspace>
 #     sh tools/probe/ablate.sh --diff <tier> <arm> <present-tree>
+#     sh tools/probe/ablate.sh --scenario <n> <workspace>
+#     sh tools/probe/ablate.sh --diff --scenario <n> <present-tree> [<base>]
 #     sh tools/probe/ablate.sh --instrument
+#
+# The two `--scenario` forms build the additive campaign of #1774, which adds
+# layers to plain code where every arm below removes a part from the present
+# tree. They are described where they are parsed.
 #
 # `<arm>` is `absent` when it is not given. A component arm of the tier
 # (#1472), such as `no-hook` or `mcp`, applies the delta the tier declares for
@@ -73,7 +79,261 @@ case $0 in
 esac
 root=$(cd "$invoked_from/../.." && pwd -P)
 
-usage="usage: sh tools/probe/ablate.sh <tier> <workspace> [<arm>], --present <workspace>, --diff <tier> <arm> <present-tree>, or --instrument"
+usage="usage: sh tools/probe/ablate.sh <tier> <workspace> [<arm>], --present <workspace>, --diff <tier> <arm> <present-tree>, --scenario <n> <workspace>, --diff --scenario <n> <present-tree> [<base>], or --instrument"
+
+declaration=${HW_PROBE_YML:-$root/.headwater/probe.yml}
+engine=$root/engine/target/dev-release/headwater
+[ -x "$engine" ] || engine=$root/engine/target/release/headwater
+
+# Refuse, at status 2, a run with no declaration or no built engine to read it.
+engine_or_refuse() {
+    [ -f "$declaration" ] || {
+        echo "ablate: no probe declaration at $declaration" >&2
+        exit 2
+    }
+    [ -x "$engine" ] || {
+        echo "ablate: no engine under $root/engine/target to read $declaration. Build it first: cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked" >&2
+        exit 2
+    }
+}
+
+# Run `headwater probe plan` with the arguments given, over the declaration.
+# The engine reads `.headwater/probe.yml` under its `--root`: the checkout
+# itself when `HW_PROBE_YML` is unset, which needs nothing on `PATH`, and a
+# scratch root that holds a copy of the named declaration otherwise.
+plan_print() {
+    if [ -z "${HW_PROBE_YML:-}" ]; then
+        "$engine" probe plan --root "$root" "$@"
+        return
+    fi
+    plan_scratch=$(mktemp -d "${TMPDIR:-/tmp}/headwater-ablate-plan.XXXXXX") || return 2
+    if ! mkdir -p "$plan_scratch/root/.headwater" ||
+        ! cp "$declaration" "$plan_scratch/root/.headwater/probe.yml"; then
+        rm -rf "$plan_scratch"
+        return 2
+    fi
+    plan_status=0
+    "$engine" probe plan --root "$plan_scratch/root" "$@" || plan_status=$?
+    rm -rf "$plan_scratch"
+    return "$plan_status"
+}
+
+# **The additive campaign (#1774).** `--scenario <n> <workspace>` builds
+# scenario <n> in a present-arm workspace, in place. Scenario 0 is plain code:
+# the present tree with the instrument and the path of every layer removed.
+# Every other scenario is plain code with its layers added. The delta is the
+# engine's, `headwater probe plan --scenario <n> --delta`, one line per path
+# of each layer:
+#
+# - `- <layer> <path>`: the scenario does not hold the layer, so the path is
+#   removed.
+# - `= <layer> <path>`: the scenario holds the layer, so the path is kept from
+#   the present tree the workspace already is.
+# - `+ <layer> <path>`: the scenario holds the layer, so the path is written
+#   from `tools/probe/arms/<layer>/<path>` in this checkout.
+#
+# It removes first and writes after, so a written file replaces a removed
+# one, and it removes each directory that a removal leaves empty. So
+# scenario 0 holds no empty `.claude/` that the paths under it left behind.
+# It refuses a workspace inside this checkout (status 6), a scenario the
+# declaration does not carry, and a written file that is not there to copy
+# (status 2), each before it removes anything.
+scenario_build() {
+    sb_number=$1
+    sb_here=$2
+    sb_delta=$(plan_print --scenario "$sb_number" --delta) || {
+        echo "ablate: the engine did not print the delta of scenario $sb_number in $declaration" >&2
+        return 2
+    }
+    [ -n "$sb_delta" ] || {
+        echo "ablate: the engine printed an empty delta for scenario $sb_number" >&2
+        return 2
+    }
+    sb_instrument=$(plan_print --instrument) || {
+        echo "ablate: the engine did not read the instrument of $declaration, so no scenario can be cleared of it" >&2
+        return 2
+    }
+    while IFS=' ' read -r sb_sign sb_layer sb_path; do
+        [ "$sb_sign" = + ] || continue
+        [ -e "$root/tools/probe/arms/$sb_layer/$sb_path" ] || {
+            echo "ablate: scenario $sb_number writes \`$sb_path\` of the \`$sb_layer\` layer, and tools/probe/arms/$sb_layer/$sb_path is not there to copy" >&2
+            return 2
+        }
+    done <<EOF
+$sb_delta
+EOF
+    sb_removed=0
+    sb_kept=0
+    sb_written=0
+    # The instrument first, as in every arm, then each path of a layer the
+    # scenario does not hold.
+    sb_removals=$(printf '%s\n' "$sb_delta" | sed -n 's/^- [^ ]* //p')
+    while IFS= read -r sb_path; do
+        [ -n "$sb_path" ] || continue
+        if [ -e "$sb_here/$sb_path" ] || [ -L "$sb_here/$sb_path" ]; then
+            rm -rf "${sb_here:?}/$sb_path"
+            sb_removed=$((sb_removed + 1))
+        fi
+        sb_parent=$sb_path
+        while :; do
+            case "$sb_parent" in
+                */*) sb_parent=${sb_parent%/*} ;;
+                *) break ;;
+            esac
+            rmdir "$sb_here/$sb_parent" 2>/dev/null || break
+        done
+    done <<EOF
+$sb_instrument
+$sb_removals
+EOF
+    while IFS=' ' read -r sb_sign sb_layer sb_path; do
+        case "$sb_sign" in
+            =) sb_kept=$((sb_kept + 1)) ;;
+            +)
+                mkdir -p "$sb_here/$(dirname "$sb_path")" || return 2
+                rm -rf "${sb_here:?}/$sb_path"
+                cp -R "$root/tools/probe/arms/$sb_layer/$sb_path" "$sb_here/$sb_path" || return 2
+                sb_written=$((sb_written + 1))
+                ;;
+        esac
+    done <<EOF
+$sb_delta
+EOF
+    echo "ablate: built scenario $sb_number in $sb_here: removed $sb_removed paths, kept $sb_kept, wrote $sb_written"
+}
+
+if [ "${1:-}" = --scenario ]; then
+    [ -n "${2:-}" ] && [ -n "${3:-}" ] || { echo "$usage" >&2; exit 2; }
+    scenario_here=$(cd "$3" 2>/dev/null && pwd -P) || {
+        echo "ablate: no workspace directory at $3" >&2
+        exit 2
+    }
+    case "$scenario_here" in
+        "$root"|"$root"/*)
+            echo "ablate: $scenario_here is inside this repository's own checkout." >&2
+            echo "ablate: a scenario's workspace is a copy outside it. Use one." >&2
+            exit 6
+            ;;
+    esac
+    engine_or_refuse
+    scenario_build "$2" "$scenario_here" || exit 2
+    exit 0
+fi
+
+# `--diff --scenario <n> <present-tree> [<base>]` builds scenario <n> and its
+# base, scenario 0 unless one is named, each in a copy of a present tree
+# outside this checkout, prints how the two differ, and deletes both copies.
+# A difference is expected where it falls under a path that scenario <n>
+# holds and the base does not hold in the same layer. That is every path of
+# the added layer, and `.claude/settings.json` of scenario 13 against 11,
+# where the rest of the harness holds the whole file in place of the hook
+# layer's one entry. It prints one line for each such path that differs:
+# `+ <path>` where files under it were added, and `~ <path>` where files
+# under it changed. Every other difference is printed as `unexpected <sign>
+# <file>`, with `-` for a removed file and `?` for one `diff` could not
+# classify, and it exits 1. It exits 1 too when the two trees do not differ.
+if [ "${1:-}" = --diff ] && [ "${2:-}" = --scenario ]; then
+    [ -n "${3:-}" ] && [ -n "${4:-}" ] || { echo "$usage" >&2; exit 2; }
+    sd_number=$3
+    sd_base=${5:-0}
+    sd_present=$(cd "$4" 2>/dev/null && pwd -P) || { echo "ablate: no present tree at $4" >&2; exit 2; }
+    engine_or_refuse
+    sd_instrument=$(plan_print --instrument) || exit 2
+    for sd_path in $sd_instrument; do
+        if [ -e "$sd_present/$sd_path" ]; then
+            echo "ablate: $sd_present still holds \`$sd_path\`, which every arm removes, so it is not a present tree" >&2
+            exit 2
+        fi
+    done
+    sd_held=$(plan_print --scenario "$sd_number" --delta) || exit 2
+    sd_base_held=$(plan_print --scenario "$sd_base" --delta) || exit 2
+    sd_scratch=$(mktemp -d "${TMPDIR:-/tmp}/headwater-ablate-diff.XXXXXX") || exit 2
+    # The (layer, path) pairs the scenario holds and the base does not.
+    printf '%s\n' "$sd_held" | sed -n 's/^[=+] //p' | LC_ALL=C sort > "$sd_scratch/held"
+    printf '%s\n' "$sd_base_held" | sed -n 's/^[=+] //p' | LC_ALL=C sort > "$sd_scratch/base-held"
+    LC_ALL=C comm -23 "$sd_scratch/held" "$sd_scratch/base-held" > "$sd_scratch/expected"
+    for sd_side in scenario base; do
+        cp -a "$sd_present" "$sd_scratch/$sd_side" || { rm -rf "$sd_scratch"; exit 2; }
+    done
+    if ! scenario_build "$sd_number" "$sd_scratch/scenario" > "$sd_scratch/build.out" 2> "$sd_scratch/build.err" ||
+        ! scenario_build "$sd_base" "$sd_scratch/base" >> "$sd_scratch/build.out" 2>> "$sd_scratch/build.err"; then
+        cat "$sd_scratch/build.err" >&2
+        rm -rf "$sd_scratch"
+        exit 2
+    fi
+    # Added and removed files from two file lists, and changed files from
+    # `diff -rq`, whose `Files <a>/<file> and <b>/<file> differ` line gives
+    # the file's length from the line's own: both halves name it once.
+    for sd_side in scenario base; do
+        (cd "$sd_scratch/$sd_side" && find . ! -type d) | sed 's|^\./||' | LC_ALL=C sort > "$sd_scratch/$sd_side.files"
+    done
+    LC_ALL=C comm -13 "$sd_scratch/base.files" "$sd_scratch/scenario.files" | sed 's/^/+ /' > "$sd_scratch/found"
+    LC_ALL=C comm -23 "$sd_scratch/base.files" "$sd_scratch/scenario.files" | sed 's/^/- /' >> "$sd_scratch/found"
+    sd_status=0
+    diff -rq --no-dereference "$sd_scratch/base" "$sd_scratch/scenario" > "$sd_scratch/diff" 2>&1 || sd_status=$?
+    if [ "$sd_status" -gt 1 ]; then
+        echo "ablate: diff could not compare scenario $sd_number with scenario $sd_base:" >&2
+        cat "$sd_scratch/diff" >&2
+        rm -rf "$sd_scratch"
+        exit 2
+    fi
+    awk -v a="$sd_scratch/base" -v b="$sd_scratch/scenario" '
+        /^Only in / { next }
+        {
+            head = "Files " a "/"
+            tail = " differ"
+            if (index($0, head) == 1 && substr($0, length($0) - length(tail) + 1) == tail) {
+                n = (length($0) - length(head) - length(" and ") - length(b) - 1 - length(tail)) / 2
+                print "~ " substr($0, length(head) + 1, n)
+            } else {
+                print "? " $0
+            }
+        }
+    ' "$sd_scratch/diff" >> "$sd_scratch/found"
+    if [ ! -s "$sd_scratch/found" ]; then
+        echo "ablate: scenario $sd_number builds a tree no different from scenario $sd_base" >&2
+        rm -rf "$sd_scratch"
+        exit 1
+    fi
+    sd_status=0
+    # The expected paths are read in BEGIN, because `NR == FNR` reads every
+    # found line as an expected path when the expected file is empty.
+    LC_ALL=C sort "$sd_scratch/found" | awk -v expected="$sd_scratch/expected" '
+        BEGIN {
+            while ((getline line < expected) > 0) {
+                space = index(line, " ")
+                path[++paths] = substr(line, space + 1)
+            }
+            close(expected)
+        }
+        {
+            sign = substr($0, 1, 1)
+            file = substr($0, 3)
+            matched = 0
+            if (sign == "+" || sign == "~") {
+                for (i = 1; i <= paths; i++) {
+                    p = path[i]
+                    if (file == p || index(file, p "/") == 1) {
+                        if (!((sign, i) in seen)) { seen[sign, i] = 1 }
+                        matched = 1
+                        break
+                    }
+                }
+            }
+            if (!matched) { unexpected[++bad] = "unexpected " $0 }
+        }
+        END {
+            for (i = 1; i <= paths; i++) {
+                if (("+", i) in seen) print "+ " path[i]
+                if (("~", i) in seen) print "~ " path[i]
+            }
+            for (j = 1; j <= bad; j++) print unexpected[j]
+            exit (bad > 0 ? 1 : 0)
+        }
+    ' || sd_status=1
+    rm -rf "$sd_scratch"
+    exit "$sd_status"
+fi
 
 # `--diff <tier> <arm> <present-tree>` builds the arm's tree in a copy of a
 # present tree outside this checkout, prints how it differs from the present
@@ -206,7 +466,6 @@ case "$here" in
         ;;
 esac
 
-declaration=${HW_PROBE_YML:-$root/.headwater/probe.yml}
 [ -f "$declaration" ] || {
     echo "ablate: no probe declaration at $declaration" >&2
     exit 2
@@ -223,33 +482,7 @@ declaration=${HW_PROBE_YML:-$root/.headwater/probe.yml}
 #
 # It fails closed. With no built engine it refuses, and it never prints an
 # empty instrument in place of one it could not read.
-engine=$root/engine/target/dev-release/headwater
-[ -x "$engine" ] || engine=$root/engine/target/release/headwater
-[ -x "$engine" ] || {
-    echo "ablate: no engine under $root/engine/target to read $declaration. Build it first: cargo build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked" >&2
-    exit 2
-}
-
-# Run `headwater probe plan` with the arguments given, over the declaration.
-# The engine reads `.headwater/probe.yml` under its `--root`: the checkout
-# itself when `HW_PROBE_YML` is unset, which needs nothing on `PATH`, and a
-# scratch root that holds a copy of the named declaration otherwise.
-plan_print() {
-    if [ -z "${HW_PROBE_YML:-}" ]; then
-        "$engine" probe plan --root "$root" "$@"
-        return
-    fi
-    plan_scratch=$(mktemp -d "${TMPDIR:-/tmp}/headwater-ablate-plan.XXXXXX") || return 2
-    if ! mkdir -p "$plan_scratch/root/.headwater" ||
-        ! cp "$declaration" "$plan_scratch/root/.headwater/probe.yml"; then
-        rm -rf "$plan_scratch"
-        return 2
-    fi
-    plan_status=0
-    "$engine" probe plan --root "$plan_scratch/root" "$@" || plan_status=$?
-    rm -rf "$plan_scratch"
-    return "$plan_status"
-}
+engine_or_refuse
 
 instrument=$(plan_print --instrument) || {
     echo "ablate: the engine did not read the instrument of $declaration, so no arm can be cleared of it" >&2

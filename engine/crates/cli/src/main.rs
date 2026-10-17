@@ -431,6 +431,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 tier,
                 arm,
                 delta,
+                scenario,
                 instrument,
                 folds,
                 answer_keys,
@@ -448,6 +449,13 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 repetitions,
             ) {
                 Err(code) => code,
+                // `--scenario <n> --delta` prints a scenario's delta from the
+                // same parse, so `tools/probe/ablate.sh --scenario` builds a
+                // scenario's tree and parses no YAML itself (#1774). Clap has
+                // already required `--delta` and refused `--arm` beside it.
+                Ok((_, _, budgets)) if scenario.is_some() => {
+                    probe_scenario_delta(&budgets, scenario.unwrap_or_default())
+                }
                 // `--delta` prints what the declaration already parsed, so a
                 // script that builds an arm's tree reads the delta from here
                 // and parses no YAML itself (#1472). Clap has already
@@ -5776,6 +5784,41 @@ fn probe_delta(
     }
     for path in envelope.adds(arm) {
         println!("+ {path}");
+    }
+    ExitCode::SUCCESS
+}
+
+/// `headwater probe plan --scenario <n> --delta`: what the tree of one
+/// scenario of the additive campaign does with each layer path against the
+/// present tree, as `- <layer> <path>`, `= <layer> <path>` and
+/// `+ <layer> <path>` lines (#1774).
+///
+/// It prints the parse `Budgets::read` already made, which has refused every
+/// scenario that differs from its base by anything but one layer. A scenario
+/// the file does not declare is refused at status 1, for the reason
+/// `probe_delta` gives.
+fn probe_scenario_delta(budgets: &headwater_probe::Budgets, number: u32) -> ExitCode {
+    let Some(delta) = budgets.scenario_delta(number) else {
+        let declared = budgets
+            .scenarios
+            .iter()
+            .map(|scenario| scenario.number.to_string())
+            .collect::<Vec<_>>();
+        return refuse(&if declared.is_empty() {
+            format!(
+                "{} declares no `scenarios`, so it declares no scenario {number}",
+                headwater_probe::budget::PATH
+            )
+        } else {
+            format!(
+                "{} declares no scenario {number}. It declares {}",
+                headwater_probe::budget::PATH,
+                declared.join(", ")
+            )
+        });
+    };
+    for (hold, layer, path) in delta {
+        println!("{} {layer} {path}", hold.sign());
     }
     ExitCode::SUCCESS
 }

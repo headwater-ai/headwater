@@ -120,9 +120,140 @@ pub struct Budgets {
     /// documents an earlier session wrote in answer to its task, which the
     /// seal removes. Empty where the file declares none.
     pub answer_keys: Vec<(String, Vec<String>)>,
+    /// The `layers` mapping of the additive campaign (#1774), in declared
+    /// order. Empty where the file declares none.
+    pub layers: Vec<Layer>,
+    /// The `scenarios` mapping of the additive campaign (#1774), in declared
+    /// order. Empty where the file declares none.
+    pub scenarios: Vec<Scenario>,
+}
+
+/// One layer of the additive campaign (#1774): the paths it adds to plain
+/// code.
+///
+/// `paths` are copied from the present tree. `arms` are written from
+/// `tools/probe/arms/<name>/`, for a layer that holds a file the present tree
+/// does not hold in that form, such as the one hook entry of the hook layer.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Layer {
+    pub name: String,
+    pub paths: Vec<String>,
+    pub arms: Vec<String>,
+}
+
+/// Which of the two blocks of the milestone a scenario belongs to (#1774).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Block {
+    /// The scenarios that answer each layer once.
+    AnswerOnce,
+    /// The scenarios that measure how two layers interact.
+    Interaction,
+}
+
+impl Block {
+    pub const ALL: [Block; 2] = [Block::AnswerOnce, Block::Interaction];
+
+    pub fn name(self) -> &'static str {
+        match self {
+            Block::AnswerOnce => "answer-once",
+            Block::Interaction => "interaction",
+        }
+    }
+
+    fn read(name: &str) -> Option<Block> {
+        Block::ALL.into_iter().find(|block| block.name() == name)
+    }
+}
+
+/// One scenario of the additive campaign (#1774): the layers it holds, and
+/// the one base it is compared with. Scenario 0 is plain code, with no layer
+/// and no base.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Scenario {
+    pub number: u32,
+    pub block: Block,
+    pub base: Option<u32>,
+    pub layers: Vec<String>,
+}
+
+/// What a scenario's tree does with one path of one layer, against the
+/// present tree.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Hold {
+    /// The scenario does not hold the layer, so the path is removed.
+    Removes,
+    /// The scenario holds the layer, and the path is kept from the present
+    /// tree.
+    Keeps,
+    /// The scenario holds the layer, and the path is written from
+    /// `tools/probe/arms/<layer>/`.
+    Writes,
+}
+
+impl Hold {
+    /// The sign `headwater probe plan --scenario <n> --delta` prints.
+    pub fn sign(self) -> char {
+        match self {
+            Hold::Removes => '-',
+            Hold::Keeps => '=',
+            Hold::Writes => '+',
+        }
+    }
 }
 
 impl Budgets {
+    /// The scenario the file declares under this number.
+    pub fn scenario(&self, number: u32) -> Option<&Scenario> {
+        self.scenarios
+            .iter()
+            .find(|scenario| scenario.number == number)
+    }
+
+    /// How the tree of a scenario differs from the present tree: one entry
+    /// for each path of each layer, in declared order.
+    ///
+    /// A layer the scenario holds keeps each of its `paths` and writes each of
+    /// its `arms`. A layer it does not hold has each path removed. One rule
+    /// joins them: an `arms` file stands in for a path that another layer
+    /// holds from the present tree, so where the scenario holds that other
+    /// layer, the present file is kept and the stand-in is neither written
+    /// nor removed. The hook layer's one-entry `settings.json` is that case,
+    /// and the rest of the harness holds the whole file. `None` for a
+    /// scenario the file does not declare.
+    pub fn scenario_delta(&self, number: u32) -> Option<Vec<(Hold, &str, &str)>> {
+        let scenario = self.scenario(number)?;
+        let held = |layer: &Layer| scenario.layers.contains(&layer.name);
+        let kept_by_held = |path: &str| {
+            self.layers
+                .iter()
+                .any(|layer| held(layer) && layer.paths.iter().any(|kept| kept == path))
+        };
+        let mut delta = Vec::new();
+        for layer in &self.layers {
+            // Two layers never hold one path from the present tree, because
+            // `layers` refuses it, so a path here is kept or removed alone.
+            for path in &layer.paths {
+                let hold = if held(layer) {
+                    Hold::Keeps
+                } else {
+                    Hold::Removes
+                };
+                delta.push((hold, layer.name.as_str(), path.as_str()));
+            }
+            for path in &layer.arms {
+                let hold = if kept_by_held(path) {
+                    continue;
+                } else if held(layer) {
+                    Hold::Writes
+                } else {
+                    Hold::Removes
+                };
+                delta.push((hold, layer.name.as_str(), path.as_str()));
+            }
+        }
+        Some(delta)
+    }
+
     pub fn of(&self, tier: Tier) -> Option<&Envelope> {
         self.tiers.iter().find(|envelope| envelope.tier == tier)
     }
@@ -222,11 +353,21 @@ impl Budgets {
                 "{PATH} declares no tier, and a run at a tier with no envelope cannot fail closed"
             )));
         }
+        let layers = match root.get("layers") {
+            None => Vec::new(),
+            Some(declared) => layers(&declared.value)?,
+        };
+        let scenarios = match root.get("scenarios") {
+            None => Vec::new(),
+            Some(declared) => scenarios(&declared.value, &layers)?,
+        };
         Ok(Budgets {
             tiers,
             instrument,
             folds,
             answer_keys,
+            layers,
+            scenarios,
         })
     }
 }
@@ -396,6 +537,243 @@ fn envelope(tier: Tier, fields: &Mapping) -> Result<Envelope, Unreadable> {
     })
 }
 
+/// The `layers` mapping (#1774): each layer's name, and the paths it adds to
+/// plain code.
+///
+/// It refuses a name that cannot be a directory under `tools/probe/arms/`, a
+/// layer with no path, an unsafe path, and a path that two layers claim. Two
+/// paths are claimed twice when they are equal or one is inside the other.
+/// The one pair it admits is an `arms` file equal to a path another layer
+/// keeps from the present tree: the file stands in for part of that path, and
+/// [`Budgets::scenario_delta`] keeps the present file where both are held.
+fn layers(value: &Value) -> Result<Vec<Layer>, Unreadable> {
+    let Some(block) = value.as_map() else {
+        return Err(Unreadable::Malformed(format!(
+            "`layers` in {PATH} is not a mapping of layer name to its paths"
+        )));
+    };
+    let mut layers: Vec<Layer> = Vec::new();
+    for entry in block {
+        let name = entry.key.value.as_str().to_string();
+        let named = !name.is_empty()
+            && name
+                .chars()
+                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-');
+        if !named {
+            return Err(Unreadable::LayerName { found: name });
+        }
+        let Some(fields) = entry.value.value.as_map() else {
+            return Err(Unreadable::Malformed(format!(
+                "the `{name}` layer in {PATH} is not a mapping of `paths` and `arms`"
+            )));
+        };
+        let mut layer = Layer {
+            name: name.clone(),
+            paths: Vec::new(),
+            arms: Vec::new(),
+        };
+        for field in fields {
+            let key = field.key.value.as_str();
+            let listed = paths(&field.value.value)
+                .ok_or_else(|| {
+                    Unreadable::Malformed(format!(
+                        "`{key}` of the `{name}` layer in {PATH} is not a sequence of paths"
+                    ))
+                })?
+                .map_err(|entry| Unreadable::LayerUnsafe {
+                    layer: name.clone(),
+                    entry,
+                })?;
+            match key {
+                "paths" => layer.paths = listed,
+                "arms" => layer.arms = listed,
+                _ => {
+                    return Err(Unreadable::Malformed(format!(
+                        "the `{name}` layer in {PATH} declares `{key}`. A layer declares \
+                         `paths`, copied from the present tree, and `arms`, written from \
+                         `tools/probe/arms/{name}/`, and nothing else"
+                    )));
+                }
+            }
+        }
+        if layer.paths.is_empty() && layer.arms.is_empty() {
+            return Err(Unreadable::LayerEmpty { layer: name });
+        }
+        layers.push(layer);
+    }
+
+    let inside = |a: &str, b: &str| {
+        a == b
+            || a.strip_prefix(b).is_some_and(|rest| rest.starts_with('/'))
+            || b.strip_prefix(a).is_some_and(|rest| rest.starts_with('/'))
+    };
+    for (index, first) in layers.iter().enumerate() {
+        for second in &layers[index + 1..] {
+            let entries = |layer: &'_ Layer| {
+                layer
+                    .paths
+                    .iter()
+                    .map(|path| (path.clone(), false))
+                    .chain(layer.arms.iter().map(|path| (path.clone(), true)))
+                    .collect::<Vec<_>>()
+            };
+            for (a, a_arms) in entries(first) {
+                for (b, b_arms) in entries(second) {
+                    // An `arms` file that stands in for a path the other layer
+                    // keeps from the present tree.
+                    let stands_in = a == b && a_arms != b_arms;
+                    if inside(&a, &b) && !stands_in {
+                        return Err(Unreadable::PathInTwoLayers {
+                            first_layer: first.name.clone(),
+                            first_path: a,
+                            second_layer: second.name.clone(),
+                            second_path: b,
+                        });
+                    }
+                }
+            }
+        }
+    }
+    Ok(layers)
+}
+
+/// The `scenarios` mapping (#1774): each scenario's block, base and layers.
+///
+/// It refuses a scenario that is not a whole number, a block outside the
+/// two, a layer `layers` does not declare, a file with no scenario 0, a
+/// scenario 0 that holds a layer or names a base, a scenario other than 0
+/// with no base or a base the file does not declare, and a scenario that
+/// differs from its base by anything but exactly one added layer.
+fn scenarios(value: &Value, layers: &[Layer]) -> Result<Vec<Scenario>, Unreadable> {
+    let Some(block) = value.as_map() else {
+        return Err(Unreadable::Malformed(format!(
+            "`scenarios` in {PATH} is not a mapping of scenario number to its layers"
+        )));
+    };
+    // The base as written, checked once every scenario is read.
+    let mut declared: Vec<(Scenario, Option<String>)> = Vec::new();
+    for entry in block {
+        let found = entry.key.value.as_str().to_string();
+        let number = match found.parse::<u32>() {
+            Ok(number) if number.to_string() == found => number,
+            _ => return Err(Unreadable::ScenarioName { found }),
+        };
+        let Some(fields) = entry.value.value.as_map() else {
+            return Err(Unreadable::Malformed(format!(
+                "scenario {number} in {PATH} is not a mapping of `block`, `base` and `layers`"
+            )));
+        };
+        let written = text(fields, "block").unwrap_or_default();
+        let Some(chosen) = Block::read(&written) else {
+            return Err(Unreadable::ScenarioBlock {
+                scenario: number,
+                found: written,
+            });
+        };
+        let Some(listed) = fields
+            .get("layers")
+            .and_then(|listed| listed.value.as_seq())
+        else {
+            return Err(Unreadable::Malformed(format!(
+                "scenario {number} in {PATH} declares no `layers` sequence. Scenario 0 \
+                 declares `layers: []`"
+            )));
+        };
+        let mut held: Vec<String> = Vec::new();
+        for item in listed {
+            let layer = item
+                .value
+                .as_scalar()
+                .map(|scalar| scalar.text.clone())
+                .unwrap_or_default();
+            if !layers.iter().any(|declared| declared.name == layer) {
+                return Err(Unreadable::ScenarioUnknownLayer {
+                    scenario: number,
+                    layer,
+                });
+            }
+            if !held.contains(&layer) {
+                held.push(layer);
+            }
+        }
+        if let Some(field) = fields
+            .iter()
+            .map(|field| field.key.value.as_str())
+            .find(|key| !["block", "base", "layers"].contains(key))
+        {
+            return Err(Unreadable::Malformed(format!(
+                "scenario {number} in {PATH} declares `{field}`. A scenario declares `block`, \
+                 `base` and `layers`, and nothing else"
+            )));
+        }
+        declared.push((
+            Scenario {
+                number,
+                block: chosen,
+                base: None,
+                layers: held,
+            },
+            text(fields, "base"),
+        ));
+    }
+
+    if !declared.is_empty() && !declared.iter().any(|(scenario, _)| scenario.number == 0) {
+        return Err(Unreadable::ScenariosWithoutPlainCode);
+    }
+    let mut scenarios = Vec::new();
+    for (mut scenario, base) in declared.iter().cloned() {
+        if scenario.number == 0 {
+            if let Some(layer) = scenario.layers.first() {
+                return Err(Unreadable::PlainCodeHoldsLayer {
+                    layer: layer.clone(),
+                });
+            }
+            if let Some(base) = base {
+                return Err(Unreadable::PlainCodeHasBase { base });
+            }
+            scenarios.push(scenario);
+            continue;
+        }
+        let Some(base) = base else {
+            return Err(Unreadable::ScenarioWithoutBase {
+                scenario: scenario.number,
+            });
+        };
+        let Some((under, _)) = declared
+            .iter()
+            .find(|(other, _)| other.number.to_string() == base)
+        else {
+            return Err(Unreadable::ScenarioUnknownBase {
+                scenario: scenario.number,
+                base,
+            });
+        };
+        let added: Vec<String> = scenario
+            .layers
+            .iter()
+            .filter(|layer| !under.layers.contains(layer))
+            .cloned()
+            .collect();
+        let dropped: Vec<String> = under
+            .layers
+            .iter()
+            .filter(|layer| !scenario.layers.contains(layer))
+            .cloned()
+            .collect();
+        if added.len() != 1 || !dropped.is_empty() {
+            return Err(Unreadable::ScenarioNotOneLayer {
+                scenario: scenario.number,
+                base: under.number,
+                added,
+                dropped,
+            });
+        }
+        scenario.base = Some(under.number);
+        scenarios.push(scenario);
+    }
+    Ok(scenarios)
+}
+
 /// A sequence of paths inside the tree, deduplicated in declared order.
 ///
 /// `None` where the value is not a sequence, and the first unsafe entry as the
@@ -501,6 +879,53 @@ pub enum Unreadable {
     AnswerKeyUnsafe {
         probe: String,
         entry: String,
+    },
+    LayerName {
+        found: String,
+    },
+    LayerUnsafe {
+        layer: String,
+        entry: String,
+    },
+    LayerEmpty {
+        layer: String,
+    },
+    PathInTwoLayers {
+        first_layer: String,
+        first_path: String,
+        second_layer: String,
+        second_path: String,
+    },
+    ScenarioName {
+        found: String,
+    },
+    ScenarioBlock {
+        scenario: u32,
+        found: String,
+    },
+    ScenarioUnknownLayer {
+        scenario: u32,
+        layer: String,
+    },
+    ScenariosWithoutPlainCode,
+    PlainCodeHoldsLayer {
+        layer: String,
+    },
+    PlainCodeHasBase {
+        base: String,
+    },
+    ScenarioWithoutBase {
+        scenario: u32,
+    },
+    ScenarioUnknownBase {
+        scenario: u32,
+        base: String,
+    },
+    ScenarioNotOneLayer {
+        scenario: u32,
+        base: u32,
+        added: Vec<String>,
+        dropped: Vec<String>,
     },
 }
 
@@ -616,6 +1041,115 @@ impl std::fmt::Display for Unreadable {
                 probe.escape_debug(),
                 entry.escape_debug()
             ),
+            Unreadable::LayerName { found } => write!(
+                f,
+                "the `layers` of {PATH} name a layer `{}`. A layer name is lower-case letters, \
+                 digits and hyphens, because it names the directory under `tools/probe/arms/` \
+                 its written files come from and a column of the scenario delta",
+                found.escape_debug()
+            ),
+            Unreadable::LayerUnsafe { layer, entry } => write!(
+                f,
+                "the `{layer}` layer in {PATH} names `{}`. An entry is a path inside the tree, \
+                 relative to its root, with no `..`, `.` or empty component and no control \
+                 character, because a scenario that does not hold the layer removes it with \
+                 `rm -rf`",
+                entry.escape_debug()
+            ),
+            Unreadable::LayerEmpty { layer } => write!(
+                f,
+                "the `{layer}` layer in {PATH} names no path under `paths` or `arms`, so a \
+                 scenario that adds it adds nothing and differs from its base by no layer"
+            ),
+            Unreadable::PathInTwoLayers {
+                first_layer,
+                first_path,
+                second_layer,
+                second_path,
+            } => write!(
+                f,
+                "the `{first_layer}` layer holds `{}` and the `{second_layer}` layer holds `{}` \
+                 in {PATH}. A path belongs to one layer, or a scenario that adds one of the two \
+                 layers adds part of the other too",
+                first_path.escape_debug(),
+                second_path.escape_debug()
+            ),
+            Unreadable::ScenarioName { found } => write!(
+                f,
+                "the `scenarios` of {PATH} name a scenario `{}`. A scenario is named by its \
+                 number in the milestone, a whole number",
+                found.escape_debug()
+            ),
+            Unreadable::ScenarioBlock { scenario, found } => write!(
+                f,
+                "scenario {scenario} in {PATH} names the block `{}`. The blocks are {}",
+                found.escape_debug(),
+                Block::ALL
+                    .iter()
+                    .map(|block| format!("`{}`", block.name()))
+                    .collect::<Vec<_>>()
+                    .join(" and ")
+            ),
+            Unreadable::ScenarioUnknownLayer { scenario, layer } => write!(
+                f,
+                "scenario {scenario} in {PATH} holds the layer `{}`, and `layers` declares no \
+                 such layer, so nothing says which paths it adds",
+                layer.escape_debug()
+            ),
+            Unreadable::ScenariosWithoutPlainCode => write!(
+                f,
+                "the `scenarios` of {PATH} declare no scenario 0. Scenario 0 is plain code, \
+                 the tree every scenario's layers are added to"
+            ),
+            Unreadable::PlainCodeHoldsLayer { layer } => write!(
+                f,
+                "scenario 0 in {PATH} holds the layer `{}`. Scenario 0 is plain code and holds \
+                 no layer",
+                layer.escape_debug()
+            ),
+            Unreadable::PlainCodeHasBase { base } => write!(
+                f,
+                "scenario 0 in {PATH} names the base `{}`. Scenario 0 is plain code, and it is \
+                 the base of others and has none",
+                base.escape_debug()
+            ),
+            Unreadable::ScenarioWithoutBase { scenario } => write!(
+                f,
+                "scenario {scenario} in {PATH} names no base. Every scenario but 0 is compared \
+                 with one base, and that comparison is the one the campaign registers"
+            ),
+            Unreadable::ScenarioUnknownBase { scenario, base } => write!(
+                f,
+                "scenario {scenario} in {PATH} names the base `{}`, which is not a scenario the \
+                 file declares",
+                base.escape_debug()
+            ),
+            Unreadable::ScenarioNotOneLayer {
+                scenario,
+                base,
+                added,
+                dropped,
+            } => {
+                let listed = |layers: &[String]| {
+                    if layers.is_empty() {
+                        "no layer".to_string()
+                    } else {
+                        layers
+                            .iter()
+                            .map(|layer| format!("`{layer}`"))
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    }
+                };
+                write!(
+                    f,
+                    "scenario {scenario} in {PATH} adds {} to its base {base} and drops {}. A \
+                     scenario differs from its base by exactly one added layer, or its \
+                     difference from the base measures more than one thing",
+                    listed(added),
+                    listed(dropped)
+                )
+            }
         }
     }
 }
@@ -1222,5 +1756,493 @@ tiers:
             let message = refusal.to_string();
             assert!(message.contains("`campaign`"), "{message}");
         }
+    }
+
+    // The additive campaign of #1774: six layers and the rest of the harness,
+    // and scenarios 0 to 13 as the milestone's issues #1780 to #1793 state
+    // them.
+    const ADDITIVE: &str = "\
+layers:
+  docs:
+    paths: [docs, engine/crates/census/fixtures/corpus.census]
+  engine:
+    paths: [.headwater, engine/target/dev-release/headwater]
+  claude-md:
+    paths: [CLAUDE.md]
+  skills:
+    paths: [.claude/skills/headwater-orient, .agents/skills]
+  hook:
+    paths: [.claude/hooks/intent.sh, .claude/hooks/lib.sh]
+    arms: [.claude/settings.json]
+  mcp:
+    arms: [.mcp.json]
+  harness:
+    paths: [.claude/settings.json, .githooks, AGENTS.md]
+scenarios:
+  0:
+    block: answer-once
+    layers: []
+  1:
+    block: answer-once
+    base: 0
+    layers: [docs]
+  2:
+    block: interaction
+    base: 1
+    layers: [docs, claude-md]
+  3:
+    block: answer-once
+    base: 1
+    layers: [docs, engine]
+  4:
+    block: answer-once
+    base: 3
+    layers: [docs, engine, skills]
+  5:
+    block: answer-once
+    base: 3
+    layers: [docs, engine, hook]
+  6:
+    block: answer-once
+    base: 3
+    layers: [docs, engine, mcp]
+  7:
+    block: interaction
+    base: 5
+    layers: [docs, engine, hook, mcp]
+  8:
+    block: interaction
+    base: 4
+    layers: [docs, engine, claude-md, skills]
+  9:
+    block: interaction
+    base: 5
+    layers: [docs, engine, claude-md, hook]
+  10:
+    block: interaction
+    base: 5
+    layers: [docs, engine, skills, hook]
+  11:
+    block: answer-once
+    base: 10
+    layers: [docs, engine, claude-md, skills, hook]
+  12:
+    block: answer-once
+    base: 11
+    layers: [docs, engine, claude-md, skills, hook, mcp]
+  13:
+    block: answer-once
+    base: 11
+    layers: [docs, engine, claude-md, skills, hook, harness]
+";
+
+    fn additive() -> String {
+        format!("{GOOD}{ADDITIVE}")
+    }
+
+    #[test]
+    fn a_file_with_no_layers_declares_no_scenario() {
+        let budgets = Budgets::read(GOOD).expect("reads");
+        assert!(budgets.layers.is_empty());
+        assert!(budgets.scenarios.is_empty());
+        assert_eq!(budgets.scenario_delta(0), None);
+    }
+
+    #[test]
+    fn fourteen_scenarios_read_with_their_layers_blocks_and_bases() {
+        let budgets = Budgets::read(&additive()).expect("reads");
+        assert_eq!(
+            budgets
+                .layers
+                .iter()
+                .map(|layer| layer.name.as_str())
+                .collect::<Vec<_>>(),
+            [
+                "docs",
+                "engine",
+                "claude-md",
+                "skills",
+                "hook",
+                "mcp",
+                "harness"
+            ]
+        );
+        let hook = &budgets.layers[4];
+        assert_eq!(
+            hook.paths,
+            [".claude/hooks/intent.sh", ".claude/hooks/lib.sh"]
+        );
+        assert_eq!(hook.arms, [".claude/settings.json"]);
+        assert_eq!(budgets.scenarios.len(), 14);
+        let bases: Vec<Option<u32>> = budgets.scenarios.iter().map(|s| s.base).collect();
+        assert_eq!(
+            bases,
+            [
+                None,
+                Some(0),
+                Some(1),
+                Some(1),
+                Some(3),
+                Some(3),
+                Some(3),
+                Some(5),
+                Some(4),
+                Some(5),
+                Some(5),
+                Some(10),
+                Some(11),
+                Some(11)
+            ]
+        );
+        let interaction: Vec<u32> = budgets
+            .scenarios
+            .iter()
+            .filter(|s| s.block == Block::Interaction)
+            .map(|s| s.number)
+            .collect();
+        assert_eq!(interaction, [2, 7, 8, 9, 10]);
+        assert!(budgets.scenario(0).expect("plain code").layers.is_empty());
+        assert_eq!(
+            budgets.scenario(13).expect("13").layers,
+            ["docs", "engine", "claude-md", "skills", "hook", "harness"]
+        );
+    }
+
+    #[test]
+    fn plain_code_removes_the_path_of_every_layer() {
+        let budgets = Budgets::read(&additive()).expect("reads");
+        let delta = budgets.scenario_delta(0).expect("declared");
+        assert!(
+            delta.iter().all(|(hold, _, _)| *hold == Hold::Removes),
+            "{delta:?}"
+        );
+        for path in [
+            "docs",
+            ".headwater",
+            "engine/target/dev-release/headwater",
+            "CLAUDE.md",
+            ".agents/skills",
+            ".claude/hooks/intent.sh",
+            ".claude/settings.json",
+            ".mcp.json",
+            "AGENTS.md",
+            ".githooks",
+        ] {
+            assert!(
+                delta.iter().any(|(_, _, p)| *p == path),
+                "{path}: {delta:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn the_hook_layer_writes_its_one_entry_and_the_harness_keeps_the_whole_file() {
+        let budgets = Budgets::read(&additive()).expect("reads");
+        let five = budgets.scenario_delta(5).expect("declared");
+        assert!(
+            five.contains(&(Hold::Writes, "hook", ".claude/settings.json")),
+            "{five:?}"
+        );
+        assert!(
+            five.contains(&(Hold::Removes, "harness", ".claude/settings.json")),
+            "{five:?}"
+        );
+        assert!(
+            five.contains(&(Hold::Keeps, "hook", ".claude/hooks/intent.sh")),
+            "{five:?}"
+        );
+        assert!(
+            five.contains(&(Hold::Keeps, "engine", ".headwater")),
+            "{five:?}"
+        );
+        assert!(
+            five.contains(&(Hold::Removes, "skills", ".agents/skills")),
+            "{five:?}"
+        );
+        let thirteen = budgets.scenario_delta(13).expect("declared");
+        assert!(
+            thirteen.contains(&(Hold::Keeps, "harness", ".claude/settings.json")),
+            "{thirteen:?}"
+        );
+        assert!(
+            !thirteen
+                .iter()
+                .any(|(hold, _, path)| *path == ".claude/settings.json" && *hold != Hold::Keeps),
+            "the stand-in is neither written nor removed where the whole file is held: \
+             {thirteen:?}"
+        );
+        // The harness held without the hook: the stand-in is not removed
+        // either, because a removal runs before every write and would take
+        // the whole file the harness keeps.
+        let source = additive().replace(
+            "  13:\n",
+            "  14:\n    block: answer-once\n    base: 0\n    layers: [harness]\n  13:\n",
+        );
+        let alone = Budgets::read(&source).expect("reads");
+        let fourteen = alone.scenario_delta(14).expect("declared");
+        assert!(
+            fourteen.contains(&(Hold::Keeps, "harness", ".claude/settings.json")),
+            "{fourteen:?}"
+        );
+        assert!(
+            !fourteen.contains(&(Hold::Removes, "hook", ".claude/settings.json")),
+            "{fourteen:?}"
+        );
+        assert!(
+            fourteen.contains(&(Hold::Removes, "hook", ".claude/hooks/intent.sh")),
+            "{fourteen:?}"
+        );
+        let six = budgets.scenario_delta(6).expect("declared");
+        assert!(six.contains(&(Hold::Writes, "mcp", ".mcp.json")), "{six:?}");
+        assert_eq!(budgets.scenario_delta(14), None);
+    }
+
+    #[test]
+    fn a_scenario_that_differs_from_its_base_by_more_or_less_than_one_layer_is_refused() {
+        for (from, to, scenario, base, added, dropped) in [
+            // Two layers added: 4 against 1.
+            (
+                "    base: 3\n    layers: [docs, engine, skills]\n",
+                "    base: 1\n    layers: [docs, engine, skills]\n",
+                4,
+                1,
+                vec!["engine", "skills"],
+                vec![],
+            ),
+            // One added and one dropped: 2 against 3.
+            (
+                "    base: 1\n    layers: [docs, claude-md]\n",
+                "    base: 3\n    layers: [docs, claude-md]\n",
+                2,
+                3,
+                vec!["claude-md"],
+                vec!["engine"],
+            ),
+            // None added: 6 against 3 with 3's own layers.
+            (
+                "    base: 3\n    layers: [docs, engine, mcp]\n",
+                "    base: 3\n    layers: [docs, engine]\n",
+                6,
+                3,
+                vec![],
+                vec![],
+            ),
+        ] {
+            let source = additive().replace(from, to);
+            assert_ne!(source, additive(), "{from}");
+            let refused = Budgets::read(&source);
+            assert_eq!(
+                refused,
+                Err(Unreadable::ScenarioNotOneLayer {
+                    scenario,
+                    base,
+                    added: added.iter().map(|l| l.to_string()).collect(),
+                    dropped: dropped.iter().map(|l| l.to_string()).collect(),
+                }),
+                "{to}"
+            );
+            let message = refused.expect_err("refused").to_string();
+            assert!(
+                message.contains(&format!("scenario {scenario}")),
+                "{message}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_scenario_that_names_an_undeclared_layer_is_refused() {
+        let source = additive().replace(
+            "    base: 3\n    layers: [docs, engine, mcp]\n",
+            "    base: 3\n    layers: [docs, engine, lsp]\n",
+        );
+        assert_eq!(
+            Budgets::read(&source),
+            Err(Unreadable::ScenarioUnknownLayer {
+                scenario: 6,
+                layer: "lsp".into()
+            })
+        );
+    }
+
+    #[test]
+    fn a_path_two_layers_both_claim_is_refused() {
+        for (from, to, first, second) in [
+            // The same path.
+            (
+                "    paths: [CLAUDE.md]\n",
+                "    paths: [CLAUDE.md, AGENTS.md]\n",
+                ("claude-md", "AGENTS.md"),
+                ("harness", "AGENTS.md"),
+            ),
+            // One path inside another.
+            (
+                "    paths: [CLAUDE.md]\n",
+                "    paths: [CLAUDE.md, .claude/hooks]\n",
+                ("claude-md", ".claude/hooks"),
+                ("hook", ".claude/hooks/intent.sh"),
+            ),
+            // One path inside a path a later layer holds.
+            (
+                "    paths: [CLAUDE.md]\n",
+                "    paths: [CLAUDE.md, .githooks/pre-commit]\n",
+                ("claude-md", ".githooks/pre-commit"),
+                ("harness", ".githooks"),
+            ),
+            // Two stand-ins for one path.
+            (
+                "    arms: [.mcp.json]\n",
+                "    arms: [.mcp.json, .claude/settings.json]\n",
+                ("hook", ".claude/settings.json"),
+                ("mcp", ".claude/settings.json"),
+            ),
+            // A stand-in inside a path another layer holds whole.
+            (
+                "    arms: [.mcp.json]\n",
+                "    arms: [.mcp.json, docs/x.md]\n",
+                ("docs", "docs"),
+                ("mcp", "docs/x.md"),
+            ),
+        ] {
+            let source = additive().replace(from, to);
+            assert_eq!(
+                Budgets::read(&source),
+                Err(Unreadable::PathInTwoLayers {
+                    first_layer: first.0.into(),
+                    first_path: first.1.into(),
+                    second_layer: second.0.into(),
+                    second_path: second.1.into(),
+                }),
+                "{to}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_path_that_shares_a_name_prefix_with_another_layers_path_is_not_claimed_twice() {
+        // `.githooks-old` is beside `.githooks`, not inside it.
+        let source = additive().replace(
+            "    paths: [CLAUDE.md]\n",
+            "    paths: [CLAUDE.md, .githooks-old, AGENTS.md.bak]\n",
+        );
+        let budgets = Budgets::read(&source).expect("reads");
+        assert_eq!(
+            budgets.layers[2].paths,
+            ["CLAUDE.md", ".githooks-old", "AGENTS.md.bak"]
+        );
+    }
+
+    #[test]
+    fn a_layer_path_that_leaves_the_tree_is_refused() {
+        for entry in ["../x", "/etc", "a/./b", ""] {
+            let source = additive().replace(
+                "    paths: [CLAUDE.md]\n",
+                &format!("    paths: [CLAUDE.md, \"{entry}\"]\n"),
+            );
+            assert_eq!(
+                Budgets::read(&source),
+                Err(Unreadable::LayerUnsafe {
+                    layer: "claude-md".into(),
+                    entry: entry.into()
+                }),
+                "{entry:?}"
+            );
+        }
+        let source = additive().replace("    arms: [.mcp.json]\n", "    arms: [../.mcp.json]\n");
+        assert_eq!(
+            Budgets::read(&source),
+            Err(Unreadable::LayerUnsafe {
+                layer: "mcp".into(),
+                entry: "../.mcp.json".into()
+            })
+        );
+    }
+
+    #[test]
+    fn plain_code_that_holds_a_layer_or_names_a_base_is_refused() {
+        let holds = additive().replace(
+            "  0:\n    block: answer-once\n    layers: []\n",
+            "  0:\n    block: answer-once\n    layers: [docs]\n",
+        );
+        assert_eq!(
+            Budgets::read(&holds),
+            Err(Unreadable::PlainCodeHoldsLayer {
+                layer: "docs".into()
+            })
+        );
+        let based = additive().replace(
+            "  0:\n    block: answer-once\n    layers: []\n",
+            "  0:\n    block: answer-once\n    base: 1\n    layers: []\n",
+        );
+        assert_eq!(
+            Budgets::read(&based),
+            Err(Unreadable::PlainCodeHasBase { base: "1".into() })
+        );
+        let missing = additive().replace("  0:\n    block: answer-once\n    layers: []\n", "");
+        assert_eq!(
+            Budgets::read(&missing),
+            Err(Unreadable::ScenariosWithoutPlainCode)
+        );
+    }
+
+    #[test]
+    fn a_scenario_with_no_base_or_an_undeclared_base_or_block_is_refused() {
+        let no_base = additive().replace(
+            "  1:\n    block: answer-once\n    base: 0\n",
+            "  1:\n    block: answer-once\n",
+        );
+        assert_eq!(
+            Budgets::read(&no_base),
+            Err(Unreadable::ScenarioWithoutBase { scenario: 1 })
+        );
+        let unknown = additive().replace(
+            "    base: 11\n    layers: [docs, engine, claude-md, skills, hook, mcp]\n",
+            "    base: 20\n    layers: [docs, engine, claude-md, skills, hook, mcp]\n",
+        );
+        assert_eq!(
+            Budgets::read(&unknown),
+            Err(Unreadable::ScenarioUnknownBase {
+                scenario: 12,
+                base: "20".into()
+            })
+        );
+        let block = additive().replace(
+            "  2:\n    block: interaction\n",
+            "  2:\n    block: pairwise\n",
+        );
+        assert_eq!(
+            Budgets::read(&block),
+            Err(Unreadable::ScenarioBlock {
+                scenario: 2,
+                found: "pairwise".into()
+            })
+        );
+        for found in ["thirteen", "013", "-1"] {
+            let named = additive().replace("  13:\n", &format!("  {found}:\n"));
+            assert_eq!(
+                Budgets::read(&named),
+                Err(Unreadable::ScenarioName {
+                    found: found.into()
+                }),
+                "{found}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_layer_with_no_path_or_a_name_that_is_not_a_directory_is_refused() {
+        let empty = additive().replace("    arms: [.mcp.json]\n", "    arms: []\n");
+        assert_eq!(
+            Budgets::read(&empty),
+            Err(Unreadable::LayerEmpty {
+                layer: "mcp".into()
+            })
+        );
+        let named = additive().replace("  mcp:\n    arms:", "  MCP server:\n    arms:");
+        assert_eq!(
+            Budgets::read(&named),
+            Err(Unreadable::LayerName {
+                found: "MCP server".into()
+            })
+        );
     }
 }
