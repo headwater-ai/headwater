@@ -732,6 +732,7 @@ fn resolve_refuses_an_overlay_projection_the_generator_refuses() {
                 "validate names the overlay: {validated:?}"
             );
         } else {
+            assert_eq!(validated.code, Some(0), "{output}: {validated:?}");
             assert!(!validated.err.contains(flagged), "{output}: {validated:?}");
         }
         if refused {
