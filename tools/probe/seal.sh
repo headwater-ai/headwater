@@ -310,22 +310,36 @@ fi
 #     leak <probe> <where> <leak string>      a leak string the declaration does not keep
 #     kept <probe> <where> <leak string>      a leak string kept on purpose, under `leaks_kept:`
 #     undeclared <probe>                  a probe that declares no leak string
+#     harness <probe> <where> <leak string>   with `--scenario`, a hit in a path of the `harness` layer
+#
+# A probe whose `leaks:` entry is `[]` declares that no string states its
+# answer, and prints nothing. A missing entry, or one with no value, is
+# `undeclared`.
 #
 # `--leak --config <dir> <workspace> <probe>...` also reads the host level of
 # the session: the `CLAUDE.md` and the skills of the configuration directory
 # it runs under (#1467). `campaign-dry-run.sh` passes the directory a batch
 # gives its sessions, which is empty by construction.
 #
-# `<where>` is the path relative to the workspace, `config:<path>`, or `mcp:<tool>`. A probe
+# `--leak --scenario <workspace> <probe>...` checks the tree of one scenario of
+# the additive campaign (#1774, clause 5), and the two options come in either
+# order. It also reads the whole body of each skill, and, where the tree holds
+# `.claude/hooks/intent.sh`, the text that hook injects for each probe's task,
+# under `<where>` = `hook:<probe>` and read against that probe's strings alone.
+# A hit under a path the declaration's `harness` layer names prints as
+# `harness` and does not fail the check.
+#
+# `<where>` is the path relative to the workspace, `config:<path>`, `mcp:<tool>`, or `hook:<probe>`. A probe
 # listed under `leaks_kept:` keeps its leak string on purpose: its own document says it
 # measures the leak string, and a campaign reports it on its own line and never in a
 # rate of its category. It exits 1 when any `leak` line printed, 0 when none
 # did, 2 on a usage error or a declaration that does not read, and 3 when the
 # always-loaded text cannot be read whole: no `python3` or no PyYAML to read
-# it, or an MCP server that no engine lists. An `undeclared` probe is a probe
-# this check cannot see, and it does not fail the check.
+# it, an MCP server that no engine lists, or, with `--scenario`, a probe whose
+# task this checkout does not hold or a hook that did not run. An `undeclared`
+# probe is a probe this check cannot see, and it does not fail the check.
 if [ "${1:-}" = --leak ]; then
-    [ -n "${2:-}" ] && [ -n "${3:-}" ] || { echo "usage: sh tools/probe/seal.sh --leak [--config <dir>] <workspace> <probe-id>..." >&2; exit 2; }
+    [ -n "${2:-}" ] && [ -n "${3:-}" ] || { echo "usage: sh tools/probe/seal.sh --leak [--config <dir>] [--scenario] <workspace> <probe-id>..." >&2; exit 2; }
     command -v python3 >/dev/null 2>&1 || {
         echo "seal: no python3, so the always-loaded text cannot be read and the leak check does not run" >&2
         exit 3
