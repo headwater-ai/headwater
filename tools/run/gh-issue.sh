@@ -16,6 +16,17 @@
 #     sh tools/run/gh-issue.sh closes <PR>                the issues a pull request's merge closes, as a JSON array
 #     sh tools/run/gh-issue.sh clauses <N>                the Done-when clauses of an issue, numbered, folds included
 #     sh tools/run/gh-issue.sh clause-check <PR>          refuse a pull request that closes an issue with a clause unaccounted
+#     sh tools/run/gh-issue.sh list [open|closed]         every issue of the state, one tab-separated line each
+#     sh tools/run/gh-issue.sh milestones                 every milestone, open and closed, one line each with its counts
+#
+# `list` and `milestones` are the two reads `hw-queue` and the product owner
+# make of the whole board. Each was one `gh issue list --json ... --jq '...'`
+# retyped per session, and a `--jq` with `.labels[].name` in it is a shape
+# worktree isolation refuses often enough that a reader fell back to three
+# narrower calls. An open issue prints `number<TAB>milestone<TAB>labels<TAB>title`,
+# with `-` for no milestone and the labels comma-joined; a closed one prints
+# `number<TAB>closed-at<TAB>milestone<TAB>labels<TAB>title`. A milestone
+# prints `number<TAB>title<TAB>state<TAB>open=<n>` and `closed=<n>`.
 #
 # `patch-body` and `comment` read the file rather than a shell argument,
 # because a long note as an argument is context as permanent as any result,
@@ -342,8 +353,27 @@ clause_check() {
     fi
 }
 
+list() {
+    case ${1:-open} in
+        open)
+            gh issue list --repo "$repo" --state open --limit 200 --json number,title,labels,milestone \
+                --jq '.[] | "\(.number)\t\(.milestone.title // "-")\t\([.labels[].name] | join(","))\t\(.title)"' ;;
+        closed)
+            gh issue list --repo "$repo" --state closed --limit 300 --json number,title,labels,milestone,closedAt \
+                --jq '.[] | "\(.number)\t\(.closedAt)\t\(.milestone.title // "-")\t\([.labels[].name] | join(","))\t\(.title)"' ;;
+        *) echo "gh-issue: list takes \`open\` or \`closed\`, got \`$1\`." >&2; exit 2 ;;
+    esac
+}
+
+milestones() {
+    gh api "repos/$repo/milestones?state=all&per_page=100" \
+        --jq '.[] | "\(.number)\t\(.title)\t\(.state)\topen=\(.open_issues)\tclosed=\(.closed_issues)"'
+}
+
 case ${1:-} in
     body) [ $# -eq 2 ] || usage; body "$2" ;;
+    list) [ $# -le 2 ] || usage; list "${2:-open}" ;;
+    milestones) [ $# -eq 1 ] || usage; milestones ;;
     comments) [ $# -eq 2 ] || usage; comments "$2" ;;
     patch-body) [ $# -eq 3 ] || usage; patch_body "$2" "$3" ;;
     comment) [ $# -eq 3 ] || usage; comment "$2" "$3" ;;

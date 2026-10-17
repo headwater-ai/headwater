@@ -806,16 +806,20 @@ jobs:
           fi
           exit "$status"
       - name: The tools a build-order stage calls behave as their agent definitions say
-        # Eight scripts that every stage of a run calls in place of a command
+        # Twelve scripts that every stage of a run calls in place of a command
         # it once retyped: the CI-finished condition, the queue-finished
         # condition, the board move, the
         # single-issue reads and writes, the capped wait, the free space on
         # the volume of the cargo pool, the fetched-added-
-        # built worktree and the cargo slot wrapper. Each of the first seven
-        # suites was written with its script and none was run by anything
-        # until run 20260923-0733 read two of them wrong in production. Every
-        # suite fakes `gh`, `cargo` or `df` on PATH, so this step needs no network, no
-        # token and no toolchain, and writes only under temporary directories.
+        # built worktree, the cargo slot wrapper, the verifier's setup, the
+        # settled-pull-request condition, the builder's pre-pull-request
+        # sequence and the integrator's steps around its merge call. Each of
+        # the first seven suites was written with its script and none was run
+        # by anything until run 20260923-0733 read two of them wrong in
+        # production. Every suite fakes `gh`, `cargo` or `df` on PATH, or a
+        # reader script by an environment variable, so this step needs no
+        # network, no token and no toolchain, and writes only under temporary
+        # directories.
         # It needs `jq`, which ubuntu-latest and the self-hosted runner both
         # carry, as the run directory step above shows: the fake `gh` of the
         # CI-finished and queue-finished suites runs each script's own
@@ -831,6 +835,10 @@ jobs:
           sh tools/run/disk-free-fixtures.sh
           sh tools/repo/new-worktree-fixtures.sh
           sh tools/hw-cargo-fixtures.sh
+          sh tools/run/verify-setup-fixtures.sh
+          sh tools/run/pr-settled-fixtures.sh
+          sh tools/run/pre-pr-fixtures.sh
+          sh tools/run/integrate-fixtures.sh
       - name: A citation that went stale reads differently from one that was invented
         # `tools/cite/check-citations.py` is the only checker in this
         # repository that reads a code file rather than a document. Spec 5 asks

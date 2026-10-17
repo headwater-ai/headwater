@@ -37,11 +37,11 @@ Ten lines the parent of a build-order run obeys on every turn. A run copies them
 `sh tools/run/run-dir.sh start` makes the run directory and prints its path, which every dispatch carries. That directory is the ledger ([HW-PD-0005](../../docs/process/decisions/0005-the-ledger-is-split-its-tabular-parts-are-jsonl-and-its-totals-are-derived.md)): its `log` takes one line per iteration, `tail` is what you read, `net` derives opened minus closed, and the prose ledger is yours to append through the verbs `hw-run-policy` names. Read `lessons.md` by heading, only the parent's sections, never whole. Ask an agent one line by `SendMessage`, never `ListAgents`.
 
 1. **Top of the run.** Dispatch `headwater-product-owner` and `hw-queue` in one turn. Read the queue agent's report and nothing else.
-2. **Fill.** While fewer than N issues are in flight and the queue holds one, dispatch `hw-adjudicate` for the issue `run-dir.sh next` prints, with the template below.
-3. **On an adjudicate report.** `VERDICT: BUILD` runs `run-dir.sh stage <run> <issue> adjudicated note=<path> footprint=<a,b>`, claims the footprint with `run-dir.sh claim <run> <issue> <branch> <artifacts>`, and dispatches `hw-iterate` with the same template, the adjudication note's path, and any `WAITS-ON` the claim printed. It owns build, verify and rework, and reports once. `VERDICT: REFUSE` is ruled by the three kinds in `hw-run-policy`, recorded with `run-dir.sh rule`, and the next issue is taken in the same turn.
-4. **On an iterate report.** `VERDICT: PASS` is your cue to rule, from the verdict and the notes it names, never from the branch. If you merge, append the ruling with `run-dir.sh integrate` and dispatch the next adjudicate in the same turn. `VERDICT: STOP` is ruled like a refusal.
-5. **The integrator slot.** Depth one. When nothing is integrating and `run-dir.sh integrations` prints a ruling, dispatch a fresh `hw-integrate` with each pull request it prints. It enqueues all, and an ejected one returns for a new ruling, recorded as `ruling=ejected` until you rule it again ([HW-PD-0020](../../docs/process/decisions/0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md)). Never a long-lived one ([HW-PD-0003](../../docs/process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md)).
-6. **Every fifth merge, and at the end**, dispatch `headwater-product-owner`.
+2. **Fill.** While fewer than N issues are in flight and the queue holds one, dispatch `hw-adjudicate` for the issue `run-dir.sh next` prints, with the file `run-dir.sh dispatch <run> <issue> adjudicate` prints.
+3. **On an adjudicate report.** `VERDICT: BUILD` runs `run-dir.sh accept <run> <issue> branch=<name> note=<path> footprint=<a,b>`, which stages, claims, and prints the `hw-iterate` dispatch file with any `WAITS-ON` the claim found; dispatch it. It owns build, verify and rework, and reports once. `VERDICT: REFUSE` is ruled by the three kinds in `hw-run-policy`, recorded with `run-dir.sh rule`, and the next issue is taken in the same turn.
+4. **On an iterate report.** `VERDICT: PASS` is your cue to rule, from the verdict and the notes it names, never from the branch. If you merge, append the ruling with `run-dir.sh integrate <run> <PR> issue=<N> branch=<name> ruling=<words> footprint=<a,b> sha=<its HEAD>` and dispatch the next adjudicate in the same turn. `VERDICT: STOP` is ruled like a refusal.
+5. **The integrator slot.** Depth one. When nothing is integrating and `run-dir.sh integrations` prints a ruling, dispatch a fresh `hw-integrate` with the file `run-dir.sh dispatch <run> none integrate` prints. A ruling you append while one is live goes to it by `SendMessage`, as the line `integrations` prints, never to a second one. An ejected one returns for a new ruling, recorded as `ruling=ejected` until you rule it again ([HW-PD-0020](../../docs/process/decisions/0020-merges-go-through-the-github-merge-queue-one-squash-commit-per-pull-request.md)). Never a long-lived one ([HW-PD-0003](../../docs/process/decisions/0003-a-dispatch-pays-when-it-retires-more-parent-turns-than-it-costs.md)).
+6. **Every fifth merge, and at the end**, dispatch `headwater-product-owner`. Its `RELEASE READY` line is a question for the owner under the rule `hw-run-policy` states, and never a tag.
 7. **Then**, if `run-dir.sh applies <run>` prints `APPLY` lines, dispatch one `hw-iterate` with `issue: none (run lessons <run>)`. A line its pull request could not apply goes to a process obligation record.
 
 ## The veto
@@ -53,19 +53,7 @@ Your veto of a `PASS` goes by `SendMessage` to that `hw-iterate` id, with your f
 
 ## The dispatch
 
-Composed with `Write` into the issue's scratch directory and passed as a path. Nothing else goes in the prompt; an environment fact belongs in `hw-run-policy`.
-
-    issue:        #<N> <title>
-    run:          <run directory>
-    scratch:      $CLAUDE_JOB_DIR/tmp/issue-<N>/
-    branch:       <name>            (iterate, build, verify, integrate)
-    pull request: #<PR>             (verify, integrate)
-    footprint:    <artifacts>       (from the adjudication; integrate)
-    waits-on:     #<N> or none      (from the claim; iterate, build, integrate)
-    ruling:       <your ruling>     (integrate)
-    attacks:      <headings from hw-verification-bar, nothing more>  (build, verify; iterate picks)
-    deadline:     <minutes>
-    report:       the fixed block your definition names and nothing before it
+`run-dir.sh dispatch <run> <issue|none> <stage> [field=value]...` renders every dispatch into the issue's scratch directory and prints the path. Pass that path and nothing else; an environment fact belongs in `hw-run-policy`. The verb's header names the fields each stage takes, and `tools/run/run-dir-fixtures.sh` holds the rendered lines.
 
 ## Stop
 
