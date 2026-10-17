@@ -1034,6 +1034,105 @@ fn the_committed_scenarios_are_the_fourteen_of_the_milestone() {
     }
 }
 
+/// The committed additive spec plans each of the fourteen scenarios in each of
+/// the three rounds, and runs no held-out probe before the final round (#1774,
+/// clause 4).
+///
+/// A line is `additive scenario-<n> <round>` and the probes of the round's set
+/// it leaves out. The screening round and each tuning try run the `tuning`
+/// set, and the final round runs `held-out`, as HW-DR-0111 fixes. So the lines
+/// of one scenario and one round must run each probe of that set exactly once:
+/// a split line that dropped a probe, or ran one twice, reads as a whole spec.
+/// The engine refuses a probe in both sets, so no held-out probe can be a
+/// member of the set a screening or tuning line runs.
+#[test]
+fn the_additive_spec_plans_each_scenario_in_each_round() {
+    let root = repository_root();
+    let spec_path = root.join("tools/probe/additive-campaign.spec");
+    let spec = std::fs::read_to_string(&spec_path)
+        .unwrap_or_else(|e| panic!("{}: {e}", spec_path.display()));
+    let path = root.join(headwater_probe::budget::PATH);
+    let source =
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    let budgets = headwater_probe::Budgets::read(&source).unwrap_or_else(|e| panic!("{e}"));
+    let set_of = |round: &str| match round {
+        "screening" | "tuning" => "tuning",
+        "final" => "held-out",
+        other => panic!("tools/probe/additive-campaign.spec names the round `{other}`"),
+    };
+    let held_out = budgets
+        .set("held-out")
+        .expect("the held-out set is declared");
+
+    // (scenario, round) -> each probe run, with the number of lines that run it.
+    let mut runs: std::collections::BTreeMap<(u32, String), Vec<String>> =
+        std::collections::BTreeMap::new();
+    for (number, line) in spec.lines().enumerate() {
+        let fields: Vec<&str> = line.split_whitespace().collect();
+        if fields.is_empty() || fields[0].starts_with('#') {
+            continue;
+        }
+        let at = number + 1;
+        assert!(
+            fields.len() >= 3,
+            "line {at}: an additive line names a tier, a scenario arm and a round"
+        );
+        assert_eq!(fields[0], "additive", "line {at}: the tier");
+        let arm = headwater_probe::Arm::read(fields[1])
+            .unwrap_or_else(|| panic!("line {at}: `{}` is no arm", fields[1]));
+        let headwater_probe::Arm::Scenario(scenario) = arm else {
+            panic!("line {at}: `{}` is not a scenario arm", fields[1]);
+        };
+        let round = fields[2];
+        let set = budgets
+            .set(set_of(round))
+            .unwrap_or_else(|| panic!("line {at}: no set `{}`", set_of(round)));
+        let left_out = &fields[3..];
+        for id in left_out {
+            assert!(
+                set.iter().any(|member| member == id),
+                "line {at} leaves out {id}, which the set `{}` does not hold",
+                set_of(round)
+            );
+        }
+        let entry = runs.entry((scenario, round.to_string())).or_default();
+        for member in set
+            .iter()
+            .filter(|member| !left_out.contains(&member.as_str()))
+        {
+            if round != "final" {
+                assert!(
+                    !held_out.contains(member),
+                    "line {at} runs the held-out probe {member} in the {round} round"
+                );
+            }
+            entry.push(member.clone());
+        }
+    }
+
+    for scenario in 0..14 {
+        for round in ["screening", "tuning", "final"] {
+            let mut ran = runs
+                .remove(&(scenario, round.to_string()))
+                .unwrap_or_else(|| {
+                    panic!("no line plans scenario-{scenario} in the {round} round")
+                });
+            ran.sort();
+            let mut expected = budgets.set(set_of(round)).expect("declared").to_vec();
+            expected.sort();
+            assert_eq!(
+                ran, expected,
+                "the lines of scenario-{scenario} in the {round} round must run each probe of the set `{}` once",
+                set_of(round)
+            );
+        }
+    }
+    assert!(
+        runs.is_empty(),
+        "lines outside the 14 scenarios and 3 rounds: {runs:?}"
+    );
+}
+
 /// Every file of this repository's harness belongs to a layer of the
 /// additive campaign, so plain code holds none of it (#1774).
 ///
