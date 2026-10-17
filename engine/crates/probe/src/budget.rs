@@ -670,7 +670,10 @@ fn scenarios(value: &Value, layers: &[Layer]) -> Result<Vec<Scenario>, Unreadabl
                 found: written,
             });
         };
-        let Some(listed) = fields.get("layers").and_then(|listed| listed.value.as_seq()) else {
+        let Some(listed) = fields
+            .get("layers")
+            .and_then(|listed| listed.value.as_seq())
+        else {
             return Err(Unreadable::Malformed(format!(
                 "scenario {number} in {PATH} declares no `layers` sequence. Scenario 0 \
                  declares `layers: []`"
@@ -1854,10 +1857,21 @@ scenarios:
                 .iter()
                 .map(|layer| layer.name.as_str())
                 .collect::<Vec<_>>(),
-            ["docs", "engine", "claude-md", "skills", "hook", "mcp", "harness"]
+            [
+                "docs",
+                "engine",
+                "claude-md",
+                "skills",
+                "hook",
+                "mcp",
+                "harness"
+            ]
         );
         let hook = &budgets.layers[4];
-        assert_eq!(hook.paths, [".claude/hooks/intent.sh", ".claude/hooks/lib.sh"]);
+        assert_eq!(
+            hook.paths,
+            [".claude/hooks/intent.sh", ".claude/hooks/lib.sh"]
+        );
         assert_eq!(hook.arms, [".claude/settings.json"]);
         assert_eq!(budgets.scenarios.len(), 14);
         let bases: Vec<Option<u32>> = budgets.scenarios.iter().map(|s| s.base).collect();
@@ -1898,7 +1912,10 @@ scenarios:
     fn plain_code_removes_the_path_of_every_layer() {
         let budgets = Budgets::read(&additive()).expect("reads");
         let delta = budgets.scenario_delta(0).expect("declared");
-        assert!(delta.iter().all(|(hold, _, _)| *hold == Hold::Removes), "{delta:?}");
+        assert!(
+            delta.iter().all(|(hold, _, _)| *hold == Hold::Removes),
+            "{delta:?}"
+        );
         for path in [
             "docs",
             ".headwater",
@@ -1911,7 +1928,10 @@ scenarios:
             "AGENTS.md",
             ".githooks",
         ] {
-            assert!(delta.iter().any(|(_, _, p)| *p == path), "{path}: {delta:?}");
+            assert!(
+                delta.iter().any(|(_, _, p)| *p == path),
+                "{path}: {delta:?}"
+            );
         }
     }
 
@@ -1919,11 +1939,26 @@ scenarios:
     fn the_hook_layer_writes_its_one_entry_and_the_harness_keeps_the_whole_file() {
         let budgets = Budgets::read(&additive()).expect("reads");
         let five = budgets.scenario_delta(5).expect("declared");
-        assert!(five.contains(&(Hold::Writes, "hook", ".claude/settings.json")), "{five:?}");
-        assert!(five.contains(&(Hold::Removes, "harness", ".claude/settings.json")), "{five:?}");
-        assert!(five.contains(&(Hold::Keeps, "hook", ".claude/hooks/intent.sh")), "{five:?}");
-        assert!(five.contains(&(Hold::Keeps, "engine", ".headwater")), "{five:?}");
-        assert!(five.contains(&(Hold::Removes, "skills", ".agents/skills")), "{five:?}");
+        assert!(
+            five.contains(&(Hold::Writes, "hook", ".claude/settings.json")),
+            "{five:?}"
+        );
+        assert!(
+            five.contains(&(Hold::Removes, "harness", ".claude/settings.json")),
+            "{five:?}"
+        );
+        assert!(
+            five.contains(&(Hold::Keeps, "hook", ".claude/hooks/intent.sh")),
+            "{five:?}"
+        );
+        assert!(
+            five.contains(&(Hold::Keeps, "engine", ".headwater")),
+            "{five:?}"
+        );
+        assert!(
+            five.contains(&(Hold::Removes, "skills", ".agents/skills")),
+            "{five:?}"
+        );
         let thirteen = budgets.scenario_delta(13).expect("declared");
         assert!(
             thirteen.contains(&(Hold::Keeps, "harness", ".claude/settings.json")),
@@ -1986,7 +2021,10 @@ scenarios:
                 "{to}"
             );
             let message = refused.expect_err("refused").to_string();
-            assert!(message.contains(&format!("scenario {scenario}")), "{message}");
+            assert!(
+                message.contains(&format!("scenario {scenario}")),
+                "{message}"
+            );
         }
     }
 

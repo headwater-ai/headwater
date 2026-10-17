@@ -991,11 +991,31 @@ fn the_committed_scenarios_are_the_fourteen_of_the_milestone() {
         (8, &["docs", "engine", "claude-md", "skills"], Some(4), true),
         (9, &["docs", "engine", "claude-md", "hook"], Some(5), true),
         (10, &["docs", "engine", "skills", "hook"], Some(5), true),
-        (11, &["docs", "engine", "claude-md", "skills", "hook"], Some(10), false),
-        (12, &["docs", "engine", "claude-md", "skills", "hook", "mcp"], Some(11), false),
-        (13, &["docs", "engine", "claude-md", "skills", "hook", "harness"], Some(11), false),
+        (
+            11,
+            &["docs", "engine", "claude-md", "skills", "hook"],
+            Some(10),
+            false,
+        ),
+        (
+            12,
+            &["docs", "engine", "claude-md", "skills", "hook", "mcp"],
+            Some(11),
+            false,
+        ),
+        (
+            13,
+            &["docs", "engine", "claude-md", "skills", "hook", "harness"],
+            Some(11),
+            false,
+        ),
     ];
-    assert_eq!(budgets.scenarios.len(), table.len(), "{:?}", budgets.scenarios);
+    assert_eq!(
+        budgets.scenarios.len(),
+        table.len(),
+        "{:?}",
+        budgets.scenarios
+    );
     for (number, layers, base, interaction) in table {
         let scenario = budgets
             .scenario(number)
@@ -1047,7 +1067,11 @@ fn every_harness_file_belongs_to_a_layer() {
 
     // What git ignores under `.claude/`: the local state, the agents' trees,
     // and the local settings file.
-    let ignored = [".claude/state", ".claude/worktrees", ".claude/settings.local.json"];
+    let ignored = [
+        ".claude/state",
+        ".claude/worktrees",
+        ".claude/settings.local.json",
+    ];
     let mut files = Vec::new();
     let mut pending: Vec<String> = [".claude", ".agents", ".codex", ".githooks"]
         .iter()
