@@ -10,7 +10,8 @@
 # It needs `jq` and `git` and no network: `gh` on `PATH` is a fake, and
 # `HW_QUEUE_DONE` and `HW_CI_DONE` name stub readers. The run directory is
 # real, under `HEADWATER_RUN_ROOT`, so the release is held against the
-# claims `run-dir.sh` wrote.
+# claims `run-dir.sh` wrote. The CI stub's answer is `HW_CI`, never `CI`:
+# GitHub Actions exports `CI=true`.
 
 set -u
 
@@ -72,7 +73,7 @@ EOF
 cat > "$scratch/ci-done.sh" <<'EOF'
 #!/bin/sh
 printf 'ci-done %s\n' "$1" >> "$LOG"
-case ${CI:-green} in
+case ${HW_CI:-green} in
     green) echo "ci-done: $(printf '%.8s' "$1") green" ;;
     red) echo "ci-done: $(printf '%.8s' "$1") red: fixtures clippy" ;;
     *) echo "ci-done: $(printf '%.8s' "$1") not finished: 1 of 2 workflow runs and 3 of 5 check runs complete." >&2; exit 1 ;;
@@ -85,15 +86,15 @@ sha=0123456789abcdef0123456789abcdef01234567
 run() {
     : > "$LOG"
     PATH="$scratch/bin:$PATH" HEAD="${HEAD:-$sha}" CLOSES="${CLOSES:-[]}" CLOSE_STATE="${CLOSE_STATE:-closed}" \
-        ACCOUNTED="${ACCOUNTED:-1}" QUEUE="${QUEUE:-merged}" CI="${CI:-green}" sh "$tool" "$@"
+        ACCOUNTED="${ACCOUNTED:-1}" QUEUE="${QUEUE:-merged}" HW_CI="${HW_CI:-green}" sh "$tool" "$@"
 }
 
 printf '# main: one read of CI on the tip, never a wait, exit 0 whatever it says\n'
 out=$(run main "$sha" 2>&1); status=$?
 same 'green: exit 0 and the MAIN line' "0 MAIN: $sha green" "$status $out"
-out=$(CI=red run main "$sha" 2>&1); status=$?
+out=$(HW_CI=red run main "$sha" 2>&1); status=$?
 same 'red: exit 0 and the checks named' "0 MAIN: $sha red: fixtures clippy" "$status $out"
-out=$(CI=pending run main "$sha" 2>&1); status=$?
+out=$(HW_CI=pending run main "$sha" 2>&1); status=$?
 same 'unfinished: exit 0, said, and not waited on' "0 1 1" "$status $(printf '%s' "$out" | grep -c "^MAIN: $sha unfinished") $(grep -c '^ci-done' "$LOG")"
 git init -q "$scratch/repo"
 git -C "$scratch/repo" -c user.name=t -c user.email=t@t commit -q --allow-empty -m first

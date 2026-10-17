@@ -8,6 +8,7 @@
 #
 # It needs no network and no token: `gh` on `PATH` is a fake that answers
 # the one endpoint the tool reads, and `HW_CI_DONE` names a stub CI reader.
+# The stub's answer is `HW_CI`, never `CI`: GitHub Actions exports `CI=true`.
 
 set -u
 
@@ -40,7 +41,7 @@ chmod +x "$scratch/bin/gh"
 cat > "$scratch/ci-done.sh" <<'EOF'
 #!/bin/sh
 printf 'ci-done %s\n' "$1" >> "$LOG"
-case ${CI:-green} in
+case ${HW_CI:-green} in
     green) echo "run 1 completed success"; echo "ci-done: $(printf '%.8s' "$1") green" ;;
     red) echo "ci-done: $(printf '%.8s' "$1") red: fixtures" ;;
     *) echo "ci-done: $(printf '%.8s' "$1") not finished: 1 of 2 workflow runs and 3 of 5 check runs complete." >&2; exit 1 ;;
@@ -53,7 +54,7 @@ sha=0123456789abcdef0123456789abcdef01234567
 run() {
     : > "$LOG"
     PATH="$scratch/bin:$PATH" MERGEABLE="${MERGEABLE:-true}" STATE="${STATE:-clean}" HEAD="${HEAD:-$sha}" \
-        CI="${CI:-green}" GH_EMPTY="${GH_EMPTY:-}" sh "$tool" "$@"
+        HW_CI="${HW_CI:-green}" GH_EMPTY="${GH_EMPTY:-}" sh "$tool" "$@"
 }
 
 printf '# not settled while mergeable is null or the state is unknown, and CI is not asked\n'
@@ -68,7 +69,7 @@ same 'an empty answer from GitHub is exit 1, an error and not a verdict' 1 "$sta
 same '  and the line says so' 1 "$(printf '%s\n' "$out" | grep -c 'answered nothing')"
 
 printf '\n# not settled while CI is unfinished\n'
-out=$(CI=pending run 77 "$sha" 2>&1); status=$?
+out=$(HW_CI=pending run 77 "$sha" 2>&1); status=$?
 same 'CI unfinished: exit 1' 1 "$status"
 same '  and the ci-done line is the one on stderr' 1 "$(printf '%s\n' "$out" | grep -c 'not finished: 1 of 2')"
 same '  and ci-done was asked about the sha the verifier detached at' "ci-done $sha" "$(grep '^ci-done' "$LOG")"
@@ -77,7 +78,7 @@ printf '\n# settled: mergeable computed and CI finished, green or red alike\n'
 out=$(run 77 "$sha" 2>&1); status=$?
 same 'exit 0' 0 "$status"
 same '  and the block' "mergeable: true (clean)|run 1 completed success|ci-done: 01234567 green|pr-settled: #77 at $sha settled" "$(printf '%s\n' "$out" | paste -sd'|')"
-out=$(MERGEABLE=false STATE=dirty CI=red run 77 "$sha" 2>&1); status=$?
+out=$(MERGEABLE=false STATE=dirty HW_CI=red run 77 "$sha" 2>&1); status=$?
 same 'red CI and an unmergeable state still settle, with exit 0: the verdict is the verifier'"'"'s' 0 "$status"
 same '  and the lines carry both' 'mergeable: false (dirty)|ci-done: 01234567 red: fixtures' "$(printf '%s\n' "$out" | grep -E '^(mergeable|ci-done)' | paste -sd'|')"
 
