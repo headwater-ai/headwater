@@ -456,3 +456,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 ## 110 — A headless review of the nine hand-built pages joins CI, and the review of the generated half stays a run by hand
 
 [HW-DR-0110](../decisions/0110-a-headless-review-of-the-nine-hand-built-pages-joins-ci-and-the-review-of-the-generated-half-stays-a-run-by-hand.md) — CI reads the nine hand-built pages at 390 and 1280 pixels wide for 2.4 seconds a run. The same reading over 623 generated pages flags 81 for one table defect, so it stays a run by hand until that defect is fixed. (asserted, and no human has accepted it)
+
+## 111 — The additive campaign adds six layers to plain code in fourteen scenarios and registers one comparison each
+
+[HW-DR-0111](../decisions/0111-the-additive-campaign-adds-six-layers-to-plain-code-in-fourteen-scenarios-and-registers-one-comparison-each.md) — The 0.07 campaign builds 14 scenarios by adding six layers to plain code. Each scenario has one base, one registered comparison and one verdict, over 8 probes split 4 for tuning and 4 held out. (asserted, and no human has accepted it)
