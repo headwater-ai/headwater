@@ -1827,9 +1827,10 @@ mod tests {
     /// how many sessions made none, over the sessions that recorded calls.
     ///
     /// The four sessions differ in what a careless count would get wrong.
-    /// Session `b` names `mcp__` only in a `Bash` argument and in two tool
+    /// Session `b` names `mcp__` only in a `Bash` argument and in three tool
     /// names that are near the prefix and not on it, so a count that read
-    /// the argument or folded the case would report a call there. Session
+    /// the argument, folded the case or matched inside the name would report
+    /// a call there. Session
     /// `d` has no `calls` key, so nothing watched it, and a count of 0 there
     /// would be the flattering error the test above guards for the rate: it
     /// would add one more session that "never called the server".
@@ -1854,8 +1855,9 @@ mod tests {
                     "Bash",
                     r#"{"command":"headwater mcp__headwater__explain x"}"#,
                 ),
-                call("mcp_headwater_route", r#"{}"#),
-                call("MCP__headwater__x", r#"{}"#),
+                call("mcp_headwater_route", "{}"),
+                call("MCP__headwater__x", "{}"),
+                call("plugin_mcp__x", "{}"),
             ]),
         );
         let c = event(3, "c", Some(Vec::new()));
@@ -1888,7 +1890,7 @@ mod tests {
         let rendered = results.render(ColorMode::Plain);
         for clause in [
             "session a: not satisfied — 3 recorded calls, and none named any of the 1 document; 2 calls to a tool of an MCP server\n",
-            "session b: not satisfied — 4 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server\n",
+            "session b: not satisfied — 5 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server\n",
             "session c: not satisfied — 0 recorded calls, and none named any of the 1 document; no call to a tool of an MCP server\n",
             "2 of 3 sessions that recorded their calls made no call to a tool of an MCP server. 1 session recorded no calls and was not counted.\n",
         ] {
@@ -1903,6 +1905,67 @@ mod tests {
                 "; calls to a tool of an MCP server not counted, because the session recorded no calls"
             ),
             "an unwatched session never reads as one that made no call: {unwatched}"
+        );
+    }
+
+    /// A session whose calls arrive in several events states their sum, and a
+    /// transcript where no session recorded calls says so in words.
+    ///
+    /// `Results::over` folds every event of one session into one row, so a
+    /// count that kept only the last event's calls would report 1 for session
+    /// `split` here. Sessions `u1` and `u2` have no `calls` key, so the plural
+    /// line for sessions not counted is the one the result prints.
+    #[test]
+    fn a_session_split_over_events_states_the_sum_and_no_watched_session_is_said_in_words() {
+        let selected = opened_over_one_document();
+        let first = event(1, "split", Some(vec![call("mcp__headwater__route", "{}")]));
+        let second = event(
+            2,
+            "split",
+            Some(vec![
+                call("mcp__headwater__explain", "{}"),
+                call("Read", "{}"),
+            ]),
+        );
+        let split = Record {
+            identity: None,
+            read: 2,
+            probes: vec!["PROBE-FIX-one".into()],
+            sessions: 1,
+            calls: 3,
+            events: vec![first, second],
+            rejected: Vec::new(),
+            refusal: None,
+            declared: 1,
+            lock_moved: None,
+            read_set_moved: None,
+        };
+        let results = Results::over(&split, std::slice::from_ref(&selected));
+        assert_eq!(results.rows[0].sessions.len(), 1, "two events, one session");
+        assert_eq!(results.rows[0].sessions[0].mcp_calls, Some(2));
+        assert_eq!(results.mcp_counts(), (0, 1, 0));
+
+        let unwatched = Record {
+            identity: None,
+            read: 2,
+            probes: vec!["PROBE-FIX-one".into()],
+            sessions: 2,
+            calls: 0,
+            events: vec![event(1, "u1", None), event(2, "u2", None)],
+            rejected: Vec::new(),
+            refusal: None,
+            declared: 1,
+            lock_moved: None,
+            read_set_moved: None,
+        };
+        let results = Results::over(&unwatched, std::slice::from_ref(&selected));
+        assert_eq!(results.mcp_counts(), (0, 0, 2));
+        let rendered = results.render(ColorMode::Plain);
+        let expected = "No session recorded its calls, so no session was counted for calls to a \
+                        tool of an MCP server. 2 sessions recorded no calls and were not counted.\n";
+        assert!(
+            rendered.contains(expected),
+            "missing {expected:?} in:\n{rendered}"
         );
     }
 
