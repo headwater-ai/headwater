@@ -963,3 +963,166 @@ fn the_campaign_spec_plans_no_probe_that_awaits_spend() {
     }
     assert!(lines > 0, "the campaign spec holds no line");
 }
+
+/// The committed `.headwater/probe.yml` declares the fourteen scenarios of
+/// milestone 0.07 as its issues, #1780 to #1793, state them (#1774).
+///
+/// The engine already refuses a scenario that differs from its base by more
+/// than one layer. This case holds the declaration to the milestone: a
+/// scenario with the wrong layers or the wrong base reads as well-formed and
+/// measures a comparison nobody registered.
+#[test]
+fn the_committed_scenarios_are_the_fourteen_of_the_milestone() {
+    let root = repository_root();
+    let path = root.join(headwater_probe::budget::PATH);
+    let source =
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    let budgets = headwater_probe::Budgets::read(&source).unwrap_or_else(|e| panic!("{e}"));
+
+    let table: [(u32, &[&str], Option<u32>, bool); 14] = [
+        (0, &[], None, false),
+        (1, &["docs"], Some(0), false),
+        (2, &["docs", "claude-md"], Some(1), true),
+        (3, &["docs", "engine"], Some(1), false),
+        (4, &["docs", "engine", "skills"], Some(3), false),
+        (5, &["docs", "engine", "hook"], Some(3), false),
+        (6, &["docs", "engine", "mcp"], Some(3), false),
+        (7, &["docs", "engine", "hook", "mcp"], Some(5), true),
+        (8, &["docs", "engine", "claude-md", "skills"], Some(4), true),
+        (9, &["docs", "engine", "claude-md", "hook"], Some(5), true),
+        (10, &["docs", "engine", "skills", "hook"], Some(5), true),
+        (11, &["docs", "engine", "claude-md", "skills", "hook"], Some(10), false),
+        (12, &["docs", "engine", "claude-md", "skills", "hook", "mcp"], Some(11), false),
+        (13, &["docs", "engine", "claude-md", "skills", "hook", "harness"], Some(11), false),
+    ];
+    assert_eq!(budgets.scenarios.len(), table.len(), "{:?}", budgets.scenarios);
+    for (number, layers, base, interaction) in table {
+        let scenario = budgets
+            .scenario(number)
+            .unwrap_or_else(|| panic!("no scenario {number}"));
+        let mut held = scenario.layers.clone();
+        held.sort();
+        let mut expected: Vec<String> = layers.iter().map(|l| l.to_string()).collect();
+        expected.sort();
+        assert_eq!(held, expected, "the layers of scenario {number}");
+        assert_eq!(scenario.base, base, "the base of scenario {number}");
+        assert_eq!(
+            scenario.block == headwater_probe::budget::Block::Interaction,
+            interaction,
+            "the block of scenario {number}"
+        );
+    }
+}
+
+/// Every file of this repository's harness belongs to a layer of the
+/// additive campaign, so plain code holds none of it (#1774).
+///
+/// A layer names its paths one by one under `.claude/`, because the skills,
+/// the hook and the rest of the harness share that directory. So a skill, an
+/// agent or a hook added later is in no layer until somebody declares it, and
+/// every scenario, plain code included, would hold it. That is the hidden
+/// difference of #1712. This case walks the directories that deliver a
+/// harness and fails on the first file no layer path holds.
+#[test]
+fn every_harness_file_belongs_to_a_layer() {
+    let root = repository_root();
+    let path = root.join(headwater_probe::budget::PATH);
+    let source =
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    let budgets = headwater_probe::Budgets::read(&source).unwrap_or_else(|e| panic!("{e}"));
+    let held: Vec<&str> = budgets
+        .layers
+        .iter()
+        .flat_map(|layer| layer.paths.iter().chain(layer.arms.iter()))
+        .map(String::as_str)
+        .collect();
+    let in_a_layer = |file: &str| {
+        held.iter().any(|path| {
+            file == *path
+                || file
+                    .strip_prefix(path)
+                    .is_some_and(|rest| rest.starts_with('/'))
+        })
+    };
+
+    // What git ignores under `.claude/`: the local state, the agents' trees,
+    // and the local settings file.
+    let ignored = [".claude/state", ".claude/worktrees", ".claude/settings.local.json"];
+    let mut files = Vec::new();
+    let mut pending: Vec<String> = [".claude", ".agents", ".codex", ".githooks"]
+        .iter()
+        .map(|d| d.to_string())
+        .collect();
+    while let Some(relative) = pending.pop() {
+        if ignored.contains(&relative.as_str()) {
+            continue;
+        }
+        let full = root.join(&relative);
+        if full.is_dir() {
+            for entry in std::fs::read_dir(&full).unwrap_or_else(|e| panic!("{relative}: {e}")) {
+                let name = entry.expect("an entry").file_name();
+                pending.push(format!("{relative}/{}", name.to_string_lossy()));
+            }
+        } else if full.exists() {
+            files.push(relative);
+        }
+    }
+    files.extend(["CLAUDE.md".to_string(), "AGENTS.md".to_string()]);
+    assert!(
+        files.iter().any(|f| f.starts_with(".claude/skills/")),
+        "the walk found no skill, so it read nothing"
+    );
+    let orphans: Vec<&String> = files.iter().filter(|file| !in_a_layer(file)).collect();
+    assert!(
+        orphans.is_empty(),
+        "these files deliver a harness and no layer of {} holds them, so plain code \
+         holds them: {orphans:?}",
+        headwater_probe::budget::PATH
+    );
+}
+
+/// The hook layer's `settings.json` holds the `UserPromptSubmit` entry of
+/// this repository's `.claude/settings.json`, byte for byte, and nothing else
+/// (#1774).
+///
+/// The hook layer writes its own file because the whole file is the rest of
+/// the harness. A change to the entry in `.claude/settings.json` that the copy
+/// does not follow would measure a hook that no adopter runs.
+#[test]
+fn the_hook_layer_holds_the_one_entry_of_the_harness_settings() {
+    let root = repository_root();
+    let read = |relative: &str| {
+        std::fs::read_to_string(root.join(relative)).unwrap_or_else(|e| panic!("{relative}: {e}"))
+    };
+    // The text from `"UserPromptSubmit"` to the bracket that closes its list.
+    let entry = |text: &str, of: &str| -> String {
+        let start = text
+            .find("\"UserPromptSubmit\"")
+            .unwrap_or_else(|| panic!("{of} holds no UserPromptSubmit entry"));
+        let mut depth = 0usize;
+        for (offset, c) in text[start..].char_indices() {
+            match c {
+                '[' => depth += 1,
+                ']' => {
+                    depth -= 1;
+                    if depth == 0 {
+                        return text[start..=start + offset].to_string();
+                    }
+                }
+                _ => {}
+            }
+        }
+        panic!("{of}: the UserPromptSubmit list does not close")
+    };
+    let whole = read(".claude/settings.json");
+    let layer = read("tools/probe/arms/hook/.claude/settings.json");
+    assert_eq!(
+        entry(&layer, "the hook layer"),
+        entry(&whole, ".claude/settings.json")
+    );
+    assert_eq!(
+        layer.matches("\"command\"").count(),
+        1,
+        "the hook layer wires one hook: {layer}"
+    );
+}

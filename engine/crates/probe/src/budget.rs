@@ -353,8 +353,14 @@ impl Budgets {
                 "{PATH} declares no tier, and a run at a tier with no envelope cannot fail closed"
             )));
         }
-        let layers = Vec::new();
-        let scenarios = Vec::new();
+        let layers = match root.get("layers") {
+            None => Vec::new(),
+            Some(declared) => layers(&declared.value)?,
+        };
+        let scenarios = match root.get("scenarios") {
+            None => Vec::new(),
+            Some(declared) => scenarios(&declared.value, &layers)?,
+        };
         Ok(Budgets {
             tiers,
             instrument,
@@ -529,6 +535,240 @@ fn envelope(tier: Tier, fields: &Mapping) -> Result<Envelope, Unreadable> {
         max_turns,
         components,
     })
+}
+
+/// The `layers` mapping (#1774): each layer's name, and the paths it adds to
+/// plain code.
+///
+/// It refuses a name that cannot be a directory under `tools/probe/arms/`, a
+/// layer with no path, an unsafe path, and a path that two layers claim. Two
+/// paths are claimed twice when they are equal or one is inside the other.
+/// The one pair it admits is an `arms` file equal to a path another layer
+/// keeps from the present tree: the file stands in for part of that path, and
+/// [`Budgets::scenario_delta`] keeps the present file where both are held.
+fn layers(value: &Value) -> Result<Vec<Layer>, Unreadable> {
+    let Some(block) = value.as_map() else {
+        return Err(Unreadable::Malformed(format!(
+            "`layers` in {PATH} is not a mapping of layer name to its paths"
+        )));
+    };
+    let mut layers: Vec<Layer> = Vec::new();
+    for entry in block {
+        let name = entry.key.value.as_str().to_string();
+        let named = !name.is_empty()
+            && name
+                .chars()
+                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-');
+        if !named {
+            return Err(Unreadable::LayerName { found: name });
+        }
+        let Some(fields) = entry.value.value.as_map() else {
+            return Err(Unreadable::Malformed(format!(
+                "the `{name}` layer in {PATH} is not a mapping of `paths` and `arms`"
+            )));
+        };
+        let mut layer = Layer {
+            name: name.clone(),
+            paths: Vec::new(),
+            arms: Vec::new(),
+        };
+        for field in fields {
+            let key = field.key.value.as_str();
+            let listed = paths(&field.value.value)
+                .ok_or_else(|| {
+                    Unreadable::Malformed(format!(
+                        "`{key}` of the `{name}` layer in {PATH} is not a sequence of paths"
+                    ))
+                })?
+                .map_err(|entry| Unreadable::LayerUnsafe {
+                    layer: name.clone(),
+                    entry,
+                })?;
+            match key {
+                "paths" => layer.paths = listed,
+                "arms" => layer.arms = listed,
+                _ => {
+                    return Err(Unreadable::Malformed(format!(
+                        "the `{name}` layer in {PATH} declares `{key}`. A layer declares \
+                         `paths`, copied from the present tree, and `arms`, written from \
+                         `tools/probe/arms/{name}/`, and nothing else"
+                    )));
+                }
+            }
+        }
+        if layer.paths.is_empty() && layer.arms.is_empty() {
+            return Err(Unreadable::LayerEmpty { layer: name });
+        }
+        layers.push(layer);
+    }
+
+    let inside = |a: &str, b: &str| {
+        a == b
+            || a.strip_prefix(b).is_some_and(|rest| rest.starts_with('/'))
+            || b.strip_prefix(a).is_some_and(|rest| rest.starts_with('/'))
+    };
+    for (index, first) in layers.iter().enumerate() {
+        for second in &layers[index + 1..] {
+            let entries = |layer: &'_ Layer| {
+                layer
+                    .paths
+                    .iter()
+                    .map(|path| (path.clone(), false))
+                    .chain(layer.arms.iter().map(|path| (path.clone(), true)))
+                    .collect::<Vec<_>>()
+            };
+            for (a, a_arms) in entries(first) {
+                for (b, b_arms) in entries(second) {
+                    // An `arms` file that stands in for a path the other layer
+                    // keeps from the present tree.
+                    let stands_in = a == b && a_arms != b_arms;
+                    if inside(&a, &b) && !stands_in {
+                        return Err(Unreadable::PathInTwoLayers {
+                            first_layer: first.name.clone(),
+                            first_path: a,
+                            second_layer: second.name.clone(),
+                            second_path: b,
+                        });
+                    }
+                }
+            }
+        }
+    }
+    Ok(layers)
+}
+
+/// The `scenarios` mapping (#1774): each scenario's block, base and layers.
+///
+/// It refuses a scenario that is not a whole number, a block outside the
+/// two, a layer `layers` does not declare, a file with no scenario 0, a
+/// scenario 0 that holds a layer or names a base, a scenario other than 0
+/// with no base or a base the file does not declare, and a scenario that
+/// differs from its base by anything but exactly one added layer.
+fn scenarios(value: &Value, layers: &[Layer]) -> Result<Vec<Scenario>, Unreadable> {
+    let Some(block) = value.as_map() else {
+        return Err(Unreadable::Malformed(format!(
+            "`scenarios` in {PATH} is not a mapping of scenario number to its layers"
+        )));
+    };
+    // The base as written, checked once every scenario is read.
+    let mut declared: Vec<(Scenario, Option<String>)> = Vec::new();
+    for entry in block {
+        let found = entry.key.value.as_str().to_string();
+        let number = match found.parse::<u32>() {
+            Ok(number) if number.to_string() == found => number,
+            _ => return Err(Unreadable::ScenarioName { found }),
+        };
+        let Some(fields) = entry.value.value.as_map() else {
+            return Err(Unreadable::Malformed(format!(
+                "scenario {number} in {PATH} is not a mapping of `block`, `base` and `layers`"
+            )));
+        };
+        let written = text(fields, "block").unwrap_or_default();
+        let Some(chosen) = Block::read(&written) else {
+            return Err(Unreadable::ScenarioBlock {
+                scenario: number,
+                found: written,
+            });
+        };
+        let Some(listed) = fields.get("layers").and_then(|listed| listed.value.as_seq()) else {
+            return Err(Unreadable::Malformed(format!(
+                "scenario {number} in {PATH} declares no `layers` sequence. Scenario 0 \
+                 declares `layers: []`"
+            )));
+        };
+        let mut held: Vec<String> = Vec::new();
+        for item in listed {
+            let layer = item
+                .value
+                .as_scalar()
+                .map(|scalar| scalar.text.clone())
+                .unwrap_or_default();
+            if !layers.iter().any(|declared| declared.name == layer) {
+                return Err(Unreadable::ScenarioUnknownLayer {
+                    scenario: number,
+                    layer,
+                });
+            }
+            if !held.contains(&layer) {
+                held.push(layer);
+            }
+        }
+        if let Some(field) = fields
+            .iter()
+            .map(|field| field.key.value.as_str())
+            .find(|key| !["block", "base", "layers"].contains(key))
+        {
+            return Err(Unreadable::Malformed(format!(
+                "scenario {number} in {PATH} declares `{field}`. A scenario declares `block`, \
+                 `base` and `layers`, and nothing else"
+            )));
+        }
+        declared.push((
+            Scenario {
+                number,
+                block: chosen,
+                base: None,
+                layers: held,
+            },
+            text(fields, "base"),
+        ));
+    }
+
+    if !declared.is_empty() && !declared.iter().any(|(scenario, _)| scenario.number == 0) {
+        return Err(Unreadable::ScenariosWithoutPlainCode);
+    }
+    let mut scenarios = Vec::new();
+    for (mut scenario, base) in declared.iter().cloned() {
+        if scenario.number == 0 {
+            if let Some(layer) = scenario.layers.first() {
+                return Err(Unreadable::PlainCodeHoldsLayer {
+                    layer: layer.clone(),
+                });
+            }
+            if let Some(base) = base {
+                return Err(Unreadable::PlainCodeHasBase { base });
+            }
+            scenarios.push(scenario);
+            continue;
+        }
+        let Some(base) = base else {
+            return Err(Unreadable::ScenarioWithoutBase {
+                scenario: scenario.number,
+            });
+        };
+        let Some((under, _)) = declared
+            .iter()
+            .find(|(other, _)| other.number.to_string() == base)
+        else {
+            return Err(Unreadable::ScenarioUnknownBase {
+                scenario: scenario.number,
+                base,
+            });
+        };
+        let added: Vec<String> = scenario
+            .layers
+            .iter()
+            .filter(|layer| !under.layers.contains(layer))
+            .cloned()
+            .collect();
+        let dropped: Vec<String> = under
+            .layers
+            .iter()
+            .filter(|layer| !scenario.layers.contains(layer))
+            .cloned()
+            .collect();
+        if added.len() != 1 || !dropped.is_empty() {
+            return Err(Unreadable::ScenarioNotOneLayer {
+                scenario: scenario.number,
+                base: under.number,
+                added,
+                dropped,
+            });
+        }
+        scenario.base = Some(under.number);
+        scenarios.push(scenario);
+    }
+    Ok(scenarios)
 }
 
 /// A sequence of paths inside the tree, deduplicated in declared order.

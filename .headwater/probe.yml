@@ -343,6 +343,160 @@ tiers:
       - engine/crates/census/fixtures/corpus.census
       - site/tutorial/index.html
 
+# **The additive campaign (#1774).** The arms above are each the present tree
+# with a part removed. The campaign of milestone 0.07 turns that around: it
+# starts from plain code and adds layers to it, so each layer is measured from
+# the bottom of the stack as well as from the top. The plan is
+# docs/decisions/0140-the-additive-campaign-adds-six-layers-to-plain-code-in-fourteen-scenarios-and-registers-one-comparison-each.md,
+# and these two mappings are its data. The engine reads them, and `sh
+# tools/probe/ablate.sh --scenario <n> <workspace>` builds a scenario's tree
+# from `headwater probe plan --scenario <n> --delta`, so no script parses
+# them.
+#
+# A layer names the paths it adds to plain code. `paths` are kept from the
+# present tree, and `arms` are written from `tools/probe/arms/<layer>/`.
+# Plain code is the present tree with the path of every layer removed. So a
+# path of this repository that delivers Headwater and belongs to no layer
+# is in plain code, and every scenario holds it. The census fixture and the
+# tutorial page go with `docs`, because each states what a document says,
+# and the documentation tier removes them for that reason. The built engine
+# goes with `engine`: a session has no network and cannot build it, so a
+# tree with the engine source and no binary has no `headwater` command.
+# `.agents/skills` goes with `skills`, because `headwater init --harness`
+# writes it. `AGENTS.md` and `.codex` are the Codex copies of the standing
+# instructions and the hook, so they go with the rest of the harness, and
+# scenario 2 differs from scenario 1 by one copy of `CLAUDE.md`.
+#
+# The hook layer holds one `UserPromptSubmit` entry, so it writes its own
+# `.claude/settings.json`. The rest of the harness holds the whole file. The
+# engine admits that one pair of equal paths: where a scenario holds both
+# layers, as scenario 13 does, the whole file is kept.
+#
+# The engine refuses a layer path that two layers claim, a scenario that names
+# a layer not declared here, a scenario 0 that holds a layer, and a scenario
+# that differs from its base by anything but exactly one added layer.
+layers:
+  docs:
+    paths:
+      - docs
+      - engine/crates/census/fixtures/corpus.census
+      - site/tutorial/index.html
+  engine:
+    paths:
+      - .headwater
+      - engine/target/dev-release/headwater
+  claude-md:
+    paths: [CLAUDE.md]
+  skills:
+    paths:
+      - .claude/skills/headwater-orient
+      - .claude/skills/headwater-authoring
+      - .claude/skills/headwater-taxonomy
+      - .claude/skills/headwater-sweep
+      - .claude/agents/headwater-maintainer.md
+      - .agents/skills
+  hook:
+    paths:
+      - .claude/hooks/intent.sh
+      - .claude/hooks/lib.sh
+    arms: [.claude/settings.json]
+  mcp:
+    arms: [.mcp.json]
+  harness:
+    paths:
+      - .claude/skills/headwater-engine
+      - .claude/skills/hw-corpus
+      - .claude/skills/hw-run-policy
+      - .claude/skills/hw-verification-bar
+      - .claude/skills/repo-cleanup
+      - .claude/skills/ste-editor
+      - .claude/skills/fixtures.sh
+      - .claude/agents/headwater-product-owner.md
+      - .claude/agents/hw-adjudicate.md
+      - .claude/agents/hw-build.md
+      - .claude/agents/hw-explore.md
+      - .claude/agents/hw-integrate.md
+      - .claude/agents/hw-iterate.md
+      - .claude/agents/hw-queue.md
+      - .claude/agents/hw-verify.md
+      - .claude/agents/fixtures.sh
+      - .claude/commands
+      - .claude/hooks/derived.sh
+      - .claude/hooks/fixtures-live.sh
+      - .claude/hooks/fixtures.sh
+      - .claude/hooks/read.sh
+      - .claude/hooks/review.sh
+      - .claude/hooks/touch.sh
+      - .claude/hooks/wait.sh
+      - .claude/hooks/write.sh
+      - .claude/run
+      - .claude/settings.json
+      - .claude/tutorial
+      - .githooks
+      - AGENTS.md
+      - .codex
+
+# The fourteen scenarios of milestone 0.07, #1780 to #1793. Each but scenario
+# 0 names one base, and the difference from that base is the one comparison
+# the plan registers. `answer-once` is the block that answers each layer
+# once, and `interaction` is the block that measures two layers together.
+scenarios:
+  0:
+    block: answer-once
+    layers: []
+  1:
+    block: answer-once
+    base: 0
+    layers: [docs]
+  2:
+    block: interaction
+    base: 1
+    layers: [docs, claude-md]
+  3:
+    block: answer-once
+    base: 1
+    layers: [docs, engine]
+  4:
+    block: answer-once
+    base: 3
+    layers: [docs, engine, skills]
+  5:
+    block: answer-once
+    base: 3
+    layers: [docs, engine, hook]
+  6:
+    block: answer-once
+    base: 3
+    layers: [docs, engine, mcp]
+  7:
+    block: interaction
+    base: 5
+    layers: [docs, engine, hook, mcp]
+  8:
+    block: interaction
+    base: 4
+    layers: [docs, engine, claude-md, skills]
+  9:
+    block: interaction
+    base: 5
+    layers: [docs, engine, claude-md, hook]
+  10:
+    block: interaction
+    base: 5
+    layers: [docs, engine, skills, hook]
+  11:
+    block: answer-once
+    base: 10
+    layers: [docs, engine, claude-md, skills, hook]
+  12:
+    block: answer-once
+    base: 11
+    layers: [docs, engine, claude-md, skills, hook, mcp]
+  13:
+    block: answer-once
+    base: 11
+    layers: [docs, engine, claude-md, skills, hook, harness]
+
 # The absent arm names a declared ablation (spec 5, "the counterfactual is not
 # a category, it is an arm of every probe... the absent arm names a declared
 # ablation, so what 'corpus absent' removed is a recorded fact"). The
