@@ -17,14 +17,17 @@
 # probe on a line of its own runs as many sessions as a pooled one.
 #
 # **Scenario 13 holds the internal harness.** Its skill bodies state the
-# answer of two probes: `hw-corpus` holds HW-DR-0104, the governs-line
-# probe's ruling, and `ste-editor` holds HW-DR-0087, the adjudication probe's
-# ruling. The leak check reads each skill body in a scenario tree and prints
-# such a hit as `harness`, and the dry run refuses a scenario-13 line that
-# pools a probe with a `harness` hit with another probe. So scenario 13 runs
-# the governs-line probe on a line of its own in the final round, and the
-# adjudication probe on a line of its own in the screening and tuning rounds.
-# A line leaves out, by identifier, the probes of the set it does not run.
+# answer of three probes: `hw-corpus` holds HW-DR-0104, the governs-line
+# probe's ruling; `headwater-engine`, `hw-run-policy` and
+# `hw-verification-bar` hold HW-DR-0049, the ruling-cited probe's ruling; and
+# `ste-editor` holds HW-DR-0087, the adjudication probe's ruling. The leak
+# check reads each skill body in a scenario tree and prints such a hit as
+# `harness`, and the dry run refuses a scenario-13 line that pools a probe
+# with a `harness` hit with another probe. So scenario 13 runs the
+# governs-line probe and the ruling-cited probe each on a line of its own in
+# the final round, and the adjudication probe on a line of its own in the
+# screening and tuning rounds. A line leaves out, by identifier, the probes of
+# the set it does not run.
 #
 # **What it costs.** At the declared 50 cents a session:
 #
@@ -90,5 +93,6 @@ additive scenario-9 final
 additive scenario-10 final
 additive scenario-11 final
 additive scenario-12 final
-additive scenario-13 final HW-PROBE-a-session-says-whether-a-command-or-a-hand-writes-a-governs-line
+additive scenario-13 final HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens HW-PROBE-a-session-says-which-date-a-corrected-status-carries HW-PROBE-a-session-says-whether-a-command-or-a-hand-writes-a-governs-line
 additive scenario-13 final HW-PROBE-what-a-session-writes-points-back-at-the-ruling-it-rests-on HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens HW-PROBE-a-session-says-which-date-a-corrected-status-carries
+additive scenario-13 final HW-PROBE-what-a-session-writes-points-back-at-the-ruling-it-rests-on HW-PROBE-a-session-says-whether-a-command-or-a-hand-writes-a-governs-line

@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-# Three keys of `.headwater/probe.yml` that the dry run of a campaign reads and
-# the engine does not: `power:` and `leaks_kept:` (#1472), and `rounds:`
-# (#1774).
+# The keys of `.headwater/probe.yml` that the dry run of a campaign reads with
+# a YAML parser: `power:` and `leaks_kept:` (#1472), which the engine does not
+# read, and `rounds:` and `scenarios:` (#1774).
 #
 #     python3 tools/probe/declared.py <declaration> power
 #     python3 tools/probe/declared.py <declaration> leaks_kept
 #     python3 tools/probe/declared.py <declaration> rounds
+#     python3 tools/probe/declared.py <declaration> scenarios
 #
 # `power` prints `present <rate>`, `absent <rate>`, `alpha <level>`,
 # `power <power>` and `pooled <category>...`, one per line. Each of the four
@@ -27,6 +28,11 @@
 # too, for `headwater probe plan --set`, and the dry run checks that the plan
 # of each line counts the probes this prints, so the two readers cannot
 # disagree unseen. A declaration with no `rounds:` prints nothing.
+#
+# `scenarios` prints one line per scenario under `scenarios:`: `<n> <base>
+# <layer>...`, with `-` for the base of a scenario that names none. The engine
+# refuses a malformed block when it reads the declaration, so this reads the
+# block for the dry run's per-scenario trees and nothing more.
 #
 # It reads with PyYAML and never with a hand-written reader, as the parent
 # ruled after verify round 3. It exits 0 when it printed the key, 2 when the
@@ -96,8 +102,8 @@ def rounds(declared):
 
 
 def main(argv):
-    if len(argv) != 2 or argv[1] not in ("power", "leaks_kept", "rounds"):
-        refuse("usage: python3 tools/probe/declared.py <declaration> power|leaks_kept|rounds")
+    if len(argv) != 2 or argv[1] not in ("power", "leaks_kept", "rounds", "scenarios"):
+        refuse("usage: python3 tools/probe/declared.py <declaration> power|leaks_kept|rounds|scenarios")
     path, key = argv
     try:
         with open(path, encoding="utf-8-sig") as handle:
@@ -117,6 +123,19 @@ def main(argv):
 
     if key == "rounds":
         return rounds(declared)
+
+    if key == "scenarios":
+        block = declared.get("scenarios") or {}
+        if not isinstance(block, dict):
+            refuse("`scenarios:` in .headwater/probe.yml is not a mapping of scenario number to its base and layers")
+        for number_, fields in block.items():
+            fields = fields if isinstance(fields, dict) else {}
+            base = fields.get("base")
+            layers = fields.get("layers") or []
+            if not isinstance(layers, list):
+                refuse(f"`layers` of scenario {number_} in .headwater/probe.yml is not a sequence of layer names")
+            print(" ".join([str(number_), "-" if base is None else str(base)] + [str(layer) for layer in layers]))
+        return 0
 
     block = declared.get("power")
     if not isinstance(block, dict):
