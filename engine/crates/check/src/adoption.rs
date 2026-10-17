@@ -1223,7 +1223,9 @@ tasks:
     /// #1495: each of the five kinds of ledger line stays one line however long
     /// it is, so a fill restored on any one of them fails here. The open line,
     /// the lapsed line, the statement, the refused line and the unread line
-    /// below each pass 80 columns.
+    /// below each pass 120 columns, the widest a caller can ask for (`--wide`
+    /// clamps `COLUMNS` to 120), so an inner fill at any width a report can be
+    /// laid out at breaks one of them and fails here.
     #[test]
     fn a_long_ledger_line_of_each_kind_is_left_for_the_report_to_fill() {
         let block = payload(
@@ -1231,18 +1233,18 @@ tasks:
 to: acme/x
 tasks:
   - id: AD-1
-    statement: the corpus states no summary on any of the documents that the design shelf holds, and each one owes one
-    owner: the documentation guild of the platform group
+    statement: the corpus states no summary on any of the documents that the design shelf holds, and each one of them owes one before the next release of the corpus
+    owner: the documentation guild of the platform group, which owns every open task in this ledger
     until: 2027-01-01
     pairs:
       - {path: docs/a.md, rule: facet.required.missing}
   - id: AD-2
     statement: a statement
-    owner: the documentation guild of the platform group, which owns the lapsed task
+    owner: the documentation guild of the platform group, which owns the lapsed task and every pair it named
     until: 2026-01-01
     pairs:
       - {path: docs/b.md, rule: facet.required.missing}
-  - id: AD-3-a-task-identifier-long-enough-to-pass-the-width-on-its-own
+  - id: AD-3-a-task-identifier-long-enough-to-pass-the-widest-width-on-its-own
     statement: a statement
     owner: an owner
     until: 2027-01-01
@@ -1285,8 +1287,8 @@ tasks:
             }
             for at in [2, 3, 4, 6, 7] {
                 assert!(
-                    plain_lines[at].chars().count() > 80,
-                    "line {at} is meant to pass 80 columns: {:?}",
+                    plain_lines[at].chars().count() > 120,
+                    "line {at} is meant to pass 120 columns: {:?}",
                     plain_lines[at]
                 );
             }

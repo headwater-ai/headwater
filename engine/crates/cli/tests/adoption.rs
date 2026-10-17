@@ -992,6 +992,13 @@ fn the_adoption_ledger_is_filled_once_and_no_word_stands_alone() {
         "{}",
         wide.out
     );
+    for line in &block {
+        assert!(
+            line.split_whitespace().count() > 1,
+            "a ledger line holds one word at `--wide`, {line:?}:\n{}",
+            wide.out
+        );
+    }
 }
 
 /// A key inside a task is a refusal rather than a note.
