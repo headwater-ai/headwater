@@ -4415,11 +4415,13 @@ same "  and the script's last line is the one call to its body" 'main "$@"' \
 #      root, so the case also holds the walk up. `v0.4.1` is planted as a
 #      release; `v0.4.2` is listed and has no archive, so the script must go
 #      on to the next release in the range rather than stop at it.
-mkdir -p "$ih/rel/v0.4.1" "$ih/corpus/.headwater" "$ih/corpus/docs/deep"
-for target in x86_64-unknown-linux-musl aarch64-apple-darwin; do
-    ih_archive="headwater-v0.4.1-$target.tar.gz"
-    tar -czf "$ih/rel/v0.4.1/$ih_archive" -C "$ih/bin" headwater
-    (cd "$ih/rel/v0.4.1" && sha256sum "$ih_archive" >"$ih_archive.sha256")
+mkdir -p "$ih/rel/v0.4.1" "$ih/rel/v0.4.3" "$ih/corpus/.headwater" "$ih/corpus/docs/deep"
+for ih_rel in v0.4.1 v0.4.3; do
+    for target in x86_64-unknown-linux-musl aarch64-apple-darwin; do
+        ih_archive="headwater-$ih_rel-$target.tar.gz"
+        tar -czf "$ih/rel/$ih_rel/$ih_archive" -C "$ih/bin" headwater
+        (cd "$ih/rel/$ih_rel" && sha256sum "$ih_archive" >"$ih_archive.sha256")
+    done
 done
 printf '[{"tag_name":"v9.0.0","assets":[]},{"tag_name":"taxonomy/headwater-standard/v0.4.9","assets":[]},{"tag_name":"%s","assets":[]},\n  {"tag_name": "v0.4.2", "assets": []},\n  {"tag_name": "v0.4.1", "assets": []}]\n' "$site_tag" >"$ih/releases.json"
 ih_api="https://api.github.com/repos/headwater-ai/headwater/releases?per_page=100"
@@ -4482,6 +4484,18 @@ printf 'engine: ">=0.4\302\240<0.5"\n' >"$ih/corpus/.headwater/taxonomy.yml"
 r=$(install_run Linux x86_64)
 same "  and a range split by a no-break space is read as the engine reads it" \
     "0|yes|0|$ih_api $ih_gone $ih_old $ih_old.sha256" "$(printf '%s' "$r" | cut -d'|' -f1-4)"
+
+# A list whose order is not the version order (#1756): `v0.4.1` sits before
+# `v0.4.3`, and both have an archive. The script installs the highest version
+# in the range, and it downloads nothing of `v0.4.1`.
+printf '[{"tag_name":"v0.4.1","assets":[]},{"tag_name":"v0.4.3","assets":[]}]\n' >"$ih/releases-unordered.json"
+ih_new="https://github.com/headwater-ai/headwater/releases/download/v0.4.3/headwater-v0.4.3-x86_64-unknown-linux-musl.tar.gz"
+STUB_API="$ih/releases-unordered.json"
+printf 'engine: ">=0.4 <0.5"\n' >"$ih/corpus/.headwater/taxonomy.yml"
+r=$(install_run Linux x86_64)
+same "  and a list out of version order installs the highest release in the range, not the first" \
+    "0|yes|0|$ih_api $ih_new $ih_new.sha256" "$(printf '%s' "$r" | cut -d'|' -f1-4)"
+STUB_API="$ih/releases.json"
 
 printf 'engine: ">=0.4 <0.5"\n' >"$ih/corpus/.headwater/taxonomy.yml"
 r=$(install_run Linux x86_64 "$site_tag")
