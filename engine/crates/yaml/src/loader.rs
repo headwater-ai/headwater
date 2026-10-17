@@ -406,6 +406,28 @@ mod tests {
         assert_eq!(&source[span.start.offset..span.end.offset], "id");
     }
 
+    /// A byte order mark at byte 0 is not part of the first key, and spans stay
+    /// in file coordinates: the key starts three bytes in, on line 1, and the
+    /// column does not count the mark, as an editor shows it (#1755).
+    #[test]
+    fn a_leading_byte_order_mark_is_not_part_of_the_first_key() {
+        let source = "\u{feff}engine: x\nid: y\n";
+        let root = load(source).expect("loads");
+        let map = root.as_map().expect("a mapping");
+        assert!(map.get("engine").is_some(), "the first key is `engine`");
+        let span = map.key_span("engine").expect("the engine key");
+        assert_eq!(span.start.line, 1);
+        assert_eq!(span.start.col, 1);
+        assert_eq!(span.start.offset, 3);
+        assert_eq!(&source[span.start.offset..span.end.offset], "engine");
+        let span = map.key_span("id").expect("the id key");
+        assert_eq!(&source[span.start.offset..span.end.offset], "id");
+
+        // A mark anywhere other than byte 0 stays part of what it is in.
+        let root = load("id: y\n\u{feff}engine: x\n").expect("loads");
+        assert!(root.as_map().expect("a mapping").get("engine").is_none());
+    }
+
     fn kinds(source: &str) -> Vec<ErrorKind> {
         load(source)
             .expect_err("expected a rejection")
