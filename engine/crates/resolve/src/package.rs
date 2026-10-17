@@ -157,6 +157,9 @@ fn unquoted_engine_range(path: &Path) -> Option<String> {
         return None;
     }
     let text = std::fs::read_to_string(path).ok()?;
+    // The loader reads past one byte order mark at byte 0, so this reads the
+    // same first line (#1755).
+    let text = text.strip_prefix('\u{feff}').unwrap_or(&text);
     let value = text
         .lines()
         .find_map(|line| line.strip_prefix(ENGINE)?.strip_prefix(':'))?

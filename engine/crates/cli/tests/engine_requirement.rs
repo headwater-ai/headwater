@@ -17,7 +17,9 @@
 //! second case holds this repository's own declaration to the workspace
 //! version, so a release bump that leaves the range behind fails here and not
 //! in the commit gate of every clone. The third case holds `taxonomy resolve`
-//! to the overlap of the corpus range and the package range.
+//! to the overlap of the corpus range and the package range. A fourth case
+//! holds a byte order mark before the first line to the same verdict as the
+//! file without it (#1755).
 
 use headwater_resolve::release::{self, satisfies};
 use std::path::{Path, PathBuf};
@@ -145,6 +147,8 @@ const ASKS: &str = "this corpus asks for engine";
 fn set_engine(at: &Path, range: Option<&str>) {
     let path = at.join(".headwater/taxonomy.yml");
     let text = std::fs::read_to_string(&path).expect("the declaration reads");
+    // A case that wrote a byte order mark leaves it on the first line.
+    let text = text.strip_prefix('\u{feff}').unwrap_or(&text);
     let mut kept: String = text
         .lines()
         .filter(|line| !line.starts_with("engine:"))
@@ -296,6 +300,85 @@ fn an_unquoted_range_that_opens_with_a_greater_than_sign_is_refused_with_the_quo
                 ran.err
             );
         }
+    }
+}
+
+/// The declaration with `line` as its first line, and with a byte order mark
+/// before it when `mark` is set. Every other line stays, and any `engine:`
+/// line elsewhere is removed.
+fn write_first_line(at: &Path, line: &str, mark: bool) {
+    set_engine(at, None);
+    let path = at.join(".headwater/taxonomy.yml");
+    let text = std::fs::read_to_string(&path).expect("the declaration reads");
+    let bom = if mark { "\u{feff}" } else { "" };
+    std::fs::write(&path, format!("{bom}{line}\n{text}")).expect("the declaration writes");
+}
+
+/// A byte order mark before the first line does not hide the key on that line
+/// (#1755). An editor on Windows can save one, and the YAML parser keeps it as
+/// part of the first key, so a range behind it was read as no range and a
+/// strict check passed on any engine. The check with the mark fails exactly as
+/// it does without it. A mark before `taxonomy:` does not hide that block, and
+/// an unquoted `>` range behind a mark gets the refusal that says to quote it.
+#[test]
+fn a_byte_order_mark_before_the_engine_line_does_not_hide_the_range() {
+    let root = Root::new("engine-requirement-bom");
+
+    let mut runs = Vec::new();
+    for mark in [false, true] {
+        write_first_line(&root.at, "engine: \">=99\"", mark);
+        let strict = root.run(&["check", "--strict"]);
+        assert_eq!(strict.code, Some(1), "mark {mark}: {strict:?}");
+        let lines = reports(&strict.err);
+        assert_eq!(lines.len(), 1, "mark {mark}: one line: {}", strict.err);
+        assert!(lines[0].contains("\">=99\""), "mark {mark}: {}", lines[0]);
+        assert!(
+            lines[0].contains(release::ENGINE),
+            "mark {mark}: {}",
+            lines[0]
+        );
+        runs.push((strict.code, lines[0].to_string()));
+    }
+    assert_eq!(
+        runs[0], runs[1],
+        "the check with the mark fails as it does without it"
+    );
+
+    // The mark before `taxonomy:`, the order `init` writes. The comment
+    // header goes, so that the mark sits on the key.
+    set_engine(&root.at, Some(&caret()));
+    let path = root.at.join(".headwater/taxonomy.yml");
+    let text = std::fs::read_to_string(&path).expect("the declaration reads");
+    let at = text
+        .find("\ntaxonomy:")
+        .expect("the fixture has a taxonomy block");
+    assert!(
+        text[..at]
+            .lines()
+            .all(|line| line.is_empty() || line.starts_with('#')),
+        "only comments come before the taxonomy block"
+    );
+    let text = &text[at + 1..];
+    std::fs::write(&path, format!("\u{feff}{text}")).expect("the declaration writes");
+    let admitted = root.run(&["check", "--strict"]);
+    assert_eq!(admitted.code, Some(0), "{admitted:?}");
+    assert!(reports(&admitted.err).is_empty(), "{}", admitted.err);
+
+    // An unquoted `>` range behind the mark.
+    write_first_line(&root.at, "engine: >=99", true);
+    for verb in [&["check", "--strict"][..], &["taxonomy", "resolve"][..]] {
+        let ran = root.run(verb);
+        assert_ne!(ran.code, Some(0), "{verb:?}: {ran:?}");
+        assert!(
+            ran.err.contains("`engine`") && ran.err.contains("in quotes"),
+            "{verb:?}: {}",
+            ran.err
+        );
+        assert!(
+            ran.err.contains("engine: \">=99\"`"),
+            "{verb:?}: {}",
+            ran.err
+        );
     }
 }
 

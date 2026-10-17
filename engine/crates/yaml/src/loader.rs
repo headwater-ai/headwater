@@ -70,6 +70,22 @@ pub fn load(source: &str) -> Result<Spanned<Value>, Vec<LoadError>> {
 
 /// Load a source on a chosen dialect, from a chosen position in its file.
 pub fn load_with(source: &str, options: Options) -> Result<Spanned<Value>, Vec<LoadError>> {
+    // One byte order mark at byte 0 is not content (#1755). The parser keeps
+    // it as part of the first key, so a declaration saved with one lost its
+    // first key: `engine` read as no range, and `taxonomy` as no block. The
+    // origin moves past the mark, so every span stays in file coordinates, and
+    // a line-1 column does not count it, as an editor shows the line. A mark
+    // anywhere else stays what it is, and that includes the start of a source
+    // that begins past byte 0 of its file, such as front matter after `---`.
+    let at_file_start = options.origin.byte == 0;
+    let (source, options) = match source.strip_prefix('\u{feff}') {
+        Some(rest) if at_file_start => {
+            let mut options = options;
+            options.origin.byte += '\u{feff}'.len_utf8();
+            (rest, options)
+        }
+        _ => (source, options),
+    };
     let offsets = ByteOffsets::new(source, options.origin);
     let mut events: Vec<(Ev, Span)> = Vec::new();
 
@@ -404,6 +420,40 @@ mod tests {
         assert_eq!(span.start.line, 2);
         assert_eq!(span.start.col, 1);
         assert_eq!(&source[span.start.offset..span.end.offset], "id");
+    }
+
+    /// A byte order mark at byte 0 is not part of the first key, and spans stay
+    /// in file coordinates: the key starts three bytes in, on line 1, and the
+    /// column does not count the mark, as an editor shows it (#1755).
+    #[test]
+    fn a_leading_byte_order_mark_is_not_part_of_the_first_key() {
+        let source = "\u{feff}engine: x\nid: y\n";
+        let root = load(source).expect("loads");
+        let map = root.as_map().expect("a mapping");
+        assert!(map.get("engine").is_some(), "the first key is `engine`");
+        let span = map.key_span("engine").expect("the engine key");
+        assert_eq!(span.start.line, 1);
+        assert_eq!(span.start.col, 1);
+        assert_eq!(span.start.offset, 3);
+        assert_eq!(&source[span.start.offset..span.end.offset], "engine");
+        let span = map.key_span("id").expect("the id key");
+        assert_eq!(&source[span.start.offset..span.end.offset], "id");
+
+        // A mark anywhere other than byte 0 stays part of what it is in.
+        let root = load("id: y\n\u{feff}engine: x\n").expect("loads");
+        assert!(root.as_map().expect("a mapping").get("engine").is_none());
+        // One mark is dropped, and a second one is content.
+        let root = load("\u{feff}\u{feff}engine: x\n").expect("loads");
+        assert!(root.as_map().expect("a mapping").get("engine").is_none());
+        // A source that starts past byte 0 of its file, such as front matter
+        // after its `---` line, keeps a mark at its own start: it is not at
+        // byte 0 of the file.
+        let root = load_with(
+            "\u{feff}status: current\n",
+            Options::front_matter(Origin::new(2, 4)),
+        )
+        .expect("loads");
+        assert!(root.as_map().expect("a mapping").get("status").is_none());
     }
 
     fn kinds(source: &str) -> Vec<ErrorKind> {

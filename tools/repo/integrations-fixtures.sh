@@ -308,6 +308,16 @@ r=$(resolve_version latest "$rv/corpus")
 same '  and a range no release satisfies fails and writes no tag' '1|' "$(printf '%s' "$r" | cut -d'|' -f1-2)"
 same '  and the refusal names the range and the file' yes \
     "$(printf '%s' "$r" | grep -q "::error::.*\">=9\".*$rv/corpus/.headwater/taxonomy.yml" && echo yes || echo no)"
+# A byte order mark before line 1 hides neither range (#1755).
+printf '\357\273\277engine: ">=9"\n' >"$rv/corpus/.headwater/taxonomy.yml"
+same '  and a range behind a byte order mark that no release satisfies fails and writes no tag' '1|' \
+    "$(resolve_version latest "$rv/corpus" | cut -d'|' -f1-2)"
+printf '\357\273\277engine: ">=0.4 <0.5"\n' >"$rv/corpus/.headwater/taxonomy.yml"
+same '  and a range behind a byte order mark resolves as it does without one' '0|tag=v0.4.1' \
+    "$(resolve_version latest "$rv/corpus" | cut -d'|' -f1-2)"
+printf 'version: 1\n\357\273\277engine: ">=0.4 <0.5"\n' >"$rv/corpus/.headwater/taxonomy.yml"
+same '  and a mark on a later line hides the key there, as it does in the engine' '0|tag=v0.6.0' \
+    "$(resolve_version latest "$rv/corpus" | cut -d'|' -f1-2)"
 printf 'engine: "~0.4"\n' >"$rv/corpus/.headwater/taxonomy.yml"
 r=$(resolve_version latest "$rv/corpus")
 same '  and a range this syntax cannot read fails and says so' '1|' "$(printf '%s' "$r" | cut -d'|' -f1-2)"
