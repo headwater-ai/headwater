@@ -4850,6 +4850,7 @@ if [ -x "$engine" ]; then
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$scratch/add-mixed.spec" > /dev/null 2> "$scratch/add-mixed.err"
     same "a spec that mixes additive lines with another tier is refused with 5" "5" "$?"
+    present "and the refusal says why" "mixes 1 lines of the \`additive\` tier with 1 of other tiers" "$scratch/add-mixed.err"
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$scratch/add-twelve.spec" --repetitions 3 > /dev/null 2> "$scratch/add-reps.err"
     same "an additive spec refuses --repetitions with 2" "2" "$?"
