@@ -280,7 +280,10 @@ pub fn fetch(location: &str) -> Result<Fetched, Error> {
 /// Unpack `archive` into `dir`, refusing once more than `bound` bytes would
 /// be written. The sizes an archive declares are read first, as a cheap
 /// refusal, and then the bound is held again on the bytes written, because a
-/// deflate member decompresses past its declared size and a header can lie.
+/// header can lie and an archive whose members use a data descriptor declares
+/// no total at all. The reader (zip 9.0.2 and later) also refuses a member
+/// that grows past the size it declares; this count is kept for each case
+/// that check misses, the undeclared total among them.
 /// A member whose name leaves `dir`, and a symbolic link, are refused: a
 /// published artifact has neither. Whatever was written before a refusal is
 /// removed by the caller's [`Fetched`] when it drops.
@@ -554,32 +557,90 @@ mod tests {
         assert_eq!(written.len(), 1024);
     }
 
+    /// Set the data-descriptor flag (bit 3 of the general-purpose flags) on
+    /// every member, in the local header (6 bytes after `PK\x03\x04`) and in
+    /// the central directory (8 bytes after `PK\x01\x02`). The sizes stay
+    /// honest, but the archive no longer declares a total it unpacks to.
+    fn without_a_declared_total(mut bytes: Vec<u8>) -> Vec<u8> {
+        let (mut local, mut central) = (0, 0);
+        for at in 0..bytes.len().saturating_sub(4) {
+            let offset = match &bytes[at..at + 4] {
+                b"PK\x03\x04" => {
+                    local += 1;
+                    6
+                }
+                b"PK\x01\x02" => {
+                    central += 1;
+                    8
+                }
+                _ => continue,
+            };
+            bytes[at + offset] |= 0b1000;
+        }
+        assert!(local > 0, "no local header was found");
+        assert_eq!(local, central, "a central record for each local header");
+        bytes
+    }
+
+    /// The bytes written under `dir`, summed over every file below it. The
+    /// cases below allow the bound plus one: `unpack` copies one byte past
+    /// what remains to learn that a member overruns, and the caller's
+    /// [`Fetched`] removes the directory when it drops.
+    fn bytes_under(dir: &Path) -> u64 {
+        std::fs::read_dir(dir)
+            .unwrap()
+            .map(|entry| {
+                let entry = entry.unwrap();
+                let kind = entry.file_type().unwrap();
+                if kind.is_dir() {
+                    bytes_under(&entry.path())
+                } else {
+                    entry.metadata().unwrap().len()
+                }
+            })
+            .sum()
+    }
+
     #[test]
     fn the_bound_holds_on_the_bytes_written_when_the_header_lies() {
-        let (result, _fetched) = unpacked(lie_about_the_size(zeros(1025), 10), 1024);
+        let (result, fetched) = unpacked(lie_about_the_size(zeros(1025), 10), 1024);
         let refused = result.unwrap_err();
         assert!(matches!(refused, Error::Archive(_)), "{refused}");
-        // Refused by the count of bytes written, not by a checksum or a size
-        // mismatch the reader might raise first.
-        assert!(
-            refused.to_string().contains("more than 1024 bytes"),
-            "{refused}"
-        );
+        assert!(refused.to_string().contains("test.zip"), "{refused}");
+        // Since zip 9.0.2 the reader refuses a member that grows past its
+        // declared size, so either layer can raise this. What holds whichever
+        // one fires is that no more than the bound reaches the disk.
+        assert!(bytes_under(fetched.path()) <= 1024 + 1);
     }
 
     #[test]
     fn the_bound_holds_across_members_and_not_for_each_one() {
         // Each member is under the bound and declares 10 bytes, so neither
         // the declared total nor any one member meets it. The 1,200 bytes the
-        // two write together do.
+        // two hold together do.
         let lying = lie_about_the_size(members(&[("a.bin", 600), ("b.bin", 600)]), 10);
-        let (result, _fetched) = unpacked(lying, 1024);
+        let (result, fetched) = unpacked(lying, 1024);
+        let refused = result.unwrap_err();
+        assert!(matches!(refused, Error::Archive(_)), "{refused}");
+        assert!(refused.to_string().contains("test.zip"), "{refused}");
+        assert!(bytes_under(fetched.path()) <= 1024 + 1);
+    }
+
+    #[test]
+    fn the_bound_holds_on_the_bytes_written_when_no_total_is_declared() {
+        // A member with a data descriptor leaves the archive with no declared
+        // total, so the cheap refusal does not run, and each member is within
+        // the size it declares, so the reader raises nothing. Only this
+        // engine's own count of the bytes written refuses the 1,200 bytes.
+        let streamed = without_a_declared_total(members(&[("a.bin", 600), ("b.bin", 600)]));
+        let (result, fetched) = unpacked(streamed, 1024);
         let refused = result.unwrap_err();
         assert!(matches!(refused, Error::Archive(_)), "{refused}");
         assert!(
             refused.to_string().contains("more than 1024 bytes"),
             "{refused}"
         );
+        assert!(bytes_under(fetched.path()) <= 1024 + 1);
     }
 
     #[test]
