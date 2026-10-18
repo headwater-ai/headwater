@@ -1954,6 +1954,20 @@ STUB
         >"$scratch/absent-arm.md" 2>"$scratch/absent-arm.err"
     present "an absent transcript states the tier's ablation" \
         'The `absent` arm is the present tree less `CLAUDE.md`, `.claude`, `.githooks`, `.headwater`.' "$scratch/absent-arm.md"
+    # An arm of the additive campaign is plain code with layers added (#1775),
+    # so its transcript names the layers its scenario holds, from
+    # `scenarios:`, and scenario 0 is plain code alone. Neither is a delta
+    # from the present tree.
+    for n in 4 0; do
+        PATH="$scratch/bin:$PATH" sh "$driver" --probe HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged \
+            --session "fixture-scenario-$n" --tier additive --arm "scenario-$n" --set tuning --repetitions 18 \
+            --task-file "$scratch/task.md" --workspace "$scratch/ws" \
+            >"$scratch/scenario-$n-arm.md" 2>"$scratch/scenario-$n-arm.err"
+    done
+    present "a scenario-4 transcript names the layers its scenario adds to plain code" \
+        'The `scenario-4` arm is plain code with the layers `docs`, `engine`, `skills` added: the present tree less the probe instrument and every layer it does not hold.' "$scratch/scenario-4-arm.md"
+    present "a scenario-0 transcript states plain code alone" \
+        'The `scenario-0` arm is plain code: the present tree less the probe instrument and the path of every layer.' "$scratch/scenario-0-arm.md"
 
     # A delta the declaration does not state is said to be unread, and never
     # printed as the present tree (verify round 1). The engine refuses a
@@ -4814,6 +4828,16 @@ if [ -x "$engine" ]; then
         "round screening: approved to \$700.00 over every attempt, so the batch runs its lines" "$scratch/add.out"
     present "and the tuning round as not approved" "round tuning: not approved, so the batch refuses its lines with 5" "$scratch/add.out"
     present "and the final round as not approved" "round final: not approved, so the batch refuses its lines with 5" "$scratch/add.out"
+    # An approval is a whole number of cents at or above zero. A negative or
+    # a non-integer one is refused, so no typo reads as an approval or as a
+    # refusal it does not state.
+    for bad in -1 true 700.5; do
+        sed "s/^    approved_cents: 70000$/    approved_cents: $bad/" "$root/.headwater/probe.yml" > "$scratch/approval-bad.yml"
+        python3 "$root/tools/probe/declared.py" "$scratch/approval-bad.yml" approved > /dev/null 2> "$scratch/approval-bad.err"
+        bad_status=$?
+        same "an approved_cents of $bad is refused" "1 1" \
+            "$([ "$bad_status" != 0 ] && echo 1 || echo 0) $(grep -c 'must be a whole number of cents at or above zero' "$scratch/approval-bad.err")"
+    done
     same "the screening spec holds the screening lines of the whole campaign, and no other" \
         "$(awk 'NF && $1 !~ /^#/ && $3 == "screening"' "$additive_spec")" \
         "$(awk 'NF && $1 !~ /^#/' "$root/tools/probe/additive-screening.spec")"
@@ -5006,6 +5030,12 @@ if [ -x "$engine" ]; then
             "$scratch/run-out/sessions/$run_session/record.err"
         same "the session the plan admitted is the one the batch planned" "$(sed -n 's/^selection: //p' "$scratch/run-out/plans/L1" | head -1)" \
             "$("$engine" probe plan --root "$root" --tier additive --arm scenario-4 --set tuning --repetitions 18 2> /dev/null | sed -n 's/^selection: //p' | head -1)"
+        # The identity block holds the set only as its digest, so assembly
+        # states the round and the set beside it. The one session did not
+        # record, so assembly fails the line, and still names its round.
+        sh "$root/tools/probe/campaign.sh" --out "$scratch/run-out" --assemble > /dev/null 2> "$scratch/run-assemble.err"
+        same "assembly states the line's round and set beside its identity" "round: screening set: tuning" \
+            "$(tr '\n' ' ' < "$scratch/run-out/assembled/L1-additive-scenario-4-screening.round" 2>/dev/null | sed 's/ $//')"
         printf 'additive scenario-4 final\n' > "$scratch/run-final.spec"
         rm -rf "$scratch/run-final-out"
         HEADWATER_PROBE_HOST_CONFIG="$scratch/run-host" CARGO_TARGET_DIR="$scratch/gate-target" PATH="$scratch/run-bin:$PATH" \
