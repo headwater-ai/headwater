@@ -174,7 +174,8 @@
 #   3   a tool, the harness version or the token is missing, or campaign.sh
 #       exited 3
 #   4   the pin or the harness is not the one given, or campaign.sh exited 4
-#   5   campaign.sh refused the plan
+#   5   campaign.sh exited 5: it refused the plan, a raise of
+#       `--repetitions`, or a line of a round nobody approved
 #   6   campaign.sh refused the output directory
 #   7   a recorder failed on a session no `<dir>/unrecorded/<name>` marks, or
 #       the batch directories under `<root>` spent past `--cap-cents`

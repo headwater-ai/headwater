@@ -3,7 +3,7 @@ id: HW-DR-0111
 status: current
 status_since: 2026-10-17
 summary: "The 0.07 campaign builds 14 scenarios by adding six layers to plain code. Each scenario has one base, one registered comparison and one verdict, over 8 probes split 4 for tuning and 4 held out."
-last_verified: 2026-10-17
+last_verified: 2026-10-18
 title: "111 — The additive campaign adds six layers to plain code in fourteen scenarios and registers one comparison each"
 provenance:
   warrant: asserted
@@ -15,6 +15,8 @@ relations:
   governs:
     - tools/probe/ablate.sh
     - tools/probe/arms/hook/.claude/settings.json
+    - tools/probe/additive-campaign.spec
+    - tools/probe/additive-screening.spec
 ---
 
 # 111 — The additive campaign adds six layers to plain code in fourteen scenarios and registers one comparison each
@@ -116,7 +118,7 @@ Every count comes from the formula that `tools/probe/campaign-dry-run.sh` states
 | each tuning try, at most 3 | the 4 tuning probes | 72 | 18 | 25 points, as the screening round |
 | final | the 4 held-out probes | 220 | 55 | 15 points anywhere, 0.425 against 0.575 needs 187, and 10 points from 0.80 to 0.90, which needs 219 |
 
-So the final round separates any scenario from its base by 15 points of the pooled rate. Where the rates sit near 0.85, it separates them by 10 points. Every verdict rests on the pooled rate. A cell of one probe in one scenario has 18 or 55 sessions, and at those counts it is not a finding. Over the 14 scenarios, the plan is 1,008 screening sessions, 3,024 tuning sessions at most, and 3,080 final sessions. The dry run prices that total, and the owner rules on it before anything spends.
+So the final round separates any scenario from its base by 15 points of the pooled rate. Where the rates sit near 0.85, it separates them by 10 points. Every verdict rests on the pooled rate. A cell of one probe in one scenario has 18 or 55 sessions, and at those counts it is not a finding. Over the 14 scenarios, the plan is 1,008 screening sessions, 3,024 tuning sessions at most, and 3,080 final sessions. The dry run prices that total. The owner approves each round before it spends, and the Consequences state what he approved.
 
 ### Two tables, one verdict
 
@@ -154,7 +156,13 @@ This record does not run anything. The probe documents state their task, target 
     round final: 3080 sessions, $1540.00
     total: 7112 sessions, $3556.00
 
-That is at the declared 50 cents a session. At the 35.0 cents a session of 2026-10-03, the total is $2,489.20. The owner's ruling on the total was deferred in run 20261017-0919. The tier's ceiling is zero until the ruling, so the plan refuses every line. The "one ceiling" clause of #1774 stays open until the ruling is quoted on that issue.
+That is at the declared 50 cents a session. At the 35.0 cents a session of 2026-10-03, the total is $2,489.20.
+
+**The owner approved the screening round alone, at $700.** On 2026-10-18 he ruled on #1775: "restart doesn't reset count, but raise ceiling to $700". The plan of the round stays 1,008 sessions and $504.00. So $196.00 is room for a restart, which is 392 sessions at 50 cents. A restart does not reset the count: the money that every attempt of the screening round spends counts toward the one $700. The tuning round, at most $1,512.00, and the final round, $1,540.00, are not approved. Each waits for a ruling of its own.
+
+Three mechanisms hold this ruling. The additive tier's ceiling in `.headwater/probe.yml` is 70000 cents. Each round under `rounds:` declares `approved_cents`: 70000 for the screening round and 0 for the other two. `tools/probe/campaign.sh` refuses a line of a round whose approval is 0, with exit 5, before it builds a tree or asks the harness anything. The ceiling alone cannot do this, because the plan prices one line at a time, and a final line of 220 sessions costs $110.00. `tools/probe/additive-screening.spec` holds the 15 screening lines alone, so the paid run names a spec that holds no refused line. `tools/probe/campaign-drive.sh` gives each batch the cap less what every other batch directory under its root spent. So a restart moves the old batch directory aside under the same root. The new batch then gets $700 less what every earlier attempt spent, less the overshoot margin.
+
+This ruling opens again if the owner approves the tuning or the final round, or moves the $700.
 
 The dry run builds the tree of each scenario and runs the leak check over it. The check reads the always-loaded text, the body of each skill, and the text the intent hook injects for the task of each probe. A leak stops the dry run with 8. A batch of the spec runs the same check before each invocation, so the check runs again before each round.
 
