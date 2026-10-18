@@ -648,6 +648,39 @@ mod tests {
     }
 
     #[test]
+    fn the_count_runs_over_every_member_and_not_the_last_two() {
+        // Any two of these members are within the bound, so a count that
+        // kept only the last member's bytes would accept all three.
+        let streamed = without_a_declared_total(members(&[
+            ("a.bin", 400),
+            ("b.bin", 400),
+            ("c.bin", 400),
+        ]));
+        let (result, fetched) = unpacked(streamed, 1024);
+        let refused = result.unwrap_err();
+        assert!(
+            refused.to_string().contains("more than 1024 bytes"),
+            "{refused}"
+        );
+        for name in ["a.bin", "b.bin"] {
+            let whole = std::fs::metadata(fetched.path().join(name)).unwrap();
+            assert_eq!(whole.len(), 400, "{name}");
+        }
+        assert!(bytes_under(fetched.path()) <= 1024 + 1);
+    }
+
+    #[test]
+    fn a_member_that_names_a_path_outside_the_directory_is_refused_by_its_name() {
+        let (result, fetched) = unpacked(members(&[("../evil.bin", 3)]), 1024);
+        let refused = result.unwrap_err();
+        assert!(matches!(refused, Error::Archive(_)), "{refused}");
+        let message = refused.to_string();
+        assert!(message.contains("../evil.bin"), "{message}");
+        assert!(message.contains("outside the directory"), "{message}");
+        assert_eq!(bytes_under(fetched.path()), 0);
+    }
+
+    #[test]
     fn a_declared_size_past_the_bound_is_refused_before_a_byte_is_written() {
         let (result, fetched) = unpacked(zeros(1025), 1024);
         let refused = result.unwrap_err();
