@@ -278,10 +278,12 @@ spent() {
 
 # spent_all: what every batch directory under `<root>` spent, `a` and `b`
 # and every earlier attempt moved aside beside them (#1775). A batch
-# directory is a directory of `<root>` that holds `sessions/`.
+# directory is a directory of `<root>` that holds `sessions/`, whatever its
+# name: `*` lists no name that starts with a dot, so the two other patterns
+# list those, less `.` and `..` (verify round 1 of #1775).
 spent_all() {
     spent_all_sum=0
-    for spent_all_dir in "$root"/*/; do
+    for spent_all_dir in "$root"/*/ "$root"/.[!.]*/ "$root"/..?*/; do
         [ -d "${spent_all_dir}sessions" ] || continue
         spent_all_sum=$((spent_all_sum + $(spent "${spent_all_dir%/}")))
     done

@@ -4838,6 +4838,15 @@ if [ -x "$engine" ]; then
         same "an approved_cents of $bad is refused" "1 1" \
             "$([ "$bad_status" != 0 ] && echo 1 || echo 0) $(grep -c 'must be a whole number of cents at or above zero' "$scratch/approval-bad.err")"
     done
+    # The recorder plans a `--set` line with its arm, because the plan prices
+    # one arm. With no arm a final line of 55 repetitions prices every
+    # scenario, 3080 sessions, past the $700 ceiling (verify round 1).
+    sh "$driver" --identity-only --tier additive --arm scenario-4 --set held-out --repetitions 55 \
+        > "$scratch/id-final.out" 2> "$scratch/id-final.err"
+    same "the recorder plans a final line of one scenario arm inside the ceiling" "0" "$?"
+    same "and its selection is the plan of that one arm" \
+        "$("$engine" probe plan --root "$root" --tier additive --arm scenario-4 --set held-out --repetitions 55 2> /dev/null | sed -n 's/^selection: //p' | head -1)" \
+        "$(sed -n 's/^selection: //p' "$scratch/id-final.out")"
     same "the screening spec holds the screening lines of the whole campaign, and no other" \
         "$(awk 'NF && $1 !~ /^#/ && $3 == "screening"' "$additive_spec")" \
         "$(awk 'NF && $1 !~ /^#/' "$root/tools/probe/additive-screening.spec")"

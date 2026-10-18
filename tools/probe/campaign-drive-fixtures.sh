@@ -353,6 +353,19 @@ drive
 check "restart: an earlier attempt that left less than p x M caps the new batch with 8" code_is 8
 check "restart: and the new batch is not invoked" calls_are 0
 check "restart: the capped file states what every attempt spent" grep -q "^spent-all: 69990\$" "$CASE/root/capped"
+# An attempt moved aside under a name that starts with a dot is still a
+# directory of the root, and a shell glob of `*` does not list it (verify
+# round 1 of #1775).
+new_case
+C=70000 B=60 M=20 P=2
+only_a
+mkdir -p "$CASE/root/.a-attempt-1/sessions/s1" "$CASE/root/..a-attempt-2/sessions/s1"
+echo 30000 > "$CASE/root/.a-attempt-1/sessions/s1/cost"
+echo 500 > "$CASE/root/..a-attempt-2/sessions/s1/cost"
+printf 'auto cents=50\n' > "$CASE/scenario"
+drive
+check "restart: an attempt under a dot-named directory is counted too (70000 - 30500 - 40 = 39460)" \
+    grep -q "/root/a cap=39460 max=500\$" "$CASE/calls.short"
 
 # ------------------------------------------- batch A alone, with no batch B
 
