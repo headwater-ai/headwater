@@ -277,6 +277,18 @@ pub fn fetch(location: &str) -> Result<Fetched, Error> {
     Ok(fetched)
 }
 
+/// Whether a member's raw name opens at a root (`/` or `\`, which also opens
+/// a UNC or verbatim prefix) or at a drive (`C:`). zip 5's `enclosed_name`
+/// refused a rooted name. zip 9's strips the root and keeps the rest, so this
+/// check keeps the refusal that a published artifact was held to before.
+fn names_a_root(raw: &[u8]) -> bool {
+    match raw {
+        [b'/' | b'\\', ..] => true,
+        [drive, b':', ..] => drive.is_ascii_alphabetic(),
+        _ => false,
+    }
+}
+
 /// Unpack `archive` into `dir`, refusing once more than `bound` bytes would
 /// be written. The sizes an archive declares are read first, as a cheap
 /// refusal, and then the bound is held again on the bytes written, because a
@@ -285,7 +297,9 @@ pub fn fetch(location: &str) -> Result<Fetched, Error> {
 /// that grows past the size it declares; this count is kept for each case
 /// that check misses, the undeclared total among them.
 /// A member whose name leaves `dir`, and a symbolic link, are refused: a
-/// published artifact has neither. Whatever was written before a refusal is
+/// published artifact has neither. A name that opens at a root or a drive is
+/// refused too, by [`names_a_root`], because zip 9 strips that root and would
+/// write the member inside `dir`. Whatever was written before a refusal is
 /// removed by the caller's [`Fetched`] when it drops.
 fn unpack<R: std::io::Read + std::io::Seek>(
     archive: &mut zip::ZipArchive<R>,
@@ -316,7 +330,12 @@ fn unpack<R: std::io::Read + std::io::Seek>(
     let mut written: u64 = 0;
     for index in 0..archive.len() {
         let mut member = archive.by_index(index).map_err(|error| broken(&error))?;
-        let Some(name) = member.enclosed_name() else {
+        let enclosed = if names_a_root(member.name_raw()) {
+            None
+        } else {
+            member.enclosed_name()
+        };
+        let Some(name) = enclosed else {
             return Err(broken(&format!(
                 "the member {} names a path outside the directory",
                 String::from_utf8_lossy(member.name_raw())
@@ -675,6 +694,33 @@ mod tests {
         assert!(message.contains("../evil.bin"), "{message}");
         assert!(message.contains("outside the directory"), "{message}");
         assert_eq!(bytes_under(fetched.path()), 0);
+    }
+
+    #[test]
+    fn a_member_that_names_a_root_or_a_drive_is_refused_and_not_written_inside() {
+        // zip 9 strips a leading root, so without the check these would unpack
+        // inside the directory where zip 5 refused them.
+        for name in [
+            "/tmp/vx-abs.bin",
+            "\\tmp\\vx-abs.bin",
+            "C:vx-abs.bin",
+            "c:/vx.bin",
+        ] {
+            let (result, fetched) = unpacked(members(&[(name, 3)]), 1024);
+            let refused = result.unwrap_err();
+            let message = refused.to_string();
+            assert!(message.contains(name), "{name}: {message}");
+            assert!(
+                message.contains("outside the directory"),
+                "{name}: {message}"
+            );
+            assert_eq!(bytes_under(fetched.path()), 0, "{name}");
+        }
+        // A colon after more than one byte, or after a byte that is not a
+        // letter, opens no drive, so these members unpack.
+        let (result, fetched) = unpacked(members(&[("ab:c.bin", 3), ("1:x.bin", 3)]), 1024);
+        result.unwrap();
+        assert_eq!(bytes_under(fetched.path()), 6);
     }
 
     #[test]
