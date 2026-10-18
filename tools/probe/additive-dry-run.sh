@@ -15,16 +15,17 @@
 # the same count. `--repetitions` is refused, because the rounds fix the count.
 #
 # Each line is planned with `--arm scenario-<n> --set <set>` and its excludes,
-# at the round's count where it is below the tier's declared one. The ceiling
-# of the additive tier refuses every plan until the owner rules on the total,
-# and a refused plan lists no probe, so the probes of a line are the set's
+# at the round's count where it is below the tier's declared one. A plan the
+# ceiling refuses lists no probe, so the probes of a line are the set's
 # members less its excludes, read with `declared.py rounds`, and the plan's
 # own count of probes must agree with them. A line whose plan counts other
 # probes, prints other arms, or is refused for a reason other than the ceiling
 # is refused, with 5.
 #
 # It prints each line, a sum for each round with the most tries the round may
-# take, and one total. Then it builds the present tree and seals it once, and
+# take, and one total. It prints each round of the spec as approved, with the
+# `approved_cents` of the round under `rounds:`, or as not approved, which the
+# batch refuses with 5 (#1775). Then it builds the present tree and seals it once, and
 # for each scenario of the spec it builds the scenario's tree with
 # `ablate.sh --scenario`, prints its `--diff` against its declared base, lists
 # the MCP tools where the scenario holds `mcp`, runs `seal.sh --leak --scenario`
@@ -229,6 +230,17 @@ if [ -s "$work/costs" ]; then
         }
     ' slice="$slice" "$work/costs"
 fi
+# The approval of each round of the spec (#1775). The batch refuses a line of
+# a round whose approval is 0, with 5, before it builds a tree.
+python3 "$root/tools/probe/declared.py" "$declaration" approved > "$work/approved" || finish $?
+awk '{ print $4 }' "$work/lines" | awk '!seen[$0]++' | while read -r a_round; do
+    a_cents=$(awk -v r="$a_round" '$1 == r { print $2 }' "$work/approved")
+    if [ "${a_cents:-0}" -gt 0 ]; then
+        awk -v r="$a_round" -v c="$a_cents" 'BEGIN { printf "round %s: approved to $%.2f over every attempt, so the batch runs its lines\n", r, c / 100 }'
+    else
+        printf 'round %s: not approved, so the batch refuses its lines with 5\n' "$a_round"
+    fi
+done
 if [ -s "$work/refused" ]; then
     printf 'The ceiling refuses %s of %s plans, and only a person who agrees to spend more may move it. The first:\n' \
         "$(wc -l < "$work/refused" | tr -d ' ')" "$(wc -l < "$work/lines" | tr -d ' ')"

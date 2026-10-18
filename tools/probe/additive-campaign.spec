@@ -40,11 +40,12 @@
 # At the 35.0 cents a session the campaign of 2026-10-03 realized, the total
 # is $2,489.20.
 #
-# **Nobody runs this spec before the owner's ruling on that total.** The
-# ruling was deferred in run 20261017-0919 (owner-question-mid-run), and the
-# additive tier's ceiling is zero until it is given, so the plan refuses every
-# line on the ceiling. The spec plans the four probes of #1718 and the #1709
-# successor, which await the same approval of spend.
+# **The owner approved the screening round alone (#1775).** On 2026-10-18 he
+# approved $700 over every attempt of the screening round, and HW-DR-0111
+# records it. The tuning and final rounds are not approved, so a batch of
+# this spec is refused with 5 before it builds a tree. The screening round
+# runs from `tools/probe/additive-screening.spec`, which holds its lines alone.
+# The spec plans the four probes of #1718 and the #1709 successor.
 
 # The screening round.
 additive scenario-0 screening

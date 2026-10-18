@@ -113,14 +113,41 @@
 #
 # So a probe runs on a line of its own where the other lines of the scenario
 # leave it out and one line leaves out every other probe of the set.
-# `tools/probe/additive-campaign.spec` is that campaign. The dry run plans it;
-# the batch does not run it, because the plan refuses every line on the
-# additive tier's ceiling of zero until the owner rules on the total. Each
-# invocation of an additive spec runs the dry run first, and a leak in any
-# scenario tree stops it with 8 before the harness is asked anything. Past
-# the ceiling, the batch refuses an additive line with 5: the per-round
-# counts, the scenario trees and `--set` for each recorded session are not
-# built yet.
+# `tools/probe/additive-campaign.spec` is that campaign, and
+# `tools/probe/additive-screening.spec` is its screening round alone.
+#
+# **A round runs only when a person approved it (#1775).** A round under
+# `rounds:` declares `approved_cents`, and a round that declares none is
+# approved for nothing. The batch refuses a spec that holds a line of a round
+# whose approval is 0, with 5, and names each such round. It refuses before
+# it builds the engine, runs the dry run, builds a tree or asks the harness
+# anything. The plan prices one line at a time, so the tier's ceiling alone
+# would admit a line of any round. On 2026-10-18 the owner approved the
+# screening round alone, at $700 over every attempt (HW-DR-0111). An
+# additive spec refuses `--repetitions` with 2, because the rounds fix the
+# count.
+#
+# Each invocation of an additive spec then runs the dry run first, and a leak
+# in any scenario tree stops it with 8 before the harness is asked anything.
+# Past it, the batch runs each additive line as the dry run priced it:
+#
+# - the line is planned and its jobs are made at its round's count, which
+#   `campaign-dry-run.sh --priced` computes from the round's rates. So a
+#   screening line runs 4 probes x 18 repetitions, and not the 55 the tier
+#   declares for the final round.
+# - its tree is `ablate.sh --scenario <n>` applied to a copy of the present
+#   tree, so each scenario's sessions run in that scenario's tree.
+# - each session is recorded with `--set <the round's set> --arm
+#   scenario-<n>` in place of `--category`, so the recorder plans the line
+#   the batch planned and copies that plan's identity.
+# - assembly names the line `L<i>-additive-scenario-<n>-<round>` and writes
+#   `<stem>.round`, which states the round and its set. The identity block is
+#   the closed key set of spec 15, so the set reaches it as the `selection`
+#   digest and not as a key.
+#
+# The batch writes the recorder's arguments of each session to
+# `sessions/<name>/record.argv`, one per line, so a reader can see what
+# planned each record.
 #
 # ## One pinned commit
 #
@@ -278,8 +305,9 @@
 #       the commit the output directory holds a batch of, the `claude`
 #       harness is another version than the batch recorded, or `--repin`
 #       found that the engine, a line's plan identity or a task moved
-#   5   the plan refuses a line of the spec, or `--repetitions` is above the
-#       count the dry run prices for a line
+#   5   the plan refuses a line of the spec, `--repetitions` is above the
+#       count the dry run prices for a line, or a line of an additive spec
+#       runs a round whose `approved_cents` is 0 (#1775)
 #   6   the output directory is inside this checkout, or a batch's output
 #       directory is under `$HOME` (#1467)
 #   7   a session of the batch did not record and is not marked with
@@ -590,16 +618,27 @@ run_job() {
     # recorder plans the session as the batch planned its line.
     plan_repetitions=$repetitions
     [ -f "$out/plans/L$index.repetitions" ] && plan_repetitions=$(cat "$out/plans/L$index.repetitions")
+    # The line the recorder plans: a category, or for an additive line the
+    # round's set in the scenario arm (#1775), as the batch planned it.
+    if [ -s "$out/plans/L$index.set" ]; then
+        selects="--set $(cat "$out/plans/L$index.set")"
+    else
+        selects="--category $category"
+    fi
+    # The arguments are written one per line before the recorder runs, so a
+    # reader of the session can see what planned its record.
     # shellcheck disable=SC2086
-    HEADWATER_PROBE_CONFIG_DIR=$out/config/$name \
-        sh "$root/tools/probe/probe-record.sh" --probe "$probe" --session "$name" \
+    set -- --probe "$probe" --session "$name" \
         --task-file "$out/tasks/$probe.md" --workspace "$ws" --model "$model" \
-        --tier "$tier" --arm "$arm" --category "$category" $excludes \
+        --tier "$tier" --arm "$arm" $selects $excludes \
         ${plan_repetitions:+--repetitions "$plan_repetitions"} \
         ${max_turns:+--max-turns "$max_turns"} \
         ${budget:+--max-budget-usd "$budget"} \
         --baseline "$out/trees/$tier-$arm" \
-        --oracle-tree "$out/trees/oracle" --raw "$dir/raw.jsonl" \
+        --oracle-tree "$out/trees/oracle" --raw "$dir/raw.jsonl"
+    printf '%s\n' "$@" > "$dir/record.argv"
+    HEADWATER_PROBE_CONFIG_DIR=$out/config/$name \
+        sh "$root/tools/probe/probe-record.sh" "$@" \
         > "$dir/record.md" 2> "$dir/record.err"
     status=$?
     sed -n 's/^cost_cents: //p' "$dir/record.md" | head -1 > "$dir/cost.tmp"
@@ -719,6 +758,14 @@ if [ "$assemble" = 1 ]; then
             > "$out/assembled/$stem.summary"
         printf 'campaign: %s: %s' "$stem" "$(cat "$out/assembled/$stem.summary")" >&2
         printf '\n' >&2
+        # An additive line names its round in place of a category, and runs
+        # the round's set (#1775). The identity block is spec 15's closed key
+        # set, where the set is the `selection` digest, so the round and the
+        # set are stated beside it.
+        if [ -s "$out/plans/L$index.set" ]; then
+            printf 'round: %s\nset: %s\n' "$category" "$(cat "$out/plans/L$index.set")" > "$out/assembled/$stem.round"
+            echo "campaign: $stem runs the $category round over the set $(cat "$out/plans/L$index.set")" >&2
+        fi
         batch_outside=$((batch_outside + outside))
         batch_uncounted=$((batch_uncounted + uncounted))
         batch_web=$((batch_web + web))
@@ -888,6 +935,35 @@ fi
     exit 2
 }
 [ -f "$spec" ] || { echo "campaign: no spec at $spec" >&2; exit 2; }
+# The approval of each round of the additive campaign (#1775). The plan
+# prices one line at a time, and a final line of 220 sessions is under any
+# ceiling the screening round needs. So the tier's ceiling cannot hold the
+# rounds nobody approved, and this does: a spec that holds a line of a round
+# whose `approved_cents` is 0 is refused, with 5, before the engine is built,
+# the dry run builds a tree or the harness is asked anything. The approval is
+# read from this checkout's declaration and from no override, because the
+# batch runs only from a clean checkout and that is where a person's approval
+# is recorded.
+additive=0
+if awk 'NF && $1 !~ /^#/ && $1 == "additive" { f = 1 } END { exit !f }' "$spec"; then
+    additive=1
+    if [ -n "$repetitions" ]; then
+        echo "campaign: an additive spec takes no --repetitions. Each round's count is computed from its rates under \`rounds:\` in .headwater/probe.yml." >&2
+        exit 2
+    fi
+    command -v python3 >/dev/null 2>&1 || { echo "campaign: \`python3\` is not on the path, so the approval of each round cannot be read." >&2; exit 3; }
+    approvals=$(python3 "$root/tools/probe/declared.py" "$root/.headwater/probe.yml" approved) || exit $?
+    unapproved=$(awk 'NF && $1 !~ /^#/ && $1 == "additive" && !seen[$3]++ { print $3 }' "$spec" | while read -r round; do
+        cents=$(printf '%s\n' "$approvals" | awk -v r="$round" '$1 == r { print $2 }')
+        [ "${cents:-0}" -gt 0 ] || printf '%s ' "$round"
+    done)
+    if [ -n "$unapproved" ]; then
+        for round in $unapproved; do
+            echo "campaign: no person has approved spend on the $round round: its \`approved_cents\` under \`rounds:\` in .headwater/probe.yml is 0 or absent, so no line of it runs. Approve the round there, in a commit, or run a spec without its lines." >&2
+        done
+        exit 5
+    fi
+fi
 for tool in git jq tar awk cargo claude bwrap; do
     command -v "$tool" >/dev/null 2>&1 || { echo "campaign: \`$tool\` is not on the path." >&2; exit 3; }
 done
@@ -908,9 +984,8 @@ fi
 # in any scenario tree stops it with 8 before anything of the batch is
 # written, before the harness is asked for its version, and before any
 # session starts. A dry run that refuses for another reason stops it with its
-# own status. Until the owner rules on the total, the plan then refuses every
-# line on the additive tier's ceiling of zero.
-if awk 'NF && $1 !~ /^#/ { n++; if ($1 == "additive") a++ } END { exit !(n > 0 && a > 0) }' "$spec"; then
+# own status. A round nobody approved was refused above, before this.
+if [ "$additive" = 1 ]; then
     HW_CAMPAIGN_ENGINE=$engine sh "$root/tools/probe/campaign-dry-run.sh" "$spec" \
         > "$out/leak-gate" 2> "$out/leak-gate.err"
     gate_status=$?
@@ -929,8 +1004,10 @@ if [ -z "$repetitions" ] && [ -s "$out/repetitions" ]; then
 fi
 # A raise is admitted on a line only up to the count the dry run prices for
 # it (#1659). This is checked before anything of the batch is written, so a
-# refused count leaves a resumed batch as it was.
-if [ -n "$repetitions" ]; then
+# refused count leaves a resumed batch as it was. An additive spec takes no
+# `--repetitions`, and the same pricing gives each of its lines its round's
+# count (#1775).
+if [ -n "$repetitions" ] || [ "$additive" = 1 ]; then
     HW_CAMPAIGN_ENGINE=$engine sh "$root/tools/probe/campaign-dry-run.sh" --priced "$spec" \
         > "$out/priced" 2> "$out/priced.err" || {
         priced_status=$?
@@ -940,7 +1017,7 @@ if [ -n "$repetitions" ]; then
     }
     raise_refused=0
     while read -r index declared price how; do
-        [ "$repetitions" -gt "$declared" ] && [ "$repetitions" -gt "$price" ] || continue
+        [ -n "$repetitions" ] && [ "$repetitions" -gt "$declared" ] && [ "$repetitions" -gt "$price" ] || continue
         what=$(awk 'NF && $1 !~ /^#/' "$spec" | awk -v i="$index" 'NR == i { print $1, $2, $3 }')
         echo "campaign: line $index ($what): --repetitions $repetitions is above the $price the dry run prices for it ($how)." >&2
         raise_refused=1
@@ -986,6 +1063,23 @@ while IFS= read -r line; do
         declared=$(awk -v i="$index" '$1 == i { print $2 }' "$out/priced")
         [ -n "$declared" ] && [ "$repetitions" -gt "$declared" ] && plan_repetitions=
     fi
+    # An additive line is planned at its round's count, which the dry run
+    # priced, and runs its round's set (#1775). Both are written beside the
+    # plan, so each session's recorder plans the same line.
+    rm -f "$out/plans/L$index.set"
+    if [ "$tier" = additive ]; then
+        plan_repetitions=$(awk -v i="$index" '$1 == i { print $3 }' "$out/priced")
+        [ -n "$plan_repetitions" ] || {
+            echo "campaign: line $index ($tier $arm $category) has no count from the dry run's pricing." >&2
+            exit 5
+        }
+        python3 "$root/tools/probe/declared.py" "$root/.headwater/probe.yml" rounds \
+            | awk -v r="$category" '$1 == r { print $2 }' > "$out/plans/L$index.set"
+        [ -s "$out/plans/L$index.set" ] || {
+            echo "campaign: line $index ($tier $arm $category) runs a round that \`rounds:\` does not declare." >&2
+            exit 5
+        }
+    fi
     printf '%s\n' "$plan_repetitions" > "$out/plans/L$index.repetitions"
     plan_line "$line" "$plan_repetitions" "$out/plans/L$index"
     if grep -q '^## This run does not start' "$out/plans/L$index"; then
@@ -1013,15 +1107,6 @@ while IFS= read -r line; do
     done
 done < "$out/lines"
 sort -u "$out/pairs.tmp" > "$out/pairs" && rm -f "$out/pairs.tmp"
-# The batch does not yet run an additive line: it would plan each line at the
-# tier's declared count and not its round's, build no scenario tree, and record
-# each session with `--category`. The plan's ceiling of zero refuses every
-# additive line above, so this is reached only once the owner has ruled on
-# the total, and it then refuses rather than run the rounds wrong.
-if grep -q '^[0-9]* additive ' "$out/lines"; then
-    echo "campaign: the batch does not run additive lines yet: the per-round counts, the scenario trees and \`--set\` in probe-record.sh are owed by #1774 before the screening round." >&2
-    exit 5
-fi
 
 # The task of each probe: the body of `## Task` and nothing else (spec 15).
 for probe in $probes; do
@@ -1054,9 +1139,13 @@ while IFS= read -r line; do
     # another name and moved, so a build that stopped half way is not reused.
     rm -rf "$out/trees/.building"
     cp -a "$out/trees/oracle" "$out/trees/.building" || exit 3
-    case $arm in
-        present) ;;
-        absent) sh "$root/tools/probe/ablate.sh" "$tier" "$out/trees/.building" >/dev/null || exit 3 ;;
+    # A scenario arm of the additive campaign is that scenario's tree, built
+    # from the present tree by `ablate.sh --scenario` (#1775), and not a
+    # component delta of the tier.
+    case $tier-$arm in
+        additive-scenario-*) sh "$root/tools/probe/ablate.sh" --scenario "${arm#scenario-}" "$out/trees/.building" >/dev/null || exit 3 ;;
+        *-present) ;;
+        *-absent) sh "$root/tools/probe/ablate.sh" "$tier" "$out/trees/.building" >/dev/null || exit 3 ;;
         *) sh "$root/tools/probe/ablate.sh" "$tier" "$out/trees/.building" "$arm" >/dev/null || exit 3 ;;
     esac
     mv "$out/trees/.building" "$out/trees/$tier-$arm" || exit 3
@@ -1065,12 +1154,15 @@ done < "$out/lines"
 # The jobs, shuffled with the seed. A job's name is its line, its probe's
 # position and its repetition, so a resumed batch names each job the same way.
 if [ ! -f "$out/jobs" ]; then
-    count=${repetitions:-$(sed -n 's/.* x \([0-9]*\) repetitions = .*/\1/p' "$out/plans/L1" | head -1)}
     while IFS= read -r line; do
         # shellcheck disable=SC2086
         set -- $line
         index=$1 tier=$2 arm=$3 category=$4
         shift 4
+        # The batch's count where it gave one, and otherwise the count of the
+        # line's own plan, because the lines of one spec need not share one:
+        # an additive line runs its round's count (#1775).
+        count=${repetitions:-$(sed -n 's/.* x \([0-9]*\) repetitions = .*/\1/p' "$out/plans/L$index" | head -1)}
         rest="$*"
         position=0
         grep "^$index " "$out/pairs" | while read -r _ probe; do

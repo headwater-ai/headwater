@@ -531,6 +531,35 @@ sh "$transform" --probe PROBE-FIX-cited --session writes-and-named --root "$scra
 same "--produced adds to the seeded paths, and a path named both ways is one entry" "5" \
     "$(grep -c '^    - path:' "$scratch/writes-named.yaml")"
 
+# Auto-memory is not a produced artifact (HW-OBL-0237, #1775). A session that
+# writes a memory file under its configuration directory named a path that
+# carries no `findings` key, and the grader could not grade it: one session
+# of the 2026-10-03 campaign was drawn again for this. With `--config-dir`,
+# a path under that directory is not in `produced`, and a path beside it is.
+mkdir -p "$scratch/cfg-dir/projects/ws/memory" "$scratch/cfg-dir-sibling"
+printf 'remember HW-DR-0049\n' > "$scratch/cfg-dir/projects/ws/memory/MEMORY.md"
+printf 'HW-DR-0049\n' > "$scratch/cfg-dir-sibling/kept.md"
+{
+    printf '%s\n' '{"type":"system","subtype":"init","model":"claude-sonnet-5","session_id":"s9"}'
+    jq -nc --arg p "$scratch/cfg-dir/projects/ws/memory/MEMORY.md" '{type:"assistant",message:{content:[{type:"tool_use",id:"t1",name:"Write",input:{file_path:$p,content:"x"}}]}}'
+    jq -nc --arg p "$scratch/cfg-dir-sibling/kept.md" '{type:"assistant",message:{content:[{type:"tool_use",id:"t2",name:"Write",input:{file_path:$p,content:"x"}}]}}'
+} > "$scratch/memory.jsonl"
+sh "$transform" --probe PROBE-FIX-cited --session memory --root "$scratch/empty-base" \
+    --config-dir "$scratch/cfg-dir" < "$scratch/memory.jsonl" > "$scratch/memory.yaml" 2>"$scratch/memory.err"
+same "a log that writes auto-memory transforms without error" "0" "$?"
+present "the memory write is still a call of the log" \
+    "      argument: \"$scratch/cfg-dir/projects/ws/memory/MEMORY.md\"" "$scratch/memory.yaml"
+absent "a memory file under the configuration directory is not produced" \
+    "    - path: \"$scratch/cfg-dir/projects/ws/memory/MEMORY.md\"" "$scratch/memory.yaml"
+present "and a file beside that directory, whose name only starts the same, still is" \
+    "    - path: \"$scratch/cfg-dir-sibling/kept.md\"" "$scratch/memory.yaml"
+sh "$transform" --probe PROBE-FIX-cited --session memory-no-config --root "$scratch/empty-base" \
+    < "$scratch/memory.jsonl" > "$scratch/memory-none.yaml" 2>/dev/null
+present "with no --config-dir the memory file is produced, as before" \
+    "    - path: \"$scratch/cfg-dir/projects/ws/memory/MEMORY.md\"" "$scratch/memory-none.yaml"
+present "the recorder gives the transform its session's configuration directory" \
+    '--config-dir "$config"' "$driver"
+
 # Inside the base, the `findings` half. The workspace is this corpus and the path is
 # absolute, as a live `Edit` names it. It has to come out relative to the base,
 # because `headwater check` reports under that form, and an absolute path there
@@ -1925,6 +1954,20 @@ STUB
         >"$scratch/absent-arm.md" 2>"$scratch/absent-arm.err"
     present "an absent transcript states the tier's ablation" \
         'The `absent` arm is the present tree less `CLAUDE.md`, `.claude`, `.githooks`, `.headwater`.' "$scratch/absent-arm.md"
+    # An arm of the additive campaign is plain code with layers added (#1775),
+    # so its transcript names the layers its scenario holds, from
+    # `scenarios:`, and scenario 0 is plain code alone. Neither is a delta
+    # from the present tree.
+    for n in 4 0; do
+        PATH="$scratch/bin:$PATH" sh "$driver" --probe HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged \
+            --session "fixture-scenario-$n" --tier additive --arm "scenario-$n" --set tuning --repetitions 18 \
+            --task-file "$scratch/task.md" --workspace "$scratch/ws" \
+            >"$scratch/scenario-$n-arm.md" 2>"$scratch/scenario-$n-arm.err"
+    done
+    present "a scenario-4 transcript names the layers its scenario adds to plain code" \
+        'The `scenario-4` arm is plain code with the layers `docs`, `engine`, `skills` added: the present tree less the probe instrument and every layer it does not hold.' "$scratch/scenario-4-arm.md"
+    present "a scenario-0 transcript states plain code alone" \
+        'The `scenario-0` arm is plain code: the present tree less the probe instrument and the path of every layer.' "$scratch/scenario-0-arm.md"
 
     # A delta the declaration does not state is said to be unread, and never
     # printed as the present tree (verify round 1). The engine refuses a
@@ -4777,7 +4820,36 @@ if [ -x "$engine" ]; then
     present "it prints the final round's sum" "round final: 3080 sessions, \$1540.00" "$scratch/add.out"
     present "and one total" "total: 7112 sessions, \$3556.00" "$scratch/add.out"
     present "each round's count is computed from its rates" "so ceil(219 / 4) = 55 repetitions of each probe" "$scratch/add.out"
-    present "the ceiling of zero refuses every plan" "The ceiling refuses 46 of 46 plans" "$scratch/add.out"
+    # The owner approved the screening round alone, at $700 (#1775). The
+    # ceiling admits each plan, and the approval of each round says which
+    # lines the batch runs.
+    absent "the ceiling of \$700 refuses no plan" "The ceiling refuses" "$scratch/add.out"
+    present "the dry run prints the screening round as approved" \
+        "round screening: approved to \$700.00 over every attempt, so the batch runs its lines" "$scratch/add.out"
+    present "and the tuning round as not approved" "round tuning: not approved, so the batch refuses its lines with 5" "$scratch/add.out"
+    present "and the final round as not approved" "round final: not approved, so the batch refuses its lines with 5" "$scratch/add.out"
+    # An approval is a whole number of cents at or above zero. A negative or
+    # a non-integer one is refused, so no typo reads as an approval or as a
+    # refusal it does not state.
+    for bad in -1 true 700.5; do
+        sed "s/^    approved_cents: 70000$/    approved_cents: $bad/" "$root/.headwater/probe.yml" > "$scratch/approval-bad.yml"
+        python3 "$root/tools/probe/declared.py" "$scratch/approval-bad.yml" approved > /dev/null 2> "$scratch/approval-bad.err"
+        bad_status=$?
+        same "an approved_cents of $bad is refused" "1 1" \
+            "$([ "$bad_status" != 0 ] && echo 1 || echo 0) $(grep -c 'must be a whole number of cents at or above zero' "$scratch/approval-bad.err")"
+    done
+    # The recorder plans a `--set` line with its arm, because the plan prices
+    # one arm. With no arm a final line of 55 repetitions prices every
+    # scenario, 3080 sessions, past the $700 ceiling (verify round 1).
+    sh "$driver" --identity-only --tier additive --arm scenario-4 --set held-out --repetitions 55 \
+        > "$scratch/id-final.out" 2> "$scratch/id-final.err"
+    same "the recorder plans a final line of one scenario arm inside the ceiling" "0" "$?"
+    same "and its selection is the plan of that one arm" \
+        "$("$engine" probe plan --root "$root" --tier additive --arm scenario-4 --set held-out --repetitions 55 2> /dev/null | sed -n 's/^selection: //p' | head -1)" \
+        "$(sed -n 's/^selection: //p' "$scratch/id-final.out")"
+    same "the screening spec holds the screening lines of the whole campaign, and no other" \
+        "$(awk 'NF && $1 !~ /^#/ && $3 == "screening"' "$additive_spec")" \
+        "$(awk 'NF && $1 !~ /^#/' "$root/tools/probe/additive-screening.spec")"
     same "and it builds and checks each of the 14 scenario trees" "14" \
         "$(sed -n 's/^tree additive \(scenario-[0-9]*\)[ :].*/\1/p' "$scratch/add.out" | LC_ALL=C sort -u | wc -l | tr -d ' ')"
     present "a hit in the harness layer of scenario 13 prints as harness" \
@@ -4903,8 +4975,8 @@ if [ -x "$engine" ]; then
         rm -rf "$scratch/gate-out"
         HW_PROBE_YML="$scratch/add-body.yml" CARGO_TARGET_DIR="$scratch/gate-target" PATH="$scratch/gate-bin:$PATH" \
             sh "$root/tools/probe/campaign.sh" --out "$scratch/gate-out" --model claude-haiku-4-5 \
-            --spec "$additive_spec" > /dev/null 2> "$scratch/gate.err"
-        same "a batch of the additive spec stops with 8 on a leak in a scenario tree" "8" "$?"
+            --spec "$root/tools/probe/additive-screening.spec" > /dev/null 2> "$scratch/gate.err"
+        same "a batch of the screening spec stops with 8 on a leak in a scenario tree" "8" "$?"
         present "and names the leak" "leak check, scenario-4 tree: leak HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged" "$scratch/gate.err"
         same "and it asked the harness nothing, not even its version, and planned no line" "no no" \
             "$([ -e "$scratch/gate-out/claude-version" ] && echo yes || echo no) $([ -e "$scratch/gate-out/lines" ] && echo yes || echo no)"
@@ -4912,9 +4984,89 @@ if [ -x "$engine" ]; then
         CARGO_TARGET_DIR="$scratch/gate-target" PATH="$scratch/gate-bin:$PATH" \
             sh "$root/tools/probe/campaign.sh" --out "$scratch/gate-out" --model claude-haiku-4-5 \
             --spec "$additive_spec" > /dev/null 2> "$scratch/gate-clean.err"
-        same "with no leak the gate passes, and the ceiling of zero then refuses the batch with 5" "5" "$?"
-        present "and the refusal is the ceiling" "against a declared ceiling of \$0.00" "$scratch/gate-clean.err"
+        same "the whole campaign's spec is still refused with 5, now on the rounds nobody approved" "5" "$?"
+        present "and the refusal names the tuning round" "no person has approved spend on the tuning round" "$scratch/gate-clean.err"
+        present "and the final round" "no person has approved spend on the final round" "$scratch/gate-clean.err"
+        absent "and not the screening round" "approved spend on the screening round" "$scratch/gate-clean.err"
+        same "and it ran no dry run, planned no line and asked the harness nothing" "no no no" \
+            "$([ -e "$scratch/gate-out/leak-gate" ] && echo yes || echo no) $([ -e "$scratch/gate-out/lines" ] && echo yes || echo no) $([ -e "$scratch/gate-out/claude-version" ] && echo yes || echo no)"
         rm -rf "$scratch/gate-out"
+        CARGO_TARGET_DIR="$scratch/gate-target" PATH="$scratch/gate-bin:$PATH" \
+            sh "$root/tools/probe/campaign.sh" --out "$scratch/gate-out" --model claude-haiku-4-5 \
+            --spec "$root/tools/probe/additive-screening.spec" --repetitions 3 > /dev/null 2> "$scratch/gate-reps.err"
+        same "a batch of an additive spec refuses --repetitions with 2" "2" "$?"
+        rm -rf "$scratch/gate-out"
+
+        # The decisive case of #1775: a batch of one additive screening line,
+        # past a ceiling above zero, runs at the round's count, in the
+        # scenario's own tree, and records each session with `--set` and
+        # `--arm`. The same batch refuses a line of a round nobody approved
+        # with 5, before it builds a tree or asks the harness anything. The
+        # harness answers `--version` alone, and `bwrap` is a stub, so no
+        # session reaches a model.
+        mkdir -p "$scratch/run-bin" "$scratch/run-host"
+        printf '#!/bin/sh\nexit 0\n' > "$scratch/run-bin/cargo"
+        printf '#!/bin/sh\nexit 0\n' > "$scratch/run-bin/bwrap"
+        printf '#!/bin/sh\nif [ "${1:-}" = --version ]; then echo "2.1.288 (Claude Code)"; exit 0; fi\n: > "%s/run-session-called"\nexit 7\n' \
+            "$scratch" > "$scratch/run-bin/claude"
+        chmod +x "$scratch/run-bin/cargo" "$scratch/run-bin/bwrap" "$scratch/run-bin/claude"
+        printf 'additive scenario-4 screening\n' > "$scratch/run-screen.spec"
+        rm -rf "$scratch/run-out"
+        HEADWATER_PROBE_HOST_CONFIG="$scratch/run-host" CARGO_TARGET_DIR="$scratch/gate-target" PATH="$scratch/run-bin:$PATH" \
+            sh "$root/tools/probe/campaign.sh" --out "$scratch/run-out" --model claude-haiku-4-5 \
+            --spec "$scratch/run-screen.spec" --max-sessions 1 > /dev/null 2> "$scratch/run.err"
+        run_status=$?
+        same "a batch of one screening line passes the plan and starts a session" "yes" \
+            "$([ "$run_status" != 5 ] && [ -e "$scratch/run-out/claude-version" ] && echo yes || echo no)"
+        same "its jobs are 4 probes x the round's 18 repetitions, not the tier's 55" "72" \
+            "$(grep -c ' additive scenario-4 screening ' "$scratch/run-out/jobs" 2>/dev/null)"
+        present "and the line is planned at the round's count" "4 probes x 1 arms x 18 repetitions = 72 sessions" "$scratch/run-out/plans/L1"
+        # The tree is the scenario's: every path of a layer scenario 4 does
+        # not hold is gone, and the skills layer it holds is there.
+        "$engine" probe plan --root "$root" --scenario 4 --delta > "$scratch/run-delta" 2> /dev/null
+        same "the tree of the line is the scenario-4 tree: no path of a layer it lacks is left" "0" \
+            "$(sed -n 's/^- [^ ]* //p' "$scratch/run-delta" | while IFS= read -r p; do
+                [ -e "$scratch/run-out/trees/additive-scenario-4/$p" ] && echo "$p"; done | wc -l | tr -d ' ')"
+        same "and the layers it holds are there" "yes" \
+            "$(awk '$1 == "=" && $2 == "skills" { print $3 }' "$scratch/run-delta" | head -1 | {
+                read -r p; [ -n "$p" ] && [ -e "$scratch/run-out/trees/additive-scenario-4/$p" ] && echo yes || echo no; })"
+        run_session=$(ls "$scratch/run-out/sessions" 2>/dev/null | head -1)
+        run_argv=$scratch/run-out/sessions/$run_session/record.argv
+        same "the recorder is given the round's set and the scenario arm" "yes yes" \
+            "$(grep -qx -- '--set' "$run_argv" 2>/dev/null && grep -A1 -x -- '--set' "$run_argv" | tail -1 | grep -qx tuning && echo yes || echo no) $(grep -A1 -x -- '--arm' "$run_argv" 2>/dev/null | tail -1 | grep -qx scenario-4 && echo yes || echo no)"
+        absent "and no category" "--category" "$run_argv"
+        absent "and the recorder plans the line the batch planned" "headwater probe plan" \
+            "$scratch/run-out/sessions/$run_session/record.err"
+        same "the session the plan admitted is the one the batch planned" "$(sed -n 's/^selection: //p' "$scratch/run-out/plans/L1" | head -1)" \
+            "$("$engine" probe plan --root "$root" --tier additive --arm scenario-4 --set tuning --repetitions 18 2> /dev/null | sed -n 's/^selection: //p' | head -1)"
+        # The identity block holds the set only as its digest, so assembly
+        # states the round and the set beside it. The one session did not
+        # record, so assembly fails the line, and still names its round.
+        sh "$root/tools/probe/campaign.sh" --out "$scratch/run-out" --assemble > /dev/null 2> "$scratch/run-assemble.err"
+        same "assembly states the line's round and set beside its identity" "round: screening set: tuning" \
+            "$(tr '\n' ' ' < "$scratch/run-out/assembled/L1-additive-scenario-4-screening.round" 2>/dev/null | sed 's/ $//')"
+        printf 'additive scenario-4 final\n' > "$scratch/run-final.spec"
+        rm -rf "$scratch/run-final-out"
+        HEADWATER_PROBE_HOST_CONFIG="$scratch/run-host" CARGO_TARGET_DIR="$scratch/gate-target" PATH="$scratch/run-bin:$PATH" \
+            sh "$root/tools/probe/campaign.sh" --out "$scratch/run-final-out" --model claude-haiku-4-5 \
+            --spec "$scratch/run-final.spec" > /dev/null 2> "$scratch/run-final.err"
+        same "a line of the final round, which nobody approved, is refused with 5" "5" "$?"
+        present "and the refusal names the round" "no person has approved spend on the final round" "$scratch/run-final.err"
+        same "and it wrote no harness version, no plan, no tree and no session" "no no no no" \
+            "$([ -e "$scratch/run-final-out/claude-version" ] && echo yes || echo no) $([ -e "$scratch/run-final-out/lines" ] && echo yes || echo no) $([ -e "$scratch/run-final-out/trees" ] && echo yes || echo no) $([ -e "$scratch/run-final-out/sessions" ] && echo yes || echo no)"
+        same "and it ran no dry run, so it built no scenario tree" "no" \
+            "$([ -e "$scratch/run-final-out/leak-gate" ] && echo yes || echo no)"
+        # Each line's jobs are its own plan's count, not the first line's
+        # (verify round 1): the regression tier runs 1 repetition and the
+        # campaign tier 30, so one spec of both is 8 + 8 x 30 jobs.
+        printf 'regression present sufficiency\ncampaign present sufficiency\n' > "$scratch/run-tiers.spec"
+        rm -rf "$scratch/run-tiers-out"
+        HEADWATER_PROBE_HOST_CONFIG="$scratch/run-host" CARGO_TARGET_DIR="$scratch/gate-target" PATH="$scratch/run-bin:$PATH" \
+            sh "$root/tools/probe/campaign.sh" --out "$scratch/run-tiers-out" --model claude-haiku-4-5 \
+            --spec "$scratch/run-tiers.spec" --max-turns 10 --max-sessions 1 > /dev/null 2> "$scratch/run-tiers.err"
+        same "a spec of two tiers runs each line at its own plan's count" "8 240" \
+            "$(awk '$2 == 1' "$scratch/run-tiers-out/jobs" 2>/dev/null | wc -l | tr -d ' ') $(awk '$2 == 2' "$scratch/run-tiers-out/jobs" 2>/dev/null | wc -l | tr -d ' ')"
+        rm -rf "$scratch/run-out" "$scratch/run-final-out" "$scratch/run-tiers-out"
     else
         printf 'note the checkout has uncommitted changes, so the batch leak gate cases did not run.\n'
     fi

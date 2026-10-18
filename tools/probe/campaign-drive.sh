@@ -9,7 +9,7 @@
 # and a person or an agent reads its log.
 #
 #     sh tools/probe/campaign-drive.sh --root <dir> --pin <sha> --claude-version <v> \
-#         --spec-a <file> --spec-b <file> --repetitions-b <n> --model <m> \
+#         --spec-a <file> [--spec-b <file> --repetitions-b <n>] --model <m> \
 #         --session-cents <B> --cap-cents <C> [--parallel <P> | --ramp <P1,P2,...>] \
 #         [--overshoot-cents <M>] [--seed <n>]
 #
@@ -75,7 +75,8 @@
 #    sessions it still owes.
 # 2. Batch A at `--parallel P --max-sessions 500`, until it exits 0.
 # 3. Batch B the same, with `--spec <spec-b> --repetitions <n>`.
-# 4. `<root>/done`, written only when both `a.done` and `b.done` exist. A
+# 4. `<root>/done`, written only when `a.done` exists, and `b.done` where
+#    the driver runs batch B. A
 #    driver started with `done` present invokes nothing and exits 0.
 #
 # Every invocation is `sh $HEADWATER_DRIVE_CAMPAIGN` (default
@@ -85,14 +86,28 @@
 #
 # ## The cap
 #
-# `--cap-cents C` bounds both batches together. `campaign.sh` bounds one
-# batch directory, and spends past its cap by at most `--parallel` times the
-# largest overshoot of one turn past `--session-cents` (see its header). So
-# before every invocation the driver gives it the cap `C - spent(other) -
-# p * M`, where `spent` sums every `sessions/*/cost` and
-# `sessions/*/spent-before`, `other` is the other batch, `p` is that
-# invocation's `--parallel` and `M` is `--overshoot-cents`. When that is at
-# or below 0, the batch is capped. `M` defaults to 100 cents: check (a) of
+# `--cap-cents C` bounds every batch directory under `<root>` together.
+# `campaign.sh` bounds one batch directory, and spends past its cap by at
+# most `--parallel` times the largest overshoot of one turn past
+# `--session-cents` (see its header). So before every invocation the driver
+# gives it the cap `C - spent(other) - p * M`, where `spent` sums every
+# `sessions/*/cost` and `sessions/*/spent-before`, `other` is every other
+# directory of `<root>` that holds `sessions/`, `p` is that invocation's
+# `--parallel` and `M` is `--overshoot-cents`. When that is at or below 0,
+# the batch is capped.
+#
+# **A restart does not reset the count (#1775).** A batch that must start
+# again in a new directory, on a new pin or a harness that moved, keeps the
+# same `<root>`. Move the old batch directory aside under it, such as
+# `<root>/a` to `<root>/a.attempt-1`, and start the driver again. Its
+# `other` then counts what the earlier attempt spent, so every attempt
+# together spends at most `C`, past it only by the overshoot margin. The
+# owner ruled this for the screening round of the additive campaign, at a
+# `C` of 70000. A batch directory outside `<root>` is not counted.
+#
+# Batch B is optional: without `--spec-b` and `--repetitions-b`, the driver
+# runs the canary and batch A alone, and writes `done` after `a.done`. The
+# screening round runs this way. `M` defaults to 100 cents: check (a) of
 # #1659 measured an overshoot of 14.6 cents on a first turn at B = 5, and
 # nobody has measured one at B = 300, so 100 is a margin and not a
 # measurement. After each invocation, a total past `C` logs the figures and
@@ -153,16 +168,17 @@
 #
 # ## Exit status
 #
-#   0   both batches exited 0, and `done` is written
+#   0   every batch it runs exited 0, and `done` is written
 #   1   `campaign.sh` exited 1
 #   2   a usage error
 #   3   a tool, the harness version or the token is missing, or campaign.sh
 #       exited 3
 #   4   the pin or the harness is not the one given, or campaign.sh exited 4
-#   5   campaign.sh refused the plan
+#   5   campaign.sh exited 5: it refused the plan, a raise of
+#       `--repetitions`, or a line of a round nobody approved
 #   6   campaign.sh refused the output directory
 #   7   a recorder failed on a session no `<dir>/unrecorded/<name>` marks, or
-#       both batches spent past `--cap-cents`
+#       the batch directories under `<root>` spent past `--cap-cents`
 #   8   a batch is capped: `capped` is written, and `done` is not
 #   10  `<root>/stop` exists
 #   11  the canary failed: `canary-failed` holds the reason
@@ -171,7 +187,7 @@
 set -u
 
 usage() {
-    echo "usage: sh tools/probe/campaign-drive.sh --root <dir> --pin <sha> --claude-version <v> --spec-a <file> --spec-b <file> --repetitions-b <n> --model <m> --session-cents <B> --cap-cents <C> [--parallel <P> | --ramp <P1,P2,...>] [--overshoot-cents <M>] [--seed <n>]" >&2
+    echo "usage: sh tools/probe/campaign-drive.sh --root <dir> --pin <sha> --claude-version <v> --spec-a <file> [--spec-b <file> --repetitions-b <n>] --model <m> --session-cents <B> --cap-cents <C> [--parallel <P> | --ramp <P1,P2,...>] [--overshoot-cents <M>] [--seed <n>]" >&2
     exit 2
 }
 
@@ -196,15 +212,21 @@ while [ $# -gt 0 ]; do
     esac
     shift 2
 done
-for value in "$root" "$pin" "$version" "$spec_a" "$spec_b" "$model"; do
+for value in "$root" "$pin" "$version" "$spec_a" "$model"; do
     [ -n "$value" ] || usage
 done
 positive() {
     case $1 in '' | *[!0-9]* | 0*) return 1 ;; esac
 }
-for value in "$reps_b" "$budget" "$cap" "$parallel" "$margin"; do
+for value in "$budget" "$cap" "$parallel" "$margin"; do
     positive "$value" || usage
 done
+# Batch B is optional (#1775): `--spec-b` and `--repetitions-b` come
+# together or not at all, and without them the driver runs batch A alone.
+if [ -n "$spec_b" ] || [ -n "$reps_b" ]; then
+    [ -n "$spec_b" ] || usage
+    positive "$reps_b" || usage
+fi
 case $seed in '' | *[!0-9]*) usage ;; esac
 # The ramp: steps of --parallel, each above the one before.
 steps=0
@@ -227,7 +249,7 @@ if [ -n "$ramp" ]; then
     [ "$steps" -gt 0 ] || usage
     parallel=$(printf '%s' "$ramp" | cut -d, -f1)
 fi
-for spec in "$spec_a" "$spec_b"; do
+for spec in "$spec_a" ${spec_b:+"$spec_b"}; do
     [ -f "$spec" ] || { echo "campaign-drive: no spec file $spec." >&2; exit 2; }
 done
 for tool in git jq awk; do
@@ -252,6 +274,20 @@ say() { printf '%s %s\n' "$(stamp)" "$1" | tee -a "$root/drive.log"; }
 spent() {
     find "$1/sessions" -mindepth 2 -maxdepth 2 -type f \( -name cost -o -name spent-before \) -exec cat {} + 2>/dev/null \
         | awk '{ s += $1 } END { print s + 0 }'
+}
+
+# spent_all: what every batch directory under `<root>` spent, `a` and `b`
+# and every earlier attempt moved aside beside them (#1775). A batch
+# directory is a directory of `<root>` that holds `sessions/`, whatever its
+# name: `*` lists no name that starts with a dot, so the two other patterns
+# list those, less `.` and `..` (verify round 1 of #1775).
+spent_all() {
+    spent_all_sum=0
+    for spent_all_dir in "$root"/*/ "$root"/.[!.]*/ "$root"/..?*/; do
+        [ -d "${spent_all_dir}sessions" ] || continue
+        spent_all_sum=$((spent_all_sum + $(spent "${spent_all_dir%/}")))
+    done
+    echo "$spent_all_sum"
 }
 
 # classify <dir>: one pass over the jobs of the batch, printing
@@ -437,6 +473,7 @@ write_capped() {
     {
         echo "spent-a: $(spent "$root/a")"
         echo "spent-b: $(spent "$root/b")"
+        echo "spent-all: $(spent_all)"
         echo "cap-cents: $cap"
         echo "recorded: $ra of $ta in a, $1 of $2 in b"
     } > "$root/capped"
@@ -449,8 +486,6 @@ write_capped() {
 # 8 recorded sessions), and returns, or exits with the driver's code.
 run_batch() {
     phase=$1 dir=$2 spec=$3 p=$4 max=$5 reps=${6:-}
-    other=b
-    [ "$dir" = b ] && other=a
     halts=0
     retried=0
     if [ "$steps" -gt 0 ] && [ "$phase" != canary ]; then
@@ -458,10 +493,13 @@ run_batch() {
     fi
     while :; do
         checks
-        given=$((cap - $(spent "$root/$other") - p * margin))
+        # What every other batch directory under the root spent: the other
+        # batch, and every earlier attempt moved aside beside them (#1775).
+        others=$(($(spent_all) - $(spent "$root/$dir")))
+        given=$((cap - others - p * margin))
         if [ "$given" -le 0 ]; then
             write_capped
-            say "$phase capped: $cap less $(spent "$root/$other") spent by $other less $p x $margin leaves $given"
+            say "$phase capped: $cap less $others spent by the other batch directories less $p x $margin leaves $given"
             exit 8
         fi
         before=$(recorded "$root/$dir")
@@ -480,7 +518,7 @@ run_batch() {
         names=$*
         new=$((rec - before))
         mine=$(spent "$root/$dir")
-        all=$(($(spent "$root/a") + $(spent "$root/b")))
+        all=$(spent_all)
         tag=
         action=
         case $code in
@@ -502,7 +540,7 @@ run_batch() {
         case $action in halt | bound | capped | refused-only) tag=" $action" ;; esac
         say "$phase exit=$code recorded=$rec/$total new=$new cents=$mine all=$all/$cap$tag"
         if [ "$all" -gt "$cap" ]; then
-            say "overspend: spent $all of $cap cents (a $(spent "$root/a"), b $(spent "$root/b"))"
+            say "overspend: spent $all of $cap cents (a $(spent "$root/a"), b $(spent "$root/b"), $((all - $(spent "$root/a") - $(spent "$root/b"))) in earlier attempts)"
             exit 7
         fi
         [ "$action" = refused-only ] || retried=0
@@ -605,11 +643,11 @@ if [ ! -f "$root/a.done" ]; then
     run_batch a a "$spec_a" "$parallel" 500
     : > "$root/a.done"
 fi
-if [ ! -f "$root/b.done" ]; then
+if [ -n "$spec_b" ] && [ ! -f "$root/b.done" ]; then
     run_batch b b "$spec_b" "$parallel" 500 "$reps_b"
     : > "$root/b.done"
 fi
-if [ -f "$root/a.done" ] && [ -f "$root/b.done" ]; then
+if [ -f "$root/a.done" ] && { [ -z "$spec_b" ] || [ -f "$root/b.done" ]; }; then
     : > "$root/done"
     say "done"
 fi

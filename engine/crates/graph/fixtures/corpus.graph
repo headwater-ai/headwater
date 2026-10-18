@@ -711,6 +711,10 @@ anchors
     cited by HW-PHOW-diagnose-an-isolation-failure
   code_path `tools/probe/ablate.sh` via source-tree
     cited by HW-DR-0111
+  code_path `tools/probe/additive-campaign.spec` via source-tree
+    cited by HW-DR-0111
+  code_path `tools/probe/additive-screening.spec` via source-tree
+    cited by HW-DR-0111
   code_path `tools/probe/arms/hook/.claude/settings.json` via source-tree
     cited by HW-DR-0111
   code_path `tools/probe/egress-proxy.py` via source-tree

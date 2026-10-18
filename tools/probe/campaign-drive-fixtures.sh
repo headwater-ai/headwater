@@ -271,6 +271,8 @@ drive() {
     (
         cd "$CASE/repo" || exit 99
         if [ -n "$RAMP" ]; then set -- --ramp "$RAMP" "$@"; else set -- --parallel "$P" "$@"; fi
+        # A_ONLY runs the driver with no batch B at all (#1775).
+        [ -n "${A_ONLY:-}" ] || set -- --spec-b "$CASE/spec-b" --repetitions-b 118 "$@"
         HEADWATER_DRIVE_CAMPAIGN=$fix/campaign-stub.sh \
         HEADWATER_DRIVE_NOW="sh $fix/now.sh" \
         HEADWATER_DRIVE_SLEEP="sh $fix/sleep.sh" \
@@ -278,7 +280,7 @@ drive() {
         HEADWATER_PROBE_HOST_CONFIG=$CASE/host \
         PATH="$fix/decoy:$PATH" \
             timeout 60 sh "$driver" --root "$CASE/root" --pin "$PIN" --claude-version "$VERSION" \
-            --spec-a "$CASE/spec-a" --spec-b "$CASE/spec-b" --repetitions-b 118 --model fixture-model \
+            --spec-a "$CASE/spec-a" --model fixture-model \
             --session-cents "$B" --cap-cents "$C" --overshoot-cents "$M" "$@"
     ) > "$CASE/out" 2> "$CASE/err"
     echo $? > "$CASE/code"
@@ -318,6 +320,66 @@ bcaps=$(grep '/root/b ' "$CASE/calls.short" | sed 's/.* cap=\([0-9-]*\) .*/\1/' 
 check "cap: every B invocation is given C - spent(a) - 2 x M, $((C - a - 2 * M)) (saw: $bcaps)" [ "$bcaps" = "$((C - a - 2 * M))" ]
 check "cap: B is invoked twice, the refusal and one re-try" [ "$(grep -c '/root/b ' "$CASE/calls.short")" = 2 ]
 check "cap: the capped file states both spends and C" grep -q "^cap-cents: $C\$" "$CASE/root/capped"
+
+# ------------------------------- the restart: an earlier attempt is counted
+#
+# The screening round of the additive campaign is approved at 70000 cents
+# over every attempt (#1775). A restart on a new pin or a moved harness
+# needs a new batch directory, and the old one is moved aside under the
+# same root. The cap the new batch is given is 70000 less what the earlier
+# attempt spent, its runs again included, less p x M.
+
+new_case
+C=70000 B=60 M=20 P=2
+only_a
+mkdir -p "$CASE/root/a.attempt-1/sessions/s1" "$CASE/root/a.attempt-1/sessions/s2"
+echo 30000 > "$CASE/root/a.attempt-1/sessions/s1/cost"
+echo 400 > "$CASE/root/a.attempt-1/sessions/s2/cost"
+echo 100 > "$CASE/root/a.attempt-1/sessions/s2/spent-before"
+printf 'auto cents=50\n' > "$CASE/scenario"
+drive
+check "restart: batch A is given C - the earlier attempt's 30500 - 2 x M = 39460" \
+    grep -q "/root/a cap=39460 max=500\$" "$CASE/calls.short"
+check "restart: the driver finishes" code_is 0
+check "restart: every attempt together is at most C" [ $(($(spent_of a) + 30500)) -le "$C" ]
+# An earlier attempt that spent the whole approval leaves nothing to give.
+new_case
+C=70000 B=60 M=20 P=2
+only_a
+mkdir -p "$CASE/root/a.attempt-1/sessions/s1"
+echo 69990 > "$CASE/root/a.attempt-1/sessions/s1/cost"
+printf 'auto cents=50\n' > "$CASE/scenario"
+drive
+check "restart: an earlier attempt that left less than p x M caps the new batch with 8" code_is 8
+check "restart: and the new batch is not invoked" calls_are 0
+check "restart: the capped file states what every attempt spent" grep -q "^spent-all: 69990\$" "$CASE/root/capped"
+# An attempt moved aside under a name that starts with a dot is still a
+# directory of the root, and a shell glob of `*` does not list it (verify
+# round 1 of #1775).
+new_case
+C=70000 B=60 M=20 P=2
+only_a
+mkdir -p "$CASE/root/.a-attempt-1/sessions/s1" "$CASE/root/..a-attempt-2/sessions/s1"
+echo 30000 > "$CASE/root/.a-attempt-1/sessions/s1/cost"
+echo 500 > "$CASE/root/..a-attempt-2/sessions/s1/cost"
+printf 'auto cents=50\n' > "$CASE/scenario"
+drive
+check "restart: an attempt under a dot-named directory is counted too (70000 - 30500 - 40 = 39460)" \
+    grep -q "/root/a cap=39460 max=500\$" "$CASE/calls.short"
+
+# ------------------------------------------- batch A alone, with no batch B
+
+new_case
+only_a
+rm -f "$CASE/root/b.done"
+printf 'auto cents=50\n' > "$CASE/scenario"
+A_ONLY=1 drive
+check "a-only: a driver with no --spec-b runs batch A and exits 0" code_is 0
+check "a-only: it writes done after a.done, with no b.done" [ -f "$CASE/root/done" -a ! -f "$CASE/root/b.done" ]
+check "a-only: it never invokes batch B" [ "$(grep -c '/root/b ' "$CASE/calls.short")" = 0 ]
+new_case
+A_ONLY=1 drive --repetitions-b 118
+check "a-only: --repetitions-b without --spec-b is a usage error" code_is 2
 
 # ------------------------------------------------- 0. arguments
 

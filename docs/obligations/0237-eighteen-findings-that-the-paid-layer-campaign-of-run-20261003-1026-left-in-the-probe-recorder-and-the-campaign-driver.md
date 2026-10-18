@@ -3,7 +3,7 @@ id: HW-OBL-0237
 status: current
 status_since: 2026-10-09
 summary: "The campaign of #1659 met gaps in tools/probe: refusals that share an exit code, a sentence a wrapper must match, ungoverned scripts and surviving mutants. None has a reader outside this repository, and #1700 meets them first."
-last_verified: 2026-10-09
+last_verified: 2026-10-18
 title: "Eighteen findings that the paid layer campaign of run 20261003-1026 left in the probe recorder and the campaign driver"
 waiting_on: build
 provenance:
@@ -52,6 +52,8 @@ Each item was checked on `66dec0f9` at the file and the symbol it names. The sur
 **What governs the tools.**
 
 - No document declares `governs` onto `tools/probe/campaign-drive.sh`, `tools/probe/campaign-drive-fixtures.sh`, `tools/probe/probe-transform.sh` or `tools/engine/build-declaration-fixtures.sh`. [Spec 15](../spec/15-the-recorder-contract.md) governs `tools/probe/probe-record.sh` and `tools/probe/egress-proxy.py` only. [HW-OBL-0235](0235-eleven-documents-and-edges-that-trail-a-change-of-run-20261002-1233.md) lists `campaign.sh`, `campaign-dry-run.sh` and the other probe files of the run before, so the two records together name the ungoverned set. The adjudication of slice 1c of #1659 ruled that the edge waits on a probe how-to or on the next document that describes the driver.
+
+**What #1775 moved.** The screening round of the additive campaign (#1775) is the next campaign that spends, so it meets this list before #1700 does. Slice 1 of #1775 discharges the auto-memory item. `tools/probe/probe-transform.sh` takes `--config-dir`, leaves out of `produced` each path under that directory, and `probe-record.sh` passes the directory it gave the session. The case "a memory file under the configuration directory is not produced" in `tools/probe/probe-record-fixtures.sh` fails without the change. The ceiling item names the campaign tier, and it stays open. The additive tier's ceiling of $700 does not repeat that defect: [HW-DR-0111](../decisions/0111-the-additive-campaign-adds-six-layers-to-plain-code-in-fourteen-scenarios-and-registers-one-comparison-each.md) states the figure, the ruling and the restart rule. HW-DR-0111 also governs the two additive specs. Every other item stays as written.
 
 ## Discharge
 
