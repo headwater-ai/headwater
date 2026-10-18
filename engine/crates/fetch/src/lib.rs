@@ -277,12 +277,29 @@ pub fn fetch(location: &str) -> Result<Fetched, Error> {
     Ok(fetched)
 }
 
+/// Whether a member's raw name opens at a root (`/` or `\`, which also opens
+/// a UNC or verbatim prefix) or at a drive (`C:`). zip 5's `enclosed_name`
+/// refused a rooted name. zip 9's strips the root and keeps the rest, so this
+/// check keeps the refusal that a published artifact was held to before.
+fn names_a_root(raw: &[u8]) -> bool {
+    match raw {
+        [b'/' | b'\\', ..] => true,
+        [drive, b':', ..] => drive.is_ascii_alphabetic(),
+        _ => false,
+    }
+}
+
 /// Unpack `archive` into `dir`, refusing once more than `bound` bytes would
 /// be written. The sizes an archive declares are read first, as a cheap
 /// refusal, and then the bound is held again on the bytes written, because a
-/// deflate member decompresses past its declared size and a header can lie.
+/// header can lie and an archive whose members use a data descriptor declares
+/// no total at all. The reader (zip 9.0.2 and later) also refuses a member
+/// that grows past the size it declares; this count is kept for each case
+/// that check misses, the undeclared total among them.
 /// A member whose name leaves `dir`, and a symbolic link, are refused: a
-/// published artifact has neither. Whatever was written before a refusal is
+/// published artifact has neither. A name that opens at a root or a drive is
+/// refused too, by [`names_a_root`], because zip 9 strips that root and would
+/// write the member inside `dir`. Whatever was written before a refusal is
 /// removed by the caller's [`Fetched`] when it drops.
 fn unpack<R: std::io::Read + std::io::Seek>(
     archive: &mut zip::ZipArchive<R>,
@@ -313,17 +330,22 @@ fn unpack<R: std::io::Read + std::io::Seek>(
     let mut written: u64 = 0;
     for index in 0..archive.len() {
         let mut member = archive.by_index(index).map_err(|error| broken(&error))?;
-        let Some(name) = member.enclosed_name() else {
+        let enclosed = if names_a_root(member.name_raw()) {
+            None
+        } else {
+            member.enclosed_name()
+        };
+        let Some(name) = enclosed else {
             return Err(broken(&format!(
                 "the member {} names a path outside the directory",
-                member.name()
+                String::from_utf8_lossy(member.name_raw())
             )));
         };
         let path = dir.join(name);
         if member.is_symlink() {
             return Err(broken(&format!(
                 "the member {} is a symbolic link",
-                member.name()
+                String::from_utf8_lossy(member.name_raw())
             )));
         }
         if member.is_dir() {
@@ -554,32 +576,151 @@ mod tests {
         assert_eq!(written.len(), 1024);
     }
 
+    /// Set the data-descriptor flag (bit 3 of the general-purpose flags) on
+    /// every member, in the local header (6 bytes after `PK\x03\x04`) and in
+    /// the central directory (8 bytes after `PK\x01\x02`). The sizes stay
+    /// honest, but the archive no longer declares a total it unpacks to.
+    fn without_a_declared_total(mut bytes: Vec<u8>) -> Vec<u8> {
+        let (mut local, mut central) = (0, 0);
+        for at in 0..bytes.len().saturating_sub(4) {
+            let offset = match &bytes[at..at + 4] {
+                b"PK\x03\x04" => {
+                    local += 1;
+                    6
+                }
+                b"PK\x01\x02" => {
+                    central += 1;
+                    8
+                }
+                _ => continue,
+            };
+            bytes[at + offset] |= 0b1000;
+        }
+        assert!(local > 0, "no local header was found");
+        assert_eq!(local, central, "a central record for each local header");
+        bytes
+    }
+
+    /// The bytes written under `dir`, summed over every file below it. The
+    /// cases below allow the bound plus one: `unpack` copies one byte past
+    /// what remains to learn that a member overruns, and the caller's
+    /// [`Fetched`] removes the directory when it drops.
+    fn bytes_under(dir: &Path) -> u64 {
+        std::fs::read_dir(dir)
+            .unwrap()
+            .map(|entry| {
+                let entry = entry.unwrap();
+                let kind = entry.file_type().unwrap();
+                if kind.is_dir() {
+                    bytes_under(&entry.path())
+                } else {
+                    entry.metadata().unwrap().len()
+                }
+            })
+            .sum()
+    }
+
     #[test]
     fn the_bound_holds_on_the_bytes_written_when_the_header_lies() {
-        let (result, _fetched) = unpacked(lie_about_the_size(zeros(1025), 10), 1024);
+        let (result, fetched) = unpacked(lie_about_the_size(zeros(1025), 10), 1024);
         let refused = result.unwrap_err();
         assert!(matches!(refused, Error::Archive(_)), "{refused}");
-        // Refused by the count of bytes written, not by a checksum or a size
-        // mismatch the reader might raise first.
-        assert!(
-            refused.to_string().contains("more than 1024 bytes"),
-            "{refused}"
-        );
+        assert!(refused.to_string().contains("test.zip"), "{refused}");
+        // Since zip 9.0.2 the reader refuses a member that grows past its
+        // declared size, so either layer can raise this. What holds whichever
+        // one fires is that no more than the bound reaches the disk.
+        assert!(bytes_under(fetched.path()) <= 1024 + 1);
     }
 
     #[test]
     fn the_bound_holds_across_members_and_not_for_each_one() {
         // Each member is under the bound and declares 10 bytes, so neither
         // the declared total nor any one member meets it. The 1,200 bytes the
-        // two write together do.
+        // two hold together do.
         let lying = lie_about_the_size(members(&[("a.bin", 600), ("b.bin", 600)]), 10);
-        let (result, _fetched) = unpacked(lying, 1024);
+        let (result, fetched) = unpacked(lying, 1024);
+        let refused = result.unwrap_err();
+        assert!(matches!(refused, Error::Archive(_)), "{refused}");
+        assert!(refused.to_string().contains("test.zip"), "{refused}");
+        assert!(bytes_under(fetched.path()) <= 1024 + 1);
+    }
+
+    #[test]
+    fn the_bound_holds_on_the_bytes_written_when_no_total_is_declared() {
+        // A member with a data descriptor leaves the archive with no declared
+        // total, so the cheap refusal does not run, and each member is within
+        // the size it declares, so the reader raises nothing. Only this
+        // engine's own count of the bytes written refuses the 1,200 bytes.
+        let streamed = without_a_declared_total(members(&[("a.bin", 600), ("b.bin", 600)]));
+        let (result, fetched) = unpacked(streamed, 1024);
         let refused = result.unwrap_err();
         assert!(matches!(refused, Error::Archive(_)), "{refused}");
         assert!(
             refused.to_string().contains("more than 1024 bytes"),
             "{refused}"
         );
+        // The first member reached the disk whole, so the refusal came from
+        // the count and not from the declared sizes, which refuse first.
+        let first = std::fs::metadata(fetched.path().join("a.bin")).unwrap();
+        assert_eq!(first.len(), 600);
+        assert!(bytes_under(fetched.path()) <= 1024 + 1);
+    }
+
+    #[test]
+    fn the_count_runs_over_every_member_and_not_the_last_one() {
+        // Any two of these members are within the bound, so a count that
+        // kept only the last member's bytes would accept all three.
+        let streamed =
+            without_a_declared_total(members(&[("a.bin", 400), ("b.bin", 400), ("c.bin", 400)]));
+        let (result, fetched) = unpacked(streamed, 1024);
+        let refused = result.unwrap_err();
+        assert!(
+            refused.to_string().contains("more than 1024 bytes"),
+            "{refused}"
+        );
+        for name in ["a.bin", "b.bin"] {
+            let whole = std::fs::metadata(fetched.path().join(name)).unwrap();
+            assert_eq!(whole.len(), 400, "{name}");
+        }
+        assert!(bytes_under(fetched.path()) <= 1024 + 1);
+    }
+
+    #[test]
+    fn a_member_that_names_a_path_outside_the_directory_is_refused_by_its_name() {
+        let (result, fetched) = unpacked(members(&[("../evil.bin", 3)]), 1024);
+        let refused = result.unwrap_err();
+        assert!(matches!(refused, Error::Archive(_)), "{refused}");
+        let message = refused.to_string();
+        assert!(message.contains("../evil.bin"), "{message}");
+        assert!(message.contains("outside the directory"), "{message}");
+        assert_eq!(bytes_under(fetched.path()), 0);
+    }
+
+    #[test]
+    fn a_member_that_names_a_root_or_a_drive_is_refused_and_not_written_inside() {
+        // zip 9 strips a leading root, so without the check these would unpack
+        // inside the directory where zip 5 refused them.
+        for name in [
+            "/tmp/vx-abs.bin",
+            "\\tmp\\vx-abs.bin",
+            "C:vx-abs.bin",
+            "c:/vx.bin",
+        ] {
+            let (result, fetched) = unpacked(members(&[(name, 3)]), 1024);
+            let refused = result.unwrap_err();
+            let message = refused.to_string();
+            assert!(message.contains(name), "{name}: {message}");
+            assert!(
+                message.contains("outside the directory"),
+                "{name}: {message}"
+            );
+            assert_eq!(bytes_under(fetched.path()), 0, "{name}");
+        }
+        // A colon after more than one byte, or after a byte that is not a
+        // letter, opens no drive, so these members unpack.
+        let (result, fetched) = unpacked(members(&[("ab:c.bin", 3), ("1:x.bin", 3)]), 1024);
+        result.unwrap();
+        assert_eq!(bytes_under(fetched.path()), 6);
     }
 
     #[test]

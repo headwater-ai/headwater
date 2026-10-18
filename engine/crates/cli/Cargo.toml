@@ -149,7 +149,7 @@ clap_complete = { version = "4.6.9", default-features = false }
 # `tests/publish.rs` packs a published artifact into the zip a release carries
 # and serves it on 127.0.0.1, to hold `vendor <location>` to `vendor <dir>`.
 # The same version `headwater-fetch` reads with, so the lock gains nothing.
-zip = { version = "5.1.1", default-features = false, features = ["deflate-flate2"] }
+zip = { version = "9.0.5", default-features = false, features = ["deflate-flate2"] }
 # `tests/publish_order.rs` reads `engine/Cargo.toml` as TOML, so that a
 # `[workspace.dependencies]` entry in any form cargo accepts is read (#1315).
 # The version and the one feature that `proc-macro-crate` already takes, so the
