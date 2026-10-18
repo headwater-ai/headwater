@@ -640,6 +640,10 @@ mod tests {
             refused.to_string().contains("more than 1024 bytes"),
             "{refused}"
         );
+        // The first member reached the disk whole, so the refusal came from
+        // the count and not from the declared sizes, which refuse first.
+        let first = std::fs::metadata(fetched.path().join("a.bin")).unwrap();
+        assert_eq!(first.len(), 600);
         assert!(bytes_under(fetched.path()) <= 1024 + 1);
     }
 
