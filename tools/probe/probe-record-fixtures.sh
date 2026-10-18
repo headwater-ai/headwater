@@ -547,14 +547,16 @@ printf 'HW-DR-0049\n' > "$scratch/cfg-dir-sibling/kept.md"
 sh "$transform" --probe PROBE-FIX-cited --session memory --root "$scratch/empty-base" \
     --config-dir "$scratch/cfg-dir" < "$scratch/memory.jsonl" > "$scratch/memory.yaml" 2>"$scratch/memory.err"
 same "a log that writes auto-memory transforms without error" "0" "$?"
+present "the memory write is still a call of the log" \
+    "      argument: \"$scratch/cfg-dir/projects/ws/memory/MEMORY.md\"" "$scratch/memory.yaml"
 absent "a memory file under the configuration directory is not produced" \
-    "cfg-dir/projects/ws/memory/MEMORY.md" "$scratch/memory.yaml"
+    "    - path: \"$scratch/cfg-dir/projects/ws/memory/MEMORY.md\"" "$scratch/memory.yaml"
 present "and a file beside that directory, whose name only starts the same, still is" \
     "    - path: \"$scratch/cfg-dir-sibling/kept.md\"" "$scratch/memory.yaml"
 sh "$transform" --probe PROBE-FIX-cited --session memory-no-config --root "$scratch/empty-base" \
     < "$scratch/memory.jsonl" > "$scratch/memory-none.yaml" 2>/dev/null
 present "with no --config-dir the memory file is produced, as before" \
-    "cfg-dir/projects/ws/memory/MEMORY.md" "$scratch/memory-none.yaml"
+    "    - path: \"$scratch/cfg-dir/projects/ws/memory/MEMORY.md\"" "$scratch/memory-none.yaml"
 present "the recorder gives the transform its session's configuration directory" \
     '--config-dir "$config"' "$driver"
 
