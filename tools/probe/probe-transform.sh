@@ -89,6 +89,7 @@ session=
 root=.
 workspace=
 oracle_tree=
+config_dir=
 produced_paths=
 
 while [ $# -gt 0 ]; do
@@ -98,6 +99,7 @@ while [ $# -gt 0 ]; do
         --root) root=${2:-}; shift 2 ;;
         --workspace) workspace=${2:-}; shift 2 ;;
         --oracle-tree) oracle_tree=${2:-}; shift 2 ;;
+        --config-dir) config_dir=${2:-}; shift 2 ;;
         --produced) produced_paths="$produced_paths${2:-}
 "; shift 2 ;;
         --answer) answer=${2:-}; shift 2 ;;
@@ -105,9 +107,10 @@ while [ $# -gt 0 ]; do
     esac
 done
 answer=${answer:-}
+config_dir=${config_dir%/}
 
 [ -n "$probe" ] && [ -n "$session" ] || {
-    echo "usage: probe-transform.sh --probe <id> --session <name> [--root <dir>] [--workspace <dir>] [--oracle-tree <dir>] [--produced <path>]… [--answer <text>]" >&2
+    echo "usage: probe-transform.sh --probe <id> --session <name> [--root <dir>] [--workspace <dir>] [--oracle-tree <dir>] [--config-dir <dir>] [--produced <path>]… [--answer <text>]" >&2
     exit 2
 }
 command -v jq >/dev/null 2>&1 || {
@@ -221,6 +224,14 @@ base_abs=$(cd "$base" 2>/dev/null && pwd) || base_abs=$base
 # A path inside the base is written relative to it, so the path an `Edit`
 # names and the path a driver passes with `--produced` are one entry and not
 # two, and so the path matches the one `headwater check` reports under.
+#
+# **A path under the session's configuration directory is not produced
+# (HW-OBL-0237, #1775).** The harness writes auto-memory there, and such a
+# path carries no `findings` key, so the grader could not grade the session:
+# one session of the 2026-10-03 campaign was discarded and drawn again for
+# it. `--config-dir` names the directory, and `probe-record.sh` passes the
+# one it gave the session. A path beside it whose name only starts the same
+# is still produced.
 step_seed_produced() {
     jq -r 'select(.kind == "call")
         | select(.tool == "Edit" or .tool == "Write" or .tool == "MultiEdit" or .tool == "NotebookEdit")
@@ -232,6 +243,11 @@ step_seed_produced() {
     step_seed_produced
 } | while IFS= read -r file; do
     [ -n "$file" ] || continue
+    if [ -n "$config_dir" ]; then
+        case $file in
+            "$config_dir" | "$config_dir"/*) continue ;;
+        esac
+    fi
     case $file in
         "$base_abs"/*) file=${file#"$base_abs"/} ;;
     esac

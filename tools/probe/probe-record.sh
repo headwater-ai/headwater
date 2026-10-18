@@ -1213,5 +1213,7 @@ fi
 # It is told the workspace because every artifact the session wrote is in that
 # copy and not in the corpus, and `produced` is read from there (#911).
 # shellcheck disable=SC2086
+# Its configuration directory too, so an auto-memory file the session wrote
+# there is not a produced artifact (HW-OBL-0237, #1775).
 sh "$root/tools/probe/probe-transform.sh" --probe "$probe" --session "$session" \
-    --root "$root" --workspace "$here" $transform_args "$@" ${answer:+--answer "$answer"} < "$raw"
+    --root "$root" --workspace "$here" --config-dir "$config" $transform_args "$@" ${answer:+--answer "$answer"} < "$raw"

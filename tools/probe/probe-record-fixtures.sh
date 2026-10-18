@@ -531,6 +531,33 @@ sh "$transform" --probe PROBE-FIX-cited --session writes-and-named --root "$scra
 same "--produced adds to the seeded paths, and a path named both ways is one entry" "5" \
     "$(grep -c '^    - path:' "$scratch/writes-named.yaml")"
 
+# Auto-memory is not a produced artifact (HW-OBL-0237, #1775). A session that
+# writes a memory file under its configuration directory named a path that
+# carries no `findings` key, and the grader could not grade it: one session
+# of the 2026-10-03 campaign was drawn again for this. With `--config-dir`,
+# a path under that directory is not in `produced`, and a path beside it is.
+mkdir -p "$scratch/cfg-dir/projects/ws/memory" "$scratch/cfg-dir-sibling"
+printf 'remember HW-DR-0049\n' > "$scratch/cfg-dir/projects/ws/memory/MEMORY.md"
+printf 'HW-DR-0049\n' > "$scratch/cfg-dir-sibling/kept.md"
+{
+    printf '%s\n' '{"type":"system","subtype":"init","model":"claude-sonnet-5","session_id":"s9"}'
+    jq -nc --arg p "$scratch/cfg-dir/projects/ws/memory/MEMORY.md" '{type:"assistant",message:{content:[{type:"tool_use",id:"t1",name:"Write",input:{file_path:$p,content:"x"}}]}}'
+    jq -nc --arg p "$scratch/cfg-dir-sibling/kept.md" '{type:"assistant",message:{content:[{type:"tool_use",id:"t2",name:"Write",input:{file_path:$p,content:"x"}}]}}'
+} > "$scratch/memory.jsonl"
+sh "$transform" --probe PROBE-FIX-cited --session memory --root "$scratch/empty-base" \
+    --config-dir "$scratch/cfg-dir" < "$scratch/memory.jsonl" > "$scratch/memory.yaml" 2>"$scratch/memory.err"
+same "a log that writes auto-memory transforms without error" "0" "$?"
+absent "a memory file under the configuration directory is not produced" \
+    "cfg-dir/projects/ws/memory/MEMORY.md" "$scratch/memory.yaml"
+present "and a file beside that directory, whose name only starts the same, still is" \
+    "    - path: \"$scratch/cfg-dir-sibling/kept.md\"" "$scratch/memory.yaml"
+sh "$transform" --probe PROBE-FIX-cited --session memory-no-config --root "$scratch/empty-base" \
+    < "$scratch/memory.jsonl" > "$scratch/memory-none.yaml" 2>/dev/null
+present "with no --config-dir the memory file is produced, as before" \
+    "cfg-dir/projects/ws/memory/MEMORY.md" "$scratch/memory-none.yaml"
+present "the recorder gives the transform its session's configuration directory" \
+    '--config-dir "$config"' "$driver"
+
 # Inside the base, the `findings` half. The workspace is this corpus and the path is
 # absolute, as a live `Edit` names it. It has to come out relative to the base,
 # because `headwater check` reports under that form, and an absolute path there
