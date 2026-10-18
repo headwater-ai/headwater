@@ -316,14 +316,14 @@ fn unpack<R: std::io::Read + std::io::Seek>(
         let Some(name) = member.enclosed_name() else {
             return Err(broken(&format!(
                 "the member {} names a path outside the directory",
-                member.name()
+                String::from_utf8_lossy(member.name_raw())
             )));
         };
         let path = dir.join(name);
         if member.is_symlink() {
             return Err(broken(&format!(
                 "the member {} is a symbolic link",
-                member.name()
+                String::from_utf8_lossy(member.name_raw())
             )));
         }
         if member.is_dir() {
