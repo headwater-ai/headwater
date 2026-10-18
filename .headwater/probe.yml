@@ -77,6 +77,7 @@ folds:
   - integrations/vscode/test/fixtures/route-text-only.jsonl
   - tools/probe/layer-campaign.spec
   - tools/probe/additive-campaign.spec
+  - tools/probe/additive-screening.spec
 
 # Answer keys: documents that an earlier session wrote in answer to a probe's
 # task, and that name neither the probe nor its slug, so the seal below would
@@ -385,12 +386,18 @@ tiers:
   # 4,280 sessions. At 50 cents the whole plan is 7,112 sessions and
   # $3,556.00, and at 35.0 cents it is $2,489.20.
   #
-  # The owner's ruling on the dry-run total sets this ceiling; deferred in run
-  # 20261017-0919, owner-question-mid-run. Until then it is zero, so the plan
-  # refuses every line of the additive tier on the ceiling, the dry run prints
-  # each line as refused, and nothing spends.
+  # The owner approved the screening round alone on 2026-10-18 (#1775), at
+  # $700 over every attempt of the round: a restart does not reset the count.
+  # HW-DR-0111 records the ruling. The plan is 1,008 sessions and $504.00, so
+  # $196.00 is room for a restart. This ceiling is that $700. It bounds one
+  # batch directory, and `tools/probe/campaign-drive.sh` gives a restarted
+  # batch the cap less what every earlier batch under its root spent. The
+  # plan prices one line at a time, so this ceiling admits a line of any
+  # round. The approval of each round under `rounds:` is what refuses the
+  # tuning and final rounds: `campaign.sh` refuses a line of a round whose
+  # `approved_cents` is 0, with 5, before it builds a tree.
   additive:
-    budget_cents: 0
+    budget_cents: 70000
     session_cost_cents: 50
     repetitions: 55
     max_turns: 80
@@ -582,19 +589,29 @@ sets:
 # scenario over the set's probes, rounded up. The screening round and each
 # tuning try run the tuning set alone, and only the final round runs the
 # held-out set, so no held-out result exists before it.
+#
+# `approved_cents` is the spend a person approved for every attempt of the
+# round (#1775), and a round that declares none is approved for nothing.
+# `tools/probe/campaign.sh` refuses a batch line of a round whose approval is
+# 0, with 5, before it builds a tree or asks the harness anything. The owner
+# approved the screening round alone, at $700, on 2026-10-18 (HW-DR-0111).
+# The tuning and final rounds wait on rulings of their own.
 rounds:
   screening:
     set: tuning
     rates: [0.625, 0.375]
     tries: 1
+    approved_cents: 70000
   tuning:
     set: tuning
     rates: [0.625, 0.375]
     tries: 3
+    approved_cents: 0
   final:
     set: held-out
     rates: [0.90, 0.80]
     tries: 1
+    approved_cents: 0
 
 # The absent arm names a declared ablation (spec 5, "the counterfactual is not
 # a category, it is an arm of every probe... the absent arm names a declared

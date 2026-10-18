@@ -7,6 +7,7 @@
 #     python3 tools/probe/declared.py <declaration> leaks_kept
 #     python3 tools/probe/declared.py <declaration> rounds
 #     python3 tools/probe/declared.py <declaration> scenarios
+#     python3 tools/probe/declared.py <declaration> approved
 #
 # `power` prints `present <rate>`, `absent <rate>`, `alpha <level>`,
 # `power <power>` and `pooled <category>...`, one per line. Each of the four
@@ -28,6 +29,13 @@
 # too, for `headwater probe plan --set`, and the dry run checks that the plan
 # of each line counts the probes this prints, so the two readers cannot
 # disagree unseen. A declaration with no `rounds:` prints nothing.
+#
+# A round may also declare `approved_cents`, a whole number of cents at or
+# above zero: the spend a person approved for every attempt of the round
+# (#1775). `approved` prints one line per round, `<round> <cents>`, and 0 for
+# a round that declares none, so a round nobody approved reads as refused.
+# `tools/probe/campaign.sh` refuses a batch line of a round whose approval is
+# 0, and the dry run prints each round's approval.
 #
 # `scenarios` prints one line per scenario under `scenarios:`: `<n> <base>
 # <layer>...`, with `-` for the base of a scenario that names none. The engine
@@ -68,7 +76,7 @@ def rate(round_name, value):
     return value
 
 
-def rounds(declared):
+def rounds(declared, approvals=False):
     block = declared.get("rounds")
     if block is None:
         return 0
@@ -81,9 +89,12 @@ def rounds(declared):
         name = str(name)
         if not isinstance(fields, dict):
             refuse(f"the `{name}` round in .headwater/probe.yml is not a mapping of `set`, `rates` and `tries`")
-        unknown = sorted(str(key) for key in fields if key not in ("set", "rates", "tries"))
+        unknown = sorted(str(key) for key in fields if key not in ("set", "rates", "tries", "approved_cents"))
         if unknown:
-            refuse(f"the `{name}` round in .headwater/probe.yml declares `{unknown[0]}`. A round declares `set`, `rates` and `tries`, and nothing else")
+            refuse(f"the `{name}` round in .headwater/probe.yml declares `{unknown[0]}`. A round declares `set`, `rates`, `tries` and `approved_cents`, and nothing else")
+        approved = fields.get("approved_cents", 0)
+        if isinstance(approved, bool) or not isinstance(approved, int) or approved < 0:
+            refuse(f"`approved_cents` of the `{name}` round in .headwater/probe.yml is {approved!r}, and it must be a whole number of cents at or above zero")
         chosen = fields.get("set")
         members = sets.get(chosen) if isinstance(chosen, str) else None
         if not isinstance(members, list) or not members or not all(isinstance(entry, str) for entry in members):
@@ -97,13 +108,16 @@ def rounds(declared):
         tries = fields.get("tries")
         if isinstance(tries, bool) or not isinstance(tries, int) or tries < 1:
             refuse(f"`tries` of the `{name}` round in .headwater/probe.yml is {tries!r}, and it must be a whole number above zero")
-        print(" ".join([name, chosen, str(high), str(low), str(tries)] + members))
+        if approvals:
+            print(f"{name} {approved}")
+        else:
+            print(" ".join([name, chosen, str(high), str(low), str(tries)] + members))
     return 0
 
 
 def main(argv):
-    if len(argv) != 2 or argv[1] not in ("power", "leaks_kept", "rounds", "scenarios"):
-        refuse("usage: python3 tools/probe/declared.py <declaration> power|leaks_kept|rounds|scenarios")
+    if len(argv) != 2 or argv[1] not in ("power", "leaks_kept", "rounds", "scenarios", "approved"):
+        refuse("usage: python3 tools/probe/declared.py <declaration> power|leaks_kept|rounds|scenarios|approved")
     path, key = argv
     try:
         with open(path, encoding="utf-8-sig") as handle:
@@ -123,6 +137,9 @@ def main(argv):
 
     if key == "rounds":
         return rounds(declared)
+
+    if key == "approved":
+        return rounds(declared, approvals=True)
 
     if key == "scenarios":
         block = declared.get("scenarios") or {}

@@ -157,7 +157,7 @@
 # above a refusal and stops, and it stops too when the plan does not select the
 # probe it was asked to record.
 #
-# `--category`, `--exclude` and `--repetitions` reach the plan unchanged, so the
+# `--category` or `--set`, `--exclude` and `--repetitions` reach the plan unchanged, so the
 # selection digest a narrowed run records is the digest of the run it planned.
 # `--max-turns` reaches the harness, so a batch can hold every session of both
 # arms to one cap. With no `--max-turns`, the cap is the one the tier declares
@@ -177,6 +177,7 @@ raw=
 tier=
 arm=
 category=
+set_name=
 excludes=
 repetitions=
 max_turns=
@@ -199,6 +200,7 @@ while [ $# -gt 0 ]; do
         --tier) tier=${2:-}; shift 2 ;;
         --arm) arm=${2:-}; shift 2 ;;
         --category) category=${2:-}; shift 2 ;;
+        --set) set_name=${2:-}; shift 2 ;;
         --exclude) excludes="$excludes --exclude ${2:-}"; shift 2 ;;
         --repetitions) repetitions=${2:-}; shift 2 ;;
         --max-turns) max_turns=${2:-}; shift 2 ;;
@@ -490,7 +492,20 @@ fi
 # the recorder copies them without change. Reading them from the plan rather
 # than recomputing them is the whole point: a recomputed digest is a second
 # measurement, and two measurements of a moving tree do not have to agree.
+#
+# A line of the additive campaign plans a set in one scenario arm and not a
+# category (#1775). So `--set` reaches the plan with `--arm`, as the batch's
+# own plan of the line sends them, and the identity this copies is the plan of
+# the line the batch planned. Without `--set`, `--arm` does not reach the
+# plan, as before, so the identity of a paired tier's session is unchanged.
 step_copy_plan_identity() {
+    if [ -n "$set_name" ]; then
+        # shellcheck disable=SC2086
+        "$engine" probe plan --root "$root" ${tier:+--tier "$tier"} \
+            ${arm:+--arm "$arm"} --set "$set_name" $excludes \
+            ${repetitions:+--repetitions "$repetitions"} > "$1" 2>"$1.err"
+        return
+    fi
     # shellcheck disable=SC2086
     "$engine" probe plan --root "$root" ${tier:+--tier "$tier"} \
         ${category:+--category "$category"} $excludes \
@@ -966,12 +981,27 @@ printf '\n'
 # present tree (verify round 1).
 arm_delta=
 arm_read=1
-if [ "${arm:-present}" != present ]; then
+# A scenario arm of the additive campaign is plain code with its layers added
+# (#1775), so its sentence names those layers, read from `scenarios:`.
+arm_layers=
+scenario_arm=0
+case ${tier:-regression}-${arm:-present} in
+    additive-scenario-*)
+        scenario_arm=1
+        arm_layers=$(python3 "$root/tools/probe/declared.py" "$root/.headwater/probe.yml" scenarios 2>/dev/null \
+            | awk -v n="${arm#scenario-}" '$1 == n { for (i = 3; i <= NF; i++) printf "%s`%s`", (i > 3 ? ", " : ""), $i; found = 1 } END { exit !found }') || arm_read=0
+        ;;
+esac
+if [ "$scenario_arm" = 0 ] && [ "${arm:-present}" != present ]; then
     arm_delta=$(sh "$root/tools/probe/ablate.sh" --delta "${tier:-regression}" "$arm" 2>/dev/null) || arm_read=0
 fi
 arm_less=$(printf '%s\n' "$arm_delta" | sed -n 's/^declared - //p' | awk 'NF { printf "%s`%s`", sep, $0; sep = ", " }')
 arm_plus=$(printf '%s\n' "$arm_delta" | sed -n 's/^declared + //p' | awk 'NF { printf "%s`%s`", sep, $0; sep = ", " }')
-if [ "${arm:-present}" = present ]; then
+if [ -n "$arm_layers" ]; then
+    printf 'The `%s` arm is plain code with the layers %s added: the present tree less the probe instrument and every layer it does not hold.\n\n' "$arm" "$arm_layers"
+elif [ "$scenario_arm" = 1 ] && [ "$arm_read" = 1 ]; then
+    printf 'The `%s` arm is plain code: the present tree less the probe instrument and the path of every layer.\n\n' "$arm"
+elif [ "${arm:-present}" = present ]; then
     printf 'The `present` arm is the present tree: this repository less the probe instrument.\n\n'
 elif [ "$arm_read" = 1 ] && [ -n "$arm_less" ]; then
     printf 'The `%s` arm is the present tree less %s.\n\n' "$arm" "$arm_less"

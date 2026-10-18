@@ -4777,7 +4777,17 @@ if [ -x "$engine" ]; then
     present "it prints the final round's sum" "round final: 3080 sessions, \$1540.00" "$scratch/add.out"
     present "and one total" "total: 7112 sessions, \$3556.00" "$scratch/add.out"
     present "each round's count is computed from its rates" "so ceil(219 / 4) = 55 repetitions of each probe" "$scratch/add.out"
-    present "the ceiling of zero refuses every plan" "The ceiling refuses 46 of 46 plans" "$scratch/add.out"
+    # The owner approved the screening round alone, at $700 (#1775). The
+    # ceiling admits each plan, and the approval of each round says which
+    # lines the batch runs.
+    absent "the ceiling of \$700 refuses no plan" "The ceiling refuses" "$scratch/add.out"
+    present "the dry run prints the screening round as approved" \
+        "round screening: approved to \$700.00 over every attempt, so the batch runs its lines" "$scratch/add.out"
+    present "and the tuning round as not approved" "round tuning: not approved, so the batch refuses its lines with 5" "$scratch/add.out"
+    present "and the final round as not approved" "round final: not approved, so the batch refuses its lines with 5" "$scratch/add.out"
+    same "the screening spec holds the screening lines of the whole campaign, and no other" \
+        "$(awk 'NF && $1 !~ /^#/ && $3 == "screening"' "$additive_spec")" \
+        "$(awk 'NF && $1 !~ /^#/' "$root/tools/probe/additive-screening.spec")"
     same "and it builds and checks each of the 14 scenario trees" "14" \
         "$(sed -n 's/^tree additive \(scenario-[0-9]*\)[ :].*/\1/p' "$scratch/add.out" | LC_ALL=C sort -u | wc -l | tr -d ' ')"
     present "a hit in the harness layer of scenario 13 prints as harness" \
@@ -4903,8 +4913,8 @@ if [ -x "$engine" ]; then
         rm -rf "$scratch/gate-out"
         HW_PROBE_YML="$scratch/add-body.yml" CARGO_TARGET_DIR="$scratch/gate-target" PATH="$scratch/gate-bin:$PATH" \
             sh "$root/tools/probe/campaign.sh" --out "$scratch/gate-out" --model claude-haiku-4-5 \
-            --spec "$additive_spec" > /dev/null 2> "$scratch/gate.err"
-        same "a batch of the additive spec stops with 8 on a leak in a scenario tree" "8" "$?"
+            --spec "$root/tools/probe/additive-screening.spec" > /dev/null 2> "$scratch/gate.err"
+        same "a batch of the screening spec stops with 8 on a leak in a scenario tree" "8" "$?"
         present "and names the leak" "leak check, scenario-4 tree: leak HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged" "$scratch/gate.err"
         same "and it asked the harness nothing, not even its version, and planned no line" "no no" \
             "$([ -e "$scratch/gate-out/claude-version" ] && echo yes || echo no) $([ -e "$scratch/gate-out/lines" ] && echo yes || echo no)"
@@ -4912,8 +4922,17 @@ if [ -x "$engine" ]; then
         CARGO_TARGET_DIR="$scratch/gate-target" PATH="$scratch/gate-bin:$PATH" \
             sh "$root/tools/probe/campaign.sh" --out "$scratch/gate-out" --model claude-haiku-4-5 \
             --spec "$additive_spec" > /dev/null 2> "$scratch/gate-clean.err"
-        same "with no leak the gate passes, and the ceiling of zero then refuses the batch with 5" "5" "$?"
-        present "and the refusal is the ceiling" "against a declared ceiling of \$0.00" "$scratch/gate-clean.err"
+        same "the whole campaign's spec is still refused with 5, now on the rounds nobody approved" "5" "$?"
+        present "and the refusal names the tuning round" "no person has approved spend on the tuning round" "$scratch/gate-clean.err"
+        present "and the final round" "no person has approved spend on the final round" "$scratch/gate-clean.err"
+        absent "and not the screening round" "approved spend on the screening round" "$scratch/gate-clean.err"
+        same "and it ran no dry run, planned no line and asked the harness nothing" "no no no" \
+            "$([ -e "$scratch/gate-out/leak-gate" ] && echo yes || echo no) $([ -e "$scratch/gate-out/lines" ] && echo yes || echo no) $([ -e "$scratch/gate-out/claude-version" ] && echo yes || echo no)"
+        rm -rf "$scratch/gate-out"
+        CARGO_TARGET_DIR="$scratch/gate-target" PATH="$scratch/gate-bin:$PATH" \
+            sh "$root/tools/probe/campaign.sh" --out "$scratch/gate-out" --model claude-haiku-4-5 \
+            --spec "$root/tools/probe/additive-screening.spec" --repetitions 3 > /dev/null 2> "$scratch/gate-reps.err"
+        same "a batch of an additive spec refuses --repetitions with 2" "2" "$?"
         rm -rf "$scratch/gate-out"
 
         # The decisive case of #1775: a batch of one additive screening line,
