@@ -648,14 +648,11 @@ mod tests {
     }
 
     #[test]
-    fn the_count_runs_over_every_member_and_not_the_last_two() {
+    fn the_count_runs_over_every_member_and_not_the_last_one() {
         // Any two of these members are within the bound, so a count that
         // kept only the last member's bytes would accept all three.
-        let streamed = without_a_declared_total(members(&[
-            ("a.bin", 400),
-            ("b.bin", 400),
-            ("c.bin", 400),
-        ]));
+        let streamed =
+            without_a_declared_total(members(&[("a.bin", 400), ("b.bin", 400), ("c.bin", 400)]));
         let (result, fetched) = unpacked(streamed, 1024);
         let refused = result.unwrap_err();
         assert!(
