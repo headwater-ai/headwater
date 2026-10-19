@@ -77,7 +77,10 @@
 # the text as read, before `flat()` folds its whitespace, because the harness
 # hands the model the text and not its folded form. A listing counts as the text
 # the harness lists, `<name> <description>` and ` - <when_to_use>` where there is
-# one. A skill body loads on demand when a session invokes the skill, so it is
+# one. An MCP tool counts as its whole definition in compact JSON, name,
+# description and input schema, as the server's `tools/list` gives it. An
+# imported memory file, a file under `.claude/rules` and the texts of the
+# `--config` directory count as the check reads them. A skill body loads on demand when a session invokes the skill, so it is
 # not counted, even with `--scenario`, and neither is a document of the corpus.
 # Where the tree holds `.claude/hooks/intent.sh`, the hook's standard output
 # for each probe's task prints on a line of its own and stays out of the total,
@@ -267,7 +270,12 @@ def mcp_tools(checkout, workspace):
             for prop in properties.values():
                 if isinstance(prop, dict):
                     words.append(scalar(prop.get("description")))
-            listed.append((f"mcp:{tool.get('name')}", " ".join(words)))
+            # The leak check reads the descriptions. `--bytes` counts the whole
+            # definition as the server lists it, name, description and input
+            # schema, in compact JSON, because the harness hands the model the
+            # schema with the descriptions (verify round 1 of #1776).
+            definition = json.dumps(tool, separators=(",", ":"), ensure_ascii=False)
+            listed.append((f"mcp:{tool.get('name')}", " ".join(words), definition))
         return listed or None
     return None
 
@@ -425,8 +433,8 @@ def main(argv):
                 file=sys.stderr,
             )
             return 3
-        loaded.records.extend((where, flat(text)) for where, text in tools)
-        loaded.raw.extend(tools)
+        loaded.records.extend((where, flat(text)) for where, text, _ in tools)
+        loaded.raw.extend((where, definition) for where, _, definition in tools)
 
     # The hook channel: one text per probe, read against that probe alone.
     hooked = {}
