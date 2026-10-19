@@ -41,6 +41,8 @@ cost_cents: 2234
 
 **What the recorder counted.** The line holds 54 sessions and cost 2234 cents: the intent hook live in 54, 0 stopped at the turn cap, 0 stopped at the session budget, 4 paths outside the workspace named, 0 sessions uncounted, 0 web-tool calls. A session the recorder could not count adds nothing to either count, so each count is a floor.
 
+**What the halts spent.** The usage limit of the account halted the batch more than once. Before a halt stopped it, an attempt at 2 of its sessions spent 36 cents, and the driver then ran each of those sessions again from the start. The cost above counts only the attempt that recorded, so this line spent 36 cents more than it states, and the batch total over every attempt is in [#1775](https://github.com/headwater-ai/headwater/issues/1775).
+
 **The contract of this batch.** The sessions ran under the recorder contract of spec 15: a `bwrap` sandbox with no network of its own, a configuration directory that holds a copy of the credentials and nothing else, the permission mode `dontAsk`, and `WebSearch` and `WebFetch` denied. The round approved $700 over every attempt, and the driver ran with a cap of 70000 cents and a session budget of 300 cents.
 
 **Where the raw recordings are.** The raw session logs are outside git, under `/mnt/build/hw-1775/screening/a/sessions/L14-*/raw.jsonl` on the host that ran the batch. Nobody deletes them until the report of [#1779](https://github.com/headwater-ai/headwater/issues/1779) is published.
