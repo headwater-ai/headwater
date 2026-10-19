@@ -31,6 +31,33 @@ export HEADWATER_RUN_ROOT="$scratch/runs"
 # No host usage snapshot reaches a fixture unless a case plants one.
 export HEADWATER_USAGE_DIR="$scratch/no-usage"
 
+# The main checkout the stale check judges (#1811). The tool judges its own
+# repository by default, and the host's checkout can be any number of commits
+# behind, so every case points it at a scratch clone. A bare origin, a clone
+# that stays level with it, and three more: one behind by one commit, one
+# ahead by a local-only commit, and one with no `origin/main` at all.
+gitc() { git -c user.name=t -c user.email=t@t -c init.defaultBranch=main "$@"; }
+repos="$scratch/git"
+mkdir -p "$repos"
+gitc init -q --bare "$repos/origin.git"
+gitc clone -q "$repos/origin.git" "$repos/level" 2>/dev/null
+gitc -C "$repos/level" commit -q --allow-empty -m first
+gitc -C "$repos/level" branch -q -M main
+gitc -C "$repos/level" push -q -u origin main 2>/dev/null
+gitc clone -q -b main "$repos/origin.git" "$repos/behind" 2>/dev/null
+gitc clone -q -b main "$repos/origin.git" "$repos/ahead" 2>/dev/null
+gitc -C "$repos/ahead" commit -q --allow-empty -m local-only
+gitc clone -q -b main "$repos/origin.git" "$repos/other" 2>/dev/null
+gitc -C "$repos/other" commit -q --allow-empty -m second
+gitc -C "$repos/other" push -q origin HEAD:main 2>/dev/null
+gitc -C "$repos/behind" fetch -q origin
+gitc -C "$repos/behind" worktree add -q "$repos/behind-wt" -b wt 2>/dev/null
+gitc init -q "$repos/no-origin"
+gitc -C "$repos/no-origin" commit -q --allow-empty -m first
+stale_line="STALE: main checkout at $(git -C "$repos/behind" rev-parse --short HEAD), origin/main at $(git -C "$repos/behind" rev-parse --short origin/main), 1 commits behind. Run: git -C $repos/behind merge --ff-only origin/main"
+export HW_RUN_CHECKOUT="$repos/level"
+unset HW_RUN_ALLOW_STALE
+
 passed=0
 failed=0
 
@@ -92,6 +119,27 @@ case $(cat "$scratch/err") in
     *'never reused'*) pass '  and the refusal says a run directory is never reused' ;;
     *) fail '  and the refusal says a run directory is never reused' "$(cat "$scratch/err")" ;;
 esac
+
+printf '\n# start: a main checkout behind origin/main is refused (#1811)\n'
+# Under a root of their own, because `start` seeds a run from the newest run
+# beside it, and a later case reads what it seeded.
+out=$(HW_RUN_CHECKOUT="$repos/behind" HEADWATER_RUN_ROOT="$scratch/stale-runs" sh "$tool" start stale1 2>"$scratch/err"); status=$?
+same 'start on a checkout one commit behind origin/main exits 1' 1 "$status"
+same '  and prints the one STALE line' "$stale_line" "$out"
+same '  and writes no run directory' absent "$([ -e "$scratch/stale-runs/stale1" ] && echo present || echo absent)"
+out=$(HW_RUN_CHECKOUT="$repos/behind-wt" HEADWATER_RUN_ROOT="$scratch/stale-runs" sh "$tool" start stale2 2>/dev/null); status=$?
+same 'a worktree of that checkout judges the main checkout, not itself' "1 $stale_line" "$status $out"
+out=$(HW_RUN_CHECKOUT="$repos/level" HEADWATER_RUN_ROOT="$scratch/stale-runs" sh "$tool" start level1 2>/dev/null); status=$?
+same 'start on a checkout level with origin/main exits 0, with no STALE line' "0 $scratch/stale-runs/level1" "$status $out"
+out=$(HW_RUN_CHECKOUT="$repos/ahead" HEADWATER_RUN_ROOT="$scratch/stale-runs" sh "$tool" start ahead1 2>/dev/null); status=$?
+same 'start on a checkout ahead of origin/main and behind it by none exits 0, with no STALE line' "0 $scratch/stale-runs/ahead1" "$status $out"
+out=$(HW_RUN_CHECKOUT="$repos/no-origin" HEADWATER_RUN_ROOT="$scratch/stale-runs" sh "$tool" start noorigin1 2>/dev/null); status=$?
+same 'start on a checkout with no origin/main exits 0, silent' "0 $scratch/stale-runs/noorigin1" "$status $out"
+out=$(HW_RUN_ALLOW_STALE=1 HW_RUN_CHECKOUT="$repos/behind" HEADWATER_RUN_ROOT="$scratch/stale-runs" sh "$tool" start stale3 2>/dev/null); status=$?
+same 'HW_RUN_ALLOW_STALE=1 turns the refusal into a warning with exit 0' 0 "$status"
+same '  and the STALE line comes first' "$stale_line" "$(printf '%s\n' "$out" | head -n 1)"
+same '  and the run directory is the last line' "$scratch/stale-runs/stale3" "$(printf '%s\n' "$out" | tail -n 1)"
+same '  and the run directory is made' present "$([ -f "$scratch/stale-runs/stale3/log.jsonl" ] && echo present || echo absent)"
 
 printf '\n# log\n'
 line='{"iter":1,"issue":101,"pr":9,"merge":"abc123","verdict":"PASS","proved":"the new rule fired on an injected defect","opened":[201,202],"closed":[101]}'
