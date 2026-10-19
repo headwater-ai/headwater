@@ -5031,7 +5031,7 @@ if [ -x "$engine" ]; then
     present "it prints the final round's sum" "round final: 3080 sessions, \$1540.00" "$scratch/add.out"
     present "and one total" "total: 7112 sessions, \$3556.00" "$scratch/add.out"
     present "each round's count is computed from its rates" "so ceil(219 / 4) = 55 repetitions of each probe" "$scratch/add.out"
-    # The owner approved the screening round alone, at $700 (#1775). The
+    # The owner approved the screening round at $700 (#1775). The
     # ceiling admits each plan, and the approval of each round says which
     # lines the batch runs.
     absent "the ceiling of \$700 refuses no plan" "The ceiling refuses" "$scratch/add.out"
