@@ -71,6 +71,21 @@
 #   pools such a probe with another, as it refuses a pooled `leaks_kept` probe.
 #   A kept probe stays `kept`.
 #
+# **The bytes the layers hand the model (#1776).** `--bytes` measures in place
+# of checking, for the bytes column of HW-DR-0111's table. It counts each text
+# of the always-loaded set above, as this file assembles it, in raw UTF-8 bytes:
+# the text as read, before `flat()` folds its whitespace, because the harness
+# hands the model the text and not its folded form. A listing counts as the text
+# the harness lists, `<name> <description>` and ` - <when_to_use>` where there is
+# one. An MCP tool counts as its whole definition in compact JSON, name,
+# description and input schema, as the server's `tools/list` gives it. An
+# imported memory file, a file under `.claude/rules` and the texts of the
+# `--config` directory count as the check reads them. A skill body loads on demand when a session invokes the skill, so it is
+# not counted, even with `--scenario`, and neither is a document of the corpus.
+# Where the tree holds `.claude/hooks/intent.sh`, the hook's standard output
+# for each probe's task prints on a line of its own and stays out of the total,
+# because a session meets one probe's hook text and not every probe's.
+#
 # **`[]` is declared with no answer string.** A probe whose `leaks:` entry is
 # the empty sequence prints nothing, because its key is an act, such as an
 # `opened` key, and no string states it. A probe with no entry, or an entry
@@ -141,6 +156,8 @@ class Loaded:
         self.workspace = workspace
         self.config = config
         self.records = []
+        # (where, raw text) of each always-loaded text, for `--bytes`.
+        self.raw = []
         self.seen = set()
 
     def where(self, path):
@@ -151,8 +168,12 @@ class Loaded:
         relative = os.path.relpath(path, self.workspace)
         return path if relative.startswith("..") else relative
 
-    def add(self, path, text):
+    def add(self, path, text, always=True):
+        # `always=False` is text the check reads that the harness does not load
+        # into every session, such as a skill body, so `--bytes` leaves it out.
         self.records.append((self.where(path), flat(text)))
+        if always:
+            self.raw.append((self.where(path), text))
 
     def memory(self, path, depth):
         if not os.path.isfile(path):
@@ -249,7 +270,12 @@ def mcp_tools(checkout, workspace):
             for prop in properties.values():
                 if isinstance(prop, dict):
                     words.append(scalar(prop.get("description")))
-            listed.append((f"mcp:{tool.get('name')}", flat(" ".join(words))))
+            # The leak check reads the descriptions. `--bytes` counts the whole
+            # definition as the server lists it, name, description and input
+            # schema, in compact JSON, because the harness hands the model the
+            # schema with the descriptions (verify round 1 of #1776).
+            definition = json.dumps(tool, separators=(",", ":"), ensure_ascii=False)
+            listed.append((f"mcp:{tool.get('name')}", " ".join(words), definition))
         return listed or None
     return None
 
@@ -320,13 +346,15 @@ def under(where, paths):
 
 
 def main(argv):
-    usage = "usage: sh tools/probe/seal.sh --leak [--config <dir>] [--scenario] <workspace> <probe-id>..."
+    usage = "usage: sh tools/probe/seal.sh --leak [--config <dir>] [--scenario] [--bytes] <workspace> <probe-id>..."
     config = None
     scenario = False
+    measure = False
     checkout, rest = (argv[0], argv[1:]) if argv else ("", [])
-    while rest and rest[0] in ("--config", "--scenario"):
-        if rest[0] == "--scenario":
-            scenario = True
+    while rest and rest[0] in ("--config", "--scenario", "--bytes"):
+        if rest[0] in ("--scenario", "--bytes"):
+            scenario = scenario or rest[0] == "--scenario"
+            measure = measure or rest[0] == "--bytes"
             rest = rest[1:]
             continue
         if len(rest) < 2:
@@ -392,7 +420,7 @@ def main(argv):
         for name in sorted(os.listdir(skills)):
             path = os.path.join(skills, name, "SKILL.md")
             if os.path.isfile(path):
-                loaded.add(path, read_text(path))
+                loaded.add(path, read_text(path), always=False)
     for path in markdown_under(os.path.join(workspace, ".claude/agents")):
         loaded.listed(path, fallback=False)
     for path in markdown_under(os.path.join(workspace, ".claude/commands")):
@@ -405,11 +433,13 @@ def main(argv):
                 file=sys.stderr,
             )
             return 3
-        loaded.records.extend(tools)
+        loaded.records.extend((where, flat(text)) for where, text, _ in tools)
+        loaded.raw.extend((where, definition) for where, _, definition in tools)
 
     # The hook channel: one text per probe, read against that probe alone.
     hooked = {}
-    if scenario and os.path.isfile(os.path.join(workspace, ".claude/hooks/intent.sh")):
+    hook_raw = {}
+    if (scenario or measure) and os.path.isfile(os.path.join(workspace, ".claude/hooks/intent.sh")):
         for probe in probes:
             task = task_of(checkout, probe)
             if task is None:
@@ -423,7 +453,20 @@ def main(argv):
                 print(f"seal: the hook of {workspace} did not run for {probe}, so the scenario text is not whole.", file=sys.stderr)
                 return 3
             hooked[probe] = (f"hook:{probe}", flat(text))
+            hook_raw[probe] = text
     harness = harness_paths(declared) if scenario else []
+
+    if measure:
+        total = 0
+        for where, text in loaded.raw:
+            size = len(text.encode("utf-8"))
+            total += size
+            print(f"bytes {where} {size}")
+        for probe in probes:
+            if probe in hook_raw:
+                print(f"bytes hook:{probe} {len(hook_raw[probe].encode('utf-8'))}")
+        print(f"bytes total {total}")
+        return 0
 
     found = 0
     for probe in probes:

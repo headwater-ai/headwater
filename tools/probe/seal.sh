@@ -329,6 +329,18 @@ fi
 # A hit under a path the declaration's `harness` layer names prints as
 # `harness` and does not fail the check.
 #
+# `--leak --bytes <workspace> <probe>...` measures in place of checking, and
+# comes in any order with `--config` and `--scenario` (#1776). It prints one
+# line per text of the always-loaded set above, `bytes <where> <n>`, with `<n>`
+# the raw UTF-8 bytes of that text as the harness hands it over and not its
+# whitespace-flattened form. A skill body loads on demand, so it is not counted,
+# even with `--scenario`. Where the tree holds `.claude/hooks/intent.sh`, it
+# prints `bytes hook:<probe> <n>` for each probe, the text the hook injects for
+# that probe's task. The last line is `bytes total <n>`, the sum of the
+# always-loaded lines alone, because a session meets one probe's hook text and
+# not every probe's. It checks no leak string. It exits 0, 2 on a usage error,
+# and 3 when the text cannot be read whole, as the check does.
+#
 # `<where>` is the path relative to the workspace, `config:<path>`, `mcp:<tool>`, or `hook:<probe>`. A probe
 # listed under `leaks_kept:` keeps its leak string on purpose: its own document says it
 # measures the leak string, and a campaign reports it on its own line and never in a
@@ -339,7 +351,7 @@ fi
 # task this checkout does not hold or a hook that did not run. An `undeclared`
 # probe is a probe this check cannot see, and it does not fail the check.
 if [ "${1:-}" = --leak ]; then
-    [ -n "${2:-}" ] && [ -n "${3:-}" ] || { echo "usage: sh tools/probe/seal.sh --leak [--config <dir>] [--scenario] <workspace> <probe-id>..." >&2; exit 2; }
+    [ -n "${2:-}" ] && [ -n "${3:-}" ] || { echo "usage: sh tools/probe/seal.sh --leak [--config <dir>] [--scenario] [--bytes] <workspace> <probe-id>..." >&2; exit 2; }
     command -v python3 >/dev/null 2>&1 || {
         echo "seal: no python3, so the always-loaded text cannot be read and the leak check does not run" >&2
         exit 3

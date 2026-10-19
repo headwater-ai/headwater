@@ -4093,6 +4093,38 @@ if [ -x "$engine" ]; then
         > "$scratch/mcp.out" 2> "$scratch/mcp.err"
     same "a leak string in an MCP tool's description is a leak" "1" "$?"
     present "and names the tool" "leak HW-PROBE-x mcp:route Resolve a task description" "$scratch/mcp.out"
+    # `--bytes` counts the same tool descriptions (#1776): one line for each
+    # tool, and a total that is their sum, because the tree holds nothing else.
+    HW_PROBE_YML="$scratch/mcp-probe.yml" sh "$seal" --leak --bytes "$scratch/leak-mcp" HW-PROBE-x \
+        > "$scratch/mcp-bytes.out" 2> "$scratch/mcp-bytes.err"
+    same "--bytes over a declared server exits 0" "0" "$?"
+    mcp_route=$(awk '$1 == "bytes" && $2 == "mcp:route" { print $3 }' "$scratch/mcp-bytes.out")
+    mcp_sum=$(awk '$1 == "bytes" && $2 ~ /^mcp:/ { s += $3 } END { print s + 0 }' "$scratch/mcp-bytes.out")
+    if [ -n "$mcp_route" ] && [ "$mcp_route" -gt 0 ] && [ "$mcp_sum" = "$(awk '$1 == "bytes" && $2 == "total" { print $3 }' "$scratch/mcp-bytes.out")" ]; then
+        pass "and counts each MCP tool's description, which the total sums"
+    else
+        fail "and counts each MCP tool's description, which the total sums" "$(head -c 300 "$scratch/mcp-bytes.out")"
+    fi
+    # A tool counts as its whole definition, name and input schema with the
+    # descriptions, in compact JSON (verify round 1 of #1776). The expected
+    # figure comes from the server's own `tools/list`, read here apart from
+    # leak.py.
+    mcp_def=$(printf '%s\n%s\n%s\n' \
+        '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05"}}' \
+        '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+        '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+        | "$engine" mcp --root "$scratch/leak-mcp" 2>/dev/null \
+        | python3 -I -c 'import json, sys
+for line in sys.stdin:
+    try:
+        m = json.loads(line)
+    except ValueError:
+        continue
+    if m.get("id") == 2:
+        for t in m["result"]["tools"]:
+            if t.get("name") == "route":
+                print(len(json.dumps(t, separators=(",", ":"), ensure_ascii=False).encode("utf-8")))')
+    same "and counts the route tool as its whole definition, schema included" "$mcp_def" "$mcp_route"
     rm -f "$scratch/leak-mcp/.mcp.json"
     HW_PROBE_YML="$scratch/mcp-probe.yml" sh "$seal" --leak "$scratch/leak-mcp" HW-PROBE-x \
         > "$scratch/nomcp.out" 2>&1
@@ -4199,6 +4231,74 @@ same "a probe declared with [] does not fail the check" "0" "$?"
 absent "and is not printed as undeclared" "undeclared HW-PROBE-x" "$scratch/empty.out"
 present "an entry with no value is still undeclared" "undeclared HW-PROBE-y" "$scratch/empty.out"
 present "and a missing entry is still undeclared" "undeclared HW-PROBE-z" "$scratch/empty.out"
+
+# The bytes the layers put in front of the model (#1776, the bytes column of
+# HW-DR-0111's table). `--bytes` counts what the harness hands every session,
+# and nothing it loads on demand: a document under `docs/` and a skill body
+# leave the total where it was, and a `CLAUDE.md` of K raw bytes raises it by
+# exactly K, multi-byte characters and whitespace runs included.
+bytes_total() {
+    awk '$1 == "bytes" && $2 == "total" { print $3 }' "$1"
+}
+rm -rf "$scratch/bytes-ws"
+mkdir -p "$scratch/bytes-ws/.claude/skills/s" "$scratch/bytes-ws/.claude/agents" "$scratch/bytes-ws/.claude/hooks"
+printf -- '---\nname: s\ndescription: Nothing to see.\n---\n\nShort body.\n' > "$scratch/bytes-ws/.claude/skills/s/SKILL.md"
+printf -- '---\nname: a\ndescription: An agent.\n---\n\nAgent body.\n' > "$scratch/bytes-ws/.claude/agents/a.md"
+printf '#!/bin/sh\ncat > /dev/null\nprintf "Pointer: x\\n"\n' > "$scratch/bytes-ws/.claude/hooks/intent.sh"
+sh "$seal" --leak --scenario --bytes "$scratch/bytes-ws" "$ruling_probe" > "$scratch/bytes0.out" 2> "$scratch/bytes0.err"
+same "--bytes measures a tree and exits 0" "0" "$?"
+t0=$(bytes_total "$scratch/bytes0.out")
+present "and counts the skill listing, name and description" "bytes .claude/skills/s/SKILL.md 17" "$scratch/bytes0.out"
+present "and counts the agent listing" "bytes .claude/agents/a.md 11" "$scratch/bytes0.out"
+present "and counts the hook's text for the probe on its own line" "bytes hook:$ruling_probe 11" "$scratch/bytes0.out"
+same "and the total is the always-loaded lines alone, not the hook's" "28" "$t0"
+mkdir -p "$scratch/bytes-ws/docs"
+printf 'A document of the corpus, never loaded whole.\n' > "$scratch/bytes-ws/docs/d.md"
+printf -- '---\nname: s\ndescription: Nothing to see.\n---\n\nA much longer body that loads on demand, and only on demand.\n' \
+    > "$scratch/bytes-ws/.claude/skills/s/SKILL.md"
+sh "$seal" --leak --scenario --bytes "$scratch/bytes-ws" "$ruling_probe" > "$scratch/bytes1.out" 2>&1
+same "a document under docs/ and a longer skill body leave the total unchanged" "$t0" "$(bytes_total "$scratch/bytes1.out")"
+# Octal escapes, because the `printf` of dash reads no `\x`: an em dash and an
+# e with an acute accent, 5 bytes in 2 characters.
+printf 'Rule  one.\n\n\342\200\224 caf\303\251\n' > "$scratch/bytes-ws/CLAUDE.md"
+k=$(wc -c < "$scratch/bytes-ws/CLAUDE.md" | tr -d ' ')
+same "the CLAUDE.md of this case holds 22 bytes in 19 characters" "22" "$k"
+sh "$seal" --leak --scenario --bytes "$scratch/bytes-ws" "$ruling_probe" > "$scratch/bytes2.out" 2>&1
+same "a CLAUDE.md of K raw bytes raises the total by exactly K" "$((t0 + k))" "$(bytes_total "$scratch/bytes2.out")"
+present "and prints its own line" "bytes CLAUDE.md $k" "$scratch/bytes2.out"
+sh "$seal" --leak --bytes "$scratch/bytes-ws" "$ruling_probe" > "$scratch/bytes3.out" 2>&1
+same "--bytes without --scenario counts the same always-loaded total" "$((t0 + k))" "$(bytes_total "$scratch/bytes3.out")"
+present "and still counts the hook's text, which loads with or without --scenario" "bytes hook:$ruling_probe 11" "$scratch/bytes3.out"
+printf 'leaks:\n  %s: [Rule]\n' "$ruling_probe" > "$scratch/bytes-probe.yml"
+HW_PROBE_YML="$scratch/bytes-probe.yml" sh "$seal" --leak --bytes "$scratch/bytes-ws" "$ruling_probe" > "$scratch/bytes4.out" 2>&1
+same "--bytes checks no leak string, so a hit does not fail it" "0" "$?"
+absent "and prints no leak line" "leak $ruling_probe" "$scratch/bytes4.out"
+# Each other text the harness loads into every session raises the total by its
+# own bytes (verify round 1 of #1776): an imported memory file, a rule under
+# `.claude/rules`, a command listing, and the CLAUDE.md and skill listing of a
+# `--config` directory. Each has its own line, and the total is checked whole.
+printf 'Rule  one.\n\n\342\200\224 caf\303\251\n@imp.md\n' > "$scratch/bytes-ws/CLAUDE.md"
+printf 'Imported \303\251.\n' > "$scratch/bytes-ws/imp.md"
+mkdir -p "$scratch/bytes-ws/.claude/rules" "$scratch/bytes-ws/.claude/commands"
+printf 'A rule \342\200\224 kept.\n' > "$scratch/bytes-ws/.claude/rules/r.md"
+printf -- '---\ndescription: A command.\n---\n\nCommand body.\n' > "$scratch/bytes-ws/.claude/commands/c.md"
+k_claude=$(wc -c < "$scratch/bytes-ws/CLAUDE.md" | tr -d ' ')
+k_imp=$(wc -c < "$scratch/bytes-ws/imp.md" | tr -d ' ')
+k_rule=$(wc -c < "$scratch/bytes-ws/.claude/rules/r.md" | tr -d ' ')
+sh "$seal" --leak --bytes "$scratch/bytes-ws" "$ruling_probe" > "$scratch/bytes5.out" 2>&1
+present "an imported memory file counts on its own line" "bytes imp.md $k_imp" "$scratch/bytes5.out"
+present "a rule under .claude/rules counts on its own line" "bytes .claude/rules/r.md $k_rule" "$scratch/bytes5.out"
+present "a command counts as its listing, the description" "bytes .claude/commands/c.md 10" "$scratch/bytes5.out"
+same "and the total sums the CLAUDE.md, the import, the rule and the command" "$((t0 + k_claude + k_imp + k_rule + 10))" "$(bytes_total "$scratch/bytes5.out")"
+rm -rf "$scratch/bytes-config"
+mkdir -p "$scratch/bytes-config/skills/h"
+printf 'Host rule.\n' > "$scratch/bytes-config/CLAUDE.md"
+printf -- '---\nname: h\ndescription: Host skill.\n---\n\nHost body.\n' > "$scratch/bytes-config/skills/h/SKILL.md"
+k_host=$(wc -c < "$scratch/bytes-config/CLAUDE.md" | tr -d ' ')
+sh "$seal" --leak --bytes --config "$scratch/bytes-config" "$scratch/bytes-ws" "$ruling_probe" > "$scratch/bytes6.out" 2>&1
+present "the CLAUDE.md of a --config directory counts on its own line" "bytes config:CLAUDE.md $k_host" "$scratch/bytes6.out"
+present "and so does its skill listing" "bytes config:skills/h/SKILL.md 13" "$scratch/bytes6.out"
+same "and both raise the total" "$(($(bytes_total "$scratch/bytes5.out") + k_host + 13))" "$(bytes_total "$scratch/bytes6.out")"
 sh "$seal" --leak "$scratch/leak-ws" \
     HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor \
     HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens \
