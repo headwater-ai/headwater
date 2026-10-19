@@ -43,6 +43,8 @@ cost_cents: 2234
 
 **What the halts spent.** The usage limit of the account halted the batch more than once. Before a halt stopped it, an attempt at 2 of its sessions spent 36 cents, and the driver then ran each of those sessions again from the start. The cost above counts only the attempt that recorded, so this line spent 36 cents more than it states, and the batch total over every attempt is in [#1775](https://github.com/headwater-ai/headwater/issues/1775).
 
+**A second model, from the harness layer.** The harness layer of this scenario adds `.claude/agents/hw-explore.md`, which declares `model: claude-haiku-4-5-20251001`. Three sessions of this line called that agent: `L14-additive-scenario-13-p1-r2`, `-r10` and `-r12`. So part of each of these three sessions ran on `claude-haiku-4-5`, and its cost (60, 66 and 65 cents) includes that spend. The session model of every session was `claude-sonnet-5`. This is part of what the scenario measures, not a default of the harness. No session of the other fourteen lines used a second model.
+
 **The contract of this batch.** The sessions ran under the recorder contract of spec 15: a `bwrap` sandbox with no network of its own, a configuration directory that holds a copy of the credentials and nothing else, the permission mode `dontAsk`, and `WebSearch` and `WebFetch` denied. The round approved $700 over every attempt, and the driver ran with a cap of 70000 cents and a session budget of 300 cents.
 
 **Where the raw recordings are.** The raw session logs are outside git, under `/mnt/build/hw-1775/screening/a/sessions/L14-*/raw.jsonl` on the host that ran the batch. Nobody deletes them until the report of [#1779](https://github.com/headwater-ai/headwater/issues/1779) is published.
