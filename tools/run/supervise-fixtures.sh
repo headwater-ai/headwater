@@ -236,6 +236,18 @@ same 'a checkout that falls behind during session 1 stops stale before session 2
     "$(printf '%s\n' "$out" | grep -c '^STOPPED: stale, ')|$(cat "$STUB/count" 2>/dev/null || echo 0)"
 rm -f "$ffdir/main-checkout/dirty"
 git -C "$ffdir/main-checkout" merge -q --ff-only origin/main
+# A main checkout on another branch, which the fast-forward never moves.
+git -C "$ffdir/main-checkout" checkout -q -b feature
+git -C "$ffdir/other" -c user.name=t -c user.email=t@t commit -q --allow-empty -m off-main
+git -C "$ffdir/other" push -q origin HEAD:main 2>/dev/null
+git -C "$ffdir/main-checkout" fetch -q origin
+fresh ffbranch
+printf 'call 1 140000\n' > "$STUB/1.sh"
+out=$(HW_SUPERVISE_TREE="$ffdir/wt" sh "$tool" ffbranch 2>&1)
+same 'a main checkout on another branch and behind is skipped by the fast-forward' "FAST-FORWARD: skipped, $ffdir/main-checkout is on \`feature\`, not main" "$(printf '%s\n' "$out" | grep '^FAST-FORWARD' | head -n 1)"
+same '  and the loop stops stale and calls claude 0 times' "1|0" "$(printf '%s\n' "$out" | grep -c '^STOPPED: stale, ')|$(cat "$STUB/count" 2>/dev/null || echo 0)"
+git -C "$ffdir/main-checkout" checkout -q main
+git -C "$ffdir/main-checkout" merge -q --ff-only origin/main
 same 'a tree that is no worktree is skipped, and the loop runs' 1 "$(printf '%s\n' "$(sh "$tool" idle 2>&1)" | grep -c 'FAST-FORWARD: skipped, .* is not a worktree of a main checkout' | sed 's/^[1-9][0-9]*$/1/')"
 same '  and it does not stop stale (#1811)' 0 "$(sh "$tool" idle 2>&1 | grep -c '^STOPPED: stale')"
 
