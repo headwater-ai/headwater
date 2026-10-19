@@ -4093,6 +4093,18 @@ if [ -x "$engine" ]; then
         > "$scratch/mcp.out" 2> "$scratch/mcp.err"
     same "a leak string in an MCP tool's description is a leak" "1" "$?"
     present "and names the tool" "leak HW-PROBE-x mcp:route Resolve a task description" "$scratch/mcp.out"
+    # `--bytes` counts the same tool descriptions (#1776): one line for each
+    # tool, and a total that is their sum, because the tree holds nothing else.
+    HW_PROBE_YML="$scratch/mcp-probe.yml" sh "$seal" --leak --bytes "$scratch/leak-mcp" HW-PROBE-x \
+        > "$scratch/mcp-bytes.out" 2> "$scratch/mcp-bytes.err"
+    same "--bytes over a declared server exits 0" "0" "$?"
+    mcp_route=$(awk '$1 == "bytes" && $2 == "mcp:route" { print $3 }' "$scratch/mcp-bytes.out")
+    mcp_sum=$(awk '$1 == "bytes" && $2 ~ /^mcp:/ { s += $3 } END { print s + 0 }' "$scratch/mcp-bytes.out")
+    if [ -n "$mcp_route" ] && [ "$mcp_route" -gt 0 ] && [ "$mcp_sum" = "$(awk '$1 == "bytes" && $2 == "total" { print $3 }' "$scratch/mcp-bytes.out")" ]; then
+        pass "and counts each MCP tool's description, which the total sums"
+    else
+        fail "and counts each MCP tool's description, which the total sums" "$(head -c 300 "$scratch/mcp-bytes.out")"
+    fi
     rm -f "$scratch/leak-mcp/.mcp.json"
     HW_PROBE_YML="$scratch/mcp-probe.yml" sh "$seal" --leak "$scratch/leak-mcp" HW-PROBE-x \
         > "$scratch/nomcp.out" 2>&1
@@ -4233,6 +4245,7 @@ same "a CLAUDE.md of K raw bytes raises the total by exactly K" "$((t0 + k))" "$
 present "and prints its own line" "bytes CLAUDE.md $k" "$scratch/bytes2.out"
 sh "$seal" --leak --bytes "$scratch/bytes-ws" "$ruling_probe" > "$scratch/bytes3.out" 2>&1
 same "--bytes without --scenario counts the same always-loaded total" "$((t0 + k))" "$(bytes_total "$scratch/bytes3.out")"
+present "and still counts the hook's text, which loads with or without --scenario" "bytes hook:$ruling_probe 11" "$scratch/bytes3.out"
 printf 'leaks:\n  %s: [Rule]\n' "$ruling_probe" > "$scratch/bytes-probe.yml"
 HW_PROBE_YML="$scratch/bytes-probe.yml" sh "$seal" --leak --bytes "$scratch/bytes-ws" "$ruling_probe" > "$scratch/bytes4.out" 2>&1
 same "--bytes checks no leak string, so a hit does not fail it" "0" "$?"
