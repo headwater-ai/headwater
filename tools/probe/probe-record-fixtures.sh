@@ -4238,8 +4238,11 @@ printf -- '---\nname: s\ndescription: Nothing to see.\n---\n\nA much longer body
     > "$scratch/bytes-ws/.claude/skills/s/SKILL.md"
 sh "$seal" --leak --scenario --bytes "$scratch/bytes-ws" "$ruling_probe" > "$scratch/bytes1.out" 2>&1
 same "a document under docs/ and a longer skill body leave the total unchanged" "$t0" "$(bytes_total "$scratch/bytes1.out")"
-printf 'Rule  one.\n\n\xe2\x80\x94 caf\xc3\xa9\n' > "$scratch/bytes-ws/CLAUDE.md"
+# Octal escapes, because the `printf` of dash reads no `\x`: an em dash and an
+# e with an acute accent, 5 bytes in 2 characters.
+printf 'Rule  one.\n\n\342\200\224 caf\303\251\n' > "$scratch/bytes-ws/CLAUDE.md"
 k=$(wc -c < "$scratch/bytes-ws/CLAUDE.md" | tr -d ' ')
+same "the CLAUDE.md of this case holds 22 bytes in 19 characters" "22" "$k"
 sh "$seal" --leak --scenario --bytes "$scratch/bytes-ws" "$ruling_probe" > "$scratch/bytes2.out" 2>&1
 same "a CLAUDE.md of K raw bytes raises the total by exactly K" "$((t0 + k))" "$(bytes_total "$scratch/bytes2.out")"
 present "and prints its own line" "bytes CLAUDE.md $k" "$scratch/bytes2.out"
