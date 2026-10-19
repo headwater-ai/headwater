@@ -3,7 +3,7 @@ id: HW-TUT-your-first-governed-corpus
 status: current
 status_since: 2026-09-06
 summary: "An untyped repository reaches a passing strict check in sixteen steps, and the reader leaves holding shelf, kind, facet, overlay and obligation."
-last_verified: 2026-10-15
+last_verified: 2026-10-20
 title: "Your first governed corpus"
 provenance:
   warrant: accepted
@@ -42,19 +42,19 @@ Install the engine once. The block below downloads the release archive for Linux
 
 ```sh
 mkdir -p ~/.local/bin
-curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.6.0/headwater-v0.6.0-x86_64-unknown-linux-musl.tar.gz
-tar -xzf headwater-v0.6.0-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater
+curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.6.1/headwater-v0.6.1-x86_64-unknown-linux-musl.tar.gz
+tar -xzf headwater-v0.6.1-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater
 ```
 
-On macOS on Apple silicon, the archive is `headwater-v0.6.0-aarch64-apple-darwin.tar.gz`. Use that name in the `curl` line and in the `tar` line.
+On macOS on Apple silicon, the archive is `headwater-v0.6.1-aarch64-apple-darwin.tar.gz`. Use that name in the `curl` line and in the `tar` line.
 
-Each archive has a checksum file beside it on [the release page](https://github.com/headwater-ai/headwater/releases/tag/v0.6.0). The name of the checksum file is the name of the archive with `.sha256` added. To verify the archive, download that file too and give it to `sha256sum -c`, or to `shasum -a 256 -c` on macOS.
+Each archive has a checksum file beside it on [the release page](https://github.com/headwater-ai/headwater/releases/tag/v0.6.1). The name of the checksum file is the name of the archive with `.sha256` added. To verify the archive, download that file too and give it to `sha256sum -c`, or to `shasum -a 256 -c` on macOS.
 
 **Check.** `headwater --version` prints a number.
 
 Many Linux distributions put `~/.local/bin` on your `PATH` when the directory exists at login. macOS does not. If your shell cannot find `headwater`, add `~/.local/bin` to your `PATH` in the startup file of your shell. Then open a new shell. You can also run the binary as `~/.local/bin/headwater`.
 
-This installs version 0.6.0 of the engine. It does not install `taxonomy-source`, and step 3 fetches that. If you have a Rust toolchain, `cargo install headwater-cli --locked` is an alternative route, and the README's *Obtaining a named version* section describes it.
+This installs version 0.6.1 of the engine. It does not install `taxonomy-source`, and step 3 fetches that. If you have a Rust toolchain, `cargo install headwater-cli --locked` is an alternative route, and the README's *Obtaining a named version* section describes it.
 
 ## Steps
 
