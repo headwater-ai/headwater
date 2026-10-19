@@ -149,6 +149,12 @@ taxonomy: headwater/standard
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
 #
+# 4.16.2 changes no declaration in this file. Beside each relation that a
+# bundle declares `reciprocal: required`, the doctrine of four bundles now
+# says, in one sentence, that the far document owes the inverse once the
+# writer leaves its initial state (HW-DR-0086, #1777). The doctrine ships in
+# this package, so the number moves.
+#
 # 4.16.1 changes no declaration in this file. Finding 6 of the decision-record
 # doctrine said that no rule reads a declared `invalid_when`, and linked a
 # fixtures section about something else. `relation.pair.invalid` has read it
@@ -304,7 +310,7 @@ taxonomy: headwater/standard
 # each carries a recipe rather than a bare instruction. One package version
 # covers every content file it publishes, this one included, so the number
 # here moves with a change to either.
-version: 4.16.1
+version: 4.16.2
 
 purposes:
   rationale:
