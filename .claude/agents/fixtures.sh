@@ -887,6 +887,56 @@ case $(handover_misses "$scratch/restart-other.md") in
     *) fail 'a handover under another rule is reported' 'the handover passed it' ;;
 esac
 
+# The run policy says what the parent does with a STALE: line (#1811). The
+# run-dir.sh verbs print it when the main checkout is behind origin/main, and
+# a line no definition answers is a line the parent reads past: in run
+# 20261018-0144 the checkout was 110 commits behind and nothing said so.
+# Prints why the sentence does not hold, or nothing when it holds.
+stale_misses() {
+    bullet=$(awk 'index($0, "- **") > 0 {
+            lead = substr($0, index($0, "- **") + 4); i = index(lead, "**")
+            if (i > 0 && index(substr(lead, 1, i - 1), "`STALE:`") > 0) { print; exit }
+        }' "$1")
+    if [ -z "$bullet" ]; then
+        printf 'no bullet whose bold lead names `STALE:`, so nothing says what the parent does with the line'
+        return
+    fi
+    case $bullet in *'fill no slot'*) ;; *) printf ' the sentence does not say to fill no slot' ;; esac
+    case $bullet in *'printed command to the owner'*) ;; *) printf ' the sentence does not put the printed command to the owner' ;; esac
+    case $bullet in *'in flight'*) ;; *) printf ' the sentence does not go on with what is in flight' ;; esac
+}
+why=$(stale_misses "$skills/hw-run-policy/SKILL.md")
+if [ -z "$why" ]; then
+    pass 'the run policy says what the parent does with a STALE: line'
+else
+    fail 'the run policy says what the parent does with a STALE: line' "$why"
+fi
+stale_good='  - **On a `STALE:` line** from `next`, fill no slot, put the printed command to the owner, and go on with what is in flight.'
+stale_arm() {
+    printf '%s\n' "$1" > "$scratch/stale.md"
+    stale_misses "$scratch/stale.md"
+}
+case $(stale_arm '- **In drain**, print DRAIN.') in
+    *'nothing says what the parent does'*) pass 'and a policy with no STALE: sentence is reported' ;;
+    *) fail 'a policy with no STALE: sentence is reported' 'the check passed it' ;;
+esac
+case $(stale_arm "$(printf '%s' "$stale_good" | sed 's/fill no slot, //')") in
+    *'fill no slot'*) pass 'and a STALE: sentence that lets the parent fill slots is reported' ;;
+    *) fail 'a STALE: sentence that lets the parent fill slots is reported' 'the check passed it' ;;
+esac
+case $(stale_arm "$(printf '%s' "$stale_good" | sed 's/put the printed command to the owner/tell the owner/')") in
+    *'printed command'*) pass 'and a STALE: sentence that drops the printed command is reported' ;;
+    *) fail 'a STALE: sentence that drops the printed command is reported' 'the check passed it' ;;
+esac
+case $(stale_arm "$(printf '%s' "$stale_good" | sed 's/, and go on with what is in flight//')") in
+    *'in flight'*) pass 'and a STALE: sentence that stops what is in flight is reported' ;;
+    *) fail 'a STALE: sentence that stops what is in flight is reported' 'the check passed it' ;;
+esac
+case $(stale_arm "$stale_good") in
+    '') pass 'and a STALE: sentence that holds every part passes' ;;
+    *) fail 'a STALE: sentence that holds every part passes' "reported: \`$(stale_arm "$stale_good")\`" ;;
+esac
+
 # --- 16. a one-line lesson of a run is applied, and not only recorded --------
 
 # A run's intake line whose whole remedy is a line in an agent file, the run

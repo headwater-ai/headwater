@@ -49,6 +49,11 @@
 #
 # It stops, and prints `STOPPED: <reason>`, on the first of these:
 #
+#     stale       the main checkout is still behind origin/main after the
+#                 fast-forward, because it is dirty, not on main or diverged:
+#                 the harness reads the agent definitions from its working
+#                 tree, so a session would dispatch old ones (#1811). The
+#                 line is `tools/run/stale-main.sh`'s, after `STALE: `.
 #     empty       `run-dir.sh next` prints EMPTY and every handover is logged
 #     merges      N merges are reached
 #     session     a session exited without a drain: it stopped on the stop
@@ -186,6 +191,13 @@ idle=0
 n=0
 while :; do
     fast_forward
+    # The same check `run-dir.sh start` makes, on the main checkout of the
+    # tree, whether or not the fast-forward ran. A tree that is no worktree of
+    # a main checkout has nothing to judge.
+    main=${gitcommon%/.git}
+    if [ -n "$gitcommon" ] && [ "$main" != "$gitcommon" ] && [ -d "$main" ]; then
+        stale=$(sh "$root/tools/run/stale-main.sh" "$tree") || stop "stale, ${stale#STALE: }"
+    fi
     total=$(( $(merges) - start_merges ))
     [ -n "$cap" ] && [ "$total" -ge "$cap" ] && stop "merges, $total of $cap reached"
     if [ -s "$run/usage.jsonl" ]; then
@@ -193,7 +205,8 @@ while :; do
         [ "${used:-0}" -ge "$five_hour" ] && stop "five-hour, the window is at ${used}% and the limit is ${five_hour}%"
     fi
     rm -f "$run/drain"
-    if [ "$(sh "$rundir_tool" next "$run" 2>/dev/null)" = EMPTY ] && ! handovers_open; then
+    # The last line, because `next` prints a STALE line before its own.
+    if [ "$(sh "$rundir_tool" next "$run" 2>/dev/null | tail -n 1)" = EMPTY ] && ! handovers_open; then
         stop "empty, the queue and handover/ hold nothing to dispatch"
     fi
 

@@ -30,6 +30,12 @@ export HEADWATER_RUN_ROOT="$scratch/runs"
 export HW_SUPERVISE_TREE="$scratch/tree"
 export HW_SUPERVISE_CLAUDE="$scratch/bin/claude"
 mkdir -p "$HEADWATER_RUN_ROOT" "$HW_SUPERVISE_TREE" "$scratch/bin"
+# The loop calls `run-dir.sh next`, which judges the main checkout of its own
+# repository by default, and the host's can be any number of commits behind
+# (#1811). A scratch repository with no origin/main gives it nothing to judge.
+git init -q "$scratch/checkout"
+export HW_RUN_CHECKOUT="$scratch/checkout"
+unset HW_RUN_ALLOW_STALE
 
 passed=0
 failed=0
@@ -170,6 +176,7 @@ same 'the loop prints the fast-forward before the first session' "FAST-FORWARD: 
 same '  and the main checkout is at origin/main' "$want" "$(git -C "$ffdir/main-checkout" rev-parse --short HEAD)"
 same '  and still on main' main "$(git -C "$ffdir/main-checkout" symbolic-ref --short HEAD)"
 same '  and the worktree the sessions ran in did not move' wt "$(git -C "$ffdir/wt" symbolic-ref --short HEAD)"
+same '  and the loop does not stop stale (#1811)' 0 "$(printf '%s\n' "$out" | grep -c '^STOPPED: stale')"
 git -C "$ffdir/main-checkout" -c user.name=t -c user.email=t@t commit -q --allow-empty -m local-only
 git -C "$ffdir/other" -c user.name=t -c user.email=t@t commit -q --allow-empty -m third
 git -C "$ffdir/other" push -q origin HEAD:main 2>/dev/null
@@ -182,7 +189,24 @@ same 'a main checkout that has diverged is left where it is, and the loop says s
     "FAST-FORWARD: skipped, $ffdir/main-checkout does not fast-forward to origin/main" "$(printf '%s\n' "$out" | grep '^FAST-FORWARD' | head -n 1)"
 same '  and its HEAD is untouched' "$local_sha" "$(git -C "$ffdir/main-checkout" rev-parse --short HEAD)"
 same '  and no rebase or merge is in progress' 0 "$(ls "$ffdir/main-checkout/.git" | grep -cE '^(MERGE_HEAD|rebase-merge|rebase-apply)$')"
+ff2_stale="STALE: main checkout at $local_sha, origin/main at $(git -C "$ffdir/other" rev-parse --short HEAD), 1 commits behind. Run: git -C $ffdir/main-checkout merge --ff-only origin/main"
+same '  and the loop stops stale, with the STALE line after its prefix (#1811)' "STOPPED: stale, ${ff2_stale#STALE: }" "$(printf '%s\n' "$out" | grep '^STOPPED' | head -n 1)"
+same '  and runs no session on it' 0 "$(cat "$STUB/count" 2>/dev/null || echo 0)"
 git -C "$ffdir/main-checkout" reset -q --hard origin/main
+git -C "$ffdir/other" -c user.name=t -c user.email=t@t commit -q --allow-empty -m fourth
+git -C "$ffdir/other" push -q origin HEAD:main 2>/dev/null
+git -C "$ffdir/main-checkout" fetch -q origin
+: > "$ffdir/main-checkout/dirty"
+fresh ffdirty
+printf 'call 1 140000\n' > "$STUB/1.sh"
+out=$(HW_SUPERVISE_TREE="$ffdir/wt" sh "$tool" ffdirty 2>&1)
+same 'a main checkout that is dirty and behind is skipped by the fast-forward' "FAST-FORWARD: skipped, $ffdir/main-checkout is not clean" "$(printf '%s\n' "$out" | grep '^FAST-FORWARD' | head -n 1)"
+same '  and the loop stops stale' 1 "$(printf '%s\n' "$out" | grep -c '^STOPPED: stale, main checkout at .*, 1 commits behind\. Run: git -C .* merge --ff-only origin/main$')"
+same '  and calls claude 0 times' 0 "$(cat "$STUB/count" 2>/dev/null || echo 0)"
+out=$(HW_SUPERVISE_FF=0 HW_SUPERVISE_TREE="$ffdir/wt" sh "$tool" ffdirty 2>&1)
+same '  and with HW_SUPERVISE_FF=0 the check still runs and stops stale' 1 "$(printf '%s\n' "$out" | grep -c '^STOPPED: stale, ')"
+rm -f "$ffdir/main-checkout/dirty"
+git -C "$ffdir/main-checkout" merge -q --ff-only origin/main
 : > "$ffdir/main-checkout/dirty"
 fresh ff3
 printf 'call 1 140000\n' > "$STUB/1.sh"
@@ -196,6 +220,7 @@ printf 'call 2 140000\n' > "$STUB/2.sh"
 out=$(HW_SUPERVISE_FF=0 HW_SUPERVISE_TREE="$ffdir/wt" sh "$tool" ff4 2>&1)
 same 'HW_SUPERVISE_FF=0 turns it off' 'FAST-FORWARD: skipped, HW_SUPERVISE_FF=0' "$(printf '%s\n' "$out" | grep '^FAST-FORWARD' | head -n 1)"
 same 'a tree that is no worktree is skipped, and the loop runs' 1 "$(printf '%s\n' "$(sh "$tool" idle 2>&1)" | grep -c 'FAST-FORWARD: skipped, .* is not a worktree of a main checkout' | sed 's/^[1-9][0-9]*$/1/')"
+same '  and it does not stop stale (#1811)' 0 "$(sh "$tool" idle 2>&1 | grep -c '^STOPPED: stale')"
 
 printf '\n# a signal to the loop leaves no session behind\n'
 fresh signal
