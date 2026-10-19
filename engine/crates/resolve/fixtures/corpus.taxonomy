@@ -98,6 +98,20 @@ facets:
       no-hook: "the session ran against the present tree with the intent hook script removed (#1472)"
       no-skills: "the session ran against the present tree with the skills removed (#1472)"
       present: "the session ran against the corpus"
+      scenario-0: "the session ran against plain code with no layer added, the floor of the additive tier (#1774)"
+      scenario-1: "the session ran against plain code with the docs layer added (#1774)"
+      scenario-10: "the session ran against plain code with the docs, engine, skills and hook layers added (#1774)"
+      scenario-11: "the session ran against plain code with the docs, engine, claude-md, skills and hook layers added (#1774)"
+      scenario-12: "the session ran against plain code with the docs, engine, claude-md, skills, hook and mcp layers added (#1774)"
+      scenario-13: "the session ran against plain code with the docs, engine, claude-md, skills, hook and harness layers added (#1774)"
+      scenario-2: "the session ran against plain code with the docs and claude-md layers added (#1774)"
+      scenario-3: "the session ran against plain code with the docs and engine layers added (#1774)"
+      scenario-4: "the session ran against plain code with the docs, engine and skills layers added (#1774)"
+      scenario-5: "the session ran against plain code with the docs, engine and hook layers added (#1774)"
+      scenario-6: "the session ran against plain code with the docs, engine and mcp layers added (#1774)"
+      scenario-7: "the session ran against plain code with the docs, engine, hook and mcp layers added (#1774)"
+      scenario-8: "the session ran against plain code with the docs, engine, claude-md and skills layers added (#1774)"
+      scenario-9: "the session ran against plain code with the docs, engine, claude-md and hook layers added (#1774)"
     required: false
     values:
       - present
@@ -106,6 +120,20 @@ facets:
       - no-skills
       - no-claude-md
       - mcp
+      - scenario-0
+      - scenario-1
+      - scenario-2
+      - scenario-3
+      - scenario-4
+      - scenario-5
+      - scenario-6
+      - scenario-7
+      - scenario-8
+      - scenario-9
+      - scenario-10
+      - scenario-11
+      - scenario-12
+      - scenario-13
     volatility: stable
   doc_type:
     guidance:
@@ -160,6 +188,7 @@ facets:
     volatility: stable
   tier:
     guidance:
+      additive: "one arm per scenario, each scenario plain code with a declared set of layers added, for the claim that each layer changes what an agent does (#1774)"
       campaign: "both arms, powered, one batch and one model version, for one named claim"
       documentation: "both arms like a campaign, and the absent arm also removes `docs/`, for the claim that the documents change what an agent does"
       regression: "a fixed scenario set in one arm against a recorded baseline, which establishes no effect"
@@ -168,6 +197,7 @@ facets:
       - regression
       - campaign
       - documentation
+      - additive
     volatility: stable
   verification_method:
     guidance:
