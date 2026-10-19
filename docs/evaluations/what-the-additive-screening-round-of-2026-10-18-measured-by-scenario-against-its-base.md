@@ -274,7 +274,7 @@ The expected effect is small. The best `cold agent` cell of the round is 8 of 18
 
 -5.6 [-21.2, +10.5], no detectable effect, with 29 of 72 sessions making no MCP call. The cells moved 4 to 1, 11 to 7, 18 to 18 and 7 to 10.
 
-**Left as it is.** HW-DR-0111 reads this row as a server that many sessions did not reach. No reading of this evaluation reads the MCP arm, so nothing measured says in which direction the rate moves when more sessions reach the server. The two cells that moved most moved down, by 3 and 4 sessions of 18, about 4 and 6 points on the pooled rate, against the 25 points that a tuning try separates.
+**Left as it is.** HW-DR-0111 reads this row as a server that many sessions did not reach. No reading of this evaluation reads the MCP arm, so nothing measured says in which direction the rate moves when more sessions reach the server. The cell that moved most, `adjudication`, fell by 4 sessions of 18, about 6 points on the pooled rate. `cold agent` fell by 3 and `discharge` rose by 3, about 4 points each. Each move is well under the 25 points that a tuning try separates.
 
 ### Standing instructions, scenario 11 against 10
 
