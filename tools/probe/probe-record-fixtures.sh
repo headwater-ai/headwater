@@ -4199,6 +4199,44 @@ same "a probe declared with [] does not fail the check" "0" "$?"
 absent "and is not printed as undeclared" "undeclared HW-PROBE-x" "$scratch/empty.out"
 present "an entry with no value is still undeclared" "undeclared HW-PROBE-y" "$scratch/empty.out"
 present "and a missing entry is still undeclared" "undeclared HW-PROBE-z" "$scratch/empty.out"
+
+# The bytes the layers put in front of the model (#1776, the bytes column of
+# HW-DR-0111's table). `--bytes` counts what the harness hands every session,
+# and nothing it loads on demand: a document under `docs/` and a skill body
+# leave the total where it was, and a `CLAUDE.md` of K raw bytes raises it by
+# exactly K, multi-byte characters and whitespace runs included.
+bytes_total() {
+    awk '$1 == "bytes" && $2 == "total" { print $3 }' "$1"
+}
+rm -rf "$scratch/bytes-ws"
+mkdir -p "$scratch/bytes-ws/.claude/skills/s" "$scratch/bytes-ws/.claude/agents" "$scratch/bytes-ws/.claude/hooks"
+printf -- '---\nname: s\ndescription: Nothing to see.\n---\n\nShort body.\n' > "$scratch/bytes-ws/.claude/skills/s/SKILL.md"
+printf -- '---\nname: a\ndescription: An agent.\n---\n\nAgent body.\n' > "$scratch/bytes-ws/.claude/agents/a.md"
+printf '#!/bin/sh\ncat > /dev/null\nprintf "Pointer: x\\n"\n' > "$scratch/bytes-ws/.claude/hooks/intent.sh"
+sh "$seal" --leak --scenario --bytes "$scratch/bytes-ws" "$ruling_probe" > "$scratch/bytes0.out" 2> "$scratch/bytes0.err"
+same "--bytes measures a tree and exits 0" "0" "$?"
+t0=$(bytes_total "$scratch/bytes0.out")
+present "and counts the skill listing, name and description" "bytes .claude/skills/s/SKILL.md 17" "$scratch/bytes0.out"
+present "and counts the agent listing" "bytes .claude/agents/a.md 11" "$scratch/bytes0.out"
+present "and counts the hook's text for the probe on its own line" "bytes hook:$ruling_probe 11" "$scratch/bytes0.out"
+same "and the total is the always-loaded lines alone, not the hook's" "28" "$t0"
+mkdir -p "$scratch/bytes-ws/docs"
+printf 'A document of the corpus, never loaded whole.\n' > "$scratch/bytes-ws/docs/d.md"
+printf -- '---\nname: s\ndescription: Nothing to see.\n---\n\nA much longer body that loads on demand, and only on demand.\n' \
+    > "$scratch/bytes-ws/.claude/skills/s/SKILL.md"
+sh "$seal" --leak --scenario --bytes "$scratch/bytes-ws" "$ruling_probe" > "$scratch/bytes1.out" 2>&1
+same "a document under docs/ and a longer skill body leave the total unchanged" "$t0" "$(bytes_total "$scratch/bytes1.out")"
+printf 'Rule  one.\n\n\xe2\x80\x94 caf\xc3\xa9\n' > "$scratch/bytes-ws/CLAUDE.md"
+k=$(wc -c < "$scratch/bytes-ws/CLAUDE.md" | tr -d ' ')
+sh "$seal" --leak --scenario --bytes "$scratch/bytes-ws" "$ruling_probe" > "$scratch/bytes2.out" 2>&1
+same "a CLAUDE.md of K raw bytes raises the total by exactly K" "$((t0 + k))" "$(bytes_total "$scratch/bytes2.out")"
+present "and prints its own line" "bytes CLAUDE.md $k" "$scratch/bytes2.out"
+sh "$seal" --leak --bytes "$scratch/bytes-ws" "$ruling_probe" > "$scratch/bytes3.out" 2>&1
+same "--bytes without --scenario counts the same always-loaded total" "$((t0 + k))" "$(bytes_total "$scratch/bytes3.out")"
+printf 'leaks:\n  %s: [Rule]\n' "$ruling_probe" > "$scratch/bytes-probe.yml"
+HW_PROBE_YML="$scratch/bytes-probe.yml" sh "$seal" --leak --bytes "$scratch/bytes-ws" "$ruling_probe" > "$scratch/bytes4.out" 2>&1
+same "--bytes checks no leak string, so a hit does not fail it" "0" "$?"
+absent "and prints no leak line" "leak $ruling_probe" "$scratch/bytes4.out"
 sh "$seal" --leak "$scratch/leak-ws" \
     HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor \
     HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens \
