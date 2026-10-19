@@ -121,6 +121,16 @@
 # `DRAIN`, which reaches the parent on calls it already makes. In drain,
 # `claim` writes nothing and `next` hands out nothing, so no new stage
 # starts, and `stage` still writes the checkpoint of the stage that ended.
+# When the main checkout is behind origin/main, `start` prints the line
+# `STALE: ...` that `tools/run/stale-main.sh` writes, exits 1 and makes no
+# run directory, because the harness reads the agent definitions a run
+# dispatches from that checkout's working tree (#1811). `HW_RUN_ALLOW_STALE=1`
+# turns the refusal into the same line as a warning, and the path is still
+# the last line. `stage`, `claim` and `next` print the same line first, as
+# they print `DRAIN`, and do what they would have done: they report and
+# never refuse. The checkout judged is the main checkout of
+# `HW_RUN_CHECKOUT`, a directory of a repository, which defaults to this
+# repository; a fixture points it at a scratch clone.
 # `next` skips an issue that holds a claim, has a handover or is in the log,
 # which is what keeps a resumed parent from dispatching it a second time. It
 # also skips an issue the run ruled out with `rule`, and a queue line marked
@@ -185,6 +195,14 @@ keys='iter issue pr merge verdict proved opened closed'
 usage() {
     sed -n '/^#     sh tools\/run\/run-dir.sh/p' "$0" | sed 's/^# *//' >&2
     exit 2
+}
+
+# The STALE line, when the main checkout is behind origin/main, and nothing
+# otherwise. Exit 1 when it printed one. `stale_said` silences a second print
+# inside `accept`, which runs `stage` and `claim` in one call.
+stale_check() {
+    [ -z "${stale_said:-}" ] || return 0
+    sh "$root/tools/run/stale-main.sh" "${HW_RUN_CHECKOUT:-$root}"
 }
 
 need_jq() {
@@ -319,6 +337,9 @@ applies() {
 
 start() {
     id=${1:-$(date -u +%Y%m%d-%H%M)}
+    if ! stale_check && [ "${HW_RUN_ALLOW_STALE:-}" != 1 ]; then
+        exit 1
+    fi
     runs=$(runs_root)
     mkdir -p "$runs"
     dir="$runs/$id"
@@ -520,6 +541,7 @@ claim() {
     shift 3
     [ -d "$dir" ] || { echo "run-dir: $dir is not a run directory." >&2; exit 1; }
     [ $# -gt 0 ] || { echo "run-dir: claim needs at least one artifact." >&2; exit 2; }
+    stale_check
     # In drain nothing starts a new stage, and a claim is how one starts. It
     # writes nothing, because an issue claimed here and never dispatched would
     # be skipped by `next` in every later session of the run.
@@ -698,6 +720,7 @@ stage() {
             exit 2
         done
     fi
+    stale_check
     mkdir -p "$dir/handover"
     tmp="$dir/handover/.$issue.$$"
     printf '%s\n' "$body" > "$tmp" && mv "$tmp" "$dir/handover/$issue" || { rm -f "$tmp"; exit 1; }
@@ -762,6 +785,7 @@ answered_issues() {
 next() {
     dir=$1
     [ -d "$dir" ] || { echo "run-dir: $dir is not a run directory." >&2; exit 1; }
+    stale_check
     if [ -e "$dir/drain" ]; then
         echo DRAIN
         return 0
@@ -1341,9 +1365,20 @@ accept() {
     [ -n "$branch" ] && [ -n "$note" ] && [ -n "$footprint" ] ||
         refuse "accept needs \`branch=\`, \`note=\` and \`footprint=\`, from the BUILD report."
     staged=$(stage "$dir" "$issue" adjudicated "note=$note" "branch=$branch" "footprint=$footprint") || exit $?
-    case $staged in
-        *DRAIN*) echo DRAIN; return 0 ;;
-    esac
+    # The STALE line is printed once, from the stage, and the claim after it
+    # is silenced, so its exact match on DRAIN below still reads only its own
+    # output.
+    stale=$(printf '%s\n' "$staged" | grep '^STALE: ')
+    if [ -n "$stale" ]; then
+        printf '%s\n' "$stale"
+        stale_said=1
+    fi
+    # A whole line, because the STALE line carries the checkout's path, and a
+    # path that holds the word must not read as the drain.
+    if printf '%s\n' "$staged" | grep -qx DRAIN; then
+        echo DRAIN
+        return 0
+    fi
     waits=none
     if [ "$footprint" != none ]; then
         set -f

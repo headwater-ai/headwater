@@ -31,6 +31,43 @@ export HEADWATER_RUN_ROOT="$scratch/runs"
 # No host usage snapshot reaches a fixture unless a case plants one.
 export HEADWATER_USAGE_DIR="$scratch/no-usage"
 
+# The main checkout the stale check judges (#1811). The tool judges its own
+# repository by default, and the host's checkout can be any number of commits
+# behind, so every case points it at a scratch clone. A bare origin, a clone
+# that stays level with it, and three more: one behind by one commit, one
+# ahead by a local-only commit, and one with no `origin/main` at all.
+gitc() { git -c user.name=t -c user.email=t@t -c init.defaultBranch=main "$@"; }
+repos="$scratch/git"
+mkdir -p "$repos"
+gitc init -q --bare "$repos/origin.git"
+gitc clone -q "$repos/origin.git" "$repos/level" 2>/dev/null
+gitc -C "$repos/level" commit -q --allow-empty -m first
+gitc -C "$repos/level" branch -q -M main
+gitc -C "$repos/level" push -q -u origin main 2>/dev/null
+gitc clone -q -b main "$repos/origin.git" "$repos/behind" 2>/dev/null
+gitc clone -q -b main "$repos/origin.git" "$repos/ahead" 2>/dev/null
+gitc -C "$repos/ahead" commit -q --allow-empty -m local-only
+gitc clone -q -b main "$repos/origin.git" "$repos/other" 2>/dev/null
+gitc -C "$repos/other" commit -q --allow-empty -m second
+gitc -C "$repos/other" push -q origin HEAD:main 2>/dev/null
+gitc -C "$repos/behind" fetch -q origin
+# The worktree is level with origin/main, so a check that judged its own HEAD
+# and not the main checkout's would pass it.
+gitc -C "$repos/behind" worktree add -q -b wt "$repos/behind-wt" origin/main 2>/dev/null
+# A checkout on a feature branch one commit behind, with its local main level
+# with origin/main, so a check that read refs/heads/main would pass it; and a
+# checkout one behind whose path holds the word DRAIN, which `accept` must not
+# read as the drain line.
+gitc clone -q -b main "$repos/origin.git" "$repos/feature" 2>/dev/null
+gitc -C "$repos/feature" checkout -q -b feature HEAD~1
+gitc clone -q -b main "$repos/origin.git" "$repos/DRAIN-behind" 2>/dev/null
+gitc -C "$repos/DRAIN-behind" reset -q --hard HEAD~1
+gitc init -q "$repos/no-origin"
+gitc -C "$repos/no-origin" commit -q --allow-empty -m first
+stale_line="STALE: main checkout at $(git -C "$repos/behind" rev-parse --short HEAD), origin/main at $(git -C "$repos/behind" rev-parse --short origin/main), 1 commits behind. Run: git -C $repos/behind merge --ff-only origin/main"
+export HW_RUN_CHECKOUT="$repos/level"
+unset HW_RUN_ALLOW_STALE
+
 passed=0
 failed=0
 
@@ -92,6 +129,32 @@ case $(cat "$scratch/err") in
     *'never reused'*) pass '  and the refusal says a run directory is never reused' ;;
     *) fail '  and the refusal says a run directory is never reused' "$(cat "$scratch/err")" ;;
 esac
+
+printf '\n# start: a main checkout behind origin/main is refused (#1811)\n'
+# Under a root of their own, because `start` seeds a run from the newest run
+# beside it, and a later case reads what it seeded.
+out=$(HW_RUN_CHECKOUT="$repos/behind" HEADWATER_RUN_ROOT="$scratch/stale-runs" sh "$tool" start stale1 2>"$scratch/err"); status=$?
+same 'start on a checkout one commit behind origin/main exits 1' 1 "$status"
+same '  and prints the one STALE line' "$stale_line" "$out"
+same '  and writes no run directory' absent "$([ -e "$scratch/stale-runs/stale1" ] && echo present || echo absent)"
+out=$(HW_RUN_CHECKOUT="$repos/behind-wt" HEADWATER_RUN_ROOT="$scratch/stale-runs" sh "$tool" start stale2 2>/dev/null); status=$?
+same 'a worktree of that checkout judges the main checkout, not itself' "1 $stale_line" "$status $out"
+out=$(HW_RUN_CHECKOUT="$repos/level" HEADWATER_RUN_ROOT="$scratch/stale-runs" sh "$tool" start level1 2>/dev/null); status=$?
+same 'start on a checkout level with origin/main exits 0, with no STALE line' "0 $scratch/stale-runs/level1" "$status $out"
+out=$(HW_RUN_CHECKOUT="$repos/ahead" HEADWATER_RUN_ROOT="$scratch/stale-runs" sh "$tool" start ahead1 2>/dev/null); status=$?
+same 'start on a checkout ahead of origin/main and behind it by none exits 0, with no STALE line' "0 $scratch/stale-runs/ahead1" "$status $out"
+out=$(HW_RUN_CHECKOUT="$repos/no-origin" HEADWATER_RUN_ROOT="$scratch/stale-runs" sh "$tool" start noorigin1 2>/dev/null); status=$?
+same 'start on a checkout with no origin/main exits 0, silent' "0 $scratch/stale-runs/noorigin1" "$status $out"
+out=$(HW_RUN_CHECKOUT="$repos/feature" HEADWATER_RUN_ROOT="$scratch/stale-runs" sh "$tool" start feature1 2>/dev/null); status=$?
+same 'a checkout on a feature branch behind origin/main is refused, though its local main is level' 1 "$status"
+same '  and the line names the checkout' 1 "$(printf '%s\n' "$out" | grep -c "^STALE: main checkout at .*, 1 commits behind\. Run: git -C $repos/feature merge --ff-only origin/main$")"
+out=$(HW_RUN_ALLOW_STALE=yes HW_RUN_CHECKOUT="$repos/behind" HEADWATER_RUN_ROOT="$scratch/stale-runs" sh "$tool" start staleyes 2>/dev/null); status=$?
+same 'HW_RUN_ALLOW_STALE=yes is not the override: start still refuses' "1|absent" "$status|$([ -e "$scratch/stale-runs/staleyes" ] && echo present || echo absent)"
+out=$(HW_RUN_ALLOW_STALE=1 HW_RUN_CHECKOUT="$repos/behind" HEADWATER_RUN_ROOT="$scratch/stale-runs" sh "$tool" start stale3 2>/dev/null); status=$?
+same 'HW_RUN_ALLOW_STALE=1 turns the refusal into a warning with exit 0' 0 "$status"
+same '  and the STALE line comes first' "$stale_line" "$(printf '%s\n' "$out" | head -n 1)"
+same '  and the run directory is the last line' "$scratch/stale-runs/stale3" "$(printf '%s\n' "$out" | tail -n 1)"
+same '  and the run directory is made' present "$([ -f "$scratch/stale-runs/stale3/log.jsonl" ] && echo present || echo absent)"
 
 printf '\n# log\n'
 line='{"iter":1,"issue":101,"pr":9,"merge":"abc123","verdict":"PASS","proved":"the new rule fired on an injected defect","opened":[201,202],"closed":[101]}'
@@ -362,6 +425,43 @@ same '  and stage still writes its checkpoint, then prints DRAIN' 'DRAIN stage v
     "$(sh "$tool" stage "$resume" 11 verified-pass 2>&1) $(head -n 1 "$resume/handover/11" 2>&1)"
 rm -f "$resume/drain"
 same 'once drain is gone, next hands out the issue again' 12 "$(sh "$tool" next "$resume" 2>&1)"
+
+printf '\n# mid-run, claim, stage and next print STALE first and do what they would have done (#1811)\n'
+# A parent that never handed over to supervise.sh meets the line on a call it
+# already makes. The run was made level, and the checkout fell behind later.
+mid=$(sh "$tool" start mid 2>/dev/null)
+q "$mid" 30; q "$mid" 31
+out=$(HW_RUN_CHECKOUT="$repos/behind" sh "$tool" next "$mid" 2>&1); status=$?
+same 'next prints the STALE line first and exits 0' "0 $stale_line" "$status $(printf '%s\n' "$out" | head -n 1)"
+same '  and hands out the same issue on the line after it' '30|2' "$(printf '%s\n' "$out" | tail -n 1)|$(printf '%s\n' "$out" | wc -l | tr -d ' ')"
+out=$(HW_RUN_CHECKOUT="$repos/behind" sh "$tool" claim "$mid" 30 issue-30 mid-file 2>&1); status=$?
+same 'claim prints the STALE line first and exits 0' "0 $stale_line" "$status $(printf '%s\n' "$out" | head -n 1)"
+same '  and then its own output' 'CLAIMED: mid-file' "$(printf '%s\n' "$out" | sed -n 2p)"
+same '  and the claim is written' present "$([ -e "$mid/claims/artifacts/mid-file" ] && echo present || echo absent)"
+out=$(HW_RUN_CHECKOUT="$repos/behind" sh "$tool" stage "$mid" 31 built branch=issue-31 pr=31 2>&1); status=$?
+same 'stage prints the STALE line, and nothing else outside drain, and exits 0' "0 $stale_line" "$status $out"
+same '  and the handover holds the stage' 'stage built' "$(head -n 1 "$mid/handover/31" 2>&1)"
+touch "$mid/drain"
+same 'in drain, next prints STALE, then DRAIN' "$stale_line|DRAIN" "$(HW_RUN_CHECKOUT="$repos/behind" sh "$tool" next "$mid" 2>&1 | paste -sd'|')"
+same '  and stage prints STALE, then DRAIN' "$stale_line|DRAIN" "$(HW_RUN_CHECKOUT="$repos/behind" sh "$tool" stage "$mid" 31 verified-fail 2>&1 | paste -sd'|')"
+same '  and claim prints STALE, then DRAIN, and claims nothing' "$stale_line|DRAIN|absent" \
+    "$(HW_RUN_CHECKOUT="$repos/behind" sh "$tool" claim "$mid" 32 issue-32 mid-other 2>&1 | paste -sd'|')|$([ -e "$mid/claims/artifacts/mid-other" ] && echo present || echo absent)"
+out=$(HEADWATER_SCRATCH="$scratch/mid-dispatch" HW_RUN_CHECKOUT="$repos/behind" sh "$tool" accept "$mid" 33 branch=issue-33 note=/s/adj33.md footprint=mid-33 2>&1); status=$?
+same '  and accept in drain prints STALE once, then DRAIN' "0|$stale_line|DRAIN" "$status|$(printf '%s\n' "$out" | paste -sd'|')"
+rm -f "$mid/drain"
+q "$mid" 34
+out=$(HEADWATER_SCRATCH="$scratch/mid-dispatch" HW_RUN_CHECKOUT="$repos/behind" sh "$tool" accept "$mid" 34 branch=issue-34 note=/s/adj34.md footprint=mid-34 2>&1); status=$?
+same 'accept prints the STALE line once, first, and exits 0' "0|$stale_line|1" "$status|$(printf '%s\n' "$out" | head -n 1)|$(printf '%s\n' "$out" | grep -c '^STALE: ')"
+same '  and still claims and renders the dispatch' 'CLAIMED: mid-34|1' "$(printf '%s\n' "$out" | grep '^CLAIMED')|$(printf '%s\n' "$out" | grep -c '^DISPATCH: ')"
+q "$mid" 35
+out=$(HEADWATER_SCRATCH="$scratch/mid-dispatch" HW_RUN_CHECKOUT="$repos/behind" sh "$tool" accept "$mid" 35 branch=issue-35 note=/s/adj35.md footprint=none 2>&1)
+same 'accept with footprint none still prints the STALE line, from its stage' "$stale_line|1" "$(printf '%s\n' "$out" | head -n 1)|$(printf '%s\n' "$out" | grep -c '^DISPATCH: ')"
+q "$mid" 37
+out=$(HEADWATER_SCRATCH="$scratch/mid-dispatch" HW_RUN_CHECKOUT="$repos/DRAIN-behind" sh "$tool" accept "$mid" 37 branch=issue-37 note=/s/adj37.md footprint=mid-37 2>&1); status=$?
+same 'accept on a checkout whose path holds DRAIN, out of drain, still claims and dispatches' "0|CLAIMED: mid-37|1|0" \
+    "$status|$(printf '%s\n' "$out" | grep '^CLAIMED')|$(printf '%s\n' "$out" | grep -c '^DISPATCH: ')|$(printf '%s\n' "$out" | grep -cx DRAIN)"
+same 'on a level checkout, next, stage and claim print no STALE line' 0 \
+    "$( { sh "$tool" next "$mid"; sh "$tool" stage "$mid" 31 built; sh "$tool" claim "$mid" 36 issue-36 lvl-file; } 2>&1 | grep -c '^STALE')"
 
 printf '\n# a bare run id, and the prose a parent writes through it\n'
 prose=$(sh "$tool" start prose 2>/dev/null)

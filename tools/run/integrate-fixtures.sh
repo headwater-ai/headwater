@@ -29,6 +29,12 @@ trap 'rm -rf "$scratch"' EXIT HUP INT TERM
 export HEADWATER_RUN_ROOT="$scratch/runs"
 export HEADWATER_USAGE_DIR="$scratch/no-usage"
 export LOG="$scratch/log"
+# run-dir.sh judges the main checkout of its own repository by default, and
+# the host's can be any number of commits behind (#1811). A scratch repository
+# with no origin/main gives it nothing to judge, so no case reads the host.
+git init -q "$scratch/checkout"
+export HW_RUN_CHECKOUT="$scratch/checkout"
+unset HW_RUN_ALLOW_STALE
 
 passed=0
 failed=0
