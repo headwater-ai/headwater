@@ -4335,8 +4335,9 @@ cat > "$rec/config/A/projects/-var-tmp-hw-1659-x-ws-A/u-a.jsonl" <<'EOF'
 EOF
 cat > "$rec/sessions/B/raw.jsonl" <<'EOF'
 {"type":"assistant","parent_tool_use_id":null,"message":{"content":[{"type":"tool_use","id":"toolu_b1","name":"Skill","input":{"skill":"headwater-orient"}}]}}
-{"type":"assistant","parent_tool_use_id":null,"message":{"content":[{"type":"tool_use","id":"toolu_b2","name":"Bash","input":{"command":"headwater check\t--root .\nx"}}]}}
+{"type":"assistant","parent_tool_use_id":null,"message":{"content":[{"type":"tool_use","id":"toolu_b2","name":"Bash","input":{"command":"headwater check\t--root .\r\nx"}}]}}
 {"type":"assistant","parent_tool_use_id":"toolu_b9","message":{"content":[{"type":"tool_use","id":"toolu_b3","name":"Grep","input":{"pattern":"supersedes","path":"docs"}}]}}
+{"type":"assistant","parent_tool_use_id":null,"message":{"content":[{"type":"tool_use","id":"toolu_b4","name":"Glob","input":{"pattern":"docs/**/*.md"}},{"type":"tool_use","id":"toolu_b5","name":"WebFetch","input":{"url":"https://w3id.org/headwater/","prompt":"p"}}]}}
 EOF
 cat > "$rec/config/B/projects/-var-tmp-hw-1659-x-ws-B/u-b.jsonl" <<'EOF'
 {"type":"attachment","isSidechain":false,"attachment":{"type":"hook_non_blocking_error","hookName":"UserPromptSubmit","stderr":"hook script not found: /var/tmp/hw-1659/x/ws/B/.claude/hooks/intent.sh"}}
@@ -4346,7 +4347,17 @@ EOF
 cat > "$rec/config/B/projects/-var-tmp-hw-1659-x-ws-B/u-b/subagents/agent-1.jsonl" <<'EOF'
 {"type":"attachment","attachment":{"type":"hook_success","hookName":"PreToolUse:Grep","content":""}}
 EOF
-rec_sum() { (cd "$rec" && find . -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum); }
+# Session D has a harness log and no stream, as a session that died before
+# its first call does. Its attachments differ in what was shown and what was
+# held, so the --text column must take the shown text first.
+mkdir -p "$rec/config/D/projects/-var-tmp-hw-1659-x-ws-D"
+cat > "$rec/config/D/projects/-var-tmp-hw-1659-x-ws-D/u-d.jsonl" <<'EOF'
+{"type":"attachment","isSidechain":false,"rendered":"shown text","attachment":{"type":"hook_additional_context","hookName":"SessionStart:startup","hookEvent":"SessionStart","content":"raw content"}}
+{"type":"attachment","isSidechain":false,"rendered":"y","attachment":{"type":"instructions","files":[{"path":"/w/CLAUDE.md"},{"path":"/w/docs/CLAUDE.md"}]}}
+{"type":"attachment","isSidechain":false,"rendered":"","attachment":{"type":"skill_listing","names":["s1","s2"]}}
+{"type":"attachment","isSidechain":false,"attachment":{"type":"hook_success","hookName":"Stop","content":"held content"}}
+EOF
+rec_sum() { (cd "$rec" && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum | sha256sum); }
 rec_before=$(rec_sum)
 python3 -I "$reader" --batch "$rec" A B > "$scratch/rec.out" 2> "$scratch/rec.err"
 same "the reader of the recordings runs on a synthetic batch" "0" "$?"
@@ -4371,13 +4382,37 @@ same "a sidechain line of the session's own log is marked as one" "yes" \
 absent "and no text block is one" "tool: Read" "$scratch/rec.out"
 same "a Skill call is a skill event named for the skill" "1" \
     "$(awk -F'\t' '$1=="B" && $3=="skill" && $4=="headwater-orient"' "$scratch/rec.out" | wc -l | tr -d ' ')"
-same "a Bash target keeps the command on one line" 'headwater check\t--root .\nx' \
+same "a Bash target keeps the command on one line" 'headwater check\t--root .\r\nx' \
     "$(awk -F'\t' '$1=="B" && $4=="Bash" {print $5}' "$scratch/rec.out")"
 same "a call inside a subagent is marked sidechain" "yes" \
     "$(awk -F'\t' '$1=="B" && $4=="Grep" {print $7}' "$scratch/rec.out")"
+same "a call target prefers the path to the pattern" "docs" \
+    "$(awk -F'\t' '$1=="B" && $4=="Grep" {print $5}' "$scratch/rec.out")"
+same "every call of a message with two is an event" "docs/**/*.md https://w3id.org/headwater/" \
+    "$(awk -F'\t' '$1=="B" && ($4=="Glob" || $4=="WebFetch") {print $5}' "$scratch/rec.out" | tr '\n' ' ' | sed 's/ $//')"
+python3 -I "$reader" --batch "$rec" --text B D > "$scratch/rec-text.out" 2> "$scratch/rec-text.err"
+same "a session with a log and no stream is read" "0" "$?"
+same "with --text, every line has eight columns, a call's included" "0" \
+    "$(awk -F'\t' 'NF!=8' "$scratch/rec-text.out" | wc -l | tr -d ' ')"
+same "and a call's text is -" "-" \
+    "$(awk -F'\t' '$1=="B" && $4=="Bash" {print $8}' "$scratch/rec-text.out")"
+same "the text is what the model was shown, before what the attachment held" "shown text" \
+    "$(awk -F'\t' '$1=="D" && $3=="hook_additional_context" {print $8}' "$scratch/rec-text.out")"
+same "an attachment that was not shown gives its content" "held content" \
+    "$(awk -F'\t' '$1=="D" && $4=="Stop" {print $8}' "$scratch/rec-text.out")"
+same "and an error gives its stderr" "hook script not found: /var/tmp/hw-1659/x/ws/B/.claude/hooks/intent.sh" \
+    "$(awk -F'\t' '$1=="B" && $3=="hook_non_blocking_error" {print $8}' "$scratch/rec-text.out")"
+same "a hook is named by its hookName, not its event" "SessionStart:startup" \
+    "$(awk -F'\t' '$1=="D" && $3=="hook_additional_context" {print $4}' "$scratch/rec-text.out")"
+same "an instructions target joins its file paths with a comma" "/w/CLAUDE.md,/w/docs/CLAUDE.md" \
+    "$(awk -F'\t' '$1=="D" && $3=="instructions" {print $5}' "$scratch/rec-text.out")"
+same "a skill listing joins its names, and an empty rendered key still reads shown" "s1,s2 yes" \
+    "$(awk -F'\t' '$1=="D" && $3=="skill_listing" {print $5, $6}' "$scratch/rec-text.out")"
 same "the reader writes nothing under the batch it reads" "$rec_before" "$(rec_sum)"
-python3 -I "$reader" --batch "$rec" 'A*' > "$scratch/rec-glob.out" 2> "$scratch/rec-glob.err"
-same "a session glob selects by session id" "A" "$(cut -f1 "$scratch/rec-glob.out" | sort -u)"
+python3 -I "$reader" --batch "$rec" 'A*' A > "$scratch/rec-glob.out" 2> "$scratch/rec-glob.err"
+same "a session glob selects by session id" "A" "$(cut -f1 "$scratch/rec-glob.out" | LC_ALL=C sort -u)"
+same "and two globs that match one session print it once" "2" \
+    "$(wc -l < "$scratch/rec-glob.out" | tr -d ' ')"
 python3 -I "$reader" --batch "$rec" C > "$scratch/rec-none.out" 2> "$scratch/rec-none.err"
 same "a session id that matches nothing is refused" "2" "$?"
 
