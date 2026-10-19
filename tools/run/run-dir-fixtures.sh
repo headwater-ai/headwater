@@ -51,7 +51,9 @@ gitc clone -q -b main "$repos/origin.git" "$repos/other" 2>/dev/null
 gitc -C "$repos/other" commit -q --allow-empty -m second
 gitc -C "$repos/other" push -q origin HEAD:main 2>/dev/null
 gitc -C "$repos/behind" fetch -q origin
-gitc -C "$repos/behind" worktree add -q "$repos/behind-wt" -b wt 2>/dev/null
+# The worktree is level with origin/main, so a check that judged its own HEAD
+# and not the main checkout's would pass it.
+gitc -C "$repos/behind" worktree add -q -b wt "$repos/behind-wt" origin/main 2>/dev/null
 gitc init -q "$repos/no-origin"
 gitc -C "$repos/no-origin" commit -q --allow-empty -m first
 stale_line="STALE: main checkout at $(git -C "$repos/behind" rev-parse --short HEAD), origin/main at $(git -C "$repos/behind" rev-parse --short origin/main), 1 commits behind. Run: git -C $repos/behind merge --ff-only origin/main"

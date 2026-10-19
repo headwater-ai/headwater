@@ -205,6 +205,11 @@ same '  and the loop stops stale' 1 "$(printf '%s\n' "$out" | grep -c '^STOPPED:
 same '  and calls claude 0 times' 0 "$(cat "$STUB/count" 2>/dev/null || echo 0)"
 out=$(HW_SUPERVISE_FF=0 HW_SUPERVISE_TREE="$ffdir/wt" sh "$tool" ffdirty 2>&1)
 same '  and with HW_SUPERVISE_FF=0 the check still runs and stops stale' 1 "$(printf '%s\n' "$out" | grep -c '^STOPPED: stale, ')"
+# `next` prints a STALE line before EMPTY when the checkout it judges is
+# behind, and the loop reads its last line, so an empty run still stops empty.
+fresh ffempty ''
+out=$(HW_RUN_CHECKOUT="$ffdir/main-checkout" sh "$tool" ffempty 2>&1)
+same 'an empty queue stops empty when next prints a STALE line before EMPTY' 1 "$(printf '%s\n' "$out" | grep -c '^STOPPED: empty')"
 rm -f "$ffdir/main-checkout/dirty"
 git -C "$ffdir/main-checkout" merge -q --ff-only origin/main
 : > "$ffdir/main-checkout/dirty"

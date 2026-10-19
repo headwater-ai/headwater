@@ -1366,16 +1366,16 @@ accept() {
         refuse "accept needs \`branch=\`, \`note=\` and \`footprint=\`, from the BUILD report."
     staged=$(stage "$dir" "$issue" adjudicated "note=$note" "branch=$branch" "footprint=$footprint") || exit $?
     # The STALE line is printed once, from the stage, and the claim after it
-    # is silenced, so a lone line is never matched as the verb's output.
+    # is silenced, so its exact match on DRAIN below still reads only its own
+    # output.
     stale=$(printf '%s\n' "$staged" | grep '^STALE: ')
     if [ -n "$stale" ]; then
         printf '%s\n' "$stale"
         stale_said=1
     fi
-    if printf '%s\n' "$staged" | grep -qx DRAIN; then
-        echo DRAIN
-        return 0
-    fi
+    case $staged in
+        *DRAIN*) echo DRAIN; return 0 ;;
+    esac
     waits=none
     if [ "$footprint" != none ]; then
         set -f
@@ -1386,7 +1386,9 @@ accept() {
         set +f
         claimed=$(claim "$dir" "$issue" "$branch" "$@") || exit $?
         printf '%s\n' "$claimed"
-        printf '%s\n' "$claimed" | grep -qx DRAIN && return 0
+        case $claimed in
+            DRAIN) return 0 ;;
+        esac
         held=$(printf '%s\n' "$claimed" | sed -n 's/^WAITS-ON://p' | head -n 1)
         [ -z "$held" ] || waits=$(printf '%s' "$held" | sed 's/ \([0-9]\)/ #\1/g; s/^ //')
     fi
