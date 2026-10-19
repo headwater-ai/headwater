@@ -4326,6 +4326,8 @@ cat > "$rec/sessions/A/raw.jsonl" <<'EOF'
 {"type":"system","subtype":"init","skills":["s"],"agents":["g"]}
 {"type":"assistant","parent_tool_use_id":null,"message":{"content":[{"type":"text","text":"tool: Read hook script not found"},{"type":"tool_use","id":"toolu_a1","name":"Read","input":{"file_path":"/var/tmp/hw-1659/x/ws/A/tools/probe/arms"}}]}}
 {"type":"user","parent_tool_use_id":null,"message":{"content":[{"type":"tool_result","tool_use_id":"toolu_a1","content":"echo \"hook script not found: $p\" >&2"}]}}
+{"type":"user","parent_tool_use_id":null,"message":{"content":[{"type":"tool_use","id":"toolu_a8","name":"Write","input":{"file_path":"/not/a/call/of/the/model"}}]}}
+{"type":"assistant","parent_tool_use_id":null,"message":{"content":[{"type":"tool_result","tool_use_id":"toolu_a9","content":"echo again"}]}}
 EOF
 cat > "$rec/config/A/projects/-var-tmp-hw-1659-x-ws-A/u-a.jsonl" <<'EOF'
 {"type":"attachment","isSidechain":false,"rendered":"x","attachment":{"type":"instructions","files":[]}}
@@ -4339,9 +4341,10 @@ EOF
 cat > "$rec/config/B/projects/-var-tmp-hw-1659-x-ws-B/u-b.jsonl" <<'EOF'
 {"type":"attachment","isSidechain":false,"attachment":{"type":"hook_non_blocking_error","hookName":"UserPromptSubmit","stderr":"hook script not found: /var/tmp/hw-1659/x/ws/B/.claude/hooks/intent.sh"}}
 {"type":"attachment","isSidechain":false,"rendered":"Headwater routed this task","attachment":{"type":"hook_success","hookName":"UserPromptSubmit","content":"Headwater routed this task"}}
+{"type":"attachment","isSidechain":true,"attachment":{"type":"hook_additional_context","hookName":"PreToolUse:Read","content":"x"}}
 EOF
 cat > "$rec/config/B/projects/-var-tmp-hw-1659-x-ws-B/u-b/subagents/agent-1.jsonl" <<'EOF'
-{"type":"attachment","isSidechain":true,"attachment":{"type":"hook_success","hookName":"PreToolUse:Grep","content":""}}
+{"type":"attachment","attachment":{"type":"hook_success","hookName":"PreToolUse:Grep","content":""}}
 EOF
 rec_sum() { (cd "$rec" && find . -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum); }
 rec_before=$(rec_sum)
@@ -4361,6 +4364,10 @@ same "a Read call's target is the file path, not the result text" \
     "A	stream	tool_use	Read	/var/tmp/hw-1659/x/ws/A/tools/probe/arms	-	no" \
     "$(awk -F'\t' '$1=="A" && $3=="tool_use"' "$scratch/rec.out")"
 absent "a tool result is never an event" "echo" "$scratch/rec.out"
+same "and session A has two events, its Read call and its instructions attachment" "2" \
+    "$(awk -F'\t' '$1=="A"' "$scratch/rec.out" | wc -l | tr -d ' ')"
+same "a sidechain line of the session's own log is marked as one" "yes" \
+    "$(awk -F'\t' '$1=="B" && $3=="hook_additional_context" {print $7}' "$scratch/rec.out")"
 absent "and no text block is one" "tool: Read" "$scratch/rec.out"
 same "a Skill call is a skill event named for the skill" "1" \
     "$(awk -F'\t' '$1=="B" && $3=="skill" && $4=="headwater-orient"' "$scratch/rec.out" | wc -l | tr -d ' ')"
