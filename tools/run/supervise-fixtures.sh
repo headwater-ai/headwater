@@ -224,6 +224,18 @@ printf 'call 1 140000\n' > "$STUB/1.sh"
 printf 'call 2 140000\n' > "$STUB/2.sh"
 out=$(HW_SUPERVISE_FF=0 HW_SUPERVISE_TREE="$ffdir/wt" sh "$tool" ff4 2>&1)
 same 'HW_SUPERVISE_FF=0 turns it off' 'FAST-FORWARD: skipped, HW_SUPERVISE_FF=0' "$(printf '%s\n' "$out" | grep '^FAST-FORWARD' | head -n 1)"
+# The check runs before every session, not only the first: session 1 drains
+# while origin/main moves and the dirty checkout cannot follow it.
+: > "$ffdir/main-checkout/dirty"
+fresh ffmid
+printf 'call 1 140000\ngit -C %s -c user.name=t -c user.email=t@t commit -q --allow-empty -m mid\ngit -C %s push -q origin HEAD:main 2>/dev/null\ngit -C %s fetch -q origin\n' \
+    "$ffdir/other" "$ffdir/other" "$ffdir/main-checkout" > "$STUB/1.sh"
+printf 'call 2 140000\n' > "$STUB/2.sh"
+out=$(HW_SUPERVISE_TREE="$ffdir/wt" sh "$tool" ffmid 2>&1)
+same 'a checkout that falls behind during session 1 stops stale before session 2' "1|1" \
+    "$(printf '%s\n' "$out" | grep -c '^STOPPED: stale, ')|$(cat "$STUB/count" 2>/dev/null || echo 0)"
+rm -f "$ffdir/main-checkout/dirty"
+git -C "$ffdir/main-checkout" merge -q --ff-only origin/main
 same 'a tree that is no worktree is skipped, and the loop runs' 1 "$(printf '%s\n' "$(sh "$tool" idle 2>&1)" | grep -c 'FAST-FORWARD: skipped, .* is not a worktree of a main checkout' | sed 's/^[1-9][0-9]*$/1/')"
 same '  and it does not stop stale (#1811)' 0 "$(sh "$tool" idle 2>&1 | grep -c '^STOPPED: stale')"
 

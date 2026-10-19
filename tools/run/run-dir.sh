@@ -1373,9 +1373,12 @@ accept() {
         printf '%s\n' "$stale"
         stale_said=1
     fi
-    case $staged in
-        *DRAIN*) echo DRAIN; return 0 ;;
-    esac
+    # A whole line, because the STALE line carries the checkout's path, and a
+    # path that holds the word must not read as the drain.
+    if printf '%s\n' "$staged" | grep -qx DRAIN; then
+        echo DRAIN
+        return 0
+    fi
     waits=none
     if [ "$footprint" != none ]; then
         set -f
