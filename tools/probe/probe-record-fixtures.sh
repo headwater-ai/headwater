@@ -4306,6 +4306,117 @@ sh "$seal" --leak "$scratch/leak-ws" \
 absent "the committed declaration leaves no probe of the additive set undeclared" "undeclared" "$scratch/set-declared.out"
 
 # ---------------------------------------------------------------------------
+# The reader of the raw recordings (#1776). A finding drawn from a recording
+# must count the harness's own record as evidence, and never text a session
+# happened to read. A grep for "hook script not found" over the no-hook
+# streams of 2026-10-03 matched 21 of 120 L3 streams, because those sessions
+# read a file that quotes the string; the error itself is a
+# `hook_non_blocking_error` attachment in the harness log. So session A below
+# reads a file whose result quotes the string and has no hook attachment, and
+# session B has the attachment and no such read. The reader must report the
+# error for B alone, and say which attachment the model was shown.
+# ---------------------------------------------------------------------------
+reader="$root/tools/probe/recordings.py"
+rec="$scratch/rec"
+rm -rf "$rec"
+mkdir -p "$rec/sessions/A" "$rec/sessions/B" \
+    "$rec/config/A/projects/-var-tmp-hw-1659-x-ws-A" \
+    "$rec/config/B/projects/-var-tmp-hw-1659-x-ws-B/u-b/subagents"
+cat > "$rec/sessions/A/raw.jsonl" <<'EOF'
+{"type":"system","subtype":"init","skills":["s"],"agents":["g"]}
+{"type":"assistant","parent_tool_use_id":null,"message":{"content":[{"type":"text","text":"tool: Read hook script not found"},{"type":"tool_use","id":"toolu_a1","name":"Read","input":{"file_path":"/var/tmp/hw-1659/x/ws/A/tools/probe/arms"}}]}}
+{"type":"user","parent_tool_use_id":null,"message":{"content":[{"type":"tool_result","tool_use_id":"toolu_a1","content":"echo \"hook script not found: $p\" >&2"}]}}
+{"type":"user","parent_tool_use_id":null,"message":{"content":[{"type":"tool_use","id":"toolu_a8","name":"Write","input":{"file_path":"/not/a/call/of/the/model"}}]}}
+{"type":"assistant","parent_tool_use_id":null,"message":{"content":[{"type":"tool_result","tool_use_id":"toolu_a9","content":"echo again"}]}}
+EOF
+cat > "$rec/config/A/projects/-var-tmp-hw-1659-x-ws-A/u-a.jsonl" <<'EOF'
+{"type":"attachment","isSidechain":false,"rendered":"x","attachment":{"type":"instructions","files":[]}}
+{"type":"user","isSidechain":false,"message":{"content":[{"type":"tool_result","tool_use_id":"toolu_a1","content":"hook_non_blocking_error hook script not found"}]}}
+EOF
+cat > "$rec/sessions/B/raw.jsonl" <<'EOF'
+{"type":"assistant","parent_tool_use_id":null,"message":{"content":[{"type":"tool_use","id":"toolu_b1","name":"Skill","input":{"skill":"headwater-orient"}}]}}
+{"type":"assistant","parent_tool_use_id":null,"message":{"content":[{"type":"tool_use","id":"toolu_b2","name":"Bash","input":{"command":"headwater check\t--root .\r\nx"}}]}}
+{"type":"assistant","parent_tool_use_id":"toolu_b9","message":{"content":[{"type":"tool_use","id":"toolu_b3","name":"Grep","input":{"pattern":"supersedes","path":"docs"}}]}}
+{"type":"assistant","parent_tool_use_id":null,"message":{"content":[{"type":"tool_use","id":"toolu_b4","name":"Glob","input":{"pattern":"docs/**/*.md"}},{"type":"tool_use","id":"toolu_b5","name":"WebFetch","input":{"url":"https://w3id.org/headwater/","prompt":"p"}}]}}
+EOF
+cat > "$rec/config/B/projects/-var-tmp-hw-1659-x-ws-B/u-b.jsonl" <<'EOF'
+{"type":"attachment","isSidechain":false,"attachment":{"type":"hook_non_blocking_error","hookName":"UserPromptSubmit","stderr":"hook script not found: /var/tmp/hw-1659/x/ws/B/.claude/hooks/intent.sh"}}
+{"type":"attachment","isSidechain":false,"rendered":"Headwater routed this task","attachment":{"type":"hook_success","hookName":"UserPromptSubmit","content":"Headwater routed this task"}}
+{"type":"attachment","isSidechain":true,"attachment":{"type":"hook_additional_context","hookName":"PreToolUse:Read","content":"x"}}
+EOF
+cat > "$rec/config/B/projects/-var-tmp-hw-1659-x-ws-B/u-b/subagents/agent-1.jsonl" <<'EOF'
+{"type":"attachment","attachment":{"type":"hook_success","hookName":"PreToolUse:Grep","content":""}}
+EOF
+# Session D has a harness log and no stream, as a session that died before
+# its first call does. Its attachments differ in what was shown and what was
+# held, so the --text column must take the shown text first.
+mkdir -p "$rec/config/D/projects/-var-tmp-hw-1659-x-ws-D"
+cat > "$rec/config/D/projects/-var-tmp-hw-1659-x-ws-D/u-d.jsonl" <<'EOF'
+{"type":"attachment","isSidechain":false,"rendered":"shown text","attachment":{"type":"hook_additional_context","hookName":"SessionStart:startup","hookEvent":"SessionStart","content":"raw content"}}
+{"type":"attachment","isSidechain":false,"rendered":"y","attachment":{"type":"instructions","files":[{"path":"/w/CLAUDE.md"},{"path":"/w/docs/CLAUDE.md"}]}}
+{"type":"attachment","isSidechain":false,"rendered":"","attachment":{"type":"skill_listing","names":["s1","s2"]}}
+{"type":"attachment","isSidechain":false,"attachment":{"type":"hook_success","hookName":"Stop","content":"held content"}}
+EOF
+rec_sum() { (cd "$rec" && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum | sha256sum); }
+rec_before=$(rec_sum)
+python3 -I "$reader" --batch "$rec" A B > "$scratch/rec.out" 2> "$scratch/rec.err"
+same "the reader of the recordings runs on a synthetic batch" "0" "$?"
+same "no hook_non_blocking_error line for a session that only read a file quoting the error" "0" \
+    "$(awk -F'\t' '$1=="A" && $3=="hook_non_blocking_error"' "$scratch/rec.out" | wc -l | tr -d ' ')"
+same "exactly one hook_non_blocking_error line for the session whose log holds one" "1" \
+    "$(awk -F'\t' '$1=="B" && $2=="log" && $3=="hook_non_blocking_error"' "$scratch/rec.out" | wc -l | tr -d ' ')"
+same "and it says the model was not shown it" "no" \
+    "$(awk -F'\t' '$1=="B" && $3=="hook_non_blocking_error" {print $6}' "$scratch/rec.out")"
+same "the hook_success the model was shown reads rendered yes" "yes" \
+    "$(awk -F'\t' '$1=="B" && $3=="hook_success" && $7=="no" {print $6}' "$scratch/rec.out")"
+same "a sidechain attachment is marked as one" "1" \
+    "$(awk -F'\t' '$1=="B" && $3=="hook_success" && $7=="yes"' "$scratch/rec.out" | wc -l | tr -d ' ')"
+same "a Read call's target is the file path, not the result text" \
+    "A	stream	tool_use	Read	/var/tmp/hw-1659/x/ws/A/tools/probe/arms	-	no" \
+    "$(awk -F'\t' '$1=="A" && $3=="tool_use"' "$scratch/rec.out")"
+absent "a tool result is never an event" "echo" "$scratch/rec.out"
+same "and session A has two events, its Read call and its instructions attachment" "2" \
+    "$(awk -F'\t' '$1=="A"' "$scratch/rec.out" | wc -l | tr -d ' ')"
+same "a sidechain line of the session's own log is marked as one" "yes" \
+    "$(awk -F'\t' '$1=="B" && $3=="hook_additional_context" {print $7}' "$scratch/rec.out")"
+absent "and no text block is one" "tool: Read" "$scratch/rec.out"
+same "a Skill call is a skill event named for the skill" "1" \
+    "$(awk -F'\t' '$1=="B" && $3=="skill" && $4=="headwater-orient"' "$scratch/rec.out" | wc -l | tr -d ' ')"
+same "a Bash target keeps the command on one line" 'headwater check\t--root .\r\nx' \
+    "$(awk -F'\t' '$1=="B" && $4=="Bash" {print $5}' "$scratch/rec.out")"
+same "a call inside a subagent is marked sidechain" "yes" \
+    "$(awk -F'\t' '$1=="B" && $4=="Grep" {print $7}' "$scratch/rec.out")"
+same "a call target prefers the path to the pattern" "docs" \
+    "$(awk -F'\t' '$1=="B" && $4=="Grep" {print $5}' "$scratch/rec.out")"
+same "every call of a message with two is an event" "docs/**/*.md https://w3id.org/headwater/" \
+    "$(awk -F'\t' '$1=="B" && ($4=="Glob" || $4=="WebFetch") {print $5}' "$scratch/rec.out" | tr '\n' ' ' | sed 's/ $//')"
+python3 -I "$reader" --batch "$rec" --text B D > "$scratch/rec-text.out" 2> "$scratch/rec-text.err"
+same "a session with a log and no stream is read" "0" "$?"
+same "with --text, every line has eight columns, a call's included" "0" \
+    "$(awk -F'\t' 'NF!=8' "$scratch/rec-text.out" | wc -l | tr -d ' ')"
+same "and a call's text is -" "-" \
+    "$(awk -F'\t' '$1=="B" && $4=="Bash" {print $8}' "$scratch/rec-text.out")"
+same "the text is what the model was shown, before what the attachment held" "shown text" \
+    "$(awk -F'\t' '$1=="D" && $3=="hook_additional_context" {print $8}' "$scratch/rec-text.out")"
+same "an attachment that was not shown gives its content" "held content" \
+    "$(awk -F'\t' '$1=="D" && $4=="Stop" {print $8}' "$scratch/rec-text.out")"
+same "and an error gives its stderr" "hook script not found: /var/tmp/hw-1659/x/ws/B/.claude/hooks/intent.sh" \
+    "$(awk -F'\t' '$1=="B" && $3=="hook_non_blocking_error" {print $8}' "$scratch/rec-text.out")"
+same "a hook is named by its hookName, not its event" "SessionStart:startup" \
+    "$(awk -F'\t' '$1=="D" && $3=="hook_additional_context" {print $4}' "$scratch/rec-text.out")"
+same "an instructions target joins its file paths with a comma" "/w/CLAUDE.md,/w/docs/CLAUDE.md" \
+    "$(awk -F'\t' '$1=="D" && $3=="instructions" {print $5}' "$scratch/rec-text.out")"
+same "a skill listing joins its names, and an empty rendered key still reads shown" "s1,s2 yes" \
+    "$(awk -F'\t' '$1=="D" && $3=="skill_listing" {print $5, $6}' "$scratch/rec-text.out")"
+same "the reader writes nothing under the batch it reads" "$rec_before" "$(rec_sum)"
+python3 -I "$reader" --batch "$rec" 'A*' A > "$scratch/rec-glob.out" 2> "$scratch/rec-glob.err"
+same "a session glob selects by session id" "A" "$(cut -f1 "$scratch/rec-glob.out" | LC_ALL=C sort -u)"
+same "and two globs that match one session print it once" "2" \
+    "$(wc -l < "$scratch/rec-glob.out" | tr -d ' ')"
+python3 -I "$reader" --batch "$rec" C > "$scratch/rec-none.out" 2> "$scratch/rec-none.err"
+same "a session id that matches nothing is refused" "2" "$?"
+
+# ---------------------------------------------------------------------------
 # The component arms (#1472). Each is built from the one present tree, and
 # `--diff` prints how it differs from that tree, against the committed
 # declaration.
