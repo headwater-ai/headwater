@@ -808,6 +808,36 @@ docs/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-screening-of-2026-10-18-scenario-0.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-screening-of-2026-10-18-scenario-1.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-screening-of-2026-10-18-scenario-10.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-screening-of-2026-10-18-scenario-11.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-screening-of-2026-10-18-scenario-12.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-screening-of-2026-10-18-scenario-13-the-tombstone-probe.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-screening-of-2026-10-18-scenario-13-three-probes.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-screening-of-2026-10-18-scenario-2.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-screening-of-2026-10-18-scenario-3.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-screening-of-2026-10-18-scenario-4.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-screening-of-2026-10-18-scenario-5.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-screening-of-2026-10-18-scenario-6.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-screening-of-2026-10-18-scenario-7.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-screening-of-2026-10-18-scenario-8.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-screening-of-2026-10-18-scenario-9.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/campaign-of-2026-09-28-campaign-tier-absent-arm-navigability.md
   generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/campaign-of-2026-09-28-campaign-tier-absent-arm-sufficiency.md
@@ -938,6 +968,36 @@ docs/probe-results/tombstone-probe-pilot-of-2026-09-29-campaign-tier-present-arm
   generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-runs/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/probe-runs/additive-screening-of-2026-10-18-scenario-0.md
+  typed: probe_transcript
+docs/probe-runs/additive-screening-of-2026-10-18-scenario-1.md
+  typed: probe_transcript
+docs/probe-runs/additive-screening-of-2026-10-18-scenario-10.md
+  typed: probe_transcript
+docs/probe-runs/additive-screening-of-2026-10-18-scenario-11.md
+  typed: probe_transcript
+docs/probe-runs/additive-screening-of-2026-10-18-scenario-12.md
+  typed: probe_transcript
+docs/probe-runs/additive-screening-of-2026-10-18-scenario-13-the-tombstone-probe.md
+  typed: probe_transcript
+docs/probe-runs/additive-screening-of-2026-10-18-scenario-13-three-probes.md
+  typed: probe_transcript
+docs/probe-runs/additive-screening-of-2026-10-18-scenario-2.md
+  typed: probe_transcript
+docs/probe-runs/additive-screening-of-2026-10-18-scenario-3.md
+  typed: probe_transcript
+docs/probe-runs/additive-screening-of-2026-10-18-scenario-4.md
+  typed: probe_transcript
+docs/probe-runs/additive-screening-of-2026-10-18-scenario-5.md
+  typed: probe_transcript
+docs/probe-runs/additive-screening-of-2026-10-18-scenario-6.md
+  typed: probe_transcript
+docs/probe-runs/additive-screening-of-2026-10-18-scenario-7.md
+  typed: probe_transcript
+docs/probe-runs/additive-screening-of-2026-10-18-scenario-8.md
+  typed: probe_transcript
+docs/probe-runs/additive-screening-of-2026-10-18-scenario-9.md
+  typed: probe_transcript
 docs/probe-runs/campaign-of-2026-09-28-campaign-tier-absent-arm-navigability.md
   typed: probe_transcript
 docs/probe-runs/campaign-of-2026-09-28-campaign-tier-absent-arm-sufficiency.md

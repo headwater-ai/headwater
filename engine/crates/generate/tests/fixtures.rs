@@ -596,14 +596,14 @@ fn every_output_carries_its_own_marker() {
     }
 }
 
-/// This repository generates its ninety artifacts, and it says why for
-/// everything else.
+/// This repository generates its one hundred and five artifacts, and it says
+/// why for everything else.
 ///
 /// A property and not a recording, for the reason the query crate states about
 /// its own repository run: the corpus is prose somebody edits. What is asserted
 /// is what a prose edit must not change.
 ///
-/// **Twenty-one of the ninety are shelf indexes, one per shelf that holds a
+/// **Twenty-one of the one hundred and five are shelf indexes, one per shelf that holds a
 /// document.** The first is the decisions shelf, which the package has declared
 /// since the first-run walkthrough and which produced a reason rather than a
 /// file until #124 filled that shelf. The other twenty are the overlay's own
@@ -625,7 +625,7 @@ fn every_output_carries_its_own_marker() {
 /// documents onto each of them. The nineteenth, `subsystems`, gave a reason
 /// rather than a file until #1288 put the graph build subsystem spec on it.
 ///
-/// **Five of the other sixty-nine are one each, and sixty-four are one per
+/// **Five of the other eighty-four are one each, and seventy-nine are one per
 /// committed transcript.** The count in the name of this test therefore moves when a
 /// transcript lands on `docs/probe-runs/`, and this paragraph is the only
 /// thing that says so. The redirect map that the open-questions
@@ -636,13 +636,14 @@ fn every_output_carries_its_own_marker() {
 /// HW-DR-0036 and #418 name: MkDocs's `nav:` over the reading order
 /// `by_precedence` derives. The descriptor, at the path Q14 fixes. And one
 /// probe result for each transcript the corpus holds, which is the
-/// sixty-four: five regression recordings of 2026-09-09 to 2026-09-17, the
+/// seventy-nine: five regression recordings of 2026-09-09 to 2026-09-17, the
 /// seven transcripts of each of the two #980 pilots of 2026-09-28, the five
 /// of the #980 campaign of the same day, the two of the #1294 pilot of
 /// 2026-09-29, the two of the #1384 pilot of the same day, and the seven of
 /// the #1384 full re-run of 2026-09-30, the three of the #1474 sealed
-/// regression recording of 2026-10-03, and the twenty-six of the #1659 paid layer
-/// campaign of 2026-10-03 to 2026-10-05.
+/// regression recording of 2026-10-03, the twenty-six of the #1659 paid layer
+/// campaign of 2026-10-03 to 2026-10-05, and the fifteen of the #1775
+/// screening round of the additive campaign of 2026-10-18.
 ///
 /// Two declarations produce a reason rather than a file. The package declares
 /// an index for one shelf this tree holds no document on, and the register is a
@@ -657,7 +658,7 @@ fn every_output_carries_its_own_marker() {
 /// compares bytes, so a contributor who edits a `summary` and does not
 /// regenerate fails this test before CI runs.
 #[test]
-fn this_repository_generates_its_ninety_artifacts_and_accounts_for_the_rest() {
+fn this_repository_generates_its_one_hundred_and_five_artifacts_and_accounts_for_the_rest() {
     let root = repository_root();
     let resolved = headwater_resolve::repository(&root)
         .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)));
@@ -740,6 +741,21 @@ fn this_repository_generates_its_ninety_artifacts_and_accounts_for_the_rest() {
             "docs/process/how-to/README.md",
             "docs/subsystems/README.md",
             "docs/spec/09-open-questions.md",
+            "docs/probe-results/additive-screening-of-2026-10-18-scenario-0.md",
+            "docs/probe-results/additive-screening-of-2026-10-18-scenario-1.md",
+            "docs/probe-results/additive-screening-of-2026-10-18-scenario-10.md",
+            "docs/probe-results/additive-screening-of-2026-10-18-scenario-11.md",
+            "docs/probe-results/additive-screening-of-2026-10-18-scenario-12.md",
+            "docs/probe-results/additive-screening-of-2026-10-18-scenario-13-the-tombstone-probe.md",
+            "docs/probe-results/additive-screening-of-2026-10-18-scenario-13-three-probes.md",
+            "docs/probe-results/additive-screening-of-2026-10-18-scenario-2.md",
+            "docs/probe-results/additive-screening-of-2026-10-18-scenario-3.md",
+            "docs/probe-results/additive-screening-of-2026-10-18-scenario-4.md",
+            "docs/probe-results/additive-screening-of-2026-10-18-scenario-5.md",
+            "docs/probe-results/additive-screening-of-2026-10-18-scenario-6.md",
+            "docs/probe-results/additive-screening-of-2026-10-18-scenario-7.md",
+            "docs/probe-results/additive-screening-of-2026-10-18-scenario-8.md",
+            "docs/probe-results/additive-screening-of-2026-10-18-scenario-9.md",
             "docs/probe-results/campaign-of-2026-09-28-campaign-tier-absent-arm-navigability.md",
             "docs/probe-results/campaign-of-2026-09-28-campaign-tier-absent-arm-sufficiency.md",
             "docs/probe-results/campaign-of-2026-09-28-campaign-tier-present-arm-navigability.md",

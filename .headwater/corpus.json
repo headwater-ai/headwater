@@ -22,7 +22,7 @@
       "taxonomy": {
         "package": "headwater/standard",
         "version": "4.16.1",
-        "lock": "sha256:1fb804541b7441a6588f57cc93c893118896dbf705119c83b1f9f77072386124"
+        "lock": "sha256:9336124275ef08569488fdd62abd2a3f36da46a5bf7005ba9b6eca5cbf75fd39"
       },
       "entry_points": [
         {
@@ -67,13 +67,13 @@
         },
         {
           "shelf": "probe_results",
-          "path": "docs/probe-results/campaign-of-2026-09-28-campaign-tier-absent-arm-navigability.md",
-          "id": "HW-RESULT-campaign-of-2026-09-28-campaign-tier-absent-arm-navigability"
+          "path": "docs/probe-results/additive-screening-of-2026-10-18-scenario-0.md",
+          "id": "HW-RESULT-additive-screening-of-2026-10-18-scenario-0"
         },
         {
           "shelf": "probe_runs",
-          "path": "docs/probe-runs/campaign-of-2026-09-28-campaign-tier-absent-arm-navigability.md",
-          "id": "HW-RUN-campaign-of-2026-09-28-campaign-tier-absent-arm-navigability"
+          "path": "docs/probe-runs/additive-screening-of-2026-10-18-scenario-0.md",
+          "id": "HW-RUN-additive-screening-of-2026-10-18-scenario-0"
         },
         {
           "shelf": "probes",
