@@ -220,13 +220,15 @@ Cells: `discharge`, `present` 24 of 30 (`a/L1`) and `absent` 7 of 30 (`a/L2`).
 
 ### R7. Which sentence of CLAUDE.md a session acted on
 
-Cells: `finds a ruling`, `present` 113 of 118 (`b/L1`) and `no-claude-md` 100 of 118 (`b/L5`). `ruling cited`, `present` 5 of 30 (`a/L15`) and `no-claude-md` 13 of 30 (`a/L19`).
+Cells: `finds a ruling`, `present` 113 of 118 (`b/L1`) and `no-claude-md` 100 of 118 (`b/L5`). `ruling cited`, `present` 5 of 30 (`a/L15`) and `no-claude-md` 13 of 30 (`a/L19`). `discharge`, `present` 24 of 30 (`a/L1`) and `no-claude-md` 25 of 30 (`a/L5`).
 
-The method matches each sentence of `CLAUDE.md` that names an action to the calls that perform it. Every `present` session has the `instructions` attachment, and no `no-claude-md` session has it.
+The method matches each sentence of `CLAUDE.md` that names an action to the calls that perform it.
+
+**Raw recording.** Every `present` session has the `instructions` attachment, 118 of 118 in `b/L1` and 30 of 30 in `a/L15`. No `no-claude-md` session has it, 0 of 118 in `b/L5` and 0 of 30 in `a/L19`.
 
 **Raw recording.** Only one sentence has an action that `present` sessions performed and `no-claude-md` sessions never did. It is line 7, "Call `EnterWorktree` at the start of every session". In `finds a ruling`, 25 of 113 passing and 0 of 5 failing `present` sessions called it. In `ruling cited`, 29 of 30 `present` sessions called it, and 24 of those 29 failed.
 
-**Raw recording.** Each other action that `CLAUDE.md` names was taken in the `no-claude-md` arm at about the same share or a higher one. `headwater-orient` was called by 16 of 118 `present` and 64 of 118 `no-claude-md` sessions in `finds a ruling`. In `ruling cited`, the passing `no-claude-md` sessions ran `headwater check` (9 of 13), `headwater new` (9 of 13) and `headwater-authoring` (10 of 13). The failing ones did so in 1, 1 and 2 of 17. So the recordings do not show a sentence of `CLAUDE.md` that carries a pass.
+**Raw recording.** Each other action that `CLAUDE.md` names was taken in the `no-claude-md` arm at about the same share or a higher one. `headwater-orient` was called by 16 of 118 `present` and 64 of 118 `no-claude-md` sessions in `finds a ruling`. In `ruling cited`, the passing `no-claude-md` sessions ran `headwater check` (9 of 13), `headwater new` (9 of 13) and `headwater-authoring` (10 of 13). The failing ones did so in 1, 1 and 2 of 17. In `discharge`, 16 of 25 passing and 0 of 5 failing `no-claude-md` sessions ran `headwater check`. So the recordings do not show a sentence of `CLAUDE.md` that carries a pass.
 
 ## One hypothesis for each layer
 
@@ -244,7 +246,7 @@ Each entry reads one registered comparison. The cells are the satisfied sessions
 
 +1.4 [-14.5, +17.2], no detectable effect. The cells moved 8 to 4, 9 to 11, 18 to 18 and 4 to 7.
 
-**Left as it is.** The cells move in both directions, and the largest move is 4 sessions of 18.
+**Left as it is.** The cells move in both directions. The largest move is 4 sessions of 18, about 6 points on the pooled rate, against the 25 points that a tuning try separates.
 
 **Raw recording.** R6 shows that the engine helps `discharge` when a session runs it: 22 of 24 passing sessions ran `headwater check`. What makes a session run it is a skill or the standing instructions, not the engine. No reading names a change to the engine itself.
 
@@ -262,7 +264,7 @@ The expected effect is small. The best `cold agent` cell of the round is 8 of 18
 
 -4.2 [-19.9, +11.8], no detectable effect. The cells moved 4 to 5, 11 to 10, 18 to 18 and 7 to 4.
 
-**Left as it is.**
+**Left as it is.** No cell moves by more than 3 sessions of 18, about 4 points on the pooled rate, against the 25 points that a tuning try separates. The readings below name no change to the hook that is not a leak.
 
 **Raw recording.** R5 shows that the gain of the hook in 2026-10-03 came from the answer in the summary of the governing document, which the hook printed. An answer in the text that a layer loads is a leak, and the leak check of this round exists to refuse it. So that gain is not one to tune toward, and no reading names another change to the hook.
 
@@ -272,15 +274,15 @@ The expected effect is small. The best `cold agent` cell of the round is 8 of 18
 
 -5.6 [-21.2, +10.5], no detectable effect, with 29 of 72 sessions making no MCP call. The cells moved 4 to 1, 11 to 7, 18 to 18 and 7 to 10.
 
-**Left as it is.** HW-DR-0111 reads this row as a server that many sessions did not reach. No reading of this evaluation reads the MCP arm, so nothing measured says in which direction the rate moves when more sessions reach the server. The two cells that moved most moved down.
+**Left as it is.** HW-DR-0111 reads this row as a server that many sessions did not reach. No reading of this evaluation reads the MCP arm, so nothing measured says in which direction the rate moves when more sessions reach the server. The two cells that moved most moved down, by 3 and 4 sessions of 18, about 4 and 6 points on the pooled rate, against the 25 points that a tuning try separates.
 
 ### Standing instructions, scenario 11 against 10
 
 +2.8 [-13.0, +18.3], no detectable effect. The cells moved 3 to 3, 7 to 9, 18 to 18 and 14 to 14.
 
-**Left as it is.** At this comparison the base already holds `discharge` at 14 of 18, and no cell moves by more than 2 sessions. The two interaction rows that add the same layer are the nearest rows to a gain: scenario 8 against 4, +13.9, and scenario 9 against 5, +15.3. `discharge` rises each time the layer is added: 4 to 13 (2 against 1), 13 to 16 (8 against 4), 4 to 15 (9 against 5) and 14 to 14 (11 against 10). The tuning and final rounds decide these rows, and a cell of 18 is not a finding.
+**Left as it is.** At this comparison the base already holds `discharge` at 14 of 18, and no cell moves by more than 2 sessions, about 3 points on the pooled rate, against the 25 points that a tuning try separates. The two interaction rows that add the same layer are the nearest rows to a gain: scenario 8 against 4, +13.9, and scenario 9 against 5, +15.3. `discharge` rises each time the layer is added: 4 to 13 (2 against 1), 13 to 16 (8 against 4), 4 to 15 (9 against 5) and 14 to 14 (11 against 10). The tuning and final rounds decide these rows, and a cell of 18 is not a finding.
 
-**Raw recording.** R7 shows no sentence of `CLAUDE.md` that carries a pass. The one sentence that only its sessions acted on, line 7, was acted on by passing and failing sessions alike. R6 shows that 16 of 25 passing `discharge` sessions without `CLAUDE.md` also ran `headwater check`. So the file is not the only route to the engine, and no one sentence to change is named.
+**Raw recording.** R7 shows no sentence of `CLAUDE.md` that carries a pass. The one sentence that only its sessions acted on, line 7, was acted on by passing and failing sessions alike. R7 also shows that 16 of 25 passing `discharge` sessions without `CLAUDE.md` ran `headwater check`. So the file is not the only route to the engine, and no one sentence to change is named.
 
 ## The discharge ladder
 
@@ -319,4 +321,4 @@ Each sentence below is the tuning note on the issue of its scenario. It agrees w
 - The reader prints calls and attachments, and never a tool result or the text of the model. So R6 cannot show what a session read in the output of `headwater check`, and R3 cannot show whether the harness loaded a skill that its listing did not name.
 - The workspaces of the recordings are gone. So a reading shows which path a session named, and not what the file at that path held.
 - R2 counts an open as a `Read`, or as a `Bash` call that runs `cat`, `sed`, `head`, `tail`, `less` or `awk` on a path under `docs/`. A `grep` that names a document is not an open in R2, although the grader counts a call that names the document. R3 counts any call that names spec 12, as the grader does.
-- R1 runs the classifier with the path of the run's own log directory unknown. Each path under `/tmp` is bound, so a log directory there changes no count, and each of the 120 counts equals its transcript.
+- **Raw recording.** R1 runs the classifier with the path of the run's own log directory unknown. Each path under `/tmp` is bound, so a log directory there changes no count, and each of the 120 counts equals its transcript.
