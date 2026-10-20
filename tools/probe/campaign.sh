@@ -959,10 +959,13 @@ fi
 additive=0
 if awk 'NF && $1 !~ /^#/ && $1 == "additive" { f = 1 } END { exit !f }' "$spec"; then
     additive=1
+    # base-neutral: begin the refusal of --repetitions on an additive spec
     if [ -n "$repetitions" ]; then
         echo "campaign: an additive spec takes no --repetitions. Each round's count is computed from its rates under \`rounds:\` in .headwater/probe.yml." >&2
         exit 2
     fi
+    # base-neutral: end
+    # base-neutral: begin the refusal of a round nobody approved (#1775)
     command -v python3 >/dev/null 2>&1 || { echo "campaign: \`python3\` is not on the path, so the approval of each round cannot be read." >&2; exit 3; }
     approvals=$(python3 "$root/tools/probe/declared.py" "$root/.headwater/probe.yml" approved) || exit $?
     unapproved=$(awk 'NF && $1 !~ /^#/ && $1 == "additive" && !seen[$3]++ { print $3 }' "$spec" | while read -r round; do
@@ -975,10 +978,12 @@ if awk 'NF && $1 !~ /^#/ && $1 == "additive" { f = 1 } END { exit !f }' "$spec";
         done
         exit 5
     fi
+    # base-neutral: end
     # The tuning round runs one layer at a time, and only a layer whose plan
     # the owner accepted (#1777, #1819). `rounds.tuning.open` names that
     # layer and its scenario, or `none`, and it is read from this checkout
     # alone, as the approval is.
+    # base-neutral: begin the refusal of a tuning line of a layer nobody opened (#1819)
     if awk 'NF && $1 !~ /^#/ && $1 == "additive" && $3 == "tuning" { f = 1 } END { exit !f }' "$spec"; then
         open=$(python3 "$root/tools/probe/declared.py" "$root/.headwater/probe.yml" open) || exit $?
         if [ "$open" = none ]; then
@@ -995,6 +1000,7 @@ if awk 'NF && $1 !~ /^#/ && $1 == "additive" { f = 1 } END { exit !f }' "$spec";
             exit 5
         fi
     fi
+    # base-neutral: end
 fi
 for tool in git jq tar awk cargo claude bwrap; do
     command -v "$tool" >/dev/null 2>&1 || { echo "campaign: \`$tool\` is not on the path." >&2; exit 3; }
