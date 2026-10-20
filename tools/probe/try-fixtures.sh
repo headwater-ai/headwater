@@ -298,6 +298,14 @@ check "base: a change to additive=1, outside every region, exits 4" code_is 4
 check "base: and names campaign.sh" out_has "invalidates: tools/probe/campaign.sh"
 
 new_case
+# A line only added, outside every region, removes nothing: the added side
+# alone has to hold it.
+sed 's/^    additive=1$/&\n    retries=3/' "$CASE/tree-pin/tools/probe/campaign.sh" > "$CASE/tree-head/tools/probe/campaign.sh"
+run plan "$CASE/root"
+check "base: a code line only added, outside every region, exits 4" code_is 4
+check "base: and names the added line" out_has "added line 6:     retries=3"
+
+new_case
 # The base pin's copy has no markers, so a change to its refusal is removed
 # code that no region of the older copy holds.
 grep -v 'base-neutral' "$CASE/tree-pin/tools/probe/campaign.sh" > "$CASE/tree-pin/tools/probe/campaign.sh.new"
