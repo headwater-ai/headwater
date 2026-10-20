@@ -1833,7 +1833,10 @@ fn unpaired(spent: &[Spent]) -> Vec<String> {
         .iter()
         .filter(|transcript| {
             let additive = transcript.tier.as_deref() == Some("additive");
-            let none = transcript.round.as_deref().is_none_or(|round| round == "none");
+            let none = transcript
+                .round
+                .as_deref()
+                .is_none_or(|round| round == "none");
             additive == none
         })
         .map(|transcript| {
@@ -1850,7 +1853,9 @@ fn each_round_of_the_additive_campaign_spent_at_most_its_approval() {
     let spent = transcripts();
     let rounds = approvals();
     assert!(
-        spent.iter().any(|it| it.round.as_deref() == Some("screening")),
+        spent
+            .iter()
+            .any(|it| it.round.as_deref() == Some("screening")),
         "no transcript of the screening round was read, so the sum is over nothing"
     );
     assert!(
