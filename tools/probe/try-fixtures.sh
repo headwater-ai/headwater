@@ -205,11 +205,15 @@ cost() {
     [ -z "${3:-}" ] || echo "$3" > "$1/spent-before"
 }
 
-# The layout of the decisive case: two earlier try roots, one dot-named.
+# The layout of the decisive case: earlier try roots of each shape a glob
+# must name (`docs-try1`, `.docs-try1-moved`, `..docs-try0`), and under the
+# dot-named one a batch of each dot-named shape (`.a-moved`, `..b`), as
+# `spent_all` of #1775 reads them. Each cost decides the refusal by one cent.
 two_roots() {
     cost "$CASE/root/docs-try1/a/sessions/s1" 3000
-    cost "$CASE/root/docs-try1/a/sessions/s2" 1000
-    cost "$CASE/root/.docs-try1-moved/a/sessions/s1" 2000 "$1"
+    cost "$CASE/root/..docs-try0/a/sessions/s1" 1000
+    cost "$CASE/root/.docs-try1-moved/.a-moved/sessions/s1" 1000 "$1"
+    cost "$CASE/root/.docs-try1-moved/..b/sessions/s1" 1000
     # Nothing at another depth counts: a session under a try root with no
     # batch, and a file one level below a session.
     cost "$CASE/root/tree/sessions/x" 50000
@@ -222,7 +226,7 @@ new_case
 two_roots 1001
 find "$CASE/root" | LC_ALL=C sort > "$CASE/before"
 run spent "$CASE/root"
-check "spent: the sum of both try roots, the dot-named one and its spent-before included, is 7001" out_has 7001
+check "spent: the sum of the three try roots, the dot-named ones, the two dot-named batches and the spent-before included, is 7001" out_has 7001
 check "spent: exits 0" code_is 0
 run launch "$CASE/root"
 check "decisive: launch at approval + 1 exits 5" code_is 5
@@ -270,7 +274,7 @@ two_roots 1001
 : > "$CASE/root/docs-try1/done"
 run status "$CASE/root"
 check "status: exits 0" code_is 0
-check "status: one line for the first try, with what it spent and its markers" out_has "docs-try1 spent=4000 driver=none markers=canary-passed done"
+check "status: one line for the first try, with what it spent and its markers" out_has "docs-try1 spent=3000 driver=none markers=canary-passed done"
 check "status: one line for the dot-named try" out_has ".docs-try1-moved spent=3001"
 check "status: the total against the approval" out_has "spent: 7001 of 10000 approved"
 check "status: the open layer" out_has "open: docs 1 2 3000"
