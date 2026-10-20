@@ -2,11 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # One try of the tuning round of the additive campaign, from the plan to the
-# canary, as seven verbs (#1821). Before this script, each try had a launch
-# script, a wait condition and a canary reader typed by hand, the total spend
-# of the round was prose that a person added to by hand, and one hand reader
-# read `named 1 path outside` as a blank field because it matched the plural
-# alone.
+# committed record, as ten verbs (#1821, #1822). Before this script, each try
+# had a launch script, a wait condition, a canary reader and a keep decision
+# typed by hand, the total spend of the round was prose that a person added
+# to by hand, and one hand reader read `named 1 path outside` as a blank field
+# because it matched the plural alone.
 #
 #     sh tools/probe/try.sh status   <root>
 #     sh tools/probe/try.sh spent    <root>
@@ -15,6 +15,9 @@
 #     sh tools/probe/try.sh relaunch <root> [<try>]
 #     sh tools/probe/try.sh canary   <root> [<try>]
 #     sh tools/probe/try.sh wait     <root> [<try>]
+#     sh tools/probe/try.sh result   <root> [<try>]
+#     sh tools/probe/try.sh ledger   <root>
+#     sh tools/probe/try.sh accept   <root> <ruling-url>
 #
 # `<root>` is the root of the round: one directory that holds every try root
 # of the tuning round, such as `<root>/docs-try1`, and the two files a person
@@ -62,9 +65,15 @@
 #   It then builds the tree of the open scenario's base at the pin of
 #   `<root>/base-pin` and at `HEAD`, each with `campaign.sh --scenario-tree`,
 #   prints every path by which the two differ, and exits 4 when one matches
-#   a pattern of `base_invalidators`. In a pattern, `*` and `**` both match
-#   any string, `/` included. A refusal of spend is never 4, so a wrapper can
-#   tell a stale base from a refusal.
+#   a pattern of `base_invalidators` and no `accept` event of
+#   `<root>/ledger.jsonl` covers it. In a pattern, `*` and `**` both match
+#   any string, `/` included. An `accept` event covers a path when its
+#   `base` and `pin` are the two fields of `<root>/base-pin` and it lists the
+#   path with the digest the path has now in the tree at `HEAD`, and `plan`
+#   prints `accepted: <path> (<ruling>)` for it. A path that changes again
+#   after its acceptance has another digest, so the base is stale again. A
+#   refusal of spend is never 4, so a wrapper can tell a stale base from a
+#   refusal.
 # - `launch <root>` runs `plan`, and exits with its status when it is not 0.
 #   It then makes the try root `<root>/<layer>-try<n>`, writes the spec
 #   `additive scenario-<n> tuning` there, outside the checkout, and starts
@@ -104,6 +113,62 @@
 #   under `/` is below `TRY_FLOOR_ROOT_KB`, or on the file system of `<root>`
 #   below `TRY_FLOOR_TRY_KB`, it writes `<try>/stop` first, which the driver
 #   reads within a minute.
+# - `result <root> [<try>]` turns a try that the driver finished into its
+#   record, in seven steps:
+#   1. It resolves the try as `canary` and `wait` do. A try that has a
+#      `result.md` exits 6, so no try is recorded twice.
+#   2. When `<try>/done` is absent, it appends a `halt` event with the try's
+#      spend and markers to `<root>/ledger.jsonl` and exits 7. It prints no
+#      `keep:` line and writes no `result.md` and no transcript. A try that is
+#      `capped`, stopped or whose canary failed has no `done`.
+#   3. It sums the try's session files as `status` does, and exits 2 when the
+#      sum is not the cents of the last `all=<n>/<cap>` line that the driver
+#      wrote to `<try>/drive.out`, and names both figures.
+#   4. It runs `campaign.sh --out <try>/a --assemble`, and writes the
+#      transcript with `headwater new probe_transcript --facet tier=additive
+#      --facet arm=scenario-<n> --facet round=tuning` in the checkout, with
+#      the assembled identity and events blocks as its two sections. It
+#      writes the path in `<try>/transcript`, and a later run that finds that
+#      file reuses it. The narrative paragraphs stay a person's job.
+#   5. It runs `headwater probe compare <new> <control>` twice and reads each
+#      `pooled:` line. The base row's control is the one committed transcript
+#      with `tier: additive`, `round: screening` and the arm of the base
+#      scenario. It is reported, and the keep rule does not read it. The keep
+#      row's control is the best so far: the transcript of the latest
+#      `result` event of the ledger for the try's layer with `kept` true, or,
+#      when there is none, the one committed screening transcript of the
+#      open scenario. Zero or more than one match exits 2.
+#   6. The keep rule is the owner's of 2026-10-20 on #1777 (ruling 7): keep a
+#      tuning change only when the whole uncertainty range of the difference
+#      against the best so far sits above zero. So the try is kept when the
+#      printed low bound of the keep row is above zero, and a printed `+0.0`
+#      or `-0.0` is not. The direction is `up`, `down` or `flat` by the sign
+#      of the printed difference. A keep row with no interval, because a side
+#      graded no session, exits 2 and keeps nothing. The rule has no branch
+#      for a try that held while the text in front of the model shrank:
+#      ruling 7 names the interval rule alone.
+#   7. It writes `<try>/result.md` with the spend, both pooled lines, `keep:
+#      kept` or `keep: not kept`, the direction, the rule and the transcript,
+#      and appends a `result` event to the ledger. It exits 0 whether the try
+#      is kept or not, because the verdict is in the record.
+# - `ledger <root>` prints one line for each event of `<root>/ledger.jsonl`,
+#   `<event>: <key>=<value> ...`, and then the round's total as `spent`
+#   counts it. A line that does not read as JSON exits 2. With no ledger it
+#   prints `no events`.
+# - `accept <root> <ruling-url>` records that the owner accepted the paths
+#   by which the base differs. It builds the two trees as `plan` does, at the
+#   pin of `<root>/base-pin` and at `HEAD`, and appends an `accept` event with
+#   the base, the pin, `HEAD`, the ruling and, for each path that
+#   invalidates, the sha256 of the path in the tree at `HEAD`, or `absent`. It
+#   prints each path. With no path that invalidates, it prints `nothing to
+#   accept` and records nothing. The ruling is the URL of a comment on an
+#   issue, `https://github.com/<owner>/<repo>/issues/<n>#issuecomment-<id>`,
+#   or of a pull request, `.../pull/<n>`, and any other text exits 2. The
+#   ledger is outside git, so the ruling's URL is the durable record, and a
+#   committed transcript cites it.
+#
+# `<root>/ledger.jsonl` holds one JSON object for each event, and only
+# `result`, `accept` and the `halt` of `result` append to it.
 #
 # ## The base tree, and `campaign.sh`
 #
@@ -128,31 +193,41 @@
 # are not on the list (owner, #1819).
 #
 # `HEADWATER_TRY_DECLARATION`, `HEADWATER_TRY_DRIVER`,
-# `HEADWATER_TRY_CAMPAIGN` and `HEADWATER_TRY_REPO` name the declaration, the
-# driver, the `campaign.sh` it runs and the checkout the driver runs from, so
-# that `tools/probe/try-fixtures.sh` runs every
-# verb with stubs. It needs `git`, `awk`, `python3` with PyYAML, `diff`,
-# `sha256sum` and `setsid`.
+# `HEADWATER_TRY_CAMPAIGN`, `HEADWATER_TRY_REPO` and `HEADWATER_TRY_ENGINE`
+# name the declaration, the driver, the `campaign.sh` it runs, the checkout
+# the driver runs from and the engine binary of `result`, by default
+# `engine/target/dev-release/headwater` in that checkout, so that
+# `tools/probe/try-fixtures.sh` runs every verb with stubs. It needs `git`,
+# `awk`, `python3` with PyYAML, `diff`, `sha256sum` and `setsid`.
 #
 # ## Exit status
 #
 #   0   the verb did what it states: `canary-passed` is written, the plan
-#       passes, the driver is started, or `wait` met its condition
+#       passes, the driver is started, `wait` met its condition, `result`
+#       recorded a try kept or not kept, `ledger` printed, or `accept`
+#       recorded or had nothing to accept
 #   1   `wait` alone: the driver runs and needs no reader
 #   2   a usage error, or a file it reads is missing or does not read:
 #       `<root>`, `<root>/env`, `<root>/base-pin`, `driver.argv`, a cost, a
-#       marked region of `campaign.sh`, or the declaration
-#   3   a tool is missing, or a tree did not build
+#       marked region of `campaign.sh`, the declaration, a line of
+#       `ledger.jsonl`, a `drive.out` whose `all=` line is not the try's
+#       spend, an assembly that refused, a control transcript that is not
+#       exactly one, a keep row with no interval, or a ruling that is not a
+#       GitHub comment or pull request URL
+#   3   a tool is missing, a tree did not build, or the engine is missing or
+#       wrote no transcript
 #   4   the base is stale: a path by which the two trees differ matches
-#       `base_invalidators`. Nothing else exits 4
+#       `base_invalidators`, and no `accept` event of `ledger.jsonl` covers
+#       it at its current digest. Nothing else exits 4
 #   5   the spend is refused: no layer is open, or what the round spent plus
 #       the open layer's cap is above the round's approval
 #   6   the state of the try refuses the verb: `launch` on a try root that
 #       exists, `relaunch` on a try that is absent, running, done, capped,
 #       stopped or whose canary failed, `launch` or `relaunch` on a
-#       checkout the driver's pin check refuses, or `canary` before
-#       `canary-recorded`
-#   7   `canary` wrote `canary-needs-reader`
+#       checkout the driver's pin check refuses, `canary` before
+#       `canary-recorded`, or `result` on a try that has a `result.md`
+#   7   a person must read the try: `canary` wrote `canary-needs-reader`, or
+#       `result` found no `done` and appended a `halt` event
 
 set -u
 
@@ -163,9 +238,10 @@ declaration=${HEADWATER_TRY_DECLARATION:-$repo/.headwater/probe.yml}
 driver=${HEADWATER_TRY_DRIVER:-$here/campaign-drive.sh}
 campaign=${HEADWATER_TRY_CAMPAIGN:-$here/campaign.sh}
 checkout=${HEADWATER_TRY_REPO:-$repo}
+engine=${HEADWATER_TRY_ENGINE:-$checkout/engine/target/dev-release/headwater}
 
 usage() {
-    echo "usage: sh tools/probe/try.sh status|spent|plan|launch <root>, or relaunch|canary|wait <root> [<try>]" >&2
+    echo "usage: sh tools/probe/try.sh status|spent|plan|launch|ledger <root>, relaunch|canary|wait|result <root> [<try>], or accept <root> <ruling-url>" >&2
     exit 2
 }
 say() { printf 'try: %s\n' "$1" >&2; }
@@ -173,10 +249,12 @@ say() { printf 'try: %s\n' "$1" >&2; }
 [ $# -ge 2 ] || usage
 verb=$1 root=$2
 try_name=${3:-}
+ruling=
 [ $# -le 3 ] || usage
 case $verb in
-    status | spent | plan | launch) [ $# = 2 ] || usage ;;
-    relaunch | canary | wait) ;;
+    status | spent | plan | launch | ledger) [ $# = 2 ] || usage ;;
+    relaunch | canary | wait | result) ;;
+    accept) [ $# = 3 ] || usage; ruling=$3 try_name= ;;
     *) usage ;;
 esac
 [ -d "$root" ] || { say "no round root at $root."; exit 2; }
@@ -314,6 +392,162 @@ try_spent() {
     echo "$try_spent_sum"
 }
 
+# ------------------------------------------------------------ the ledger
+
+# ledger_py <mode> <args...>: every read and write of `<root>/ledger.jsonl`.
+# A line that does not read as a JSON object exits 2, in every mode.
+#   append <key>=<type>:<value>...   append one event. The type is `s` for a
+#                                    string, `i` for a whole number, `b` for
+#                                    true or false, and `t` for the rows
+#                                    `<path>\t<digest>` of standard input
+#   print                            one line for each event
+#   best <layer>                     the transcript of the latest kept result
+#                                    of the layer, or nothing
+#   cover <base> <pin>               for each row `<path>\t<digest>` of
+#                                    standard input, `covered\t<path>\t<ruling>`
+#                                    or `uncovered\t<path>`
+# shellcheck disable=SC2016
+ledger_program='
+import json, sys
+mode, ledger = sys.argv[1], sys.argv[2]
+args = sys.argv[3:]
+
+def events():
+    try:
+        with open(ledger, encoding="utf-8") as handle:
+            lines = handle.read().splitlines()
+    except FileNotFoundError:
+        return None
+    out = []
+    for number, line in enumerate(lines, 1):
+        if not line.strip():
+            continue
+        try:
+            event = json.loads(line)
+        except ValueError:
+            event = None
+        if not isinstance(event, dict):
+            print("try: line %d of %s does not read as a JSON object: %s" % (number, ledger, line), file=sys.stderr)
+            sys.exit(2)
+        out.append(event)
+    return out
+
+def rows():
+    return [row.split("\t", 1) for row in sys.stdin.read().splitlines() if row]
+
+if mode == "append":
+    events()
+    event = {}
+    for arg in args:
+        key, typed = arg.split("=", 1)
+        kind, value = typed.split(":", 1)
+        if kind == "i":
+            event[key] = int(value)
+        elif kind == "b":
+            event[key] = value == "true"
+        elif kind == "t":
+            event[key] = {path: digest for path, digest in rows()}
+        else:
+            event[key] = value
+    with open(ledger, "a", encoding="utf-8") as handle:
+        handle.write(json.dumps(event) + "\n")
+elif mode == "print":
+    found = events()
+    if not found:
+        print("no events")
+    for event in found or []:
+        rest = " ".join("%s=%s" % (key, value if isinstance(value, str) else json.dumps(value))
+                        for key, value in event.items() if key != "event")
+        print("%s: %s" % (event.get("event", "unknown"), rest))
+elif mode == "best":
+    best = None
+    for event in events() or []:
+        if event.get("event") == "result" and event.get("layer") == args[0] and event.get("kept") is True:
+            best = event.get("transcript")
+    if best:
+        print(best)
+elif mode == "cover":
+    accepted = {}
+    for event in events() or []:
+        if event.get("event") == "accept" and str(event.get("base")) == args[0] \
+                and event.get("pin") == args[1] and isinstance(event.get("paths"), dict):
+            for path, digest in event["paths"].items():
+                accepted.setdefault(path, {})[digest] = event.get("ruling", "")
+    for path, digest in rows():
+        ruling = accepted.get(path, {}).get(digest)
+        print("covered\t%s\t%s" % (path, ruling) if ruling is not None else "uncovered\t%s" % path)
+'
+ledger_py() {
+    command -v python3 >/dev/null 2>&1 || { say "python3 is not on the path."; exit 3; }
+    ledger_mode=$1
+    shift
+    python3 -c "$ledger_program" "$ledger_mode" "$root/ledger.jsonl" "$@" || exit 2
+}
+
+now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
+
+# read_pin: the two fields of `<root>/base-pin`, in `pin_scenario` and
+# `pin_sha`.
+read_pin() {
+    pin_file=$root/base-pin
+    [ -f "$pin_file" ] || { say "no $pin_file. Write one line there: <scenario> <sha>, the base scenario and the commit it was measured at."; exit 2; }
+    # shellcheck disable=SC2046
+    set -- $(head -1 "$pin_file")
+    [ $# = 2 ] || { say "$pin_file reads \`$(head -1 "$pin_file")\`, and it must be \`<scenario> <sha>\`."; exit 2; }
+    pin_scenario=$1 pin_sha=$2
+    case $pin_sha in
+        *[!0-9a-f]*) say "the pin in $pin_file is not a commit: $pin_sha."; exit 2 ;;
+    esac
+    [ ${#pin_sha} -ge 7 ] || { say "the pin in $pin_file is not a commit: $pin_sha."; exit 2; }
+}
+
+# transcripts <tier> <round> <arm>: the committed transcripts of the checkout
+# whose front matter holds the three, as paths under the checkout.
+transcripts() {
+    for transcript_file in "$checkout"/docs/probe-runs/*.md; do
+        [ -f "$transcript_file" ] || continue
+        awk -v t="tier: $1" -v r="round: $2" -v a="arm: $3" -v f="${transcript_file#"$checkout"/}" '
+            NR == 1 { if ($0 != "---") exit; next }
+            $0 == "---" { if (tt && rr && aa) print f; exit }
+            $0 == t { tt = 1 }
+            $0 == r { rr = 1 }
+            $0 == a { aa = 1 }
+        ' "$transcript_file"
+    done
+}
+
+# one_transcript <what> <tier> <round> <arm>: the one transcript that
+# matches, and exit 2 on none or on more than one.
+one_transcript() {
+    one_what=$1
+    shift
+    one_found=$(transcripts "$@")
+    one_count=$(printf '%s' "$one_found" | awk 'END { print NR }')
+    if [ "$one_count" != 1 ]; then
+        say "the $one_what must be one committed transcript with tier: $1, round: $2 and arm: $3 under $checkout/docs/probe-runs, and $one_count match${one_found:+:}"
+        [ -z "$one_found" ] || printf '%s\n' "$one_found" | sed 's/^/  /' >&2
+        exit 2
+    fi
+    printf '%s\n' "$one_found"
+}
+
+# compare_row <treated> <control>: the `pooled:` line of `headwater probe
+# compare`, both paths under the checkout.
+compare_row() {
+    compare_out=$("$engine" probe compare --root "$checkout" "$checkout/$1" "$checkout/$2" 2> "${TMPDIR:-/tmp}/try-compare.$$")
+    compare_status=$?
+    if [ "$compare_status" != 0 ]; then
+        say "headwater probe compare $1 $2 exited $compare_status:"
+        tail -5 "${TMPDIR:-/tmp}/try-compare.$$" >&2
+        rm -f "${TMPDIR:-/tmp}/try-compare.$$"
+        exit 2
+    fi
+    rm -f "${TMPDIR:-/tmp}/try-compare.$$"
+    compare_line=$(printf '%s\n' "$compare_out" | grep '^pooled: ' | tail -1)
+    [ -n "$compare_line" ] || { say "headwater probe compare $1 $2 printed no pooled: line."; exit 2; }
+    printf '%s\n' "$compare_line"
+}
+
 # ------------------------------------------------------------ the base
 
 # manifest <tree>: `<path>\t<sha256>` for every file, and `<path>\t-> <target>`
@@ -430,14 +664,24 @@ base_check() {
             base_line=$(neutral "$base_dir/pin/trees/additive-scenario-$1/$base_path" "$base_dir/head/trees/additive-scenario-$1/$base_path")
             case $? in
                 0) echo "neutral: $base_path (every changed line is a comment, a blank or inside a base-neutral region)" ;;
-                1) echo "invalidates: $base_path ($base_pattern): $base_line"; stale=1 ;;
+                1) echo "invalidates: $base_path ($base_pattern): $base_line"; stale=1; echo "$base_path" >> "$base_dir/invalid" ;;
                 *) rm -rf "$base_dir"; exit 2 ;;
             esac
         else
             echo "invalidates: $base_path ($base_pattern)"
             stale=1
+            echo "$base_path" >> "$base_dir/invalid"
         fi
     done < "$base_dir/differs"
+    # Each path that invalidates, with its digest in the tree at HEAD, for
+    # the `accept` event that records it and for `plan`, which compares it.
+    base_invalid=
+    if [ -s "$base_dir/invalid" ]; then
+        base_invalid=$(awk -F'\t' '
+            NR == FNR { h[$1] = $2; next }
+            { p = "./" $0; print $0 "\t" ((p in h) ? h[p] : "absent") }
+        ' "$base_dir/head.manifest" "$base_dir/invalid")
+    fi
     rm -rf "$base_dir"
 }
 
@@ -471,22 +715,19 @@ plan_check() {
         say "scenario $open_scenario names no base in the declaration."
         exit 2
     fi
-    pin_file=$root/base-pin
-    [ -f "$pin_file" ] || { say "no $pin_file. Write one line there: <scenario> <sha>, the base scenario and the commit it was measured at."; exit 2; }
-    # shellcheck disable=SC2046
-    set -- $(head -1 "$pin_file")
-    if [ $# != 2 ] || [ "$1" != "$base" ]; then
+    read_pin
+    if [ "$pin_scenario" != "$base" ]; then
         say "$pin_file reads \`$(head -1 "$pin_file")\`, and it must be \`$base <sha>\`, the base of scenario $open_scenario and the commit it was measured at."
         exit 2
     fi
-    case $2 in
-        *[!0-9a-f]*) say "the pin in $pin_file is not a commit: $2."; exit 2 ;;
-    esac
-    [ ${#2} -ge 7 ] || { say "the pin in $pin_file is not a commit: $2."; exit 2; }
-    base_check "$base" "$2"
+    base_check "$base" "$pin_sha"
     if [ "$stale" = 1 ]; then
-        say "the base, scenario $base at $2, is stale: a path above that differs is on base_invalidators. Re-measure the base, or have the owner accept the difference."
-        exit 4
+        cover=$(printf '%s\n' "$base_invalid" | ledger_py cover "$base" "$pin_sha") || exit $?
+        printf '%s\n' "$cover" | awk -F'\t' '$1 == "covered" { print "accepted: " $2 " (" $3 ")" }'
+        if printf '%s\n' "$cover" | grep -q '^uncovered'; then
+            say "the base, scenario $base at $pin_sha, is stale: a path above that differs is on base_invalidators, and no accept event covers it at its digest now. Re-measure the base, or have the owner accept the difference and record it with try.sh accept."
+            exit 4
+        fi
     fi
     echo "plan: a try of $open_layer on scenario $open_scenario may launch"
 }
@@ -699,6 +940,165 @@ $records records of the canary, not 8"
         fi
         alive "$try" && exit 1
         echo driver-exited
+        ;;
+
+    result)
+        resolve_try
+        [ -d "$try" ] || { say "no try root at $try."; exit 2; }
+        result_name=${try##*/}
+        case $result_name in
+            ?*-try[0-9]*) result_layer=${result_name%-try*} result_n=${result_name##*-try} ;;
+            *) say "$try is not a try root of the form <layer>-try<n>."; exit 2 ;;
+        esac
+        [ ! -e "$try/result.md" ] || { say "$try/result.md is present: this try is recorded already."; exit 6; }
+        result_spent=$(try_spent "$try")
+        # Step 2: no `done`, so a person reads the try and nothing is decided.
+        if [ ! -e "$try/done" ]; then
+            ledger_py append event=s:halt "try=s:$result_name" "spent=i:$result_spent" "markers=s:$(markers "$try")" "at=s:$(now)"
+            say "$try has no done, so it has no result: a halt event with its spend of $result_spent cents is in $root/ledger.jsonl."
+            exit 7
+        fi
+        # Step 3: the session files against the driver's own last total.
+        result_all=$(grep -o 'all=[0-9]*/' "$try/drive.out" 2>/dev/null | tail -1 | sed 's/^all=//; s|/$||')
+        if [ -z "$result_all" ]; then
+            say "$try/drive.out has no all=<n>/<cap> line, so the try's spend cannot be checked against the driver's."
+            exit 2
+        fi
+        if [ "$result_all" != "$result_spent" ]; then
+            say "the session files of $try sum to $result_spent cents, and the driver's last all= line in drive.out says $result_all."
+            exit 2
+        fi
+        # shellcheck disable=SC2046
+        set -- $(head -1 "$try/spec" 2>/dev/null)
+        case ${2:-} in
+            scenario-[0-9]*) result_scenario=${2#scenario-} ;;
+            *) say "$try/spec does not name a scenario."; exit 2 ;;
+        esac
+        scenarios=$(declared scenarios) || exit $?
+        result_base=$(printf '%s\n' "$scenarios" | awk -v s="$result_scenario" '$1 == s { print $2 }')
+        if [ -z "$result_base" ] || [ "$result_base" = - ]; then
+            say "scenario $result_scenario names no base in the declaration."
+            exit 2
+        fi
+        # The two controls, before anything is written.
+        base_row_control=$(one_transcript "base's screening transcript" additive screening "scenario-$result_base") || exit $?
+        best=$(ledger_py best "$result_layer") || exit $?
+        if [ -n "$best" ]; then
+            [ -f "$checkout/$best" ] || { say "the best so far of $result_layer, $best, is not in $checkout."; exit 2; }
+        else
+            best=$(one_transcript "best so far, the screening transcript of scenario $result_scenario," additive screening "scenario-$result_scenario") || exit $?
+        fi
+        [ -x "$engine" ] || { say "no engine at $engine. Build it, or name it with HEADWATER_TRY_ENGINE."; exit 3; }
+        # Step 4: the assembly, and the transcript that wraps it.
+        if [ -s "$try/transcript" ] && [ -f "$checkout/$(head -1 "$try/transcript")" ]; then
+            transcript=$(head -1 "$try/transcript")
+        else
+            (cd "$checkout" && sh "$campaign" --out "$try/a" --assemble) > "$try/assemble.out" 2> "$try/assemble.err"
+            assemble_status=$?
+            if [ "$assemble_status" != 0 ]; then
+                say "campaign.sh --assemble on $try/a exited $assemble_status:"
+                tail -5 "$try/assemble.err" >&2
+                exit 2
+            fi
+            set -- "$try"/a/assembled/*.identity.yaml
+            if [ $# != 1 ] || [ ! -f "$1" ]; then
+                say "the assembly of $try/a wrote $# identity blocks, and a try has one line."
+                exit 2
+            fi
+            stem=${1%.identity.yaml}
+            [ -f "$stem.events.yaml" ] || { say "the assembly wrote no $stem.events.yaml."; exit 2; }
+            "$engine" new probe_transcript --root "$checkout" \
+                --title "Additive tuning of $(date -u +%Y-%m-%d), $result_layer try $result_n, scenario $result_scenario" \
+                --summary "Try $result_n of the $result_layer layer in the additive tuning round, the scenario-$result_scenario arm: $(head -1 "$stem.summary" 2>/dev/null)." \
+                --facet tier=additive --facet "arm=scenario-$result_scenario" --facet round=tuning \
+                > "$try/new.out" 2> "$try/new.err"
+            new_status=$?
+            transcript=$(sed -n 's/^wrote //p' "$try/new.out" | head -1)
+            if [ "$new_status" != 0 ] || [ -z "$transcript" ] || [ ! -f "$checkout/$transcript" ]; then
+                say "headwater new probe_transcript exited $new_status and wrote no transcript:"
+                tail -5 "$try/new.err" >&2
+                exit 3
+            fi
+            awk -v idf="$stem.identity.yaml" -v evf="$stem.events.yaml" '
+                /^## / { section = $0 }
+                $0 == "TODO write this section." && section == "## Run identity" { block(idf); next }
+                $0 == "TODO write this section." && section == "## Events" { block(evf); next }
+                { print }
+                function block(file,    l) {
+                    print "```yaml"
+                    while ((getline l < file) > 0) print l
+                    close(file)
+                    print "```"
+                }
+            ' "$checkout/$transcript" > "$try/transcript.md" && cat "$try/transcript.md" > "$checkout/$transcript"
+            rm -f "$try/transcript.md"
+            if [ "$(grep -c '^```yaml$' "$checkout/$transcript")" != 2 ]; then
+                say "the scaffold of $transcript did not take the two blocks: it has no Run identity or no Events section."
+                exit 3
+            fi
+            printf '%s\n' "$transcript" > "$try/transcript"
+        fi
+        # Step 5: the two rows.
+        base_row=$(compare_row "$transcript" "$base_row_control") || exit $?
+        keep_row=$(compare_row "$transcript" "$best") || exit $?
+        # Step 6: the keep rule, on the printed bounds.
+        keep_fields=$(printf '%s\n' "$keep_row" | sed -n 's/.*, \([-+][0-9][0-9.]*\) points \[\([-+][0-9][0-9.]*\), \([-+][0-9][0-9.]*\)\]$/\1 \2/p')
+        if [ -z "$keep_fields" ]; then
+            say "the keep row has no interval, so nothing is kept: $keep_row"
+            exit 2
+        fi
+        # shellcheck disable=SC2086
+        set -- $keep_fields
+        verdict=$(awk -v d="$1" -v low="$2" 'BEGIN {
+            printf "%s ", (low + 0 > 0) ? "kept" : "not-kept"
+            print (d + 0 > 0) ? "up" : (d + 0 < 0) ? "down" : "flat"
+        }')
+        # shellcheck disable=SC2086
+        set -- $verdict
+        if [ "$1" = kept ]; then keep=kept kept=true; else keep="not kept" kept=false; fi
+        direction=$2
+        # Step 7: the record.
+        {
+            echo "try: $result_name"
+            echo "spent: $result_spent"
+            echo "transcript: $transcript"
+            echo "best so far: $best"
+            echo "keep row: $keep_row"
+            echo "base row: $base_row"
+            echo "keep: $keep"
+            echo "direction: $direction"
+            echo "rule: keep a tuning change only when the whole uncertainty range of the difference against the best so far sits above zero (owner, 2026-10-20, #1777, ruling 7)"
+        } > "$try/result.md"
+        ledger_py append event=s:result "try=s:$result_name" "layer=s:$result_layer" "scenario=s:$result_scenario" \
+            "spent=i:$result_spent" "transcript=s:$transcript" "best=s:$best" "keep_row=s:$keep_row" \
+            "base_row=s:$base_row" "kept=b:$kept" "direction=s:$direction" "at=s:$(now)"
+        cat "$try/result.md"
+        ;;
+
+    ledger)
+        ledger_py print
+        ledger_total=$(spent_round) || exit $?
+        echo "spent: $ledger_total"
+        ;;
+
+    accept)
+        printf '%s' "$ruling" | grep -Eqx 'https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/(issues/[0-9]+#issuecomment-[0-9]+|pull/[0-9]+([#/?][A-Za-z0-9_./?=&#-]*)?)' || {
+            say "\`$ruling\` is not the URL of the owner's ruling: a comment on an issue, https://github.com/<owner>/<repo>/issues/<n>#issuecomment-<id>, or a pull request, https://github.com/<owner>/<repo>/pull/<n>."
+            exit 2
+        }
+        read_env 0
+        read_pin
+        base_check "$pin_scenario" "$pin_sha"
+        if [ "$stale" != 1 ]; then
+            echo "nothing to accept"
+            exit 0
+        fi
+        accept_head=$(git -C "$repo" rev-parse HEAD 2>/dev/null)
+        ledger_py append event=s:accept "base=s:$pin_scenario" "pin=s:$pin_sha" \
+            "head=s:$accept_head" "ruling=s:$ruling" paths=t: "at=s:$(now)" <<EOF
+$base_invalid
+EOF
+        printf '%s\n' "$base_invalid" | awk -F'\t' -v r="$ruling" '{ print "accept: " $1 " at " $2 " (" r ")" }'
         ;;
 esac
 exit 0

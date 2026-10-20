@@ -147,6 +147,7 @@ ${2%%=*}: ${2#*=}" ;;
         ;;
 esac
 EOF
+chmod +x "$fix/engine-stub.sh"
 
 OPEN_DOCS='{layer: docs, scenario: 1, try: 2, cap_cents: 3000, plan: "https://example.org/accepted", change: none}'
 OPEN_HOOK='{layer: hook, scenario: 2, try: 1, cap_cents: 3000, plan: "https://example.org/accepted", change: none}'
