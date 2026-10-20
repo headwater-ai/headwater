@@ -9,7 +9,10 @@
 # attempt and every layer, one layer at a time, with the plan of each layer
 # accepted before any spend on it (HW-DR-0111). The final round is not
 # approved, so the batch refuses its lines with 5. This file holds no such
-# line, so the paid invocation names it.
+# line. The batch also runs a tuning line only for the one layer that
+# `rounds.tuning.open` in `.headwater/probe.yml` opens (#1819). Try 1 was not
+# kept and `open` is `none`, so the batch refuses this file with 5 until a
+# commit opens the documents layer on scenario 1 again.
 #
 # At the declared 50 cents a session:
 #

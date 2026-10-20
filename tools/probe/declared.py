@@ -8,6 +8,8 @@
 #     python3 tools/probe/declared.py <declaration> rounds
 #     python3 tools/probe/declared.py <declaration> scenarios
 #     python3 tools/probe/declared.py <declaration> approved
+#     python3 tools/probe/declared.py <declaration> open
+#     python3 tools/probe/declared.py <declaration> base_invalidators
 #
 # `power` prints `present <rate>`, `absent <rate>`, `alpha <level>`,
 # `power <power>` and `pooled <category>...`, one per line. Each of the four
@@ -36,6 +38,23 @@
 # a round that declares none, so a round nobody approved reads as refused.
 # `tools/probe/campaign.sh` refuses a batch line of a round whose approval is
 # 0, and the dry run prints each round's approval.
+#
+# The tuning round, and no other round, may also declare `open` (#1819): the
+# one layer whose plan the owner accepted, or `none`. `open` prints `none`
+# for `none` or for a tuning round that declares no `open`, and otherwise one
+# line, `<layer> <scenario> <try> <cap_cents> <plan> <change>`. It refuses a
+# layer that `layers:` does not declare, a scenario that `scenarios:` does
+# not declare, a scenario that does not add exactly the named layer over its
+# base (so scenario 0, which has no base), a try outside 1 to the round's
+# `tries`, a cap that is not above zero or is above the round's
+# `approved_cents`, a plan that is not a URL, a change that is neither a
+# commit nor `none`, and an `open` that is neither `none` nor a mapping of
+# exactly those six fields. `tools/probe/campaign.sh` refuses a tuning line
+# when no layer is open, and a tuning line of any scenario but the open one.
+#
+# `base_invalidators` prints each path pattern of the top-level list of that
+# name, one per line: the paths whose change can make a measured base stale,
+# as the owner ruled them on 2026-10-20 (HW-DR-0111).
 #
 # `scenarios` prints one line per scenario under `scenarios:`: `<n> <base>
 # <layer>...`, with `-` for the base of a scenario that names none. The engine
@@ -76,7 +95,7 @@ def rate(round_name, value):
     return value
 
 
-def rounds(declared, approvals=False):
+def rounds(declared, approvals=False, quiet=False):
     block = declared.get("rounds")
     if block is None:
         return 0
@@ -89,9 +108,11 @@ def rounds(declared, approvals=False):
         name = str(name)
         if not isinstance(fields, dict):
             refuse(f"the `{name}` round in .headwater/probe.yml is not a mapping of `set`, `rates` and `tries`")
-        unknown = sorted(str(key) for key in fields if key not in ("set", "rates", "tries", "approved_cents"))
+        unknown = sorted(str(key) for key in fields if key not in ("set", "rates", "tries", "approved_cents", "open"))
         if unknown:
-            refuse(f"the `{name}` round in .headwater/probe.yml declares `{unknown[0]}`. A round declares `set`, `rates`, `tries` and `approved_cents`, and nothing else")
+            refuse(f"the `{name}` round in .headwater/probe.yml declares `{unknown[0]}`. A round declares `set`, `rates`, `tries`, `approved_cents` and, on the tuning round, `open`, and nothing else")
+        if "open" in fields and name != "tuning":
+            refuse(f"the `{name}` round in .headwater/probe.yml declares `open`, and only the tuning round declares `open`: the one layer whose plan the owner accepted")
         approved = fields.get("approved_cents", 0)
         if isinstance(approved, bool) or not isinstance(approved, int) or approved < 0:
             refuse(f"`approved_cents` of the `{name}` round in .headwater/probe.yml is {approved!r}, and it must be a whole number of cents at or above zero")
@@ -108,6 +129,8 @@ def rounds(declared, approvals=False):
         tries = fields.get("tries")
         if isinstance(tries, bool) or not isinstance(tries, int) or tries < 1:
             refuse(f"`tries` of the `{name}` round in .headwater/probe.yml is {tries!r}, and it must be a whole number above zero")
+        if quiet:
+            continue
         if approvals:
             print(f"{name} {approved}")
         else:
@@ -115,9 +138,81 @@ def rounds(declared, approvals=False):
     return 0
 
 
+OPEN_FIELDS = ("layer", "scenario", "try", "cap_cents", "plan", "change")
+
+
+def whole(value):
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
+def open_layer(declared):
+    # Every round reads first, so an `open` never stands on a round block the
+    # round gate would refuse.
+    rounds(declared, quiet=True)
+    tuning = (declared.get("rounds") or {}).get("tuning")
+    block = tuning.get("open", "none") if isinstance(tuning, dict) else "none"
+    if block == "none":
+        print("none")
+        return 0
+    where = "`rounds.tuning.open` in .headwater/probe.yml"
+    if not isinstance(block, dict):
+        refuse(f"{where} is {block!r}, and it is neither `none` nor a mapping of {', '.join(OPEN_FIELDS)}")
+    unknown = sorted(str(key) for key in block if key not in OPEN_FIELDS)
+    if unknown:
+        refuse(f"{where} declares `{unknown[0]}`. An open layer declares {', '.join(OPEN_FIELDS)}, and nothing else")
+    for field in OPEN_FIELDS:
+        if field not in block:
+            refuse(f"{where} does not declare `{field}`. An open layer declares {', '.join(OPEN_FIELDS)}")
+    layer, scenario = block["layer"], block["scenario"]
+    layers = declared.get("layers") or {}
+    if not isinstance(layer, str) or not isinstance(layers, dict) or layer not in layers:
+        refuse(f"`layer` of {where} is {layer!r}, and `layers:` declares no layer {layer}")
+    scenarios = declared.get("scenarios") or {}
+    if not whole(scenario) or not isinstance(scenarios, dict) or scenario not in scenarios:
+        refuse(f"`scenario` of {where} is {scenario!r}, and `scenarios:` declares no scenario {scenario}")
+    fields = scenarios[scenario] if isinstance(scenarios[scenario], dict) else {}
+    base = fields.get("base")
+    if base is None or base not in scenarios:
+        refuse(f"`scenario` of {where} is {scenario}, and scenario {scenario} names no base, so no one layer is tuned over it")
+    held = fields.get("layers") or []
+    base_fields = scenarios[base] if isinstance(scenarios[base], dict) else {}
+    base_held = base_fields.get("layers") or []
+    added = [entry for entry in held if entry not in base_held]
+    if added != [layer] or any(entry not in held for entry in base_held):
+        refuse(f"scenario {scenario} adds {added} over its base, scenario {base}, so it does not add exactly the {layer} layer over its base, as {where} names it")
+    tuning_tries = tuning.get("tries")
+    attempt = block["try"]
+    if not whole(attempt) or not 1 <= attempt <= tuning_tries:
+        refuse(f"`try` of {where} is {attempt!r}, and it must be a whole number from 1 to the round's `tries`, {tuning_tries}")
+    approved = tuning.get("approved_cents", 0)
+    cap = block["cap_cents"]
+    if not whole(cap) or cap < 1:
+        refuse(f"`cap_cents` of {where} is {cap!r}, and it must be a whole number of cents above zero")
+    if cap > approved:
+        refuse(f"`cap_cents` of {where} is {cap}, above the tuning round's `approved_cents` of {approved}")
+    plan = block["plan"]
+    if not isinstance(plan, str) or not plan.startswith("https://") or any(char.isspace() for char in plan):
+        refuse(f"`plan` of {where} is {plan!r}, and it must be the URL of the comment in which the owner accepted the layer's plan")
+    change = str(block["change"]) if isinstance(block["change"], str) else None
+    if change != "none" and (change is None or not 7 <= len(change) <= 40 or any(char not in "0123456789abcdef" for char in change)):
+        refuse(f"`change` of {where} is {block['change']!r}, and it must be the commit of the try's change, in hexadecimal and quoted where it holds digits alone, or `none`")
+    print(" ".join(str(block[field]) for field in OPEN_FIELDS))
+    return 0
+
+
+def base_invalidators(declared):
+    entries = declared.get("base_invalidators")
+    if not isinstance(entries, list) or not entries or not all(isinstance(entry, str) and entry for entry in entries):
+        refuse("`base_invalidators` in .headwater/probe.yml is not a sequence of path patterns")
+    for entry in entries:
+        print(entry)
+    return 0
+
+
 def main(argv):
-    if len(argv) != 2 or argv[1] not in ("power", "leaks_kept", "rounds", "scenarios", "approved"):
-        refuse("usage: python3 tools/probe/declared.py <declaration> power|leaks_kept|rounds|scenarios|approved")
+    modes = ("power", "leaks_kept", "rounds", "scenarios", "approved", "open", "base_invalidators")
+    if len(argv) != 2 or argv[1] not in modes:
+        refuse(f"usage: python3 tools/probe/declared.py <declaration> {'|'.join(modes)}")
     path, key = argv
     try:
         with open(path, encoding="utf-8-sig") as handle:
@@ -140,6 +235,12 @@ def main(argv):
 
     if key == "approved":
         return rounds(declared, approvals=True)
+
+    if key == "open":
+        return open_layer(declared)
+
+    if key == "base_invalidators":
+        return base_invalidators(declared)
 
     if key == "scenarios":
         block = declared.get("scenarios") or {}

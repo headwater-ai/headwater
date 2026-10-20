@@ -48,7 +48,8 @@
 # final round is not approved, so a batch of this spec is refused with 5
 # before it builds a tree. The screening round runs from
 # `tools/probe/additive-screening.spec`, which holds its lines alone, and the
-# documents layer's tuning try runs from `tools/probe/additive-tuning-docs.spec`.
+# documents layer's tuning try runs from `tools/probe/additive-tuning-docs.spec`
+# while `rounds.tuning.open` in `.headwater/probe.yml` opens that layer (#1819).
 # The spec plans the four probes of #1718 and the #1709 successor.
 
 # The screening round.
