@@ -149,10 +149,8 @@ taxonomy: headwater/standard
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
 #
-# 4.16.2 changes no declaration in this file. Beside each relation that a
-# bundle declares `reciprocal: required`, the doctrine of four bundles now
-# says, in one sentence, that the far document owes the inverse once the
-# writer leaves its initial state (HW-DR-0086, #1777). The doctrine ships in
+# 4.16.2 changes no declaration in this file. The doctrine of four bundles
+# gains one sentence for each of six relations (#1777). The doctrine ships in
 # this package, so the number moves.
 #
 # 4.16.1 changes no declaration in this file. Finding 6 of the decision-record
