@@ -6,6 +6,7 @@ summary: "The discovery line of the sealed re-recording of the three retired reg
 last_verified: 2026-10-03
 tier: regression
 arm: present
+round: none
 title: "Regression of 2026-10-03, regression tier, present arm, discovery"
 ---
 

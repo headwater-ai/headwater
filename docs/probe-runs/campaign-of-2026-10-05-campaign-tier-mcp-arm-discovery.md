@@ -6,6 +6,7 @@ summary: "The mcp arm of the campaign tier over the discovery selection, in batc
 last_verified: 2026-10-08
 tier: campaign
 arm: mcp
+round: none
 title: "Campaign of 2026-10-05, campaign tier, mcp arm, discovery"
 relations:
   records:

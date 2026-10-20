@@ -6,6 +6,7 @@ summary: "The present arm of the campaign tier over the sufficiency selection, i
 last_verified: 2026-09-30
 tier: campaign
 arm: present
+round: none
 title: "Campaign of 2026-09-30, campaign tier, present arm, sufficiency"
 relations:
   records:

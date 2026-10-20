@@ -6,6 +6,7 @@ summary: "The present arm of the campaign tier over the sufficiency selection (l
 last_verified: 2026-10-08
 tier: campaign
 arm: present
+round: none
 title: "Campaign of 2026-10-03, campaign tier, present arm, sufficiency, leak-kept probes"
 relations:
   records:

@@ -6,6 +6,7 @@ summary: "Try 1 of the documents layer in the additive tuning round, the scenari
 last_verified: 2026-10-20
 tier: additive
 arm: scenario-1
+round: tuning
 title: "Additive tuning of 2026-10-20, documents try 1, scenario 1"
 relations:
   records:

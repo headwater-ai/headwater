@@ -6,6 +6,7 @@ summary: "The absent arm of the campaign tier over the discovery selection, in b
 last_verified: 2026-10-08
 tier: campaign
 arm: absent
+round: none
 title: "Campaign of 2026-10-05, campaign tier, absent arm, discovery"
 relations:
   records:

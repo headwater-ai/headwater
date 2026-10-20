@@ -1692,3 +1692,248 @@ fn the_hook_layer_holds_the_one_entry_of_the_harness_settings() {
         "the hook layer wires one hook: {layer}"
     );
 }
+
+// ------------------------------------------------- the spend of each round
+//
+// `.headwater/probe.yml` declares three rounds of the additive campaign, each
+// with the cents the owner approved for it, and every transcript states the
+// round that spent for it in its `round` facet (#1822). So the committed
+// spend of a round is the sum of `cost_cents` over its transcripts, and these
+// two tests hold that sum at or below the approval, and the facet to the
+// tier. A halted attempt that left no transcript is in no sum, so the
+// committed sum is a floor of what a round spent, which is enough for a test
+// that it stays at or below its approval.
+
+/// The shelf `kinds.probe_transcript` is placed on.
+const TRANSCRIPTS: &str = "docs/probe-runs";
+
+/// One transcript, as these two tests read it.
+struct Spent {
+    path: String,
+    tier: Option<String>,
+    round: Option<String>,
+    /// `cost_cents` of the YAML block under `## Run identity`.
+    cost: Option<u64>,
+}
+
+/// `cost_cents` of the first YAML block under `## Run identity`.
+fn identity_cost(source: &str) -> Option<u64> {
+    let start = source.find("\n## Run identity\n")?;
+    let rest = &source[start..];
+    let open = rest.find("\n```yaml\n")? + "\n```yaml\n".len();
+    let close = rest[open..].find("\n```")?;
+    rest[open..open + close]
+        .lines()
+        .find_map(|line| line.strip_prefix("cost_cents: "))
+        .and_then(|value| value.trim().parse().ok())
+}
+
+/// Every transcript of the shelf, in path order. The index `README.md` opens
+/// with no front matter fence, which is how it is told from a transcript.
+fn transcripts() -> Vec<Spent> {
+    let shelf = repository_root().join(TRANSCRIPTS);
+    let mut paths: Vec<PathBuf> = std::fs::read_dir(&shelf)
+        .unwrap_or_else(|e| panic!("{}: {e}", shelf.display()))
+        .map(|entry| entry.expect("a shelf entry").path())
+        .filter(|path| path.extension().is_some_and(|it| it == "md"))
+        .collect();
+    paths.sort();
+    paths
+        .iter()
+        .filter(|path| {
+            std::fs::read_to_string(path)
+                .unwrap_or_else(|e| panic!("{}: {e}", path.display()))
+                .starts_with("---\n")
+        })
+        .map(|path| {
+            let (source, document) = front_matter(path);
+            Spent {
+                path: path.display().to_string(),
+                tier: scalar(&document, "tier"),
+                round: scalar(&document, "round"),
+                cost: identity_cost(&source),
+            }
+        })
+        .collect()
+}
+
+/// `approved_cents` of each round under `rounds:` in `.headwater/probe.yml`.
+fn approvals() -> Vec<(String, u64)> {
+    let path = repository_root().join(".headwater/probe.yml");
+    let source =
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    let loaded = headwater_yaml::load(&source).expect("the probe declaration parses");
+    let rounds = loaded
+        .value
+        .as_map()
+        .and_then(|root| root.get("rounds"))
+        .and_then(|rounds| rounds.value.as_map())
+        .expect("`rounds:` is a mapping");
+    rounds
+        .iter()
+        .map(|entry| {
+            let cents = entry
+                .value
+                .value
+                .as_map()
+                .and_then(|round| round.get("approved_cents"))
+                .and_then(|cents| cents.value.as_scalar())
+                .and_then(|cents| cents.text.parse().ok())
+                .unwrap_or_else(|| panic!("round {} has no whole approved_cents", entry.key.value));
+            (entry.key.value.clone(), cents)
+        })
+        .collect()
+}
+
+/// Each way the transcripts break a round's approval: a round above its
+/// approval, a round no declaration names, a transcript with no round, and a
+/// transcript of a round whose cost does not read.
+fn over_approval(approved: &[(String, u64)], spent: &[Spent]) -> Vec<String> {
+    let mut findings = Vec::new();
+    let mut sums: Vec<(String, u64, usize)> = approved
+        .iter()
+        .map(|(round, _)| (round.clone(), 0, 0))
+        .collect();
+    for transcript in spent {
+        match transcript.round.as_deref() {
+            None => findings.push(format!("{} declares no round", transcript.path)),
+            Some("none") => {}
+            Some(round) => match sums.iter_mut().find(|(name, _, _)| name == round) {
+                None => findings.push(format!(
+                    "{} names the round {round}, which `rounds:` does not declare",
+                    transcript.path
+                )),
+                Some(sum) => match transcript.cost {
+                    None => findings.push(format!(
+                        "{} states no cost_cents under Run identity",
+                        transcript.path
+                    )),
+                    Some(cost) => {
+                        sum.1 += cost;
+                        sum.2 += 1;
+                    }
+                },
+            },
+        }
+    }
+    for ((round, sum, count), (_, cents)) in sums.iter().zip(approved) {
+        if sum > cents {
+            findings.push(format!(
+                "round {round}: {sum} cents over {count} transcripts, above the {cents} approved"
+            ));
+        }
+    }
+    findings
+}
+
+/// Each transcript whose round does not pair with its tier: an additive
+/// transcript names a round, and every other one writes `none`.
+fn unpaired(spent: &[Spent]) -> Vec<String> {
+    spent
+        .iter()
+        .filter(|transcript| {
+            let additive = transcript.tier.as_deref() == Some("additive");
+            let none = transcript.round.as_deref().is_none_or(|round| round == "none");
+            additive == none
+        })
+        .map(|transcript| {
+            format!(
+                "{}: tier {:?} with round {:?}",
+                transcript.path, transcript.tier, transcript.round
+            )
+        })
+        .collect()
+}
+
+#[test]
+fn each_round_of_the_additive_campaign_spent_at_most_its_approval() {
+    let spent = transcripts();
+    let rounds = approvals();
+    assert!(
+        spent.iter().any(|it| it.round.as_deref() == Some("screening")),
+        "no transcript of the screening round was read, so the sum is over nothing"
+    );
+    assert!(
+        rounds.iter().any(|(round, _)| round == "tuning"),
+        "`rounds:` declares no tuning round"
+    );
+    let findings = over_approval(&rounds, &spent);
+    assert!(findings.is_empty(), "{}", findings.join("\n"));
+}
+
+#[test]
+fn a_transcript_names_a_round_exactly_when_its_tier_is_additive() {
+    let findings = unpaired(&transcripts());
+    assert!(findings.is_empty(), "{}", findings.join("\n"));
+}
+
+fn spent(path: &str, tier: &str, round: Option<&str>, cost: Option<u64>) -> Spent {
+    Spent {
+        path: path.to_string(),
+        tier: Some(tier.to_string()),
+        round: round.map(str::to_string),
+        cost,
+    }
+}
+
+/// The twin of the spend test, over a set it writes: one cent above the
+/// approval is a finding, the approval exactly is not, and each way a
+/// transcript escapes the sum is a finding of its own.
+#[test]
+fn the_spend_test_finds_a_round_one_cent_above_its_approval() {
+    let approved = vec![("screening".to_string(), 100), ("tuning".to_string(), 50)];
+    let at = vec![
+        spent("a", "additive", Some("screening"), Some(60)),
+        spent("b", "additive", Some("screening"), Some(40)),
+        spent("c", "additive", Some("tuning"), Some(50)),
+        spent("d", "campaign", Some("none"), Some(999_999)),
+    ];
+    assert_eq!(over_approval(&approved, &at), Vec::<String>::new());
+
+    let mut above = at;
+    above[1].cost = Some(41);
+    assert_eq!(
+        over_approval(&approved, &above),
+        vec!["round screening: 101 cents over 2 transcripts, above the 100 approved".to_string()]
+    );
+
+    let escapes = vec![
+        spent("e", "additive", Some("pilot"), Some(1)),
+        spent("f", "additive", None, Some(1)),
+        spent("g", "additive", Some("tuning"), None),
+    ];
+    assert_eq!(
+        over_approval(&approved, &escapes),
+        vec![
+            "e names the round pilot, which `rounds:` does not declare".to_string(),
+            "f declares no round".to_string(),
+            "g states no cost_cents under Run identity".to_string(),
+        ]
+    );
+}
+
+#[test]
+fn the_pairing_test_finds_each_direction() {
+    let set = vec![
+        spent("kept", "additive", Some("tuning"), None),
+        spent("kept-too", "campaign", Some("none"), None),
+        spent("additive-none", "additive", Some("none"), None),
+        spent("additive-absent", "additive", None, None),
+        spent("campaign-round", "campaign", Some("screening"), None),
+    ];
+    let found: Vec<String> = unpaired(&set)
+        .into_iter()
+        .map(|it| it.split(':').next().unwrap_or_default().to_string())
+        .collect();
+    assert_eq!(
+        found,
+        vec!["additive-none", "additive-absent", "campaign-round"]
+    );
+}
+
+#[test]
+fn identity_cost_reads_the_run_identity_block_and_no_other() {
+    let source = "---\nid: x\n---\n\n## Events\n\n```yaml\ncost_cents: 1\n```\n\n## Run identity\n\n```yaml\nmodel: m\ncost_cents: 2452\n```\n";
+    assert_eq!(identity_cost(source), Some(2452));
+    assert_eq!(identity_cost("---\n---\n\n## Run identity\n\nTODO\n"), None);
+}

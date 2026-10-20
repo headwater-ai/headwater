@@ -6,6 +6,7 @@ summary: "The present arm of the campaign tier over the status probe alone, in t
 last_verified: 2026-09-29
 tier: campaign
 arm: present
+round: none
 title: "Status probe pilot of 2026-09-29, campaign tier, present arm, sufficiency"
 ---
 

@@ -6,6 +6,7 @@ summary: "Eight regression sessions ran live on claude-sonnet-5 against the read
 last_verified: 2026-09-17
 tier: regression
 arm: present
+round: none
 title: "Regression probe transcript for 2026-09-17 after the probe corrections"
 ---
 

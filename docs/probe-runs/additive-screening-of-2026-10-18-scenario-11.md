@@ -6,6 +6,7 @@ summary: "The scenario-11 arm of the additive screening round, line 12 of the ba
 last_verified: 2026-10-19
 tier: additive
 arm: scenario-11
+round: screening
 title: "Additive screening of 2026-10-18, scenario 11"
 relations:
   records:

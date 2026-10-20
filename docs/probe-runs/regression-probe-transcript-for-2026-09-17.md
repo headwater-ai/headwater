@@ -6,6 +6,7 @@ summary: "Eight regression sessions ran against the lock of this tree, on claude
 last_verified: 2026-09-16
 tier: regression
 arm: present
+round: none
 title: "Regression probe transcript for 2026-09-17"
 ---
 

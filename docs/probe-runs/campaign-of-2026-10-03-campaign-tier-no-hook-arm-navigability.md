@@ -6,6 +6,7 @@ summary: "The no-hook arm of the campaign tier over the navigability selection, 
 last_verified: 2026-10-08
 tier: campaign
 arm: no-hook
+round: none
 title: "Campaign of 2026-10-03, campaign tier, no-hook arm, navigability"
 relations:
   records:

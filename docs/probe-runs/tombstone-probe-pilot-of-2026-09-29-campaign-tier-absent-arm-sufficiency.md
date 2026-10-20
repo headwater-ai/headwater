@@ -6,6 +6,7 @@ summary: "The absent arm of the campaign tier over the tombstone probe alone, in
 last_verified: 2026-09-29
 tier: campaign
 arm: absent
+round: none
 title: "Tombstone probe pilot of 2026-09-29, campaign tier, absent arm, sufficiency"
 ---
 

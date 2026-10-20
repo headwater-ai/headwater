@@ -6,6 +6,7 @@ summary: "The scenario-9 arm of the additive screening round, line 10 of the bat
 last_verified: 2026-10-19
 tier: additive
 arm: scenario-9
+round: screening
 title: "Additive screening of 2026-10-18, scenario 9"
 relations:
   records:
