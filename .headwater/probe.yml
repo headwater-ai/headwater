@@ -603,6 +603,26 @@ sets:
 # least one paid try, and the owner accepts each layer's plan before any
 # spend on that layer. HW-DR-0111 records both rulings. The final round waits
 # on a ruling of its own.
+#
+# `open` holds the one-layer rule (#1819). It names the one layer whose plan
+# the owner accepted, or it is `none`, and only the tuning round declares it.
+# `tools/probe/campaign.sh` refuses a tuning line with 5, before it builds a
+# tree or asks the harness anything, when `open` is `none`, and when the
+# line's scenario is not the open one. An open layer is a mapping of six
+# fields, which `tools/probe/declared.py <declaration> open` checks:
+#
+#     open:
+#       layer: docs          # a layer under `layers:`
+#       scenario: 1          # a scenario that adds exactly that layer over its base
+#       try: 1               # 1 to the round's `tries`
+#       cap_cents: 6000      # above zero, and at most the round's `approved_cents`
+#       plan: https://github.com/headwater-ai/headwater/issues/1777#issuecomment-6277195497
+#       change: none         # the commit of the try's change, or `none`
+#
+# The plan is the URL of the comment in which the owner accepted it. The
+# documents layer was open for try 1, which scored 32 of 72 sessions and was
+# not kept (#1777), and no other layer's plan is accepted, so `open` is
+# `none`.
 rounds:
   screening:
     set: tuning
@@ -614,11 +634,32 @@ rounds:
     rates: [0.625, 0.375]
     tries: 3
     approved_cents: 151200
+    open: none
   final:
     set: held-out
     rates: [0.90, 0.80]
     tries: 1
     approved_cents: 0
+
+# The paths whose change can make a measured base stale, as the owner ruled
+# them on 2026-10-20 (HW-DR-0111): the engine's source and the scripts that
+# record, transform, contain, run and ablate a session. A base is stale when
+# a commit after the one it was measured at changes one of these paths in a
+# way that alters what a session measures: the engine, the grader or the
+# harness (#1777). A change that alters no session does not make a base
+# stale by itself, and a refusal that `campaign.sh` makes before it builds a
+# tree is such a change. `tools/probe/seal.sh` and `tools/probe/leak.py` are
+# not on the list, by the same ruling, and the owner's acceptance on
+# 2026-10-20 of the 30 paths by which the scenario-0 trees at 2d212a26 and
+# 2e3d71a7 differ stands. `tools/probe/declared.py <declaration>
+# base_invalidators` prints the list.
+base_invalidators:
+  - engine/crates/*/src/**
+  - tools/probe/probe-record.sh
+  - tools/probe/probe-transform.sh
+  - tools/probe/egress-proxy.py
+  - tools/probe/campaign.sh
+  - tools/probe/ablate.sh
 
 # The absent arm names a declared ablation (spec 5, "the counterfactual is not
 # a category, it is an arm of every probe... the absent arm names a declared

@@ -127,6 +127,18 @@
 # additive spec refuses `--repetitions` with 2, because the rounds fix the
 # count.
 #
+# **A tuning line runs only for the one layer the owner opened (#1819).**
+# The owner approved the tuning round on 2026-10-19 (#1777) on the rule that
+# it tunes one layer at a time and that the owner accepts each layer's plan
+# before any spend on it. `rounds.tuning.open` in `.headwater/probe.yml`
+# names that layer and its scenario, or `none`. The batch refuses a spec that
+# holds a tuning line when `open` is `none`, and a tuning line of any
+# scenario but the open one, with 5, and names the open layer and scenario.
+# It refuses at the same point as the round approval, so before any build,
+# tree or harness call, and it reads the same checkout's declaration and no
+# override. A declaration that `tools/probe/declared.py` refuses stops the
+# batch with 2.
+#
 # Each invocation of an additive spec then runs the dry run first, and a leak
 # in any scenario tree stops it with 8 before the harness is asked anything.
 # Past it, the batch runs each additive line as the dry run priced it:
@@ -962,6 +974,26 @@ if awk 'NF && $1 !~ /^#/ && $1 == "additive" { f = 1 } END { exit !f }' "$spec";
             echo "campaign: no person has approved spend on the $round round: its \`approved_cents\` under \`rounds:\` in .headwater/probe.yml is 0 or absent, so no line of it runs. Approve the round there, in a commit, or run a spec without its lines." >&2
         done
         exit 5
+    fi
+    # The tuning round runs one layer at a time, and only a layer whose plan
+    # the owner accepted (#1777, #1819). `rounds.tuning.open` names that
+    # layer and its scenario, or `none`, and it is read from this checkout
+    # alone, as the approval is.
+    if awk 'NF && $1 !~ /^#/ && $1 == "additive" && $3 == "tuning" { f = 1 } END { exit !f }' "$spec"; then
+        open=$(python3 "$root/tools/probe/declared.py" "$root/.headwater/probe.yml" open) || exit $?
+        if [ "$open" = none ]; then
+            echo "campaign: the tuning round is open for no layer: \`open:\` under \`rounds.tuning\` in .headwater/probe.yml is \`none\`, so no tuning line runs. Open the one layer whose plan the owner accepted there, in a commit, or run a spec without tuning lines." >&2
+            exit 5
+        fi
+        open_layer=$(printf '%s\n' "$open" | awk '{ print $1 }')
+        open_scenario=$(printf '%s\n' "$open" | awk '{ print $2 }')
+        others=$(awk -v s="scenario-$open_scenario" 'NF && $1 !~ /^#/ && $1 == "additive" && $3 == "tuning" && $2 != s && !seen[$2]++ { print $2 }' "$spec")
+        if [ -n "$others" ]; then
+            for other in $others; do
+                echo "campaign: the tuning round is open for the $open_layer layer on scenario $open_scenario alone, and the spec holds a tuning line of $other. Run a spec of the open scenario's tuning lines, or open that scenario's layer under \`rounds.tuning.open\` in .headwater/probe.yml, in a commit, once the owner has accepted its plan." >&2
+            done
+            exit 5
+        fi
     fi
 fi
 for tool in git jq tar awk cargo claude bwrap; do
