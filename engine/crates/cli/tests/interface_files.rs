@@ -92,6 +92,7 @@ const CASES: &[Case] = &[
     loads(&["probe", "plan"]),
     loads(&["probe", "record", TRANSCRIPT]),
     loads(&["probe", "grade", TRANSCRIPT]),
+    loads(&["probe", "compare", TRANSCRIPT, TRANSCRIPT]),
     loads(&["probe", "stale"]),
     stops(&["init"], "the root is already bound"),
     stops(&["taxonomy", "validate"], "it reads the package and no graph"),

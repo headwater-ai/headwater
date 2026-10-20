@@ -1251,6 +1251,20 @@ pub enum ProbeWord {
         )]
         path: Option<String>,
     },
+    Compare {
+        #[arg(
+            value_name = "treated",
+            help = "the transcript of the treated run. Both transcripts are graded as `probe \
+                    grade` grades one, and each difference is the treated rate minus the control \
+                    rate"
+        )]
+        treated: Option<String>,
+        #[arg(
+            value_name = "control",
+            help = "the transcript of the control run, graded the same way"
+        )]
+        control: Option<String>,
+    },
     Stale,
     #[command(external_subcommand)]
     Other(Vec<String>),
