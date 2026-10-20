@@ -409,8 +409,15 @@ exit=0 record=4 cents=50
 exit=9 record=5 cents=40
 exit=0 record=5 cents=40
 EOF
-drive
+# The two hooks (#1821) log each run, with the markers they found, so the
+# case shows when each ran.
+printf 'echo "$1 $(ls "$CASE/root" | tr "\\n" " ")" >> "$CASE/hooks.log"\n' > "$CASE/hook.sh"
+drive --on-canary "sh $CASE/hook.sh canary" --on-done "sh $CASE/hook.sh done"
 check "order: exits 0" code_is 0
+check "hooks: --on-canary runs once" [ "$(grep -c '^canary ' "$CASE/hooks.log")" = 1 ]
+check "hooks: --on-canary runs after canary-recorded is written, before a.done" sh -c "grep '^canary ' '$CASE/hooks.log' | grep -q ' canary-recorded ' && ! grep '^canary ' '$CASE/hooks.log' | grep -q ' a.done '"
+check "hooks: --on-done runs once" [ "$(grep -c '^done ' "$CASE/hooks.log")" = 1 ]
+check "hooks: --on-done runs after done is written, and last" sh -c "tail -1 '$CASE/hooks.log' | grep -q '^done .* done '"
 check "order: six invocations" calls_are 6
 check "order: the canary is first, at --parallel 1 --max-sessions 8" sh -c "grep '^argv' '$CASE/calls.short' | head -1 | grep -q '/root/a cap=99980 max=8\$'"
 check "order: the canary argv carries --parallel 1" sh -c "grep -c -- '--parallel 1 --max-sessions 8' '$CASE/calls.argv' | grep -qx 1"
@@ -423,9 +430,10 @@ check "order: the log file holds the same lines" sh -c "grep -c ' exit=' '$CASE/
 check "order: the last A line reads 20/20 and the files' 1000 cents" out_has " a exit=0 recorded=20/20 new=4 cents=$(spent_of a) all=$(spent_of a)/100000\$"
 check "order: the last B line reads 10/10 and both batches' cents" out_has " b exit=0 recorded=10/10 new=5 cents=$(spent_of b) all=$(($(spent_of a) + $(spent_of b)))/100000\$"
 check "order: a bound exit is tagged bound" out_has " a exit=9 recorded=12/20 new=4 cents=600 all=600/100000 bound\$"
-drive
+drive --on-canary "sh $CASE/hook.sh canary" --on-done "sh $CASE/hook.sh done"
 check "order: started again with done present, exits 0" code_is 0
 check "order: started again with done present, invokes nothing" calls_are 6
+check "hooks: a driver started with done present runs neither hook" [ "$(wc -l < "$CASE/hooks.log")" = 2 ]
 
 # ------------------------------------------------- 2. halt backoff
 
