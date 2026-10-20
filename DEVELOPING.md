@@ -195,6 +195,7 @@ The fixture suites, which are shell and Python rather than cargo, and which you 
     sh tools/probe/ci-confine.sh
     sh tools/probe/ci-confine-fixtures.sh
     sh tools/probe/campaign-drive-fixtures.sh
+    sh tools/probe/try-fixtures.sh
     sh tools/repo/readme-fixtures.sh
     sh tools/repo/release-guide-fixtures.sh
     sh tools/repo/retire-worktree-fixtures.sh
