@@ -17,6 +17,7 @@ relations:
     - tools/probe/arms/hook/.claude/settings.json
     - tools/probe/additive-campaign.spec
     - tools/probe/additive-screening.spec
+    - tools/probe/additive-tuning-docs.spec
 ---
 
 # 111 — The additive campaign adds six layers to plain code in fourteen scenarios and registers one comparison each
@@ -158,11 +159,13 @@ This record does not run anything. The probe documents state their task, target 
 
 That is at the declared 50 cents a session. At the 35.0 cents a session of 2026-10-03, the total is $2,489.20.
 
-**The owner approved the screening round alone, at $700.** On 2026-10-18 he ruled on #1775: "restart doesn't reset count, but raise ceiling to $700". The plan of the round stays 1,008 sessions and $504.00. So $196.00 is room for a restart, which is 392 sessions at 50 cents. A restart does not reset the count: the money that every attempt of the screening round spends counts toward the one $700. The tuning round, at most $1,512.00, and the final round, $1,540.00, are not approved. Each waits for a ruling of its own.
+**The owner approved the screening round at $700.** On 2026-10-18 he ruled on #1775: "restart doesn't reset count, but raise ceiling to $700". The plan of the round stays 1,008 sessions and $504.00. So $196.00 is room for a restart, which is 392 sessions at 50 cents. A restart does not reset the count: the money that every attempt of the screening round spends counts toward the one $700.
 
-Three mechanisms hold this ruling. The additive tier's ceiling in `.headwater/probe.yml` is 70000 cents. Each round under `rounds:` declares `approved_cents`: 70000 for the screening round and 0 for the other two. `tools/probe/campaign.sh` refuses a line of a round whose approval is 0, with exit 5, before it builds a tree or asks the harness anything. The ceiling alone cannot do this, because the plan prices one line at a time, and a final line of 220 sessions costs $110.00. `tools/probe/additive-screening.spec` holds the 15 screening lines alone, so the paid run names a spec that holds no refused line. `tools/probe/campaign-drive.sh` gives each batch the cap less what every other batch directory under its root spent. So a restart moves the old batch directory aside under the same root. The new batch then gets $700 less what every earlier attempt spent, less the overshoot margin.
+**The owner approved the tuning round at $1,512.00.** On 2026-10-19 he ruled on #1777: "Approve the full $1,512: tuning may spend up to $1,512." The sum covers every attempt and every layer. He also ruled that every layer gets at least one paid tuning try. The tuning runs one layer at a time. The owner accepts the plan of each layer before any spend on that layer. No tool holds a total across tuning batches, so the parent of the run keeps it by hand. The final round, $1,540.00, is not approved, and it waits for a ruling of its own.
 
-This ruling opens again if the owner approves the tuning or the final round, or moves the $700.
+Three mechanisms hold these rulings. The additive tier's ceiling in `.headwater/probe.yml` is 70000 cents, and it bounds one batch directory. Each round under `rounds:` declares `approved_cents`: 70000 for the screening round, 151200 for the tuning round and 0 for the final round. `tools/probe/campaign.sh` refuses a line of a round whose approval is 0, with exit 5, before it builds a tree or asks the harness anything. The ceiling alone cannot do this, because the plan prices one line at a time, and a final line of 220 sessions costs $110.00. `tools/probe/additive-screening.spec` holds the 15 screening lines alone, so the paid run names a spec that holds no refused line. `tools/probe/additive-tuning-docs.spec` holds the one tuning line of the documents layer, scenario 1, in the same way. `tools/probe/campaign-drive.sh` gives each batch the cap less what every other batch directory under its root spent. So a restart moves the old batch directory aside under the same root. The new batch then gets $700 less what every earlier attempt spent, less the overshoot margin.
+
+These rulings open again if the owner approves the final round, or moves the $700 or the $1,512.00.
 
 The dry run builds the tree of each scenario and runs the leak check over it. The check reads the always-loaded text, the body of each skill, and the text the intent hook injects for the task of each probe. A leak stops the dry run with 8. A batch of the spec runs the same check before each invocation, so the check runs again before each round.
 

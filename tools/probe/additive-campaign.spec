@@ -40,11 +40,15 @@
 # At the 35.0 cents a session the campaign of 2026-10-03 realized, the total
 # is $2,489.20.
 #
-# **The owner approved the screening round alone (#1775).** On 2026-10-18 he
-# approved $700 over every attempt of the screening round, and HW-DR-0111
-# records it. The tuning and final rounds are not approved, so a batch of
-# this spec is refused with 5 before it builds a tree. The screening round
-# runs from `tools/probe/additive-screening.spec`, which holds its lines alone.
+# **The owner approved the screening and tuning rounds, and not the final
+# round.** On 2026-10-18 he approved $700 over every attempt of the screening
+# round (#1775). On 2026-10-19 he approved $1,512.00 over every attempt and
+# every layer of the tuning round (#1777): one layer at a time, with each
+# layer's plan accepted before any spend on it. HW-DR-0111 records both. The
+# final round is not approved, so a batch of this spec is refused with 5
+# before it builds a tree. The screening round runs from
+# `tools/probe/additive-screening.spec`, which holds its lines alone, and the
+# documents layer's tuning try runs from `tools/probe/additive-tuning-docs.spec`.
 # The spec plans the four probes of #1718 and the #1709 successor.
 
 # The screening round.

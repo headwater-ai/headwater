@@ -386,16 +386,19 @@ tiers:
   # 4,280 sessions. At 50 cents the whole plan is 7,112 sessions and
   # $3,556.00, and at 35.0 cents it is $2,489.20.
   #
-  # The owner approved the screening round alone on 2026-10-18 (#1775), at
-  # $700 over every attempt of the round: a restart does not reset the count.
-  # HW-DR-0111 records the ruling. The plan is 1,008 sessions and $504.00, so
-  # $196.00 is room for a restart. This ceiling is that $700. It bounds one
-  # batch directory, and `tools/probe/campaign-drive.sh` gives a restarted
-  # batch the cap less what every earlier batch under its root spent. The
-  # plan prices one line at a time, so this ceiling admits a line of any
-  # round. The approval of each round under `rounds:` is what refuses the
-  # tuning and final rounds: `campaign.sh` refuses a line of a round whose
-  # `approved_cents` is 0, with 5, before it builds a tree.
+  # The owner approved the screening round on 2026-10-18 (#1775), at $700
+  # over every attempt of the round: a restart does not reset the count. The
+  # screening plan is 1,008 sessions and $504.00, so $196.00 is room for a
+  # restart. This ceiling was set to that $700, and it now bounds one batch
+  # directory of any round: a tuning try of one layer is 72 sessions, or
+  # $36.00, well inside it. `tools/probe/campaign-drive.sh` gives a restarted
+  # batch the cap less what every earlier batch under its root spent. It
+  # holds no total across roots, so the total of the tuning round against its
+  # $1,512.00 (#1777) is kept by hand. The plan prices one line at a time, so
+  # this ceiling admits a line of any round. The approval of each round under
+  # `rounds:` is what refuses a round: `campaign.sh` refuses a line of a round
+  # whose `approved_cents` is 0, with 5, before it builds a tree. HW-DR-0111
+  # records each approval.
   additive:
     budget_cents: 70000
     session_cost_cents: 50
@@ -594,8 +597,12 @@ sets:
 # round (#1775), and a round that declares none is approved for nothing.
 # `tools/probe/campaign.sh` refuses a batch line of a round whose approval is
 # 0, with 5, before it builds a tree or asks the harness anything. The owner
-# approved the screening round alone, at $700, on 2026-10-18 (HW-DR-0111).
-# The tuning and final rounds wait on rulings of their own.
+# approved the screening round, at $700, on 2026-10-18 (#1775). On
+# 2026-10-19 the owner approved the tuning round, at $1,512.00 over every
+# attempt and every layer (#1777): one layer at a time, every layer gets at
+# least one paid try, and the owner accepts each layer's plan before any
+# spend on that layer. HW-DR-0111 records both rulings. The final round waits
+# on a ruling of its own.
 rounds:
   screening:
     set: tuning
@@ -606,7 +613,7 @@ rounds:
     set: tuning
     rates: [0.625, 0.375]
     tries: 3
-    approved_cents: 0
+    approved_cents: 151200
   final:
     set: held-out
     rates: [0.90, 0.80]

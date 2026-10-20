@@ -5031,13 +5031,16 @@ if [ -x "$engine" ]; then
     present "it prints the final round's sum" "round final: 3080 sessions, \$1540.00" "$scratch/add.out"
     present "and one total" "total: 7112 sessions, \$3556.00" "$scratch/add.out"
     present "each round's count is computed from its rates" "so ceil(219 / 4) = 55 repetitions of each probe" "$scratch/add.out"
-    # The owner approved the screening round alone, at $700 (#1775). The
+    # The owner approved the screening round at $700 (#1775). The
     # ceiling admits each plan, and the approval of each round says which
     # lines the batch runs.
     absent "the ceiling of \$700 refuses no plan" "The ceiling refuses" "$scratch/add.out"
     present "the dry run prints the screening round as approved" \
         "round screening: approved to \$700.00 over every attempt, so the batch runs its lines" "$scratch/add.out"
-    present "and the tuning round as not approved" "round tuning: not approved, so the batch refuses its lines with 5" "$scratch/add.out"
+    # The owner approved the tuning round on 2026-10-19 (#1777), at $1,512.00
+    # over every attempt and every layer, one layer at a time.
+    present "and the tuning round as approved" \
+        "round tuning: approved to \$1512.00 over every attempt, so the batch runs its lines" "$scratch/add.out"
     present "and the final round as not approved" "round final: not approved, so the batch refuses its lines with 5" "$scratch/add.out"
     # An approval is a whole number of cents at or above zero. A negative or
     # a non-integer one is refused, so no typo reads as an approval or as a
@@ -5061,6 +5064,9 @@ if [ -x "$engine" ]; then
     same "the screening spec holds the screening lines of the whole campaign, and no other" \
         "$(awk 'NF && $1 !~ /^#/ && $3 == "screening"' "$additive_spec")" \
         "$(awk 'NF && $1 !~ /^#/' "$root/tools/probe/additive-screening.spec")"
+    same "the documents tuning spec holds the scenario-1 tuning line of the whole campaign, and no other" \
+        "$(awk 'NF && $1 !~ /^#/ && $2 == "scenario-1" && $3 == "tuning"' "$additive_spec")" \
+        "$(awk 'NF && $1 !~ /^#/' "$root/tools/probe/additive-tuning-docs.spec")"
     same "and it builds and checks each of the 14 scenario trees" "14" \
         "$(sed -n 's/^tree additive \(scenario-[0-9]*\)[ :].*/\1/p' "$scratch/add.out" | LC_ALL=C sort -u | wc -l | tr -d ' ')"
     present "a hit in the harness layer of scenario 13 prints as harness" \
@@ -5195,9 +5201,9 @@ if [ -x "$engine" ]; then
         CARGO_TARGET_DIR="$scratch/gate-target" PATH="$scratch/gate-bin:$PATH" \
             sh "$root/tools/probe/campaign.sh" --out "$scratch/gate-out" --model claude-haiku-4-5 \
             --spec "$additive_spec" > /dev/null 2> "$scratch/gate-clean.err"
-        same "the whole campaign's spec is still refused with 5, now on the rounds nobody approved" "5" "$?"
-        present "and the refusal names the tuning round" "no person has approved spend on the tuning round" "$scratch/gate-clean.err"
-        present "and the final round" "no person has approved spend on the final round" "$scratch/gate-clean.err"
+        same "the whole campaign's spec is still refused with 5, now on the round nobody approved" "5" "$?"
+        present "and the refusal names the final round" "no person has approved spend on the final round" "$scratch/gate-clean.err"
+        absent "and not the tuning round, which the owner approved (#1777)" "approved spend on the tuning round" "$scratch/gate-clean.err"
         absent "and not the screening round" "approved spend on the screening round" "$scratch/gate-clean.err"
         same "and it ran no dry run, planned no line and asked the harness nothing" "no no no" \
             "$([ -e "$scratch/gate-out/leak-gate" ] && echo yes || echo no) $([ -e "$scratch/gate-out/lines" ] && echo yes || echo no) $([ -e "$scratch/gate-out/claude-version" ] && echo yes || echo no)"
@@ -5267,6 +5273,21 @@ if [ -x "$engine" ]; then
             "$([ -e "$scratch/run-final-out/claude-version" ] && echo yes || echo no) $([ -e "$scratch/run-final-out/lines" ] && echo yes || echo no) $([ -e "$scratch/run-final-out/trees" ] && echo yes || echo no) $([ -e "$scratch/run-final-out/sessions" ] && echo yes || echo no)"
         same "and it ran no dry run, so it built no scenario tree" "no" \
             "$([ -e "$scratch/run-final-out/leak-gate" ] && echo yes || echo no)"
+        # The decisive case of #1777: the owner approved the tuning round, so a
+        # batch of the documents tuning spec passes the round gate and starts a
+        # session. The stub harness answers `--version` alone, so no session
+        # reaches a model.
+        rm -rf "$scratch/run-tune-out"
+        HEADWATER_PROBE_HOST_CONFIG="$scratch/run-host" CARGO_TARGET_DIR="$scratch/gate-target" PATH="$scratch/run-bin:$PATH" \
+            sh "$root/tools/probe/campaign.sh" --out "$scratch/run-tune-out" --model claude-haiku-4-5 \
+            --spec "$root/tools/probe/additive-tuning-docs.spec" --max-sessions 1 > /dev/null 2> "$scratch/run-tune.err"
+        tune_status=$?
+        same "a batch of the documents tuning spec passes the round gate and starts a session" "yes" \
+            "$([ "$tune_status" != 5 ] && [ -e "$scratch/run-tune-out/claude-version" ] && echo yes || echo no)"
+        absent "and names no refusal of the tuning round" "no person has approved spend on the tuning round" "$scratch/run-tune.err"
+        same "its jobs are 4 probes x the tuning round's 18 repetitions" "72" \
+            "$(grep -c ' additive scenario-1 tuning ' "$scratch/run-tune-out/jobs" 2>/dev/null)"
+        rm -rf "$scratch/run-tune-out"
         # Each line's jobs are its own plan's count, not the first line's
         # (verify round 1): the regression tier runs 1 repetition and the
         # campaign tier 30, so one spec of both is 8 + 8 x 30 jobs.

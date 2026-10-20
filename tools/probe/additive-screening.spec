@@ -3,7 +3,7 @@
 #
 #     sh tools/probe/campaign.sh --dry-run --spec tools/probe/additive-screening.spec
 #
-# The owner approved the screening round alone, at $700 over every attempt
+# The owner approved the screening round at $700 over every attempt
 # of the round (HW-DR-0111). The batch refuses a line of a round whose
 # `approved_cents` under `rounds:` in `.headwater/probe.yml` is 0, with 5,
 # before it builds a tree or asks the harness anything. So the paid

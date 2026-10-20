@@ -61,7 +61,7 @@ The direction is forced rather than chosen, and it is the sharpest point of this
 
 The name avoids two addresses the base holds. `governs` runs from a document to a `code_path`, and `constrains` runs from a decision to a decision. Both declare their endpoints as lists, and an `add` cannot reach into a list that exists, so neither is reachable.
 
-`created_by: agent`, which matches the base's `constrains`. Nothing mechanical knows which standard binds which component. A coherence sweep proposes the edge and a person accepts it.
+`created_by: agent`, which matches the base's `constrains`. Nothing mechanical knows which standard binds which component. A coherence sweep proposes the edge and a person accepts it. Once the standard that writes `regulates` leaves its initial state, the specification owes `regulated_by`: write it in the same change, or run `headwater check --fix`.
 
 ### `realizes`, from the technical specification to the functional one
 
@@ -73,7 +73,7 @@ The family is `derivation` and the nucleus is the functional specification. This
 
 `composition` was refused. It would say the technical specification is part of the functional one, and it is not. It is a second document about one subject at a second level.
 
-`created_by: scaffold`, on the argument the design-spec entry used for `applied_in`. The run that opens a technical specification from a functional one writes the technical specification's half of the edge. The technical specification opens at an initial state, so the run writes no half into the functional one and reports that half as owed. The functional specification owes it once the technical one is promoted, and `headwater check --fix` writes it then ([HW-DR-0086](https://github.com/headwater-ai/headwater/blob/main/docs/decisions/0086-a-reciprocal-half-is-owed-once-its-writer-leaves-its-initial-state.md)).
+`created_by: scaffold`, on the argument the design-spec entry used for `applied_in`. The run that opens a technical specification from a functional one writes the technical specification's half of the edge. The technical specification opens at an initial state, so the run writes no half into the functional one and reports that half as owed. The functional specification owes it once the technical one is promoted, and `headwater check --fix` writes it then ([HW-DR-0086](https://github.com/headwater-ai/headwater/blob/main/docs/decisions/0086-a-reciprocal-half-is-owed-once-its-writer-leaves-its-initial-state.md)). Once the technical specification that writes `realizes` leaves its initial state, the functional one owes `realized_by`: write it in the same change, or run `headwater check --fix`.
 
 ### The third relation this entry does not declare
 
