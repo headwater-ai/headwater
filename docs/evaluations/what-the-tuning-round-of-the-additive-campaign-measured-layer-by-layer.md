@@ -30,7 +30,7 @@ This is the tuning record that [#1777](https://github.com/headwater-ai/headwater
 
 The rate is the share of graded sessions that satisfied their expectation, with the Wilson 95% interval that the result page prints. The difference from the base is the Newcombe hybrid score interval, as `Interval::minus` computes it in `engine/crates/probe/src/grade.rs`. The screening evaluation uses the same method. The script that computed the figures below also gives two rows that the screening evaluation prints. They are +38.9 [+23.7, +51.7] for scenario 1 against 0, and +1.4 [-14.5, +17.2] for scenario 3 against 1.
 
-**The keep rule** is the rule of #1777. A try is kept when the pooled point estimate of the tuned scenario against its base is above the best one so far. A loop stops at the first try that is not kept, or after three tries. A try that is not kept is reverted.
+**The keep rule** is the rule of #1777. A try is kept when the pooled point estimate of the tuned scenario against its base is above the best one so far. A loop stops at the first try that is not kept, or after three tries. A try that is not kept is reverted. On 2026-10-20 the owner replaced this rule. A try is kept only when the whole interval of its difference against the best so far is above zero. `tools/probe/try.sh result` applies the new rule (#1822). Try 1, 32 of 72 against 39 of 72, is -9.7 [-25.2, +6.5], so neither rule keeps it.
 
 **The approval.** The owner approved $1,512.00 for the whole tuning round, over every attempt and every layer (OWNER lines of 2026-10-19 and 2026-10-20 in the run `20261018-0144`). The total below is the sum of `sessions/*/cost` and `sessions/*/spent-before` under every batch directory of the round.
 
