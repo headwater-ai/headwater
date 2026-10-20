@@ -491,6 +491,15 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 ),
                 Some(path) => probe_grade(root, Path::new(&path)),
             },
+            Some(ProbeWord::Compare { treated, control }) => match (treated, control) {
+                (Some(treated), Some(control)) => {
+                    probe_compare(root, Path::new(&treated), Path::new(&control))
+                }
+                _ => fail(
+                    "`probe compare` takes two transcript paths, the treated run first and the \
+                     control run second. It grades both and prints each difference",
+                ),
+            },
             Some(ProbeWord::Stale) => probe_stale(root),
             Some(ProbeWord::Other(words)) => no_such_second_word("probe", &words),
         },
@@ -5847,33 +5856,86 @@ fn probe_scenario_delta(budgets: &headwater_probe::Budgets, number: u32) -> Exit
 /// It writes nothing and it reaches nothing. No socket is opened here, no crate
 /// below can open one, and no gate, hook or CI step calls this verb.
 fn probe_grade(root: &Path, path: &Path) -> ExitCode {
-    let source = match std::fs::read_to_string(path) {
-        Ok(source) => source,
-        Err(error) => {
-            return fail(&format!(
-                "the transcript at {} did not read: {error}",
-                path.display()
-            ))
+    match grade_transcripts(root, &[path]) {
+        Err(code) => code,
+        Ok(Grading::Unplannable(refusal)) => {
+            println!("Nothing was graded. `headwater probe plan` refuses this corpus: {refusal}");
+            ExitCode::SUCCESS
         }
-    };
+        Ok(Grading::Graded(results)) => {
+            for results in &results {
+                print!("{}", results.render(headwater_cli::paint::stdout_color()));
+            }
+            ExitCode::SUCCESS
+        }
+    }
+}
+
+/// `headwater probe compare <treated> <control>`.
+///
+/// It grades both transcripts through the path `probe grade` takes, in one
+/// load of the corpus, and prints each difference of the treated rate minus
+/// the control rate with its Newcombe interval, one line for each probe and
+/// one pooled line (#1820). Like `probe grade` it never gates: a comparison
+/// it produces exits 0 whatever the rates are.
+fn probe_compare(root: &Path, treated: &Path, control: &Path) -> ExitCode {
+    match grade_transcripts(root, &[treated, control]) {
+        Err(code) => code,
+        Ok(Grading::Unplannable(refusal)) => {
+            println!("Nothing was compared. `headwater probe plan` refuses this corpus: {refusal}");
+            ExitCode::SUCCESS
+        }
+        Ok(Grading::Graded(results)) => {
+            print!(
+                "{}",
+                headwater_probe::grade::comparison(&results[0], &results[1])
+            );
+            ExitCode::SUCCESS
+        }
+    }
+}
+
+/// What grading a list of transcripts against this corpus came to.
+enum Grading {
+    /// The plan refuses this corpus, so no transcript was graded.
+    Unplannable(String),
+    /// The results of each transcript, in the order the paths were given.
+    Graded(Vec<headwater_probe::Results>),
+}
+
+/// Grade each transcript against the regression selection this tree
+/// declares, the one path that `probe grade` and `probe compare` share.
+///
+/// It returns the exit code of a refusal when a transcript or the probe
+/// declaration does not read, or when the corpus does not load.
+fn grade_transcripts(root: &Path, paths: &[&Path]) -> Result<Grading, ExitCode> {
+    let mut sources = Vec::new();
+    for path in paths {
+        match std::fs::read_to_string(path) {
+            Ok(source) => sources.push(source),
+            Err(error) => {
+                return Err(fail(&format!(
+                    "the transcript at {} did not read: {error}",
+                    path.display()
+                )))
+            }
+        }
+    }
     let declaration = root.join(headwater_probe::budget::PATH);
     let budgets = match std::fs::read_to_string(&declaration) {
         Ok(source) => match headwater_probe::Budgets::read(&source) {
             Ok(budgets) => budgets,
-            Err(unreadable) => return refuse(&unreadable.to_string()),
+            Err(unreadable) => return Err(refuse(&unreadable.to_string())),
         },
         Err(error) => {
-            return refuse(&format!(
+            return Err(refuse(&format!(
                 "`{}` did not read: {error}. A grade names the selection it was taken over, and \
                  the selection comes from the plan",
                 headwater_probe::budget::PATH
-            ))
+            )))
         }
     };
-    let loaded = match load(root) {
-        Ok(loaded) => loaded,
-        Err(code) => return code,
-    };
+    let loaded = load(root)?;
     let plan = headwater_probe::Plan::over(
         &loaded.census,
         &loaded.graph,
@@ -5893,10 +5955,7 @@ fn probe_grade(root: &Path, path: &Path) -> ExitCode {
     // one.
     let selected = match plan.gradable() {
         Ok(selected) => selected,
-        Err(refusal) => {
-            println!("Nothing was graded. `headwater probe plan` refuses this corpus: {refusal}");
-            return ExitCode::SUCCESS;
-        }
+        Err(refusal) => return Ok(Grading::Unplannable(refusal.to_string())),
     };
     let tree = headwater_probe::intake::Tree {
         census: &loaded.census,
@@ -5904,14 +5963,16 @@ fn probe_grade(root: &Path, path: &Path) -> ExitCode {
         lock: &loaded.bound.digest,
         selected: Some(selected),
     };
-    let record = headwater_probe::Record::read(&source, &tree);
-    // A run planned over part of the selection is graded against that part,
-    // the same way `generate` grades it (#980).
-    let narrowed = headwater_probe::grade::narrowed(selected, &record);
-    let selected = narrowed.as_deref().unwrap_or(selected);
-    let results = headwater_probe::Results::over(&record, selected);
-    print!("{}", results.render(headwater_cli::paint::stdout_color()));
-    ExitCode::SUCCESS
+    let mut graded = Vec::new();
+    for source in &sources {
+        let record = headwater_probe::Record::read(source, &tree);
+        // A run planned over part of the selection is graded against that
+        // part, the same way `generate` grades it (#980).
+        let narrowed = headwater_probe::grade::narrowed(selected, &record);
+        let selected = narrowed.as_deref().unwrap_or(selected);
+        graded.push(headwater_probe::Results::over(&record, selected));
+    }
+    Ok(Grading::Graded(graded))
 }
 
 /// `headwater probe record <path>`.

@@ -390,6 +390,25 @@ pub struct Row {
     pub sessions: Vec<Graded>,
 }
 
+impl Row {
+    /// Sessions of this probe that reached a verdict, the denominator of its
+    /// rate. It counts as [`Results::graded`] counts, over one row.
+    pub fn graded(&self) -> usize {
+        self.sessions
+            .iter()
+            .filter(|session| !matches!(session.verdict, Verdict::Refused(_)))
+            .count()
+    }
+
+    /// Sessions of this probe that satisfied its predicate.
+    pub fn satisfied(&self) -> usize {
+        self.sessions
+            .iter()
+            .filter(|session| matches!(session.verdict, Verdict::Satisfied(_)))
+            .count()
+    }
+}
+
 /// A closed-interval estimate of a rate, as a proportion.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Interval {
@@ -399,6 +418,29 @@ pub struct Interval {
 }
 
 impl Interval {
+    /// The Wilson score interval of `satisfied` of `graded`, and `None` where
+    /// nothing was graded.
+    ///
+    /// It is the one copy of the interval. [`Results::rate`] reports it for a
+    /// whole transcript, and [`compared`] takes it for each side of one
+    /// probe's difference, so a per-probe rate and a pooled rate cannot drift
+    /// apart (#1820).
+    pub fn wilson(satisfied: usize, graded: usize) -> Option<Interval> {
+        if graded == 0 {
+            return None;
+        }
+        let n = graded as f64;
+        let p = satisfied as f64 / n;
+        let denominator = 1.0 + Z * Z / n;
+        let center = (p + Z * Z / (2.0 * n)) / denominator;
+        let half = Z * (p * (1.0 - p) / n + Z * Z / (4.0 * n * n)).sqrt() / denominator;
+        Some(Interval {
+            point: p,
+            low: (center - half).max(0.0),
+            high: (center + half).min(1.0),
+        })
+    }
+
     /// The difference `self - other`, with a Newcombe hybrid score interval.
     ///
     /// Spec 5 powers a campaign for a two-sample test: 0.50 against 0.75 at 80%
@@ -663,20 +705,7 @@ impl Results {
     /// inside zero and one at the session counts a regression tier runs, where
     /// the textbook normal interval does not.
     pub fn rate(&self) -> Option<Interval> {
-        let n = self.graded();
-        if n == 0 {
-            return None;
-        }
-        let n = n as f64;
-        let p = self.satisfied() as f64 / n;
-        let denominator = 1.0 + Z * Z / n;
-        let center = (p + Z * Z / (2.0 * n)) / denominator;
-        let half = Z * (p * (1.0 - p) / n + Z * Z / (4.0 * n * n)).sqrt() / denominator;
-        Some(Interval {
-            point: p,
-            low: (center - half).max(0.0),
-            high: (center + half).min(1.0),
-        })
+        Interval::wilson(self.satisfied(), self.graded())
     }
 
     /// The report, in the engine's own words.
@@ -814,6 +843,105 @@ pub fn percent(value: f64) -> String {
 /// A difference of two proportions, in percentage points and with its sign.
 pub fn points(value: f64) -> String {
     format!("{:+.1} points", value * 100.0)
+}
+
+/// The label of the line that compares two whole transcripts.
+pub const POOLED: &str = "pooled";
+
+/// One line of `headwater probe compare`: the difference of the treated rate
+/// minus the control rate, each given as `(satisfied, graded)`.
+///
+/// The interval is [`Interval::minus`] over the two [`Interval::wilson`]
+/// intervals, so it is the interval a result page computes, and the line is
+/// `<label>: <x1>/<n1> against <x0>/<n0>, <d> points [<low>, <high>]`. A side
+/// that graded no session has no interval, and the line says which side.
+pub fn compared(label: &str, treated: (usize, usize), control: (usize, usize)) -> String {
+    let counts = format!(
+        "{label}: {}/{} against {}/{}",
+        treated.0, treated.1, control.0, control.1
+    );
+    match (
+        Interval::wilson(treated.0, treated.1),
+        Interval::wilson(control.0, control.1),
+    ) {
+        (Some(one), Some(other)) => {
+            let difference = one.minus(&other);
+            format!(
+                "{counts}, {} [{:+.1}, {:+.1}]",
+                points(difference.point),
+                difference.low * 100.0,
+                difference.high * 100.0
+            )
+        }
+        (None, _) => format!("{counts}, no difference: the treated transcript graded no session"),
+        (_, None) => format!("{counts}, no difference: the control transcript graded no session"),
+    }
+}
+
+/// The report of `headwater probe compare`: one line for each probe and one
+/// [`POOLED`] line, the treated transcript first.
+///
+/// A transcript the intake refused has no rows, so the report states the
+/// refusal and compares nothing. A probe that only one transcript ran is
+/// named on a line of its own and left out of the per-probe lines; the pooled
+/// line counts every graded session of each side, as [`Results::rate`] does.
+pub fn comparison(treated: &Results, control: &Results) -> String {
+    use std::fmt::Write;
+    let mut out = String::new();
+    let mut refused = false;
+    for (side, results) in [("treated", treated), ("control", control)] {
+        if let Some(why) = &results.unusable {
+            let _ = writeln!(
+                out,
+                "The {side} transcript reached no grader, so nothing was compared: {why}"
+            );
+            refused = true;
+        }
+    }
+    if refused {
+        return out;
+    }
+    for row in &treated.rows {
+        match control.rows.iter().find(|other| other.probe == row.probe) {
+            Some(other) => {
+                let _ = writeln!(
+                    out,
+                    "{}",
+                    compared(
+                        &row.probe,
+                        (row.satisfied(), row.graded()),
+                        (other.satisfied(), other.graded())
+                    )
+                );
+            }
+            None => {
+                let _ = writeln!(
+                    out,
+                    "{}: only the treated transcript ran this probe, so it has no difference",
+                    row.probe
+                );
+            }
+        }
+    }
+    for row in &control.rows {
+        if !treated.rows.iter().any(|other| other.probe == row.probe) {
+            let _ = writeln!(
+                out,
+                "{}: only the control transcript ran this probe, so it has no difference",
+                row.probe
+            );
+        }
+    }
+    let _ = writeln!(
+        out,
+        "{}",
+        compared(
+            POOLED,
+            (treated.satisfied(), treated.graded()),
+            (control.satisfied(), control.graded())
+        )
+    );
+    out
 }
 
 /// The events of one probe, grouped by session, in the order the sessions first
@@ -2044,5 +2172,96 @@ mod tests {
             );
             assert!(interval.low <= interval.point && interval.point <= interval.high);
         }
+    }
+
+    /// A row of `graded` sessions, `satisfied` of them satisfied, and
+    /// `refused` more that reached no verdict.
+    fn row_of(probe: &str, satisfied: usize, graded: usize, refused: usize) -> Row {
+        let mut sessions: Vec<Graded> = (0..graded)
+            .map(|index| Graded {
+                session: index.to_string(),
+                events: vec![index + 1],
+                verdict: match index < satisfied {
+                    true => Verdict::Satisfied(Witness::Answered {
+                        event: index + 1,
+                        value: "yes".into(),
+                    }),
+                    false => Verdict::NotSatisfied(Miss::NoAnswerGiven),
+                },
+                mcp_calls: None,
+            })
+            .collect();
+        sessions.extend((0..refused).map(|index| Graded {
+            session: format!("r{index}"),
+            events: Vec::new(),
+            verdict: Verdict::Refused(Refusal::NotRun),
+            mcp_calls: None,
+        }));
+        Row {
+            probe: probe.into(),
+            category: Category::Discovery,
+            expectation: Expectation::Answered,
+            sessions,
+        }
+    }
+
+    fn results_of(rows: Vec<Row>, unusable: Option<&str>) -> Results {
+        Results {
+            grader: VERSION,
+            tier: None,
+            arm: None,
+            model: None,
+            served_version: None,
+            rows,
+            unusable: unusable.map(str::to_string),
+        }
+    }
+
+    /// `headwater probe compare` prints one line for each probe both sides
+    /// ran, a line for a probe one side alone ran, and the pooled line over
+    /// every graded session of each side. A refused session is in no
+    /// denominator, per probe or pooled (#1820).
+    #[test]
+    fn a_comparison_states_each_probe_one_sided_probes_and_the_pool() {
+        let treated = results_of(
+            vec![
+                row_of("PROBE-a", 8, 18, 2),
+                row_of("PROBE-b", 0, 0, 3),
+                row_of("PROBE-t", 1, 1, 0),
+            ],
+            None,
+        );
+        let control = results_of(
+            vec![
+                row_of("PROBE-a", 0, 18, 0),
+                row_of("PROBE-b", 4, 18, 0),
+                row_of("PROBE-c", 2, 2, 0),
+            ],
+            None,
+        );
+        assert_eq!(
+            comparison(&treated, &control),
+            "PROBE-a: 8/18 against 0/18, +44.4 points [+17.9, +66.3]\n\
+             PROBE-b: 0/0 against 4/18, no difference: the treated transcript graded no session\n\
+             PROBE-t: only the treated transcript ran this probe, so it has no difference\n\
+             PROBE-c: only the control transcript ran this probe, so it has no difference\n\
+             pooled: 9/19 against 6/38, +31.6 points [+6.8, +54.1]\n"
+        );
+    }
+
+    #[test]
+    fn a_refused_transcript_on_either_side_is_stated_and_nothing_is_compared() {
+        let graded = results_of(vec![row_of("PROBE-a", 1, 2, 0)], None);
+        let refused = results_of(Vec::new(), Some("the lock digest differs"));
+        assert_eq!(
+            comparison(&refused, &graded),
+            "The treated transcript reached no grader, so nothing was compared: the lock digest \
+             differs\n"
+        );
+        assert_eq!(
+            comparison(&graded, &refused),
+            "The control transcript reached no grader, so nothing was compared: the lock digest \
+             differs\n"
+        );
     }
 }

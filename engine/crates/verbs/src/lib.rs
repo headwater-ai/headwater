@@ -308,8 +308,8 @@ pub const VERBS: &[Verb] = &[
     Verb {
         name: "probe",
         group: "Sampling, which never gates",
-        summary: "the four parts of the probe harness",
-        description: "The four deterministic parts of the probe harness, which is a sampler and never a check. Nothing here reaches a model and nothing here writes a transcript. A transcript that an agent wrote about its own session is a self-report, which spec 5 refuses, so the recorder observes a session from outside it and is not in this repository.",
+        summary: "the five parts of the probe harness",
+        description: "The five deterministic parts of the probe harness, which is a sampler and never a check. Nothing here reaches a model and nothing here writes a transcript. A transcript that an agent wrote about its own session is a self-report, which spec 5 refuses, so the recorder observes a session from outside it and is not in this repository.",
         words: &[
             Word {
                 name: "plan",
@@ -325,6 +325,11 @@ pub const VERBS: &[Verb] = &[
                 name: "grade",
                 summary: "the one part of this engine that returns a verdict",
                 description: "The one component of this engine that returns a verdict, and three properties are why it may: its inputs carry no prose, every satisfied verdict names the event that satisfied it, and six conditions return no verdict where a green one would be free. It reports a rate over the sessions that reached a verdict, with the count that did not beside it.",
+            },
+            Word {
+                name: "compare",
+                summary: "the difference of two graded transcripts, with its interval",
+                description: "Grade two transcripts the way `grade` grades one, and print the difference of the treated rate minus the control rate for each probe and pooled, with the Newcombe interval that a result page computes. It exits 0 on every comparison it produces, whatever the rates are.",
             },
             Word {
                 name: "stale",
