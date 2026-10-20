@@ -435,6 +435,16 @@ check "order: started again with done present, exits 0" code_is 0
 check "order: started again with done present, invokes nothing" calls_are 6
 check "hooks: a driver started with done present runs neither hook" [ "$(wc -l < "$CASE/hooks.log")" = 2 ]
 
+# A reader on --on-canary that writes canary-passed lets the driver go on
+# with nobody awake: the hook runs before the wait, so the wait never logs.
+new_case
+A_ONLY=1
+printf 'exit=9 record=8 cents=50\nexit=0 record=12 cents=50\n' > "$CASE/scenario"
+A_ONLY=1 drive --on-canary ": > $CASE/root/canary-passed"
+check "hooks: an --on-canary that writes canary-passed lets the driver finish" code_is 0
+check "hooks: and the driver never waits for a reader" sh -c "! grep -q 'wait canary-passed' '$CASE/root/drive.log'"
+A_ONLY=
+
 # ------------------------------------------------- 2. halt backoff
 
 new_case
