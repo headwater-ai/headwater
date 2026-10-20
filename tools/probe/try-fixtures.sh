@@ -787,6 +787,13 @@ finished_try docs-try4
 run result "$CASE/root" docs-try4
 check "result: try 4's keep row is against try 2 still, because try 3 was not kept" grep -q 'probe compare .*-docs-try-4-scenario-1\.md .*-docs-try-2-scenario-1\.md$' "$CASE/engine.log"
 
+# A kept try of another layer is not the best so far of this one.
+result_case
+printf '%s\n' '{"event": "result", "try": "hook-try1", "layer": "hook", "scenario": "2", "transcript": "docs/probe-runs/additive-screening-scenario-10.md", "kept": true}' > "$CASE/root/ledger.jsonl"
+echo 'pooled: 51/72 against 39/72, +16.7 points [+0.9, +31.4]' > "$CASE/pooled-keep"
+run result "$CASE/root"
+check "result: a kept try of the hook layer is not the best so far of docs" grep -q 'probe compare .*-docs-try-2-scenario-1\.md .*/additive-screening-scenario-1\.md$' "$CASE/engine.log"
+
 # The spend: the session files against the driver's last `all=` line.
 result_case
 rm -r "$CASE/root/docs-try2"
@@ -807,6 +814,7 @@ result_case
 echo 'pooled: 0/0 against 39/72, no difference: the treated transcript graded no session' > "$CASE/pooled-keep"
 run result "$CASE/root"
 check "result: a keep row with no interval exits 2" code_is 2
+check "result: and says the keep row has no interval" err_has "the keep row has no interval"
 check "result: and writes no result.md" [ ! -e "$CASE/root/docs-try2/result.md" ]
 check "result: and records no result event" sh -c "! grep -q '\"event\": \"result\"' '$CASE/root/ledger.jsonl' 2>/dev/null"
 
