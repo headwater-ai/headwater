@@ -317,6 +317,22 @@ sed '/^fi$/i\    # base-neutral: begin the open-layer refusal\n    if [ "$open" 
 run plan "$CASE/root"
 check "base: a refusal added inside a marked region over an unmarked pin exits 0" code_is 0
 
+# The committed campaign.sh: each refusal it marks reads as neutral when it
+# is added over a copy without it, and its markers close before the check of
+# the tools. A change to `additive=1`, outside every region, is not neutral.
+new_case
+awk '/^ *# base-neutral: begin/ { skip = 1 } !skip { print } /^ *# base-neutral: end/ { skip = 0 }' "$here/campaign.sh" > "$CASE/tree-pin/tools/probe/campaign.sh"
+cp "$here/campaign.sh" "$CASE/tree-head/tools/probe/campaign.sh"
+run plan "$CASE/root"
+check "base: the committed campaign.sh's refusals, added over a copy without them, exit 0" code_is 0
+check "base: and campaign.sh reads as neutral" out_has "neutral: tools/probe/campaign.sh"
+check "base: the committed campaign.sh marks three regions" [ "$(grep -c '^ *# base-neutral: begin' "$here/campaign.sh")" = 3 ]
+new_case
+cp "$here/campaign.sh" "$CASE/tree-pin/tools/probe/campaign.sh"
+sed 's/^    additive=1$/    additive=1 # set here/' "$here/campaign.sh" > "$CASE/tree-head/tools/probe/campaign.sh"
+run plan "$CASE/root"
+check "base: a change to the committed campaign.sh's additive=1 exits 4" code_is 4
+
 new_case
 sed -i '/^for tool in git jq/d; /^    command -v "\$tool"/d; /^done$/d' "$CASE/tree-head/tools/probe/campaign.sh"
 echo 'for tool in git jq tar awk cargo claude bwrap; do :; done' > "$CASE/tail"
