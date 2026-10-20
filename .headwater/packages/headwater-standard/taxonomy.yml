@@ -149,6 +149,10 @@ taxonomy: headwater/standard
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
 #
+# 4.16.3 changes no declaration in this file. It takes the six doctrine
+# sentences of 4.16.2 out again, because the tuning try that measured them
+# was not kept (#1777). The doctrine of each bundle is the text of 4.16.1.
+#
 # 4.16.2 changes no declaration in this file. The doctrine of four bundles
 # gains one sentence for each of six relations (#1777). The doctrine ships in
 # this package, so the number moves.
@@ -308,7 +312,7 @@ taxonomy: headwater/standard
 # each carries a recipe rather than a bare instruction. One package version
 # covers every content file it publishes, this one included, so the number
 # here moves with a change to either.
-version: 4.16.2
+version: 4.16.3
 
 purposes:
   rationale:

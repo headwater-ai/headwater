@@ -302,6 +302,8 @@ docs/evaluations/what-the-paid-layer-campaign-of-2026-10-03-measured-by-arm-and-
   typed: evaluation
 docs/evaluations/what-the-shadow-mode-routing-log-showed-at-its-bound.md
   typed: evaluation
+docs/evaluations/what-the-tuning-round-of-the-additive-campaign-measured-layer-by-layer.md
+  typed: evaluation
 docs/evaluations/why-corpus-counts-are-derived-not-stored.md
   typed: evaluation
 docs/explanations/README.md
@@ -840,6 +842,8 @@ docs/probe-results/additive-screening-of-2026-10-18-scenario-8.md
   generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/additive-screening-of-2026-10-18-scenario-9.md
   generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-tuning-of-2026-10-20-documents-try-1-scenario-1.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/campaign-of-2026-09-28-campaign-tier-absent-arm-navigability.md
   generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/campaign-of-2026-09-28-campaign-tier-absent-arm-sufficiency.md
@@ -999,6 +1003,8 @@ docs/probe-runs/additive-screening-of-2026-10-18-scenario-7.md
 docs/probe-runs/additive-screening-of-2026-10-18-scenario-8.md
   typed: probe_transcript
 docs/probe-runs/additive-screening-of-2026-10-18-scenario-9.md
+  typed: probe_transcript
+docs/probe-runs/additive-tuning-of-2026-10-20-documents-try-1-scenario-1.md
   typed: probe_transcript
 docs/probe-runs/campaign-of-2026-09-28-campaign-tier-absent-arm-navigability.md
   typed: probe_transcript
