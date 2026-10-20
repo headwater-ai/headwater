@@ -73,7 +73,11 @@
 #   `cap_cents` as `--cap-cents`, and `--on-canary` running `canary` on the
 #   try. It writes `driver.argv`, `driver.pid` and `launched` in the try
 #   root. A try root that exists already exits 6, and nothing is started.
-#   The driver checks the pin, the harness and the token itself.
+#   Before it makes the try root, it refuses with 6 the four states of the
+#   checkout that the driver's pin check refuses: `HEAD` on a branch, a pin
+#   that is not on `origin/main`, a dirty tree, and, for `relaunch`, a
+#   `HEAD` that is no longer the pin of `driver.argv`. The driver checks the
+#   harness and the token itself.
 # - `relaunch <root> [<try>]` starts the driver again on a try root that
 #   `launch` made, with the same arguments, read from `driver.argv`. It
 #   exits 6 when the try root does not exist, when its driver runs, or when
@@ -123,9 +127,10 @@
 # unclosed region, exits 2. `tools/probe/seal.sh` and `tools/probe/leak.py`
 # are not on the list (owner, #1819).
 #
-# `HEADWATER_TRY_DECLARATION`, `HEADWATER_TRY_DRIVER` and
-# `HEADWATER_TRY_CAMPAIGN` name the declaration, the driver and the
-# `campaign.sh` it runs, so that `tools/probe/try-fixtures.sh` runs every
+# `HEADWATER_TRY_DECLARATION`, `HEADWATER_TRY_DRIVER`,
+# `HEADWATER_TRY_CAMPAIGN` and `HEADWATER_TRY_REPO` name the declaration, the
+# driver, the `campaign.sh` it runs and the checkout the driver runs from, so
+# that `tools/probe/try-fixtures.sh` runs every
 # verb with stubs. It needs `git`, `awk`, `python3` with PyYAML, `diff`,
 # `sha256sum` and `setsid`.
 #
@@ -144,7 +149,8 @@
 #       the open layer's cap is above the round's approval
 #   6   the state of the try refuses the verb: `launch` on a try root that
 #       exists, `relaunch` on a try that is absent, running, done, capped,
-#       stopped or whose canary failed, or `canary` before
+#       stopped or whose canary failed, `launch` or `relaunch` on a
+#       checkout the driver's pin check refuses, or `canary` before
 #       `canary-recorded`
 #   7   `canary` wrote `canary-needs-reader`
 
@@ -156,6 +162,7 @@ self=$here/try.sh
 declaration=${HEADWATER_TRY_DECLARATION:-$repo/.headwater/probe.yml}
 driver=${HEADWATER_TRY_DRIVER:-$here/campaign-drive.sh}
 campaign=${HEADWATER_TRY_CAMPAIGN:-$here/campaign.sh}
+checkout=${HEADWATER_TRY_REPO:-$repo}
 
 usage() {
     echo "usage: sh tools/probe/try.sh status|spent|plan|launch <root>, or relaunch|canary|wait <root> [<try>]" >&2
@@ -503,11 +510,34 @@ start() {
         set -- "$@" "$start_arg"
     done < "$start_try/driver.argv"
     command -v setsid >/dev/null 2>&1 || { say "setsid is not on the path."; exit 3; }
-    cd "$repo" || exit 3
+    cd "$checkout" || exit 3
     setsid nohup sh "$driver" "$@" >> "$start_try/drive.out" 2>&1 < /dev/null &
     echo $! > "$start_try/driver.pid"
     date -u +%Y-%m-%dT%H:%M:%SZ >> "$start_try/launched"
     echo "launched: $start_try, driver pid $(cat "$start_try/driver.pid")"
+}
+
+# pin_ready <pin>: the checkout is in the state the driver's own pin check
+# accepts, so that a launch never reports a driver that exits at once.
+pin_ready() {
+    command -v git >/dev/null 2>&1 || { say "git is not on the path."; exit 3; }
+    pin_head=$(git -C "$checkout" rev-parse HEAD 2>/dev/null)
+    if [ "$pin_head" != "$1" ]; then
+        say "the checkout $checkout is at ${pin_head:-no commit}, not the pin $1."
+        exit 6
+    fi
+    if git -C "$checkout" symbolic-ref -q HEAD >/dev/null 2>&1; then
+        say "the checkout $checkout is on a branch, and the driver refuses that. Detach it at the pin: git switch --detach $1."
+        exit 6
+    fi
+    if ! git -C "$checkout" merge-base --is-ancestor "$1" origin/main 2>/dev/null; then
+        say "the pin $1 is not on origin/main, and the driver refuses that."
+        exit 6
+    fi
+    if [ -n "$(git -C "$checkout" status --porcelain 2>/dev/null)" ]; then
+        say "the checkout $checkout is dirty, and the driver refuses that."
+        exit 6
+    fi
 }
 
 markers() {
@@ -559,7 +589,8 @@ case $verb in
             *"'"* | *[[:space:]]*) say "the round root $root holds a quote or a space, which the canary command cannot carry."; exit 2 ;;
         esac
         command -v git >/dev/null 2>&1 || { say "git is not on the path."; exit 3; }
-        pin=$(git -C "$repo" rev-parse HEAD) || exit 3
+        pin=$(git -C "$checkout" rev-parse HEAD) || exit 3
+        pin_ready "$pin"
         mkdir -p "$try" || exit 2
         printf 'additive scenario-%s tuning\n' "$open_scenario" > "$try/spec"
         printf '%s\n' --root "$try" --pin "$pin" --claude-version "$TRY_HARNESS" \
@@ -584,6 +615,7 @@ case $verb in
         fi
         [ -s "$try/driver.argv" ] || { say "no $try/driver.argv, so this try was not launched by try.sh."; exit 2; }
         read_env 1
+        pin_ready "$(awk 'previous == "--pin" { print; exit } { previous = $0 }' "$try/driver.argv")"
         start "$try"
         ;;
 
