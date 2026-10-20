@@ -5357,7 +5357,7 @@ for open_case in \
     "a missing field|/^      change: none$/d|does not declare \`change\`" \
     "a plan that is not a URL|s/^      plan: .*$/      plan: accepted/|\`plan\` of \`rounds.tuning.open\`" \
     "a change that is not a commit or none|s/^      change: none$/      change: main/|\`change\` of \`rounds.tuning.open\`" \
-    "an open that is a word, not a mapping|s/^    open:$/    open: docs/|is neither \`none\` nor a mapping"
+    "an open that is a word, not a mapping|/^    open:$/,/^      change: none$/c\\    open: docs|is neither \`none\` nor a mapping"
 do
     open_name=${open_case%%|*}; open_rest=${open_case#*|}
     open_sed=${open_rest%%|*}; open_needle=${open_rest#*|}
