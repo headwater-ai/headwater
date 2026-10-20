@@ -145,7 +145,9 @@ new_case() {
     mkdir -p "$CASE/root" "$CASE/tmp" "$CASE/versions"
     export CASE
     decl "$OPEN_DOCS" 10000
-    printf 'HEADWATER_DRIVE_CLAUDE_VERSIONS=%s\nCARGO_TARGET_DIR=%s\nTMPDIR=%s\n' \
+    # The floors are 0, so the free space of the host running the case never
+    # decides one; the floor case sets its own.
+    printf 'HEADWATER_DRIVE_CLAUDE_VERSIONS=%s\nCARGO_TARGET_DIR=%s\nTMPDIR=%s\nTRY_FLOOR_ROOT_KB=0\nTRY_FLOOR_TRY_KB=0\n' \
         "$CASE/versions" "$CASE/target" "$CASE/tmp" > "$CASE/root/env"
     echo '0 2d212a269a111fddb7af5b2b75ebaf2f9ab32f29' > "$CASE/root/base-pin"
     tree_files "$CASE/tree-pin"
@@ -287,7 +289,7 @@ new_case
 sed 's/^git -C "\$root" archive "\$head"/git -C "$root" archive --worktree-attributes "$head"/' "$CASE/tree-pin/tools/probe/campaign.sh" > "$CASE/tree-head/tools/probe/campaign.sh"
 run plan "$CASE/root"
 check "base: a one-line change to the tree step exits 4" code_is 4
-check "base: and names campaign.sh and the line" out_has "invalidates: tools/probe/campaign.sh (tools/probe/campaign.sh): added line 16"
+check "base: and names campaign.sh and the line" out_has "invalidates: tools/probe/campaign.sh (tools/probe/campaign.sh): removed line 16: git -C"
 
 new_case
 sed 's/^    additive=1$/    additive=2/' "$CASE/tree-pin/tools/probe/campaign.sh" > "$CASE/tree-head/tools/probe/campaign.sh"
@@ -311,7 +313,7 @@ new_case
 # markers, are neutral: the #1819 gate over 2d212a26.
 grep -v 'base-neutral' "$CASE/tree-pin/tools/probe/campaign.sh" > "$CASE/tree-pin/tools/probe/campaign.sh.new"
 mv "$CASE/tree-pin/tools/probe/campaign.sh.new" "$CASE/tree-pin/tools/probe/campaign.sh"
-sed -i '/^    fi$/a\    # base-neutral: begin the open-layer refusal\n    if [ "$open" = none ]; then\n        exit 5\n    fi\n    # base-neutral: end' "$CASE/tree-head/tools/probe/campaign.sh"
+sed '/^fi$/i\    # base-neutral: begin the open-layer refusal\n    if [ "$open" = none ]; then\n        exit 5\n    fi\n    # base-neutral: end' "$CASE/tree-pin/tools/probe/campaign.sh" > "$CASE/tree-head/tools/probe/campaign.sh"
 run plan "$CASE/root"
 check "base: a refusal added inside a marked region over an unmarked pin exits 0" code_is 0
 
@@ -412,6 +414,7 @@ run relaunch "$CASE/root"
 await_calls 2
 check "relaunch: exits 0" code_is 0
 check "relaunch: invokes the driver again with the same arguments" sh -c "[ \"\$(grep -c '^argv ' '$CASE/calls')\" = 2 ] && [ \"\$(grep '^argv ' '$CASE/calls' | sort -u | wc -l)\" = 1 ]"
+mkdir -p "$CASE/root/docs-try2"
 for marker in done capped canary-failed stop; do
     : > "$CASE/root/docs-try2/$marker"
     run relaunch "$CASE/root"
@@ -599,6 +602,7 @@ check "args: an unknown verb exits 2" code_is 2
 run spent "$CASE/root" extra
 check "args: spent with a try exits 2" code_is 2
 
-rm -rf "$fix"
+# TRY_FIXTURES_KEEP keeps the cases' directories, to read a failure.
+if [ -n "${TRY_FIXTURES_KEEP:-}" ]; then echo "try-fixtures: the cases are in $fix" >&2; else rm -rf "$fix"; fi
 echo "try-fixtures: $passed passed, $failed failed"
 [ "$failed" = 0 ]
