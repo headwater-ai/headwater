@@ -31,6 +31,25 @@ python3 -c 'import yaml' 2>/dev/null || { echo "try-fixtures: python3 has no PyY
 here=$(cd "$(dirname "$0")" && pwd)
 try=${HEADWATER_TRY_UNDER_TEST:-$here/try.sh}
 fix=$(mktemp -d "${TMPDIR:-/tmp}/try-fixtures.XXXXXX")
+
+# The checkouts the driver runs from. `repo` is in the one state the driver's
+# pin check accepts: detached, at a commit `origin/main` holds, and clean.
+# Each other one is in a state that check refuses.
+make_repo() {
+    git init -q "$1"
+    git -C "$1" -c user.name=fixture -c user.email=fixture@example.org commit -q --allow-empty -m base
+    git -C "$1" update-ref refs/remotes/origin/main HEAD
+    git -C "$1" checkout -q --detach
+}
+make_repo "$fix/repo"
+make_repo "$fix/repo-branch"
+git -C "$fix/repo-branch" checkout -q -b work
+make_repo "$fix/repo-dirty"
+: > "$fix/repo-dirty/untracked"
+make_repo "$fix/repo-ahead"
+git -C "$fix/repo-ahead" -c user.name=fixture -c user.email=fixture@example.org commit -q --allow-empty -m ahead
+make_repo "$fix/repo-moves"
+checkout=$fix/repo
 passed=0
 failed=0
 cases=0
@@ -158,6 +177,7 @@ run() {
     HEADWATER_TRY_DECLARATION=$CASE/probe.yml \
     HEADWATER_TRY_DRIVER=$fix/driver-stub.sh \
     HEADWATER_TRY_CAMPAIGN=$fix/campaign-stub.sh \
+    HEADWATER_TRY_REPO=$checkout \
     TRY_CALLS=$CASE/calls TRY_SLEEP=$CASE/driver-sleeps TMPDIR=$CASE/tmp \
         timeout 60 sh "$try" "$@" > "$CASE/out" 2> "$CASE/err"
     echo $? > "$CASE/code"
@@ -429,6 +449,23 @@ check "launch: a stale base exits 4" code_is 4
 check "launch: a stale base invokes nothing" no_calls
 check "launch: a stale base makes no try root" [ ! -e "$CASE/root/docs-try2" ]
 
+# The driver's pin check refuses each of these checkouts, so a launch that
+# started it would report a driver that exits at once.
+for state in branch dirty ahead; do
+    new_case
+    checkout=$fix/repo-$state
+    run launch "$CASE/root"
+    checkout=$fix/repo
+    check "launch: a checkout that is $state exits 6" code_is 6
+    check "launch: a checkout that is $state invokes nothing" no_calls
+    check "launch: a checkout that is $state makes no try root" [ ! -e "$CASE/root/docs-try2" ]
+done
+check "launch: and the last one names origin/main" err_has "is not on origin/main"
+new_case
+run launch "$CASE/root"
+await_calls 1
+check "launch: the driver runs from the checkout, pinned at its HEAD" sh -c "grep -qx 'env .* pwd=$fix/repo' '$CASE/calls' && grep -q -- '--pin $(git -C "$fix/repo" rev-parse HEAD) ' '$CASE/calls'"
+
 # ---------------------------------------------------------------- relaunch
 
 new_case
@@ -449,6 +486,16 @@ check "relaunch: no refused relaunch invokes the driver" [ "$(calls_count)" = 2 
 check "relaunch: no relaunch writes a.done" [ ! -e "$CASE/root/docs-try2/a.done" ]
 run relaunch "$CASE/root" docs-try9
 check "relaunch: a try that does not exist exits 6" code_is 6
+new_case
+checkout=$fix/repo-moves
+run launch "$CASE/root"
+await_calls 1
+git -C "$fix/repo-moves" -c user.name=fixture -c user.email=fixture@example.org commit -q --allow-empty -m moved
+run relaunch "$CASE/root"
+checkout=$fix/repo
+check "relaunch: a checkout whose HEAD left the pin of driver.argv exits 6" code_is 6
+check "relaunch: and names the pin" err_has "not the pin"
+check "relaunch: and invokes the driver no second time" [ "$(calls_count)" = 1 ]
 new_case
 : > "$CASE/driver-sleeps"
 run launch "$CASE/root"
