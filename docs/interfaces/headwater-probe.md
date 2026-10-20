@@ -45,7 +45,7 @@ The harness reads the selection again when it grades a transcript. This prevents
 
 `grade` states, for each graded session, how many of its recorded calls went to a tool of an MCP server. A call to an MCP server is a call whose tool name starts with `mcp__`. The grader reads the tool name and never the argument. A session with no `calls` key gets the words "not counted" and never the number 0. `grade` also states how many of the sessions that recorded their calls made no call to an MCP server. It states how many sessions recorded no calls. Thus a reader gets the share of sessions that never called the server from the committed result, and not from the transcript.
 
-`compare` grades each of its two transcripts in the same way that `grade` grades one. It prints one line for each probe that both transcripts ran, and then one line with the label `pooled` for all the graded sessions of each transcript. Each line has this form:
+`compare` grades each of its two transcripts in the same way that `grade` grades one. It prints one line for each probe that both transcripts ran. Then it prints one line with the label `pooled`, over all the graded sessions of each transcript. Each line has this form:
 
     <probe>: <x1>/<n1> against <x0>/<n0>, <d> points [<low>, <high>]
 

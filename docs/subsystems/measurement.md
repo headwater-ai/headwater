@@ -39,11 +39,11 @@ This spec describes the inside of the measurement subsystem of [spec 6](../spec/
 
 Each crate measures a different thing:
 
-- `probe` plans a probe run, reads back the transcript of the run, grades it, and tells which committed results an edit made stale.
+- `probe` plans a probe run, reads back the transcript of the run, grades it, compares two graded transcripts, and tells which committed results an edit made stale.
 - `conformance` evaluates a consumer repository against the rule set that its taxonomy package ships, and reports the level that the met rules reach.
 - `sweep` writes the briefing for a coherence sweep and verifies the return file that an agent wrote.
 
-The verbs over these crates are `probe plan`, `probe record`, `probe grade`, `probe stale`, `conformance`, `sweep plan` and `sweep report`. Their bodies are in the `cli` crate, which belongs to the Command surface row of spec 6. This spec describes the libraries that those bodies call.
+The verbs over these crates are `probe plan`, `probe record`, `probe grade`, `probe compare`, `probe stale`, `conformance`, `sweep plan` and `sweep report`. Their bodies are in the `cli` crate, which belongs to the Command surface row of spec 6. This spec describes the libraries that those bodies call.
 
 Other documents state what the subsystem does, and this spec does not repeat them:
 
