@@ -269,12 +269,12 @@ assembly: starter
 package: headwater/starter
 version: 0.1.0
 from:
-  package: headwater/standard@4.16.2
+  package: headwater/standard@4.16.3
   bundles: [design-spec, evidence-and-obligation, decision-record]
 ```
 
 ```text
-headwater/standard@4.16.2
+headwater/standard@4.16.3
 |-- base taxonomy
 |-- bundle: design-spec ---------------\
 |-- bundle: evidence-and-obligation ----+--> assembly: starter
