@@ -5273,20 +5273,22 @@ if [ -x "$engine" ]; then
             "$([ -e "$scratch/run-final-out/claude-version" ] && echo yes || echo no) $([ -e "$scratch/run-final-out/lines" ] && echo yes || echo no) $([ -e "$scratch/run-final-out/trees" ] && echo yes || echo no) $([ -e "$scratch/run-final-out/sessions" ] && echo yes || echo no)"
         same "and it ran no dry run, so it built no scenario tree" "no" \
             "$([ -e "$scratch/run-final-out/leak-gate" ] && echo yes || echo no)"
-        # The decisive case of #1777: the owner approved the tuning round, so a
-        # batch of the documents tuning spec passes the round gate and starts a
-        # session. The stub harness answers `--version` alone, so no session
-        # reaches a model.
+        # The owner approved the tuning round (#1777), and it is open for no
+        # layer now (#1819): documents try 1 was not kept, and no other
+        # layer's plan is accepted. So a batch of the documents tuning spec
+        # passes the round gate and is refused by the layer gate, with 5,
+        # before it builds a tree or asks the harness anything. The case of a
+        # declared open layer reads a scratch root, below, because the gate
+        # reads this checkout's declaration and no override.
         rm -rf "$scratch/run-tune-out"
         HEADWATER_PROBE_HOST_CONFIG="$scratch/run-host" CARGO_TARGET_DIR="$scratch/gate-target" PATH="$scratch/run-bin:$PATH" \
             sh "$root/tools/probe/campaign.sh" --out "$scratch/run-tune-out" --model claude-haiku-4-5 \
             --spec "$root/tools/probe/additive-tuning-docs.spec" --max-sessions 1 > /dev/null 2> "$scratch/run-tune.err"
-        tune_status=$?
-        same "a batch of the documents tuning spec passes the round gate and starts a session" "yes" \
-            "$([ "$tune_status" != 5 ] && [ -e "$scratch/run-tune-out/claude-version" ] && echo yes || echo no)"
-        absent "and names no refusal of the tuning round" "no person has approved spend on the tuning round" "$scratch/run-tune.err"
-        same "its jobs are 4 probes x the tuning round's 18 repetitions" "72" \
-            "$(grep -c ' additive scenario-1 tuning ' "$scratch/run-tune-out/jobs" 2>/dev/null)"
+        same "a batch of the documents tuning spec is refused with 5 while the tuning round is open for no layer" "5" "$?"
+        absent "and names no refusal of the tuning round's approval" "no person has approved spend on the tuning round" "$scratch/run-tune.err"
+        present "and names the open rule" "the tuning round is open for no layer" "$scratch/run-tune.err"
+        same "and it wrote no harness version, no plan, no tree and no dry run" "no no no no" \
+            "$([ -e "$scratch/run-tune-out/claude-version" ] && echo yes || echo no) $([ -e "$scratch/run-tune-out/lines" ] && echo yes || echo no) $([ -e "$scratch/run-tune-out/trees" ] && echo yes || echo no) $([ -e "$scratch/run-tune-out/leak-gate" ] && echo yes || echo no)"
         rm -rf "$scratch/run-tune-out"
         # Each line's jobs are its own plan's count, not the first line's
         # (verify round 1): the regression tier runs 1 repetition and the
@@ -5311,6 +5313,133 @@ if [ -x "$engine" ]; then
 else
     printf 'note no engine, so the additive dry-run cases did not run.\n'
 fi
+
+# ---------------------------------------------------------------------------
+# The layer gate of the tuning round (#1819), beside the round gate above.
+#
+# `rounds.tuning.open` names the one layer whose plan the owner accepted, its
+# scenario, the try, its cap, the plan and the change, or `none`. Each
+# declaration below is the committed one with `open: none` replaced, so a
+# case reads every other key as the checkout declares it. These cases need
+# no engine and no clean checkout, so no skip above hides them.
+# ---------------------------------------------------------------------------
+open_decl() {
+    # $1 the declaration to write, $2 the lines that replace `open: none`
+    awk -v block="$2" '$0 == "    open: none" { print block; next } { print }' "$root/.headwater/probe.yml" > "$1"
+}
+open_docs1='    open:\n      layer: docs\n      scenario: 1\n      try: 1\n      cap_cents: 6000\n      plan: https://github.com/headwater-ai/headwater/issues/1777#issuecomment-6277195497\n      change: none'
+open_decl "$scratch/open-docs1.yml" "$open_docs1"
+declared_py=$root/tools/probe/declared.py
+
+python3 "$declared_py" "$root/.headwater/probe.yml" open > "$scratch/open-none.out" 2> "$scratch/open-none.err"
+same "declared.py open prints none for the committed declaration" "0 none" "$? $(cat "$scratch/open-none.out")"
+python3 "$declared_py" "$scratch/open-docs1.yml" open > "$scratch/open-docs1.out" 2> "$scratch/open-docs1.err"
+same "declared.py open prints the six fields of an open layer, on one line" \
+    "0 docs 1 1 6000 https://github.com/headwater-ai/headwater/issues/1777#issuecomment-6277195497 none" \
+    "$? $(cat "$scratch/open-docs1.out")"
+sed 's/^      layer: docs$/      layer: engine/; s/^      scenario: 1$/      scenario: 3/; s/^      change: none$/      change: 2e3d71a7/' \
+    "$scratch/open-docs1.yml" > "$scratch/open-engine3.yml"
+python3 "$declared_py" "$scratch/open-engine3.yml" open > "$scratch/open-engine3.out" 2> /dev/null
+same "and admits the engine layer on scenario 3, which adds engine over scenario 1" \
+    "0 engine 3 1 6000 https://github.com/headwater-ai/headwater/issues/1777#issuecomment-6277195497 2e3d71a7" \
+    "$? $(cat "$scratch/open-engine3.out")"
+# Each refusal exits 2 and states its own reason. `name|sed|needle`.
+for open_case in \
+    "scenario 3 named with the docs layer|s/^      scenario: 1$/      scenario: 3/|does not add exactly the docs layer over its base" \
+    "scenario 0, which has no base|s/^      scenario: 1$/      scenario: 0/|scenario 0 names no base" \
+    "a scenario that scenarios: does not declare|s/^      scenario: 1$/      scenario: 99/|\`scenarios:\` declares no scenario 99" \
+    "a layer that layers: does not declare|s/^      layer: docs$/      layer: nope/|\`layers:\` declares no layer nope" \
+    "a cap above the round's approval|s/^      cap_cents: 6000$/      cap_cents: 151201/|above the tuning round's \`approved_cents\` of 151200" \
+    "a cap of zero|s/^      cap_cents: 6000$/      cap_cents: 0/|must be a whole number of cents above zero" \
+    "a try past the round's tries|s/^      try: 1$/      try: 4/|must be a whole number from 1 to the round's \`tries\`, 3" \
+    "a try of zero|s/^      try: 1$/      try: 0/|must be a whole number from 1 to the round's \`tries\`, 3" \
+    "a seventh field|s/^      change: none$/      change: none\n      note: x/|declares \`note\`" \
+    "a missing field|/^      change: none$/d|does not declare \`change\`" \
+    "a plan that is not a URL|s/^      plan: .*$/      plan: accepted/|\`plan\` of \`rounds.tuning.open\`" \
+    "a change that is not a commit or none|s/^      change: none$/      change: main/|\`change\` of \`rounds.tuning.open\`" \
+    "an open that is a word, not a mapping|s/^    open:$/    open: docs/|is neither \`none\` nor a mapping"
+do
+    open_name=${open_case%%|*}; open_rest=${open_case#*|}
+    open_sed=${open_rest%%|*}; open_needle=${open_rest#*|}
+    sed "$open_sed" "$scratch/open-docs1.yml" > "$scratch/open-bad.yml"
+    python3 "$declared_py" "$scratch/open-bad.yml" open > "$scratch/open-bad.out" 2> "$scratch/open-bad.err"
+    same "declared.py open refuses $open_name, with 2 and its reason" "2 1 0" \
+        "$? $(grep -cF -- "$open_needle" "$scratch/open-bad.err") $(wc -c < "$scratch/open-bad.out" | tr -d ' ')"
+done
+# `open` is a key of the tuning round alone. A round's key outside the list
+# used to break `rounds` and `approved`, and with them the round gate and
+# both dry runs, so each still reads a declaration with an open layer.
+python3 "$declared_py" "$scratch/open-docs1.yml" rounds > /dev/null 2> /dev/null
+rounds_status=$?
+python3 "$declared_py" "$scratch/open-docs1.yml" approved > /dev/null 2> /dev/null
+same "declared.py rounds and approved still read a declaration with an open layer" "0 0" "$rounds_status $?"
+awk '$0 == "    approved_cents: 70000" { print; print "    open: none"; next } { print }' "$root/.headwater/probe.yml" > "$scratch/open-screening.yml"
+python3 "$declared_py" "$scratch/open-screening.yml" approved > /dev/null 2> "$scratch/open-screening.err"
+same "and refuse open on any round but tuning, with 2" "2 1" \
+    "$? $(grep -c 'only the tuning round declares `open`' "$scratch/open-screening.err")"
+# The invalidator list is the owner's ruling of 2026-10-20: six entries, and
+# neither seal.sh nor leak.py. Each entry names at least one tracked path, so
+# no entry is a typo that matches nothing.
+python3 "$declared_py" "$root/.headwater/probe.yml" base_invalidators > "$scratch/invalidators.out" 2> /dev/null
+same "declared.py base_invalidators prints the six entries the owner ruled" \
+    "0 engine/crates/*/src/** tools/probe/probe-record.sh tools/probe/probe-transform.sh tools/probe/egress-proxy.py tools/probe/campaign.sh tools/probe/ablate.sh" \
+    "$? $(tr '\n' ' ' < "$scratch/invalidators.out" | sed 's/ $//')"
+same "and each entry names at least one tracked path" "0" \
+    "$(while IFS= read -r entry; do
+        [ -n "$(git -C "$root" ls-files -- ":(glob)$entry" 2>/dev/null | head -1)" ] || echo "$entry"
+    done < "$scratch/invalidators.out" | wc -l | tr -d ' ')"
+
+# The batch reads the gate from its own checkout's declaration, and from no
+# override. So each case runs a scratch root that holds the batch, the reader
+# and a declaration: the gate runs before the tools, the engine and the clean
+# checkout are checked, so a pass of the gate stops later, on 3.
+open_root=$scratch/open-root
+mkdir -p "$open_root/tools/probe" "$open_root/.headwater"
+cp "$root/tools/probe/campaign.sh" "$root/tools/probe/declared.py" "$open_root/tools/probe/"
+open_batch() {
+    # $1 the declaration, $2 the spec, $3 the stderr file. Prints the status.
+    cp "$1" "$open_root/.headwater/probe.yml"
+    rm -rf "$scratch/open-out"
+    sh "$open_root/tools/probe/campaign.sh" --out "$scratch/open-out" --model claude-haiku-4-5 --spec "$2" > /dev/null 2> "$3"
+    echo "$?"
+}
+open_wrote() {
+    printf '%s %s %s %s' "$([ -e "$scratch/open-out/leak-gate" ] && echo yes || echo no)" \
+        "$([ -e "$scratch/open-out/lines" ] && echo yes || echo no)" \
+        "$([ -e "$scratch/open-out/trees" ] && echo yes || echo no)" \
+        "$([ -e "$scratch/open-out/claude-version" ] && echo yes || echo no)"
+}
+# The decisive case of #1819: a paid tuning line of a layer whose plan
+# nobody accepted. With docs open on scenario 1, a tuning line of scenario 3
+# is refused, and the refusal names the open layer and scenario.
+printf 'additive scenario-3 tuning\n' > "$scratch/open-s3.spec"
+same "with docs open on scenario 1, a tuning line of scenario 3 is refused with 5" "5" \
+    "$(open_batch "$scratch/open-docs1.yml" "$scratch/open-s3.spec" "$scratch/open-s3.err")"
+present "and the refusal names the open layer and scenario, and the line's scenario" \
+    "the tuning round is open for the docs layer on scenario 1 alone, and the spec holds a tuning line of scenario-3" "$scratch/open-s3.err"
+same "and it ran no dry run, planned no line, built no tree and asked the harness nothing" "no no no no" "$(open_wrote)"
+same "with open: none, the documents tuning spec is refused with 5" "5" \
+    "$(open_batch "$root/.headwater/probe.yml" "$root/tools/probe/additive-tuning-docs.spec" "$scratch/open-nonespec.err")"
+present "and the refusal names the open rule" "the tuning round is open for no layer" "$scratch/open-nonespec.err"
+same "and it ran no dry run, planned no line, built no tree and asked the harness nothing" "no no no no" "$(open_wrote)"
+open_status=$(open_batch "$scratch/open-docs1.yml" "$root/tools/probe/additive-tuning-docs.spec" "$scratch/open-pass.err")
+same "with docs open on scenario 1, the documents tuning spec passes the gate" "yes 0" \
+    "$([ "$open_status" != 5 ] && echo yes || echo no) $(grep -c 'the tuning round is open for' "$scratch/open-pass.err")"
+# The gate reads tuning lines alone: a screening line runs while no layer is
+# open, and a tuning line of the open scenario runs beside it.
+printf 'additive scenario-4 screening\n' > "$scratch/open-screen.spec"
+open_status=$(open_batch "$root/.headwater/probe.yml" "$scratch/open-screen.spec" "$scratch/open-screen.err")
+same "with open: none, a screening line passes the gate" "yes 0" \
+    "$([ "$open_status" != 5 ] && echo yes || echo no) $(grep -c 'the tuning round is open for' "$scratch/open-screen.err")"
+printf 'additive scenario-4 screening\nadditive scenario-1 tuning\nadditive scenario-6 tuning\n' > "$scratch/open-mixed.spec"
+same "with docs open on scenario 1, a spec that also holds scenario 6 is refused with 5" "5" \
+    "$(open_batch "$scratch/open-docs1.yml" "$scratch/open-mixed.spec" "$scratch/open-mixed.err")"
+present "and names scenario 6" "and the spec holds a tuning line of scenario-6" "$scratch/open-mixed.err"
+absent "and not the open scenario" "a tuning line of scenario-1" "$scratch/open-mixed.err"
+# A declaration the reader refuses stops the batch with the reader's own 2.
+sed 's/^      try: 1$/      try: 4/' "$scratch/open-docs1.yml" > "$scratch/open-try4.yml"
+same "a malformed open stops the batch with the reader's 2" "2" \
+    "$(open_batch "$scratch/open-try4.yml" "$root/tools/probe/additive-tuning-docs.spec" "$scratch/open-try4.err")"
 
 present "the driver names the channel and never a file under ~/.claude/projects" \
     "output-format stream-json" "$driver"
