@@ -1,8 +1,8 @@
 #!/bin/sh
 # SPDX-License-Identifier: Apache-2.0
 #
-# The fixtures of tools/probe/try.sh, the seven verbs of one try of the
-# additive campaign's tuning round (#1821).
+# The fixtures of tools/probe/try.sh, the ten verbs of one try of the
+# additive campaign's tuning round (#1821, #1822).
 #
 #     sh tools/probe/try-fixtures.sh
 #
@@ -17,6 +17,11 @@
 # roots, one of them dot-named and holding a `spent-before`, refuses a try
 # that would take the round one cent past its approval, and passes the same
 # layout at the approval exactly.
+#
+# The decisive case of `result` (#1822) is the table of `result: the keep
+# rule`: a stub engine prints the pooled line that `headwater probe compare`
+# prints for each try against a best of 39 of 72, and 40 of 72, which the
+# issue's first rule kept, is not kept under the owner's rule of 2026-10-20.
 #
 # Exit status: 0 when every case passes, 1 when one fails, 3 when a tool it
 # needs is missing.
@@ -78,9 +83,10 @@ exit 0
 EOF
 cat > "$fix/campaign-stub.sh" <<'EOF'
 #!/bin/sh
-n= out= at=
+n= out= at= assemble=
 while [ $# -gt 0 ]; do
     case $1 in
+        --assemble) assemble=1; shift; continue ;;
         --scenario-tree) n=$2 ;;
         --out) out=$2 ;;
         --at) at=$2 ;;
@@ -88,11 +94,58 @@ while [ $# -gt 0 ]; do
     esac
     shift 2
 done
+if [ -n "$assemble" ]; then
+    # The assembly of a tuning try: one line, as campaign.sh names its files.
+    echo "assemble $out" >> "$CASE/trees.log"
+    [ -f "$CASE/assemble-fails" ] && { echo "stub: another identity" >&2; exit 2; }
+    mkdir -p "$out/assembled"
+    stem=L1-additive-scenario-1-tuning
+    printf 'model: claude-sonnet-5\ntier: additive\narm: scenario-1\nat: 2026-10-21\ncost_cents: 2452\n' > "$out/assembled/$stem.identity.yaml"
+    printf -- '- probe: "HW-PROBE-a"\n  session: "L1-additive-scenario-1-p1-r1"\n' > "$out/assembled/$stem.events.yaml"
+    echo '72 sessions, 2452 cents, the intent hook live in 0' > "$out/assembled/$stem.summary"
+    exit 0
+fi
 echo "tree $n $at" >> "$CASE/trees.log"
 [ -f "$CASE/tree-fails" ] && { echo "stub: the tree did not build" >&2; exit 3; }
 if [ "$at" = HEAD ]; then src=$CASE/tree-head; else src=$CASE/tree-pin; fi
 mkdir -p "$out/trees"
 cp -a "$src" "$out/trees/additive-scenario-$n"
+EOF
+# The engine of `result`: `new` writes a scaffold with the facets it was
+# given, and `probe compare` prints a per-probe line and the pooled line of
+# the case: the base row against the scenario-0 screening transcript, and the
+# keep row against anything else.
+cat > "$fix/engine-stub.sh" <<'EOF'
+#!/bin/sh
+printf '%s\n' "$*" >> "$CASE/engine.log"
+case $1 in
+    new)
+        shift 2
+        r= t= facets=
+        while [ $# -gt 0 ]; do
+            case $1 in
+                --root) r=$2 ;;
+                --title) t=$2 ;;
+                --facet) facets="$facets
+${2%%=*}: ${2#*=}" ;;
+            esac
+            shift 2
+        done
+        slug=$(printf '%s' "$t" | tr 'A-Z' 'a-z' | sed 's/[^a-z0-9][^a-z0-9]*/-/g; s/^-//; s/-$//')
+        mkdir -p "$r/docs/probe-runs"
+        printf -- '---\nid: HW-RUN-%s\nstatus: draft%s\ntitle: "%s"\n---\n\n# %s\n\n## Run identity\n\nTODO write this section.\n\n## Events\n\nTODO write this section.\n' \
+            "$slug" "$facets" "$t" "$t" > "$r/docs/probe-runs/$slug.md"
+        echo "wrote docs/probe-runs/$slug.md"
+        ;;
+    probe)
+        for control in "$@"; do :; done
+        echo "HW-PROBE-a: 9/18 against 9/18, +0.0 points [-30.0, +30.0]"
+        case $control in
+            */additive-screening-scenario-0.md) cat "$CASE/pooled-base" ;;
+            *) cat "$CASE/pooled-keep" ;;
+        esac
+        ;;
+esac
 EOF
 
 OPEN_DOCS='{layer: docs, scenario: 1, try: 2, cap_cents: 3000, plan: "https://example.org/accepted", change: none}'
@@ -178,6 +231,7 @@ run() {
     HEADWATER_TRY_DRIVER=$fix/driver-stub.sh \
     HEADWATER_TRY_CAMPAIGN=$fix/campaign-stub.sh \
     HEADWATER_TRY_REPO=$checkout \
+    HEADWATER_TRY_ENGINE=$fix/engine-stub.sh \
     TRY_CALLS=$CASE/calls TRY_SLEEP=$CASE/driver-sleeps TMPDIR=$CASE/tmp \
         timeout 60 sh "$try" "$@" > "$CASE/out" 2> "$CASE/err"
     echo $? > "$CASE/code"
@@ -634,6 +688,232 @@ run canary "$CASE/root"
 check "canary: a canary-passed a person wrote stands" code_is 0
 check "canary: and is not overwritten" [ ! -s "$CASE/root/docs-try2/canary-passed" ]
 
+# ------------------------------------------------------ result: the keep rule
+
+# screening <file> <tier> <round> <arm>: a committed transcript of the case's
+# checkout, with the front matter `result` selects on.
+screening() {
+    mkdir -p "$checkout/docs/probe-runs"
+    printf -- '---\nid: HW-RUN-%s\ntier: %s\nround: %s\narm: %s\ntitle: "x"\n---\n\n# x\n' \
+        "$1" "$2" "$3" "$4" > "$checkout/docs/probe-runs/$1.md"
+}
+# finished_try <try> [<all>]: a try root whose driver wrote `done`, two
+# sessions of 1200 and 1252 cents, and a drive.out whose last `all=` line is
+# <all>, 2452 when it is not given.
+finished_try() {
+    t=$CASE/root/$1
+    mkdir -p "$t/a"
+    echo "additive scenario-1 tuning" > "$t/spec"
+    cost "$t/a/sessions/L1-p1-r1" 1200
+    cost "$t/a/sessions/L1-p1-r2" 1252
+    printf 'campaign-drive: canary exit=0 recorded=8/72 new=8 cents=400 all=400/3000\ncampaign-drive: a exit=0 recorded=72/72 new=64 cents=%s all=%s/3000\n' \
+        "${2:-2452}" "${2:-2452}" > "$t/drive.out"
+    : > "$t/done"
+}
+result_case() {
+    new_case
+    checkout=$CASE/checkout
+    screening additive-screening-scenario-0 additive screening scenario-0
+    screening additive-screening-scenario-1 additive screening scenario-1
+    # Neither of these is the best so far of scenario 1: a prefix of another
+    # arm, and the same arm in another tier and round.
+    screening additive-screening-scenario-10 additive screening scenario-10
+    screening ablation-scenario-1 ablation none scenario-1
+    finished_try docs-try2
+    echo 'pooled: 11/72 against 11/72, +0.0 points [-12.8, +12.8]' > "$CASE/pooled-base"
+}
+ledger_has() { grep -qF -- "$1" "$CASE/root/ledger.jsonl"; }
+result_md_has() { grep -qxF -- "$1" "$CASE/root/docs-try2/result.md"; }
+
+# Each row is the pooled keep row that `headwater probe compare` prints for
+# that try against a best of 39 of 72, computed with the Newcombe interval of
+# grade.rs, then the verdict and the direction. The rule is the owner's of
+# 2026-10-20 on #1777: kept only when the whole interval sits above zero. The
+# rule the issue first wrote, "strictly above the best so far", keeps 40.
+while IFS='|' read -r row_try row_line row_keep row_direction; do
+    result_case
+    echo "$row_line" > "$CASE/pooled-keep"
+    run result "$CASE/root"
+    check "result $row_try: exits 0, kept or not" code_is 0
+    check "result $row_try: prints keep: $row_keep" out_has "keep: $row_keep"
+    check "result $row_try: prints direction: $row_direction" out_has "direction: $row_direction"
+    check "result $row_try: result.md holds keep: $row_keep" result_md_has "keep: $row_keep"
+    check "result $row_try: result.md holds the keep row verbatim" grep -qF -- "$row_line" "$CASE/root/docs-try2/result.md"
+    if [ "$row_keep" = kept ]; then row_kept=true; else row_kept=false; fi
+    check "result $row_try: the ledger records kept $row_kept" ledger_has "\"kept\": $row_kept"
+done <<'EOF'
+51/72|pooled: 51/72 against 39/72, +16.7 points [+0.9, +31.4]|kept|up
+50/72|pooled: 50/72 against 39/72, +15.3 points [-0.6, +30.1]|not kept|up
+40/72|pooled: 40/72 against 39/72, +1.4 points [-14.5, +17.2]|not kept|up
+39/72|pooled: 39/72 against 39/72, +0.0 points [-15.9, +15.9]|not kept|flat
+32/72|pooled: 32/72 against 39/72, -9.7 points [-25.2, +6.5]|not kept|down
+low +0.0|pooled: 61/100 against 39/100, +15.0 points [+0.0, +30.0]|not kept|up
+low -0.0|pooled: 61/100 against 39/100, +15.0 points [-0.0, +30.0]|not kept|up
+flat -0.0|pooled: 39/72 against 39/72, -0.0 points [-15.9, +15.9]|not kept|flat
+EOF
+
+# What one result writes, on the row that is kept.
+result_case
+echo 'pooled: 51/72 against 39/72, +16.7 points [+0.9, +31.4]' > "$CASE/pooled-keep"
+run result "$CASE/root"
+check "result: the keep row compares the new transcript against the scenario-1 screening transcript" grep -q 'probe compare .*docs/probe-runs/additive-tuning-of-.*-docs-try-2-scenario-1\.md .*/docs/probe-runs/additive-screening-scenario-1\.md$' "$CASE/engine.log"
+check "result: the base row compares it against the scenario-0 screening transcript" grep -q 'probe compare .*docs/probe-runs/additive-tuning-of-.*-docs-try-2-scenario-1\.md .*/docs/probe-runs/additive-screening-scenario-0\.md$' "$CASE/engine.log"
+check "result: result.md holds the base row verbatim" result_md_has "base row: pooled: 11/72 against 11/72, +0.0 points [-12.8, +12.8]"
+check "result: result.md holds the spend" result_md_has "spent: 2452"
+check "result: result.md states the rule and cites it" grep -qF 'owner, 2026-10-20, #1777' "$CASE/root/docs-try2/result.md"
+check "result: the transcript is written with the facets tier, arm and round" grep -q '^new probe_transcript .*--facet tier=additive --facet arm=scenario-1 --facet round=tuning' "$CASE/engine.log"
+result_transcript=$(ls "$checkout"/docs/probe-runs/additive-tuning-of-*-docs-try-2-scenario-1.md 2>/dev/null)
+check "result: the transcript is in the checkout" [ -f "$result_transcript" ]
+check "result: its Run identity holds the assembled identity block" grep -qx 'cost_cents: 2452' "$result_transcript"
+check "result: its Events hold the assembled events block" grep -qx '  session: "L1-additive-scenario-1-p1-r1"' "$result_transcript"
+check "result: no TODO is left in the two sections" sh -c "! grep -q TODO '$result_transcript'"
+check "result: the ledger records the result event" ledger_has '"event": "result"'
+check "result: with its layer and scenario" sh -c "grep -qF '\"layer\": \"docs\"' '$CASE/root/ledger.jsonl' && grep -qF '\"scenario\": \"1\"' '$CASE/root/ledger.jsonl'"
+check "result: and its direction" ledger_has '"direction": "up"'
+check "result: and the spend" ledger_has '"spent": 2452'
+run result "$CASE/root"
+check "result: a try that has a result.md exits 6" code_is 6
+check "result: and appends no second event" [ "$(grep -c '"event": "result"' "$CASE/root/ledger.jsonl")" = 1 ]
+
+# The best so far is the latest kept try of the layer, and a try that is not
+# kept never becomes it.
+finished_try docs-try3
+echo 'pooled: 40/72 against 51/72, -15.3 points [-30.1, +0.6]' > "$CASE/pooled-keep"
+run result "$CASE/root" docs-try3
+check "result: try 3 exits 0" code_is 0
+check "result: its keep row is against try 2, which was kept" grep -q 'probe compare .*-docs-try-3-scenario-1\.md .*-docs-try-2-scenario-1\.md$' "$CASE/engine.log"
+finished_try docs-try4
+run result "$CASE/root" docs-try4
+check "result: try 4's keep row is against try 2 still, because try 3 was not kept" grep -q 'probe compare .*-docs-try-4-scenario-1\.md .*-docs-try-2-scenario-1\.md$' "$CASE/engine.log"
+
+# The spend: the session files against the driver's last `all=` line.
+result_case
+rm -r "$CASE/root/docs-try2"
+finished_try docs-try2 2451
+echo 'pooled: 51/72 against 39/72, +16.7 points [+0.9, +31.4]' > "$CASE/pooled-keep"
+run result "$CASE/root"
+check "result: session files of 2452 against all=2451 exit 2" code_is 2
+check "result: and name both figures" sh -c "grep -q 2452 '$CASE/err' && grep -q 2451 '$CASE/err'"
+check "result: and write no result.md" [ ! -e "$CASE/root/docs-try2/result.md" ]
+check "result: and assemble nothing" sh -c "! grep -q assemble '$CASE/trees.log' 2>/dev/null"
+result_case
+sed -i '/all=/d' "$CASE/root/docs-try2/drive.out"
+run result "$CASE/root"
+check "result: a drive.out with no all= line exits 2" code_is 2
+
+# The keep row has no interval when a side graded no session.
+result_case
+echo 'pooled: 0/0 against 39/72, no difference: the treated transcript graded no session' > "$CASE/pooled-keep"
+run result "$CASE/root"
+check "result: a keep row with no interval exits 2" code_is 2
+check "result: and writes no result.md" [ ! -e "$CASE/root/docs-try2/result.md" ]
+check "result: and records no result event" sh -c "! grep -q '\"event\": \"result\"' '$CASE/root/ledger.jsonl' 2>/dev/null"
+
+# The best so far must be one transcript.
+result_case
+screening additive-screening-scenario-1-again additive screening scenario-1
+echo 'pooled: 51/72 against 39/72, +16.7 points [+0.9, +31.4]' > "$CASE/pooled-keep"
+run result "$CASE/root"
+check "result: two screening transcripts of the open scenario exit 2" code_is 2
+check "result: and name both" sh -c "grep -q additive-screening-scenario-1.md '$CASE/err' && grep -q additive-screening-scenario-1-again.md '$CASE/err'"
+result_case
+rm "$checkout/docs/probe-runs/additive-screening-scenario-1.md"
+run result "$CASE/root"
+check "result: no screening transcript of the open scenario exits 2" code_is 2
+
+result_case
+: > "$CASE/assemble-fails"
+run result "$CASE/root"
+check "result: an assembly that refuses exits 2" code_is 2
+check "result: and writes no transcript" sh -c "! grep -q '^new ' '$CASE/engine.log' 2>/dev/null"
+
+# A try with no `done`: a halt, and no verdict.
+result_case
+rm "$CASE/root/docs-try2/done"
+: > "$CASE/root/docs-try2/capped"
+echo 'pooled: 51/72 against 39/72, +16.7 points [+0.9, +31.4]' > "$CASE/pooled-keep"
+run result "$CASE/root"
+check "result: a try with no done exits 7" code_is 7
+check "result: and appends a halt event" ledger_has '"event": "halt"'
+check "result: with the spend" ledger_has '"spent": 2452'
+check "result: and the markers" ledger_has '"markers": "capped"'
+check "result: and prints no keep: line" sh -c "! grep -q '^keep:' '$CASE/out'"
+check "result: and writes no result.md" [ ! -e "$CASE/root/docs-try2/result.md" ]
+check "result: and writes no transcript" sh -c "! grep -q '^new ' '$CASE/engine.log' 2>/dev/null"
+checkout=$fix/repo
+
+# ------------------------------------------------------------------ ledger
+
+result_case
+run ledger "$CASE/root"
+check "ledger: no ledger.jsonl prints no events" out_has "no events"
+check "ledger: and exits 0" code_is 0
+echo 'pooled: 51/72 against 39/72, +16.7 points [+0.9, +31.4]' > "$CASE/pooled-keep"
+run result "$CASE/root"
+finished_try docs-try3
+rm "$CASE/root/docs-try3/done"
+run result "$CASE/root" docs-try3
+run ledger "$CASE/root"
+check "ledger: two events print two lines and the total" [ "$(grep -c '^[a-z]*: ' "$CASE/out")" = 3 ]
+check "ledger: the first is the result" out_has "result: try=docs-try2"
+check "ledger: the second is the halt" out_has "halt: try=docs-try3"
+check "ledger: the total is the round's spend" out_has "spent: 4904"
+echo 'not json' >> "$CASE/root/ledger.jsonl"
+run ledger "$CASE/root"
+check "ledger: a line that is not JSON exits 2" code_is 2
+checkout=$fix/repo
+
+# ------------------------------------------------------------------ accept
+
+RULING=https://github.com/headwater-ai/headwater/issues/1777#issuecomment-123456
+accept_case() {
+    new_case
+    echo 'pub fn x() { changed() }' > "$CASE/tree-head/engine/crates/x/src/lib.rs"
+}
+accept_case
+run plan "$CASE/root"
+check "accept: a changed engine source makes plan exit 4" code_is 4
+run accept "$CASE/root" "https://example.org/ruling"
+check "accept: a URL that is not a GitHub ruling exits 2" code_is 2
+check "accept: and records nothing" [ ! -e "$CASE/root/ledger.jsonl" ]
+run accept "$CASE/root" "https://github.com/headwater-ai/headwater/issues/1777"
+check "accept: an issue URL with no comment exits 2" code_is 2
+run accept "$CASE/root" "$RULING"
+check "accept: a ruling URL exits 0" code_is 0
+check "accept: and prints the path it accepts" out_has "engine/crates/x/src/lib.rs"
+check "accept: and records the accept event" ledger_has '"event": "accept"'
+check "accept: with the ruling" ledger_has "\"ruling\": \"$RULING\""
+run plan "$CASE/root"
+check "accept: plan then exits 0" code_is 0
+check "accept: and prints accepted: with the ruling" out_has "accepted: engine/crates/x/src/lib.rs ($RULING)"
+echo 'pub fn x() { changed_again() }' > "$CASE/tree-head/engine/crates/x/src/lib.rs"
+run plan "$CASE/root"
+check "accept: the path changed again after the acceptance makes plan exit 4" code_is 4
+check "accept: and plan prints no accepted: line" sh -c "! grep -q '^accepted:' '$CASE/out'"
+accept_case
+run accept "$CASE/root" "$RULING"
+echo 'pub fn y() {}' > "$CASE/tree-head/engine/crates/x/src/other.rs"
+run plan "$CASE/root"
+check "accept: a second invalidating path the acceptance does not list makes plan exit 4" code_is 4
+check "accept: while the first is still accepted" out_has "accepted: engine/crates/x/src/lib.rs"
+accept_case
+run accept "$CASE/root" "$RULING"
+echo '0 1111111111111111111111111111111111111111' > "$CASE/root/base-pin"
+run plan "$CASE/root"
+check "accept: an acceptance at another pin covers nothing" code_is 4
+accept_case
+rm "$CASE/tree-head/engine/crates/x/src/lib.rs"
+run accept "$CASE/root" "https://github.com/headwater-ai/headwater/pull/1827#discussion_r99"
+check "accept: a pull request URL and a removed path exit 0" code_is 0
+check "accept: and record the path as absent" ledger_has '"engine/crates/x/src/lib.rs": "absent"'
+run plan "$CASE/root"
+check "accept: plan then accepts the removal" code_is 0
+new_case
+run accept "$CASE/root" "$RULING"
+check "accept: nothing invalidating exits 0" code_is 0
+check "accept: and says nothing to accept" out_has "nothing to accept"
+check "accept: and records nothing" [ ! -e "$CASE/root/ledger.jsonl" ]
+
 # -------------------------------------------------------------------- wait
 
 new_case
@@ -676,6 +956,10 @@ run frobnicate "$CASE/root"
 check "args: an unknown verb exits 2" code_is 2
 run spent "$CASE/root" extra
 check "args: spent with a try exits 2" code_is 2
+run ledger "$CASE/root" extra
+check "args: ledger with a try exits 2" code_is 2
+run accept "$CASE/root"
+check "args: accept with no ruling URL exits 2" code_is 2
 
 # TRY_FIXTURES_KEEP keeps the cases' directories, to read a failure.
 if [ -n "${TRY_FIXTURES_KEEP:-}" ]; then echo "try-fixtures: the cases are in $fix" >&2; else rm -rf "$fix"; fi
