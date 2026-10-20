@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! `headwater probe compare` renders each difference through one function,
 //! and that function takes counts (#1820).
 //!
