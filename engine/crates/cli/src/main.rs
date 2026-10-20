@@ -5882,9 +5882,7 @@ fn probe_compare(root: &Path, treated: &Path, control: &Path) -> ExitCode {
     match grade_transcripts(root, &[treated, control]) {
         Err(code) => code,
         Ok(Grading::Unplannable(refusal)) => {
-            println!(
-                "Nothing was compared. `headwater probe plan` refuses this corpus: {refusal}"
-            );
+            println!("Nothing was compared. `headwater probe plan` refuses this corpus: {refusal}");
             ExitCode::SUCCESS
         }
         Ok(Grading::Graded(results)) => {

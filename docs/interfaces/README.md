@@ -47,7 +47,7 @@ The headings and the second column are the groups and the summaries that `headwa
 | Verb | What it does | What a caller types | Contract |
 |---|---|---|---|
 | `sweep` | the two halves of the coherence sweep | `headwater sweep plan`, `headwater sweep report` | [headwater sweep](headwater-sweep.md) |
-| `probe` | the four parts of the probe harness | `headwater probe plan`, `headwater probe record`, `headwater probe grade`, `headwater probe stale` | [headwater probe](headwater-probe.md) |
+| `probe` | the five parts of the probe harness | `headwater probe plan`, `headwater probe record`, `headwater probe grade`, `headwater probe compare`, `headwater probe stale` | [headwater probe](headwater-probe.md) |
 
 ## The taxonomy
 
