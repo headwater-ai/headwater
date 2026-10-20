@@ -596,14 +596,14 @@ fn every_output_carries_its_own_marker() {
     }
 }
 
-/// This repository generates its one hundred and five artifacts, and it says
+/// This repository generates its one hundred and six artifacts, and it says
 /// why for everything else.
 ///
 /// A property and not a recording, for the reason the query crate states about
 /// its own repository run: the corpus is prose somebody edits. What is asserted
 /// is what a prose edit must not change.
 ///
-/// **Twenty-one of the one hundred and five are shelf indexes, one per shelf that holds a
+/// **Twenty-one of the one hundred and six are shelf indexes, one per shelf that holds a
 /// document.** The first is the decisions shelf, which the package has declared
 /// since the first-run walkthrough and which produced a reason rather than a
 /// file until #124 filled that shelf. The other twenty are the overlay's own
@@ -658,7 +658,7 @@ fn every_output_carries_its_own_marker() {
 /// compares bytes, so a contributor who edits a `summary` and does not
 /// regenerate fails this test before CI runs.
 #[test]
-fn this_repository_generates_its_one_hundred_and_five_artifacts_and_accounts_for_the_rest() {
+fn this_repository_generates_its_one_hundred_and_six_artifacts_and_accounts_for_the_rest() {
     let root = repository_root();
     let resolved = headwater_resolve::repository(&root)
         .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)));
@@ -756,6 +756,7 @@ fn this_repository_generates_its_one_hundred_and_five_artifacts_and_accounts_for
             "docs/probe-results/additive-screening-of-2026-10-18-scenario-7.md",
             "docs/probe-results/additive-screening-of-2026-10-18-scenario-8.md",
             "docs/probe-results/additive-screening-of-2026-10-18-scenario-9.md",
+            "docs/probe-results/additive-tuning-of-2026-10-20-documents-try-1-scenario-1.md",
             "docs/probe-results/campaign-of-2026-09-28-campaign-tier-absent-arm-navigability.md",
             "docs/probe-results/campaign-of-2026-09-28-campaign-tier-absent-arm-sufficiency.md",
             "docs/probe-results/campaign-of-2026-09-28-campaign-tier-present-arm-navigability.md",
