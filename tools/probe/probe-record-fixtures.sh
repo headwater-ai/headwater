@@ -5357,6 +5357,9 @@ for open_case in \
     "a missing field|/^      change: none$/d|does not declare \`change\`" \
     "a plan that is not a URL|s/^      plan: .*$/      plan: accepted/|\`plan\` of \`rounds.tuning.open\`" \
     "a change that is not a commit or none|s/^      change: none$/      change: main/|\`change\` of \`rounds.tuning.open\`" \
+    "a change shorter than 7 hex characters|s/^      change: none$/      change: abc123/|\`change\` of \`rounds.tuning.open\`" \
+    "a change in upper-case hex|s/^      change: none$/      change: ABCDEF1/|\`change\` of \`rounds.tuning.open\`" \
+    "a plan that is not https|s/^      plan: https:/      plan: http:/|\`plan\` of \`rounds.tuning.open\`" \
     "an open that is a word, not a mapping|/^    open:$/,/^      change: none$/c\\    open: docs|is neither \`none\` nor a mapping"
 do
     open_name=${open_case%%|*}; open_rest=${open_case#*|}
@@ -5435,7 +5438,12 @@ printf 'additive scenario-4 screening\nadditive scenario-1 tuning\nadditive scen
 same "with docs open on scenario 1, a spec that also holds scenario 6 is refused with 5" "5" \
     "$(open_batch "$scratch/open-docs1.yml" "$scratch/open-mixed.spec" "$scratch/open-mixed.err")"
 present "and names scenario 6" "and the spec holds a tuning line of scenario-6" "$scratch/open-mixed.err"
-absent "and not the open scenario" "a tuning line of scenario-1" "$scratch/open-mixed.err"
+absent "and not the open scenario" "a tuning line of scenario-1." "$scratch/open-mixed.err"
+# A scenario whose name begins with the open one's is another scenario.
+printf 'additive scenario-10 tuning\n' > "$scratch/open-s10.spec"
+same "with docs open on scenario 1, a tuning line of scenario 10 is refused with 5" "5" \
+    "$(open_batch "$scratch/open-docs1.yml" "$scratch/open-s10.spec" "$scratch/open-s10.err")"
+present "and names scenario 10" "and the spec holds a tuning line of scenario-10." "$scratch/open-s10.err"
 # A declaration the reader refuses stops the batch with the reader's own 2.
 sed 's/^      try: 1$/      try: 4/' "$scratch/open-docs1.yml" > "$scratch/open-try4.yml"
 same "a malformed open stops the batch with the reader's 2" "2" \
