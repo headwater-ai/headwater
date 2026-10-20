@@ -11,6 +11,7 @@
 #     sh tools/probe/campaign.sh --out <dir> --assemble
 #     sh tools/probe/campaign.sh --out <dir> --unrecorded <session>...
 #     sh tools/probe/campaign.sh --out <dir> --repin
+#     sh tools/probe/campaign.sh --out <dir> --scenario-tree <n> [--at <rev>]
 #     sh tools/probe/campaign.sh --dry-run --spec <file> [--repetitions <n>] \
 #         [--max-sessions <n>]
 #
@@ -138,6 +139,29 @@
 # tree or harness call, and it reads the same checkout's declaration and no
 # override. A declaration that `tools/probe/declared.py` refuses stops the
 # batch with 2.
+#
+# **Each refusal before the check of the tools is marked base-neutral
+# (#1821).** The owner ruled on 2026-10-20 that an edit to this script makes
+# a measured base stale only when it touches the code that builds, runs or
+# grades a session, and that the gate and refusal checks are exempt. So each
+# refusal block above the line `for tool in git jq tar awk cargo claude
+# bwrap` sits between `# base-neutral: begin <reason>` and
+# `# base-neutral: end`, and `tools/probe/try.sh plan` reads a changed line
+# inside such a region, or a comment or a blank, as no change to the base.
+# A line that a later line reads, such as `additive=1`, stays outside every
+# region. A region that reaches the check of the tools makes `plan` exit 2.
+#
+# `--scenario-tree <n>` builds the tree a session of scenario `<n>` gets, at
+# `<out>/trees/additive-scenario-<n>`, and nothing else of a batch, from the
+# commit that `--at` names (`HEAD` by default). It builds with the same two
+# functions as a batch: `git archive` of the commit, this checkout's engine
+# copied in, `ablate.sh --present`, `seal.sh` over the tuning round's set,
+# and `ablate.sh --scenario <n>` on a copy. Every tree it builds holds this
+# checkout's engine and is transformed by this checkout's tools, so two
+# trees of two commits differ by the files of the commits alone. It spends
+# nothing, needs a built engine, and accepts an output directory under
+# `$HOME`. `tools/probe/try.sh plan` compares a base's tree at its pin with
+# the tree at `HEAD` this way.
 #
 # Each invocation of an additive spec then runs the dry run first, and a leak
 # in any scenario tree stops it with 8 before the harness is asked anything.
@@ -307,12 +331,14 @@
 # ## Exit status
 #
 #   0   the batch finished, the assembly was written, the sessions named
-#       were marked unrecorded, or the pin moved or had nothing to move
+#       were marked unrecorded, the pin moved or had nothing to move, or
+#       `--scenario-tree` built its tree
 #   2   a usage error, a line whose tier declares no turn cap and no
-#       `--max-turns` was given, or `--unrecorded` names a session that is not
+#       `--max-turns` was given, `--unrecorded` names a session that is not
 #       a job of the batch, whose `status` is not 5, or that states no cost
-#       in whole cents
-#   3   a tool is missing, or no engine is built
+#       in whole cents, or `--at` names no commit
+#   3   a tool is missing, no engine is built, or a tree of
+#       `--scenario-tree` did not build
 #   4   the checkout is dirty, `HEAD` moved during the batch, `HEAD` is not
 #       the commit the output directory holds a batch of, the `claude`
 #       harness is another version than the batch recorded, or `--repin`
@@ -347,6 +373,8 @@ job=
 unrecorded=0
 unrecorded_names=
 repin=0
+scenario_tree=
+at=
 
 while [ $# -gt 0 ]; do
     case $1 in
@@ -374,6 +402,8 @@ while [ $# -gt 0 ]; do
         --assemble) assemble=1; shift ;;
         --dry-run) dry=1; shift ;;
         --job) job=${2:-}; shift 2 ;;
+        --scenario-tree) scenario_tree=${2:-}; shift 2 ;;
+        --at) at=${2:-}; shift 2 ;;
         *) echo "campaign: unknown argument \`$1\`" >&2; exit 2 ;;
     esac
 done
@@ -415,7 +445,7 @@ esac
 # under `$HOME` would sit beside the host's own configuration and copies of
 # this repository. Assembly of a batch already recorded there still runs.
 home_real=$(cd "${HOME:-/nonexistent}" 2>/dev/null && pwd -P) || home_real=
-if [ "$assemble" = 0 ] && [ "$unrecorded" = 0 ] && [ -n "$home_real" ]; then
+if [ "$assemble" = 0 ] && [ "$unrecorded" = 0 ] && [ -z "$scenario_tree" ] && [ -n "$home_real" ]; then
     case "$out" in
         "$home_real"|"$home_real"/*)
             echo "campaign: the output directory is under \$HOME ($home_real). Put the batch outside it, such as under /mnt or /var/tmp (#1467)." >&2
@@ -867,6 +897,84 @@ extract_task() {
         > "$2"
 }
 
+# build_oracle <rev> <trees> <probe>...: the present tree of the commit
+# <rev>, at `<trees>/oracle`: its `git archive`, this checkout's engine
+# copied in, `ablate.sh --present`, and `seal.sh` over the probes. The batch
+# and `--scenario-tree` both build with it, so the tree a base is compared on
+# is built the way a session's tree is (#1821).
+build_oracle() {
+    o_rev=$1 o_trees=$2
+    shift 2
+    rm -rf "$o_trees"
+    mkdir -p "$o_trees/base"
+    git -C "$root" archive "$o_rev" | tar -x -C "$o_trees/base" || return 3
+    mv "$o_trees/base" "$o_trees/oracle"
+    mkdir -p "$o_trees/oracle/engine/target/dev-release"
+    cp "$engine" "$o_trees/oracle/engine/target/dev-release/headwater" || return 3
+    sh "$root/tools/probe/ablate.sh" --present "$o_trees/oracle" >/dev/null || return 3
+    sh "$root/tools/probe/seal.sh" "$o_trees/oracle" "$@" >/dev/null || return 3
+}
+
+# build_arm <trees> <tier> <arm>: the tree of one arm at `<trees>/<tier>-<arm>`,
+# from the present tree, unless it is built already.
+build_arm() {
+    a_trees=$1 a_tier=$2 a_arm=$3
+    [ -d "$a_trees/$a_tier-$a_arm" ] && return 0
+    # A component arm is built by `ablate.sh` too (#1659). Before, only the
+    # absent arm was, so the `no-hook`, `no-skills`, `no-claude-md` and `mcp`
+    # trees were copies of the present tree, and the slice-1 live check found
+    # no `.mcp.json` in the `mcp` arm's workspace. The tree is built under
+    # another name and moved, so a build that stopped half way is not reused.
+    rm -rf "$a_trees/.building"
+    cp -a "$a_trees/oracle" "$a_trees/.building" || return 3
+    # A scenario arm of the additive campaign is that scenario's tree, built
+    # from the present tree by `ablate.sh --scenario` (#1775), and not a
+    # component delta of the tier.
+    case $a_tier-$a_arm in
+        additive-scenario-*) sh "$root/tools/probe/ablate.sh" --scenario "${a_arm#scenario-}" "$a_trees/.building" >/dev/null || return 3 ;;
+        *-present) ;;
+        *-absent) sh "$root/tools/probe/ablate.sh" "$a_tier" "$a_trees/.building" >/dev/null || return 3 ;;
+        *) sh "$root/tools/probe/ablate.sh" "$a_tier" "$a_trees/.building" "$a_arm" >/dev/null || return 3 ;;
+    esac
+    mv "$a_trees/.building" "$a_trees/$a_tier-$a_arm" || return 3
+}
+
+# ---------------------------------------------------------------------------
+# `--scenario-tree <n>`: the tree a session of scenario `<n>` gets, built at
+# `<out>/trees/additive-scenario-<n>` from the commit `--at` names, `HEAD` by
+# default, with nothing else of a batch (#1821). It spends nothing and runs
+# no harness. The probes it seals are the tuning round's set.
+# ---------------------------------------------------------------------------
+if [ -n "$scenario_tree" ]; then
+    case $scenario_tree in
+        *[!0-9]*) echo "campaign: --scenario-tree takes a scenario number, not \`$scenario_tree\`." >&2; exit 2 ;;
+    esac
+    for tool in git tar awk python3 sha256sum; do
+        command -v "$tool" >/dev/null 2>&1 || { echo "campaign: \`$tool\` is not on the path." >&2; exit 3; }
+    done
+    [ -x "$engine" ] || { echo "campaign: no engine is built at $root/engine/target, and ablate.sh and seal.sh read the declaration with it." >&2; exit 3; }
+    tree_rev=$(git -C "$root" rev-parse --verify --quiet "${at:-HEAD}^{commit}") || {
+        echo "campaign: --at names no commit of this checkout: ${at:-HEAD}." >&2
+        exit 2
+    }
+    tree_probes=$(python3 "$root/tools/probe/declared.py" "$root/.headwater/probe.yml" rounds \
+        | awk '$1 == "tuning" { for (i = 6; i <= NF; i++) print $i }')
+    [ -n "$tree_probes" ] || { echo "campaign: the declaration names no probe of the tuning round's set." >&2; exit 2; }
+    # shellcheck disable=SC2086
+    build_oracle "$tree_rev" "$out/trees" $tree_probes || {
+        echo "campaign: the present tree of $tree_rev did not build." >&2
+        exit 3
+    }
+    build_arm "$out/trees" additive "scenario-$scenario_tree" || {
+        echo "campaign: the tree of scenario $scenario_tree at $tree_rev did not build." >&2
+        exit 3
+    }
+    printf '%s\n' "$tree_rev" > "$out/head"
+    sha256sum "$engine" | awk '{ print $1 }' > "$out/engine.sha256"
+    echo "$out/trees/additive-scenario-$scenario_tree"
+    exit 0
+fi
+
 # ---------------------------------------------------------------------------
 # `--repin`: move a batch's pin to this checkout's `HEAD` (#1659). It spends
 # nothing and runs no harness. It moves the pin only when it can show that no
@@ -959,10 +1067,13 @@ fi
 additive=0
 if awk 'NF && $1 !~ /^#/ && $1 == "additive" { f = 1 } END { exit !f }' "$spec"; then
     additive=1
+    # base-neutral: begin the refusal of --repetitions on an additive spec
     if [ -n "$repetitions" ]; then
         echo "campaign: an additive spec takes no --repetitions. Each round's count is computed from its rates under \`rounds:\` in .headwater/probe.yml." >&2
         exit 2
     fi
+    # base-neutral: end
+    # base-neutral: begin the refusal of a round nobody approved (#1775)
     command -v python3 >/dev/null 2>&1 || { echo "campaign: \`python3\` is not on the path, so the approval of each round cannot be read." >&2; exit 3; }
     approvals=$(python3 "$root/tools/probe/declared.py" "$root/.headwater/probe.yml" approved) || exit $?
     unapproved=$(awk 'NF && $1 !~ /^#/ && $1 == "additive" && !seen[$3]++ { print $3 }' "$spec" | while read -r round; do
@@ -975,10 +1086,12 @@ if awk 'NF && $1 !~ /^#/ && $1 == "additive" { f = 1 } END { exit !f }' "$spec";
         done
         exit 5
     fi
+    # base-neutral: end
     # The tuning round runs one layer at a time, and only a layer whose plan
     # the owner accepted (#1777, #1819). `rounds.tuning.open` names that
     # layer and its scenario, or `none`, and it is read from this checkout
     # alone, as the approval is.
+    # base-neutral: begin the refusal of a tuning line of a layer nobody opened (#1819)
     if awk 'NF && $1 !~ /^#/ && $1 == "additive" && $3 == "tuning" { f = 1 } END { exit !f }' "$spec"; then
         open=$(python3 "$root/tools/probe/declared.py" "$root/.headwater/probe.yml" open) || exit $?
         if [ "$open" = none ]; then
@@ -995,6 +1108,7 @@ if awk 'NF && $1 !~ /^#/ && $1 == "additive" { f = 1 } END { exit !f }' "$spec";
             exit 5
         fi
     fi
+    # base-neutral: end
 fi
 for tool in git jq tar awk cargo claude bwrap; do
     command -v "$tool" >/dev/null 2>&1 || { echo "campaign: \`$tool\` is not on the path." >&2; exit 3; }
@@ -1146,41 +1260,16 @@ for probe in $probes; do
     [ -s "$out/tasks/$probe.md" ] || { echo "campaign: $probe has no task body." >&2; exit 5; }
 done
 
-# The trees, built once.
+# The trees, built once, by the two functions `--scenario-tree` builds with.
 if [ ! -d "$out/trees/oracle" ]; then
-    rm -rf "$out/trees"
-    mkdir -p "$out/trees/base"
-    git -C "$root" archive "$head" | tar -x -C "$out/trees/base" || exit 3
-    mv "$out/trees/base" "$out/trees/oracle"
-    mkdir -p "$out/trees/oracle/engine/target/dev-release"
-    cp "$engine" "$out/trees/oracle/engine/target/dev-release/headwater" || exit 3
-    sha256sum "$engine" | awk '{ print $1 }' > "$out/engine.sha256"
-    sh "$root/tools/probe/ablate.sh" --present "$out/trees/oracle" >/dev/null || exit 3
     # shellcheck disable=SC2086
-    sh "$root/tools/probe/seal.sh" "$out/trees/oracle" $probes >/dev/null || exit 3
+    build_oracle "$head" "$out/trees" $probes || exit 3
+    sha256sum "$engine" | awk '{ print $1 }' > "$out/engine.sha256"
 fi
 while IFS= read -r line; do
     # shellcheck disable=SC2086
     set -- $line
-    tier=$2 arm=$3
-    [ -d "$out/trees/$tier-$arm" ] && continue
-    # A component arm is built by `ablate.sh` too (#1659). Before, only the
-    # absent arm was, so the `no-hook`, `no-skills`, `no-claude-md` and `mcp`
-    # trees were copies of the present tree, and the slice-1 live check found
-    # no `.mcp.json` in the `mcp` arm's workspace. The tree is built under
-    # another name and moved, so a build that stopped half way is not reused.
-    rm -rf "$out/trees/.building"
-    cp -a "$out/trees/oracle" "$out/trees/.building" || exit 3
-    # A scenario arm of the additive campaign is that scenario's tree, built
-    # from the present tree by `ablate.sh --scenario` (#1775), and not a
-    # component delta of the tier.
-    case $tier-$arm in
-        additive-scenario-*) sh "$root/tools/probe/ablate.sh" --scenario "${arm#scenario-}" "$out/trees/.building" >/dev/null || exit 3 ;;
-        *-present) ;;
-        *-absent) sh "$root/tools/probe/ablate.sh" "$tier" "$out/trees/.building" >/dev/null || exit 3 ;;
-        *) sh "$root/tools/probe/ablate.sh" "$tier" "$out/trees/.building" "$arm" >/dev/null || exit 3 ;;
-    esac
-    mv "$out/trees/.building" "$out/trees/$tier-$arm" || exit 3
+    build_arm "$out/trees" "$2" "$3" || exit 3
 done < "$out/lines"
 
 # The jobs, shuffled with the seed. A job's name is its line, its probe's

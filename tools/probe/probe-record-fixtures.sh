@@ -5310,6 +5310,28 @@ if [ -x "$engine" ]; then
     else
         pass "no additive dry run calls a model"
     fi
+
+    # `--scenario-tree` (#1821) builds the tree a session of one scenario
+    # gets, with the batch's own two functions, and nothing else of a batch.
+    # It reads `HEAD` of this checkout, so it runs on a dirty checkout too.
+    rm -rf "$scratch/st-out"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$scratch/st-out" --scenario-tree 0 \
+        > "$scratch/st.out" 2> "$scratch/st.err"
+    same "campaign.sh --scenario-tree 0 exits 0 and prints the tree's path" \
+        "0 $scratch/st-out/trees/additive-scenario-0" "$? $(cat "$scratch/st.out")"
+    same "and writes HEAD's commit, and nothing of a batch: no jobs, no plans, no claude-version" \
+        "$(git -C "$root" rev-parse HEAD) no no no" \
+        "$(cat "$scratch/st-out/head" 2>/dev/null) $([ -e "$scratch/st-out/jobs" ] && echo yes || echo no) $([ -e "$scratch/st-out/plans" ] && echo yes || echo no) $([ -e "$scratch/st-out/claude-version" ] && echo yes || echo no)"
+    same "and scenario 0's tree holds no engine binary, because the engine layer owns it" "no" \
+        "$([ -e "$scratch/st-out/trees/additive-scenario-0/engine/target/dev-release/headwater" ] && echo yes || echo no)"
+    same "and holds the engine's sources and this script" "yes yes" \
+        "$([ -d "$scratch/st-out/trees/additive-scenario-0/engine/crates/cli/src" ] && echo yes || echo no) $([ -f "$scratch/st-out/trees/additive-scenario-0/tools/probe/campaign.sh" ] && echo yes || echo no)"
+    rm -rf "$scratch/st-out"
+    sh "$root/tools/probe/campaign.sh" --out "$scratch/st-out" --scenario-tree 0 --at no-such-revision > /dev/null 2> "$scratch/st-bad.err"
+    same "--at a name that is no commit exits 2" "2" "$?"
+    sh "$root/tools/probe/campaign.sh" --out "$scratch/st-out" --scenario-tree zero > /dev/null 2> /dev/null
+    same "--scenario-tree with no scenario number exits 2" "2" "$?"
+    rm -rf "$scratch/st-out"
 else
     printf 'note no engine, so the additive dry-run cases did not run.\n'
 fi

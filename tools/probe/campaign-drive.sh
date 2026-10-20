@@ -11,7 +11,7 @@
 #     sh tools/probe/campaign-drive.sh --root <dir> --pin <sha> --claude-version <v> \
 #         --spec-a <file> [--spec-b <file> --repetitions-b <n>] --model <m> \
 #         --session-cents <B> --cap-cents <C> [--parallel <P> | --ramp <P1,P2,...>] \
-#         [--overshoot-cents <M>] [--seed <n>]
+#         [--overshoot-cents <M>] [--seed <n>] [--on-canary <cmd>] [--on-done <cmd>]
 #
 # Launch it from a worktree detached at the pin, with the engine built there,
 # so that it outlives the shell that started it:
@@ -73,11 +73,21 @@
 #    path, no refused provider fetch, and the intent hook live in every arm
 #    but `no-hook`. A canary that a halt cut short asks only for the
 #    sessions it still owes.
+#
+#    `--on-canary <cmd>` runs `sh -c <cmd>` once, in the foreground, right
+#    after the driver writes `canary-recorded` and before it waits, so that
+#    a reader such as `sh tools/probe/try.sh canary` can write
+#    `canary-passed` with nobody awake (#1821). The driver logs its exit
+#    status and goes on to the wait whatever the status is, because the
+#    wait reads `canary-passed` and nothing else. A driver started again
+#    with `canary-recorded` present does not run it again.
 # 2. Batch A at `--parallel P --max-sessions 500`, until it exits 0.
 # 3. Batch B the same, with `--spec <spec-b> --repetitions <n>`.
 # 4. `<root>/done`, written only when `a.done` exists, and `b.done` where
-#    the driver runs batch B. A
-#    driver started with `done` present invokes nothing and exits 0.
+#    the driver runs batch B. A driver started with `done` present invokes
+#    nothing and exits 0. `--on-done <cmd>` runs `sh -c <cmd>` once, right
+#    after the driver writes `done`, and the driver logs its status and
+#    exits 0. A driver started with `done` present runs neither hook.
 #
 # Every invocation is `sh $HEADWATER_DRIVE_CAMPAIGN` (default
 # `tools/probe/campaign.sh` in the current directory) with `--out --model
@@ -187,11 +197,11 @@
 set -u
 
 usage() {
-    echo "usage: sh tools/probe/campaign-drive.sh --root <dir> --pin <sha> --claude-version <v> --spec-a <file> [--spec-b <file> --repetitions-b <n>] --model <m> --session-cents <B> --cap-cents <C> [--parallel <P> | --ramp <P1,P2,...>] [--overshoot-cents <M>] [--seed <n>]" >&2
+    echo "usage: sh tools/probe/campaign-drive.sh --root <dir> --pin <sha> --claude-version <v> --spec-a <file> [--spec-b <file> --repetitions-b <n>] --model <m> --session-cents <B> --cap-cents <C> [--parallel <P> | --ramp <P1,P2,...>] [--overshoot-cents <M>] [--seed <n>] [--on-canary <cmd>] [--on-done <cmd>]" >&2
     exit 2
 }
 
-root= pin= version= spec_a= spec_b= reps_b= model= budget= cap= parallel=4 parallel_given= ramp= margin=100 seed=0
+root= pin= version= spec_a= spec_b= reps_b= model= budget= cap= parallel=4 parallel_given= ramp= margin=100 seed=0 on_canary= on_done=
 while [ $# -gt 0 ]; do
     [ $# -ge 2 ] || usage
     case $1 in
@@ -208,6 +218,8 @@ while [ $# -gt 0 ]; do
         --ramp) ramp=$2 ;;
         --overshoot-cents) margin=$2 ;;
         --seed) seed=$2 ;;
+        --on-canary) on_canary=$2 ;;
+        --on-done) on_done=$2 ;;
         *) usage ;;
     esac
     shift 2
@@ -403,6 +415,15 @@ token_wait() {
         fi
         pause 60
     done
+}
+
+# hook <name> <cmd>: run `--on-canary` or `--on-done` once, and log its
+# status. An empty command runs nothing.
+hook() {
+    [ -n "$2" ] || return 0
+    say "on-$1: $2"
+    sh -c "$2"
+    say "on-$1 exited $?"
 }
 
 canary_wait() {
@@ -637,6 +658,7 @@ if [ ! -f "$root/canary-recorded" ]; then
     ' "$root/a/jobs" > "$root/canary-range"
     : > "$root/canary-recorded"
     say "canary recorded"
+    hook canary "$on_canary"
 fi
 canary_wait
 if [ ! -f "$root/a.done" ]; then
@@ -650,5 +672,6 @@ fi
 if [ -f "$root/a.done" ] && { [ -z "$spec_b" ] || [ -f "$root/b.done" ]; }; then
     : > "$root/done"
     say "done"
+    hook done "$on_done"
 fi
 exit 0

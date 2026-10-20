@@ -713,6 +713,8 @@ anchors
     cited by HW-DR-0111
   code_path `tools/probe/additive-campaign.spec` via source-tree
     cited by HW-DR-0111
+  code_path `tools/probe/additive-launch.env` via source-tree
+    cited by HW-DR-0111
   code_path `tools/probe/additive-screening.spec` via source-tree
     cited by HW-DR-0111
   code_path `tools/probe/additive-tuning-docs.spec` via source-tree
@@ -725,6 +727,8 @@ anchors
     cited by HW-SPEC-the-recorder-contract
   code_path `tools/probe/rdf-probe/emit.py` via source-tree
     cited by HW-EVAL-owl-skos-worked-example
+  code_path `tools/probe/try.sh` via source-tree
+    cited by HW-DR-0111
   code_path `tools/repo/decision-register-fixtures.sh` via source-tree
     cited by HW-REG-decisions
   code_path `tools/repo/obligation-register-fixtures.sh` via source-tree
