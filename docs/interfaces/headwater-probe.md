@@ -2,7 +2,7 @@
 id: HW-IFACE-headwater-probe
 status: current
 status_since: 2026-09-06
-summary: "How plan, record, grade and stale compose probe measurements without gating a build."
+summary: "How plan, record, grade, compare and stale compose probe measurements without gating a build."
 last_verified: 2026-10-03
 title: "headwater probe"
 relations:
@@ -28,13 +28,14 @@ relations:
     headwater probe plan --answer-keys <probe>
     headwater probe record <path>
     headwater probe grade <path>
+    headwater probe compare <treated> <control>
     headwater probe stale
 
-`plan` takes no path. `record` and `grade` take one transcript path. `stale` takes no operand. Each subcommand refuses an unknown word.
+`plan` takes no path. `record` and `grade` take one transcript path. `compare` takes two transcript paths, the treated run first and the control run second. `stale` takes no operand. Each subcommand refuses an unknown word.
 
 ## Description
 
-`headwater probe` is the four-part measurement harness. `plan` composes a selection from the declared probes, tier, arms, category and budget. `record` reads a transcript and confirms its structure without evaluating an expectation. `grade` evaluates the declared expectations. `stale` compares committed transcript read sets with the current corpus.
+`headwater probe` is the five-part measurement harness. `plan` composes a selection from the declared probes, tier, arms, category and budget. `record` reads a transcript and confirms its structure without evaluating an expectation. `grade` evaluates the declared expectations. `compare` grades two transcripts and states the difference of their rates. `stale` compares committed transcript read sets with the current corpus.
 
 Probe output never changes an exit status. A probe is a measurement, not a build gate. No subcommand opens a network connection or writes a file.
 
@@ -44,9 +45,19 @@ The harness reads the selection again when it grades a transcript. This prevents
 
 `grade` states, for each graded session, how many of its recorded calls went to a tool of an MCP server. A call to an MCP server is a call whose tool name starts with `mcp__`. The grader reads the tool name and never the argument. A session with no `calls` key gets the words "not counted" and never the number 0. `grade` also states how many of the sessions that recorded their calls made no call to an MCP server. It states how many sessions recorded no calls. Thus a reader gets the share of sessions that never called the server from the committed result, and not from the transcript.
 
+`compare` grades each of its two transcripts in the same way that `grade` grades one. It prints one line for each probe that both transcripts ran, and then one line with the label `pooled` for all the graded sessions of each transcript. Each line has this form:
+
+    <probe>: <x1>/<n1> against <x0>/<n0>, <d> points [<low>, <high>]
+
+`<x1>/<n1>` is the satisfied sessions of the treated transcript over its graded sessions, and `<x0>/<n0>` is the same count for the control transcript. A refused session is in no denominator. `<d>` is the treated rate minus the control rate, in percentage points with its sign. `[<low>, <high>]` is the Newcombe hybrid score interval of that difference, built from the two Wilson intervals that `grade` reports. A result page computes the same interval, and [HW-DR-0111](../decisions/0111-the-additive-campaign-adds-six-layers-to-plain-code-in-fourteen-scenarios-and-registers-one-comparison-each.md) registers it. The line states no verdict. Three cases get a stated line, not a silent drop:
+
+- When one transcript graded no session of a probe, the line ends `no difference: the treated transcript graded no session`, or names the control transcript.
+- When only one transcript ran a probe, the line is `<probe>: only the treated transcript ran this probe, so it has no difference`, or names the control transcript.
+- When the intake refuses either transcript, `compare` prints `The treated transcript reached no grader, so nothing was compared: ` and the refusal, or names the control transcript. It prints no comparison line.
+
 ## Preconditions
 
-All subcommands require a readable `.headwater/probe.yml`, a readable taxonomy lock and a loadable corpus. `record` and `grade` also require a readable transcript path. `stale` requires committed probe transcripts to report, but it succeeds when none exist.
+All subcommands require a readable `.headwater/probe.yml`, a readable taxonomy lock and a loadable corpus. `record` and `grade` also require a readable transcript path, and `compare` requires two. `stale` requires committed probe transcripts to report, but it succeeds when none exist.
 
 ## Options
 
@@ -66,8 +77,9 @@ All subcommands require a readable `.headwater/probe.yml`, a readable taxonomy l
 | `plan` | `--seed <n>` | Record the caller's rotation seed. It does not select a subset. The default is `0`. |
 | `record` | `<path>` | Read and report the transcript at the path. |
 | `grade` | `<path>` | Grade the transcript at the path against the current regression selection. When the transcript names part of the selection, the grade uses that part. |
+| `compare` | `<treated> <control>` | Grade the two transcripts against the current regression selection, as `grade` does. Print the difference of the treated rate minus the control rate for each probe and for the `pooled` line, each with its Newcombe interval. |
 | `stale` | none | Report which committed transcript read sets changed. |
-| every | `--no-color` | Force plain text on both streams: bold and dim weight plus glyphs, no escape sequence. The default already senses whether each stream is a terminal, and renders color only there. All four subcommands, `plan`, `record`, `grade` and `stale`, color their own report under a terminal. A refusal on standard error colors under a terminal for all four. |
+| every | `--no-color` | Force plain text on both streams: bold and dim weight plus glyphs, no escape sequence. The default already senses whether each stream is a terminal, and renders color only there. Four subcommands, `plan`, `record`, `grade` and `stale`, color their own report under a terminal. `compare` prints its report in plain text. A refusal on standard error colors under a terminal for all five subcommands. |
 
 Global `--root` selects the repository. `--help`, `--version`, `--wide` and `--no-banner` are handled by the binary before or around the subcommand.
 
@@ -83,6 +95,8 @@ Global `--root` selects the repository. `--help`, `--version`, `--wide` and `--n
 
 The first line carries no color escape, also under a terminal.
 
+`compare` exits 0 on every comparison it prints, whatever the rates are. It also exits 0 when the intake refuses either transcript, and when the plan refuses the corpus. In that case it prints `Nothing was compared. ` and the refusal. It exits 1 when an operand is missing or a transcript cannot be read, as `grade` does.
+
 **1** when the command line is invalid, or a required file cannot be read. A tier, arm or category name outside this engine's closed set makes the command line invalid. It is also 1 when the budget declaration is malformed or the corpus cannot load. Under `--delta`, an arm that the tier does not run is also 1, because a script builds a tree from the output. Under `--instrument`, `--folds` or `--answer-keys`, a malformed or unsafe declaration is 1, and nothing is printed on standard output. The message names the refusal.
 
 **1**, and never 101, when standard output or standard error cannot be written, and one sentence on standard error names a failed standard output.
@@ -95,13 +109,13 @@ No environment variable reaches a probe subcommand. The tier, repository and see
 
 | Path | How this verb treats it |
 |---|---|
-| `.headwater/probe.yml` | read by `plan`, `grade` and `stale` to load the tier budgets |
+| `.headwater/probe.yml` | read by `plan`, `grade`, `compare` and `stale` to load the tier budgets |
 | `.headwater/taxonomy.lock` | read by every subcommand through the corpus loader |
 | `.headwater/taxonomy.yml` | read by every subcommand through the corpus loader |
 | the corpus | read to select probes and to rebuild transcript read sets |
 | `.headwater/imports/` | read by every subcommand where `.headwater/taxonomy.yml` declares an import, for the anchors that an imported snapshot supplies. An `imports` entry that does not read stops the verb with exit 1, and so does an `at` path outside the repository root. |
 | the path each `harvests.<name>.at` names | read by every subcommand where `.headwater/taxonomy.yml` declares a pinned corpus export, for the anchors that export supplies. A `harvests` entry that does not read stops the verb with exit 1, and so does an `at` path outside the repository root. A pin with no digest binds no anchor. An absent file binds no anchor, and neither does a file that fails the pinned digest or is not an export. |
-| the transcript path | read by `record` and `grade` |
+| the transcript path | read by `record` and `grade`, and both transcript paths are read by `compare` |
 | committed probe transcripts | read by `stale` |
 
 No subcommand writes a file. Output goes to standard output.

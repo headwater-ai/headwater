@@ -203,6 +203,7 @@ headwater probe       plan [--tier regression|campaign|documentation|additive] [
                     | plan --answer-keys <probe>
                     | record <path>
                     | grade <path>
+                    | compare <treated> <control>
                     | stale
 headwater json        field <key>...
                     | count [<key>...]
