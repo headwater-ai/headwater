@@ -129,7 +129,7 @@ flowchart LR
 
 ### The queue stage
 
-[`.claude/agents/hw-queue.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/agents/hw-queue.md) reads the whole issue list and the milestone list once. It writes the eligible issues into the run directory in order, with one `run-dir.sh queue` call for each issue.
+[`.claude/agents/hw-queue.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/agents/hw-queue.md) reads the whole issue list and the milestone list once. It writes the eligible issues into the run directory in order, with one `run-dir.sh queue` call for each issue. It never queues an issue labeled `paid-experiment`, and it names each one on an `EXPERIMENT:` line of its report ([HW-PD-0025](../decisions/0025-a-paid-try-runs-under-its-own-command-and-never-under-the-build-order.md)).
 
 **It owns the population and the order.** It applies the value rule, sorts a defect above everything else, and marks each candidate with the artifacts that change most likely regenerates. The parent then reads one report and never the board. A board dump read once is re-read on every later turn of the run. An issue with an open GitHub `blocked by` link stays in its place, marked `blocked`, and `run-dir.sh next` holds it until the parent rules it `open`. So the queue raises a dependency to the parent and never decides it.
 
