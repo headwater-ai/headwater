@@ -6,6 +6,7 @@ summary: "The no-claude-md arm of the campaign tier over the navigability select
 last_verified: 2026-10-08
 tier: campaign
 arm: no-claude-md
+round: none
 title: "Campaign of 2026-10-03, campaign tier, no-claude-md arm, navigability"
 relations:
   records:

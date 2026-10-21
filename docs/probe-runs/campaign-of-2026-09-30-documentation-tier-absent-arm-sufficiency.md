@@ -6,6 +6,7 @@ summary: "The absent arm of the documentation tier over the sufficiency selectio
 last_verified: 2026-09-30
 tier: documentation
 arm: absent
+round: none
 title: "Campaign of 2026-09-30, documentation tier, absent arm, sufficiency"
 relations:
   records:

@@ -6,6 +6,7 @@ summary: "The mcp arm of the campaign tier over the sufficiency selection (four 
 last_verified: 2026-10-08
 tier: campaign
 arm: mcp
+round: none
 title: "Campaign of 2026-10-03, campaign tier, mcp arm, sufficiency, four probes"
 relations:
   records:

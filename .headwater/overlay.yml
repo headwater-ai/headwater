@@ -185,6 +185,31 @@ add:
       scenario-12: the session ran against plain code with the docs, engine, claude-md, skills, hook and mcp layers added (#1774)
       scenario-13: the session ran against plain code with the docs, engine, claude-md, skills, hook and harness layers added (#1774)
 
+  # The round of the additive campaign that spent for a transcript, one of the
+  # three `rounds:` that `.headwater/probe.yml` declares with their approved
+  # cents. With it, the committed spend of each round is the sum of
+  # `cost_cents` over the transcripts of that round, and
+  # `engine/crates/probe/tests/corpus.rs` holds that sum at or below the
+  # approval (#1822).
+  #
+  # **The round applies to the additive tier alone, and every other transcript
+  # writes `none`.** That is the sentinel of `facets.oracle` again: the
+  # taxonomy language has no way to say "required when another facet holds one
+  # value", and a facet that no kind requires is refused as unread.
+  # [HW-OBL-0123](../docs/obligations/0123-a-facet-that-applies-to-one-value-of-another-facet-has-nowhere-to-say-so.md)
+  # holds it. The same test of `corpus.rs` enforces the pairing in both
+  # directions: an additive transcript that writes `none`, and a transcript of
+  # another tier that names a round, each fail it.
+  facets.round:
+    values: [screening, tuning, final, none]
+    required: false
+    volatility: stable
+    guidance:
+      screening: an additive transcript of the screening round, which measures each scenario once against the floor (#1775)
+      tuning: an additive transcript of the tuning round, one try of one layer against the best so far (#1777)
+      final: an additive transcript of the final round, which measures each registered comparison on the held-out set
+      none: a transcript of any tier other than additive, which no round of the additive campaign spent for
+
   # The check a `patched` expectation grades a produced patch against, which
   # spec 5 calls the oracle route.
   #
@@ -239,7 +264,7 @@ add:
     lifecycle: standard
     identifier: {scheme: run_id}
     facets:
-      require: [tier, arm, title]
+      require: [tier, arm, round, title]
     sections:
       require: [Run identity, Events]
 

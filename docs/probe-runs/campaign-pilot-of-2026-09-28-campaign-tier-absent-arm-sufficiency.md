@@ -6,6 +6,7 @@ summary: "The absent arm of the campaign tier over the sufficiency selection: 12
 last_verified: 2026-09-28
 tier: campaign
 arm: absent
+round: none
 title: "Campaign pilot of 2026-09-28, campaign tier, absent arm, sufficiency"
 ---
 

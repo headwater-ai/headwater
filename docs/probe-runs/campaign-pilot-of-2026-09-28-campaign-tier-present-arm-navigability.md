@@ -6,6 +6,7 @@ summary: "The present arm of the campaign tier over the navigability selection: 
 last_verified: 2026-09-28
 tier: campaign
 arm: present
+round: none
 title: "Campaign pilot of 2026-09-28, campaign tier, present arm, navigability"
 ---
 

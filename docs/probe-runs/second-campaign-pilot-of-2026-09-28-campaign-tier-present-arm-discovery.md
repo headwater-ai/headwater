@@ -6,6 +6,7 @@ summary: "The present arm of the campaign tier over the discovery selection: 2 s
 last_verified: 2026-09-28
 tier: campaign
 arm: present
+round: none
 title: "Second campaign pilot of 2026-09-28, campaign tier, present arm, discovery"
 ---
 

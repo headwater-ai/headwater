@@ -22,7 +22,7 @@
 
 lock:
   format: 3
-  digest: sha256:4cceb5894fc6797b679191cfb9800b107ee06f4c61ebbf90b9e3a8efcaa7cbe2
+  digest: sha256:5545ee6c59112ee9b7ccfdfb42a0b67b146c77eb8cbf43b61a290aa2cc244d1f
   rules: 2
   package: headwater/standard
   version: 4.16.3
@@ -36,7 +36,7 @@ lock:
     - path: .headwater/packages/headwater-standard/bundles/decision-record/bundle.yml
       digest: sha256:84e2d9770dfd50107a46f099af4d51666455a161eacf803cf05cfd303dd8f88d
     - path: .headwater/overlay.yml
-      digest: sha256:9784a4b8b9125c5e808af741ebf2d0381e13a97b04dfb60e1eb677ae2f684b49
+      digest: sha256:85e15c8391ab3da63d0644a94a20d024691a95d3bfaa5624a7c391595789caf4
 
 # The adoption payload: the debt this corpus declared when the taxonomy first
 # reached it. Every other line of this file is generated and this block is not.
@@ -267,6 +267,19 @@ resolved:
         - sufficiency
         - navigability
         - consistency
+      volatility: stable
+    round:
+      guidance:
+        final: "an additive transcript of the final round, which measures each registered comparison on the held-out set"
+        none: "a transcript of any tier other than additive, which no round of the additive campaign spent for"
+        screening: "an additive transcript of the screening round, which measures each scenario once against the floor (#1775)"
+        tuning: "an additive transcript of the tuning round, one try of one layer against the best so far (#1777)"
+      required: false
+      values:
+        - screening
+        - tuning
+        - final
+        - none
       volatility: stable
     sequence:
       required: false
@@ -652,6 +665,7 @@ resolved:
         require:
           - tier
           - arm
+          - round
           - title
       identifier:
         scheme: run_id

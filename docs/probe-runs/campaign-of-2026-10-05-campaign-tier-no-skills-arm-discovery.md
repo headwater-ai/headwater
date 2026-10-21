@@ -6,6 +6,7 @@ summary: "The no-skills arm of the campaign tier over the discovery selection, i
 last_verified: 2026-10-08
 tier: campaign
 arm: no-skills
+round: none
 title: "Campaign of 2026-10-05, campaign tier, no-skills arm, discovery"
 relations:
   records:

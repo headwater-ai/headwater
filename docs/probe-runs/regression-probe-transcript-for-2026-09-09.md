@@ -7,6 +7,7 @@ summary: "Four regression sessions recorded the calls that a Claude Haiku sessio
 last_verified: 2026-09-09
 tier: regression
 arm: present
+round: none
 ---
 
 # Regression probe transcript for 2026-09-09

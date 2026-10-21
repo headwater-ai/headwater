@@ -6,6 +6,7 @@ summary: "The absent arm of the campaign tier over the discovery selection: 6 se
 last_verified: 2026-09-28
 tier: campaign
 arm: absent
+round: none
 title: "Campaign pilot of 2026-09-28, campaign tier, absent arm, discovery"
 ---
 

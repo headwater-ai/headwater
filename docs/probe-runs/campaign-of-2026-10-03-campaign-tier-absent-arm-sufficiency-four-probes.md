@@ -6,6 +6,7 @@ summary: "The absent arm of the campaign tier over the sufficiency selection (fo
 last_verified: 2026-10-08
 tier: campaign
 arm: absent
+round: none
 title: "Campaign of 2026-10-03, campaign tier, absent arm, sufficiency, four probes"
 relations:
   records:

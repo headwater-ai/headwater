@@ -6,6 +6,7 @@ summary: "The scenario-7 arm of the additive screening round, line 8 of the batc
 last_verified: 2026-10-19
 tier: additive
 arm: scenario-7
+round: screening
 title: "Additive screening of 2026-10-18, scenario 7"
 relations:
   records:

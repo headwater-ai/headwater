@@ -6,6 +6,7 @@ summary: "Four regression sessions ran against the lock of 2026-09-11, and the r
 last_verified: 2026-09-11
 tier: regression
 arm: present
+round: none
 title: "Regression probe transcript for 2026-09-11"
 ---
 

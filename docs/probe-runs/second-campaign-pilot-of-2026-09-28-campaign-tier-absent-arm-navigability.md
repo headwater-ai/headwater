@@ -6,6 +6,7 @@ summary: "The absent arm of the campaign tier over the navigability selection: 3
 last_verified: 2026-09-28
 tier: campaign
 arm: absent
+round: none
 title: "Second campaign pilot of 2026-09-28, campaign tier, absent arm, navigability"
 ---
 

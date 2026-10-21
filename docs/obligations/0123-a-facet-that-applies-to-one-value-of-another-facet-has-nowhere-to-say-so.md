@@ -45,6 +45,8 @@ Nothing discharges this today, and the harness pays the cost meanwhile. `headwat
 
 That is the measurement this record holds. The rule that would catch it at commit time cannot be declared, and the count is one facet of five in one repository. A second corpus with a conditional facet is what turns one instance into evidence that the shape is general.
 
+**A second sentinel landed on 2026-10-21 (#1822).** The `round` facet of a probe transcript applies to the `additive` value of `tier` alone, so the 64 transcripts of other tiers write `none`. A test in `engine/crates/probe/tests/corpus.rs` holds that pairing in both directions, and no check reads it.
+
 ## What the grader added, which is a second instance and a third shape
 
 **The shape recurred inside this repository before any second corpus arrived.** The `answered` expectation is satisfied by one value of a closed set that the probe declares, and nothing held that set. It applies to one value of `expectation` and to no other. That is this record's shape exactly, so the count is two conditional declarations of five forms rather than one.

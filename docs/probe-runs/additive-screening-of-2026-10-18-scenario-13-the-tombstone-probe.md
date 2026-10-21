@@ -6,6 +6,7 @@ summary: "The scenario-13 arm of the additive screening round, line 15 of the ba
 last_verified: 2026-10-19
 tier: additive
 arm: scenario-13
+round: screening
 title: "Additive screening of 2026-10-18, scenario 13, the tombstone probe"
 relations:
   records:
