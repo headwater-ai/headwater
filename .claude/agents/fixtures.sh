@@ -262,6 +262,16 @@ ceiling CLAUDE.md "$claude_md_ceiling"
 ceiling .claude/commands/next-run.md "$next_run_ceiling"
 ceiling .claude/commands/next-experiment.md "$next_experiment_ceiling"
 ceiling .claude/run/doctrine.md "$doctrine_ceiling"
+# A ceiling declared above and read by no `ceiling` call holds nothing.
+unread=''
+for name in $(sed -n 's/^\([a-z_]*_ceiling\)=[0-9][0-9]*$/\1/p' "$0"); do
+    grep -qE "^ceiling [^ ]+ \"\\\$$name\"\$" "$0" || unread="$unread $name"
+done
+if [ -z "$unread" ]; then
+    pass 'and every declared ceiling is read by a ceiling call'
+else
+    fail 'every declared ceiling is read by a ceiling call' "unread:$unread"
+fi
 
 # --- 7. the doctrine in the command is the doctrine file, byte for byte -------
 
@@ -1093,16 +1103,22 @@ esac
 # two decisions, launch and not kept (HW-PD-0025). A paid try now runs under
 # its own command. Three files hold that: the queue never takes an issue
 # labeled `paid-experiment` and names it on an `EXPERIMENT:` line, the product
-# owner owns the label, and the command names no build-order stage and no
+# owner owns the label, and the command names no stage of the loop (adjudicate,
+# iterate, build, verify, integrate) and no
 # verb that `tools/probe/try.sh` does not state in its header.
 printf '\n# a paid experiment never enters the build-order loop\n'
 # The verbs `tools/probe/try.sh` states, one per line, read from its header.
 try_verbs() {
     sed -n 's/^#     sh tools\/probe\/try\.sh \([a-z][a-z]*\).*/\1/p' "$1"
 }
+# The sentences of a file, one per line. A check reads one sentence, because a
+# paragraph that names the label also says "never" and "not" about other work.
+sentences() {
+    tr '\n' ' ' < "$1" | sed 's/\([.!?]\) /\1\n/g'
+}
 # Prints why the queue agent lets a paid experiment in, or nothing.
 queue_paid_misses() {
-    if ! grep -F '`paid-experiment`' "$1" | grep -qiwE 'never|not'; then
+    if ! sentences "$1" | grep -F '`paid-experiment`' | grep -qiE 'never (be )?queued|is not queued|never queues'; then
         printf 'no sentence keeps an issue labeled paid-experiment out of the queue' ; return
     fi
     if ! grep -qE '^    EXPERIMENT: ' "$1"; then
@@ -1121,8 +1137,8 @@ command_paid_misses() {
     if [ ! -f "$1" ]; then
         printf 'the command does not exist' ; return
     fi
-    if grep -qE 'hw-(build|verify)' "$1"; then
-        printf 'the command names a build-order stage: %s' "$(grep -oE 'hw-(build|verify)' "$1" | sort -u | tr '\n' ' ')" ; return
+    if grep -qE 'hw-(adjudicate|iterate|build|verify|integrate)' "$1"; then
+        printf 'the command names a build-order stage: %s' "$(grep -oE 'hw-(adjudicate|iterate|build|verify|integrate)' "$1" | sort -u | tr '\n' ' ')" ; return
     fi
     verbs=$(try_verbs "$2")
     if [ -z "$verbs" ]; then
@@ -1135,7 +1151,7 @@ command_paid_misses() {
     for verb in $named; do
         printf '%s\n' "$verbs" | grep -qx "$verb" || { printf 'the command names try.sh %s, which the header does not state' "$verb" ; return ; }
     done
-    if ! grep -F '/next-run' "$1" | grep -qiw 'never'; then
+    if ! sentences "$1" | grep -F '/next-run' | grep -qiE 'never[^.]*/next-run'; then
         printf 'the command does not say that it never runs inside /next-run'
     fi
 }
@@ -1166,6 +1182,13 @@ case $(queue_paid_misses "$scratch/queue-a.md") in
     *'out of the queue'*) pass 'and a queue agent that no longer keeps paid-experiment out is reported' ;;
     *) fail 'a queue agent that no longer keeps paid-experiment out is reported' 'it was not' ;;
 esac
+# The label named in a sentence that queues it, in a paragraph that says
+# "never" and "not" about other issues, is still reported.
+sed 's/`paid-experiment` is never queued/`paid-experiment` is queued first/' "$agents/hw-queue.md" > "$scratch/queue-g.md"
+case $(queue_paid_misses "$scratch/queue-g.md") in
+    *'out of the queue'*) pass 'and a queue agent that queues paid-experiment beside another never is reported' ;;
+    *) fail 'a queue agent that queues paid-experiment beside another never is reported' 'it was not' ;;
+esac
 grep -vE '^    EXPERIMENT: ' "$agents/hw-queue.md" > "$scratch/queue-b.md"
 case $(queue_paid_misses "$scratch/queue-b.md") in
     *'EXPERIMENT:'*) pass 'and a report block with no EXPERIMENT: line is reported' ;;
@@ -1191,6 +1214,12 @@ if [ -f "$paid_command" ]; then
     case $(command_paid_misses "$scratch/command-f.md" "$paid_try") in
         *'/next-run'*) pass 'and a command that does not keep out of /next-run is reported' ;;
         *) fail 'a command that does not keep out of /next-run is reported' 'it was not' ;;
+    esac
+    # A "never" elsewhere in the same paragraph does not stand for this one.
+    sed 's/never inside `\/next-run`/also inside `\/next-run`/' "$paid_command" > "$scratch/command-h.md"
+    case $(command_paid_misses "$scratch/command-h.md" "$paid_try") in
+        *'/next-run'*) pass 'and a command that runs inside /next-run beside another never is reported' ;;
+        *) fail 'a command that runs inside /next-run beside another never is reported' 'it was not' ;;
     esac
 else
     fail 'the arms on next-experiment.md run' 'the command does not exist'

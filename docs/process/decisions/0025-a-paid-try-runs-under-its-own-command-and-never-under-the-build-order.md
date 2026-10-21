@@ -45,7 +45,7 @@ The chain made two decisions: launch the try, and do not keep the change. The tu
 
 ## Decision
 
-A paid try runs under `.claude/commands/next-experiment.md`, in a session of its own, and never inside `/next-run`. The command names only verbs that the header of `tools/probe/try.sh` states, and it names no build or verify stage. The session runs one try, opens one pull request for its record, reports to the owner in plain terms and stops.
+A paid try runs under `.claude/commands/next-experiment.md`, in a session of its own, and never inside `/next-run`. The command names only verbs that the header of `tools/probe/try.sh` states. It names no stage of the loop that builds an issue: no adjudicate, loop, build, verify or integrate agent. The session runs one try, opens one pull request for its record, reports to the owner in plain terms and stops.
 
 `headwater-product-owner` labels an issue `paid-experiment` when its next step spends money on probe sessions. `hw-queue` never queues such an issue. It names each one on an `EXPERIMENT:` line of its report, so the parent sees the work and no slot takes it.
 
