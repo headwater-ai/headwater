@@ -10,14 +10,15 @@
 # definition's instructions, and a skill name nobody matches never loads. This
 # suite is what reports the drift.
 #
-# Sixteen cases, and this list is the one place that names them all:
+# Seventeen cases, and this list is the one place that names them all:
 #
 #     1   every agent a command or an agent dispatches is a definition
 #     2   every skill an agent invokes is a skill on this tree
 #     3   every ruling cited under .claude/ exists and is not superseded
 #     4   front matter is what a harness reads, and two agents cannot write
 #     5   the verification bar's headings are stated once
-#     6   the byte ceilings of CLAUDE.md, next-run.md and the doctrine
+#     6   the byte ceilings of CLAUDE.md, next-run.md, next-experiment.md and
+#         the doctrine
 #     7   the doctrine in the command is the doctrine file, byte for byte
 #     8   the two commands name the same agents
 #     9   every cargo build or test an agent runs goes through tools/hw-cargo
@@ -28,6 +29,7 @@
 #     14  every file under .claude is shipped or named as internal
 #     15  the first session hands the run to supervise.sh
 #     16  a one-line lesson is ruled Apply and applied at the end of the run
+#     17  a paid experiment never enters the build-order loop
 #
 # The ceilings are the reason two of them exist. The parent's
 # context is the unit of cost ([HW-PD-0003]), so the command and the doctrine
@@ -47,9 +49,10 @@ agents="$root/.claude/agents"
 commands="$root/.claude/commands"
 skills="$root/.claude/skills"
 
-# The three ceilings, in bytes. Declared here and nowhere else.
+# The four ceilings, in bytes. Declared here and nowhere else.
 claude_md_ceiling=9216
 next_run_ceiling=8192
+next_experiment_ceiling=6144
 doctrine_ceiling=2600
 
 passed=0
@@ -241,9 +244,13 @@ fi
 
 # --- 6. the ceilings ---------------------------------------------------------
 
-printf '\n# the three files the parent and every agent pay for hold their ceilings\n'
+printf '\n# the four files the parent and every agent pay for hold their ceilings\n'
 ceiling() {
     file=$1 limit=$2
+    if [ ! -f "$root/$file" ]; then
+        fail "$file holds its ceiling of $limit bytes" 'the file does not exist'
+        return
+    fi
     size=$(wc -c < "$root/$file" | tr -d ' ')
     if [ "$size" -le "$limit" ]; then
         pass "$file is $size bytes, under its ceiling of $limit"
@@ -253,7 +260,18 @@ ceiling() {
 }
 ceiling CLAUDE.md "$claude_md_ceiling"
 ceiling .claude/commands/next-run.md "$next_run_ceiling"
+ceiling .claude/commands/next-experiment.md "$next_experiment_ceiling"
 ceiling .claude/run/doctrine.md "$doctrine_ceiling"
+# A ceiling declared above and read by no `ceiling` call holds nothing.
+unread=''
+for name in $(sed -n 's/^\([a-z_]*_ceiling\)=[0-9][0-9]*$/\1/p' "$0"); do
+    grep -qE "^ceiling [^ ]+ \"\\\$$name\"\$" "$0" || unread="$unread $name"
+done
+if [ -z "$unread" ]; then
+    pass 'and every declared ceiling is read by a ceiling call'
+else
+    fail 'every declared ceiling is read by a ceiling call' "unread:$unread"
+fi
 
 # --- 7. the doctrine in the command is the doctrine file, byte for byte -------
 
@@ -687,7 +705,7 @@ printf '\n# every file under .claude is in the shipped set or named as internal\
 # directory. This list is the internal list of the case.
 is_internal() {
     case $1 in
-        hw-* | headwater-engine | headwater-product-owner | repo-cleanup | ste-editor | next | next-run | product-owner) return 0 ;;
+        hw-* | headwater-engine | headwater-product-owner | repo-cleanup | ste-editor | next | next-run | next-experiment | product-owner) return 0 ;;
     esac
     return 1
 }
@@ -1077,6 +1095,155 @@ case $(lessons_step_misses "$scratch/loop.md") in
     *'no step'*) pass 'and a lessons step outside ## The loop is not read' ;;
     *) fail 'a lessons step outside ## The loop is not read' 'it was read' ;;
 esac
+
+# --- 17. a paid experiment never enters the build-order loop -----------------
+
+# The first paid try of the tuning round (#1777) was queued by `/next-run` and
+# mapped onto the loop agent and its builder: 14 agents and 632 turns bought
+# two decisions, launch and not kept (HW-PD-0025). A paid try now runs under
+# its own command. Three files hold that: the queue never takes an issue
+# labeled `paid-experiment` and names it on an `EXPERIMENT:` line, the product
+# owner owns the label, and the command names no stage of the loop (adjudicate,
+# iterate, build, verify, integrate) and no
+# verb that `tools/probe/try.sh` does not state in its header.
+printf '\n# a paid experiment never enters the build-order loop\n'
+# The verbs `tools/probe/try.sh` states, one per line, read from its header.
+try_verbs() {
+    sed -n 's/^#     sh tools\/probe\/try\.sh \([a-z][a-z]*\).*/\1/p' "$1"
+}
+# The sentences of a file, one per line. A check reads one sentence, because a
+# paragraph that names the label also says "never" and "not" about other work.
+sentences() {
+    tr '\n' ' ' < "$1" | sed 's/\([.!?]\) /\1\n/g'
+}
+# Prints why the queue agent lets a paid experiment in, or nothing.
+queue_paid_misses() {
+    if ! sentences "$1" | grep -F '`paid-experiment`' | grep -qiE 'never (be )?queued|is not queued|never queues'; then
+        printf 'no sentence keeps an issue labeled paid-experiment out of the queue' ; return
+    fi
+    # The exclusion holds no exception: a sentence that says "never queued,
+    # except ..." or "unless ..." queues the label in the case it names.
+    if sentences "$1" | grep -F '`paid-experiment`' | grep -iE 'never (be )?queued|is not queued|never queues' | grep -qiwE 'except|unless|but|save'; then
+        printf 'the sentence that keeps paid-experiment out of the queue names an exception' ; return
+    fi
+    if ! grep -qE '^    EXPERIMENT: ' "$1"; then
+        printf 'the report block has no EXPERIMENT: line'
+    fi
+}
+# Prints why the product owner does not own the label, or nothing.
+owner_label_misses() {
+    if ! sed -n '/^---$/,/^---$/p' "$1" | grep -E '^description:' | grep -qF '`paid-experiment`'; then
+        printf 'the description does not name paid-experiment among the labels it owns' ; return
+    fi
+    # The description says it owns the label, and the writes list is how it
+    # applies it: a misspelled write applies another label.
+    if ! grep -qE '^    gh issue edit <N> --repo headwater-ai/headwater --add-label paid-experiment$' "$1"; then
+        printf 'the writes list has no gh issue edit line that adds the label paid-experiment'
+    fi
+}
+# Prints why the command lets a paid try into the loop, or nothing. The second
+# argument is the try.sh whose header states the verbs.
+command_paid_misses() {
+    if [ ! -f "$1" ]; then
+        printf 'the command does not exist' ; return
+    fi
+    if grep -qE 'hw-(adjudicate|iterate|build|verify|integrate)' "$1"; then
+        printf 'the command names a build-order stage: %s' "$(grep -oE 'hw-(adjudicate|iterate|build|verify|integrate)' "$1" | sort -u | tr '\n' ' ')" ; return
+    fi
+    verbs=$(try_verbs "$2")
+    if [ -z "$verbs" ]; then
+        printf 'the header of try.sh states no verb' ; return
+    fi
+    named=$(grep -oE 'try\.sh [a-z]+' "$1" | sed 's/^try\.sh //' | sort -u)
+    if [ -z "$named" ]; then
+        printf 'the command names no try.sh verb' ; return
+    fi
+    for verb in $named; do
+        printf '%s\n' "$verbs" | grep -qx "$verb" || { printf 'the command names try.sh %s, which the header does not state' "$verb" ; return ; }
+    done
+    if ! sentences "$1" | grep -F '/next-run' | grep -qiE 'never[^.]*/next-run'; then
+        printf 'the command does not say that it never runs inside /next-run'
+    fi
+}
+paid_command="$commands/next-experiment.md"
+paid_try="$root/tools/probe/try.sh"
+why=$(queue_paid_misses "$agents/hw-queue.md")
+if [ -z "$why" ]; then
+    pass 'hw-queue.md never queues a paid experiment and names it on an EXPERIMENT: line'
+else
+    fail 'hw-queue.md never queues a paid experiment and names it on an EXPERIMENT: line' "$why"
+fi
+why=$(owner_label_misses "$agents/headwater-product-owner.md")
+if [ -z "$why" ]; then
+    pass 'and headwater-product-owner.md owns the paid-experiment label'
+else
+    fail 'headwater-product-owner.md owns the paid-experiment label' "$why"
+fi
+why=$(command_paid_misses "$paid_command" "$paid_try")
+if [ -z "$why" ]; then
+    pass "and next-experiment.md names no build-order stage, only the $(try_verbs "$paid_try" | wc -l | tr -d ' ') verbs of try.sh, and never runs inside /next-run"
+else
+    fail 'next-experiment.md stays out of the build-order loop' "$why"
+fi
+# The five arms, each a scratch copy of a real file with one thing taken out
+# or put in.
+grep -vF '`paid-experiment`' "$agents/hw-queue.md" > "$scratch/queue-a.md"
+case $(queue_paid_misses "$scratch/queue-a.md") in
+    *'out of the queue'*) pass 'and a queue agent that no longer keeps paid-experiment out is reported' ;;
+    *) fail 'a queue agent that no longer keeps paid-experiment out is reported' 'it was not' ;;
+esac
+# The label named in a sentence that queues it, in a paragraph that says
+# "never" and "not" about other issues, is still reported.
+sed 's/`paid-experiment` is never queued/`paid-experiment` is queued first/' "$agents/hw-queue.md" > "$scratch/queue-g.md"
+case $(queue_paid_misses "$scratch/queue-g.md") in
+    *'out of the queue'*) pass 'and a queue agent that queues paid-experiment beside another never is reported' ;;
+    *) fail 'a queue agent that queues paid-experiment beside another never is reported' 'it was not' ;;
+esac
+grep -vE '^    EXPERIMENT: ' "$agents/hw-queue.md" > "$scratch/queue-b.md"
+case $(queue_paid_misses "$scratch/queue-b.md") in
+    *'EXPERIMENT:'*) pass 'and a report block with no EXPERIMENT: line is reported' ;;
+    *) fail 'a report block with no EXPERIMENT: line is reported' 'it was not' ;;
+esac
+sed '/^description:/s/`paid-experiment`/the label/' "$agents/headwater-product-owner.md" > "$scratch/owner-c.md"
+case $(owner_label_misses "$scratch/owner-c.md") in
+    *'paid-experiment'*) pass 'and a product owner that does not own the label is reported' ;;
+    *) fail 'a product owner that does not own the label is reported' 'it was not' ;;
+esac
+sed 's/--add-label paid-experiment/--add-label paid_experiment/' "$agents/headwater-product-owner.md" > "$scratch/owner-i.md"
+case $(owner_label_misses "$scratch/owner-i.md") in
+    *'writes list'*) pass 'and a product owner whose write adds a misspelled label is reported' ;;
+    *) fail 'a product owner whose write adds a misspelled label is reported' 'it was not' ;;
+esac
+sed 's/`paid-experiment` is never queued, because/`paid-experiment` is never queued, except when the owner is away, when it is queued, because/' "$agents/hw-queue.md" > "$scratch/queue-j.md"
+case $(queue_paid_misses "$scratch/queue-j.md") in
+    *'names an exception'*) pass 'and a queue sentence that names an exception to the exclusion is reported' ;;
+    *) fail 'a queue sentence that names an exception to the exclusion is reported' 'it was not' ;;
+esac
+if [ -f "$paid_command" ]; then
+    { cat "$paid_command" ; printf '\nThen dispatch `hw-build`.\n' ; } > "$scratch/command-d.md"
+    case $(command_paid_misses "$scratch/command-d.md" "$paid_try") in
+        *'build-order stage'*) pass 'and a command that names hw-build is reported' ;;
+        *) fail 'a command that names hw-build is reported' 'it was not' ;;
+    esac
+    { cat "$paid_command" ; printf '\nRun `sh tools/probe/try.sh launchall <root>`.\n' ; } > "$scratch/command-e.md"
+    case $(command_paid_misses "$scratch/command-e.md" "$paid_try") in
+        *'try.sh launchall'*) pass 'and a command that names a verb try.sh does not state is reported' ;;
+        *) fail 'a command that names a verb try.sh does not state is reported' 'it was not' ;;
+    esac
+    grep -vF '/next-run' "$paid_command" > "$scratch/command-f.md"
+    case $(command_paid_misses "$scratch/command-f.md" "$paid_try") in
+        *'/next-run'*) pass 'and a command that does not keep out of /next-run is reported' ;;
+        *) fail 'a command that does not keep out of /next-run is reported' 'it was not' ;;
+    esac
+    # A "never" elsewhere in the same paragraph does not stand for this one.
+    sed 's/never inside `\/next-run`/also inside `\/next-run`/' "$paid_command" > "$scratch/command-h.md"
+    case $(command_paid_misses "$scratch/command-h.md" "$paid_try") in
+        *'/next-run'*) pass 'and a command that runs inside /next-run beside another never is reported' ;;
+        *) fail 'a command that runs inside /next-run beside another never is reported' 'it was not' ;;
+    esac
+else
+    fail 'the arms on next-experiment.md run' 'the command does not exist'
+fi
 
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]

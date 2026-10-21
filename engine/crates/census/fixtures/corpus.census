@@ -1224,6 +1224,8 @@ docs/process/decisions/0023-a-build-order-parent-restarts-every-few-merges-drain
   typed: process_decision
 docs/process/decisions/0024-a-document-that-moves-to-a-process-shelf-keeps-its-identifier.md
   typed: process_decision
+docs/process/decisions/0025-a-paid-try-runs-under-its-own-command-and-never-under-the-build-order.md
+  typed: process_decision
 docs/process/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/process/evaluations/README.md

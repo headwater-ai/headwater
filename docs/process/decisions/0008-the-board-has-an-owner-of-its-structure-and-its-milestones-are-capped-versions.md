@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .claude/agents/headwater-product-owner.md
-      verified_revision: sha256:4acd02db4714aafdcd86195d69299c20d8bfa78cce4dc009faf46661036fb1d5
+      verified_revision: sha256:18a1673c9f863c564fab3ad9c256e30471a1ca4bd1ffd7eb8c04b56e857c8e72
 ---
 
 # The board has an owner of its structure, and its milestones are capped versions
@@ -39,7 +39,7 @@ The milestones themselves were part of the cause. The M-sequence was a bootstrap
 
 ## Decision
 
-**One agent owns the structure of the board, and never its scope.** Structure is where work sits and how urgent it is: milestones, milestone membership, folds, and the `bug` and `adopter-blocking` labels. Scope is what the work is and when it is done, and scope stays with the owner. The agent is `headwater-product-owner`. It runs outside the context of any builder. It runs standalone, at the top of a run, at every fifth merge and at the end of a run. It names every write with its reason, in a form that the owner can reverse.
+**One agent owns the structure of the board, and never its scope.** Structure is where work sits and how urgent it is: milestones, milestone membership, folds, the `bug` and `adopter-blocking` labels, and the `paid-experiment` label ([HW-PD-0025](0025-a-paid-try-runs-under-its-own-command-and-never-under-the-build-order.md)). Scope is what the work is and when it is done, and scope stays with the owner. The agent is `headwater-product-owner`. It runs outside the context of any builder. It runs standalone, at the top of a run, at every fifth merge and at the end of a run. It names every write with its reason, in a form that the owner can reverse.
 
 **No agent of a run files an issue, the parent included, and only the product owner files one.** A stage or the parent writes a finding that is not the issue in hand as one line in the intake file of the run. The product owner rules on each line with one of five rulings: apply, fold, record, admit or backlog. Apply was added on 2026-10-13 by #1483. It sends a one-line remedy to one pull request at the end of the run. So the comparison against other work occurs before the filing, and not after it.
 

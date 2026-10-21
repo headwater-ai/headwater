@@ -21,6 +21,10 @@ anchors
     cited by HW-SPEC-orchestration-architecture
   code_path `.claude/agents/hw-verify.md` via source-tree
     cited by HW-SPEC-orchestration-architecture
+  code_path `.claude/commands/next-experiment.md` via source-tree
+    cited by HW-PD-0025
+  code_path `.claude/commands/next-experiment.md` via source-tree
+    cited by HW-SPEC-orchestration-architecture
   code_path `.claude/commands/next-run.md` via source-tree
     cited by HW-OBL-0177
   code_path `.claude/commands/next-run.md` via source-tree
@@ -715,6 +719,8 @@ anchors
     cited by HW-DR-0111
   code_path `tools/probe/additive-launch.env` via source-tree
     cited by HW-DR-0111
+  code_path `tools/probe/additive-launch.env` via source-tree
+    cited by HW-PD-0025
   code_path `tools/probe/additive-screening.spec` via source-tree
     cited by HW-DR-0111
   code_path `tools/probe/additive-tuning-docs.spec` via source-tree
@@ -729,6 +735,8 @@ anchors
     cited by HW-EVAL-owl-skos-worked-example
   code_path `tools/probe/try.sh` via source-tree
     cited by HW-DR-0111
+  code_path `tools/probe/try.sh` via source-tree
+    cited by HW-PD-0025
   code_path `tools/repo/decision-register-fixtures.sh` via source-tree
     cited by HW-REG-decisions
   code_path `tools/repo/obligation-register-fixtures.sh` via source-tree
