@@ -53,6 +53,7 @@ operations
   add.facets.expectation (.headwater/overlay.yml)
   add.facets.tier (.headwater/overlay.yml)
   add.facets.arm (.headwater/overlay.yml)
+  add.facets.round (.headwater/overlay.yml)
   add.facets.oracle (.headwater/overlay.yml)
   add.kinds.probe (.headwater/overlay.yml)
   add.kinds.probe_transcript (.headwater/overlay.yml)
@@ -129,7 +130,7 @@ declarations, by member count
   version: 4.16.3
   purposes: 6 members
   vocabularies: 1 member
-  facets: 14 members
+  facets: 15 members
   regimes: 3 members
   anchors: 3 members
   kinds: 28 members

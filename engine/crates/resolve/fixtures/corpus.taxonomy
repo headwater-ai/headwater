@@ -182,6 +182,19 @@ facets:
       - navigability
       - consistency
     volatility: stable
+  round:
+    guidance:
+      final: "an additive transcript of the final round, which measures each registered comparison on the held-out set"
+      none: "a transcript of any tier other than additive, which no round of the additive campaign spent for"
+      screening: "an additive transcript of the screening round, which measures each scenario once against the floor (#1775)"
+      tuning: "an additive transcript of the tuning round, one try of one layer against the best so far (#1777)"
+    required: false
+    values:
+      - screening
+      - tuning
+      - final
+      - none
+    volatility: stable
   sequence:
     required: false
     type: integer
@@ -566,6 +579,7 @@ kinds:
       require:
         - tier
         - arm
+        - round
         - title
     identifier:
       scheme: run_id
