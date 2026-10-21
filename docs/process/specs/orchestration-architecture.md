@@ -24,13 +24,16 @@ relations:
     - HW-PD-0007
     - HW-PD-0022
     - HW-PD-0023
+    - HW-PD-0025
   governs:
     - to: .claude/commands/next-run.md
       verified_revision: sha256:3df8b71b341db52c236143673c32f6129ed8b36a61439b0e8dc2854af4870fa0
     - to: .claude/commands/next.md
       verified_revision: sha256:69dd88bcbea169b0f42438d67e4627716f847128982ea38072a6857e4188d530
+    - to: .claude/commands/next-experiment.md
+      verified_revision: sha256:c53c9b1ff4500832ee4187e5f4825fcf79ca3b436e47d0c72288e5ac72470977
     - to: .claude/agents/hw-queue.md
-      verified_revision: sha256:141a53657679aa2278c6085c66f91ba8ad91c34de96f650eb505f25bfb0071e1
+      verified_revision: sha256:068867244132e4afb411b7c743cddf156eb58b957a13f902e23ce0bb2a83d664
     - to: .claude/agents/hw-adjudicate.md
       verified_revision: sha256:d33ccaa7b073f82caccf0a48b66fb933a96d518b9e4ab78a5c63c85190dd3045
     - to: .claude/agents/hw-iterate.md
@@ -44,7 +47,7 @@ relations:
     - to: .claude/skills/hw-run-policy/SKILL.md
       verified_revision: sha256:d480435d17740e1626d729bae8b2181dccd8e986786bcb0f659f9892fcf1a129
     - to: .claude/agents/fixtures.sh
-      verified_revision: sha256:c59260ae6df892c561de1cf8fd405feab17c1289f537334edd3db3cc093553f8
+      verified_revision: sha256:a0320217d84975763ea19c77f3dd533884a47281b19adb1aaa97d942929f09cf
     - to: .claude/skills/hw-verification-bar/SKILL.md
       verified_revision: sha256:a68ce6b14b5a8d7068aeafd8c7443e0497a55b4e444e2b971daa1da738c2153b
 ---
@@ -216,7 +219,8 @@ The front matter of this part declares a `governs` edge onto each `.claude/` fil
 |---|---|
 | [`.claude/commands/next-run.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/commands/next-run.md) | The entrypoint: the value rule, the doctrine block, the loop, the veto, the resume form and the dispatch template |
 | [`.claude/commands/next.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/commands/next.md) | The single-iteration form over the same definitions and skills, with the merge left to a person |
-| [`.claude/agents/hw-queue.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/agents/hw-queue.md) | The queue stage: the eligible population, the selection order and the collision marks |
+| [`.claude/commands/next-experiment.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/commands/next-experiment.md) | One paid try of the tuning round, in a session of its own and never inside `/next-run`: the steps over the verbs of `tools/probe/try.sh` and the plain report to the owner ([HW-PD-0025](../decisions/0025-a-paid-try-runs-under-its-own-command-and-never-under-the-build-order.md)) |
+| [`.claude/agents/hw-queue.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/agents/hw-queue.md) | The queue stage: the eligible population, the selection order, the collision marks and the `EXPERIMENT` line for an issue it never queues |
 | [`.claude/agents/hw-adjudicate.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/agents/hw-adjudicate.md) | The adjudication stage: the premise, the claimed footprint and the derived folds, the decisive fixture and the three kinds of refusal |
 | [`.claude/agents/hw-iterate.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/agents/hw-iterate.md) | The loop stage: the dispatch of the builder and each verifier, the rework by resume, the checkpoint at each stage boundary, the stop at the third FAIL and the report |
 | [`.claude/agents/hw-build.md`](https://github.com/headwater-ai/headwater/blob/main/.claude/agents/hw-build.md) | The construction stage: the worktree, the contract-first order, the pull request and the write boundary |

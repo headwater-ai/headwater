@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .claude/agents/headwater-product-owner.md
-      verified_revision: sha256:4acd02db4714aafdcd86195d69299c20d8bfa78cce4dc009faf46661036fb1d5
+      verified_revision: sha256:287874cd75e9522c79db7f4119d2007f3895853bc7d74184493eb2d3a89d550c
 ---
 
 # The board has an owner of its structure, and its milestones are capped versions
