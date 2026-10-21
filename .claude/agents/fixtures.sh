@@ -1121,6 +1121,11 @@ queue_paid_misses() {
     if ! sentences "$1" | grep -F '`paid-experiment`' | grep -qiE 'never (be )?queued|is not queued|never queues'; then
         printf 'no sentence keeps an issue labeled paid-experiment out of the queue' ; return
     fi
+    # The exclusion holds no exception: a sentence that says "never queued,
+    # except ..." or "unless ..." queues the label in the case it names.
+    if sentences "$1" | grep -F '`paid-experiment`' | grep -iE 'never (be )?queued|is not queued|never queues' | grep -qiwE 'except|unless|but|save'; then
+        printf 'the sentence that keeps paid-experiment out of the queue names an exception' ; return
+    fi
     if ! grep -qE '^    EXPERIMENT: ' "$1"; then
         printf 'the report block has no EXPERIMENT: line'
     fi
@@ -1128,7 +1133,12 @@ queue_paid_misses() {
 # Prints why the product owner does not own the label, or nothing.
 owner_label_misses() {
     if ! sed -n '/^---$/,/^---$/p' "$1" | grep -E '^description:' | grep -qF '`paid-experiment`'; then
-        printf 'the description does not name paid-experiment among the labels it owns'
+        printf 'the description does not name paid-experiment among the labels it owns' ; return
+    fi
+    # The description says it owns the label, and the writes list is how it
+    # applies it: a misspelled write applies another label.
+    if ! grep -qE '^    gh issue edit <N> --repo headwater-ai/headwater --add-label paid-experiment$' "$1"; then
+        printf 'the writes list has no gh issue edit line that adds the label paid-experiment'
     fi
 }
 # Prints why the command lets a paid try into the loop, or nothing. The second
@@ -1198,6 +1208,16 @@ sed '/^description:/s/`paid-experiment`/the label/' "$agents/headwater-product-o
 case $(owner_label_misses "$scratch/owner-c.md") in
     *'paid-experiment'*) pass 'and a product owner that does not own the label is reported' ;;
     *) fail 'a product owner that does not own the label is reported' 'it was not' ;;
+esac
+sed 's/--add-label paid-experiment/--add-label paid_experiment/' "$agents/headwater-product-owner.md" > "$scratch/owner-i.md"
+case $(owner_label_misses "$scratch/owner-i.md") in
+    *'writes list'*) pass 'and a product owner whose write adds a misspelled label is reported' ;;
+    *) fail 'a product owner whose write adds a misspelled label is reported' 'it was not' ;;
+esac
+sed 's/`paid-experiment` is never queued, because/`paid-experiment` is never queued, except when the owner is away, when it is queued, because/' "$agents/hw-queue.md" > "$scratch/queue-j.md"
+case $(queue_paid_misses "$scratch/queue-j.md") in
+    *'names an exception'*) pass 'and a queue sentence that names an exception to the exclusion is reported' ;;
+    *) fail 'a queue sentence that names an exception to the exclusion is reported' 'it was not' ;;
 esac
 if [ -f "$paid_command" ]; then
     { cat "$paid_command" ; printf '\nThen dispatch `hw-build`.\n' ; } > "$scratch/command-d.md"
