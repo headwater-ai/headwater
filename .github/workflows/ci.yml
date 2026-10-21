@@ -751,9 +751,13 @@ jobs:
         # included, refused one cent past the approval with no driver call;
         # the base check, which exits 4 only on a path of `base_invalidators`
         # and reads a change to a marked refusal of `campaign.sh` as neutral;
-        # and the canary reader, which reads `1 path` and `1 call` in the
-        # singular as offending. It needs `sh`, `git`, `python3` with the
-        # PyYAML installed above, `diff`, `sha256sum` and `setsid`.
+        # the canary reader, which reads `1 path` and `1 call` in the
+        # singular as offending; the keep rule of `result` (#1822), with a stub
+        # engine, which keeps a try only when the low bound of its keep row is
+        # above zero, so 40 of 72 against 39 is not kept; and `accept`, whose
+        # record `plan` reads only while each path holds the digest it
+        # accepted. It needs `sh`, `git`, `python3` with the PyYAML installed
+        # above, `diff`, `sha256sum` and `setsid`.
         run: sh tools/probe/try-fixtures.sh
       - name: The run census counts a turn once per message and a call by what it is for
         # `tools/run/run-census.sh` is the measurement behind HW-PD-0003 as a
