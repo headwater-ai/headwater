@@ -45,15 +45,16 @@ A layer is a set of paths that it adds to plain code. Plain code is the present 
 | documents | `docs` | `docs/`, `engine/crates/census/fixtures/corpus.census`, `site/tutorial/index.html` |
 | engine | `engine` | `.headwater/` and the built `headwater` command, `engine/target/dev-release/headwater` |
 | standing instructions | `claude-md` | `CLAUDE.md` |
-| skills | `skills` | the four skills and the `headwater-maintainer` agent that `headwater init --harness` installs, under `.claude/` and `.agents/skills/` |
+| skills | `skills` | the four skills and the `headwater-maintainer` agent that `headwater init --harness` installs, under `.claude/` and `.agents/skills/`. Also the engine's source copies of that text, `engine/crates/cli/harness/skills/` and `engine/crates/cli/harness/agents/` |
 | hook | `hook` | `.claude/hooks/intent.sh`, the `.claude/hooks/lib.sh` it sources, and a `settings.json` with the one `UserPromptSubmit` entry |
 | MCP | `mcp` | `.mcp.json`, which declares `headwater mcp` |
 
-Three placements need a reason:
+Four placements need a reason:
 
 - **The census fixture and the tutorial page go with the documents.** Each states what a document says, and the `documentation` tier removes both for that reason. Without them, plain code would hold part of `docs/`.
 - **The built engine goes with the engine layer.** A session has no network and cannot build the engine. So a tree with the engine source and no binary has no `headwater` command, and plain code is that tree.
 - **`.agents/skills/` goes with the skills.** `headwater init --harness` writes it, so an adopter receives it with the four skills.
+- **The engine's source copies of the skills text go with the skills.** `engine/crates/cli/harness/` holds the text that `include_str!` embeds in the binary, and each file is its `.claude/` copy without the marker line that `headwater init --harness` adds. A scenario without the skills layer that keeps these files still gives a session the skills text. The campaign builds the binary from its own checkout and not from a scenario tree. So the engine source in a tree does not need them.
 
 The rest of this repository's harness is one block, `harness`, and only scenario 13 holds it. It is the six internal skills, the other eight agents, `.claude/commands`, the other six hooks with their fixtures, `.claude/run`, `.claude/tutorial`, the whole `.claude/settings.json` and `.githooks/`. It also holds the Codex copies, `AGENTS.md` and `.codex/`. It also holds the Copilot copies under `.github/`: `copilot-instructions.md`, `hooks/`, `agents/` and `prompts/`. `copilot-instructions.md` is a link to `CLAUDE.md`. So scenario 2 differs from scenario 1 by one path to the standing instructions and not three. No `headwater init --harness` writes a Codex or Copilot copy, the binding of `headwater-maintainer` in `.github/agents/` included, so none of them goes with the skills. The rest of `.github/` serves GitHub and not a session, so plain code keeps it. That is the workflows, the images, the issue template and the two community files.
 
