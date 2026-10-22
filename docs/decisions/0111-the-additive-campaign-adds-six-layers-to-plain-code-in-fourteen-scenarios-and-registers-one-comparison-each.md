@@ -2,8 +2,8 @@
 id: HW-DR-0111
 status: current
 status_since: 2026-10-17
-summary: "The 0.07 campaign builds 14 scenarios by adding six layers to plain code. Each scenario has one base, one registered comparison and one verdict, over 8 probes split 4 for tuning and 4 held out."
-last_verified: 2026-10-20
+summary: "The 0.07 campaign builds 14 scenarios by adding six layers to plain code. Each scenario has one base, one registered comparison and one verdict, over 9 probes split 5 for tuning and 4 held out. Only the skills, the hook and MCP are tuned."
+last_verified: 2026-10-22
 title: "111 — The additive campaign adds six layers to plain code in fourteen scenarios and registers one comparison each"
 provenance:
   warrant: asserted
@@ -17,7 +17,6 @@ relations:
     - tools/probe/arms/hook/.claude/settings.json
     - tools/probe/additive-campaign.spec
     - tools/probe/additive-screening.spec
-    - tools/probe/additive-tuning-docs.spec
     - tools/probe/try.sh
     - tools/probe/additive-launch.env
 ---
@@ -83,30 +82,44 @@ Each scenario except scenario 0 names one base. A scenario differs from its base
 
 The answer-once block answers each layer once. The interaction block measures a layer over a base that already holds another layer.
 
+### Three layers are tuned, and three are frozen
+
+On 2026-10-22 the owner ruled on #1777 that the tuning round tunes three layers: the skills, the hook and MCP. Each is tuned against scenario 3. So a try of the skills compares scenario 4 with scenario 3. A try of the hook compares scenario 5, and a try of MCP compares scenario 6. The documents, the engine and `CLAUDE.md` are frozen, and no tuning try changes them. `CLAUDE.md` is measured once, in the final round, on top of the layers that the tuning round keeps. Every scenario keeps its base and its registered comparison.
+
 ### One probe shape
 
 Every probe of the campaign has one shape. It has one task in plain words, one target document, and one key. The grader checks the key from the recorded transcript, with no model as a judge. The issue says "from tool calls alone". An `answered` key reads the final answer of the session and not a call, so this record reads the clause as the recorded transcript. The grader checks all five forms in this way, so each form is admitted: `opened`, `not_opened`, `cited`, `patched` and `answered`. Each probe document states its task, its target and its key under three headings of the same names. The second slice of #1774 made the documents conform.
 
 ### The common probe set, and its split
 
-The set has eight probes, and the split is fixed now. The screening round and every tuning try run the tuning set alone. The final round runs the held-out set alone, so no held-out result exists until then.
+The set has nine probes: five for tuning and four held out. The owner fixed the split on 2026-10-17, and on 2026-10-22 he changed the tuning set (#1833). The screening round and every tuning try run the tuning set alone. The final round runs the held-out set alone, so no held-out result exists until then.
 
 | probe | key | 2026-10-03 present arm | set |
 |---|---|---|---|
 | a-session-records-which-obligation-an-evaluation-discharged | patched | 24 of 30 | tuning |
-| a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor | opened | 17 of 118 | tuning |
-| a-session-follows-two-citations-from-a-record-the-task-does-not-name | answered | not recorded (#1718) | tuning |
 | an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded | opened | not recorded (#1718) | tuning |
+| a-session-that-changes-the-recorder-reaches-the-recorder-contract | opened | not recorded (#1833) | tuning |
+| a-session-that-moves-a-shelf-reaches-the-relocation-guide | opened | not recorded (#1833) | tuning |
+| a-session-that-changes-a-verb-s-default-reaches-the-verb-s-interface-contract | opened | not recorded (#1833) | tuning |
 | what-a-session-writes-points-back-at-the-ruling-it-rests-on | cited | 5 of 30 | held out |
 | the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens | opened | 7 of 118 | held out |
 | a-session-says-which-date-a-corrected-status-carries | answered | not recorded (#1718) | held out |
 | a-session-says-whether-a-command-or-a-hand-writes-a-governs-line | answered | not recorded (#1709) | held out |
 
-Each set holds two recorded probes and two that no campaign has run. No probe in the set was at the ceiling of the `present` arm.
+The tuning set holds one probe that the campaign of 2026-10-03 recorded, and the held-out set holds two. No probe in the set was at the ceiling of the `present` arm.
+
+Two probes left the tuning set on 2026-10-22, and each stays on the shelf as a record:
+
+- **The two-citations probe**, `a-session-follows-two-citations-from-a-record-the-task-does-not-name`. It sat at 18 of 18 in each of the 13 scenarios that hold `docs/`. So it added the same passes to both sides of each tuning comparison. Plain code also passed it: in scenario 0, 11 of 18 sessions answered from comments in the code.
+- **The cold-agent probe**, `a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor`. Its task asks for a rule that already exists, `facet.value.blank`, so the task is defective. Each scenario-0 session that answered said so.
+
+The three probes that replace them key on `opened`. Each task asks for a change to the code or to the taxonomy. The key reads whether the session opened the document that governs that change. The targets are the recorder contract, the relocation guide and the interface contract of `headwater route`. Proposal 1, the first comment on #1833, is the design, and it states the rate that each probe expects in scenario 3.
+
+#1835 adds a third set, `code`, with a round of its own. It is an addition, and it changes neither the tuning set nor the held-out set.
 
 The other probes on the shelf are left out:
 
-- **At the ceiling.** Eight probes sat at 30 of 30 in the `present` arm. They are the tombstone, the citation, the unmeasured claim and the accepted event. They are also the status in a pull request, the register, the figure on the site and the adjudication. No scenario above its base can show a gain on a probe at the ceiling. #1720 added a harder probe beside four of them, and three of those four are in the set.
+- **At the ceiling.** Eight probes sat at 30 of 30 in the `present` arm. They are the tombstone, the citation, the unmeasured claim and the accepted event. They are also the status in a pull request, the register, the figure on the site and the adjudication. No scenario above its base can show a gain on a probe at the ceiling. #1720 added a harder probe beside four of them, and two of those four are in the set.
 - **Near the ceiling.** `a-session-finds-a-ruling-from-a-task-in-plain-words` was 113 of 118. A gain over its base could not pass five points. Its key also accepts two documents, the ruling and the evaluation that the ruling cites.
 - **A second document in the key.** `a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced` keys on a document that the session must not open, and that document is not its target. So it has two documents and not one. The adjudication probe, which is out for the ceiling, also keys on two documents: the decision register and the record that its Q8 row links.
 - **A target that some scenarios cannot hold.** `the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document` opens a file under `.claude/`, which the eight scenarios without the skills layer do not hold. Its rate there is zero by construction.
@@ -118,11 +131,13 @@ Every count comes from the formula that `tools/probe/campaign-dry-run.sh` states
 
 | round | probes | sessions per scenario | repetitions per probe | the difference it separates |
 |---|---|---|---|---|
-| screening | the 4 tuning probes | 72 | 18 | 25 points, anywhere: 0.375 against 0.625 needs 70 |
-| each tuning try, at most 3 | the 4 tuning probes | 72 | 18 | 25 points, as the screening round |
+| screening | the 5 tuning probes | 70 | 14 | 25 points, anywhere: 0.375 against 0.625 needs 70 |
+| each tuning try, at most 3 | the 5 tuning probes | 70 | 14 | 25 points, as the screening round |
 | final | the 4 held-out probes | 220 | 55 | 15 points anywhere, 0.425 against 0.575 needs 187, and 10 points from 0.80 to 0.90, which needs 219 |
 
-So the final round separates any scenario from its base by 15 points of the pooled rate. Where the rates sit near 0.85, it separates them by 10 points. Every verdict rests on the pooled rate. A cell of one probe in one scenario has 18 or 55 sessions, and at those counts it is not a finding. Over the 14 scenarios, the plan is 1,008 screening sessions, 3,024 tuning sessions at most, and 3,080 final sessions. The dry run prices that total. The owner approves each round before it spends, and the Consequences state what he approved.
+So the final round separates any scenario from its base by 15 points of the pooled rate. Where the rates sit near 0.85, it separates them by 10 points. Every verdict rests on the pooled rate. A cell of one probe in one scenario has 14 or 55 sessions, and at those counts it is not a finding. Over the 14 scenarios, the plan is 980 screening sessions, 2,940 tuning sessions at most, and 3,080 final sessions. The dry run prices that total. The owner approves each round before it spends, and the Consequences state what he approved.
+
+The bases of the tuned comparisons are measured again on the new tuning set. On 2026-10-22 the owner ruled that a base and a confirmation each run 145 sessions, 29 repetitions of each of the five tuning probes. The dry run does not compute that count yet, and #1838 is the issue for it.
 
 ### Two tables, one verdict
 
@@ -155,20 +170,20 @@ This record does not run anything. The probe documents state their task, target 
 
 `.headwater/probe.yml` declares the `additive` tier, its arms `scenario-0` to `scenario-13`, the two sets and the three rounds. `headwater probe plan --arm scenario-<n> --set <name>` plans one scenario over one set. `tools/probe/additive-campaign.spec` holds one line for each scenario and round. `sh tools/probe/campaign.sh --dry-run --spec tools/probe/additive-campaign.spec` computes each round's count from the rates of the round. It prints this total:
 
-    round screening: 1008 sessions, $504.00
-    round tuning: 3024 sessions, $1512.00 (3 tries at most)
+    round screening: 980 sessions, $490.00
+    round tuning: 2940 sessions, $1470.00 (3 tries at most)
     round final: 3080 sessions, $1540.00
-    total: 7112 sessions, $3556.00
+    total: 7000 sessions, $3500.00
 
-That is at the declared 50 cents a session. At the 35.0 cents a session of 2026-10-03, the total is $2,489.20.
+That is at the declared 50 cents a session. At the 35.0 cents a session of 2026-10-03, the total is $2,450.00.
 
-**The owner approved the screening round at $700.** On 2026-10-18 he ruled on #1775: "restart doesn't reset count, but raise ceiling to $700". The plan of the round stays 1,008 sessions and $504.00. So $196.00 is room for a restart, which is 392 sessions at 50 cents. A restart does not reset the count: the money that every attempt of the screening round spends counts toward the one $700.
+**The owner approved the screening round at $700.** On 2026-10-18 he ruled on #1775: "restart doesn't reset count, but raise ceiling to $700". Over the first tuning set of four probes, the plan of the round was 1,008 sessions and $504.00. So $196.00 was room for a restart, which is 392 sessions at 50 cents. A restart does not reset the count: the money that every attempt of the screening round spends counts toward the one $700.
 
-**The owner approved the tuning round at $1,512.00.** On 2026-10-19 he ruled on #1777: "Approve the full $1,512: tuning may spend up to $1,512." The sum covers every attempt and every layer. He also ruled that every layer gets at least one paid tuning try. The tuning runs one layer at a time. The owner accepts the plan of each layer before any spend on that layer. Since #1819, a mechanism holds this rule, and the fourth mechanism below states it. Since #1821, `tools/probe/try.sh spent <root>` derives the total across tuning batches from the files, and the fifth mechanism below states it. The final round, $1,540.00, is not approved, and it waits for a ruling of its own.
+**The owner approved the tuning round at $1,512.00.** On 2026-10-19 he ruled on #1777: "Approve the full $1,512: tuning may spend up to $1,512." The sum covers every attempt and every layer. He also ruled that every layer gets at least one paid tuning try. On 2026-10-22 he narrowed that ruling: only the skills, the hook and MCP are tuned, and the documents try 1 is withdrawn (#1833). The tuning runs one layer at a time. The owner accepts the plan of each layer before any spend on that layer. Since #1819, a mechanism holds this rule, and the fourth mechanism below states it. Since #1821, `tools/probe/try.sh spent <root>` derives the total across tuning batches from the files, and the fifth mechanism below states it. The final round, $1,540.00, is not approved, and it waits for a ruling of its own.
 
-Five mechanisms hold these rulings. The first three hold the spend of one batch or one root, and the fifth holds the total of the tuning round. The additive tier's ceiling in `.headwater/probe.yml` is 70000 cents, and it bounds one batch directory. Each round under `rounds:` declares `approved_cents`: 70000 for the screening round, 151200 for the tuning round and 0 for the final round. `tools/probe/campaign.sh` refuses a line of a round whose approval is 0, with exit 5, before it builds a tree or asks the harness anything. The ceiling alone cannot do this, because the plan prices one line at a time, and a final line of 220 sessions costs $110.00. `tools/probe/additive-screening.spec` holds the 15 screening lines alone, so the paid run names a spec that holds no refused line. `tools/probe/additive-tuning-docs.spec` holds the one tuning line of the documents layer, scenario 1, in the same way. `tools/probe/campaign-drive.sh` gives each batch the cap less what every other batch directory under its root spent. So a restart moves the old batch directory aside under the same root. The new batch then gets $700 less what every earlier attempt spent, less the overshoot margin.
+Five mechanisms hold these rulings. The first three hold the spend of one batch or one root, and the fifth holds the total of the tuning round. The additive tier's ceiling in `.headwater/probe.yml` is 70000 cents, and it bounds one batch directory. Each round under `rounds:` declares `approved_cents`: 70000 for the screening round, 151200 for the tuning round and 0 for the final round. `tools/probe/campaign.sh` refuses a line of a round whose approval is 0, with exit 5, before it builds a tree or asks the harness anything. The ceiling alone cannot do this, because the plan prices one line at a time, and a final line of 220 sessions costs $110.00. `tools/probe/additive-screening.spec` holds the 15 screening lines alone, so the paid run names a spec that holds no refused line. `tools/probe/campaign-drive.sh` gives each batch the cap less what every other batch directory under its root spent. So a restart moves the old batch directory aside under the same root. The new batch then gets $700 less what every earlier attempt spent, less the overshoot margin.
 
-The fourth mechanism holds the rule of one layer at a time (#1819). The tuning round under `rounds:` declares `open`. Its value is `none`, or the one layer whose plan the owner accepted. An open layer also names its scenario, the try, the cap of the try, the URL of the acceptance and the commit of the change. `python3 tools/probe/declared.py .headwater/probe.yml open` prints the value. It refuses a scenario that does not add exactly the named layer over its base. It also refuses a cap above the round's `approved_cents` and a try past the round's `tries`. `tools/probe/campaign.sh` refuses a tuning line with exit 5 when `open` is `none`. It also refuses a tuning line of a scenario other than the open one, and it names the open layer and scenario. Both refusals occur at the same point as the round approval, before the batch builds a tree or asks the harness anything. Try 1 of the documents layer scored 32 of 72 sessions, and the owner did not keep it. No other layer has an accepted plan, so `open` is `none`, and the batch refuses `tools/probe/additive-tuning-docs.spec` too.
+The fourth mechanism holds the rule of one layer at a time (#1819). The tuning round under `rounds:` declares `open`. Its value is `none`, or the one layer whose plan the owner accepted. An open layer also names its scenario, the try, the cap of the try, the URL of the acceptance and the commit of the change. `python3 tools/probe/declared.py .headwater/probe.yml open` prints the value. It refuses a scenario that does not add exactly the named layer over its base. It also refuses a cap above the round's `approved_cents` and a try past the round's `tries`. `tools/probe/campaign.sh` refuses a tuning line with exit 5 when `open` is `none`. It also refuses a tuning line of a scenario other than the open one, and it names the open layer and scenario. Both refusals occur at the same point as the round approval, before the batch builds a tree or asks the harness anything. Try 1 of the documents layer scored 32 of 72 sessions, and the owner did not keep it. The ruling of 2026-10-22 withdrew that try with the layer. No other layer has an accepted plan, so `open` is `none`.
 
 `.headwater/probe.yml` also declares `base_invalidators`, the paths whose change can make a measured base stale. Its six entries are the engine source, `engine/crates/*/src/**`, and five scripts under `tools/probe/`: `probe-record.sh`, `probe-transform.sh`, `egress-proxy.py`, `campaign.sh` and `ablate.sh`. The owner ruled on 2026-10-20 that `tools/probe/seal.sh` and `tools/probe/leak.py` are not on the list. By the same ruling, his acceptance of the 30 paths by which the scenario-0 trees at 2d212a26 and 2e3d71a7 differ stands. A base is stale when a later change to one of these paths alters what a session measures. A refusal that `campaign.sh` makes before it builds a tree alters no session, so it does not make a base stale.
 
@@ -188,4 +203,4 @@ The dry run builds the tree of each scenario and runs the leak check over it. Th
 
 **Scenario 0 is the floor.** Scenario 0 holds no `docs/`. So a probe whose key needs a document under `docs/` is at zero there by construction. That is the floor that scenario 1 is compared with, and it is not a defect of the set.
 
-A probe at the ceiling of 2026-10-03 stays out of the set even where it sits lower in plain code. Its gain from the bottom is real and unmeasured here. The set opens again if a held-out probe sits at the ceiling in the base of a scenario. That probe can then show no gain there.
+A probe at the ceiling of 2026-10-03 stays out of the set even where it sits lower in plain code. Its gain from the bottom is real and unmeasured here. The set opens again if a held-out probe sits at the ceiling in the base of a scenario. That probe can then show no gain there. The tuning set also opens again if a tuning probe sits at the ceiling in the base of every tuned scenario. That probe can then show no gain in any tuning try.

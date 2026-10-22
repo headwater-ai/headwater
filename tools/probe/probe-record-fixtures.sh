@@ -3754,10 +3754,12 @@ STUB
         rm -rf "$arms"
 
         # A raise above the tier's declared count is admitted on a line only
-        # up to the count the dry run prices for that line (#1659). Spec line
-        # 21 names one probe out of discovery, so k = 3 and the line prices
-        # at ceil(353 / 3) = 118 from this checkout's `power:`.
-        printf 'campaign present discovery HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document\n' \
+        # up to the count the dry run prices for that line (#1659). The line
+        # leaves out of discovery what each discovery line of the layer
+        # campaign leaves out: the authoring-skill probe, and the relocation
+        # probe that awaits spend (#1833). So k = 3 and the line prices at
+        # ceil(353 / 3) = 118 from this checkout's `power:`.
+        printf 'campaign present discovery HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document HW-PROBE-a-session-that-moves-a-shelf-reaches-the-relocation-guide\n' \
             > "$scratch/raise.spec"
         stagger_stub ok
         for over in 119 1180; do
@@ -5304,10 +5306,10 @@ if [ -x "$engine" ]; then
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$additive_spec" > "$scratch/add.out" 2> "$scratch/add.err"
     same "the dry run of the additive campaign exits 0" "0" "$?"
-    present "it prints the screening round's sum" "round screening: 1008 sessions, \$504.00" "$scratch/add.out"
-    present "it prints the tuning round's sum at its most tries" "round tuning: 3024 sessions, \$1512.00 (3 tries at most)" "$scratch/add.out"
+    present "it prints the screening round's sum" "round screening: 980 sessions, \$490.00" "$scratch/add.out"
+    present "it prints the tuning round's sum at its most tries" "round tuning: 2940 sessions, \$1470.00 (3 tries at most)" "$scratch/add.out"
     present "it prints the final round's sum" "round final: 3080 sessions, \$1540.00" "$scratch/add.out"
-    present "and one total" "total: 7112 sessions, \$3556.00" "$scratch/add.out"
+    present "and one total" "total: 7000 sessions, \$3500.00" "$scratch/add.out"
     present "each round's count is computed from its rates" "so ceil(219 / 4) = 55 repetitions of each probe" "$scratch/add.out"
     # The owner approved the screening round at $700 (#1775). The
     # ceiling admits each plan, and the approval of each round says which
@@ -5342,9 +5344,6 @@ if [ -x "$engine" ]; then
     same "the screening spec holds the screening lines of the whole campaign, and no other" \
         "$(awk 'NF && $1 !~ /^#/ && $3 == "screening"' "$additive_spec")" \
         "$(awk 'NF && $1 !~ /^#/' "$root/tools/probe/additive-screening.spec")"
-    same "the documents tuning spec holds the scenario-1 tuning line of the whole campaign, and no other" \
-        "$(awk 'NF && $1 !~ /^#/ && $2 == "scenario-1" && $3 == "tuning"' "$additive_spec")" \
-        "$(awk 'NF && $1 !~ /^#/' "$root/tools/probe/additive-tuning-docs.spec")"
     same "and it builds and checks each of the 14 scenario trees" "14" \
         "$(sed -n 's/^tree additive \(scenario-[0-9]*\)[ :].*/\1/p' "$scratch/add.out" | LC_ALL=C sort -u | wc -l | tr -d ' ')"
     present "a hit in the harness layer of scenario 13 prints as harness" \
@@ -5382,7 +5381,7 @@ if [ -x "$engine" ]; then
     same "a leak string in a skills-layer skill body fails the additive dry run with 8" "8" "$?"
     same "and it names every scenario that holds skills, and no other" "4 8 10 11 12 13" \
         "$(sed -n "s/^leak check, scenario-\([0-9]*\) tree: leak .*headwater-orient\/SKILL.md $body_string$/\1/p" "$scratch/add-body.out" | LC_ALL=C sort -n | tr '\n' ' ' | sed 's/ $//')"
-    present "and prints the round sums all the same" "total: 7112 sessions" "$scratch/add-body.out"
+    present "and prints the round sums all the same" "total: 7000 sessions" "$scratch/add-body.out"
 
     # The hook's text: the pointer probe's route names its own target, and no
     # file of a hook scenario's always-loaded text or skill bodies does, but
@@ -5449,11 +5448,11 @@ if [ -x "$engine" ]; then
     HW_PROBE_YML="$scratch/add-short.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$scratch/add-short.spec" > "$scratch/add-short.out" 2> /dev/null
     same "a set the plan counts otherwise than the declaration read is refused with 5" "5" "$?"
-    present "and the refusal names both counts" "the plan selects 4 probes, and the set tuning less the probes the line leaves out holds 3" "$scratch/add-short.out"
+    present "and the refusal names both counts" "the plan selects 5 probes, and the set tuning less the probes the line leaves out holds 4" "$scratch/add-short.out"
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" \
         > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
     same "--priced reads each additive line" "0 46" "$? $(wc -l < "$scratch/add-priced.out" | tr -d ' ')"
-    same "and gives each its round's count" "18 18 55" \
+    same "and gives each its round's count" "14 14 55" \
         "$(awk '$1 == 1 || $1 == 16 || $1 == 31 { print $3 }' "$scratch/add-priced.out" | tr '\n' ' ' | sed 's/ $//')"
 
     # The batch runs the same check before each invocation (clause 5: "the
@@ -5513,9 +5512,9 @@ if [ -x "$engine" ]; then
         run_status=$?
         same "a batch of one screening line passes the plan and starts a session" "yes" \
             "$([ "$run_status" != 5 ] && [ -e "$scratch/run-out/claude-version" ] && echo yes || echo no)"
-        same "its jobs are 4 probes x the round's 18 repetitions, not the tier's 55" "72" \
+        same "its jobs are 5 probes x the round's 14 repetitions, not the tier's 55" "70" \
             "$(grep -c ' additive scenario-4 screening ' "$scratch/run-out/jobs" 2>/dev/null)"
-        present "and the line is planned at the round's count" "4 probes x 1 arms x 18 repetitions = 72 sessions" "$scratch/run-out/plans/L1"
+        present "and the line is planned at the round's count" "5 probes x 1 arms x 14 repetitions = 70 sessions" "$scratch/run-out/plans/L1"
         # The tree is the scenario's: every path of a layer scenario 4 does
         # not hold is gone, and the skills layer it holds is there.
         "$engine" probe plan --root "$root" --scenario 4 --delta > "$scratch/run-delta" 2> /dev/null
@@ -5539,7 +5538,7 @@ if [ -x "$engine" ]; then
         absent "and the recorder plans the line the batch planned" "headwater probe plan" \
             "$scratch/run-out/sessions/$run_session/record.err"
         same "the session the plan admitted is the one the batch planned" "$(sed -n 's/^selection: //p' "$scratch/run-out/plans/L1" | head -1)" \
-            "$("$engine" probe plan --root "$root" --tier additive --arm scenario-4 --set tuning --repetitions 18 2> /dev/null | sed -n 's/^selection: //p' | head -1)"
+            "$("$engine" probe plan --root "$root" --tier additive --arm scenario-4 --set tuning --repetitions 14 2> /dev/null | sed -n 's/^selection: //p' | head -1)"
         # The identity block holds the set only as its digest, so assembly
         # states the round and the set beside it. The one session did not
         # record, so assembly fails the line, and still names its round.
@@ -5559,16 +5558,17 @@ if [ -x "$engine" ]; then
             "$([ -e "$scratch/run-final-out/leak-gate" ] && echo yes || echo no)"
         # The owner approved the tuning round (#1777), and it is open for no
         # layer now (#1819): documents try 1 was not kept, and no other
-        # layer's plan is accepted. So a batch of the documents tuning spec
+        # layer's plan is accepted. So a batch of a scenario-1 tuning line
         # passes the round gate and is refused by the layer gate, with 5,
         # before it builds a tree or asks the harness anything. The case of a
         # declared open layer reads a scratch root, below, because the gate
         # reads this checkout's declaration and no override.
+        printf 'additive scenario-1 tuning\n' > "$scratch/run-tune.spec"
         rm -rf "$scratch/run-tune-out"
         HEADWATER_PROBE_HOST_CONFIG="$scratch/run-host" CARGO_TARGET_DIR="$scratch/gate-target" PATH="$scratch/run-bin:$PATH" \
             sh "$root/tools/probe/campaign.sh" --out "$scratch/run-tune-out" --model claude-haiku-4-5 \
-            --spec "$root/tools/probe/additive-tuning-docs.spec" --max-sessions 1 > /dev/null 2> "$scratch/run-tune.err"
-        same "a batch of the documents tuning spec is refused with 5 while the tuning round is open for no layer" "5" "$?"
+            --spec "$scratch/run-tune.spec" --max-sessions 1 > /dev/null 2> "$scratch/run-tune.err"
+        same "a batch of a scenario-1 tuning line is refused with 5 while the tuning round is open for no layer" "5" "$?"
         absent "and names no refusal of the tuning round's approval" "no person has approved spend on the tuning round" "$scratch/run-tune.err"
         present "and names the open rule" "the tuning round is open for no layer" "$scratch/run-tune.err"
         same "and it wrote no harness version, no plan, no tree and no dry run" "no no no no" \
@@ -5727,12 +5727,13 @@ same "with docs open on scenario 1, a tuning line of scenario 3 is refused with 
 present "and the refusal names the open layer and scenario, and the line's scenario" \
     "the tuning round is open for the docs layer on scenario 1 alone, and the spec holds a tuning line of scenario-3" "$scratch/open-s3.err"
 same "and it ran no dry run, planned no line, built no tree and asked the harness nothing" "no no no no" "$(open_wrote)"
-same "with open: none, the documents tuning spec is refused with 5" "5" \
-    "$(open_batch "$root/.headwater/probe.yml" "$root/tools/probe/additive-tuning-docs.spec" "$scratch/open-nonespec.err")"
+printf 'additive scenario-1 tuning\n' > "$scratch/open-s1.spec"
+same "with open: none, a scenario-1 tuning line is refused with 5" "5" \
+    "$(open_batch "$root/.headwater/probe.yml" "$scratch/open-s1.spec" "$scratch/open-nonespec.err")"
 present "and the refusal names the open rule" "the tuning round is open for no layer" "$scratch/open-nonespec.err"
 same "and it ran no dry run, planned no line, built no tree and asked the harness nothing" "no no no no" "$(open_wrote)"
-open_status=$(open_batch "$scratch/open-docs1.yml" "$root/tools/probe/additive-tuning-docs.spec" "$scratch/open-pass.err")
-same "with docs open on scenario 1, the documents tuning spec passes the gate" "yes 0" \
+open_status=$(open_batch "$scratch/open-docs1.yml" "$scratch/open-s1.spec" "$scratch/open-pass.err")
+same "with docs open on scenario 1, a scenario-1 tuning line passes the gate" "yes 0" \
     "$([ "$open_status" != 5 ] && echo yes || echo no) $(grep -c 'the tuning round is open for' "$scratch/open-pass.err")"
 # The gate reads tuning lines alone: a screening line runs while no layer is
 # open, and a tuning line of the open scenario runs beside it.
@@ -5753,7 +5754,7 @@ present "and names scenario 10" "and the spec holds a tuning line of scenario-10
 # A declaration the reader refuses stops the batch with the reader's own 2.
 sed 's/^      try: 1$/      try: 4/' "$scratch/open-docs1.yml" > "$scratch/open-try4.yml"
 same "a malformed open stops the batch with the reader's 2" "2" \
-    "$(open_batch "$scratch/open-try4.yml" "$root/tools/probe/additive-tuning-docs.spec" "$scratch/open-try4.err")"
+    "$(open_batch "$scratch/open-try4.yml" "$scratch/open-s1.spec" "$scratch/open-try4.err")"
 
 present "the driver names the channel and never a file under ~/.claude/projects" \
     "output-format stream-json" "$driver"

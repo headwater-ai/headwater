@@ -1350,6 +1350,11 @@ const AWAITING_SPEND: &[&str] = &[
     "HW-PROBE-a-session-says-which-date-a-corrected-status-carries",
     "HW-PROBE-a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced",
     "HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded",
+    // The three probes of the additive tuning set (#1833). The owner
+    // approved their spend for that campaign and not for this one.
+    "HW-PROBE-a-session-that-changes-the-recorder-reaches-the-recorder-contract",
+    "HW-PROBE-a-session-that-moves-a-shelf-reaches-the-relocation-guide",
+    "HW-PROBE-a-session-that-changes-a-verb-s-default-reaches-the-verb-s-interface-contract",
 ];
 
 /// The campaign spec plans no probe that awaits the owner's approval of spend.
@@ -1566,6 +1571,110 @@ fn the_additive_spec_plans_each_scenario_in_each_round() {
         runs.is_empty(),
         "lines outside the 14 scenarios and 3 rounds: {runs:?}"
     );
+}
+
+/// The probes the owner ruled into the tuning set on 2026-10-22 (#1833): the
+/// two kept probes, and the three of proposal 1 that replace the two dropped.
+const TUNING_SET: &[&str] = &[
+    "HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged",
+    "HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded",
+    "HW-PROBE-a-session-that-changes-the-recorder-reaches-the-recorder-contract",
+    "HW-PROBE-a-session-that-moves-a-shelf-reaches-the-relocation-guide",
+    "HW-PROBE-a-session-that-changes-a-verb-s-default-reaches-the-verb-s-interface-contract",
+];
+
+/// The tuning set is the five probes the owner ruled on 2026-10-22, and the
+/// two it dropped are in no set (#1833, clauses 1 and 2).
+///
+/// The two dropped probes stay on the shelf as records: the two-citations
+/// probe sat at the ceiling in every scenario that holds `docs/`, and the
+/// cold-agent probe asked for a rule that already exists. Each new probe keys
+/// on `opened`, so it declares no oracle.
+#[test]
+fn the_tuning_set_is_the_five_probes_the_owner_ruled_on_2026_10_22() {
+    let root = repository_root();
+    let path = root.join(headwater_probe::budget::PATH);
+    let source =
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    let budgets = headwater_probe::Budgets::read(&source).unwrap_or_else(|e| panic!("{e}"));
+
+    let mut tuning = budgets
+        .set("tuning")
+        .expect("the tuning set is declared")
+        .to_vec();
+    tuning.sort();
+    let mut expected: Vec<String> = TUNING_SET.iter().map(|id| id.to_string()).collect();
+    expected.sort();
+    assert_eq!(tuning, expected, "the tuning set of .headwater/probe.yml");
+
+    let dropped = [
+        "HW-PROBE-a-session-follows-two-citations-from-a-record-the-task-does-not-name",
+        "HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor",
+    ];
+    let shelf = probes();
+    for id in dropped {
+        assert!(
+            shelf.iter().any(|probe| probe.id.as_deref() == Some(id)),
+            "{id} left the shelf; it stays as a record"
+        );
+        // `code` is the set #1835 adds, and a set the file does not declare
+        // holds nothing.
+        for set in ["tuning", "held-out", "code"] {
+            let members = budgets.set(set).unwrap_or_default();
+            assert!(
+                !members.iter().any(|member| member == id),
+                "{id} is still a member of the set `{set}`"
+            );
+        }
+    }
+
+    // Each new probe examines its target, and the target stands at `current`:
+    // the relocation guide was `draft` with an accepted warrant, and the
+    // owner ruled that it is promoted before any base is measured (clause 4).
+    let targets = [
+        (
+            "HW-SPEC-the-recorder-contract",
+            "docs/spec/15-the-recorder-contract.md",
+        ),
+        ("HW-HOW-relocate-a-shelf", "docs/how-to/relocate-a-shelf.md"),
+        (
+            "HW-IFACE-headwater-route",
+            "docs/interfaces/headwater-route.md",
+        ),
+    ];
+    for (id, (target, target_path)) in TUNING_SET[2..].iter().zip(targets) {
+        let probe = shelf
+            .iter()
+            .find(|probe| probe.id.as_deref() == Some(*id))
+            .unwrap_or_else(|| panic!("{id} is not on {SHELF}"));
+        let (_, document) = front_matter(&root.join(&probe.path));
+        assert_eq!(
+            examines_of(&document),
+            vec![target.to_string()],
+            "{id}: examines"
+        );
+        let (_, examined) = front_matter(&root.join(target_path));
+        assert_eq!(
+            scalar(&examined, "id").as_deref(),
+            Some(target),
+            "{target_path}: id"
+        );
+        assert_eq!(
+            scalar(&examined, "status").as_deref(),
+            Some("current"),
+            "{target}, which {id} examines, stands at `current`"
+        );
+        assert_eq!(
+            scalar(&document, "expectation").as_deref(),
+            Some("opened"),
+            "{id}: expectation"
+        );
+        assert_eq!(
+            scalar(&document, "oracle").as_deref(),
+            Some("none"),
+            "{id}: oracle"
+        );
+    }
 }
 
 /// Every file of this repository's harness belongs to a layer of the

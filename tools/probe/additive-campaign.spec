@@ -11,8 +11,9 @@
 # `engine/crates/probe/tests/corpus.rs` holds that.
 #
 # The dry run computes each round's repetitions from the round's two rates,
-# with the one formula it states, over the four probes of the round's set:
-# 18 for the screening round and each tuning try, and 55 for the final round.
+# with the one formula it states, over the probes of the round's set, five
+# in the tuning set and four in the held-out set: 14 for the screening round
+# and each tuning try, and 55 for the final round.
 # A line that leaves a probe out runs the others at the round's count, so a
 # probe on a line of its own runs as many sessions as a pooled one.
 #
@@ -32,25 +33,26 @@
 #
 # **What it costs.** At the declared 50 cents a session:
 #
-#     round screening: 1008 sessions, $504.00
-#     round tuning: 3024 sessions, $1512.00 (3 tries at most)
+#     round screening: 980 sessions, $490.00
+#     round tuning: 2940 sessions, $1470.00 (3 tries at most)
 #     round final: 3080 sessions, $1540.00
-#     total: 7112 sessions, $3556.00
+#     total: 7000 sessions, $3500.00
 #
 # At the 35.0 cents a session the campaign of 2026-10-03 realized, the total
-# is $2,489.20.
+# is $2,450.00.
 #
 # **The owner approved the screening and tuning rounds, and not the final
 # round.** On 2026-10-18 he approved $700 over every attempt of the screening
 # round (#1775). On 2026-10-19 he approved $1,512.00 over every attempt and
 # every layer of the tuning round (#1777): one layer at a time, with each
-# layer's plan accepted before any spend on it. HW-DR-0111 records both. The
-# final round is not approved, so a batch of this spec is refused with 5
-# before it builds a tree. The screening round runs from
-# `tools/probe/additive-screening.spec`, which holds its lines alone, and the
-# documents layer's tuning try runs from `tools/probe/additive-tuning-docs.spec`
-# while `rounds.tuning.open` in `.headwater/probe.yml` opens that layer (#1819).
-# The spec plans the four probes of #1718 and the #1709 successor.
+# layer's plan accepted before any spend on it. On 2026-10-22 he ruled that
+# only the skills, the hook and the MCP layer are tuned, each against
+# scenario 3, and that the documents, the engine and `CLAUDE.md` are frozen
+# (#1833). HW-DR-0111 records the three rulings. The final round is not
+# approved, so a batch of this spec is refused with 5 before it builds a tree.
+# The screening round runs from `tools/probe/additive-screening.spec`, which
+# holds its lines alone, and a tuning try runs from a spec of its own while
+# `rounds.tuning.open` in `.headwater/probe.yml` opens that layer (#1819).
 
 # The screening round.
 additive scenario-0 screening
@@ -67,7 +69,7 @@ additive scenario-10 screening
 additive scenario-11 screening
 additive scenario-12 screening
 additive scenario-13 screening HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded
-additive scenario-13 screening HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor HW-PROBE-a-session-follows-two-citations-from-a-record-the-task-does-not-name
+additive scenario-13 screening HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged HW-PROBE-a-session-that-changes-the-recorder-reaches-the-recorder-contract HW-PROBE-a-session-that-moves-a-shelf-reaches-the-relocation-guide HW-PROBE-a-session-that-changes-a-verb-s-default-reaches-the-verb-s-interface-contract
 
 # The tuning round.
 additive scenario-0 tuning
@@ -84,7 +86,7 @@ additive scenario-10 tuning
 additive scenario-11 tuning
 additive scenario-12 tuning
 additive scenario-13 tuning HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded
-additive scenario-13 tuning HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor HW-PROBE-a-session-follows-two-citations-from-a-record-the-task-does-not-name
+additive scenario-13 tuning HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged HW-PROBE-a-session-that-changes-the-recorder-reaches-the-recorder-contract HW-PROBE-a-session-that-moves-a-shelf-reaches-the-relocation-guide HW-PROBE-a-session-that-changes-a-verb-s-default-reaches-the-verb-s-interface-contract
 
 # The final round.
 additive scenario-0 final
