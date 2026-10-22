@@ -3754,10 +3754,12 @@ STUB
         rm -rf "$arms"
 
         # A raise above the tier's declared count is admitted on a line only
-        # up to the count the dry run prices for that line (#1659). Spec line
-        # 21 names one probe out of discovery, so k = 3 and the line prices
-        # at ceil(353 / 3) = 118 from this checkout's `power:`.
-        printf 'campaign present discovery HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document\n' \
+        # up to the count the dry run prices for that line (#1659). The line
+        # leaves out of discovery what each discovery line of the layer
+        # campaign leaves out: the authoring-skill probe, and the relocation
+        # probe that awaits spend (#1833). So k = 3 and the line prices at
+        # ceil(353 / 3) = 118 from this checkout's `power:`.
+        printf 'campaign present discovery HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document HW-PROBE-a-session-that-moves-a-shelf-reaches-the-relocation-guide\n' \
             > "$scratch/raise.spec"
         stagger_stub ok
         for over in 119 1180; do
