@@ -77,7 +77,7 @@ cat > "$fix/driver-stub.sh" <<'EOF'
     for arg in "$@"; do printf ' %s' "$arg"; done
     printf '\n'
 } >> "$TRY_CALLS"
-echo "env versions=${HEADWATER_DRIVE_CLAUDE_VERSIONS:-} target=${CARGO_TARGET_DIR:-} tmp=${TMPDIR:-} pwd=$PWD" >> "$TRY_CALLS"
+echo "env versions=${HEADWATER_DRIVE_CLAUDE_VERSIONS:-} target=${CARGO_TARGET_DIR:-} tmp=${TMPDIR:-} pwd=$PWD stage=${HEADWATER_TUNING_STAGE:-}" >> "$TRY_CALLS"
 if [ -f "$TRY_SLEEP" ]; then sleep 30; fi
 exit 0
 EOF
@@ -955,6 +955,150 @@ run wait "$CASE/root"
 check "wait: with no open layer and no try named exits 2" code_is 2
 run wait "$CASE/root" ../x
 check "wait: a try that is not a directory name exits 2" code_is 2
+
+# ------------------------- rank and confirm: usage before pass rate (#1838)
+
+# The decisive case of the rounds of #1838. The owner ruled on 2026-10-22
+# (#1777) that a round screens 4 variants at 24 sessions, ranks them on the
+# use of the layer first and on the pass rate second, and confirms only a
+# variant that raises the use, at 144 sessions against the best so far at
+# 144. Over the five tuning probes each count rounds up: ceil(24 / 5) = 5
+# repetitions, 25 sessions, and ceil(144 / 5) = 29, 145. Variant 1 passes 22
+# of 25 and never calls the skill, variant 2 passes 14 of 25 and calls it in
+# 12, and the best so far calls it in 3 of 145. Variant 2 is ranked first and
+# confirmed at 145. Variant 1 is not confirmed, whatever its pass rate.
+
+# rank_decl <open>: a declaration with the skills layer and the six fields of
+# the rounds, at one cent a session, so a cap of 3000 holds a confirmation.
+rank_decl() {
+    cat > "$CASE/probe.yml" <<EOF
+layers:
+  skills: {paths: [.claude/skills/hw-x]}
+  docs: {}
+  hook: {}
+sets:
+  tuning: [HW-PROBE-a, HW-PROBE-b, HW-PROBE-c, HW-PROBE-d, HW-PROBE-e]
+scenarios:
+  0: {layers: []}
+  1: {base: 0, layers: [skills]}
+  2: {base: 0, layers: [docs]}
+  3: {base: 0, layers: [hook]}
+tiers:
+  additive: {session_cost_cents: 1}
+rounds:
+  tuning:
+    set: tuning
+    rates: [0.625, 0.375]
+    tries: 4
+    approved_cents: 100000
+    screen: 24
+    confirm: 144
+    variants: 4
+    stop_after_empty: 2
+    order: [skills, docs, hook]
+    ceiling_cents: ${2:-100000}
+    open: $1
+base_invalidators:
+  - engine/crates/*/src/**
+  - tools/probe/campaign.sh
+EOF
+}
+OPEN_SKILLS='{layer: skills, scenario: 1, try: 1, cap_cents: 3000, plan: "https://example.org/accepted", change: none}'
+
+# skill_batch <try> <stage> <sessions> <used>: a try root the driver
+# finished, whose batch planned <sessions> jobs, each session one cent, the
+# first <used> of which call the shipped skill hw-x. Every other session
+# calls a skill the layer does not ship, which is not a use of it.
+skill_batch() {
+    t=$CASE/root/$1
+    mkdir -p "$t/a/sessions"
+    echo "additive scenario-1 tuning" > "$t/spec"
+    echo "$2" > "$t/stage"
+    : > "$t/a/jobs"
+    i=1
+    while [ "$i" -le "$3" ]; do
+        s=$t/a/sessions/L1-p1-r$i
+        mkdir -p "$s"
+        echo "L1-p1-r$i 1 additive scenario-1 tuning HW-PROBE-a" >> "$t/a/jobs"
+        echo 0 > "$s/status"
+        echo 1 > "$s/cost"
+        if [ "$i" -le "$4" ]; then skill=hw-x; else skill=other; fi
+        printf '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Skill","input":{"skill":"%s"}}]}}\n' "$skill" > "$s/raw.jsonl"
+        i=$((i + 1))
+    done
+    printf 'campaign-drive: a exit=0 recorded=%s/%s new=%s cents=%s all=%s/3000\n' "$3" "$3" "$3" "$3" "$3" > "$t/drive.out"
+    : > "$t/done"
+}
+rank_case() {
+    new_case
+    rank_decl "$OPEN_SKILLS" "${1:-100000}"
+    checkout=$CASE/checkout
+    screening additive-screening-scenario-0 additive screening scenario-0
+    screening additive-screening-scenario-1 additive screening scenario-1
+    # The best so far, at the confirmation's count: 3 of 145 call the skill.
+    skill_batch skills-r1-best best 145 3
+    echo 'pooled: 80/145 against 78/145, +1.4 points [-10.0, +12.8]' > "$CASE/pooled-base"
+    run result "$CASE/root" skills-r1-best
+}
+# screened <variant k> <used> <passed>: one screened variant, recorded.
+screened() {
+    skill_batch "skills-r1-v$1" "screen $1" 25 "$2"
+    echo "pooled: $3/25 against 11/25, +0.0 points [-1.0, +1.0]" > "$CASE/pooled-base"
+    run result "$CASE/root" "skills-r1-v$1"
+}
+
+rank_case
+check "rank: the best so far at 145 is recorded" code_is 0
+check "rank: and its use, 3 of 145" ledger_has '"used": 3, "sessions": 145'
+screened 1 0 22
+check "rank: variant 1 is recorded" code_is 0
+check "rank: a screen is never kept" out_has "keep: never"
+check "rank: its use is 0 of 25" ledger_has '"try": "skills-r1-v1"'
+screened 2 12 14
+run rank "$CASE/root"
+check "decisive: rank exits 0" code_is 0
+check "decisive: variant 2, which uses the skill in 12 of 25, ranks first though it passes 14 of 25" \
+    out_has "rank 1: skills-r1-v2 used in 12 of 25 sessions, passed 14 of 25, gain"
+check "decisive: variant 1, which passes 22 of 25 and never uses it, ranks second, with no gain" \
+    out_has "rank 2: skills-r1-v1 used in 0 of 25 sessions, passed 22 of 25, no gain"
+run launch "$CASE/root" confirm skills-r1-v1
+check "decisive: a confirmation of variant 1 exits 6" code_is 6
+check "decisive: and says no gain in use" err_has "no gain in use"
+check "decisive: and invokes nothing" no_calls
+check "decisive: and makes no confirmation root" [ ! -e "$CASE/root/skills-r1-confirm" ]
+check "decisive: and closes no round, because variant 1 is not the top" sh -c "! grep -q '\"event\": \"round\"' '$CASE/root/ledger.jsonl'"
+run plan "$CASE/root" confirm skills-r1-v2
+check "decisive: a confirmation of variant 2 plans" code_is 0
+check "decisive: at 145 sessions, ceil(144 / 5) = 29 repetitions of 5 probes" out_has "stage: confirm skills-r1-v2, 145 sessions"
+printf -- '--pin\n%s\n' "$(git -C "$fix/repo" rev-parse HEAD)" > "$CASE/root/skills-r1-v2/driver.argv"
+checkout=$fix/repo
+run launch "$CASE/root" confirm skills-r1-v2
+await_calls 1
+check "decisive: the confirmation launches" code_is 0
+check "decisive: in its own try root, with its stage" sh -c "[ \"\$(cat '$CASE/root/skills-r1-confirm/stage')\" = 'confirm skills-r1-v2' ]"
+check "decisive: and the driver reads the confirmation's count" grep -q ' stage=confirm$' "$CASE/calls"
+checkout=$CASE/checkout
+rm -f "$CASE/root/skills-r1-confirm/driver.pid"
+skill_batch skills-r1-confirm "confirm skills-r1-v2" 145 30
+echo 'pooled: 82/145 against 80/145, +1.4 points [-10.0, +12.8]' > "$CASE/pooled-base"
+echo 'pooled: 82/145 against 80/145, +1.4 points [-10.0, +12.8]' > "$CASE/pooled-keep"
+run result "$CASE/root" skills-r1-confirm
+check "decisive: the confirmation is recorded" code_is 0
+check "decisive: and kept on its own interval, which holds zero, so not kept" out_has "keep: not kept"
+check "decisive: its keep row is against the best so far at 145" grep -q 'probe compare .*-skills-round-1-confirmation-scenario-1\.md .*-skills-round-1-best-so-far-scenario-1\.md$' "$CASE/engine.log"
+check "decisive: and the round is closed with nothing kept" ledger_has '"event": "round", "layer": "skills", "round": 1, "kept": false'
+checkout=$fix/repo
+
+# The top variant does not raise the use: the round closes with nothing kept.
+rank_case
+screened 1 2 25
+run launch "$CASE/root" confirm skills-r1-v1
+check "rank: a top variant with no gain in use exits 6" code_is 6
+check "rank: and closes the round with nothing kept" ledger_has '"reason": "no-gain-in-use"'
+run plan "$CASE/root" screen 2
+check "rank: a closed round screens no more variants" code_is 6
+check "rank: and says it is closed" err_has "round 1 of the skills layer is closed"
+checkout=$fix/repo
 
 # ---------------------------------------------------------------- arguments
 
