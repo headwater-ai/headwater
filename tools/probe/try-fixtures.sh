@@ -908,9 +908,14 @@ finished_try docs-r2-v1 2452 "screen 1" 145
 run result "$CASE/root" docs-r2-v1
 check "result: a screen whose batch planned 145 jobs exits 2" code_is 2
 result_case
-echo "screen 2" > "$CASE/root/docs-r2-confirm/stage"
+rm -r "$CASE/root/docs-r2-confirm"
+finished_try docs-r2-confirm 2452 "screen 2" 25
 run result "$CASE/root" docs-r2-confirm
-check "result: a stage that is not the try root's exits 2" code_is 2
+check "result: a screen of 25 jobs in the confirmation's try root exits 2" code_is 2
+check "result: and records nothing" sh -c "! grep -q '\"event\": \"screen\"' '$CASE/root/ledger.jsonl'"
+finished_try docs-r2-v1 2452 "screen 2" 25
+run result "$CASE/root" docs-r2-v1
+check "result: a screen of variant 2 in the try root of variant 1 exits 2" code_is 2
 result_case
 rm "$CASE/root/docs-r2-confirm/stage"
 run result "$CASE/root" docs-r2-confirm
