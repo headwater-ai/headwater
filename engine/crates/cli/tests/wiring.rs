@@ -2767,3 +2767,65 @@ fn probe_plan_folds_and_answer_keys_print_the_parsed_lists() {
         assert_eq!(both.out, "", "{pair:?}");
     }
 }
+
+/// `probe plan --oracles` prints each declared command oracle as tab-separated
+/// lines, so that `tools/probe/probe-transform.sh` and `tools/probe/campaign.sh`
+/// parse no YAML (#1834). A declaration with none prints nothing, an unsafe one
+/// prints nothing and exits 1, and the flag refuses a second list beside it.
+#[test]
+fn probe_plan_oracles_print_the_parsed_declaration() {
+    let at = std::env::temp_dir().join(format!(
+        "headwater-cli-wiring-{}-probe-oracles",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_dir_all(&at);
+    std::fs::create_dir_all(at.join(".headwater")).expect("the declaration directory is there");
+    let root = Root { at };
+    let tiers = "tiers:\n  regression:\n    budget_cents: 2000\n    session_cost_cents: 25\n    \
+                 repetitions: 1\n    arms: [present]\n";
+    let oracles = "oracles:\n  unit-tests:\n    paths: [src/**, tests/*.rs]\n    command: cargo \
+                   test --test hidden -- --nocapture\n    parser: cargo-test\n    holds: \
+                   [tests/hidden.rs]\n  site:\n    paths: [site/**]\n    command: sh \
+                   tools/site/refresh.sh --check\n    parser: exit\n";
+    std::fs::write(
+        root.path(".headwater/probe.yml"),
+        format!("{oracles}{tiers}"),
+    )
+    .expect("the declaration writes");
+    let printed = root.run(&["probe", "plan", "--oracles"]);
+    assert_eq!(printed.code, Some(0), "{}{}", printed.out, printed.err);
+    assert_eq!(
+        printed.out,
+        "unit-tests\tparser\tcargo-test\n\
+         unit-tests\tcommand\tcargo test --test hidden -- --nocapture\n\
+         unit-tests\tpath\tsrc/**\n\
+         unit-tests\tpath\ttests/*.rs\n\
+         unit-tests\thold\ttests/hidden.rs\n\
+         site\tparser\texit\n\
+         site\tcommand\tsh tools/site/refresh.sh --check\n\
+         site\tpath\tsite/**\n",
+        "{}",
+        printed.err
+    );
+
+    std::fs::write(root.path(".headwater/probe.yml"), tiers).expect("the declaration writes");
+    let none = root.run(&["probe", "plan", "--oracles"]);
+    assert_eq!(none.code, Some(0), "{}", none.err);
+    assert_eq!(none.out, "");
+
+    std::fs::write(
+        root.path(".headwater/probe.yml"),
+        format!("{}{tiers}", oracles.replace("[site/**]", "[../site]")),
+    )
+    .expect("the declaration writes");
+    let unsafe_path = root.run(&["probe", "plan", "--oracles"]);
+    assert_eq!(unsafe_path.code, Some(1), "{}", unsafe_path.err);
+    assert_eq!(unsafe_path.out, "");
+    assert!(unsafe_path.err.contains("../site"), "{}", unsafe_path.err);
+
+    for other in ["--folds", "--instrument"] {
+        let both = root.run(&["probe", "plan", "--oracles", other]);
+        assert_ne!(both.code, Some(0), "{other}: {}{}", both.out, both.err);
+        assert_eq!(both.out, "", "{other}");
+    }
+}

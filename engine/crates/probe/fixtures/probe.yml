@@ -12,6 +12,20 @@
 # The regression tier declares a turn cap and the other two do not, so the
 # recorded regression plan holds the line that prints it (#1384).
 
+# One command oracle of each parser (#1834). A `patched` probe may grade
+# against `test:fixture-tests` or `command:fixture-command` and against no
+# other `test:` or `command:` name.
+oracles:
+  fixture-tests:
+    paths: [src/**]
+    command: cargo test --test hidden
+    parser: cargo-test
+    holds: [tests/hidden.rs]
+  fixture-command:
+    paths: [site/**, tools/site/*.sh]
+    command: sh tools/site/refresh.sh --check
+    parser: exit
+
 tiers:
   regression:
     budget_cents: 2000
@@ -33,17 +47,3 @@ tiers:
     repetitions: 58
     arms: [present, absent]
     ablation: [CLAUDE.md, .claude, .githooks, .headwater, corpus/probes]
-
-# One command oracle of each parser (#1834). A `patched` probe may grade
-# against `test:fixture-tests` or `command:fixture-command` and against no
-# other `test:` or `command:` name.
-oracles:
-  fixture-tests:
-    paths: [src/**]
-    command: cargo test --test hidden
-    parser: cargo-test
-    holds: [tests/hidden.rs]
-  fixture-command:
-    paths: [site/**, tools/site/*.sh]
-    command: sh tools/site/refresh.sh --check
-    parser: exit
