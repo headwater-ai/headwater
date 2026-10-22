@@ -669,6 +669,21 @@ sets:
 # documents layer was open for try 1, which scored 32 of 72 sessions and was
 # not kept (#1777). The ruling of 2026-10-22 withdrew that try with the
 # layer, and no other layer's plan is accepted, so `open` is `none`.
+#
+# The tuning round runs in rounds (#1838), as the owner ruled on 2026-10-22
+# (#1777): a round screens `variants` changes of the open layer at `screen`
+# sessions each, ranks them on the use of the layer and then on the pass
+# rate, and confirms the top one at `confirm` sessions against the best so
+# far measured at the same count. The keep rule reads the confirmation
+# alone. A layer takes at most `tries` rounds, and it stops after
+# `stop_after_empty` rounds in a row with nothing kept. The layers run in
+# `order`, and a round of a later layer waits while an earlier one is open.
+# The screen is 24 sessions and the confirmation 144, as ruled, and
+# `tools/probe/declared.py <declaration> tuning` rounds each up to a whole
+# number of repetitions over the probes of the set: 25 and 145 over five.
+# `ceiling_cents` is the most every try may spend, $1,290.00 inside the
+# $1,512.00 approval, and `tools/probe/try.sh plan` refuses a launch whose
+# round is priced above what is left of it.
 rounds:
   screening:
     set: tuning
@@ -678,8 +693,14 @@ rounds:
   tuning:
     set: tuning
     rates: [0.625, 0.375]
-    tries: 3
+    tries: 4
     approved_cents: 151200
+    screen: 24
+    confirm: 144
+    variants: 4
+    stop_after_empty: 2
+    order: [skills, hook, mcp]
+    ceiling_cents: 129000
     open: none
   final:
     set: held-out

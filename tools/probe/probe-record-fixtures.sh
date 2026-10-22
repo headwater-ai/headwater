@@ -5307,9 +5307,16 @@ if [ -x "$engine" ]; then
         --spec "$additive_spec" > "$scratch/add.out" 2> "$scratch/add.err"
     same "the dry run of the additive campaign exits 0" "0" "$?"
     present "it prints the screening round's sum" "round screening: 980 sessions, \$490.00" "$scratch/add.out"
-    present "it prints the tuning round's sum at its most tries" "round tuning: 2940 sessions, \$1470.00 (3 tries at most)" "$scratch/add.out"
+    # The tuning round runs in rounds (#1838): each tuning line is priced as
+    # one round of 4 variants at 25 sessions, a confirmation at 145 and the
+    # best so far at 145, 390 sessions over five probes, at most 4 rounds.
+    present "it prints the tuning round's sum at its most rounds" "round tuning: 21840 sessions, \$10920.00 (4 rounds at most)" "$scratch/add.out"
+    present "it prints the two counts the owner ruled, each rounded up over the five probes" \
+        "the owner ruled 24 sessions for a screened variant and 144 for a confirmation, so ceil(24 / 5) = 5 and ceil(144 / 5) = 29 repetitions" "$scratch/add.out"
+    present "and prices a whole round on a tuning line" \
+        "line 16  additive scenario-0 tuning: a round of 4 variants x 5 probes x 5 repetitions (ceil(24 / 5)) = 100 sessions, a confirmation of 5 probes x 29 repetitions (round tuning, ceil(144 / 5)) = 145 sessions, and the best so far at 145 sessions where no measurement at that count exists: 390 sessions, \$195.00 a round" "$scratch/add.out"
     present "it prints the final round's sum" "round final: 3080 sessions, \$1540.00" "$scratch/add.out"
-    present "and one total" "total: 7000 sessions, \$3500.00" "$scratch/add.out"
+    present "and one total" "total: 25900 sessions, \$12950.00" "$scratch/add.out"
     present "each round's count is computed from its rates" "so ceil(219 / 4) = 55 repetitions of each probe" "$scratch/add.out"
     # The owner approved the screening round at $700 (#1775). The
     # ceiling admits each plan, and the approval of each round says which
@@ -5449,11 +5456,53 @@ if [ -x "$engine" ]; then
         --spec "$scratch/add-short.spec" > "$scratch/add-short.out" 2> /dev/null
     same "a set the plan counts otherwise than the declaration read is refused with 5" "5" "$?"
     present "and the refusal names both counts" "the plan selects 5 probes, and the set tuning less the probes the line leaves out holds 4" "$scratch/add-short.out"
+    # A tuning line runs one stage of a round (#1838), and the batch reads
+    # the stage from HEADWATER_TUNING_STAGE, which tools/probe/try.sh sets.
+    # With none, the priced counts exit 2, so no batch runs a tuning line at
+    # a count nobody chose. No count of 25 or 145 is typed anywhere: each is
+    # ceil(24 / 5) or ceil(144 / 5) over the five probes of the set.
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" \
         > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
-    same "--priced reads each additive line" "0 46" "$? $(wc -l < "$scratch/add-priced.out" | tr -d ' ')"
-    same "and gives each its round's count" "14 14 55" \
+    same "--priced of a tuning line with no stage exits 2" "2" "$?"
+    present "and names the stage it lacks" "HEADWATER_TUNING_STAGE names none" "$scratch/add-priced.err"
+    HEADWATER_TUNING_STAGE=screen PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" \
+        > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
+    same "--priced of the screen reads each additive line" "0 46" "$? $(wc -l < "$scratch/add-priced.out" | tr -d ' ')"
+    same "and gives each its round's count, 5 repetitions on a screened tuning line" "14 5 55" \
         "$(awk '$1 == 1 || $1 == 16 || $1 == 31 { print $3 }' "$scratch/add-priced.out" | tr '\n' ' ' | sed 's/ $//')"
+    HEADWATER_TUNING_STAGE=confirm PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" \
+        > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
+    same "--priced of the confirmation gives a tuning line 29 repetitions" "0 29" \
+        "$? $(awk '$1 == 16 { print $3 }' "$scratch/add-priced.out")"
+    HEADWATER_TUNING_STAGE=final PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" \
+        > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
+    same "--priced of a stage that is neither screen nor confirm exits 2" "2" "$?"
+    sed 's/^    screen: 24$/    screen: 30/; s/^    confirm: 144$/    confirm: 150/' "$root/.headwater/probe.yml" > "$scratch/add-counts.yml"
+    HW_PROBE_YML="$scratch/add-counts.yml" HEADWATER_TUNING_STAGE=confirm PATH="$scratch/dry-bin:$PATH" \
+        sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
+    same "a confirmation declared at 150 is priced at ceil(150 / 5) = 30 repetitions, read and not typed" "0 30" \
+        "$? $(awk '$1 == 16 { print $3 }' "$scratch/add-priced.out")"
+    HW_PROBE_YML="$scratch/add-counts.yml" HEADWATER_TUNING_STAGE=screen PATH="$scratch/dry-bin:$PATH" \
+        sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
+    same "and a screen declared at 30 at ceil(30 / 5) = 6" "0 6" \
+        "$? $(awk '$1 == 16 { print $3 }' "$scratch/add-priced.out")"
+    # The six fields of the tuning round's rounds are declared together, and
+    # each is read with PyYAML and refused when it does not hold.
+    for bad in 'screen: 0|`screen` of the `tuning` round' 'confirm: "144"|`confirm` of the `tuning` round' \
+        'variants: -1|`variants` of the `tuning` round' 'stop_after_empty: 0|`stop_after_empty` of the `tuning` round' \
+        'order: [skills, nope]|names the layer nope' 'order: [skills, skills]|names a layer twice' \
+        'ceiling_cents: 151201|above the round'"'"'s `approved_cents` of 151200'; do
+        bad_field=${bad%%:*}
+        bad_line=${bad%%|*}
+        sed "s/^    $bad_field: .*/    $bad_line/" "$root/.headwater/probe.yml" > "$scratch/stage-bad.yml"
+        python3 "$root/tools/probe/declared.py" "$scratch/stage-bad.yml" tuning > /dev/null 2> "$scratch/stage-bad.err"
+        same "declared.py tuning refuses $bad_line with 2" "2" "$?"
+        present "and says why" "${bad#*|}" "$scratch/stage-bad.err"
+    done
+    grep -v '^    variants: 4$' "$root/.headwater/probe.yml" > "$scratch/stage-bad.yml"
+    python3 "$root/tools/probe/declared.py" "$scratch/stage-bad.yml" tuning > /dev/null 2> "$scratch/stage-bad.err"
+    same "declared.py tuning refuses five of the six fields with 2" "2" "$?"
+    present "and names the one missing" "and not \`variants\`" "$scratch/stage-bad.err"
 
     # The batch runs the same check before each invocation (clause 5: "the
     # check runs again before each round"). A stub `cargo` stands in for the
@@ -5657,8 +5706,8 @@ for open_case in \
     "a layer that layers: does not declare|s/^      layer: docs$/      layer: nope/|\`layers:\` declares no layer nope" \
     "a cap above the round's approval|s/^      cap_cents: 6000$/      cap_cents: 151201/|above the tuning round's \`approved_cents\` of 151200" \
     "a cap of zero|s/^      cap_cents: 6000$/      cap_cents: 0/|must be a whole number of cents above zero" \
-    "a try past the round's tries|s/^      try: 1$/      try: 4/|must be a whole number from 1 to the round's \`tries\`, 3" \
-    "a try of zero|s/^      try: 1$/      try: 0/|must be a whole number from 1 to the round's \`tries\`, 3" \
+    "a try past the round's tries|s/^      try: 1$/      try: 5/|must be a whole number from 1 to the round's \`tries\`, 4" \
+    "a try of zero|s/^      try: 1$/      try: 0/|must be a whole number from 1 to the round's \`tries\`, 4" \
     "a seventh field|s/^      change: none$/      change: none\n      note: x/|declares \`note\`" \
     "a missing field|/^      change: none$/d|does not declare \`change\`" \
     "a plan that is not a URL|s/^      plan: .*$/      plan: accepted/|\`plan\` of \`rounds.tuning.open\`" \
@@ -5752,7 +5801,7 @@ same "with docs open on scenario 1, a tuning line of scenario 10 is refused with
     "$(open_batch "$scratch/open-docs1.yml" "$scratch/open-s10.spec" "$scratch/open-s10.err")"
 present "and names scenario 10" "and the spec holds a tuning line of scenario-10." "$scratch/open-s10.err"
 # A declaration the reader refuses stops the batch with the reader's own 2.
-sed 's/^      try: 1$/      try: 4/' "$scratch/open-docs1.yml" > "$scratch/open-try4.yml"
+sed 's/^      try: 1$/      try: 5/' "$scratch/open-docs1.yml" > "$scratch/open-try4.yml"
 same "a malformed open stops the batch with the reader's 2" "2" \
     "$(open_batch "$scratch/open-try4.yml" "$scratch/open-s1.spec" "$scratch/open-try4.err")"
 

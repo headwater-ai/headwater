@@ -10,6 +10,7 @@
 #     python3 tools/probe/declared.py <declaration> approved
 #     python3 tools/probe/declared.py <declaration> open
 #     python3 tools/probe/declared.py <declaration> base_invalidators
+#     python3 tools/probe/declared.py <declaration> tuning
 #
 # `power` prints `present <rate>`, `absent <rate>`, `alpha <level>`,
 # `power <power>` and `pooled <category>...`, one per line. Each of the four
@@ -51,6 +52,29 @@
 # commit nor `none`, and an `open` that is neither `none` nor a mapping of
 # exactly those six fields. `tools/probe/campaign.sh` refuses a tuning line
 # when no layer is open, and a tuning line of any scenario but the open one.
+#
+# The tuning round, and no other round, may also declare the six fields of
+# its rounds (#1838), all six or none: `screen` and `confirm`, the sessions
+# the owner ruled for one screened variant and for one confirmation, each a
+# whole number above zero; `variants`, the most variants one round screens,
+# a whole number above zero; `stop_after_empty`, the rounds in a row with
+# nothing kept after which a layer stops, a whole number above zero;
+# `order`, the layers in the order they are tuned, each one that `layers:`
+# declares and none twice; and `ceiling_cents`, the most every try of the
+# round may spend, a whole number of cents at or above zero and at most the
+# round's `approved_cents`. On the tuning round `tries` is then the most
+# rounds of one layer. `tuning` prints nothing when the tuning round declares
+# none of the six, and otherwise one line for each figure the tools read:
+# `screen <target> <repetitions> <sessions>` and `confirm <target>
+# <repetitions> <sessions>`, where the repetitions are ceil(target / k) over
+# the k probes of the round's set and the sessions are k times that,
+# `variants <n>`, `rounds <n>` (the round's `tries`), `stop_after_empty <n>`,
+# `order <layer>...`, `ceiling_cents <n>`, `approved_cents <n>` and `rate
+# <cents>`, the `session_cost_cents` of the `additive` tier under `tiers:`,
+# which it refuses when that tier declares none. This is the one place the
+# count of a screen and of a confirmation is computed: the dry run and
+# `tools/probe/try.sh` both read it here, and `try.sh plan` refuses an open
+# layer that `order` does not name.
 #
 # `base_invalidators` prints each path pattern of the top-level list of that
 # name, one per line: the paths whose change can make a measured base stale,
@@ -108,11 +132,14 @@ def rounds(declared, approvals=False, quiet=False):
         name = str(name)
         if not isinstance(fields, dict):
             refuse(f"the `{name}` round in .headwater/probe.yml is not a mapping of `set`, `rates` and `tries`")
-        unknown = sorted(str(key) for key in fields if key not in ("set", "rates", "tries", "approved_cents", "open"))
+        unknown = sorted(str(key) for key in fields if key not in ("set", "rates", "tries", "approved_cents", "open") + STAGE_FIELDS)
         if unknown:
-            refuse(f"the `{name}` round in .headwater/probe.yml declares `{unknown[0]}`. A round declares `set`, `rates`, `tries`, `approved_cents` and, on the tuning round, `open`, and nothing else")
+            refuse(f"the `{name}` round in .headwater/probe.yml declares `{unknown[0]}`. A round declares `set`, `rates`, `tries`, `approved_cents` and, on the tuning round, `open`, {', '.join(f'`{field}`' for field in STAGE_FIELDS)}, and nothing else")
         if "open" in fields and name != "tuning":
             refuse(f"the `{name}` round in .headwater/probe.yml declares `open`, and only the tuning round declares `open`: the one layer whose plan the owner accepted")
+        staged = [field for field in STAGE_FIELDS if field in fields]
+        if staged and name != "tuning":
+            refuse(f"the `{name}` round in .headwater/probe.yml declares `{staged[0]}`, and only the tuning round declares the fields of its rounds")
         approved = fields.get("approved_cents", 0)
         if isinstance(approved, bool) or not isinstance(approved, int) or approved < 0:
             refuse(f"`approved_cents` of the `{name}` round in .headwater/probe.yml is {approved!r}, and it must be a whole number of cents at or above zero")
@@ -129,6 +156,8 @@ def rounds(declared, approvals=False, quiet=False):
         tries = fields.get("tries")
         if isinstance(tries, bool) or not isinstance(tries, int) or tries < 1:
             refuse(f"`tries` of the `{name}` round in .headwater/probe.yml is {tries!r}, and it must be a whole number above zero")
+        if staged:
+            stages(declared, name, fields, approved)
         if quiet:
             continue
         if approvals:
@@ -139,10 +168,62 @@ def rounds(declared, approvals=False, quiet=False):
 
 
 OPEN_FIELDS = ("layer", "scenario", "try", "cap_cents", "plan", "change")
+STAGE_FIELDS = ("screen", "confirm", "variants", "stop_after_empty", "order", "ceiling_cents")
 
 
 def whole(value):
     return isinstance(value, int) and not isinstance(value, bool)
+
+
+def stages(declared, name, fields, approved):
+    """Check the six fields of the tuning round's rounds (#1838)."""
+    where = f"the `{name}` round in .headwater/probe.yml"
+    missing = [field for field in STAGE_FIELDS if field not in fields]
+    if missing:
+        refuse(f"{where} declares {', '.join(f'`{field}`' for field in STAGE_FIELDS if field in fields)} and not `{missing[0]}`. It declares all six of {', '.join(STAGE_FIELDS)}, or none")
+    for field in ("screen", "confirm", "variants", "stop_after_empty"):
+        if not whole(fields[field]) or fields[field] < 1:
+            refuse(f"`{field}` of {where} is {fields[field]!r}, and it must be a whole number above zero")
+    ceiling = fields["ceiling_cents"]
+    if not whole(ceiling) or ceiling < 0:
+        refuse(f"`ceiling_cents` of {where} is {ceiling!r}, and it must be a whole number of cents at or above zero")
+    if ceiling > approved:
+        refuse(f"`ceiling_cents` of {where} is {ceiling}, above the round's `approved_cents` of {approved}")
+    order = fields["order"]
+    layers = declared.get("layers") or {}
+    if not isinstance(order, list) or not order or not all(isinstance(entry, str) for entry in order):
+        refuse(f"`order` of {where} is {order!r}, and it must be a sequence of layer names")
+    for entry in order:
+        if not isinstance(layers, dict) or entry not in layers:
+            refuse(f"`order` of {where} names the layer {entry}, and `layers:` declares no such layer")
+    if len(set(order)) != len(order):
+        refuse(f"`order` of {where} names a layer twice: {order}")
+
+
+def tuning_rounds(declared):
+    rounds(declared, quiet=True)
+    tuning = (declared.get("rounds") or {}).get("tuning")
+    if not isinstance(tuning, dict) or not any(field in tuning for field in STAGE_FIELDS):
+        return 0
+    members = (declared.get("sets") or {}).get(tuning["set"])
+    k = len(members)
+    tiers = declared.get("tiers") or {}
+    tier = tiers.get("additive") if isinstance(tiers, dict) else None
+    rate = tier.get("session_cost_cents") if isinstance(tier, dict) else None
+    if not whole(rate) or rate < 1:
+        refuse(f"`session_cost_cents` of the `additive` tier under `tiers:` in .headwater/probe.yml is {rate!r}, and the tuning round prices its rounds at it, so it must be a whole number of cents above zero")
+    for stage in ("screen", "confirm"):
+        target = tuning[stage]
+        repetitions = -(-target // k)
+        print(f"{stage} {target} {repetitions} {repetitions * k}")
+    print(f"variants {tuning['variants']}")
+    print(f"rounds {tuning['tries']}")
+    print(f"stop_after_empty {tuning['stop_after_empty']}")
+    print(" ".join(["order"] + tuning["order"]))
+    print(f"ceiling_cents {tuning['ceiling_cents']}")
+    print(f"approved_cents {tuning.get('approved_cents', 0)}")
+    print(f"rate {rate}")
+    return 0
 
 
 def open_layer(declared):
@@ -210,7 +291,7 @@ def base_invalidators(declared):
 
 
 def main(argv):
-    modes = ("power", "leaks_kept", "rounds", "scenarios", "approved", "open", "base_invalidators")
+    modes = ("power", "leaks_kept", "rounds", "scenarios", "approved", "open", "base_invalidators", "tuning")
     if len(argv) != 2 or argv[1] not in modes:
         refuse(f"usage: python3 tools/probe/declared.py <declaration> {'|'.join(modes)}")
     path, key = argv
@@ -241,6 +322,9 @@ def main(argv):
 
     if key == "base_invalidators":
         return base_invalidators(declared)
+
+    if key == "tuning":
+        return tuning_rounds(declared)
 
     if key == "scenarios":
         block = declared.get("scenarios") or {}
