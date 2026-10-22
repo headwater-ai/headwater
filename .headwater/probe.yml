@@ -135,7 +135,10 @@ answer_keys:
 # so it fails here by design, and it passes only over a tree a session
 # changed. `-- --ignored` runs it, and its `test result: ok. 1 passed` line
 # is what the parser counts. `refresh-figures` runs the figures check, which
-# needs a built engine in the grading copy, as every oracle does.
+# needs a built engine in the grading copy, and then requires a figure key on
+# the proof page that the pin's page does not carry, because a number typed
+# as plain text leaves the figures check clean. A hidden script does both,
+# and it names its probe for the same reason the hidden test does.
 oracles:
   future-date:
     paths: [engine/crates/check/*]
@@ -144,8 +147,9 @@ oracles:
     holds: [engine/crates/check/tests/probe_oracle_future_date.rs]
   refresh-figures:
     paths: [site/*, tools/site/*]
-    command: sh tools/site/refresh-figures.sh --check
+    command: sh tools/probe/oracle-figure-added.sh
     parser: exit
+    holds: [tools/probe/oracle-figure-added.sh]
 
 # Leak strings (#1472): for each probe, the strings whose presence in text the harness
 # loads into every session gives the probe's answer away. The seal finds an

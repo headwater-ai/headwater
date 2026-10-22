@@ -131,7 +131,7 @@ Each probe of the tuning set and the held-out set asks a question about the corp
 | a-session-says-what-a-refusal-writes-on-standard-output-under-json | answered | none | code |
 | a-session-says-what-a-verb-that-mints-an-identifier-writes-beside-the-document | answered | none | code |
 
-The two `patched` probes grade against a command oracle (#1834). `.headwater/probe.yml` declares each one under `oracles:`. `future-date` runs a hidden test of the check crate in the grading copy, and the seal removes that test from every workspace. `refresh-figures` runs the figures check of the hand-built pages. The three `answered` probes need no oracle.
+The two `patched` probes grade against a command oracle (#1834). `.headwater/probe.yml` declares each one under `oracles:`. `future-date` runs a hidden test of the check crate in the grading copy, and the seal removes that test from every workspace. `refresh-figures` runs a hidden script, which the seal also removes. The script runs the figures check of the hand-built pages, and it requires a figure key that the page at the pin does not carry. The three `answered` probes need no oracle.
 
 The set registers one comparison: scenario 1 against scenario 0. The verdict rule is the rule of every other comparison, which the section *Two tables, one verdict* states. The code set runs in scenarios 0 and 1 alone, and in no tuning try.
 

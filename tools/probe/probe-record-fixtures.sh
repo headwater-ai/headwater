@@ -701,7 +701,12 @@ if [ -x "$engine" ]; then
     rm -rf "$cot" "$scratch/cmd-ws" "$scratch/cmd-ran"
     mkdir -p "$cot/src" "$cot/site"
     cp -a "$root/.headwater" "$root/CLAUDE.md" "$cot/"
-    awk '/^oracles: \{\}$/ {
+    # The fixture's two oracles stand in for the block the declaration
+    # carries, whatever that block holds (#1835 declared the first ones).
+    awk 'skip && /^[^ ]/ { skip = 0 }
+    skip { next }
+    /^oracles:/ {
+        skip = 1
         print "oracles:"
         print "  fixture-oracle:"
         print "    paths: [src/**]"
@@ -1284,7 +1289,10 @@ if [ -x "$engine" ]; then
     cp "$root/docs/probes/$tombstone.md" "$scratch/held/docs/probes/"
     printf '// The hidden test of HW-PROBE-%s.\n#[test]\nfn hidden() {}\n' "$tombstone" \
         > "$scratch/held/$hidden"
-    awk -v h="$hidden" '/^oracles: \{\}$/ {
+    awk -v h="$hidden" 'skip && /^[^ ]/ { skip = 0 }
+    skip { next }
+    /^oracles:/ {
+        skip = 1
         print "oracles:"
         print "  hidden-oracle:"
         print "    paths: [engine/**]"
@@ -5425,7 +5433,27 @@ if [ -x "$engine" ]; then
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$scratch/add-round.spec" > "$scratch/add-round.out" 2> /dev/null
     same "a line of a round that rounds: does not declare is refused with 5" "5" "$?"
-    present "and the refusal names the rounds declared" "declares no round \`pilot\`. It declares screening tuning final" "$scratch/add-round.out"
+    present "and the refusal names the rounds declared" "declares no round \`pilot\`. It declares screening tuning final code code-pilot" "$scratch/add-round.out"
+    # The code round and its pilot (#1835), each in its own spec. The code
+    # round's count is computed from its rates over the five probes of the
+    # code set, and the pilot's is the count it declares. The leak check runs
+    # over scenarios 0 and 1 for the five probes and finds nothing.
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$root/tools/probe/code-campaign.spec" > "$scratch/add-code.out" 2> "$scratch/add-code.err"
+    same "the dry run of the code round exits 0, its leak check clean" "0" "$?"
+    present "it computes 44 repetitions of each code probe" "so ceil(219 / 5) = 44 repetitions of each probe" "$scratch/add-code.out"
+    present "and prices the round at 440 sessions" "round code: 440 sessions, \$220.00" "$scratch/add-code.out"
+    present "and prints it as not approved" "round code: not approved, so the batch refuses its lines with 5" "$scratch/add-code.out"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$root/tools/probe/code-pilot.spec" > "$scratch/add-pilot.out" 2> "$scratch/add-pilot.err"
+    same "the dry run of the pilot exits 0, its leak check clean" "0" "$?"
+    present "it plans the count the pilot declares" "5 probes x 18 repetitions (round code-pilot, declared) = 90 sessions" "$scratch/add-pilot.out"
+    present "and prices the pilot at 180 sessions" "round code-pilot: 180 sessions, \$90.00" "$scratch/add-pilot.out"
+    present "and prints it as approved to the owner's \$130" "round code-pilot: approved to \$130.00 over every attempt, so the batch runs its lines" "$scratch/add-pilot.out"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign-dry-run.sh" --priced "$root/tools/probe/code-pilot.spec" \
+        > "$scratch/add-pilot-priced.out" 2> /dev/null
+    same "--priced gives each pilot line the declared count" "18 18" \
+        "$(awk '{ print $3 }' "$scratch/add-pilot-priced.out" | tr '\n' ' ' | sed 's/ $//')"
     printf 'additive scenario-3 screening %s\n' "$pointer_probe" > "$scratch/add-outside.spec"
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$scratch/add-outside.spec" > "$scratch/add-outside.out" 2> /dev/null
@@ -5682,6 +5710,30 @@ python3 "$declared_py" "$scratch/open-docs1.yml" rounds > /dev/null 2> /dev/null
 rounds_status=$?
 python3 "$declared_py" "$scratch/open-docs1.yml" approved > /dev/null 2> /dev/null
 same "declared.py rounds and approved still read a declaration with an open layer" "0 0" "$rounds_status $?"
+# A round may declare its own count in place of its rates (#1835): the pilot
+# of the code set measures each probe's rate and no difference. Its line
+# carries `repetitions <n>` where the rates stand, so the probes stay in the
+# same fields, and a round that declares both or neither is refused.
+python3 "$declared_py" "$root/.headwater/probe.yml" rounds > "$scratch/reps-rounds.out" 2> /dev/null
+same "declared.py rounds prints the pilot's declared count in place of its rates" "0 code-pilot code repetitions 18 1 5" \
+    "$? $(awk '$1 == "code-pilot" { print $1, $2, $3, $4, $5, NF - 5 }' "$scratch/reps-rounds.out")"
+same "and the code round's rates, as the final round's" "code code 0.9 0.8 1 5" \
+    "$(awk '$1 == "code" { print $1, $2, $3, $4, $5, NF - 5 }' "$scratch/reps-rounds.out")"
+# Each refusal exits 2 and states its own reason. `name|sed|needle`.
+for reps_case in \
+    "a round with both rates and repetitions|s/^    repetitions: 18$/    repetitions: 18\n    rates: [0.90, 0.80]/|declares both \`rates\` and \`repetitions\`" \
+    "a round with neither rates nor repetitions|/^    repetitions: 18$/d|declares neither \`rates\` nor \`repetitions\`" \
+    "a count of zero|s/^    repetitions: 18$/    repetitions: 0/|must be a whole number above zero" \
+    "a count that is a word|s/^    repetitions: 18$/    repetitions: many/|must be a whole number above zero" \
+    "a count that is a quoted number|s/^    repetitions: 18$/    repetitions: \"18\"/|must be a whole number above zero"
+do
+    reps_name=${reps_case%%|*}; reps_rest=${reps_case#*|}
+    reps_sed=${reps_rest%%|*}; reps_needle=${reps_rest#*|}
+    sed "$reps_sed" "$root/.headwater/probe.yml" > "$scratch/reps-bad.yml"
+    python3 "$declared_py" "$scratch/reps-bad.yml" rounds > "$scratch/reps-bad.out" 2> "$scratch/reps-bad.err"
+    same "declared.py rounds refuses $reps_name, with 2 and its reason" "2 1 0" \
+        "$? $(grep -cF -- "$reps_needle" "$scratch/reps-bad.err") $(wc -c < "$scratch/reps-bad.out" | tr -d ' ')"
+done
 awk '$0 == "    approved_cents: 70000" { print; print "    open: none"; next } { print }' "$root/.headwater/probe.yml" > "$scratch/open-screening.yml"
 python3 "$declared_py" "$scratch/open-screening.yml" approved > /dev/null 2> "$scratch/open-screening.err"
 same "and refuse open on any round but tuning, with 2" "2 1" \
