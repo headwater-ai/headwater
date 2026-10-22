@@ -1355,6 +1355,13 @@ const AWAITING_SPEND: &[&str] = &[
     "HW-PROBE-a-session-that-changes-the-recorder-reaches-the-recorder-contract",
     "HW-PROBE-a-session-that-moves-a-shelf-reaches-the-relocation-guide",
     "HW-PROBE-a-session-that-changes-a-verb-s-default-reaches-the-verb-s-interface-contract",
+    // The five probes of the code set (#1835), which run in the additive
+    // campaign's code round and in no round of this campaign.
+    "HW-PROBE-a-rule-that-reads-the-date-takes-it-from-the-run-and-ships-with-the-fixture-that-fails-it",
+    "HW-PROBE-a-figure-a-session-adds-to-a-hand-built-page-is-measured-and-never-typed",
+    "HW-PROBE-a-session-says-where-a-check-gets-the-version-that-stood-before-a-change",
+    "HW-PROBE-a-session-says-what-a-refusal-writes-on-standard-output-under-json",
+    "HW-PROBE-a-session-says-what-a-verb-that-mints-an-identifier-writes-beside-the-document",
 ];
 
 /// The campaign spec plans no probe that awaits the owner's approval of spend.
@@ -1675,6 +1682,143 @@ fn the_tuning_set_is_the_five_probes_the_owner_ruled_on_2026_10_22() {
             "{id}: oracle"
         );
     }
+}
+
+/// The lead-in of the paragraph under `## Key` that names where plain code
+/// carries what a code probe needs (#1835).
+const PLAIN_CODE: &str = "**Where plain code carries it.**";
+
+/// The path a code span names, less a `:<lines>` suffix.
+fn path_of(span: &str) -> &str {
+    span.split_once(':').map_or(span, |(path, _)| path)
+}
+
+/// Whether a path of the repository is in plain code: outside `docs/` and
+/// outside every path of every layer under `layers:`, so scenario 0 holds it.
+fn in_plain_code(budgets: &headwater_probe::Budgets, path: &str) -> bool {
+    let under = |prefix: &str| path == prefix || path.starts_with(&format!("{prefix}/"));
+    !under("docs")
+        && !budgets
+            .layers
+            .iter()
+            .flat_map(|layer| layer.paths.iter().chain(layer.arms.iter()))
+            .any(|held| under(held.trim_end_matches('/')))
+}
+
+/// The code set is five probes whose answer plain code carries (#1835).
+///
+/// A code probe compares scenario 1 with scenario 0, so a probe that cannot
+/// pass in scenario 0 by construction has its gain built in, and a `patched`
+/// probe that any write satisfies measures nothing. So, for each member of
+/// `sets.code`:
+///
+/// - it is in neither fixed set, which HW-DR-0111 keeps as #1833 left them;
+/// - a `patched` member grades against an oracle `.headwater/probe.yml`
+///   declares under `oracles:`, and each file that oracle `holds` exists and
+///   names the probe in its first lines, so the seal removes it from every
+///   workspace and no session reads the oracle;
+/// - its `## Key` has a paragraph that opens with the lead-in above and names
+///   at least one existing file outside `docs/` and outside every layer, so
+///   scenario 0 holds what the probe needs;
+/// - an `answered` member expects a proper part of its closed set.
+///
+/// No expected answer is written here, because the seal removes from a
+/// probe's arm tree every file that names it, and this file names none of
+/// the code probes.
+#[test]
+fn the_code_set_is_five_probes_whose_answer_plain_code_carries() {
+    let root = repository_root();
+    let path = root.join(headwater_probe::budget::PATH);
+    let source =
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    let budgets = headwater_probe::Budgets::read(&source).unwrap_or_else(|e| panic!("{e}"));
+
+    let code = budgets
+        .set("code")
+        .expect("the code set is declared under `sets:` (#1835)")
+        .to_vec();
+    assert_eq!(code.len(), 5, "the code set holds five probes: {code:?}");
+
+    let shelf = probes();
+    let mut findings = Vec::new();
+    for id in &code {
+        for fixed in ["tuning", "held-out"] {
+            if budgets.set(fixed).unwrap_or_default().contains(id) {
+                findings.push(format!("{id} is also in the fixed set `{fixed}`"));
+            }
+        }
+        let Some(probe) = shelf.iter().find(|probe| probe.id.as_deref() == Some(id)) else {
+            findings.push(format!("{id} is not on {SHELF}"));
+            continue;
+        };
+        let (text, document) = front_matter(&root.join(&probe.path));
+        let slug = id.strip_prefix("HW-PROBE-").unwrap_or(id);
+
+        match probe.expectation.as_deref() {
+            Some("patched") => {
+                let oracle = scalar(&document, "oracle").unwrap_or_default();
+                match budgets.oracles.iter().find(|it| it.finding() == oracle) {
+                    None => findings.push(format!(
+                        "{id} grades against `{oracle}`, which no entry under `oracles:` is"
+                    )),
+                    Some(entry) => {
+                        if entry.holds.is_empty() && entry.parser.prefix() == "test" {
+                            findings.push(format!(
+                                "{id}: the oracle `{oracle}` runs a test and holds no file, so \
+                                 the session's tree holds the test it is graded by"
+                            ));
+                        }
+                        for held in &entry.holds {
+                            let head: String = std::fs::read_to_string(root.join(held))
+                                .unwrap_or_default()
+                                .lines()
+                                .take(10)
+                                .collect::<Vec<_>>()
+                                .join("\n");
+                            if !head.contains(slug) {
+                                findings.push(format!(
+                                    "{id}: {held}, which the oracle `{oracle}` holds, does not \
+                                     exist or does not name the probe in its first ten lines, \
+                                     so the seal leaves it in the session's tree"
+                                ));
+                            }
+                        }
+                    }
+                }
+            }
+            Some("answered") => {
+                if probe.expected.is_empty()
+                    || probe.expected.len() >= probe.answers.len()
+                    || probe.expected.iter().any(|it| !probe.answers.contains(it))
+                {
+                    findings.push(format!("{id} expects no proper part of its closed set"));
+                }
+            }
+            other => findings.push(format!(
+                "{id} declares the expectation {other:?}, and a code probe is `patched` or \
+                 `answered`"
+            )),
+        }
+
+        let paragraph = section_of(&text, "Key")
+            .lines()
+            .find(|line| line.trim_start().starts_with(PLAIN_CODE))
+            .unwrap_or_default();
+        let carried = code_spans_in(paragraph)
+            .iter()
+            .map(|span| path_of(span))
+            .filter(|path| is_path(path))
+            .filter(|path| in_plain_code(&budgets, path))
+            .any(|path| root.join(path).is_file());
+        if !carried {
+            findings.push(format!(
+                "{id}: `## Key` has no paragraph opening `{PLAIN_CODE}` that names an existing \
+                 path outside `docs/` and outside every layer, so nothing shows scenario 0 holds \
+                 what the probe needs"
+            ));
+        }
+    }
+    assert!(findings.is_empty(), "{}", findings.join("\n"));
 }
 
 /// Every file of this repository's harness belongs to a layer of the
@@ -2050,4 +2194,36 @@ fn identity_cost_reads_the_run_identity_block_and_no_other() {
     let source = "---\nid: x\n---\n\n## Events\n\n```yaml\ncost_cents: 1\n```\n\n## Run identity\n\n```yaml\nmodel: m\ncost_cents: 2452\n```\n";
     assert_eq!(identity_cost(source), Some(2452));
     assert_eq!(identity_cost("---\n---\n\n## Run identity\n\nTODO\n"), None);
+}
+
+/// No probe on the shelf quotes the text a figure marker opens with.
+///
+/// The site renders every probe as a page, and `tools/site/refresh-figures.sh`
+/// counts each `data-figure=` on an assembled page as a marker. A quotation in
+/// a code span renders escaped, so the pattern does not read it as an element,
+/// the count disagrees, and the CI step that fills the figures exits 1
+/// (#1835, verify round 1: the C2 probe quoted the marker twice). Only
+/// `docs/probe-runs/` is excused, because the filler skips it. A probe that
+/// must name the attribute names it without the `=`.
+#[test]
+fn no_probe_on_the_shelf_quotes_a_figure_marker() {
+    const MARKER: &str = "data-figure=";
+    let shelf = repository_root().join(SHELF);
+    let mut quoting: Vec<String> = std::fs::read_dir(&shelf)
+        .unwrap_or_else(|e| panic!("{}: {e}", shelf.display()))
+        .map(|entry| entry.expect("a shelf entry").path())
+        .filter(|path| path.extension().is_some_and(|it| it == "md"))
+        .filter(|path| {
+            std::fs::read_to_string(path)
+                .unwrap_or_else(|e| panic!("{}: {e}", path.display()))
+                .contains(MARKER)
+        })
+        .map(|path| path.display().to_string())
+        .collect();
+    quoting.sort();
+    assert!(
+        quoting.is_empty(),
+        "these probes carry the text `{MARKER}`, which the published page carries too and \
+         `tools/site/refresh-figures.sh --into` reads as a marker it cannot fill: {quoting:?}"
+    );
 }
