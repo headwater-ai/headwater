@@ -5446,11 +5446,11 @@ if [ -x "$engine" ]; then
     HW_PROBE_YML="$scratch/add-short.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$scratch/add-short.spec" > "$scratch/add-short.out" 2> /dev/null
     same "a set the plan counts otherwise than the declaration read is refused with 5" "5" "$?"
-    present "and the refusal names both counts" "the plan selects 4 probes, and the set tuning less the probes the line leaves out holds 3" "$scratch/add-short.out"
+    present "and the refusal names both counts" "the plan selects 5 probes, and the set tuning less the probes the line leaves out holds 4" "$scratch/add-short.out"
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" \
         > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
     same "--priced reads each additive line" "0 46" "$? $(wc -l < "$scratch/add-priced.out" | tr -d ' ')"
-    same "and gives each its round's count" "18 18 55" \
+    same "and gives each its round's count" "14 14 55" \
         "$(awk '$1 == 1 || $1 == 16 || $1 == 31 { print $3 }' "$scratch/add-priced.out" | tr '\n' ' ' | sed 's/ $//')"
 
     # The batch runs the same check before each invocation (clause 5: "the

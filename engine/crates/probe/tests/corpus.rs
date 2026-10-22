@@ -1628,12 +1628,36 @@ fn the_tuning_set_is_the_five_probes_the_owner_ruled_on_2026_10_22() {
         }
     }
 
-    for id in &TUNING_SET[2..] {
+    // Each new probe examines its target, and the target stands at `current`:
+    // the relocation guide was `draft` with an accepted warrant, and the
+    // owner ruled that it is promoted before any base is measured (clause 4).
+    let targets = [
+        ("HW-SPEC-the-recorder-contract", "docs/spec/15-the-recorder-contract.md"),
+        ("HW-HOW-relocate-a-shelf", "docs/how-to/relocate-a-shelf.md"),
+        ("HW-IFACE-headwater-route", "docs/interfaces/headwater-route.md"),
+    ];
+    for (id, (target, target_path)) in TUNING_SET[2..].iter().zip(targets) {
         let probe = shelf
             .iter()
             .find(|probe| probe.id.as_deref() == Some(*id))
             .unwrap_or_else(|| panic!("{id} is not on {SHELF}"));
         let (_, document) = front_matter(&root.join(&probe.path));
+        assert_eq!(
+            examines_of(&document),
+            vec![target.to_string()],
+            "{id}: examines"
+        );
+        let (_, examined) = front_matter(&root.join(target_path));
+        assert_eq!(
+            scalar(&examined, "id").as_deref(),
+            Some(target),
+            "{target_path}: id"
+        );
+        assert_eq!(
+            scalar(&examined, "status").as_deref(),
+            Some("current"),
+            "{target}, which {id} examines, stands at `current`"
+        );
         assert_eq!(
             scalar(&document, "expectation").as_deref(),
             Some("opened"),
