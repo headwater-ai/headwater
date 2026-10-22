@@ -1264,6 +1264,64 @@ same "and the driver passes both guards over the sealed tree" "3" "$?"
 sh "$root/tools/probe/seal.sh" "$root/docs" "HW-PROBE-$tombstone" >/dev/null 2>&1
 same "seal.sh refuses a path inside this checkout" "6" "$?"
 
+# A hidden test that names its probe is sealed out of every workspace and kept
+# in the grading tree (#1834). A `cargo-test` oracle can run a test the session
+# never sees. The seal removes the test, because its header names the probe,
+# and every arm tree is a copy of the sealed tree. The recorder grades in a
+# copy of the grading tree, which `tools/probe/grading-tree.sh` builds: the
+# sealed tree plus each file an oracle `holds`, and nothing else.
+if [ -x "$engine" ]; then
+    hidden=engine/tests/hidden-1834.rs
+    rm -rf "$scratch/held" "$scratch/held-src" "$scratch/held-arm" "$scratch/held-grading"
+    mkdir -p "$scratch/held/docs/probes" "$scratch/held/engine/tests" "$scratch/held/.headwater"
+    cp "$root/docs/probes/$tombstone.md" "$scratch/held/docs/probes/"
+    printf '// The hidden test of HW-PROBE-%s.\n#[test]\nfn hidden() {}\n' "$tombstone" \
+        > "$scratch/held/$hidden"
+    awk -v h="$hidden" '/^oracles: \{\}$/ {
+        print "oracles:"
+        print "  hidden-oracle:"
+        print "    paths: [engine/**]"
+        print "    command: cargo test --test hidden-1834"
+        print "    parser: cargo-test"
+        print "    holds: [" h "]"
+        next
+    } { print }' "$root/.headwater/probe.yml" > "$scratch/held/.headwater/probe.yml"
+    cp -a "$scratch/held" "$scratch/held-src"
+    sh "$root/tools/probe/seal.sh" "$scratch/held" "HW-PROBE-$tombstone" >/dev/null 2>"$scratch/held-seal.err"
+    same "seal.sh seals a tree whose oracle holds a hidden test" "0" "$?"
+    cp -a "$scratch/held" "$scratch/held-arm"
+    if [ -e "$scratch/held/$hidden" ] || [ -e "$scratch/held-arm/$hidden" ]; then
+        fail "and the hidden test is in neither the sealed tree nor an arm tree copied from it" \
+            "$(ls -R "$scratch/held/engine")"
+    else
+        pass "and the hidden test is in neither the sealed tree nor an arm tree copied from it"
+    fi
+    same "grading-tree.sh --holds prints the held path" "$hidden" \
+        "$(sh "$root/tools/probe/grading-tree.sh" --holds "$scratch/held" 2>/dev/null)"
+    sh "$root/tools/probe/grading-tree.sh" "$scratch/held" "$scratch/held-src" "$scratch/held-grading" \
+        >/dev/null 2>"$scratch/held-grading.err"
+    same "grading-tree.sh builds the grading tree" "0" "$?"
+    if cmp -s "$scratch/held-src/$hidden" "$scratch/held-grading/$hidden"; then
+        pass "and the grading tree holds the hidden test"
+    else
+        fail "and the grading tree holds the hidden test" "$(cat "$scratch/held-grading.err")"
+    fi
+    if [ -e "$scratch/held-grading/docs/probes" ]; then
+        fail "and it restores nothing else the seal removed" "docs/probes is back"
+    else
+        pass "and it restores nothing else the seal removed"
+    fi
+    rm "$scratch/held-src/$hidden"
+    sh "$root/tools/probe/grading-tree.sh" "$scratch/held" "$scratch/held-src" "$scratch/held-grading-2" \
+        >/dev/null 2>"$scratch/held-grading-2.err"
+    same "a held path the source does not hold refuses with 3" "3" "$?"
+    if [ -e "$scratch/held-grading-2" ] || [ -e "$scratch/held-grading-2.building" ]; then
+        fail "and it leaves no grading tree" "$(ls "$scratch")"
+    else
+        pass "and it leaves no grading tree"
+    fi
+fi
+
 # A named document is sealed the way an answer key is (#1293). The #980 batch
 # deleted HW-OBL-0013 because it names the tombstone probe, and left its claim
 # file, its register line and its shelf-index line, so 23 of 30 present-arm
