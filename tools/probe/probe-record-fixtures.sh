@@ -707,6 +707,7 @@ if [ -x "$engine" ]; then
         print "    paths: [src/**]"
         print "    command: sh oracle-stub.sh"
         print "    parser: cargo-test"
+        print "    holds: [tests/hidden.sh]"
         print "  fixture-exit:"
         print "    paths: [site/**]"
         print "    command: sh exit-stub.sh"
@@ -721,6 +722,7 @@ case \$(cat stub-mode) in
     pass) printf 'running 1 test\ntest a::b ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored\n'; exit 0 ;;
     failcase) printf 'running 2 tests\ntest a::b ... FAILED\ntest a::c ... ok\n\ntest result: FAILED. 1 passed; 1 failed; 0 ignored\n'; exit 101 ;;
     zero) printf 'running 0 tests\n\ntest result: ok. 0 passed; 0 failed; 0 ignored\n'; exit 0 ;;
+    held) sh tests/hidden.sh; exit \$? ;;
 esac
 exit 99
 STUB
@@ -728,6 +730,9 @@ STUB
     printf 'pub fn pinned() {}\n' > "$cot/src/lib.rs"
     printf '<p>pinned</p>\n' > "$cot/site/index.html"
     printf '0\n' > "$cot/exit-code"
+    mkdir -p "$cot/tests"
+    printf "printf 'test hidden::case ... FAILED\\\\ntest result: FAILED. 0 passed; 1 failed\\\\n'; exit 101\n" \
+        > "$cot/tests/hidden.sh"
     cp -a "$cot" "$scratch/cmd-ws"
     printf 'pub fn changed( {}\n' > "$scratch/cmd-ws/src/lib.rs"
     printf '# changed\n' > "$scratch/cmd-ws/README.md"
@@ -792,11 +797,11 @@ STUB
     fi
 
     printf '0\n' > "$cot/exit-code"
-    cmd_run exit0 pass site/index.html src/lib.rs
+    cmd_run exit0 pass site/index.html README.md
     same "an \`exit\` oracle that exits 0 gives no \`command:\` finding" "0" \
         "$(cmd_count command:fixture-exit exit0)"
     printf '3\n' > "$cot/exit-code"
-    cmd_run exit3 pass site/index.html src/lib.rs
+    cmd_run exit3 pass site/index.html README.md
     same "an \`exit\` oracle that exits 3 gives \`command:fixture-exit\` on both artifacts" "2" \
         "$(cmd_count command:fixture-exit exit3)"
     printf '0\n' > "$cot/exit-code"
@@ -811,6 +816,15 @@ STUB
     same "a session that rewrote the declaration still fails on the oracle tree's command" "3" \
         "$(cmd_count test:fixture-oracle swapped)"
     cp "$cot/.headwater/probe.yml" "$scratch/cmd-ws/.headwater/probe.yml"
+
+    # A held file is the oracle tree's. A session that writes its own hidden
+    # test, one that passes, still grades against the oracle tree's test.
+    printf "printf 'test result: ok. 1 passed; 0 failed\\\\n'\n" > "$scratch/cmd-ws/tests/hidden.sh"
+    cmd_run held held src/lib.rs tests/hidden.sh
+    same "a session that rewrote a held test records" "0" "$?"
+    same "and it fails on the oracle tree's test, not its own" "2" "$(cmd_count test:hidden::case held)"
+    same "and the whole oracle fails on both artifacts" "2" "$(cmd_count test:fixture-oracle held)"
+    cp "$cot/tests/hidden.sh" "$scratch/cmd-ws/tests/hidden.sh"
 
     # A command that cannot start found no failure, so nothing is written.
     cp "$cot/.headwater/probe.yml" "$scratch/cmd-probe.yml"
@@ -2848,6 +2862,7 @@ STUB
         rm -rf "$batch"
         mkdir -p "$batch/tasks" "$batch/sessions" "$batch/ws" "$batch/trees"
         cp -a "$scratch/bw-base" "$batch/trees/oracle"
+        cp -a "$scratch/bw-base" "$batch/trees/grading"
         cp -a "$scratch/bw-base" "$batch/trees/campaign-present"
         git -C "$root" rev-parse HEAD > "$batch/head"
         printf 'claude-haiku-4-5\n' > "$batch/model"
@@ -3101,6 +3116,7 @@ STUB
             rm -rf "$1"
             mkdir -p "$1/tasks" "$1/sessions" "$1/ws" "$1/trees"
             cp -a "$scratch/bw-base" "$1/trees/oracle"
+            cp -a "$scratch/bw-base" "$1/trees/grading"
             cp -a "$scratch/bw-base" "$1/trees/campaign-present"
             git -C "$root" rev-parse HEAD > "$1/head"
             cp "$scratch/task.md" "$1/tasks/HW-PROBE-$tombstone.md"

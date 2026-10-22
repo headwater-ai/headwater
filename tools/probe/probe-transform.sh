@@ -45,12 +45,18 @@
 #                         `NotebookEdit` call, added to every `--produced` path
 #   step_derive_produced  `path`, and `result` as that same digest
 #   step_derive_cites     every identifier of this corpus in the artifact
-#   step_derive_findings  every rule that reported over the artifact
+#   step_derive_findings  every rule that reported over the artifact, and
+#                         every failure of a command oracle that
+#                         `.headwater/probe.yml` declares (`step_run_oracles`)
 #
 # `step_derive_cites` and `step_derive_findings` are computed the same way for
 # every probe and neither reads a probe, which is the boundary [spec 15]
 # §"Two produced keys carry a derivation" draws between a recorder and a
-# grader. The two identity steps — the six members copied from the plan, and
+# grader. A command oracle (#1834) runs when a produced artifact matches its
+# pattern. Its findings go on every produced artifact inside the base, and an
+# oracle that no artifact matched fails whole, because the tree it measures is
+# then the pin's. Neither rule reads a probe. `step_run_oracles` says why each
+# holds. The two identity steps — the six members copied from the plan, and
 # `served_version` with `cost_cents` from the provider metadata — belong to the
 # driver, which is the half that has the plan and the metadata.
 #
@@ -363,8 +369,12 @@ step_derive_findings() {
                 exit 5
             }
         fi
-        jq -r --arg path "$file" '.findings[] | select(.path == $path) | .rule' \
-            < "$scratch/oracle.json" | sort -u
+        step_run_oracles "$scratch/oracle" || exit 5
+        {
+            jq -r --arg path "$file" '.findings[] | select(.path == $path) | .rule' \
+                < "$scratch/oracle.json"
+            cat "$scratch/command-findings.txt"
+        } | sort -u
         return 0
     fi
     if [ ! -f "$scratch/check.json" ]; then
@@ -374,8 +384,147 @@ step_derive_findings() {
             exit 5
         }
     fi
-    jq -r --arg path "$file" '.findings[] | select(.path == $path) | .rule' \
-        < "$scratch/check.json" | sort -u
+    # With no oracle tree, a command runs in a copy of the base and never in
+    # the base itself, which is the session's workspace.
+    step_run_oracles "" || exit 5
+    {
+        jq -r --arg path "$file" '.findings[] | select(.path == $path) | .rule' \
+            < "$scratch/check.json"
+        cat "$scratch/command-findings.txt"
+    } | sort -u
+}
+
+# step_run_oracles <copy>: the findings of every command oracle (#1834), into
+# `$scratch/command-findings.txt`, once per session.
+#
+# `.headwater/probe.yml` declares each oracle under `oracles`: path patterns
+# over produced artifacts, a command, and a parser. `headwater probe plan
+# --oracles` prints the parse, so this script reads no YAML. The declaration
+# is read from the oracle tree, or from `--root` where there is none, and
+# never from the session's workspace: the declaration is a fold, and a session
+# can write to it.
+#
+# **The pattern decides whether the command runs, and nothing else.** A
+# pattern is a shell `case` pattern, so `*` also matches `/`. Where a produced
+# artifact inside the base matches a pattern, the command runs once, with
+# `sh -c`, in <copy>: the oracle copy that already holds every artifact. With
+# no oracle tree, it runs in a fresh copy of the base. Where no artifact
+# matches, the command does not run, because a `cargo-test` run costs a build,
+# and the oracle fails whole. The tree under the pattern is then the pin's, so
+# the session did not attempt what the oracle measures. This reads no probe.
+#
+# **A command's findings go on every produced artifact inside the base**, and
+# not only on the artifacts that matched. The grader is satisfied by any one
+# artifact whose findings lack the oracle, so a finding on the matched
+# artifacts alone passes a session that also wrote a `README.md`.
+#
+#   exit        a non-zero exit is `command:<name>`.
+#   cargo-test  each `test <case> ... FAILED` line is `test:<case>`, and
+#               `error: could not compile` is `test:build`. Both are
+#               diagnostics. The oracle fails whole as `test:<name>` when the
+#               command exits non-zero, or when no `test result: ok. N passed`
+#               line has N of 1 or more. So a build that fails, and a case
+#               that never ran, fail the oracle that a probe grades against.
+#
+# A command that cannot start, exit 126 or 127, refuses with exit 5 and no
+# event, as a missing engine does: a command that did not run did not find a
+# failure.
+step_run_oracles() {
+    [ -f "$scratch/command-findings.txt" ] && return 0
+    declared_in=${oracle_tree:-$root}
+    if [ -f "$declared_in/.headwater/probe.yml" ]; then
+        "$engine" probe plan --root "$declared_in" --oracles > "$scratch/oracles.tsv" 2> "$scratch/oracles.err" || {
+            echo "probe-transform: \`headwater probe plan --oracles\` refused the declaration in $declared_in:" >&2
+            tail -3 "$scratch/oracles.err" >&2
+            return 5
+        }
+    else
+        : > "$scratch/oracles.tsv"
+    fi
+    : > "$scratch/command-findings.tmp"
+    tab=$(printf '\t')
+    awk -F "$tab" '!seen[$1]++ { print $1 }' "$scratch/oracles.tsv" > "$scratch/oracle-names.txt"
+    # A held file is the oracle tree's, never the session's. The copy took
+    # every produced artifact, so a session that wrote a file at a held path,
+    # such as the hidden test itself, would otherwise grade its own test. Each
+    # held path is put back from the oracle tree, or removed where the oracle
+    # tree has none.
+    if [ -n "$1" ]; then
+        awk -F "$tab" '$2 == "hold" { print $3 }' "$scratch/oracles.tsv" > "$scratch/oracle-holds.txt"
+        while IFS= read -r held; do
+            [ -n "$held" ] || continue
+            if [ -f "$oracle_tree/$held" ]; then
+                mkdir -p "$(dirname "$1/$held")" && cp "$oracle_tree/$held" "$1/$held" || {
+                    echo "probe-transform: the held file $held could not be restored in the oracle copy." >&2
+                    return 5
+                }
+            else
+                rm -f "$1/$held"
+            fi
+        done < "$scratch/oracle-holds.txt"
+    fi
+    while IFS= read -r oracle_name; do
+        [ -n "$oracle_name" ] || continue
+        oracle_parser=$(awk -F "$tab" -v n="$oracle_name" '$1 == n && $2 == "parser" { print $3 }' "$scratch/oracles.tsv")
+        oracle_command=$(awk -F "$tab" -v n="$oracle_name" '$1 == n && $2 == "command" { print $3 }' "$scratch/oracles.tsv")
+        awk -F "$tab" -v n="$oracle_name" '$1 == n && $2 == "path" { print $3 }' "$scratch/oracles.tsv" > "$scratch/oracle-paths.txt"
+        case $oracle_parser in
+            cargo-test) oracle_whole=test:$oracle_name ;;
+            *) oracle_whole=command:$oracle_name ;;
+        esac
+        matched=no
+        while IFS= read -r pattern; do
+            while IFS= read -r each; do
+                case $each in
+                    '' | /*) continue ;;
+                    # An unquoted pattern is a pattern, so `src/**` matches.
+                    # shellcheck disable=SC2254
+                    $pattern) matched=yes ;;
+                esac
+            done < "$scratch/produced.txt"
+        done < "$scratch/oracle-paths.txt"
+        if [ "$matched" = no ]; then
+            printf '%s\n' "$oracle_whole" >> "$scratch/command-findings.tmp"
+            continue
+        fi
+        run_in=$1
+        if [ -z "$run_in" ]; then
+            run_in=$scratch/command-copy
+            if [ ! -d "$run_in" ]; then
+                cp -a "$base" "$run_in" || {
+                    echo "probe-transform: the base $base could not be copied to run the \`$oracle_name\` oracle in." >&2
+                    return 5
+                }
+            fi
+        fi
+        command_status=0
+        (cd "$run_in" && sh -c "$oracle_command") < /dev/null > "$scratch/oracle-$oracle_name.log" 2>&1 || command_status=$?
+        case $command_status in
+            126 | 127)
+                echo "probe-transform: the \`$oracle_name\` oracle's command could not start (exit $command_status): $oracle_command" >&2
+                tail -3 "$scratch/oracle-$oracle_name.log" >&2
+                echo "probe-transform: refusing to write the findings of a command that did not run." >&2
+                return 5
+                ;;
+        esac
+        case $oracle_parser in
+            cargo-test)
+                sed -n 's/^test \(.*\) \.\.\. FAILED$/test:\1/p' "$scratch/oracle-$oracle_name.log" >> "$scratch/command-findings.tmp"
+                if grep -q 'error: could not compile' "$scratch/oracle-$oracle_name.log"; then
+                    printf 'test:build\n' >> "$scratch/command-findings.tmp"
+                fi
+                if [ "$command_status" -ne 0 ] || ! grep -Eq '^test result: ok\. [1-9][0-9]* passed' "$scratch/oracle-$oracle_name.log"; then
+                    printf '%s\n' "$oracle_whole" >> "$scratch/command-findings.tmp"
+                fi
+                ;;
+            *)
+                if [ "$command_status" -ne 0 ]; then
+                    printf '%s\n' "$oracle_whole" >> "$scratch/command-findings.tmp"
+                fi
+                ;;
+        esac
+    done < "$scratch/oracle-names.txt"
+    sort -u "$scratch/command-findings.tmp" > "$scratch/command-findings.txt"
 }
 
 # scalar: the one encoder every value of this event goes through.
