@@ -1677,6 +1677,143 @@ fn the_tuning_set_is_the_five_probes_the_owner_ruled_on_2026_10_22() {
     }
 }
 
+/// The lead-in of the paragraph under `## Key` that names where plain code
+/// carries what a code probe needs (#1835).
+const PLAIN_CODE: &str = "**Where plain code carries it.**";
+
+/// The path a code span names, less a `:<lines>` suffix.
+fn path_of(span: &str) -> &str {
+    span.split_once(':').map_or(span, |(path, _)| path)
+}
+
+/// Whether a path of the repository is in plain code: outside `docs/` and
+/// outside every path of every layer under `layers:`, so scenario 0 holds it.
+fn in_plain_code(budgets: &headwater_probe::Budgets, path: &str) -> bool {
+    let under = |prefix: &str| path == prefix || path.starts_with(&format!("{prefix}/"));
+    !under("docs")
+        && !budgets
+            .layers
+            .iter()
+            .flat_map(|layer| layer.paths.iter().chain(layer.arms.iter()))
+            .any(|held| under(held.trim_end_matches('/')))
+}
+
+/// The code set is five probes whose answer plain code carries (#1835).
+///
+/// A code probe compares scenario 1 with scenario 0, so a probe that cannot
+/// pass in scenario 0 by construction has its gain built in, and a `patched`
+/// probe that any write satisfies measures nothing. So, for each member of
+/// `sets.code`:
+///
+/// - it is in neither fixed set, which HW-DR-0111 keeps as #1833 left them;
+/// - a `patched` member grades against an oracle `.headwater/probe.yml`
+///   declares under `oracles:`, and each file that oracle `holds` exists and
+///   names the probe in its first lines, so the seal removes it from every
+///   workspace and no session reads the oracle;
+/// - its `## Key` has a paragraph that opens with the lead-in above and names
+///   at least one existing file outside `docs/` and outside every layer, so
+///   scenario 0 holds what the probe needs;
+/// - an `answered` member expects a proper part of its closed set.
+///
+/// No expected answer is written here, because the seal removes from a
+/// probe's arm tree every file that names it, and this file names none of
+/// the code probes.
+#[test]
+fn the_code_set_is_five_probes_whose_answer_plain_code_carries() {
+    let root = repository_root();
+    let path = root.join(headwater_probe::budget::PATH);
+    let source =
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    let budgets = headwater_probe::Budgets::read(&source).unwrap_or_else(|e| panic!("{e}"));
+
+    let code = budgets
+        .set("code")
+        .expect("the code set is declared under `sets:` (#1835)")
+        .to_vec();
+    assert_eq!(code.len(), 5, "the code set holds five probes: {code:?}");
+
+    let shelf = probes();
+    let mut findings = Vec::new();
+    for id in &code {
+        for fixed in ["tuning", "held-out"] {
+            if budgets.set(fixed).unwrap_or_default().contains(id) {
+                findings.push(format!("{id} is also in the fixed set `{fixed}`"));
+            }
+        }
+        let Some(probe) = shelf.iter().find(|probe| probe.id.as_deref() == Some(id)) else {
+            findings.push(format!("{id} is not on {SHELF}"));
+            continue;
+        };
+        let (text, document) = front_matter(&root.join(&probe.path));
+        let slug = id.strip_prefix("HW-PROBE-").unwrap_or(id);
+
+        match probe.expectation.as_deref() {
+            Some("patched") => {
+                let oracle = scalar(&document, "oracle").unwrap_or_default();
+                match budgets.oracles.iter().find(|it| it.finding() == oracle) {
+                    None => findings.push(format!(
+                        "{id} grades against `{oracle}`, which no entry under `oracles:` is"
+                    )),
+                    Some(entry) => {
+                        if entry.holds.is_empty() && entry.parser.prefix() == "test" {
+                            findings.push(format!(
+                                "{id}: the oracle `{oracle}` runs a test and holds no file, so \
+                                 the session's tree holds the test it is graded by"
+                            ));
+                        }
+                        for held in &entry.holds {
+                            let head: String = std::fs::read_to_string(root.join(held))
+                                .unwrap_or_default()
+                                .lines()
+                                .take(10)
+                                .collect::<Vec<_>>()
+                                .join("\n");
+                            if !head.contains(slug) {
+                                findings.push(format!(
+                                    "{id}: {held}, which the oracle `{oracle}` holds, does not \
+                                     exist or does not name the probe in its first ten lines, \
+                                     so the seal leaves it in the session's tree"
+                                ));
+                            }
+                        }
+                    }
+                }
+            }
+            Some("answered") => {
+                if probe.expected.is_empty()
+                    || probe.expected.len() >= probe.answers.len()
+                    || probe.expected.iter().any(|it| !probe.answers.contains(it))
+                {
+                    findings.push(format!("{id} expects no proper part of its closed set"));
+                }
+            }
+            other => findings.push(format!(
+                "{id} declares the expectation {other:?}, and a code probe is `patched` or \
+                 `answered`"
+            )),
+        }
+
+        let paragraph = section_of(&text, "Key")
+            .lines()
+            .find(|line| line.trim_start().starts_with(PLAIN_CODE))
+            .unwrap_or_default();
+        let carried = code_spans_in(paragraph)
+            .iter()
+            .map(|span| path_of(span))
+            .filter(|path| is_path(path))
+            .filter(|path| in_plain_code(&budgets, path))
+            .any(|path| root.join(path).is_file());
+        if !carried {
+            findings.push(format!(
+                "{id}: `## Key` has no paragraph opening `{PLAIN_CODE}` that names an existing \
+                 path outside `docs/` and outside every layer, so nothing shows scenario 0 holds \
+                 what the probe needs"
+            ));
+        }
+    }
+    assert!(findings.is_empty(), "{}", findings.join("\n"));
+}
+
 /// Every file of this repository's harness belongs to a layer of the
 /// additive campaign, so plain code holds none of it (#1774).
 ///
