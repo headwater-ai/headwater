@@ -41,6 +41,26 @@ here=$(cd "$(dirname "$0")" && pwd)
 try=${HEADWATER_TRY_UNDER_TEST:-$here/try.sh}
 fix=$(mktemp -d "${TMPDIR:-/tmp}/try-fixtures.XXXXXX")
 
+# The python3 of CI's self-hosted runner. It installs PyYAML with
+# `pip install --user`, and `python3 -I` drops the user site, so under `-I`
+# the runner has no PyYAML. This host may have PyYAML in the system site,
+# where `-I` still reaches it, so every case runs a python3 that hides PyYAML
+# from an isolated run. A script that reads the declaration must therefore run
+# without `-I` (#1838: 26 cases passed here and failed on the runner).
+real_python3=$(command -v python3)
+mkdir "$fix/bin"
+cat > "$fix/bin/python3" <<EOF
+#!/bin/sh
+case "\$1" in
+    -I) shift
+        exec "$real_python3" -I -c 'import runpy, sys; sys.modules["yaml"] = None; sys.argv = sys.argv[1:]; runpy.run_path(sys.argv[0], run_name="__main__")' "\$@" ;;
+esac
+exec "$real_python3" "\$@"
+EOF
+chmod +x "$fix/bin/python3"
+PATH=$fix/bin:$PATH
+export PATH
+
 # The checkouts the driver runs from. `repo` is in the one state the driver's
 # pin check accepts: detached, at a commit `origin/main` holds, and clean.
 # Each other one is in a state that check refuses.
