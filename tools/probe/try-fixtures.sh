@@ -174,11 +174,12 @@ EOF
 chmod +x "$fix/engine-stub.sh"
 # The counter of use for the docs layer, which the tuning round does not tune
 # and tools/probe/usage.py refuses: no session used it. Any other layer runs
-# the real counter.
+# the real counter, isolated when the driver isolated the stub, so that a
+# `python3 -I` in the driver fails here as it fails on the runner.
 cat > "$fix/usage-stub.py" <<EOF
 import os, sys
 if sys.argv[2] != "docs":
-    os.execvp("python3", ["python3", "-I", "$here/usage.py"] + sys.argv[1:])
+    os.execvp("python3", ["python3"] + (["-I"] if sys.flags.isolated else []) + ["$here/usage.py"] + sys.argv[1:])
 print("used 0 sessions %d" % len(os.listdir(os.path.join(sys.argv[3], "sessions"))))
 EOF
 
@@ -1439,7 +1440,7 @@ usage_session() {
         printf '%s\n' "$4" > "$1/config/$2/projects/x/log.jsonl"
     fi
 }
-usage_of() { python3 -I "$here/usage.py" "$CASE/probe.yml" "$1" "$CASE/batch" > "$CASE/out" 2> "$CASE/err"; echo $? > "$CASE/code"; }
+usage_of() { python3 "$here/usage.py" "$CASE/probe.yml" "$1" "$CASE/batch" > "$CASE/out" 2> "$CASE/err"; echo $? > "$CASE/code"; }
 tool_line() { printf '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"%s","input":%s}]}}' "$1" "$2"; }
 new_case
 rank_decl "$OPEN_SKILLS"
@@ -1463,8 +1464,9 @@ check "usage: hook counts a Read or a reader in Bash of a path the hook injected
 rm -rf "$b"
 usage_session "$b" s1 "$(tool_line mcp__headwater__explain '{"path":"x"}')"
 usage_session "$b" s2 "$(tool_line Read '{"file_path":"mcp__x"}')"
+usage_session "$b" s3 "$(tool_line mcp_headwater_explain '{"path":"x"}')"
 usage_of mcp
-check "usage: mcp counts a call to an MCP tool and nothing else" out_has "used 1 sessions 2"
+check "usage: mcp counts a call to an MCP tool, named mcp__ and not mcp_, and nothing else" out_has "used 1 sessions 3"
 usage_of docs
 check "usage: a layer the round does not tune exits 2" code_is 2
 rm -rf "$b"

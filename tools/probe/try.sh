@@ -1386,7 +1386,7 @@ $records records of the canary, not 8"
             say "a $result_stage runs $result_count sessions, and the batch of $try planned $result_jobs jobs, so it is not recorded as a $result_stage."
             exit 2
         fi
-        result_usage=$(python3 -I "$usage_counter" "$declaration" "$result_layer" "$try/a") || { say "the use of the $result_layer layer in $try/a was not counted."; exit 2; }
+        result_usage=$(python3 "$usage_counter" "$declaration" "$result_layer" "$try/a") || { say "the use of the $result_layer layer in $try/a was not counted."; exit 2; }
         # shellcheck disable=SC2086
         set -- $result_usage
         result_used=$2 result_sessions=$4

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Count the sessions of one batch that used one layer of the additive campaign.
 
-    python3 -I tools/probe/usage.py <declaration> <layer> <batch>
+    python3 tools/probe/usage.py <declaration> <layer> <batch>
 
 `tools/probe/try.sh result` runs it on the batch of each try of the tuning
 round (#1838), and `try.sh rank` ranks the screened variants of a round on the
@@ -122,7 +122,7 @@ def used_hook(stream, config):
 
 def main(argv):
     if len(argv) != 3:
-        refuse("usage: python3 -I tools/probe/usage.py <declaration> <layer> <batch>")
+        refuse("usage: python3 tools/probe/usage.py <declaration> <layer> <batch>")
     declaration, layer, batch = argv
     if layer not in LAYERS:
         refuse(f"the layer {layer} is not one the tuning round tunes, {', '.join(LAYERS)}, so no use of it is counted")
