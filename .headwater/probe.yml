@@ -128,7 +128,24 @@ answer_keys:
 # `headwater probe plan --oracles` prints the parse, and a path that leaves the
 # tree, an unknown parser or an empty command refuses the whole file. The
 # probes that grade against an oracle declare it here (#1835).
-oracles: {}
+#
+# The two oracles of the code set (#1835). `future-date` builds the check
+# crate in the grading copy and runs one hidden test, which is `#[ignore]`d so
+# that CI never runs it: on this tree no rule reports a date after the run,
+# so it fails here by design, and it passes only over a tree a session
+# changed. `-- --ignored` runs it, and its `test result: ok. 1 passed` line
+# is what the parser counts. `refresh-figures` runs the figures check, which
+# needs a built engine in the grading copy, as every oracle does.
+oracles:
+  future-date:
+    paths: [engine/crates/check/*]
+    command: sh tools/hw-cargo test --profile dev-release -p headwater-check --test probe_oracle_future_date --manifest-path engine/Cargo.toml --locked -- --ignored
+    parser: cargo-test
+    holds: [engine/crates/check/tests/probe_oracle_future_date.rs]
+  refresh-figures:
+    paths: [site/*, tools/site/*]
+    command: sh tools/site/refresh-figures.sh --check
+    parser: exit
 
 # Leak strings (#1472): for each probe, the strings whose presence in text the harness
 # loads into every session gives the probe's answer away. The seal finds an
@@ -198,6 +215,16 @@ leaks:
   HW-PROBE-a-session-that-changes-the-recorder-reaches-the-recorder-contract: []
   HW-PROBE-a-session-that-moves-a-shelf-reaches-the-relocation-guide: []
   HW-PROBE-a-session-that-changes-a-verb-s-default-reaches-the-verb-s-interface-contract: []
+  # The code set (#1835). The two `patched` probes grade a structure that a
+  # command oracle reads, and no string states it, so each declares the empty
+  # sequence. The three `answered` probes declare the ruling that holds the
+  # answer and the phrase that states it, on the same ground as the entries
+  # above.
+  HW-PROBE-a-rule-that-reads-the-date-takes-it-from-the-run-and-ships-with-the-fixture-that-fails-it: []
+  HW-PROBE-a-figure-a-session-adds-to-a-hand-built-page-is-measured-and-never-typed: []
+  HW-PROBE-a-session-says-where-a-check-gets-the-version-that-stood-before-a-change: [HW-SPEC-check-layer, prior version]
+  HW-PROBE-a-session-says-what-a-refusal-writes-on-standard-output-under-json: [HW-DR-0043, a refusal is never a document]
+  HW-PROBE-a-session-says-what-a-verb-that-mints-an-identifier-writes-beside-the-document: [HW-DR-0054, claim store]
 
 # The probes whose leak string stays in the present arm on purpose (#1472, the second
 # outcome the issue offers). The leak string of the status probe is in the
@@ -627,6 +654,16 @@ sets:
     - HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens
     - HW-PROBE-a-session-says-which-date-a-corrected-status-carries
     - HW-PROBE-a-session-says-whether-a-command-or-a-hand-writes-a-governs-line
+  # The code set (#1835): five probes whose answer plain code carries, so
+  # that scenario 1 against scenario 0 reads as whether the documents help an
+  # agent write code. It is an addition to HW-DR-0111, and it changes neither
+  # fixed set.
+  code:
+    - HW-PROBE-a-rule-that-reads-the-date-takes-it-from-the-run-and-ships-with-the-fixture-that-fails-it
+    - HW-PROBE-a-figure-a-session-adds-to-a-hand-built-page-is-measured-and-never-typed
+    - HW-PROBE-a-session-says-where-a-check-gets-the-version-that-stood-before-a-change
+    - HW-PROBE-a-session-says-what-a-refusal-writes-on-standard-output-under-json
+    - HW-PROBE-a-session-says-what-a-verb-that-mints-an-identifier-writes-beside-the-document
 
 # The rounds of the additive campaign. Each round names the set it runs, the
 # two pooled rates it is sized to separate, and the most tries it may take.
@@ -686,6 +723,25 @@ rounds:
     rates: [0.90, 0.80]
     tries: 1
     approved_cents: 0
+  # The code round and its pilot (#1835). The code round is sized as the
+  # final round is: 219 sessions per scenario, so ceil(219 / 5) = 44
+  # repetitions of each probe, 220 sessions per scenario and 440 over
+  # scenarios 0 and 1. The owner rules on its spend with #1778, so it is
+  # approved for nothing. The pilot measures each probe's rate, not a
+  # verdict, so its count is declared rather than computed: 18 repetitions,
+  # 90 sessions per scenario and 180 over the two. The owner approved $130
+  # for it on 2026-10-22 (#1777, comment 6339176737), and a reworded probe
+  # re-runs 18 sessions in scenario 0 under the same ceiling.
+  code:
+    set: code
+    rates: [0.90, 0.80]
+    tries: 1
+    approved_cents: 0
+  code-pilot:
+    set: code
+    repetitions: 18
+    tries: 1
+    approved_cents: 13000
 
 # The paths whose change can make a measured base stale, as the owner ruled
 # them on 2026-10-20 (HW-DR-0111): the engine's source and the scripts that

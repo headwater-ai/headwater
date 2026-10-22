@@ -12,7 +12,9 @@
 # computed, never typed: `fleiss` of the round's two rates gives the sessions
 # a scenario needs, and ceil(n / k) over the k probes of the round's set is the
 # repetitions of each probe. A line that leaves probes out runs the others at
-# the same count. `--repetitions` is refused, because the rounds fix the count.
+# the same count. A round that declares `repetitions` in place of its rates
+# (#1835) runs that count of each probe, and its n is the count times k.
+# `--repetitions` is refused, because the rounds fix the count.
 #
 # Each line is planned with `--arm scenario-<n> --set <set>` and its excludes,
 # at the round's count where it is below the tier's declared one. A plan the
@@ -51,15 +53,25 @@ fi
 # The count of each round: `<round> <set> <tries> <n> <k> <repetitions>`.
 : > "$work/round-counts"
 while read -r r_name r_set r_high r_low r_tries r_members; do
-    r_needed=$(fleiss "$r_high" "$r_low")
-    r_n=${r_needed#* }
     # shellcheck disable=SC2086
     set -- $r_members
     r_k=$#
-    r_reps=$(awk -v n="$r_n" -v k="$r_k" 'BEGIN { r = n / k; c = int(r); if (c < r) c++; print c }')
-    printf '%s %s %s %s %s %s\n' "$r_name" "$r_set" "$r_tries" "$r_n" "$r_k" "$r_reps" >> "$work/round-counts"
     r_in="in one try"
     [ "$r_tries" -gt 1 ] && r_in="in at most $r_tries tries"
+    # A round that declares its own count (#1835) prints `repetitions <n>` in
+    # place of its rates, and its n is that count over the set's probes.
+    if [ "$r_high" = repetitions ]; then
+        r_reps=$r_low
+        r_n=$((r_reps * r_k))
+        printf '%s %s %s %s %s %s\n' "$r_name" "$r_set" "$r_tries" "$r_n" "$r_k" "$r_reps" >> "$work/round-counts"
+        [ "$priced" = 1 ] || printf 'round %s: the set %s of %s probes at the %s repetitions of each probe the round declares, %s sessions per scenario, %s.\n' \
+            "$r_name" "$r_set" "$r_k" "$r_reps" "$r_n" "$r_in"
+        continue
+    fi
+    r_needed=$(fleiss "$r_high" "$r_low")
+    r_n=${r_needed#* }
+    r_reps=$(awk -v n="$r_n" -v k="$r_k" 'BEGIN { r = n / k; c = int(r); if (c < r) c++; print c }')
+    printf '%s %s %s %s %s %s\n' "$r_name" "$r_set" "$r_tries" "$r_n" "$r_k" "$r_reps" >> "$work/round-counts"
     [ "$priced" = 1 ] || printf 'round %s: the set %s of %s probes, %s against %s, needs %s sessions per scenario with the Fleiss continuity correction, so ceil(%s / %s) = %s repetitions of each probe, %s.\n' \
         "$r_name" "$r_set" "$r_k" "$r_high" "$r_low" "$r_n" "$r_n" "$r_k" "$r_reps" "$r_in"
 done < "$work/rounds"
@@ -173,6 +185,9 @@ $excluded
         continue
     fi
     how="round $round, ceil($round_n / $set_k)"
+    if awk -v r="$round" '$1 == r && $3 == "repetitions" { found = 1 } END { exit !found }' "$work/rounds"; then
+        how="round $round, declared"
+    fi
     if [ "$priced" = 1 ]; then
         printf '%s %s %s %s\n' "$index" "$declared" "$reps" "$how"
         continue

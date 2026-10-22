@@ -1355,6 +1355,13 @@ const AWAITING_SPEND: &[&str] = &[
     "HW-PROBE-a-session-that-changes-the-recorder-reaches-the-recorder-contract",
     "HW-PROBE-a-session-that-moves-a-shelf-reaches-the-relocation-guide",
     "HW-PROBE-a-session-that-changes-a-verb-s-default-reaches-the-verb-s-interface-contract",
+    // The five probes of the code set (#1835), which run in the additive
+    // campaign's code round and in no round of this campaign.
+    "HW-PROBE-a-rule-that-reads-the-date-takes-it-from-the-run-and-ships-with-the-fixture-that-fails-it",
+    "HW-PROBE-a-figure-a-session-adds-to-a-hand-built-page-is-measured-and-never-typed",
+    "HW-PROBE-a-session-says-where-a-check-gets-the-version-that-stood-before-a-change",
+    "HW-PROBE-a-session-says-what-a-refusal-writes-on-standard-output-under-json",
+    "HW-PROBE-a-session-says-what-a-verb-that-mints-an-identifier-writes-beside-the-document",
 ];
 
 /// The campaign spec plans no probe that awaits the owner's approval of spend.
