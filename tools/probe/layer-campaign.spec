@@ -109,18 +109,21 @@ documentation absent       sufficiency HW-PROBE-a-counted-tombstone-separates-a-
 
 # Navigability, less the governs probe that the campaign of 2026-10-03 ran.
 # It is superseded and stays on the shelf as that campaign's record, and the
-# plan selects a probe by its category and not by its status (#1709).
-campaign      present      navigability HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document HW-PROBE-a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded
-campaign      absent       navigability HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document HW-PROBE-a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded
-campaign      no-hook      navigability HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document HW-PROBE-a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded
-campaign      no-skills    navigability HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document HW-PROBE-a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded
-campaign      no-claude-md navigability HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document HW-PROBE-a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded
-campaign      mcp          navigability HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document HW-PROBE-a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded
+# plan selects a probe by its category and not by its status (#1709). Each
+# line also leaves out the two navigability probes and the one discovery
+# probe that joined the additive tuning set (#1833), which await the owner's
+# approval of spend on this campaign.
+campaign      present      navigability HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document HW-PROBE-a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded HW-PROBE-a-session-that-changes-the-recorder-reaches-the-recorder-contract HW-PROBE-a-session-that-changes-a-verb-s-default-reaches-the-verb-s-interface-contract
+campaign      absent       navigability HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document HW-PROBE-a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded HW-PROBE-a-session-that-changes-the-recorder-reaches-the-recorder-contract HW-PROBE-a-session-that-changes-a-verb-s-default-reaches-the-verb-s-interface-contract
+campaign      no-hook      navigability HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document HW-PROBE-a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded HW-PROBE-a-session-that-changes-the-recorder-reaches-the-recorder-contract HW-PROBE-a-session-that-changes-a-verb-s-default-reaches-the-verb-s-interface-contract
+campaign      no-skills    navigability HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document HW-PROBE-a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded HW-PROBE-a-session-that-changes-the-recorder-reaches-the-recorder-contract HW-PROBE-a-session-that-changes-a-verb-s-default-reaches-the-verb-s-interface-contract
+campaign      no-claude-md navigability HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document HW-PROBE-a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded HW-PROBE-a-session-that-changes-the-recorder-reaches-the-recorder-contract HW-PROBE-a-session-that-changes-a-verb-s-default-reaches-the-verb-s-interface-contract
+campaign      mcp          navigability HW-PROBE-a-session-says-how-a-governs-line-reaches-a-document HW-PROBE-a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded HW-PROBE-a-session-that-changes-the-recorder-reaches-the-recorder-contract HW-PROBE-a-session-that-changes-a-verb-s-default-reaches-the-verb-s-interface-contract
 
 # Discovery, less the authoring-skill probe, at the powered repetitions.
-campaign      present      discovery HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document
-campaign      absent       discovery HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document
-campaign      no-hook      discovery HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document
-campaign      no-skills    discovery HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document
-campaign      no-claude-md discovery HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document
-campaign      mcp          discovery HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document
+campaign      present      discovery HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document HW-PROBE-a-session-that-moves-a-shelf-reaches-the-relocation-guide
+campaign      absent       discovery HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document HW-PROBE-a-session-that-moves-a-shelf-reaches-the-relocation-guide
+campaign      no-hook      discovery HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document HW-PROBE-a-session-that-moves-a-shelf-reaches-the-relocation-guide
+campaign      no-skills    discovery HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document HW-PROBE-a-session-that-moves-a-shelf-reaches-the-relocation-guide
+campaign      no-claude-md discovery HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document HW-PROBE-a-session-that-moves-a-shelf-reaches-the-relocation-guide
+campaign      mcp          discovery HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document HW-PROBE-a-session-that-moves-a-shelf-reaches-the-relocation-guide

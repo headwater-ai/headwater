@@ -192,6 +192,12 @@ leaks:
   # pointer is the treatment the hook layer delivers, not a leak.
   HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor: []
   HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens: []
+  # The three probes of proposal 1 that joined the tuning set (#1833) key
+  # on `opened` as well, so each declares the empty sequence on the same
+  # ground as the two above.
+  HW-PROBE-a-session-that-changes-the-recorder-reaches-the-recorder-contract: []
+  HW-PROBE-a-session-that-moves-a-shelf-reaches-the-relocation-guide: []
+  HW-PROBE-a-session-that-changes-a-verb-s-default-reaches-the-verb-s-interface-contract: []
 
 # The probes whose leak string stays in the present arm on purpose (#1472, the second
 # outcome the issue offers). The leak string of the status probe is in the
@@ -612,9 +618,10 @@ scenarios:
 sets:
   tuning:
     - HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged
-    - HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor
-    - HW-PROBE-a-session-follows-two-citations-from-a-record-the-task-does-not-name
     - HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded
+    - HW-PROBE-a-session-that-changes-the-recorder-reaches-the-recorder-contract
+    - HW-PROBE-a-session-that-moves-a-shelf-reaches-the-relocation-guide
+    - HW-PROBE-a-session-that-changes-a-verb-s-default-reaches-the-verb-s-interface-contract
   held-out:
     - HW-PROBE-what-a-session-writes-points-back-at-the-ruling-it-rests-on
     - HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens
@@ -638,8 +645,10 @@ sets:
 # 2026-10-19 the owner approved the tuning round, at $1,512.00 over every
 # attempt and every layer (#1777): one layer at a time, every layer gets at
 # least one paid try, and the owner accepts each layer's plan before any
-# spend on that layer. HW-DR-0111 records both rulings. The final round waits
-# on a ruling of its own.
+# spend on that layer. On 2026-10-22 the owner ruled that only the skills,
+# the hook and the MCP layer are tuned, each against scenario 3, and that the
+# documents, the engine and `CLAUDE.md` are frozen (#1833). HW-DR-0111
+# records the three rulings. The final round waits on a ruling of its own.
 #
 # `open` holds the one-layer rule (#1819). It names the one layer whose plan
 # the owner accepted, or it is `none`, and only the tuning round declares it.
@@ -658,8 +667,8 @@ sets:
 #
 # The plan is the URL of the comment in which the owner accepted it. The
 # documents layer was open for try 1, which scored 32 of 72 sessions and was
-# not kept (#1777), and no other layer's plan is accepted, so `open` is
-# `none`.
+# not kept (#1777). The ruling of 2026-10-22 withdrew that try with the
+# layer, and no other layer's plan is accepted, so `open` is `none`.
 rounds:
   screening:
     set: tuning

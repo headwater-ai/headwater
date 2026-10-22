@@ -11,7 +11,7 @@
 #
 # At the declared 50 cents a session:
 #
-#     round screening: 1008 sessions, $504.00
+#     round screening: 980 sessions, $490.00
 #
 # Keep these lines the same as the screening lines of
 # `tools/probe/additive-campaign.spec`. The fixtures in
@@ -31,4 +31,4 @@ additive scenario-10 screening
 additive scenario-11 screening
 additive scenario-12 screening
 additive scenario-13 screening HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded
-additive scenario-13 screening HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor HW-PROBE-a-session-follows-two-citations-from-a-record-the-task-does-not-name
+additive scenario-13 screening HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged HW-PROBE-a-session-that-changes-the-recorder-reaches-the-recorder-contract HW-PROBE-a-session-that-moves-a-shelf-reaches-the-relocation-guide HW-PROBE-a-session-that-changes-a-verb-s-default-reaches-the-verb-s-interface-contract

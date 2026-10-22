@@ -1,7 +1,7 @@
 ---
 id: HW-HOW-relocate-a-shelf
-status: draft
-status_since: 2026-09-16
+status: current
+status_since: 2026-10-22
 summary: "An overlay relocates a shelf with one override key, and the move breaks every relative link into the old path until you repair them."
 last_verified: 2026-09-16
 title: "Relocate a shelf"
@@ -50,6 +50,8 @@ This repository's own overlay had no `override` key before this guide. It only a
 override:
   shelves.decisions.path: docs/adr/**
 ```
+
+**A shelf that your own overlay declares takes no `override`.** The `override` key replaces a value that a package declares. If your overlay declares the shelf itself, under its `add` key, edit the `path:` of that shelf in place, and add no `override` key. In this repository, `shelves.verifications` is a shelf of that type. Then do the other steps of this guide, from the resolve to the repair of the links.
 
 ### Resolve the override
 

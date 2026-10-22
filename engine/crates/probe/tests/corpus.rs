@@ -1350,6 +1350,11 @@ const AWAITING_SPEND: &[&str] = &[
     "HW-PROBE-a-session-says-which-date-a-corrected-status-carries",
     "HW-PROBE-a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced",
     "HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded",
+    // The three probes of the additive tuning set (#1833). The owner
+    // approved their spend for that campaign and not for this one.
+    "HW-PROBE-a-session-that-changes-the-recorder-reaches-the-recorder-contract",
+    "HW-PROBE-a-session-that-moves-a-shelf-reaches-the-relocation-guide",
+    "HW-PROBE-a-session-that-changes-a-verb-s-default-reaches-the-verb-s-interface-contract",
 ];
 
 /// The campaign spec plans no probe that awaits the owner's approval of spend.
