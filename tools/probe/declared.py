@@ -33,6 +33,13 @@
 # of each line counts the probes this prints, so the two readers cannot
 # disagree unseen. A declaration with no `rounds:` prints nothing.
 #
+# A round that measures rates rather than a difference, such as the pilot of
+# the code set (#1835), declares `repetitions`, a whole number above zero, in
+# place of `rates`. Its line is `<round> <set> repetitions <n> <tries>
+# <probe>...`, so the probes stay in the same fields. A round declares
+# exactly one of `rates` and `repetitions`, and the reader refuses both or
+# neither.
+#
 # A round may also declare `approved_cents`, a whole number of cents at or
 # above zero: the spend a person approved for every attempt of the round
 # (#1775). `approved` prints one line per round, `<round> <cents>`, and 0 for
@@ -128,13 +135,14 @@ def rounds(declared, approvals=False, quiet=False):
     sets = declared.get("sets") or {}
     if not isinstance(sets, dict):
         refuse("`sets:` in .headwater/probe.yml is not a mapping of set name to probe identifiers")
+    lines = []
     for name, fields in block.items():
         name = str(name)
         if not isinstance(fields, dict):
             refuse(f"the `{name}` round in .headwater/probe.yml is not a mapping of `set`, `rates` and `tries`")
-        unknown = sorted(str(key) for key in fields if key not in ("set", "rates", "tries", "approved_cents", "open") + STAGE_FIELDS)
+        unknown = sorted(str(key) for key in fields if key not in ("set", "rates", "repetitions", "tries", "approved_cents", "open") + STAGE_FIELDS)
         if unknown:
-            refuse(f"the `{name}` round in .headwater/probe.yml declares `{unknown[0]}`. A round declares `set`, `rates`, `tries`, `approved_cents` and, on the tuning round, `open`, {', '.join(f'`{field}`' for field in STAGE_FIELDS)}, and nothing else")
+            refuse(f"the `{name}` round in .headwater/probe.yml declares `{unknown[0]}`. A round declares `set`, `rates` or `repetitions`, `tries`, `approved_cents` and, on the tuning round, `open`, {', '.join(f'`{field}`' for field in STAGE_FIELDS)}, and nothing else")
         if "open" in fields and name != "tuning":
             refuse(f"the `{name}` round in .headwater/probe.yml declares `open`, and only the tuning round declares `open`: the one layer whose plan the owner accepted")
         staged = [field for field in STAGE_FIELDS if field in fields]
@@ -147,23 +155,34 @@ def rounds(declared, approvals=False, quiet=False):
         members = sets.get(chosen) if isinstance(chosen, str) else None
         if not isinstance(members, list) or not members or not all(isinstance(entry, str) for entry in members):
             refuse(f"the `{name}` round in .headwater/probe.yml runs the set {chosen!r}, and `sets:` declares no such set of probe identifiers")
-        rates = fields.get("rates")
-        if not isinstance(rates, list) or len(rates) != 2:
-            refuse(f"`rates` of the `{name}` round in .headwater/probe.yml is not a sequence of two rates")
-        high, low = (rate(name, value) for value in rates)
-        if high == low:
-            refuse(f"the two rates of the `{name}` round in .headwater/probe.yml are equal, so no difference is powered")
+        if ("rates" in fields) == ("repetitions" in fields):
+            refuse(f"the `{name}` round in .headwater/probe.yml declares {'both `rates` and `repetitions`' if 'rates' in fields else 'neither `rates` nor `repetitions`'}. A round declares exactly one: two rates its count is computed from, or a count of its own")
+        if "repetitions" in fields:
+            count = fields["repetitions"]
+            if not whole(count) or count < 1:
+                refuse(f"`repetitions` of the `{name}` round in .headwater/probe.yml is {count!r}, and it must be a whole number above zero")
+            high, low = "repetitions", str(count)
+        else:
+            rates = fields.get("rates")
+            if not isinstance(rates, list) or len(rates) != 2:
+                refuse(f"`rates` of the `{name}` round in .headwater/probe.yml is not a sequence of two rates")
+            high, low = (rate(name, value) for value in rates)
+            if high == low:
+                refuse(f"the two rates of the `{name}` round in .headwater/probe.yml are equal, so no difference is powered")
         tries = fields.get("tries")
         if isinstance(tries, bool) or not isinstance(tries, int) or tries < 1:
             refuse(f"`tries` of the `{name}` round in .headwater/probe.yml is {tries!r}, and it must be a whole number above zero")
         if staged:
             stages(declared, name, fields, approved)
-        if quiet:
-            continue
         if approvals:
-            print(f"{name} {approved}")
+            lines.append(f"{name} {approved}")
         else:
-            print(" ".join([name, chosen, str(high), str(low), str(tries)] + members))
+            lines.append(" ".join([name, chosen, str(high), str(low), str(tries)] + members))
+    # Every round is read before any line is printed, so a refusal leaves
+    # nothing on standard output for a caller to read as a declaration.
+    if not quiet:
+        for line in lines:
+            print(line)
     return 0
 
 

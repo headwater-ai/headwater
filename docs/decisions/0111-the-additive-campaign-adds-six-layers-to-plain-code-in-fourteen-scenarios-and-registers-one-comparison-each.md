@@ -2,7 +2,7 @@
 id: HW-DR-0111
 status: current
 status_since: 2026-10-17
-summary: "The 0.07 campaign builds 14 scenarios by adding six layers to plain code. Each scenario has one base, one registered comparison and one verdict, over 9 probes split 5 for tuning and 4 held out. Only the skills, the hook and MCP are tuned."
+summary: "The 0.07 campaign builds 14 scenarios by adding six layers to plain code. Each scenario has one base, one registered comparison and one verdict, over 9 probes split 5 for tuning and 4 held out. Only the skills, the hook and MCP are tuned. A code set of 5 probes asks whether the documents help an agent write code."
 last_verified: 2026-10-22
 title: "111 — The additive campaign adds six layers to plain code in fourteen scenarios and registers one comparison each"
 provenance:
@@ -19,6 +19,8 @@ relations:
     - tools/probe/additive-screening.spec
     - tools/probe/try.sh
     - tools/probe/additive-launch.env
+    - tools/probe/code-campaign.spec
+    - tools/probe/code-pilot.spec
 ---
 
 # 111 — The additive campaign adds six layers to plain code in fourteen scenarios and registers one comparison each
@@ -115,7 +117,25 @@ Two probes left the tuning set on 2026-10-22, and each stays on the shelf as a r
 
 The three probes that replace them key on `opened`. Each task asks for a change to the code or to the taxonomy. The key reads whether the session opened the document that governs that change. The targets are the recorder contract, the relocation guide and the interface contract of `headwater route`. Proposal 1, the first comment on #1833, is the design, and it states the rate that each probe expects in scenario 3.
 
-#1835 adds a third set, `code`, with a round of its own. It is an addition, and it changes neither the tuning set nor the held-out set.
+#1835 adds a third set, `code`, with a round of its own. It is an addition, and it changes neither the tuning set nor the held-out set. The next section states it.
+
+### The code set, and its one comparison
+
+Each probe of the tuning set and the held-out set asks a question about the corpus. So scenario 0, which holds no `docs/`, is at zero on most of them by construction. The difference from scenario 0 is then mostly the fact that `docs/` exists. The code set asks for a code outcome or a fact about the code that plain code also carries. Each of its probe documents names, under **Where plain code carries it.**, the paths outside `docs/` that hold what the session needs. So the difference of scenario 1 from scenario 0 on this set reads as whether the documents help an agent write code. Proposal 2, the first comment on #1835, is the design, and it states the rate that each probe expects in scenarios 0 and 1.
+
+| probe | key | oracle | set |
+|---|---|---|---|
+| a-rule-that-reads-the-date-takes-it-from-the-run-and-ships-with-the-fixture-that-fails-it | patched | `test:future-date` | code |
+| a-figure-a-session-adds-to-a-hand-built-page-is-measured-and-never-typed | patched | `command:refresh-figures` | code |
+| a-session-says-where-a-check-gets-the-version-that-stood-before-a-change | answered | none | code |
+| a-session-says-what-a-refusal-writes-on-standard-output-under-json | answered | none | code |
+| a-session-says-what-a-verb-that-mints-an-identifier-writes-beside-the-document | answered | none | code |
+
+The two `patched` probes grade against a command oracle (#1834). `.headwater/probe.yml` declares each one under `oracles:`. `future-date` runs a hidden test of the check crate in the grading copy, and the seal removes that test from every workspace. `refresh-figures` runs a hidden script, which the seal also removes. The script runs the figures check of the hand-built pages, and it requires a figure key that the page at the pin does not carry. The three `answered` probes need no oracle.
+
+The set registers one comparison: scenario 1 against scenario 0. The verdict rule is the rule of every other comparison, which the section *Two tables, one verdict* states. The code set runs in scenarios 0 and 1 alone, and in no tuning try.
+
+**Two probes are the deliberate case where plain code states the answer, and the documents state it better.** They are the figure probe and the refusal probe. Plain code states the figure convention in the header of the refresh script. It states the refusal rule in a macro and a test name. The documents state each convention with its reason, where a search lands first. So these two probes measure whether the documents make a stated convention reachable, and not whether the documents are its only statement. No expected answer of the set stands as a comment beside its subject in plain code.
 
 The other probes on the shelf are left out:
 
@@ -135,8 +155,10 @@ Every count comes from the formula that `tools/probe/campaign-dry-run.sh` states
 | each screened variant of a tuning round, 4 a round | the 5 tuning probes | 25 | 5 | none alone: the round ranks its variants on the use of the layer, then on the pass rate |
 | each confirmation, and each best so far, of a tuning round | the 5 tuning probes | 145 | 29 | the count the owner ruled, 144, rounded up to 29 repetitions of 5 probes |
 | final | the 4 held-out probes | 220 | 55 | 15 points anywhere, 0.425 against 0.575 needs 187, and 10 points from 0.80 to 0.90, which needs 219 |
+| code, scenarios 0 and 1 | the 5 code probes | 220 | 44 | as the final round: 10 points from 0.80 to 0.90 needs 219 |
+| code pilot, scenarios 0 and 1 | the 5 code probes | 90 | 18, declared | none: it measures the rate of each probe |
 
-So the final round separates any scenario from its base by 15 points of the pooled rate. Where the rates sit near 0.85, it separates them by 10 points. Every verdict rests on the pooled rate. A cell of one probe in one scenario has 14 or 55 sessions, and at those counts it is not a finding. Over the 14 scenarios, the plan is 980 screening sessions, 21,840 tuning sessions at most, and 3,080 final sessions. A tuning round is 390 sessions: 4 variants of 25, a confirmation of 145 and a best so far of 145. The dry run prices 4 rounds of each of the 14 scenarios. The dry run prices that total. The owner approves each round before it spends, and the Consequences state what he approved.
+The code round runs 440 sessions over its two scenarios. That is $220.00 at the declared 50 cents a session. At the realized 86.6 cents in scenario 0 and 32.0 cents in scenario 1, it is about $261. The pilot declares its count, because it measures rates and no difference, and runs 180 sessions. That is about $107 at the realized costs. So the final round separates any scenario from its base by 15 points of the pooled rate. Where the rates sit near 0.85, it separates them by 10 points. Every verdict rests on the pooled rate. A cell of one probe in one scenario has 14 or 55 sessions, and at those counts it is not a finding. Over the 14 scenarios, the plan is 980 screening sessions, 21,840 tuning sessions at most, and 3,080 final sessions. A tuning round is 390 sessions: 4 variants of 25, a confirmation of 145 and a best so far of 145. The dry run prices 4 rounds of each of the 14 scenarios, and it prices the whole total. The owner approves each round before it spends, and the Consequences state what he approved.
 
 The bases of the tuned comparisons are measured again on the new tuning set. On 2026-10-22 the owner ruled that a base and a confirmation each run 145 sessions, 29 repetitions of each of the five tuning probes. A screened variant runs 25. The tuning round under `rounds:` declares the two counts as he ruled them, `screen: 24` and `confirm: 144`. `python3 tools/probe/declared.py .headwater/probe.yml tuning` divides each count by the probes of the set and rounds up, so no file types 25 or 145 (#1838). A batch of a tuning line runs one stage of a round, and the dry run reads the stage from `HEADWATER_TUNING_STAGE`, `screen` or `confirm`. With no stage, the priced counts of a tuning line exit 2.
 
@@ -206,7 +228,9 @@ On 2026-10-22 the owner ruled how a layer is tuned, and since #1838 `try.sh` hol
 - **A change to the engine's source makes the base stale for a confirmation.** Such a change can alter what `headwater route` prints to each session of scenario 3. No acceptance covers it there, so `plan` exits 4 until the base is measured again at 145.
 - **The round spends at most $1,290.00 inside the $1,512.00 approved,** as `ceiling_cents: 129000`. Before every launch, `plan` adds the spend to the price of the rest of the round. It exits 5 when the sum is above the ceiling.
 
-These rulings open again if the owner approves the final round, or moves the $700 or the $1,512.00.
+**The owner approved the code pilot at $130.** On 2026-10-22 he ruled on #1777 that the pilot's ceiling is $130 ([comment 6339176737](https://github.com/headwater-ai/headwater/issues/1777#issuecomment-6339176737)). The `code-pilot` round declares 13000 cents. Its 180 sessions cost about $107 at the realized costs, so about $23 is left. That covers one reworded probe, which the owner ruled re-runs 18 sessions in scenario 0 alone, at about $15.59. A rewording that does not fit under the ceiling is dropped, with the reason recorded. A probe whose pilot rate in scenario 0 is outside 15 to 70 percent is reworded or dropped before the code round. The code round, $220.00 at the declared cost, is not approved. Its round declares 0 cents, and the owner rules on its spend with #1778. `tools/probe/code-pilot.spec` and `tools/probe/code-campaign.spec` hold the lines of each, and `sh tools/probe/campaign.sh --dry-run --spec <spec>` prints its sessions, its price and its approval.
+
+These rulings open again if the owner approves the final round or the code round, or moves the $700, the $1,512.00 or the $130.
 
 The dry run builds the tree of each scenario and runs the leak check over it. The check reads the always-loaded text, the body of each skill, and the text the intent hook injects for the task of each probe. A leak stops the dry run with 8. A batch of the spec runs the same check before each invocation, so the check runs again before each round.
 

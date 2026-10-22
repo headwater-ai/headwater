@@ -701,7 +701,12 @@ if [ -x "$engine" ]; then
     rm -rf "$cot" "$scratch/cmd-ws" "$scratch/cmd-ran"
     mkdir -p "$cot/src" "$cot/site"
     cp -a "$root/.headwater" "$root/CLAUDE.md" "$cot/"
-    awk '/^oracles: \{\}$/ {
+    # The fixture's two oracles stand in for the block the declaration
+    # carries, whatever that block holds (#1835 declared the first ones).
+    awk 'skip && /^[^ ]/ { skip = 0 }
+    skip { next }
+    /^oracles:/ {
+        skip = 1
         print "oracles:"
         print "  fixture-oracle:"
         print "    paths: [src/**]"
@@ -1284,7 +1289,10 @@ if [ -x "$engine" ]; then
     cp "$root/docs/probes/$tombstone.md" "$scratch/held/docs/probes/"
     printf '// The hidden test of HW-PROBE-%s.\n#[test]\nfn hidden() {}\n' "$tombstone" \
         > "$scratch/held/$hidden"
-    awk -v h="$hidden" '/^oracles: \{\}$/ {
+    awk -v h="$hidden" 'skip && /^[^ ]/ { skip = 0 }
+    skip { next }
+    /^oracles:/ {
+        skip = 1
         print "oracles:"
         print "  hidden-oracle:"
         print "    paths: [engine/**]"
@@ -1451,7 +1459,9 @@ if [ "$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)" = "$root" ]; then
     # Outside `docs/`, every probe of the shelf is named by a declared fold or
     # by one of the three files that state an answer, and by nothing else
     # (#1384). The third is the case table of the harder probes (#1472), which
-    # holds the shallow and the sound answer of each. A fold dropped from the list, or a new file that names a probe,
+    # holds the shallow and the sound answer of each. Two more are the hidden
+    # oracles of the code set (#1835), a test and a script, each of which
+    # names its probe so that the seal removes it. A fold dropped from the list, or a new file that names a probe,
     # moves this set, so each entry of the list is held here.
     : > "$scratch/outside-naming.txt"
     for shelf_probe in "$root"/docs/probes/*.md; do
@@ -1460,9 +1470,33 @@ if [ "$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)" = "$root" ]; then
         sh "$root/tools/probe/seal.sh" --naming "$scratch/corpus" "$shelf_id" \
             | awk -v here="$scratch/corpus/" 'index($0, here) == 1 { $0 = substr($0, length(here) + 1) } $0 !~ /^docs\//' >> "$scratch/outside-naming.txt"
     done
-    same "outside docs/, only the three files that state an answer name a probe and are not folds" \
-        ".claude/skills/fixtures.sh engine/crates/probe/tests/corpus.rs tools/probe/probe-record-fixtures.sh" \
+    same "outside docs/, only the three files that state an answer and the two hidden oracles name a probe and are not folds" \
+        ".claude/skills/fixtures.sh engine/crates/check/tests/probe_oracle_future_date.rs engine/crates/probe/tests/corpus.rs tools/probe/oracle-figure-added.sh tools/probe/probe-record-fixtures.sh" \
         "$(LC_ALL=C sort -u "$scratch/outside-naming.txt" | tr '\n' ' ' | sed 's/ $//')"
+
+    # The figure oracle of the code set (#1835), in three directions, over a
+    # planted figures check: a page with the pin's keys alone, the same page
+    # with one key more, and that page under a figures check that refuses.
+    # The pin's keys are then held against the page, because a figure added
+    # to the page and not to the pin would pass every session of the probe.
+    fo=$scratch/figure-oracle
+    rm -rf "$fo"
+    mkdir -p "$fo/tools/site" "$fo/tools/probe" "$fo/site/proof"
+    cp "$root/tools/probe/oracle-figure-added.sh" "$fo/tools/probe/"
+    printf '%s\n' 'exit 0' > "$fo/tools/site/refresh-figures.sh"
+    sed -n 's/^PIN_KEYS="\(.*\)"$/\1/p' "$root/tools/probe/oracle-figure-added.sh" | tr ' ' '\n' \
+        | sed 's/.*/<b data-figure="&"><\/b>/' > "$fo/site/proof/index.html"
+    (cd "$fo" && sh tools/probe/oracle-figure-added.sh) >/dev/null 2>&1
+    same "the figure oracle fails a page that carries the pin's keys alone" "1" "$?"
+    printf '%s\n' '<b data-figure="rules.quiet"></b>' >> "$fo/site/proof/index.html"
+    (cd "$fo" && sh tools/probe/oracle-figure-added.sh) >/dev/null 2>&1
+    same "the figure oracle passes a page that carries one key the pin's page does not" "0" "$?"
+    printf '%s\n' 'exit 1' > "$fo/tools/site/refresh-figures.sh"
+    (cd "$fo" && sh tools/probe/oracle-figure-added.sh) >/dev/null 2>&1
+    same "the figure oracle fails that page when the figures check refuses it" "1" "$?"
+    same "the figure oracle's pin keys are the keys site/proof/index.html carries" \
+        "$(grep -o 'data-figure="[^"]*"' "$root/site/proof/index.html" | sed 's/^data-figure="//; s/"$//' | LC_ALL=C sort -u | tr '\n' ' ' | sed 's/ $//')" \
+        "$(sed -n 's/^PIN_KEYS="\(.*\)"$/\1/p' "$root/tools/probe/oracle-figure-added.sh" | tr ' ' '\n' | LC_ALL=C sort -u | tr '\n' ' ' | sed 's/ $//')"
     sh "$root/tools/probe/seal.sh" "$scratch/corpus" \
         HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer \
         HW-PROBE-a-session-answers-from-the-register-without-opening-the-question-it-replaced \
@@ -5142,11 +5176,12 @@ if [ -x "$engine" ]; then
     present "and each leak-kept line on its own" "line 8 holds only leak-kept probes" "$scratch/dry.out"
 
     # A line that pools a leak-kept probe with one that is not fails the dry run,
-    # and a plan over its ceiling is printed rather than fatal: eight
+    # and a plan over its ceiling is printed rather than fatal: ten
     # sufficiency probes over the documentation tier's two arms at 30
-    # repetitions is 480 sessions, $240.00 against its $130.00. Two of the
-    # eight are the harder variants of #1718, which this line names by
-    # category and not by identifier. The campaign
+    # repetitions is 600 sessions, $300.00 against its $130.00. Two of the
+    # ten are the harder variants of #1718, and two are the patched probes of
+    # the code set (#1835), which this line names by category and not by
+    # identifier. The campaign
     # tier no longer serves: no plan of one line passes its $2052.00 (#1659).
     printf 'documentation absent sufficiency\n' > "$scratch/pooled.spec"
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
@@ -5154,7 +5189,7 @@ if [ -x "$engine" ]; then
     same "a line that pools a leak-kept probe fails the dry run with 8, not 5" "8" "$?"
     present "and names the line" "line 1 pools a probe under \`leaks_kept:\`" "$scratch/pooled.out"
     present "and the ceiling's refusal is printed as a line" \
-        "L1 480 sessions project \$240.00 against a declared ceiling of \$130.00" "$scratch/pooled.out"
+        "L1 600 sessions project \$300.00 against a declared ceiling of \$130.00" "$scratch/pooled.out"
 
     # Any other refusal of a plan is the batch driver's 5.
     printf 'campaign present discovery\n' > "$scratch/refused.spec"
@@ -5432,7 +5467,27 @@ if [ -x "$engine" ]; then
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$scratch/add-round.spec" > "$scratch/add-round.out" 2> /dev/null
     same "a line of a round that rounds: does not declare is refused with 5" "5" "$?"
-    present "and the refusal names the rounds declared" "declares no round \`pilot\`. It declares screening tuning final" "$scratch/add-round.out"
+    present "and the refusal names the rounds declared" "declares no round \`pilot\`. It declares screening tuning final code code-pilot" "$scratch/add-round.out"
+    # The code round and its pilot (#1835), each in its own spec. The code
+    # round's count is computed from its rates over the five probes of the
+    # code set, and the pilot's is the count it declares. The leak check runs
+    # over scenarios 0 and 1 for the five probes and finds nothing.
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$root/tools/probe/code-campaign.spec" > "$scratch/add-code.out" 2> "$scratch/add-code.err"
+    same "the dry run of the code round exits 0, its leak check clean" "0" "$?"
+    present "it computes 44 repetitions of each code probe" "so ceil(219 / 5) = 44 repetitions of each probe" "$scratch/add-code.out"
+    present "and prices the round at 440 sessions" "round code: 440 sessions, \$220.00" "$scratch/add-code.out"
+    present "and prints it as not approved" "round code: not approved, so the batch refuses its lines with 5" "$scratch/add-code.out"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$root/tools/probe/code-pilot.spec" > "$scratch/add-pilot.out" 2> "$scratch/add-pilot.err"
+    same "the dry run of the pilot exits 0, its leak check clean" "0" "$?"
+    present "it plans the count the pilot declares" "5 probes x 18 repetitions (round code-pilot, declared) = 90 sessions" "$scratch/add-pilot.out"
+    present "and prices the pilot at 180 sessions" "round code-pilot: 180 sessions, \$90.00" "$scratch/add-pilot.out"
+    present "and prints it as approved to the owner's \$130" "round code-pilot: approved to \$130.00 over every attempt, so the batch runs its lines" "$scratch/add-pilot.out"
+    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign-dry-run.sh" --priced "$root/tools/probe/code-pilot.spec" \
+        > "$scratch/add-pilot-priced.out" 2> /dev/null
+    same "--priced gives each pilot line the declared count" "18 18" \
+        "$(awk '{ print $3 }' "$scratch/add-pilot-priced.out" | tr '\n' ' ' | sed 's/ $//')"
     printf 'additive scenario-3 screening %s\n' "$pointer_probe" > "$scratch/add-outside.spec"
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$scratch/add-outside.spec" > "$scratch/add-outside.out" 2> /dev/null
@@ -5625,13 +5680,15 @@ if [ -x "$engine" ]; then
         rm -rf "$scratch/run-tune-out"
         # Each line's jobs are its own plan's count, not the first line's
         # (verify round 1): the regression tier runs 1 repetition and the
-        # campaign tier 30, so one spec of both is 8 + 8 x 30 jobs.
+        # campaign tier 30, so one spec of both is 10 + 10 x 30 jobs. The
+        # sufficiency shelf is ten probes since the code set added C1 and C2
+        # (#1835).
         printf 'regression present sufficiency\ncampaign present sufficiency\n' > "$scratch/run-tiers.spec"
         rm -rf "$scratch/run-tiers-out"
         HEADWATER_PROBE_HOST_CONFIG="$scratch/run-host" CARGO_TARGET_DIR="$scratch/gate-target" PATH="$scratch/run-bin:$PATH" \
             sh "$root/tools/probe/campaign.sh" --out "$scratch/run-tiers-out" --model claude-haiku-4-5 \
             --spec "$scratch/run-tiers.spec" --max-turns 10 --max-sessions 1 > /dev/null 2> "$scratch/run-tiers.err"
-        same "a spec of two tiers runs each line at its own plan's count" "8 240" \
+        same "a spec of two tiers runs each line at its own plan's count" "10 300" \
             "$(awk '$2 == 1' "$scratch/run-tiers-out/jobs" 2>/dev/null | wc -l | tr -d ' ') $(awk '$2 == 2' "$scratch/run-tiers-out/jobs" 2>/dev/null | wc -l | tr -d ' ')"
         rm -rf "$scratch/run-out" "$scratch/run-final-out" "$scratch/run-tiers-out"
     else
@@ -5731,6 +5788,30 @@ python3 "$declared_py" "$scratch/open-docs1.yml" rounds > /dev/null 2> /dev/null
 rounds_status=$?
 python3 "$declared_py" "$scratch/open-docs1.yml" approved > /dev/null 2> /dev/null
 same "declared.py rounds and approved still read a declaration with an open layer" "0 0" "$rounds_status $?"
+# A round may declare its own count in place of its rates (#1835): the pilot
+# of the code set measures each probe's rate and no difference. Its line
+# carries `repetitions <n>` where the rates stand, so the probes stay in the
+# same fields, and a round that declares both or neither is refused.
+python3 "$declared_py" "$root/.headwater/probe.yml" rounds > "$scratch/reps-rounds.out" 2> /dev/null
+same "declared.py rounds prints the pilot's declared count in place of its rates" "0 code-pilot code repetitions 18 1 5" \
+    "$? $(awk '$1 == "code-pilot" { print $1, $2, $3, $4, $5, NF - 5 }' "$scratch/reps-rounds.out")"
+same "and the code round's rates, as the final round's" "code code 0.9 0.8 1 5" \
+    "$(awk '$1 == "code" { print $1, $2, $3, $4, $5, NF - 5 }' "$scratch/reps-rounds.out")"
+# Each refusal exits 2 and states its own reason. `name|sed|needle`.
+for reps_case in \
+    "a round with both rates and repetitions|s/^    repetitions: 18$/    repetitions: 18\n    rates: [0.90, 0.80]/|declares both \`rates\` and \`repetitions\`" \
+    "a round with neither rates nor repetitions|/^    repetitions: 18$/d|declares neither \`rates\` nor \`repetitions\`" \
+    "a count of zero|s/^    repetitions: 18$/    repetitions: 0/|must be a whole number above zero" \
+    "a count that is a word|s/^    repetitions: 18$/    repetitions: many/|must be a whole number above zero" \
+    "a count that is a quoted number|s/^    repetitions: 18$/    repetitions: \"18\"/|must be a whole number above zero"
+do
+    reps_name=${reps_case%%|*}; reps_rest=${reps_case#*|}
+    reps_sed=${reps_rest%%|*}; reps_needle=${reps_rest#*|}
+    sed "$reps_sed" "$root/.headwater/probe.yml" > "$scratch/reps-bad.yml"
+    python3 "$declared_py" "$scratch/reps-bad.yml" rounds > "$scratch/reps-bad.out" 2> "$scratch/reps-bad.err"
+    same "declared.py rounds refuses $reps_name, with 2 and its reason" "2 1 0" \
+        "$? $(grep -cF -- "$reps_needle" "$scratch/reps-bad.err") $(wc -c < "$scratch/reps-bad.out" | tr -d ' ')"
+done
 awk '$0 == "    approved_cents: 70000" { print; print "    open: none"; next } { print }' "$root/.headwater/probe.yml" > "$scratch/open-screening.yml"
 python3 "$declared_py" "$scratch/open-screening.yml" approved > /dev/null 2> "$scratch/open-screening.err"
 same "and refuse open on any round but tuning, with 2" "2 1" \
