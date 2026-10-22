@@ -1217,10 +1217,15 @@ fn a_command_oracle_fails_a_session_only_when_every_artifact_carries_it() {
     };
     let on_both = "[\"test:build\", \"test:fixture-tests\"]";
     let source = event(on_both, on_both);
-    assert!(source.contains("path: README.md"), "the fixture still carries the patched event");
+    assert!(
+        source.contains("path: README.md"),
+        "the fixture still carries the patched event"
+    );
     let row_verdict = |source: &str| {
         let results = Results::over(&record_of(source), &selected);
-        row_of(&results, "PROBE-FIX-patched").sessions[0].verdict.clone()
+        row_of(&results, "PROBE-FIX-patched").sessions[0]
+            .verdict
+            .clone()
     };
     assert!(
         matches!(
@@ -1233,10 +1238,7 @@ fn a_command_oracle_fails_a_session_only_when_every_artifact_carries_it() {
     // The shape the Done-when as written gives: the finding on the matched
     // `.rs` alone, and the README clean. The grader passes it.
     assert!(
-        matches!(
-            row_verdict(&event(on_both, "[]")),
-            Verdict::Satisfied(_)
-        ),
+        matches!(row_verdict(&event(on_both, "[]")), Verdict::Satisfied(_)),
         "{:?}",
         row_verdict(&event(on_both, "[]"))
     );
