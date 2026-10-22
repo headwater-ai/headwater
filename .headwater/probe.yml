@@ -426,7 +426,10 @@ tiers:
 # goes with `engine`: a session has no network and cannot build it, so a
 # tree with the engine source and no binary has no `headwater` command.
 # `.agents/skills` goes with `skills`, because `headwater init --harness`
-# writes it. `AGENTS.md` and `.codex` are the Codex copies of the standing
+# writes it. `engine/crates/cli/harness/skills` and `/agents` go with
+# `skills` too: they are the engine's source copies of the same text, which
+# `include_str!` embeds in the binary. The campaign builds the binary from
+# its own checkout, so a scenario tree does not need them to have it. `AGENTS.md` and `.codex` are the Codex copies of the standing
 # instructions and the hook, so they go with the rest of the harness, and
 # scenario 2 differs from scenario 1 by one copy of `CLAUDE.md`. The Copilot
 # copies under `.github/` go with the harness for the same reason:
@@ -462,6 +465,8 @@ layers:
       - .claude/skills/headwater-sweep
       - .claude/agents/headwater-maintainer.md
       - .agents/skills
+      - engine/crates/cli/harness/skills
+      - engine/crates/cli/harness/agents
   hook:
     paths:
       - .claude/hooks/intent.sh
