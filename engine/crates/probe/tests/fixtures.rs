@@ -1863,6 +1863,62 @@ fn plan_over_probe(edit: &dyn Fn(&str) -> String) -> Plan {
     plan
 }
 
+/// The refusal a `patched` probe gets when it grades against `oracle`.
+fn patched_against(oracle: &str) -> Option<Refusal> {
+    plan_over_probe(&|source| {
+        source
+            .replace("expectation: opened", "expectation: patched")
+            .replace("oracle: \"none\"", &format!("oracle: {oracle}"))
+    })
+    .refusal
+}
+
+/// A declared command oracle plans exactly as a carried rule does (#1834).
+///
+/// The edit names the oracle in both scratch probes, and only the first is
+/// made `patched`. So a plan that admits the patched probe's oracle reaches
+/// the second probe, and refuses it for naming an oracle it does not use.
+#[test]
+fn a_patched_probe_naming_a_declared_command_oracle_plans() {
+    for oracle in [
+        "section.required.missing",
+        "test:fixture-tests",
+        "command:fixture-command",
+    ] {
+        match patched_against(oracle) {
+            Some(Refusal::OracleNotUsed { probe, rule, .. }) => {
+                assert_eq!(probe, "PROBE-FIX-answered", "`{oracle}`");
+                assert_eq!(rule, oracle);
+            }
+            other => panic!(
+                "`{oracle}` is a carried rule or an oracle the fixture declares of its own \
+                 parser, so the patched probe plans: {other:?}"
+            ),
+        }
+    }
+}
+
+/// A `test:` or `command:` name that `oracles` does not declare of that parser
+/// is refused (#1834). `test:build` and a case name are diagnostics of one
+/// oracle and never an oracle: a probe graded on either passes a session whose
+/// code does not compile, or whose case never ran.
+#[test]
+fn a_patched_probe_naming_an_undeclared_command_oracle_stops_the_run() {
+    for oracle in [
+        "test:undeclared",
+        "test:build",
+        "test:a::b",
+        "command:undeclared",
+        "test:fixture-command",
+        "command:fixture-tests",
+    ] {
+        match patched_against(oracle) {
+            Some(Refusal::OracleUnknown { rule, .. }) => assert_eq!(rule, oracle),
+            other => panic!("`{oracle}` is not a declared oracle of its parser: {other:?}"),
+        }
+    }
+}
+
 #[test]
 fn a_patched_probe_naming_a_rule_this_engine_does_not_carry_stops_the_run() {
     let plan = plan_over_probe(&|source| {
