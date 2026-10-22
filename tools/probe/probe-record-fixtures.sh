@@ -1470,9 +1470,33 @@ if [ "$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)" = "$root" ]; then
         sh "$root/tools/probe/seal.sh" --naming "$scratch/corpus" "$shelf_id" \
             | awk -v here="$scratch/corpus/" 'index($0, here) == 1 { $0 = substr($0, length(here) + 1) } $0 !~ /^docs\//' >> "$scratch/outside-naming.txt"
     done
-    same "outside docs/, only the three files that state an answer name a probe and are not folds" \
+    same "outside docs/, only the three files that state an answer and the two hidden oracles name a probe and are not folds" \
         ".claude/skills/fixtures.sh engine/crates/check/tests/probe_oracle_future_date.rs engine/crates/probe/tests/corpus.rs tools/probe/oracle-figure-added.sh tools/probe/probe-record-fixtures.sh" \
         "$(LC_ALL=C sort -u "$scratch/outside-naming.txt" | tr '\n' ' ' | sed 's/ $//')"
+
+    # The figure oracle of the code set (#1835), in three directions, over a
+    # planted figures check: a page with the pin's keys alone, the same page
+    # with one key more, and that page under a figures check that refuses.
+    # The pin's keys are then held against the page, because a figure added
+    # to the page and not to the pin would pass every session of the probe.
+    fo=$scratch/figure-oracle
+    rm -rf "$fo"
+    mkdir -p "$fo/tools/site" "$fo/tools/probe" "$fo/site/proof"
+    cp "$root/tools/probe/oracle-figure-added.sh" "$fo/tools/probe/"
+    printf '%s\n' 'exit 0' > "$fo/tools/site/refresh-figures.sh"
+    sed -n 's/^PIN_KEYS="\(.*\)"$/\1/p' "$root/tools/probe/oracle-figure-added.sh" | tr ' ' '\n' \
+        | sed 's/.*/<b data-figure="&"><\/b>/' > "$fo/site/proof/index.html"
+    (cd "$fo" && sh tools/probe/oracle-figure-added.sh) >/dev/null 2>&1
+    same "the figure oracle fails a page that carries the pin's keys alone" "1" "$?"
+    printf '%s\n' '<b data-figure="rules.quiet"></b>' >> "$fo/site/proof/index.html"
+    (cd "$fo" && sh tools/probe/oracle-figure-added.sh) >/dev/null 2>&1
+    same "the figure oracle passes a page that carries one key the pin's page does not" "0" "$?"
+    printf '%s\n' 'exit 1' > "$fo/tools/site/refresh-figures.sh"
+    (cd "$fo" && sh tools/probe/oracle-figure-added.sh) >/dev/null 2>&1
+    same "the figure oracle fails that page when the figures check refuses it" "1" "$?"
+    same "the figure oracle's pin keys are the keys site/proof/index.html carries" \
+        "$(grep -o 'data-figure="[^"]*"' "$root/site/proof/index.html" | sed 's/^data-figure="//; s/"$//' | LC_ALL=C sort -u | tr '\n' ' ' | sed 's/ $//')" \
+        "$(sed -n 's/^PIN_KEYS="\(.*\)"$/\1/p' "$root/tools/probe/oracle-figure-added.sh" | tr ' ' '\n' | LC_ALL=C sort -u | tr '\n' ' ' | sed 's/ $//')"
     sh "$root/tools/probe/seal.sh" "$scratch/corpus" \
         HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer \
         HW-PROBE-a-session-answers-from-the-register-without-opening-the-question-it-replaced \
