@@ -1140,6 +1140,10 @@ docs/probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descr
   typed: probe
 docs/probes/a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer.md
   typed: probe
+docs/probes/a-figure-a-session-adds-to-a-hand-built-page-is-measured-and-never-typed.md
+  typed: probe
+docs/probes/a-rule-that-reads-the-date-takes-it-from-the-run-and-ships-with-the-fixture-that-fails-it.md
+  typed: probe
 docs/probes/a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced.md
   typed: probe
 docs/probes/a-session-answers-from-the-register-without-opening-the-question-it-replaced.md
@@ -1159,6 +1163,12 @@ docs/probes/a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-check
 docs/probes/a-session-records-which-obligation-an-evaluation-discharged.md
   typed: probe
 docs/probes/a-session-says-how-a-governs-line-reaches-a-document.md
+  typed: probe
+docs/probes/a-session-says-what-a-refusal-writes-on-standard-output-under-json.md
+  typed: probe
+docs/probes/a-session-says-what-a-verb-that-mints-an-identifier-writes-beside-the-document.md
+  typed: probe
+docs/probes/a-session-says-where-a-check-gets-the-version-that-stood-before-a-change.md
   typed: probe
 docs/probes/a-session-says-where-a-figure-on-the-site-is-written.md
   typed: probe
