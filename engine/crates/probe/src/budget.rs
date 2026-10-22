@@ -392,7 +392,17 @@ impl Budgets {
         };
 
         let mut answer_keys: Vec<(String, Vec<String>)> = Vec::new();
-        if let Some(declared) = root.get("answer_keys") {
+        // The seal deletes the line of each answer key it removes, so a
+        // sealed declaration whose every key it removed holds `answer_keys:`
+        // and no entry. That reads as no answer key, because the recorder
+        // reads the sealed tree's declaration for its command oracles
+        // (#1834). Any other scalar is still refused.
+        let emptied = |value: &Value| {
+            value
+                .as_scalar()
+                .is_some_and(headwater_yaml::core_schema::as_null)
+        };
+        if let Some(declared) = root.get("answer_keys").filter(|d| !emptied(&d.value)) {
             let Some(by_probe) = declared.value.as_map() else {
                 return Err(Unreadable::Malformed(format!(
                     "`answer_keys` in {PATH} is not a mapping of probe to a sequence of paths"
@@ -1628,6 +1638,21 @@ tiers:
         let budgets = Budgets::read(GOOD).expect("reads");
         assert!(budgets.folds.is_empty());
         assert!(budgets.answer_keys.is_empty());
+    }
+
+    /// A sealed declaration whose every answer key the seal removed holds
+    /// `answer_keys:` and no entry, and the recorder reads it for its command
+    /// oracles (#1834). It reads as no answer key. A scalar is still refused.
+    #[test]
+    fn an_answer_keys_block_the_seal_emptied_reads_as_no_answer_key() {
+        for emptied in ["answer_keys:\n", "answer_keys:\n\n# a comment\n"] {
+            let budgets = Budgets::read(&format!("{emptied}{GOOD}")).expect(emptied);
+            assert!(budgets.answer_keys.is_empty(), "{emptied}");
+        }
+        assert!(matches!(
+            Budgets::read(&format!("answer_keys: docs/a.md\n{GOOD}")),
+            Err(Unreadable::Malformed(_))
+        ));
     }
 
     #[test]
