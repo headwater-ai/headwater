@@ -1193,6 +1193,22 @@ check "rank: a closed round screens no more variants" code_is 6
 check "rank: and says it is closed" err_has "round 1 of the skills layer is closed"
 checkout=$fix/repo
 
+# A screen of 25 of 25 does not keep its variant: the confirmation does,
+# and its interval holds zero.
+rank_case
+screened 1 12 25
+printf -- '--pin\n%s\n' "$(git -C "$fix/repo" rev-parse HEAD)" > "$CASE/root/skills-r1-v1/driver.argv"
+checkout=$fix/repo
+run launch "$CASE/root" confirm skills-r1-v1
+await_calls 1
+checkout=$CASE/checkout
+skill_batch skills-r1-confirm "confirm skills-r1-v1" 145 40
+echo 'pooled: 85/145 against 80/145, +3.4 points [-7.9, +14.6]' > "$CASE/pooled-keep"
+run result "$CASE/root" skills-r1-confirm
+check "rank: a variant that screened 25 of 25, confirmed with an interval that holds zero, is not kept" out_has "keep: not kept"
+check "rank: and the ledger keeps nothing of the screen" sh -c "! grep -q '\"kept\": true' '$CASE/root/ledger.jsonl'"
+checkout=$fix/repo
+
 # ---------------------------------------------------- rounds: stages (#1838)
 
 # A screen is one of `variants` variants, each on a tree of its own.

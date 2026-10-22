@@ -5388,7 +5388,7 @@ if [ -x "$engine" ]; then
     same "a leak string in a skills-layer skill body fails the additive dry run with 8" "8" "$?"
     same "and it names every scenario that holds skills, and no other" "4 8 10 11 12 13" \
         "$(sed -n "s/^leak check, scenario-\([0-9]*\) tree: leak .*headwater-orient\/SKILL.md $body_string$/\1/p" "$scratch/add-body.out" | LC_ALL=C sort -n | tr '\n' ' ' | sed 's/ $//')"
-    present "and prints the round sums all the same" "total: 7000 sessions" "$scratch/add-body.out"
+    present "and prints the round sums all the same" "total: 25900 sessions" "$scratch/add-body.out"
 
     # The hook's text: the pointer probe's route names its own target, and no
     # file of a hook scenario's always-loaded text or skill bodies does, but
