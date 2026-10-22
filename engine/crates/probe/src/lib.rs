@@ -127,7 +127,7 @@ pub mod intake;
 pub mod plan;
 pub mod read_set;
 
-pub use budget::{Budgets, Envelope};
+pub use budget::{Budgets, Envelope, Oracle, OracleParser};
 pub use grade::Results;
 pub use intake::Record;
 pub use plan::Plan;

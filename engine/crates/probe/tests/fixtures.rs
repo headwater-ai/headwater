@@ -1190,6 +1190,65 @@ fn a_patched_session_that_produced_nothing_says_so() {
         .contains("produced no artifact"));
 }
 
+/// A `patched` session graded against a command oracle (#1834), over the two
+/// shapes of event the transform can write for a session that produced code
+/// and a README. The grader is unchanged: it is satisfied by any artifact whose
+/// findings lack the oracle. So the whole-oracle finding has to be on every
+/// artifact, or a session whose code did not compile passes on its README.
+#[test]
+fn a_command_oracle_fails_a_session_only_when_every_artifact_carries_it() {
+    let mut selected = regression().selected;
+    let patched = selected
+        .iter_mut()
+        .find(|probe| probe.id == "PROBE-FIX-patched")
+        .expect("the fixture selects the patched probe");
+    patched.oracle = Some("test:fixture-tests".to_string());
+    let artifact = "    - path: out/patch.md\n      result: sha256:e\n      cites: []\n      \
+                    findings: []\n";
+    let event = |code: &str, readme: &str| {
+        transcript("transcript.md").replace(
+            artifact,
+            &format!(
+                "    - path: src/lib.rs\n      result: sha256:e\n      cites: []\n      \
+                 findings: {code}\n    - path: README.md\n      result: sha256:f\n      \
+                 cites: []\n      findings: {readme}\n"
+            ),
+        )
+    };
+    let on_both = "[\"test:build\", \"test:fixture-tests\"]";
+    let source = event(on_both, on_both);
+    assert!(
+        source.contains("path: README.md"),
+        "the fixture still carries the patched event"
+    );
+    let row_verdict = |source: &str| {
+        let results = Results::over(&record_of(source), &selected);
+        row_of(&results, "PROBE-FIX-patched").sessions[0]
+            .verdict
+            .clone()
+    };
+    assert!(
+        matches!(
+            row_verdict(&source),
+            Verdict::NotSatisfied(Miss::OracleReported { .. })
+        ),
+        "{:?}",
+        row_verdict(&source)
+    );
+    // The shape the Done-when as written gives: the finding on the matched
+    // `.rs` alone, and the README clean. The grader passes it.
+    assert!(
+        matches!(row_verdict(&event(on_both, "[]")), Verdict::Satisfied(_)),
+        "{:?}",
+        row_verdict(&event(on_both, "[]"))
+    );
+    // A diagnostic is not the oracle: `test:build` alone on both passes.
+    assert!(matches!(
+        row_verdict(&event("[\"test:build\"]", "[\"test:build\"]")),
+        Verdict::Satisfied(_)
+    ));
+}
+
 /// An answer inside the closed set and outside the expected value is wrong,
 /// and never satisfied. Before #1229 the grader tested membership in the set,
 /// so the one probe on the shelf passed every word its task offered.
@@ -1861,6 +1920,62 @@ fn plan_over_probe(edit: &dyn Fn(&str) -> String) -> Plan {
     );
     let _ = std::fs::remove_dir_all(&directory);
     plan
+}
+
+/// The refusal a `patched` probe gets when it grades against `oracle`.
+fn patched_against(oracle: &str) -> Option<Refusal> {
+    plan_over_probe(&|source| {
+        source
+            .replace("expectation: opened", "expectation: patched")
+            .replace("oracle: \"none\"", &format!("oracle: {oracle}"))
+    })
+    .refusal
+}
+
+/// A declared command oracle plans exactly as a carried rule does (#1834).
+///
+/// The edit names the oracle in both scratch probes, and only the first is
+/// made `patched`. So a plan that admits the patched probe's oracle reaches
+/// the second probe, and refuses it for naming an oracle it does not use.
+#[test]
+fn a_patched_probe_naming_a_declared_command_oracle_plans() {
+    for oracle in [
+        "section.required.missing",
+        "test:fixture-tests",
+        "command:fixture-command",
+    ] {
+        match patched_against(oracle) {
+            Some(Refusal::OracleNotUsed { probe, rule, .. }) => {
+                assert_eq!(probe, "PROBE-FIX-answered", "`{oracle}`");
+                assert_eq!(rule, oracle);
+            }
+            other => panic!(
+                "`{oracle}` is a carried rule or an oracle the fixture declares of its own \
+                 parser, so the patched probe plans: {other:?}"
+            ),
+        }
+    }
+}
+
+/// A `test:` or `command:` name that `oracles` does not declare of that parser
+/// is refused (#1834). `test:build` and a case name are diagnostics of one
+/// oracle and never an oracle: a probe graded on either passes a session whose
+/// code does not compile, or whose case never ran.
+#[test]
+fn a_patched_probe_naming_an_undeclared_command_oracle_stops_the_run() {
+    for oracle in [
+        "test:undeclared",
+        "test:build",
+        "test:a::b",
+        "command:undeclared",
+        "test:fixture-command",
+        "command:fixture-tests",
+    ] {
+        match patched_against(oracle) {
+            Some(Refusal::OracleUnknown { rule, .. }) => assert_eq!(rule, oracle),
+            other => panic!("`{oracle}` is not a declared oracle of its parser: {other:?}"),
+        }
+    }
 }
 
 #[test]

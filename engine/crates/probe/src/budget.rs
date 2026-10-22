@@ -137,6 +137,74 @@ pub struct Budgets {
     /// each set's name and the probe identifiers it holds. `headwater probe
     /// plan --set <name>` selects one. Empty where the file declares none.
     pub sets: Vec<(String, Vec<String>)>,
+    /// The `oracles` mapping (#1834), in declared order: each command the
+    /// repository declares as the oracle of a code artifact. A `patched` probe
+    /// grades against `test:<name>` of a `cargo-test` oracle or
+    /// `command:<name>` of an `exit` oracle, and against no other name of
+    /// either prefix. Empty where the file declares none.
+    pub oracles: Vec<Oracle>,
+}
+
+/// How the recorder reads the output of a command oracle (#1834).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum OracleParser {
+    /// `cargo test` output: each failed case, a build that failed, and the
+    /// whole oracle when the command exits non-zero or no case passed.
+    CargoTest,
+    /// The exit status alone: a non-zero exit fails the oracle.
+    Exit,
+}
+
+impl OracleParser {
+    /// The name `.headwater/probe.yml` declares the parser by.
+    pub fn name(self) -> &'static str {
+        match self {
+            OracleParser::CargoTest => "cargo-test",
+            OracleParser::Exit => "exit",
+        }
+    }
+
+    /// The prefix of the findings the parser writes, and of the `oracle:`
+    /// value a `patched` probe declares to grade against it.
+    pub fn prefix(self) -> &'static str {
+        match self {
+            OracleParser::CargoTest => "test",
+            OracleParser::Exit => "command",
+        }
+    }
+
+    fn read(name: &str) -> Option<OracleParser> {
+        match name {
+            "cargo-test" => Some(OracleParser::CargoTest),
+            "exit" => Some(OracleParser::Exit),
+            _ => None,
+        }
+    }
+}
+
+/// One command the repository declares as the oracle of a code artifact
+/// (#1834).
+///
+/// The recorder runs `command` once per session in the grading copy, which
+/// holds every artifact the session produced, when a produced artifact matches
+/// one of `paths`. `holds` names the files the seal removes from every
+/// workspace and the grading copy keeps, such as a hidden test that names its
+/// probe.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Oracle {
+    pub name: String,
+    pub paths: Vec<String>,
+    pub command: String,
+    pub parser: OracleParser,
+    pub holds: Vec<String>,
+}
+
+impl Oracle {
+    /// The finding the whole oracle writes when it fails, which is also the
+    /// `oracle:` value a `patched` probe declares to grade against it.
+    pub fn finding(&self) -> String {
+        format!("{}:{}", self.parser.prefix(), self.name)
+    }
 }
 
 /// One layer of the additive campaign (#1774): the paths it adds to plain
@@ -324,7 +392,17 @@ impl Budgets {
         };
 
         let mut answer_keys: Vec<(String, Vec<String>)> = Vec::new();
-        if let Some(declared) = root.get("answer_keys") {
+        // The seal deletes the line of each answer key it removes, so a
+        // sealed declaration whose every key it removed holds `answer_keys:`
+        // and no entry. That reads as no answer key, because the recorder
+        // reads the sealed tree's declaration for its command oracles
+        // (#1834). Any other scalar is still refused.
+        let emptied = |value: &Value| {
+            value
+                .as_scalar()
+                .is_some_and(headwater_yaml::core_schema::as_null)
+        };
+        if let Some(declared) = root.get("answer_keys").filter(|d| !emptied(&d.value)) {
             let Some(by_probe) = declared.value.as_map() else {
                 return Err(Unreadable::Malformed(format!(
                     "`answer_keys` in {PATH} is not a mapping of probe to a sequence of paths"
@@ -390,6 +468,10 @@ impl Budgets {
             None => Vec::new(),
             Some(declared) => sets(&declared.value)?,
         };
+        let oracles = match root.get("oracles") {
+            None => Vec::new(),
+            Some(declared) => oracles(&declared.value)?,
+        };
         Ok(Budgets {
             tiers,
             instrument,
@@ -398,6 +480,7 @@ impl Budgets {
             layers,
             scenarios,
             sets,
+            oracles,
         })
     }
 
@@ -418,6 +501,81 @@ impl Budgets {
 /// So an identifier in two sets is refused, and so is an empty set, which
 /// plans a round of nothing. Whether each identifier names a probe document
 /// is the plan's question, because only the plan reads the corpus.
+/// The `oracles` mapping (#1834).
+///
+/// It refuses a name outside `[a-z0-9-]+`, the reserved name `build`, an
+/// unknown parser, an empty command or one with a control character, no
+/// `paths`, and a path that leaves the tree. The YAML loader refuses a
+/// duplicate name before anything reaches here.
+fn oracles(value: &Value) -> Result<Vec<Oracle>, Unreadable> {
+    let Some(block) = value.as_map() else {
+        return Err(Unreadable::Malformed(format!(
+            "`oracles` in {PATH} is not a mapping of oracle name to its declaration"
+        )));
+    };
+    let mut oracles: Vec<Oracle> = Vec::new();
+    for entry in block {
+        let name = entry.key.value.as_str().to_string();
+        if name.is_empty()
+            || !name
+                .chars()
+                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+            || name == "build"
+        {
+            return Err(Unreadable::OracleName { found: name });
+        }
+        let Some(fields) = entry.value.value.as_map() else {
+            return Err(Unreadable::Malformed(format!(
+                "the `{name}` oracle in {PATH} is not a mapping of `paths`, `command`, `parser` \
+                 and `holds`"
+            )));
+        };
+        let parser = text(fields, "parser").unwrap_or_default();
+        let Some(parser) = OracleParser::read(&parser) else {
+            return Err(Unreadable::OracleParser {
+                oracle: name,
+                found: parser,
+            });
+        };
+        let command = text(fields, "command").unwrap_or_default();
+        if command.trim().is_empty() || command.chars().any(char::is_control) {
+            return Err(Unreadable::OracleCommand {
+                oracle: name,
+                found: command,
+            });
+        }
+        let paths_of = |key: &str| -> Result<Vec<String>, Unreadable> {
+            match fields.get(key) {
+                None => Ok(Vec::new()),
+                Some(listed) => paths(&listed.value)
+                    .ok_or_else(|| {
+                        Unreadable::Malformed(format!(
+                            "the `{key}` of the `{name}` oracle in {PATH} is not a sequence of \
+                             paths"
+                        ))
+                    })?
+                    .map_err(|entry| Unreadable::OracleUnsafe {
+                        oracle: name.clone(),
+                        entry,
+                    }),
+            }
+        };
+        let patterns = paths_of("paths")?;
+        if patterns.is_empty() {
+            return Err(Unreadable::OraclePathless { oracle: name });
+        }
+        let holds = paths_of("holds")?;
+        oracles.push(Oracle {
+            name,
+            paths: patterns,
+            command,
+            parser,
+            holds,
+        });
+    }
+    Ok(oracles)
+}
+
 fn sets(value: &Value) -> Result<Vec<(String, Vec<String>)>, Unreadable> {
     let Some(block) = value.as_map() else {
         return Err(Unreadable::Malformed(format!(
@@ -1052,6 +1210,24 @@ pub enum Unreadable {
         first: String,
         second: String,
     },
+    OracleName {
+        found: String,
+    },
+    OracleParser {
+        oracle: String,
+        found: String,
+    },
+    OracleCommand {
+        oracle: String,
+        found: String,
+    },
+    OraclePathless {
+        oracle: String,
+    },
+    OracleUnsafe {
+        oracle: String,
+        entry: String,
+    },
 }
 
 impl std::fmt::Display for Unreadable {
@@ -1311,6 +1487,42 @@ impl std::fmt::Display for Unreadable {
                 first.escape_debug(),
                 second.escape_debug()
             ),
+            Unreadable::OracleName { found } => write!(
+                f,
+                "the `oracles` of {PATH} name an oracle `{}`. An oracle name is lower-case \
+                 letters, digits and hyphens, and not `build`, because `test:build` is the \
+                 finding of a build that failed",
+                found.escape_debug()
+            ),
+            Unreadable::OracleParser { oracle, found } => write!(
+                f,
+                "the `{}` oracle in {PATH} declares the parser `{}`. A parser is `cargo-test` \
+                 or `exit`",
+                oracle.escape_debug(),
+                found.escape_debug()
+            ),
+            Unreadable::OracleCommand { oracle, found } => write!(
+                f,
+                "the `{}` oracle in {PATH} declares the command `{}`. A command is one line \
+                 that is not empty, because the recorder runs it with `sh -c`",
+                oracle.escape_debug(),
+                found.escape_debug()
+            ),
+            Unreadable::OraclePathless { oracle } => write!(
+                f,
+                "the `{}` oracle in {PATH} declares no `paths`, so no produced artifact would \
+                 ever run it",
+                oracle.escape_debug()
+            ),
+            Unreadable::OracleUnsafe { oracle, entry } => write!(
+                f,
+                "the `{}` oracle in {PATH} names `{}`. An entry is a path inside the tree, \
+                 relative to its root, with no `..`, `.` or empty component and no control \
+                 character, because the recorder matches it against a produced path and \
+                 restores it into the grading copy",
+                oracle.escape_debug(),
+                entry.escape_debug()
+            ),
         }
     }
 }
@@ -1428,6 +1640,21 @@ tiers:
         assert!(budgets.answer_keys.is_empty());
     }
 
+    /// A sealed declaration whose every answer key the seal removed holds
+    /// `answer_keys:` and no entry, and the recorder reads it for its command
+    /// oracles (#1834). It reads as no answer key. A scalar is still refused.
+    #[test]
+    fn an_answer_keys_block_the_seal_emptied_reads_as_no_answer_key() {
+        for emptied in ["answer_keys:\n", "answer_keys:\n\n# a comment\n"] {
+            let budgets = Budgets::read(&format!("{emptied}{GOOD}")).expect(emptied);
+            assert!(budgets.answer_keys.is_empty(), "{emptied}");
+        }
+        assert!(matches!(
+            Budgets::read(&format!("answer_keys: docs/a.md\n{GOOD}")),
+            Err(Unreadable::Malformed(_))
+        ));
+    }
+
     #[test]
     fn a_fold_or_an_answer_key_that_leaves_the_tree_is_refused() {
         // The seal runs `rm` on each answer key in a workspace, and a fold is
@@ -1488,6 +1715,119 @@ tiers:
                 "{written}"
             );
         }
+    }
+
+    const ORACLES: &str = "oracles:\n  unit:\n    paths: [src/**, tests/*.rs]\n    command: \
+                           cargo test --test hidden\n    parser: cargo-test\n    holds: \
+                           [tests/hidden.rs]\n  site:\n    paths: [site/**]\n    command: sh \
+                           check.sh\n    parser: exit\n";
+
+    #[test]
+    fn the_oracles_read_in_declared_order_and_a_file_with_none_reads_empty() {
+        assert!(Budgets::read(GOOD).expect("reads").oracles.is_empty());
+        let budgets = Budgets::read(&format!("{ORACLES}{GOOD}")).expect("reads");
+        assert_eq!(
+            budgets.oracles,
+            vec![
+                Oracle {
+                    name: "unit".to_string(),
+                    paths: vec!["src/**".to_string(), "tests/*.rs".to_string()],
+                    command: "cargo test --test hidden".to_string(),
+                    parser: OracleParser::CargoTest,
+                    holds: vec!["tests/hidden.rs".to_string()],
+                },
+                Oracle {
+                    name: "site".to_string(),
+                    paths: vec!["site/**".to_string()],
+                    command: "sh check.sh".to_string(),
+                    parser: OracleParser::Exit,
+                    holds: Vec::new(),
+                },
+            ]
+        );
+        assert_eq!(budgets.oracles[0].finding(), "test:unit");
+        assert_eq!(budgets.oracles[1].finding(), "command:site");
+    }
+
+    #[test]
+    fn an_oracle_of_any_bad_shape_refuses_the_file() {
+        let one = |name: &str, body: &str| format!("oracles:\n  {name}:\n{body}{GOOD}");
+        let fine = "    paths: [src/**]\n    command: sh x.sh\n    parser: exit\n";
+        assert!(Budgets::read(&one("ok-1", fine)).is_ok());
+        for name in ["build", "Upper", "a_b", "a.b", "\"\""] {
+            assert!(
+                matches!(
+                    Budgets::read(&one(name, fine)),
+                    Err(Unreadable::OracleName { .. })
+                ),
+                "{name}"
+            );
+        }
+        for (body, expected) in [
+            (
+                "    paths: [src/**]\n    command: sh x.sh\n    parser: pytest\n",
+                "parser",
+            ),
+            ("    paths: [src/**]\n    command: sh x.sh\n", "parser"),
+            ("    paths: [src/**]\n    parser: exit\n", "command"),
+            (
+                "    paths: [src/**]\n    command: \"  \"\n    parser: exit\n",
+                "command",
+            ),
+            (
+                "    paths: [src/**]\n    command: \"a\\nb\"\n    parser: exit\n",
+                "command",
+            ),
+            ("    command: sh x.sh\n    parser: exit\n", "pathless"),
+            (
+                "    paths: []\n    command: sh x.sh\n    parser: exit\n",
+                "pathless",
+            ),
+            (
+                "    paths: [../src]\n    command: sh x.sh\n    parser: exit\n",
+                "unsafe",
+            ),
+            (
+                "    paths: [src/**]\n    command: sh x.sh\n    parser: exit\n    holds: \
+                 [/etc/passwd]\n",
+                "unsafe",
+            ),
+            (
+                "    paths: src/**\n    command: sh x.sh\n    parser: exit\n",
+                "malformed",
+            ),
+            ("    - src/**\n", "malformed"),
+        ] {
+            let read = Budgets::read(&one("x", body));
+            let kind = match &read {
+                Err(Unreadable::OracleParser { .. }) => "parser",
+                Err(Unreadable::OracleCommand { .. }) => "command",
+                Err(Unreadable::OraclePathless { .. }) => "pathless",
+                Err(Unreadable::OracleUnsafe { .. }) => "unsafe",
+                Err(Unreadable::Malformed(_)) => "malformed",
+                _ => "other",
+            };
+            assert_eq!(kind, expected, "{body}: {read:?}");
+            assert!(!read.unwrap_err().to_string().is_empty());
+        }
+        assert!(matches!(
+            Budgets::read(&format!("oracles: [a]\n{GOOD}")),
+            Err(Unreadable::Malformed(_))
+        ));
+    }
+
+    #[test]
+    fn an_oracle_declared_twice_refuses_the_file() {
+        let twice = format!(
+            "oracles:\n  a:\n    paths: [x]\n    command: c\n    parser: exit\n  a:\n    \
+             paths: [y]\n    command: d\n    parser: exit\n{GOOD}"
+        );
+        // The loader refuses a duplicate key, before the oracles are read.
+        assert!(
+            matches!(Budgets::read(&twice), Err(Unreadable::Unparsed(_))),
+            "{:?}",
+            Budgets::read(&twice)
+        );
     }
 
     #[test]

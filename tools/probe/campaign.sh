@@ -677,7 +677,7 @@ run_job() {
         ${max_turns:+--max-turns "$max_turns"} \
         ${budget:+--max-budget-usd "$budget"} \
         --baseline "$out/trees/$tier-$arm" \
-        --oracle-tree "$out/trees/oracle" --raw "$dir/raw.jsonl"
+        --oracle-tree "$out/trees/grading" --raw "$dir/raw.jsonl"
     printf '%s\n' "$@" > "$dir/record.argv"
     HEADWATER_PROBE_CONFIG_DIR=$out/config/$name \
         sh "$root/tools/probe/probe-record.sh" "$@" \
@@ -913,6 +913,26 @@ build_oracle() {
     cp "$engine" "$o_trees/oracle/engine/target/dev-release/headwater" || return 3
     sh "$root/tools/probe/ablate.sh" --present "$o_trees/oracle" >/dev/null || return 3
     sh "$root/tools/probe/seal.sh" "$o_trees/oracle" "$@" >/dev/null || return 3
+    build_grading "$o_rev" "$o_trees"
+}
+
+# build_grading <rev> <trees>: the tree the recorder grades in, at
+# `<trees>/grading` (#1834): the sealed oracle tree, plus each file a command
+# oracle `holds`, taken from the `git archive` of <rev>. The seal removed a
+# hidden test that names its probe from the oracle tree and so from every arm
+# tree, and the transform runs the oracle's command in a copy of this tree.
+# `tools/probe/grading-tree.sh` says why nothing else is restored.
+build_grading() {
+    g_rev=$1 g_trees=$2
+    g_holds=$(sh "$root/tools/probe/grading-tree.sh" --holds "$g_trees/oracle") || return 3
+    rm -rf "$g_trees/holds"
+    mkdir -p "$g_trees/holds"
+    if [ -n "$g_holds" ]; then
+        # shellcheck disable=SC2086
+        git -C "$root" archive "$g_rev" -- $g_holds | tar -x -C "$g_trees/holds" || return 3
+    fi
+    sh "$root/tools/probe/grading-tree.sh" "$g_trees/oracle" "$g_trees/holds" "$g_trees/grading" >/dev/null || return 3
+    rm -rf "$g_trees/holds"
 }
 
 # build_arm <trees> <tier> <arm>: the tree of one arm at `<trees>/<tier>-<arm>`,
@@ -1265,6 +1285,11 @@ if [ ! -d "$out/trees/oracle" ]; then
     # shellcheck disable=SC2086
     build_oracle "$head" "$out/trees" $probes || exit 3
     sha256sum "$engine" | awk '{ print $1 }' > "$out/engine.sha256"
+fi
+# A batch directory written before #1834 holds the oracle tree and no grading
+# tree, and every session of it is recorded against the grading tree.
+if [ ! -d "$out/trees/grading" ]; then
+    build_grading "$head" "$out/trees" || exit 3
 fi
 while IFS= read -r line; do
     # shellcheck disable=SC2086

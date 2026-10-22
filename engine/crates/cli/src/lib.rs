@@ -1169,6 +1169,18 @@ pub enum ProbeWord {
         folds: bool,
         #[arg(
             long,
+            conflicts_with_all = ["delta", "instrument", "folds", "answer_keys"],
+            help = "plan nothing, and print each command oracle that the `oracles` mapping of \
+                    `.headwater/probe.yml` declares, as tab-separated lines: \
+                    `<name>\tparser\t<parser>`, `<name>\tcommand\t<command>`, one \
+                    `<name>\tpath\t<pattern>` for each pattern, and one `<name>\thold\t<path>` \
+                    for each file the grading copy keeps. It reads `.headwater/probe.yml` alone \
+                    and loads no corpus. A declaration it cannot read is refused with status 1 \
+                    and prints no line"
+        )]
+        oracles: bool,
+        #[arg(
+            long,
             value_name = "probe",
             conflicts_with_all = ["delta", "instrument"],
             help = "plan nothing, and print each answer key that the `answer_keys` mapping of \

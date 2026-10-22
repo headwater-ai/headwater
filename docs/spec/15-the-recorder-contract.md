@@ -247,6 +247,10 @@ A recorder computes each key **the same way for every probe, and it reads no pro
 
 A recorder that reads the probe is a grader with no fixture set and no version. That covers a recorder which writes only the identifiers one probe named, and one which writes only the rule an oracle names. Any value whose computation needs the probe belongs to `headwater probe grade`, which is a pure function of the transcript, the expectations and its own version.
 
+A finding has two sources. It is a rule of the taxonomy, or it is the failure of a command that the `oracles` mapping of `.headwater/probe.yml` declares (#1834). A command oracle that fails gives `test:<name>` or `command:<name>`, and a `patched` probe over code grades against that name. A `cargo-test` oracle also gives `test:<case>` for each failed case and `test:build` for a failed build. These two are diagnostics, and no probe grades against them. A `cargo-test` oracle fails whole when its command exits non-zero, or when no case passed.
+
+The recorder runs a command when a produced artifact matches the pattern of its oracle. It runs the command in a copy of the tree, never in the workspace. It puts the findings of the command on every produced artifact inside the base, because the grader accepts any one clean artifact. When no artifact matches, the command does not run, and every artifact carries the whole-oracle finding. The tree under the pattern is then the pin's, so the session did not attempt what the oracle measures. Both rules read no probe, so they are part of the one computation that every probe gets.
+
 ## What the engine confirms, and what it records without confirming
 
 `headwater probe record` confirms five things and evaluates no expectation.

@@ -200,6 +200,7 @@ headwater probe       plan [--tier regression|campaign|documentation|additive] [
                     | plan --scenario <n> --delta
                     | plan --instrument
                     | plan --folds
+                    | plan --oracles
                     | plan --answer-keys <probe>
                     | record <path>
                     | grade <path>
