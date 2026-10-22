@@ -108,9 +108,9 @@ fn crate_dir() -> PathBuf {
 fn three_parts(rule: &str) -> bool {
     let parts: Vec<&str> = rule.split('.').collect();
     parts.len() == 3
-        && parts
-            .iter()
-            .all(|part| !part.is_empty() && part.chars().all(|c| c.is_ascii_lowercase() || c == '_'))
+        && parts.iter().all(|part| {
+            !part.is_empty() && part.chars().all(|c| c.is_ascii_lowercase() || c == '_')
+        })
 }
 
 /// A corpus of one decision record of the check fixture taxonomy, whose
@@ -184,8 +184,8 @@ fn reports(run: &Run, rule: &str) -> bool {
 
 /// The date `tests/fixtures.rs` pins its recorded run at.
 fn pinned() -> String {
-    let source = std::fs::read_to_string(crate_dir().join("tests/fixtures.rs"))
-        .expect("tests/fixtures.rs");
+    let source =
+        std::fs::read_to_string(crate_dir().join("tests/fixtures.rs")).expect("tests/fixtures.rs");
     source
         .lines()
         .find_map(|line| {
@@ -229,7 +229,11 @@ fn the_rule_reports_a_date_after_the_injected_clock_and_ships_a_fixture() {
         .copied()
         .filter(|rule| !PIN.contains(rule))
         .collect();
-    assert_eq!(added.len(), 1, "RULES adds {added:?} to the pin, and not one rule");
+    assert_eq!(
+        added.len(),
+        1,
+        "RULES adds {added:?} to the pin, and not one rule"
+    );
     let rule = added[0];
     assert!(three_parts(rule), "{rule} is not in the form <a>.<b>.<c>");
 
