@@ -4867,6 +4867,10 @@ scenario_tree() {
     # a scenario that keeps it holds a second path to CLAUDE.md that --diff
     # cannot see: the link itself does not change.
     ln -s ../CLAUDE.md "$scratch/scen/.github/copilot-instructions.md"
+    # The engine's own copies of the skills text are real files, so that a
+    # scenario that keeps them can be compared with this checkout's (#1837).
+    mkdir -p "$scratch/scen/engine/crates/cli"
+    cp -a "$root/engine/crates/cli/harness" "$scratch/scen/engine/crates/cli/harness"
     # Every other path a layer names, so each layer is in the tree.
     while IFS=' ' read -r sign layer path; do
         [ "$sign" = - ] || continue
@@ -4935,7 +4939,7 @@ sh "$ablate" --scenario 0 "$scratch/scen-zero" > /dev/null 2> "$scratch/scen-zer
 same "ablate.sh --scenario 0 builds plain code" "0" "$?"
 left=
 for headwater_path in docs .headwater CLAUDE.md AGENTS.md .claude .agents .codex .githooks .mcp.json \
-    engine/crates/census/fixtures/corpus.census site/tutorial engine/target \
+    engine/crates/census/fixtures/corpus.census site/tutorial engine/target engine/crates/cli/harness \
     .github/copilot-instructions.md .github/agents .github/hooks .github/prompts; do
     if [ -e "$scratch/scen-zero/$headwater_path" ] || [ -L "$scratch/scen-zero/$headwater_path" ]; then
         left="$left $headwater_path"
@@ -4987,6 +4991,56 @@ else
         "$(cd "$scratch/scen-two" && find CLAUDE.md AGENTS.md .github 2>/dev/null | LC_ALL=C sort | tr '\n' ' ')"
 fi
 rm -rf "$scratch/scen-two"
+
+# Assertion 4 (#1837): the engine's own copies of the skills text under
+# `engine/crates/cli/harness/` go with the skills layer. A scenario without
+# the layer holds neither directory, and keeps the rest of the engine source.
+# A scenario with it keeps both as they are in this checkout, and each file
+# is its `.claude/` mirror less the one marker line `headwater init --harness`
+# appends to the mirror.
+cp -a "$scratch/scen" "$scratch/scen-three"
+sh "$ablate" --scenario 3 "$scratch/scen-three" > /dev/null 2> "$scratch/scen-three.err"
+same "ablate.sh --scenario 3 builds the engine scenario" "0" "$?"
+left=
+for harness_dir in skills agents; do
+    [ -e "$scratch/scen-three/engine/crates/cli/harness/$harness_dir" ] && left="$left $harness_dir"
+done
+same "and it holds neither of the engine's copies of the skills text" "" "$left"
+if [ -f "$scratch/scen-three/engine/crates/census/src/lib.rs" ]; then
+    pass "and it keeps the rest of the engine source"
+else
+    fail "and it keeps the rest of the engine source" "engine/crates/census/src/lib.rs is gone"
+fi
+rm -rf "$scratch/scen-three"
+cp -a "$scratch/scen" "$scratch/scen-four"
+sh "$ablate" --scenario 4 "$scratch/scen-four" > /dev/null 2> "$scratch/scen-four.err"
+same "ablate.sh --scenario 4 builds the skills scenario" "0" "$?"
+for harness_dir in skills agents; do
+    if [ -d "$scratch/scen-four/engine/crates/cli/harness/$harness_dir" ] &&
+        diff -r "$root/engine/crates/cli/harness/$harness_dir" \
+            "$scratch/scen-four/engine/crates/cli/harness/$harness_dir" > "$scratch/scen-four.diff" 2>&1; then
+        pass "and it keeps engine/crates/cli/harness/$harness_dir as this checkout has it"
+    else
+        fail "and it keeps engine/crates/cli/harness/$harness_dir as this checkout has it" \
+            "$(head -5 "$scratch/scen-four.diff")"
+    fi
+done
+unequal=
+for copy in skills/headwater-orient/SKILL.md skills/headwater-authoring/SKILL.md \
+    skills/headwater-taxonomy/SKILL.md skills/headwater-sweep/SKILL.md agents/headwater-maintainer.md; do
+    sed '${/^<!-- installed by headwater init --harness, digest sha256:[0-9a-f]* -->$/d;}' \
+        "$root/.claude/$copy" > "$scratch/scen-mirror"
+    cmp -s "$scratch/scen-mirror" "$scratch/scen-four/engine/crates/cli/harness/$copy" || unequal="$unequal $copy"
+done
+same "and each of the five is its .claude/ mirror less the init marker" "" "$unequal"
+rm -rf "$scratch/scen-four"
+sh "$ablate" --diff --scenario 4 "$scratch/scen" 3 > "$scratch/scen-four-three" 2> "$scratch/scen-four-three.err"
+same "ablate.sh --diff --scenario 4 against 3 exits 0" "0" "$?"
+for harness_dir in skills agents; do
+    present "and it adds engine/crates/cli/harness/$harness_dir" "+ engine/crates/cli/harness/$harness_dir" \
+        "$scratch/scen-four-three"
+done
+absent "and it names nothing unexpected" "unexpected" "$scratch/scen-four-three"
 
 # The refusals, each before anything is removed.
 sh "$ablate" --scenario 14 "$scratch/scen" > /dev/null 2> "$scratch/scen-14.err"
