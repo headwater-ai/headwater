@@ -427,8 +427,8 @@ tiers:
   # over every attempt of the round: a restart does not reset the count. The
   # screening plan is 1,008 sessions and $504.00, so $196.00 is room for a
   # restart. This ceiling was set to that $700, and it now bounds one batch
-  # directory of any round: a tuning try of one layer is 72 sessions, or
-  # $36.00, well inside it. `tools/probe/campaign-drive.sh` gives a restarted
+  # directory of any round: the largest batch of a tuning round, a
+  # confirmation, is 145 sessions, or $72.50, well inside it (#1838). `tools/probe/campaign-drive.sh` gives a restarted
   # batch the cap less what every earlier batch under its root spent. It
   # holds no total across roots, so the total of the tuning round against its
   # $1,512.00 (#1777) is kept by hand. The plan prices one line at a time, so
