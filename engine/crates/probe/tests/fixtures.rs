@@ -1190,6 +1190,63 @@ fn a_patched_session_that_produced_nothing_says_so() {
         .contains("produced no artifact"));
 }
 
+/// A `patched` session graded against a command oracle (#1834), over the two
+/// shapes of event the transform can write for a session that produced code
+/// and a README. The grader is unchanged: it is satisfied by any artifact whose
+/// findings lack the oracle. So the whole-oracle finding has to be on every
+/// artifact, or a session whose code did not compile passes on its README.
+#[test]
+fn a_command_oracle_fails_a_session_only_when_every_artifact_carries_it() {
+    let mut selected = regression().selected;
+    let patched = selected
+        .iter_mut()
+        .find(|probe| probe.id == "PROBE-FIX-patched")
+        .expect("the fixture selects the patched probe");
+    patched.oracle = Some("test:fixture-tests".to_string());
+    let artifact = "    - path: out/patch.md\n      result: sha256:e\n      cites: []\n      \
+                    findings: []\n";
+    let event = |code: &str, readme: &str| {
+        transcript("transcript.md").replace(
+            artifact,
+            &format!(
+                "    - path: src/lib.rs\n      result: sha256:e\n      cites: []\n      \
+                 findings: {code}\n    - path: README.md\n      result: sha256:f\n      \
+                 cites: []\n      findings: {readme}\n"
+            ),
+        )
+    };
+    let on_both = "[\"test:build\", \"test:fixture-tests\"]";
+    let source = event(on_both, on_both);
+    assert!(source.contains("path: README.md"), "the fixture still carries the patched event");
+    let row_verdict = |source: &str| {
+        let results = Results::over(&record_of(source), &selected);
+        row_of(&results, "PROBE-FIX-patched").sessions[0].verdict.clone()
+    };
+    assert!(
+        matches!(
+            row_verdict(&source),
+            Verdict::NotSatisfied(Miss::OracleReported { .. })
+        ),
+        "{:?}",
+        row_verdict(&source)
+    );
+    // The shape the Done-when as written gives: the finding on the matched
+    // `.rs` alone, and the README clean. The grader passes it.
+    assert!(
+        matches!(
+            row_verdict(&event(on_both, "[]")),
+            Verdict::Satisfied(_)
+        ),
+        "{:?}",
+        row_verdict(&event(on_both, "[]"))
+    );
+    // A diagnostic is not the oracle: `test:build` alone on both passes.
+    assert!(matches!(
+        row_verdict(&event("[\"test:build\"]", "[\"test:build\"]")),
+        Verdict::Satisfied(_)
+    ));
+}
+
 /// An answer inside the closed set and outside the expected value is wrong,
 /// and never satisfied. Before #1229 the grader tested membership in the set,
 /// so the one probe on the shelf passed every word its task offered.
