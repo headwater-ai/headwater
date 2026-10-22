@@ -111,6 +111,7 @@ def rounds(declared, approvals=False, quiet=False):
     sets = declared.get("sets") or {}
     if not isinstance(sets, dict):
         refuse("`sets:` in .headwater/probe.yml is not a mapping of set name to probe identifiers")
+    lines = []
     for name, fields in block.items():
         name = str(name)
         if not isinstance(fields, dict):
@@ -144,12 +145,15 @@ def rounds(declared, approvals=False, quiet=False):
         tries = fields.get("tries")
         if isinstance(tries, bool) or not isinstance(tries, int) or tries < 1:
             refuse(f"`tries` of the `{name}` round in .headwater/probe.yml is {tries!r}, and it must be a whole number above zero")
-        if quiet:
-            continue
         if approvals:
-            print(f"{name} {approved}")
+            lines.append(f"{name} {approved}")
         else:
-            print(" ".join([name, chosen, str(high), str(low), str(tries)] + members))
+            lines.append(" ".join([name, chosen, str(high), str(low), str(tries)] + members))
+    # Every round is read before any line is printed, so a refusal leaves
+    # nothing on standard output for a caller to read as a declaration.
+    if not quiet:
+        for line in lines:
+            print(line)
     return 0
 
 
