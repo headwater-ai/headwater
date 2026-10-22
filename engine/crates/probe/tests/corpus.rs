@@ -1632,9 +1632,15 @@ fn the_tuning_set_is_the_five_probes_the_owner_ruled_on_2026_10_22() {
     // the relocation guide was `draft` with an accepted warrant, and the
     // owner ruled that it is promoted before any base is measured (clause 4).
     let targets = [
-        ("HW-SPEC-the-recorder-contract", "docs/spec/15-the-recorder-contract.md"),
+        (
+            "HW-SPEC-the-recorder-contract",
+            "docs/spec/15-the-recorder-contract.md",
+        ),
         ("HW-HOW-relocate-a-shelf", "docs/how-to/relocate-a-shelf.md"),
-        ("HW-IFACE-headwater-route", "docs/interfaces/headwater-route.md"),
+        (
+            "HW-IFACE-headwater-route",
+            "docs/interfaces/headwater-route.md",
+        ),
     ];
     for (id, (target, target_path)) in TUNING_SET[2..].iter().zip(targets) {
         let probe = shelf
