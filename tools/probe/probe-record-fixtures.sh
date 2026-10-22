@@ -717,12 +717,14 @@ if [ -x "$engine" ]; then
     cat > "$cot/oracle-stub.sh" <<STUB
 #!/bin/sh
 : > "$scratch/cmd-ran"
+: > ran-here
 case \$(cat stub-mode) in
     compile) printf 'error[E0425]: cannot find value\nerror: could not compile \`fixture\` (lib) due to 1 previous error\n'; exit 101 ;;
     pass) printf 'running 1 test\ntest a::b ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored\n'; exit 0 ;;
     failcase) printf 'running 2 tests\ntest a::b ... FAILED\ntest a::c ... ok\n\ntest result: FAILED. 1 passed; 1 failed; 0 ignored\n'; exit 101 ;;
     zero) printf 'running 0 tests\n\ntest result: ok. 0 passed; 0 failed; 0 ignored\n'; exit 0 ;;
     held) sh tests/hidden.sh; exit \$? ;;
+    exitonly) printf 'running 1 test\ntest a::b ... ok\n\ntest result: ok. 1 passed; 0 failed\nerror: test failed, to rerun pass \`--doc\`\n'; exit 101 ;;
 esac
 exit 99
 STUB
@@ -767,7 +769,7 @@ STUB
     else
         fail "and the command ran, because an artifact matched its pattern" "$(cat "$scratch/cmd-compile.err")"
     fi
-    if [ -e "$cot/target" ] || [ -e "$scratch/cmd-ws/stub-mode" ]; then
+    if [ -e "$cot/ran-here" ] || [ -e "$scratch/cmd-ws/ran-here" ]; then
         fail "and it ran in a copy, never in the oracle tree or the workspace" "$(ls -a "$cot" "$scratch/cmd-ws")"
     else
         pass "and it ran in a copy, never in the oracle tree or the workspace"
@@ -781,6 +783,10 @@ STUB
     same "a failed case gives that case on both artifacts" "2" "$(cmd_count test:a::b failcase)"
     same "and the whole-oracle finding on both" "2" "$(cmd_count test:fixture-oracle failcase)"
     same "and no finding for the case that passed" "0" "$(cmd_count test:a::c failcase)"
+
+    cmd_run exitonly exitonly src/lib.rs README.md
+    same "a command that exits non-zero after a passing case fails the oracle on both artifacts" "2" \
+        "$(cmd_count test:fixture-oracle exitonly)"
 
     cmd_run zero zero src/lib.rs README.md
     same "a run in which no case ran gives the whole-oracle finding on both artifacts" "2" \
@@ -810,7 +816,8 @@ STUB
 
     # The declaration is the oracle tree's, never the workspace's: a session
     # that rewrites the fold cannot swap the command for `true`.
-    sed 's/command: sh oracle-stub.sh/command: "true"/' "$cot/.headwater/probe.yml" \
+    sed -e 's/command: sh oracle-stub.sh/command: "true"/' \
+        -e '/command: "true"/{n;s/parser: cargo-test/parser: exit/;}' "$cot/.headwater/probe.yml" \
         > "$scratch/cmd-ws/.headwater/probe.yml"
     cmd_run swapped compile src/lib.rs README.md .headwater/probe.yml
     same "a session that rewrote the declaration still fails on the oracle tree's command" "3" \
@@ -5469,6 +5476,12 @@ if [ -x "$engine" ]; then
         same "the recorder is given the round's set and the scenario arm" "yes yes" \
             "$(grep -qx -- '--set' "$run_argv" 2>/dev/null && grep -A1 -x -- '--set' "$run_argv" | tail -1 | grep -qx tuning && echo yes || echo no) $(grep -A1 -x -- '--arm' "$run_argv" 2>/dev/null | tail -1 | grep -qx scenario-4 && echo yes || echo no)"
         absent "and no category" "--category" "$run_argv"
+        # The recorder grades in the grading tree, which keeps each file a
+        # command oracle holds, and never in the sealed oracle tree (#1834).
+        same "the recorder grades in the batch's grading tree" "$scratch/run-out/trees/grading" \
+            "$(grep -A1 -x -- '--oracle-tree' "$run_argv" 2>/dev/null | tail -1)"
+        same "and the batch built it" "yes" \
+            "$([ -d "$scratch/run-out/trees/grading/.headwater" ] && echo yes || echo no)"
         absent "and the recorder plans the line the batch planned" "headwater probe plan" \
             "$scratch/run-out/sessions/$run_session/record.err"
         same "the session the plan admitted is the one the batch planned" "$(sed -n 's/^selection: //p' "$scratch/run-out/plans/L1" | head -1)" \
