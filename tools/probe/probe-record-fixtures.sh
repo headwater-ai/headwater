@@ -5631,13 +5631,15 @@ if [ -x "$engine" ]; then
         rm -rf "$scratch/run-tune-out"
         # Each line's jobs are its own plan's count, not the first line's
         # (verify round 1): the regression tier runs 1 repetition and the
-        # campaign tier 30, so one spec of both is 8 + 8 x 30 jobs.
+        # campaign tier 30, so one spec of both is 10 + 10 x 30 jobs. The
+        # sufficiency shelf is ten probes since the code set added C1 and C2
+        # (#1835).
         printf 'regression present sufficiency\ncampaign present sufficiency\n' > "$scratch/run-tiers.spec"
         rm -rf "$scratch/run-tiers-out"
         HEADWATER_PROBE_HOST_CONFIG="$scratch/run-host" CARGO_TARGET_DIR="$scratch/gate-target" PATH="$scratch/run-bin:$PATH" \
             sh "$root/tools/probe/campaign.sh" --out "$scratch/run-tiers-out" --model claude-haiku-4-5 \
             --spec "$scratch/run-tiers.spec" --max-turns 10 --max-sessions 1 > /dev/null 2> "$scratch/run-tiers.err"
-        same "a spec of two tiers runs each line at its own plan's count" "8 240" \
+        same "a spec of two tiers runs each line at its own plan's count" "10 300" \
             "$(awk '$2 == 1' "$scratch/run-tiers-out/jobs" 2>/dev/null | wc -l | tr -d ' ') $(awk '$2 == 2' "$scratch/run-tiers-out/jobs" 2>/dev/null | wc -l | tr -d ' ')"
         rm -rf "$scratch/run-out" "$scratch/run-final-out" "$scratch/run-tiers-out"
     else

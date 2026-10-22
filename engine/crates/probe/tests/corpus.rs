@@ -2195,3 +2195,35 @@ fn identity_cost_reads_the_run_identity_block_and_no_other() {
     assert_eq!(identity_cost(source), Some(2452));
     assert_eq!(identity_cost("---\n---\n\n## Run identity\n\nTODO\n"), None);
 }
+
+/// No probe on the shelf quotes the text a figure marker opens with.
+///
+/// The site renders every probe as a page, and `tools/site/refresh-figures.sh`
+/// counts each `data-figure=` on an assembled page as a marker. A quotation in
+/// a code span renders escaped, so the pattern does not read it as an element,
+/// the count disagrees, and the CI step that fills the figures exits 1
+/// (#1835, verify round 1: the C2 probe quoted the marker twice). Only
+/// `docs/probe-runs/` is excused, because the filler skips it. A probe that
+/// must name the attribute names it without the `=`.
+#[test]
+fn no_probe_on_the_shelf_quotes_a_figure_marker() {
+    const MARKER: &str = "data-figure=";
+    let shelf = repository_root().join(SHELF);
+    let mut quoting: Vec<String> = std::fs::read_dir(&shelf)
+        .unwrap_or_else(|e| panic!("{}: {e}", shelf.display()))
+        .map(|entry| entry.expect("a shelf entry").path())
+        .filter(|path| path.extension().is_some_and(|it| it == "md"))
+        .filter(|path| {
+            std::fs::read_to_string(path)
+                .unwrap_or_else(|e| panic!("{}: {e}", path.display()))
+                .contains(MARKER)
+        })
+        .map(|path| path.display().to_string())
+        .collect();
+    quoting.sort();
+    assert!(
+        quoting.is_empty(),
+        "these probes carry the text `{MARKER}`, which the published page carries too and \
+         `tools/site/refresh-figures.sh --into` reads as a marker it cannot fill: {quoting:?}"
+    );
+}
