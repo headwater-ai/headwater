@@ -685,6 +685,166 @@ if [ -x "$engine" ] && [ -f "$oprobe" ]; then
 fi
 
 # ---------------------------------------------------------------------------
+# A command oracle fails every artifact of a session whose command failed
+# (#1834).
+#
+# `.headwater/probe.yml` declares a command under `oracles`, and the transform
+# runs it in its copy of the oracle tree. The grader is satisfied by any one
+# artifact whose findings lack the oracle, so the decisive case is a session
+# that wrote code that does not compile and also a README: before #1834 the
+# README carried `findings: []`, the code carried no `test:` finding at all,
+# and the session graded as a pass. The stub stands in for `cargo test`,
+# because what the case tests is the parser and not cargo.
+# ---------------------------------------------------------------------------
+if [ -x "$engine" ]; then
+    cot=$scratch/cmd-oracle
+    rm -rf "$cot" "$scratch/cmd-ws" "$scratch/cmd-ran"
+    mkdir -p "$cot/src" "$cot/site"
+    cp -a "$root/.headwater" "$root/CLAUDE.md" "$cot/"
+    awk '/^oracles: \{\}$/ {
+        print "oracles:"
+        print "  fixture-oracle:"
+        print "    paths: [src/**]"
+        print "    command: sh oracle-stub.sh"
+        print "    parser: cargo-test"
+        print "    holds: [tests/hidden.sh]"
+        print "  fixture-exit:"
+        print "    paths: [site/**]"
+        print "    command: sh exit-stub.sh"
+        print "    parser: exit"
+        next
+    } { print }' "$root/.headwater/probe.yml" > "$cot/.headwater/probe.yml"
+    cat > "$cot/oracle-stub.sh" <<STUB
+#!/bin/sh
+: > "$scratch/cmd-ran"
+: > ran-here
+case \$(cat stub-mode) in
+    compile) printf 'error[E0425]: cannot find value\nerror: could not compile \`fixture\` (lib) due to 1 previous error\n'; exit 101 ;;
+    pass) printf 'running 1 test\ntest a::b ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored\n'; exit 0 ;;
+    failcase) printf 'running 2 tests\ntest a::b ... FAILED\ntest a::c ... ok\n\ntest result: FAILED. 1 passed; 1 failed; 0 ignored\n'; exit 101 ;;
+    zero) printf 'running 0 tests\n\ntest result: ok. 0 passed; 0 failed; 0 ignored\n'; exit 0 ;;
+    held) sh tests/hidden.sh; exit \$? ;;
+    exitonly) printf 'running 1 test\ntest a::b ... ok\n\ntest result: ok. 1 passed; 0 failed\nerror: test failed, to rerun pass \`--doc\`\n'; exit 101 ;;
+esac
+exit 99
+STUB
+    printf 'exit "$(cat exit-code)"\n' > "$cot/exit-stub.sh"
+    printf 'pub fn pinned() {}\n' > "$cot/src/lib.rs"
+    printf '<p>pinned</p>\n' > "$cot/site/index.html"
+    printf '0\n' > "$cot/exit-code"
+    mkdir -p "$cot/tests"
+    printf "printf 'test hidden::case ... FAILED\\\\ntest result: FAILED. 0 passed; 1 failed\\\\n'; exit 101\n" \
+        > "$cot/tests/hidden.sh"
+    cp -a "$cot" "$scratch/cmd-ws"
+    printf 'pub fn changed( {}\n' > "$scratch/cmd-ws/src/lib.rs"
+    printf '# changed\n' > "$scratch/cmd-ws/README.md"
+    printf '<p>changed</p>\n' > "$scratch/cmd-ws/site/index.html"
+    # cmd_run <name> <mode> <produced...>: one transform run over the stub.
+    cmd_run() {
+        c_name=$1 c_mode=$2
+        shift 2
+        printf '%s\n' "$c_mode" > "$cot/stub-mode"
+        rm -f "$scratch/cmd-ran"
+        c_args=
+        for c_path in "$@"; do c_args="$c_args --produced $c_path"; done
+        # shellcheck disable=SC2086
+        sh "$transform" --probe HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged \
+            --session "$c_name" --root "$scratch/engine-only" --workspace "$scratch/cmd-ws" \
+            --oracle-tree "$cot" $c_args \
+            < "$scratch/watched-nothing.jsonl" > "$scratch/cmd-$c_name.yaml" 2>"$scratch/cmd-$c_name.err"
+    }
+    # cmd_count <needle> <name>: how many artifacts of one event carry a finding.
+    cmd_count() {
+        grep -cxF -- "        - \"$1\"" "$scratch/cmd-$2.yaml"
+    }
+
+    cmd_run compile compile src/lib.rs README.md
+    same "a session whose code does not compile records through a command oracle" "0" "$?"
+    same "and both artifacts carry the whole-oracle finding, the README too" "2" \
+        "$(cmd_count test:fixture-oracle compile)"
+    same "and both carry \`test:build\`, the diagnostic that splits a failed build from a wrong one" "2" \
+        "$(cmd_count test:build compile)"
+    if [ -f "$scratch/cmd-ran" ]; then
+        pass "and the command ran, because an artifact matched its pattern"
+    else
+        fail "and the command ran, because an artifact matched its pattern" "$(cat "$scratch/cmd-compile.err")"
+    fi
+    if [ -e "$cot/ran-here" ] || [ -e "$scratch/cmd-ws/ran-here" ]; then
+        fail "and it ran in a copy, never in the oracle tree or the workspace" "$(ls -a "$cot" "$scratch/cmd-ws")"
+    else
+        pass "and it ran in a copy, never in the oracle tree or the workspace"
+    fi
+
+    cmd_run pass pass src/lib.rs README.md
+    same "a passing command records" "0" "$?"
+    same "and no artifact carries a \`test:\` finding" "0" "$(grep -c -- '- "test:' "$scratch/cmd-pass.yaml")"
+
+    cmd_run failcase failcase src/lib.rs README.md
+    same "a failed case gives that case on both artifacts" "2" "$(cmd_count test:a::b failcase)"
+    same "and the whole-oracle finding on both" "2" "$(cmd_count test:fixture-oracle failcase)"
+    same "and no finding for the case that passed" "0" "$(cmd_count test:a::c failcase)"
+
+    cmd_run exitonly exitonly src/lib.rs README.md
+    same "a command that exits non-zero after a passing case fails the oracle on both artifacts" "2" \
+        "$(cmd_count test:fixture-oracle exitonly)"
+
+    cmd_run zero zero src/lib.rs README.md
+    same "a run in which no case ran gives the whole-oracle finding on both artifacts" "2" \
+        "$(cmd_count test:fixture-oracle zero)"
+    same "and not \`test:build\`, because it compiled" "0" "$(cmd_count test:build zero)"
+
+    cmd_run untouched pass README.md
+    same "a session with no artifact under the pattern records" "0" "$?"
+    same "and the whole-oracle finding is on its artifact" "1" "$(cmd_count test:fixture-oracle untouched)"
+    if [ -e "$scratch/cmd-ran" ]; then
+        fail "and the command did not run" "the stub wrote its marker"
+    else
+        pass "and the command did not run"
+    fi
+
+    printf '0\n' > "$cot/exit-code"
+    cmd_run exit0 pass site/index.html README.md
+    same "an \`exit\` oracle that exits 0 gives no \`command:\` finding" "0" \
+        "$(cmd_count command:fixture-exit exit0)"
+    printf '3\n' > "$cot/exit-code"
+    cmd_run exit3 pass site/index.html README.md
+    same "an \`exit\` oracle that exits 3 gives \`command:fixture-exit\` on both artifacts" "2" \
+        "$(cmd_count command:fixture-exit exit3)"
+    printf '0\n' > "$cot/exit-code"
+    same "and a site-only session fails the code oracle it did not attempt" "2" \
+        "$(cmd_count test:fixture-oracle exit3)"
+
+    # The declaration is the oracle tree's, never the workspace's: a session
+    # that rewrites the fold cannot swap the command for `true`.
+    sed -e 's/command: sh oracle-stub.sh/command: "true"/' \
+        -e '/command: "true"/{n;s/parser: cargo-test/parser: exit/;}' "$cot/.headwater/probe.yml" \
+        > "$scratch/cmd-ws/.headwater/probe.yml"
+    cmd_run swapped compile src/lib.rs README.md .headwater/probe.yml
+    same "a session that rewrote the declaration still fails on the oracle tree's command" "3" \
+        "$(cmd_count test:fixture-oracle swapped)"
+    cp "$cot/.headwater/probe.yml" "$scratch/cmd-ws/.headwater/probe.yml"
+
+    # A held file is the oracle tree's. A session that writes its own hidden
+    # test, one that passes, still grades against the oracle tree's test.
+    printf "printf 'test result: ok. 1 passed; 0 failed\\\\n'\n" > "$scratch/cmd-ws/tests/hidden.sh"
+    cmd_run held held src/lib.rs tests/hidden.sh
+    same "a session that rewrote a held test records" "0" "$?"
+    same "and it fails on the oracle tree's test, not its own" "2" "$(cmd_count test:hidden::case held)"
+    same "and the whole oracle fails on both artifacts" "2" "$(cmd_count test:fixture-oracle held)"
+    cp "$cot/tests/hidden.sh" "$scratch/cmd-ws/tests/hidden.sh"
+
+    # A command that cannot start found no failure, so nothing is written.
+    cp "$cot/.headwater/probe.yml" "$scratch/cmd-probe.yml"
+    sed 's/command: sh oracle-stub.sh/command: no-such-oracle-command-1834/' "$scratch/cmd-probe.yml" \
+        > "$cot/.headwater/probe.yml"
+    cmd_run missing pass src/lib.rs
+    same "a command that cannot start refuses with exit 5" "5" "$?"
+    same "and writes no event" "0" "$(wc -c < "$scratch/cmd-missing.yaml" | tr -d ' ')"
+    present "and says the command could not start" "could not start" "$scratch/cmd-missing.err"
+    cp "$scratch/cmd-probe.yml" "$cot/.headwater/probe.yml"
+fi
+
+# ---------------------------------------------------------------------------
 # A real stream, recorded from the channel rather than written by hand.
 #
 # `tools/probe/fixtures/live-haiku-session.jsonl` is the standard output
@@ -1110,6 +1270,64 @@ PATH="$scratch/grep-only" "$shell" "$driver" --probe "HW-PROBE-$tombstone" --ses
 same "and the driver passes both guards over the sealed tree" "3" "$?"
 sh "$root/tools/probe/seal.sh" "$root/docs" "HW-PROBE-$tombstone" >/dev/null 2>&1
 same "seal.sh refuses a path inside this checkout" "6" "$?"
+
+# A hidden test that names its probe is sealed out of every workspace and kept
+# in the grading tree (#1834). A `cargo-test` oracle can run a test the session
+# never sees. The seal removes the test, because its header names the probe,
+# and every arm tree is a copy of the sealed tree. The recorder grades in a
+# copy of the grading tree, which `tools/probe/grading-tree.sh` builds: the
+# sealed tree plus each file an oracle `holds`, and nothing else.
+if [ -x "$engine" ]; then
+    hidden=engine/tests/hidden-1834.rs
+    rm -rf "$scratch/held" "$scratch/held-src" "$scratch/held-arm" "$scratch/held-grading"
+    mkdir -p "$scratch/held/docs/probes" "$scratch/held/engine/tests" "$scratch/held/.headwater"
+    cp "$root/docs/probes/$tombstone.md" "$scratch/held/docs/probes/"
+    printf '// The hidden test of HW-PROBE-%s.\n#[test]\nfn hidden() {}\n' "$tombstone" \
+        > "$scratch/held/$hidden"
+    awk -v h="$hidden" '/^oracles: \{\}$/ {
+        print "oracles:"
+        print "  hidden-oracle:"
+        print "    paths: [engine/**]"
+        print "    command: cargo test --test hidden-1834"
+        print "    parser: cargo-test"
+        print "    holds: [" h "]"
+        next
+    } { print }' "$root/.headwater/probe.yml" > "$scratch/held/.headwater/probe.yml"
+    cp -a "$scratch/held" "$scratch/held-src"
+    sh "$root/tools/probe/seal.sh" "$scratch/held" "HW-PROBE-$tombstone" >/dev/null 2>"$scratch/held-seal.err"
+    same "seal.sh seals a tree whose oracle holds a hidden test" "0" "$?"
+    cp -a "$scratch/held" "$scratch/held-arm"
+    if [ -e "$scratch/held/$hidden" ] || [ -e "$scratch/held-arm/$hidden" ]; then
+        fail "and the hidden test is in neither the sealed tree nor an arm tree copied from it" \
+            "$(ls -R "$scratch/held/engine")"
+    else
+        pass "and the hidden test is in neither the sealed tree nor an arm tree copied from it"
+    fi
+    same "grading-tree.sh --holds prints the held path" "$hidden" \
+        "$(sh "$root/tools/probe/grading-tree.sh" --holds "$scratch/held" 2>/dev/null)"
+    sh "$root/tools/probe/grading-tree.sh" "$scratch/held" "$scratch/held-src" "$scratch/held-grading" \
+        >/dev/null 2>"$scratch/held-grading.err"
+    same "grading-tree.sh builds the grading tree" "0" "$?"
+    if cmp -s "$scratch/held-src/$hidden" "$scratch/held-grading/$hidden"; then
+        pass "and the grading tree holds the hidden test"
+    else
+        fail "and the grading tree holds the hidden test" "$(cat "$scratch/held-grading.err")"
+    fi
+    if [ -e "$scratch/held-grading/docs/probes" ]; then
+        fail "and it restores nothing else the seal removed" "docs/probes is back"
+    else
+        pass "and it restores nothing else the seal removed"
+    fi
+    rm "$scratch/held-src/$hidden"
+    sh "$root/tools/probe/grading-tree.sh" "$scratch/held" "$scratch/held-src" "$scratch/held-grading-2" \
+        >/dev/null 2>"$scratch/held-grading-2.err"
+    same "a held path the source does not hold refuses with 3" "3" "$?"
+    if [ -e "$scratch/held-grading-2" ] || [ -e "$scratch/held-grading-2.building" ]; then
+        fail "and it leaves no grading tree" "$(ls "$scratch")"
+    else
+        pass "and it leaves no grading tree"
+    fi
+fi
 
 # A named document is sealed the way an answer key is (#1293). The #980 batch
 # deleted HW-OBL-0013 because it names the tombstone probe, and left its claim
@@ -2052,14 +2270,18 @@ STUB
     if command -v bwrap >/dev/null 2>&1; then
         conf=$(cd "$outer" && pwd -P)
         rm -rf "$conf/outside" "$conf/trees" "$conf/conf-ws"
-        mkdir -p "$conf/outside" "$conf/trees/oracle" "$conf/conf-ws"
+        mkdir -p "$conf/outside" "$conf/trees/oracle" "$conf/trees/grading" "$conf/conf-ws"
         printf 'HW-LEAK-MARKER-1467\n' > "$conf/outside/secret.md"
         printf 'HW-LEAK-MARKER-1467\n' > "$conf/trees/oracle/secret.md"
+        # The grading tree (#1834) holds what the seal removed, a hidden test
+        # among it, so it is held to the same confinement as the oracle tree.
+        printf 'HW-LEAK-MARKER-1467\n' > "$conf/trees/grading/secret.md"
         cat > "$scratch/bin/claude" <<STUB
 #!/bin/sh
 {
     cat "$conf/outside/secret.md"
     cat ../trees/oracle/secret.md
+    cat ../trees/grading/secret.md
     find / -name secret.md
     for p in /proc/[0-9]*/root$conf/outside/secret.md; do cat "\$p"; done
     cat /proc/[0-9]*/cmdline | tr '\\0' ' ' | grep -o 'probe-record-fixtures[.]sh'
@@ -2705,6 +2927,7 @@ STUB
         rm -rf "$batch"
         mkdir -p "$batch/tasks" "$batch/sessions" "$batch/ws" "$batch/trees"
         cp -a "$scratch/bw-base" "$batch/trees/oracle"
+        cp -a "$scratch/bw-base" "$batch/trees/grading"
         cp -a "$scratch/bw-base" "$batch/trees/campaign-present"
         git -C "$root" rev-parse HEAD > "$batch/head"
         printf 'claude-haiku-4-5\n' > "$batch/model"
@@ -2958,6 +3181,7 @@ STUB
             rm -rf "$1"
             mkdir -p "$1/tasks" "$1/sessions" "$1/ws" "$1/trees"
             cp -a "$scratch/bw-base" "$1/trees/oracle"
+            cp -a "$scratch/bw-base" "$1/trees/grading"
             cp -a "$scratch/bw-base" "$1/trees/campaign-present"
             git -C "$root" rev-parse HEAD > "$1/head"
             cp "$scratch/task.md" "$1/tasks/HW-PROBE-$tombstone.md"
@@ -5252,6 +5476,12 @@ if [ -x "$engine" ]; then
         same "the recorder is given the round's set and the scenario arm" "yes yes" \
             "$(grep -qx -- '--set' "$run_argv" 2>/dev/null && grep -A1 -x -- '--set' "$run_argv" | tail -1 | grep -qx tuning && echo yes || echo no) $(grep -A1 -x -- '--arm' "$run_argv" 2>/dev/null | tail -1 | grep -qx scenario-4 && echo yes || echo no)"
         absent "and no category" "--category" "$run_argv"
+        # The recorder grades in the grading tree, which keeps each file a
+        # command oracle holds, and never in the sealed oracle tree (#1834).
+        same "the recorder grades in the batch's grading tree" "$scratch/run-out/trees/grading" \
+            "$(grep -A1 -x -- '--oracle-tree' "$run_argv" 2>/dev/null | tail -1)"
+        same "and the batch built it" "yes" \
+            "$([ -d "$scratch/run-out/trees/grading/.headwater" ] && echo yes || echo no)"
         absent "and the recorder plans the line the batch planned" "headwater probe plan" \
             "$scratch/run-out/sessions/$run_session/record.err"
         same "the session the plan admitted is the one the batch planned" "$(sed -n 's/^selection: //p' "$scratch/run-out/plans/L1" | head -1)" \

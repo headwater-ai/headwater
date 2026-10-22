@@ -434,6 +434,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 scenario,
                 instrument,
                 folds,
+                oracles,
                 answer_keys,
                 category,
                 set,
@@ -472,6 +473,10 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 // `--folds` and `--answer-keys` print the two lists
                 // `tools/probe/seal.sh` reads, for the same reason (#1472).
                 Ok((_, _, budgets)) if folds => probe_folds(&budgets),
+                // `--oracles` prints the command oracles the recorder runs,
+                // so `tools/probe/probe-transform.sh` and
+                // `tools/probe/campaign.sh` parse no YAML either (#1834).
+                Ok((_, _, budgets)) if oracles => probe_oracles(&budgets),
                 Ok((_, _, budgets)) if answer_keys.is_some() => {
                     probe_answer_keys(&budgets, answer_keys.as_deref().unwrap_or_default())
                 }
@@ -5739,6 +5744,28 @@ fn probe_instrument(budgets: &headwater_probe::Budgets) -> ExitCode {
 fn probe_folds(budgets: &headwater_probe::Budgets) -> ExitCode {
     for path in &budgets.folds {
         println!("{path}");
+    }
+    ExitCode::SUCCESS
+}
+
+/// `headwater probe plan --oracles`: each declared command oracle, as
+/// tab-separated `<name> <field> <value>` lines (#1834).
+///
+/// `Budgets::read` refused a name outside `[a-z0-9-]+`, a command with a
+/// control character and an unsafe path before anything reached here, so no
+/// value holds a tab or a line break and each line splits into three fields.
+/// A declaration with no `oracles` prints nothing and exits 0.
+fn probe_oracles(budgets: &headwater_probe::Budgets) -> ExitCode {
+    for oracle in &budgets.oracles {
+        let name = &oracle.name;
+        println!("{name}\tparser\t{}", oracle.parser.name());
+        println!("{name}\tcommand\t{}", oracle.command);
+        for pattern in &oracle.paths {
+            println!("{name}\tpath\t{pattern}");
+        }
+        for held in &oracle.holds {
+            println!("{name}\thold\t{held}");
+        }
     }
     ExitCode::SUCCESS
 }

@@ -236,7 +236,11 @@ pub enum Refusal {
     /// A `patched` probe naming a rule this engine does not carry. The grader
     /// would have nothing to run, and a probe that grades against nothing
     /// returns a verdict about the harness.
-    OracleUnknown { probe: String, rule: String },
+    OracleUnknown {
+        probe: String,
+        rule: String,
+        declared: Vec<String>,
+    },
     /// An `answered` probe that declares no closed set of answers. Every string
     /// would then be the expected one, and the rate would be the session count.
     AnswersUndeclared { probe: String },
@@ -457,11 +461,22 @@ impl std::fmt::Display for Refusal {
                  a check, so that rule is declared and never read. Write `oracle: {NO_ORACLE}`",
                 expectation.name()
             ),
-            Refusal::OracleUnknown { probe, rule } => write!(
+            Refusal::OracleUnknown {
+                probe,
+                rule,
+                declared,
+            } => write!(
                 f,
                 "{probe} grades against `{rule}`, which is not one of the {} rules this engine \
-                 carries",
-                headwater_check::RULES.len()
+                 carries and not a command oracle that the `oracles` of .headwater/probe.yml \
+                 declares ({}). A failed case and `test:build` are diagnostics of an oracle, and \
+                 a probe grades against the oracle's own name",
+                headwater_check::RULES.len(),
+                if declared.is_empty() {
+                    "it declares none".to_string()
+                } else {
+                    format!("it declares `{}`", declared.join("`, `"))
+                }
             ),
             Refusal::AnswersUndeclared { probe } => write!(
                 f,
@@ -816,11 +831,16 @@ impl Plan {
                     return plan;
                 }
                 (Expectation::Patched, Some(rule))
-                    if !headwater_check::RULES.contains(&rule.as_str()) =>
+                    if !headwater_check::RULES.contains(&rule.as_str())
+                        && !budgets
+                            .oracles
+                            .iter()
+                            .any(|oracle| oracle.finding() == *rule) =>
                 {
                     plan.refusal = Some(Refusal::OracleUnknown {
                         probe: id,
                         rule: rule.clone(),
+                        declared: budgets.oracles.iter().map(|o| o.finding()).collect(),
                     });
                     return plan;
                 }

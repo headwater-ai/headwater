@@ -99,6 +99,37 @@ folds:
 answer_keys:
   HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks: [docs/obligations/0198-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-work-starts.md]
 
+# Command oracles (#1834): the commands this repository declares as the oracle
+# of a code artifact, beside the rules of the taxonomy. A `patched` probe over
+# code grades against `test:<name>` of a `cargo-test` oracle or
+# `command:<name>` of an `exit` oracle, and `headwater probe plan` refuses any
+# other name of either prefix. A failed case `test:<case>` and a failed build
+# `test:build` are diagnostics of an oracle and never an oracle.
+#
+# Each entry is keyed by a name of lower-case letters, digits and hyphens, and
+# `build` is refused. It holds:
+#
+#   paths    shell `case` patterns over the produced artifacts. A produced
+#            artifact that matches one runs the command, once per session.
+#            Where none matches, the command does not run and the oracle fails
+#            whole, because the tree it measures is then the pin's.
+#   command  one line, run with `sh -c` in the grading copy, which holds every
+#            artifact the session produced and never is the session's
+#            workspace.
+#   parser   `cargo-test` or `exit`. `tools/probe/probe-transform.sh`
+#            (`step_run_oracles`) states what each one reads.
+#   holds    optional: the files the seal removes from every workspace, such
+#            as a hidden test whose header names its probe, which the grading
+#            copy keeps. `tools/probe/grading-tree.sh` restores them.
+#
+# The findings of a command go on every produced artifact inside the base. The
+# recorder reads this block from the oracle tree, and never from a session's
+# workspace, because this file is a fold and a session can write to it.
+# `headwater probe plan --oracles` prints the parse, and a path that leaves the
+# tree, an unknown parser or an empty command refuses the whole file. The
+# probes that grade against an oracle declare it here (#1835).
+oracles: {}
+
 # Leak strings (#1472): for each probe, the strings whose presence in text the harness
 # loads into every session gives the probe's answer away. The seal finds an
 # answer by a name, and this leak names none. The description of the
