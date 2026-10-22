@@ -459,4 +459,4 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 ## 111 — The additive campaign adds six layers to plain code in fourteen scenarios and registers one comparison each
 
-[HW-DR-0111](../decisions/0111-the-additive-campaign-adds-six-layers-to-plain-code-in-fourteen-scenarios-and-registers-one-comparison-each.md) — The 0.07 campaign builds 14 scenarios by adding six layers to plain code. Each scenario has one base, one registered comparison and one verdict, over 8 probes split 4 for tuning and 4 held out. (asserted, and no human has accepted it)
+[HW-DR-0111](../decisions/0111-the-additive-campaign-adds-six-layers-to-plain-code-in-fourteen-scenarios-and-registers-one-comparison-each.md) — The 0.07 campaign builds 14 scenarios by adding six layers to plain code. Each scenario has one base, one registered comparison and one verdict, over 9 probes split 5 for tuning and 4 held out. Only the skills, the hook and MCP are tuned. (asserted, and no human has accepted it)

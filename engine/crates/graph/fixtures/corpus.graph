@@ -723,8 +723,6 @@ anchors
     cited by HW-PD-0025
   code_path `tools/probe/additive-screening.spec` via source-tree
     cited by HW-DR-0111
-  code_path `tools/probe/additive-tuning-docs.spec` via source-tree
-    cited by HW-DR-0111
   code_path `tools/probe/arms/hook/.claude/settings.json` via source-tree
     cited by HW-DR-0111
   code_path `tools/probe/egress-proxy.py` via source-tree
