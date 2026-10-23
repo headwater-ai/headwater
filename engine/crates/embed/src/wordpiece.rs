@@ -55,6 +55,42 @@ impl WordPiece {
         ids
     }
 
+    /// The ids and the token type ids of a (query, document) pair, as a BERT
+    /// cross-encoder reads it: `[CLS] query [SEP] document [SEP]`, with type 0
+    /// for `[CLS]`, the query and the first `[SEP]`, and type 1 for the rest.
+    /// The whole is at most `limit` long. When it is longer, one piece at a
+    /// time leaves the end of the longer side, and the document side on a
+    /// tie, which is the Hugging Face `longest_first` truncation.
+    pub fn encode_pair(&self, query: &str, document: &str, limit: usize) -> (Vec<i64>, Vec<i64>) {
+        let mut first = Vec::new();
+        for word in words(query) {
+            self.pieces(&word, &mut first);
+        }
+        let mut second = Vec::new();
+        for word in words(document) {
+            self.pieces(&word, &mut second);
+        }
+        let budget = limit.saturating_sub(3);
+        while first.len() + second.len() > budget {
+            if first.len() > second.len() {
+                first.pop();
+            } else {
+                second.pop();
+            }
+        }
+        let mut ids = Vec::with_capacity(first.len() + second.len() + 3);
+        ids.push(self.cls);
+        ids.extend(first);
+        ids.push(self.sep);
+        let query_side = ids.len();
+        ids.extend(second);
+        ids.push(self.sep);
+        let types = (0..ids.len())
+            .map(|at| i64::from(at >= query_side))
+            .collect();
+        (ids, types)
+    }
+
     /// Greedy longest match from the left, with `##` on every piece but the
     /// first. A word with any unmatched stretch is one unknown token.
     fn pieces(&self, word: &str, ids: &mut Vec<i64>) {
@@ -166,6 +202,26 @@ mod tests {
     #[test]
     fn the_limit_counts_both_special_tokens() {
         assert_eq!(vocab().encode("route route route", 3), vec![2, 9, 3]);
+    }
+
+    #[test]
+    fn a_pair_carries_type_zero_for_the_query_and_type_one_for_the_document() {
+        let (ids, types) = vocab().encode_pair("route", "Headwater.", 512);
+        assert_eq!(ids, vec![2, 9, 3, 4, 5, 8, 3]);
+        assert_eq!(types, vec![0, 0, 0, 1, 1, 1, 1]);
+    }
+
+    #[test]
+    fn a_long_pair_loses_pieces_from_the_longer_side_first() {
+        // Query 5 pieces, document 2: a limit of 8 leaves 5 for both sides, so
+        // two pieces leave the query and the document keeps both of its own.
+        let (ids, types) = vocab().encode_pair("route route route route route", "head s", 8);
+        assert_eq!(ids, vec![2, 9, 9, 9, 3, 4, 11, 3]);
+        assert_eq!(types, vec![0, 0, 0, 0, 0, 1, 1, 1]);
+        // Both sides 3 long and a budget of 4: the tie takes from the document
+        // first, so each side keeps two.
+        let (ids, _) = vocab().encode_pair("route route route", "head head head", 7);
+        assert_eq!(ids, vec![2, 9, 9, 3, 4, 4, 3]);
     }
 
     #[test]
