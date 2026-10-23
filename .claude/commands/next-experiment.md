@@ -20,15 +20,15 @@ Run one paid try of the tuning round, then stop. `$ARGUMENTS` names the round ro
 
 1. Run `sh tools/probe/try.sh status <root>`. Read the spend, the approval and the open layer.
 2. **When no layer is open,** write the tuning plan of the next layer for the owner, as a comment on its issue, and stop. The owner accepts it on the issue, and a pull request writes `open`. `try.sh plan` refuses with 5 until then.
-3. Run `sh tools/probe/try.sh plan <root>`. On exit 5, report the refusal it prints and stop. On exit 4, put each path it prints to the owner. On the owner's yes, run `sh tools/probe/try.sh accept <root> <ruling-url>` with the URL of that comment, and run `plan` again.
-4. Run `sh tools/probe/try.sh launch <root>`. Exit 6 names a state of the checkout or a try root that exists already. Repair the checkout, or stop and ask.
+3. Run `sh tools/probe/try.sh rank <root>` and `sh tools/probe/try.sh plan <root>` to read where the round of the open layer stands. Choose the next stage as the header of `try.sh` defines them: `screen <k>` for the next variant, `best` where no best so far is measured at the confirmation's count, or `confirm <variant>` for the top of the rank. Run `sh tools/probe/try.sh plan <root> <stage>`. On exit 5, report the refusal it prints and stop. On exit 6, report the rule of rounds, order or stages that it names, and stop. On exit 4, put each path it prints to the owner. On the owner's yes, run `sh tools/probe/try.sh accept <root> <ruling-url>` with the URL of that comment, and run `plan` again. A confirmation after a change to the engine's source exits 4 whatever the owner accepted, so report it and stop.
+4. Run `sh tools/probe/try.sh launch <root> <stage>`. Its try root `<try>` is the one that `plan` printed. Exit 6 names a state of the checkout or a try root that exists already. Repair the checkout, or stop and ask.
 5. Wait in the foreground with a Bash `timeout` of `300000`:
 
-       sh tools/run/wait-for.sh 'sh tools/probe/try.sh wait <root>'
+       sh tools/run/wait-for.sh 'sh tools/probe/try.sh wait <root> <try>'
 
    On `RE-ISSUE`, run the same call again. Never wait in the background.
-6. Read the line that `wait` printed. On `canary-needs-reader`, read the records that `<try>/canary-needs-reader` names, and put them to the owner. Write `canary-passed` only on the owner's word, then run `sh tools/probe/try.sh relaunch <root>` and wait again. On `disk-floor`, `capped`, `canary-failed`, `stop` or `driver-exited`, report it to the owner and stop.
-7. On `done`, run `sh tools/probe/try.sh result <root>`. It writes the transcript and `result.md`, and it appends the `result` event to `<root>/ledger.jsonl`. Run `sh tools/probe/try.sh ledger <root>` to read the round so far.
+6. Read the line that `wait` printed. On `canary-needs-reader`, read the records that `<try>/canary-needs-reader` names, and put them to the owner. Write `canary-passed` only on the owner's word, then run `sh tools/probe/try.sh relaunch <root> <try>` and wait again. On `disk-floor`, `capped`, `canary-failed`, `stop` or `driver-exited`, report it to the owner and stop.
+7. On `done`, run `sh tools/probe/try.sh result <root> <try>`. It writes the transcript and `result.md`, and it appends the event of the stage to `<root>/ledger.jsonl`. A screen and a best so far are never kept, and a confirmation is kept or not under the keep rule. Run `sh tools/probe/try.sh ledger <root>` to read the round so far.
 8. Open one pull request of your own. It commits the transcript, the figures of `result.md` and the narrative paragraphs the transcript leaves to a person. When the change was not kept, the same pull request reverts it. Name the issue with `Refs`, because the round is not finished.
 9. Report to the owner, and stop.
 
@@ -36,9 +36,9 @@ Run one paid try of the tuning round, then stop. `$ARGUMENTS` names the round ro
 
 Report in plain terms first: the scores, what they mean and what the try cost. No interval and no statistical term comes first. For example:
 
-> The tuned version solved 32 of 72 tasks against 39 of 72 before. That is worse, so it is not kept. The try cost $24.52.
+> The confirmed version solved 82 of 145 tasks against 80 of 145 before. That is too close to call, so it is not kept. The try cost $72.50.
 
-Then give the `pooled:` line of `result.md` with its interval, for a reader who wants it. Then name the pull request, the round's spend against its approval from `sh tools/probe/try.sh spent <root>`, and the question the owner owes: a second try, another layer, or neither.
+Then give the `pooled:` line of `result.md` with its interval, for a reader who wants it. Then name the pull request, the round's spend against its approval from `sh tools/probe/try.sh spent <root>`, and the question the owner owes: the next stage of the round, another layer, or neither.
 
 ## What you never do
 

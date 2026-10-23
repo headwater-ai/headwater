@@ -458,8 +458,8 @@ tiers:
   # over every attempt of the round: a restart does not reset the count. The
   # screening plan is 1,008 sessions and $504.00, so $196.00 is room for a
   # restart. This ceiling was set to that $700, and it now bounds one batch
-  # directory of any round: a tuning try of one layer is 72 sessions, or
-  # $36.00, well inside it. `tools/probe/campaign-drive.sh` gives a restarted
+  # directory of any round: the largest batch of a tuning round, a
+  # confirmation, is 145 sessions, or $72.50, well inside it (#1838). `tools/probe/campaign-drive.sh` gives a restarted
   # batch the cap less what every earlier batch under its root spent. It
   # holds no total across roots, so the total of the tuning round against its
   # $1,512.00 (#1777) is kept by hand. The plan prices one line at a time, so
@@ -710,6 +710,21 @@ sets:
 # documents layer was open for try 1, which scored 32 of 72 sessions and was
 # not kept (#1777). The ruling of 2026-10-22 withdrew that try with the
 # layer, and no other layer's plan is accepted, so `open` is `none`.
+#
+# The tuning round runs in rounds (#1838), as the owner ruled on 2026-10-22
+# (#1777): a round screens `variants` changes of the open layer at `screen`
+# sessions each, ranks them on the use of the layer and then on the pass
+# rate, and confirms the top one at `confirm` sessions against the best so
+# far measured at the same count. The keep rule reads the confirmation
+# alone. A layer takes at most `tries` rounds, and it stops after
+# `stop_after_empty` rounds in a row with nothing kept. The layers run in
+# `order`, and a round of a later layer waits while an earlier one is open.
+# The screen is 24 sessions and the confirmation 144, as ruled, and
+# `tools/probe/declared.py <declaration> tuning` rounds each up to a whole
+# number of repetitions over the probes of the set: 25 and 145 over five.
+# `ceiling_cents` is the most every try may spend, $1,290.00 inside the
+# $1,512.00 approval, and `tools/probe/try.sh plan` refuses a launch whose
+# round is priced above what is left of it.
 rounds:
   screening:
     set: tuning
@@ -719,8 +734,14 @@ rounds:
   tuning:
     set: tuning
     rates: [0.625, 0.375]
-    tries: 3
+    tries: 4
     approved_cents: 151200
+    screen: 24
+    confirm: 144
+    variants: 4
+    stop_after_empty: 2
+    order: [skills, hook, mcp]
+    ceiling_cents: 129000
     open: none
   final:
     set: held-out

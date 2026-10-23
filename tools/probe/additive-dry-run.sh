@@ -38,6 +38,22 @@
 # `--priced` prints `<index> <declared> <round count> <how>` for each line,
 # as it does for every other spec, so the batch driver reads the round's count
 # from here.
+#
+# **The tuning round runs in rounds (#1838).** When the tuning round declares
+# the fields of its rounds, `declared.py tuning` computes the two counts the
+# owner ruled on 2026-10-22: a screened variant runs ceil(24 / k) repetitions
+# of each of the k probes of the set, and a confirmation, or the best so far
+# measured at the same count, runs ceil(144 / k). Over five probes that is 5
+# and 29, so 25 and 145 sessions. A tuning line then runs one stage, which
+# `HEADWATER_TUNING_STAGE` names, `screen` or `confirm`, and which
+# `tools/probe/try.sh` sets for each driver it starts. With `--priced`, a
+# tuning line with no stage exits 2, so no batch runs a tuning line at a
+# count nobody chose, and any other stage exits 2 with or without it.
+# Without `--priced` and with no stage, a tuning line is priced as one whole
+# round: the variants at the screen's count, one confirmation, and the best
+# so far at the confirmation's count, which a round runs only where no
+# measurement at that count exists. The sum of the round is that, at the
+# most rounds a layer may take.
 
 if [ -n "$asked" ]; then
     echo "campaign: an additive spec takes no --repetitions. Each round's count is computed from its rates under \`rounds:\` in .headwater/probe.yml." >&2
@@ -45,6 +61,18 @@ if [ -n "$asked" ]; then
 fi
 python3 "$root/tools/probe/declared.py" "$declaration" rounds > "$work/rounds" || finish $?
 python3 "$root/tools/probe/declared.py" "$declaration" scenarios > "$work/scenarios" || finish $?
+python3 "$root/tools/probe/declared.py" "$declaration" tuning > "$work/tuning" || finish $?
+stage=${HEADWATER_TUNING_STAGE:-}
+if [ -s "$work/tuning" ]; then
+    case $stage in
+        '' | screen | confirm) ;;
+        *)
+            echo "campaign: HEADWATER_TUNING_STAGE is \`$stage\`, and a tuning line runs the stage \`screen\` or \`confirm\`." >&2
+            finish 2
+            ;;
+    esac
+fi
+tuning_field() { awk -v f="$1" -v c="$2" '$1 == f { print $c }' "$work/tuning"; }
 if [ ! -s "$work/rounds" ]; then
     echo "campaign: $spec is an additive spec, and .headwater/probe.yml declares no \`rounds:\`." >&2
     finish 5
@@ -72,6 +100,12 @@ while read -r r_name r_set r_high r_low r_tries r_members; do
     r_n=${r_needed#* }
     r_reps=$(awk -v n="$r_n" -v k="$r_k" 'BEGIN { r = n / k; c = int(r); if (c < r) c++; print c }')
     printf '%s %s %s %s %s %s\n' "$r_name" "$r_set" "$r_tries" "$r_n" "$r_k" "$r_reps" >> "$work/round-counts"
+    if [ "$r_name" = tuning ] && [ -s "$work/tuning" ]; then
+        [ "$priced" = 1 ] || printf 'round %s: the owner ruled %s sessions for a screened variant and %s for a confirmation, so ceil(%s / %s) = %s and ceil(%s / %s) = %s repetitions of each probe of the set %s: %s variants a round, in at most %s rounds a layer.\n' \
+            "$r_name" "$(tuning_field screen 2)" "$(tuning_field confirm 2)" "$(tuning_field screen 2)" "$r_k" "$(tuning_field screen 3)" \
+            "$(tuning_field confirm 2)" "$r_k" "$(tuning_field confirm 3)" "$r_set" "$(tuning_field variants 2)" "$r_tries"
+        continue
+    fi
     [ "$priced" = 1 ] || printf 'round %s: the set %s of %s probes, %s against %s, needs %s sessions per scenario with the Fleiss continuity correction, so ceil(%s / %s) = %s repetitions of each probe, %s.\n' \
         "$r_name" "$r_set" "$r_k" "$r_high" "$r_low" "$r_n" "$r_n" "$r_k" "$r_reps" "$r_in"
 done < "$work/rounds"
@@ -107,6 +141,23 @@ while IFS= read -r line; do
     set -- $counts "$@"
     set_name=$2 tries=$3 round_n=$4 set_k=$5 reps=$6
     shift 6
+    # A tuning line runs one stage of a round (#1838), or is priced as one
+    # whole round when no stage is named and nothing runs it.
+    staged=
+    if [ "$round" = tuning ] && [ -s "$work/tuning" ]; then
+        if [ -n "$stage" ]; then
+            staged=$stage
+            round_n=$(tuning_field "$stage" 2)
+            reps=$(tuning_field "$stage" 3)
+        elif [ "$priced" = 1 ]; then
+            echo "campaign: line $index ($tier $arm $round) runs one stage of a tuning round, and HEADWATER_TUNING_STAGE names none. Launch it with tools/probe/try.sh, which names the stage." >&2
+            finish 2
+        else
+            staged=round
+            round_n=$(tuning_field confirm 2)
+            reps=$(tuning_field confirm 3)
+        fi
+    fi
     members=$(awk -v r="$round" '$1 == r { for (i = 6; i <= NF; i++) print $i }' "$work/rounds")
     excludes=
     bad=
@@ -185,6 +236,7 @@ $excluded
         continue
     fi
     how="round $round, ceil($round_n / $set_k)"
+    [ -n "$staged" ] && [ "$staged" != round ] && how="round $round, the $staged, ceil($round_n / $set_k)"
     if awk -v r="$round" '$1 == r && $3 == "repetitions" { found = 1 } END { exit !found }' "$work/rounds"; then
         how="round $round, declared"
     fi
@@ -200,9 +252,21 @@ $excluded
     cents=$((sessions * unit))
     per=
     [ "$tries" -gt 1 ] && per=" a try"
-    printf 'line %s  %s %s %s: %s probes x %s repetitions (%s) = %s sessions, $%s%s\n' \
-        "$index" "$tier" "$arm" "$round" "$k" "$reps" "$how" "$sessions" \
-        "$(awk -v c="$cents" 'BEGIN { printf "%.2f", c / 100 }')" "$per"
+    if [ "$staged" = round ]; then
+        variants=$(tuning_field variants 2)
+        screen_reps=$(tuning_field screen 3)
+        screen_sessions=$((variants * k * screen_reps))
+        sessions=$((screen_sessions + 2 * k * reps))
+        cents=$((sessions * unit))
+        printf 'line %s  %s %s %s: a round of %s variants x %s probes x %s repetitions (ceil(%s / %s)) = %s sessions, a confirmation of %s probes x %s repetitions (%s) = %s sessions, and the best so far at %s sessions where no measurement at that count exists: %s sessions, $%s a round\n' \
+            "$index" "$tier" "$arm" "$round" "$variants" "$k" "$screen_reps" "$(tuning_field screen 2)" "$set_k" "$screen_sessions" \
+            "$k" "$reps" "$how" "$((k * reps))" "$((k * reps))" "$sessions" \
+            "$(awk -v c="$cents" 'BEGIN { printf "%.2f", c / 100 }')"
+    else
+        printf 'line %s  %s %s %s: %s probes x %s repetitions (%s) = %s sessions, $%s%s\n' \
+            "$index" "$tier" "$arm" "$round" "$k" "$reps" "$how" "$sessions" \
+            "$(awk -v c="$cents" 'BEGIN { printf "%.2f", c / 100 }')" "$per"
+    fi
     has_cued=0
     has_other=0
     for probe in $probes; do
@@ -220,7 +284,10 @@ $probe
         printf 'line %s pools a probe under `leaks_kept:` with one that is not, so its rate would hold the leak string.\n' "$index"
         [ "$status" = 5 ] || status=8
     fi
-    printf '%s %s %s %s %s\n' "$round" "$tries" "$((sessions * tries))" "$((cents * tries))" "$ceiling" >> "$work/costs"
+    unit_word=tries
+    [ "$staged" = round ] && unit_word=rounds
+    [ -n "$staged" ] && [ "$staged" != round ] && tries=1
+    printf '%s %s %s %s %s %s\n' "$round" "$tries" "$((sessions * tries))" "$((cents * tries))" "$ceiling" "$unit_word" >> "$work/costs"
 done < "$work/lines"
 [ "$priced" = 1 ] && finish 0
 
@@ -232,13 +299,13 @@ if [ -s "$work/costs" ]; then
         function d(c) { return sprintf("$%.2f", c / 100) }
         {
             if (!($1 in rs)) order[++nr] = $1
-            rs[$1] += $3; rc[$1] += $4; tries[$1] = $2; ceil = $5
+            rs[$1] += $3; rc[$1] += $4; tries[$1] = $2; ceil = $5; word[$1] = $6
             s += $3; c += $4
         }
         END {
             for (i = 1; i <= nr; i++) {
                 r = order[i]
-                printf "round %s: %d sessions, %s%s\n", r, rs[r], d(rc[r]), (tries[r] > 1 ? " (" tries[r] " tries at most)" : "")
+                printf "round %s: %d sessions, %s%s\n", r, rs[r], d(rc[r]), (tries[r] > 1 ? " (" tries[r] " " word[r] " at most)" : "")
             }
             printf "total: %d sessions, %s against the %s the additive tier declares\n", s, d(c), d(ceil)
             if (slice != "") printf "slices: %d sessions in %d slices of at most %d\n", s, int((s + slice - 1) / slice), slice
