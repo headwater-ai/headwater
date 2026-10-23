@@ -16,7 +16,7 @@ relations:
     - to: .claude/commands/next-experiment.md
       verified_revision: sha256:089798682f64b9be0d5797a27450a75cc498ac50cd8cc496de7d845cb0f658e5
     - to: tools/probe/try.sh
-      verified_revision: sha256:4b7cdd00cda11546ec79ac72f4e1ce5a03dde7c8d435985e8d275c960dfaf0f3
+      verified_revision: sha256:1954a2d593d6f75ea31c9d229a503e2ac976ffda69bcc02321f14bd18423031c
     - to: tools/probe/additive-launch.env
       verified_revision: sha256:b7bdd819610d49e23ca67556db5be04c29293570663489d1e966d27cc0e03b07
   traces_to:

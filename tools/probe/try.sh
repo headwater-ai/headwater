@@ -33,7 +33,7 @@
 #
 # The open layer and its round are `rounds.tuning.open` in
 # `.headwater/probe.yml`: its `layer`, and its `try`, which is the round `n`.
-# The figures of a round are the six fields of the tuning round that
+# The figures of a round are the seven fields of the tuning round that
 # `tools/probe/declared.py <declaration> tuning` prints, with the count of
 # each stage computed there and nowhere else: over the five tuning probes, a
 # screened variant runs 25 sessions and a confirmation 145. A round has three
