@@ -823,6 +823,23 @@ jobs:
             exit 0
           fi
           exit "$status"
+      - name: The rerank experiment grades a cut it ranked without reading a grade
+        # `tools/run/rerank-experiment.sh` reranks #1670's sample with the
+        # pinned cross-encoder and grades the cut from the committed
+        # consensus (#1688). The cases inject the scores and work every
+        # count, McNemar p and verdict by hand, plant an obligation, a review
+        # and a sealed probe at the top that must be dropped, and permute the
+        # grades to show the order does not move. The last case reprints the
+        # committed rerank.txt from the committed files. It skips with a
+        # warning without `awk`.
+        run: |
+          status=0
+          sh tools/run/rerank-experiment-fixtures.sh || status=$?
+          if [ "$status" = 3 ]; then
+            echo "::warning title=Rerank experiment fixtures skipped::No awk on this runner, so none of these cases ran."
+            exit 0
+          fi
+          exit "$status"
       - name: The tools a build-order stage calls behave as their agent definitions say
         # Twelve scripts that every stage of a run calls in place of a command
         # it once retyped: the CI-finished condition, the queue-finished
