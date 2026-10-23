@@ -1,6 +1,6 @@
 ---
 name: headwater-orient
-description: Find what this corpus already says about a subject, before reading any of it. Use at the start of a task that names a document, a decision, an obligation or a concept of this repository, when a question is about what was already decided, and whenever the alternative is a search across the corpus or reading a long document end to end. It answers from the graph the engine already built, and it never replaces reading the document it finds.
+description: How to run this repository's own engine, `headwater`, which is built in the tree but not on PATH, and its three read commands: route (which documents govern a task or a file path), explain (what a document is, and what supersedes it) and check (what a change broke). Load it when a task mentions headwater, .headwater/, the docs directory, a verb, a check, a shelf or any file path of this repository, and before your first headwater command, so that the command works the first time.
 ---
 
 # Orientation
@@ -9,11 +9,21 @@ The corpus is typed, and the engine holds a graph over it. So the cost of findin
 
 This skill is the first thing in a task, and it is finished as soon as the right document is open. It finds; it does not read for you.
 
+## Run the engine
+
+`headwater` may not be on PATH. Run `command -v headwater`, and if it prints nothing, run `ls */target/*/headwater` to find this repository's own build. Call the engine by the path that prints in every `headwater` command of this skill. Never fall back to grep because the bare name failed.
+
+## Before you change a file
+
+Run `headwater route "<the task, with every path it names>" --root .` before the first edit. Open each document whose line says `governs <path>` or names the thing you are changing. If that document rules the change out, say so instead of making it.
+
+## Before you answer from a record
+
+Run `headwater explain <path or identifier> --root .` on the record. A `superseded_by` edge, or a line that says another document governs the reading, means that the answer is in the other record. Open that record.
+
 ## Start with what a hook already handed you
 
-Where a hook of this repository runs `headwater route` on every prompt, the documents it matched are printed above the first tool call. Those pointers are the answer to "where does this subject live", already paid for. Read them before searching for anything.
-
-A route that matched nothing prints nothing, which is a result rather than a failure. Silence means the subject is not one a declared purpose answers, and a search is then reasonable.
+Where a hook of this repository runs `headwater route` on every prompt, read the documents it printed above the first tool call before you search for anything.
 
 ## The three verbs
 

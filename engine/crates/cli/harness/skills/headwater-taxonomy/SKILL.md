@@ -1,6 +1,6 @@
 ---
 name: headwater-taxonomy
-description: Change what this repository's taxonomy declares — a kind, a facet, a shelf, a relation, an identifier scheme, a language regime, an obligation or a control. Use when `headwater new` refuses because a declaration is missing, when a document has nowhere to live or nothing to be, when a check must start or stop reading something, and whenever a change to `.headwater/taxonomy.yml`, `.headwater/overlay.yml` or a package source is asked for.
+description: Change what this repository's taxonomy declares — a kind, a facet, a shelf, a relation, an identifier scheme, a language regime, an obligation or a control. Use when `headwater new` refuses because a declaration is missing, when a document has nowhere to live or nothing to be, when a check must start or stop reading something, and whenever a change to `.headwater/taxonomy.yml`, `.headwater/overlay.yml` or a package source is asked for. Its commands need the engine: load headwater-orient first for how to run it.
 ---
 
 # Headwater taxonomy
@@ -8,6 +8,10 @@ description: Change what this repository's taxonomy declares — a kind, a facet
 A structural change is a taxonomy change: propose it, validate it, resolve it, commit the lock. Nothing in this repository invents a shelf, a kind or a facet in place.
 
 Nothing here restates a rule that `headwater taxonomy validate` holds. If a sentence below disagrees with the engine, the engine is right and this file is stale.
+
+## Run the engine
+
+`headwater` may not be on PATH. Run `command -v headwater`, and if it prints nothing, run `ls */target/*/headwater` to find this repository's own build. Call the engine by the path that prints in every `headwater` command of this skill. Never fall back to grep because the bare name failed.
 
 ## Where a declaration goes
 
