@@ -52,6 +52,15 @@ import resolve_engine  # noqa: E402 — path must be set first
 DOC = 'docs/tutorials/your-first-governed-corpus.md'
 STATED_DATE = '2026-09-09'
 
+# The paragraph after step 9 that states the size of the jump in prose (#1757),
+# and the two coverage blocks whose counts it repeats: step 7's and step 9's.
+JUMP_PARAGRAPH = 'The corpus did not grow.'
+JUMP_FROM_BLOCK, JUMP_TO_BLOCK = 18, 25
+BLOCK_COUNT = re.compile(r'(\d+) check instances')
+_UNITS = ('zero one two three four five six seven eight nine ten eleven twelve thirteen '
+          'fourteen fifteen sixteen seventeen eighteen nineteen').split()
+_TENS = 'twenty thirty forty fifty sixty seventy eighty ninety'.split()
+
 # The indices, in document order, of every fenced block that is a command
 # rather than output. This mirrors every `run(blocks[N])` call `main()`
 # below makes, plus block 0 (the release download), the one command this script
@@ -174,6 +183,77 @@ def read_today_under_a_hostile_zone():
     return today, expect_utc
 
 
+def read_body(root):
+    """The tutorial's text with its front matter stripped.
+
+    The front matter ends at the first `---` after the opening one. A split on
+    the delimiter would cut at the scaffolded front matter that step 8 prints
+    inside a fence, which is a `---` the document quotes rather than one it uses.
+    """
+    lines = open(os.path.join(root, DOC)).read().split('\n')
+    if lines and lines[0] == '---':
+        lines = lines[lines.index('---', 1) + 1:]
+    return '\n'.join(lines)
+
+
+def number_word(n):
+    """`n` as an English number word, for 0 to 99, as the tutorial writes one."""
+    if n < 20:
+        return _UNITS[n]
+    tens, units = divmod(n, 10)
+    return _TENS[tens - 2] + ('-' + _UNITS[units] if units else '')
+
+
+def prose_counts_match_blocks(text, blocks):
+    """Stub: the claim before its parser exists (#1757)."""
+    return True, 'stub'
+
+
+def stale_prose_counts_are_refused(text, blocks):
+    """The regression case for #1757: the jump paragraph after step 9, fed in
+    the stale forms it has actually had, must fail the prose claim.
+
+    #1832 moved the step 9 block from 22 to 23 check instances and the
+    paragraph was moved by hand; before that it was moved by hand from 7 to 21
+    to 8 to 22. Each case below is a copy of the real document with only the
+    paragraph changed, so a case passes only if the check reads the paragraph.
+    Returns `(ok, detail)`, where `ok` means every stale case was refused.
+    """
+    current = [line for line in text.split('\n') if line.startswith(JUMP_PARAGRAPH)]
+    if len(current) != 1:
+        return False, f'the self-test needs one jump paragraph and found {len(current)}'
+    current = current[0]
+    a = int(BLOCK_COUNT.search(blocks[JUMP_FROM_BLOCK]).group(1))
+    b = int(BLOCK_COUNT.search(blocks[JUMP_TO_BLOCK]).group(1))
+    word = number_word(b - a)
+    stale = {
+        'the paragraph before #1832 (the jump ends one short, and the word follows it)':
+            current.replace(f'from {a} to {b}', f'from {a} to {b - 1}')
+                   .replace(f' {word} ', f' {number_word(b - 1 - a)} '),
+        'the jump is right and the word for its size is not':
+            current.replace(f' {word} ', f' {number_word(b - a - 1)} '),
+        'the jump starts from a count no block shows':
+            current.replace(f'from {a} to', f'from {a - 1} to'),
+        'a fourth number that no block shows':
+            current + ' It took 2 commands.',
+    }
+    survivors = []
+    for case, paragraph in stale.items():
+        if paragraph == current:
+            return False, f'the self-test case did not change the paragraph: {case}'
+        ok, _ = prose_counts_match_blocks(text.replace(current, paragraph), blocks)
+        if ok:
+            survivors.append(case)
+    for case, edited in {
+        'no jump paragraph': text.replace(current, current[len(JUMP_PARAGRAPH):].lstrip()),
+        'two jump paragraphs': text.replace(current, current + '\n\n' + current),
+    }.items():
+        ok, _ = prose_counts_match_blocks(edited, blocks)
+        if ok:
+            survivors.append(case)
+    return not survivors, 'the prose claim passed a stale paragraph: ' + '; '.join(survivors)
+
+
 def read_blocks(root):
     """Every fenced code block of the tutorial body, and whether it is marked trimmed.
 
@@ -188,13 +268,7 @@ def read_blocks(root):
     the page does not declare is the page breaking its own rule. That is the one
     thing sixteen steps of substring matching cannot otherwise see.
     """
-    lines = open(os.path.join(root, DOC)).read().split('\n')
-    # Strip the front matter, which ends at the first `---` after the opening one.
-    # A split on the delimiter would cut at the scaffolded front matter that step
-    # 8 prints inside a fence, which is a `---` the document quotes rather than
-    # one it uses.
-    if lines and lines[0] == '---':
-        lines = lines[lines.index('---', 1) + 1:]
+    lines = read_body(root).split('\n')
     blocks, trimmed, current, inside, paragraph = [], [], [], False, ''
     for line in lines:
         if FENCE_MARKER.match(line.strip()):
@@ -262,6 +336,15 @@ def main():
     blocks, trimmed = read_blocks(root)
     if len(blocks) != 46:
         raise SystemExit(f'tutorial: expected 46 code blocks and found {len(blocks)}')
+
+    # #1757: the paragraph after step 9 repeats the two coverage counts and their
+    # difference in prose; this holds the prose to the blocks, which `compare`
+    # holds to the engine.
+    body = read_body(root)
+    ok, detail = prose_counts_match_blocks(body, blocks)
+    assert_true('step 9: the jump paragraph states the counts its blocks show', ok, detail)
+    ok, detail = stale_prose_counts_are_refused(body, blocks)
+    assert_true('step 9: the jump paragraph claim refuses a stale paragraph', ok, detail)
 
     ok, detail = clock_reads_the_engine_s_day_and_not_the_local_one()
     assert_true("the substitution clock reads the engine's UTC day, not the local one", ok, detail)
