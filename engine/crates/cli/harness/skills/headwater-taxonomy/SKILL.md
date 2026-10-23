@@ -9,6 +9,10 @@ A structural change is a taxonomy change: propose it, validate it, resolve it, c
 
 Nothing here restates a rule that `headwater taxonomy validate` holds. If a sentence below disagrees with the engine, the engine is right and this file is stale.
 
+## Run the engine
+
+`headwater` may not be on PATH. Run `command -v headwater`, and if it prints nothing, run `ls */target/*/headwater` to find this repository's own build. Call the engine by the path that prints in every `headwater` command of this skill. Never fall back to grep because the bare name failed.
+
 ## Where a declaration goes
 
 `.headwater/taxonomy.yml` is the consumer declaration. It names the package this repository takes and the bundles it selects, and those resolve into one lock with the overlay.

@@ -9,6 +9,10 @@ Every document in the corpus is typed by the taxonomy in `.headwater/taxonomy.lo
 
 Nothing here restates a rule the engine holds. If a sentence below disagrees with the engine, the engine is right and this file is stale.
 
+## Run the engine
+
+`headwater` may not be on PATH. Run `command -v headwater`, and if it prints nothing, run `ls */target/*/headwater` to find this repository's own build. Call the engine by the path that prints in every `headwater` command of this skill. Never fall back to grep because the bare name failed.
+
 ## Never write a new document by hand
 
 Run the verb:
@@ -72,4 +76,4 @@ Neither is worked around. Hand both to the `headwater-taxonomy` skill, which own
 Errors must reach zero before a commit. `headwater check --fix` writes the corrections the engine derives without judgment — a British spelling, a contraction whose expansion is one word, a retired term that names a replacement, and a missing reciprocal half — and it leaves every finding whose remedy is a rewrite. Read the diff.
 
 **An edit to a document that a probe reads moves no committed result.** A result pins only what its transcript read, so it keeps its bytes and every verdict. The next `headwater generate` names each result whose read set moved, and `headwater probe stale` names the results the edit reached. Neither one fails for it.
-<!-- installed by headwater init --harness, digest sha256:fe74869a211cd3edf73c0513d679ac0a213f2106998c98a49681230b64975cf6 -->
+<!-- installed by headwater init --harness, digest sha256:d686c3d0bd38991d1a9efd99b5f01035de5889784776dd95b09d0694e5e76db3 -->
