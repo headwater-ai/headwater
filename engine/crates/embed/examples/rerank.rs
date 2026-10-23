@@ -49,7 +49,12 @@ fn main() {
     let pin = headwater_embed::Pin::read_at(Path::new(pin)).unwrap_or_else(|e| fail(e));
     let reranker =
         headwater_embed::Reranker::load(&pin, Path::new(dir)).unwrap_or_else(|e| fail(e));
-    eprintln!("rerank: {} at {}, digest {}", pin.model, pin.revision, reranker.digest());
+    eprintln!(
+        "rerank: {} at {}, digest {}",
+        pin.model,
+        pin.revision,
+        reranker.digest()
+    );
     let stdout = std::io::stdout();
     let mut out = std::io::BufWriter::new(stdout.lock());
     for (number, line) in std::io::stdin().lock().lines().enumerate() {
@@ -64,5 +69,6 @@ fn main() {
         writeln!(out, "{prompt}\t{path}\t{score:.6}")
             .unwrap_or_else(|e| fail(format!("cannot write: {e}")));
     }
-    out.flush().unwrap_or_else(|e| fail(format!("cannot write: {e}")));
+    out.flush()
+        .unwrap_or_else(|e| fail(format!("cannot write: {e}")));
 }

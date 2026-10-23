@@ -321,7 +321,11 @@ impl Reranker {
                 "input_ids" => PairInput::Ids,
                 "attention_mask" => PairInput::Mask,
                 "token_type_ids" => PairInput::Types,
-                other => return Err(format!("`{GRAPH}` has an input `{other}` a BERT pair has not")),
+                other => {
+                    return Err(format!(
+                        "`{GRAPH}` has an input `{other}` a BERT pair has not"
+                    ))
+                }
             });
         }
         let plan = model
