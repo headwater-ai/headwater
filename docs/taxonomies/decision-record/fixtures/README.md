@@ -62,7 +62,7 @@ add:
 
 ## What a run reports
 
-`headwater check --no-cache` over the assembled root types and checks every document. The table under [The findings a run reports](#the-findings-a-run-reports) lists each finding that the run must report, as a rule and a document. Case group 8 fails when the run does not report one of them, and when it reports a rule that [the second table](#the-rules-a-run-reports-on-no-document) names. The runner prints the total and the count for each rule, and it asserts neither, so a new rule of the engine can add a finding without a red suite. Items 1, 2 and 4 below are planted. Item 3 no longer reports. Item 5 is not planted.
+`headwater check --no-cache` over the assembled root types and checks every document. The table under [The findings a run reports](#the-findings-a-run-reports) lists each finding that the run must report, as a rule and a document. Case group 8 fails when the run does not report one of them, and when it reports a rule that [the second table](#the-rules-a-run-reports-on-no-document) names. The runner prints the total and the count for each rule, and it asserts neither, so a new rule of the engine can add a finding without a red suite. Items 1, 2 and 4 below are planted. Item 3 no longer reports. Items 5 and 6 are not planted.
 
 **1. `0003-integration-guide-states-the-old-guarantee.md` has no `Discharge` section.** `section.required.missing`, error, under `OB-SECT-1`. The kind requires `Context`, `Obligation` and `Discharge`, and the third is the one that makes a debt actionable. An obligation whose discharge nobody can state is a wish, and this is the fixture that proves the heading is enforced rather than suggested.
 
@@ -76,6 +76,8 @@ Two changes removed it. [HW-OBL-0039](../../../obligations/0039-a-participation-
 
 **5. The summary of `0004-deliver-exactly-once-per-destination.md` narrates a change.** `voice.forbidden_construction`, warning, under `OB-VOICE-1`. The summary writes "no longer", and the `declarative` voice that the base binds to `decision` forbids change narration. Nobody planted it. The table lists it so that the run holds it, and the prose stays as written, because a fixture rewritten to make a run quieter no longer tests the rule.
 
+**6. `0005-partition-by-tenant.md` is at `draft` and says that a person accepted it.** `warrant.acceptance.at_initial`, warning, under `OB-WARRANT-5`. The record is at `draft`, the state that its regime opens at, and its summary says that nobody ruled on it. But its `provenance.warrant` is `accepted`, with an `accepted_by`. One of the two is false, and only a person can say which. Nobody planted it. The table lists it so that the run holds it, and the record stays as written for the reason that item 5 gives.
+
 ### The findings a run reports
 
 | Rule | Document | Planted |
@@ -85,6 +87,7 @@ Two changes removed it. [HW-OBL-0039](../../../obligations/0039-a-participation-
 | `relation.pair.invalid` | `docs/decisions/0002-store-attempts-in-postgres.md` | yes |
 | `relation.pair.invalid` | `docs/decisions/0006-hold-attempt-state-in-redis.md` | yes |
 | `voice.forbidden_construction` | `docs/decisions/0004-deliver-exactly-once-per-destination.md` | no |
+| `warrant.acceptance.at_initial` | `docs/decisions/0005-partition-by-tenant.md` | no |
 
 ### The rules a run reports on no document
 
