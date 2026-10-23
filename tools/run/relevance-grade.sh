@@ -131,14 +131,15 @@
 #
 #     The graded prompts. For each prompt of `sample.tsv` it reads `task` and
 #     `tree_digest` from the log line the row names. It walks back from the
-#     row's time through at most `--walk <n>` (default 20) commits of the
+#     row's time through at most `--walk <n>` (default 80) commits of the
 #     history and takes the newest whose tree has that digest, which is
 #     what `headwater neighbors` prints for a tree. It writes that tree once,
 #     with `git archive`, and routes every prompt on it there. A digest that
 #     no commit in the walk matches is counted as `tree not found` and never
-#     routed against another tree. A route that exits non-zero or prints no
-#     `pointers` list is counted as `route refused`. Both stay out of the
-#     denominator. A silent route is a result: it scores 0 and stays in. Of
+#     routed against another tree. On 2026-10-23 a walk of 20 found the tree
+#     of 261 of the 361 prompts and a walk of 80 found 304, so 80 is the
+#     default. A route that exits non-zero or prints no `pointers` list is
+#     counted as `route refused`. Both stay out of the denominator. A silent route is a result: it scores 0 and stays in. Of
 #     each route it keeps the top 3, seals each path as the record does, and
 #     joins it against `consensus.tsv` by prompt and path. Per stratum, and
 #     never pooled as a rate, it prints the prompts whose top 1 holds a
@@ -935,7 +936,7 @@ probe_sets() {
 }
 
 cmd_score() {
-    variant=; only=both; walk=20
+    variant=; only=both; walk=80
     : > "$work/probe.in"
     while [ $# -gt 0 ]; do
         [ $# -ge 2 ] || usage
