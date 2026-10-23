@@ -60,23 +60,26 @@
 # exactly those six fields. `tools/probe/campaign.sh` refuses a tuning line
 # when no layer is open, and a tuning line of any scenario but the open one.
 #
-# The tuning round, and no other round, may also declare the six fields of
-# its rounds (#1838), all six or none: `screen` and `confirm`, the sessions
+# The tuning round, and no other round, may also declare the seven fields of
+# its rounds (#1838), all seven or none: `screen` and `confirm`, the sessions
 # the owner ruled for one screened variant and for one confirmation, each a
 # whole number above zero; `variants`, the most variants one round screens,
 # a whole number above zero; `stop_after_empty`, the rounds in a row with
 # nothing kept after which a layer stops, a whole number above zero;
 # `order`, the layers in the order they are tuned, each one that `layers:`
-# declares and none twice; and `ceiling_cents`, the most every try of the
-# round may spend, a whole number of cents at or above zero and at most the
+# declares and none twice; `ceiling_cents`, the most the tries of the round
+# may spend; and `base_ceiling_cents`, the most its bases may spend: the
+# first `base` try and the first `best` of each layer. Each ceiling is a whole
+# number of cents at or above zero, and the two together are at most the
 # round's `approved_cents`. On the tuning round `tries` is then the most
 # rounds of one layer. `tuning` prints nothing when the tuning round declares
-# none of the six, and otherwise one line for each figure the tools read:
+# none of the seven, and otherwise one line for each figure the tools read:
 # `screen <target> <repetitions> <sessions>` and `confirm <target>
 # <repetitions> <sessions>`, where the repetitions are ceil(target / k) over
 # the k probes of the round's set and the sessions are k times that,
 # `variants <n>`, `rounds <n>` (the round's `tries`), `stop_after_empty <n>`,
-# `order <layer>...`, `ceiling_cents <n>`, `approved_cents <n>` and `rate
+# `order <layer>...`, `ceiling_cents <n>`, `base_ceiling_cents <n>`,
+# `approved_cents <n>` and `rate
 # <cents>`, the `session_cost_cents` of the `additive` tier under `tiers:`,
 # which it refuses when that tier declares none. This is the one place the
 # count of a screen and of a confirmation is computed: the dry run and
@@ -187,7 +190,7 @@ def rounds(declared, approvals=False, quiet=False):
 
 
 OPEN_FIELDS = ("layer", "scenario", "try", "cap_cents", "plan", "change")
-STAGE_FIELDS = ("screen", "confirm", "variants", "stop_after_empty", "order", "ceiling_cents")
+STAGE_FIELDS = ("screen", "confirm", "variants", "stop_after_empty", "order", "ceiling_cents", "base_ceiling_cents")
 
 
 def whole(value):
@@ -195,11 +198,11 @@ def whole(value):
 
 
 def stages(declared, name, fields, approved):
-    """Check the six fields of the tuning round's rounds (#1838)."""
+    """Check the seven fields of the tuning round's rounds (#1838)."""
     where = f"the `{name}` round in .headwater/probe.yml"
     missing = [field for field in STAGE_FIELDS if field not in fields]
     if missing:
-        refuse(f"{where} declares {', '.join(f'`{field}`' for field in STAGE_FIELDS if field in fields)} and not `{missing[0]}`. It declares all six of {', '.join(STAGE_FIELDS)}, or none")
+        refuse(f"{where} declares {', '.join(f'`{field}`' for field in STAGE_FIELDS if field in fields)} and not `{missing[0]}`. It declares all seven of {', '.join(STAGE_FIELDS)}, or none")
     for field in ("screen", "confirm", "variants", "stop_after_empty"):
         if not whole(fields[field]) or fields[field] < 1:
             refuse(f"`{field}` of {where} is {fields[field]!r}, and it must be a whole number above zero")
@@ -208,6 +211,11 @@ def stages(declared, name, fields, approved):
         refuse(f"`ceiling_cents` of {where} is {ceiling!r}, and it must be a whole number of cents at or above zero")
     if ceiling > approved:
         refuse(f"`ceiling_cents` of {where} is {ceiling}, above the round's `approved_cents` of {approved}")
+    base_ceiling = fields["base_ceiling_cents"]
+    if not whole(base_ceiling) or base_ceiling < 0:
+        refuse(f"`base_ceiling_cents` of {where} is {base_ceiling!r}, and it must be a whole number of cents at or above zero")
+    if base_ceiling + ceiling > approved:
+        refuse(f"`base_ceiling_cents` of {where} is {base_ceiling} and `ceiling_cents` is {ceiling}: together {base_ceiling + ceiling}, above the round's `approved_cents` of {approved}")
     order = fields["order"]
     layers = declared.get("layers") or {}
     if not isinstance(order, list) or not order or not all(isinstance(entry, str) for entry in order):
@@ -240,6 +248,7 @@ def tuning_rounds(declared):
     print(f"stop_after_empty {tuning['stop_after_empty']}")
     print(" ".join(["order"] + tuning["order"]))
     print(f"ceiling_cents {tuning['ceiling_cents']}")
+    print(f"base_ceiling_cents {tuning['base_ceiling_cents']}")
     print(f"approved_cents {tuning.get('approved_cents', 0)}")
     print(f"rate {rate}")
     return 0

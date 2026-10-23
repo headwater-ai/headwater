@@ -1120,10 +1120,13 @@ if awk 'NF && $1 !~ /^#/ && $1 == "additive" { f = 1 } END { exit !f }' "$spec";
         fi
         open_layer=$(printf '%s\n' "$open" | awk '{ print $1 }')
         open_scenario=$(printf '%s\n' "$open" | awk '{ print $2 }')
-        others=$(awk -v s="scenario-$open_scenario" 'NF && $1 !~ /^#/ && $1 == "additive" && $3 == "tuning" && $2 != s && !seen[$2]++ { print $2 }' "$spec")
+        # The base of the open scenario is measured again at the
+        # confirmation's count (#1838), so its tuning line runs too.
+        open_base=$(python3 "$root/tools/probe/declared.py" "$root/.headwater/probe.yml" scenarios | awk -v s="$open_scenario" '$1 == s { print $2 }') || exit $?
+        others=$(awk -v s="scenario-$open_scenario" -v b="scenario-$open_base" 'NF && $1 !~ /^#/ && $1 == "additive" && $3 == "tuning" && $2 != s && $2 != b && !seen[$2]++ { print $2 }' "$spec")
         if [ -n "$others" ]; then
             for other in $others; do
-                echo "campaign: the tuning round is open for the $open_layer layer on scenario $open_scenario alone, and the spec holds a tuning line of $other. Run a spec of the open scenario's tuning lines, or open that scenario's layer under \`rounds.tuning.open\` in .headwater/probe.yml, in a commit, once the owner has accepted its plan." >&2
+                echo "campaign: the tuning round is open for the $open_layer layer on scenario $open_scenario and its base, scenario $open_base, alone, and the spec holds a tuning line of $other. Run a spec of the open scenario's tuning lines, or open that scenario's layer under \`rounds.tuning.open\` in .headwater/probe.yml, in a commit, once the owner has accepted its plan." >&2
             done
             exit 5
         fi
