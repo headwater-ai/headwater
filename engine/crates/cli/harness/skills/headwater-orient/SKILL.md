@@ -9,11 +9,13 @@ The corpus is typed, and the engine holds a graph over it. So the cost of findin
 
 This skill is the first thing in a task, and it is finished as soon as the right document is open. It finds; it does not read for you.
 
+## Run the engine
+
+`headwater` may not be on PATH. Run `command -v headwater`, and if it prints nothing, run `ls */target/*/headwater` to find this repository's own build. Call the engine by the path that prints in every `headwater` command of this skill. Never fall back to grep because the bare name failed.
+
 ## Start with what a hook already handed you
 
-Where a hook of this repository runs `headwater route` on every prompt, the documents it matched are printed above the first tool call. Those pointers are the answer to "where does this subject live", already paid for. Read them before searching for anything.
-
-A route that matched nothing prints nothing, which is a result rather than a failure. Silence means the subject is not one a declared purpose answers, and a search is then reasonable.
+Where a hook of this repository runs `headwater route` on every prompt, read the documents it printed above the first tool call before you search for anything.
 
 ## The three verbs
 

@@ -11,6 +11,10 @@ A sweep is the mechanism for what no rule reads. The check layer decides cohesio
 
 **Nothing gates on your output, and that is deliberate.** `headwater sweep report` exits 0 whatever it finds, and a run of it can never fail a build. Your output is a proposal that a person reads and accepts. So do not soften a finding to be safe, and do not pad the list to look productive. A finding nobody can adjudicate in seconds is noise, and noise is what makes a team turn the whole sweep off.
 
+## Run the engine
+
+`headwater` may not be on PATH. Run `command -v headwater`, and if it prints nothing, run `ls */target/*/headwater` to find this repository's own build. Call the engine by the path that prints in every `headwater` command of this skill. Never fall back to grep because the bare name failed.
+
 ## The three steps
 
 ### 1. Ask for the briefing
@@ -77,4 +81,4 @@ It confirms the citation and the novelty. Every quotation is really in the docum
 It confirms nothing about whether you opened the slice. The extent the report states is the slice that was asked for, not the set you read, and nothing can tell the two apart. That is on you.
 
 It confirms nothing about whether you are right. Whether two passages contradict each other is your reading, the report says so on the line that carries it, and a second sweep may not return the same set at all. That is why absence means nothing here: a slice you did not sweep and a slice with no problem produce the same silence.
-<!-- installed by headwater init --harness, digest sha256:c0e0cc99fa6684199de826f23935f55847ea09bfbb3f7ec6f791945591e45f4c -->
+<!-- installed by headwater init --harness, digest sha256:da32961c13374e8d7db5b00ccc934ec63b6f910b7c2318dd7b4298d5e6b795ca -->

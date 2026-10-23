@@ -1,6 +1,6 @@
 ---
 name: headwater-authoring
-description: Write or revise a governed document in this repository, of any kind its taxonomy declares. Use when asked to record a finding, file a decision, or add a document to the corpus, and when `headwater new` refuses. It calls the engine for what the taxonomy decides and carries the judgment it leaves as hand entry.
+description: Load before you report any task in this repository as done, whatever it changed (code, a script, configuration, a directory of documents or one document), and before you give an answer that you read from a document. It runs the closing pass: it names each document that governs a path you changed, so you can update or obey it, it runs the check that finds the second file a change owes, and it confirms that the record you answer from is still in force.
 ---
 
 # Headwater authoring
@@ -8,6 +8,19 @@ description: Write or revise a governed document in this repository, of any kind
 Every document in the corpus is typed by the taxonomy in `.headwater/taxonomy.lock`. The engine decides the placement, the identifier, the front matter and the section headings. What is left is judgment, and that is what this skill carries.
 
 Nothing here restates a rule the engine holds. If a sentence below disagrees with the engine, the engine is right and this file is stale.
+
+## Run the engine
+
+`headwater` may not be on PATH. Run `command -v headwater`, and if it prints nothing, run `ls */target/*/headwater` to find this repository's own build. Call the engine by the path that prints in every `headwater` command of this skill. Never fall back to grep because the bare name failed.
+
+## The closing pass
+
+Run this pass before you report a task as done, and before you give an answer that you read from a document.
+
+1. List what you changed: `git status --short`.
+2. Run `headwater route "<the task, with every path you changed>" --root .`, and open every document that governs one of those paths. If a document forbids the change, revert the change and report that.
+3. Run `headwater check --fix`, then `headwater check`, until the errors reach zero. Read the diff that `--fix` wrote.
+4. For an answer, run `headwater explain <the record> --root .` and follow any `superseded_by` edge to the record in force.
 
 ## Never write a new document by hand
 
