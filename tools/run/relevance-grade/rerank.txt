@@ -1,0 +1,27 @@
+# The offline cross-encoder rerank of the #1670 sample (#1688).
+# Written by `sh tools/run/rerank-experiment.sh grade` from sample.tsv,
+# consensus.tsv and rerank-scores.tsv. Do not edit it by hand.
+# The rerank is the union of both paths' lists with obligations, reviews
+# and sealed probes dropped, sorted by the pinned cross-encoder and cut to 5.
+# b counts prompts the embedding top 3 reaches and the rerank misses; c the reverse.
+
+silent: top 3 holds a score-2 document: embedding 7 of 71, rerank 15 of 71
+silent: McNemar b 0, c 8, exact p 0.0078125
+silent: first pick scores 2: embedding 4 of 71, rerank 9 of 71
+silent: oracle over the filtered union: 17 of 71 (unfiltered 17 of 71)
+silent: unscored pairs in the cut to 5: 0 of 283
+
+disjoint: top 3 holds a score-2 document: embedding 19 of 230, rerank 35 of 230
+disjoint: McNemar b 2, c 18, exact p 0.000402451
+disjoint: first pick scores 2: embedding 12 of 230, rerank 23 of 230
+disjoint: oracle over the filtered union: 43 of 230 (unfiltered 48 of 230)
+disjoint: unscored pairs in the cut to 5: 0 of 1124
+
+overlap: top 3 holds a score-2 document: embedding 13 of 60, rerank 17 of 60
+overlap: McNemar b 2, c 6, exact p 0.289062
+overlap: first pick scores 2: embedding 7 of 60, rerank 12 of 60
+overlap: oracle over the filtered union: 23 of 60 (unfiltered 24 of 60)
+overlap: unscored pairs in the cut to 5: 0 of 300
+
+bars: accept when disjoint gains with exact p < 0.05 and silent first-at-2 >= 8; reject when disjoint top 3 < 30
+verdict: accept
