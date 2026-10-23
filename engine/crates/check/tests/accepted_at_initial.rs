@@ -16,7 +16,9 @@
 //! - **A rule that read `role: initial`, or the literal `draft`,** reports
 //!   `records/drafted-accepted.md` and passes `records/opened-accepted.md`.
 //!   The regime `intake` opens at `proposed`, which carries no role.
-//! - **A rule that read the warrant alone** reports `live-accepted.md`.
+//! - **A rule that read the warrant alone** reports `live-accepted.md`, and a
+//!   rule that reported every warrant but `asserted` reports
+//!   `opened-transcribed.md` and `opened-regenerated.md`.
 //! - **A rule that took an absent or misspelled warrant as accepted** reports
 //!   `opened-quiet.md` or `opened-misspelled.md`, which belong to
 //!   `warrant.value.not_permitted` and HW-OBL-0125.
@@ -169,6 +171,21 @@ fn an_accepted_document_at_the_initial_state_of_its_regime_is_one_warning() {
 fn the_live_state_and_an_asserted_warrant_pass() {
     let run = run();
     for file in ["records/live-accepted.md", "records/opened-asserted.md"] {
+        assert!(matches!(outcome(&run, file), Outcome::Passed), "{file}");
+        assert!(findings(&run, file).is_empty(), "{file}");
+    }
+}
+
+/// Only `accepted` claims a person's acceptance. The other two members of the
+/// closed set at the initial state pass, so a rule that reported every warrant
+/// except `asserted` fails here (the verifier's M17 on #1832).
+#[test]
+fn a_transcribed_or_regenerated_warrant_at_the_initial_state_passes() {
+    let run = run();
+    for file in [
+        "records/opened-transcribed.md",
+        "records/opened-regenerated.md",
+    ] {
         assert!(matches!(outcome(&run, file), Outcome::Passed), "{file}");
         assert!(findings(&run, file).is_empty(), "{file}");
     }
