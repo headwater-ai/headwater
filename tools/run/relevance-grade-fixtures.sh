@@ -841,5 +841,24 @@ sc k12 --only prompts --variant "echo not-json"
 rc "k12: a variant that prints no pointer list still exits 0" k12.score 0
 has k12 "$scratch/k12.score.out" 'stratum overlap: 1 prompts; tree not found 0 of 1; route refused 1 of 1; scored 0 of 1'
 
+# k13: the top 1 is rank 1 alone. The baseline offers Y (0) and then Z (2),
+# and the variant offers X (no consensus row) and then Z. Neither top 1 holds
+# a document graded 2, and both top 3s do. A top 1 read as rank 2 or below
+# fails here.
+krec k13
+K13='a graded document at rank two'
+slogline k13 2026-09-05T00:00:00Z p1 "$K13" "$T_ONE"
+ssample k13 p1 disjoint 2026-09-05T00:00:00Z 1
+kscore k13 p1 docs/y.md 0
+kscore k13 p1 docs/z.md 2
+kscore k13 p1 missing 0
+offer base "$K13" docs/y.md docs/z.md
+offer variant "$K13" docs/x.md docs/z.md
+sc k13 --only prompts --variant "$VARIANT"
+rc "k13: score exits 0" k13.score 0
+has k13 "$scratch/k13.score.out" 'stratum disjoint top 1 at score 2: baseline 0 of 1; variant 0 of 1'
+has k13 "$scratch/k13.score.out" 'stratum disjoint top 3 at score 2: baseline 1 of 1; variant 1 of 1'
+has k13 "$scratch/k13.score.out" 'stratum disjoint unknown in top 3: baseline 0 of 2 pointers; variant 1 of 2 pointers'
+
 printf '%d passed, %d failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]
