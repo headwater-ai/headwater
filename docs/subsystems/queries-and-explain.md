@@ -117,15 +117,15 @@ The server walks the corpus once, before it accepts a message, and each tool ans
 
 ### The embedding path
 
-`embed` holds the four rulings of [HW-DR-0064](../decisions/0064-q64-whether-intent-time-routing-gains-an-offline-embedding-path-in-shadow-mode.md), and each ruling has a type. Three constants name where its files are. `PIN` is the committed pin. `MODELS` is the ignored directory for the model files, and `CACHE` is the ignored directory for the vectors.
+`embed` holds the four rulings of [HW-DR-0064](../decisions/0064-q64-whether-intent-time-routing-gains-an-offline-embedding-path-in-shadow-mode.md), and each ruling has a type. Four constants name where its files are. `PIN` is the committed pin of the embedding model, and `RERANKER_PIN` is the committed pin of the cross-encoder of the #1688 experiment. `MODELS` is the ignored directory for the model files, and `CACHE` is the ignored directory for the vectors.
 
-`Pin` reads the committed pin, which names each model file by URL and digest. `Pin::digest` covers each pinned file, so a second model or a second vocabulary gives a second digest. No crate here opens a socket, and the caller fetches the files.
+`Pin::read` reads the committed pin, which names each model file by URL and digest. `Pin::read_at` reads a pin of the same shape from another path. `Pin::digest` covers each pinned file, so a second model or a second vocabulary gives a second digest. No crate here opens a socket, and the caller fetches the files.
 
-`Model::load` reads each file through `verified`, which refuses a file whose digest is not the pinned one. A model file that fails its digest stops the run, as the [`headwater neighbors`](../interfaces/headwater-neighbors.md) contract states. Inference is pure Rust, through `tract-onnx`. `similarity` is the dot product of two unit vectors, which is their cosine.
+`Model::load` and `Reranker::load` read each file through `verified`, which refuses a file whose digest is not the pinned one. A model file that fails its digest stops the run, as the [`headwater neighbors`](../interfaces/headwater-neighbors.md) contract states. Inference is pure Rust, through `tract-onnx`. `similarity` is the dot product of two unit vectors, which is their cosine. `Reranker::score` returns the raw relevance logit of a (query, document) pair. Only the `rerank` example calls it, and no verb does.
 
 `Cache` keeps the vectors for one model digest, keyed on the digest of each text. A vector is a fact about this machine and not about the tree, because quantized arithmetic differs between instruction sets. Thus no emitter writes a vector. A missing or malformed cache file is an empty cache and never an error, because each entry can be computed again.
 
-`wordpiece.rs` is the BERT uncased WordPiece tokenizer that the pinned model uses. It is in this crate because the default build of the `tokenizers` crate links a C regular-expression library. It lowercases the text and removes accents before it splits the text, as the configuration of the model states.
+`wordpiece.rs` is the BERT uncased WordPiece tokenizer that both pinned models use. `encode_pair` writes the (query, document) pair that the cross-encoder reads. It is in this crate because the default build of the `tokenizers` crate links a C regular-expression library. It lowercases the text and removes accents before it splits the text, as the configuration of the model states.
 
 ## Invariants
 
