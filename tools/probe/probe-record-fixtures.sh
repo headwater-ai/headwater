@@ -5786,9 +5786,10 @@ if [ -x "$engine" ]; then
             "$([ -e "$scratch/run-final-out/claude-version" ] && echo yes || echo no) $([ -e "$scratch/run-final-out/lines" ] && echo yes || echo no) $([ -e "$scratch/run-final-out/trees" ] && echo yes || echo no) $([ -e "$scratch/run-final-out/sessions" ] && echo yes || echo no)"
         same "and it ran no dry run, so it built no scenario tree" "no" \
             "$([ -e "$scratch/run-final-out/leak-gate" ] && echo yes || echo no)"
-        # The owner approved the tuning round (#1777), and it is open for no
-        # layer now (#1819): documents try 1 was not kept, and no other
-        # layer's plan is accepted. So a batch of a scenario-1 tuning line
+        # The owner approved the tuning round (#1777), and no layer it may
+        # open adds over scenario 1 since the ruling of 2026-10-22 withdrew
+        # the documents layer (#1819), whether a layer is open or none is.
+        # So a batch of a scenario-1 tuning line
         # passes the round gate and is refused by the layer gate, with 5,
         # before it builds a tree or asks the harness anything. The case of a
         # declared open layer reads a scratch root, below, because the gate
@@ -5798,9 +5799,9 @@ if [ -x "$engine" ]; then
         HEADWATER_PROBE_HOST_CONFIG="$scratch/run-host" CARGO_TARGET_DIR="$scratch/gate-target" PATH="$scratch/run-bin:$PATH" \
             sh "$root/tools/probe/campaign.sh" --out "$scratch/run-tune-out" --model claude-haiku-4-5 \
             --spec "$scratch/run-tune.spec" --max-sessions 1 > /dev/null 2> "$scratch/run-tune.err"
-        same "a batch of a scenario-1 tuning line is refused with 5 while the tuning round is open for no layer" "5" "$?"
+        same "a batch of a scenario-1 tuning line is refused with 5 by the layer gate" "5" "$?"
         absent "and names no refusal of the tuning round's approval" "no person has approved spend on the tuning round" "$scratch/run-tune.err"
-        present "and names the open rule" "the tuning round is open for no layer" "$scratch/run-tune.err"
+        present "and names the open rule" "the tuning round is open for" "$scratch/run-tune.err"
         same "and it wrote no harness version, no plan, no tree and no dry run" "no no no no" \
             "$([ -e "$scratch/run-tune-out/claude-version" ] && echo yes || echo no) $([ -e "$scratch/run-tune-out/lines" ] && echo yes || echo no) $([ -e "$scratch/run-tune-out/trees" ] && echo yes || echo no) $([ -e "$scratch/run-tune-out/leak-gate" ] && echo yes || echo no)"
         rm -rf "$scratch/run-tune-out"
@@ -5861,16 +5862,19 @@ fi
 # case reads every other key as the checkout declares it. These cases need
 # no engine and no clean checkout, so no skip above hides them.
 # ---------------------------------------------------------------------------
+# The committed declaration with its open layer set back to `none`, so the
+# cases hold whichever layer the checkout has open.
+awk '/^    open:/ { print "    open: none"; skip = 1; next } skip && /^      / { next } { skip = 0; print }' "$root/.headwater/probe.yml" > "$scratch/open-none.yml"
 open_decl() {
     # $1 the declaration to write, $2 the lines that replace `open: none`
-    awk -v block="$2" '$0 == "    open: none" { print block; next } { print }' "$root/.headwater/probe.yml" > "$1"
+    awk -v block="$2" '$0 == "    open: none" { print block; next } { print }' "$scratch/open-none.yml" > "$1"
 }
 open_docs1='    open:\n      layer: docs\n      scenario: 1\n      try: 1\n      cap_cents: 6000\n      plan: https://github.com/headwater-ai/headwater/issues/1777#issuecomment-6277195497\n      change: none'
 open_decl "$scratch/open-docs1.yml" "$open_docs1"
 declared_py=$root/tools/probe/declared.py
 
-python3 "$declared_py" "$root/.headwater/probe.yml" open > "$scratch/open-none.out" 2> "$scratch/open-none.err"
-same "declared.py open prints none for the committed declaration" "0 none" "$? $(cat "$scratch/open-none.out")"
+python3 "$declared_py" "$scratch/open-none.yml" open > "$scratch/open-none.out" 2> "$scratch/open-none.err"
+same "declared.py open prints none for a declaration with open: none" "0 none" "$? $(cat "$scratch/open-none.out")"
 python3 "$declared_py" "$scratch/open-docs1.yml" open > "$scratch/open-docs1.out" 2> "$scratch/open-docs1.err"
 same "declared.py open prints the six fields of an open layer, on one line" \
     "0 docs 1 1 6000 https://github.com/headwater-ai/headwater/issues/1777#issuecomment-6277195497 none" \
@@ -6006,7 +6010,7 @@ same "campaign.sh names open_base on three lines" "3" "$(wc -l < "$scratch/open-
 same "and each is inside a base-neutral region" "" "$(grep -vxF -f "$scratch/regions.out" "$scratch/open-base.lines")"
 printf 'additive scenario-1 tuning\n' > "$scratch/open-s1.spec"
 same "with open: none, a scenario-1 tuning line is refused with 5" "5" \
-    "$(open_batch "$root/.headwater/probe.yml" "$scratch/open-s1.spec" "$scratch/open-nonespec.err")"
+    "$(open_batch "$scratch/open-none.yml" "$scratch/open-s1.spec" "$scratch/open-nonespec.err")"
 present "and the refusal names the open rule" "the tuning round is open for no layer" "$scratch/open-nonespec.err"
 same "and it ran no dry run, planned no line, built no tree and asked the harness nothing" "no no no no" "$(open_wrote)"
 open_status=$(open_batch "$scratch/open-docs1.yml" "$scratch/open-s1.spec" "$scratch/open-pass.err")
@@ -6015,7 +6019,7 @@ same "with docs open on scenario 1, a scenario-1 tuning line passes the gate" "y
 # The gate reads tuning lines alone: a screening line runs while no layer is
 # open, and a tuning line of the open scenario runs beside it.
 printf 'additive scenario-4 screening\n' > "$scratch/open-screen.spec"
-open_status=$(open_batch "$root/.headwater/probe.yml" "$scratch/open-screen.spec" "$scratch/open-screen.err")
+open_status=$(open_batch "$scratch/open-none.yml" "$scratch/open-screen.spec" "$scratch/open-screen.err")
 same "with open: none, a screening line passes the gate" "yes 0" \
     "$([ "$open_status" != 5 ] && echo yes || echo no) $(grep -c 'the tuning round is open for' "$scratch/open-screen.err")"
 printf 'additive scenario-4 screening\nadditive scenario-1 tuning\nadditive scenario-6 tuning\n' > "$scratch/open-mixed.spec"

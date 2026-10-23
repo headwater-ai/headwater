@@ -709,7 +709,9 @@ sets:
 # The plan is the URL of the comment in which the owner accepted it. The
 # documents layer was open for try 1, which scored 32 of 72 sessions and was
 # not kept (#1777). The ruling of 2026-10-22 withdrew that try with the
-# layer, and no other layer's plan is accepted, so `open` is `none`.
+# layer. On 2026-10-24 the skills layer opened for its round 1, scenario 4
+# against scenario 3, under the plan the comment below states, which the run
+# of 2026-10-22 accepts under the owner's standing ruling of rounds (#1777).
 #
 # The tuning round runs in rounds (#1838), as the owner ruled on 2026-10-22
 # (#1777): a round screens `variants` changes of the open layer at `screen`
@@ -748,7 +750,13 @@ rounds:
     order: [skills, hook, mcp]
     ceiling_cents: 129000
     base_ceiling_cents: 22000
-    open: none
+    open:
+      layer: skills
+      scenario: 4
+      try: 1
+      cap_cents: 12250
+      plan: https://github.com/headwater-ai/headwater/issues/1777#issuecomment-6375391385
+      change: none
   final:
     set: held-out
     rates: [0.90, 0.80]
