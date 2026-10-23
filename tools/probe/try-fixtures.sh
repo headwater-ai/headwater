@@ -1344,7 +1344,9 @@ check "route: and the re-measure it needs" err_has "sh tools/probe/try.sh launch
 # measurement, so it does not clear the route gate: only a `base` event at the
 # confirmation's count does, and `result` of a `base` try writes both.
 head_sha=$(git -C "$fix/repo" rev-parse HEAD)
-echo "0 $head_sha" > "$CASE/root/base-pin"
+# The hand-written pin names another commit than the launch's, so the case
+# also reads that `result` rewrites it.
+echo '0 1111111111111111111111111111111111111111' > "$CASE/root/base-pin"
 cp "$CASE/tree-head/engine/crates/x/src/lib.rs" "$CASE/tree-pin/engine/crates/x/src/lib.rs"
 run plan "$CASE/root" confirm docs-r2-v1
 check "base: a pin written by hand at the engine's source does not let the confirmation plan" code_is 4
@@ -1395,6 +1397,15 @@ run plan "$CASE/root" confirm docs-r2-v1
 check "base: a second engine change after the re-measure refuses the confirmation with 4 again" code_is 4
 run plan "$CASE/root" screen 3
 check "base: and a screen, whose acceptance named the old pin, is stale by today's gate" code_is 4
+# The owner accepts the change at the new pin: a screen plans, and the
+# confirmation still waits for a base measured at the engine's source.
+run accept "$CASE/root" "https://github.com/headwater-ai/headwater/issues/1777#issuecomment-2"
+run plan "$CASE/root" screen 3
+check "base: an accepted engine change at the new pin lets a screen plan" code_is 0
+run plan "$CASE/root" confirm docs-r2-v1
+check "base: and still refuses the confirmation with 4, whatever was accepted" code_is 4
+check "base: naming the route path" out_has "route: engine/crates/x/src/lib.rs (accepted by https://github.com/headwater-ai/headwater/issues/1777#issuecomment-2"
+check "base: and the launch that measures it" err_has "a route change makes scenario 0 stale for a confirmation"
 
 # A base event at another count, or of another scenario, does not back the
 # pin: the confirmation reads a base at its own count.
@@ -1582,6 +1593,13 @@ rm -rf "$CASE/root/base-1"
 run plan "$CASE/root" confirm docs-r2-v1
 check "remeasure: base-1 is priced under the base ceiling instead" code_is 4
 check "remeasure: and says so" out_has "left of the bases with the re-measure: 145 sessions, 145 cents, in base-1"
+cost "$CASE/root/docs-r1-best/a/sessions/s1" 855
+run plan "$CASE/root" confirm docs-r2-v1
+check "remeasure: base-1 at the base ceiling exactly exits 4" code_is 4
+cost "$CASE/root/docs-r1-best/a/sessions/s1" 856
+run plan "$CASE/root" confirm docs-r2-v1
+check "remeasure: and one cent above it exits 5" code_is 5
+check "remeasure: naming the base ceiling" err_has "above the base ceiling of 1000 cents"
 
 # ----------------------------------------------- rounds: arguments (#1838)
 
