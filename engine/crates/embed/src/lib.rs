@@ -30,6 +30,10 @@ use tract_onnx::prelude::*;
 /// Where the pin is committed, relative to the repository root.
 pub const PIN: &str = ".headwater/embedding.yml";
 
+/// Where the cross-encoder pin of the reranking experiment (#1688) is
+/// committed, relative to the repository root. It has the shape of [`PIN`].
+pub const RERANKER_PIN: &str = ".headwater/reranker.yml";
+
 /// Where a caller fetches the model files to by default. Ignored by git.
 pub const MODELS: &str = ".headwater/models";
 
@@ -68,6 +72,18 @@ impl Pin {
         let source = std::fs::read_to_string(&path)
             .map_err(|error| format!("cannot read `{PIN}`: {error}"))?;
         Pin::parse(&source)
+    }
+
+    /// Read a pin of the same shape from a path other than [`PIN`], such as
+    /// the cross-encoder pin `.headwater/reranker.yml` ([`RERANKER_PIN`]).
+    pub fn read_at(path: &Path) -> Result<Pin, String> {
+        let shown = path.display();
+        if not_regular(path) {
+            return Err(format!("cannot read `{shown}`: it is not a regular file"));
+        }
+        let source = std::fs::read_to_string(path)
+            .map_err(|error| format!("cannot read `{shown}`: {error}"))?;
+        Pin::parse(&source).map_err(|error| format!("{error} (read from `{shown}`)"))
     }
 
     pub fn parse(source: &str) -> Result<Pin, String> {
@@ -250,6 +266,124 @@ impl Model {
             }
         }
         Ok(pooled)
+    }
+}
+
+/// A loaded BERT cross-encoder whose every file matched its pin. It reads a
+/// (query, document) pair as one sequence and returns one relevance logit.
+///
+/// It is the offline reranker of the #1688 experiment, run by the
+/// `rerank` example and by no verb: HW-DR-0077 closes the consumer surface,
+/// and no verb is owed until a ruling builds it into `headwater route`.
+pub struct Reranker {
+    plan: Arc<TypedSimplePlan>,
+    tokenizer: WordPiece,
+    max_tokens: usize,
+    /// The graph's inputs in their declared order, each one the tensor it is.
+    inputs: Vec<PairInput>,
+    digest: String,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum PairInput {
+    Ids,
+    Mask,
+    Types,
+}
+
+impl std::fmt::Debug for Reranker {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Reranker")
+            .field("digest", &self.digest)
+            .field("inputs", &self.inputs)
+            .finish_non_exhaustive()
+    }
+}
+
+impl Reranker {
+    /// Load the pinned files from `dir`, refusing any whose digest differs.
+    pub fn load(pin: &Pin, dir: &Path) -> Result<Reranker, String> {
+        let graph = verified(pin, dir, GRAPH)?;
+        let vocabulary = verified(pin, dir, VOCABULARY)?;
+        let vocabulary =
+            String::from_utf8(vocabulary).map_err(|_| format!("`{VOCABULARY}` is not UTF-8"))?;
+        let tokenizer = WordPiece::parse(&vocabulary)?;
+        let loaded = |error: TractError| format!("`{GRAPH}` did not load: {error}");
+        let model = tract_onnx::onnx()
+            .model_for_read(&mut graph.as_slice())
+            .map_err(loaded)?;
+        // The tensors go to the plan by position, so the order is read from
+        // the graph and never assumed.
+        let mut inputs = Vec::new();
+        for outlet in model.input_outlets().map_err(loaded)? {
+            let name = model.node(outlet.node).name.as_str();
+            inputs.push(match name {
+                "input_ids" => PairInput::Ids,
+                "attention_mask" => PairInput::Mask,
+                "token_type_ids" => PairInput::Types,
+                other => {
+                    return Err(format!(
+                        "`{GRAPH}` has an input `{other}` a BERT pair has not"
+                    ))
+                }
+            });
+        }
+        let plan = model
+            .into_optimized()
+            .and_then(|model| model.into_runnable())
+            .map_err(loaded)?;
+        Ok(Reranker {
+            plan,
+            tokenizer,
+            max_tokens: pin.max_tokens,
+            inputs,
+            digest: pin.digest(),
+        })
+    }
+
+    pub fn digest(&self) -> &str {
+        &self.digest
+    }
+
+    /// The raw relevance logit of a document for a query. Higher is more
+    /// relevant. No sigmoid is applied, because the order is what a rerank reads.
+    pub fn score(&self, query: &str, document: &str) -> Result<f32, String> {
+        let (ids, types) = self.tokenizer.encode_pair(query, document, self.max_tokens);
+        let count = ids.len();
+        let failed = |error: TractError| format!("inference failed: {error}");
+        let shaped = |values: Vec<i64>| {
+            tract_ndarray::Array2::from_shape_vec((1, count), values)
+                .map(|array| array.into_tensor())
+                .map_err(|error| format!("inference failed: {error}"))
+        };
+        let mut ids = Some(shaped(ids)?);
+        let mut mask = Some(shaped(vec![1_i64; count])?);
+        let mut types = Some(shaped(types)?);
+        let mut feed = TVec::new();
+        for input in &self.inputs {
+            let tensor = match input {
+                PairInput::Ids => ids.take(),
+                PairInput::Mask => mask.take(),
+                PairInput::Types => types.take(),
+            }
+            .ok_or_else(|| format!("`{GRAPH}` names one input twice"))?;
+            feed.push(tensor.into());
+        }
+        let outputs = self.plan.run(feed).map_err(failed)?;
+        let logits = outputs
+            .first()
+            .ok_or_else(|| "inference returned no output".to_string())?
+            .to_plain_array_view::<f32>()
+            .map_err(failed)?;
+        let shape = logits.shape().to_vec();
+        if shape != [1, 1] {
+            return Err(format!("inference returned an output of shape {shape:?}"));
+        }
+        logits
+            .iter()
+            .next()
+            .copied()
+            .ok_or_else(|| "inference returned an empty output".to_string())
     }
 }
 
@@ -727,6 +861,60 @@ mod tests {
             "paraphrase similarity {close}"
         );
         assert!(far < 0.1, "unrelated similarity {far}");
+    }
+
+    /// The pinned cross-encoder ranks the model card's relevant passage above
+    /// its unrelated one. The files are 90MB and fetched with
+    /// `tools/embed/fetch-model.sh --pin .headwater/reranker.yml`, so a run
+    /// with no `HEADWATER_RERANKER_DIR` says it skipped rather than passing.
+    #[test]
+    fn the_pinned_reranker_scores_a_relevant_passage_above_an_unrelated_one() {
+        let Some(dir) = std::env::var_os("HEADWATER_RERANKER_DIR") else {
+            eprintln!("skipped: set HEADWATER_RERANKER_DIR to the fetched reranker files");
+            return;
+        };
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let pin = Pin::read_at(&root.join(RERANKER_PIN)).expect("the committed pin parses");
+        let reranker =
+            Reranker::load(&pin, Path::new(&dir)).expect("the fetched files match the pin");
+        let query = "How many people live in Berlin?";
+        let relevant = reranker
+            .score(
+                query,
+                "Berlin had a population of 3,520,031 registered inhabitants in an area of 891.82 square kilometers.",
+            )
+            .expect("inference runs");
+        let unrelated = reranker
+            .score(query, "Berlin is well known for its museums.")
+            .expect("inference runs");
+        // The model card prints [ 8.607138 -4.320078] for these two pairs,
+        // computed by sentence-transformers in PyTorch, not by this crate.
+        assert!(
+            (relevant - 8.607_138).abs() < 0.001,
+            "relevant {relevant}, the model card says 8.607"
+        );
+        assert!(
+            (unrelated + 4.320_078).abs() < 0.001,
+            "unrelated {unrelated}, the model card says -4.320"
+        );
+    }
+
+    #[test]
+    fn a_pin_read_from_another_path_names_that_path_in_its_refusal() {
+        let dir = std::env::temp_dir().join(format!(
+            "headwater-embed-pin-at-{}-{:?}",
+            std::process::id(),
+            std::thread::current().id()
+        ));
+        std::fs::create_dir_all(&dir).expect("a temp dir");
+        let path = dir.join("reranker.yml");
+        std::fs::write(&path, "model: x\n").expect("a pin");
+        let error = Pin::read_at(&path).expect_err("a pin with no files is refused");
+        assert!(error.contains("reranker.yml"), "{error}");
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let pin = Pin::read_at(&root.join(RERANKER_PIN)).expect("the committed pin parses");
+        assert_eq!(pin.max_tokens, 512);
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

@@ -7,7 +7,12 @@
 # neighbors` checks the digests again on every run, so a file this script did
 # not write is refused there too.
 #
-# Usage: sh tools/embed/fetch-model.sh [--into <dir>]
+# Usage: sh tools/embed/fetch-model.sh [--pin <file>] [--into <dir>]
+#
+# The default pin is `.headwater/embedding.yml`. `--pin .headwater/reranker.yml`
+# fetches the cross-encoder of the reranking experiment (#1688) instead, and its
+# default directory is then `<git common dir>/headwater-models/reranker`, so the
+# two models never share a `model.onnx`.
 #
 # The default directory is `<git common dir>/headwater-models`, which every
 # worktree of one clone shares, and which `.claude/hooks/intent.sh` passes to
@@ -18,14 +23,23 @@ root=$(cd "$(dirname "$0")/../.." && pwd)
 pin="$root/.headwater/embedding.yml"
 
 into=
-case ${1:-} in
-    --into) into=${2:?--into takes a directory} ;;
-    '') ;;
-    *) echo "fetch-model: unknown argument $1" >&2; exit 2 ;;
-esac
+sub=
+while [ $# -gt 0 ]; do
+    case $1 in
+        --into) into=${2:?--into takes a directory}; shift 2 ;;
+        --pin)
+            pin=${2:?--pin takes a file}
+            case $pin in /*) ;; *) pin="$PWD/$pin" ;; esac
+            [ -f "$pin" ] || { echo "fetch-model: no pin at $pin" >&2; exit 2; }
+            sub=$(basename "$pin" .yml)
+            [ "$sub" = embedding ] && sub=
+            shift 2 ;;
+        *) echo "fetch-model: unknown argument $1" >&2; exit 2 ;;
+    esac
+done
 if [ -z "$into" ]; then
     common=$(git -C "$root" rev-parse --path-format=absolute --git-common-dir)
-    into="$common/headwater-models"
+    into="$common/headwater-models${sub:+/$sub}"
 fi
 mkdir -p "$into"
 
