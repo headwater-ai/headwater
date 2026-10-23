@@ -548,12 +548,14 @@ spent_round() {
     printf '%s\n' "$spent_sum"
 }
 
-# try_spent <try>: the same sum, over one try root.
+# try_spent <try>: the same sum, over one try root. awk reads each file
+# as its own records, so a cost with no final newline does not join the
+# next file's number, as cat into one awk did (30 and 40 read as 3040).
 try_spent() {
     try_spent_sum=0
     for try_batch in "$1"/*/ "$1"/.[!.]*/ "$1"/..?*/; do
         [ -d "${try_batch}sessions" ] || continue
-        try_spent_sum=$((try_spent_sum + $(find "${try_batch}sessions" -mindepth 2 -maxdepth 2 -type f \( -name cost -o -name spent-before \) -exec cat {} + 2>/dev/null | awk '{ s += $1 } END { print s + 0 }')))
+        try_spent_sum=$((try_spent_sum + $(find "${try_batch}sessions" -mindepth 2 -maxdepth 2 -type f \( -name cost -o -name spent-before \) -exec awk '{ s += $1 } END { print s + 0 }' {} + 2>/dev/null | awk '{ s += $1 } END { print s + 0 }')))
     done
     echo "$try_spent_sum"
 }
