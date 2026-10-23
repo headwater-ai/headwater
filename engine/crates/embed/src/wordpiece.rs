@@ -218,10 +218,10 @@ mod tests {
         let (ids, types) = vocab().encode_pair("route route route route route", "head s", 8);
         assert_eq!(ids, vec![2, 9, 9, 9, 3, 4, 11, 3]);
         assert_eq!(types, vec![0, 0, 0, 0, 0, 1, 1, 1]);
-        // Both sides 3 long and a budget of 4: the tie takes from the document
-        // first, so each side keeps two.
-        let (ids, _) = vocab().encode_pair("route route route", "head head head", 7);
-        assert_eq!(ids, vec![2, 9, 9, 3, 4, 4, 3]);
+        // Both sides 3 long and a budget of 5: the tie takes from the document,
+        // so the query keeps three and the document two.
+        let (ids, _) = vocab().encode_pair("route route route", "head head head", 8);
+        assert_eq!(ids, vec![2, 9, 9, 9, 3, 4, 4, 3]);
     }
 
     #[test]

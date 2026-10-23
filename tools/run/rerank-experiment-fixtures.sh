@@ -18,19 +18,25 @@
 #            hit that is not a first-at-2.
 #        TI  r1 scores 2 and ties e2 and e3 under e1. The tie goes to the
 #            path in ascending order, so r1 is fourth and the reranker misses.
+#        N3  r1 scores 2 and the reranker puts it third: still a top-3 hit.
+#        WD  seven documents, none at 2: the cut keeps the first 5.
 #        NN  nothing scores 2.
 #      Four variants, one per verdict, each worked here:
 #        accept   silent 2 BB, 6 NB, 1 NS, 1 NN: embedding 2/10, rerank 9/10,
 #                 b 0, c 7, p 2/128 = 0.015625; first-at-2 2 against 8.
 #                 disjoint 24 BB, 6 NB, 1 TI, 1 NN: 24/32 against 30/32,
-#                 b 0, c 6, p 2/64 = 0.03125. overlap 1 BB, 1 BN, 3 NB, 1 NN:
-#                 2/6 against 4/6, b 1, c 3, p 2 x 5/16 = 0.625.
+#                 b 0, c 6, p 2/64 = 0.03125. overlap 1 BB, 1 BN, 3 NB, 1 N3,
+#                 1 WD, 1 NN: 2/8 against 5/8, b 1, c 4, p 2 x 6/32 = 0.375.
 #        reject   disjoint 29 BB, 1 BN, 1 TI, 1 NN: 30/32 against 29/32, b 1,
 #                 c 0, p 1. 29 is under the bar of 30.
 #        inconclusive  silent 2 BB, 5 NB, 2 NS, 1 NN: first-at-2 7, one under
 #                 the bar of 8. disjoint as in accept.
 #        weak     disjoint 25 BB, 5 NB, 1 TI, 1 NN: c 5, p 2/32 = 0.0625, which
 #                 is not under 0.05. silent as in accept.
+#        worse    disjoint 30 BB, 6 BN, 1 TI, 1 NN: 36/38 against 30/38, b 6,
+#                 c 0, p 0.03125. Significant, but a loss, so not accept.
+#        both     disjoint 23 BB, 6 NB, 1 TI, 2 NN: 23/32 against 29/32, c 6,
+#                 p 0.03125. The accept bar and the reject bar both hold.
 #      The obligation, the review and the sealed probe never reach the
 #      reranker or the cut to 5: if one did, every prompt would hit. The
 #      overlap NN prompt's r1 has no consensus score, so one graded pair is
@@ -40,7 +46,8 @@
 #   b  the pairs the runner reads: the task text of the packet, its lines
 #      joined, and the title, a newline and the summary of the document.
 #   c  the refusals: a document the packets do not hold, a runner that
-#      returns fewer scores than pairs, and an unknown argument.
+#      returns its scores out of order, a runner that returns fewer scores
+#      than pairs, and an unknown argument.
 #   k  the committed rerank.txt is what `grade` prints on the committed
 #      score file, sample and consensus, so a clone reprints it without the
 #      texts.
@@ -85,7 +92,7 @@ cat > "$fake" <<'EOF'
 #!/bin/sh
 tee "$RERANK_FAKE_LOG" | awk -F '\t' -v table="$RERANK_FAKE_TABLE" -v short="${RERANK_FAKE_SHORT:-0}" '
     BEGIN { OFS = "\t"; while ((getline line < table) > 0) { split(line, f, "\t"); s[f[1] SUBSEP f[2]] = f[3] } }
-    { n++; if (short && n == 1) next; print $1, $2, s[$1 SUBSEP $2] }
+    { n++; if (short == "first" && n == 1) next; if (n > 1 && short == "last") print held; held = $1 "\t" $2 "\t" s[$1 SUBSEP $2]; if (short != "last") print held }
 '
 EOF
 
@@ -128,8 +135,10 @@ plant() {
                 if (shape == "NB") { r1 = 2; sr = 9 }
                 if (shape == "NS") { r1 = 2; s1 = 9; sr = 8 }
                 if (shape == "TI") { r1 = 2; s1 = 9; s2 = 3; s3 = 3; sr = 3 }
-                if (shape == "NN") { e2 = 1; sr = 9 }
+                if (shape == "N3") { r1 = 2; s1 = 9; s2 = 8; sr = 7; s3 = 1 }
+                if (shape == "NN" || shape == "WD") { e2 = 1; sr = 9 }
                 emb = p "-e1.md|" p "-e2.md|" p "-e3.md|docs/obligations/" id ".md|docs/reviews/" id ".md|sealed:" id
+                if (shape == "WD") emb = emb "|" p "-e4.md|" p "-e5.md|" p "-e6.md"
                 if (stratum == "silent") { det = ""; emb = emb "|" p "-r1.md" } else det = p "-r1.md"
                 print id, stratum, "2026-10-01T00:00:00Z", "log.jsonl", n, "sha256:" id, det, emb > sample
                 print "rater", "P" n, id, "01" > pkeys
@@ -142,6 +151,11 @@ plant() {
                 item(id, "docs/obligations/" id ".md", 2, 99, 5)
                 item(id, "docs/reviews/" id ".md", 2, 98, 6)
                 item(id, "sealed:" id, 2, 97, 7)
+                if (shape == "WD") {
+                    item(id, p "-e4.md", 0, 1.5, 8)
+                    item(id, p "-e5.md", 0, 1.4, 9)
+                    item(id, p "-e6.md", 0, 1.3, 10)
+                }
                 print "" > batch
             }
         }
@@ -163,7 +177,7 @@ rc() {
     if [ "$got" = "$3" ]; then pass "$1"; else fail "$1" "exit $got, wanted $3: $(head -c 400 "${2%.rc}.err" 2>/dev/null)"; fi
 }
 
-overlap="overlap:BB:1 overlap:BN:1 overlap:NB:3 overlap:NN:1"
+overlap="overlap:BB:1 overlap:BN:1 overlap:NB:3 overlap:N3:1 overlap:WD:1 overlap:NN:1"
 
 # a: accept.
 A="$scratch/accept"
@@ -178,17 +192,19 @@ has "a accept" "$T" "silent: oracle over the filtered union: 9 of 10 (unfiltered
 has "a accept" "$T" "disjoint: top 3 holds a score-2 document: embedding 24 of 32, rerank 30 of 32"
 has "a accept" "$T" "disjoint: McNemar b 0, c 6, exact p 0.03125"
 has "a accept" "$T" "disjoint: oracle over the filtered union: 31 of 32 (unfiltered 32 of 32)"
-has "a accept" "$T" "overlap: top 3 holds a score-2 document: embedding 2 of 6, rerank 4 of 6"
-has "a accept" "$T" "overlap: McNemar b 1, c 3, exact p 0.625"
-has "a accept" "$T" "overlap: unscored pairs in the cut to 5: 1 of 24"
+has "a accept" "$T" "overlap: top 3 holds a score-2 document: embedding 2 of 8, rerank 5 of 8"
+has "a accept" "$T" "overlap: McNemar b 1, c 4, exact p 0.375"
+has "a accept" "$T" "overlap: unscored pairs in the cut to 5: 1 of 33"
 has "a accept" "$T" "verdict: accept"
 lacks "a accept: no filtered item reaches the runner" "$A/runner.log" "docs/obligations/"
 lacks "a accept: no review reaches the runner" "$A/runner.log" "docs/reviews/"
 lacks "a accept: no sealed probe reaches the runner" "$A/runner.log" "sealed:"
 lacks "a accept: no filtered item is in the score file" "$A/rec/rerank-scores.tsv" "docs/obligations/"
-check "a accept: the score file holds one row per filtered pair, 4 for each of 48 prompts, and a header" '[ "$(wc -l < "$A/rec/rerank-scores.tsv")" -eq 193 ]'
+check "a accept: the score file holds one row per filtered pair, 4 for each of 50 prompts, 3 more for WD, and a header" '[ "$(wc -l < "$A/rec/rerank-scores.tsv")" -eq 204 ]'
 run "$A" order
 has "a accept: the TI prompt's tie goes to the path in ascending order" "$A/order.out" "d-ti-01	docs/t/d-ti-01-e1.md|docs/t/d-ti-01-e2.md|docs/t/d-ti-01-e3.md|docs/t/d-ti-01-r1.md"
+has "a accept: the N3 prompt's score-2 document is third" "$A/order.out" "o-n3-01	docs/t/o-n3-01-e1.md|docs/t/o-n3-01-e2.md|docs/t/o-n3-01-r1.md|docs/t/o-n3-01-e3.md"
+has "a accept: the WD prompt is cut to its first 5" "$A/order.out" "o-wd-01	docs/t/o-wd-01-r1.md|docs/t/o-wd-01-e1.md|docs/t/o-wd-01-e2.md|docs/t/o-wd-01-e3.md|docs/t/o-wd-01-e4.md"
 has "a accept: the BN prompt's score-2 document is cut to last" "$A/order.out" "o-bn-01	docs/t/o-bn-01-e1.md|docs/t/o-bn-01-e3.md|docs/t/o-bn-01-r1.md|docs/t/o-bn-01-e2.md"
 
 # a: reject.
@@ -207,6 +223,23 @@ run "$I" run
 rc "a inconclusive: run exits 0" "$I/run.rc" 0
 has "a inconclusive" "$I/rec/rerank.txt" "silent: first pick scores 2: embedding 2 of 10, rerank 7 of 10"
 has "a inconclusive" "$I/rec/rerank.txt" "verdict: inconclusive"
+
+# a: inconclusive, a significant loss.
+V="$scratch/worse"
+plant "$V" silent:BB:2 silent:NB:6 silent:NS:1 silent:NN:1 disjoint:BB:30 disjoint:BN:6 disjoint:TI:1 disjoint:NN:1 $overlap
+run "$V" run
+rc "a worse: run exits 0" "$V/run.rc" 0
+has "a worse" "$V/rec/rerank.txt" "disjoint: McNemar b 6, c 0, exact p 0.03125"
+has "a worse" "$V/rec/rerank.txt" "verdict: inconclusive"
+
+# a: inconclusive, both bars hold.
+B="$scratch/both"
+plant "$B" silent:BB:2 silent:NB:6 silent:NS:1 silent:NN:1 disjoint:BB:23 disjoint:NB:6 disjoint:TI:1 disjoint:NN:2 $overlap
+run "$B" run
+rc "a both: run exits 0" "$B/run.rc" 0
+has "a both" "$B/rec/rerank.txt" "disjoint: top 3 holds a score-2 document: embedding 23 of 32, rerank 29 of 32"
+has "a both" "$B/rec/rerank.txt" "verdict: inconclusive"
+has "a both" "$B/rec/rerank.txt" "reason: both the accept bar and the reject bar hold"
 
 # a: inconclusive, p not under 0.05.
 W="$scratch/weak"
@@ -241,9 +274,17 @@ rc "c: a document the packets do not hold exits 4" "$C/score.rc" 4
 check "c: and writes no score file" '[ ! -e "$C/rec/rerank-scores.tsv" ]'
 C2="$scratch/c2"
 plant "$C2" silent:BB:1 disjoint:BB:1 overlap:BB:1
-RERANK_FAKE_SHORT=1 run "$C2" score
+RERANK_FAKE_SHORT=first
+export RERANK_FAKE_SHORT
+run "$C2" score
+rc "c: a runner whose scores are out of step with the pairs exits 4" "$C2/score.rc" 4
+check "c: and writes no score file" '[ ! -e "$C2/rec/rerank-scores.tsv" ]'
+RERANK_FAKE_SHORT=last
+run "$C2" score
 rc "c: a runner that returns fewer scores than pairs exits 4" "$C2/score.rc" 4
 check "c: and writes no score file" '[ ! -e "$C2/rec/rerank-scores.tsv" ]'
+grep -q 'scores for' "$C2/score.err" && pass "c: and says how many scores it read" || fail "c: and says how many scores it read" "$(cat "$C2/score.err")"
+unset RERANK_FAKE_SHORT
 run "$C2" bogus
 rc "c: an unknown verb exits 2" "$C2/bogus.rc" 2
 
