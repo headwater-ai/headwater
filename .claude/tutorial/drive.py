@@ -243,10 +243,11 @@ def prose_counts_match_blocks(text, blocks):
     stated = [int(token) if token.isdigit() else words[token]
               for token in re.findall(r'\d+|[a-z]+(?:-[a-z]+)?', paragraph.lower())
               if token.isdigit() or token in words]
-    after_jump = stated[stated.index(b) + 1:] if b in stated else []
-    if size not in after_jump:
+    # The `from a to b` phrase accounts for one `a` and one `b`; the size must be
+    # stated once more than that, which still holds when it equals `a` or `b`.
+    if stated.count(size) <= [a, b].count(size):
         return False, (f'the blocks state a jump of {size} ({number_word(size)}), '
-                       f'and the paragraph states no such number after "from {a} to {b}"')
+                       f'and the paragraph does not state it')
     unheld = [n for n in stated if n not in (a, b, size)]
     if unheld:
         return False, f'the paragraph states {unheld}, which no block holds; it may state only {a}, {b} and {size}'
@@ -261,15 +262,27 @@ def stale_prose_counts_are_refused(text, blocks):
     paragraph was moved by hand; before that it was moved by hand from 7 to 21
     to 8 to 22. Each case below is a copy of the real document with only the
     paragraph changed, so a case passes only if the check reads the paragraph.
-    Returns `(ok, detail)`, where `ok` means every stale case was refused.
+
+    The cases start from a paragraph written from the blocks, which is true by
+    construction, and not from the page's own paragraph. So this self-test
+    fails only when the check is broken, and a stale page fails the claim
+    above and not this one. Returns `(ok, detail)`, where `ok` means the true
+    paragraph passed and every stale case was refused.
     """
-    current = [line for line in text.split('\n') if line.startswith(JUMP_PARAGRAPH)]
-    if len(current) != 1:
-        return False, f'the self-test needs one jump paragraph and found {len(current)}'
-    current = current[0]
-    a = int(BLOCK_COUNT.search(blocks[JUMP_FROM_BLOCK]).group(1))
-    b = int(BLOCK_COUNT.search(blocks[JUMP_TO_BLOCK]).group(1))
+    matches = [BLOCK_COUNT.search(blocks[i]) if i < len(blocks) else None
+               for i in (JUMP_FROM_BLOCK, JUMP_TO_BLOCK)]
+    if not all(matches):
+        return False, 'the self-test needs a "<n> check instances" count in both blocks'
+    a, b = (int(m.group(1)) for m in matches)
     word = number_word(b - a)
+    current = (f'{JUMP_PARAGRAPH} The count of checks that ran went from {a} to {b}, because '
+               f'a typed document is a document that rules can reach. Type a document, and '
+               f'{word} more questions become answerable about it.')
+    text = '\n'.join([line for line in text.split('\n') if not line.startswith(JUMP_PARAGRAPH)]
+                     + ['', current])
+    ok, detail = prose_counts_match_blocks(text, blocks)
+    if not ok:
+        return False, f'the prose claim refused a paragraph written from the blocks: {detail}'
     stale = {
         'the paragraph before #1832 (the jump ends one short, and the word follows it)':
             current.replace(f'from {a} to {b}', f'from {a} to {b - 1}')
@@ -278,9 +291,17 @@ def stale_prose_counts_are_refused(text, blocks):
             current.replace(f' {word} ', f' {number_word(b - a - 1)} '),
         'the jump starts from a count no block shows':
             current.replace(f'from {a} to', f'from {a - 1} to'),
+        'the jump is stated backward':
+            current.replace(f'from {a} to {b}', f'from {b} to {a}'),
+        'the size of the jump is not stated':
+            current.replace(f' {word} ', ' '),
         'a fourth number that no block shows':
             current + ' It took 2 commands.',
     }
+    spelled = {0: 'zero', 15: 'fifteen', 20: 'twenty', 23: 'twenty-three', 99: 'ninety-nine'}
+    wrong = [n for n, w in spelled.items() if number_word(n) != w]
+    if wrong:
+        return False, f'number_word spells {wrong} wrong'
     survivors = []
     for case, paragraph in stale.items():
         if paragraph == current:
@@ -291,6 +312,8 @@ def stale_prose_counts_are_refused(text, blocks):
     for case, edited in {
         'no jump paragraph': text.replace(current, current[len(JUMP_PARAGRAPH):].lstrip()),
         'two jump paragraphs': text.replace(current, current + '\n\n' + current),
+        'the only jump paragraph is quoted inside a fence':
+            text.replace(current, '```\n' + current + '\n```'),
     }.items():
         ok, _ = prose_counts_match_blocks(edited, blocks)
         if ok:
