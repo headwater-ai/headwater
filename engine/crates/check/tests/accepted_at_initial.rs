@@ -114,7 +114,11 @@ fn outcomes<'a>(run: &'a Run, file: &str) -> Vec<&'a Outcome> {
 /// The one outcome of the rule over `file`, which must exist.
 fn outcome<'a>(run: &'a Run, file: &str) -> &'a Outcome {
     let over = outcomes(run, file);
-    assert_eq!(over.len(), 1, "one instance of {RULE} over {file}: {over:?}");
+    assert_eq!(
+        over.len(),
+        1,
+        "one instance of {RULE} over {file}: {over:?}"
+    );
     over[0]
 }
 
@@ -128,8 +132,17 @@ fn an_accepted_document_at_the_initial_state_of_its_regime_is_one_warning() {
     assert_eq!(found.len(), 1, "one finding: {found:?}");
     let finding = found[0];
     assert_eq!(finding.severity, headwater_check::Severity::Warn);
-    assert!(finding.patch.is_none(), "only the author can choose a direction");
-    for part in ["`stage`", "`proposed`", "`intake`", "`provenance.warrant`", "`accepted`"] {
+    assert!(
+        finding.patch.is_none(),
+        "only the author can choose a direction"
+    );
+    for part in [
+        "`stage`",
+        "`proposed`",
+        "`intake`",
+        "`provenance.warrant`",
+        "`accepted`",
+    ] {
         assert!(
             finding.message.contains(part),
             "the message names {part}: {}",

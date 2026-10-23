@@ -918,7 +918,13 @@ pub fn run(
     instances.extend(scope::over_documents(&blank, census, graph, ctx, cache));
     instances.extend(scope::over_documents(&closed, census, graph, ctx, cache));
     instances.extend(scope::over_documents(&pairing, census, graph, ctx, cache));
-    instances.extend(scope::over_documents(&at_initial, census, graph, ctx, cache));
+    instances.extend(scope::over_documents(
+        &at_initial,
+        census,
+        graph,
+        ctx,
+        cache,
+    ));
     instances.extend(scope::over_documents(
         &identifiers,
         census,

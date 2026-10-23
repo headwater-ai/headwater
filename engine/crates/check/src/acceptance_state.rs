@@ -61,6 +61,11 @@ use headwater_doc::{ACCEPTED, ACCEPTED_BY, WARRANT, WARRANTS};
 /// The rule.
 pub const RULE: &str = "warrant.acceptance.at_initial";
 
+/// The skip reason for a document that declares no warrant. It names no
+/// identifier of this repository, because an adopter's report carries it too.
+const ABSENT: &str =
+    "this document declares no warrant, so there is no acceptance to read beside the state";
+
 /// The check. It carries the shape, because the initial state is the regime's
 /// declaration.
 pub struct AtInitial<'a> {
@@ -116,22 +121,15 @@ impl DocumentCheck for AtInitial<'_> {
                 regime.name
             ));
         }
-        let warrant = match headwater_doc::warrant(view.facets()) {
-            None => {
-                return Outcome::Skipped(
-                    "this document declares no warrant, so there is no acceptance to read beside \
-                     the state"
-                        .to_string(),
-                )
-            }
-            Some(warrant) if !WARRANTS.contains(&warrant) => {
-                return Outcome::Skipped(format!(
-                    "the warrant `{warrant}` is outside the closed set, and \
-                     `warrant.value.not_permitted` reports that"
-                ))
-            }
-            Some(warrant) => warrant,
+        let Some(warrant) = headwater_doc::warrant(view.facets()) else {
+            return Outcome::Skipped(ABSENT.to_string());
         };
+        if !WARRANTS.contains(&warrant) {
+            return Outcome::Skipped(format!(
+                "the warrant `{warrant}` is outside the closed set, and \
+                 `warrant.value.not_permitted` reports that"
+            ));
+        }
         if state != regime.initial || warrant != ACCEPTED {
             return Outcome::Passed;
         }
