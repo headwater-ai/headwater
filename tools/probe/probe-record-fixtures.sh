@@ -5786,9 +5786,10 @@ if [ -x "$engine" ]; then
             "$([ -e "$scratch/run-final-out/claude-version" ] && echo yes || echo no) $([ -e "$scratch/run-final-out/lines" ] && echo yes || echo no) $([ -e "$scratch/run-final-out/trees" ] && echo yes || echo no) $([ -e "$scratch/run-final-out/sessions" ] && echo yes || echo no)"
         same "and it ran no dry run, so it built no scenario tree" "no" \
             "$([ -e "$scratch/run-final-out/leak-gate" ] && echo yes || echo no)"
-        # The owner approved the tuning round (#1777), and it is open for no
-        # layer now (#1819): documents try 1 was not kept, and no other
-        # layer's plan is accepted. So a batch of a scenario-1 tuning line
+        # The owner approved the tuning round (#1777), and no layer it may
+        # open adds over scenario 1 since the ruling of 2026-10-22 withdrew
+        # the documents layer (#1819), whether a layer is open or none is.
+        # So a batch of a scenario-1 tuning line
         # passes the round gate and is refused by the layer gate, with 5,
         # before it builds a tree or asks the harness anything. The case of a
         # declared open layer reads a scratch root, below, because the gate
@@ -5798,9 +5799,9 @@ if [ -x "$engine" ]; then
         HEADWATER_PROBE_HOST_CONFIG="$scratch/run-host" CARGO_TARGET_DIR="$scratch/gate-target" PATH="$scratch/run-bin:$PATH" \
             sh "$root/tools/probe/campaign.sh" --out "$scratch/run-tune-out" --model claude-haiku-4-5 \
             --spec "$scratch/run-tune.spec" --max-sessions 1 > /dev/null 2> "$scratch/run-tune.err"
-        same "a batch of a scenario-1 tuning line is refused with 5 while the tuning round is open for no layer" "5" "$?"
+        same "a batch of a scenario-1 tuning line is refused with 5 by the layer gate" "5" "$?"
         absent "and names no refusal of the tuning round's approval" "no person has approved spend on the tuning round" "$scratch/run-tune.err"
-        present "and names the open rule" "the tuning round is open for no layer" "$scratch/run-tune.err"
+        present "and names the open rule" "the tuning round is open for" "$scratch/run-tune.err"
         same "and it wrote no harness version, no plan, no tree and no dry run" "no no no no" \
             "$([ -e "$scratch/run-tune-out/claude-version" ] && echo yes || echo no) $([ -e "$scratch/run-tune-out/lines" ] && echo yes || echo no) $([ -e "$scratch/run-tune-out/trees" ] && echo yes || echo no) $([ -e "$scratch/run-tune-out/leak-gate" ] && echo yes || echo no)"
         rm -rf "$scratch/run-tune-out"
