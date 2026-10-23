@@ -225,6 +225,20 @@ mod tests {
     }
 
     #[test]
+    fn truncation_cuts_the_tail_of_each_side_and_never_its_head() {
+        // Every piece differs, so a cut from the front gives other ids. Query
+        // `route naive , .` is 9 6 7 8 and document `head s` is 4 11: a budget
+        // of 5 cuts the last piece of the query, `.`, and keeps 9 6 7.
+        let (ids, _) = vocab().encode_pair("route naive , .", "head s", 8);
+        assert_eq!(ids, vec![2, 9, 6, 7, 3, 4, 11, 3]);
+        // Query `route` is 9, document `head s naive , .` is 4 11 6 7 8: a
+        // budget of 3 keeps the first two pieces of the document.
+        let (ids, types) = vocab().encode_pair("route", "head s naive , .", 6);
+        assert_eq!(ids, vec![2, 9, 3, 4, 11, 3]);
+        assert_eq!(types, vec![0, 0, 0, 1, 1, 1]);
+    }
+
+    #[test]
     fn a_vocabulary_without_the_special_tokens_is_refused() {
         assert!(WordPiece::parse("head\n").is_err());
     }
