@@ -360,6 +360,9 @@ printf '40' > "$CASE/root/t/a/sessions/s2/cost"
 run spent "$CASE/root"
 check "spent: two costs with no final newline add to 70, not 3040" out_has 70
 check "spent: and not 3040" sh -c "! grep -q 3040 '$CASE/out'"
+check "spent: the try's own sum is 70 in either order of the two files, not 3040 or 4030" out_has "tries: 70 of the tuning ceiling"
+run status "$CASE/root"
+check "status: the try's line sums the two files to 70" out_has "t spent=70 "
 cost "$CASE/root/t/a/sessions/s3" 'twelve'
 run spent "$CASE/root"
 check "spent: a cost that is not whole cents exits 2" code_is 2
