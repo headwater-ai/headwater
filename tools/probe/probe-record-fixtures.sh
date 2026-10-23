@@ -3015,11 +3015,21 @@ printf '%s\n' '{"type":"assistant","message":{"content":[{"type":"tool_use","id"
 printf '%s\n' '{"type":"result","subtype":"success","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
 STUB
     chmod +x "$scratch/bin/claude"
-    HEADWATER_PROBE_LOG_DIR="$scratch/bw/.probe-log" PATH="$scratch/bin:$PATH" \
+    rm -rf "$scratch/bw-tmp"
+    mkdir -p "$scratch/bw-tmp"
+    HEADWATER_PROBE_LOG_DIR="$scratch/bw/.probe-log" TMPDIR="$scratch/bw-tmp" PATH="$scratch/bin:$PATH" \
         sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-bash-write \
         --task-file "$scratch/task.md" --workspace "$scratch/bw" --baseline "$scratch/bw-base" \
         > "$scratch/bash-write.md" 2>"$scratch/bash-write.err"
     same "a session that writes through Bash records" "0" "$?"
+    # The comparison with the baseline writes into a directory of its own
+    # under `TMPDIR`, and the driver's one `EXIT` trap removes it with the
+    # other directories the run made (#1807), so no directory is left there.
+    # The stream of the session is a file, and it stays: the run prints its
+    # path.
+    same "and a recording compared with a baseline leaves no directory under TMPDIR" "" \
+        "$(find "$scratch/bw-tmp" -mindepth 1 -maxdepth 1 -type d 2>/dev/null)"
+    rm -rf "$scratch/bw-tmp"
     present "a file a Bash call wrote is produced" 'path: "docs/written-by-bash.md"' "$scratch/bash-write.md"
     present "a file a Bash call changed is produced" 'path: "docs/changed.md"' "$scratch/bash-write.md"
     present "a file written in a worktree of the workspace is produced" \

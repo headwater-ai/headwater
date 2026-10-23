@@ -512,22 +512,22 @@ step_copy_plan_identity() {
         ${repetitions:+--repetitions "$repetitions"} > "$1" 2>"$1.err"
 }
 
-# What this run made under `TMPDIR`, removed when it exits (#1807). The log
-# and configuration directories are removed only where this run made them: a
-# caller that names one keeps it, because `campaign.sh` names the
-# configuration directory and reads it after the session. Until #1807 nothing
-# removed either, and `/tmp` held 11,586 of them on 2026-10-18. The removal is
-# one `EXIT` trap, set once, so no later `trap` replaces it. A signal keeps its
-# old handling: it removes the plan, and the script goes on to its exit, where
-# this trap runs. The trap calls no `exit`, so the script's status stands.
+# The directories this run made under `TMPDIR`, removed when it exits
+# (#1807). The log and configuration directories are removed only where this
+# run made them: a caller that names one keeps it, because `campaign.sh` names
+# the configuration directory and reads it after the session. Until #1807
+# nothing removed either, and `/tmp` held 11,586 of them on 2026-10-18. The
+# stream of the session stays where `--raw` or `mktemp` put it, because the
+# run prints its path for a reader. The removal is one `EXIT` trap, set once,
+# so no later `trap` replaces it. A signal keeps its old handling: it removes
+# the plan, and the script goes on to its exit, where this trap runs. The trap
+# calls no `exit`, so the script's status stands.
 made_log=
 made_config=
 diffdir=
-egress=
 cleanup() {
     rm -f "$plan" "$plan.err"
     [ -n "$diffdir" ] && rm -rf "$diffdir"
-    [ -n "$egress" ] && rm -rf "$egress"
     [ -n "$made_log" ] && rm -rf "$made_log"
     [ -n "$made_config" ] && rm -rf "$made_config"
     return 0
