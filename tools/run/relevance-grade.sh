@@ -16,6 +16,7 @@
 #     sh tools/run/relevance-grade.sh third --seed <s>
 #     sh tools/run/relevance-grade.sh consensus
 #     sh tools/run/relevance-grade.sh grade
+#     sh tools/run/relevance-grade.sh score [--variant <command>] [--probe <id>]... [--only prompts|probes] [--walk <n>]
 #
 # The procedure, in order. Each step is a commit, so the order is on record.
 #
@@ -124,6 +125,46 @@
 #     stratum and no line that pools the strata, because the overlap
 #     stratum is a draw and the other two are whole.
 #
+#  8. `score` (#1839) scores a route offline, so that a change to routing is
+#     measured before a paid screen. It writes nothing and prints its lines.
+#     It has two parts, and `--only` runs one of them.
+#
+#     The graded prompts. For each prompt of `sample.tsv` it reads `task` and
+#     `tree_digest` from the log line the row names. It walks back from the
+#     row's time through at most `--walk <n>` (default 20) commits of the
+#     history and takes the newest whose tree has that digest, which is
+#     what `headwater neighbors` prints for a tree. It writes that tree once,
+#     with `git archive`, and routes every prompt on it there. A digest that
+#     no commit in the walk matches is counted as `tree not found` and never
+#     routed against another tree. A route that exits non-zero or prints no
+#     `pointers` list is counted as `route refused`. Both stay out of the
+#     denominator. A silent route is a result: it scores 0 and stays in. Of
+#     each route it keeps the top 3, seals each path as the record does, and
+#     joins it against `consensus.tsv` by prompt and path. Per stratum, and
+#     never pooled as a rate, it prints the prompts whose top 1 holds a
+#     document graded 2, the prompts whose top 3 holds one, and the pointers
+#     in the top 3 that have no consensus value, as `unknown`. An unknown
+#     pointer is never counted as relevant. One `all strata` line of each
+#     count follows, as a count.
+#
+#     The tuning probes. It reads the `tuning` and `held-out` sets from the
+#     tree's `.headwater/probe.yml` at run time, and names no probe itself.
+#     A `--probe <id>` in the held-out set, or a probe in both sets, exits 2
+#     before anything is explained, routed or printed, and so does an
+#     identifier outside the tuning set. The default is the whole tuning set.
+#     `headwater explain` names each probe's path and its `examines` targets,
+#     the route gets the text of its `## Task` section, and a hit is a
+#     target in the top 1 or the top 3. A probe that examines nothing is
+#     counted and left out of the denominator.
+#
+#     The variant. `--variant '<command>'` names a command that takes
+#     `--root <tree> --json <task>` and prints `pointers[].path` in rank
+#     order, the contract of `headwater route --json`. The baseline is
+#     `headwater route` of the engine at HEADWATER_BIN. Each line prints the
+#     variant's count beside the baseline's, over the same prompts and the
+#     same trees, and a prompt that either route refuses is refused for both.
+#     A budget is `--variant '<engine> route --budget <n>'`.
+#
 # The seal. A probe is sealed: outside `docs/`, only a fold and the three
 # files that state an answer may name one (#1384), and
 # `tools/probe/probe-record-fixtures.sh` holds that set. The routing paths
@@ -145,10 +186,20 @@
 #     HEADWATER_SHADOW_LOG_DIR     the shadow log, as shadow-mine.sh reads it
 #     HEADWATER_TRANSCRIPT_DIRS    the transcripts, as shadow-mine.sh reads them
 #     SHADOW_MINE_TOOL             shadow-mine.sh itself
+#     HEADWATER_BIN                the engine `score` routes with
+#                                  (default engine/target/dev-release/headwater)
+#     HEADWATER_RELEVANCE_TREE     the tree whose probes `score` reads and
+#                                  routes against (default this checkout)
+#     HEADWATER_RELEVANCE_MODEL    the model `neighbors` loads to print a
+#                                  tree digest (default <git common dir>/headwater-models)
+#
+# `score` keeps the embedding cache between trees under the packet
+# directory, in `score-cache/embeddings`, and nothing else.
 #
 # A non-zero exit is an argument or a missing input (2), no `jq` (3), a
 # score file that does not cover its batch (4), or at `grade`, a consensus
-# that does not cover the sample (4).
+# that does not cover the sample (4). At `score`, a held-out probe in the
+# input, a probe in both sets, or a probe outside the tuning set is 2.
 #
 # `sh tools/run/relevance-grade-fixtures.sh` holds it.
 
@@ -816,6 +867,258 @@ cmd_grade() {
     printf 'grade: %s lines to %s\n' "$(wc -l < "$work/grade" | tr -d ' ')" "$record/grade.txt"
 }
 
+# run_route <command> <tree> <task>: the paths the command offers, in rank
+# order, one per line, to $work/route.paths. The command is given
+# `--root <tree> --json <task>`, the contract of `headwater route --json`.
+# Status 1 when it exits non-zero or prints no `pointers` list. A silent
+# route prints an empty list, which is a result and not a refusal.
+run_route() {
+    sh -c "$1"' "$@"' sh --root "$2" --json "$3" < /dev/null > "$work/route.json" 2> "$work/route.err" || return 1
+    jq -r 'if (.pointers | type) == "array" then .pointers[] | (.path | tostring) else error("no pointers") end' \
+        "$work/route.json" > "$work/route.paths" 2> /dev/null
+}
+
+# digest_tree <tree>: the tree digest the shadow log records, which is what
+# `headwater neighbors` prints. The embedding cache is kept between trees,
+# outside the tree, because without it each tree pays for every vector.
+digest_tree() {
+    mkdir -p "$ecache" "$1/.headwater/cache/embeddings"
+    cp -R "$ecache/." "$1/.headwater/cache/embeddings/"
+    "$bin" neighbors --root "$1" --model "$model" --json x < /dev/null > "$work/neighbors.json" 2> /dev/null
+    cp -R "$1/.headwater/cache/embeddings/." "$ecache/"
+    jq -r '.tree_digest // empty' "$work/neighbors.json" 2> /dev/null
+}
+
+# extract <commit> <dir>: the commit's tree, written to the directory. No
+# checkout is switched.
+extract() {
+    rm -rf "$2"
+    mkdir -p "$2"
+    git -C "$history" archive "$1" | tar -x -C "$2"
+}
+
+# digest_of <commit>: the tree digest of the commit, computed once.
+digest_of() {
+    _d=$(awk -F '\t' -v c="$1" '$1 == c { print $2; exit }' "$work/digests.tsv")
+    if [ -z "$_d" ]; then
+        extract "$1" "$work/cand"
+        _d=$(digest_tree "$work/cand")
+        rm -rf "$work/cand"
+        printf '%s\t%s\n' "$1" "${_d:--}" >> "$work/digests.tsv"
+    fi
+    printf '%s' "$_d"
+}
+
+# resolve <digest> <at>: the newest commit of the history at or before the
+# time, within the walk, whose tree has the digest, or nothing. A commit
+# after the time is never a candidate, so a prompt is never routed against
+# a tree that did not exist when it was typed.
+resolve() {
+    git -C "$history" log --before="$2" -n "$walk" --format=%H HEAD > "$work/cands" 2> /dev/null || return 0
+    while IFS= read -r _c; do
+        if [ "$(digest_of "$_c")" = "$1" ]; then
+            printf '%s' "$_c"
+            return 0
+        fi
+    done < "$work/cands"
+}
+
+# probe_sets: the `sets` block of the tree's probe.yml as `set<TAB>id`.
+probe_sets() {
+    [ -f "$tree/.headwater/probe.yml" ] || die "no .headwater/probe.yml under $tree"
+    awk '
+        /^[^ \t#]/ { insets = ($0 ~ /^sets:[ \t]*$/); set = ""; next }
+        !insets || /^[ \t]*#/ { next }
+        /^  [A-Za-z0-9_-]+:[ \t]*$/ { set = $1; sub(/:$/, "", set); next }
+        /^    - / && set != "" { v = $0; sub(/^    - */, "", v); sub(/[ \t]+#.*$/, "", v); sub(/[ \t]+$/, "", v); print set "\t" v }
+    ' "$tree/.headwater/probe.yml" > "$work/sets.tsv"
+}
+
+cmd_score() {
+    variant=; only=both; walk=20
+    : > "$work/probe.in"
+    while [ $# -gt 0 ]; do
+        [ $# -ge 2 ] || usage
+        case $1 in
+            --variant) variant=$2 ;;
+            --only) only=$2 ;;
+            --walk) walk=$2 ;;
+            --probe) printf '%s\n' "$2" >> "$work/probe.in" ;;
+            *) usage ;;
+        esac
+        shift 2
+    done
+    case $only in both | prompts | probes) ;; *) usage ;; esac
+    case $walk in '' | *[!0-9]* | 0) usage ;; esac
+    if [ -s "$work/probe.in" ] && [ "$only" = prompts ]; then usage; fi
+    bin=${HEADWATER_BIN:-$here/engine/target/dev-release/headwater}
+    tree=${HEADWATER_RELEVANCE_TREE:-$here}
+    baseline="'$bin' route"
+    [ -x "$bin" ] || die "no engine at $bin; build it, or name one with HEADWATER_BIN"
+    labels=baseline
+    [ -z "$variant" ] || labels="baseline variant"
+
+    # The probes are checked before anything is routed, the prompts too: a
+    # held-out identifier in the input, or a probe in both sets, exits 2 and
+    # nothing is explained, routed or printed. The script names no probe; it
+    # reads the sets from the tree at run time.
+    if [ "$only" != prompts ]; then
+        probe_sets
+        awk -F '\t' '$1 == "tuning" { print $2 }' "$work/sets.tsv" > "$work/tuning"
+        awk -F '\t' '$1 == "held-out" { print $2 }' "$work/sets.tsv" > "$work/held"
+        [ -s "$work/tuning" ] || die "probe.yml declares no tuning set"
+        _both=$(grep -Fxf "$work/held" "$work/tuning" | head -n 1)
+        [ -z "$_both" ] || die "the probe $_both is in the tuning set and the held-out set, so nothing is routed"
+        [ -s "$work/probe.in" ] || cp "$work/tuning" "$work/probe.in"
+        while IFS= read -r _p; do
+            if grep -Fqx -- "$_p" "$work/held"; then die "the probe $_p is held out, so nothing is routed"; fi
+            grep -Fqx -- "$_p" "$work/tuning" || die "the probe $_p is not in the tuning set"
+        done < "$work/probe.in"
+    fi
+
+    printf 'score: baseline %s' "$baseline"
+    [ -z "$variant" ] || printf '; variant %s' "$variant"
+    printf '\n'
+    if [ "$only" != probes ]; then score_prompts; fi
+    if [ "$only" != prompts ]; then score_probes; fi
+}
+
+# score_prompts: each sampled prompt, routed at its tree, against the
+# consensus.
+score_prompts() {
+    [ -f "$record/sample.tsv" ] || die "need sample.tsv"
+    [ -f "$record/consensus.tsv" ] || die "need consensus.tsv"
+    need_log
+    need_packets
+    model=${HEADWATER_RELEVANCE_MODEL:-$(common_dir)/headwater-models}
+    ecache="$packets/score-cache/embeddings"
+    : > "$work/digests.tsv"
+    : > "$work/status.tsv"
+    : > "$work/plan.tsv"
+    : > "$work/offers.tsv"
+    # Each prompt's tree, found by its digest. A digest no commit matches is
+    # counted as not found and never routed.
+    tail -n +2 "$record/sample.tsv" > "$work/sample.rows"
+    while IFS="$tab" read -r _id _s _at _f _l _rest <&3; do
+        line_of "$_f" "$_l"
+        _td=$(jq -r '.tree_digest // empty' "$work/line.json" 2> /dev/null)
+        _c=
+        [ -z "$_td" ] || _c=$(resolve "$_td" "$_at")
+        if [ -z "$_c" ]; then
+            printf '%s\t%s\tnotfound\n' "$_id" "$_s" >> "$work/status.tsv"
+        else
+            printf '%s\t%s\t%s\t%s\t%s\n' "$_c" "$_id" "$_s" "$_f" "$_l" >> "$work/plan.tsv"
+        fi
+    done 3< "$work/sample.rows"
+    # Each tree is written once, and every prompt on it is routed there. The
+    # top 3 of each route is kept, sealed, and nothing past it.
+    LC_ALL=C sort -t "$tab" -k1,1 "$work/plan.tsv" > "$work/plan.sorted"
+    _cur=
+    while IFS="$tab" read -r _c _id _s _f _l <&3; do
+        if [ "$_c" != "$_cur" ]; then
+            extract "$_c" "$work/tree"
+            _cur=$_c
+        fi
+        line_of "$_f" "$_l"
+        _task=$(jq -r '.task' "$work/line.json")
+        _ok=1
+        : > "$work/prompt.offers"
+        for _lab in $labels; do
+            if [ "$_lab" = baseline ]; then _cmd=$baseline; else _cmd=$variant; fi
+            if ! run_route "$_cmd" "$work/tree" "$_task"; then _ok=0; break; fi
+            _r=0
+            head -n 3 "$work/route.paths" > "$work/route.top"
+            while IFS= read -r _p; do
+                _r=$((_r + 1))
+                printf '%s\t%s\t%s\t%s\n' "$_id" "$_lab" "$_r" "$(sealed "$_p")" >> "$work/prompt.offers"
+            done < "$work/route.top"
+        done
+        if [ "$_ok" = 1 ]; then
+            printf '%s\t%s\tscored\n' "$_id" "$_s" >> "$work/status.tsv"
+            cat "$work/prompt.offers" >> "$work/offers.tsv"
+        else
+            printf '%s\t%s\trefused\n' "$_id" "$_s" >> "$work/status.tsv"
+        fi
+    done 3< "$work/plan.sorted"
+    rm -rf "$work/tree"
+    LC_ALL=C awk -F '\t' -v labels="$labels" '
+        FILENAME == ARGV[1] { if (FNR > 1) v[$1 "\t" $2] = $3; next }
+        FILENAME == ARGV[2] { st[$1] = $2; n[$2]++; c[$2, $3]++; if ($3 == "scored") scored[$1] = 1; next }
+        {
+            id = $1; l = $2; s = st[id]; k = id "\t" $4
+            if (!(id in scored) || $3 > 3) next
+            ptr[s, l]++
+            if (!(k in v)) unk[s, l]++
+            else if (v[k] == 2) { if ($3 == 1) top1[id, l] = 1; top3[id, l] = 1 }
+        }
+        function line(what, s, a, d,   i, out) {
+            out = what ":"
+            for (i = 1; i <= nl; i++) out = out (i > 1 ? ";" : "") " " L[i] " " (a[s, L[i]] + 0) " of " d
+            print out
+        }
+        END {
+            nl = split(labels, L, " ")
+            for (id in scored) for (i = 1; i <= nl; i++) {
+                if (top1[id, L[i]]) h1[st[id], L[i]]++
+                if (top3[id, L[i]]) h3[st[id], L[i]]++
+            }
+            split("silent disjoint overlap", S, " ")
+            for (j = 1; j <= 3; j++) {
+                s = S[j]; k = c[s, "scored"] + 0; N = n[s] + 0
+                printf "stratum %s: %d prompts; tree not found %d of %d; route refused %d of %d; scored %d of %d\n", s, N, c[s, "notfound"], N, c[s, "refused"], N, k, N
+                line("stratum " s " top 1 at score 2", s, h1, k)
+                line("stratum " s " top 3 at score 2", s, h3, k)
+                out = "stratum " s " unknown in top 3:"
+                for (i = 1; i <= nl; i++) out = out (i > 1 ? ";" : "") " " L[i] " " (unk[s, L[i]] + 0) " of " (ptr[s, L[i]] + 0) " pointers"
+                print out
+                tot += k
+                for (i = 1; i <= nl; i++) { a1["all", L[i]] += h1[s, L[i]]; a3["all", L[i]] += h3[s, L[i]] }
+            }
+            line("all strata top 1 at score 2", "all", a1, tot)
+            line("all strata top 3 at score 2", "all", a3, tot)
+        }' "$record/consensus.tsv" "$work/status.tsv" "$work/offers.tsv"
+}
+
+# score_probes: each tuning probe's task, routed at the current tree,
+# against the documents the probe examines. The engine's `explain` names
+# the probe's path and its `examines` targets, so no held-out document is
+# opened here: every identifier was checked against the sets above.
+score_probes() {
+    _n=0; _t=0; _ref=0
+    : > "$work/probe.hits"
+    while IFS= read -r _p <&3; do
+        _n=$((_n + 1))
+        "$bin" explain --root "$tree" --json "$_p" < /dev/null > "$work/explain.json" 2> /dev/null || die "explain refused the probe $_p"
+        _path=$(jq -r '.path // empty' "$work/explain.json")
+        [ -n "$_path" ] && [ -f "$tree/$_path" ] || die "no document for the probe $_p"
+        jq -r '.related[]? | select(.relation == "examines" and .inbound == false) | (.pointer.path // .target)' "$work/explain.json" > "$work/targets"
+        [ -s "$work/targets" ] || continue
+        _t=$((_t + 1))
+        _task=$(awk '/^## Task[ \t]*$/ { f = 1; next } /^## / { f = 0 } f && NF { printf "%s%s", (o++ ? " " : ""), $0 }' "$tree/$_path" | sed 's/[ \t][ \t]*/ /g')
+        _ok=1
+        : > "$work/probe.one"
+        for _lab in $labels; do
+            if [ "$_lab" = baseline ]; then _cmd=$baseline; else _cmd=$variant; fi
+            if ! run_route "$_cmd" "$tree" "$_task"; then _ok=0; break; fi
+            head -n 3 "$work/route.paths" | awk -v l="$_lab" 'FILENAME == ARGV[1] { t[$0] = 1; next } ($0 in t) { print l "\t" FNR; exit }' "$work/targets" - >> "$work/probe.one"
+        done
+        if [ "$_ok" = 1 ]; then cat "$work/probe.one" >> "$work/probe.hits"; else _ref=$((_ref + 1)); fi
+    done 3< "$work/probe.in"
+    _k=$((_t - _ref))
+    printf 'probes tuning: %d probes; with a target %d of %d; route refused %d of %d; scored %d of %d\n' "$_n" "$_t" "$_n" "$_ref" "$_t" "$_k" "$_t"
+    awk -F '\t' -v labels="$labels" -v k="$_k" '
+        { if ($2 == 1) h1[$1]++; h3[$1]++ }
+        END {
+            nl = split(labels, L, " ")
+            o1 = "probes tuning top 1 at a target:"; o3 = "probes tuning top 3 at a target:"
+            for (i = 1; i <= nl; i++) {
+                o1 = o1 (i > 1 ? ";" : "") " " L[i] " " (h1[L[i]] + 0) " of " k
+                o3 = o3 (i > 1 ? ";" : "") " " L[i] " " (h3[L[i]] + 0) " of " k
+            }
+            print o1; print o3
+        }' "$work/probe.hits"
+}
+
 [ $# -ge 1 ] || usage
 sub=$1
 shift
@@ -827,5 +1130,6 @@ case $sub in
     third) cmd_third "$@" ;;
     consensus) cmd_consensus "$@" ;;
     grade) cmd_grade "$@" ;;
+    score) cmd_score "$@" ;;
     *) usage ;;
 esac

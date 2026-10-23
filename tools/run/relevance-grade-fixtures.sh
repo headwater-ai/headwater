@@ -756,7 +756,7 @@ offer base 'Fix the finding.' docs/a.md
 sc k10 --only probes --variant "$VARIANT"
 rc "k10: score of the tuning set exits 0" k10.score 0
 O10="$scratch/k10.score.out"
-has k10 "$O10" 'probes tuning: 2 probes; with a target 1 of 2'
+has k10 "$O10" 'probes tuning: 2 probes; with a target 1 of 2; route refused 0 of 1; scored 1 of 1'
 has k10 "$O10" 'probes tuning top 1 at a target: baseline 0 of 1; variant 1 of 1'
 has k10 "$O10" 'probes tuning top 3 at a target: baseline 1 of 1; variant 1 of 1'
 lacks k10 "$scratch/k10.log" 'HW-PROBE-h1'
@@ -770,7 +770,7 @@ check "k10: and routes and explains nothing, beside a tuning probe" '[ ! -s "$sc
 sc k10 --only probes --probe HW-PROBE-zz
 rc "k10: a probe in no tuning set exits 2" k10.score 2
 sc k10 --only probes --probe HW-PROBE-t1
-has "k10: one tuning probe" "$O10" 'probes tuning: 1 probes; with a target 1 of 1'
+has "k10: one tuning probe" "$O10" 'probes tuning: 1 probes; with a target 1 of 1; route refused 0 of 1; scored 1 of 1'
 cp -R "$scratch/k10" "$scratch/k10b"
 sed -i 's/^    - HW-PROBE-h1$/    - HW-PROBE-h1\n    - HW-PROBE-t2/' "$scratch/k10b/tree/.headwater/probe.yml"
 sc k10b --only probes
