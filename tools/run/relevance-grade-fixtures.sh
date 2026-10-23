@@ -762,6 +762,7 @@ has k10 "$O10" 'probes tuning top 3 at a target: baseline 1 of 1; variant 1 of 1
 lacks k10 "$scratch/k10.log" 'HW-PROBE-h1'
 sc k10 --only probes --probe HW-PROBE-h1
 rc "k10: a held-out probe in the input exits 2" k10.score 2
+has "k10: the refusal names the held-out set" "$scratch/k10.score.err" "relevance-grade: the probe HW-PROBE-h1 is held out, so nothing is routed"
 check "k10: and prints nothing on standard output" '[ ! -s "$scratch/k10.score.out" ]'
 check "k10: and routes and explains nothing" '[ ! -s "$scratch/k10.log" ]'
 sc k10 --only probes --probe HW-PROBE-t1 --probe HW-PROBE-h1
@@ -773,9 +774,18 @@ sc k10 --only probes --probe HW-PROBE-t1
 has "k10: one tuning probe" "$O10" 'probes tuning: 1 probes; with a target 1 of 1; route refused 0 of 1; scored 1 of 1'
 cp -R "$scratch/k10" "$scratch/k10b"
 sed -i 's/^    - HW-PROBE-h1$/    - HW-PROBE-h1\n    - HW-PROBE-t2/' "$scratch/k10b/tree/.headwater/probe.yml"
-sc k10b --only probes
+sc k10b --only probes --probe HW-PROBE-t1
 rc "k10: a tuning probe that is also held out exits 2" k10b.score 2
 check "k10: and the overlap routes and explains nothing" '[ ! -s "$scratch/k10b.log" ]'
+# k10c: a target at rank 4 is no hit in the top 3, and a variant that prints
+# no pointer list refuses the probe for both routes rather than scoring 0.
+cp -R "$scratch/k10" "$scratch/k10c"
+printf -- '---\nid: HW-PROBE-t1\n---\n\n## Task\n\nThe target is offered fourth.\n' > "$scratch/k10c/tree/docs/probes/t1.md"
+offer base 'The target is offered fourth.' docs/b.md docs/c.md docs/e.md docs/a.md
+sc k10c --only probes --probe HW-PROBE-t1
+has k10c "$scratch/k10c.score.out" 'probes tuning top 3 at a target: baseline 0 of 1'
+sc k10c --only probes --probe HW-PROBE-t1 --variant "echo not-json"
+has k10c "$scratch/k10c.score.out" 'probes tuning: 1 probes; with a target 1 of 1; route refused 1 of 1; scored 0 of 1'
 
 # k11: the tree. p1 is logged on 2026-09-05 at the tree `one`, which the
 # commit of 2026-09-01 holds. p2 is logged on 2026-09-12 at the tree `one`:

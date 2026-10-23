@@ -1046,7 +1046,7 @@ score_prompts() {
         FILENAME == ARGV[2] { st[$1] = $2; n[$2]++; c[$2, $3]++; if ($3 == "scored") scored[$1] = 1; next }
         {
             id = $1; l = $2; s = st[id]; k = id "\t" $4
-            if (!(id in scored) || $3 > 3) next
+            if (!(id in scored)) next
             ptr[s, l]++
             if (!(k in v)) unk[s, l]++
             else if (v[k] == 2) { if ($3 == 1) top1[id, l] = 1; top3[id, l] = 1 }
