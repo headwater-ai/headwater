@@ -13,7 +13,9 @@
 # The dry run computes each round's repetitions from the round's two rates,
 # with the one formula it states, over the probes of the round's set, five
 # in the tuning set and four in the held-out set: 14 for the screening round
-# and each tuning try, and 55 for the final round.
+# and 55 for the final round. A tuning line instead runs the counts the owner
+# ruled, rounded up over the five probes: 5 for a screened variant and 29
+# for a confirmation, by the stage in `HEADWATER_TUNING_STAGE` (#1838).
 # A line that leaves a probe out runs the others at the round's count, so a
 # probe on a line of its own runs as many sessions as a pooled one.
 #
@@ -34,12 +36,15 @@
 # **What it costs.** At the declared 50 cents a session:
 #
 #     round screening: 980 sessions, $490.00
-#     round tuning: 2940 sessions, $1470.00 (3 tries at most)
+#     round tuning: 21840 sessions, $10920.00 (4 rounds at most)
 #     round final: 3080 sessions, $1540.00
-#     total: 7000 sessions, $3500.00
+#     total: 25900 sessions, $12950.00
 #
 # At the 35.0 cents a session the campaign of 2026-10-03 realized, the total
-# is $2,450.00.
+# is $9,065.00. A tuning line is priced as up to 4 rounds of 390 sessions
+# each: 4 variants of 25, a confirmation of 145 and a best so far of 145
+# (#1838). That sum bounds every tuning line, and only the skills, the hook
+# and MCP are tuned, under the ceiling of $1,290.00.
 #
 # **The owner approved the screening and tuning rounds, and not the final
 # round.** On 2026-10-18 he approved $700 over every attempt of the screening
