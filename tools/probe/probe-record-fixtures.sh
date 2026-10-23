@@ -2413,10 +2413,20 @@ STUB
             'find / -name x 2>/dev/null' 1
         outside_case "and a search of the root by grep is the same try: \`grep -rn x /\` counts 1" \
             'grep -rn x /' 1
+        # Each program the rule reads as a walk of the root has a row of its
+        # own, so dropping one from the list turns its row red.
+        for walk in 'ls /' 'ls -la /' 'du -sh /' 'tree -L 1 /' 'stat /' 'rg -n x /' 'egrep -r x /'; do
+            outside_case "a search of the root by \`$walk\` counts 1" "$walk" 1
+        done
         outside_case "a slash that is an argument of tr is not a search of the root: \`tr / _\` counts 0" \
             'echo a/b | tr / _' 0
         outside_case "a path that opens with ~ is a try: \`cat ~/notes\` counts 1" \
             'cat ~/notes' 1
+        # A `~` right after `(` or `|`, with no space, is the same try.
+        outside_case "and so is one that opens a command substitution: \`out=\$(~/bin/x)\` counts 1" \
+            'out=$(~/bin/x)' 1
+        outside_case "and one right after a pipe: \`echo a|~/bin/y\` counts 1" \
+            'echo a|~/bin/y' 1
         outside_case "a regular-expression match operator is not a path: \`[[ x =~ y ]]\` counts 0" \
             '[[ x =~ y ]] && echo HEAD~1' 0
         outside_case "a path under a top-level directory of the host still counts: \`cat /home/x /root/y\` counts 2" \
