@@ -1,6 +1,6 @@
 ---
 name: headwater-authoring
-description: Write or revise a governed document in this repository, of any kind its taxonomy declares. Use when asked to record a finding, file a decision, or add a document to the corpus, and when `headwater new` refuses. It calls the engine for what the taxonomy decides and carries the judgment it leaves as hand entry.
+description: Write or revise a governed document in this repository, of any kind its taxonomy declares. Use when asked to record a finding, file a decision, or add a document to the corpus, and when `headwater new` refuses. It calls the engine for what the taxonomy decides and carries the judgment it leaves as hand entry. Its commands need the engine: load headwater-orient first for how to run it.
 ---
 
 # Headwater authoring
@@ -8,6 +8,10 @@ description: Write or revise a governed document in this repository, of any kind
 Every document in the corpus is typed by the taxonomy in `.headwater/taxonomy.lock`. The engine decides the placement, the identifier, the front matter and the section headings. What is left is judgment, and that is what this skill carries.
 
 Nothing here restates a rule the engine holds. If a sentence below disagrees with the engine, the engine is right and this file is stale.
+
+## Run the engine
+
+`headwater` may not be on PATH. Run `command -v headwater`, and if it prints nothing, run `ls */target/*/headwater` to find this repository's own build. Call the engine by the path that prints in every `headwater` command of this skill. Never fall back to grep because the bare name failed.
 
 ## Never write a new document by hand
 

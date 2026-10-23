@@ -1,6 +1,6 @@
 ---
 name: headwater-sweep
-description: Run a coherence sweep over a slice of this repository's corpus — read the documents and report contradictions, quiet supersessions, undefined concepts, audience mismatches and unwritten sections that no check can see. Use when asked to sweep the corpus, audit it for coherence, look for documents that disagree, or find out what the linter cannot. It reaches a model, which is you, and its output is a proposal a person accepts rather than a verdict anything gates on.
+description: Run a coherence sweep over a slice of this repository's corpus — read the documents and report contradictions, quiet supersessions, undefined concepts, audience mismatches and unwritten sections that no check can see. Use when asked to sweep the corpus, audit it for coherence, look for documents that disagree, or find out what the linter cannot. It reaches a model, which is you, and its output is a proposal a person accepts rather than a verdict anything gates on. Its commands need the engine: load headwater-orient first for how to run it.
 ---
 
 # Headwater coherence sweep
@@ -10,6 +10,10 @@ A sweep is the mechanism for what no rule reads. The check layer decides cohesio
 **You are the middle part of the mechanism, and there is no other.** The engine writes a briefing, you read the documents, and the engine reads your file back. Nothing in the engine reaches a model. If you do not read the documents, nothing does.
 
 **Nothing gates on your output, and that is deliberate.** `headwater sweep report` exits 0 whatever it finds, and a run of it can never fail a build. Your output is a proposal that a person reads and accepts. So do not soften a finding to be safe, and do not pad the list to look productive. A finding nobody can adjudicate in seconds is noise, and noise is what makes a team turn the whole sweep off.
+
+## Run the engine
+
+`headwater` may not be on PATH. Run `command -v headwater`, and if it prints nothing, run `ls */target/*/headwater` to find this repository's own build. Call the engine by the path that prints in every `headwater` command of this skill. Never fall back to grep because the bare name failed.
 
 ## The three steps
 
