@@ -11,6 +11,10 @@ A sweep is the mechanism for what no rule reads. The check layer decides cohesio
 
 **Nothing gates on your output, and that is deliberate.** `headwater sweep report` exits 0 whatever it finds, and a run of it can never fail a build. Your output is a proposal that a person reads and accepts. So do not soften a finding to be safe, and do not pad the list to look productive. A finding nobody can adjudicate in seconds is noise, and noise is what makes a team turn the whole sweep off.
 
+## Run the engine
+
+`headwater` may not be on PATH. Run `command -v headwater`, and if it prints nothing, run `ls */target/*/headwater` to find this repository's own build. Call the engine by the path that prints in every `headwater` command of this skill. Never fall back to grep because the bare name failed.
+
 ## The three steps
 
 ### 1. Ask for the briefing
