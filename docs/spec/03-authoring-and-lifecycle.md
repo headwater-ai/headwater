@@ -40,7 +40,7 @@ Four facets do structural work in the default taxonomy:
 
 Everything else — owner, scope, audience, domain — is a taxonomy choice.
 
-**The provenance block is the exception, and its shape belongs to the engine.** An earlier draft listed provenance beside the taxonomy choices above. A taxonomy chooses which facets a kind carries. It does not choose whether `accepted_by` exists, because that field is what enforces the boundary between a draft and an acceptance. It does not choose the [warrant](01-conceptual-model.md#warrant) vocabulary either, because four engine rules turn on the value.
+**The provenance block is the exception, and its shape belongs to the engine.** An earlier draft listed provenance beside the taxonomy choices above. A taxonomy chooses which facets a kind carries. It does not choose whether `accepted_by` exists, because that field is what enforces the boundary between a draft and an acceptance. It does not choose the [warrant](01-conceptual-model.md#warrant) vocabulary either, because five engine rules turn on the value.
 
 ## Lifecycle
 
