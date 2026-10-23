@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 4.16.3
+version: 4.17.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -1506,6 +1506,12 @@ obligations:
     class: cohesion
     prevents: process.traceability
     severity: medium
+  OB-WARRANT-5:
+    statement: "A document that stands at the initial state of its regime does not also declare that a person accepted it"
+    rationale: "The initial state says a document is not proposed as finished, and an accepted warrant says a person read it as finished. A reader who takes either value takes a claim the other contradicts, and a query that filters on the state hides a document somebody vouched for"
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
   OB-LIFE-7:
     statement: "A generated document does not receive two different states from the relations that write a state onto it"
     rationale: "A page can carry one state, so where two edges write two states the generator takes the first in a fixed order, and the page then states one of two answers with nothing that tells its author a second one was dropped"
@@ -1970,6 +1976,16 @@ controls:
         window: "one release of the taxonomy over an adopting corpus"
         threshold: "no false positive, because the rule reads two members of one provenance block and the pairing that spec 3 states between them"
         sample: "every finding of one run over the adopting corpus, adjudicated once"
+  CT-WARRANT-5:
+    mechanism: "check:warrant.acceptance.at_initial"
+    discharges:
+      - OB-WARRANT-5
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      permanently_advisory:
+        reasoning: "The remedy has two directions. Either the document is finished and its state should be the one it will hold once it merges, or nobody accepted it and the warrant should be asserted. The engine cannot tell which half is wrong, so a posture that stopped a merge would stop it on a question only an author can settle"
   CT-LIFE-7:
     mechanism: "check:lifecycle.state.set_twice"
     discharges:

@@ -227,6 +227,8 @@ checks
       document scope, one document and its front matter
     warrant.acceptance.unpaired
       document scope, one document and its front matter
+    warrant.acceptance.at_initial
+      document scope, one document and its front matter
     lifecycle.deletion.not_permitted
       corpus scope, every row of the census, and the version of each path the
         change named that no row of this corpus holds, and it is a barrier
@@ -307,6 +309,7 @@ checks
     lifecycle.state.not_admitted reaches no obligation, so it names none
     warrant.value.not_permitted reaches no obligation, so it names none
     warrant.acceptance.unpaired reaches no obligation, so it names none
+    warrant.acceptance.at_initial reaches no obligation, so it names none
     lifecycle.deletion.not_permitted reaches no obligation, so it names none
     coverage.document_unchecked reaches no obligation, so it names none
     control.observation.invalid reaches no obligation, so it names none
@@ -755,6 +758,7 @@ read set
   version lifecycle.state.not_admitted 1
   version warrant.value.not_permitted 1
   version warrant.acceptance.unpaired 1
+  version warrant.acceptance.at_initial 1
   version lifecycle.deletion.not_permitted 1
   version coverage.document_unchecked 1
   version obligation.disposition.not_one 1

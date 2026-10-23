@@ -584,6 +584,20 @@
               }
             },
             {
+              "id": "warrant.acceptance.at_initial",
+              "shortDescription": {
+                "text": "document scope, one document and its front matter"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
               "id": "lifecycle.deletion.not_permitted",
               "shortDescription": {
                 "text": "corpus scope, every row of the census, and the version of each path the change named that no row of this corpus holds, and it is a barrier"
@@ -1337,7 +1351,7 @@
         },
         {
           "ruleId": "coverage.document_unchecked",
-          "ruleIndex": 39,
+          "ruleIndex": 40,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3204,7 +3218,7 @@
         },
         {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 41,
+          "ruleIndex": 42,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3233,7 +3247,7 @@
         },
         {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 41,
+          "ruleIndex": 42,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3262,7 +3276,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 40,
+          "ruleIndex": 41,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3291,7 +3305,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 40,
+          "ruleIndex": 41,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3320,7 +3334,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 40,
+          "ruleIndex": 41,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3349,7 +3363,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 40,
+          "ruleIndex": 41,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3378,7 +3392,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 40,
+          "ruleIndex": 41,
           "level": "warning",
           "kind": "fail",
           "message": {
