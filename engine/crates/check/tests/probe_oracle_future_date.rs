@@ -40,7 +40,7 @@ use std::path::{Path, PathBuf};
 /// The rules of the pin, in the order of `RULES` when the probe was written.
 /// A session may change the length of the array, so the case reads `RULES`
 /// as a slice and compares it with this list.
-const PIN: [&str; 49] = [
+const PIN: [&str; 50] = [
     "facet.required.missing",
     "facet.value.not_permitted",
     "facet.value.blank",
@@ -79,6 +79,7 @@ const PIN: [&str; 49] = [
     "lifecycle.state.not_admitted",
     "warrant.value.not_permitted",
     "warrant.acceptance.unpaired",
+    "warrant.acceptance.at_initial",
     "lifecycle.deletion.not_permitted",
     "coverage.document_unchecked",
     "obligation.disposition.not_one",

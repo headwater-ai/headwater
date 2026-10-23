@@ -1975,6 +1975,9 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             // #1437).
             Grain::Document,
             Grain::Document,
+            // The state beside the warrant: one document's state facet and its
+            // provenance block, read together (#1832).
+            Grain::Document,
             // The third rule that reads a lifecycle regime, and the only one
             // whose subject is a document this corpus no longer holds. A
             // deleted document has no census row, so there is nothing smaller

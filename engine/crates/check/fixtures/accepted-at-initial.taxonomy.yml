@@ -1,0 +1,71 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the accepted-at-initial tree is checked against (#1832). The rule
+# reads a document that stands at the initial state of its regime and says a
+# person accepted it, and this shape is built so that a rule which read the
+# wrong thing for "initial" reports the wrong documents.
+#
+# - The state facet is `stage`, not `status`, so a rule that hard-codes the
+#   facet name reads nothing here.
+# - The regime `intake` opens at `proposed`, and `proposed` carries no role. The
+#   value with `role: initial` is `draft`, which `intake` reaches second. A rule
+#   that read the role, or the literal `draft`, reports `drafted-accepted.md`
+#   and passes `opened-accepted.md`, which is the reverse of the ruling.
+# - `plain` opens at `draft`, the common case, so a rule that never reported
+#   `draft` is caught by the memo.
+# - `withdrawn` is a state the vocabulary admits and `intake` never names, and
+#   `note` binds no regime.
+
+facets:
+  stage:
+    role: state
+    values:
+      - {value: draft,     role: initial}
+      - {value: proposed}
+      - {value: current,   role: live}
+      - {value: withdrawn, role: terminal-retained}
+  stage_since:
+    role: state_entered
+  summary:
+    role: scent
+
+regimes:
+  lifecycle:
+    intake:
+      initial: proposed
+      transitions: {proposed: [draft], draft: [current]}
+      retain_terminal: true
+    plain:
+      initial: draft
+      transitions: {draft: [current], current: [withdrawn]}
+      retain_terminal: true
+
+identifier_schemes:
+  note_id: {pattern: "NOTE-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+kinds:
+  record:
+    identifier: {scheme: note_id}
+    lifecycle: intake
+    facets: {require: [stage]}
+  memo:
+    identifier: {scheme: note_id}
+    lifecycle: plain
+    facets: {require: [stage]}
+  note:
+    identifier: {scheme: note_id}
+    facets: {require: [stage]}
+
+shelves:
+  records:
+    path: accepted-at-initial/records/**
+    homogeneous: true
+    kind: record
+  memos:
+    path: accepted-at-initial/memos/**
+    homogeneous: true
+    kind: memo
+  notes:
+    path: accepted-at-initial/notes/**
+    homogeneous: true
+    kind: note

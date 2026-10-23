@@ -138,6 +138,7 @@
 //! corpus-scoped check this engine carries, and spec 12 calls those the
 //! barriers.
 
+pub mod acceptance_state;
 pub mod adoption;
 pub mod anchors;
 pub mod basis;
@@ -238,7 +239,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 49] = [
+pub const RULES: [&str; 50] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
@@ -277,6 +278,7 @@ pub const RULES: [&str; 49] = [
     lifecycle_state::RULE,
     warrant::VALUE,
     warrant::UNPAIRED,
+    acceptance_state::RULE,
     retention::RULE,
     coverage::RULE,
     register::DISPOSITION,
@@ -672,6 +674,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::document_exports::<warrant::Pairing>(),
         ),
         (
+            acceptance_state::RULE,
+            scope::document_scope::<acceptance_state::AtInitial<'_>>(),
+            scope::document_version::<acceptance_state::AtInitial<'_>>(),
+            scope::document_exports::<acceptance_state::AtInitial<'_>>(),
+        ),
+        (
             retention::RULE,
             scope::corpus_scope::<retention::Retention<'_>>(),
             scope::corpus_version::<retention::Retention<'_>>(),
@@ -793,6 +801,9 @@ pub fn run(
     // no declaration. See [`warrant`].
     let closed = warrant::Closed;
     let pairing = warrant::Pairing;
+    // The state beside the warrant: a document at the initial state of its
+    // regime that says a person accepted it. See [`acceptance_state`].
+    let at_initial = acceptance_state::AtInitial::over(declared.shape);
     let identifiers =
         identifier::Identifier::over(declared.shape, &declared.config.identifier_facet);
     let placement = placement::Placement::over(declared.taxonomy);
@@ -907,6 +918,13 @@ pub fn run(
     instances.extend(scope::over_documents(&blank, census, graph, ctx, cache));
     instances.extend(scope::over_documents(&closed, census, graph, ctx, cache));
     instances.extend(scope::over_documents(&pairing, census, graph, ctx, cache));
+    instances.extend(scope::over_documents(
+        &at_initial,
+        census,
+        graph,
+        ctx,
+        cache,
+    ));
     instances.extend(scope::over_documents(
         &identifiers,
         census,

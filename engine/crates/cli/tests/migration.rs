@@ -659,15 +659,16 @@ fn addresses() -> String {
 /// carries two of them, `instance_validity` reports three documents, and the
 /// payload names those three and no others.
 ///
-/// The `BROKEN, 3 failed / 3 skipped` assertion is deliberately the loose
+/// The `BROKEN, 3 failed / 6 skipped` assertion is deliberately the loose
 /// half. A payload that named nothing would still meet it, and the
 /// accounting line below is where this case fails.
 ///
-/// Six instances and three documents. Three are `facet.value.not_permitted`
+/// Nine instances and three documents. Three are `facet.value.not_permitted`
 /// going from passed to failed, which is what "stopped validating" means. The
-/// other three are `lifecycle.state.not_admitted` going from passed to
-/// *skipped*, because the value the document carries is outside the
-/// candidate's vocabulary and that rule defers to the one above it. A skip is
+/// other six are `lifecycle.state.not_admitted` and
+/// `warrant.acceptance.at_initial` going from passed to *skipped*, because the
+/// value the document carries is outside the candidate's vocabulary and both
+/// rules defer to the one above them (#1832). A skip is
 /// a rule that declined to decide rather than a document that broke, and the
 /// two are counted apart in the printed word for that reason.
 /// [#221](https://github.com/headwater-ai/headwater/issues/221) held the
@@ -684,17 +685,17 @@ fn the_payload_names_every_document_whose_validity_moved() {
     assert_eq!(ran.code, Some(0), "{ran:?}");
     assert_eq!(
         ran.dimension("instance_validity"),
-        "BROKEN, 3 failed / 3 skipped"
+        "BROKEN, 3 failed / 6 skipped"
     );
-    // The same six breaks, read by the dimension that is a superset of the one
+    // The same nine breaks, read by the dimension that is a superset of the one
     // above, and the two lines are adjacent in the report. `consequence` said
     // `BROKEN, 6 of them` here until #396: one number over three failures and
     // three hand-offs, printed directly under a line that had already told
     // them apart.
     assert_eq!(
         ran.dimension("consequence"),
-        "BROKEN, 3 failed / 3 skipped",
-        "the superset dimension tells the same six apart: {ran:?}"
+        "BROKEN, 3 failed / 6 skipped",
+        "the superset dimension tells the same nine apart: {ran:?}"
     );
     assert!(
         ran.out.contains(
@@ -756,7 +757,7 @@ fn a_document_no_step_names_is_named() {
     assert_eq!(ran.code, Some(0), "{ran:?}");
     assert_eq!(
         ran.dimension("instance_validity"),
-        "BROKEN, 3 failed / 3 skipped",
+        "BROKEN, 3 failed / 6 skipped",
         "the corpus and the candidate are the ones the case above measured: {ran:?}"
     );
     assert!(
@@ -1723,7 +1724,7 @@ fn an_overlay_address_the_new_base_still_declares_is_preserved() {
     );
     assert_eq!(
         ran.dimension("instance_validity"),
-        "BROKEN, 3 failed / 3 skipped",
+        "BROKEN, 3 failed / 6 skipped",
         "and the run did measure something, or this case proves nothing: {ran:?}"
     );
 }
