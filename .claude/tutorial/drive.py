@@ -205,8 +205,52 @@ def number_word(n):
 
 
 def prose_counts_match_blocks(text, blocks):
-    """Stub: the claim before its parser exists (#1757)."""
-    return True, 'stub'
+    """The paragraph after step 9 that opens `The corpus did not grow.` repeats
+    numbers that two output blocks show, and nothing else read it (#1757): it
+    was moved by hand from 7 to 21 to 8 to 22, then to 8 to 23 when #1832 added
+    a rule.
+
+    The paragraph must state the jump as `from <a> to <b>`, where `a` is the
+    count in step 7's coverage block and `b` the count in step 9's, and it must
+    state the size of the jump, `b - a`, as a number word or in digits. Every
+    other number it states, in either form, is a claim no block holds, so it
+    fails too. The paragraph is found outside fences only, and exactly once.
+    Returns `(ok, detail)`.
+    """
+    outside, inside = [], False
+    for line in text.split('\n'):
+        if FENCE_MARKER.match(line.strip()):
+            inside = not inside
+        elif not inside:
+            outside.append(line)
+    found = [line for line in outside if line.startswith(JUMP_PARAGRAPH)]
+    if len(found) != 1:
+        return False, f'expected one paragraph opening {JUMP_PARAGRAPH!r} and found {len(found)}'
+    paragraph = found[0]
+    counts = []
+    for index in (JUMP_FROM_BLOCK, JUMP_TO_BLOCK):
+        match = BLOCK_COUNT.search(blocks[index]) if index < len(blocks) else None
+        if not match:
+            return False, f'block {index} states no "<n> check instances" count'
+        counts.append(int(match.group(1)))
+    a, b = counts
+    size = b - a
+    if not 0 <= size < 100:
+        return False, f'the blocks state {a} and {b}, a jump this check cannot name'
+    if f'from {a} to {b}' not in paragraph:
+        return False, f'the blocks state {a} then {b}, and the paragraph does not say "from {a} to {b}"'
+    words = {number_word(n): n for n in range(100)}
+    stated = [int(token) if token.isdigit() else words[token]
+              for token in re.findall(r'\d+|[a-z]+(?:-[a-z]+)?', paragraph.lower())
+              if token.isdigit() or token in words]
+    after_jump = stated[stated.index(b) + 1:] if b in stated else []
+    if size not in after_jump:
+        return False, (f'the blocks state a jump of {size} ({number_word(size)}), '
+                       f'and the paragraph states no such number after "from {a} to {b}"')
+    unheld = [n for n in stated if n not in (a, b, size)]
+    if unheld:
+        return False, f'the paragraph states {unheld}, which no block holds; it may state only {a}, {b} and {size}'
+    return True, f'the paragraph states from {a} to {b} and a jump of {size}, as blocks {JUMP_FROM_BLOCK} and {JUMP_TO_BLOCK} show'
 
 
 def stale_prose_counts_are_refused(text, blocks):
