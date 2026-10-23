@@ -1,6 +1,6 @@
 ---
 name: headwater-orient
-description: Find what this corpus already says about a subject, before reading any of it. Use at the start of a task that names a document, a decision, an obligation or a concept of this repository, when a question is about what was already decided, and whenever the alternative is a search across the corpus or reading a long document end to end. It answers from the graph the engine already built, and it never replaces reading the document it finds.
+description: Load first, before your first Read, Grep, Glob, Edit or Bash, on every task in this repository: a question about what it says or decided, a change to code or a script, a move or rename of files, or an edit to a document. Load it even when the task already gives the exact path, because a named document can be superseded and a file you are told to change can be governed by a contract that forbids the change. It shows how to run the engine here and the one command that names the documents governing the paths you will read or change.
 ---
 
 # Orientation
@@ -9,11 +9,25 @@ The corpus is typed, and the engine holds a graph over it. So the cost of findin
 
 This skill is the first thing in a task, and it is finished as soon as the right document is open. It finds; it does not read for you.
 
+## Run the engine
+
+`headwater` may not be on PATH. Run `command -v headwater`, and if it prints nothing, run `ls */target/*/headwater` to find this repository's own build. Call the engine by the path that prints in every `headwater` command of this skill. Never fall back to grep because the bare name failed.
+
+## Before you change a file
+
+Run `headwater route "<the task, with every path it names>" --root .` before the first edit. Open each document whose line says `governs <path>` or names the thing you are changing. If that document rules the change out, say so instead of making it.
+
+## Before you answer from a record
+
+Run `headwater explain <path or identifier> --root .` on the record. A `superseded_by` edge, or a line that says another document governs the reading, means that the answer is in the other record. Open that record.
+
+## Before a procedure
+
+For a move, a rename, a publish or a release, list the how-to shelf that `.headwater/corpus.json` names. Open the guide for the operation, whatever word its title uses for it, and follow it.
+
 ## Start with what a hook already handed you
 
-Where a hook of this repository runs `headwater route` on every prompt, the documents it matched are printed above the first tool call. Those pointers are the answer to "where does this subject live", already paid for. Read them before searching for anything.
-
-A route that matched nothing prints nothing, which is a result rather than a failure. Silence means the subject is not one a declared purpose answers, and a search is then reasonable.
+Where a hook of this repository runs `headwater route` on every prompt, read the documents it printed above the first tool call before you search for anything.
 
 ## The three verbs
 
@@ -47,4 +61,4 @@ The test is whether you could name the file the answer is in. If yes, `explain` 
 ## What orientation does not settle
 
 `explain` reports the warrant of a document and never whether it is right. Contradictions between documents that each pass every rule are what a coherence sweep is for, and the `headwater-sweep` skill carries it. Whether the corpus owes something that nobody has written is a question for the same sweep, and for `headwater check` when a rule already reads it.
-<!-- installed by headwater init --harness, digest sha256:3f0287830cfecbc34a888ac8e909b6b4b6f20bfbac764bd47c6d1be6468f6458 -->
+<!-- installed by headwater init --harness, digest sha256:6f58d2bc601c7ec39a222506fe3f34f6e6fda235d49733937408c7716878405f -->

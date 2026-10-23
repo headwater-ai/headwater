@@ -9,6 +9,10 @@ Every document in the corpus is typed by the taxonomy in `.headwater/taxonomy.lo
 
 Nothing here restates a rule the engine holds. If a sentence below disagrees with the engine, the engine is right and this file is stale.
 
+## Run the engine
+
+`headwater` may not be on PATH. Run `command -v headwater`, and if it prints nothing, run `ls */target/*/headwater` to find this repository's own build. Call the engine by the path that prints in every `headwater` command of this skill. Never fall back to grep because the bare name failed.
+
 ## Never write a new document by hand
 
 Run the verb:
