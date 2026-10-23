@@ -1320,11 +1320,63 @@ check "route: an accepted engine change lets a screen plan" code_is 0
 run plan "$CASE/root" confirm docs-r2-v1
 check "route: and refuses a confirmation with 4" code_is 4
 check "route: naming the path" out_has "route: engine/crates/x/src/lib.rs"
-check "route: and the re-measure it needs" err_has "Re-measure scenario 0 at 145 sessions"
-echo '0 2d212a269a111fddb7af5b2b75ebaf2f9ab32f29' > "$CASE/root/base-pin"
+check "route: and the re-measure it needs" err_has "sh tools/probe/try.sh launch $CASE/root base"
+
+# ------ base: a route change waits for a measured base at 145 (#1838)
+
+# The decisive case of the base stage. A pin written by hand is not a
+# measurement, so it does not clear the route gate: only a `base` event at the
+# confirmation's count does, and `result` of a `base` try writes both.
+head_sha=$(git -C "$fix/repo" rev-parse HEAD)
+echo "0 $head_sha" > "$CASE/root/base-pin"
 cp "$CASE/tree-head/engine/crates/x/src/lib.rs" "$CASE/tree-pin/engine/crates/x/src/lib.rs"
 run plan "$CASE/root" confirm docs-r2-v1
-check "route: a base re-measured at the engine's source lets the confirmation plan" code_is 0
+check "base: a pin written by hand at the engine's source does not let the confirmation plan" code_is 4
+check "base: and says no base is measured at that pin" err_has "no base event at 145 sessions"
+check "base: and names the launch that measures one" err_has "sh tools/probe/try.sh launch $CASE/root base"
+run launch "$CASE/root" base
+await_calls 1
+check "base: launch base starts the driver" code_is 0
+check "base: in base-1" [ -d "$CASE/root/base-1" ]
+check "base: on the base scenario's tuning line" sh -c "[ \"\$(cat '$CASE/root/base-1/spec')\" = 'additive scenario-0 tuning' ]"
+check "base: with the stage base" sh -c "[ \"\$(cat '$CASE/root/base-1/stage')\" = base ]"
+check "base: and the driver reads the confirmation's count" grep -q ' stage=confirm$' "$CASE/calls"
+rm -f "$CASE/root/base-1/driver.pid"
+checkout=$CASE/checkout
+screening additive-screening-scenario-0 additive screening scenario-0
+finished_try base-1 145 base 145
+echo 'additive scenario-0 tuning' > "$CASE/root/base-1/spec"
+cost "$CASE/root/base-1/a/sessions/L1-p1-r1" 100
+cost "$CASE/root/base-1/a/sessions/L1-p1-r2" 45
+echo 'pooled: 70/145 against 33/72, +2.4 points [-11.0, +15.8]' > "$CASE/pooled-base"
+run result "$CASE/root" base-1
+check "base: result of a base exits 0" code_is 0
+check "base: and keeps nothing" out_has "keep: never"
+check "base: it appends a base event at 145 sessions at the launch's pin" \
+    ledger_has "\"event\": \"base\", \"try\": \"base-1\", \"scenario\": \"0\", \"pin\": \"$head_sha\", \"count\": 145"
+check "base: and writes the base-pin itself" sh -c "[ \"\$(cat '$CASE/root/base-pin')\" = '0 $head_sha' ]"
+check "base: its transcript says it is a base re-measure" grep -q '^title: "Additive tuning of .*, base re-measure of scenario 0"$' "$CASE/checkout/$(cat "$CASE/root/base-1/transcript")"
+check "base: and its base row is against the screening transcript it replaces" grep -q 'probe compare .*base-re-measure-of-scenario-0\.md .*additive-screening-scenario-0\.md$' "$CASE/engine.log"
+checkout=$fix/repo
+run plan "$CASE/root" confirm docs-r2-v1
+check "base: with the base measured at the engine's source, the confirmation plans" code_is 0
+run plan "$CASE/root" base
+check "base: a second base at a commit that has one exits 6" code_is 6
+check "base: and names the measurement" err_has "is measured at $head_sha already"
+check "base: and builds no tree" no_trees
+# A screen after the re-measure reads its base row against the new base.
+checkout=$CASE/checkout
+finished_try docs-r2-v2 2452 "screen 2" 25
+echo 'pooled: 12/25 against 70/145, +0.0 points [-1.0, +1.0]' > "$CASE/pooled-keep"
+run result "$CASE/root" docs-r2-v2
+check "base: a screen after the re-measure is recorded" code_is 0
+check "base: and its base row is against the re-measured base, not the screening transcript" grep -q 'probe compare .*variant-2-scenario-1\.md .*base-re-measure-of-scenario-0\.md$' "$CASE/engine.log"
+checkout=$fix/repo
+echo 'pub fn x() { routed_again() }' > "$CASE/tree-head/engine/crates/x/src/lib.rs"
+run plan "$CASE/root" confirm docs-r2-v1
+check "base: a second engine change after the re-measure refuses the confirmation with 4 again" code_is 4
+run plan "$CASE/root" screen 3
+check "base: and a screen, whose acceptance named the old pin, is stale by today's gate" code_is 4
 
 # ----------------------------------------------------- rounds: order (#1838)
 
