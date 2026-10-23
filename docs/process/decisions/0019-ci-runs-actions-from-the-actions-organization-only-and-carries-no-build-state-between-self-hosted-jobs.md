@@ -3,7 +3,7 @@ id: HW-PD-0019
 status: current
 status_since: 2026-09-27
 summary: "Only actions from GitHub's own organization run in ci.yml. No self-hosted job inherits engine/target from another, and sccache makes a cold target cheap."
-last_verified: 2026-10-03
+last_verified: 2026-10-23
 title: "CI runs actions from the actions organization only, and carries no build state between self-hosted jobs"
 provenance:
   warrant: asserted
@@ -30,6 +30,8 @@ Before this record, the reasons lived in comments of `.github/workflows/ci.yml` 
 **No carried build state.** No self-hosted job carries `engine/target` from an earlier job. Two attempts broke `actions/checkout` and then `.githooks/fixtures.sh`. sccache makes a cold target directory cheap.
 
 **A step reads the runner, not a guess.** A step that must act differently on the two runners reads `runner.environment`, which is `self-hosted` on the container. Each `pip install --user` passes `--break-system-packages`, which the Python of the self-hosted image needs under PEP 668. pip accepts the flag where PEP 668 does not apply.
+
+**Reaffirmed on 2026-10-23 with the write cost weighed ([#1617](https://github.com/headwater-ai/headwater/issues/1617)).** The self-hosted pool ran 1,306 jobs in six days, and one `Engine tests` debug directory reached 7.5 GB. A job container wrote a mean of 5.07 GB to the NVMe over 737 containers. Containers wrote about half of all NVMe bytes, which is about 0.3 TB a day of 0.6 TB. A persistent per-slot target might halve that. The drive would then last about 3.5 years, not 2.5 to 3. The owner ruled that this gain does not justify the stale-rlib failure of [#849](https://github.com/headwater-ai/headwater/issues/849) on the runner that gates every merge. The rule stays. A target that lives in memory and ends with its container carries no state, so it does not break this rule. It needs its own measurement first.
 
 **The runner itself is not here.** The self-hosted containers are provisioned outside this repository. This record states nothing about their lifecycle, their threat model or their incident runbook.
 
