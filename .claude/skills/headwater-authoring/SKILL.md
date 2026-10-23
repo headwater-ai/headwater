@@ -1,6 +1,6 @@
 ---
 name: headwater-authoring
-description: Write or revise a governed document in this repository, of any kind its taxonomy declares. Use when asked to record a finding, file a decision, or add a document to the corpus, and when `headwater new` refuses. It calls the engine for what the taxonomy decides and carries the judgment it leaves as hand entry.
+description: Use before you change any file in this repository, whether code, script, configuration or document, and before you add or edit front matter or a relation. A change here usually owes an edit to a second document the task does not name, and this skill finds that document and runs the check that proves the change complete.
 ---
 
 # Headwater authoring
@@ -8,6 +8,22 @@ description: Write or revise a governed document in this repository, of any kind
 Every document in the corpus is typed by the taxonomy in `.headwater/taxonomy.lock`. The engine decides the placement, the identifier, the front matter and the section headings. What is left is judgment, and that is what this skill carries.
 
 Nothing here restates a rule the engine holds. If a sentence below disagrees with the engine, the engine is right and this file is stale.
+
+## Run the engine
+
+`headwater` may not be on PATH. Run `command -v headwater`, and if it prints nothing, run `ls */target/*/headwater` to find this repository's own build. Call the engine by the path that prints in every `headwater` command of this skill. Never fall back to grep because the bare name failed.
+
+## Before you change a file
+
+Run `headwater route "<the task, with every path it names>" --root .` before the first edit, and open each document that governs one of those paths. Then make the change, and run `headwater check --fix` and `headwater check` as the next section says.
+
+## Finish with the engine
+
+    headwater check
+
+Errors must reach zero before a commit. `headwater check --fix` writes the corrections the engine derives without judgment — a British spelling, a contraction whose expansion is one word, a retired term that names a replacement, and a missing reciprocal half — and it leaves every finding whose remedy is a rewrite. Read the diff.
+
+**An edit to a document that a probe reads moves no committed result.** A result pins only what its transcript read, so it keeps its bytes and every verdict. The next `headwater generate` names each result whose read set moved, and `headwater probe stale` names the results the edit reached. Neither one fails for it.
 
 ## Never write a new document by hand
 
@@ -64,12 +80,4 @@ These are the behaviors that pressure to be helpful breaks first, so they are st
 `Unnameable` means the kind names no identifier scheme and a relation may name a document of it, so the document would be neither end of any edge. Its message prints the two overlay lines that declare a scheme for the kind. `FacetUndeterminable` means a required facet declares a closed value set, an integer or a date that no role determines, and a prompt in that field is a value the checks refuse.
 
 Neither is worked around. Hand both to the `headwater-taxonomy` skill, which owns the declaration. The one exception is a closed facet whose value is the author's to choose: pass `--facet <name>=<value>`, after you read what each value means.
-
-## Finish with the engine
-
-    headwater check
-
-Errors must reach zero before a commit. `headwater check --fix` writes the corrections the engine derives without judgment — a British spelling, a contraction whose expansion is one word, a retired term that names a replacement, and a missing reciprocal half — and it leaves every finding whose remedy is a rewrite. Read the diff.
-
-**An edit to a document that a probe reads moves no committed result.** A result pins only what its transcript read, so it keeps its bytes and every verdict. The next `headwater generate` names each result whose read set moved, and `headwater probe stale` names the results the edit reached. Neither one fails for it.
-<!-- installed by headwater init --harness, digest sha256:fe74869a211cd3edf73c0513d679ac0a213f2106998c98a49681230b64975cf6 -->
+<!-- installed by headwater init --harness, digest sha256:90ef8a8fc3e9235cbbdc23eed2eb94863c82f8d4f9fd8e369a9415bba6226a8e -->

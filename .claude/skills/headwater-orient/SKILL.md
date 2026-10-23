@@ -1,6 +1,6 @@
 ---
 name: headwater-orient
-description: Find what this corpus already says about a subject, before reading any of it. Use at the start of a task that names a document, a decision, an obligation or a concept of this repository, when a question is about what was already decided, and whenever the alternative is a search across the corpus or reading a long document end to end. It answers from the graph the engine already built, and it never replaces reading the document it finds.
+description: Use when a task asks what a document of this repository says or what was decided, including when the task gives the exact path to read: a record can be superseded, and one command finds the one in force. Also use whenever the alternative is a grep across the corpus.
 ---
 
 # Orientation
@@ -9,11 +9,17 @@ The corpus is typed, and the engine holds a graph over it. So the cost of findin
 
 This skill is the first thing in a task, and it is finished as soon as the right document is open. It finds; it does not read for you.
 
+## Run the engine
+
+`headwater` may not be on PATH. Run `command -v headwater`, and if it prints nothing, run `ls */target/*/headwater` to find this repository's own build. Call the engine by the path that prints in every `headwater` command of this skill. Never fall back to grep because the bare name failed.
+
+## First command
+
+When the task gives a path, run `headwater explain <that path> --root .` before you read the file. A `superseded_by` edge means that the answer is in the record that supersedes it, so open that record. When the task gives no path, run `headwater route "<the task>" --root .`.
+
 ## Start with what a hook already handed you
 
-Where a hook of this repository runs `headwater route` on every prompt, the documents it matched are printed above the first tool call. Those pointers are the answer to "where does this subject live", already paid for. Read them before searching for anything.
-
-A route that matched nothing prints nothing, which is a result rather than a failure. Silence means the subject is not one a declared purpose answers, and a search is then reasonable.
+Where a hook of this repository runs `headwater route` on every prompt, read the documents it printed above the first tool call before you search for anything.
 
 ## The three verbs
 
@@ -47,4 +53,4 @@ The test is whether you could name the file the answer is in. If yes, `explain` 
 ## What orientation does not settle
 
 `explain` reports the warrant of a document and never whether it is right. Contradictions between documents that each pass every rule are what a coherence sweep is for, and the `headwater-sweep` skill carries it. Whether the corpus owes something that nobody has written is a question for the same sweep, and for `headwater check` when a rule already reads it.
-<!-- installed by headwater init --harness, digest sha256:3f0287830cfecbc34a888ac8e909b6b4b6f20bfbac764bd47c6d1be6468f6458 -->
+<!-- installed by headwater init --harness, digest sha256:6eb39c889d7ada1db39b49ec4586ff2cd0db89d22a41a97b40302f5e1284f713 -->
