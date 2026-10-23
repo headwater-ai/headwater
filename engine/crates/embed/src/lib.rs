@@ -890,11 +890,11 @@ mod tests {
         // The model card prints [ 8.607138 -4.320078] for these two pairs,
         // computed by sentence-transformers in PyTorch, not by this crate.
         assert!(
-            (relevant - 8.607).abs() < 0.05,
+            (relevant - 8.607_138).abs() < 0.001,
             "relevant {relevant}, the model card says 8.607"
         );
         assert!(
-            (unrelated + 4.320).abs() < 0.05,
+            (unrelated + 4.320_078).abs() < 0.001,
             "unrelated {unrelated}, the model card says -4.320"
         );
     }
