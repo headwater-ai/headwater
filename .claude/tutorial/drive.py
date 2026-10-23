@@ -283,6 +283,12 @@ def stale_prose_counts_are_refused(text, blocks):
     ok, detail = prose_counts_match_blocks(text, blocks)
     if not ok:
         return False, f'the prose claim refused a paragraph written from the blocks: {detail}'
+    # The paragraph is the one line that opens with the phrase; a line that
+    # quotes the phrase after other text is not a second jump paragraph.
+    quoted = text + f'\n\n- A reader may quote "{JUMP_PARAGRAPH}" in another paragraph.'
+    ok, detail = prose_counts_match_blocks(quoted, blocks)
+    if not ok:
+        return False, f'the prose claim counted a line that quotes the opening mid-line: {detail}'
     stale = {
         'the paragraph before #1832 (the jump ends one short, and the word follows it)':
             current.replace(f'from {a} to {b}', f'from {a} to {b - 1}')
