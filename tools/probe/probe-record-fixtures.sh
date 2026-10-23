@@ -2396,8 +2396,10 @@ STUB
                 --task-file "$scratch/task.md" --workspace "$conf/outside-ws" \
                 >"$scratch/outside.md" 2>"$scratch/outside.err"
             if [ "$3" = 1 ]; then unit=path; else unit=paths; fi
-            present "$1" \
-                "The session named $3 $unit outside its workspace that the confinement does not bind" "$scratch/outside.md"
+            # The sentence is matched whole, and the count is compared on its
+            # own, so a failure names the count the transcript gave.
+            same "$1" "The session named $3 $unit outside its workspace that the confinement does not bind" \
+                "$(grep -o '^The session named [0-9]* paths\{0,1\} outside its workspace that the confinement does not bind' "$scratch/outside.md")"
         }
         outside_case "a grep filter's pattern is not a path: \`grep -v /site/\` counts 0" \
             'grep -rn x . | grep -v /site/' 0
