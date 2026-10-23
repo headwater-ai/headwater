@@ -621,5 +621,215 @@ rg k8 grade
 rc "k8: grade exits 0 on the committed record" k8.grade 0
 check "k8: the committed grade.txt is what grade prints on the committed record" 'cmp -s "$scratch/k8/rec/grade.txt" "$root/tools/run/relevance-grade/grade.txt"'
 
+# k9 to k12: `score`. It routes each sampled prompt's logged task at the
+# commit whose tree has the logged digest, and scores the top 1 and the top 3
+# against the consensus. The engine is a stub: `neighbors` prints the digest
+# of the tree's `tree.txt`, `route` offers the paths planted for the task and
+# logs each call, and `explain` prints the JSON planted for an identifier. The
+# planted history has two commits, one on 2026-09-01 with the tree `one` and
+# one on 2026-09-10 with the tree `two`.
+SH="$scratch/score-hist"
+mkdir -p "$SH"
+git -C "$SH" init -q
+printf 'one\n' > "$SH/tree.txt"
+git -C "$SH" add tree.txt
+GIT_COMMITTER_DATE=2026-09-01T00:00:00Z git -C "$SH" -c user.name=f -c user.email=f@f commit -q --date 2026-09-01T00:00:00Z -m one
+printf 'two\n' > "$SH/tree.txt"
+GIT_COMMITTER_DATE=2026-09-10T00:00:00Z git -C "$SH" -c user.name=f -c user.email=f@f commit -q --date 2026-09-10T00:00:00Z -am two
+T_ONE="sha256:$(printf 'one\n' | sha256sum | cut -d ' ' -f 1)"
+T_TWO="sha256:$(printf 'two\n' | sha256sum | cut -d ' ' -f 1)"
+SB="$scratch/score-bin"
+mkdir -p "$SB" "$scratch/offers/base" "$scratch/offers/variant" "$scratch/explain"
+cat > "$SB/headwater" <<'STUB'
+#!/bin/sh
+verb=$1; shift
+root=; task=
+while [ $# -gt 0 ]; do
+    case $1 in
+        --root) root=$2; shift 2 ;;
+        --model | --budget) shift 2 ;;
+        --json) shift ;;
+        *) task=$1; shift ;;
+    esac
+done
+case $verb in
+    neighbors) printf '{"tree_digest":"sha256:%s"}\n' "$(sha256sum < "$root/tree.txt" | cut -d ' ' -f 1)" ;;
+    explain) printf 'explain %s\n' "$task" >> "$STUB_LOG"; cat "$STUB_EXPLAIN/$task.json" ;;
+    route)
+        printf 'route %s %s\n' "$(cat "$root/tree.txt" 2>/dev/null || echo current)" "$task" >> "$STUB_LOG"
+        f="$STUB_OFFERS/$(printf '%s' "$task" | sha256sum | cut -d ' ' -f 1)"
+        if [ -f "$f" ]; then jq -R . "$f" | jq -cs '{version: "1.1", pointers: [.[] | {path: .}], silence: null}'
+        else printf '{"version":"1.1","pointers":[],"silence":{"reason":"no_purpose_matched"}}\n'; fi ;;
+esac
+STUB
+cp "$SB/headwater" "$SB/variant"
+chmod +x "$SB/headwater" "$SB/variant"
+# offer <base|variant> <task> <path>...: what the stub offers for the task.
+offer() { _w=$1; _t=$2; shift 2; printf '%s\n' "$@" > "$scratch/offers/$_w/$(sha "$_t")"; }
+# slogline <case> <at> <id> <task> <tree digest>: a log line of the hook's shape.
+slogline() {
+    mkdir -p "$scratch/$1/log"
+    jq -cn --arg at "$2" --arg id "$3" --arg task "$4" --arg td "$5" \
+        '{at: $at, session: "S", prompt_id: $id, probe_session: "", corpus_root: "/root/c", injected: false, task: $task, route: "", model_digest: "m", neighbors: "", tree_digest: $td}' \
+        >> "$scratch/$1/log/S.jsonl"
+}
+# ssample <case> <id> <stratum> <at> <line>
+ssample() { printf '%s\t%s\t%s\tS.jsonl\t%s\tsha256:t\t\t\n' "$2" "$3" "$4" "$5" >> "$scratch/$1/rec/sample.tsv"; }
+# sc <case> <arguments>...: run `score` against the stub, logging to <case>.log.
+sc() {
+    _c=$1
+    shift
+    : > "$scratch/$_c.log"
+    STUB_LOG="$scratch/$_c.log" STUB_OFFERS="$scratch/offers/base" STUB_EXPLAIN="$scratch/explain" \
+        HEADWATER_BIN="$SB/headwater" HEADWATER_RELEVANCE_TREE="$scratch/$_c/tree" \
+        HEADWATER_SHADOW_LOG_DIR="$scratch/$_c/log" HEADWATER_RELEVANCE_RECORD="$scratch/$_c/rec" \
+        HEADWATER_RELEVANCE_PACKETS="$scratch/$_c/pk" HEADWATER_RELEVANCE_HISTORY="$SH" \
+        HEADWATER_RELEVANCE_MODEL="$scratch/no-model" \
+        sh "$tool" score "$@" > "$scratch/$_c.score.out" 2> "$scratch/$_c.score.err"
+    echo $? > "$scratch/$_c.score.rc"
+}
+VARIANT="STUB_OFFERS='$scratch/offers/variant' '$SB/variant' route"
+
+# k9, the decisive case. The baseline offers X (no consensus row), Y (0),
+# W (1) and Z (2) for the disjoint prompt p1: the top 1 and the top 3 hold no
+# document graded 2, and X is one unknown pointer of three. The variant
+# offers Z at rank 3, so its top 3 holds one. The silent prompt p2 gets no
+# pointer from either, scores 0 and stays in the denominator. An ungraded
+# pointer counted as relevant, or a score read past rank 3, fails here.
+krec k9
+K9A='which rule runs again after an edit'
+K9B='a task that no purpose answers'
+slogline k9 2026-09-05T00:00:00Z p1 "$K9A" "$T_ONE"
+slogline k9 2026-09-05T00:00:00Z p2 "$K9B" "$T_ONE"
+ssample k9 p1 disjoint 2026-09-05T00:00:00Z 1
+ssample k9 p2 silent 2026-09-05T00:00:00Z 2
+kscore k9 p1 docs/y.md 0
+kscore k9 p1 docs/w.md 1
+kscore k9 p1 docs/z.md 2
+kscore k9 p1 missing 0
+kscore k9 p2 missing 1
+offer base "$K9A" docs/x.md docs/y.md docs/w.md docs/z.md
+offer variant "$K9A" docs/x.md docs/y.md docs/z.md docs/w.md
+sc k9 --only prompts --variant "$VARIANT"
+rc "k9: score exits 0" k9.score 0
+O9="$scratch/k9.score.out"
+has k9 "$O9" 'stratum disjoint: 1 prompts; tree not found 0 of 1; route refused 0 of 1; scored 1 of 1'
+has k9 "$O9" 'stratum disjoint top 1 at score 2: baseline 0 of 1; variant 0 of 1'
+has k9 "$O9" 'stratum disjoint top 3 at score 2: baseline 0 of 1; variant 1 of 1'
+has k9 "$O9" 'stratum disjoint unknown in top 3: baseline 1 of 3 pointers; variant 1 of 3 pointers'
+has k9 "$O9" 'stratum silent: 1 prompts; tree not found 0 of 1; route refused 0 of 1; scored 1 of 1'
+has k9 "$O9" 'stratum silent top 3 at score 2: baseline 0 of 1; variant 0 of 1'
+has k9 "$O9" 'stratum overlap: 0 prompts; tree not found 0 of 0; route refused 0 of 0; scored 0 of 0'
+has k9 "$O9" 'all strata top 1 at score 2: baseline 0 of 2; variant 0 of 2'
+has k9 "$O9" 'all strata top 3 at score 2: baseline 0 of 2; variant 1 of 2'
+has k9 "$scratch/k9.log" "route one $K9A"
+lacks k9 "$O9" "$K9A"
+lacks k9 "$O9" '%'
+sc k9 --only prompts
+has "k9: without a variant" "$O9" 'stratum disjoint top 3 at score 2: baseline 0 of 1'
+
+# k10: the tuning set. The probe `t1` examines docs/a.md, the baseline
+# offers it at rank 2, and the probe `t2` examines nothing. A held-out
+# identifier in the input exits 2 before anything is routed or explained,
+# and prints nothing on standard output.
+mkdir -p "$scratch/k10/tree/.headwater" "$scratch/k10/tree/docs/probes"
+cat > "$scratch/k10/tree/.headwater/probe.yml" <<'YML'
+version: 1
+sets:
+  # a comment
+  tuning:
+    - HW-PROBE-t1
+    - HW-PROBE-t2
+  held-out:
+    - HW-PROBE-h1
+tiers:
+  regression:
+    ceiling: 1
+YML
+printf -- '---\nid: HW-PROBE-t1\n---\n\n## Task\n\nMove the shelf of records\nto another place.\n\n## Target\n\nThe guide.\n' > "$scratch/k10/tree/docs/probes/t1.md"
+printf -- '---\nid: HW-PROBE-t2\n---\n\n## Task\n\nFix the finding.\n\n## Key\n\nx\n' > "$scratch/k10/tree/docs/probes/t2.md"
+printf '%s\n' '{"path":"docs/probes/t1.md","related":[{"relation":"examines","inbound":false,"target":"HW-HOW-a","pointer":{"path":"docs/a.md"}},{"relation":"examines","inbound":true,"target":"HW-X","pointer":{"path":"docs/b.md"}}]}' > "$scratch/explain/HW-PROBE-t1.json"
+printf '%s\n' '{"path":"docs/probes/t2.md","related":[]}' > "$scratch/explain/HW-PROBE-t2.json"
+offer base 'Move the shelf of records to another place.' docs/b.md docs/a.md docs/c.md
+offer variant 'Move the shelf of records to another place.' docs/a.md
+offer base 'Fix the finding.' docs/a.md
+sc k10 --only probes --variant "$VARIANT"
+rc "k10: score of the tuning set exits 0" k10.score 0
+O10="$scratch/k10.score.out"
+has k10 "$O10" 'probes tuning: 2 probes; with a target 1 of 2'
+has k10 "$O10" 'probes tuning top 1 at a target: baseline 0 of 1; variant 1 of 1'
+has k10 "$O10" 'probes tuning top 3 at a target: baseline 1 of 1; variant 1 of 1'
+lacks k10 "$scratch/k10.log" 'HW-PROBE-h1'
+sc k10 --only probes --probe HW-PROBE-h1
+rc "k10: a held-out probe in the input exits 2" k10.score 2
+check "k10: and prints nothing on standard output" '[ ! -s "$scratch/k10.score.out" ]'
+check "k10: and routes and explains nothing" '[ ! -s "$scratch/k10.log" ]'
+sc k10 --only probes --probe HW-PROBE-t1 --probe HW-PROBE-h1
+rc "k10: a held-out probe beside a tuning probe exits 2" k10.score 2
+check "k10: and routes and explains nothing, beside a tuning probe" '[ ! -s "$scratch/k10.log" ]'
+sc k10 --only probes --probe HW-PROBE-zz
+rc "k10: a probe in no tuning set exits 2" k10.score 2
+sc k10 --only probes --probe HW-PROBE-t1
+has "k10: one tuning probe" "$O10" 'probes tuning: 1 probes; with a target 1 of 1'
+cp -R "$scratch/k10" "$scratch/k10b"
+sed -i 's/^    - HW-PROBE-h1$/    - HW-PROBE-h1\n    - HW-PROBE-t2/' "$scratch/k10b/tree/.headwater/probe.yml"
+sc k10b --only probes
+rc "k10: a tuning probe that is also held out exits 2" k10b.score 2
+check "k10: and the overlap routes and explains nothing" '[ ! -s "$scratch/k10b.log" ]'
+
+# k11: the tree. p1 is logged on 2026-09-05 at the tree `one`, which the
+# commit of 2026-09-01 holds. p2 is logged on 2026-09-12 at the tree `one`:
+# the walk passes the commit of 2026-09-10 and finds the older one. p3 is
+# logged on 2026-09-05 at the tree `two`, which only a later commit holds,
+# and p4 at a tree no commit holds. Neither is routed, both are counted as
+# not found, and neither is in a denominator.
+krec k11
+K11_1='task number 1 of the tree case'
+K11_2='task number 2 of the tree case'
+K11_3='task number 3 of the tree case'
+K11_4='task number 4 of the tree case'
+slogline k11 2026-09-05T00:00:00Z p1 "$K11_1" "$T_ONE"
+slogline k11 2026-09-12T00:00:00Z p2 "$K11_2" "$T_ONE"
+slogline k11 2026-09-05T00:00:00Z p3 "$K11_3" "$T_TWO"
+slogline k11 2026-09-12T00:00:00Z p4 "$K11_4" sha256:nothing
+ssample k11 p1 overlap 2026-09-05T00:00:00Z 1
+ssample k11 p2 overlap 2026-09-12T00:00:00Z 2
+ssample k11 p3 overlap 2026-09-05T00:00:00Z 3
+ssample k11 p4 overlap 2026-09-12T00:00:00Z 4
+for p in p1 p2 p3 p4; do kscore k11 "$p" docs/z.md 2; kscore k11 "$p" missing 0; done
+offer base "$K11_1" docs/z.md
+offer base "$K11_2" docs/z.md
+offer base "$K11_3" docs/z.md
+offer base "$K11_4" docs/z.md
+sc k11 --only prompts
+rc "k11: score exits 0" k11.score 0
+O11="$scratch/k11.score.out"
+has k11 "$O11" 'stratum overlap: 4 prompts; tree not found 2 of 4; route refused 0 of 4; scored 2 of 4'
+has k11 "$O11" 'stratum overlap top 1 at score 2: baseline 2 of 2'
+has k11 "$scratch/k11.log" "route one $K11_1"
+has k11 "$scratch/k11.log" "route one $K11_2"
+lacks k11 "$scratch/k11.log" "$K11_3"
+lacks k11 "$scratch/k11.log" "$K11_4"
+sc k11 --only prompts --walk 1
+has "k11: a walk of one commit does not reach the older tree" "$O11" 'stratum overlap: 4 prompts; tree not found 3 of 4; route refused 0 of 4; scored 1 of 4'
+
+# k12: the seal. The variant offers a probe-shelf document, which the record
+# names by its token alone, so the join goes through the token. A route
+# that prints no pointer list is refused, never scored 0.
+krec k12
+K12='which probe holds the recorder'
+slogline k12 2026-09-05T00:00:00Z p1 "$K12" "$T_ONE"
+ssample k12 p1 overlap 2026-09-05T00:00:00Z 1
+kscore k12 p1 "sealed:$(sha docs/probes/q.md | cut -c 1-16)" 2
+kscore k12 p1 missing 0
+offer variant "$K12" docs/probes/q.md
+offer base "$K12" docs/probes/q.md
+sc k12 --only prompts --variant "$VARIANT"
+has k12 "$scratch/k12.score.out" 'stratum overlap top 1 at score 2: baseline 1 of 1; variant 1 of 1'
+has k12 "$scratch/k12.score.out" 'stratum overlap unknown in top 3: baseline 0 of 1 pointers; variant 0 of 1 pointers'
+sc k12 --only prompts --variant "echo not-json"
+rc "k12: a variant that prints no pointer list still exits 0" k12.score 0
+has k12 "$scratch/k12.score.out" 'stratum overlap: 1 prompts; tree not found 0 of 1; route refused 1 of 1; scored 0 of 1'
+
 printf '%d passed, %d failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]
