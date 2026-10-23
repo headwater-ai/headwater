@@ -1004,6 +1004,12 @@
       "obligations": []
     },
     {
+      "rule": "warrant.acceptance.at_initial",
+      "scope": "document",
+      "version": 1,
+      "obligations": []
+    },
+    {
       "rule": "lifecycle.deletion.not_permitted",
       "scope": "corpus",
       "version": 1,

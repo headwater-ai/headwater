@@ -2,8 +2,9 @@ touched corpus/spec/04-a-scaffolded-fourth-part.md
 touched corpus/decisions/a-scaffolded-successor.md
 touched corpus/decisions/a-second-successor.md
 
-14 seen, 9 classified, 9 checked, 151 check instances
+14 seen, 9 classified, 9 checked, 160 check instances
      12 skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+      6 skipped: this document declares no warrant, so there is no acceptance to read beside the state
       4 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
      19 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
 adoption
@@ -36,6 +37,7 @@ adoption
       9 instances of lifecycle.state.not_admitted
       9 instances of warrant.value.not_permitted
       9 instances of warrant.acceptance.unpaired
+      9 instances of warrant.acceptance.at_initial
       1 instances of lifecycle.deletion.not_permitted
 suppressions
   0 findings hidden by 0 directives
@@ -118,6 +120,8 @@ rules, and for each the scope that binds it
     document scope, one document and its front matter
   warrant.acceptance.unpaired
     document scope, one document and its front matter
+  warrant.acceptance.at_initial
+    document scope, one document and its front matter
   lifecycle.deletion.not_permitted
     corpus scope, every row of the census, and the version of each path the change named that no row of this corpus holds, and it is a barrier
   coverage.document_unchecked
@@ -186,6 +190,7 @@ register
   lifecycle.state.not_admitted reaches no obligation, so it names none
   warrant.value.not_permitted reaches no obligation, so it names none
   warrant.acceptance.unpaired reaches no obligation, so it names none
+  warrant.acceptance.at_initial reaches no obligation, so it names none
   lifecycle.deletion.not_permitted reaches no obligation, so it names none
   coverage.document_unchecked reaches no obligation, so it names none
   obligation.disposition.not_one reaches no obligation, so it names none
@@ -291,6 +296,24 @@ instances
     passed
   warrant.acceptance.unpaired corpus/standards/a-standard.md
     skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
+  warrant.acceptance.at_initial corpus/decisions/a-scaffolded-successor.md
+    passed
+  warrant.acceptance.at_initial corpus/decisions/a-second-successor.md
+    passed
+  warrant.acceptance.at_initial corpus/decisions/an-earlier-decision.md
+    skipped: this document declares no warrant, so there is no acceptance to read beside the state
+  warrant.acceptance.at_initial corpus/exhausted/the-last-one.md
+    skipped: this document declares no warrant, so there is no acceptance to read beside the state
+  warrant.acceptance.at_initial corpus/spec/01-the-first-part.md
+    skipped: this document declares no warrant, so there is no acceptance to read beside the state
+  warrant.acceptance.at_initial corpus/spec/02-the-second-part.md
+    skipped: this document declares no warrant, so there is no acceptance to read beside the state
+  warrant.acceptance.at_initial corpus/spec/03-the-third-part.md
+    skipped: this document declares no warrant, so there is no acceptance to read beside the state
+  warrant.acceptance.at_initial corpus/spec/04-a-scaffolded-fourth-part.md
+    passed
+  warrant.acceptance.at_initial corpus/standards/a-standard.md
+    skipped: this document declares no warrant, so there is no acceptance to read beside the state
   identifier.pattern.not_met corpus/decisions/a-scaffolded-successor.md
     passed
   identifier.pattern.not_met corpus/decisions/a-second-successor.md
