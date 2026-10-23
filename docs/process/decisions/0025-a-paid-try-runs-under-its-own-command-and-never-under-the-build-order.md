@@ -3,7 +3,7 @@ id: HW-PD-0025
 status: current
 status_since: 2026-10-21
 summary: "A paid try of the tuning round runs under `/next-experiment` in a session of its own. The build order never queues an issue labeled `paid-experiment`. The first try went through the build order and took 14 agents and 632 turns."
-last_verified: 2026-10-21
+last_verified: 2026-10-24
 title: "A paid try runs under its own command and never under the build order"
 provenance:
   warrant: asserted
@@ -14,9 +14,9 @@ provenance:
 relations:
   governs:
     - to: .claude/commands/next-experiment.md
-      verified_revision: sha256:c53c9b1ff4500832ee4187e5f4825fcf79ca3b436e47d0c72288e5ac72470977
+      verified_revision: sha256:089798682f64b9be0d5797a27450a75cc498ac50cd8cc496de7d845cb0f658e5
     - to: tools/probe/try.sh
-      verified_revision: sha256:bde5e71b4164281184820d4459566cece26d2140e86631c0827e6bce87df5593
+      verified_revision: sha256:1954a2d593d6f75ea31c9d229a503e2ac976ffda69bcc02321f14bd18423031c
     - to: tools/probe/additive-launch.env
       verified_revision: sha256:b7bdd819610d49e23ca67556db5be04c29293570663489d1e966d27cc0e03b07
   traces_to:

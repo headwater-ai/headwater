@@ -722,9 +722,14 @@ sets:
 # The screen is 24 sessions and the confirmation 144, as ruled, and
 # `tools/probe/declared.py <declaration> tuning` rounds each up to a whole
 # number of repetitions over the probes of the set: 25 and 145 over five.
-# `ceiling_cents` is the most every try may spend, $1,290.00 inside the
-# $1,512.00 approval, and `tools/probe/try.sh plan` refuses a launch whose
-# round is priced above what is left of it.
+# The owner split the approval in two on 2026-10-22 (#1777, comment
+# 6339176737). `base_ceiling_cents` is the most the bases may spend, $220.00:
+# the first `base` try, which measures scenario 3 at the confirmation's
+# count, and the first best so far of each layer (#1833). `ceiling_cents` is
+# the most every other try may spend, $1,290.00, a later base included. The
+# two together are inside the $1,512.00 approval, and `tools/probe/try.sh
+# plan` refuses a launch whose charge is priced above what is left under its
+# own ceiling.
 rounds:
   screening:
     set: tuning
@@ -742,6 +747,7 @@ rounds:
     stop_after_empty: 2
     order: [skills, hook, mcp]
     ceiling_cents: 129000
+    base_ceiling_cents: 22000
     open: none
   final:
     set: held-out

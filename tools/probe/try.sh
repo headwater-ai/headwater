@@ -23,8 +23,9 @@
 #     sh tools/probe/try.sh accept   <root> <ruling-url>
 #
 # `<root>` is the root of the tuning round: one directory that holds every
-# try root of the round and the two files a person writes once for the
-# round, `<root>/env` and `<root>/base-pin`. A try root is the `--root` of
+# try root of the round and the two files of the round: `<root>/env`, which
+# a person writes once, and `<root>/base-pin`, which `result` of a base
+# rewrites. A try root is the `--root` of
 # one `tools/probe/campaign-drive.sh` driver, and its batch directories are
 # `<try>/<batch>/sessions/<job>`. `<try>` names a try root under `<root>`.
 #
@@ -32,11 +33,12 @@
 #
 # The open layer and its round are `rounds.tuning.open` in
 # `.headwater/probe.yml`: its `layer`, and its `try`, which is the round `n`.
-# The figures of a round are the six fields of the tuning round that
+# The figures of a round are the seven fields of the tuning round that
 # `tools/probe/declared.py <declaration> tuning` prints, with the count of
 # each stage computed there and nowhere else: over the five tuning probes, a
 # screened variant runs 25 sessions and a confirmation 145. A round has three
-# stages, and each `<stage>` names one launch and its try root:
+# stages, a fourth stage measures the base outside the rounds, and each
+# `<stage>` names one launch and its try root:
 #
 # - `screen <k>` runs variant `k` of the round at the screen's count, in
 #   `<root>/<layer>-r<n>-v<k>`. `k` is 1 to `variants`, so a fifth variant
@@ -52,10 +54,18 @@
 # - `confirm <variant>` runs the variant named, a try root of a screen of
 #   the round, at the confirmation's count, in `<root>/<layer>-r<n>-confirm`,
 #   from a checkout at the commit that variant ran at.
+# - `base` measures the base scenario of the open layer, scenario 3 for the
+#   skills, the hook and MCP, at the confirmation's count, in
+#   `<root>/base-<k>`, at the checkout's `HEAD`, with `k` the first free
+#   number from 1. One base serves every layer of that base, so the try root
+#   names no layer. It is no stage of a round: it reads no rule of rounds
+#   and order, and it builds no tree, because it is the measurement the
+#   base check asks for. It is refused where the ledger holds a `base` event
+#   at `HEAD`'s commit already. A confirmation waits for one (#1838).
 #
 # `launch` writes the stage in `<try>/stage`, and each driver it starts gets
 # `HEADWATER_TUNING_STAGE`, `screen` or `confirm`, which the dry run reads
-# for the count of the batch.
+# for the count of the batch. A best so far and a base run as `confirm`.
 #
 # **Rank on use, then pass rate.** `result` counts, for each try, the
 # sessions that used the open layer with `tools/probe/usage.py`, from the
@@ -99,7 +109,9 @@
 # - `<root>/base-pin` is one line, `<scenario> <sha>`: the base scenario of
 #   the open layer and the commit at which that base was measured. The
 #   declaration cannot carry it, because `declared.py` refuses a seventh
-#   field of `open`.
+#   field of `open`. `result` of a `base` try writes it. A pin that a person
+#   writes by hand still names the commit of the base check, but no `base`
+#   event backs it, so it does not clear the gate of a confirmation.
 #
 # A try root that `launch` makes also holds `stage`, which `result` reads.
 #
@@ -113,24 +125,32 @@
 #   `<root>/<try>/<batch>/sessions/<job>/`, over every try and every batch,
 #   dot-named directories included, at that depth and no other. A file there
 #   that does not hold a whole number of cents exits 2, because a total that
-#   skips it is too low.
+#   skips it is too low. It then prints the two parts of that total, each
+#   against its ceiling: the bases, `base-1` and the earliest
+#   `<layer>-r<n>-best` of each layer, against `base_ceiling_cents`, and
+#   every other try root against `ceiling_cents`. The part of a try root is
+#   read from its name, so no total is stored (#1838).
 # - `status <root>` prints each try root with what it spent, its markers and
-#   whether its driver runs, and then the total, the approval and the open
-#   layer.
+#   whether its driver runs, and then the total, the approval, the two parts
+#   and the open layer.
 # - `plan <root> [<stage>]` exits 0 when the stage of the open layer's round
 #   may launch, or with no stage when the round may start, and prints the
 #   figures it read. It refuses with 5 when no layer is open, before it
 #   builds anything. It refuses with 6 a round the rules of rounds and order
 #   above refuse, and a stage those of the stages refuse, before it builds
 #   anything. It refuses with 5 when `spent <root>` plus the open layer's
-#   `cap_cents` is above the tuning round's `approved_cents`, when `spent
-#   <root>` plus the price of what is left of the round is above
-#   `ceiling_cents`, and when the price of the stage is above `cap_cents`,
-#   which the driver would stop it at. Equal passes. The price of a stage is
-#   its sessions times the additive tier's `session_cost_cents`, and what is
-#   left of the round is the variants from `k` on at the screen's count, the
-#   confirmation, and the best so far where it is due, or the whole round
-#   with no stage. It then builds the tree of the open scenario's base at the pin of
+#   `cap_cents` is above the tuning round's `approved_cents`, when the tries'
+#   part of it plus the price of what is left of the round is above
+#   `ceiling_cents`, when the bases' part plus the price of the base left is
+#   above `base_ceiling_cents`, and when the price of the stage is above
+#   `cap_cents`, which the driver would stop it at. Equal passes. The price
+#   of a stage is its sessions times the additive tier's
+#   `session_cost_cents`. What is left of the round is the variants from `k`
+#   on at the screen's count, the confirmation, and a best so far that is
+#   due and is not the layer's first, or the whole round with no stage. The
+#   base left is the layer's first best so far where it is due, or `base-1`
+#   for a `base`. A `base` past `base-1` is a try. A `base` stops here: it
+#   builds no tree. Otherwise `plan` then builds the tree of the open scenario's base at the pin of
 #   `<root>/base-pin` and at `HEAD`, each with `campaign.sh --scenario-tree`,
 #   prints every path by which the two differ, and exits 4 when one matches
 #   a pattern of `base_invalidators` and no `accept` event of
@@ -140,13 +160,16 @@
 #   path with the digest the path has now in the tree at `HEAD`, and `plan`
 #   prints `accepted: <path> (<ruling>)` for it. A path that changes again
 #   after its acceptance has another digest, so the base is stale again. For
-#   a confirmation, no acceptance covers a path under
-#   `engine/crates/*/src/**`, because a change to the engine can change what
-#   `headwater route` prints to every session of the base scenario, and
-#   nothing here reads which change does: the base is re-measured at the
-#   confirmation's count and its new pin written to `<root>/base-pin` first.
-#   A refusal of spend is never 4, so a wrapper can tell a stale base from a
-#   refusal. A screen then builds the open scenario's tree at `HEAD` and
+#   a confirmation, it exits 4 unless a `base` event of the ledger at the
+#   confirmation's count has the scenario and the pin of `<root>/base-pin`,
+#   and no acceptance covers a path under `engine/crates/*/src/**`, because a
+#   change to the engine can change what `headwater route` prints to every
+#   session of the base scenario. Nothing here reads which change does, so
+#   the gate errs toward stale: `launch <root> base` at the variant's commit
+#   measures the base again, and its `result` writes the new pin. Before
+#   either exit 4, `plan` prices that re-measure under the ceiling it is
+#   charged to, and exits 5 instead when the spend refuses it. A refusal of
+#   spend is never 4, so a wrapper can tell a stale base from a refusal. A screen then builds the open scenario's tree at `HEAD` and
 #   refuses with 6 a tree another variant of the round has.
 # - `launch <root> <stage>` runs `plan` with the stage, and exits with its
 #   status when it is not 0. It then makes the try root of the stage, writes
@@ -198,7 +221,7 @@
 #   record, in seven steps:
 #   1. It reads the stage of the try from `<try>/stage`, and a try root with
 #      no stage, or with a name that is not `<layer>-r<n>-v<k>`,
-#      `<layer>-r<n>-best` or `<layer>-r<n>-confirm`, exits 2. A try that has
+#      `<layer>-r<n>-best`, `<layer>-r<n>-confirm` or `base-<k>`, exits 2. A try that has
 #      a `result.md` exits 6, so no try is recorded twice.
 #   2. When `<try>/done` is absent, it appends a `halt` event with the try's
 #      spend and markers to `<root>/ledger.jsonl` and exits 7. It prints no
@@ -209,7 +232,8 @@
 #      wrote to `<try>/drive.out`, and names both figures. It exits 2 when the
 #      jobs of `<try>/a/jobs` are not the stage's count, so a batch of a
 #      screen is never recorded as a confirmation. It counts the use of the
-#      layer with `tools/probe/usage.py`.
+#      layer with `tools/probe/usage.py`, except for a base, which adds no
+#      layer.
 #   4. It runs `campaign.sh --out <try>/a --assemble`, and writes the
 #      transcript with `headwater new probe_transcript --facet tier=additive
 #      --facet arm=scenario-<n> --facet round=tuning` in the checkout, with
@@ -217,9 +241,16 @@
 #      writes the path in `<try>/transcript`, and a later run that finds that
 #      file reuses it. The narrative paragraphs stay a person's job.
 #   5. It runs `headwater probe compare <new> <control>` and reads the
-#      `pooled:` line. The base row's control is the one committed transcript
-#      with `tier: additive`, `round: screening` and the arm of the base
-#      scenario. It is reported, and the keep rule does not read it. Zero or
+#      `pooled:` line. The base row's control is the transcript of the `base`
+#      event at the confirmation's count that `<root>/base-pin` names, and
+#      where no event backs the pin, the one committed transcript with
+#      `tier: additive`, `round: screening` and the arm of the base scenario.
+#      It is reported, and the keep rule does not read it. A base compares
+#      with the base it measures again, takes its pass rate from the treated
+#      side, appends a `base` event with its scenario, the `--pin` of its
+#      `driver.argv`, its count, its pass rate, its spend and its transcript,
+#      writes `<root>/base-pin` as `<scenario> <pin>`, and writes `result.md`
+#      with `keep: never`. Zero or
 #      more than one match exits 2. A screen takes its pass rate from the
 #      treated side of the base row, and it and a best so far stop here: each
 #      appends its event, `screen` or `best`, with its use, and writes
@@ -259,7 +290,7 @@
 #   committed transcript cites it.
 #
 # `<root>/ledger.jsonl` holds one JSON object for each event. `result`
-# appends `screen`, `best`, `result`, `round` and `halt`, `accept` appends
+# appends `screen`, `best`, `base`, `result`, `round` and `halt`, `accept` appends
 # `accept`, and `launch` appends a `round` with `kept` false when it refuses
 # the top variant of a round for no gain in use.
 #
@@ -313,11 +344,13 @@
 #       wrote no transcript
 #   4   the base is stale: a path by which the two trees differ matches
 #       `base_invalidators`, and no `accept` event of `ledger.jsonl` covers
-#       it at its current digest. Nothing else exits 4
+#       it at its current digest, or, for a confirmation, no `base` event at
+#       its count backs the pin, or the engine's source differs from the
+#       pin. Nothing else exits 4
 #   5   the spend is refused: no layer is open, what the round spent plus
-#       the open layer's cap is above the round's approval, what it spent
-#       plus the price of what is left of the round is above its ceiling, or
-#       the price of the stage is above the cap
+#       the open layer's cap is above the round's approval, what the tries
+#       or the bases spent plus the price of what is left under that ceiling
+#       is above it, or the price of the stage is above the cap
 #   6   the state of the try refuses the verb: `launch` on a try root that
 #       exists, `relaunch` on a try that is absent, running, done, capped,
 #       stopped or whose canary failed, `launch` or `relaunch` on a
@@ -341,7 +374,7 @@ engine=${HEADWATER_TRY_ENGINE:-$checkout/engine/target/dev-release/headwater}
 usage_counter=${HEADWATER_TRY_USAGE:-$here/usage.py}
 
 usage() {
-    echo "usage: sh tools/probe/try.sh status|spent|rank|ledger <root>, plan <root> [<stage>], launch <root> <stage>, relaunch|canary|wait|result <root> <try>, or accept <root> <ruling-url>, where <stage> is screen <k>, best or confirm <variant>" >&2
+    echo "usage: sh tools/probe/try.sh status|spent|rank|ledger <root>, plan <root> [<stage>], launch <root> <stage>, relaunch|canary|wait|result <root> <try>, or accept <root> <ruling-url>, where <stage> is screen <k>, best, confirm <variant> or base" >&2
     exit 2
 }
 say() { printf 'try: %s\n' "$1" >&2; }
@@ -367,13 +400,13 @@ case $stage_kind in
             '' | *[!0-9]* | 0*) say "a screen names its variant, a whole number from 1: screen <k>."; exit 2 ;;
         esac
         ;;
-    best) [ -z "$stage_arg" ] || usage ;;
+    best | base) [ -z "$stage_arg" ] || usage ;;
     confirm)
         case $stage_arg in
             '' | */* | . | ..) say "a confirmation names the try root of a screened variant under the round root: confirm <variant>."; exit 2 ;;
         esac
         ;;
-    *) say "\`$stage_kind\` is not a stage. A stage is screen <k>, best or confirm <variant>."; exit 2 ;;
+    *) say "\`$stage_kind\` is not a stage. A stage is screen <k>, best, confirm <variant> or base."; exit 2 ;;
 esac
 [ -d "$root" ] || { say "no round root at $root."; exit 2; }
 root=$(cd "$root" && pwd -P)
@@ -464,7 +497,7 @@ resolve_try() {
 tuning_read() {
     tuning_out=$(declared tuning) || exit $?
     if [ -z "$tuning_out" ]; then
-        say "the tuning round declares none of screen, confirm, variants, stop_after_empty, order and ceiling_cents, so it has no rounds to run."
+        say "the tuning round declares none of screen, confirm, variants, stop_after_empty, order, ceiling_cents and base_ceiling_cents, so it has no rounds to run."
         exit 2
     fi
     t_screen=$(printf '%s\n' "$tuning_out" | awk '$1 == "screen" { print $4 }')
@@ -476,6 +509,7 @@ tuning_read() {
     t_stop=$(printf '%s\n' "$tuning_out" | awk '$1 == "stop_after_empty" { print $2 }')
     t_order=$(printf '%s\n' "$tuning_out" | awk '$1 == "order" { $1 = ""; sub(/^ /, ""); print }')
     t_ceiling=$(printf '%s\n' "$tuning_out" | awk '$1 == "ceiling_cents" { print $2 }')
+    t_base_ceiling=$(printf '%s\n' "$tuning_out" | awk '$1 == "base_ceiling_cents" { print $2 }')
     t_rate=$(printf '%s\n' "$tuning_out" | awk '$1 == "rate" { print $2 }')
 }
 
@@ -514,14 +548,79 @@ spent_round() {
     printf '%s\n' "$spent_sum"
 }
 
-# try_spent <try>: the same sum, over one try root.
+# try_spent <try>: the same sum, over one try root. awk reads each file
+# as its own records, so a cost with no final newline does not join the
+# next file's number, as cat into one awk did (30 and 40 read as 3040).
 try_spent() {
     try_spent_sum=0
     for try_batch in "$1"/*/ "$1"/.[!.]*/ "$1"/..?*/; do
         [ -d "${try_batch}sessions" ] || continue
-        try_spent_sum=$((try_spent_sum + $(find "${try_batch}sessions" -mindepth 2 -maxdepth 2 -type f \( -name cost -o -name spent-before \) -exec cat {} + 2>/dev/null | awk '{ s += $1 } END { print s + 0 }')))
+        try_spent_sum=$((try_spent_sum + $(find "${try_batch}sessions" -mindepth 2 -maxdepth 2 -type f \( -name cost -o -name spent-before \) -exec awk '{ s += $1 } END { print s + 0 }' {} + 2>/dev/null | awk '{ s += $1 } END { print s + 0 }')))
     done
     echo "$try_spent_sum"
+}
+
+# first_best <layer>: the try root of the earliest best so far of the layer
+# under the round root, by its round, or nothing.
+first_best() {
+    for first_dir in "$root/$1"-r*-best/; do
+        [ -d "$first_dir" ] || continue
+        first_dir=${first_dir%/}
+        printf '%s\n' "${first_dir##*/}"
+    done | sed -n "s/^$1-r\([1-9][0-9]*\)-best\$/\1 &/p" | sort -n | awk 'NR == 1 { print $2 }'
+}
+
+# charge_of <try>: the ceiling a try root is charged to, by its name alone
+# (#1838). `base` is the base ceiling, which pays for the bases of #1833:
+# `base-1`, the first measurement of the base scenario at the
+# confirmation's count, and the earliest best so far of each layer. Every
+# other try root, `base-2` and later included, is `tries`, the tuning
+# ceiling. A try root that does not exist yet is read as if it did.
+charge_of() {
+    charge_name=$1
+    if [ "$charge_name" = base-1 ]; then
+        echo base
+        return
+    fi
+    charge_fields=$(printf '%s\n' "$charge_name" | sed -n 's/^\([a-z][a-z0-9-]*\)-r\([1-9][0-9]*\)-best$/\1 \2/p')
+    if [ -n "$charge_fields" ]; then
+        charge_first=$(first_best "${charge_fields% *}")
+        charge_first_n=${charge_first%-best}
+        charge_first_n=${charge_first_n##*-r}
+        if [ -z "$charge_first" ] || [ "${charge_fields#* }" -le "$charge_first_n" ]; then
+            echo base
+            return
+        fi
+    fi
+    echo tries
+}
+
+# spent_split: `<base> <tries>`, what the try roots charged to each ceiling
+# spent. It reads the files `spent_round` reads, and it stores no total.
+spent_split() {
+    split_base=0
+    split_tries=0
+    for split_try in "$root"/*/ "$root"/.[!.]*/ "$root"/..?*/; do
+        [ -d "$split_try" ] || continue
+        split_try=${split_try%/}
+        split_sum=$(try_spent "$split_try")
+        if [ "$(charge_of "${split_try##*/}")" = base ]; then
+            split_base=$((split_base + split_sum))
+        else
+            split_tries=$((split_tries + split_sum))
+        fi
+    done
+    echo "$split_base $split_tries"
+}
+
+# ceilings: `<tries> <base>`, the two ceilings of the tuning round, or `- -`
+# where it declares no rounds.
+ceilings() {
+    ceilings_out=$(declared tuning) || exit $?
+    printf '%s\n' "$ceilings_out" | awk '
+        $1 == "ceiling_cents" { t = $2 }
+        $1 == "base_ceiling_cents" { b = $2 }
+        END { print (t == "" ? "-" : t), (b == "" ? "-" : b) }'
 }
 
 # ------------------------------------------------------------ the ledger
@@ -546,6 +645,9 @@ try_spent() {
 #   cover <base> <pin>               for each row `<path>\t<digest>` of
 #                                    standard input, `covered\t<path>\t<ruling>`
 #                                    or `uncovered\t<path>`
+#   base <scenario> <pin> <count>    the latest `base` event of the scenario at
+#                                    that pin and count, `-` for any, as
+#                                    `<transcript>\t<pin>\t<count>\t<try>`
 # shellcheck disable=SC2016
 ledger_program='
 import json, sys
@@ -638,6 +740,14 @@ elif mode == "layers":
         else:
             state = "open"
         print(layer, state, ",".join(str(number) for number in numbers) or "-")
+elif mode == "base":
+    found = None
+    for event in events() or []:
+        if event.get("event") == "base" and str(event.get("scenario")) == args[0] \
+                and args[1] in ("-", event.get("pin")) and args[2] in ("-", str(event.get("count"))):
+            found = event
+    if found:
+        print("\t".join(str(found.get(key, "")) for key in ("transcript", "pin", "count", "try")))
 elif mode == "cover":
     accepted = {}
     for event in events() or []:
@@ -863,7 +973,22 @@ stage_root() {
         screen) echo "$open_layer-r$open_try-v$stage_arg" ;;
         best) echo "$open_layer-r$open_try-best" ;;
         confirm) echo "$open_layer-r$open_try-confirm" ;;
+        base)
+            stage_k=1
+            while [ -e "$root/base-$stage_k" ]; do stage_k=$((stage_k + 1)); done
+            echo "base-$stage_k"
+            ;;
     esac
+}
+
+# open_base: the base scenario of the open scenario, in `base`.
+open_base() {
+    scenarios=$(declared scenarios) || exit $?
+    base=$(printf '%s\n' "$scenarios" | awk -v s="$open_scenario" '$1 == s { print $2 }')
+    if [ -z "$base" ] || [ "$base" = - ]; then
+        say "scenario $open_scenario names no base in the declaration."
+        exit 2
+    fi
 }
 
 # share_above <used> <sessions> <used> <sessions>: 0 when the first share is
@@ -873,8 +998,22 @@ share_above() {
 }
 
 # round_check: the rules of rounds and order, and of the stage, which refuse
-# with 6 before anything is priced or built. It sets `best_due`.
+# with 6 before anything is priced or built. It sets `best_due`. A base is
+# no stage of a round, so it reads none of those rules: it refuses a base at
+# a commit the ledger has one at.
 round_check() {
+    if [ "$stage_kind" = base ]; then
+        best_due=0
+        open_base
+        base_head=$(git -C "$checkout" rev-parse HEAD 2>/dev/null)
+        base_measured=$(ledger_py base "$base" "${base_head:-none}" -) || exit $?
+        if [ -n "$base_measured" ]; then
+            say "scenario $base is measured at $base_head already, in $(printf '%s\n' "$base_measured" | cut -f4): a base runs once at a commit."
+            exit 6
+        fi
+        echo "base: scenario $base, the base of scenario $open_scenario, at HEAD ${base_head:-unknown}"
+        return
+    fi
     case " $t_order " in
         *" $open_layer "*) ;;
         *)
@@ -971,6 +1110,30 @@ confirm_check() {
     fi
 }
 
+# route_refuse <reason>: a confirmation waits for the base to be measured
+# again at the confirmation's count. The re-measure is priced under the
+# ceiling it is charged to, so a re-measure that the spend refuses exits 5,
+# and one it does not exits 4.
+route_refuse() {
+    route_root=$(stage_kind=base && stage_root)
+    route_price=$((t_confirm * t_rate))
+    if [ "$(charge_of "$route_root")" = base ]; then
+        echo "left of the bases with the re-measure: $t_confirm sessions, $route_price cents, in $route_root"
+        if [ $((spent_base + route_price)) -gt "$t_base_ceiling" ]; then
+            say "$1 The re-measure in $route_root is priced at $route_price cents, and the bases spent $spent_base, $((spent_base + route_price)) in all, above the base ceiling of $t_base_ceiling cents. Nothing is launched."
+            exit 5
+        fi
+    else
+        echo "left with the re-measure: $((left + t_confirm)) sessions of the round, $(((left + t_confirm) * t_rate)) cents, the re-measure in $route_root included"
+        if [ $((spent_tries + (left + t_confirm) * t_rate)) -gt "$t_ceiling" ]; then
+            say "$1 The re-measure in $route_root and what is left of round $open_try are priced at $(((left + t_confirm) * t_rate)) cents, and the tries spent $spent_tries, $((spent_tries + (left + t_confirm) * t_rate)) in all, above the tuning ceiling of $t_ceiling cents. Nothing is launched."
+            exit 5
+        fi
+    fi
+    say "$1 Measure scenario $base again at $t_confirm sessions at the variant's commit first: sh tools/probe/try.sh launch $root base, and then result."
+    exit 4
+}
+
 # plan_check: the whole of `plan`, which `launch` runs first. It sets
 # `open_layer`, `open_scenario`, `open_try` and `open_cap`, and exits with
 # the status of a refusal.
@@ -990,44 +1153,68 @@ plan_check() {
     approvals=$(declared approved) || exit $?
     approved=$(printf '%s\n' "$approvals" | awk '$1 == "tuning" { print $2 }')
     spent=$(spent_round) || exit $?
-    # The sessions left in the round from this stage on, and the stage's own.
+    # shellcheck disable=SC2046
+    set -- $(spent_split)
+    spent_base=$1 spent_tries=$2
+    # The first best so far of a layer is charged to the base ceiling.
+    best_base=0
+    if [ "$best_due" = 1 ] && [ "$(charge_of "$open_layer-r$open_try-best")" = base ]; then
+        best_base=1
+    fi
+    # The sessions left under each ceiling from this stage on, and the
+    # stage's own: `left` under the tuning ceiling, `left_base` under the
+    # base ceiling.
     case $stage_kind in
-        '') left=$((t_variants * t_screen + t_confirm + best_due * t_confirm)) stage_sessions=0 ;;
-        screen) left=$(((t_variants - stage_arg + 1) * t_screen + t_confirm + best_due * t_confirm)) stage_sessions=$t_screen ;;
-        best) left=$((2 * t_confirm)) stage_sessions=$t_confirm ;;
-        confirm) left=$t_confirm stage_sessions=$t_confirm ;;
+        '') left=$((t_variants * t_screen + t_confirm + (best_due - best_base) * t_confirm)) left_base=$((best_base * t_confirm)) stage_sessions=0 ;;
+        screen) left=$(((t_variants - stage_arg + 1) * t_screen + t_confirm + (best_due - best_base) * t_confirm)) left_base=$((best_base * t_confirm)) stage_sessions=$t_screen ;;
+        best) left=$(((2 - best_base) * t_confirm)) left_base=$((best_base * t_confirm)) stage_sessions=$t_confirm ;;
+        confirm) left=$t_confirm left_base=0 stage_sessions=$t_confirm ;;
+        base)
+            if [ "$(charge_of "$(stage_root)")" = base ]; then left=0 left_base=$t_confirm; else left=$t_confirm left_base=0; fi
+            stage_sessions=$t_confirm
+            ;;
     esac
     priced=$((left * t_rate))
-    echo "spent: $spent"
+    priced_base=$((left_base * t_rate))
+    echo "spent: $spent, of which the bases $spent_base and the tries $spent_tries"
     echo "cap: $open_cap"
     echo "approved: $approved"
     echo "ceiling: $t_ceiling"
+    echo "base ceiling: $t_base_ceiling"
     [ -n "$stage_kind" ] && echo "stage: $stage_kind${stage_arg:+ $stage_arg}, $stage_sessions sessions, $((stage_sessions * t_rate)) cents at $t_rate a session, in $(stage_root)"
-    echo "left: $left sessions of the round, $priced cents at $t_rate a session$([ "$best_due" = 1 ] && echo ", the best so far at $t_confirm included")"
+    echo "left: $left sessions of the round, $priced cents at $t_rate a session$([ $((best_due - best_base)) = 1 ] && echo ", the best so far at $t_confirm included")"
+    echo "left of the bases: $left_base sessions, $priced_base cents at $t_rate a session"
     if [ $((spent + open_cap)) -gt "${approved:-0}" ]; then
         say "the round spent $spent cents, and a try of $open_cap more is $((spent + open_cap)), above the $approved cents approved for the tuning round. Nothing is launched."
         exit 5
     fi
-    if [ $((spent + priced)) -gt "$t_ceiling" ]; then
-        say "the round spent $spent cents, and what is left of round $open_try is priced at $priced more, $((spent + priced)), above the tuning ceiling of $t_ceiling cents. Nothing is launched."
+    if [ $((spent_tries + priced)) -gt "$t_ceiling" ]; then
+        say "the tries of the round spent $spent_tries cents, and what is left of round $open_try is priced at $priced more, $((spent_tries + priced)), above the tuning ceiling of $t_ceiling cents. Nothing is launched."
+        exit 5
+    fi
+    if [ $((spent_base + priced_base)) -gt "$t_base_ceiling" ]; then
+        say "the bases spent $spent_base cents, and the $([ "$stage_kind" = base ] && echo "base" || echo "best so far of $open_layer") is priced at $priced_base more, $((spent_base + priced_base)), above the base ceiling of $t_base_ceiling cents. Nothing is launched."
         exit 5
     fi
     if [ $((stage_sessions * t_rate)) -gt "$open_cap" ]; then
         say "the $stage_kind is priced at $((stage_sessions * t_rate)) cents, above the cap of one launch, $open_cap, at which the driver would stop it unfinished. Nothing is launched."
         exit 5
     fi
-    scenarios=$(declared scenarios) || exit $?
-    base=$(printf '%s\n' "$scenarios" | awk -v s="$open_scenario" '$1 == s { print $2 }')
-    if [ -z "$base" ] || [ "$base" = - ]; then
-        say "scenario $open_scenario names no base in the declaration."
-        exit 2
+    if [ "$stage_kind" = base ]; then
+        # The base is the measurement the base check asks for, so it builds
+        # no tree and reads no pin.
+        echo "plan: the base, scenario $base, at the confirmation's count, may launch"
+        return
     fi
+    open_base
     read_pin
     if [ "$pin_scenario" != "$base" ]; then
         say "$pin_file reads \`$(head -1 "$pin_file")\`, and it must be \`$base <sha>\`, the base of scenario $open_scenario and the commit it was measured at."
         exit 2
     fi
     base_check "$base" "$pin_sha"
+    route_hit=0
+    cover=
     if [ "$stale" = 1 ]; then
         cover=$(printf '%s\n' "$base_invalid" | ledger_py cover "$base" "$pin_sha") || exit $?
         if [ "$stage_kind" = confirm ]; then
@@ -1037,12 +1224,23 @@ plan_check() {
                 $1 == "covered" && $2 ~ /^engine\/crates\/[^\/]*\/src\// { print "route\t" $2 "\t" $3; next }
                 { print }')
             printf '%s\n' "$cover" | awk -F'\t' '$1 == "route" { print "route: " $2 " (accepted by " $3 ", and no acceptance covers the engine for a confirmation)" }'
-            if printf '%s\n' "$cover" | grep -q '^route'; then
-                say "the engine's source differs from the base's pin, and a route change makes scenario $base stale for a confirmation whatever was accepted. Re-measure scenario $base at $t_confirm sessions and write its new pin to $pin_file before the confirmation."
-                exit 4
-            fi
+            printf '%s\n' "$cover" | grep -q '^route' && route_hit=1
         fi
         printf '%s\n' "$cover" | awk -F'\t' '$1 == "covered" { print "accepted: " $2 " (" $3 ")" }'
+    fi
+    if [ "$stage_kind" = confirm ]; then
+        # A confirmation reads the base at the confirmation's count, measured
+        # at the pin. A pin that a person wrote is no measurement (#1838).
+        base_measured=$(ledger_py base "$base" "$pin_sha" "$t_confirm") || exit $?
+        if [ -z "$base_measured" ]; then
+            route_refuse "no base event at $t_confirm sessions in $root/ledger.jsonl measures scenario $base at $pin_sha, the pin of $pin_file, and a pin written by hand is not a measurement."
+        fi
+        echo "measured: scenario $base at $pin_sha, $t_confirm sessions, in $(printf '%s\n' "$base_measured" | cut -f4): $(printf '%s\n' "$base_measured" | cut -f1)"
+        if [ "$route_hit" = 1 ]; then
+            route_refuse "the engine's source differs from the base's pin, and a route change makes scenario $base stale for a confirmation whatever was accepted."
+        fi
+    fi
+    if [ "$stale" = 1 ]; then
         if printf '%s\n' "$cover" | grep -q '^uncovered'; then
             say "the base, scenario $base at $pin_sha, is stale: a path above that differs is on base_invalidators, and no accept event covers it at its digest now. Re-measure the base, or have the owner accept the difference and record it with try.sh accept."
             exit 4
@@ -1106,7 +1304,7 @@ start() {
     # The stage names the count of the batch, which the dry run reads (#1838).
     case $(awk '{ print $1; exit }' "$start_try/stage" 2>/dev/null) in
         screen) HEADWATER_TUNING_STAGE=screen ;;
-        best | confirm) HEADWATER_TUNING_STAGE=confirm ;;
+        best | confirm | base) HEADWATER_TUNING_STAGE=confirm ;;
         *) say "$start_try/stage names no stage, so the driver would not know the count of its batch."; exit 2 ;;
     esac
     export HEADWATER_TUNING_STAGE
@@ -1153,6 +1351,10 @@ markers() {
 case $verb in
     spent)
         spent_round
+        # shellcheck disable=SC2046
+        set -- $(spent_split) $(ceilings)
+        echo "bases: $1 of the base ceiling, $4"
+        echo "tries: $2 of the tuning ceiling, $3"
         ;;
 
     status)
@@ -1169,6 +1371,10 @@ case $verb in
         approvals=$(declared approved) || exit $?
         open_line=$(declared open) || exit $?
         echo "spent: $total of $(printf '%s\n' "$approvals" | awk '$1 == "tuning" { print $2 }') approved"
+        # shellcheck disable=SC2046
+        set -- $(spent_split) $(ceilings)
+        echo "bases: $1 of the base ceiling, $4"
+        echo "tries: $2 of the tuning ceiling, $3"
         echo "open: $open_line"
         ;;
 
@@ -1230,7 +1436,8 @@ case $verb in
         fi
         pin_ready "$pin"
         mkdir -p "$try" || exit 2
-        printf 'additive scenario-%s tuning\n' "$open_scenario" > "$try/spec"
+        if [ "$stage_kind" = base ]; then spec_scenario=$base; else spec_scenario=$open_scenario; fi
+        printf 'additive scenario-%s tuning\n' "$spec_scenario" > "$try/spec"
         printf '%s\n' "$stage_kind${stage_arg:+ $stage_arg}" > "$try/stage"
         [ "$stage_kind" = screen ] && printf '%s\n' "$variant_tree" > "$try/tree"
         printf '%s\n' --root "$try" --pin "$pin" --claude-version "$TRY_HARNESS" \
@@ -1347,7 +1554,10 @@ $records records of the canary, not 8"
         result_name=${try##*/}
         result_fields=$(printf '%s\n' "$result_name" | sed -n 's/^\([a-z][a-z0-9-]*\)-r\([1-9][0-9]*\)-\(v[1-9][0-9]*\|best\|confirm\)$/\1 \2 \3/p')
         if [ -z "$result_fields" ]; then
-            say "$try is not a try root of a round: <layer>-r<n>-v<k>, <layer>-r<n>-best or <layer>-r<n>-confirm."
+            result_fields=$(printf '%s\n' "$result_name" | sed -n 's/^base-\([1-9][0-9]*\)$/- \1 base/p')
+        fi
+        if [ -z "$result_fields" ]; then
+            say "$try is not a try root of a round or a base: <layer>-r<n>-v<k>, <layer>-r<n>-best, <layer>-r<n>-confirm or base-<k>."
             exit 2
         fi
         # shellcheck disable=SC2086
@@ -1356,7 +1566,7 @@ $records records of the canary, not 8"
         result_stage=$(awk '{ print $1; exit }' "$try/stage" 2>/dev/null)
         result_variant=$(awk '{ print $2; exit }' "$try/stage" 2>/dev/null)
         case $result_stage:$result_part in
-            screen:v"$result_variant" | best:best | confirm:confirm) ;;
+            screen:v"$result_variant" | best:best | confirm:confirm | base:base) ;;
             *) say "$try/stage reads \`$(head -1 "$try/stage" 2>/dev/null)\`, and the try root $result_name is not that stage."; exit 2 ;;
         esac
         [ ! -e "$try/result.md" ] || { say "$try/result.md is present: this try is recorded already."; exit 6; }
@@ -1386,10 +1596,13 @@ $records records of the canary, not 8"
             say "a $result_stage runs $result_count sessions, and the batch of $try planned $result_jobs jobs, so it is not recorded as a $result_stage."
             exit 2
         fi
-        result_usage=$(python3 "$usage_counter" "$declaration" "$result_layer" "$try/a") || { say "the use of the $result_layer layer in $try/a was not counted."; exit 2; }
-        # shellcheck disable=SC2086
-        set -- $result_usage
-        result_used=$2 result_sessions=$4
+        # A base adds no layer, so it counts no use.
+        if [ "$result_stage" != base ]; then
+            result_usage=$(python3 "$usage_counter" "$declaration" "$result_layer" "$try/a") || { say "the use of the $result_layer layer in $try/a was not counted."; exit 2; }
+            # shellcheck disable=SC2046
+            set -- $result_usage
+            result_used=$2 result_sessions=$4
+        fi
         # shellcheck disable=SC2046
         set -- $(head -1 "$try/spec" 2>/dev/null)
         case ${2:-} in
@@ -1398,12 +1611,37 @@ $records records of the canary, not 8"
         esac
         scenarios=$(declared scenarios) || exit $?
         result_base=$(printf '%s\n' "$scenarios" | awk -v s="$result_scenario" '$1 == s { print $2 }')
+        # A base is its own base: its base row compares it with the base
+        # it measures again.
+        [ "$result_stage" = base ] && result_base=$result_scenario
         if [ -z "$result_base" ] || [ "$result_base" = - ]; then
             say "scenario $result_scenario names no base in the declaration."
             exit 2
         fi
         # The controls, before anything is written.
-        base_row_control=$(one_transcript "base's screening transcript" additive screening "scenario-$result_base") || exit $?
+        # The base row's control is the latest base that `base-pin` names and
+        # a `base` event at the confirmation's count measured, and otherwise
+        # the screening transcript of the base scenario (#1838).
+        base_row_control=
+        if [ -f "$root/base-pin" ]; then
+            read_pin
+            if [ "$pin_scenario" = "$result_base" ]; then
+                base_backed=$(ledger_py base "$result_base" "$pin_sha" "$t_confirm") || exit $?
+                if [ -n "$base_backed" ]; then
+                    base_row_control=$(printf '%s\n' "$base_backed" | cut -f1)
+                    [ -f "$checkout/$base_row_control" ] || { say "the base of scenario $result_base measured at $pin_sha, $base_row_control, is not in $checkout."; exit 2; }
+                fi
+            fi
+        fi
+        if [ -z "$base_row_control" ]; then
+            base_row_control=$(one_transcript "base's screening transcript" additive screening "scenario-$result_base") || exit $?
+        fi
+        if [ "$result_stage" = base ]; then
+            result_pin=$(awk 'previous == "--pin" { print; exit } { previous = $0 }' "$try/driver.argv" 2>/dev/null)
+            case $result_pin in
+                '' | *[!0-9a-f]*) say "$try/driver.argv names no --pin, so the base has no commit to be measured at."; exit 2 ;;
+            esac
+        fi
         best=
         if [ "$result_stage" = confirm ]; then
             best_line=$(ledger_py best "$result_layer") || exit $?
@@ -1443,9 +1681,16 @@ $records records of the canary, not 8"
                 best) result_what="best so far" ;;
                 confirm) result_what="confirmation" ;;
             esac
+            if [ "$result_stage" = base ]; then
+                result_title="Additive tuning of $(date -u +%Y-%m-%d), base re-measure of scenario $result_scenario"
+                result_summary="The base re-measure of scenario $result_scenario in the additive tuning round, at the confirmation's count and the commit $result_pin: $(head -1 "$stem.summary" 2>/dev/null)."
+            else
+                result_title="Additive tuning of $(date -u +%Y-%m-%d), $result_layer round $result_n $result_what, scenario $result_scenario"
+                result_summary="The $result_what of round $result_n of the $result_layer layer in the additive tuning round, the scenario-$result_scenario arm: $(head -1 "$stem.summary" 2>/dev/null)."
+            fi
             "$engine" new probe_transcript --root "$checkout" \
-                --title "Additive tuning of $(date -u +%Y-%m-%d), $result_layer round $result_n $result_what, scenario $result_scenario" \
-                --summary "The $result_what of round $result_n of the $result_layer layer in the additive tuning round, the scenario-$result_scenario arm: $(head -1 "$stem.summary" 2>/dev/null)." \
+                --title "$result_title" \
+                --summary "$result_summary" \
                 --facet tier=additive --facet "arm=scenario-$result_scenario" --facet round=tuning \
                 > "$try/new.out" 2> "$try/new.err"
             new_status=$?
@@ -1476,6 +1721,32 @@ $records records of the canary, not 8"
         fi
         # Step 5: the base row, and for a screen or a best so far, the record.
         base_row=$(compare_row "$transcript" "$base_row_control") || exit $?
+        if [ "$result_stage" = base ]; then
+            result_passed=$(printf '%s\n' "$base_row" | sed -n 's|^pooled: \([0-9][0-9]*\)/\([0-9][0-9]*\) against .*|\1 \2|p')
+            if [ -z "$result_passed" ]; then
+                say "the base row has no pass rate of the base, so it is not recorded: $base_row"
+                exit 2
+            fi
+            # shellcheck disable=SC2086
+            set -- $result_passed
+            {
+                echo "try: $result_name"
+                echo "stage: base"
+                echo "scenario: $result_scenario"
+                echo "pin: $result_pin"
+                echo "spent: $result_spent"
+                echo "transcript: $transcript"
+                echo "passed: $1 of $2"
+                echo "base row: $base_row, against $base_row_control"
+                echo "keep: never: a base is never kept; it is the measurement a confirmation reads (#1838)"
+            } > "$try/result.md"
+            ledger_py append event=s:base "try=s:$result_name" "scenario=s:$result_scenario" "pin=s:$result_pin" \
+                "count=i:$result_jobs" "passed=i:$1" "graded=i:$2" "spent=i:$result_spent" \
+                "transcript=s:$transcript" "at=s:$(now)"
+            printf '%s %s\n' "$result_scenario" "$result_pin" > "$root/base-pin"
+            cat "$try/result.md"
+            exit 0
+        fi
         if [ "$result_stage" != confirm ]; then
             result_passed=$(printf '%s\n' "$base_row" | sed -n 's|^pooled: \([0-9][0-9]*\)/\([0-9][0-9]*\) against .*|\1 \2|p')
             if [ -z "$result_passed" ]; then

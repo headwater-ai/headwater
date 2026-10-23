@@ -186,9 +186,12 @@ EOF
 OPEN_DOCS='{layer: docs, scenario: 1, try: 2, cap_cents: 3000, plan: "https://example.org/accepted", change: none}'
 OPEN_HOOK='{layer: hook, scenario: 2, try: 1, cap_cents: 3000, plan: "https://example.org/accepted", change: none}'
 
-# decl <open> <approved_cents> [<ceiling_cents>]: the declaration of the
-# case. A session costs one cent, so a round of 4 variants at 25 sessions, a
-# confirmation at 145 and a best so far at 145 is priced at 390 cents.
+# decl <open> <approved_cents> [<ceiling_cents>] [<base_ceiling_cents>]: the
+# declaration of the case. A session costs one cent, so a round of 4 variants
+# at 25 sessions and a confirmation at 145 is priced at 245 cents under the
+# tuning ceiling, and a first best so far at 145 at 145 cents under the base
+# ceiling. The base ceiling is 1000 and the tuning ceiling the rest of the
+# approval where the case names neither.
 decl() {
     cat > "$CASE/probe.yml" <<EOF
 layers:
@@ -213,7 +216,8 @@ rounds:
     variants: 4
     stop_after_empty: 2
     order: [docs, hook]
-    ceiling_cents: ${3:-$2}
+    ceiling_cents: ${3:-$(($2 - ${4:-1000}))}
+    base_ceiling_cents: ${4:-1000}
     open: $1
 base_invalidators:
   - engine/crates/*/src/**
@@ -356,6 +360,9 @@ printf '40' > "$CASE/root/t/a/sessions/s2/cost"
 run spent "$CASE/root"
 check "spent: two costs with no final newline add to 70, not 3040" out_has 70
 check "spent: and not 3040" sh -c "! grep -q 3040 '$CASE/out'"
+check "spent: the try's own sum is 70 in either order of the two files, not 3040 or 4030" out_has "tries: 70 of the tuning ceiling"
+run status "$CASE/root"
+check "status: the try's line sums the two files to 70" out_has "t spent=70 "
 cost "$CASE/root/t/a/sessions/s3" 'twelve'
 run spent "$CASE/root"
 check "spent: a cost that is not whole cents exits 2" code_is 2
@@ -790,6 +797,12 @@ best_event() {
         "$1" "$2" "$2" >> "$CASE/root/ledger.jsonl"
 }
 ledger_has() { grep -qF -- "$1" "$CASE/root/ledger.jsonl"; }
+# measured_base: a `base` event at 145 sessions at the pin of the case's
+# base-pin, which a confirmation's plan reads (#1838).
+measured_base() {
+    printf '{"event": "base", "try": "base-1", "scenario": "0", "pin": "%s", "count": 145, "transcript": "docs/probe-runs/additive-screening-scenario-0.md"}\n' \
+        "$(awk '{ print $2 }' "$CASE/root/base-pin")" >> "$CASE/root/ledger.jsonl"
+}
 result_md_has() { grep -qxF -- "$1" "$CASE/root/docs-r2-confirm/result.md"; }
 
 # Each row is the pooled keep row that `headwater probe compare` prints for
@@ -1087,8 +1100,9 @@ check "wait: a try that is not a directory name exits 2" code_is 2
 # 12, and the best so far calls it in 3 of 145. Variant 2 is ranked first and
 # confirmed at 145. Variant 1 is not confirmed, whatever its pass rate.
 
-# rank_decl <open>: a declaration with the skills layer and the six fields of
-# the rounds, at one cent a session, so a cap of 3000 holds a confirmation.
+# rank_decl <open> [<ceiling_cents>] [<base_ceiling_cents>]: a declaration
+# with the skills layer and the seven fields of the rounds, at one cent a
+# session, so a cap of 3000 holds a confirmation.
 rank_decl() {
     cat > "$CASE/probe.yml" <<EOF
 layers:
@@ -1115,7 +1129,8 @@ rounds:
     variants: 4
     stop_after_empty: 2
     order: [skills, docs, hook]
-    ceiling_cents: ${2:-100000}
+    ceiling_cents: ${2:-99000}
+    base_ceiling_cents: ${3:-1000}
     open: $1
 base_invalidators:
   - engine/crates/*/src/**
@@ -1150,7 +1165,7 @@ skill_batch() {
 }
 rank_case() {
     new_case
-    rank_decl "$OPEN_SKILLS" "${1:-100000}"
+    rank_decl "$OPEN_SKILLS" "${1:-99000}"
     checkout=$CASE/checkout
     screening additive-screening-scenario-0 additive screening scenario-0
     screening additive-screening-scenario-1 additive screening scenario-1
@@ -1158,6 +1173,7 @@ rank_case() {
     skill_batch skills-r1-best best 145 3
     echo 'pooled: 80/145 against 78/145, +1.4 points [-10.0, +12.8]' > "$CASE/pooled-base"
     run result "$CASE/root" skills-r1-best
+    measured_base
 }
 # screened <variant k> <used> <passed>: one screened variant, recorded.
 screened() {
@@ -1263,7 +1279,8 @@ new_case
 run plan "$CASE/root" best
 check "best: with no measurement at 145, a best so far plans" code_is 0
 check "best: at 145 sessions" out_has "stage: best, 145 sessions"
-check "best: and what is left of the round is it and a confirmation" out_has "left: 290 sessions"
+check "best: the first best so far of the layer is charged to the base ceiling" out_has "left of the bases: 145 sessions, 145 cents"
+check "best: and what is left under the tuning ceiling is the confirmation" out_has "left: 145 sessions"
 printf '%s\n' '{"event": "best", "try": "docs-r1-best", "layer": "docs", "round": 1, "transcript": "x.md", "used": 1, "sessions": 145, "count": 145}' > "$CASE/root/ledger.jsonl"
 run plan "$CASE/root" best
 check "best: with a best so far measured at 145, exits 6" code_is 6
@@ -1279,6 +1296,7 @@ run plan "$CASE/root" confirm docs-r2-v1
 check "confirm: with no best so far exits 6" code_is 6
 check "confirm: and names the best so far to launch" err_has "launch $CASE/root best"
 printf '%s\n' '{"event": "best", "try": "docs-r1-best", "layer": "docs", "round": 1, "transcript": "x.md", "used": 1, "sessions": 145, "count": 145}' >> "$CASE/root/ledger.jsonl"
+measured_base
 mkdir -p "$CASE/root/docs-r2-v2"
 run plan "$CASE/root" confirm docs-r2-v1
 check "confirm: while a screen of the round has no result exits 6" code_is 6
@@ -1301,6 +1319,7 @@ check "confirm: and invokes nothing" no_calls
 new_case
 printf '%s\n' '{"event": "best", "try": "docs-r1-best", "layer": "docs", "round": 1, "transcript": "x.md", "used": 29, "sessions": 145, "count": 145}' > "$CASE/root/ledger.jsonl"
 printf '%s\n' '{"event": "screen", "try": "docs-r2-v1", "layer": "docs", "round": 2, "used": 5, "sessions": 25, "passed": 25, "graded": 25}' >> "$CASE/root/ledger.jsonl"
+measured_base
 run plan "$CASE/root" confirm docs-r2-v1
 check "confirm: a use of 5 of 25 over a best of 29 of 145, the same share, is no gain" code_is 6
 check "confirm: and plan closes no round" sh -c "! grep -q '\"event\": \"round\"' '$CASE/root/ledger.jsonl'"
@@ -1320,11 +1339,93 @@ check "route: an accepted engine change lets a screen plan" code_is 0
 run plan "$CASE/root" confirm docs-r2-v1
 check "route: and refuses a confirmation with 4" code_is 4
 check "route: naming the path" out_has "route: engine/crates/x/src/lib.rs"
-check "route: and the re-measure it needs" err_has "Re-measure scenario 0 at 145 sessions"
-echo '0 2d212a269a111fddb7af5b2b75ebaf2f9ab32f29' > "$CASE/root/base-pin"
+check "route: and the re-measure it needs" err_has "sh tools/probe/try.sh launch $CASE/root base"
+
+# ------ base: a route change waits for a measured base at 145 (#1838)
+
+# The decisive case of the base stage. A pin written by hand is not a
+# measurement, so it does not clear the route gate: only a `base` event at the
+# confirmation's count does, and `result` of a `base` try writes both.
+head_sha=$(git -C "$fix/repo" rev-parse HEAD)
+# The hand-written pin names another commit than the launch's, so the case
+# also reads that `result` rewrites it.
+echo '0 1111111111111111111111111111111111111111' > "$CASE/root/base-pin"
 cp "$CASE/tree-head/engine/crates/x/src/lib.rs" "$CASE/tree-pin/engine/crates/x/src/lib.rs"
 run plan "$CASE/root" confirm docs-r2-v1
-check "route: a base re-measured at the engine's source lets the confirmation plan" code_is 0
+check "base: a pin written by hand at the engine's source does not let the confirmation plan" code_is 4
+check "base: and says no base is measured at that pin" err_has "no base event at 145 sessions"
+check "base: and names the launch that measures one" err_has "sh tools/probe/try.sh launch $CASE/root base"
+run launch "$CASE/root" base
+await_calls 1
+check "base: launch base starts the driver" code_is 0
+check "base: in base-1" [ -d "$CASE/root/base-1" ]
+check "base: on the base scenario's tuning line" sh -c "[ \"\$(cat '$CASE/root/base-1/spec')\" = 'additive scenario-0 tuning' ]"
+check "base: with the stage base" sh -c "[ \"\$(cat '$CASE/root/base-1/stage')\" = base ]"
+check "base: and the driver reads the confirmation's count" grep -q ' stage=confirm$' "$CASE/calls"
+rm -f "$CASE/root/base-1/driver.pid"
+checkout=$CASE/checkout
+screening additive-screening-scenario-0 additive screening scenario-0
+finished_try base-1 145 base 145
+echo 'additive scenario-0 tuning' > "$CASE/root/base-1/spec"
+cost "$CASE/root/base-1/a/sessions/L1-p1-r1" 100
+cost "$CASE/root/base-1/a/sessions/L1-p1-r2" 45
+echo 'pooled: 70/145 against 33/72, +2.4 points [-11.0, +15.8]' > "$CASE/pooled-base"
+run result "$CASE/root" base-1
+check "base: result of a base exits 0" code_is 0
+check "base: and keeps nothing" out_has "keep: never"
+check "base: it appends a base event at 145 sessions at the launch's pin" \
+    ledger_has "\"event\": \"base\", \"try\": \"base-1\", \"scenario\": \"0\", \"pin\": \"$head_sha\", \"count\": 145"
+check "base: and writes the base-pin itself" sh -c "[ \"\$(cat '$CASE/root/base-pin')\" = '0 $head_sha' ]"
+check "base: its transcript says it is a base re-measure" grep -q '^title: "Additive tuning of .*, base re-measure of scenario 0"$' "$CASE/checkout/$(cat "$CASE/root/base-1/transcript")"
+check "base: and its base row is against the screening transcript it replaces" grep -q 'probe compare .*base-re-measure-of-scenario-0\.md .*additive-screening-scenario-0\.md$' "$CASE/engine.log"
+checkout=$fix/repo
+run plan "$CASE/root" confirm docs-r2-v1
+check "base: with the base measured at the engine's source, the confirmation plans" code_is 0
+check "base: and names the measurement it read" out_has "measured: scenario 0 at $head_sha, 145 sessions, in base-1"
+: > "$CASE/trees.log"
+run plan "$CASE/root" base
+check "base: a second base at a commit that has one exits 6" code_is 6
+check "base: and names the measurement" err_has "is measured at $head_sha already"
+check "base: and builds no tree" no_trees
+# A screen after the re-measure reads its base row against the new base.
+checkout=$CASE/checkout
+finished_try docs-r2-v2 2452 "screen 2" 25
+echo 'pooled: 12/25 against 70/145, +0.0 points [-1.0, +1.0]' > "$CASE/pooled-keep"
+run result "$CASE/root" docs-r2-v2
+check "base: a screen after the re-measure is recorded" code_is 0
+check "base: and its base row is against the re-measured base, not the screening transcript" grep -q 'probe compare .*variant-2-scenario-1\.md .*base-re-measure-of-scenario-0\.md$' "$CASE/engine.log"
+checkout=$fix/repo
+echo 'pub fn x() { routed_again() }' > "$CASE/tree-head/engine/crates/x/src/lib.rs"
+run plan "$CASE/root" confirm docs-r2-v1
+check "base: a second engine change after the re-measure refuses the confirmation with 4 again" code_is 4
+run plan "$CASE/root" screen 3
+check "base: and a screen, whose acceptance named the old pin, is stale by today's gate" code_is 4
+# The owner accepts the change at the new pin: a screen plans, and the
+# confirmation still waits for a base measured at the engine's source.
+run accept "$CASE/root" "https://github.com/headwater-ai/headwater/issues/1777#issuecomment-2"
+run plan "$CASE/root" screen 3
+check "base: an accepted engine change at the new pin lets a screen plan" code_is 0
+run plan "$CASE/root" confirm docs-r2-v1
+check "base: and still refuses the confirmation with 4, whatever was accepted" code_is 4
+check "base: naming the route path" out_has "route: engine/crates/x/src/lib.rs (accepted by https://github.com/headwater-ai/headwater/issues/1777#issuecomment-2"
+check "base: and the launch that measures it" err_has "a route change makes scenario 0 stale for a confirmation"
+
+# A base event at another count, or of another scenario, does not back the
+# pin: the confirmation reads a base at its own count.
+new_case
+printf '%s\n' '{"event": "best", "try": "docs-r1-best", "layer": "docs", "round": 1, "transcript": "x.md", "used": 1, "sessions": 145, "count": 145}' > "$CASE/root/ledger.jsonl"
+printf '%s\n' '{"event": "screen", "try": "docs-r2-v1", "layer": "docs", "round": 2, "used": 5, "sessions": 25, "passed": 10, "graded": 25}' >> "$CASE/root/ledger.jsonl"
+printf '%s\n' '{"event": "base", "try": "base-1", "scenario": "0", "pin": "2d212a269a111fddb7af5b2b75ebaf2f9ab32f29", "count": 25, "transcript": "x.md"}' >> "$CASE/root/ledger.jsonl"
+printf '%s\n' '{"event": "base", "try": "base-2", "scenario": "3", "pin": "2d212a269a111fddb7af5b2b75ebaf2f9ab32f29", "count": 145, "transcript": "x.md"}' >> "$CASE/root/ledger.jsonl"
+run plan "$CASE/root" confirm docs-r2-v1
+check "base: a base of 25 sessions, and one of another scenario, at the pin do not back it" code_is 4
+sed -i 's/"count": 25,/"count": 145,/' "$CASE/root/ledger.jsonl"
+run plan "$CASE/root" confirm docs-r2-v1
+check "base: and one of 145 sessions of the base scenario does" code_is 0
+check "base: and it is the one named" out_has "145 sessions, in base-1: x.md"
+sed -i 's/"pin": "2d212a269a111fddb7af5b2b75ebaf2f9ab32f29", "count": 145, "transcript": "x.md"}/"pin": "2d212a26", "count": 145, "transcript": "x.md"}/' "$CASE/root/ledger.jsonl"
+run plan "$CASE/root" confirm docs-r2-v1
+check "base: and one at another pin does not" code_is 4
 
 # ----------------------------------------------------- rounds: order (#1838)
 
@@ -1369,14 +1470,15 @@ check "order: a layer that order does not name exits 6" code_is 6
 
 # --------------------------------------------- rounds: the ceiling (#1838)
 
-# What is left of round 2 with no stage is 4 x 25 + 145 + 145 = 390 cents.
-# With a ceiling of 5000, a spend of 4610 is at it exactly.
+# What is left of round 2 with no stage is 4 x 25 + 145 = 245 cents under the
+# tuning ceiling, and the first best so far, 145, under the base ceiling.
+# With a ceiling of 5000, a spend of 4755 is at it exactly.
 ceiling_case() {
     new_case
     decl "$OPEN_DOCS" 10000 5000
     cost "$CASE/root/docs-try1/a/sessions/s1" "$1"
 }
-ceiling_case 4611
+ceiling_case 4756
 run plan "$CASE/root"
 check "ceiling: one cent above it exits 5" code_is 5
 check "ceiling: and names the ceiling" err_has "above the tuning ceiling of 5000 cents"
@@ -1384,18 +1486,19 @@ check "ceiling: and builds no tree" no_trees
 run launch "$CASE/root" screen 1
 check "ceiling: a launch one cent above it exits 5" code_is 5
 check "ceiling: and invokes nothing" no_calls
-ceiling_case 4610
+ceiling_case 4755
 run plan "$CASE/root"
 check "ceiling: at it exactly exits 0" code_is 0
-check "ceiling: and prints what is left" out_has "left: 390 sessions of the round, 390 cents at 1 a session, the best so far at 145 included"
+check "ceiling: and prints what is left under the tuning ceiling" out_has "left: 245 sessions of the round, 245 cents at 1 a session"
+check "ceiling: and under the base ceiling" out_has "left of the bases: 145 sessions, 145 cents at 1 a session"
 ceiling_case 100
 run plan "$CASE/root"
 check "ceiling: well below it exits 0" code_is 0
-# The fourth screen leaves 25 + 145 + 145 = 315: 4685 is at the ceiling.
-ceiling_case 4686
+# The fourth screen leaves 25 + 145 = 170: 4830 is at the ceiling.
+ceiling_case 4831
 run plan "$CASE/root" screen 4
 check "ceiling: the fourth screen one cent above it exits 5" code_is 5
-ceiling_case 4685
+ceiling_case 4830
 run plan "$CASE/root" screen 4
 check "ceiling: the fourth screen at it exits 0" code_is 0
 # A stage priced above the cap of one launch would stop unfinished.
@@ -1406,6 +1509,100 @@ check "cap: a best so far of 145 cents under a cap of 144 exits 5" code_is 5
 check "cap: and says the driver would stop it" err_has "above the cap of one launch, 144"
 run plan "$CASE/root" screen 1
 check "cap: a screen of 25 cents under it plans" code_is 0
+
+# ------------------------------------- rounds: the base ceiling (#1838)
+
+# base-1 and the first best so far of a layer are charged to the base
+# ceiling, so their spend does not move the check of a screen against the
+# tuning ceiling. The best so far is measured, so none is left to price.
+ceiling_case 4755
+cost "$CASE/root/base-1/a/sessions/s1" 600
+cost "$CASE/root/docs-r1-best/a/sessions/s1" 400
+best_event x 145
+run plan "$CASE/root" screen 1
+check "split: 1000 cents of bases leave a screen at the tuning ceiling exactly" code_is 0
+check "split: and the spend prints both sums" out_has "spent: 5755, of which the bases 1000 and the tries 4755"
+run spent "$CASE/root"
+check "split: spent prints the total" sh -c "head -1 '$CASE/out' | grep -qx 5755"
+check "split: and the bases against their ceiling" out_has "bases: 1000 of the base ceiling, 1000"
+check "split: and the tries against theirs" out_has "tries: 4755 of the tuning ceiling, 5000"
+run status "$CASE/root"
+check "split: status prints both sums too" sh -c "grep -qx 'bases: 1000 of the base ceiling, 1000' '$CASE/out' && grep -qx 'tries: 4755 of the tuning ceiling, 5000' '$CASE/out'"
+cost "$CASE/root/docs-try1/a/sessions/s2" 1
+run plan "$CASE/root" screen 1
+check "split: one cent more of tries exits 5" code_is 5
+check "split: and names the tuning ceiling" err_has "above the tuning ceiling of 5000 cents"
+# A later best so far of the layer is a try.
+ceiling_case 4755
+cost "$CASE/root/docs-r1-best/a/sessions/s1" 1
+run plan "$CASE/root" screen 1
+check "split: a best so far of round 2 after one of round 1 is charged to the tuning ceiling" code_is 5
+check "split: and is priced there" out_has "left: 390 sessions of the round, 390 cents at 1 a session, the best so far at 145 included"
+# base-2 is charged to the tuning ceiling, and base-1 to the base ceiling.
+ceiling_case 4855
+run plan "$CASE/root" base
+check "split: base-1 is charged to the base ceiling" code_is 0
+check "split: and leaves nothing under the tuning ceiling" out_has "left of the bases: 145 sessions"
+check "split: in base-1" out_has "in base-1"
+check "split: and builds no tree" no_trees
+mkdir -p "$CASE/root/base-1"
+run plan "$CASE/root" base
+check "split: base-2 at the tuning ceiling exactly plans" code_is 0
+check "split: in base-2" out_has "in base-2"
+cost "$CASE/root/docs-try1/a/sessions/s2" 1
+run plan "$CASE/root" base
+check "split: and one cent above it exits 5" code_is 5
+check "split: naming the tuning ceiling" err_has "above the tuning ceiling of 5000 cents"
+# The four bases of #1833 at the declared rate of 50 cents a session: one
+# base and three first bests are 4 x 7250 = 29000 cents, above 22000.
+four_case() {
+    new_case
+    rank_decl '{layer: hook, scenario: 3, try: 1, cap_cents: 8000, plan: "https://example.org/accepted", change: none}' 78000 22000
+    sed -i 's/session_cost_cents: 1}/session_cost_cents: 50}/' "$CASE/probe.yml"
+    round_event skills 1 false
+    round_event skills 2 false
+    round_event docs 1 false
+    round_event docs 2 false
+    cost "$CASE/root/base-1/a/sessions/s1" "$1"
+    cost "$CASE/root/skills-r1-best/a/sessions/s1" "$2"
+    cost "$CASE/root/docs-r1-best/a/sessions/s1" "$3"
+}
+four_case 7250 7250 7250
+run plan "$CASE/root" best
+check "four: the fourth charge to the base ceiling at the declared rate, 29000, exits 5" code_is 5
+check "four: and names the base ceiling" err_has "above the base ceiling of 22000 cents"
+check "four: and builds no tree" no_trees
+four_case 7250 7250 251
+run plan "$CASE/root" best
+check "four: one cent above the base ceiling exits 5" code_is 5
+four_case 7250 7250 250
+run plan "$CASE/root" best
+check "four: at the base ceiling exactly plans" code_is 0
+# A confirmation that waits for a re-measure prices it: base-2 under the
+# tuning ceiling, beside the confirmation.
+new_case
+decl "$OPEN_DOCS" 10000 5000
+printf '%s\n' '{"event": "best", "try": "docs-r1-best", "layer": "docs", "round": 1, "transcript": "x.md", "used": 1, "sessions": 145, "count": 145}' > "$CASE/root/ledger.jsonl"
+printf '%s\n' '{"event": "screen", "try": "docs-r2-v1", "layer": "docs", "round": 2, "used": 5, "sessions": 25, "passed": 10, "graded": 25}' >> "$CASE/root/ledger.jsonl"
+mkdir -p "$CASE/root/base-1"
+cost "$CASE/root/docs-try1/a/sessions/s1" 4710
+run plan "$CASE/root" confirm docs-r2-v1
+check "remeasure: a confirmation with no measured base and room for base-2 exits 4" code_is 4
+check "remeasure: and prices base-2 beside it" out_has "left with the re-measure: 290 sessions of the round, 290 cents, the re-measure in base-2 included"
+cost "$CASE/root/docs-try1/a/sessions/s2" 1
+run plan "$CASE/root" confirm docs-r2-v1
+check "remeasure: and one cent above the tuning ceiling with it exits 5" code_is 5
+rm -rf "$CASE/root/base-1"
+run plan "$CASE/root" confirm docs-r2-v1
+check "remeasure: base-1 is priced under the base ceiling instead" code_is 4
+check "remeasure: and says so" out_has "left of the bases with the re-measure: 145 sessions, 145 cents, in base-1"
+cost "$CASE/root/docs-r1-best/a/sessions/s1" 855
+run plan "$CASE/root" confirm docs-r2-v1
+check "remeasure: base-1 at the base ceiling exactly exits 4" code_is 4
+cost "$CASE/root/docs-r1-best/a/sessions/s1" 856
+run plan "$CASE/root" confirm docs-r2-v1
+check "remeasure: and one cent above it exits 5" code_is 5
+check "remeasure: naming the base ceiling" err_has "above the base ceiling of 1000 cents"
 
 # ----------------------------------------------- rounds: arguments (#1838)
 
@@ -1419,7 +1616,7 @@ for bad in "screen" "screen 0" "screen x" "screen 01" "confirm" "confirm ../x" "
 done
 check "args: and no bad stage builds a tree" no_trees
 new_case
-sed -i '/^    screen: 24$/d; /^    confirm: 144$/d; /^    variants: 4$/d; /^    stop_after_empty: 2$/d; /^    order: /d; /^    ceiling_cents: /d' "$CASE/probe.yml"
+sed -i '/^    screen: 24$/d; /^    confirm: 144$/d; /^    variants: 4$/d; /^    stop_after_empty: 2$/d; /^    order: /d; /^    ceiling_cents: /d; /^    base_ceiling_cents: /d' "$CASE/probe.yml"
 run plan "$CASE/root"
 check "args: a tuning round with no rounds declared exits 2" code_is 2
 check "args: and says it has no rounds" err_has "has no rounds to run"

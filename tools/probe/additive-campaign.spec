@@ -44,7 +44,9 @@
 # is $9,065.00. A tuning line is priced as up to 4 rounds of 390 sessions
 # each: 4 variants of 25, a confirmation of 145 and a best so far of 145
 # (#1838). That sum bounds every tuning line, and only the skills, the hook
-# and MCP are tuned, under the ceiling of $1,290.00.
+# and MCP are tuned, under a ceiling of $1,290.00 for the tries and of
+# $220.00 for the bases: the first base and the first best so far of each
+# layer.
 #
 # **The owner approved the screening and tuning rounds, and not the final
 # round.** On 2026-10-18 he approved $700 over every attempt of the screening

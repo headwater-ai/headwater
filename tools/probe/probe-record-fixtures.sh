@@ -5657,12 +5657,15 @@ if [ -x "$engine" ]; then
         sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
     same "and a screen declared at 30 at ceil(30 / 5) = 6" "0 6" \
         "$? $(awk '$1 == 16 { print $3 }' "$scratch/add-priced.out")"
-    # The six fields of the tuning round's rounds are declared together, and
-    # each is read with PyYAML and refused when it does not hold.
+    # The seven fields of the tuning round's rounds are declared together,
+    # and each is read with PyYAML and refused when it does not hold.
     for bad in 'screen: 0|`screen` of the `tuning` round' 'confirm: "144"|`confirm` of the `tuning` round' \
         'variants: -1|`variants` of the `tuning` round' 'stop_after_empty: 0|`stop_after_empty` of the `tuning` round' \
         'order: [skills, nope]|names the layer nope' 'order: [skills, skills]|names a layer twice' \
-        'ceiling_cents: 151201|above the round'"'"'s `approved_cents` of 151200'; do
+        'ceiling_cents: 151201|above the round'"'"'s `approved_cents` of 151200' \
+        'base_ceiling_cents: -1|`base_ceiling_cents` of the `tuning` round' \
+        'base_ceiling_cents: "22000"|`base_ceiling_cents` of the `tuning` round' \
+        'base_ceiling_cents: 22201|together 151201, above the round'"'"'s `approved_cents` of 151200'; do
         bad_field=${bad%%:*}
         bad_line=${bad%%|*}
         sed "s/^    $bad_field: .*/    $bad_line/" "$root/.headwater/probe.yml" > "$scratch/stage-bad.yml"
@@ -5672,8 +5675,15 @@ if [ -x "$engine" ]; then
     done
     grep -v '^    variants: 4$' "$root/.headwater/probe.yml" > "$scratch/stage-bad.yml"
     python3 "$root/tools/probe/declared.py" "$scratch/stage-bad.yml" tuning > /dev/null 2> "$scratch/stage-bad.err"
-    same "declared.py tuning refuses five of the six fields with 2" "2" "$?"
+    same "declared.py tuning refuses six of the seven fields with 2" "2" "$?"
     present "and names the one missing" "and not \`variants\`" "$scratch/stage-bad.err"
+    grep -v '^    base_ceiling_cents: ' "$root/.headwater/probe.yml" > "$scratch/stage-bad.yml"
+    python3 "$root/tools/probe/declared.py" "$scratch/stage-bad.yml" tuning > /dev/null 2> "$scratch/stage-bad.err"
+    same "declared.py tuning refuses a round with no base ceiling with 2" "2" "$?"
+    present "and names it" "and not \`base_ceiling_cents\`" "$scratch/stage-bad.err"
+    python3 "$root/tools/probe/declared.py" "$root/.headwater/probe.yml" tuning > "$scratch/stage-good.out"
+    same "declared.py tuning prints the base ceiling of the declaration" "base_ceiling_cents 22000" \
+        "$(grep '^base_ceiling_cents ' "$scratch/stage-good.out")"
 
     # The batch runs the same check before each invocation (clause 5: "the
     # check runs again before each round"). A stub `cargo` stands in for the
@@ -5971,8 +5981,29 @@ printf 'additive scenario-3 tuning\n' > "$scratch/open-s3.spec"
 same "with docs open on scenario 1, a tuning line of scenario 3 is refused with 5" "5" \
     "$(open_batch "$scratch/open-docs1.yml" "$scratch/open-s3.spec" "$scratch/open-s3.err")"
 present "and the refusal names the open layer and scenario, and the line's scenario" \
-    "the tuning round is open for the docs layer on scenario 1 alone, and the spec holds a tuning line of scenario-3" "$scratch/open-s3.err"
+    "the tuning round is open for the docs layer on scenario 1 and its base, scenario 0, alone, and the spec holds a tuning line of scenario-3" "$scratch/open-s3.err"
 same "and it ran no dry run, planned no line, built no tree and asked the harness nothing" "no no no no" "$(open_wrote)"
+# The base of the open scenario is measured again at the confirmation's
+# count (#1838), so its tuning line passes the gate beside the open one.
+printf 'additive scenario-0 tuning\n' > "$scratch/open-s0.spec"
+open_status=$(open_batch "$scratch/open-docs1.yml" "$scratch/open-s0.spec" "$scratch/open-s0.err")
+same "with docs open on scenario 1, a tuning line of scenario 0, its base, passes the gate" "yes 0" \
+    "$([ "$open_status" != 5 ] && echo yes || echo no) $(grep -c 'the tuning round is open for' "$scratch/open-s0.err")"
+printf 'additive scenario-0 tuning\nadditive scenario-1 tuning\nadditive scenario-3 tuning\n' > "$scratch/open-s013.spec"
+same "and a spec of the base, the open scenario and scenario 3 is still refused with 5" "5" \
+    "$(open_batch "$scratch/open-docs1.yml" "$scratch/open-s013.spec" "$scratch/open-s013.err")"
+present "and names scenario 3 alone" "and the spec holds a tuning line of scenario-3." "$scratch/open-s013.err"
+absent "and not the base" "a tuning line of scenario-0." "$scratch/open-s013.err"
+# The edit that admits the base is inside a base-neutral region, as try.sh
+# reads the regions, so it makes no measured base stale. The reader is the
+# `regions` function of try.sh itself.
+sed -n '/^regions() {$/,/^}$/p' "$root/tools/probe/try.sh" > "$scratch/regions.sh"
+printf '%s\n' 'regions "$1" campaign.sh' >> "$scratch/regions.sh"
+sh "$scratch/regions.sh" "$root/tools/probe/campaign.sh" > "$scratch/regions.out" 2> "$scratch/regions.err"
+same "try.sh's reader of the regions reads campaign.sh" "0" "$?"
+grep -n 'open_base' "$root/tools/probe/campaign.sh" | cut -d: -f1 > "$scratch/open-base.lines"
+same "campaign.sh names open_base on three lines" "3" "$(wc -l < "$scratch/open-base.lines" | tr -d ' ')"
+same "and each is inside a base-neutral region" "" "$(grep -vxF -f "$scratch/regions.out" "$scratch/open-base.lines")"
 printf 'additive scenario-1 tuning\n' > "$scratch/open-s1.spec"
 same "with open: none, a scenario-1 tuning line is refused with 5" "5" \
     "$(open_batch "$root/.headwater/probe.yml" "$scratch/open-s1.spec" "$scratch/open-nonespec.err")"
