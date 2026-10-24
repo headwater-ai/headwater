@@ -1,6 +1,6 @@
 ---
 name: headwater-orient
-description: Load first, before your first Read, Grep, Glob, Edit or Bash, on every task in this repository: a question about what it says or decided, a change to code or a script, a move or rename of files, or an edit to a document. Load it even when the task already gives the exact path, because a named document can be superseded and a file you are told to change can be governed by a contract that forbids the change. It shows how to run the engine here and the one command that names the documents governing the paths you will read or change.
+description: Load first, before your first Read, Grep, Glob, Edit or Bash, on every task in this repository: a question about what it says or decided, a change to code or a script, a move or rename of files, or an edit to a document. Load it even when the task already gives the exact path, because a named document can be superseded and a file you are told to change can be governed by a contract that forbids the change. Load it before your final answer if you have not: before you report a change done, refuse one, or answer from a file. It shows how to run the engine here and the one command that names the documents governing the paths you will read or change.
 ---
 
 # Orientation
@@ -17,13 +17,19 @@ This skill is the first thing in a task, and it is finished as soon as the right
 
 Run `headwater route "<the task, with every path it names>" --root .` before the first edit. Open each document whose line says `governs <path>` or names the thing you are changing. If that document rules the change out, say so instead of making it.
 
+After the last edit, run `headwater check --fix --root .` and then `headwater check --root .`, and fix each finding on a file you changed. `--fix` writes the missing inverse half of a relation that you declared on one side only.
+
 ## Before you answer from a record
 
-Run `headwater explain <path or identifier> --root .` on the record. A `superseded_by` edge, or a line that says another document governs the reading, means that the answer is in the other record. Open that record.
+Run `headwater explain <path or identifier> --root .` on the record. A `superseded_by` edge, or a line that says another document governs the reading, means that the answer is in the other record. Open that record before you answer, even when the record you already read summarizes it, because a summary of the record in force is not the record.
 
 ## Before a procedure
 
-For a move, a rename, a publish or a release, list the how-to shelf that `.headwater/corpus.json` names. Open the guide for the operation, whatever word its title uses for it, and follow it.
+For a move, a rename, a publish or a release, list the how-to shelf that `.headwater/corpus.json` names. Open the guide for the operation, whatever word its title uses for it, and follow it. Do this before `route` and before you load another skill, because a route names the documents that govern the paths and not the order of the steps.
+
+## Before your final answer
+
+If you have not run `route` on the paths you changed or read, run it now, and open each document whose line says `governs <path>`. If that document rules out what you did or what you are about to say, say that instead. A comment in a file that cites a document is not the document.
 
 ## Start with what a hook already handed you
 
