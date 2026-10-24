@@ -593,6 +593,18 @@ PIN=$(g2 rev-parse HEAD)
 drive
 check "pin: a pin not on origin/main exits 4" code_is 4
 check "pin: a pin not on origin/main invokes nothing" calls_are 0
+g2 update-ref refs/remotes/origin/tune/fixture-v1 HEAD
+drive
+check "pin: a pin on a branch under origin/tune/ exits 0" code_is 0
+check "pin: a pin on a branch under origin/tune/ invokes the batch" [ "$(calls)" -gt 0 ]
+pin_case
+echo two > "$CASE/repo/file"
+g2 commit -q -a -m two
+g2 checkout -q --detach
+g2 update-ref refs/remotes/origin/other/v1 HEAD
+PIN=$(g2 rev-parse HEAD)
+drive
+check "pin: a pin on a pushed branch outside origin/tune/ exits 4" code_is 4
 pin_case
 : > "$CASE/repo/untracked"
 drive
