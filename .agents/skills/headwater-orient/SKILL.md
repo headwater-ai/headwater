@@ -1,6 +1,6 @@
 ---
 name: headwater-orient
-description: Load first, before your first Read, Grep, Glob, Edit or Bash, on every task in this repository: a question about what it says or decided, a change to code or a script, a move or rename of files, or an edit to a document. Load it even when the task already gives the exact path, because a named document can be superseded and a file you are told to change can be governed by a contract that forbids the change. It shows how to run the engine here and the one command that names the documents governing the paths you will read or change.
+description: Load first, before your first Read, Grep, Glob, Edit or Bash, on every task in this repository: a question about what it says or decided, a change to code or a script, a move or rename of files, or an edit to a document. Load it even when the task already gives the exact path, because a named document can be superseded and a file you are told to change can be governed by a contract that forbids the change. Load it also when a file you read cites a specification, a decision or a contract you have not opened. It shows how to run the engine here and the one command that names the documents governing the paths you will read or change.
 ---
 
 # Orientation
@@ -17,13 +17,19 @@ This skill is the first thing in a task, and it is finished as soon as the right
 
 Run `headwater route "<the task, with every path it names>" --root .` before the first edit. Open each document whose line says `governs <path>` or names the thing you are changing. If that document rules the change out, say so instead of making it.
 
+After the last edit, run `headwater check --fix --root .` and then `headwater check --root .`, and fix each finding on a file you changed. `--fix` writes the missing inverse half of a relation that you declared on one side only.
+
+## When a file cites a document
+
+A comment, a script header or a README that cites a specification, a decision or a contract by number is a pointer and not the ruling. Run `headwater route` with the path of the file that cites it. The line that says `governs <path>` names the document. Open that document before you act on what the comment says, and before you refuse the change because of it.
+
 ## Before you answer from a record
 
-Run `headwater explain <path or identifier> --root .` on the record. A `superseded_by` edge, or a line that says another document governs the reading, means that the answer is in the other record. Open that record.
+Run `headwater explain <path or identifier> --root .` on the record. A `superseded_by` edge, or a line that says another document governs the reading, means that the answer is in the other record. Open that record before you answer, even when the record you already read summarizes it, because a summary of the record in force is not the record.
 
 ## Before a procedure
 
-For a move, a rename, a publish or a release, list the how-to shelf that `.headwater/corpus.json` names. Open the guide for the operation, whatever word its title uses for it, and follow it.
+For a move, a rename, a publish or a release, list the how-to shelf that `.headwater/corpus.json` names. Open the guide for the operation, whatever word its title uses for it, and follow it. Do this before `route` and before you load another skill, because a route names the documents that govern the paths and not the order of the steps.
 
 ## Start with what a hook already handed you
 
@@ -61,4 +67,4 @@ The test is whether you could name the file the answer is in. If yes, `explain` 
 ## What orientation does not settle
 
 `explain` reports the warrant of a document and never whether it is right. Contradictions between documents that each pass every rule are what a coherence sweep is for, and the `headwater-sweep` skill carries it. Whether the corpus owes something that nobody has written is a question for the same sweep, and for `headwater check` when a rule already reads it.
-<!-- installed by headwater init --harness, digest sha256:6f58d2bc601c7ec39a222506fe3f34f6e6fda235d49733937408c7716878405f -->
+<!-- installed by headwater init --harness, digest sha256:f6cce408dce7dd0951f5cc35b854fa193bb8fba01bd11d043a13a4115aa80a4b -->
