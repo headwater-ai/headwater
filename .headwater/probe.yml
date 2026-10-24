@@ -712,6 +712,9 @@ sets:
 # layer. On 2026-10-24 the skills layer opened for its round 1, scenario 4
 # against scenario 3, under the plan the comment below states, which the run
 # of 2026-10-22 accepts under the owner's standing ruling of rounds (#1777).
+# Round 1 kept its variant 1 on 2026-10-25, 127 of 145 against 81 of 142,
+# and the skills layer opened for its round 2 under the plan below, against
+# that confirmation as the best so far.
 #
 # The tuning round runs in rounds (#1838), as the owner ruled on 2026-10-22
 # (#1777): a round screens `variants` changes of the open layer at `screen`
@@ -753,9 +756,9 @@ rounds:
     open:
       layer: skills
       scenario: 4
-      try: 1
+      try: 2
       cap_cents: 12250
-      plan: https://github.com/headwater-ai/headwater/issues/1777#issuecomment-6375391385
+      plan: https://github.com/headwater-ai/headwater/issues/1777#issuecomment-6387233245
       change: none
   final:
     set: held-out
