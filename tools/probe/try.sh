@@ -184,7 +184,8 @@
 #   `driver.argv` exits 6.
 #   Before it makes the try root, it refuses with 6 the four states of the
 #   checkout that the driver's pin check refuses: `HEAD` on a branch, a pin
-#   that is not on `origin/main`, a dirty tree, and, for `relaunch`, a
+#   that is not on `origin/main` or on a branch under `origin/tune/`, a
+#   dirty tree, and, for `relaunch`, a
 #   `HEAD` that is no longer the pin of `driver.argv`. The driver checks the
 #   harness and the token itself.
 # - `rank <root>` prints the best so far of the open layer, with its use, and
@@ -1328,8 +1329,16 @@ pin_ready() {
         say "the checkout $checkout is on a branch, and the driver refuses that. Detach it at the pin: git switch --detach $1."
         exit 6
     fi
-    if ! git -C "$checkout" merge-base --is-ancestor "$1" origin/main 2>/dev/null; then
-        say "the pin $1 is not on origin/main, and the driver refuses that."
+    pin_on=
+    if git -C "$checkout" merge-base --is-ancestor "$1" origin/main 2>/dev/null; then
+        pin_on=main
+    else
+        for ref in $(git -C "$checkout" for-each-ref --format='%(refname)' refs/remotes/origin/tune/ 2>/dev/null); do
+            git -C "$checkout" merge-base --is-ancestor "$1" "$ref" 2>/dev/null && { pin_on=$ref; break; }
+        done
+    fi
+    if [ -z "$pin_on" ]; then
+        say "the pin $1 is not on origin/main or on a branch under origin/tune/, and the driver refuses that."
         exit 6
     fi
     if [ -n "$(git -C "$checkout" status --porcelain 2>/dev/null)" ]; then

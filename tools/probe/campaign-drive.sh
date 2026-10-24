@@ -40,7 +40,10 @@
 #   an invocation that is running. To end one sooner, kill its process
 #   group, which `setsid` gave it: `kill -- -<pgid>`.
 # - **The pin.** `HEAD` is `--pin`, the worktree is detached, the pin is on
-#   `origin/main`, and the tree is clean. Otherwise it exits 4.
+#   `origin/main` or on a branch under `origin/tune/`, and the tree is clean.
+#   Otherwise it exits 4. A variant of the tuning round is screened before it
+#   merges, so its commit is on its pushed `tune/` branch and not yet on
+#   `origin/main` (#1777). Either way the pin is a commit the remote holds.
 # - **The harness.** `<root>/bin/claude` is a symlink to
 #   `$HEADWATER_DRIVE_CLAUDE_VERSIONS/<v>` (default
 #   `~/.local/share/claude/versions`), and `<root>/bin` is first on `PATH`
@@ -440,6 +443,16 @@ canary_wait() {
 
 # ------------------------------------------------------------ the checks
 
+# pin_pushed <sha>: the commit is on origin/main or on a branch under
+# origin/tune/.
+pin_pushed() {
+    git merge-base --is-ancestor "$1" origin/main 2>/dev/null && return 0
+    for ref in $(git for-each-ref --format='%(refname)' refs/remotes/origin/tune/ 2>/dev/null); do
+        git merge-base --is-ancestor "$1" "$ref" 2>/dev/null && return 0
+    done
+    return 1
+}
+
 pin_check() {
     head=$(git rev-parse HEAD 2>/dev/null)
     if [ "$head" != "$pin" ]; then
@@ -450,8 +463,8 @@ pin_check() {
         echo "campaign-drive: the worktree is on a branch; detach it at the pin." >&2
         exit 4
     fi
-    if ! git merge-base --is-ancestor "$pin" origin/main 2>/dev/null; then
-        echo "campaign-drive: the pin $pin is not on origin/main." >&2
+    if ! pin_pushed "$pin"; then
+        echo "campaign-drive: the pin $pin is not on origin/main or on a branch under origin/tune/." >&2
         exit 4
     fi
     if [ -n "$(git status --porcelain 2>/dev/null)" ]; then

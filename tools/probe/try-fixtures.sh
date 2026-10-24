@@ -78,6 +78,12 @@ make_repo "$fix/repo-dirty"
 make_repo "$fix/repo-ahead"
 git -C "$fix/repo-ahead" -c user.name=fixture -c user.email=fixture@example.org commit -q --allow-empty -m ahead
 make_repo "$fix/repo-moves"
+# A variant screened before it merges: ahead of origin/main, on a pushed
+# branch under origin/tune/.
+make_repo "$fix/repo-tune"
+git -C "$fix/repo-tune" -c user.name=fixture -c user.email=fixture@example.org commit -q --allow-empty -m variant
+git -C "$fix/repo-tune" checkout -q --detach
+git -C "$fix/repo-tune" update-ref refs/remotes/origin/tune/fixture-v1 HEAD
 checkout=$fix/repo
 passed=0
 failed=0
@@ -575,6 +581,13 @@ for state in branch dirty ahead; do
     check "launch: a checkout that is $state makes no try root" [ ! -e "$CASE/root/docs-r2-v1" ]
 done
 check "launch: and the last one names origin/main" err_has "is not on origin/main"
+new_case
+checkout=$fix/repo-tune
+run launch "$CASE/root" screen 1
+checkout=$fix/repo
+await_calls 1
+check "launch: a pin on a branch under origin/tune/ exits 0" code_is 0
+check "launch: a pin on a branch under origin/tune/ starts the driver" [ "$(calls_count)" = 1 ]
 new_case
 run launch "$CASE/root" screen 1
 await_calls 1
