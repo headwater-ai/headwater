@@ -5530,8 +5530,13 @@ if [ -x "$engine" ]; then
         ' "$root/.headwater/probe.yml" > "$1"
     }
     # The decisive case: the only leak string is in the body of a skill of the
-    # `skills` layer, and in no description, memory file or hook text.
-    body_string="Silence means the subject is not one a declared purpose answers"
+    # `skills` layer, and in no description, memory file or hook text. It is
+    # read from the orient body at run time, as the last sentence of its
+    # start-of-task gate, so a rewrite of the skill cannot leave a planted
+    # string that no tree holds any more.
+    body_string=$(sed -n '/^## Before you change a file$/,/^## /{/^[A-Z]/p;}' "$root/.claude/skills/headwater-orient/SKILL.md" | sed 's/.*\. //')
+    same "the orient body has a start-of-task gate to plant a leak from" "yes" \
+        "$([ -n "$body_string" ] && echo yes || echo no)"
     additive_leaks "$scratch/add-body.yml" \
         HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged "$body_string"
     HW_PROBE_YML="$scratch/add-body.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
