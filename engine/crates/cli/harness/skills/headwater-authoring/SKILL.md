@@ -1,6 +1,6 @@
 ---
 name: headwater-authoring
-description: Write or revise a governed document in this repository, of any kind its taxonomy declares. Use when asked to record a finding, file a decision, or add a document to the corpus, and when `headwater new` refuses. It calls the engine for what the taxonomy decides and carries the judgment it leaves as hand entry.
+description: Write or revise a governed document in this repository, of any kind its taxonomy declares. Use when asked to record a finding, file a decision, or add a document to the corpus, and when `headwater new` refuses. Load it, after headwater-orient, before you change code, a script or a configuration file that a task names, because a document of the corpus can govern that file and forbid the change. It calls the engine for what the taxonomy decides and carries the judgment it leaves as hand entry.
 ---
 
 # Headwater authoring
@@ -12,6 +12,10 @@ Nothing here restates a rule the engine holds. If a sentence below disagrees wit
 ## Run the engine
 
 `headwater` may not be on PATH. Run `command -v headwater`, and if it prints nothing, run `ls */target/*/headwater` to find this repository's own build. Call the engine by the path that prints in every `headwater` command of this skill. Never fall back to grep because the bare name failed.
+
+## Before you change code or a script
+
+A document of the corpus can govern a source file, a script or a configuration file. Run `headwater route "<the task, with every path it names>" --root .` before the first edit, and open each document whose line says `governs <path>`. If that document rules the change out, say so instead of making it. After the last edit, run `headwater check --root .`.
 
 ## Never write a new document by hand
 

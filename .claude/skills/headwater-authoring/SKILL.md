@@ -1,6 +1,6 @@
 ---
 name: headwater-authoring
-description: Write or revise a governed document in this repository, of any kind its taxonomy declares. Use when asked to record a finding, file a decision, or add a document to the corpus, and when `headwater new` refuses. It calls the engine for what the taxonomy decides and carries the judgment it leaves as hand entry.
+description: Write or revise a governed document in this repository, of any kind its taxonomy declares. Use when asked to record a finding, file a decision, or add a document to the corpus, and when `headwater new` refuses. Load it, after headwater-orient, before you change code, a script or a configuration file that a task names, because a document of the corpus can govern that file and forbid the change. It calls the engine for what the taxonomy decides and carries the judgment it leaves as hand entry.
 ---
 
 # Headwater authoring
@@ -12,6 +12,10 @@ Nothing here restates a rule the engine holds. If a sentence below disagrees wit
 ## Run the engine
 
 `headwater` may not be on PATH. Run `command -v headwater`, and if it prints nothing, run `ls */target/*/headwater` to find this repository's own build. Call the engine by the path that prints in every `headwater` command of this skill. Never fall back to grep because the bare name failed.
+
+## Before you change code or a script
+
+A document of the corpus can govern a source file, a script or a configuration file. Run `headwater route "<the task, with every path it names>" --root .` before the first edit, and open each document whose line says `governs <path>`. If that document rules the change out, say so instead of making it. After the last edit, run `headwater check --root .`.
 
 ## Never write a new document by hand
 
@@ -76,4 +80,4 @@ Neither is worked around. Hand both to the `headwater-taxonomy` skill, which own
 Errors must reach zero before a commit. `headwater check --fix` writes the corrections the engine derives without judgment — a British spelling, a contraction whose expansion is one word, a retired term that names a replacement, and a missing reciprocal half — and it leaves every finding whose remedy is a rewrite. Read the diff.
 
 **An edit to a document that a probe reads moves no committed result.** A result pins only what its transcript read, so it keeps its bytes and every verdict. The next `headwater generate` names each result whose read set moved, and `headwater probe stale` names the results the edit reached. Neither one fails for it.
-<!-- installed by headwater init --harness, digest sha256:d686c3d0bd38991d1a9efd99b5f01035de5889784776dd95b09d0694e5e76db3 -->
+<!-- installed by headwater init --harness, digest sha256:a57b5011da1e8ad0533b1a9f14ab32c86458154d267c4f3751650183691149f4 -->

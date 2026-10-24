@@ -17,13 +17,15 @@ This skill is the first thing in a task, and it is finished as soon as the right
 
 Run `headwater route "<the task, with every path it names>" --root .` before the first edit. Open each document whose line says `governs <path>` or names the thing you are changing. If that document rules the change out, say so instead of making it.
 
+After the last edit, run `headwater check --fix --root .` and then `headwater check --root .`, and fix each finding on a file you changed. `--fix` writes the missing inverse half of a relation that you declared on one side only.
+
 ## Before you answer from a record
 
-Run `headwater explain <path or identifier> --root .` on the record. A `superseded_by` edge, or a line that says another document governs the reading, means that the answer is in the other record. Open that record.
+Run `headwater explain <path or identifier> --root .` on the record. A `superseded_by` edge, or a line that says another document governs the reading, means that the answer is in the other record. Open that record before you answer, even when the record you already read summarizes it, because a summary of the record in force is not the record.
 
 ## Before a procedure
 
-For a move, a rename, a publish or a release, list the how-to shelf that `.headwater/corpus.json` names. Open the guide for the operation, whatever word its title uses for it, and follow it.
+For a move, a rename, a publish or a release, list the how-to shelf that `.headwater/corpus.json` names. Open the guide for the operation, whatever word its title uses for it, and follow it. Do this before `route` and before you load another skill, because a route names the documents that govern the paths and not the order of the steps.
 
 ## Start with what a hook already handed you
 
