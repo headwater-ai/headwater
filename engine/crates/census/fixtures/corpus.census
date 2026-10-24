@@ -846,6 +846,8 @@ docs/probe-results/additive-screening-of-2026-10-18-scenario-9.md
   generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/additive-tuning-of-2026-10-20-documents-try-1-scenario-1.md
   generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-tuning-of-2026-10-24-base-re-measure-of-scenario-3.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/campaign-of-2026-09-28-campaign-tier-absent-arm-navigability.md
   generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/campaign-of-2026-09-28-campaign-tier-absent-arm-sufficiency.md
@@ -1007,6 +1009,8 @@ docs/probe-runs/additive-screening-of-2026-10-18-scenario-8.md
 docs/probe-runs/additive-screening-of-2026-10-18-scenario-9.md
   typed: probe_transcript
 docs/probe-runs/additive-tuning-of-2026-10-20-documents-try-1-scenario-1.md
+  typed: probe_transcript
+docs/probe-runs/additive-tuning-of-2026-10-24-base-re-measure-of-scenario-3.md
   typed: probe_transcript
 docs/probe-runs/campaign-of-2026-09-28-campaign-tier-absent-arm-navigability.md
   typed: probe_transcript
