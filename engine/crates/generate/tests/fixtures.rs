@@ -596,14 +596,14 @@ fn every_output_carries_its_own_marker() {
     }
 }
 
-/// This repository generates its one hundred and seven artifacts, and it says
+/// This repository generates its one hundred and eight artifacts, and it says
 /// why for everything else.
 ///
 /// A property and not a recording, for the reason the query crate states about
 /// its own repository run: the corpus is prose somebody edits. What is asserted
 /// is what a prose edit must not change.
 ///
-/// **Twenty-one of the one hundred and seven are shelf indexes, one per shelf that holds a
+/// **Twenty-one of the one hundred and eight are shelf indexes, one per shelf that holds a
 /// document.** The first is the decisions shelf, which the package has declared
 /// since the first-run walkthrough and which produced a reason rather than a
 /// file until #124 filled that shelf. The other twenty are the overlay's own
@@ -625,7 +625,7 @@ fn every_output_carries_its_own_marker() {
 /// documents onto each of them. The nineteenth, `subsystems`, gave a reason
 /// rather than a file until #1288 put the graph build subsystem spec on it.
 ///
-/// **Five of the other eighty-six are one each, and eighty-one are one per
+/// **Five of the other eighty-seven are one each, and eighty-two are one per
 /// committed transcript.** The count in the name of this test therefore moves when a
 /// transcript lands on `docs/probe-runs/`, and this paragraph is the only
 /// thing that says so. The redirect map that the open-questions
@@ -636,14 +636,14 @@ fn every_output_carries_its_own_marker() {
 /// HW-DR-0036 and #418 name: MkDocs's `nav:` over the reading order
 /// `by_precedence` derives. The descriptor, at the path Q14 fixes. And one
 /// probe result for each transcript the corpus holds, which is the
-/// eighty-one: five regression recordings of 2026-09-09 to 2026-09-17, the
+/// eighty-two: five regression recordings of 2026-09-09 to 2026-09-17, the
 /// seven transcripts of each of the two #980 pilots of 2026-09-28, the five
 /// of the #980 campaign of the same day, the two of the #1294 pilot of
 /// 2026-09-29, the two of the #1384 pilot of the same day, and the seven of
 /// the #1384 full re-run of 2026-09-30, the three of the #1474 sealed
 /// regression recording of 2026-10-03, the twenty-six of the #1659 paid layer
 /// campaign of 2026-10-03 to 2026-10-05, and the fifteen of the #1775
-/// screening round of the additive campaign of 2026-10-18, and the two of
+/// screening round of the additive campaign of 2026-10-18, and the three of
 /// the #1777 tuning round of 2026-10-20 and 2026-10-24.
 ///
 /// Two declarations produce a reason rather than a file. The package declares
@@ -659,7 +659,7 @@ fn every_output_carries_its_own_marker() {
 /// compares bytes, so a contributor who edits a `summary` and does not
 /// regenerate fails this test before CI runs.
 #[test]
-fn this_repository_generates_its_one_hundred_and_seven_artifacts_and_accounts_for_the_rest() {
+fn this_repository_generates_its_one_hundred_and_eight_artifacts_and_accounts_for_the_rest() {
     let root = repository_root();
     let resolved = headwater_resolve::repository(&root)
         .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)));
@@ -759,6 +759,7 @@ fn this_repository_generates_its_one_hundred_and_seven_artifacts_and_accounts_fo
             "docs/probe-results/additive-screening-of-2026-10-18-scenario-9.md",
             "docs/probe-results/additive-tuning-of-2026-10-20-documents-try-1-scenario-1.md",
             "docs/probe-results/additive-tuning-of-2026-10-24-base-re-measure-of-scenario-3.md",
+            "docs/probe-results/additive-tuning-of-2026-10-24-skills-round-1-best-so-far-scenario-4.md",
             "docs/probe-results/campaign-of-2026-09-28-campaign-tier-absent-arm-navigability.md",
             "docs/probe-results/campaign-of-2026-09-28-campaign-tier-absent-arm-sufficiency.md",
             "docs/probe-results/campaign-of-2026-09-28-campaign-tier-present-arm-navigability.md",
