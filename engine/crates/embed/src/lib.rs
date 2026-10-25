@@ -208,11 +208,25 @@ impl Model {
     pub fn load(pin: &Pin, dir: &Path) -> Result<Model, String> {
         let graph = verified(pin, dir, GRAPH)?;
         let vocabulary = verified(pin, dir, VOCABULARY)?;
+        Model::assemble(pin, &graph, vocabulary)
+    }
+
+    /// Load the pinned files from bytes the caller already holds, refusing
+    /// any whose digest differs. The route variant of #1777 builds both models
+    /// into the binary, because a probe session's sandbox holds no file of the
+    /// host's, and every byte is still checked against the tree's pin.
+    pub fn from_bytes(pin: &Pin, graph: &[u8], vocabulary: &[u8]) -> Result<Model, String> {
+        pinned_bytes(pin, GRAPH, graph)?;
+        pinned_bytes(pin, VOCABULARY, vocabulary)?;
+        Model::assemble(pin, graph, vocabulary.to_vec())
+    }
+
+    fn assemble(pin: &Pin, graph: &[u8], vocabulary: Vec<u8>) -> Result<Model, String> {
         let vocabulary =
             String::from_utf8(vocabulary).map_err(|_| format!("`{VOCABULARY}` is not UTF-8"))?;
         let tokenizer = WordPiece::parse(&vocabulary)?;
         let plan = tract_onnx::onnx()
-            .model_for_read(&mut graph.as_slice())
+            .model_for_read(&mut &graph[..])
             .and_then(|model| model.into_optimized())
             .and_then(|model| model.into_runnable())
             .map_err(|error| format!("`{GRAPH}` did not load: {error}"))?;
@@ -305,12 +319,24 @@ impl Reranker {
     pub fn load(pin: &Pin, dir: &Path) -> Result<Reranker, String> {
         let graph = verified(pin, dir, GRAPH)?;
         let vocabulary = verified(pin, dir, VOCABULARY)?;
+        Reranker::assemble(pin, &graph, vocabulary)
+    }
+
+    /// Load the pinned files from bytes the caller already holds, refusing
+    /// any whose digest differs, as [`Model::from_bytes`] does.
+    pub fn from_bytes(pin: &Pin, graph: &[u8], vocabulary: &[u8]) -> Result<Reranker, String> {
+        pinned_bytes(pin, GRAPH, graph)?;
+        pinned_bytes(pin, VOCABULARY, vocabulary)?;
+        Reranker::assemble(pin, graph, vocabulary.to_vec())
+    }
+
+    fn assemble(pin: &Pin, graph: &[u8], vocabulary: Vec<u8>) -> Result<Reranker, String> {
         let vocabulary =
             String::from_utf8(vocabulary).map_err(|_| format!("`{VOCABULARY}` is not UTF-8"))?;
         let tokenizer = WordPiece::parse(&vocabulary)?;
         let loaded = |error: TractError| format!("`{GRAPH}` did not load: {error}");
         let model = tract_onnx::onnx()
-            .model_for_read(&mut graph.as_slice())
+            .model_for_read(&mut &graph[..])
             .map_err(loaded)?;
         // The tensors go to the plan by position, so the order is read from
         // the graph and never assumed.
@@ -385,6 +411,22 @@ impl Reranker {
             .copied()
             .ok_or_else(|| "inference returned an empty output".to_string())
     }
+}
+
+/// Refuse bytes whose digest is not the one the pin names for `name`.
+fn pinned_bytes(pin: &Pin, name: &str, bytes: &[u8]) -> Result<(), String> {
+    let pinned = pin
+        .file(name)
+        .ok_or_else(|| format!("the pin of {} pins no `{name}`", pin.model))?;
+    let found = headwater_hash::digest(bytes);
+    if found != pinned.digest {
+        return Err(format!(
+            "the `{name}` built into this binary is not the pinned bytes of {}: the pin says {}, \
+             the bytes are {found}",
+            pin.model, pinned.digest
+        ));
+    }
+    Ok(())
 }
 
 fn verified(pin: &Pin, dir: &Path, name: &str) -> Result<Vec<u8>, String> {

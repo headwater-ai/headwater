@@ -230,6 +230,16 @@ pub enum Evidence {
         /// order.
         of: usize,
     },
+    /// The pinned cross-encoder put the document at this place among the
+    /// candidates of the lexical rank and the embedding path, read on its
+    /// title and summary (#1777, a hook variant). The place is an order, and
+    /// no score is carried, for the reason the type states.
+    Reranked {
+        /// The place, counted from 1.
+        place: usize,
+        /// How many candidates the cross-encoder ordered.
+        of: usize,
+    },
 }
 
 /// A governing edge whose recorded revision differs from the revision its
@@ -275,6 +285,9 @@ impl Evidence {
             Evidence::Titled { words } => format!("repeats its name, {}", words.join(" ")),
             Evidence::Ranked { terms, rank, of } => {
                 format!("matched {}, rank {rank} of {of}", terms.join(" "))
+            }
+            Evidence::Reranked { place, of } => {
+                format!("reranked on its title and summary, place {place} of {of}")
             }
         }
     }

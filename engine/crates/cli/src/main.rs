@@ -4427,11 +4427,28 @@ fn route(root: &Path, task: &str, budget: Option<usize>, json: bool) -> ExitCode
     // govern the file (#1433). A link that dangles, loops or leaves the root
     // gives nothing, and the path is read as written.
     let real = |path: &str| headwater_census::walk::real_within(&corpus.base, path);
-    let mut route = loaded.surface().route_through(task, budget, &tree, &real);
+    // A tree that pins both models is reranked (#1777, hook variant). The
+    // lexical rank is asked for a pool wider than the budget, and the rerank
+    // cuts it back.
+    let reranking = root.join(headwater_embed::PIN).is_file()
+        && root.join(headwater_embed::RERANKER_PIN).is_file();
+    let asked = match reranking {
+        true => Budget {
+            pointers: budget.pointers.max(RERANK_POOL),
+        },
+        false => budget,
+    };
+    let surface = loaded.surface();
+    let mut route = surface.route_through(task, asked, &tree, &real);
     // Git is read only where the route named an ungoverned path, so a route
     // that named none runs no version control command (#953).
     if !route.ungoverned.is_empty() {
         route.retain_unignored(&headwater_graph::scope::Ignored::read(&corpus.base));
+    }
+    if reranking {
+        if let Err(message) = rerank(root, &surface, &mut route, budget) {
+            return fail(&message);
+        }
     }
     // One route, rendered two ways, and the JSON document carries the text form
     // inside it. `.claude/hooks/intent.sh` is the caller that needs both out of
@@ -4442,6 +4459,178 @@ fn route(root: &Path, task: &str, budget: Option<usize>, json: bool) -> ExitCode
         false => print!("{}", route.render(headwater_cli::paint::stdout_color())),
     }
     ExitCode::SUCCESS
+}
+
+/// The two pinned models, built into the binary by `build.rs` (#1777). A probe
+/// session's sandbox holds no file of the host's, so a model on disk is not
+/// one a session can read.
+static EMBED_GRAPH: &[u8] = include_bytes!(env!("HEADWATER_EMBED_GRAPH"));
+static EMBED_VOCAB: &[u8] = include_bytes!(env!("HEADWATER_EMBED_VOCAB"));
+static RERANK_GRAPH: &[u8] = include_bytes!(env!("HEADWATER_RERANK_GRAPH"));
+static RERANK_VOCAB: &[u8] = include_bytes!(env!("HEADWATER_RERANK_VOCAB"));
+
+/// How many candidates each path adds to the pool the cross-encoder orders:
+/// the lexical rank's first ten and the embedding path's first ten, the pool
+/// the offline scoring of 2026-10-24 measured (#1777).
+const RERANK_POOL: usize = 10;
+
+/// The kinds the offline rerank of #1688 dropped from its pool, and so the
+/// kinds this one drops: obligations, reviews and probe records.
+const UNRERANKED_KINDS: [&str; 5] = [
+    "obligation_record",
+    "review_record",
+    "probe",
+    "probe_transcript",
+    "probe_result",
+];
+
+/// The abstain cut on a silent route: the cross-encoder logit at or above
+/// which a candidate may speak where the lexical route found nothing. `None`
+/// keeps every silent route silent, so the reranker only reorders a route
+/// that already spoke.
+///
+/// Hook tuning round 1, variant 2 (#1777): -7.351 is the 0.9 quantile of the
+/// MiniLM-L6 logit over the router-levers pool, so a silent route speaks only
+/// for a candidate that scores in the top tenth. A route that already spoke
+/// is reranked exactly as variant 1 reranks it, with no cut.
+const SILENT_CUT: Option<f32> = Some(-7.351);
+
+/// Rerank the ranked pointers of a route with the pinned cross-encoder.
+///
+/// A pointer that an anchor or the document's own name reached stays where it
+/// is, outside the budget, because nothing ranked it. Every other pointer is
+/// replaced: the pool is the lexical rank's candidates and the embedding
+/// path's nearest summaries, less the kinds above, each read by the
+/// cross-encoder on its title and summary, highest logit first and path order
+/// on a tie, and cut to the budget. Any model that does not load is a refusal,
+/// so this variant never falls back to the lexical order in silence.
+fn rerank(
+    root: &Path,
+    surface: &Surface<'_>,
+    route: &mut headwater_query::Route,
+    budget: Budget,
+) -> Result<(), String> {
+    use headwater_query::{Evidence, Silence};
+    let silent = route.pointers.is_empty();
+    if silent && SILENT_CUT.is_none() {
+        return Ok(());
+    }
+    let mut pointers = Vec::new();
+    let mut evidence = Vec::new();
+    let mut pool: Vec<String> = Vec::new();
+    for (pointer, said) in route.offers() {
+        match said {
+            Some(Evidence::Ranked { .. }) => pool.push(pointer.path.clone()),
+            other => {
+                pointers.push(pointer.clone());
+                if let Some(other) = other {
+                    evidence.push(other.clone());
+                }
+            }
+        }
+    }
+
+    let embed_pin = headwater_embed::Pin::read(root)?;
+    let rerank_pin = headwater_embed::Pin::read_at(&root.join(headwater_embed::RERANKER_PIN))?;
+    let embedder = headwater_embed::Model::from_bytes(&embed_pin, EMBED_GRAPH, EMBED_VOCAB)?;
+    let documents = surface.documents();
+    let query = embedder.embed(&route.task)?;
+    // A probe session starts with no vector cache, and the hook that calls
+    // this has 15 seconds. One thread embeds the 700 summaries of this corpus
+    // in about 8, so the summaries are split over the cores, with no cache.
+    let summaries: Vec<(&str, String)> = documents
+        .iter()
+        .filter_map(|document| {
+            surface
+                .summary(document)
+                .filter(|s| !s.trim().is_empty())
+                .map(|summary| (document.path, summary))
+        })
+        .collect();
+    let threads = std::thread::available_parallelism()
+        .map(|n| n.get())
+        .unwrap_or(1)
+        .clamp(1, 8);
+    let chunk = summaries.len().div_ceil(threads).max(1);
+    let mut near: Vec<(f32, &str)> = Vec::new();
+    let embedded: Vec<Result<Vec<(f32, &str)>, String>> = std::thread::scope(|scope| {
+        let handles: Vec<_> = summaries
+            .chunks(chunk)
+            .map(|part| {
+                let embedder = &embedder;
+                let query = &query;
+                scope.spawn(move || {
+                    part.iter()
+                        .map(|(path, summary)| {
+                            embedder
+                                .embed(summary)
+                                .map(|vector| (headwater_embed::similarity(query, &vector), *path))
+                        })
+                        .collect::<Result<Vec<_>, String>>()
+                })
+            })
+            .collect();
+        handles
+            .into_iter()
+            .map(|handle| {
+                handle
+                    .join()
+                    .unwrap_or_else(|_| Err("an embedding thread panicked".to_string()))
+            })
+            .collect()
+    });
+    for part in embedded {
+        near.extend(part?);
+    }
+    near.sort_by(|a, b| b.0.total_cmp(&a.0).then_with(|| a.1.cmp(b.1)));
+    for (_, path) in near.into_iter().take(RERANK_POOL) {
+        if !pool.iter().any(|held| held == path) {
+            pool.push(path.to_string());
+        }
+    }
+
+    let reranker = headwater_embed::Reranker::from_bytes(&rerank_pin, RERANK_GRAPH, RERANK_VOCAB)?;
+    let mut scored: Vec<(f32, headwater_query::Pointer)> = Vec::new();
+    for path in &pool {
+        let Some(document) = documents.iter().find(|document| document.path == path) else {
+            continue;
+        };
+        if UNRERANKED_KINDS.contains(&document.kind)
+            || pointers
+                .iter()
+                .any(|kept: &headwater_query::Pointer| kept.path == *path)
+        {
+            continue;
+        }
+        let pointer = surface.pointer(document);
+        let title = pointer.name.clone().unwrap_or_else(|| pointer.path.clone());
+        let summary = pointer.summary.clone().unwrap_or_default();
+        let score = reranker.score(&route.task, &format!("{title}\n{summary}"))?;
+        scored.push((score, pointer));
+    }
+    scored.sort_by(|a, b| b.0.total_cmp(&a.0).then_with(|| a.1.path.cmp(&b.1.path)));
+    if silent {
+        if let Some(cut) = SILENT_CUT {
+            scored.retain(|(score, _)| *score >= cut);
+        }
+    }
+    let of = scored.len();
+    let kept = budget.pointers.min(of);
+    for (place, (_, pointer)) in scored.into_iter().take(kept).enumerate() {
+        pointers.push(pointer);
+        evidence.push(Evidence::Reranked {
+            place: place + 1,
+            of,
+        });
+    }
+    route.withheld = of - kept;
+    route.pointers = pointers;
+    route.evidence = evidence;
+    route.silence = match route.pointers.is_empty() {
+        true => route.silence.take().or(Some(Silence::NoDocumentReached)),
+        false => None,
+    };
+    Ok(())
 }
 
 /// `headwater neighbors`.
