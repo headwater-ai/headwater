@@ -47,6 +47,8 @@ cost_cents: 9799
 
 **Where the other figures are.** The rate and the interval of each probe are in the generated result that reads this transcript.
 
+**The owner's near-ceiling ruling keeps the change.** The verdict "not kept" above stands as `try.sh result` wrote it, and no figure in this transcript changes. On 2026-10-25 the owner ruled that a looser keep rule applies near the ceiling ([#1777 comment 6394137349](https://github.com/headwater-ai/headwater/issues/1777#issuecomment-6394137349)). When the best so far passes 85% or more, a change is kept if its point estimate is up and its 80% interval clears zero. The best so far passed 127 of 145, and this line is +4.8 points with the 80% interval [+0.3, +9.4]. So variant 4 is kept, and the skills layer closes.
+
 ## Events
 
 ```yaml
