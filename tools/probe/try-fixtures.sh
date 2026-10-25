@@ -1662,15 +1662,32 @@ usage_session "$b" s4 "$(tool_line Read '{"file_path":".claude/skills/hw-x/SKILL
 mkdir -p "$b/sessions/s5"
 usage_of skills
 check "usage: skills counts a Skill call of a shipped skill, by its name after a plugin, and no other call" out_has "used 2 sessions 4"
-inject='{"type":"attachment","attachment":{"type":"hook_additional_context","hookName":"UserPromptSubmit","content":"Read docs/spec/01-x.md first."}}'
+# The text `headwater route` renders, as the intent hook prints it: the task
+# echoed on the `route` line, an anchor the task names, and two pointer lines,
+# the second of them to the path the task names.
+routed='Headwater routed this task.\n\nroute \"Read docs/spec/03-z.md and answer.\"\n  names the anchor docs/spec/04-w.md\n  purpose rationale 3\n  docs/spec/01-x.md (One) — A summary that names docs/spec/05-v.md.\n    governs docs/spec/04-w.md\n  docs/spec/03-z.md (Three) — The task names it.\n'
+# Claude Code 2.1.288, the version the campaign runs, logs the hook's output as
+# `hook_success`; older logs carry it as `hook_additional_context`.
+inject='{"type":"attachment","rendered":[{"content":"<system-reminder>x</system-reminder>"}],"attachment":{"type":"hook_success","hookName":"UserPromptSubmit","hookEvent":"UserPromptSubmit","content":"'"$routed"'"}}'
+other='{"type":"attachment","attachment":{"type":"hook_success","hookName":"Stop","hookEvent":"Stop","content":"'"$routed"'"}}'
+older='{"type":"attachment","attachment":{"type":"hook_additional_context","hookName":"UserPromptSubmit","content":"'"$routed"'"}}'
 rm -rf "$b"
 usage_session "$b" s1 "$(tool_line Read '{"file_path":"/work/docs/spec/01-x.md"}')" "$inject"
 usage_session "$b" s2 "$(tool_line Bash '{"command":"sed -n 1,20p ./docs/spec/01-x.md"}')" "$inject"
 usage_session "$b" s3 "$(tool_line Read '{"file_path":"docs/spec/02-y.md"}')" "$inject"
 usage_session "$b" s4 "$(tool_line Bash '{"command":"echo docs/spec/01-x.md"}')" "$inject"
 usage_session "$b" s5 "$(tool_line Read '{"file_path":"docs/spec/01-x.md"}')"
+usage_session "$b" s6 "$(tool_line Read '{"file_path":"docs/spec/03-z.md"}')" "$inject"
+usage_session "$b" s7 "$(tool_line Read '{"file_path":"docs/spec/04-w.md"}')" "$inject"
+usage_session "$b" s8 "$(tool_line Read '{"file_path":"docs/spec/05-v.md"}')" "$inject"
+usage_session "$b" s9 "$(tool_line Read '{"file_path":"docs/spec/01-x.md"}')" "$other"
 usage_of hook
-check "usage: hook counts a Read or a reader in Bash of a path the hook injected, and nothing the hook did not inject" out_has "used 2 sessions 5"
+check "usage: hook counts a Read or a reader in Bash of a pointer in the UserPromptSubmit hook_success, and no path the task names, no anchor, evidence or summary path, and no other hook" out_has "used 2 sessions 9"
+rm -rf "$b"
+usage_session "$b" s1 "$(tool_line Read '{"file_path":"docs/spec/01-x.md"}')" "$older"
+usage_session "$b" s2 "$(tool_line Read '{"file_path":"docs/spec/03-z.md"}')" "$older"
+usage_of hook
+check "usage: hook still counts a pointer in the hook_additional_context of an older log, and not the path the task names" out_has "used 1 sessions 2"
 rm -rf "$b"
 usage_session "$b" s1 "$(tool_line mcp__headwater__explain '{"path":"x"}')"
 usage_session "$b" s2 "$(tool_line Read '{"file_path":"mcp__x"}')"
