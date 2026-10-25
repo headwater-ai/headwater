@@ -568,6 +568,7 @@ fn every_decision_record_is_offered_for_its_own_title_inside_the_default_budget(
                 headwater_query::Evidence::Named { .. } => "anchor",
                 headwater_query::Evidence::Titled { .. } => "name",
                 headwater_query::Evidence::Ranked { .. } => "terms",
+                headwater_query::Evidence::Reranked { .. } => "reranker",
             })
         );
         if offered.is_none() {

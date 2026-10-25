@@ -263,6 +263,11 @@ fn of_evidence(evidence: &Evidence) -> Json {
             ("rank", number(*rank)),
             ("of", number(*of)),
         ]),
+        Evidence::Reranked { place, of } => Json::object([
+            ("by", Json::string("reranker")),
+            ("place", number(*place)),
+            ("of", number(*of)),
+        ]),
     }
 }
 
