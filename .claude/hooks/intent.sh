@@ -287,5 +287,13 @@ if [ "$injected" = true ]; then
     printf 'Headwater routed this task to the documents that govern it, before you open a file.\n'
     printf 'These are pointers, not content. Open the ones that bear on the task.\n\n'
     printf '%s\n' "$report"
+    # Hook tuning round 1, variant 4 (#1777): a pointer above that is
+    # superseded is named with the record in force, after the report and in
+    # the hook's own words, because the engine's report does not say it.
+    if successors=$(hw_successor_lines "$route"); then
+        printf '\nA pointer above is superseded, and the record in force is not the one it names:\n'
+        printf '%s\n' "$successors"
+        printf 'Open the record in force before you answer or change anything.\n'
+    fi
 fi
 exit 0

@@ -319,6 +319,70 @@ hw_route_pointers() {
     printf '%s\n' "${_lines#?}"
 }
 
+# Hook tuning round 1, variant 4 (#1777). The `status` of one document, read
+# from its front matter by the engine, or nothing and a non-zero status. The
+# awk prints the lines between the first two `---` fences and parses nothing;
+# `headwater json` reads the YAML, as HW-DR-0055 rules for every wire format.
+hw_document_status() {
+    _file="$hw_root/$1"
+    [ -f "$_file" ] || return 1
+    _engine=$(hw_engine) || return 1
+    { awk 'NR == 1 && $0 == "---" { on = 1; next } on && $0 == "---" { exit } on' "$_file" |
+        "$_engine" json field status; } 2>/dev/null
+}
+
+# One line for every superseded pointer of a route document, naming the record
+# in force, or nothing and a non-zero status when no pointer is superseded. A
+# pointer whose status is `superseded` is followed through the supersession
+# edges `headwater explain` reports, up to three records, to the first one
+# that is not itself superseded. The route never says a pointer is superseded,
+# and a session that opens only the record a task names answers from a ruling
+# that no longer holds.
+hw_successor_lines() {
+    _json=$1
+    _engine=$(hw_engine) || return 1
+    _total=$(hw_count "$_json" pointers) || return 1
+    _out= _at=0
+    while [ "$_at" -lt "$_total" ]; do
+        _old=$(hw_field "$_json" pointers "$_at" path) || _old=
+        _at=$((_at + 1))
+        [ -n "$_old" ] || continue
+        [ "$(hw_document_status "$_old")" = superseded ] || continue
+        _from=$_old _hops=0 _new= _new_name= _new_summary=
+        while [ "$_hops" -lt 3 ]; do
+            _hops=$((_hops + 1))
+            _explain=$("$_engine" explain --root "$hw_root" --json "$_from" 2>/dev/null) || break
+            _edges=$(hw_count "$_explain" related) || break
+            _next= _e=0
+            while [ "$_e" -lt "$_edges" ]; do
+                _relation=$(hw_field "$_explain" related "$_e" relation) || _relation=
+                case $_relation in
+                    supersedes | superseded_by)
+                        _path=$(hw_field "$_explain" related "$_e" pointer path) || _path=
+                        if [ -n "$_path" ] && [ "$_path" != "$_from" ] && [ "$_path" != "$_old" ]; then
+                            _next=$_path
+                            _new_name=$(hw_field "$_explain" related "$_e" pointer name) || _new_name=
+                            _new_summary=$(hw_field "$_explain" related "$_e" pointer summary) || _new_summary=
+                            break
+                        fi
+                        ;;
+                esac
+                _e=$((_e + 1))
+            done
+            [ -n "$_next" ] || break
+            _new=$_next
+            [ "$(hw_document_status "$_new")" = superseded ] || break
+            _from=$_new
+        done
+        [ -n "$_new" ] || continue
+        case $_out in *"  $_old is superseded"*) continue ;; esac
+        _out="$_out
+  $_old is superseded by $_new ($_new_name) — $_new_summary"
+    done
+    [ -n "$_out" ] || return 1
+    printf '%s\n' "${_out#?}"
+}
+
 # The pointer lines of every document that declares it governs one path, or
 # nothing and a non-zero status when none does. The read position and the
 # pre-edit position both say the same set, and this is the one place that asks
