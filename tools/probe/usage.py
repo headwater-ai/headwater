@@ -20,12 +20,24 @@ skills  a `Skill` call in the stream, `<batch>/sessions/<id>/raw.jsonl`, that
         names a skill the skills layer ships. The shipped skills are the
         directories `.claude/skills/<name>` under `layers.skills.paths` in the
         declaration. A call that names `<plugin>:<name>` counts by its name.
-hook    a session that opened a path the intent hook injected. The injected
-        text is each `hook_additional_context` attachment of the harness's log,
-        `<batch>/config/<id>/projects/**/*.jsonl`, and a path in it is a word
-        that holds a `/` and ends in a file extension. A session opened it when
-        a `Read` call names it, or a `Bash` call runs `cat`, `sed`, `head`,
-        `tail` or `less` on a command that names it.
+hook    a session that opened a path the intent hook printed as a pointer.
+        The hook's text is in the harness's log,
+        `<batch>/config/<id>/projects/**/*.jsonl`, as an attachment of one of
+        two types. Claude Code 2.1.288, the version the campaign runs, logs
+        the output of the `UserPromptSubmit` hook as `hook_success`, and only
+        a `hook_success` of that hook counts. Older logs carry it as
+        `hook_additional_context`, which still counts. A pointer is a line of
+        that text that opens with two spaces and a path, which is a word that
+        holds a `/` and ends in a file extension, and the path is followed by
+        ` (`, ` — `, ` [` or the end of the line. That is the line
+        `headwater route` renders for each document it offers. A path on any
+        other line does not count: the `route "<task>"` line and the
+        `names the anchor` lines repeat what the task names, and an evidence
+        line or a summary only describes a pointer. A pointer to a path that
+        the `route "<task>"` line also holds does not count either, because
+        the task already sent the session there. A session opened a
+        pointer when a `Read` call names it, or a `Bash` call runs `cat`,
+        `sed`, `head`, `tail` or `less` on a command that names it.
 mcp     a `tool_use` in the stream whose tool name starts with `mcp__`, the
         rule `tools/probe/probe-record.sh` counts calls to a server by.
 
@@ -49,6 +61,8 @@ except ImportError:
 
 LAYERS = ("skills", "hook", "mcp")
 PATH_WORD = re.compile(r"[A-Za-z0-9_.@-]*/[A-Za-z0-9_./@-]*\.[A-Za-z0-9]+")
+POINTER = re.compile(r"^  (" + PATH_WORD.pattern + r")(?: \(| \u2014 | \[|$)")
+HOOK_KINDS = ("hook_success", "hook_additional_context")
 READERS = re.compile(r"(^|[\s;&|(])(cat|sed|head|tail|less)\s")
 
 
@@ -100,11 +114,27 @@ def used_mcp(stream):
     return False
 
 
+def pointers(text):
+    """The paths the hook's text offers as pointers, less the paths the task names."""
+    found, named = set(), set()
+    for line in text.splitlines():
+        if line.startswith('route "'):
+            named.update(PATH_WORD.findall(line))
+            continue
+        match = POINTER.match(line)
+        if match:
+            found.add(match.group(1))
+    return {path for path in found if not any(same_path(path, word) or same_path(word, path) for word in named)}
+
+
 def used_hook(stream, config):
     injected = set()
     for row in recordings.log_events("s", config, True):
-        if row[2] == "hook_additional_context" and isinstance(row[7], str):
-            injected.update(PATH_WORD.findall(row[7]))
+        if row[2] not in HOOK_KINDS or not isinstance(row[7], str):
+            continue
+        if row[2] == "hook_success" and row[3] != "UserPromptSubmit":
+            continue
+        injected.update(pointers(row[7]))
     if not injected:
         return False
     for row in recordings.stream_events("s", stream, False):
