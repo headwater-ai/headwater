@@ -283,9 +283,16 @@ fi
 
 hw_shadow_log
 
+# Hook tuning round 1, variant 3 (#1777): the two lines that frame the report
+# say what to do with it, and a closing line names the check to run after the
+# last edit. The engine path is printed relative to the root when it sits
+# inside it, so the line is one a session can type as written.
 if [ "$injected" = true ]; then
+    _check=${engine#"$hw_root"/}
     printf 'Headwater routed this task to the documents that govern it, before you open a file.\n'
-    printf 'These are pointers, not content. Open the ones that bear on the task.\n\n'
-    printf '%s\n' "$report"
+    printf 'Open the first pointer below, and every pointer marked `governs` or `repeats its name`, before you open or change any other file.\n'
+    printf 'A summary is not the ruling. Read the document itself before you act on the task, refuse it, or answer it.\n\n'
+    printf '%s\n\n' "$report"
+    printf 'After your last edit, run `%s check --root .` and fix each finding it reports on a file you changed.\n' "$_check"
 fi
 exit 0
