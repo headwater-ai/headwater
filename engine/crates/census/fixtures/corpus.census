@@ -868,6 +868,8 @@ docs/probe-results/additive-tuning-of-2026-10-24-skills-round-2-variant-3-scenar
   generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/additive-tuning-of-2026-10-24-skills-round-2-variant-4-scenario-4.md
   generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-tuning-of-2026-10-25-skills-round-2-confirmation-scenario-4.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/campaign-of-2026-09-28-campaign-tier-absent-arm-navigability.md
   generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/campaign-of-2026-09-28-campaign-tier-absent-arm-sufficiency.md
@@ -1051,6 +1053,8 @@ docs/probe-runs/additive-tuning-of-2026-10-24-skills-round-2-variant-2-scenario-
 docs/probe-runs/additive-tuning-of-2026-10-24-skills-round-2-variant-3-scenario-4.md
   typed: probe_transcript
 docs/probe-runs/additive-tuning-of-2026-10-24-skills-round-2-variant-4-scenario-4.md
+  typed: probe_transcript
+docs/probe-runs/additive-tuning-of-2026-10-25-skills-round-2-confirmation-scenario-4.md
   typed: probe_transcript
 docs/probe-runs/campaign-of-2026-09-28-campaign-tier-absent-arm-navigability.md
   typed: probe_transcript
