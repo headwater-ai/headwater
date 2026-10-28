@@ -1,9 +1,9 @@
 ---
 id: HW-PD-0026
 status: current
-status_since: 2026-10-28
+status_since: 2026-10-29
 summary: "When a better structure costs a comparison with earlier runs, a baseline or a probe set, we take the loss and undo the old work. A measured result stays as a dated record. The 0.07 re-cut is the first application."
-last_verified: 2026-10-28
+last_verified: 2026-10-29
 title: "We pivot rather than carry debt forward"
 provenance:
   warrant: asserted
@@ -21,7 +21,7 @@ relations:
 
 The additive campaign of [HW-DR-0111](../../decisions/0111-the-additive-campaign-adds-six-layers-to-plain-code-in-fourteen-scenarios-and-registers-one-comparison-each.md) measured its layers in fourteen scenarios. Its tuning round closed under [#1777](https://github.com/headwater-ai/headwater/issues/1777). The re-cut of milestone 0.07, [#1868](https://github.com/headwater-ai/headwater/issues/1868), replaces that design with eleven actions, five layers and seven scenarios. A result from the new design does not compare with a baseline from the old one. So the re-cut had to choose: keep the old design for the comparison, or take the loss.
 
-The owner stated the principle below on 2026-10-28, during the re-cut, and approved this wording on 2026-10-29 ([#1869](https://github.com/headwater-ai/headwater/issues/1869)). Before this record, no document in `DEVELOPING.md` or under `docs/process/` stated a rule about a structure that a better one replaces.
+The owner stated the principle below on 2026-10-28, during the re-cut, and approved this wording on 2026-10-29 ([#1869](https://github.com/headwater-ai/headwater/issues/1869)). Before this record, neither `DEVELOPING.md` nor a document under `docs/process/` stated a rule about a structure that a better one replaces.
 
 ## Decision
 
