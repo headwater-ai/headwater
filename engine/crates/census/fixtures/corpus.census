@@ -1292,6 +1292,8 @@ docs/process/decisions/0024-a-document-that-moves-to-a-process-shelf-keeps-its-i
   typed: process_decision
 docs/process/decisions/0025-a-paid-try-runs-under-its-own-command-and-never-under-the-build-order.md
   typed: process_decision
+docs/process/decisions/0026-we-pivot-rather-than-carry-debt-forward.md
+  typed: process_decision
 docs/process/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/process/evaluations/README.md
