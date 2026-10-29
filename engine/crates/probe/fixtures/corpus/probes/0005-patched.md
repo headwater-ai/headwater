@@ -5,6 +5,7 @@ status_since: 2026-08-14
 summary: The oracle route, and the one form whose expectation names a check this engine carries.
 probe_category: sufficiency
 expectation: patched
+action: repair_check
 oracle: section.required.missing
 ---
 

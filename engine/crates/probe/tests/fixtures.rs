@@ -2153,6 +2153,149 @@ fn a_category_outside_the_closed_set_stops_the_run() {
     );
 }
 
+// --- the action and the moments of HW-DR-0112 (#1873) ------------------------
+
+fn selected_ids(plan: &Plan) -> Vec<&str> {
+    plan.selected
+        .iter()
+        .map(|selected| selected.id.as_str())
+        .collect()
+}
+
+/// The case #1873 exists for: a `write.sh` screen needs the probes that pass
+/// the write moment, and a probe passes it when `write` is one item of its
+/// `moments` list. `PROBE-FIX-opened` passes `[read]` alone, so a narrowing
+/// that read the list as one scalar, or matched any moment, selects it too.
+#[test]
+fn a_moment_narrows_the_selection_to_the_probes_whose_list_holds_it() {
+    let plan = plan_at(
+        Tier::Regression,
+        &Narrowing {
+            moment: Some("write".to_string()),
+            ..Narrowing::default()
+        },
+    );
+    assert_eq!(plan.refusal, None, "{:?}", plan.refusal);
+    assert_eq!(selected_ids(&plan), ["PROBE-FIX-cited"]);
+
+    let read = plan_at(
+        Tier::Regression,
+        &Narrowing {
+            moment: Some("read".to_string()),
+            ..Narrowing::default()
+        },
+    );
+    assert_eq!(selected_ids(&read), ["PROBE-FIX-cited", "PROBE-FIX-opened"]);
+}
+
+#[test]
+fn an_action_narrows_the_selection_to_the_probes_that_declare_it() {
+    let plan = plan_at(
+        Tier::Regression,
+        &Narrowing {
+            action: Some("ask_or_locate".to_string()),
+            ..Narrowing::default()
+        },
+    );
+    assert_eq!(plan.refusal, None, "{:?}", plan.refusal);
+    assert_eq!(
+        selected_ids(&plan),
+        ["PROBE-FIX-answered", "PROBE-FIX-not-opened", "PROBE-FIX-opened"]
+    );
+    let opened = plan
+        .selected
+        .iter()
+        .find(|selected| selected.id == "PROBE-FIX-opened")
+        .expect("the opened probe");
+    assert_eq!(opened.action.as_deref(), Some("ask_or_locate"));
+    assert_eq!(opened.moments, ["read"]);
+}
+
+#[test]
+fn an_action_and_a_moment_narrow_together() {
+    let plan = plan_at(
+        Tier::Regression,
+        &Narrowing {
+            action: Some("ask_or_locate".to_string()),
+            moment: Some("write".to_string()),
+            ..Narrowing::default()
+        },
+    );
+    assert_eq!(
+        plan.refusal,
+        Some(Refusal::SelectionEmpty {
+            category: None,
+            action: Some("ask_or_locate".to_string()),
+            moment: Some("write".to_string()),
+        }),
+        "no ask_or_locate probe passes the write moment"
+    );
+}
+
+#[test]
+fn a_moment_outside_the_closed_set_stops_the_run() {
+    let plan =
+        plan_over_probe(&|source| source.replace("moments: [read]", "moments: [read, bogus]"));
+    assert_eq!(
+        plan.refusal,
+        Some(Refusal::Undeclared {
+            path: "corpus/probes/0001-opened.md".to_string(),
+            facet: "moments",
+            found: Some("bogus".to_string()),
+        })
+    );
+}
+
+#[test]
+fn an_action_outside_the_closed_set_stops_the_run() {
+    let plan =
+        plan_over_probe(&|source| source.replace("action: ask_or_locate", "action: wibble"));
+    assert!(
+        matches!(
+            plan.refusal,
+            Some(Refusal::Undeclared { facet: "action", found: Some(ref found), .. })
+                if found == "wibble"
+        ),
+        "{:?}",
+        plan.refusal
+    );
+}
+
+/// The taxonomy requires `action` on the probe kind, so a probe without one is
+/// a probe no action-narrowed run could ever select or exclude correctly.
+#[test]
+fn a_probe_without_an_action_stops_the_run() {
+    let plan = plan_over_probe(&|source| source.replace("action: ask_or_locate\n", ""));
+    assert!(
+        matches!(
+            plan.refusal,
+            Some(Refusal::Undeclared { facet: "action", found: None, .. })
+        ),
+        "{:?}",
+        plan.refusal
+    );
+}
+
+/// One probe has one action. A list would let a probe count toward two rows
+/// of the grid, and a denominator per row would double-count it.
+#[test]
+fn an_action_that_is_a_list_stops_the_run() {
+    let plan = plan_over_probe(&|source| {
+        source.replace(
+            "action: ask_or_locate",
+            "action: [ask_or_locate, repair_check]",
+        )
+    });
+    assert!(
+        matches!(
+            plan.refusal,
+            Some(Refusal::Undeclared { facet: "action", found: Some(_), .. })
+        ),
+        "{:?}",
+        plan.refusal
+    );
+}
+
 // --- the refusals a transcript can provoke -----------------------------------
 
 /// The rule this fixture set exists for. Spec 5: the transcript "holds no model
