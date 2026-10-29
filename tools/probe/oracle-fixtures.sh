@@ -334,6 +334,9 @@ tree=$(fresh keep-html-comment) && sed "s|$keep_literal|<!-- & -->|" "$base/$new
 grep -q -F -- "<!-- $keep_literal -->" "$tree/$new" || echo "oracle-fixtures: the HTML comment was not added, so the next case reads nothing." >&2
 expect 0 "nothing-else-broken with no keep line passes a tree that put the kept text in an HTML comment" "$tree" nothing-else-broken.sh "$work/scoped"
 expect 1 "nothing-else-broken with a keep line fails a kept text that only an HTML comment holds" "$tree" nothing-else-broken.sh "$work/scoped-keep"
+tree=$(fresh keep-html-block) && awk -v k="$keep_literal" 'index($0, k) { print "<!--"; print; print "-->"; next } { print }' "$base/$new" > "$tree/$new"
+grep -q -x -- '<!--' "$tree/$new" || echo "oracle-fixtures: the HTML comment block was not added, so the next case reads nothing." >&2
+expect 1 "nothing-else-broken with a keep line fails a kept text that an HTML comment over several lines holds" "$tree" nothing-else-broken.sh "$work/scoped-keep"
 keep_front='- tools/probe/leak.py'
 grep -q -x -F -- "    $keep_front" "$base/$new" || echo "oracle-fixtures: $new does not hold \`$keep_front\` in its front matter, so the next cases read nothing." >&2
 { cat "$work/scoped"; printf '# keep: %s %s\n' "$new" "$keep_front"; } > "$work/scoped-keep-front"
