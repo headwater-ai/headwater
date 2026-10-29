@@ -483,6 +483,11 @@ grep -q -x -F -- "    $edge_front" "$tree/$new" || echo "oracle-fixtures: the ed
 expect 1 "nothing-else-broken with an edge line fails the edge moved under another relation" "$tree" nothing-else-broken.sh "$work/scoped-edge"
 { cat "$work/scoped"; printf '# edge: %s governs\n' "$new"; } > "$work/scoped-edge-bad"
 expect 2 "nothing-else-broken refuses an edge line with no target" "$base" nothing-else-broken.sh "$work/scoped-edge-bad"
+# The far end of an edge is not a declaration of the path. HW-DR-0112
+# supersedes HW-DR-0111, so explain lists `superseded_by` on HW-DR-0111 as an
+# inbound edge from HW-DR-0112, and an edge line reads outbound edges alone.
+{ cat "$work/scoped"; printf '# edge: %s superseded_by %s\n' "$old" "$new"; } > "$work/scoped-edge-inbound"
+expect 1 "nothing-else-broken with an edge line fails an edge the path does not declare and its far end does" "$base" nothing-else-broken.sh "$work/scoped-edge-inbound"
 summary_clause='Phase B reports held-out numbers per action.'
 grep -q -F -- "$summary_clause" "$base/$new" || echo "oracle-fixtures: the summary of $new does not hold \`$summary_clause\`, so the summary cases read nothing." >&2
 { cat "$work/scoped"; printf '# summary: %s %s\n' "$new" "$summary_clause"; } > "$work/scoped-summary"
