@@ -729,11 +729,18 @@ stage() {
 }
 
 # The issues the log records, space-separated. A log line means the run is
-# done with the issue, whatever its verdict, so nothing hands it out again.
+# done with the issue, whatever its verdict, so nothing hands it out again,
+# with one exception: a merge that closes nothing is a `Refs` slice, and a
+# `Refs` merge does not release the issue (`hw-run-policy`), so its next slice
+# still resumes from the handover. In run 20261028-2310 the slice-1 merges of
+# #1874 and #1875 hid both slice-2 handovers, and the loop stopped `empty`.
 logged_issues() {
     [ -s "$1/log.jsonl" ] || return 0
     need_jq
-    jq -r '.issue // empty' "$1/log.jsonl" 2>/dev/null | tr '\n' ' '
+    jq -r '. as $l | select(.issue != null)
+        | select((((.merge // "") | type == "string" and test("^[0-9a-f]{7,40}$"))
+            and ((.closed // []) | map(tostring) | index($l.issue | tostring) == null)) | not)
+        | .issue' "$1/log.jsonl" 2>/dev/null | tr '\n' ' '
 }
 
 # The last ruling of each issue in decisions.md that this run wrote, one
@@ -1191,10 +1198,14 @@ resume() {
     fi
     [ -d "$dir/handover" ] || return 0
     logged=$(logged_issues "$dir")
+    ruled=$(ruled_issues "$dir")
     for h in "$dir"/handover/*; do
         [ -f "$h" ] || continue
         issue=${h##*/}
         case " $logged " in *" $issue "*) continue ;; esac
+        # A slice remainder the run let go is ruled so, and its handover stays.
+        kind=$(printf '%s\n' "$ruled" | awk -v i="$issue" '$1 == i { print $2 }')
+        case $kind in gated|deferred|refused) continue ;; esac
         reached=$(sed -n 's/^stage //p' "$h")
         case $reached in
             adjudicated)

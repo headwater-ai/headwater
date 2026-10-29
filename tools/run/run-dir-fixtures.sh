@@ -415,6 +415,17 @@ sh "$tool" release "$resume" 13 >/dev/null 2>&1
 printf '{"iter":1,"issue":12,"pr":3,"merge":"m","verdict":"refused","proved":"p","opened":[],"closed":[]}\n' >> "$resume/log.jsonl"
 same 'next skips an issue the log records, and prints EMPTY when nothing is left' EMPTY "$(sh "$tool" next "$resume" 2>&1)"
 : > "$resume/log.jsonl"
+# A `Refs` slice merge closes nothing and does not release the issue, so the
+# next slice's handover still resumes; a merge that closes the issue ends it.
+printf '{"iter":1,"issue":11,"pr":911,"merge":"0123abcd","verdict":"merge","proved":"p","opened":[],"closed":[]}\n' >> "$resume/log.jsonl"
+same 'resume still prints an issue whose logged merge closed nothing' 'verified-fail iterate' \
+    "$(sh "$tool" resume "$resume" 2>&1 | awk '$1 == 11 { print $2, $3 }')"
+printf '{"iter":1,"issue":11,"pr":912,"merge":"4567cdef","verdict":"merge","proved":"p","opened":[],"closed":[11]}\n' >> "$resume/log.jsonl"
+same '  and drops it once a logged merge closes it' '' "$(sh "$tool" resume "$resume" 2>&1 | awk '$1 == 11')"
+: > "$resume/log.jsonl"
+printf -- '- 2026-10-29 — RULED #11 gated (run %s): remainder ruled a separate issue\n' "${resume##*/}" >> "$resume/decisions.md"
+same 'resume drops a handover whose issue this run ruled gated' '' "$(sh "$tool" resume "$resume" 2>&1 | awk '$1 == 11')"
+printf -- '- 2026-10-29 — RULED #11 open (run %s): back in\n' "${resume##*/}" >> "$resume/decisions.md"
 
 touch "$resume/drain"
 same 'in drain, next prints DRAIN instead of an issue' DRAIN "$(sh "$tool" next "$resume" 2>&1)"
