@@ -157,12 +157,12 @@ answer_keys:
 #   lock-regenerated.sh [<file> <literal>]...
 #                                        `headwater taxonomy resolve --check`,
 #                                        and each <file> holds its <literal>
-#                                        outside a YAML comment
+#                                        outside a comment
 #   nothing-else-broken.sh <baseline>    no finding the pin did not carry, on
 #                                        the files of a `# scope:` line of
 #                                        <baseline> where it has one, and
 #                                        each `# keep: <path> <literal>`
-#                                        line holds
+#                                        line holds outside a comment
 #   test-passes.sh [--ignored] <crate> <test-target> [<filter>]
 #                                        cargo passes and ran a case
 #   no-hook-warning.sh                   row 11: no hook spoke in the
