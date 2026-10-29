@@ -5,9 +5,9 @@
 #
 #     sh tools/probe/oracles/no-hook-warning.sh <log>...
 #
-# This oracle reads the session's transcript and not its tree, so a row 11
-# probe declares two oracles: one over the tree for "done", and this one.
-# Each <log> is a file of the harness's own session log, or a directory that
+# This oracle reads the session's transcript and not its tree. The `oracle:`
+# facet of a row 11 probe names its oracle over the tree, for "done", and
+# the recorder runs this script beside it on each session of row 11. Each <log> is a file of the harness's own session log, or a directory that
 # holds such files, `*.jsonl`, which is searched. That log, and not the
 # stream the recorder reads, holds the hook attachments, as
 # `tools/probe/recordings.py` states. Passing the log path of a session to

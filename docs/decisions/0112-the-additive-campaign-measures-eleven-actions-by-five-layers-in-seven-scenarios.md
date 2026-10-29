@@ -15,6 +15,8 @@ relations:
   governs:
     - tools/probe/arms/hooks/.claude/settings.json
     - .headwater/probe.yml
+    - tools/probe/oracles/**
+    - tools/probe/oracle-fixtures.sh
   supersedes:
     - HW-DR-0111
   traces_to:
@@ -72,6 +74,24 @@ The set has 11 actions × (2 tuning + 2 held-out) = 44 probes. Each probe is tag
 ### One probe shape
 
 Every probe has one shape: one task in plain words, one target, and one key. Each probe document states them under three headings of the same names, `Task`, `Target` and `Key`. The grader checks the key from the recorded transcript, with no model as a judge. For an oracle row, the key is the oracle: the probe passes when the oracle command passes in the grading copy. #1874 defines the form of an oracle.
+
+### The form of an oracle
+
+Added on 2026-10-29 by #1874. A probe of rows 2–9 or 11 declares `expectation: patched` and `oracle: "command:<name>"` or `oracle: "test:<name>"`. The name is an entry under `oracles:` in `.headwater/probe.yml`, with the four fields that block already has: `paths`, `command`, `parser` and `holds`.
+
+The command calls a generic script under `tools/probe/oracles/` with the arguments of the probe. The script runs from the root of the grading copy, and it reads no history, because that copy holds none. It exits 0 on a pass and 1 on a fail, and a usage error exits 2. It writes exactly one line of evidence to standard output.
+
+The oracle holds each script that its command runs, and `lib.sh`, which each script sources. The recorder restores a held file over the copy that the session wrote. So a session cannot change the script that grades it.
+
+A file that holds a value only the answer knows names its probe in its first ten lines, and the oracle holds it. A hidden test and a baseline of findings are two examples. The seal removes such a file from every workspace. A generic script names no probe. The seal keeps `probe.yml` as a fold, so each workspace still holds the command line. A command therefore states what the oracle checks and never the answer.
+
+Row 11 has two conditions. The `oracle:` facet names the oracle over the tree. `no-hook-warning.sh` reads the log of the session, and #1875 makes the recorder run it on each session of row 11.
+
+`tools/probe/oracle-fixtures.sh` runs each script over a tree that it must pass and a tree that it must fail. An oracle that passes both trees, or fails both, fails CI. The pilot of #1835 found probes of each kind.
+
+### The form of a phrasing
+
+Added on 2026-10-29 by #1874. Under `## Task`, a probe has two or three subsections with the headings `### Phrasing 1`, `### Phrasing 2` and `### Phrasing 3`. Each one states the whole task in different words. The target and the key are the same for each phrasing. The shape check reads level-two headings only, so a probe with phrasings keeps the shape of `Task`, `Target` and `Key`. Until #1875 draws one phrasing for each session, a session reads every phrasing of its probe.
 
 ### The seven scenarios
 

@@ -1948,11 +1948,12 @@ struct Graded<'a> {
 /// script the command runs is held, and so is `lib.sh` that it sources,
 /// because the recorder restores a held file over the session's copy and a
 /// session can otherwise rewrite the script that grades it.
-fn mechanical_findings(probe: &Graded, oracles: &[headwater_probe::Oracle], root: &Path) -> Vec<String> {
+fn mechanical_findings(
+    probe: &Graded,
+    oracles: &[headwater_probe::Oracle],
+    root: &Path,
+) -> Vec<String> {
     let mut findings = Vec::new();
-    if true {
-        return findings;
-    }
     if !MECHANICAL_ACTIONS.contains(&probe.action) {
         return findings;
     }
@@ -1987,7 +1988,10 @@ fn mechanical_findings(probe: &Graded, oracles: &[headwater_probe::Oracle], root
     for held in &entry.holds {
         let path = root.join(held);
         if !path.is_file() {
-            findings.push(format!("{id}: {held}, which the oracle `{}` holds, does not exist", probe.oracle));
+            findings.push(format!(
+                "{id}: {held}, which the oracle `{}` holds, does not exist",
+                probe.oracle
+            ));
             continue;
         }
         if held.starts_with(GENERIC_ORACLES) {
@@ -2040,7 +2044,10 @@ fn mechanical_findings(probe: &Graded, oracles: &[headwater_probe::Oracle], root
 #[test]
 fn every_mechanical_row_probe_grades_against_a_declared_oracle() {
     let root = repository_root();
-    let oracle = |name: &str, command: &str, parser: headwater_probe::OracleParser, holds: &[&str]| headwater_probe::Oracle {
+    let oracle = |name: &str,
+                  command: &str,
+                  parser: headwater_probe::OracleParser,
+                  holds: &[&str]| headwater_probe::Oracle {
         name: name.to_owned(),
         paths: vec!["docs/*".to_owned()],
         command: command.to_owned(),
@@ -2053,33 +2060,167 @@ fn every_mechanical_row_probe_grades_against_a_declared_oracle() {
             "sound",
             "sh tools/probe/oracles/check-clean.sh",
             exit,
-            &["tools/probe/oracles/check-clean.sh", "tools/probe/oracles/lib.sh"],
+            &[
+                "tools/probe/oracles/check-clean.sh",
+                "tools/probe/oracles/lib.sh",
+            ],
         ),
-        oracle("no-lib", "sh tools/probe/oracles/check-clean.sh", exit, &["tools/probe/oracles/check-clean.sh"]),
-        oracle("unheld", "sh tools/probe/oracles/check-clean.sh", exit, &["tools/probe/oracles/lib.sh"]),
-        oracle("absent", "sh tools/probe/oracles/no-such.sh", exit, &["tools/probe/oracles/no-such.sh", "tools/probe/oracles/lib.sh"]),
+        oracle(
+            "no-lib",
+            "sh tools/probe/oracles/check-clean.sh",
+            exit,
+            &["tools/probe/oracles/check-clean.sh"],
+        ),
+        oracle(
+            "unheld",
+            "sh tools/probe/oracles/check-clean.sh",
+            exit,
+            &["tools/probe/oracles/lib.sh"],
+        ),
+        oracle(
+            "absent",
+            "sh tools/probe/oracles/no-such.sh",
+            exit,
+            &[
+                "tools/probe/oracles/no-such.sh",
+                "tools/probe/oracles/lib.sh",
+            ],
+        ),
         oracle(
             "hidden",
             "sh tools/hw-cargo test -p headwater-check --test probe_oracle_future_date",
             headwater_probe::OracleParser::CargoTest,
             &["engine/crates/check/tests/probe_oracle_future_date.rs"],
         ),
-        oracle("bare-test", "sh tools/hw-cargo test", headwater_probe::OracleParser::CargoTest, &[]),
+        oracle(
+            "bare-test",
+            "sh tools/hw-cargo test",
+            headwater_probe::OracleParser::CargoTest,
+            &[],
+        ),
     ];
     let date = "HW-PROBE-a-rule-that-reads-the-date-takes-it-from-the-run-and-ships-with-the-fixture-that-fails-it";
     let seeded: [(&str, Graded, bool); 12] = [
-        ("a mechanical probe with `oracle: none`", Graded { id: "HW-PROBE-seeded", action: "add_document", expectation: "patched", oracle: "none" }, false),
-        ("a sound command oracle", Graded { id: "HW-PROBE-seeded", action: "add_document", expectation: "patched", oracle: "command:sound" }, true),
-        ("row 11 with `oracle: none`", Graded { id: "HW-PROBE-seeded", action: "ungoverned_control", expectation: "patched", oracle: "none" }, false),
-        ("row 1 keeps `oracle: none`", Graded { id: "HW-PROBE-seeded", action: "ask_or_locate", expectation: "answered", oracle: "none" }, true),
-        ("row 10 keeps `oracle: none`", Graded { id: "HW-PROBE-seeded", action: "review_change", expectation: "cited", oracle: "none" }, true),
-        ("an expectation other than `patched`", Graded { id: "HW-PROBE-seeded", action: "move_document", expectation: "opened", oracle: "command:sound" }, false),
-        ("a rule finding in place of an oracle", Graded { id: "HW-PROBE-seeded", action: "edit_depended_document", expectation: "patched", oracle: "relation.reciprocity.missing" }, false),
-        ("a generic script whose lib.sh is not held", Graded { id: "HW-PROBE-seeded", action: "add_document", expectation: "patched", oracle: "command:no-lib" }, false),
-        ("a generic script that is not held", Graded { id: "HW-PROBE-seeded", action: "add_document", expectation: "patched", oracle: "command:unheld" }, false),
-        ("a held file that does not exist", Graded { id: "HW-PROBE-seeded", action: "add_document", expectation: "patched", oracle: "command:absent" }, false),
-        ("a hidden test that names another probe", Graded { id: "HW-PROBE-seeded", action: "change_governed_code", expectation: "patched", oracle: "test:hidden" }, false),
-        ("a test oracle that holds no file", Graded { id: date, action: "change_governed_code", expectation: "patched", oracle: "test:bare-test" }, false),
+        (
+            "a mechanical probe with `oracle: none`",
+            Graded {
+                id: "HW-PROBE-seeded",
+                action: "add_document",
+                expectation: "patched",
+                oracle: "none",
+            },
+            false,
+        ),
+        (
+            "a sound command oracle",
+            Graded {
+                id: "HW-PROBE-seeded",
+                action: "add_document",
+                expectation: "patched",
+                oracle: "command:sound",
+            },
+            true,
+        ),
+        (
+            "row 11 with `oracle: none`",
+            Graded {
+                id: "HW-PROBE-seeded",
+                action: "ungoverned_control",
+                expectation: "patched",
+                oracle: "none",
+            },
+            false,
+        ),
+        (
+            "row 1 keeps `oracle: none`",
+            Graded {
+                id: "HW-PROBE-seeded",
+                action: "ask_or_locate",
+                expectation: "answered",
+                oracle: "none",
+            },
+            true,
+        ),
+        (
+            "row 10 keeps `oracle: none`",
+            Graded {
+                id: "HW-PROBE-seeded",
+                action: "review_change",
+                expectation: "cited",
+                oracle: "none",
+            },
+            true,
+        ),
+        (
+            "an expectation other than `patched`",
+            Graded {
+                id: "HW-PROBE-seeded",
+                action: "move_document",
+                expectation: "opened",
+                oracle: "command:sound",
+            },
+            false,
+        ),
+        (
+            "a rule finding in place of an oracle",
+            Graded {
+                id: "HW-PROBE-seeded",
+                action: "edit_depended_document",
+                expectation: "patched",
+                oracle: "relation.reciprocity.missing",
+            },
+            false,
+        ),
+        (
+            "a generic script whose lib.sh is not held",
+            Graded {
+                id: "HW-PROBE-seeded",
+                action: "add_document",
+                expectation: "patched",
+                oracle: "command:no-lib",
+            },
+            false,
+        ),
+        (
+            "a generic script that is not held",
+            Graded {
+                id: "HW-PROBE-seeded",
+                action: "add_document",
+                expectation: "patched",
+                oracle: "command:unheld",
+            },
+            false,
+        ),
+        (
+            "a held file that does not exist",
+            Graded {
+                id: "HW-PROBE-seeded",
+                action: "add_document",
+                expectation: "patched",
+                oracle: "command:absent",
+            },
+            false,
+        ),
+        (
+            "a hidden test that names another probe",
+            Graded {
+                id: "HW-PROBE-seeded",
+                action: "change_governed_code",
+                expectation: "patched",
+                oracle: "test:hidden",
+            },
+            false,
+        ),
+        (
+            "a test oracle that holds no file",
+            Graded {
+                id: date,
+                action: "change_governed_code",
+                expectation: "patched",
+                oracle: "test:bare-test",
+            },
+            false,
+        ),
     ];
     let mut wrong = Vec::new();
     for (label, probe, sound) in &seeded {
@@ -2091,42 +2232,107 @@ fn every_mechanical_row_probe_grades_against_a_declared_oracle() {
             ));
         }
     }
-    let hidden = Graded { id: date, action: "change_governed_code", expectation: "patched", oracle: "test:hidden" };
+    let hidden = Graded {
+        id: date,
+        action: "change_governed_code",
+        expectation: "patched",
+        oracle: "test:hidden",
+    };
     let found = mechanical_findings(&hidden, &seeded_oracles, &root);
     if !found.is_empty() {
-        wrong.push(format!("seeded, a hidden test that names its probe: wanted no finding, got {found:?}"));
+        wrong.push(format!(
+            "seeded, a hidden test that names its probe: wanted no finding, got {found:?}"
+        ));
+    }
+    let none = Graded {
+        id: "HW-PROBE-seeded",
+        action: "add_document",
+        expectation: "patched",
+        oracle: "none",
+    };
+    let found = mechanical_findings(&none, &seeded_oracles, &root);
+    if !found.iter().any(|it| it.contains("`oracle: none`")) {
+        wrong.push(format!(
+            "seeded, `oracle: none` on a mechanical row is refused as itself, not as an undeclared oracle: got {found:?}"
+        ));
+    }
+
+    // The awaiting list, seeded: a listed probe that now passes, a listed
+    // probe gone from the shelf, and an unlisted probe that fails are each
+    // reported, and a listed probe that still fails is not.
+    let seeded_shelf = vec![
+        ("HW-PROBE-fixed".to_owned(), Vec::new()),
+        ("HW-PROBE-waiting".to_owned(), vec!["a finding".to_owned()]),
+        (
+            "HW-PROBE-unlisted".to_owned(),
+            vec!["an unlisted finding".to_owned()],
+        ),
+    ];
+    let reported = awaiting_findings(
+        &seeded_shelf,
+        &["HW-PROBE-fixed", "HW-PROBE-waiting", "HW-PROBE-gone"],
+    );
+    for want in ["HW-PROBE-fixed", "HW-PROBE-gone", "an unlisted finding"] {
+        if !reported.iter().any(|it| it.contains(want)) {
+            wrong.push(format!(
+                "seeded awaiting list: nothing reports {want}: {reported:?}"
+            ));
+        }
+    }
+    if reported.len() != 3 {
+        wrong.push(format!(
+            "seeded awaiting list: wanted 3 reports, got {reported:?}"
+        ));
     }
 
     let path = root.join(headwater_probe::budget::PATH);
-    let source = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    let source =
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     let budgets = headwater_probe::Budgets::read(&source).unwrap_or_else(|e| panic!("{e}"));
-    let shelf = probes();
-    let mut awaiting_seen = Vec::new();
-    for probe in &shelf {
+    let mut shelf = Vec::new();
+    for probe in probes() {
         let (_, document) = front_matter(&root.join(&probe.path));
         let id = probe.id.clone().unwrap_or_else(|| probe.path.clone());
         let action = scalar(&document, "action").unwrap_or_default();
         let oracle = scalar(&document, "oracle").unwrap_or_default();
         let expectation = probe.expectation.clone().unwrap_or_default();
-        let graded = Graded { id: &id, action: &action, expectation: &expectation, oracle: &oracle };
+        let graded = Graded {
+            id: &id,
+            action: &action,
+            expectation: &expectation,
+            oracle: &oracle,
+        };
         let found = mechanical_findings(&graded, &budgets.oracles, &root);
-        if AWAITING_ORACLE.contains(&id.as_str()) {
-            awaiting_seen.push(id.clone());
+        shelf.push((id, found));
+    }
+    wrong.extend(awaiting_findings(&shelf, AWAITING_ORACLE));
+    assert!(wrong.is_empty(), "{}", wrong.join("\n"));
+}
+
+/// What the shelf owes, given each probe's findings and the probes still
+/// awaiting an oracle: every finding of a probe the list does not name, each
+/// listed probe that has none now, and each listed probe not on the shelf.
+fn awaiting_findings(shelf: &[(String, Vec<String>)], awaiting: &[&str]) -> Vec<String> {
+    let mut out = Vec::new();
+    for (id, found) in shelf {
+        if awaiting.contains(&id.as_str()) {
             if found.is_empty() {
-                wrong.push(format!(
+                out.push(format!(
                     "{id} grades against a declared oracle now, so delete its line from AWAITING_ORACLE"
                 ));
             }
         } else {
-            wrong.extend(found);
+            out.extend(found.iter().cloned());
         }
     }
-    for id in AWAITING_ORACLE {
-        if !awaiting_seen.iter().any(|seen| seen == id) {
-            wrong.push(format!("{id} is in AWAITING_ORACLE and not on {SHELF}, so delete its line"));
+    for id in awaiting {
+        if !shelf.iter().any(|(seen, _)| seen == id) {
+            out.push(format!(
+                "{id} is in AWAITING_ORACLE and not on {SHELF}, so delete its line"
+            ));
         }
     }
-    assert!(wrong.is_empty(), "{}", wrong.join("\n"));
+    out
 }
 
 /// Every file of this repository's harness belongs to a layer of the

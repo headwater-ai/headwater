@@ -170,7 +170,14 @@ tree=$(fresh broken-advisory)
 printf '\nThis sentence was added by a session that repaired one finding and in doing so wrote one long sentence that runs well past the twenty-five words the house style allows for it.\n' >> "$tree/$new"
 expect 0 "check-clean passes a tree with one new advisory" "$tree" check-clean.sh
 expect 1 "nothing-else-broken fails the same tree" "$tree" nothing-else-broken.sh "$work/baseline"
-grep -v "	$new\$" "$work/baseline" > "$work/baseline-less"
+# A pair the pin carries twice, with one of the two taken out of the
+# baseline: the tree holds the pair, so only a count, not a set, sees it.
+pair=$(uniq -d "$work/baseline" | sed -n '1p')
+if [ -z "$pair" ]; then
+    echo "FAIL no finding occurs twice in this repository, so the multiset case reads nothing. Seed a pair here."
+    failures=$((failures + 1))
+fi
+awk -v pair="$pair" '$0 == pair && !gone { gone = 1; next } { print }' "$work/baseline" > "$work/baseline-less"
 expect 1 "nothing-else-broken fails a tree that holds one more finding of a pair than the pin" "$base" nothing-else-broken.sh "$work/baseline-less"
 printf '# the baseline of a probe names the probe in its first line\n' > "$work/baseline-commented" && cat "$work/baseline" >> "$work/baseline-commented"
 expect 0 "nothing-else-broken reads past a comment line" "$base" nothing-else-broken.sh "$work/baseline-commented"
