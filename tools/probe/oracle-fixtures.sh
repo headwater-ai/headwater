@@ -327,6 +327,20 @@ expect 0 "nothing-else-broken with no keep line passes a tree that deleted the p
 expect 1 "nothing-else-broken with a keep line fails the same tree" "$tree" nothing-else-broken.sh "$work/scoped-keep"
 { cat "$work/scoped"; printf '# keep: %s\n' "$new"; } > "$work/scoped-keep-bad"
 expect 2 "nothing-else-broken refuses a keep line with no literal" "$base" nothing-else-broken.sh "$work/scoped-keep-bad"
+# A keep literal that only a comment holds keeps nothing: a `#` line in the
+# front matter, and an HTML comment in the body. A literal in the front
+# matter outside a comment counts (verify round 2 of #1874.3).
+tree=$(fresh keep-html-comment) && sed "s|$keep_literal|<!-- & -->|" "$base/$new" > "$tree/$new"
+grep -q -F -- "<!-- $keep_literal -->" "$tree/$new" || echo "oracle-fixtures: the HTML comment was not added, so the next case reads nothing." >&2
+expect 0 "nothing-else-broken with no keep line passes a tree that put the kept text in an HTML comment" "$tree" nothing-else-broken.sh "$work/scoped"
+expect 1 "nothing-else-broken with a keep line fails a kept text that only an HTML comment holds" "$tree" nothing-else-broken.sh "$work/scoped-keep"
+keep_front='- tools/probe/leak.py'
+grep -q -x -F -- "    $keep_front" "$base/$new" || echo "oracle-fixtures: $new does not hold \`$keep_front\` in its front matter, so the next cases read nothing." >&2
+{ cat "$work/scoped"; printf '# keep: %s %s\n' "$new" "$keep_front"; } > "$work/scoped-keep-front"
+expect 0 "nothing-else-broken passes a keep literal that the front matter holds outside a comment" "$base" nothing-else-broken.sh "$work/scoped-keep-front"
+tree=$(fresh keep-front-comment) && sed "s|^    $keep_front\$|    # $keep_front|" "$base/$new" > "$tree/$new"
+grep -q -x -F -- "    # $keep_front" "$tree/$new" || echo "oracle-fixtures: the front-matter comment was not added, so the next case reads nothing." >&2
+expect 1 "nothing-else-broken with a keep line fails a kept text that only a front-matter comment holds" "$tree" nothing-else-broken.sh "$work/scoped-keep-front"
 
 # --- test-passes.sh -------------------------------------------------------
 

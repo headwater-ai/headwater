@@ -107,6 +107,50 @@ hw_oracle_names_whole() {
     grep -E -q -- "(^|[^A-Za-z0-9_.-])$hw_whole_pattern([^A-Za-z0-9_.-]|\\.[^A-Za-z0-9_-]|\\.\$|\$)" "$2"
 }
 
+# Write <file> to <out> without its comments, because the engine reads no
+# comment, so a literal that only a comment holds declares nothing (#1874.3).
+# In a `.yml` or `.yaml` file, and in the front matter of a `.md` file, each
+# line loses what follows a `#` that opens it or that a blank precedes. In
+# the body of a `.md` file, each `<!-- ... -->` is removed, across lines too,
+# and a `#` there is a heading or a number and stays. Any other file is
+# copied. A quoted YAML value that holds ` #` is cut there, which makes a
+# false fail and never a false pass.
+#
+#     hw_oracle_uncommented <file> <out>
+hw_oracle_uncommented() {
+    case $1 in
+        *.yml | *.yaml) hw_uncommented_form=yaml ;;
+        *.md) hw_uncommented_form=md ;;
+        *) cp -- "$1" "$2"; return ;;
+    esac
+    awk -v form="$hw_uncommented_form" '
+        function yaml(line) {
+            sub(/^[[:space:]]*#.*$/, "", line)
+            sub(/[[:space:]]#.*$/, "", line)
+            return line
+        }
+        form == "yaml" { print yaml($0); next }
+        FNR == 1 && $0 == "---" { front = 1; print; next }
+        front && $0 == "---" { front = 0; print; next }
+        front { print yaml($0); next }
+        {
+            line = $0; out = ""
+            while (1) {
+                if (inside) {
+                    at = index(line, "-->")
+                    if (!at) { line = ""; break }
+                    line = substr(line, at + 3); inside = 0
+                } else {
+                    at = index(line, "<!--")
+                    if (!at) { out = out line; break }
+                    out = out substr(line, 1, at - 1) " "; line = substr(line, at + 4); inside = 1
+                }
+            }
+            print out
+        }
+    ' "$1" > "$2"
+}
+
 #
 # A script that names its documents sets `hw_oracle_subjects` to their paths,
 # separated by spaces, and then the condition reads the strict errors on
