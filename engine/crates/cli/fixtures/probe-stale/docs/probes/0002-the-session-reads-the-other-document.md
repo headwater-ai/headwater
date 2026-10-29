@@ -6,6 +6,7 @@ last_verified: 2026-08-01
 summary: The second well-formed probe, so that the selection has more than one probe and a part of it is not the whole.
 probe_category: discovery
 expectation: opened
+action: ask_or_locate
 oracle: "none"
 provenance:
   warrant: asserted

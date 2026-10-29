@@ -6,6 +6,8 @@ summary: "Two module headers of plain code say a check reads only a manifest the
 last_verified: 2026-10-22
 probe_category: navigability
 expectation: answered
+action: ask_or_locate
+moments: [intent]
 oracle: "none"
 title: "A session says where a check gets the version that stood before a change"
 provenance:

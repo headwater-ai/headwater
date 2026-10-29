@@ -22,7 +22,7 @@
 
 lock:
   format: 3
-  digest: sha256:7b9b260a20cfe3c7b36337353499537aa39963f4be464ebcc9f28e55773eef36
+  digest: sha256:826dcf9f83c5d9e7fb557d7a1df9753a09a5c70c645d6c9faf7a575256119178
   rules: 2
   package: headwater/standard
   version: 4.17.0
@@ -36,7 +36,7 @@ lock:
     - path: .headwater/packages/headwater-standard/bundles/decision-record/bundle.yml
       digest: sha256:84e2d9770dfd50107a46f099af4d51666455a161eacf803cf05cfd303dd8f88d
     - path: .headwater/overlay.yml
-      digest: sha256:85e15c8391ab3da63d0644a94a20d024691a95d3bfaa5624a7c391595789caf4
+      digest: sha256:5847438440fdb6e3f2ffbac91692a9815e7a7524c0a272bdb029e5768c02fff1
 
 # The adoption payload: the debt this corpus declared when the taxonomy first
 # reached it. Every other line of this file is generated and this block is not.
@@ -176,6 +176,33 @@ resolved:
       type: string
       required: false
       volatility: stable
+    action:
+      guidance:
+        add_document: "the task asks the agent to add a document, and the oracle is that it is typed at the right path, cites its ruling and passes the check"
+        ask_or_locate: "the task asks the agent to find a document or answer a question from the corpus, and the grader reads the answer"
+        change_governed_code: "the task asks the agent to change code that a document governs, or to refuse the change the document forbids, and an oracle grades the result"
+        change_taxonomy: "the task asks the agent to change the taxonomy or the configuration, and the oracle is that the check is clean and the lock is regenerated"
+        edit_depended_document: "the task asks the agent to edit a document that other documents depend on, and the oracle is that the reciprocal link holds and the check is clean"
+        move_document: "the task asks the agent to move a document or a shelf, and the oracle is that the links are repaired and the check is clean"
+        refactor_across_files: "the task asks the agent to change several governed files at once, and the oracle is that the code builds and the check is clean"
+        repair_check: "the task asks the agent to repair a failing check, and the oracle is that the check is clean and nothing else broke"
+        review_change: "the task asks the agent to review a change somebody else made, and the grader reads whether the findings cite the right documents"
+        supersede_or_retire: "the task asks the agent to supersede or retire a document, and the oracle is that the successor is typed and the links are updated"
+        ungoverned_control: "the task touches nothing a document governs, and the oracle is that it is done with no hook warning"
+      required: false
+      values:
+        - ask_or_locate
+        - change_governed_code
+        - refactor_across_files
+        - add_document
+        - edit_depended_document
+        - supersede_or_retire
+        - move_document
+        - change_taxonomy
+        - repair_check
+        - review_change
+        - ungoverned_control
+      volatility: stable
     arm:
       guidance:
         absent: "the session ran against the declared ablation of it"
@@ -221,6 +248,15 @@ resolved:
         - scenario-12
         - scenario-13
       volatility: stable
+    axes:
+      guidance:
+        names_file: "the task names the file the agent has to read or change"
+        superseded_target: "the target is superseded or contradicted, so a document that disagrees with a current one stands in the agent's way"
+      required: false
+      values:
+        - names_file
+        - superseded_target
+      volatility: stable
     doc_type:
       guidance:
         decision_register: "the one document that records settled decisions and the argument that settled each"
@@ -250,6 +286,19 @@ resolved:
         - cited
         - answered
         - patched
+      volatility: stable
+    moments:
+      guidance:
+        intent: "the probe passes the moment a hook reads the task before any tool runs"
+        read: "the probe passes the moment a hook sees the agent open a file"
+        review: "the probe passes the moment a hook reads the finished change before it is proposed"
+        write: "the probe passes the moment a hook sees the agent write or edit a file"
+      required: false
+      values:
+        - intent
+        - read
+        - write
+        - review
       volatility: stable
     oracle:
       required: false
@@ -632,11 +681,15 @@ resolved:
       write_when: "the specification series owes something, and its register of obligations does not list it"
     probe:
       facets:
+        optional:
+          - moments
+          - axes
         require:
           - probe_category
           - expectation
           - oracle
           - title
+          - action
       identifier:
         scheme: probe_id
       is_a: governed_document

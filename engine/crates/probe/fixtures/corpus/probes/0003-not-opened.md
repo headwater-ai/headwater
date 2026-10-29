@@ -5,6 +5,7 @@ status_since: 2026-08-14
 summary: A negative predicate, which is the one form that a session doing nothing would satisfy for free.
 probe_category: navigability
 expectation: not_opened
+action: ask_or_locate
 oracle: "none"
 relations:
   examines:

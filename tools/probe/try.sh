@@ -197,13 +197,19 @@
 #   exits 6 when the try root does not exist, when its driver runs, or when
 #   `done`, `capped`, `canary-failed` or `stop` is present. It never writes
 #   `a.done`, so a capped batch stays capped until a person rules on it.
+#   `usage-gated` does not refuse a relaunch (#1876): the driver reads the
+#   usage gate first, removes the marker below the threshold and goes on,
+#   with `campaign.sh` skipping every job already recorded, and above it
+#   writes the marker again and exits 13 with no invocation. Each launch
+#   and relaunch hands the driver the three `TRY_USAGE_*` values of the
+#   current `additive-launch.env`.
 # - `canary <root> <try>` reads the eight records of the canary, the jobs
 #   of `<try>/a/jobs` that have a `status`, and writes `<try>/canary-passed`
 #   only when there are eight and each one has `status` 0, a cost of at most
 #   `TRY_SESSION_CENTS + TRY_OVERSHOOT_CENTS`, and the sentences of
 #   `tools/probe/probe-record.sh` that state 0 calls to a web tool, 0 paths
 #   outside its workspace and no refused provider fetch, and that the intent
-#   hook was live when the scenario of `<try>/spec` holds the `hook` layer
+#   hook was live when the scenario of `<try>/spec` holds the `hooks` layer
 #   and was not live otherwise. A count of 1 is written in the singular
 #   (`1 path`, `1 call`), so the reader matches the sentence of 0 and treats
 #   every other sentence, the "not counted" one included, as offending.
@@ -213,8 +219,12 @@
 # - `wait <root> <try>` is the condition for `tools/run/wait-for.sh`. It
 #   exits 0 and prints one line when a person must read something or the
 #   driver has stopped: `disk-floor`, `done`, `canary-failed`, `capped`,
-#   `stop`, `canary-needs-reader`, `canary-recorded` or `driver-exited`. It
-#   exits 1 while the driver runs and needs nobody. When the free space
+#   `stop`, `canary-needs-reader`, `canary-recorded`, `usage-gated` or
+#   `driver-exited`. It exits 1 while the driver runs and needs nobody, and
+#   so while a gated invocation lets its sessions in flight finish. A driver
+#   that stopped on the usage gate prints `usage-gated:` and the line of
+#   `<try>/usage-gated`, and the first `wait` to read that marker appends
+#   one `gate` event to the ledger. When the free space
 #   under `/` is below `TRY_FLOOR_ROOT_KB`, or on the file system of `<root>`
 #   below `TRY_FLOOR_TRY_KB`, it writes `<try>/stop` first, which the driver
 #   reads within a minute.
@@ -292,7 +302,7 @@
 #
 # `<root>/ledger.jsonl` holds one JSON object for each event. `result`
 # appends `screen`, `best`, `base`, `result`, `round` and `halt`, `accept` appends
-# `accept`, and `launch` appends a `round` with `kept` false when it refuses
+# `accept`, `wait` appends `gate` for each stop of the usage gate, and `launch` appends a `round` with `kept` false when it refuses
 # the top variant of a round for no gain in use.
 #
 # ## The base tree, and `campaign.sh`
@@ -1309,6 +1319,12 @@ start() {
         *) say "$start_try/stage names no stage, so the driver would not know the count of its batch."; exit 2 ;;
     esac
     export HEADWATER_TUNING_STAGE
+    # The usage gate reads the current `additive-launch.env`, on a relaunch
+    # as on a launch, and not `driver.argv` (#1876).
+    HEADWATER_DRIVE_USAGE_STOP=$TRY_USAGE_STOP_PERCENT
+    HEADWATER_DRIVE_USAGE_LATE=$TRY_USAGE_LATE_PERCENT
+    HEADWATER_DRIVE_USAGE_LATE_HOURS=$TRY_USAGE_LATE_HOURS
+    export HEADWATER_DRIVE_USAGE_STOP HEADWATER_DRIVE_USAGE_LATE HEADWATER_DRIVE_USAGE_LATE_HOURS
     cd "$checkout" || exit 3
     setsid nohup sh "$driver" "$@" >> "$start_try/drive.out" 2>&1 < /dev/null &
     echo $! > "$start_try/driver.pid"
@@ -1349,7 +1365,7 @@ pin_ready() {
 
 markers() {
     marker_list=
-    for marker in canary-recorded canary-passed canary-needs-reader canary-failed a.done capped stop done; do
+    for marker in canary-recorded canary-passed canary-needs-reader canary-failed a.done capped stop usage-gated done; do
         [ -e "$1/$marker" ] && marker_list="$marker_list $marker"
     done
     printf '%s\n' "${marker_list# }"
@@ -1488,7 +1504,7 @@ case $verb in
         scenarios=$(declared scenarios) || exit $?
         canary_layers=$(printf '%s\n' "$scenarios" | awk -v s="$canary_scenario" '$1 == s { $1 = ""; $2 = ""; print }')
         case " $canary_layers " in
-            *" hook "*) hook_expected=live ;;
+            *" hooks "*) hook_expected=live ;;
             *) hook_expected="not live" ;;
         esac
         bound=$((TRY_SESSION_CENTS + TRY_OVERSHOOT_CENTS))
@@ -1554,6 +1570,25 @@ $records records of the canary, not 8"
             [ -e "$try/canary-recorded" ] && { echo canary-recorded; exit 0; }
         fi
         alive "$try" && exit 1
+        # The driver stopped on the usage gate (#1876). The ledger records
+        # each stop once, however often `wait` reads it: the content of
+        # `usage-gated` starts with the time of the stop, and
+        # `usage-gated.ledgered` holds the content already recorded.
+        if [ -f "$try/usage-gated" ]; then
+            if ! cmp -s "$try/usage-gated" "$try/usage-gated.ledgered" 2>/dev/null; then
+                gate_field() { sed -n "s/^$1: //p" "$try/usage-gated" | head -n 1; }
+                gate_resets=$(gate_field resets-at)
+                gate_threshold=$(gate_field threshold)
+                case $gate_resets in '' | *[!0-9]*) gate_resets=0 ;; esac
+                case $gate_threshold in '' | *[!0-9]*) gate_threshold=0 ;; esac
+                ledger_py append event=s:gate "try=s:${try##*/}" "percent=s:$(gate_field percent)" \
+                    "resets_at=i:$gate_resets" "threshold=i:$gate_threshold" \
+                    "source=s:$(gate_field source)" "at=s:$(now)"
+                cp "$try/usage-gated" "$try/usage-gated.ledgered"
+            fi
+            echo "usage-gated: $(head -n 1 "$try/usage-gated")"
+            exit 0
+        fi
         echo driver-exited
         ;;
 

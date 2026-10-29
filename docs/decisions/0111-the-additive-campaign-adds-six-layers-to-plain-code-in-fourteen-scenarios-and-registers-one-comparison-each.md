@@ -1,8 +1,8 @@
 ---
 id: HW-DR-0111
-status: current
-status_since: 2026-10-17
-summary: "The 0.07 campaign builds 14 scenarios by adding six layers to plain code. Each scenario has one base, one registered comparison and one verdict, over 9 probes split 5 for tuning and 4 held out. Only the skills, the hook and MCP are tuned. A code set of 5 probes asks whether the documents help an agent write code."
+status: superseded
+status_since: 2026-10-29
+summary: "Superseded by HW-DR-0112, and this record decides nothing in force. HW-DR-0112 carries its probe shape, its verdict rule, its definition of a call to the server and its fixed model. It recorded 14 scenarios over 9 probes, and a code set of 5 probes."
 last_verified: 2026-10-22
 title: "111 — The additive campaign adds six layers to plain code in fourteen scenarios and registers one comparison each"
 provenance:
@@ -14,7 +14,6 @@ provenance:
 relations:
   governs:
     - tools/probe/ablate.sh
-    - tools/probe/arms/hook/.claude/settings.json
     - tools/probe/additive-campaign.spec
     - tools/probe/additive-screening.spec
     - tools/probe/try.sh
@@ -24,6 +23,8 @@ relations:
     - tools/probe/declared.py
     - tools/probe/usage.py
     - tools/probe/additive-dry-run.sh
+  superseded_by:
+    - HW-DR-0112
 ---
 
 # 111 — The additive campaign adds six layers to plain code in fourteen scenarios and registers one comparison each

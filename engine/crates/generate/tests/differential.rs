@@ -264,7 +264,7 @@ fn facet_of(message: &str) -> String {
 /// Evaluate one instance against one schema, and name the family of each error.
 ///
 /// It reads the keywords this emitter writes and no others: `type`,
-/// `properties`, `required`, `enum`, `const`, `anyOf`, `allOf`, `oneOf`, `not`,
+/// `properties`, `required`, `enum`, `const`, `anyOf`, `allOf`, `oneOf`, `not`, `items`,
 /// `if` with `then`, and `$ref` into `$defs`. A keyword outside that set is
 /// ignored, which is what a validator does with a keyword it does not know and
 /// therefore what this evaluator has to do to agree with one. The emitted schema
@@ -389,6 +389,13 @@ fn constrain(schema: &Value, held: &Value, at: &str, facet: &str, out: &mut Vec<
                 });
                 if !any {
                     out.push(record(at, facet_value::RULE, facet));
+                }
+            }
+            // A list is constrained item by item (#1873), and an instance that
+            // is not a list is not reached, as a validator reads `items`.
+            "items" => {
+                for item in held.as_seq().unwrap_or_default() {
+                    constrain(value, &item.value, at, facet, out);
                 }
             }
             // Ignored, for the reason the same arm in `evaluate` is.
@@ -637,7 +644,7 @@ fn the_emitted_schema_uses_only_keywords_this_file_reads() {
         "tombstones",
     ];
     /// What `evaluate` and `constrain` between them read.
-    const READ: [&str; 12] = [
+    const READ: [&str; 13] = [
         "$schema",
         "$defs",
         "$ref",
@@ -650,6 +657,7 @@ fn the_emitted_schema_uses_only_keywords_this_file_reads() {
         "anyOf",
         "if",
         "then",
+        "items",
     ];
 
     let (_, root) = schema(&built());

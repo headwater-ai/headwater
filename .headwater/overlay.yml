@@ -126,6 +126,53 @@ add:
       navigability: the probe asks whether the agent gets from a code path to the governing document and back
       consistency: the probe asks whether two phrasings of one question reach one answer
 
+  # The eleven canonical actions of the HW-DR-0112 grid, in its row order. A
+  # probe has exactly one, so a rate per row has a denominator that counts each
+  # probe once. `headwater probe plan --action` narrows to one (#1873).
+  facets.action:
+    values: [ask_or_locate, change_governed_code, refactor_across_files, add_document, edit_depended_document, supersede_or_retire, move_document, change_taxonomy, repair_check, review_change, ungoverned_control]
+    required: false
+    volatility: stable
+    guidance:
+      ask_or_locate: the task asks the agent to find a document or answer a question from the corpus, and the grader reads the answer
+      change_governed_code: the task asks the agent to change code that a document governs, or to refuse the change the document forbids, and an oracle grades the result
+      refactor_across_files: the task asks the agent to change several governed files at once, and the oracle is that the code builds and the check is clean
+      add_document: the task asks the agent to add a document, and the oracle is that it is typed at the right path, cites its ruling and passes the check
+      edit_depended_document: the task asks the agent to edit a document that other documents depend on, and the oracle is that the reciprocal link holds and the check is clean
+      supersede_or_retire: the task asks the agent to supersede or retire a document, and the oracle is that the successor is typed and the links are updated
+      move_document: the task asks the agent to move a document or a shelf, and the oracle is that the links are repaired and the check is clean
+      change_taxonomy: the task asks the agent to change the taxonomy or the configuration, and the oracle is that the check is clean and the lock is regenerated
+      repair_check: the task asks the agent to repair a failing check, and the oracle is that the check is clean and nothing else broke
+      review_change: the task asks the agent to review a change somebody else made, and the grader reads whether the findings cite the right documents
+      ungoverned_control: the task touches nothing a document governs, and the oracle is that it is done with no hook warning
+
+  # The hook moments of the HW-DR-0112 grid. The value on a probe is a YAML
+  # list, one item for each moment the probe passes, and an
+  # `ungoverned_control` probe lists none rather than a sentinel. Each item is
+  # read against this set by `facet.value.not_permitted` and by `headwater
+  # probe plan`, and `--moment` keeps a probe whose list holds the value (#1873).
+  facets.moments:
+    values: [intent, read, write, review]
+    required: false
+    volatility: stable
+    guidance:
+      intent: the probe passes the moment a hook reads the task before any tool runs
+      read: the probe passes the moment a hook sees the agent open a file
+      write: the probe passes the moment a hook sees the agent write or edit a file
+      review: the probe passes the moment a hook reads the finished change before it is proposed
+
+  # Two of the three circumstance axes of HW-DR-0112, as a YAML list of the
+  # axes that hold for the probe. The phrasing is the third axis, and it is not
+  # a value here: it is drawn for each session and pooled, so it is a property
+  # of a session and not of a probe.
+  facets.axes:
+    values: [names_file, superseded_target]
+    required: false
+    volatility: stable
+    guidance:
+      names_file: the task names the file the agent has to read or change
+      superseded_target: the target is superseded or contradicted, so a document that disagrees with a current one stands in the agent's way
+
   # The closed predicate set of spec 5. It is closed for the reason the sweep's
   # class set is: a form nobody declared is a form no grader can evaluate and no
   # report can total.
@@ -242,8 +289,12 @@ add:
     lifecycle: standard
     identifier: {scheme: probe_id}
     facets:
-      require: [probe_category, expectation, oracle, title]
-    # One probe shape (HW-DR-0111, #1774): the prompt under Task, the one
+      require: [probe_category, expectation, oracle, title, action]
+      # `moments` and `axes` are YAML lists, one item per moment or axis
+      # (HW-DR-0112). `headwater new` asks only for what a kind requires, so
+      # an author adds either one by hand.
+      optional: [moments, axes]
+    # One probe shape (HW-DR-0112, #1774): the prompt under Task, the one
     # document that holds the answer under Target, and the key under Key.
     # `headwater-probe` reads the closed answer set under Key and no other
     # heading.

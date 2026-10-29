@@ -6,6 +6,8 @@ summary: The declared instrument for the assist claim cannot separate its arms, 
 last_verified: 2026-09-11
 probe_category: sufficiency
 expectation: patched
+action: add_document
+moments: [write, review]
 oracle: "section.required.missing"
 title: "A session records an unmeasured claim in the shape this corpus checks"
 provenance:

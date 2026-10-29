@@ -6,6 +6,7 @@ last_verified: 2026-08-01
 summary: A well-formed probe, one of the two a plan over this corpus selects.
 probe_category: discovery
 expectation: opened
+action: ask_or_locate
 oracle: "none"
 provenance:
   warrant: asserted

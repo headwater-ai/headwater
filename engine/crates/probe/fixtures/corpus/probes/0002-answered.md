@@ -5,6 +5,7 @@ status_since: 2026-08-14
 summary: An answered probe, whose closed set of values lives in the section its kind already requires.
 probe_category: sufficiency
 expectation: answered
+action: ask_or_locate
 oracle: "none"
 ---
 

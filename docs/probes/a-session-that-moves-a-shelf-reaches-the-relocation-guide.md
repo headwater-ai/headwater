@@ -6,6 +6,7 @@ summary: "The task asks a session to move a shelf of records to a new directory,
 last_verified: 2026-10-22
 probe_category: discovery
 expectation: opened
+action: move_document
 oracle: "none"
 title: "A session that moves a shelf reaches the relocation guide"
 provenance:
@@ -33,7 +34,7 @@ The session must open [the relocation guide](../how-to/relocate-a-shelf.md). It 
 
 `opened` over `HW-HOW-relocate-a-shelf`.
 
-**This probe is one of three that replaced two probes of the tuning set (#1833).** [HW-DR-0111](../decisions/0111-the-additive-campaign-adds-six-layers-to-plain-code-in-fourteen-scenarios-and-registers-one-comparison-each.md) records the set and why the two probes left it. Proposal 1, the first comment on #1833, is the design.
+**This probe was one of three that replaced two probes of the tuning set of the fourteen-scenario campaign (#1833).** [HW-DR-0111](../decisions/0111-the-additive-campaign-adds-six-layers-to-plain-code-in-fourteen-scenarios-and-registers-one-comparison-each.md) recorded that set and why the two probes left it. [HW-DR-0112](../decisions/0112-the-additive-campaign-measures-eleven-actions-by-five-layers-in-seven-scenarios.md) replaced that set, and #1874 builds the 44-probe set. Proposal 1, the first comment on #1833, is the design.
 
 **What this probe expects, stated before any paid run.** About 35 percent in scenario 3, with a range of 20 to 55 percent. The task says "move", and the title, the path and the summary of the guide say "relocate", so a search by name misses it. A search for "shelf" returns many matches before the guide. The recordings of 2026-10-03 show that a session with a task about the taxonomy and no harness goes to spec 2 and to `.headwater/`, and not to a how-to.
 

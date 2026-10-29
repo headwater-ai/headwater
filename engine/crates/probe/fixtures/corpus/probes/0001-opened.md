@@ -5,6 +5,8 @@ status_since: 2026-08-14
 summary: A well-formed probe that names one document, which is the arm every refusal below is measured against.
 probe_category: discovery
 expectation: opened
+action: ask_or_locate
+moments: [read]
 oracle: "none"
 relations:
   examines:

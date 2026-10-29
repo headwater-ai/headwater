@@ -37,6 +37,7 @@ use headwater_census::census::Census;
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::paint::{paint, ColorMode, Role};
+use headwater_check::Shape;
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Graph};
@@ -137,6 +138,7 @@ fn plan_at(tier: Tier, narrowing: &Narrowing) -> Plan {
         &taken,
         &graph,
         &Config::default(),
+        &Shape::read(&root).expect("the shape reads"),
         &budgets(),
         LOCK,
         tier,
@@ -153,6 +155,7 @@ fn plan_against(tier: Tier, budgets: &Budgets) -> Plan {
         &taken,
         &graph,
         &Config::default(),
+        &Shape::read(&root).expect("the shape reads"),
         budgets,
         LOCK,
         tier,
@@ -229,6 +232,7 @@ fn plan_over(dir: &Path) -> Plan {
         &taken,
         &graph,
         &Config::default(),
+        &Shape::read(&root).expect("the shape reads"),
         &budgets(),
         LOCK,
         Tier::Regression,
@@ -245,6 +249,7 @@ fn staleness_at(dir: &Path) -> Staleness {
         &taken,
         &graph,
         &config,
+        &Shape::read(&root).expect("the shape reads"),
         &budgets(),
         LOCK,
         Tier::Regression,
@@ -505,6 +510,7 @@ fn staleness_of(dir: &Path, source: &str) -> Staleness {
         &taken,
         &graph,
         &config,
+        &Shape::read(&root).expect("the shape reads"),
         &budgets(),
         LOCK,
         Tier::Regression,
@@ -717,7 +723,7 @@ fn a_call_that_named_no_document_of_this_corpus_is_reported_apart() {
 }
 
 /// The one call the committed transcript records, as it writes it.
-const THE_READ_CALL: &str = "    - tool: read\n      argument: corpus/probes/0002-answered.md\n      result: sha256:4ad8a68a9b14018c085d8cb9a67113d44e15eb624e8d383d7fc76fb5c3e6bc1b\n";
+const THE_READ_CALL: &str = "    - tool: read\n      argument: corpus/probes/0002-answered.md\n      result: sha256:be177fea7c3cb22bbc0419a39601ae4010234b283d8fabf6300995690a396630\n";
 
 /// The committed transcript at `dir` with its one call replaced by `calls`.
 fn with_calls(dir: &Path, calls: &str) -> String {
@@ -962,7 +968,7 @@ fn a_member_with_a_witness_is_reported_by_it_even_where_bash_named_it_first() {
     assert!(member.witness.is_some(), "{report}");
     assert!(
         report.contains(
-            "- corpus/probes/0002-answered.md (probe) sha256:4ad8a68a9b14018c085d8cb9a67113d44e15eb624e8d383d7fc76fb5c3e6bc1b\n    event 1 call 2 observed the same identity, so this document stands\n"
+            "- corpus/probes/0002-answered.md (probe) sha256:be177fea7c3cb22bbc0419a39601ae4010234b283d8fabf6300995690a396630\n    event 1 call 2 observed the same identity, so this document stands\n"
         ),
         "the witnessed member is not reported by its witness:\n{report}"
     );
@@ -1350,6 +1356,8 @@ fn the_grader_refuses_a_selection_the_plan_would_not_have_produced() {
         oracle: oracle.map(str::to_string),
         answers,
         expected: Vec::new(),
+        action: None,
+        moments: Vec::new(),
     };
     let record = record_of(&transcript("transcript.md"));
 
@@ -1472,6 +1480,7 @@ fn layer_plan(budgets: &Budgets, narrowing: &Narrowing) -> Plan {
         &taken,
         &graph,
         &Config::default(),
+        &Shape::read(&root).expect("the shape reads"),
         budgets,
         LOCK,
         Tier::Campaign,
@@ -1823,7 +1832,9 @@ fn a_category_that_no_probe_declares_refuses_rather_than_planning_nothing() {
     assert_eq!(
         plan.refusal,
         Some(Refusal::SelectionEmpty {
-            category: Some(Category::Consistency)
+            category: Some(Category::Consistency),
+            action: None,
+            moment: None,
         }),
         "an empty selection is a run over a denominator nobody declared"
     );
@@ -1913,6 +1924,7 @@ fn plan_over_probe(edit: &dyn Fn(&str) -> String) -> Plan {
         &taken,
         &graph,
         &config,
+        &Shape::read(&root).expect("the shape reads"),
         &budgets(),
         LOCK,
         Tier::Regression,
@@ -2148,6 +2160,160 @@ fn a_category_outside_the_closed_set_stops_the_run() {
     });
     assert!(
         matches!(plan.refusal, Some(Refusal::Undeclared { .. })),
+        "{:?}",
+        plan.refusal
+    );
+}
+
+// --- the action and the moments of HW-DR-0112 (#1873) ------------------------
+
+fn selected_ids(plan: &Plan) -> Vec<&str> {
+    plan.selected
+        .iter()
+        .map(|selected| selected.id.as_str())
+        .collect()
+}
+
+/// The case #1873 exists for: a `write.sh` screen needs the probes that pass
+/// the write moment, and a probe passes it when `write` is one item of its
+/// `moments` list. `PROBE-FIX-opened` passes `[read]` alone, so a narrowing
+/// that read the list as one scalar, or matched any moment, selects it too.
+#[test]
+fn a_moment_narrows_the_selection_to_the_probes_whose_list_holds_it() {
+    let plan = plan_at(
+        Tier::Regression,
+        &Narrowing {
+            moment: Some("write".to_string()),
+            ..Narrowing::default()
+        },
+    );
+    assert_eq!(plan.refusal, None, "{:?}", plan.refusal);
+    assert_eq!(selected_ids(&plan), ["PROBE-FIX-cited"]);
+
+    let read = plan_at(
+        Tier::Regression,
+        &Narrowing {
+            moment: Some("read".to_string()),
+            ..Narrowing::default()
+        },
+    );
+    assert_eq!(selected_ids(&read), ["PROBE-FIX-cited", "PROBE-FIX-opened"]);
+}
+
+#[test]
+fn an_action_narrows_the_selection_to_the_probes_that_declare_it() {
+    let plan = plan_at(
+        Tier::Regression,
+        &Narrowing {
+            action: Some("ask_or_locate".to_string()),
+            ..Narrowing::default()
+        },
+    );
+    assert_eq!(plan.refusal, None, "{:?}", plan.refusal);
+    assert_eq!(
+        selected_ids(&plan),
+        [
+            "PROBE-FIX-answered",
+            "PROBE-FIX-not-opened",
+            "PROBE-FIX-opened"
+        ]
+    );
+    let opened = plan
+        .selected
+        .iter()
+        .find(|selected| selected.id == "PROBE-FIX-opened")
+        .expect("the opened probe");
+    assert_eq!(opened.action.as_deref(), Some("ask_or_locate"));
+    assert_eq!(opened.moments, ["read"]);
+}
+
+#[test]
+fn an_action_and_a_moment_narrow_together() {
+    let plan = plan_at(
+        Tier::Regression,
+        &Narrowing {
+            action: Some("ask_or_locate".to_string()),
+            moment: Some("write".to_string()),
+            ..Narrowing::default()
+        },
+    );
+    assert_eq!(
+        plan.refusal,
+        Some(Refusal::SelectionEmpty {
+            category: None,
+            action: Some("ask_or_locate".to_string()),
+            moment: Some("write".to_string()),
+        }),
+        "no ask_or_locate probe passes the write moment"
+    );
+}
+
+#[test]
+fn a_moment_outside_the_closed_set_stops_the_run() {
+    let plan =
+        plan_over_probe(&|source| source.replace("moments: [read]", "moments: [read, bogus]"));
+    assert_eq!(
+        plan.refusal,
+        Some(Refusal::Undeclared {
+            path: "corpus/probes/0001-opened.md".to_string(),
+            facet: "moments",
+            found: Some("bogus".to_string()),
+        })
+    );
+}
+
+#[test]
+fn an_action_outside_the_closed_set_stops_the_run() {
+    let plan = plan_over_probe(&|source| source.replace("action: ask_or_locate", "action: wibble"));
+    assert!(
+        matches!(
+            plan.refusal,
+            Some(Refusal::Undeclared { facet: "action", found: Some(ref found), .. })
+                if found == "wibble"
+        ),
+        "{:?}",
+        plan.refusal
+    );
+}
+
+/// The taxonomy requires `action` on the probe kind, so a probe without one is
+/// a probe no action-narrowed run could ever select or exclude correctly.
+#[test]
+fn a_probe_without_an_action_stops_the_run() {
+    let plan = plan_over_probe(&|source| source.replace("action: ask_or_locate\n", ""));
+    assert!(
+        matches!(
+            plan.refusal,
+            Some(Refusal::Undeclared {
+                facet: "action",
+                found: None,
+                ..
+            })
+        ),
+        "{:?}",
+        plan.refusal
+    );
+}
+
+/// One probe has one action. A list would let a probe count toward two rows
+/// of the grid, and a denominator per row would double-count it.
+#[test]
+fn an_action_that_is_a_list_stops_the_run() {
+    let plan = plan_over_probe(&|source| {
+        source.replace(
+            "action: ask_or_locate",
+            "action: [ask_or_locate, repair_check]",
+        )
+    });
+    assert!(
+        matches!(
+            plan.refusal,
+            Some(Refusal::Undeclared {
+                facet: "action",
+                found: Some(_),
+                ..
+            })
+        ),
         "{:?}",
         plan.refusal
     );
@@ -3067,6 +3233,7 @@ fn additive_plan(budgets: &Budgets, tier: Tier, narrowing: &Narrowing) -> Plan {
         &taken,
         &graph,
         &Config::default(),
+        &Shape::read(&root).expect("the shape reads"),
         budgets,
         LOCK,
         tier,
@@ -3079,6 +3246,32 @@ fn additive_plan(budgets: &Budgets, tier: Tier, narrowing: &Narrowing) -> Plan {
 /// every layer: HW-DR-0111 keeps it there at zero by construction, as the
 /// floor scenario 1 is compared with. The ceiling of zero refuses the run
 /// and still prices it.
+/// A set and an action narrow together, and the set is read first (#1873).
+/// `tuning` names `PROBE-FIX-opened` (`ask_or_locate`) and `PROBE-FIX-cited`
+/// (`add_document`). An action filter applied before the set check would leave
+/// `cited` out of the selection, and the set check would then refuse it as a
+/// member no probe carries.
+#[test]
+fn a_set_and_an_action_narrow_together() {
+    let budgets = additive_budgets(FIXTURE_SETS);
+    let plan = additive_plan(
+        &budgets,
+        Tier::Additive,
+        &Narrowing {
+            arm: Some(Arm::Scenario(1)),
+            set: Some("tuning".into()),
+            action: Some("ask_or_locate".into()),
+            ..Narrowing::default()
+        },
+    );
+    assert!(
+        !matches!(plan.refusal, Some(Refusal::SetMemberUnknown { .. })),
+        "{:?}",
+        plan.refusal
+    );
+    assert_eq!(selected_ids(&plan), ["PROBE-FIX-opened"]);
+}
+
 #[test]
 fn a_set_selects_its_probes_across_categories_and_scenario_0_keeps_a_document_keyed_probe() {
     let budgets = additive_budgets(FIXTURE_SETS);

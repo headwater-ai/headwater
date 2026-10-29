@@ -334,10 +334,27 @@ The documents on this shelf, in the reading order this corpus derives. Each head
         "status": {
           "anyOf": [
             {
-              "type": [
-                "object",
-                "array"
-              ]
+              "type": "object"
+            },
+            {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "type": [
+                      "object",
+                      "array"
+                    ]
+                  },
+                  {
+                    "enum": [
+                      "draft",
+                      "current",
+                      "superseded"
+                    ]
+                  }
+                ]
+              }
             },
             {
               "enum": [
@@ -353,10 +370,26 @@ The documents on this shelf, in the reading order this corpus derives. Each head
         "doc_type": {
           "anyOf": [
             {
-              "type": [
-                "object",
-                "array"
-              ]
+              "type": "object"
+            },
+            {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "type": [
+                      "object",
+                      "array"
+                    ]
+                  },
+                  {
+                    "enum": [
+                      "decision",
+                      "guide"
+                    ]
+                  }
+                ]
+              }
             },
             {
               "enum": [
@@ -379,10 +412,27 @@ The documents on this shelf, in the reading order this corpus derives. Each head
         "status": {
           "anyOf": [
             {
-              "type": [
-                "object",
-                "array"
-              ]
+              "type": "object"
+            },
+            {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "type": [
+                      "object",
+                      "array"
+                    ]
+                  },
+                  {
+                    "enum": [
+                      "draft",
+                      "current",
+                      "superseded"
+                    ]
+                  }
+                ]
+              }
             },
             {
               "enum": [
@@ -398,10 +448,26 @@ The documents on this shelf, in the reading order this corpus derives. Each head
         "doc_type": {
           "anyOf": [
             {
-              "type": [
-                "object",
-                "array"
-              ]
+              "type": "object"
+            },
+            {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "type": [
+                      "object",
+                      "array"
+                    ]
+                  },
+                  {
+                    "enum": [
+                      "decision",
+                      "guide"
+                    ]
+                  }
+                ]
+              }
             },
             {
               "enum": [
@@ -424,10 +490,27 @@ The documents on this shelf, in the reading order this corpus derives. Each head
         "status": {
           "anyOf": [
             {
-              "type": [
-                "object",
-                "array"
-              ]
+              "type": "object"
+            },
+            {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "type": [
+                      "object",
+                      "array"
+                    ]
+                  },
+                  {
+                    "enum": [
+                      "draft",
+                      "current",
+                      "superseded"
+                    ]
+                  }
+                ]
+              }
             },
             {
               "enum": [
@@ -443,10 +526,26 @@ The documents on this shelf, in the reading order this corpus derives. Each head
         "doc_type": {
           "anyOf": [
             {
-              "type": [
-                "object",
-                "array"
-              ]
+              "type": "object"
+            },
+            {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "type": [
+                      "object",
+                      "array"
+                    ]
+                  },
+                  {
+                    "enum": [
+                      "decision",
+                      "guide"
+                    ]
+                  }
+                ]
+              }
             },
             {
               "enum": [

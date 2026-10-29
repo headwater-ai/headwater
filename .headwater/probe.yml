@@ -139,6 +139,45 @@ answer_keys:
 # the proof page that the pin's page does not carry, because a number typed
 # as plain text leaves the figures check clean. A hidden script does both,
 # and it names its probe for the same reason the hidden test does.
+# The form of an oracle of the 44-probe set (#1874, HW-DR-0112 "The form of
+# an oracle"). A probe of rows 2-9 or 11 of the grid declares `expectation:
+# patched` and `oracle: "command:<name>"` or `"test:<name>"`, and the entry
+# here is named for the probe. Its command calls a generic script under
+# `tools/probe/oracles/` with the probe's own arguments:
+#
+#   check-clean.sh                       `headwater check --strict` exits 0
+#   typed-at.sh <dir> <kind> <ruling> <title-pattern>
+#                                        a document under <dir>, of <kind>,
+#                                        cites <ruling>
+#   reciprocal-link.sh <doc-a> <doc-b>   each names the other in `relations:`
+#   successor-typed.sh <old>             a typed successor supersedes <old>,
+#                                        and <old> names it
+#   moved.sh <old-path> <new-path>       moved, and no link resolves to the
+#                                        old path
+#   lock-regenerated.sh                  `headwater taxonomy resolve --check`
+#   nothing-else-broken.sh <baseline>    no finding the pin did not carry
+#   test-passes.sh [--ignored] <crate> <test-target> [<filter>]
+#                                        cargo passes and ran a case
+#   no-hook-warning.sh                   row 11: no hook spoke in the
+#                                        harness log that
+#                                        $HEADWATER_ORACLE_HARNESS_LOG
+#                                        names (#1875 exports it and runs
+#                                        the script)
+#
+# `--check-clean` as the first argument of a tree script adds the condition
+# of check-clean.sh. Each script runs from the root of the grading copy,
+# exits 0 on a pass and 1 on a fail (2 on a usage error), and prints one
+# line of evidence on standard output. The entry holds each script its
+# command runs and `tools/probe/oracles/lib.sh`, so the recorder restores
+# them over a session's copy. A file that holds what only the answer knows,
+# such as a hidden test or a baseline, names its probe in its first ten
+# lines and is held too, so the seal removes it from every workspace. This
+# file is a fold that every workspace keeps, so a command line states what
+# is checked and never the answer. `tools/probe/oracle-fixtures.sh` runs
+# each script over a tree it must pass and one it must fail.
+# `every_mechanical_row_probe_grades_against_a_declared_oracle` in
+# `engine/crates/probe/tests/corpus.rs` holds the probes to this form.
+#
 oracles:
   future-date:
     paths: [engine/crates/check/*]
@@ -441,7 +480,7 @@ tiers:
 
   # The additive campaign (#1774): one `scenario-<n>` arm for each scenario
   # declared under `scenarios:` below, each compared with its base. The plan
-  # is HW-DR-0111, and `tools/probe/additive-campaign.spec` is its batch.
+  # is HW-DR-0112, and `tools/probe/additive-campaign.spec` is its batch.
   #
   # `repetitions` is the final round's count, 55, the largest any round runs.
   # Every lower round passes `--repetitions` to the plan as a lowering, and
@@ -472,48 +511,57 @@ tiers:
     session_cost_cents: 50
     repetitions: 55
     max_turns: 80
-    arms: [scenario-0, scenario-1, scenario-2, scenario-3, scenario-4, scenario-5, scenario-6, scenario-7, scenario-8, scenario-9, scenario-10, scenario-11, scenario-12, scenario-13]
+    arms: [scenario-0, scenario-1, scenario-2, scenario-3, scenario-4, scenario-5, scenario-6]
 
 # **The additive campaign (#1774).** The arms above are each the present tree
 # with a part removed. The campaign of milestone 0.07 turns that around: it
 # starts from plain code and adds layers to it, so each layer is measured from
 # the bottom of the stack as well as from the top. The plan is
-# docs/decisions/0111-the-additive-campaign-adds-six-layers-to-plain-code-in-fourteen-scenarios-and-registers-one-comparison-each.md,
-# and these two mappings are its data. The engine reads them, and `sh
-# tools/probe/ablate.sh --scenario <n> <workspace>` builds a scenario's tree
-# from `headwater probe plan --scenario <n> --delta`, so no script parses
-# them.
+# docs/decisions/0112-the-additive-campaign-measures-eleven-actions-by-five-layers-in-seven-scenarios.md,
+# and these three entries are its data: `layers`, `tooling` and `scenarios`
+# (#1872). The engine reads them, and `sh tools/probe/ablate.sh --scenario
+# <n> <workspace>` builds a scenario's tree from `headwater probe plan
+# --scenario <n> --delta`, so no script parses them.
 #
 # A layer names the paths it adds to plain code. `paths` are kept from the
 # present tree, and `arms` are written from `tools/probe/arms/<layer>/`.
-# Plain code is the present tree with the path of every layer removed. So a
-# path of this repository that delivers Headwater and belongs to no layer
-# is in plain code, and every scenario holds it. The census fixture and the
-# tutorial page go with `docs`, because each states what a document says,
-# and the documentation tier removes them for that reason. The built engine
-# goes with `engine`: a session has no network and cannot build it, so a
-# tree with the engine source and no binary has no `headwater` command.
-# `.agents/skills` goes with `skills`, because `headwater init --harness`
-# writes it. `engine/crates/cli/harness/skills` and `/agents` go with
-# `skills` too: they are the engine's source copies of the same text, which
-# `include_str!` embeds in the binary. The campaign builds the binary from
-# its own checkout, so a scenario tree does not need them to have it.
-# `AGENTS.md` and `.codex` are the Codex copies of the standing
-# instructions and the hook, so they go with the rest of the harness, and
-# scenario 2 differs from scenario 1 by one copy of `CLAUDE.md`. The Copilot
-# copies under `.github/` go with the harness for the same reason:
+# Plain code is the present tree with the path of every layer and every
+# `tooling` path removed. A path of this repository that delivers Headwater
+# and belongs to neither is in plain code, and every scenario holds it. The
+# census fixture and the tutorial page go with `docs`, because each states
+# what a document says, and the documentation tier removes them for that
+# reason. The built engine goes with `engine`: a session has no network and
+# cannot build it, so a tree with the engine source and no binary has no
+# `headwater` command. `.agents/skills` goes with `skills`, because
+# `headwater init --harness` writes it. `engine/crates/cli/harness/skills`
+# and `/agents` go with `skills` too: they are the engine's source copies of
+# the same text, which `include_str!` embeds in the binary. The campaign
+# builds the binary from its own checkout, so a scenario tree does not need
+# them to have it.
+#
+# The hooks layer is the six scripts `headwater init --harness` ships, their
+# source copies under `engine/crates/cli/harness/hooks` (#1871), and
+# `lib.local.sh`, which `lib.sh` sources. Its one `arms` file is the
+# `.claude/settings.json` that `headwater init --harness` writes into a fresh
+# repository: six entries over four events, generated by the engine and not
+# typed. A scenario without the hooks layer has no settings file at all.
+#
+# `tooling` is this repository's own instructions, skills, agents, commands,
+# hooks and Git hooks, which `headwater init` does not ship. `CLAUDE.md` is
+# not a layer (HW-DR-0112), and `.githooks` stays repository tooling. Every
+# scenario removes each tooling path, scenario 6 included, so scenario 0 is
+# plain code and scenario 6 is what `headwater init` ships. `AGENTS.md` and
+# `.codex` are the Codex copies of the standing instructions and the hook.
+# The Copilot copies under `.github/` are tooling for the same reason:
 # `copilot-instructions.md` links to `CLAUDE.md`, `hooks/hooks.json` wires the
-# hooks, and `agents/` and `prompts/` bind the agents and commands. No
-# `headwater init --harness` writes them, the maintainer's binding included.
+# hooks, and `agents/` and `prompts/` bind the agents and commands.
 #
-# The hook layer holds one `UserPromptSubmit` entry, so it writes its own
-# `.claude/settings.json`. The rest of the harness holds the whole file. The
-# engine admits that one pair of equal paths: where a scenario holds both
-# layers, as scenario 13 does, the whole file is kept.
-#
-# The engine refuses a layer path that two layers claim, a scenario that names
-# a layer not declared here, a scenario 0 that holds a layer, and a scenario
-# that differs from its base by anything but exactly one added layer.
+# The engine refuses a layer path that two layers claim, a tooling path that
+# a layer claims, a scenario that names a layer not declared here, a
+# scenario 0 that holds a layer, and a scenario that differs from its base by
+# anything but exactly one added layer. The one exception is the scenario
+# that declares `exception: full-stack`: it holds every layer, drops none of
+# its base, and no other scenario declares it.
 layers:
   docs:
     paths:
@@ -524,8 +572,6 @@ layers:
     paths:
       - .headwater
       - engine/target/dev-release/headwater
-  claude-md:
-    paths: [CLAUDE.md]
   skills:
     paths:
       - .claude/skills/headwater-orient
@@ -536,55 +582,65 @@ layers:
       - .agents/skills
       - engine/crates/cli/harness/skills
       - engine/crates/cli/harness/agents
-  hook:
+  hooks:
     paths:
       - .claude/hooks/intent.sh
+      - .claude/hooks/read.sh
+      - .claude/hooks/write.sh
+      - .claude/hooks/review.sh
       - .claude/hooks/lib.sh
+      - .claude/hooks/touch.sh
+      - .claude/hooks/lib.local.sh
+      - engine/crates/cli/harness/hooks/intent.sh
+      - engine/crates/cli/harness/hooks/read.sh
+      - engine/crates/cli/harness/hooks/write.sh
+      - engine/crates/cli/harness/hooks/review.sh
+      - engine/crates/cli/harness/hooks/lib.sh
+      - engine/crates/cli/harness/hooks/touch.sh
     arms: [.claude/settings.json]
   mcp:
     arms: [.mcp.json]
-  harness:
-    paths:
-      - .claude/skills/headwater-engine
-      - .claude/skills/hw-corpus
-      - .claude/skills/hw-run-policy
-      - .claude/skills/hw-verification-bar
-      - .claude/skills/repo-cleanup
-      - .claude/skills/ste-editor
-      - .claude/skills/fixtures.sh
-      - .claude/agents/headwater-product-owner.md
-      - .claude/agents/hw-adjudicate.md
-      - .claude/agents/hw-build.md
-      - .claude/agents/hw-explore.md
-      - .claude/agents/hw-integrate.md
-      - .claude/agents/hw-iterate.md
-      - .claude/agents/hw-queue.md
-      - .claude/agents/hw-verify.md
-      - .claude/agents/fixtures.sh
-      - .claude/commands
-      - .claude/hooks/derived.sh
-      - .claude/hooks/fixtures-live.sh
-      - .claude/hooks/fixtures.sh
-      - .claude/hooks/read.sh
-      - .claude/hooks/review.sh
-      - .claude/hooks/touch.sh
-      - .claude/hooks/wait.sh
-      - .claude/hooks/write.sh
-      - .claude/run
-      - .claude/settings.json
-      - .claude/tutorial
-      - .githooks
-      - AGENTS.md
-      - .codex
-      - .github/copilot-instructions.md
-      - .github/agents
-      - .github/prompts
-      - .github/hooks
 
-# The fourteen scenarios of milestone 0.07, #1780 to #1793. Each but scenario
-# 0 names one base, and the difference from that base is the one comparison
-# the plan registers. `answer-once` is the block that answers each layer
-# once, and `interaction` is the block that measures two layers together.
+tooling:
+  - CLAUDE.md
+  - .claude/skills/headwater-engine
+  - .claude/skills/hw-corpus
+  - .claude/skills/hw-run-policy
+  - .claude/skills/hw-verification-bar
+  - .claude/skills/repo-cleanup
+  - .claude/skills/ste-editor
+  - .claude/skills/fixtures.sh
+  - .claude/agents/headwater-product-owner.md
+  - .claude/agents/hw-adjudicate.md
+  - .claude/agents/hw-build.md
+  - .claude/agents/hw-explore.md
+  - .claude/agents/hw-integrate.md
+  - .claude/agents/hw-iterate.md
+  - .claude/agents/hw-queue.md
+  - .claude/agents/hw-verify.md
+  - .claude/agents/fixtures.sh
+  - .claude/commands
+  - .claude/hooks/derived.sh
+  - .claude/hooks/fixtures-live.sh
+  - .claude/hooks/fixtures.sh
+  - .claude/hooks/wait.sh
+  - .claude/run
+  - .claude/tutorial
+  - .githooks
+  - AGENTS.md
+  - .codex
+  - .github/copilot-instructions.md
+  - .github/agents
+  - .github/prompts
+  - .github/hooks
+
+# The seven scenarios of HW-DR-0112. Each but scenario 0 names one base, and
+# the difference from that base is the one comparison the plan registers.
+# The skills, the hooks and the MCP server call the engine, so each is added
+# to scenario 2. Scenario 6 adds all three to scenario 2, which is what
+# `headwater init` ships, and it is the one exception to the one-layer rule.
+# The campaign measures no pairings, so every scenario is in the
+# `answer-once` block.
 scenarios:
   0:
     block: answer-once
@@ -594,53 +650,26 @@ scenarios:
     base: 0
     layers: [docs]
   2:
-    block: interaction
-    base: 1
-    layers: [docs, claude-md]
-  3:
     block: answer-once
     base: 1
     layers: [docs, engine]
+  3:
+    block: answer-once
+    base: 2
+    layers: [docs, engine, skills]
   4:
     block: answer-once
-    base: 3
-    layers: [docs, engine, skills]
+    base: 2
+    layers: [docs, engine, hooks]
   5:
     block: answer-once
-    base: 3
-    layers: [docs, engine, hook]
+    base: 2
+    layers: [docs, engine, mcp]
   6:
     block: answer-once
-    base: 3
-    layers: [docs, engine, mcp]
-  7:
-    block: interaction
-    base: 5
-    layers: [docs, engine, hook, mcp]
-  8:
-    block: interaction
-    base: 4
-    layers: [docs, engine, claude-md, skills]
-  9:
-    block: interaction
-    base: 5
-    layers: [docs, engine, claude-md, hook]
-  10:
-    block: interaction
-    base: 5
-    layers: [docs, engine, skills, hook]
-  11:
-    block: answer-once
-    base: 10
-    layers: [docs, engine, claude-md, skills, hook]
-  12:
-    block: answer-once
-    base: 11
-    layers: [docs, engine, claude-md, skills, hook, mcp]
-  13:
-    block: answer-once
-    base: 11
-    layers: [docs, engine, claude-md, skills, hook, harness]
+    base: 2
+    exception: full-stack
+    layers: [docs, engine, skills, hooks, mcp]
 
 # The common probe set of the additive campaign and its split, as HW-DR-0111
 # fixes them. `headwater probe plan --set <name>` selects one set across
@@ -750,16 +779,10 @@ rounds:
     confirm: 144
     variants: 4
     stop_after_empty: 2
-    order: [skills, hook, mcp]
+    order: [skills, hooks, mcp]
     ceiling_cents: 129000
     base_ceiling_cents: 22000
-    open:
-      layer: skills
-      scenario: 4
-      try: 2
-      cap_cents: 12250
-      plan: https://github.com/headwater-ai/headwater/issues/1777#issuecomment-6387233245
-      change: none
+    open: none
   final:
     set: held-out
     rates: [0.90, 0.80]

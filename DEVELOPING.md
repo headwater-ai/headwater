@@ -196,6 +196,7 @@ The fixture suites, which are shell and Python rather than cargo, and which you 
     sh tools/probe/ci-confine-fixtures.sh
     sh tools/probe/campaign-drive-fixtures.sh
     sh tools/probe/try-fixtures.sh
+    sh tools/probe/oracle-fixtures.sh
     sh tools/repo/readme-fixtures.sh
     sh tools/repo/release-guide-fixtures.sh
     sh tools/repo/retire-worktree-fixtures.sh
@@ -381,6 +382,6 @@ It does not run the container, and nothing does. A recipe that is well formed, c
 
 ## Where the rest lives
 
-[`CLAUDE.md`](CLAUDE.md) is the short list of conventions every agent obeys, and *What holds this repository* above is the fullest account of what each gate holds and why it exists at all. [`engine/README.md`](engine/README.md) is the reference for each crate and for what its tests cover. [`docs/tutorials/your-first-governed-corpus.md`](docs/tutorials/your-first-governed-corpus.md) takes a reader from an empty directory to a passing strict run, and a suite runs every command in it and diffs the output against the page. [`docs/process/how-to/cut-a-release.md`](docs/process/how-to/cut-a-release.md) is the order in which an engine release and a taxonomy release are cut, and `sh tools/repo/release-guide-fixtures.sh` holds its table of release workflows against the trigger of each one. The same script holds the header of each release workflow and of `ci.yml` against the decision records that govern it, in both directions.
+[`CLAUDE.md`](CLAUDE.md) is the short list of conventions every agent obeys, and *What holds this repository* above is the fullest account of what each gate holds and why it exists at all. [`engine/README.md`](engine/README.md) is the reference for each crate and for what its tests cover. [`docs/tutorials/your-first-governed-corpus.md`](docs/tutorials/your-first-governed-corpus.md) takes a reader from an empty directory to a passing strict run, and a suite runs every command in it and diffs the output against the page. [`docs/process/how-to/cut-a-release.md`](docs/process/how-to/cut-a-release.md) is the order in which an engine release and a taxonomy release are cut, and `sh tools/repo/release-guide-fixtures.sh` holds its table of release workflows against the trigger of each one. The same script holds the header of each release workflow and of `ci.yml` against the decision records that govern it, in both directions. Whether to keep an old structure when a better one costs something that the old one gives is settled by [HW-PD-0026](docs/process/decisions/0026-we-pivot-rather-than-carry-debt-forward.md).
 
 If you work through an AI harness, `.claude/`, `.codex/` and `.github/hooks/` register the same three scripts for three harnesses. None of them blocks anything. What holds a change is the commit gate and the CI job above.

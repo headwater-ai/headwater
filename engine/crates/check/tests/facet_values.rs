@@ -205,14 +205,47 @@ fn one_value_on_two_kinds_reports_the_kind_that_does_not_admit_it() {
 #[test]
 fn each_of_the_two_narrowings_reports_its_own_document_and_no_other() {
     let run = run();
+    // `opens/` holds the list cases below, which no narrowing decides.
+    let narrowed: Vec<&str> = reported(&run)
+        .into_iter()
+        .filter(|path| !path.starts_with("facet-values/opens/listed-"))
+        .collect();
     assert_eq!(
-        reported(&run),
+        narrowed,
         vec![
             "facet-values/notes/excluded.md",
             "facet-values/rulings/excluded.md",
         ],
         "the reported set is not the two documents the two narrowings exclude"
     );
+}
+
+/// A list is read item by item (#1873). `opens/listed-outside.md` holds
+/// `[asserted, bogus]` and is reported once, at `bogus`, and
+/// `opens/listed-inside.md` holds `[asserted, cited]` and is silent. A rule
+/// that skipped every list, which version 2 did, reports neither; a rule that
+/// read the list as one value reports both.
+#[test]
+fn a_list_is_reported_at_each_item_outside_the_set_and_at_no_other() {
+    let run = run();
+    let listed: Vec<(&str, &str)> = refusals(&run)
+        .into_iter()
+        .filter(|(path, _)| path.starts_with("facet-values/opens/listed-"))
+        .collect();
+    assert_eq!(listed.len(), 1, "{listed:?}");
+    assert_eq!(listed[0].0, "facet-values/opens/listed-outside.md");
+    assert!(
+        listed[0].1.ends_with("this document declares `bogus`"),
+        "the finding names the item outside the set: {listed:?}"
+    );
+    let finding = run
+        .findings
+        .iter()
+        .find(|finding| {
+            finding.rule == RULE && finding.path == "facet-values/opens/listed-outside.md"
+        })
+        .expect("the finding");
+    assert_eq!(finding.line, 3, "the finding reports at the item's line");
 }
 
 /// Each message names the set that kind admits, and not the facet's list.
@@ -321,7 +354,7 @@ fn a_kind_that_narrows_nothing_still_instantiates() {
     );
     assert_eq!(
         targets.len(),
-        5,
+        7,
         "one instance per document, whatever its kind narrows: {targets:?}"
     );
 }

@@ -172,5 +172,5 @@ fn this_repositorys_own_overlay_addresses_parse() {
     // makes this test fail rather than pass over nothing. It moves when a
     // declaration is added, and the number is what a reader compares against
     // the diff that moved it.
-    assert_eq!(seen, 101, "the two sources declare 101 add operations");
+    assert_eq!(seen, 104, "the two sources declare 104 add operations");
 }

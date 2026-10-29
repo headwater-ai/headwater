@@ -108,6 +108,7 @@ cat > "$fix/driver-stub.sh" <<'EOF'
     printf '\n'
 } >> "$TRY_CALLS"
 echo "env versions=${HEADWATER_DRIVE_CLAUDE_VERSIONS:-} target=${CARGO_TARGET_DIR:-} tmp=${TMPDIR:-} pwd=$PWD stage=${HEADWATER_TUNING_STAGE:-}" >> "$TRY_CALLS"
+echo "usage stop=${HEADWATER_DRIVE_USAGE_STOP:-} late=${HEADWATER_DRIVE_USAGE_LATE:-} hours=${HEADWATER_DRIVE_USAGE_LATE_HOURS:-}" >> "$TRY_CALLS"
 if [ -f "$TRY_SLEEP" ]; then sleep 30; fi
 exit 0
 EOF
@@ -190,7 +191,7 @@ print("used 0 sessions %d" % len(os.listdir(os.path.join(sys.argv[3], "sessions"
 EOF
 
 OPEN_DOCS='{layer: docs, scenario: 1, try: 2, cap_cents: 3000, plan: "https://example.org/accepted", change: none}'
-OPEN_HOOK='{layer: hook, scenario: 2, try: 1, cap_cents: 3000, plan: "https://example.org/accepted", change: none}'
+OPEN_HOOK='{layer: hooks, scenario: 2, try: 1, cap_cents: 3000, plan: "https://example.org/accepted", change: none}'
 
 # decl <open> <approved_cents> [<ceiling_cents>] [<base_ceiling_cents>]: the
 # declaration of the case. A session costs one cent, so a round of 4 variants
@@ -202,13 +203,13 @@ decl() {
     cat > "$CASE/probe.yml" <<EOF
 layers:
   docs: {}
-  hook: {}
+  hooks: {}
 sets:
   tuning: [HW-PROBE-a, HW-PROBE-b, HW-PROBE-c, HW-PROBE-d, HW-PROBE-e]
 scenarios:
   0: {layers: []}
   1: {base: 0, layers: [docs]}
-  2: {base: 0, layers: [hook]}
+  2: {base: 0, layers: [hooks]}
 tiers:
   additive: {session_cost_cents: 1}
 rounds:
@@ -221,7 +222,7 @@ rounds:
     confirm: 144
     variants: 4
     stop_after_empty: 2
-    order: [docs, hook]
+    order: [docs, hooks]
     ceiling_cents: ${3:-$(($2 - ${4:-1000}))}
     base_ceiling_cents: ${4:-1000}
     open: $1
@@ -389,6 +390,9 @@ run status "$CASE/root"
 check "status: exits 0" code_is 0
 check "status: one line for the first try, with what it spent and its markers" out_has "docs-try1 spent=3000 driver=none markers=canary-passed done"
 check "status: one line for the dot-named try" out_has ".docs-try1-moved spent=3001"
+: > "$CASE/root/docs-try1/usage-gated"
+run status "$CASE/root"
+check "status: a stop of the usage gate is among the markers (#1876)" out_has "docs-try1 spent=3000 driver=none markers=canary-passed usage-gated done"
 check "status: the total against the approval" out_has "spent: 7001 of 10000 approved"
 check "status: the open layer" out_has "open: docs 1 2 3000"
 
@@ -610,6 +614,29 @@ for marker in done capped canary-failed stop; do
     rm "$CASE/root/docs-r2-v1/$marker"
 done
 check "relaunch: no refused relaunch invokes the driver" [ "$(calls_count)" = 2 ]
+# A stop of the usage gate is not a refusal: the driver reads the gate again
+# (#1876), and each start hands it the values of additive-launch.env.
+check "launch: the driver is handed the usage gate of additive-launch.env" sh -c "[ \"\$(grep -c '^usage stop=85 late=100 hours=24\$' '$CASE/calls')\" = 2 ]"
+echo "2026-10-29T00:00:00Z usage-gated: 7-day at 86% (from x), threshold 85%, resets 2026-10-30T00:00:00Z" > "$CASE/root/docs-r2-v1/usage-gated"
+run relaunch "$CASE/root" docs-r2-v1
+await_calls 3
+check "relaunch: usage-gated present exits 0" code_is 0
+check "relaunch: and invokes the driver" [ "$(calls_count)" = 3 ]
+check "relaunch: and hands it the usage gate again" sh -c "[ \"\$(grep -c '^usage stop=85 late=100 hours=24\$' '$CASE/calls')\" = 3 ]"
+rm "$CASE/root/docs-r2-v1/usage-gated"
+# The values come from additive-launch.env as it reads now, not from a figure
+# in try.sh and not from the launch: a copy of try.sh beside an env file that
+# says 70, 95 and 12 hands the driver those on a relaunch.
+mkdir -p "$fix/env-copy/tools/probe"
+cp "$try" "$fix/env-copy/tools/probe/try.sh"
+sed -e 's/^TRY_USAGE_STOP_PERCENT=.*/TRY_USAGE_STOP_PERCENT=70/' -e 's/^TRY_USAGE_LATE_PERCENT=.*/TRY_USAGE_LATE_PERCENT=95/' \
+    -e 's/^TRY_USAGE_LATE_HOURS=.*/TRY_USAGE_LATE_HOURS=12/' "$here/additive-launch.env" > "$fix/env-copy/tools/probe/additive-launch.env"
+try_was=$try
+try=$fix/env-copy/tools/probe/try.sh
+run relaunch "$CASE/root" docs-r2-v1
+try=$try_was
+await_calls 4
+check "relaunch: hands the driver the usage gate of the env file as it reads now" grep -q '^usage stop=70 late=95 hours=12$' "$CASE/calls"
 check "relaunch: no relaunch writes a.done" [ ! -e "$CASE/root/docs-r2-v1/a.done" ]
 run relaunch "$CASE/root" docs-try9
 check "relaunch: a try that does not exist exits 6" code_is 6
@@ -657,7 +684,7 @@ EOF
 canary_case() {
     new_case
     decl "${1:-$OPEN_DOCS}" 10000
-    mkdir -p "$CASE/root/docs-r2-v1/a" "$CASE/root/hook-try1/a"
+    mkdir -p "$CASE/root/docs-r2-v1/a" "$CASE/root/hooks-try1/a"
     echo "additive scenario-1 tuning" > "$CASE/root/docs-r2-v1/spec"
     : > "$CASE/root/docs-r2-v1/canary-recorded"
     for j in 1 2 3 4 5 6 7 8; do record "L1-p1-r$j"; done
@@ -882,10 +909,10 @@ check "result: round 4's keep row is against round 2 still, because round 3 was 
 
 # A kept try of another layer is not the best so far of this one.
 result_case
-printf '%s\n' '{"event": "result", "try": "hook-r1-confirm", "layer": "hook", "scenario": "2", "stage": "confirm", "transcript": "docs/probe-runs/additive-screening-scenario-10.md", "used": 9, "sessions": 145, "count": 145, "kept": true}' >> "$CASE/root/ledger.jsonl"
+printf '%s\n' '{"event": "result", "try": "hooks-r1-confirm", "layer": "hooks", "scenario": "2", "stage": "confirm", "transcript": "docs/probe-runs/additive-screening-scenario-10.md", "used": 9, "sessions": 145, "count": 145, "kept": true}' >> "$CASE/root/ledger.jsonl"
 echo 'pooled: 51/72 against 39/72, +16.7 points [+0.9, +31.4]' > "$CASE/pooled-keep"
 run result "$CASE/root" docs-r2-confirm
-check "result: a kept try of the hook layer is not the best so far of docs" grep -q 'probe compare .*-docs-round-2-confirmation-scenario-1\.md .*/additive-screening-scenario-1\.md$' "$CASE/engine.log"
+check "result: a kept try of the hooks layer is not the best so far of docs" grep -q 'probe compare .*-docs-round-2-confirmation-scenario-1\.md .*/additive-screening-scenario-1\.md$' "$CASE/engine.log"
 
 # The spend: the session files against the driver's last `all=` line.
 result_case
@@ -1095,6 +1122,25 @@ run wait "$CASE/root" docs-r2-v1
 check "wait: below the disk floor exits 0" code_is 0
 check "wait: and prints disk-floor" out_has disk-floor
 check "wait: and writes stop" [ -s "$CASE/root/docs-r2-v1/stop" ]
+# A driver that stopped on the usage gate (#1876): `wait` names the stop,
+# and the ledger records it once over two reads, and again for a new stop.
+new_case
+mkdir -p "$CASE/root/docs-r2-v1"
+printf '%s\n' "2026-10-29T00:00:00Z usage-gated: 7-day at 86% (from /u/s1.json), threshold 85%, resets 2026-10-30T00:00:00Z" \
+    'percent: 86' 'resets-at: 1793318400' 'threshold: 85' 'source: /u/s1.json' > "$CASE/root/docs-r2-v1/usage-gated"
+run wait "$CASE/root" docs-r2-v1
+check "wait: usage-gated exits 0" code_is 0
+check "wait: and prints usage-gated with the line" out_has "usage-gated: 2026-10-29T00:00:00Z usage-gated: 7-day at 86%"
+run wait "$CASE/root" docs-r2-v1
+check "wait: usage-gated read twice exits 0" code_is 0
+check "wait: and the ledger holds one gate event" [ "$(grep -c '"event": "gate"' "$CASE/root/ledger.jsonl")" = 1 ]
+check "wait: which names the try, the figure, the reset and the threshold" grep -q '"try": "docs-r2-v1", "percent": "86", "resets_at": 1793318400, "threshold": 85' "$CASE/root/ledger.jsonl"
+sed -i '1s/^2026-10-29T00:00:00Z/2026-10-29T06:00:00Z/' "$CASE/root/docs-r2-v1/usage-gated"
+run wait "$CASE/root" docs-r2-v1
+check "wait: a second stop appends a second gate event" [ "$(grep -c '"event": "gate"' "$CASE/root/ledger.jsonl")" = 2 ]
+: > "$CASE/root/docs-r2-v1/stop"
+run wait "$CASE/root" docs-r2-v1
+check "wait: stop is printed before usage-gated" sh -c "[ \"\$(cat '$CASE/out')\" = stop ]"
 new_case
 run wait "$CASE/root"
 check "wait: with no try named exits 2, because a round runs several tries" code_is 2
@@ -1121,14 +1167,14 @@ rank_decl() {
 layers:
   skills: {paths: [.claude/skills/hw-x]}
   docs: {}
-  hook: {}
+  hooks: {}
 sets:
   tuning: [HW-PROBE-a, HW-PROBE-b, HW-PROBE-c, HW-PROBE-d, HW-PROBE-e]
 scenarios:
   0: {layers: []}
   1: {base: 0, layers: [skills]}
   2: {base: 0, layers: [docs]}
-  3: {base: 0, layers: [hook]}
+  3: {base: 0, layers: [hooks]}
 tiers:
   additive: {session_cost_cents: 1}
 rounds:
@@ -1141,7 +1187,7 @@ rounds:
     confirm: 144
     variants: 4
     stop_after_empty: 2
-    order: [skills, docs, hook]
+    order: [skills, docs, hooks]
     ceiling_cents: ${2:-99000}
     base_ceiling_cents: ${3:-1000}
     open: $1
@@ -1445,8 +1491,8 @@ check "base: and one at another pin does not" code_is 4
 new_case
 decl "$OPEN_HOOK" 10000
 run plan "$CASE/root"
-check "order: a round of hook while docs, before it, is open exits 6" code_is 6
-check "order: and names docs" err_has "the docs layer comes before hook"
+check "order: a round of hooks while docs, before it, is open exits 6" code_is 6
+check "order: and names docs" err_has "the docs layer comes before hooks"
 check "order: and builds nothing" no_trees
 round_event() { printf '{"event": "round", "layer": "%s", "round": %s, "kept": %s}\n' "$1" "$2" "$3" >> "$CASE/root/ledger.jsonl"; }
 round_event docs 1 false
@@ -1454,8 +1500,8 @@ run plan "$CASE/root"
 check "order: one empty round of docs does not stop it" code_is 6
 round_event docs 2 false
 run plan "$CASE/root"
-check "order: two empty rounds in a row stop docs, and hook plans" code_is 0
-check "order: as round 1 of hook" out_has "layer: hook open, rounds closed: -"
+check "order: two empty rounds in a row stop docs, and hooks plans" code_is 0
+check "order: as round 1 of hooks" out_has "layer: hooks open, rounds closed: -"
 decl "$OPEN_DOCS" 10000
 run plan "$CASE/root"
 check "order: a stopped layer plans no round" code_is 6
@@ -1477,7 +1523,7 @@ run plan "$CASE/root"
 check "order: a layer that took its 4 rounds exits 6" code_is 6
 check "order: and says so" err_has "took its 4 rounds"
 new_case
-sed -i 's/^    order: \[docs, hook\]$/    order: [hook]/' "$CASE/probe.yml"
+sed -i 's/^    order: \[docs, hooks\]$/    order: [hooks]/' "$CASE/probe.yml"
 run plan "$CASE/root"
 check "order: a layer that order does not name exits 6" code_is 6
 
@@ -1570,7 +1616,7 @@ check "split: naming the tuning ceiling" err_has "above the tuning ceiling of 50
 # base and three first bests are 4 x 7250 = 29000 cents, above 22000.
 four_case() {
     new_case
-    rank_decl '{layer: hook, scenario: 3, try: 1, cap_cents: 8000, plan: "https://example.org/accepted", change: none}' 78000 22000
+    rank_decl '{layer: hooks, scenario: 3, try: 1, cap_cents: 8000, plan: "https://example.org/accepted", change: none}' 78000 22000
     sed -i 's/session_cost_cents: 1}/session_cost_cents: 50}/' "$CASE/probe.yml"
     round_event skills 1 false
     round_event skills 2 false
@@ -1681,13 +1727,58 @@ usage_session "$b" s6 "$(tool_line Read '{"file_path":"docs/spec/03-z.md"}')" "$
 usage_session "$b" s7 "$(tool_line Read '{"file_path":"docs/spec/04-w.md"}')" "$inject"
 usage_session "$b" s8 "$(tool_line Read '{"file_path":"docs/spec/05-v.md"}')" "$inject"
 usage_session "$b" s9 "$(tool_line Read '{"file_path":"docs/spec/01-x.md"}')" "$other"
-usage_of hook
-check "usage: hook counts a Read or a reader in Bash of a pointer in the UserPromptSubmit hook_success, and no path the task names, no anchor, evidence or summary path, and no other hook" out_has "used 2 sessions 9"
+usage_of hooks
+check "usage: hooks counts a Read or a reader in Bash of a pointer in the UserPromptSubmit hook_success, and no path the task names, no anchor, evidence or summary path, and no other hook" out_has "used 2 sessions 9"
 rm -rf "$b"
 usage_session "$b" s1 "$(tool_line Read '{"file_path":"docs/spec/01-x.md"}')" "$older"
 usage_session "$b" s2 "$(tool_line Read '{"file_path":"docs/spec/03-z.md"}')" "$older"
-usage_of hook
-check "usage: hook still counts a pointer in the hook_additional_context of an older log, and not the path the task names" out_has "used 1 sessions 2"
+usage_of hooks
+check "usage: hooks still counts a pointer in the hook_additional_context of an older log, and not the path the task names" out_has "used 1 sessions 2"
+# Each of the four hooks, per hook and per session (#1875). Intent keeps the
+# pointer-opened rule. Read, write and review count a hook_success with text:
+# `PreToolUse:Read`, `PreToolUse:Write`, `PostToolUse:Edit` and `Stop`. A hook
+# that printed nothing, or only white space, such as `touch.sh` on the write
+# matcher, is no use,
+# and neither is a hook the layer does not ship (`PreToolUse:Grep`).
+out_line() { grep -qxF -- "$1" "$CASE/out"; }
+out_first() { [ "$(head -1 "$CASE/out")" = "$1" ]; }
+hook_line() { printf '{"type":"attachment","attachment":{"type":"hook_success","hookName":"%s","hookEvent":"%s","content":"%s"}}\n' "$1" "${1%%:*}" "$2"; }
+rm -rf "$b"
+usage_session "$b" s1 "$(tool_line Read '{"file_path":"docs/spec/01-x.md"}')" "$inject"
+log=$b/config/s1/projects/x/log.jsonl
+hook_line PreToolUse:Read 'docs/spec/01-x.md is governed by HW-DR-0001.' >> "$log"
+hook_line PreToolUse:Write 'Use headwater new for a new document.' >> "$log"
+hook_line PreToolUse:Write '' >> "$log"
+hook_line PostToolUse:Edit '' >> "$log"
+hook_line Stop 'headwater check found 1 error.' >> "$log"
+usage_session "$b" s2 "$(tool_line Read '{"file_path":"docs/spec/02-y.md"}')" "$(hook_line PostToolUse:Edit 'The edit left a stale fold.')"
+hook_line PreToolUse:Grep 'not a hook the layer ships' >> "$b/config/s2/projects/x/log.jsonl"
+usage_session "$b" s3 "$(tool_line Read '{"file_path":"docs/spec/02-y.md"}')" "$(hook_line PreToolUse:Write '')"
+hook_line Stop '\n ' >> "$b/config/s3/projects/x/log.jsonl"
+# Claude Code 2.1.312 logs a hook's added context as a hook_additional_context
+# whose content is a list of strings. A pointer line in the read hook's list
+# counts for read and never for intent, though the session opened it.
+listed='{"type":"attachment","rendered":["x"],"attachment":{"type":"hook_additional_context","hookName":"PreToolUse:Read","hookEvent":"PreToolUse","content":["Headwater routed this read.","  docs/spec/01-x.md (One) — A summary."]}}'
+usage_session "$b" s4 "$(tool_line Read '{"file_path":"docs/spec/01-x.md"}')" "$listed"
+usage_of hooks
+check "usage: hooks keeps the first line on the intent rule, which try.sh rank reads" out_first "used 1 sessions 4"
+check "usage: hooks counts the intent hook by the pointer it opened" out_line "hook intent used 1 sessions 4"
+check "usage: hooks counts the read hook by a PreToolUse:Read with text, as a string or a list" out_line "hook read used 2 sessions 4"
+check "usage: hooks counts the write hook by a Pre or PostToolUse on Write or Edit with text, and no empty one" out_line "hook write used 2 sessions 4"
+check "usage: hooks counts the review hook by a Stop with text, and no empty one" out_line "hook review used 1 sessions 4"
+check "usage: hooks prints the hooks each session used, in the order intent, read, write, review" out_line "session s1 intent read write review"
+check "usage: hooks prints a session by the hooks it used, and no hook the layer does not ship" out_line "session s2 write"
+check "usage: hooks prints a dash for a session that used no hook" out_line "session s3 -"
+check "usage: hooks reads the list content of a hook_additional_context, and counts another hook's pointer for that hook and not for intent" out_line "session s4 read"
+# The intent hook as Claude Code 2.1.312 logs it: a list whose first element is
+# the heading and whose pointer line comes after it. A reader of the first
+# element alone hides every intent use that try.sh rank reads.
+intent_listed='{"type":"attachment","rendered":["x"],"attachment":{"type":"hook_additional_context","hookName":"UserPromptSubmit","hookEvent":"UserPromptSubmit","content":["Headwater routed this task.","  docs/spec/01-x.md (One) — A summary."]}}'
+rm -rf "$b"
+usage_session "$b" s1 "$(tool_line Read '{"file_path":"docs/spec/01-x.md"}')" "$intent_listed"
+usage_of hooks
+check "usage: hooks reads every element of the intent hook's list, and counts a pointer after the first" out_line "hook intent used 1 sessions 1"
+check "usage: hooks names intent for a session that opened a pointer from the intent hook's list" out_line "session s1 intent"
 rm -rf "$b"
 usage_session "$b" s1 "$(tool_line mcp__headwater__explain '{"path":"x"}')"
 usage_session "$b" s2 "$(tool_line Read '{"file_path":"mcp__x"}')"

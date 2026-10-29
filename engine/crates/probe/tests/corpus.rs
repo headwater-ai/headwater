@@ -1090,6 +1090,8 @@ fn selected(row: &Harder) -> headwater_probe::plan::Selected {
         },
         answers: probe.answers.clone(),
         expected: probe.expected.clone(),
+        action: scalar(&document, "action"),
+        moments: Vec::new(),
     }
 }
 
@@ -1411,51 +1413,42 @@ fn the_campaign_spec_plans_no_probe_that_awaits_spend() {
     assert!(lines > 0, "the campaign spec holds no line");
 }
 
-/// The committed `.headwater/probe.yml` declares the fourteen scenarios of
-/// milestone 0.07 as its issues, #1780 to #1793, state them (#1774).
+/// The committed `.headwater/probe.yml` declares the seven scenarios of
+/// HW-DR-0112 (#1872), and no scenario holds this repository's own tooling.
 ///
 /// The engine already refuses a scenario that differs from its base by more
-/// than one layer. This case holds the declaration to the milestone: a
-/// scenario with the wrong layers or the wrong base reads as well-formed and
-/// measures a comparison nobody registered.
+/// than one layer outside the declared exception. This case holds the
+/// declaration to the decision: a re-cut can read as well-formed while
+/// scenario 0 and scenario 6 still carry this repository's own instructions,
+/// skills and hooks, because a path in no layer is plain code and every
+/// scenario keeps it. So it reads the delta of each scenario, not only the
+/// layers it names.
 #[test]
-fn the_committed_scenarios_are_the_fourteen_of_the_milestone() {
+fn the_committed_scenarios_are_the_seven_of_hw_dr_0112_and_none_holds_the_tooling() {
     let root = repository_root();
     let path = root.join(headwater_probe::budget::PATH);
     let source =
         std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     let budgets = headwater_probe::Budgets::read(&source).unwrap_or_else(|e| panic!("{e}"));
 
-    let table: [(u32, &[&str], Option<u32>, bool); 14] = [
+    assert_eq!(
+        budgets
+            .layers
+            .iter()
+            .map(|layer| layer.name.as_str())
+            .collect::<Vec<_>>(),
+        ["docs", "engine", "skills", "hooks", "mcp"],
+        "the five layers of HW-DR-0112"
+    );
+    let full = ["docs", "engine", "skills", "hooks", "mcp"];
+    let table: [(u32, &[&str], Option<u32>, bool); 7] = [
         (0, &[], None, false),
         (1, &["docs"], Some(0), false),
-        (2, &["docs", "claude-md"], Some(1), true),
-        (3, &["docs", "engine"], Some(1), false),
-        (4, &["docs", "engine", "skills"], Some(3), false),
-        (5, &["docs", "engine", "hook"], Some(3), false),
-        (6, &["docs", "engine", "mcp"], Some(3), false),
-        (7, &["docs", "engine", "hook", "mcp"], Some(5), true),
-        (8, &["docs", "engine", "claude-md", "skills"], Some(4), true),
-        (9, &["docs", "engine", "claude-md", "hook"], Some(5), true),
-        (10, &["docs", "engine", "skills", "hook"], Some(5), true),
-        (
-            11,
-            &["docs", "engine", "claude-md", "skills", "hook"],
-            Some(10),
-            false,
-        ),
-        (
-            12,
-            &["docs", "engine", "claude-md", "skills", "hook", "mcp"],
-            Some(11),
-            false,
-        ),
-        (
-            13,
-            &["docs", "engine", "claude-md", "skills", "hook", "harness"],
-            Some(11),
-            false,
-        ),
+        (2, &["docs", "engine"], Some(1), false),
+        (3, &["docs", "engine", "skills"], Some(2), false),
+        (4, &["docs", "engine", "hooks"], Some(2), false),
+        (5, &["docs", "engine", "mcp"], Some(2), false),
+        (6, &full, Some(2), true),
     ];
     assert_eq!(
         budgets.scenarios.len(),
@@ -1463,7 +1456,7 @@ fn the_committed_scenarios_are_the_fourteen_of_the_milestone() {
         "{:?}",
         budgets.scenarios
     );
-    for (number, layers, base, interaction) in table {
+    for (number, layers, base, exception) in table {
         let scenario = budgets
             .scenario(number)
             .unwrap_or_else(|| panic!("no scenario {number}"));
@@ -1474,15 +1467,94 @@ fn the_committed_scenarios_are_the_fourteen_of_the_milestone() {
         assert_eq!(held, expected, "the layers of scenario {number}");
         assert_eq!(scenario.base, base, "the base of scenario {number}");
         assert_eq!(
-            scenario.block == headwater_probe::budget::Block::Interaction,
-            interaction,
-            "the block of scenario {number}"
+            scenario.exception, exception,
+            "the exception of scenario {number}"
+        );
+    }
+
+    use headwater_probe::budget::Hold;
+    for number in 0..=6 {
+        let delta = budgets
+            .scenario_delta(number)
+            .unwrap_or_else(|| panic!("no delta for scenario {number}"));
+        for tooling in [
+            "CLAUDE.md",
+            "AGENTS.md",
+            ".claude/skills/hw-run-policy",
+            ".claude/skills/headwater-engine",
+            ".claude/commands",
+            ".githooks",
+        ] {
+            let entries: Vec<_> = delta.iter().filter(|(_, _, p)| *p == tooling).collect();
+            assert_eq!(
+                entries,
+                [&(Hold::Removes, "tooling", tooling)],
+                "scenario {number} must remove {tooling}"
+            );
+        }
+        let settings: Vec<_> = delta
+            .iter()
+            .filter(|(_, _, p)| *p == ".claude/settings.json")
+            .collect();
+        let hold = if [4, 6].contains(&number) {
+            Hold::Writes
+        } else {
+            Hold::Removes
+        };
+        assert_eq!(
+            settings,
+            [&(hold, "hooks", ".claude/settings.json")],
+            "the settings file of scenario {number}"
         );
     }
 }
 
-/// The committed additive spec plans each of the fourteen scenarios in each of
-/// the three rounds, and runs no held-out probe before the final round (#1774,
+/// The settings file the hooks layer writes is the one `headwater init
+/// --harness` writes into a fresh repository (#1872): six entries over four
+/// events, each running a script the hooks layer holds.
+///
+/// The probe crate does not link the CLI, so this reads the arms file and the
+/// engine's source of the entries, `engine/crates/cli/src/harness.rs`, and
+/// checks that each script and event the source names is wired in the file.
+/// `engine/crates/cli/tests/init_hooks.rs` holds the byte equality.
+#[test]
+fn the_hooks_arms_settings_wire_every_script_the_hooks_layer_holds() {
+    let root = repository_root();
+    let path = root.join("tools/probe/arms/hooks/.claude/settings.json");
+    let settings =
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    for event in ["UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop"] {
+        assert!(
+            settings.contains(&format!("\"{event}\"")),
+            "the arms settings file wires no {event} hook"
+        );
+    }
+    let commands = settings.matches("\"type\": \"command\"").count();
+    assert_eq!(commands, 6, "six hook entries over four events");
+    let source =
+        std::fs::read_to_string(root.join(headwater_probe::budget::PATH)).expect("the declaration");
+    let budgets = headwater_probe::Budgets::read(&source).unwrap_or_else(|e| panic!("{e}"));
+    let hooks = budgets
+        .layers
+        .iter()
+        .find(|layer| layer.name == "hooks")
+        .expect("the hooks layer");
+    assert_eq!(hooks.arms, [".claude/settings.json"]);
+    for script in ["intent", "read", "write", "review", "touch"] {
+        let wired = format!(".claude/hooks/{script}.sh");
+        assert!(
+            settings.contains(&wired),
+            "the arms settings file does not run {wired}"
+        );
+        assert!(
+            hooks.paths.contains(&wired),
+            "the hooks layer does not hold {wired}"
+        );
+    }
+}
+
+/// The committed additive spec plans each declared scenario in each of the
+/// three rounds, and runs no held-out probe before the final round (#1774,
 /// clause 4).
 ///
 /// A line is `additive scenario-<n> <round>` and the probes of the round's set
@@ -1557,7 +1629,8 @@ fn the_additive_spec_plans_each_scenario_in_each_round() {
         }
     }
 
-    for scenario in 0..14 {
+    let declared: Vec<u32> = budgets.scenarios.iter().map(|s| s.number).collect();
+    for &scenario in &declared {
         for round in ["screening", "tuning", "final"] {
             let mut ran = runs
                 .remove(&(scenario, round.to_string()))
@@ -1576,7 +1649,8 @@ fn the_additive_spec_plans_each_scenario_in_each_round() {
     }
     assert!(
         runs.is_empty(),
-        "lines outside the 14 scenarios and 3 rounds: {runs:?}"
+        "lines outside the {} declared scenarios and 3 rounds: {runs:?}",
+        declared.len()
     );
 }
 
@@ -1702,6 +1776,7 @@ fn in_plain_code(budgets: &headwater_probe::Budgets, path: &str) -> bool {
             .layers
             .iter()
             .flat_map(|layer| layer.paths.iter().chain(layer.arms.iter()))
+            .chain(budgets.tooling.iter())
             .any(|held| under(held.trim_end_matches('/')))
 }
 
@@ -1821,15 +1896,456 @@ fn the_code_set_is_five_probes_whose_answer_plain_code_carries() {
     assert!(findings.is_empty(), "{}", findings.join("\n"));
 }
 
+/// The actions of rows 2 to 9 and 11 of the grid in HW-DR-0112, which pass or
+/// fail by a mechanical oracle. Rows 1 and 10, `ask_or_locate` and
+/// `review_change`, are graded from the transcript and keep `oracle: none`
+/// (HW-OBL-0123 records why the facet cannot say so per action).
+const MECHANICAL_ACTIONS: [&str; 9] = [
+    "change_governed_code",
+    "refactor_across_files",
+    "add_document",
+    "edit_depended_document",
+    "supersede_or_retire",
+    "move_document",
+    "change_taxonomy",
+    "repair_check",
+    "ungoverned_control",
+];
+
+/// The probes of a mechanical row on the shelf that grade against no
+/// declared oracle yet. #1874.2 and #1874.3 rewrite each into the 44-probe
+/// set or retire it with a reason, and delete its line here. The case below
+/// fails on a line whose probe now passes, so the list can only shrink.
+const AWAITING_ORACLE: &[&str] = &[
+    "HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks",
+    "HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged",
+    "HW-PROBE-a-session-that-changes-a-verb-s-default-reaches-the-verb-s-interface-contract",
+    "HW-PROBE-a-session-that-changes-the-recorder-reaches-the-recorder-contract",
+    "HW-PROBE-a-session-that-moves-a-shelf-reaches-the-relocation-guide",
+    "HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document",
+    "HW-PROBE-what-a-session-writes-points-back-at-the-ruling-it-rests-on",
+];
+
+/// The directory of the generic oracle scripts (#1874.1). A script there
+/// names no probe, because many probes call it with their own arguments.
+const GENERIC_ORACLES: &str = "tools/probe/oracles/";
+
+/// What the decisive case reads of one probe.
+struct Graded<'a> {
+    id: &'a str,
+    action: &'a str,
+    expectation: &'a str,
+    oracle: &'a str,
+}
+
+/// Why a probe of a mechanical row cannot grade against its oracle, one line
+/// for each reason. Empty for a probe of rows 1 and 10, and for a sound one.
+///
+/// A sound probe of rows 2 to 9 and 11 is `patched` and names a `command:`
+/// or `test:` oracle declared under `oracles:`. Each file that oracle holds
+/// exists. A held file outside the generic scripts names the probe in its
+/// first ten lines, so the seal removes it from every workspace. Each generic
+/// script the command runs is held, and so is `lib.sh` that it sources,
+/// because the recorder restores a held file over the session's copy and a
+/// session can otherwise rewrite the script that grades it.
+fn mechanical_findings(
+    probe: &Graded,
+    oracles: &[headwater_probe::Oracle],
+    root: &Path,
+) -> Vec<String> {
+    let mut findings = Vec::new();
+    if !MECHANICAL_ACTIONS.contains(&probe.action) {
+        return findings;
+    }
+    let id = probe.id;
+    if probe.expectation != "patched" {
+        findings.push(format!(
+            "{id} is on the mechanical row `{}` and declares the expectation `{}`, not `patched`",
+            probe.action, probe.expectation
+        ));
+    }
+    if probe.oracle == "none" {
+        findings.push(format!(
+            "{id} is on the mechanical row `{}` and declares `oracle: none`, so HW-DR-0112 refuses it from the set",
+            probe.action
+        ));
+        return findings;
+    }
+    let Some(entry) = oracles.iter().find(|it| it.finding() == probe.oracle) else {
+        findings.push(format!(
+            "{id} grades against `{}`, which is no `command:` or `test:` oracle declared under `oracles:`",
+            probe.oracle
+        ));
+        return findings;
+    };
+    if entry.holds.is_empty() && entry.parser.prefix() == "test" {
+        findings.push(format!(
+            "{id}: the oracle `{}` runs a test and holds no file, so the session's tree holds the test it is graded by",
+            probe.oracle
+        ));
+    }
+    let slug = id.strip_prefix("HW-PROBE-").unwrap_or(id);
+    for held in &entry.holds {
+        let path = root.join(held);
+        if !path.is_file() {
+            findings.push(format!(
+                "{id}: {held}, which the oracle `{}` holds, does not exist",
+                probe.oracle
+            ));
+            continue;
+        }
+        if held.starts_with(GENERIC_ORACLES) {
+            continue;
+        }
+        let head: String = std::fs::read_to_string(&path)
+            .unwrap_or_default()
+            .lines()
+            .take(10)
+            .collect::<Vec<_>>()
+            .join("\n");
+        if !head.contains(slug) {
+            findings.push(format!(
+                "{id}: {held}, which the oracle `{}` holds, does not name the probe in its first ten lines, so the seal leaves it in the session's tree",
+                probe.oracle
+            ));
+        }
+    }
+    let scripts: Vec<&str> = entry
+        .command
+        .split_whitespace()
+        .filter(|word| word.starts_with(GENERIC_ORACLES))
+        .collect();
+    for script in &scripts {
+        if !entry.holds.iter().any(|held| held == script) {
+            findings.push(format!(
+                "{id}: the oracle `{}` runs {script} and does not hold it, so a session can rewrite the script that grades it",
+                probe.oracle
+            ));
+        }
+    }
+    let lib = format!("{GENERIC_ORACLES}lib.sh");
+    if !scripts.is_empty() && !entry.holds.contains(&lib) {
+        findings.push(format!(
+            "{id}: the oracle `{}` runs a generic script and does not hold {lib}, which every one of them sources",
+            probe.oracle
+        ));
+    }
+    findings
+}
+
+/// Every probe of a mechanical row grades against a declared oracle (#1874,
+/// HW-DR-0112 "The probe set").
+///
+/// The seeded probes come first, and each one is refused or accepted for the
+/// reason its label states. Then the shelf: each probe of rows 2 to 9 and 11
+/// has no finding unless `AWAITING_ORACLE` names it, and each probe that list
+/// names is on the shelf and still has one. #1874.3 adds the count of 4 for
+/// each action, 2 in `tuning` and 2 in `held-out`, to this case.
+#[test]
+fn every_mechanical_row_probe_grades_against_a_declared_oracle() {
+    let root = repository_root();
+    let oracle = |name: &str,
+                  command: &str,
+                  parser: headwater_probe::OracleParser,
+                  holds: &[&str]| headwater_probe::Oracle {
+        name: name.to_owned(),
+        paths: vec!["docs/*".to_owned()],
+        command: command.to_owned(),
+        parser,
+        holds: holds.iter().map(|it| (*it).to_owned()).collect(),
+    };
+    let exit = headwater_probe::OracleParser::Exit;
+    let seeded_oracles = vec![
+        oracle(
+            "sound",
+            "sh tools/probe/oracles/check-clean.sh",
+            exit,
+            &[
+                "tools/probe/oracles/check-clean.sh",
+                "tools/probe/oracles/lib.sh",
+            ],
+        ),
+        oracle(
+            "no-lib",
+            "sh tools/probe/oracles/check-clean.sh",
+            exit,
+            &["tools/probe/oracles/check-clean.sh"],
+        ),
+        oracle(
+            "unheld",
+            "sh tools/probe/oracles/check-clean.sh",
+            exit,
+            &["tools/probe/oracles/lib.sh"],
+        ),
+        oracle(
+            "absent",
+            "sh tools/probe/oracles/no-such.sh",
+            exit,
+            &[
+                "tools/probe/oracles/no-such.sh",
+                "tools/probe/oracles/lib.sh",
+            ],
+        ),
+        oracle(
+            "hidden",
+            "sh tools/hw-cargo test -p headwater-check --test probe_oracle_future_date",
+            headwater_probe::OracleParser::CargoTest,
+            &["engine/crates/check/tests/probe_oracle_future_date.rs"],
+        ),
+        oracle(
+            "bare-test",
+            "sh tools/hw-cargo test",
+            headwater_probe::OracleParser::CargoTest,
+            &[],
+        ),
+    ];
+    let date = "HW-PROBE-a-rule-that-reads-the-date-takes-it-from-the-run-and-ships-with-the-fixture-that-fails-it";
+    let seeded: [(&str, Graded, bool); 12] = [
+        (
+            "a mechanical probe with `oracle: none`",
+            Graded {
+                id: "HW-PROBE-seeded",
+                action: "add_document",
+                expectation: "patched",
+                oracle: "none",
+            },
+            false,
+        ),
+        (
+            "a sound command oracle",
+            Graded {
+                id: "HW-PROBE-seeded",
+                action: "add_document",
+                expectation: "patched",
+                oracle: "command:sound",
+            },
+            true,
+        ),
+        (
+            "row 11 with `oracle: none`",
+            Graded {
+                id: "HW-PROBE-seeded",
+                action: "ungoverned_control",
+                expectation: "patched",
+                oracle: "none",
+            },
+            false,
+        ),
+        (
+            "row 1 keeps `oracle: none`",
+            Graded {
+                id: "HW-PROBE-seeded",
+                action: "ask_or_locate",
+                expectation: "answered",
+                oracle: "none",
+            },
+            true,
+        ),
+        (
+            "row 10 keeps `oracle: none`",
+            Graded {
+                id: "HW-PROBE-seeded",
+                action: "review_change",
+                expectation: "cited",
+                oracle: "none",
+            },
+            true,
+        ),
+        (
+            "an expectation other than `patched`",
+            Graded {
+                id: "HW-PROBE-seeded",
+                action: "move_document",
+                expectation: "opened",
+                oracle: "command:sound",
+            },
+            false,
+        ),
+        (
+            "a rule finding in place of an oracle",
+            Graded {
+                id: "HW-PROBE-seeded",
+                action: "edit_depended_document",
+                expectation: "patched",
+                oracle: "relation.reciprocity.missing",
+            },
+            false,
+        ),
+        (
+            "a generic script whose lib.sh is not held",
+            Graded {
+                id: "HW-PROBE-seeded",
+                action: "add_document",
+                expectation: "patched",
+                oracle: "command:no-lib",
+            },
+            false,
+        ),
+        (
+            "a generic script that is not held",
+            Graded {
+                id: "HW-PROBE-seeded",
+                action: "add_document",
+                expectation: "patched",
+                oracle: "command:unheld",
+            },
+            false,
+        ),
+        (
+            "a held file that does not exist",
+            Graded {
+                id: "HW-PROBE-seeded",
+                action: "add_document",
+                expectation: "patched",
+                oracle: "command:absent",
+            },
+            false,
+        ),
+        (
+            "a hidden test that names another probe",
+            Graded {
+                id: "HW-PROBE-seeded",
+                action: "change_governed_code",
+                expectation: "patched",
+                oracle: "test:hidden",
+            },
+            false,
+        ),
+        (
+            "a test oracle that holds no file",
+            Graded {
+                id: date,
+                action: "change_governed_code",
+                expectation: "patched",
+                oracle: "test:bare-test",
+            },
+            false,
+        ),
+    ];
+    let mut wrong = Vec::new();
+    for (label, probe, sound) in &seeded {
+        let found = mechanical_findings(probe, &seeded_oracles, &root);
+        if found.is_empty() != *sound {
+            wrong.push(format!(
+                "seeded, {label}: wanted {}, got {found:?}",
+                if *sound { "no finding" } else { "a finding" }
+            ));
+        }
+    }
+    let hidden = Graded {
+        id: date,
+        action: "change_governed_code",
+        expectation: "patched",
+        oracle: "test:hidden",
+    };
+    let found = mechanical_findings(&hidden, &seeded_oracles, &root);
+    if !found.is_empty() {
+        wrong.push(format!(
+            "seeded, a hidden test that names its probe: wanted no finding, got {found:?}"
+        ));
+    }
+    let none = Graded {
+        id: "HW-PROBE-seeded",
+        action: "add_document",
+        expectation: "patched",
+        oracle: "none",
+    };
+    let found = mechanical_findings(&none, &seeded_oracles, &root);
+    if !found.iter().any(|it| it.contains("`oracle: none`")) {
+        wrong.push(format!(
+            "seeded, `oracle: none` on a mechanical row is refused as itself, not as an undeclared oracle: got {found:?}"
+        ));
+    }
+
+    // The awaiting list, seeded: a listed probe that now passes, a listed
+    // probe gone from the shelf, and an unlisted probe that fails are each
+    // reported, and a listed probe that still fails is not.
+    let seeded_shelf = vec![
+        ("HW-PROBE-fixed".to_owned(), Vec::new()),
+        ("HW-PROBE-waiting".to_owned(), vec!["a finding".to_owned()]),
+        (
+            "HW-PROBE-unlisted".to_owned(),
+            vec!["an unlisted finding".to_owned()],
+        ),
+    ];
+    let reported = awaiting_findings(
+        &seeded_shelf,
+        &["HW-PROBE-fixed", "HW-PROBE-waiting", "HW-PROBE-gone"],
+    );
+    for want in ["HW-PROBE-fixed", "HW-PROBE-gone", "an unlisted finding"] {
+        if !reported.iter().any(|it| it.contains(want)) {
+            wrong.push(format!(
+                "seeded awaiting list: nothing reports {want}: {reported:?}"
+            ));
+        }
+    }
+    if reported.len() != 3 {
+        wrong.push(format!(
+            "seeded awaiting list: wanted 3 reports, got {reported:?}"
+        ));
+    }
+
+    let path = root.join(headwater_probe::budget::PATH);
+    let source =
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    let budgets = headwater_probe::Budgets::read(&source).unwrap_or_else(|e| panic!("{e}"));
+    let mut shelf = Vec::new();
+    for probe in probes() {
+        let (_, document) = front_matter(&root.join(&probe.path));
+        let id = probe.id.clone().unwrap_or_else(|| probe.path.clone());
+        let action = scalar(&document, "action").unwrap_or_default();
+        let oracle = scalar(&document, "oracle").unwrap_or_default();
+        let expectation = probe.expectation.clone().unwrap_or_default();
+        let graded = Graded {
+            id: &id,
+            action: &action,
+            expectation: &expectation,
+            oracle: &oracle,
+        };
+        let found = mechanical_findings(&graded, &budgets.oracles, &root);
+        shelf.push((id, found));
+    }
+    wrong.extend(awaiting_findings(&shelf, AWAITING_ORACLE));
+    assert!(wrong.is_empty(), "{}", wrong.join("\n"));
+}
+
+/// What the shelf owes, given each probe's findings and the probes still
+/// awaiting an oracle: every finding of a probe the list does not name, each
+/// listed probe that has none now, and each listed probe not on the shelf.
+fn awaiting_findings(shelf: &[(String, Vec<String>)], awaiting: &[&str]) -> Vec<String> {
+    let mut out = Vec::new();
+    for (id, found) in shelf {
+        if awaiting.contains(&id.as_str()) {
+            if found.is_empty() {
+                out.push(format!(
+                    "{id} grades against a declared oracle now, so delete its line from AWAITING_ORACLE"
+                ));
+            }
+        } else {
+            out.extend(found.iter().cloned());
+        }
+    }
+    for id in awaiting {
+        if !shelf.iter().any(|(seen, _)| seen == id) {
+            out.push(format!(
+                "{id} is in AWAITING_ORACLE and not on {SHELF}, so delete its line"
+            ));
+        }
+    }
+    out
+}
+
 /// Every file of this repository's harness belongs to a layer of the
-/// additive campaign, so plain code holds none of it (#1774).
+/// additive campaign or to its `tooling`, so plain code holds none of it
+/// (#1774, #1872).
 ///
 /// A layer names its paths one by one under `.claude/`, because the skills,
-/// the hook and the rest of the harness share that directory. So a skill, an
-/// agent or a hook added later is in no layer until somebody declares it, and
-/// every scenario, plain code included, would hold it. That is the hidden
-/// difference of #1712. This case walks the directories that deliver a
-/// harness and fails on the first file no layer path holds.
+/// the hooks and this repository's own tooling share that directory. So a
+/// skill, an agent or a hook added later is in no layer and no tooling path
+/// until somebody declares it, and every scenario, plain code included,
+/// would hold it. That is the hidden difference of #1712. This case walks
+/// the directories that deliver a harness and fails on the first file that
+/// neither a layer path nor a tooling path holds.
 #[test]
 fn every_harness_file_belongs_to_a_layer() {
     let root = repository_root();
@@ -1841,6 +2357,7 @@ fn every_harness_file_belongs_to_a_layer() {
         .layers
         .iter()
         .flat_map(|layer| layer.paths.iter().chain(layer.arms.iter()))
+        .chain(budgets.tooling.iter())
         .map(String::as_str)
         .collect();
     let in_a_layer = |file: &str| {
@@ -1894,55 +2411,9 @@ fn every_harness_file_belongs_to_a_layer() {
     let orphans: Vec<&String> = files.iter().filter(|file| !in_a_layer(file)).collect();
     assert!(
         orphans.is_empty(),
-        "these files deliver a harness and no layer of {} holds them, so plain code \
-         holds them: {orphans:?}",
+        "these files deliver a harness and neither a layer nor the tooling of {} holds \
+         them, so plain code holds them: {orphans:?}",
         headwater_probe::budget::PATH
-    );
-}
-
-/// The hook layer's `settings.json` holds the `UserPromptSubmit` entry of
-/// this repository's `.claude/settings.json`, byte for byte, and nothing else
-/// (#1774).
-///
-/// The hook layer writes its own file because the whole file is the rest of
-/// the harness. A change to the entry in `.claude/settings.json` that the copy
-/// does not follow would measure a hook that no adopter runs.
-#[test]
-fn the_hook_layer_holds_the_one_entry_of_the_harness_settings() {
-    let root = repository_root();
-    let read = |relative: &str| {
-        std::fs::read_to_string(root.join(relative)).unwrap_or_else(|e| panic!("{relative}: {e}"))
-    };
-    // The text from `"UserPromptSubmit"` to the bracket that closes its list.
-    let entry = |text: &str, of: &str| -> String {
-        let start = text
-            .find("\"UserPromptSubmit\"")
-            .unwrap_or_else(|| panic!("{of} holds no UserPromptSubmit entry"));
-        let mut depth = 0usize;
-        for (offset, c) in text[start..].char_indices() {
-            match c {
-                '[' => depth += 1,
-                ']' => {
-                    depth -= 1;
-                    if depth == 0 {
-                        return text[start..=start + offset].to_string();
-                    }
-                }
-                _ => {}
-            }
-        }
-        panic!("{of}: the UserPromptSubmit list does not close")
-    };
-    let whole = read(".claude/settings.json");
-    let layer = read("tools/probe/arms/hook/.claude/settings.json");
-    assert_eq!(
-        entry(&layer, "the hook layer"),
-        entry(&whole, ".claude/settings.json")
-    );
-    assert_eq!(
-        layer.matches("\"command\":").count(),
-        1,
-        "the hook layer wires one hook: {layer}"
     );
 }
 

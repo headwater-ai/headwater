@@ -729,6 +729,7 @@ case \$(cat stub-mode) in
     failcase) printf 'running 2 tests\ntest a::b ... FAILED\ntest a::c ... ok\n\ntest result: FAILED. 1 passed; 1 failed; 0 ignored\n'; exit 101 ;;
     zero) printf 'running 0 tests\n\ntest result: ok. 0 passed; 0 failed; 0 ignored\n'; exit 0 ;;
     held) sh tests/hidden.sh; exit \$? ;;
+    env) printf '%s\n' "\$HEADWATER_ORACLE_TRANSCRIPT" "\$HEADWATER_ORACLE_HARNESS_LOG" > "$scratch/cmd-env"; cp "\$HEADWATER_ORACLE_TRANSCRIPT" "$scratch/cmd-env-stream"; printf 'test result: ok. 1 passed; 0 failed\n'; exit 0 ;;
     exitonly) printf 'running 1 test\ntest a::b ... ok\n\ntest result: ok. 1 passed; 0 failed\nerror: test failed, to rerun pass \`--doc\`\n'; exit 101 ;;
 esac
 exit 99
@@ -838,6 +839,36 @@ STUB
     same "and the whole oracle fails on both artifacts" "2" "$(cmd_count test:fixture-oracle held)"
     cp "$cot/tests/hidden.sh" "$scratch/cmd-ws/tests/hidden.sh"
 
+    # The command reads the session's logs through two variables (#1875): the
+    # stream the transform read, and the `projects` directory of the
+    # configuration the harness ran under. A value in the caller's
+    # environment never reaches it, and a relative `--config-dir` reaches it
+    # as an absolute path, because the command runs in a copy.
+    printf 'env\n' > "$cot/stub-mode"
+    rm -f "$scratch/cmd-env" "$scratch/cmd-env-stream"
+    mkdir -p "$scratch/cmd-config/projects"
+    (cd "$scratch" && HEADWATER_ORACLE_TRANSCRIPT=/nowhere HEADWATER_ORACLE_HARNESS_LOG=/nowhere \
+        sh "$transform" --probe HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged \
+        --session env --root "$scratch/engine-only" --workspace "$scratch/cmd-ws" \
+        --oracle-tree "$cot" --config-dir cmd-config --produced src/lib.rs \
+        < "$scratch/watched-nothing.jsonl" > "$scratch/cmd-env.yaml" 2>"$scratch/cmd-env.err")
+    same "a command oracle run with a configuration directory records" "0" "$?"
+    if cmp -s "$scratch/watched-nothing.jsonl" "$scratch/cmd-env-stream"; then
+        pass "and HEADWATER_ORACLE_TRANSCRIPT names the stream the transform read"
+    else
+        fail "and HEADWATER_ORACLE_TRANSCRIPT names the stream the transform read" "$(cat "$scratch/cmd-env" "$scratch/cmd-env.err" 2>&1)"
+    fi
+    same "and HEADWATER_ORACLE_HARNESS_LOG names the projects directory of the configuration, as an absolute path" \
+        "$scratch/cmd-config/projects" "$(sed -n 2p "$scratch/cmd-env" 2>/dev/null)"
+    printf 'env\n' > "$cot/stub-mode"
+    rm -f "$scratch/cmd-env"
+    HEADWATER_ORACLE_HARNESS_LOG=/nowhere sh "$transform" --probe HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged \
+        --session env2 --root "$scratch/engine-only" --workspace "$scratch/cmd-ws" \
+        --oracle-tree "$cot" --produced src/lib.rs \
+        < "$scratch/watched-nothing.jsonl" > "$scratch/cmd-env2.yaml" 2>"$scratch/cmd-env2.err"
+    same "and with no configuration directory HEADWATER_ORACLE_HARNESS_LOG is empty, not the caller's" \
+        "" "$(sed -n 2p "$scratch/cmd-env" 2>/dev/null)"
+
     # A command that cannot start found no failure, so nothing is written.
     cp "$cot/.headwater/probe.yml" "$scratch/cmd-probe.yml"
     sed 's/command: sh oracle-stub.sh/command: no-such-oracle-command-1834/' "$scratch/cmd-probe.yml" \
@@ -888,6 +919,18 @@ if [ -f "$live" ]; then
     same "the cost is whole cents, rounded from the dollars the harness reports" \
         "cost_cents: 1" \
         "$(printf '%s\n' "$provider" | grep '^cost_cents:')"
+    # The token counts of the `usage` of the `result` line (#1875), which
+    # `campaign.sh` writes to the session's `tokens` file beside `cost`. They
+    # are not identity members, so `record.md` does not carry them.
+    same "the cache-read tokens are the result's cache_read_input_tokens" \
+        "cache_read_tokens: 29244" \
+        "$(printf '%s\n' "$provider" | grep '^cache_read_tokens:')"
+    same "the cache-write tokens are the result's cache_creation_input_tokens" \
+        "cache_write_tokens: 687" \
+        "$(printf '%s\n' "$provider" | grep '^cache_write_tokens:')"
+    same "the input tokens are the result's uncached input_tokens" \
+        "input_tokens: 18" \
+        "$(printf '%s\n' "$provider" | grep '^input_tokens:')"
 
     # ---------------------------------------------------------------------
     # A second model in `modelUsage` that is not the one driven.
@@ -913,6 +956,9 @@ JSONL
     same "the model is still the name the harness announced" \
         "model: claude-sonnet-5" \
         "$(printf '%s\n' "$multi" | grep '^model:')"
+    same "a result with no usage counts 0 cache-read tokens rather than null" \
+        "cache_read_tokens: 0" \
+        "$(printf '%s\n' "$multi" | grep '^cache_read_tokens:')"
 
     # `answer` is the key that says what a closed-set session concluded, and
     # this script wrote `null` for every session it drove until #803, because
@@ -2210,14 +2256,14 @@ STUB
     # so its transcript names the layers its scenario holds, from
     # `scenarios:`, and scenario 0 is plain code alone. Neither is a delta
     # from the present tree.
-    for n in 4 0; do
+    for n in 3 0; do
         PATH="$scratch/bin:$PATH" sh "$driver" --probe HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged \
             --session "fixture-scenario-$n" --tier additive --arm "scenario-$n" --set tuning --repetitions 18 \
             --task-file "$scratch/task.md" --workspace "$scratch/ws" \
             >"$scratch/scenario-$n-arm.md" 2>"$scratch/scenario-$n-arm.err"
     done
-    present "a scenario-4 transcript names the layers its scenario adds to plain code" \
-        'The `scenario-4` arm is plain code with the layers `docs`, `engine`, `skills` added: the present tree less the probe instrument and every layer it does not hold.' "$scratch/scenario-4-arm.md"
+    present "a scenario-3 transcript names the layers its scenario adds to plain code" \
+        'The `scenario-3` arm is plain code with the layers `docs`, `engine`, `skills` added: the present tree less the probe instrument and every layer it does not hold.' "$scratch/scenario-3-arm.md"
     present "a scenario-0 transcript states plain code alone" \
         'The `scenario-0` arm is plain code: the present tree less the probe instrument and the path of every layer.' "$scratch/scenario-0-arm.md"
 
@@ -3187,7 +3233,7 @@ printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","ses
 printf '%s\n' '{"type":"assistant","message":{"id":"m1","content":[{"type":"tool_use","id":"t1","name":"Bash","input":{"command":"cat /home/someone/secret.md"}}]}}'
 printf '%s\n' '{"type":"assistant","message":{"id":"m2","content":[{"type":"tool_use","id":"t2","name":"Read","input":{"file_path":"/etc/hostname"}}]}}'
 printf '%s\n' '{"type":"assistant","message":{"id":"m3","content":[{"type":"server_tool_use","id":"t3","name":"WebSearch","input":{"query":"x"}}]}}'
-printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_cost_usd":0.01,"usage":{"input_tokens":10,"cache_creation_input_tokens":30,"cache_read_input_tokens":60},"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
 STUB
         chmod +x "$scratch/bin/claude"
         PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$leak" \
@@ -3197,6 +3243,12 @@ STUB
             "$(cat "$leak/sessions/L1-campaign-present-p1-r1/status" 2>/dev/null)"
         present "and its record counts one web-tool call" \
             "The session made 1 call to a web tool." "$leak/sessions/L1-campaign-present-p1-r1/record.md"
+        # The token record beside the cost (#1875), and not in the record.
+        same "the session's tokens file carries the three counts of the result's usage" \
+            "cache_read_tokens: 60 cache_write_tokens: 30 input_tokens: 10" \
+            "$(tr '\n' ' ' < "$leak/sessions/L1-campaign-present-p1-r1/tokens" 2>/dev/null | sed 's/ $//')"
+        absent "and the record's identity block carries none of them" \
+            "cache_read_tokens" "$leak/sessions/L1-campaign-present-p1-r1/record.md"
         cat > "$scratch/bin/claude" <<STUB
 #!/bin/sh
 printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s22"}'
@@ -3205,9 +3257,15 @@ printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_c
 printf '%s' '{"type":"assistant","message":{"id":"m2","content":[{"type":"tool_'
 STUB
         chmod +x "$scratch/bin/claude"
+        # A token record left by an earlier attempt of the job, which a log
+        # that does not parse must not keep (#1875).
+        mkdir -p "$leak/sessions/L1-campaign-present-p1-r2"
+        printf 'cache_read_tokens: 5\ncache_write_tokens: 5\ninput_tokens: 5\n' > "$leak/sessions/L1-campaign-present-p1-r2/tokens"
         PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$leak" \
             --job "L1-campaign-present-p1-r2 1 campaign present sufficiency HW-PROBE-$tombstone" \
             >/dev/null 2>"$scratch/leak-b.err"
+        same "a job run again drops the token record of its earlier attempt when its log does not parse" "absent" \
+            "$([ -e "$leak/sessions/L1-campaign-present-p1-r2/tokens" ] && echo present || echo absent)"
         # The transform refuses a stream that does not parse, so the session
         # spent and did not record. Nobody counted what it named.
         same "a session whose stream does not parse does not record" "4" \
@@ -3225,6 +3283,9 @@ STUB
             "$scratch/leak-assemble.err"
         absent "and the uncounted session is never reported as a batch of 0" \
             "named 0 paths" "$scratch/leak-assemble.err"
+        present "and the batch states the cached share of input over its one recorded session alone" \
+            "campaign: cached share: 60 of 100 input tokens read from the cache over 1 recorded sessions, 60.0%" \
+            "$scratch/leak-assemble.err"
 
         # A recorded session whose record states neither count is uncounted
         # too, never 0: the record of a stream that `jq -s` could not read,
@@ -3264,6 +3325,21 @@ STUB
         present "and so is each figure of the batch line" \
             "campaign: the batch named 6 paths outside the workspace over 4 sessions, 2 sessions uncounted, 3 web-tool calls" \
             "$scratch/leak-assemble5.err"
+        # A session recorded before #1875 has no token record, so it is named
+        # and adds nothing to either sum.
+        rm -f "$leak/sessions/L1-campaign-present-p1-r5/tokens"
+        # A session that did not record is no recorded session, whatever
+        # token record it holds.
+        mkdir -p "$leak/sessions/L1-campaign-present-p1-r6"
+        printf '4\n' > "$leak/sessions/L1-campaign-present-p1-r6/status"
+        printf 'cache_read_tokens: 1000\ncache_write_tokens: 0\ninput_tokens: 0\n' > "$leak/sessions/L1-campaign-present-p1-r6/tokens"
+        printf 'cache_read_tokens: 0\ncache_write_tokens: 100\ninput_tokens: 0\n' > "$leak/sessions/L1-campaign-present-p1-r4/tokens"
+        same "the cached share sums the reads over the input of each recorded session, and names one with no token record" \
+            "cached share: 120 of 300 input tokens read from the cache over 3 recorded sessions, 40.0%, 1 recorded sessions without a token record" \
+            "$(sh "$root/tools/probe/cached-share.sh" "$leak")"
+        same "and a batch with no recorded session says so" \
+            "cached share: no recorded sessions" \
+            "$(sh "$root/tools/probe/cached-share.sh" "$scratch/no-such-batch")"
     else
         printf 'note not a checkout of this repository, so the campaign job case did not run.\n'
     fi
@@ -4539,8 +4615,8 @@ HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak --scenario "$scratch/le
     > "$scratch/agent-s.out" 2>&1
 same "with --scenario an agent body is still no leak, the known limit" "0" "$?"
 
-# The harness classification: a hit in a file of the `harness` layer, in a
-# tree that holds it, is internal text the seal cannot remove. It prints as
+# The harness classification: a hit in a file of the `tooling` list, in a
+# tree that holds it, is internal text the seal cannot remove (#1872). It prints as
 # `harness` and does not fail the check. The same text in another skill is a
 # leak.
 rm -rf "$scratch/leak-harness"
@@ -4549,7 +4625,7 @@ printf -- '---\nname: hw-corpus\ndescription: Nothing.\n---\n\nThe ruling is HW-
     > "$scratch/leak-harness/.claude/skills/hw-corpus/SKILL.md"
 HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak --scenario "$scratch/leak-harness" "$status_probe" \
     > "$scratch/harness.out" 2>&1
-same "with --scenario a hit in a harness-layer skill body does not fail the check" "0" "$?"
+same "with --scenario a hit in a tooling skill body does not fail the check" "0" "$?"
 present "and prints as harness" "harness $status_probe .claude/skills/hw-corpus/SKILL.md HW-DR-0052" "$scratch/harness.out"
 cp "$scratch/leak-harness/.claude/skills/hw-corpus/SKILL.md" "$scratch/leak-harness/.claude/skills/other/SKILL.md"
 HW_PROBE_YML="$scratch/leak-probe.yml" sh "$seal" --leak --scenario "$scratch/leak-harness" "$status_probe" \
@@ -4957,17 +5033,18 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# The scenarios of the additive campaign (#1774). The decisive case: each
-# scenario's tree differs from its base by exactly the one layer the
-# milestone names, and scenario 0 holds no Headwater path, in a present tree
-# that holds the Codex copies, the census fixture, a built binary and the
-# whole `settings.json` with more than one hook. A builder that copies the
-# whole `settings.json` into the hook layer fails the third assertion, and
-# one that leaves `AGENTS.md` or `.agents/` in plain code fails the second.
-# Either is the #1712 problem: a scenario that differs from its base by more
-# than its named layer.
+# The scenarios of the additive campaign (#1774), as HW-DR-0112 cuts them
+# (#1872). The decisive case: each scenario's tree differs from its base by
+# exactly the layers the decision names, and no scenario holds this
+# repository's own tooling, in a present tree that holds the Codex copies,
+# the census fixture, a built binary and the whole `settings.json` with more
+# than one hook. A builder that leaves `AGENTS.md` or `.agents/` in plain
+# code fails the second assertion, and one that lets scenario 6 keep
+# `CLAUDE.md` or a `hw-*` skill fails the third. Either is the #1712
+# problem: a scenario that differs from its base by more than its named
+# layers.
 #
-# The table is the milestone's, written here by hand, so a declaration that
+# The table is the decision's, written here by hand, so a declaration that
 # drifts from it fails here as well as in the engine's own suite. The paths of
 # each layer are the committed declaration's, read from scenario 0's delta.
 # ---------------------------------------------------------------------------
@@ -4975,24 +5052,16 @@ scenario_layers() {
     case $1 in
         0) echo "" ;;
         1) echo "docs" ;;
-        2) echo "docs claude-md" ;;
-        3) echo "docs engine" ;;
-        4) echo "docs engine skills" ;;
-        5) echo "docs engine hook" ;;
-        6) echo "docs engine mcp" ;;
-        7) echo "docs engine hook mcp" ;;
-        8) echo "docs engine claude-md skills" ;;
-        9) echo "docs engine claude-md hook" ;;
-        10) echo "docs engine skills hook" ;;
-        11) echo "docs engine claude-md skills hook" ;;
-        12) echo "docs engine claude-md skills hook mcp" ;;
-        13) echo "docs engine claude-md skills hook harness" ;;
+        2) echo "docs engine" ;;
+        3) echo "docs engine skills" ;;
+        4) echo "docs engine hooks" ;;
+        5) echo "docs engine mcp" ;;
+        6) echo "docs engine skills hooks mcp" ;;
     esac
 }
 scenario_base() {
     case $1 in
-        1) echo 0 ;; 2|3) echo 1 ;; 4|5|6) echo 3 ;; 7|9|10) echo 5 ;; 8) echo 4 ;;
-        11) echo 10 ;; 12|13) echo 11 ;;
+        1) echo 0 ;; 2) echo 1 ;; 3|4|5|6) echo 2 ;;
     esac
 }
 scenario_tree() {
@@ -5043,13 +5112,13 @@ else
 fi
 
 # Assertion 1: against plain code, each scenario differs by exactly the paths
-# of its layers, and against its base, by the paths of the one layer it adds.
-for n in 0 1 2 3 4 5 6 7 8 9 10 11 12 13; do
+# of its layers, and against its base, by the paths of the layers it adds:
+# one layer, or the three of scenario 6, the declared exception.
+for n in 0 1 2 3 4 5 6; do
     : > "$scratch/scen-expected"
     for layer in $(scenario_layers "$n"); do
         sed -n "s/^- $layer /+ /p" "$scratch/scen-zero.delta" >> "$scratch/scen-expected"
     done
-    # The hook layer and the rest of the harness both name settings.json.
     LC_ALL=C sort -u "$scratch/scen-expected" -o "$scratch/scen-expected"
     sh "$ablate" --diff --scenario "$n" "$scratch/scen" > "$scratch/scen-diff.$n" 2> "$scratch/scen-diff.$n.err"
     status=$?
@@ -5073,17 +5142,25 @@ for n in 0 1 2 3 4 5 6 7 8 9 10 11 12 13; do
     added=$(echo $added)
     sh "$ablate" --diff --scenario "$n" "$scratch/scen" "$base" > "$scratch/scen-base.$n" 2> "$scratch/scen-base.$n.err"
     same "ablate.sh --diff --scenario $n against its base $base exits 0" "0" "$?"
-    same "and it adds one layer to its base" "1" "$(echo $added | wc -w | tr -d ' ')"
+    if [ "$n" = 6 ]; then
+        same "and it adds the three layers of the exception to its base" "skills hooks mcp" "$added"
+    else
+        same "and it adds one layer to its base" "1" "$(echo $added | wc -w | tr -d ' ')"
+    fi
     stray=$(while IFS=' ' read -r sign path; do
-        grep -qxF -- "- $added $path" "$scratch/scen-zero.delta" || printf '%s %s; ' "$sign" "$path"
+        owned=
+        for layer in $added; do
+            grep -qxF -- "- $layer $path" "$scratch/scen-zero.delta" && owned=yes
+        done
+        [ -n "$owned" ] || printf '%s %s; ' "$sign" "$path"
     done < "$scratch/scen-base.$n")
-    same "and every path it differs by belongs to the added layer, $added" "" "$stray"
+    same "and every path it differs by belongs to an added layer, $added" "" "$stray"
     if [ ! -s "$scratch/scen-base.$n" ]; then
         fail "and it differs from its base at all" "it printed nothing"
     fi
 done
-same "scenario 13 differs from 11 by the whole settings.json the harness holds" "~ .claude/settings.json" \
-    "$(grep -F 'settings.json' "$scratch/scen-base.13")"
+same "scenario 6 differs from 2 by the settings file the hooks layer writes" "+ .claude/settings.json" \
+    "$(grep -F 'settings.json' "$scratch/scen-base.6")"
 
 # Assertion 2: plain code holds no Headwater path.
 cp -a "$scratch/scen" "$scratch/scen-zero"
@@ -5106,43 +5183,63 @@ else
         "$(cd "$scratch/scen-zero" && find . -type f | LC_ALL=C sort | tr '\n' ' ')"
 fi
 
-# Assertion 3: the hook layer wires the one hook, and the harness the rest.
-cp -a "$scratch/scen" "$scratch/scen-five"
-sh "$ablate" --scenario 5 "$scratch/scen-five" > /dev/null 2> "$scratch/scen-five.err"
-same "ablate.sh --scenario 5 builds the hook scenario" "0" "$?"
-same "and its settings.json wires exactly one hook" "1" \
-    "$(grep -c '"command":' "$scratch/scen-five/.claude/settings.json" 2>/dev/null)"
-present "and that hook is the UserPromptSubmit entry" '"UserPromptSubmit"' "$scratch/scen-five/.claude/settings.json"
-present "and it runs intent.sh" '.claude/hooks/intent.sh' "$scratch/scen-five/.claude/settings.json"
-if [ -f "$scratch/scen-five/.claude/hooks/intent.sh" ] && [ -f "$scratch/scen-five/.claude/hooks/lib.sh" ] &&
-    [ ! -e "$scratch/scen-five/.claude/hooks/write.sh" ] && [ ! -e "$scratch/scen-five/AGENTS.md" ]; then
-    pass "and it keeps the hook's two scripts and no other hook or Codex copy"
+# Assertion 3: the hooks layer writes the settings file `headwater init
+# --harness` writes, six entries over four events, and keeps the six scripts.
+# No scenario keeps the tooling: scenario 6, what `headwater init` ships,
+# holds every layer and none of this repository's own instructions, skills,
+# commands or Git hooks.
+cp -a "$scratch/scen" "$scratch/scen-four"
+sh "$ablate" --scenario 4 "$scratch/scen-four" > /dev/null 2> "$scratch/scen-four.err"
+same "ablate.sh --scenario 4 builds the hooks scenario" "0" "$?"
+same "and its settings.json wires six hooks" "6" \
+    "$(grep -c '"command":' "$scratch/scen-four/.claude/settings.json" 2>/dev/null)"
+if cmp -s "$root/tools/probe/arms/hooks/.claude/settings.json" "$scratch/scen-four/.claude/settings.json"; then
+    pass "and it is the hooks layer's arms file"
 else
-    fail "and it keeps the hook's two scripts and no other hook or Codex copy" \
-        "$(cd "$scratch/scen-five" && find .claude AGENTS.md -type f 2>/dev/null | LC_ALL=C sort | tr '\n' ' ')"
+    fail "and it is the hooks layer's arms file" "it differs from tools/probe/arms/hooks/.claude/settings.json"
 fi
-cp -a "$scratch/scen" "$scratch/scen-thirteen"
-sh "$ablate" --scenario 13 "$scratch/scen-thirteen" > /dev/null 2> "$scratch/scen-thirteen.err"
-same "ablate.sh --scenario 13 builds the whole harness" "0" "$?"
-if cmp -s "$root/.claude/settings.json" "$scratch/scen-thirteen/.claude/settings.json"; then
-    pass "and its settings.json is the whole file"
+for event in UserPromptSubmit PreToolUse PostToolUse Stop; do
+    present "and it wires $event" "\"$event\"" "$scratch/scen-four/.claude/settings.json"
+done
+missing=
+for script in intent read write review lib touch; do
+    [ -f "$scratch/scen-four/.claude/hooks/$script.sh" ] || missing="$missing $script"
+done
+same "and it keeps the six scripts" "" "$missing"
+if [ ! -e "$scratch/scen-four/.claude/hooks/derived.sh" ] && [ ! -e "$scratch/scen-four/AGENTS.md" ] &&
+    [ ! -e "$scratch/scen-four/CLAUDE.md" ] && [ ! -e "$scratch/scen-four/.githooks" ]; then
+    pass "and no hook of this repository's own, Codex copy, CLAUDE.md or Git hook"
 else
-    fail "and its settings.json is the whole file" "it differs from .claude/settings.json"
+    fail "and no hook of this repository's own, Codex copy, CLAUDE.md or Git hook" \
+        "$(cd "$scratch/scen-four" && find .claude AGENTS.md CLAUDE.md .githooks -type f 2>/dev/null | LC_ALL=C sort | tr '\n' ' ')"
 fi
-# Scenario 2 adds CLAUDE.md to the documents, and only that one path to it:
-# the Copilot link to CLAUDE.md is the harness's.
-cp -a "$scratch/scen" "$scratch/scen-two"
-sh "$ablate" --scenario 2 "$scratch/scen-two" > /dev/null 2> "$scratch/scen-two.err"
-same "ablate.sh --scenario 2 builds the standing-instructions scenario" "0" "$?"
-if [ -f "$scratch/scen-two/CLAUDE.md" ] && [ ! -e "$scratch/scen-two/.github/copilot-instructions.md" ] &&
-    [ ! -L "$scratch/scen-two/.github/copilot-instructions.md" ] && [ ! -e "$scratch/scen-two/AGENTS.md" ] &&
-    [ ! -e "$scratch/scen-two/.github/agents" ] && [ -f "$scratch/scen-two/.github/workflows/ci.yml" ]; then
-    pass "and it holds CLAUDE.md once, with no Codex or Copilot copy, and keeps the workflows"
+rm -rf "$scratch/scen-four"
+cp -a "$scratch/scen" "$scratch/scen-six"
+sh "$ablate" --scenario 6 "$scratch/scen-six" > /dev/null 2> "$scratch/scen-six.err"
+same "ablate.sh --scenario 6 builds what headwater init ships" "0" "$?"
+if cmp -s "$root/tools/probe/arms/hooks/.claude/settings.json" "$scratch/scen-six/.claude/settings.json"; then
+    pass "and its settings.json is the hooks layer's, not this repository's"
 else
-    fail "and it holds CLAUDE.md once, with no Codex or Copilot copy, and keeps the workflows" \
-        "$(cd "$scratch/scen-two" && find CLAUDE.md AGENTS.md .github 2>/dev/null | LC_ALL=C sort | tr '\n' ' ')"
+    fail "and its settings.json is the hooks layer's, not this repository's" "it differs from the arms file"
 fi
-rm -rf "$scratch/scen-two"
+left=
+for tooling in CLAUDE.md AGENTS.md .codex .githooks .claude/commands .claude/skills/hw-corpus \
+    .claude/skills/headwater-engine .claude/agents/hw-build.md .claude/hooks/derived.sh \
+    .github/copilot-instructions.md .github/agents .github/hooks .github/prompts; do
+    if [ -e "$scratch/scen-six/$tooling" ] || [ -L "$scratch/scen-six/$tooling" ]; then
+        left="$left $tooling"
+    fi
+done
+same "and it holds none of the tooling" "" "$left"
+if [ -f "$scratch/scen-six/.claude/skills/headwater-orient/SKILL.md" ] &&
+    [ -f "$scratch/scen-six/.claude/hooks/review.sh" ] && [ -f "$scratch/scen-six/.mcp.json" ] &&
+    [ -f "$scratch/scen-six/.github/workflows/ci.yml" ]; then
+    pass "and it holds a shipped skill, a shipped hook and the server, and keeps the workflows"
+else
+    fail "and it holds a shipped skill, a shipped hook and the server, and keeps the workflows" \
+        "$(cd "$scratch/scen-six" && find .claude .mcp.json .github -type f 2>/dev/null | LC_ALL=C sort | tr '\n' ' ')"
+fi
+rm -rf "$scratch/scen-six"
 
 # Assertion 4 (#1837): the engine's own copies of the skills text under
 # `engine/crates/cli/harness/` go with the skills layer. A scenario without
@@ -5151,8 +5248,8 @@ rm -rf "$scratch/scen-two"
 # is its `.claude/` mirror less the one marker line `headwater init --harness`
 # appends to the mirror.
 cp -a "$scratch/scen" "$scratch/scen-three"
-sh "$ablate" --scenario 3 "$scratch/scen-three" > /dev/null 2> "$scratch/scen-three.err"
-same "ablate.sh --scenario 3 builds the engine scenario" "0" "$?"
+sh "$ablate" --scenario 2 "$scratch/scen-three" > /dev/null 2> "$scratch/scen-three.err"
+same "ablate.sh --scenario 2 builds the engine scenario" "0" "$?"
 left=
 for harness_dir in skills agents; do
     [ -e "$scratch/scen-three/engine/crates/cli/harness/$harness_dir" ] && left="$left $harness_dir"
@@ -5165,8 +5262,8 @@ else
 fi
 rm -rf "$scratch/scen-three"
 cp -a "$scratch/scen" "$scratch/scen-four"
-sh "$ablate" --scenario 4 "$scratch/scen-four" > /dev/null 2> "$scratch/scen-four.err"
-same "ablate.sh --scenario 4 builds the skills scenario" "0" "$?"
+sh "$ablate" --scenario 3 "$scratch/scen-four" > /dev/null 2> "$scratch/scen-four.err"
+same "ablate.sh --scenario 3 builds the skills scenario" "0" "$?"
 for harness_dir in skills agents; do
     if [ -d "$scratch/scen-four/engine/crates/cli/harness/$harness_dir" ] &&
         diff -r "$root/engine/crates/cli/harness/$harness_dir" \
@@ -5186,8 +5283,8 @@ for copy in skills/headwater-orient/SKILL.md skills/headwater-authoring/SKILL.md
 done
 same "and each of the five is its .claude/ mirror less the init marker" "" "$unequal"
 rm -rf "$scratch/scen-four"
-sh "$ablate" --diff --scenario 4 "$scratch/scen" 3 > "$scratch/scen-four-three" 2> "$scratch/scen-four-three.err"
-same "ablate.sh --diff --scenario 4 against 3 exits 0" "0" "$?"
+sh "$ablate" --diff --scenario 3 "$scratch/scen" 2 > "$scratch/scen-four-three" 2> "$scratch/scen-four-three.err"
+same "ablate.sh --diff --scenario 3 against 2 exits 0" "0" "$?"
 for harness_dir in skills agents; do
     present "and it adds engine/crates/cli/harness/$harness_dir" "+ engine/crates/cli/harness/$harness_dir" \
         "$scratch/scen-four-three"
@@ -5195,9 +5292,9 @@ done
 absent "and it names nothing unexpected" "unexpected" "$scratch/scen-four-three"
 
 # The refusals, each before anything is removed.
-sh "$ablate" --scenario 14 "$scratch/scen" > /dev/null 2> "$scratch/scen-14.err"
+sh "$ablate" --scenario 7 "$scratch/scen" > /dev/null 2> "$scratch/scen-14.err"
 same "ablate.sh refuses a scenario the declaration does not carry" "2" "$?"
-present "and the engine names the scenarios it does carry" "declares no scenario 14" "$scratch/scen-14.err"
+present "and the engine names the scenarios it does carry" "declares no scenario 7. It declares 0, 1, 2, 3, 4, 5, 6" "$scratch/scen-14.err"
 [ -f "$scratch/scen/CLAUDE.md" ] && pass "and it removes nothing" || fail "and it removes nothing" "CLAUDE.md is gone"
 sh "$ablate" --scenario 0 "$root/tools" > /dev/null 2> "$scratch/scen-inside.err"
 same "ablate.sh refuses to build a scenario inside this checkout" "6" "$?"
@@ -5205,21 +5302,21 @@ mkdir -p "$scratch/scen/docs/probes"
 sh "$ablate" --diff --scenario 1 "$scratch/scen" > /dev/null 2> "$scratch/scen-instrument.err"
 same "--diff --scenario refuses a tree that still holds the instrument" "2" "$?"
 rm -rf "$scratch/scen/docs/probes"
-# A declaration whose hook layer writes a file `tools/probe/arms/` does not
+# A declaration whose hooks layer writes a file `tools/probe/arms/` does not
 # hold is refused before the tree is touched.
 sed 's/^    arms: \[\.claude\/settings\.json\]$/    arms: [.claude\/settings.local.json]/' "$root/.headwater/probe.yml" \
     > "$scratch/scen-missing-arm.yml"
 cp -a "$scratch/scen" "$scratch/scen-missing"
-HW_PROBE_YML="$scratch/scen-missing-arm.yml" sh "$ablate" --scenario 5 "$scratch/scen-missing" \
+HW_PROBE_YML="$scratch/scen-missing-arm.yml" sh "$ablate" --scenario 4 "$scratch/scen-missing" \
     > /dev/null 2> "$scratch/scen-missing.err"
 same "ablate.sh refuses a written file that tools/probe/arms/ does not hold" "2" "$?"
-present "and names it" "tools/probe/arms/hook/.claude/settings.local.json is not there to copy" "$scratch/scen-missing.err"
+present "and names it" "tools/probe/arms/hooks/.claude/settings.local.json is not there to copy" "$scratch/scen-missing.err"
 [ -f "$scratch/scen-missing/CLAUDE.md" ] && pass "and it removes nothing" || fail "and it removes nothing" "CLAUDE.md is gone"
-# A present tree that already holds a server file: plain code and scenario 3
-# remove it, and scenario 6 holds the mcp layer's file in its place, so 6
-# differs from 3 by the one path.
+# A present tree that already holds a server file: plain code and scenario 2
+# remove it, and scenario 5 holds the mcp layer's file in its place, so 5
+# differs from 2 by the one path.
 printf '{}\n' > "$scratch/scen/.mcp.json"
-sh "$ablate" --diff --scenario 6 "$scratch/scen" 3 > "$scratch/scen-mcp.out" 2>&1
+sh "$ablate" --diff --scenario 5 "$scratch/scen" 2 > "$scratch/scen-mcp.out" 2>&1
 same "a present server file is replaced by the mcp layer's, and --diff passes it" "0" "$?"
 same "and names the one path" "+ .mcp.json" "$(cat "$scratch/scen-mcp.out")"
 rm -f "$scratch/scen/.mcp.json"
@@ -5233,15 +5330,15 @@ present "and names it" "unexpected - docs/spec/05.md" "$scratch/scen-reverse.out
 cp -a "$scratch/scen" "$scratch/scen-instrumented"
 mkdir -p "$scratch/scen-instrumented/docs/probes"
 printf 'probe\n' > "$scratch/scen-instrumented/docs/probes/p.md"
-sh "$ablate" --scenario 13 "$scratch/scen-instrumented" > /dev/null 2> "$scratch/scen-instrumented.err"
-same "ablate.sh --scenario 13 builds a workspace that holds the instrument" "0" "$?"
+sh "$ablate" --scenario 6 "$scratch/scen-instrumented" > /dev/null 2> "$scratch/scen-instrumented.err"
+same "ablate.sh --scenario 6 builds a workspace that holds the instrument" "0" "$?"
 if [ ! -e "$scratch/scen-instrumented/docs/probes" ] && [ -f "$scratch/scen-instrumented/docs/spec/05.md" ]; then
     pass "and it removes the instrument and keeps the documents"
 else
     fail "and it removes the instrument and keeps the documents" \
         "$(cd "$scratch/scen-instrumented" && find docs -type f | LC_ALL=C sort | tr '\n' ' ')"
 fi
-rm -rf "$scratch/scen" "$scratch/scen-zero" "$scratch/scen-five" "$scratch/scen-thirteen" "$scratch/scen-missing" \
+rm -rf "$scratch/scen" "$scratch/scen-zero" "$scratch/scen-missing" \
     "$scratch/scen-instrumented"
 
 # ---------------------------------------------------------------------------
@@ -5457,17 +5554,19 @@ if [ -x "$engine" ]; then
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$additive_spec" > "$scratch/add.out" 2> "$scratch/add.err"
     same "the dry run of the additive campaign exits 0" "0" "$?"
-    present "it prints the screening round's sum" "round screening: 980 sessions, \$490.00" "$scratch/add.out"
+    present "it prints the screening round's sum" "round screening: 490 sessions, \$245.00" "$scratch/add.out"
     # The tuning round runs in rounds (#1838): each tuning line is priced as
     # one round of 4 variants at 25 sessions, a confirmation at 145 and the
     # best so far at 145, 390 sessions over five probes, at most 4 rounds.
-    present "it prints the tuning round's sum at its most rounds" "round tuning: 21840 sessions, \$10920.00 (4 rounds at most)" "$scratch/add.out"
+    present "it prints the tuning round's sum at its most rounds" "round tuning: 10920 sessions, \$5460.00 (4 rounds at most)" "$scratch/add.out"
     present "it prints the two counts the owner ruled, each rounded up over the five probes" \
         "the owner ruled 24 sessions for a screened variant and 144 for a confirmation, so ceil(24 / 5) = 5 and ceil(144 / 5) = 29 repetitions" "$scratch/add.out"
     present "and prices a whole round on a tuning line" \
-        "line 16  additive scenario-0 tuning: a round of 4 variants x 5 probes x 5 repetitions (ceil(24 / 5)) = 100 sessions, a confirmation of 5 probes x 29 repetitions (round tuning, ceil(144 / 5)) = 145 sessions, and the best so far at 145 sessions where no measurement at that count exists: 390 sessions, \$195.00 a round" "$scratch/add.out"
-    present "it prints the final round's sum" "round final: 3080 sessions, \$1540.00" "$scratch/add.out"
-    present "and one total" "total: 25900 sessions, \$12950.00" "$scratch/add.out"
+        "line 8  additive scenario-0 tuning: a round of 4 variants x 5 probes x 5 repetitions (ceil(24 / 5)) = 100 sessions, a confirmation of 5 probes x 29 repetitions (round tuning, ceil(144 / 5)) = 145 sessions, and the best so far at 145 sessions where no measurement at that count exists: 390 sessions, \$195.00 a round" "$scratch/add.out"
+    present "it prints the final round's sum" "round final: 1540 sessions, \$770.00" "$scratch/add.out"
+    present "and one total" "total: 12950 sessions, \$6475.00" "$scratch/add.out"
+    present "and the cached share of input, with no batch recorded, as no recorded sessions (#1875)" \
+        "cached share: no recorded sessions" "$scratch/add.out"
     present "each round's count is computed from its rates" "so ceil(219 / 4) = 55 repetitions of each probe" "$scratch/add.out"
     # The owner approved the screening round at $700 (#1775). The
     # ceiling admits each plan, and the approval of each round says which
@@ -5502,10 +5601,9 @@ if [ -x "$engine" ]; then
     same "the screening spec holds the screening lines of the whole campaign, and no other" \
         "$(awk 'NF && $1 !~ /^#/ && $3 == "screening"' "$additive_spec")" \
         "$(awk 'NF && $1 !~ /^#/' "$root/tools/probe/additive-screening.spec")"
-    same "and it builds and checks each of the 14 scenario trees" "14" \
+    same "and it builds and checks each of the 7 scenario trees" "7" \
         "$(sed -n 's/^tree additive \(scenario-[0-9]*\)[ :].*/\1/p' "$scratch/add.out" | LC_ALL=C sort -u | wc -l | tr -d ' ')"
-    present "a hit in the harness layer of scenario 13 prints as harness" \
-        "leak check, scenario-13 tree: harness HW-PROBE-a-session-says-whether-a-command-or-a-hand-writes-a-governs-line .claude/skills/hw-corpus/SKILL.md HW-DR-0104" "$scratch/add.out"
+    absent "no scenario tree holds a skill of this repository's own tooling" " tree: harness " "$scratch/add.out"
     absent "and no scenario tree leaks" " tree: leak " "$scratch/add.out"
 
     # additive_leaks <file> <probe> <string>: the committed declaration with
@@ -5543,9 +5641,9 @@ if [ -x "$engine" ]; then
     HW_PROBE_YML="$scratch/add-body.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$additive_spec" > "$scratch/add-body.out" 2> "$scratch/add-body.err"
     same "a leak string in a skills-layer skill body fails the additive dry run with 8" "8" "$?"
-    same "and it names every scenario that holds skills, and no other" "4 8 10 11 12 13" \
+    same "and it names every scenario that holds skills, and no other" "3 6" \
         "$(sed -n "s/^leak check, scenario-\([0-9]*\) tree: leak .*headwater-orient\/SKILL.md $body_string$/\1/p" "$scratch/add-body.out" | LC_ALL=C sort -n | tr '\n' ' ' | sed 's/ $//')"
-    present "and prints the round sums all the same" "total: 25900 sessions" "$scratch/add-body.out"
+    present "and prints the round sums all the same" "total: 12950 sessions" "$scratch/add-body.out"
 
     # The hook's text: the pointer probe's route names its own target, and no
     # file of a hook scenario's always-loaded text or skill bodies does, but
@@ -5556,25 +5654,12 @@ if [ -x "$engine" ]; then
     HW_PROBE_YML="$scratch/add-hook.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$additive_spec" > "$scratch/add-hook.out" 2> "$scratch/add-hook.err"
     same "a leak string in the hook's text fails the additive dry run with 8" "8" "$?"
-    same "and it names every scenario that holds the hook, and no other" "5 7 9 10 11 12 13" \
+    same "and it names every scenario that holds the hooks, and no other" "4 6" \
         "$(sed -n "s|^leak check, scenario-\([0-9]*\) tree: leak $pointer_probe hook:$pointer_probe $hook_string$|\1|p" "$scratch/add-hook.out" | LC_ALL=C sort -n | tr '\n' ' ' | sed 's/ $//')"
     same "and no scenario leaks through another channel" "0" \
         "$(grep ' tree: leak ' "$scratch/add-hook.out" | grep -vc " hook:$pointer_probe ")"
 
-    # A scenario-13 line that pools a probe whose answer the harness layer
-    # states with another probe is refused with 8.
-    printf 'additive scenario-13 final\n' > "$scratch/add-pooled.spec"
-    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
-        --spec "$scratch/add-pooled.spec" > "$scratch/add-pooled.out" 2> "$scratch/add-pooled.err"
-    same "a scenario-13 line that pools a harness-leaked probe is refused with 8" "8" "$?"
-    present "and names the probe" \
-        "line 1 pools HW-PROBE-a-session-says-whether-a-command-or-a-hand-writes-a-governs-line, whose answer the harness layer of the scenario-13 tree states" \
-        "$scratch/add-pooled.out"
-    printf 'additive scenario-12 final\n' > "$scratch/add-twelve.spec"
-    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
-        --spec "$scratch/add-twelve.spec" > "$scratch/add-twelve.out" 2> "$scratch/add-twelve.err"
-    same "the same pooled line in scenario 12, which holds no harness, passes" "0" "$?"
-
+    printf 'additive scenario-6 final\n' > "$scratch/add-twelve.spec"
     # The refusals of a spec.
     printf 'additive scenario-3 final\ncampaign present structural\n' > "$scratch/add-mixed.spec"
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
@@ -5628,7 +5713,7 @@ if [ -x "$engine" ]; then
     present "other rates for the final round price another count" "0.95 against 0.8, needs 88 sessions per scenario" "$scratch/add-rates.out"
     present "and plan it" "4 probes x 22 repetitions (round final, ceil(88 / 4)) = 88 sessions" "$scratch/add-rates.out"
     awk '/^  tuning:/ && !done { print; getline; done = 1; next } { print }' "$root/.headwater/probe.yml" > "$scratch/add-short.yml"
-    printf 'additive scenario-12 screening\n' > "$scratch/add-short.spec"
+    printf 'additive scenario-5 screening\n' > "$scratch/add-short.spec"
     HW_PROBE_YML="$scratch/add-short.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$scratch/add-short.spec" > "$scratch/add-short.out" 2> /dev/null
     same "a set the plan counts otherwise than the declaration read is refused with 5" "5" "$?"
@@ -5644,13 +5729,13 @@ if [ -x "$engine" ]; then
     present "and names the stage it lacks" "HEADWATER_TUNING_STAGE names none" "$scratch/add-priced.err"
     HEADWATER_TUNING_STAGE=screen PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" \
         > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
-    same "--priced of the screen reads each additive line" "0 46" "$? $(wc -l < "$scratch/add-priced.out" | tr -d ' ')"
+    same "--priced of the screen reads each additive line" "0 21" "$? $(wc -l < "$scratch/add-priced.out" | tr -d ' ')"
     same "and gives each its round's count, 5 repetitions on a screened tuning line" "14 5 55" \
-        "$(awk '$1 == 1 || $1 == 16 || $1 == 31 { print $3 }' "$scratch/add-priced.out" | tr '\n' ' ' | sed 's/ $//')"
+        "$(awk '$1 == 1 || $1 == 8 || $1 == 15 { print $3 }' "$scratch/add-priced.out" | tr '\n' ' ' | sed 's/ $//')"
     HEADWATER_TUNING_STAGE=confirm PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" \
         > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
     same "--priced of the confirmation gives a tuning line 29 repetitions" "0 29" \
-        "$? $(awk '$1 == 16 { print $3 }' "$scratch/add-priced.out")"
+        "$? $(awk '$1 == 8 { print $3 }' "$scratch/add-priced.out")"
     HEADWATER_TUNING_STAGE=final PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" \
         > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
     same "--priced of a stage that is neither screen nor confirm exits 2" "2" "$?"
@@ -5658,11 +5743,11 @@ if [ -x "$engine" ]; then
     HW_PROBE_YML="$scratch/add-counts.yml" HEADWATER_TUNING_STAGE=confirm PATH="$scratch/dry-bin:$PATH" \
         sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
     same "a confirmation declared at 150 is priced at ceil(150 / 5) = 30 repetitions, read and not typed" "0 30" \
-        "$? $(awk '$1 == 16 { print $3 }' "$scratch/add-priced.out")"
+        "$? $(awk '$1 == 8 { print $3 }' "$scratch/add-priced.out")"
     HW_PROBE_YML="$scratch/add-counts.yml" HEADWATER_TUNING_STAGE=screen PATH="$scratch/dry-bin:$PATH" \
         sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
     same "and a screen declared at 30 at ceil(30 / 5) = 6" "0 6" \
-        "$? $(awk '$1 == 16 { print $3 }' "$scratch/add-priced.out")"
+        "$? $(awk '$1 == 8 { print $3 }' "$scratch/add-priced.out")"
     # The seven fields of the tuning round's rounds are declared together,
     # and each is read with PyYAML and refused when it does not hold.
     for bad in 'screen: 0|`screen` of the `tuning` round' 'confirm: "144"|`confirm` of the `tuning` round' \
@@ -5707,7 +5792,7 @@ if [ -x "$engine" ]; then
             sh "$root/tools/probe/campaign.sh" --out "$scratch/gate-out" --model claude-haiku-4-5 \
             --spec "$root/tools/probe/additive-screening.spec" > /dev/null 2> "$scratch/gate.err"
         same "a batch of the screening spec stops with 8 on a leak in a scenario tree" "8" "$?"
-        present "and names the leak" "leak check, scenario-4 tree: leak HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged" "$scratch/gate.err"
+        present "and names the leak" "leak check, scenario-3 tree: leak HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged" "$scratch/gate.err"
         same "and it asked the harness nothing, not even its version, and planned no line" "no no" \
             "$([ -e "$scratch/gate-out/claude-version" ] && echo yes || echo no) $([ -e "$scratch/gate-out/lines" ] && echo yes || echo no)"
         rm -rf "$scratch/gate-out"
@@ -5752,13 +5837,13 @@ if [ -x "$engine" ]; then
             "$(grep -c ' additive scenario-4 screening ' "$scratch/run-out/jobs" 2>/dev/null)"
         present "and the line is planned at the round's count" "5 probes x 1 arms x 14 repetitions = 70 sessions" "$scratch/run-out/plans/L1"
         # The tree is the scenario's: every path of a layer scenario 4 does
-        # not hold is gone, and the skills layer it holds is there.
+        # not hold is gone, and the hooks layer it holds is there.
         "$engine" probe plan --root "$root" --scenario 4 --delta > "$scratch/run-delta" 2> /dev/null
         same "the tree of the line is the scenario-4 tree: no path of a layer it lacks is left" "0" \
             "$(sed -n 's/^- [^ ]* //p' "$scratch/run-delta" | while IFS= read -r p; do
                 [ -e "$scratch/run-out/trees/additive-scenario-4/$p" ] && echo "$p"; done | wc -l | tr -d ' ')"
         same "and the layers it holds are there" "yes" \
-            "$(awk '$1 == "=" && $2 == "skills" { print $3 }' "$scratch/run-delta" | head -1 | {
+            "$(awk '$1 == "=" && $2 == "hooks" { print $3 }' "$scratch/run-delta" | head -1 | {
                 read -r p; [ -n "$p" ] && [ -e "$scratch/run-out/trees/additive-scenario-4/$p" ] && echo yes || echo no; })"
         run_session=$(ls "$scratch/run-out/sessions" 2>/dev/null | head -1)
         run_argv=$scratch/run-out/sessions/$run_session/record.argv
@@ -5885,11 +5970,11 @@ python3 "$declared_py" "$scratch/open-docs1.yml" open > "$scratch/open-docs1.out
 same "declared.py open prints the six fields of an open layer, on one line" \
     "0 docs 1 1 6000 https://github.com/headwater-ai/headwater/issues/1777#issuecomment-6277195497 none" \
     "$? $(cat "$scratch/open-docs1.out")"
-sed 's/^      layer: docs$/      layer: engine/; s/^      scenario: 1$/      scenario: 3/; s/^      change: none$/      change: 2e3d71a7/' \
+sed 's/^      layer: docs$/      layer: engine/; s/^      scenario: 1$/      scenario: 2/; s/^      change: none$/      change: 2e3d71a7/' \
     "$scratch/open-docs1.yml" > "$scratch/open-engine3.yml"
 python3 "$declared_py" "$scratch/open-engine3.yml" open > "$scratch/open-engine3.out" 2> /dev/null
-same "and admits the engine layer on scenario 3, which adds engine over scenario 1" \
-    "0 engine 3 1 6000 https://github.com/headwater-ai/headwater/issues/1777#issuecomment-6277195497 2e3d71a7" \
+same "and admits the engine layer on scenario 2, which adds engine over scenario 1" \
+    "0 engine 2 1 6000 https://github.com/headwater-ai/headwater/issues/1777#issuecomment-6277195497 2e3d71a7" \
     "$? $(cat "$scratch/open-engine3.out")"
 # Each refusal exits 2 and states its own reason. `name|sed|needle`.
 for open_case in \

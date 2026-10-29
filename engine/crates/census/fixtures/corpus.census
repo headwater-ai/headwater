@@ -234,6 +234,8 @@ docs/decisions/0110-a-headless-review-of-the-nine-hand-built-pages-joins-ci-and-
   typed: decision
 docs/decisions/0111-the-additive-campaign-adds-six-layers-to-plain-code-in-fourteen-scenarios-and-registers-one-comparison-each.md
   typed: decision
+docs/decisions/0112-the-additive-campaign-measures-eleven-actions-by-five-layers-in-seven-scenarios.md
+  typed: decision
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md
@@ -1291,6 +1293,8 @@ docs/process/decisions/0023-a-build-order-parent-restarts-every-few-merges-drain
 docs/process/decisions/0024-a-document-that-moves-to-a-process-shelf-keeps-its-identifier.md
   typed: process_decision
 docs/process/decisions/0025-a-paid-try-runs-under-its-own-command-and-never-under-the-build-order.md
+  typed: process_decision
+docs/process/decisions/0026-we-pivot-rather-than-carry-debt-forward.md
   typed: process_decision
 docs/process/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census

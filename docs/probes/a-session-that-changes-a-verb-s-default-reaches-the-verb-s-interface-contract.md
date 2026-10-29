@@ -6,6 +6,8 @@ summary: "The task asks a session to change the default of one verb, and this as
 last_verified: 2026-10-22
 probe_category: navigability
 expectation: opened
+action: change_governed_code
+moments: [intent, read, write, review]
 oracle: "none"
 title: "A session that changes a verb's default reaches the verb's interface contract"
 provenance:
@@ -33,7 +35,7 @@ The session must open [the interface contract of `headwater route`](../interface
 
 `opened` over `HW-IFACE-headwater-route`.
 
-**This probe is one of three that replaced two probes of the tuning set (#1833).** [HW-DR-0111](../decisions/0111-the-additive-campaign-adds-six-layers-to-plain-code-in-fourteen-scenarios-and-registers-one-comparison-each.md) records the set and why the two probes left it. Proposal 1, the first comment on #1833, is the design.
+**This probe was one of three that replaced two probes of the tuning set of the fourteen-scenario campaign (#1833).** [HW-DR-0111](../decisions/0111-the-additive-campaign-adds-six-layers-to-plain-code-in-fourteen-scenarios-and-registers-one-comparison-each.md) recorded that set and why the two probes left it. [HW-DR-0112](../decisions/0112-the-additive-campaign-measures-eleven-actions-by-five-layers-in-seven-scenarios.md) replaced that set, and #1874 builds the 44-probe set. Proposal 1, the first comment on #1833, is the design.
 
 **What this probe expects, stated before any paid run.** About 55 percent in scenario 3, with a range of 40 to 75 percent. It is the nearest of the three to the ceiling, and the set holds it for that reason: the set needs one probe that a layer can move down as well as up. A search for the name of the verb over `docs/` finds the contract at once, and the routing code points to it. But a session that changes one constant and reports is done without opening anything under `docs/`.
 

@@ -54,9 +54,11 @@
 # against its declared base, lists the MCP tools where the scenario holds
 # `mcp`, and runs `seal.sh --leak --scenario` over that tree, which also reads
 # each skill body and the hook's text for each probe. It exits 8 on a leak, and
-# on a scenario-13 line that pools a probe whose answer the harness layer
-# states with another probe. It refuses `--repetitions` with 2, and a spec
-# that mixes additive lines with lines of another tier with 5.
+# on a line of any scenario that pools a probe whose answer a path of the
+# `tooling` list states with another probe. That list is the repository
+# tooling that is in no layer of HW-DR-0112, such as `CLAUDE.md`, and
+# `seal.sh` prints a hit in it as `harness`. It refuses `--repetitions` with
+# 2, and a spec that mixes additive lines with lines of another tier with 5.
 #
 # `--cap-cents` stops the batch below a figure a person agreed to for this batch
 # alone, such as a pilot, where the tier's ceiling is set for the full run. The
@@ -110,9 +112,11 @@
 # that the line leaves out, read as the `--exclude` of a category line is:
 #
 #     additive scenario-4  screening
-#     additive scenario-13 final HW-PROBE-a-session-says-whether-a-command-…
+#     additive scenario-6  final HW-PROBE-a-session-says-whether-a-command-…
 #
-# So a probe runs on a line of its own where the other lines of the scenario
+# Scenario 6 is the full stack of HW-DR-0112, the three layers `headwater
+# init` ships over scenario 2, and phase B runs each held-out row in it and in
+# scenario 1. So a probe runs on a line of its own where the other lines of the scenario
 # leave it out and one line leaves out every other probe of the set.
 # `tools/probe/additive-campaign.spec` is that campaign, and
 # `tools/probe/additive-screening.spec` is its screening round alone.
@@ -184,6 +188,14 @@
 # The batch writes the recorder's arguments of each session to
 # `sessions/<name>/record.argv`, one per line, so a reader can see what
 # planned each record.
+#
+# Beside each session's `cost` it writes `sessions/<name>/tokens` (#1875):
+# `cache_read_tokens`, `cache_write_tokens` and `input_tokens`, read from the
+# `usage` of the `result` line of the session's `raw.jsonl` through
+# `probe-record.sh --provider-only`. They are not identity members, so
+# `record.md` does not carry them. Assembly prints one line more for the
+# batch, `campaign: cached share: ...`, from `tools/probe/cached-share.sh`,
+# and the dry run prints the same line for the batch it would resume.
 #
 # ## One pinned commit
 #
@@ -429,7 +441,7 @@ engine=$root/engine/target/dev-release/headwater
 [ -x "$engine" ] || engine=$root/engine/target/release/headwater
 
 if [ "$dry" = 1 ]; then
-    exec sh "$root/tools/probe/campaign-dry-run.sh" "$spec" "$repetitions" "$max_sessions"
+    HEADWATER_CAMPAIGN_RECORDED=${out:-} exec sh "$root/tools/probe/campaign-dry-run.sh" "$spec" "$repetitions" "$max_sessions"
 fi
 
 [ -n "$out" ] || { echo "campaign: --out is required" >&2; exit 2; }
@@ -639,7 +651,7 @@ run_job() {
         [ -f "$dir/spent-before" ] && before=$((before + $(cat "$dir/spent-before")))
         printf '%s\n' "$before" > "$dir/spent-before"
     fi
-    rm -f "$dir/status" "$dir/cost"
+    rm -f "$dir/status" "$dir/cost" "$dir/tokens"
     : > "$dir/started"
     # The second seam for the fixtures: it holds the lock after the marker,
     # so a fixture can see that the marker is written before the lock goes.
@@ -691,6 +703,14 @@ run_job() {
             | sed -n 's/^cost_cents: //p' > "$dir/cost.tmp"
     fi
     [ -s "$dir/cost.tmp" ] && mv "$dir/cost.tmp" "$dir/cost" || rm -f "$dir/cost.tmp"
+    # The session's token counts (#1875), beside its cost. They are not
+    # identity members, so `record.md` does not carry them, and they are read
+    # from the log alone. `tools/probe/cached-share.sh` sums them.
+    if [ -f "$dir/raw.jsonl" ]; then
+        sh "$root/tools/probe/probe-record.sh" --provider-only "$dir/raw.jsonl" 2>/dev/null \
+            | grep -e '^cache_read_tokens: ' -e '^cache_write_tokens: ' -e '^input_tokens: ' > "$dir/tokens.tmp"
+        [ -s "$dir/tokens.tmp" ] && mv "$dir/tokens.tmp" "$dir/tokens" || rm -f "$dir/tokens.tmp"
+    fi
     printf '%s\n' "$status" > "$dir/status"
     if [ "$status" = 10 ]; then
         : > "$out/slice/halt"
@@ -816,6 +836,8 @@ if [ "$assemble" = 1 ]; then
     # report and not a gate: a confined session's tries are unreadable.
     printf 'campaign: the batch named %s paths outside the workspace over %s sessions, %s sessions uncounted, %s web-tool calls\n' \
         "$batch_outside" "$batch_sessions" "$batch_uncounted" "$batch_web" >&2
+    # The share of input the cache served (#1875), over the recorded sessions.
+    printf 'campaign: %s\n' "$(sh "$root/tools/probe/cached-share.sh" "$out")" >&2
     # Every move of the batch's pin, so the transcript can state that two
     # recorders derived its records and what `--repin` proved of the move.
     if [ -s "$out/pins" ]; then
@@ -1155,7 +1177,7 @@ fi
 # session starts. A dry run that refuses for another reason stops it with its
 # own status. A round nobody approved was refused above, before this.
 if [ "$additive" = 1 ]; then
-    HW_CAMPAIGN_ENGINE=$engine sh "$root/tools/probe/campaign-dry-run.sh" "$spec" \
+    HW_CAMPAIGN_ENGINE=$engine HEADWATER_CAMPAIGN_RECORDED=$out sh "$root/tools/probe/campaign-dry-run.sh" "$spec" \
         > "$out/leak-gate" 2> "$out/leak-gate.err"
     gate_status=$?
     if [ "$gate_status" != 0 ]; then

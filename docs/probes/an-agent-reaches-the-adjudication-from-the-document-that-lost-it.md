@@ -6,6 +6,8 @@ summary: A session that meets the superseded register first either reaches the d
 last_verified: 2026-08-14
 probe_category: navigability
 expectation: opened
+action: ask_or_locate
+moments: [intent]
 oracle: "none"
 title: "An agent reaches the adjudication from the document that lost it"
 provenance:

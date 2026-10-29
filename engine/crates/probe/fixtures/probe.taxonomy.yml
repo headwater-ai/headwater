@@ -40,6 +40,17 @@ facets:
   oracle:
     volatility: stable
 
+  # Three of the eleven actions of HW-DR-0112, enough for a narrowing that
+  # selects one probe and one that selects several.
+  action:
+    values: [ask_or_locate, add_document, repair_check]
+    volatility: stable
+
+  # A list on a probe: each item is one hook moment the probe passes.
+  moments:
+    values: [intent, read, write, review]
+    volatility: stable
+
   tier:
     values: [regression, campaign]
     volatility: stable
@@ -60,7 +71,7 @@ kinds:
   probe:
     is_a: governed_document
     identifier: {scheme: probe_id}
-    facets: {require: [probe_category, expectation, oracle]}
+    facets: {require: [probe_category, expectation, oracle, action], optional: [moments]}
     sections: {require: [Task, Target, Key]}
 
   probe_transcript:
