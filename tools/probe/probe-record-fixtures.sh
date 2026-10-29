@@ -1510,7 +1510,13 @@ if [ "$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)" = "$root" ]; then
     # names its probe so that the seal removes it. The held arguments and the
     # case files of the probe oracles (#1874) each name their probe for the
     # same reason. A fold dropped from the list, or a new file that names a
-    # probe, moves this set, so each entry of the list is held here.
+    # probe, moves this set, so each entry of the list is held here. The held
+    # files are every file under `tools/probe/oracle-args/` and
+    # `tools/probe/oracle-cases/` of the archive, read from the two
+    # directories and not listed by hand, so a new probe's files join the set
+    # and each one that names no probe fails it (#1874.3).
+    held_files=$(cd "$scratch/corpus" && find tools/probe/oracle-args tools/probe/oracle-cases -type f 2> /dev/null | LC_ALL=C sort | tr '\n' ' ' | sed 's/ $//')
+    [ -n "$held_files" ] || fail "the archive holds the oracles' held arguments and case files" "neither tools/probe/oracle-args/ nor tools/probe/oracle-cases/ holds a file"
     : > "$scratch/outside-naming.txt"
     for shelf_probe in "$root"/docs/probes/*.md; do
         shelf_id=$(awk '/^id: */ { sub(/^id: */, ""); print; exit }' "$shelf_probe")
@@ -1519,7 +1525,7 @@ if [ "$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)" = "$root" ]; then
             | awk -v here="$scratch/corpus/" 'index($0, here) == 1 { $0 = substr($0, length(here) + 1) } $0 !~ /^docs\//' >> "$scratch/outside-naming.txt"
     done
     same "outside docs/, only the three files that state an answer, the two hidden oracles and the oracles' held arguments and case files name a probe and are not folds" \
-        ".claude/skills/fixtures.sh engine/crates/check/tests/probe_oracle_future_date.rs engine/crates/probe/tests/corpus.rs tools/probe/oracle-args/r4-adopter-axis tools/probe/oracle-args/r4-corpus-size tools/probe/oracle-args/r4-hook-warning tools/probe/oracle-args/r4-phrasing-rate tools/probe/oracle-args/r5-check-layer-owl tools/probe/oracle-args/r5-federation-walkthrough tools/probe/oracle-args/r5-hook-role tools/probe/oracle-args/r5-read-set tools/probe/oracle-cases/future-date.sh tools/probe/oracle-cases/r4-adopter-axis.sh tools/probe/oracle-cases/r4-corpus-size.sh tools/probe/oracle-cases/r4-hook-warning.sh tools/probe/oracle-cases/r4-phrasing-rate.sh tools/probe/oracle-cases/r5-check-layer-owl.sh tools/probe/oracle-cases/r5-federation-walkthrough.sh tools/probe/oracle-cases/r5-hook-role.sh tools/probe/oracle-cases/r5-read-set.sh tools/probe/oracle-cases/refresh-figures.sh tools/probe/oracle-figure-added.sh tools/probe/probe-record-fixtures.sh" \
+        "$(printf '%s\n' .claude/skills/fixtures.sh engine/crates/check/tests/probe_oracle_future_date.rs engine/crates/probe/tests/corpus.rs tools/probe/oracle-figure-added.sh tools/probe/probe-record-fixtures.sh $held_files | LC_ALL=C sort -u | tr '\n' ' ' | sed 's/ $//')" \
         "$(LC_ALL=C sort -u "$scratch/outside-naming.txt" | tr '\n' ' ' | sed 's/ $//')"
 
     # The figure oracle of the code set (#1835), in three directions, over a
