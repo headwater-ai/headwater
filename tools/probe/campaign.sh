@@ -54,9 +54,11 @@
 # against its declared base, lists the MCP tools where the scenario holds
 # `mcp`, and runs `seal.sh --leak --scenario` over that tree, which also reads
 # each skill body and the hook's text for each probe. It exits 8 on a leak, and
-# on a scenario-13 line that pools a probe whose answer the harness layer
-# states with another probe. It refuses `--repetitions` with 2, and a spec
-# that mixes additive lines with lines of another tier with 5.
+# on a line of any scenario that pools a probe whose answer a path of the
+# `tooling` list states with another probe. That list is the repository
+# tooling that is in no layer of HW-DR-0112, such as `CLAUDE.md`, and
+# `seal.sh` prints a hit in it as `harness`. It refuses `--repetitions` with
+# 2, and a spec that mixes additive lines with lines of another tier with 5.
 #
 # `--cap-cents` stops the batch below a figure a person agreed to for this batch
 # alone, such as a pilot, where the tier's ceiling is set for the full run. The
@@ -110,9 +112,11 @@
 # that the line leaves out, read as the `--exclude` of a category line is:
 #
 #     additive scenario-4  screening
-#     additive scenario-13 final HW-PROBE-a-session-says-whether-a-command-…
+#     additive scenario-6  final HW-PROBE-a-session-says-whether-a-command-…
 #
-# So a probe runs on a line of its own where the other lines of the scenario
+# Scenario 6 is the full stack of HW-DR-0112, the three layers `headwater
+# init` ships over scenario 2, and phase B runs each held-out row in it and in
+# scenario 1. So a probe runs on a line of its own where the other lines of the scenario
 # leave it out and one line leaves out every other probe of the set.
 # `tools/probe/additive-campaign.spec` is that campaign, and
 # `tools/probe/additive-screening.spec` is its screening round alone.
