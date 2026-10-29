@@ -84,9 +84,21 @@ if [ -f "$CASE/on-sleep" ]; then
 fi
 EOF
 
+# The poll: the step between two reads of the usage gate while campaign.sh
+# runs (#1876). It moves no clock and logs no sleep, so the cases that count
+# the sleeps of a wait read only those, and it runs the one-shot hook
+# $CASE/on-poll.
+cat > "$fix/poll.sh" <<'EOF'
+sleep 0.01
+if [ -f "$CASE/on-poll" ]; then
+    mv "$CASE/on-poll" "$CASE/on-poll.ran"
+    sh "$CASE/on-poll.ran"
+fi
+EOF
+
 # The campaign. Each invocation reads the next line of $CASE/scenario (the
 # last line repeats once they run out), which is either
-#     exit=<n> [record=<k>] [cents=<c>] [halt=y] [skip=<k>] [refuse=<k>] [fail=<k>] [provider=<k>]
+#     exit=<n> [record=<k>] [cents=<c>] [halt=y] [skip=<k>] [refuse=<k>] [fail=<k>] [provider=<k>] [waithalt]
 # or
 #     auto cents=<c>
 # A manual line walks the jobs not yet recorded, in order: it leaves `skip`
@@ -98,7 +110,10 @@ EOF
 # after that, and exits 7 on a refusal, 9 on the bound and 0 when all are
 # recorded. A session a manual line records gets a `record.md` stating that
 # the proxy refused `provider` provider fetches (default 0), in the words
-# probe-record.sh prints.
+# probe-record.sh prints. With `waithalt`, the invocation writes
+# $CASE/stub-ready once its slice is fresh, and walks its jobs only after
+# `<out>/slice/halt` exists, polling for it in real time for at most 20 s:
+# the jobs in flight when the driver halts it still finish (#1876).
 cat > "$fix/campaign-stub.sh" <<'EOF'
 set -u
 printf 'argv %s\n' "$*" >> "$CASE/calls.argv"
@@ -133,10 +148,11 @@ fi
 [ -f "$out/claude-version" ] || printf '%s\n' "$ver" > "$out/claude-version"
 rm -rf "$out/slice"
 mkdir -p "$out/slice/started" "$out/slice/refused"
-code= record=0 cents=0 halt=n skip=0 refuse=0 fail=0 auto=n provider=0 unrec=0 nomark=n
+code= record=0 cents=0 halt=n skip=0 refuse=0 fail=0 auto=n provider=0 unrec=0 nomark=n waithalt=n
 for word in $line; do
     case $word in
         auto) auto=y ;;
+        waithalt) waithalt=y ;;
         unrec=*) unrec=${word#unrec=} ;;
         nomark) nomark=y ;;
         exit=*) code=${word#exit=} ;;
@@ -150,6 +166,14 @@ for word in $line; do
     esac
 done
 printf 'argv %s cap=%s max=%s\n' "$out" "$cap" "$max" >> "$CASE/calls.short"
+if [ "$waithalt" = y ]; then
+    : > "$CASE/stub-ready"
+    tries=0
+    while [ ! -f "$out/slice/halt" ] && [ "$tries" -lt 2000 ]; do
+        sleep 0.01
+        tries=$((tries + 1))
+    done
+fi
 spent() {
     find "$out/sessions" -mindepth 2 -maxdepth 2 -type f \( -name cost -o -name spent-before \) -exec cat {} + 2>/dev/null \
         | awk '{ s += $1 } END { print s + 0 }'
@@ -254,6 +278,11 @@ new_case() {
     g checkout -q --detach
     PIN=$(g rev-parse HEAD)
     B=60 C=100000 M=20 P=2 VERSION=2.1.288 RAMP=
+    # The usage gate of #1876, at the values of `additive-launch.env`. The
+    # snapshot directory is the case's own, so the host's real snapshots
+    # never decide a case.
+    mkdir -p "$CASE/usage"
+    U_STOP=85 U_LATE=100 U_HOURS=24
 }
 
 write_token() {
@@ -278,6 +307,11 @@ drive() {
         HEADWATER_DRIVE_SLEEP="sh $fix/sleep.sh" \
         HEADWATER_DRIVE_CLAUDE_VERSIONS=$fix/versions \
         HEADWATER_PROBE_HOST_CONFIG=$CASE/host \
+        HEADWATER_USAGE_DIR=$CASE/usage \
+        HEADWATER_DRIVE_USAGE_STOP=$U_STOP \
+        HEADWATER_DRIVE_USAGE_LATE=$U_LATE \
+        HEADWATER_DRIVE_USAGE_LATE_HOURS=$U_HOURS \
+        HEADWATER_DRIVE_POLL="sh $fix/poll.sh" \
         PATH="$fix/decoy:$PATH" \
             timeout 60 sh "$driver" --root "$CASE/root" --pin "$PIN" --claude-version "$VERSION" \
             --spec-a "$CASE/spec-a" --model fixture-model \
@@ -535,6 +569,169 @@ fi
 EOF
 drive
 check "token: a 25-minute wait logs 3 lines" sh -c "grep -c 'wait token' '$CASE/out' | grep -qx 3"
+
+# ------------------------------------------------- 3a. the usage gate
+#
+# The owner's ruling on #1868: a run stops launching sessions at 85 percent
+# of the 7-day window, unless the reset is under 24 hours away, in which case
+# it runs on to 100 percent (#1876). The driver reads the freshest figure of
+# the snapshot directory and of the last `rate_limit_event` of its own
+# transcripts, before each invocation and while one runs.
+
+# snap <percent> <resets_at> [<last_activity>]: one snapshot in the case's
+# usage directory, in the shape the host's status line writes.
+snap() {
+    usnap=$((${usnap:-0} + 1))
+    printf '{"session_id":"s%s","last_activity":%s,"seven_day":{"used_percentage":%s,"resets_at":"%s"}}\n' \
+        "$usnap" "${3:-$(($(cat "$CASE/clock") - 60))}" "$1" "$2" > "$CASE/usage/s$usnap.json"
+}
+# transcript <mtime> <line>: the raw.jsonl of a session of batch A, with one
+# rate limit line between two others, dated by its mtime.
+transcript() {
+    mkdir -p "$CASE/root/a/sessions/a-001"
+    printf '{"type":"assistant"}\n%s\n{"type":"result"}\n' "$2" > "$CASE/root/a/sessions/a-001/raw.jsonl"
+    touch -d "@$1" "$CASE/root/a/sessions/a-001/raw.jsonl"
+}
+# window <utilization> <resets_at>: a rate limit line of the harness, whose
+# 7-day window is under `unifiedWindows`.
+window() {
+    printf '{"type":"rate_limit_event","rate_limit_info":{"rateLimitType":"five_hour","utilization":0.1,"resetsAt":%s,"unifiedWindows":{"five_hour":{"utilization":0.1,"resetsAt":%s},"seven_day":{"utilization":%s,"resetsAt":%s}}}}' \
+        "$2" "$2" "$1" "$2"
+}
+t0=1790000000
+h48=$((t0 + 48 * 3600))
+h12=$((t0 + 12 * 3600))
+recorded_a() { grep -lx 0 "$CASE/root/a/sessions"/*/status 2>/dev/null | wc -l | tr -d ' '; }
+
+# The decisive case: the figure passes 85 percent while an invocation runs.
+# The driver halts the invocation, so campaign.sh starts nothing more, and
+# exits 13 with no halt backoff. A relaunch below the threshold then records
+# every job once.
+new_case
+only_a
+printf 'exit=9 record=3 cents=10 waithalt\nexit=0 record=20 cents=10\n' > "$CASE/scenario"
+cat > "$CASE/on-poll" <<EOF
+tries=0
+while [ ! -f "\$CASE/stub-ready" ] && [ "\$tries" -lt 2000 ]; do sleep 0.01; tries=\$((tries + 1)); done
+printf '{"last_activity":%s,"seven_day":{"used_percentage":86,"resets_at":"%s"}}\n' $t0 $h48 > "\$CASE/usage/late.json"
+EOF
+drive
+check "usage: a figure past 85% during an invocation exits 13" code_is 13
+check "usage: and writes the halt of the slice" has a/slice/halt
+check "usage: and writes <root>/usage-gated" has usage-gated
+check "usage: and logs one line naming 86% and the reset" sh -c "grep -c 'usage-gated: 7-day at 86% (from .*late.json), threshold 85%, resets 2026-09-23T14:13:20Z' '$CASE/out' | grep -qx 1"
+check "usage: with one invocation" calls_are 1
+check "usage: and no halt backoff" sh -c "! grep -q 'halt 1; sleeping' '$CASE/out'"
+check "usage: the jobs in flight record" [ "$(recorded_a)" = 3 ]
+snap 50 "$h48" "$((t0 + 1))"
+drive
+check "usage: a relaunch below the threshold finishes" code_is 0
+check "usage: and removes usage-gated" hasnt usage-gated
+check "usage: and invokes once more" calls_are 2
+check "usage: every job is recorded" [ "$(recorded_a)" = 20 ]
+check "usage: and none twice" sh -c "! find '$CASE/root/a/sessions' -name spent-before | grep -q ."
+
+# The thresholds, each read before the invocation.
+usage_case() {
+    # usage_case <description> <expected exit> <expected calls>
+    drive
+    check "usage: $1 exits $2" code_is "$2"
+    check "usage: $1 invokes $3 times" calls_are "$3"
+}
+new_case
+only_a
+echo 'exit=0 record=20 cents=10' > "$CASE/scenario"
+snap 84 "$h48"
+usage_case "84% with 48 h to the reset" 0 1
+new_case
+only_a
+echo 'exit=0 record=20 cents=10' > "$CASE/scenario"
+snap 85 "$h48"
+usage_case "85% with 48 h to the reset" 13 0
+check "usage: and the marker holds the figure" grep -q '^percent: 85$' "$CASE/root/usage-gated"
+check "usage: and the threshold" grep -q '^threshold: 85$' "$CASE/root/usage-gated"
+check "usage: and the reset" grep -q "^resets-at: $h48\$" "$CASE/root/usage-gated"
+new_case
+only_a
+echo 'exit=0 record=20 cents=10' > "$CASE/scenario"
+snap 86 "$h12"
+usage_case "86% with 12 h to the reset, the late threshold," 0 1
+new_case
+only_a
+echo 'exit=0 record=20 cents=10' > "$CASE/scenario"
+snap 99.9 "$h12"
+usage_case "99.9% with 12 h to the reset" 0 1
+new_case
+only_a
+echo 'exit=0 record=20 cents=10' > "$CASE/scenario"
+snap 100 "$h12"
+usage_case "100% with 12 h to the reset" 13 0
+check "usage: and names the late threshold" out_has "threshold 100%"
+new_case
+only_a
+echo 'exit=0 record=20 cents=10' > "$CASE/scenario"
+snap 90 "$((t0 + 24 * 3600))"
+usage_case "90% with exactly 24 h to the reset" 13 0
+new_case
+only_a
+echo 'exit=0 record=20 cents=10' > "$CASE/scenario"
+snap 50 "$h48" "$((t0 - 600))"
+transcript "$((t0 - 60))" "$(window 0.90 "$h48")"
+usage_case "a transcript at 0.90 newer than a snapshot at 50" 13 0
+check "usage: and the source names the transcript" out_has "usage-gated: 7-day at 90% (from .*a-001/raw.jsonl)"
+new_case
+only_a
+echo 'exit=0 record=20 cents=10' > "$CASE/scenario"
+snap 50 "$h48" "$((t0 - 60))"
+transcript "$((t0 - 600))" "$(window 0.90 "$h48")"
+usage_case "a transcript at 0.90 older than a snapshot at 50" 0 1
+new_case
+only_a
+echo 'exit=0 record=20 cents=10' > "$CASE/scenario"
+transcript "$((t0 - 60))" "{\"type\":\"rate_limit_event\",\"rate_limit_info\":{\"rateLimitType\":\"seven_day\",\"utilization\":0.95,\"resetsAt\":$h48}}"
+usage_case "a top-level seven_day line at 0.95" 13 0
+new_case
+only_a
+echo 'exit=0 record=20 cents=10' > "$CASE/scenario"
+transcript "$((t0 - 60))" "{\"type\":\"rate_limit_event\",\"rate_limit_info\":{\"rateLimitType\":\"five_hour\",\"utilization\":0.99,\"resetsAt\":$h48}}"
+usage_case "a top-level five_hour line at 0.99, which is no 7-day figure," 0 1
+new_case
+only_a
+echo 'exit=0 record=20 cents=10' > "$CASE/scenario"
+transcript "$((t0 - 60))" '{"type":"rate_limit_event","rate_limit":{"utilization":0.88}}'
+usage_case "the older rate_limit shape, which is no figure," 0 1
+check "usage: and it reads as unknown" out_has "usage unknown"
+new_case
+only_a
+echo 'exit=0 record=20 cents=10' > "$CASE/scenario"
+snap 99 "$((t0 - 1))"
+usage_case "a figure whose reset is past" 0 1
+check "usage: and logs nothing gated" sh -c "! grep -q 'usage-gated' '$CASE/out'"
+new_case
+only_a
+echo 'exit=0 record=20 cents=10' > "$CASE/scenario"
+usage_case "no figure" 0 1
+check "usage: and logs one usage unknown line" sh -c "grep -c 'usage unknown' '$CASE/out' | grep -qx 1"
+new_case
+only_a
+echo 'exit=0 record=20 cents=10' > "$CASE/scenario"
+snap 99 "$h48"
+U_STOP= U_LATE= U_HOURS=
+usage_case "the three keys unset" 0 1
+check "usage: and logs one usage gate off line" sh -c "grep -c 'usage gate off' '$CASE/out' | grep -qx 1"
+new_case
+only_a
+echo 'exit=0 record=20 cents=10' > "$CASE/scenario"
+U_STOP=eighty
+usage_case "a threshold that is not a whole number" 2 0
+new_case
+only_a
+echo 'exit=0 record=20 cents=10' > "$CASE/scenario"
+snap 99 "$h48"
+: > "$CASE/root/usage-gated"
+snap 10 "$h48" "$t0"
+usage_case "a stale usage-gated below the threshold" 0 1
+check "usage: and the driver removes it" hasnt usage-gated
 
 # ------------------------------------------------- 4. the pinned harness
 
