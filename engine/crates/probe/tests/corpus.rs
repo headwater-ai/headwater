@@ -1411,51 +1411,42 @@ fn the_campaign_spec_plans_no_probe_that_awaits_spend() {
     assert!(lines > 0, "the campaign spec holds no line");
 }
 
-/// The committed `.headwater/probe.yml` declares the fourteen scenarios of
-/// milestone 0.07 as its issues, #1780 to #1793, state them (#1774).
+/// The committed `.headwater/probe.yml` declares the seven scenarios of
+/// HW-DR-0112 (#1872), and no scenario holds this repository's own tooling.
 ///
 /// The engine already refuses a scenario that differs from its base by more
-/// than one layer. This case holds the declaration to the milestone: a
-/// scenario with the wrong layers or the wrong base reads as well-formed and
-/// measures a comparison nobody registered.
+/// than one layer outside the declared exception. This case holds the
+/// declaration to the decision: a re-cut can read as well-formed while
+/// scenario 0 and scenario 6 still carry this repository's own instructions,
+/// skills and hooks, because a path in no layer is plain code and every
+/// scenario keeps it. So it reads the delta of each scenario, not only the
+/// layers it names.
 #[test]
-fn the_committed_scenarios_are_the_fourteen_of_the_milestone() {
+fn the_committed_scenarios_are_the_seven_of_hw_dr_0112_and_none_holds_the_tooling() {
     let root = repository_root();
     let path = root.join(headwater_probe::budget::PATH);
     let source =
         std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     let budgets = headwater_probe::Budgets::read(&source).unwrap_or_else(|e| panic!("{e}"));
 
-    let table: [(u32, &[&str], Option<u32>, bool); 14] = [
+    assert_eq!(
+        budgets
+            .layers
+            .iter()
+            .map(|layer| layer.name.as_str())
+            .collect::<Vec<_>>(),
+        ["docs", "engine", "skills", "hooks", "mcp"],
+        "the five layers of HW-DR-0112"
+    );
+    let full = ["docs", "engine", "skills", "hooks", "mcp"];
+    let table: [(u32, &[&str], Option<u32>, bool); 7] = [
         (0, &[], None, false),
         (1, &["docs"], Some(0), false),
-        (2, &["docs", "claude-md"], Some(1), true),
-        (3, &["docs", "engine"], Some(1), false),
-        (4, &["docs", "engine", "skills"], Some(3), false),
-        (5, &["docs", "engine", "hook"], Some(3), false),
-        (6, &["docs", "engine", "mcp"], Some(3), false),
-        (7, &["docs", "engine", "hook", "mcp"], Some(5), true),
-        (8, &["docs", "engine", "claude-md", "skills"], Some(4), true),
-        (9, &["docs", "engine", "claude-md", "hook"], Some(5), true),
-        (10, &["docs", "engine", "skills", "hook"], Some(5), true),
-        (
-            11,
-            &["docs", "engine", "claude-md", "skills", "hook"],
-            Some(10),
-            false,
-        ),
-        (
-            12,
-            &["docs", "engine", "claude-md", "skills", "hook", "mcp"],
-            Some(11),
-            false,
-        ),
-        (
-            13,
-            &["docs", "engine", "claude-md", "skills", "hook", "harness"],
-            Some(11),
-            false,
-        ),
+        (2, &["docs", "engine"], Some(1), false),
+        (3, &["docs", "engine", "skills"], Some(2), false),
+        (4, &["docs", "engine", "hooks"], Some(2), false),
+        (5, &["docs", "engine", "mcp"], Some(2), false),
+        (6, &full, Some(2), true),
     ];
     assert_eq!(
         budgets.scenarios.len(),
@@ -1463,7 +1454,7 @@ fn the_committed_scenarios_are_the_fourteen_of_the_milestone() {
         "{:?}",
         budgets.scenarios
     );
-    for (number, layers, base, interaction) in table {
+    for (number, layers, base, exception) in table {
         let scenario = budgets
             .scenario(number)
             .unwrap_or_else(|| panic!("no scenario {number}"));
@@ -1474,15 +1465,94 @@ fn the_committed_scenarios_are_the_fourteen_of_the_milestone() {
         assert_eq!(held, expected, "the layers of scenario {number}");
         assert_eq!(scenario.base, base, "the base of scenario {number}");
         assert_eq!(
-            scenario.block == headwater_probe::budget::Block::Interaction,
-            interaction,
-            "the block of scenario {number}"
+            scenario.exception, exception,
+            "the exception of scenario {number}"
+        );
+    }
+
+    use headwater_probe::budget::Hold;
+    for number in 0..=6 {
+        let delta = budgets
+            .scenario_delta(number)
+            .unwrap_or_else(|| panic!("no delta for scenario {number}"));
+        for tooling in [
+            "CLAUDE.md",
+            "AGENTS.md",
+            ".claude/skills/hw-run-policy",
+            ".claude/skills/headwater-engine",
+            ".claude/commands",
+            ".githooks",
+        ] {
+            let entries: Vec<_> = delta.iter().filter(|(_, _, p)| *p == tooling).collect();
+            assert_eq!(
+                entries,
+                [&(Hold::Removes, "tooling", tooling)],
+                "scenario {number} must remove {tooling}"
+            );
+        }
+        let settings: Vec<_> = delta
+            .iter()
+            .filter(|(_, _, p)| *p == ".claude/settings.json")
+            .collect();
+        let hold = if [4, 6].contains(&number) {
+            Hold::Writes
+        } else {
+            Hold::Removes
+        };
+        assert_eq!(
+            settings,
+            [&(hold, "hooks", ".claude/settings.json")],
+            "the settings file of scenario {number}"
         );
     }
 }
 
-/// The committed additive spec plans each of the fourteen scenarios in each of
-/// the three rounds, and runs no held-out probe before the final round (#1774,
+/// The settings file the hooks layer writes is the one `headwater init
+/// --harness` writes into a fresh repository (#1872): six entries over four
+/// events, each running a script the hooks layer holds.
+///
+/// The probe crate does not link the CLI, so this reads the arms file and the
+/// engine's source of the entries, `engine/crates/cli/src/harness.rs`, and
+/// checks that each script and event the source names is wired in the file.
+/// `engine/crates/cli/tests/init_hooks.rs` holds the byte equality.
+#[test]
+fn the_hooks_arms_settings_wire_every_script_the_hooks_layer_holds() {
+    let root = repository_root();
+    let path = root.join("tools/probe/arms/hooks/.claude/settings.json");
+    let settings =
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    for event in ["UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop"] {
+        assert!(
+            settings.contains(&format!("\"{event}\"")),
+            "the arms settings file wires no {event} hook"
+        );
+    }
+    let commands = settings.matches("\"type\": \"command\"").count();
+    assert_eq!(commands, 6, "six hook entries over four events");
+    let source =
+        std::fs::read_to_string(root.join(headwater_probe::budget::PATH)).expect("the declaration");
+    let budgets = headwater_probe::Budgets::read(&source).unwrap_or_else(|e| panic!("{e}"));
+    let hooks = budgets
+        .layers
+        .iter()
+        .find(|layer| layer.name == "hooks")
+        .expect("the hooks layer");
+    assert_eq!(hooks.arms, [".claude/settings.json"]);
+    for script in ["intent", "read", "write", "review", "touch"] {
+        let wired = format!(".claude/hooks/{script}.sh");
+        assert!(
+            settings.contains(&wired),
+            "the arms settings file does not run {wired}"
+        );
+        assert!(
+            hooks.paths.contains(&wired),
+            "the hooks layer does not hold {wired}"
+        );
+    }
+}
+
+/// The committed additive spec plans each declared scenario in each of the
+/// three rounds, and runs no held-out probe before the final round (#1774,
 /// clause 4).
 ///
 /// A line is `additive scenario-<n> <round>` and the probes of the round's set
@@ -1557,7 +1627,8 @@ fn the_additive_spec_plans_each_scenario_in_each_round() {
         }
     }
 
-    for scenario in 0..14 {
+    let declared: Vec<u32> = budgets.scenarios.iter().map(|s| s.number).collect();
+    for &scenario in &declared {
         for round in ["screening", "tuning", "final"] {
             let mut ran = runs
                 .remove(&(scenario, round.to_string()))
@@ -1576,7 +1647,8 @@ fn the_additive_spec_plans_each_scenario_in_each_round() {
     }
     assert!(
         runs.is_empty(),
-        "lines outside the 14 scenarios and 3 rounds: {runs:?}"
+        "lines outside the {} declared scenarios and 3 rounds: {runs:?}",
+        declared.len()
     );
 }
 
