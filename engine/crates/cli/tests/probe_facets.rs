@@ -100,3 +100,42 @@ fn new_probe_asks_for_an_action() {
     );
     assert!(probes(&root).is_empty(), "a run that asked wrote a probe");
 }
+
+/// A root whose taxonomy is this repository's and which carries its
+/// `.headwater/probe.yml`, so `probe plan` reads past its declaration.
+fn planned(label: &str) -> Root {
+    Root::shaped(label, |at| {
+        std::fs::copy(
+            common::repository().join(".headwater/probe.yml"),
+            at.join(".headwater/probe.yml"),
+        )
+        .expect("the probe declaration copies");
+    })
+}
+
+/// `--action` and `--moment` are read against the sets the taxonomy declares,
+/// and a value outside them is a caller's error at status 1 with the set
+/// printed. A value inside them plans, and status 0 holds whatever the plan
+/// says.
+#[test]
+fn probe_plan_refuses_an_action_or_a_moment_outside_the_taxonomy() {
+    let root = planned("probe-facets-plan");
+    let ran = root.run(&["probe", "plan", "--action", "wibble"]);
+    assert_eq!(ran.code, Some(1), "{ran:?}");
+    assert!(
+        ran.err.contains("`--action wibble`")
+            && ran.err.contains("ask_or_locate")
+            && ran.err.contains("ungoverned_control"),
+        "the refusal prints the set: {ran:?}"
+    );
+    let ran = root.run(&["probe", "plan", "--moment", "bogus"]);
+    assert_eq!(ran.code, Some(1), "{ran:?}");
+    assert!(
+        ran.err.contains("`--moment bogus`") && ran.err.contains("intent, read, write, review"),
+        "the refusal prints the set: {ran:?}"
+    );
+    for (flag, value) in [("--action", "ask_or_locate"), ("--moment", "write")] {
+        let ran = root.run(&["probe", "plan", flag, value]);
+        assert_eq!(ran.code, Some(0), "{flag} {value}: {ran:?}");
+    }
+}

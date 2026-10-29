@@ -3246,6 +3246,32 @@ fn additive_plan(budgets: &Budgets, tier: Tier, narrowing: &Narrowing) -> Plan {
 /// every layer: HW-DR-0111 keeps it there at zero by construction, as the
 /// floor scenario 1 is compared with. The ceiling of zero refuses the run
 /// and still prices it.
+/// A set and an action narrow together, and the set is read first (#1873).
+/// `tuning` names `PROBE-FIX-opened` (`ask_or_locate`) and `PROBE-FIX-cited`
+/// (`add_document`). An action filter applied before the set check would leave
+/// `cited` out of the selection, and the set check would then refuse it as a
+/// member no probe carries.
+#[test]
+fn a_set_and_an_action_narrow_together() {
+    let budgets = additive_budgets(FIXTURE_SETS);
+    let plan = additive_plan(
+        &budgets,
+        Tier::Additive,
+        &Narrowing {
+            arm: Some(Arm::Scenario(1)),
+            set: Some("tuning".into()),
+            action: Some("ask_or_locate".into()),
+            ..Narrowing::default()
+        },
+    );
+    assert!(
+        !matches!(plan.refusal, Some(Refusal::SetMemberUnknown { .. })),
+        "{:?}",
+        plan.refusal
+    );
+    assert_eq!(selected_ids(&plan), ["PROBE-FIX-opened"]);
+}
+
 #[test]
 fn a_set_selects_its_probes_across_categories_and_scenario_0_keeps_a_document_keyed_probe() {
     let budgets = additive_budgets(FIXTURE_SETS);
