@@ -33,7 +33,12 @@ The verb marks a field `hand entry` when no declaration determines it. Read its 
 
 **The body under each required heading.** The headings come from the kind's section contract and the prose does not. Open a sibling of the same kind to see what one says under each heading, and write what this document adds.
 
-**The provenance block.** The verb writes `warrant: asserted` and nothing else in it, because nobody has accepted the new document. Add any other member by hand, in the shape a sibling on the same shelf uses. An `accepted_by` that you add pairs only with `warrant: accepted`. Two checks read the block: `warrant.value.not_permitted` refuses a warrant outside the four values the engine permits, and `warrant.acceptance.unpaired` refuses an `accepted_by` that the warrant does not pair with.
+**The provenance block.** The verb writes `warrant: asserted` and nothing else in it, because nobody has accepted the new document. Add any other member by hand, in the shape a sibling on the same shelf uses. An `accepted_by` that you add pairs only with `warrant: accepted`. These checks read the block:
+- `warrant.value.not_permitted` refuses a warrant outside the four values the engine permits.
+- `warrant.acceptance.unpaired` refuses an `accepted_by` that the warrant does not pair with.
+- `warrant.acceptance.at_initial` warns when a document says `warrant: accepted` and stands at the initial state of its regime. It writes no patch. A hand edit to `accepted` on such a document gets this warning, and the remedy is to set the state that the document will hold once it merges.
+- `warrant.promoted` counts each move from `asserted` to `accepted` in one change and reports the count. It reads a change only, so a run over the whole corpus skips it.
+- `warrant.evidence.unsupported` warns when a document claims `evidence_basis: evidenced` and rests that claim on a document whose warrant is `asserted`. It writes no patch.
 
 **Never move a `warrant` to `accepted` yourself, on any document, at any time.** That move belongs to a person who has read the document. Propose it and let them make it.
 
@@ -76,4 +81,4 @@ Neither is worked around. Hand both to the `headwater-taxonomy` skill, which own
 Errors must reach zero before a commit. `headwater check --fix` writes the corrections the engine derives without judgment — a British spelling, a contraction whose expansion is one word, a retired term that names a replacement, and a missing reciprocal half — and it leaves every finding whose remedy is a rewrite. Read the diff.
 
 **An edit to a document that a probe reads moves no committed result.** A result pins only what its transcript read, so it keeps its bytes and every verdict. The next `headwater generate` names each result whose read set moved, and `headwater probe stale` names the results the edit reached. Neither one fails for it.
-<!-- installed by headwater init --harness, digest sha256:d686c3d0bd38991d1a9efd99b5f01035de5889784776dd95b09d0694e5e76db3 -->
+<!-- installed by headwater init --harness, digest sha256:e688def66e493b101ec0427effc0f4fa8bd09efaf49d2f7ce9f88ed6e17485ec -->
