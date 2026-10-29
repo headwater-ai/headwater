@@ -22,7 +22,8 @@
 #
 # Batch A runs in `<root>/a` and batch B in `<root>/b`. The log
 # `<root>/drive.log`, and the markers `canary-recorded`, `canary-failed`,
-# `a.done`, `b.done`, `capped` and `done`, are in `<root>`. The spec files
+# `a.done`, `b.done`, `capped` and `done`, are in `<root>`, and so are the
+# files of the saturation stop, `cells.a`, `b.spec` and `saturated`. The spec files
 # live outside the checkout, because `campaign.sh` refuses a dirty one. A
 # driver started again skips each phase whose marker exists, and derives
 # every cap again from the files, so a restart after a kill goes on where
@@ -113,12 +114,58 @@
 #    wait reads `canary-passed` and nothing else. A driver started again
 #    with `canary-recorded` present does not run it again.
 # 2. Batch A at `--parallel P --max-sessions 500`, until it exits 0.
-# 3. Batch B the same, with `--spec <spec-b> --repetitions <n>`.
-# 4. `<root>/done`, written only when `a.done` exists, and `b.done` where
+# 3. Under `--saturate-at <n>`, the saturation stop: see "The saturation
+#    stop" below. It may stop cells of batch B, or all of it.
+# 4. Batch B the same, with `--spec <spec-b> --repetitions <n>`, or with
+#    `--spec <root>/b.spec` under `--saturate-at`.
+# 5. `<root>/done`, written only when `a.done` exists, and `b.done` where
 #    the driver runs batch B. A driver started with `done` present invokes
 #    nothing and exits 0. `--on-done <cmd>` runs `sh -c <cmd>` once, right
 #    after the driver writes `done`, and the driver logs its status and
 #    exits 0. A driver started with `done` present runs neither hook.
+#
+# ## The saturation stop
+#
+# Phase B of the additive campaign (HW-DR-0112, "Phase B: the report") runs
+# each row in scenarios 1 and 6 at 72 sessions, and "a cell that saturates
+# stops at 24 sessions. A cell saturates when all its sessions pass or all
+# fail at 24." A cell is one row, the probe's `action` facet, in one
+# scenario and set. Batch A runs the first 24 sessions of each cell, 12
+# repetitions of each of a row's two held-out probes, and batch B the other
+# 48. `--saturate-at <n>` needs `--spec-b`, and the driver holds no default:
+# phase B passes `TRY_SATURATE_AT` of `tools/probe/additive-launch.env`,
+# which is 24. Without the option, nothing here runs.
+#
+# After `a.done` and before batch B, the driver grades batch A once with
+# `$HEADWATER_DRIVE_CELLS` (default `tools/probe/cell-passes.sh` in the
+# current directory), whose `counts` prints the grader's satisfied and
+# graded sessions of each probe, into `<root>/cells.a`. The count is the
+# grader's and never a recorder status, and a refused session is in no
+# denominator. For each line of spec-b, the same script's `probes` names the
+# probes the line selects and the action of each. Then:
+#
+# - a cell with exactly `<n>` graded sessions and 0 or `<n>` satisfied
+#   **stops**: each of its probes becomes an exclude on each line of batch
+#   B's spec that selects it, the form `campaign.sh` reads as `--exclude`;
+# - any other cell **runs**, including one with fewer than `<n>` graded
+#   sessions and one graded past `<n>`;
+# - a line whose every probe stopped is dropped, and a line that selects
+#   no probe, such as a line of another tier, is copied as it is;
+# - scenario 0, the anchor, is pooled at 145 sessions and is not a cell, so
+#   a spec-b line of scenario 0 runs whole.
+#
+# The derived spec is `<root>/b.spec`, written once, so a restart gives
+# batch B the same spec and grades nothing again. The ledger of the stop is
+# `<root>/saturated`, one line per cell, each also in `drive.log`:
+#
+#     stopped <action>/scenario-<k> at <n>: <s> of <n>
+#     runs <action>/scenario-<k>: <s> of <g>
+#
+# When no line is left, the driver writes `b.done`, logs `batch B has no
+# line left`, and invokes no batch B. A count that fails writes no
+# `cells.a`, a plan that fails writes no `b.spec`, and either one exits 14
+# before batch B spends. `try.sh ledger` reads phase A
+# alone, so the stop writes nothing to `ledger.jsonl`.
 #
 # Every invocation is `sh $HEADWATER_DRIVE_CAMPAIGN` (default
 # `tools/probe/campaign.sh` in the current directory) with `--out --model
@@ -226,6 +273,8 @@
 #   12  12 halts in a row recorded nothing, and the 13th stopped the driver
 #   13  the usage gate tripped: `usage-gated` holds the figure, and
 #       `tools/probe/try.sh relaunch` goes on below the threshold
+#   14  under `--saturate-at`, the grade of batch A or the plan of a line of
+#       spec-b failed, and batch B did not start
 
 set -u
 

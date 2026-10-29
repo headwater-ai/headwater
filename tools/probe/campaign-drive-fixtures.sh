@@ -21,12 +21,18 @@
 # `--cap-cents`, because the cap each invocation is given is the cap less
 # what the other batch spent less `--parallel` times the overshoot margin.
 #
-# Exit status: 0 when every case passes, 1 when one fails, 3 when `jq`, `git`
-# or `timeout` is missing.
+# Section 7a holds the saturation stop of phase B (#1875) against a stub of
+# its seam, and 7b holds the seam, `tools/probe/cell-passes.sh`, against a
+# stub engine and a stub `campaign.sh --assemble`. Its decisive case is the
+# first of 7a: of four cells, 24 of 24 and 0 of 24 stop and 13 of 24 and 23
+# of 23 graded run on.
+#
+# Exit status: 0 when every case passes, 1 when one fails, 3 when `jq`, `git`,
+# `timeout` or `python3` is missing.
 
 set -u
 
-for tool in jq git awk timeout; do
+for tool in jq git awk timeout python3; do
     command -v "$tool" >/dev/null 2>&1 || { echo "campaign-drive-fixtures: $tool is missing, so no case runs." >&2; exit 3; }
 done
 
@@ -1207,7 +1213,11 @@ scenario-6 held-out row_a P2 0 12
 scenario-6 held-out row_b P3 12 12
 scenario-6 held-out row_b P4 11 11
 EOF
-drive --saturate-at 24
+# The count phase B passes, as `additive-launch.env` declares it.
+TRY_SATURATE_AT=
+. "$here/additive-launch.env"
+check "saturation: additive-launch.env declares the 24 of HW-DR-0112" [ "$TRY_SATURATE_AT" = 24 ]
+drive --saturate-at "$TRY_SATURATE_AT"
 check "saturation: the driver finishes batch B and exits 0" code_is 0
 check "saturation: it writes b.done and done" sh -c "[ -f '$CASE/root/b.done' ] && [ -f '$CASE/root/done' ]"
 check "saturation: batch B runs once, from the derived spec <root>/b.spec" sh -c "[ \"\$(grep -c -- '--out $CASE/root/b ' '$CASE/calls.argv')\" = 1 ] && grep -q -- '--spec $CASE/root/b.spec ' '$CASE/calls.argv'"
@@ -1307,6 +1317,122 @@ saturation_case
 drive
 check "saturation off: batch B runs spec-b itself" grep -q -- "--spec $CASE/spec-b " "$CASE/calls.argv"
 check "saturation off: and nothing is graded" [ ! -f "$CASE/cells.calls" ]
+
+# ------------------------------------------------- 7b. the seam behind the stop
+#
+# `tools/probe/cell-passes.sh`, against a stub engine and a stub
+# `campaign.sh --assemble`, in a checkout that holds `declared.py` and a
+# declaration of one round. The pass counts are the grader's, as
+# `probe compare` states them, and never a recorder status.
+
+cells_case() {
+    CASE=$(mktemp -d "$fix/cells.XXXXXX")
+    export CASE
+    mkdir -p "$CASE/co/tools/probe" "$CASE/co/.headwater" "$CASE/batch"
+    cp "$here/declared.py" "$CASE/co/tools/probe/declared.py"
+    cp "$here/cell-passes.sh" "$CASE/co/tools/probe/cell-passes.sh"
+    printf 'sets:\n  held-out: [HW-PROBE-p1, HW-PROBE-p2, HW-PROBE-p3]\nrounds:\n  final:\n    set: held-out\n    rates: [0.9, 0.8]\n    tries: 1\n' \
+        > "$CASE/co/.headwater/probe.yml"
+    printf 'HW-PROBE-p1 row_a\nHW-PROBE-p2 row_b\nHW-PROBE-p3 row_b\n' > "$CASE/plan"
+    printf '1 additive scenario-1 final HW-PROBE-p3\n2 campaign present sufficiency\n' > "$CASE/batch/lines"
+    : > "$CASE/engine.calls"
+}
+cat > "$fix/engine-stub.sh" <<'EOF'
+#!/bin/sh
+echo "engine $*" >> "$CASE/engine.calls"
+[ "$1" = probe ] || exit 1
+case $2 in
+    plan)
+        if [ -f "$CASE/plan-refuses" ]; then
+            echo "This run is refused: the set names a probe the corpus does not declare."
+            exit 0
+        fi
+        gone=$(printf '%s\n' "$*" | tr ' ' '\n' | awk 'x { print; x = 0 } $0 == "--exclude" { x = 1 }' | tr '\n' ' ')
+        printf 'A additive probe run.\n\n## The selection\n\n'
+        awk -v gone="$gone" '
+            BEGIN { n = split(gone, o, " "); for (i = 1; i <= n; i++) out[o[i]] = 1 }
+            !($1 in out) { printf "- %s (docs/probes/x.md)\n    category: sufficiency\n    action: %s\n", $1, $2 }
+        ' "$CASE/plan"
+        printf '\n## The read set\n\n- docs/probes/x.md (probe) sha256:0\n'
+        ;;
+    compare)
+        shift 2
+        while [ "$1" = --root ]; do shift 2; done
+        cp "$1" "$CASE/transcript.seen"
+        cat "$CASE/compare"
+        ;;
+esac
+EOF
+chmod +x "$fix/engine-stub.sh"
+cat > "$fix/assemble-stub.sh" <<'EOF'
+echo "campaign $*" >> "$CASE/campaign.calls"
+out=$2
+mkdir -p "$out/assembled"
+printf 'model: fixture\ntier: additive\narm: scenario-1\n' > "$out/assembled/L1-additive-scenario-1-final.identity.yaml"
+printf -- '- probe: HW-PROBE-p1\n  session: s1\n' > "$out/assembled/L1-additive-scenario-1-final.events.yaml"
+exit "$(cat "$CASE/assemble-exit" 2>/dev/null || echo 0)"
+EOF
+cells() {
+    (
+        cd "$CASE/co" || exit 99
+        HEADWATER_CELLS_ENGINE=$fix/engine-stub.sh HEADWATER_CELLS_CAMPAIGN=$fix/assemble-stub.sh \
+            timeout 60 sh tools/probe/cell-passes.sh "$@"
+    ) > "$CASE/out" 2> "$CASE/err"
+    echo $? > "$CASE/code"
+}
+
+cells_case
+printf 'HW-PROBE-p1: 12/12 against 12/12, +0.0 points [-24.2, +24.2]\nHW-PROBE-p2: no difference: the treated transcript graded no session\npooled: 12/12 against 12/12, +0.0 points [-24.2, +24.2]\n' > "$CASE/compare"
+cells counts "$CASE/batch"
+check "cells: counts exits 0" code_is 0
+check "cells: each probe the line selects gets the grader's satisfied over graded (saw: $(tr '\n' '|' < "$CASE/out"))" \
+    sh -c "[ \"\$(cat '$CASE/out')\" = \"\$(printf 'scenario-1 held-out row_a HW-PROBE-p1 12 12\nscenario-1 held-out row_b HW-PROBE-p2 0 0')\" ]"
+check "cells: a probe the line excludes is not counted" sh -c "! grep -q p3 '$CASE/out'"
+check "cells: the plan is asked with the line's exclude" grep -q -- '--set held-out --exclude HW-PROBE-p3' "$CASE/engine.calls"
+check "cells: a line of another tier is neither graded nor planned" sh -c "[ \"\$(grep -c 'probe compare' '$CASE/engine.calls')\" = 1 ] && ! grep -q 'arm present' '$CASE/engine.calls'"
+check "cells: the batch is assembled once, by campaign.sh --assemble" grep -qx "campaign --out $CASE/batch --assemble" "$CASE/campaign.calls"
+check "cells: the grade reads a transcript of the identity and events blocks" \
+    sh -c "grep -q '^## Run identity\$' '$CASE/transcript.seen' && grep -q '^## Events\$' '$CASE/transcript.seen' && grep -q '^arm: scenario-1\$' '$CASE/transcript.seen' && grep -q '^- probe: HW-PROBE-p1\$' '$CASE/transcript.seen'"
+check "cells: the transcript is written in the batch, outside the checkout" [ -f "$CASE/batch/assembled/L1-additive-scenario-1-final.transcript.md" ]
+# A session the grader refused is in no denominator, and an oracle's
+# failure is the grader's not satisfied: the counts are the engine's own.
+cells_case
+printf 'HW-PROBE-p1: 0/11 against 0/11, +0.0 points [-25.9, +25.9]\nHW-PROBE-p2: 7/12 against 7/12, +0.0 points [-37.0, +37.0]\npooled: 7/23 against 7/23, +0.0 points [-25.0, +25.0]\n' > "$CASE/compare"
+cells counts "$CASE/batch"
+check "cells: the counts are compare's, a refused session out of the denominator (saw: $(tr '\n' '|' < "$CASE/out"))" \
+    sh -c "[ \"\$(cat '$CASE/out')\" = \"\$(printf 'scenario-1 held-out row_a HW-PROBE-p1 0 11\nscenario-1 held-out row_b HW-PROBE-p2 7 12')\" ]"
+# A transcript the intake refuses is not a count of zero.
+cells_case
+printf 'The treated transcript reached no grader, so nothing was compared: no Run identity block\n' > "$CASE/compare"
+cells counts "$CASE/batch"
+check "cells: a refused transcript exits 4" code_is 4
+check "cells: and prints no count" [ ! -s "$CASE/out" ]
+# An assembly that fails is not graded.
+cells_case
+echo 7 > "$CASE/assemble-exit"
+: > "$CASE/compare"
+cells counts "$CASE/batch"
+check "cells: an assembly that exits 7 exits 4" code_is 4
+check "cells: and grades nothing" sh -c "! grep -q 'probe compare' '$CASE/engine.calls'"
+# probes: the selection of one spec line, with its action.
+cells_case
+cells probes additive scenario-6 final HW-PROBE-p2
+check "cells: probes prints each probe the line selects with its action (saw: $(tr '\n' '|' < "$CASE/out"))" \
+    sh -c "[ \"\$(cat '$CASE/out')\" = \"\$(printf 'scenario-6 held-out HW-PROBE-p1 row_a\nscenario-6 held-out HW-PROBE-p3 row_b')\" ]"
+check "cells: probes asks the plan for the round's set in the line's arm" grep -q -- 'probe plan --root .* --tier additive --arm scenario-6 --set held-out --exclude HW-PROBE-p2' "$CASE/engine.calls"
+cells_case
+cells probes campaign present sufficiency
+check "cells: probes prints nothing for a line of another tier" sh -c "[ \"\$(cat '$CASE/code')\" = 0 ] && [ ! -s '$CASE/out' ] && [ ! -s '$CASE/engine.calls' ]"
+cells_case
+: > "$CASE/plan-refuses"
+cells probes additive scenario-1 final
+check "cells: a plan that selects nothing exits 4" code_is 4
+cells_case
+cells probes additive scenario-1 screening
+check "cells: a round the declaration does not hold exits 4" code_is 4
+cells_case
+(cd "$CASE/co" && HEADWATER_CELLS_ENGINE=$CASE/none sh tools/probe/cell-passes.sh probes additive scenario-1 final) > /dev/null 2>&1
+check "cells: no engine exits 3" [ $? = 3 ]
 
 # ------------------------------------------------- 8. no paid session
 

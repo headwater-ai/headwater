@@ -738,8 +738,9 @@ jobs:
         # `campaign.sh`, a stub clock and fake `claude` versions, so no case
         # spends or waits, and hold the shared cap, the one re-try after a
         # refusal, the halt backoff, the token wait, the pinned harness, the
-        # pin, the canary gate and the parallel ramp. It needs `sh`, `git`
-        # and `jq`.
+        # pin, the canary gate, the parallel ramp, and the saturation stop of
+        # phase B (#1875) with `tools/probe/cell-passes.sh` behind a stub
+        # engine. It needs `sh`, `git`, `jq` and `python3`.
         run: sh tools/probe/campaign-drive-fixtures.sh
       - name: A try of the tuning round launches only inside the round's approval and on a base that is not stale
         # `tools/probe/try.sh` starts a try of the additive campaign's tuning
