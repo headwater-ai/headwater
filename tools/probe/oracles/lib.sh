@@ -95,18 +95,6 @@ case ${1:-} in
         ;;
 esac
 
-# Whether a file holds <name> as a whole name: not preceded by a letter, a
-# digit, `_`, `-` or `.`, and not followed by one of them, except a period
-# that ends a sentence, which no letter, digit, `_` or `-` follows. So
-# `HW-DR-0112` is not found in `HW-DR-01120`, `HW-DR-0112.md` or
-# `HW-DR-0112.5`, and `0112-x.md` is not found in `draft-0112-x.md`.
-#
-#     hw_oracle_names_whole <name> <file>
-hw_oracle_names_whole() {
-    hw_whole_pattern=$(printf '%s\n' "$1" | sed 's/[][\.*^$+?(){}|/]/\\&/g')
-    grep -E -q -- "(^|[^A-Za-z0-9_.-])$hw_whole_pattern([^A-Za-z0-9_.-]|\\.[^A-Za-z0-9_-]|\\.\$|\$)" "$2"
-}
-
 # The engine's parse of one document, which the scripts read in place of
 # lines of its file, so a comment, a quoted value, a body line or an edge
 # under another key is not the structure they ask for (#1874.3).
@@ -140,6 +128,20 @@ hw_oracle_edge() {
     hw_edge_json=$1 hw_edge_relation=$2
     shift 2
     jq -e --arg relation "$hw_edge_relation" '[.related[]? | select(.inbound == false and .relation == $relation) | .targets[]?] as $declared | any($ARGS.positional[]; . as $target | any($declared[]; . == $target))' "$hw_edge_json" --args "$@" > /dev/null 2>&1
+}
+
+# Whether the explained document <json> declares an edge of any relation to
+# one of the <target>s: hw_oracle_edge with the relation left open. A target
+# matches only when it equals an entry of `targets`, so `HW-DR-0112` does
+# not match `HW-DR-01120`, `HW-DR-0112.` or `draft-0112-x.md`. `typed-at.sh`
+# and `reciprocal-link.sh` ask for a link and not for one relation, and an
+# entry with `inbound` true is an edge that the other document declares.
+#
+#     hw_oracle_cites <json> <target>...
+hw_oracle_cites() {
+    hw_cites_json=$1
+    shift
+    jq -e '[.related[]? | select(.inbound == false) | .targets[]?] as $declared | any($ARGS.positional[]; . as $target | any($declared[]; . == $target))' "$hw_cites_json" --args "$@" > /dev/null 2>&1
 }
 
 #
@@ -181,26 +183,7 @@ hw_oracle_pass_clean() {
     hw_oracle_pass "$*"
 }
 
-# The path of a document, from its identifier or its path, as the first line
-# `headwater explain` prints. Empty when the engine refuses it.
-hw_oracle_path_of() {
-    hw_oracle_engine
-    "$hw_engine" explain --root . "$1" 2> /dev/null | sed -n '1p'
-}
-
 # The front matter of a file: the lines between the first two `---` lines.
 hw_oracle_front_matter() {
     awk 'NR == 1 && $0 != "---" { exit } NR > 1 && $0 == "---" { exit } NR > 1 { print }' "$1"
-}
-
-# The `relations:` block of the front matter of a file, the key line
-# included. A summary or a title that mentions a document is not a link, so
-# the scripts that ask for a link read this block alone.
-hw_oracle_relations() {
-    hw_oracle_front_matter "$1" | awk '/^[^ #]/ { inside = ($0 ~ /^relations:/) } inside { print }'
-}
-
-# The identifier a file declares, from the `id:` line of its front matter.
-hw_oracle_id_of() {
-    hw_oracle_front_matter "$1" | sed -n 's/^id: *"\{0,1\}\([^" ]*\)"\{0,1\} *$/\1/p' | sed -n '1p'
 }
