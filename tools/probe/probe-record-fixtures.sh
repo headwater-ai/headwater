@@ -3226,9 +3226,15 @@ printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_c
 printf '%s' '{"type":"assistant","message":{"id":"m2","content":[{"type":"tool_'
 STUB
         chmod +x "$scratch/bin/claude"
+        # A token record left by an earlier attempt of the job, which a log
+        # that does not parse must not keep (#1875).
+        mkdir -p "$leak/sessions/L1-campaign-present-p1-r2"
+        printf 'cache_read_tokens: 5\ncache_write_tokens: 5\ninput_tokens: 5\n' > "$leak/sessions/L1-campaign-present-p1-r2/tokens"
         PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$leak" \
             --job "L1-campaign-present-p1-r2 1 campaign present sufficiency HW-PROBE-$tombstone" \
             >/dev/null 2>"$scratch/leak-b.err"
+        same "a job run again drops the token record of its earlier attempt when its log does not parse" "absent" \
+            "$([ -e "$leak/sessions/L1-campaign-present-p1-r2/tokens" ] && echo present || echo absent)"
         # The transform refuses a stream that does not parse, so the session
         # spent and did not record. Nobody counted what it named.
         same "a session whose stream does not parse does not record" "4" \
@@ -3291,6 +3297,11 @@ STUB
         # A session recorded before #1875 has no token record, so it is named
         # and adds nothing to either sum.
         rm -f "$leak/sessions/L1-campaign-present-p1-r5/tokens"
+        # A session that did not record is no recorded session, whatever
+        # token record it holds.
+        mkdir -p "$leak/sessions/L1-campaign-present-p1-r6"
+        printf '4\n' > "$leak/sessions/L1-campaign-present-p1-r6/status"
+        printf 'cache_read_tokens: 1000\ncache_write_tokens: 0\ninput_tokens: 0\n' > "$leak/sessions/L1-campaign-present-p1-r6/tokens"
         printf 'cache_read_tokens: 0\ncache_write_tokens: 100\ninput_tokens: 0\n' > "$leak/sessions/L1-campaign-present-p1-r4/tokens"
         same "the cached share sums the reads over the input of each recorded session, and names one with no token record" \
             "cached share: 120 of 300 input tokens read from the cache over 3 recorded sessions, 40.0%, 1 recorded sessions without a token record" \

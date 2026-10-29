@@ -1737,7 +1737,8 @@ check "usage: hooks still counts a pointer in the hook_additional_context of an 
 # Each of the four hooks, per hook and per session (#1875). Intent keeps the
 # pointer-opened rule. Read, write and review count a hook_success with text:
 # `PreToolUse:Read`, `PreToolUse:Write`, `PostToolUse:Edit` and `Stop`. A hook
-# that printed nothing, such as `touch.sh` on the write matcher, is no use,
+# that printed nothing, or only white space, such as `touch.sh` on the write
+# matcher, is no use,
 # and neither is a hook the layer does not ship (`PreToolUse:Grep`).
 out_line() { grep -qxF -- "$1" "$CASE/out"; }
 out_first() { [ "$(head -1 "$CASE/out")" = "$1" ]; }
@@ -1753,7 +1754,7 @@ hook_line Stop 'headwater check found 1 error.' >> "$log"
 usage_session "$b" s2 "$(tool_line Read '{"file_path":"docs/spec/02-y.md"}')" "$(hook_line PostToolUse:Edit 'The edit left a stale fold.')"
 hook_line PreToolUse:Grep 'not a hook the layer ships' >> "$b/config/s2/projects/x/log.jsonl"
 usage_session "$b" s3 "$(tool_line Read '{"file_path":"docs/spec/02-y.md"}')" "$(hook_line PreToolUse:Write '')"
-hook_line Stop '' >> "$b/config/s3/projects/x/log.jsonl"
+hook_line Stop '\n ' >> "$b/config/s3/projects/x/log.jsonl"
 usage_of hooks
 check "usage: hooks keeps the first line on the intent rule, which try.sh rank reads" out_first "used 1 sessions 3"
 check "usage: hooks counts the intent hook by the pointer it opened" out_line "hook intent used 1 sessions 3"
