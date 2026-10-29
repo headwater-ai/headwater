@@ -129,8 +129,20 @@ tree=$(fresh typed-suffix) && sed -i 's/HW-PD-0026/HW-PD-0026.md/g' "$tree/$new"
 expect 1 "typed-at fails a citation that the ruling is followed by a file extension in" "$tree" typed-at.sh docs/decisions decision HW-PD-0026 "$title"
 tree=$(fresh typed-dotted) && sed -i 's/HW-PD-0026/HW-PD-0026.5/g' "$tree/$new"
 expect 1 "typed-at fails a citation that the ruling is followed by a period and a digit in" "$tree" typed-at.sh docs/decisions decision HW-PD-0026 "$title"
-tree=$(fresh typed-period) && sed -i 's/HW-PD-0026/HW-PD-0026. /g' "$tree/$new"
-expect 0 "typed-at passes a citation that ends a sentence" "$tree" typed-at.sh docs/decisions decision HW-PD-0026 "$title"
+# Condition 3 is a relation as `headwater explain --json` reads it, and not
+# a name in the bytes of the file (#1874.3b). So a citation in the body, or a
+# relation line in a comment, cites nothing, and the relation alone does.
+tree=$(fresh typed-relation-only) && sed -i 's/HW-PD-0026\](/HW-PD-9999](/g; s/0026-we-pivot/9999-we-pivot/g' "$tree/$new"
+grep -q '^    - HW-PD-0026$' "$tree/$new" && ! grep -q 'HW-PD-0026\]' "$tree/$new" || echo "oracle-fixtures: the body links of $new were not rewritten, so the next case reads nothing." >&2
+expect 0 "typed-at passes a ruling that a relation cites and the body does not" "$tree" typed-at.sh docs/decisions decision HW-PD-0026 "$title"
+tree=$(fresh typed-body-only) && sed -i '/^  traces_to:/,/^---$/s/^    - HW-PD-0026$/    - HW-PD-9999/' "$tree/$new"
+grep -q '^    - HW-PD-9999$' "$tree/$new" && grep -q 'HW-PD-0026\]' "$tree/$new" || echo "oracle-fixtures: the traces_to line of $new was not rewritten, so the next case reads nothing." >&2
+expect 1 "typed-at fails a ruling that only the body cites" "$tree" typed-at.sh docs/decisions decision HW-PD-0026 "$title"
+tree=$(fresh typed-commented) && sed -i 's/HW-PD-0026/HW-PD-9999/g; s/0026-we-pivot/9999-we-pivot/g' "$tree/$new" && sed -i '/^  traces_to:/,/^---$/s/^    - HW-PD-9999$/    # - HW-PD-0026\n&/' "$tree/$new"
+grep -q '^    # - HW-PD-0026$' "$tree/$new" || echo "oracle-fixtures: the commented relation of $new was not written, so the next case reads nothing." >&2
+expect 1 "typed-at fails a ruling that only a commented relation line cites" "$tree" typed-at.sh docs/decisions decision HW-PD-0026 "$title"
+tree=$(fresh typed-period) && sed -i '/^  traces_to:/,/^---$/s/^    - HW-PD-0026$/    - HW-PD-0026./' "$tree/$new"
+expect 1 "typed-at fails a relation to the ruling with a period after it, which is another target" "$tree" typed-at.sh docs/decisions decision HW-PD-0026 "$title"
 
 # --- --args <file>, read by lib.sh for every script --------------------------
 
@@ -161,6 +173,23 @@ expect 1 "reciprocal-link fails a document the engine does not read" "$base" rec
 tree=$(fresh link-prefix) && sed -i "/^  superseded_by:/,/^  [a-z]/s#^    - HW-DR-0112\$#    - draft-${new##*/}#" "$tree/$old"
 grep -q "^    - draft-${new##*/}\$" "$tree/$old" || echo "oracle-fixtures: the superseded_by line of $old was not rewritten, so the next case reads nothing." >&2
 expect 1 "reciprocal-link fails a file name that the other document's name is a suffix of" "$tree" reciprocal-link.sh HW-DR-0112 HW-DR-0111
+# Each end is an edge as `headwater explain --json` reads it, and not a line
+# of the `relations:` block (#1874.3b). So a commented relation line links
+# nothing.
+tree=$(fresh link-commented) && sed -i '/^  superseded_by:/,/^  [a-z]/s/^    - HW-DR-0112$/    # - HW-DR-0112/' "$tree/$old"
+grep -q '^    # - HW-DR-0112$' "$tree/$old" || echo "oracle-fixtures: the superseded_by line of $old was not commented, so the next case reads nothing." >&2
+expect 1 "reciprocal-link fails an end whose relation line is a comment" "$tree" reciprocal-link.sh HW-DR-0112 HW-DR-0111
+# `targets` holds an edge as written. The engine resolves no path written
+# under `superseded_by`, so that edge is a strict error (measured on
+# 8196bd18): the script reads the path as a name of the other end, and
+# `--check-clean` fails the tree.
+tree=$(fresh link-path) && sed -i "/^  superseded_by:/,/^  [a-z]/s#^    - HW-DR-0112\$#    - $new#" "$tree/$old"
+grep -q "^    - $new\$" "$tree/$old" || echo "oracle-fixtures: the superseded_by line of $old was not rewritten, so the next case reads nothing." >&2
+expect 0 "reciprocal-link reads an edge written as the other end's path from the root" "$tree" reciprocal-link.sh HW-DR-0112 HW-DR-0111
+expect 1 "reciprocal-link with --check-clean fails that edge, which the engine does not resolve" "$tree" reciprocal-link.sh --check-clean HW-DR-0112 HW-DR-0111
+tree=$(fresh link-file-name) && sed -i "/^  superseded_by:/,/^  [a-z]/s#^    - HW-DR-0112\$#    - ${new##*/}#" "$tree/$old"
+grep -q "^    - ${new##*/}\$" "$tree/$old" || echo "oracle-fixtures: the superseded_by line of $old was not rewritten, so the next case reads nothing." >&2
+expect 1 "reciprocal-link fails an edge written as the other end's file name alone" "$tree" reciprocal-link.sh HW-DR-0112 HW-DR-0111
 expect 1 "reciprocal-link with --check-clean fails an error in one of its documents" "$elsewhere" reciprocal-link.sh --check-clean HW-DR-0112 HW-DR-0111
 tree=$(fresh link-error-elsewhere) && spoil "$tree" docs/spec/12-check-layer.md
 expect 0 "reciprocal-link with --check-clean passes an error in a document it does not name" "$tree" reciprocal-link.sh --check-clean HW-DR-0112 HW-DR-0111
