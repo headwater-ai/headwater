@@ -1630,7 +1630,7 @@ check "split: naming the tuning ceiling" err_has "above the tuning ceiling of 50
 # base and three first bests are 4 x 7250 = 29000 cents, above 22000.
 four_case() {
     new_case
-    rank_decl '{layer: hooks, scenario: 3, try: 1, cap_cents: 8000, plan: "https://example.org/accepted", change: none}' 78000 22000
+    rank_decl '{layer: hooks, scenario: 3, try: 1, cap_cents: 8000, plan: "https://example.org/accepted", change: none, moment: intent}' 78000 22000
     sed -i 's/session_cost_cents: 1}/session_cost_cents: 50}/' "$CASE/probe.yml"
     round_event skills 1 false
     round_event skills 2 false
@@ -1729,7 +1729,7 @@ grep '^draw: ' "$CASE/out" > "$CASE/draw-v1"
 run plan "$CASE/root" screen 2
 grep '^draw: ' "$CASE/out" > "$CASE/draw-v2"
 check "draw: the second variant of the round plans the same 22 sessions" out_has "stage: screen 2, 22 sessions"
-check "draw: decisive: on the same draw, byte for byte" cmp -s "$CASE/draw-v1" "$CASE/draw-v2"
+check "draw: decisive: on the same draw of 22 lines, byte for byte" sh -c "[ \"\$(wc -l < '$CASE/draw-v1')\" = 22 ] && cmp -s '$CASE/draw-v1' '$CASE/draw-v2'"
 check "draw: and the plan stores no draw under the round root" [ ! -e "$CASE/root/docs-r2-v1" ]
 run plan "$CASE/root" best
 check "draw: a best so far draws nothing, because its phrasings are spread" sh -c "! grep -q '^draw: ' '$CASE/out'"

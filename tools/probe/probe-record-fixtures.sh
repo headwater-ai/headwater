@@ -6052,8 +6052,8 @@ same "declared.py open prints a hooks layer's moment as a seventh word" \
     "$? $(cat "$scratch/open-hooks4.out")"
 for open_case in \
     "a hooks layer with no moment|open-hooks4|/^      moment: read$/d|does not declare \`moment\`" \
-    "a moment outside the four|open-hooks4|s/^      moment: read$/      moment: start/|\`moment\` of \`rounds.tuning.open\` is 'start'" \
-    "a moment that is not a word|open-hooks4|s/^      moment: read$/      moment: [read]/|\`moment\` of \`rounds.tuning.open\` is ['read']" \
+    "a moment outside the four|open-hooks4|s/^      moment: read$/      moment: start/|\`moment\` of \`rounds.tuning.open\` in .headwater/probe.yml is 'start'" \
+    "a moment that is not a word|open-hooks4|s/^      moment: read$/      moment: [read]/|\`moment\` of \`rounds.tuning.open\` in .headwater/probe.yml is ['read']" \
     "a moment on the docs layer|open-docs1|s/^      change: none$/      change: none\n      moment: read/|only the hooks layer declares one"
 do
     open_name=${open_case%%|*}; open_rest=${open_case#*|}
