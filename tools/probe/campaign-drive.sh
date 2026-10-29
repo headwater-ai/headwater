@@ -31,7 +31,7 @@
 #
 # ## Before every invocation
 #
-# It checks four things at the start and again before each invocation of
+# It checks five things at the start and again before each invocation of
 # `campaign.sh`, and invokes nothing when one fails:
 #
 # - **The stop file.** When `<root>/stop` exists it logs `stop` and exits 10.
@@ -64,6 +64,34 @@
 #   has to run `claude` on the host, such as a session a person keeps
 #   alive, because the driver never starts a session of its own. Without
 #   that, the driver waits at this check and spends nothing.
+# - **The usage gate** (#1876). It reads the freshest figure of the 7-day
+#   window of the subscription from two sources, and takes the newer:
+#   the snapshot of `$HEADWATER_USAGE_DIR` (default
+#   `~/.cache/claude-usage/sessions`) with the highest `last_activity`, read
+#   at `.seven_day.used_percentage` and `.seven_day.resets_at`; and the last
+#   `rate_limit_event` of the newest `<root>/*/sessions/*/raw.jsonl` that
+#   holds one, dated by the file's mtime, read at
+#   `.rate_limit_info.unifiedWindows.seven_day`, or at `.rate_limit_info`
+#   where its `rateLimitType` is `seven_day`, with `utilization` a fraction.
+#   A figure whose reset is past belongs to a closed window and is no
+#   figure. The threshold is `HEADWATER_DRIVE_USAGE_STOP` percent, and
+#   `HEADWATER_DRIVE_USAGE_LATE` percent when the reset is less than
+#   `HEADWATER_DRIVE_USAGE_LATE_HOURS` hours away. `tools/probe/try.sh` sets
+#   all three from `additive-launch.env`, and the driver holds no default:
+#   with any of them unset it logs `usage gate off` once and gates nothing.
+#   At or above the threshold, it writes `<root>/usage-gated`, logs one
+#   line `usage-gated: 7-day at <p>% (from <source>), threshold <t>%,
+#   resets <time>`, and exits 13. Below it, it removes `<root>/usage-gated`.
+#   With no figure it logs `usage unknown`, at most every 10 minutes, and
+#   goes on: the harness's own limit still stops a session at 100 percent.
+#   The gate acts per session, not only per invocation, because one
+#   invocation can run a whole confirm of 145 sessions. So while
+#   `campaign.sh` runs, the driver reads the gate again every 60 s
+#   (`HEADWATER_DRIVE_POLL`, default the sleep command). When it trips, the
+#   driver writes `<dir>/slice/halt`, which `campaign.sh` reads before it
+#   starts each job, lets the jobs in flight finish and record, and exits 13
+#   with no halt backoff. `tools/probe/campaign.sh` is not changed, because
+#   it is a base invalidator of `.headwater/probe.yml`.
 #
 # ## The phases
 #
@@ -196,6 +224,8 @@
 #   10  `<root>/stop` exists
 #   11  the canary failed: `canary-failed` holds the reason
 #   12  12 halts in a row recorded nothing, and the 13th stopped the driver
+#   13  the usage gate tripped: `usage-gated` holds the figure, and
+#       `tools/probe/try.sh relaunch` goes on below the threshold
 
 set -u
 
@@ -276,6 +306,18 @@ versions=${HEADWATER_DRIVE_CLAUDE_VERSIONS:-$HOME/.local/share/claude/versions}
 credentials=${HEADWATER_PROBE_HOST_CONFIG:-$HOME/.claude}/.credentials.json
 now_cmd=${HEADWATER_DRIVE_NOW:-date +%s}
 sleep_cmd=${HEADWATER_DRIVE_SLEEP:-sleep}
+poll_cmd=${HEADWATER_DRIVE_POLL:-$sleep_cmd}
+usage_dir=${HEADWATER_USAGE_DIR:-$HOME/.cache/claude-usage/sessions}
+usage_stop=${HEADWATER_DRIVE_USAGE_STOP:-}
+usage_late=${HEADWATER_DRIVE_USAGE_LATE:-}
+usage_hours=${HEADWATER_DRIVE_USAGE_LATE_HOURS:-}
+usage_on=
+if [ -n "$usage_stop" ] && [ -n "$usage_late" ] && [ -n "$usage_hours" ]; then
+    for value in "$usage_stop" "$usage_late" "$usage_hours"; do
+        positive "$value" || { echo "campaign-drive: a usage threshold is not a whole number: $usage_stop $usage_late $usage_hours." >&2; exit 2; }
+    done
+    usage_on=1
+fi
 mkdir -p "$root" || exit 2
 root=$(cd "$root" && pwd)
 
@@ -420,6 +462,96 @@ token_wait() {
     done
 }
 
+# usage_figure: print `<percent> <resets_at> <source>` for the freshest
+# figure of the 7-day window that is not past its reset, or nothing. The
+# header says where it reads.
+usage_figure() {
+    uf_t=$(now)
+    uf_at=-1
+    uf_out=
+    for uf_file in "$usage_dir"/*.json; do
+        [ -f "$uf_file" ] || continue
+        uf_row=$(jq -r '.last_activity as $a | .seven_day | select(type == "object")
+            | select((.used_percentage | type) == "number" and .resets_at != null and ($a | type) == "number")
+            | "\($a | floor) \(.used_percentage) \(.resets_at | tonumber | floor)"' "$uf_file" 2>/dev/null) || continue
+        set -- $uf_row
+        [ $# = 3 ] || continue
+        [ "$3" -gt "$uf_t" ] 2>/dev/null || continue
+        [ "$1" -gt "$uf_at" ] 2>/dev/null || continue
+        uf_at=$1
+        uf_out="$2 $3 $uf_file"
+    done
+    # The transcripts, newest first. A transcript that holds no 7-day figure
+    # yet, such as a session that has just started, gives way to the next.
+    uf_list=$(find "$root" -mindepth 4 -maxdepth 4 -type f -path "$root/*/sessions/*/raw.jsonl" -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -n 10)
+    while read -r uf_mtime uf_file; do
+        [ -n "$uf_file" ] || continue
+        uf_mtime=${uf_mtime%.*}
+        uf_row=$(grep -F rate_limit_event "$uf_file" 2>/dev/null | jq -R -r 'fromjson? | objects
+            | select(.type == "rate_limit_event") | .rate_limit_info | objects
+            | if (.unifiedWindows.seven_day | type) == "object" then .unifiedWindows.seven_day
+              elif .rateLimitType == "seven_day" then . else empty end
+            | select((.utilization | type) == "number" and .resetsAt != null)
+            | "\(.utilization * 100) \(.resetsAt | tonumber | floor)"' 2>/dev/null | tail -n 1)
+        set -- $uf_row
+        [ $# = 2 ] || continue
+        [ "$2" -gt "$uf_t" ] 2>/dev/null || continue
+        [ "$uf_mtime" -gt "$uf_at" ] && uf_out="$1 $2 $uf_file"
+        break
+    done <<EOF
+$uf_list
+EOF
+    [ -n "$uf_out" ] && printf '%s\n' "$uf_out"
+}
+
+# usage_check: 0 when the gate lets the driver start a session, 1 when it
+# trips, with the line in `usage_line` and `<root>/usage-gated` written.
+usage_check() {
+    if [ -z "$usage_on" ]; then
+        [ -n "$usage_off_said" ] || { say "usage gate off"; usage_off_said=1; }
+        return 0
+    fi
+    uc_figure=$(usage_figure)
+    if [ -z "$uc_figure" ]; then
+        uc_t=$(now)
+        if [ -z "$usage_unknown_said" ] || [ $((uc_t - usage_unknown_said)) -ge 600 ]; then
+            say "usage unknown: no 7-day figure in $usage_dir or under $root/*/sessions; the gate lets the batch go on"
+            usage_unknown_said=$uc_t
+        fi
+        return 0
+    fi
+    uc_rest=${uc_figure#* }
+    uc_p=$(awk -v p="${uc_figure%% *}" 'BEGIN { s = sprintf("%.1f", p); sub(/\.0$/, "", s); print s }')
+    uc_resets=${uc_rest%% *}
+    uc_source=${uc_rest#* }
+    uc_threshold=$usage_stop
+    [ $((uc_resets - $(now))) -lt $((usage_hours * 3600)) ] && uc_threshold=$usage_late
+    # The figure as read decides, and the line shows it to one decimal.
+    awk -v p="${uc_figure%% *}" -v t="$uc_threshold" 'BEGIN { exit !(p + 0 >= t + 0) }' || return 0
+    usage_line="usage-gated: 7-day at $uc_p% (from $uc_source), threshold $uc_threshold%, resets $(date -u -d "@$uc_resets" +%Y-%m-%dT%H:%M:%SZ)"
+    {
+        echo "$(stamp) $usage_line"
+        echo "percent: $uc_p"
+        echo "resets-at: $uc_resets"
+        echo "threshold: $uc_threshold"
+        echo "source: $uc_source"
+    } > "$root/usage-gated"
+    return 1
+}
+usage_off_said=
+usage_unknown_said=
+
+# usage_gate: the check before an invocation. It exits 13 when the gate
+# trips, and otherwise clears a `usage-gated` an earlier run left.
+usage_gate() {
+    if usage_check; then
+        rm -f "$root/usage-gated"
+        return 0
+    fi
+    say "$usage_line"
+    exit 13
+}
+
 # hook <name> <cmd>: run `--on-canary` or `--on-done` once, and log its
 # status. An empty command runs nothing.
 hook() {
@@ -498,6 +630,7 @@ checks() {
     pin_check
     harness_check
     token_wait
+    usage_gate
 }
 
 write_capped() {
@@ -544,7 +677,26 @@ run_batch() {
         fi
         sh "$campaign" --out "$root/$dir" --model "$model" --spec "$spec" --seed "$seed" \
             --session-cents "$budget" --cap-cents "$given" --parallel "$p" --max-sessions "$sessions" \
-            ${reps:+--repetitions "$reps"} >&2
+            ${reps:+--repetitions "$reps"} >&2 &
+        campaign_pid=$!
+        # The usage gate while the invocation runs (#1876). A trip writes the
+        # halt of the slice, so campaign.sh starts no job after it, and the
+        # jobs in flight finish. The halt is written again at each step while
+        # campaign.sh runs, because an invocation that had not yet cleared
+        # its slice would remove the first one. A stop file here keeps its
+        # rule: it does not end an invocation.
+        gated=
+        while kill -0 "$campaign_pid" 2>/dev/null; do
+            if [ -z "$gated" ] && ! usage_check; then
+                gated=1
+                say "$usage_line; halting $dir, the sessions in flight finish"
+            fi
+            if [ -n "$gated" ] && [ -d "$root/$dir/slice" ] && [ ! -f "$root/$dir/slice/halt" ]; then
+                : > "$root/$dir/slice/halt"
+            fi
+            $poll_cmd 60
+        done
+        wait "$campaign_pid"
         code=$?
         set -- $(classify "$root/$dir")
         rec=$1 total=$2 failed=$4 halt=$5
@@ -576,6 +728,17 @@ run_batch() {
         if [ "$all" -gt "$cap" ]; then
             say "overspend: spent $all of $cap cents (a $(spent "$root/a"), b $(spent "$root/b"), $((all - $(spent "$root/a") - $(spent "$root/b"))) in earlier attempts)"
             exit 7
+        fi
+        # A gated invocation ends the driver, with no halt counted, no
+        # backoff and no change to the ramp. A batch that finished, a
+        # recorder that failed and a stop keep their own rows.
+        if [ -n "$gated" ]; then
+            case $action in
+                halt | bound | refused-only)
+                    say "$phase usage-gated: exit 13; relaunch once the 7-day figure is below the threshold"
+                    exit 13
+                    ;;
+            esac
         fi
         [ "$action" = refused-only ] || retried=0
         # The ramp, for the next slice of this batch alone. A halt lowers it
