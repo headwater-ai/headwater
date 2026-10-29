@@ -27,6 +27,10 @@
 # pass rate`: a variant that passes 22 of 25 and never calls the skill ranks
 # below one that passes 14 of 25 and calls it in 12, and is not confirmed.
 #
+# The decisive case of the fixed draw (#1875) is `the fixed draw`: two
+# variants of one round of 22 tuning probes at `screen: 22` each plan 22
+# sessions, and plan and launch the same draw of phrasings, byte for byte.
+#
 # Exit status: 0 when every case passes, 1 when one fails, 3 when a tool it
 # needs is missing.
 
@@ -109,6 +113,7 @@ cat > "$fix/driver-stub.sh" <<'EOF'
 } >> "$TRY_CALLS"
 echo "env versions=${HEADWATER_DRIVE_CLAUDE_VERSIONS:-} target=${CARGO_TARGET_DIR:-} tmp=${TMPDIR:-} pwd=$PWD stage=${HEADWATER_TUNING_STAGE:-}" >> "$TRY_CALLS"
 echo "usage stop=${HEADWATER_DRIVE_USAGE_STOP:-} late=${HEADWATER_DRIVE_USAGE_LATE:-} hours=${HEADWATER_DRIVE_USAGE_LATE_HOURS:-}" >> "$TRY_CALLS"
+echo "draw ${HEADWATER_CAMPAIGN_DRAW:-}" >> "$TRY_CALLS"
 if [ -f "$TRY_SLEEP" ]; then sleep 30; fi
 exit 0
 EOF
@@ -169,6 +174,15 @@ ${2%%=*}: ${2#*=}" ;;
         echo "wrote docs/probe-runs/$slug.md"
         ;;
     probe)
+        # The plan of a hook variant's selection (#1875): the probes of the
+        # case's moment, or of its action.
+        if [ "$2" = plan ]; then
+            case "$*" in
+                *--moment*) cat "$CASE/plan-moment" 2>/dev/null ;;
+                *--action*) cat "$CASE/plan-action" 2>/dev/null ;;
+            esac
+            exit 0
+        fi
         for control in "$@"; do :; done
         echo "HW-PROBE-a: 9/18 against 9/18, +0.0 points [-30.0, +30.0]"
         case $control in
@@ -191,7 +205,7 @@ print("used 0 sessions %d" % len(os.listdir(os.path.join(sys.argv[3], "sessions"
 EOF
 
 OPEN_DOCS='{layer: docs, scenario: 1, try: 2, cap_cents: 3000, plan: "https://example.org/accepted", change: none}'
-OPEN_HOOK='{layer: hooks, scenario: 2, try: 1, cap_cents: 3000, plan: "https://example.org/accepted", change: none}'
+OPEN_HOOK='{layer: hooks, scenario: 2, try: 1, cap_cents: 3000, plan: "https://example.org/accepted", change: none, moment: intent}'
 
 # decl <open> <approved_cents> [<ceiling_cents>] [<base_ceiling_cents>]: the
 # declaration of the case. A session costs one cent, so a round of 4 variants
@@ -1662,6 +1676,137 @@ cost "$CASE/root/docs-r1-best/a/sessions/s1" 856
 run plan "$CASE/root" confirm docs-r2-v1
 check "remeasure: and one cent above it exits 5" code_is 5
 check "remeasure: naming the base ceiling" err_has "above the base ceiling of 1000 cents"
+
+# ------------------- the fixed draw: one session per tuning probe (#1875)
+
+# The decisive case of #1875: a screen of 22 tuning probes at `screen: 22`
+# runs 22 sessions, one for each probe, on a draw of one phrasing for each
+# probe that is the same for every variant of the round. Variants ranked on
+# different task lists would rank the draw and not the change. The checkout
+# holds the 22 probe documents: one with three phrasings, one with two, and
+# twenty with none, which count as one phrasing.
+draw_repo=$fix/repo-draw
+git init -q "$draw_repo"
+mkdir -p "$draw_repo/docs/probes"
+draw_set=
+i=1
+while [ "$i" -le 22 ]; do
+    id=HW-PROBE-p$(printf '%02d' "$i")
+    draw_set="$draw_set${draw_set:+, }$id"
+    {
+        printf -- '---\nid: %s\n---\n\n# %s\n\n## Task\n\n' "$id" "$id"
+        case $i in
+            1) printf '### Phrasing 1\n\nOne of p01.\n\n### Phrasing 2\n\nTwo of p01.\n\n### Phrasing 3\n\nThree of p01.\n' ;;
+            2) printf '### Phrasing 1\n\nOne of p02.\n\n### Phrasing 2\n\nTwo of p02.\n' ;;
+            *) printf 'The task of %s.\n' "$id" ;;
+        esac
+        printf '\n## Target\n\nA link.\n'
+    } > "$draw_repo/docs/probes/p$i.md"
+    i=$((i + 1))
+done
+git -C "$draw_repo" add docs
+git -C "$draw_repo" -c user.name=fixture -c user.email=fixture@example.org commit -q -m probes
+git -C "$draw_repo" update-ref refs/remotes/origin/main HEAD
+git -C "$draw_repo" checkout -q --detach
+draw_decl() {
+    sed -i "s/^  tuning: \[.*\]$/  tuning: [$draw_set]/; s/^    screen: 24$/    screen: 22/" "$CASE/probe.yml"
+}
+saved_checkout=$checkout
+checkout=$draw_repo
+new_case
+draw_decl
+run plan "$CASE/root" screen 1
+check "draw: a screen of 22 tuning probes at screen: 22 plans" code_is 0
+check "draw: at 22 sessions, one for each tuning probe" out_has "stage: screen 1, 22 sessions, 22 cents at 1 a session, in docs-r2-v1"
+check "draw: and prints one draw line for each session" [ "$(grep -c '^draw: ' "$CASE/out")" = 22 ]
+check "draw: in the order of the set" sh -c "grep '^draw: ' '$CASE/out' | awk '{ print \$2 }' | paste -sd, - | sed 's/,/, /g' | grep -qx '$draw_set'"
+check "draw: a probe with three phrasings draws one of the three" grep -Eqx 'draw: HW-PROBE-p01 [123]' "$CASE/out"
+check "draw: a probe with two phrasings draws one of the two" grep -Eqx 'draw: HW-PROBE-p02 [12]' "$CASE/out"
+check "draw: a probe with no phrasing draws 1, its whole task" grep -qx 'draw: HW-PROBE-p03 1' "$CASE/out"
+check "draw: the phrasing is phrasing.sh draw of the seed, the open layer, the round and the probe" \
+    grep -qx "draw: HW-PROBE-p01 $(sh "$here/phrasing.sh" draw 0 docs 2 HW-PROBE-p01 1 3)" "$CASE/out"
+grep '^draw: ' "$CASE/out" > "$CASE/draw-v1"
+run plan "$CASE/root" screen 2
+grep '^draw: ' "$CASE/out" > "$CASE/draw-v2"
+check "draw: the second variant of the round plans the same 22 sessions" out_has "stage: screen 2, 22 sessions"
+check "draw: decisive: on the same draw, byte for byte" cmp -s "$CASE/draw-v1" "$CASE/draw-v2"
+check "draw: and the plan stores no draw under the round root" [ ! -e "$CASE/root/docs-r2-v1" ]
+run plan "$CASE/root" best
+check "draw: a best so far draws nothing, because its phrasings are spread" sh -c "! grep -q '^draw: ' '$CASE/out'"
+run launch "$CASE/root" screen 1
+await_calls 1
+check "draw: launch writes the draw in the try root, as plan printed it" cmp -s "$CASE/draw-v1" "$CASE/root/docs-r2-v1/draw"
+check "draw: and the driver gets HEADWATER_CAMPAIGN_DRAW" grep -qx "draw $CASE/root/docs-r2-v1/draw" "$CASE/calls"
+echo 'another variant' >> "$CASE/tree-head/README.md"
+run launch "$CASE/root" screen 2
+await_calls 2
+check "draw: decisive: the second variant launches on the same draw file, byte for byte" cmp -s "$CASE/root/docs-r2-v1/draw" "$CASE/root/docs-r2-v2/draw"
+check "draw: and its driver gets its own" grep -qx "draw $CASE/root/docs-r2-v2/draw" "$CASE/calls"
+run relaunch "$CASE/root" docs-r2-v1
+await_calls 3
+check "draw: relaunch exports the draw again" [ "$(grep -c "^draw $CASE/root/docs-r2-v1/draw\$" "$CASE/calls")" = 2 ]
+# Another round draws on its own key, so the next round's draw is not this
+# one carried forward: round 3 of docs gives p01 the draw of its own key.
+new_case
+draw_decl
+sed -i 's/try: 2,/try: 3,/' "$CASE/probe.yml"
+run plan "$CASE/root" screen 1
+check "draw: round 3 draws phrasing.sh draw of round 3" \
+    grep -qx "draw: HW-PROBE-p01 $(sh "$here/phrasing.sh" draw 0 docs 3 HW-PROBE-p01 1 3)" "$CASE/out"
+checkout=$saved_checkout
+
+# ------------- a hook variant: its moment plus row 11 (#1875, HW-DR-0112)
+
+# A hook variant screens and confirms on the rows of its moment, plus row 11
+# (`ungoverned_control`). The plan of each is a call of its own, because the
+# two flags of one call intersect. The stub engine answers `--moment read`
+# with b and d, and `--action ungoverned_control` with e and b, so the union
+# in the order of the set is b, d and e.
+OPEN_HOOK_READ='{layer: hooks, scenario: 2, try: 1, cap_cents: 3000, plan: "https://example.org/accepted", change: none, moment: read}'
+hook_case() {
+    new_case
+    decl "$OPEN_HOOK_READ" 10000
+    sed -i 's/^    order: \[docs, hooks\]$/    order: [hooks, docs]/' "$CASE/probe.yml"
+    printf -- '- HW-PROBE-b (moments: read)\n- HW-PROBE-d (moments: read, write)\n' > "$CASE/plan-moment"
+    printf -- '- HW-PROBE-e (action: ungoverned_control)\n- HW-PROBE-b (action: ungoverned_control)\n' > "$CASE/plan-action"
+}
+hook_case
+run plan "$CASE/root" screen 1
+check "hook: a read variant plans" code_is 0
+check "hook: it selects the union of the moment and row 11, in the order of the set" \
+    sh -c "[ \"\$(grep '^selected: ' '$CASE/out' | tr '\n' ' ')\" = 'selected: HW-PROBE-b selected: HW-PROBE-d selected: HW-PROBE-e ' ]"
+check "hook: at the screen's repetitions, 5, over the 3 it selected" out_has "stage: screen 1, 15 sessions, 15 cents at 1 a session, in hooks-r1-v1"
+check "hook: and draws for the probes it selected alone" [ "$(grep -c '^draw: HW-PROBE-[bde] ' "$CASE/out") $(grep -c '^draw: ' "$CASE/out")" = "15 15" ]
+check "hook: it asks the plan for the moment in a call of its own" grep -q -- '--set tuning --moment read$' "$CASE/engine.log"
+check "hook: and for row 11 in another, as ungoverned_control" grep -q -- '--set tuning --action ungoverned_control$' "$CASE/engine.log"
+check "hook: never the two flags in one call, which intersect" sh -c "! grep -- '--moment' '$CASE/engine.log' | grep -q -- '--action'"
+run plan "$CASE/root" best
+check "hook: a best so far runs the selection at the confirmation's repetitions, 29 x 3" out_has "stage: best, 87 sessions"
+run launch "$CASE/root" screen 1
+await_calls 1
+check "hook: launch writes each probe outside the selection as an exclude on the spec" \
+    sh -c "[ \"\$(cat '$CASE/root/hooks-r1-v1/spec')\" = 'additive scenario-2 tuning HW-PROBE-a HW-PROBE-c' ]"
+hook_case
+: > "$CASE/plan-moment"
+run plan "$CASE/root" screen 1
+check "hook: a moment no probe carries is an empty part of the union, not an error" code_is 0
+check "hook: and the selection is row 11 alone" sh -c "[ \"\$(grep -c '^selected: ' '$CASE/out')\" = 2 ]"
+hook_case
+: > "$CASE/plan-moment"
+: > "$CASE/plan-action"
+run plan "$CASE/root" screen 1
+check "hook: a selection of no probe exits 6" code_is 6
+check "hook: and launches nothing" no_calls
+new_case
+decl "$OPEN_HOOK" 10000
+sed -i 's/^    order: \[docs, hooks\]$/    order: [hooks, docs]/' "$CASE/probe.yml"
+run plan "$CASE/root" screen 1
+check "hook: an intent variant selects every probe" sh -c "[ \"\$(grep -c '^selected: ' '$CASE/out')\" = 5 ]"
+check "hook: without asking the plan" sh -c "! grep -q -- '--moment' '$CASE/engine.log' 2>/dev/null"
+check "hook: at the screen's count" out_has "stage: screen 1, 25 sessions"
+new_case
+run plan "$CASE/root" screen 1
+check "docs: a layer that is not hooks prints no selection" sh -c "! grep -q '^selected: ' '$CASE/out'"
 
 # ----------------------------------------------- rounds: arguments (#1838)
 

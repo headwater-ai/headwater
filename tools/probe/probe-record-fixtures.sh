@@ -3167,6 +3167,43 @@ STUB
         present "and the record names it" "$batch/config/L1-campaign-present-p1-r1" \
             "$batch/sessions/L1-campaign-present-p1-r1/record.md"
 
+        # A job reads the task file of its own phrasing (#1875). In a copy of
+        # the batch, the probe's task has two phrasings, and the draw that
+        # `HEADWATER_CAMPAIGN_DRAW` names gives its session phrasing 2, so the
+        # prompt is the body of phrasing 2 alone. A draw that gives it a
+        # phrasing above its count exits 5 before the harness runs.
+        phr_batch=$scratch/batch-phrasing
+        rm -rf "$phr_batch"
+        cp -a "$batch" "$phr_batch"
+        printf 'The first phrasing of the task.\n' > "$phr_batch/tasks/HW-PROBE-$tombstone-1.md"
+        printf 'The second phrasing of the task.\n' > "$phr_batch/tasks/HW-PROBE-$tombstone-2.md"
+        printf '2\n' > "$phr_batch/tasks/HW-PROBE-$tombstone.phrasings"
+        printf 'draw: HW-PROBE-%s 2\n' "$tombstone" > "$phr_batch/draw"
+        rm -f "$args"
+        job="L1-campaign-present-p1-r1 1 campaign present sufficiency HW-PROBE-$tombstone"
+        rm -rf "$phr_batch/sessions/L1-campaign-present-p1-r1"
+        HEADWATER_CAMPAIGN_DRAW=$phr_batch/draw PATH="$scratch/bin:$PATH" \
+            sh "$root/tools/probe/campaign.sh" --out "$phr_batch" --job "$job" >/dev/null 2>"$scratch/batch-phrasing.err"
+        same "a job on a draw of phrasing 2 records" "0" \
+            "$(cat "$phr_batch/sessions/L1-campaign-present-p1-r1/status" 2>/dev/null)"
+        present "and the harness is asked the body of phrasing 2" "The second phrasing of the task." "$args"
+        absent "and no other phrasing" "The first phrasing of the task." "$args"
+        printf 'draw: HW-PROBE-%s 3\n' "$tombstone" > "$phr_batch/draw"
+        rm -f "$args"
+        rm -rf "$phr_batch/sessions/L1-campaign-present-p1-r1"
+        HEADWATER_CAMPAIGN_DRAW=$phr_batch/draw PATH="$scratch/bin:$PATH" \
+            sh "$root/tools/probe/campaign.sh" --out "$phr_batch" --job "$job" >/dev/null 2>"$scratch/batch-phrasing.err"
+        same "a draw of phrasing 3 for a task of 2 exits 5" "5" "$?"
+        same "and the harness is not asked" "no" "$([ -f "$args" ] && echo yes || echo no)"
+        present "and says why" "holds 2 phrasings" "$scratch/batch-phrasing.err"
+        # With no draw, repetition 2 of the job takes phrasing 2.
+        rm -f "$args"
+        job="L1-campaign-present-p1-r2 1 campaign present sufficiency HW-PROBE-$tombstone"
+        PATH="$scratch/bin:$PATH" \
+            sh "$root/tools/probe/campaign.sh" --out "$phr_batch" --job "$job" >/dev/null 2>"$scratch/batch-phrasing.err"
+        present "with no draw, repetition 2 of a probe of 2 phrasings is asked phrasing 2" "The second phrasing of the task." "$args"
+        rm -rf "$phr_batch"
+
         # The tier's ceiling reserves `--session-cents` too, not the declared
         # unit (#1659). The batch has spent 1 cent above and 50 in another
         # session of the tier, so with B = 60 a ceiling of 110 refuses the next
@@ -6002,6 +6039,86 @@ do
     same "declared.py open refuses $open_name, with 2 and its reason" "2 1 0" \
         "$? $(grep -cF -- "$open_needle" "$scratch/open-bad.err") $(wc -c < "$scratch/open-bad.out" | tr -d ' ')"
 done
+# A hooks layer names its hook moment as a seventh field, `moment`, one of
+# intent, read, write and review (#1875), and `open` prints it as a seventh
+# word. No other layer declares it, so the line of every other layer keeps
+# its six words. The rows are the hooks layer on scenario 4, which adds the
+# hooks over scenario 2.
+sed 's/^      layer: docs$/      layer: hooks/; s/^      scenario: 1$/      scenario: 4/; s/^      change: none$/      change: none\n      moment: read/' \
+    "$scratch/open-docs1.yml" > "$scratch/open-hooks4.yml"
+python3 "$declared_py" "$scratch/open-hooks4.yml" open > "$scratch/open-hooks4.out" 2> "$scratch/open-hooks4.err"
+same "declared.py open prints a hooks layer's moment as a seventh word" \
+    "0 hooks 4 1 6000 https://github.com/headwater-ai/headwater/issues/1777#issuecomment-6277195497 none read" \
+    "$? $(cat "$scratch/open-hooks4.out")"
+for open_case in \
+    "a hooks layer with no moment|open-hooks4|/^      moment: read$/d|does not declare \`moment\`" \
+    "a moment outside the four|open-hooks4|s/^      moment: read$/      moment: start/|\`moment\` of \`rounds.tuning.open\` is 'start'" \
+    "a moment that is not a word|open-hooks4|s/^      moment: read$/      moment: [read]/|\`moment\` of \`rounds.tuning.open\` is ['read']" \
+    "a moment on the docs layer|open-docs1|s/^      change: none$/      change: none\n      moment: read/|only the hooks layer declares one"
+do
+    open_name=${open_case%%|*}; open_rest=${open_case#*|}
+    open_from=${open_rest%%|*}; open_rest=${open_rest#*|}
+    open_sed=${open_rest%%|*}; open_needle=${open_rest#*|}
+    sed "$open_sed" "$scratch/$open_from.yml" > "$scratch/open-bad.yml"
+    python3 "$declared_py" "$scratch/open-bad.yml" open > "$scratch/open-bad.out" 2> "$scratch/open-bad.err"
+    same "declared.py open refuses $open_name, with 2 and its reason" "2 1 0" \
+        "$? $(grep -cF -- "$open_needle" "$scratch/open-bad.err") $(wc -c < "$scratch/open-bad.out" | tr -d ' ')"
+done
+
+# `tuning_set` prints the members of the tuning round's set, one a line, in
+# the order the set declares them, which `try.sh` draws and selects in.
+python3 "$declared_py" "$scratch/open-docs1.yml" tuning_set > "$scratch/tuning-set.out" 2> /dev/null
+same "declared.py tuning_set prints the tuning round's set, one member a line, in its order" \
+    "0 $(python3 -c 'import sys, yaml; d = yaml.safe_load(open(sys.argv[1])); print(" ".join(d["sets"][d["rounds"]["tuning"]["set"]]))' "$scratch/open-docs1.yml")" \
+    "$? $(tr '\n' ' ' < "$scratch/tuning-set.out" | sed 's/ $//')"
+
+# ---------------------------------------------------------------------------
+# `tools/probe/phrasing.sh` cuts a probe's task the one way the campaign and
+# the tuning round both read it (#1875, HW-DR-0112's form of a phrasing).
+# The prompt of a session is the body of the one phrasing it draws, without
+# the heading and without any other phrasing (spec 15).
+# ---------------------------------------------------------------------------
+phrasing=$root/tools/probe/phrasing.sh
+mkdir -p "$scratch/phr/docs/probes"
+printf -- '---\nid: HW-PROBE-phr3\n---\n\n# Three\n\n## Task\n\n### Phrasing 1\n\nFind the first.\n\n### Phrasing 2\n\nLocate the second,\nover two lines.\n\n#### A note\n\nInside phrasing 2.\n\n### Phrasing 3\n\nName the third.\n\n## Target\n\nA link.\n' \
+    > "$scratch/phr/docs/probes/phr3.md"
+printf -- '---\nid: HW-PROBE-phr0\n---\n\n# None\n\n## Task\n\n\nThe whole task.\n\n\n## Target\n\nA link.\n' \
+    > "$scratch/phr/docs/probes/phr0.md"
+same "phrasing.sh count: three phrasings under ## Task" "3" "$(sh "$phrasing" count "$scratch/phr" HW-PROBE-phr3)"
+same "phrasing.sh count: a task with none is 0" "0" "$(sh "$phrasing" count "$scratch/phr" HW-PROBE-phr0)"
+same "phrasing.sh count: a probe that no document declares is 0" "0" "$(sh "$phrasing" count "$scratch/phr" HW-PROBE-nobody)"
+sh "$phrasing" cut "$scratch/phr" HW-PROBE-phr3 2 > "$scratch/phr/cut2"
+printf 'Locate the second,\nover two lines.\n\n#### A note\n\nInside phrasing 2.\n' > "$scratch/phr/want2"
+same "phrasing.sh cut 2: the body of phrasing 2 alone, without its heading or another phrasing, byte for byte" \
+    "same" "$(cmp -s "$scratch/phr/cut2" "$scratch/phr/want2" && echo same || echo differs)"
+same "phrasing.sh cut 3: the last phrasing stops at the next ## heading" "Name the third." \
+    "$(sh "$phrasing" cut "$scratch/phr" HW-PROBE-phr3 3)"
+same "phrasing.sh cut 4: a phrasing the task does not hold is empty" "" \
+    "$(sh "$phrasing" cut "$scratch/phr" HW-PROBE-phr3 4)"
+same "phrasing.sh cut: a task with no phrasing is its whole body, trimmed" "The whole task." \
+    "$(sh "$phrasing" cut "$scratch/phr" HW-PROBE-phr0)"
+same "phrasing.sh pick: no draw spreads 6 repetitions over 3 phrasings, two each" "1 2 3 1 2 3" \
+    "$(for r in 1 2 3 4 5 6; do sh "$phrasing" pick HW-PROBE-phr3 "$r" 3; done | tr '\n' ' ' | sed 's/ $//')"
+same "phrasing.sh pick: a task with no phrasing is 0, its whole task" "0" "$(sh "$phrasing" pick HW-PROBE-phr0 4 0)"
+printf 'draw: HW-PROBE-phr3 2\ndraw: HW-PROBE-phr0 1\ndraw: HW-PROBE-big 4\n' > "$scratch/phr/draw"
+same "phrasing.sh pick: a draw gives the job the phrasing it names" "2" \
+    "$(sh "$phrasing" pick HW-PROBE-phr3 1 3 "$scratch/phr/draw")"
+same "phrasing.sh pick: a draw of 1 for a task with no phrasing is its whole task" "0" \
+    "$(sh "$phrasing" pick HW-PROBE-phr0 1 0 "$scratch/phr/draw")"
+sh "$phrasing" pick HW-PROBE-big 1 3 "$scratch/phr/draw" > /dev/null 2> "$scratch/phr/err"
+same "phrasing.sh pick: a phrasing above the count exits 5" "5" "$?"
+sh "$phrasing" pick HW-PROBE-phr3 2 3 "$scratch/phr/draw" > /dev/null 2> "$scratch/phr/err"
+same "phrasing.sh pick: a session the draw does not name exits 5" "5" "$?"
+sh "$phrasing" pick HW-PROBE-other 1 3 "$scratch/phr/draw" > /dev/null 2> "$scratch/phr/err"
+same "phrasing.sh pick: a probe the draw does not name exits 5" "5" "$?"
+same "phrasing.sh draw: a task with no phrasing draws 1" "1" "$(sh "$phrasing" draw 0 docs 1 HW-PROBE-phr0 1 0)"
+same "phrasing.sh draw: the same key draws the same phrasing" \
+    "$(sh "$phrasing" draw 7 hooks 2 HW-PROBE-phr3 1 3)" "$(sh "$phrasing" draw 7 hooks 2 HW-PROBE-phr3 1 3)"
+# Over 300 keys the draw reaches every phrasing, and no phrasing takes more
+# than half of them, so it is not one fixed index.
+same "phrasing.sh draw: over 300 keys each of 3 phrasings is drawn, none in more than half" "3 yes" \
+    "$(for k in $(seq 1 300); do sh "$phrasing" draw "$k" docs 1 HW-PROBE-phr3 1 3; done | sort | uniq -c | awk '{ n++; if ($1 > 150) big = 1 } END { print n, (big ? "no" : "yes") }')"
+
 # `open` is a key of the tuning round alone. A round's key outside the list
 # used to break `rounds` and `approved`, and with them the round gate and
 # both dry runs, so each still reads a declaration with an open layer.
