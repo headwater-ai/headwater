@@ -2761,7 +2761,12 @@ scenarios:
                 ".agents/skills",
             ),
             // A tooling path inside a layer path.
-            ("tooling: [CLAUDE.md, docs/x.md]\n", "docs", "docs", "docs/x.md"),
+            (
+                "tooling: [CLAUDE.md, docs/x.md]\n",
+                "docs",
+                "docs",
+                "docs/x.md",
+            ),
             // A layer path inside a tooling path.
             (
                 "tooling: [CLAUDE.md, .claude/hooks]\n",
@@ -3062,11 +3067,8 @@ sets:
 
     #[test]
     fn an_additive_tier_reads_its_scenario_arms_and_a_ceiling_of_zero() {
-        let budgets = Budgets::read(&additive_tier(
-            "[scenario-0, scenario-1, scenario-6]",
-            SETS,
-        ))
-        .expect("reads");
+        let budgets = Budgets::read(&additive_tier("[scenario-0, scenario-1, scenario-6]", SETS))
+            .expect("reads");
         let envelope = budgets.of(Tier::Additive).expect("the additive tier");
         assert_eq!(
             envelope.arms,
