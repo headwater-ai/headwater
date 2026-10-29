@@ -6,6 +6,8 @@ summary: A session classifies a recovery word as present, withheld, or absent fr
 last_verified: 2026-09-30
 probe_category: sufficiency
 expectation: answered
+action: ask_or_locate
+moments: [intent]
 oracle: "none"
 title: "A counted tombstone separates a withheld answer from an absent answer"
 provenance:

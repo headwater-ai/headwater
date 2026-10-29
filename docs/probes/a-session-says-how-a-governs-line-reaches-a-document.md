@@ -6,6 +6,8 @@ summary: Many documents share the terms of this task, and a superseded record, a
 last_verified: 2026-10-03
 probe_category: navigability
 expectation: answered
+action: ask_or_locate
+moments: [intent]
 oracle: "none"
 title: "A session says how a governs line reaches a document"
 provenance:

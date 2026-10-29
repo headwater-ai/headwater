@@ -6,6 +6,8 @@ summary: A session picks one of two events as the one that makes a document acce
 last_verified: 2026-09-27
 probe_category: sufficiency
 expectation: answered
+action: ask_or_locate
+moments: [intent]
 oracle: "none"
 title: "A session names the event that makes a document accepted"
 provenance:

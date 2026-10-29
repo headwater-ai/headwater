@@ -6,6 +6,8 @@ summary: A session corrects the status of a settled decision that is already on 
 last_verified: 2026-10-10
 probe_category: sufficiency
 expectation: answered
+action: ask_or_locate
+moments: [intent]
 oracle: "none"
 title: "A session says which date a corrected status carries"
 provenance:

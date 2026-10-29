@@ -6,6 +6,8 @@ summary: Nothing makes a skill load, so its reach is a measurement, and this is 
 last_verified: 2026-08-14
 probe_category: discovery
 expectation: opened
+action: add_document
+moments: [write, review]
 oracle: "none"
 title: "The authoring skill reaches an agent that is about to write a governed document"
 provenance:

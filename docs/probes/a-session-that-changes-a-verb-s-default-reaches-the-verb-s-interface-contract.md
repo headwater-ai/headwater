@@ -6,6 +6,8 @@ summary: "The task asks a session to change the default of one verb, and this as
 last_verified: 2026-10-22
 probe_category: navigability
 expectation: opened
+action: change_governed_code
+moments: [intent, read, write, review]
 oracle: "none"
 title: "A session that changes a verb's default reaches the verb's interface contract"
 provenance:

@@ -6,6 +6,8 @@ summary: Precision at intent time has no reading at all, and this takes the half
 last_verified: 2026-09-11
 probe_category: discovery
 expectation: opened
+action: ask_or_locate
+moments: [intent]
 oracle: "none"
 title: "The pointer this corpus offers for a task is the document a session opens"
 provenance:

@@ -6,6 +6,8 @@ summary: A search by name reaches a replaced ruling before the ruling in force, 
 last_verified: 2026-10-03
 probe_category: navigability
 expectation: answered
+action: ask_or_locate
+moments: [intent]
 oracle: "none"
 title: "A session says where a figure on the site is written"
 provenance:

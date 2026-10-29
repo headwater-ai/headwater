@@ -6,6 +6,8 @@ summary: The descriptor names one entry point for each shelf that holds a docume
 last_verified: 2026-08-14
 probe_category: discovery
 expectation: opened
+action: ask_or_locate
+moments: [intent]
 oracle: "none"
 title: "A cold agent reaches the governing document through the corpus descriptor"
 provenance:

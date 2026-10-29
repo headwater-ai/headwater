@@ -6,6 +6,7 @@ summary: "The task asks a session to move a shelf of records to a new directory,
 last_verified: 2026-10-22
 probe_category: discovery
 expectation: opened
+action: move_document
 oracle: "none"
 title: "A session that moves a shelf reaches the relocation guide"
 provenance:

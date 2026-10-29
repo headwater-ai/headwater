@@ -6,6 +6,8 @@ summary: The answer is in no single record. One record names the ruling it rests
 last_verified: 2026-10-03
 probe_category: sufficiency
 expectation: answered
+action: ask_or_locate
+moments: [intent]
 oracle: "none"
 title: "A session follows a citation from one record to the next"
 provenance:

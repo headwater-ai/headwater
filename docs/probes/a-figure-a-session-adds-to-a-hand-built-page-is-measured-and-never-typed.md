@@ -6,6 +6,8 @@ summary: "The deliberate case where plain code states the convention: the refres
 last_verified: 2026-10-22
 probe_category: sufficiency
 expectation: patched
+action: change_governed_code
+moments: [intent, read, write, review]
 oracle: "command:refresh-figures"
 title: "A figure a session adds to a hand-built page is measured and never typed"
 provenance:

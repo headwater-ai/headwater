@@ -6,6 +6,8 @@ summary: The task uses the title of the superseded list of open questions, so a 
 last_verified: 2026-10-10
 probe_category: navigability
 expectation: not_opened
+action: ask_or_locate
+moments: [intent]
 oracle: "none"
 title: "A session answers from the register when the task names the list it replaced"
 provenance:

@@ -6,6 +6,8 @@ summary: Both registers carry the same answer, so nothing in what a session says
 last_verified: 2026-09-11
 probe_category: navigability
 expectation: not_opened
+action: ask_or_locate
+moments: [intent]
 oracle: "none"
 title: "A session answers from the register without opening the question it replaced"
 provenance:

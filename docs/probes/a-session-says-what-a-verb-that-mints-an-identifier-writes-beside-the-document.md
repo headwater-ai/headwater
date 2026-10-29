@@ -6,6 +6,8 @@ summary: "The header of one check module states the mechanism in full, and the d
 last_verified: 2026-10-22
 probe_category: navigability
 expectation: answered
+action: ask_or_locate
+moments: [intent]
 oracle: "none"
 title: "A session says what a verb that mints an identifier writes beside the document"
 provenance:

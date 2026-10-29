@@ -6,6 +6,8 @@ summary: The answer is three records away from a record the task describes and d
 last_verified: 2026-10-10
 probe_category: sufficiency
 expectation: answered
+action: ask_or_locate
+moments: [intent]
 oracle: "none"
 title: "A session follows two citations from a record the task does not name"
 provenance:

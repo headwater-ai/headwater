@@ -6,6 +6,8 @@ summary: A task in plain words shares no word with the name, path or title of th
 last_verified: 2026-10-03
 probe_category: discovery
 expectation: opened
+action: ask_or_locate
+moments: [intent]
 oracle: "none"
 title: "A session finds a ruling from a task in plain words"
 provenance:

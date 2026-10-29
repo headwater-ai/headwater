@@ -6,6 +6,8 @@ summary: The one link of a tombstone section reaches a superseded decision, so a
 last_verified: 2026-10-10
 probe_category: navigability
 expectation: opened
+action: ask_or_locate
+moments: [intent]
 oracle: "none"
 title: "An agent reaches the adjudication when the decision a tombstone links is superseded"
 provenance:
