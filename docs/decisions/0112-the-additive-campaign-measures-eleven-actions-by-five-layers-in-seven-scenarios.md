@@ -14,6 +14,8 @@ provenance:
 relations:
   supersedes:
     - HW-DR-0111
+  traces_to:
+    - HW-PD-0026
 ---
 
 # 112 — The additive campaign measures eleven actions by five layers in seven scenarios
@@ -22,7 +24,7 @@ relations:
 
 [HW-DR-0111](0111-the-additive-campaign-adds-six-layers-to-plain-code-in-fourteen-scenarios-and-registers-one-comparison-each.md) built fourteen scenarios from six layers and measured them over nine probes. Each of those probes asked a question about the corpus. So the set did not cover most of what a person asks an assistant to do in a governed repository. The tuning round of that design closed on #1777, and its final report is comment 6467831567 there.
 
-The owner re-cut milestone 0.07 on 2026-10-28 and 2026-10-29. His rulings are on #1777, in comments 6465567947 and 6466863444, and in the body of epic #1868. That body is the source of the design that this record states. The epic closed the fourteen scenario issues, #1780 to #1793, and folded #1835 and #1836 into #1874.
+The owner re-cut milestone 0.07 on 2026-10-28 and 2026-10-29. His rulings are on #1777, in comments 6465567947 and 6466863444, and in the body of epic #1868. That body is the source of the design that this record states. The re-cut is the first application of [HW-PD-0026](../process/decisions/0026-we-pivot-rather-than-carry-debt-forward.md): a better structure is worth the loss of a comparison with earlier runs. The epic closed the fourteen scenario issues, #1780 to #1793, and folded #1835 and #1836 into #1874.
 
 This record supersedes HW-DR-0111 as a whole, because a supersession sets its target to `superseded` and the taxonomy has no partial form. So this record states again, as its own rule, each part of HW-DR-0111 that #1868 keeps. No rule in force lives only in the superseded record.
 
