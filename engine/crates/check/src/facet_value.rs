@@ -53,13 +53,21 @@
 //! [`crate::coverage`] describes for a corpus-scoped check, met from the other
 //! side. Spec 13 carries what is left of it.
 //!
+//! # A list is read item by item
+//!
+//! A facet whose value is a list holds one value per scalar item, and each item
+//! is read against the admitted set, the way `invalid_pair` reads a list
+//! (#1542). The probe kind's `moments` and `axes` are lists of this kind
+//! (HW-DR-0112, #1873), and before version 3 `moments: [read, bogus]` passed
+//! every strict run. Each item outside the set is one finding at that item.
+//!
 //! # What this check declines to decide
 //!
-//! A facet whose value is a mapping or a list where the taxonomy declared a set
-//! of scalars produces nothing here. That is a shape defect, the meta-schema
-//! owns shape, and a second report of it from the check layer would send an
-//! author to two places. The same posture the rest of this crate takes toward a
-//! taxonomy it can read but did not validate.
+//! A facet whose value is a mapping, and a list item that is not a scalar,
+//! produce nothing here. That is a shape defect, the meta-schema owns shape,
+//! and a second report of it from the check layer would send an author to two
+//! places. The same posture the rest of this crate takes toward a taxonomy it
+//! can read but did not validate.
 
 use crate::finding::{at, Finding, Severity};
 use crate::instance::Outcome;
@@ -140,13 +148,16 @@ impl DocumentCheck for Values {
     const RULE: &'static str = self::RULE;
     /// See [`crate::placement::Placement::VERSION`]. 2 reads a kind's
     /// `facets.values`, so a warm cache written by 1 holds the verdict of a
-    /// rule that admitted the whole declared set on every kind.
-    const VERSION: u32 = 2;
+    /// rule that admitted the whole declared set on every kind. 3 reads each
+    /// scalar item of a list (#1873), so a warm cache written by 2 holds a pass
+    /// for a list with an item outside the set.
+    const VERSION: u32 = 3;
     /// A declared value set becomes an `enum` over the same members, under a
-    /// guard that lets a mapping or a list through. The guard is what makes
-    /// the translation equivalent rather than stricter, because this check
-    /// declines a value it cannot read as a scalar and a bare `enum` would
-    /// reject one. See the module comment above, and the differential at
+    /// guard that lets a mapping through and enumerates each scalar item of a
+    /// list. The guard is what makes the translation equivalent rather than
+    /// stricter, because this check declines a value it cannot read as a
+    /// scalar and a bare `enum` would reject one. See the module comment above,
+    /// and the differential at
     /// `engine/crates/generate/tests/differential.rs`.
     const EXPORTABLE_AS: ExportTargets = &["jsonschema"];
 
@@ -158,16 +169,33 @@ impl DocumentCheck for Values {
         let findings = self
             .admitted_by(view.kind())
             .iter()
-            .filter_map(|Enumerated { facet, values }| {
-                let entry = view.facets().entry(facet)?;
+            .flat_map(|Enumerated { facet, values }| {
                 // Absent is the required-facet rule's business, and a value
-                // this engine cannot read as a scalar is the meta-schema's.
-                let declared = entry.value.value.as_scalar()?;
-                if values.iter().any(|value| value == &declared.text) {
-                    return None;
-                }
-                let (line, column) = at(Some(entry.value.span));
-                Some(Finding {
+                // this engine cannot read as a scalar is the meta-schema's. A
+                // list is read item by item (#1873).
+                let read: Vec<_> = match view.facets().entry(facet) {
+                    None => Vec::new(),
+                    Some(entry) => {
+                        match (entry.value.value.as_scalar(), entry.value.value.as_seq()) {
+                            (Some(scalar), _) => vec![(scalar, entry.value.span)],
+                            (None, Some(items)) => items
+                                .iter()
+                                .filter_map(|item| {
+                                    item.value.as_scalar().map(|scalar| (scalar, item.span))
+                                })
+                                .collect(),
+                            (None, None) => Vec::new(),
+                        }
+                    }
+                };
+                read.into_iter()
+                    .filter(|(declared, _)| !values.iter().any(|value| value == &declared.text))
+                    .map(|(declared, span)| (facet, values, declared, span))
+                    .collect::<Vec<_>>()
+            })
+            .map(|(facet, values, declared, span)| {
+                let (line, column) = at(Some(span));
+                Finding {
                     rule: self::RULE,
                     severity: Severity::Error,
                     obligation: None,
@@ -185,7 +213,7 @@ impl DocumentCheck for Values {
                         values.join(", ")
                     ),
                     patch: None,
-                })
+                }
             })
             .collect();
         Outcome::failed(findings)

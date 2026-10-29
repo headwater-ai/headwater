@@ -1507,8 +1507,8 @@ fn the_schema_export_carries_constraints_and_accounts_for_every_instance() {
         );
     }
     // A facet with a declared value set becomes an enum over exactly that set,
-    // under a guard that admits a mapping or a list, and a facet with none gets
-    // no constraint. A `type: string` here would be the emitter inventing a rule
+    // under a guard that admits a mapping and reads a list item by item, and a
+    // facet with none gets no constraint. A `type: string` here would be the emitter inventing a rule
     // the native check does not enforce, and a bare `enum` would be the emitter
     // enforcing one harder than the check does: `facet.value.not_permitted`
     // declines a value it cannot read as a scalar, and the guard is what makes
@@ -1526,14 +1526,24 @@ fn the_schema_export_carries_constraints_and_accounts_for_every_instance() {
         .get("anyOf")
         .and_then(|node| node.value.as_seq())
         .expect("the guard on a value set");
-    assert_eq!(guarded.len(), 2, "the guard is not a two-branch choice");
+    // Three branches since #1873: a mapping, a list whose every scalar item is
+    // enumerated, and a scalar enumerated.
+    assert_eq!(guarded.len(), 3, "the guard is not a three-branch choice");
     assert!(
-        guarded[1]
+        guarded[2]
             .value
             .as_map()
             .and_then(|branch| branch.get("enum"))
             .is_some(),
         "an enum facet lost its values"
+    );
+    assert!(
+        guarded[1]
+            .value
+            .as_map()
+            .and_then(|branch| branch.get("items"))
+            .is_some(),
+        "a list of an enum facet is no longer read item by item"
     );
     let since = properties
         .get("status_since")

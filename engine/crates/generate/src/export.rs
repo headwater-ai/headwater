@@ -868,7 +868,9 @@ fn schema(surface: &Surface<'_>, all: &[Node<'_>]) -> Body {
 /// declared a set of scalars is a shape defect and the meta-schema owns shape.
 /// A bare `enum` rejects that document, which is a constraint arriving with
 /// more force than the check it claims to carry. So the emitted form admits a
-/// composite and enumerates a scalar, which is what the check does.
+/// mapping and enumerates a scalar, which is what the check does. A list is
+/// read item by item since #1873, so the emitted form enumerates each scalar
+/// item of a list and admits a composite item.
 ///
 /// The kind is a parameter and not a convenience. A kind narrows the value set
 /// of an enumerated facet under `facets.values`, and the schema is emitted one
@@ -879,13 +881,8 @@ fn schema(surface: &Surface<'_>, all: &[Node<'_>]) -> Body {
 /// a wrong answer rather than less coverage.
 fn constraint(shape: &headwater_check::Shape, kind: &str, name: &str) -> Json {
     match shape.facet(name) {
-        Some(facet) if !facet.values.is_empty() => Json::object([(
-            "anyOf",
-            Json::Array(vec![
-                Json::object([(
-                    "type",
-                    Json::Array(vec![Json::string("object"), Json::string("array")]),
-                )]),
+        Some(facet) if !facet.values.is_empty() => {
+            let admitted = || {
                 Json::object([(
                     "enum",
                     Json::Array(
@@ -896,9 +893,32 @@ fn constraint(shape: &headwater_check::Shape, kind: &str, name: &str) -> Json {
                             .map(Json::string)
                             .collect(),
                     ),
-                )]),
-            ]),
-        )]),
+                )])
+            };
+            let composite = || {
+                Json::object([(
+                    "type",
+                    Json::Array(vec![Json::string("object"), Json::string("array")]),
+                )])
+            };
+            // A list is read item by item (#1873): each item that is a scalar
+            // is enumerated, and an item that is a composite passes, as the
+            // check declines it.
+            Json::object([(
+                "anyOf",
+                Json::Array(vec![
+                    Json::object([("type", Json::string("object"))]),
+                    Json::object([
+                        ("type", Json::string("array")),
+                        (
+                            "items",
+                            Json::object([("anyOf", Json::Array(vec![composite(), admitted()]))]),
+                        ),
+                    ]),
+                    admitted(),
+                ]),
+            )])
+        }
         _ => Json::Object(Vec::new()),
     }
 }
