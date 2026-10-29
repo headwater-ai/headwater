@@ -1,4 +1,4 @@
-# The screening round of the additive campaign (#1775): the 15 screening
+# The screening round of the additive campaign (#1775): the 7 screening
 # lines of `tools/probe/additive-campaign.spec`, and no line of another round.
 #
 #     sh tools/probe/campaign.sh --dry-run --spec tools/probe/additive-screening.spec
@@ -11,7 +11,7 @@
 #
 # At the declared 50 cents a session:
 #
-#     round screening: 980 sessions, $490.00
+#     round screening: 490 sessions, $245.00
 #
 # Keep these lines the same as the screening lines of
 # `tools/probe/additive-campaign.spec`. The fixtures in
@@ -24,11 +24,3 @@ additive scenario-3 screening
 additive scenario-4 screening
 additive scenario-5 screening
 additive scenario-6 screening
-additive scenario-7 screening
-additive scenario-8 screening
-additive scenario-9 screening
-additive scenario-10 screening
-additive scenario-11 screening
-additive scenario-12 screening
-additive scenario-13 screening HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded
-additive scenario-13 screening HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged HW-PROBE-a-session-that-changes-the-recorder-reaches-the-recorder-contract HW-PROBE-a-session-that-moves-a-shelf-reaches-the-relocation-guide HW-PROBE-a-session-that-changes-a-verb-s-default-reaches-the-verb-s-interface-contract

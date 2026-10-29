@@ -64,9 +64,10 @@
 #   the hook injects for its own task. Its standard error is discarded. A probe
 #   whose task this checkout does not hold leaves the text not whole, and the
 #   check exits 3.
-# - a hit whose `<where>` is a path of the `harness` layer under `layers:` in
-#   the declaration, or a file under one, is internal harness text that the
-#   seal cannot remove. It prints as `harness <probe> <where> <string>` and does
+# - a hit whose `<where>` is a path of the `tooling` list in the declaration
+#   (#1872), or a file under one, is this repository's own harness text, which
+#   the seal cannot remove and every scenario removes, so a scenario tree holds
+#   it only where the tree was not built from the declaration. It prints as `harness <probe> <where> <string>` and does
 #   not fail the check. The dry run of the additive spec refuses a line that
 #   pools such a probe with another, as it refuses a pooled `leaks_kept` probe.
 #   A kept probe stays `kept`.
@@ -335,10 +336,9 @@ def hook_text(workspace, task, probe):
 
 
 def harness_paths(declared):
-    layers = declared.get("layers") or {}
-    harness = layers.get("harness") if isinstance(layers, dict) else None
-    paths = (harness or {}).get("paths") if isinstance(harness, dict) else None
-    return [str(path).rstrip("/") for path in (paths or [])]
+    paths = declared.get("tooling") if isinstance(declared, dict) else None
+    paths = paths if isinstance(paths, list) else []
+    return [str(path).rstrip("/") for path in paths]
 
 
 def under(where, paths):
