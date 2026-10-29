@@ -1,0 +1,8 @@
+# The arguments of the `r5-hook-role` oracle, one to a line, for the probe
+# HW-PROBE-a-session-links-the-governs-edges-evaluation-to-the-obligation-that-it-says-is-discharged
+# (#1874). `tools/probe/oracles/lib.sh` reads this file for `--args` and
+# skips each line that opens with `#`. The file names its probe, so the seal
+# removes it from every workspace, and the oracle entry holds it. The
+# command is `sh tools/probe/oracles/reciprocal-link.sh --check-clean --args <this file>`.
+HW-EVAL-governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it
+HW-OBL-0105

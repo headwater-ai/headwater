@@ -1,0 +1,10 @@
+# The arguments of the `r4-phrasing-rate` oracle, one to a line, for the probe
+# HW-PROBE-a-session-records-as-owed-that-nothing-reports-a-pass-rate-for-each-phrasing-of-a-probe
+# (#1874). `tools/probe/oracles/lib.sh` reads this file for `--args` and
+# skips each line that opens with `#`. The file names its probe, so the seal
+# removes it from every workspace, and the oracle entry holds it. The
+# command is `sh tools/probe/oracles/typed-at.sh --check-clean --args <this file>`.
+docs/obligations
+obligation_record
+HW-DR-0112
+phrasing|wording

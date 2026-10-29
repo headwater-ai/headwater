@@ -165,7 +165,13 @@ answer_keys:
 #                                        the script)
 #
 # `--check-clean` as the first argument of a tree script adds the condition
-# of check-clean.sh. Each script runs from the root of the grading copy,
+# of check-clean.sh, over the documents the script names where it names
+# them: typed-at.sh and reciprocal-link.sh count only the strict errors on
+# their own documents, because the seal leaves errors elsewhere in a sealed
+# tree. `--args <file>` as the last option reads the arguments from a held
+# file, one to a line, which names its probe in its first ten lines; a key
+# or a held path never names a probe, because the seal strips such a line
+# from this file. Each script runs from the root of the grading copy,
 # exits 0 on a pass and 1 on a fail (2 on a usage error), and prints one
 # line of evidence on standard output. The entry holds each script its
 # command runs and `tools/probe/oracles/lib.sh`, so the recorder restores
@@ -189,6 +195,46 @@ oracles:
     command: sh tools/probe/oracle-figure-added.sh
     parser: exit
     holds: [tools/probe/oracle-figure-added.sh]
+  r4-hook-warning:
+    paths: [docs/*]
+    command: sh tools/probe/oracles/typed-at.sh --check-clean --args tools/probe/oracle-args/r4-hook-warning
+    parser: exit
+    holds: [tools/probe/oracles/typed-at.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r4-hook-warning]
+  r4-corpus-size:
+    paths: [docs/*]
+    command: sh tools/probe/oracles/typed-at.sh --check-clean --args tools/probe/oracle-args/r4-corpus-size
+    parser: exit
+    holds: [tools/probe/oracles/typed-at.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r4-corpus-size]
+  r4-adopter-axis:
+    paths: [docs/*]
+    command: sh tools/probe/oracles/typed-at.sh --check-clean --args tools/probe/oracle-args/r4-adopter-axis
+    parser: exit
+    holds: [tools/probe/oracles/typed-at.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r4-adopter-axis]
+  r4-phrasing-rate:
+    paths: [docs/*]
+    command: sh tools/probe/oracles/typed-at.sh --check-clean --args tools/probe/oracle-args/r4-phrasing-rate
+    parser: exit
+    holds: [tools/probe/oracles/typed-at.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r4-phrasing-rate]
+  r5-read-set:
+    paths: [docs/*]
+    command: sh tools/probe/oracles/reciprocal-link.sh --check-clean --args tools/probe/oracle-args/r5-read-set
+    parser: exit
+    holds: [tools/probe/oracles/reciprocal-link.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r5-read-set]
+  r5-federation-walkthrough:
+    paths: [docs/*]
+    command: sh tools/probe/oracles/reciprocal-link.sh --check-clean --args tools/probe/oracle-args/r5-federation-walkthrough
+    parser: exit
+    holds: [tools/probe/oracles/reciprocal-link.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r5-federation-walkthrough]
+  r5-check-layer-owl:
+    paths: [docs/*]
+    command: sh tools/probe/oracles/reciprocal-link.sh --check-clean --args tools/probe/oracle-args/r5-check-layer-owl
+    parser: exit
+    holds: [tools/probe/oracles/reciprocal-link.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r5-check-layer-owl]
+  r5-hook-role:
+    paths: [docs/*]
+    command: sh tools/probe/oracles/reciprocal-link.sh --check-clean --args tools/probe/oracle-args/r5-hook-role
+    parser: exit
+    holds: [tools/probe/oracles/reciprocal-link.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r5-hook-role]
 
 # Leak strings (#1472): for each probe, the strings whose presence in text the harness
 # loads into every session gives the probe's answer away. The seal finds an
@@ -268,6 +314,23 @@ leaks:
   HW-PROBE-a-session-says-where-a-check-gets-the-version-that-stood-before-a-change: [HW-SPEC-check-layer, prior version]
   HW-PROBE-a-session-says-what-a-refusal-writes-on-standard-output-under-json: [HW-DR-0043, a refusal is never a document]
   HW-PROBE-a-session-says-what-a-verb-that-mints-an-identifier-writes-beside-the-document: [HW-DR-0054, claim store]
+  # Rows 1, 4 and 5 of the grid in HW-DR-0112 (#1874). The four `answered`
+  # probes of row 1 declare the record that holds the answer and the phrase
+  # that states it, and the `opened` probe declares the record it must reach.
+  # Each `patched` probe of rows 4 and 5 grades a structure that a command
+  # oracle reads, and no string states it, so each declares the empty sequence.
+  HW-PROBE-a-session-tells-a-withheld-answer-from-an-absent-one-in-a-corpus-that-serves-no-tombstone: [declares no export profile, serves no counted tombstone]
+  HW-PROBE-a-session-reaches-the-adjudication-from-the-tombstone-that-the-task-names: [HW-DR-0008]
+  HW-PROBE-a-session-says-whether-a-front-page-recording-may-show-a-number-a-live-run-does-not-produce-when-the-task-names-the-record-that-was-superseded: [HW-DR-0078, recorded on]
+  HW-PROBE-a-session-names-the-record-that-governs-the-scripts-that-grade-a-change-from-a-task-in-plain-words: [HW-DR-0112, tools/probe/oracles]
+  HW-PROBE-a-session-records-as-owed-that-no-ruling-says-whether-a-hook-s-text-on-a-prompt-is-a-warning: []
+  HW-PROBE-a-session-records-as-owed-the-corpus-size-axis-that-the-additive-campaign-defers: []
+  HW-PROBE-a-session-records-as-owed-the-axis-of-an-adopter-s-own-repository-that-the-named-decision-defers: []
+  HW-PROBE-a-session-records-as-owed-that-nothing-reports-a-pass-rate-for-each-phrasing-of-a-probe: []
+  HW-PROBE-a-session-links-the-obligation-on-published-read-sets-to-the-evaluation-whose-measurement-discharged-it: []
+  HW-PROBE-a-session-records-the-walkthrough-that-the-federation-part-rests-a-rule-on-as-the-evidence-it-cites: []
+  HW-PROBE-a-session-records-the-owl-worked-example-as-evidence-of-the-check-layer-part-that-the-task-names: []
+  HW-PROBE-a-session-links-the-governs-edges-evaluation-to-the-obligation-that-it-says-is-discharged: []
 
 # The probes whose leak string stays in the present arm on purpose (#1472, the second
 # outcome the issue offers). The leak string of the status probe is in the

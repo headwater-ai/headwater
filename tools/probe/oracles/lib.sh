@@ -72,7 +72,62 @@ case ${1:-} in
         ;;
 esac
 
+# `--args <file>`, after `--check-clean` where both are given, reads the
+# script's own arguments from <file>, one argument per line. A line that
+# opens with `#` and an empty line are skipped. Nothing may follow <file> on
+# the command line. The command line in `.headwater/probe.yml` is a fold
+# that every workspace keeps, so an argument that states the answer, such as
+# a shelf, a kind or a ruling, goes in a held file that names its probe in
+# its first ten lines, and the seal removes it from every workspace
+# (HW-DR-0112, "The form of an oracle"). A missing file is a usage error.
+case ${1:-} in
+    --args)
+        [ $# -eq 2 ] || hw_oracle_usage "--args takes one file and is the last option: --args <file>"
+        hw_args_file=$2
+        [ -f "$hw_args_file" ] || hw_oracle_usage "no file of arguments at $hw_args_file"
+        set --
+        while IFS= read -r hw_args_line || [ -n "$hw_args_line" ]; do
+            case $hw_args_line in
+                '#'* | '') continue ;;
+            esac
+            set -- "$@" "$hw_args_line"
+        done < "$hw_args_file"
+        ;;
+esac
+
+# Whether a file holds <name> as a whole name: not preceded by a letter, a
+# digit, `_`, `-` or `.`, and not followed by one of them, except a period
+# that ends a sentence, which no letter, digit, `_` or `-` follows. So
+# `HW-DR-0112` is not found in `HW-DR-01120`, `HW-DR-0112.md` or
+# `HW-DR-0112.5`, and `0112-x.md` is not found in `draft-0112-x.md`.
+#
+#     hw_oracle_names_whole <name> <file>
+hw_oracle_names_whole() {
+    hw_whole_pattern=$(printf '%s\n' "$1" | sed 's/[][\.*^$+?(){}|/]/\\&/g')
+    grep -E -q -- "(^|[^A-Za-z0-9_.-])$hw_whole_pattern([^A-Za-z0-9_.-]|\\.[^A-Za-z0-9_-]|\\.\$|\$)" "$2"
+}
+
+#
+# A script that names its documents sets `hw_oracle_subjects` to their paths,
+# separated by spaces, and then the condition reads the strict errors on
+# those documents alone: the findings of `headwater check --json` of
+# severity `error` that no directive or adoption task holds (`escape` is
+# `none`), which are the findings a strict run fails on. A sealed tree holds
+# errors the seal made in documents it kept, such as a relation to a removed
+# document, so a whole-tree condition fails every session there (#1874.2).
+# `check-clean.sh` and every script that sets no subject read the whole tree.
+hw_oracle_subjects=""
+
 hw_oracle_pass_clean() {
+    if [ "$hw_oracle_clean" = yes ] && [ -n "$hw_oracle_subjects" ]; then
+        command -v jq > /dev/null 2>&1 || hw_oracle_usage "--check-clean on a named document reads the findings with jq, and no jq is on the path"
+        hw_oracle_engine
+        hw_oracle_tmp
+        "$hw_engine" check --json --root . > "$hw_oracle_scratch/check.json" 2> "$hw_oracle_scratch/check.err"
+        hw_errors=$(jq -r --arg subjects " $hw_oracle_subjects " '[.findings[] | (.path // "") as $path | select(.severity == "error" and .escape == "none" and ($subjects | contains(" " + $path + " ")))] | length' "$hw_oracle_scratch/check.json" 2> /dev/null) || hw_oracle_usage "the engine wrote no findings that jq reads"
+        [ "$hw_errors" -eq 0 ] || hw_oracle_fail "$*, and \`headwater check --strict\` reports $hw_errors error(s) on it"
+        hw_oracle_pass "$*, and \`headwater check --strict\` reports no error on it"
+    fi
     if [ "$hw_oracle_clean" = yes ]; then
         hw_check_status=0
         hw_oracle_check_strict || hw_check_status=$?
