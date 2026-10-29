@@ -729,6 +729,7 @@ case \$(cat stub-mode) in
     failcase) printf 'running 2 tests\ntest a::b ... FAILED\ntest a::c ... ok\n\ntest result: FAILED. 1 passed; 1 failed; 0 ignored\n'; exit 101 ;;
     zero) printf 'running 0 tests\n\ntest result: ok. 0 passed; 0 failed; 0 ignored\n'; exit 0 ;;
     held) sh tests/hidden.sh; exit \$? ;;
+    env) printf '%s\n' "\$HEADWATER_ORACLE_TRANSCRIPT" "\$HEADWATER_ORACLE_HARNESS_LOG" > "$scratch/cmd-env"; cp "\$HEADWATER_ORACLE_TRANSCRIPT" "$scratch/cmd-env-stream"; printf 'test result: ok. 1 passed; 0 failed\n'; exit 0 ;;
     exitonly) printf 'running 1 test\ntest a::b ... ok\n\ntest result: ok. 1 passed; 0 failed\nerror: test failed, to rerun pass \`--doc\`\n'; exit 101 ;;
 esac
 exit 99
@@ -837,6 +838,36 @@ STUB
     same "and it fails on the oracle tree's test, not its own" "2" "$(cmd_count test:hidden::case held)"
     same "and the whole oracle fails on both artifacts" "2" "$(cmd_count test:fixture-oracle held)"
     cp "$cot/tests/hidden.sh" "$scratch/cmd-ws/tests/hidden.sh"
+
+    # The command reads the session's logs through two variables (#1875): the
+    # stream the transform read, and the `projects` directory of the
+    # configuration the harness ran under. A value in the caller's
+    # environment never reaches it, and a relative `--config-dir` reaches it
+    # as an absolute path, because the command runs in a copy.
+    printf 'env\n' > "$cot/stub-mode"
+    rm -f "$scratch/cmd-env" "$scratch/cmd-env-stream"
+    mkdir -p "$scratch/cmd-config/projects"
+    (cd "$scratch" && HEADWATER_ORACLE_TRANSCRIPT=/nowhere HEADWATER_ORACLE_HARNESS_LOG=/nowhere \
+        sh "$transform" --probe HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged \
+        --session env --root "$scratch/engine-only" --workspace "$scratch/cmd-ws" \
+        --oracle-tree "$cot" --config-dir cmd-config --produced src/lib.rs \
+        < "$scratch/watched-nothing.jsonl" > "$scratch/cmd-env.yaml" 2>"$scratch/cmd-env.err")
+    same "a command oracle run with a configuration directory records" "0" "$?"
+    if cmp -s "$scratch/watched-nothing.jsonl" "$scratch/cmd-env-stream"; then
+        pass "and HEADWATER_ORACLE_TRANSCRIPT names the stream the transform read"
+    else
+        fail "and HEADWATER_ORACLE_TRANSCRIPT names the stream the transform read" "$(cat "$scratch/cmd-env" "$scratch/cmd-env.err" 2>&1)"
+    fi
+    same "and HEADWATER_ORACLE_HARNESS_LOG names the projects directory of the configuration, as an absolute path" \
+        "$scratch/cmd-config/projects" "$(sed -n 2p "$scratch/cmd-env" 2>/dev/null)"
+    printf 'env\n' > "$cot/stub-mode"
+    rm -f "$scratch/cmd-env"
+    HEADWATER_ORACLE_HARNESS_LOG=/nowhere sh "$transform" --probe HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged \
+        --session env2 --root "$scratch/engine-only" --workspace "$scratch/cmd-ws" \
+        --oracle-tree "$cot" --produced src/lib.rs \
+        < "$scratch/watched-nothing.jsonl" > "$scratch/cmd-env2.yaml" 2>"$scratch/cmd-env2.err"
+    same "and with no configuration directory HEADWATER_ORACLE_HARNESS_LOG is empty, not the caller's" \
+        "" "$(sed -n 2p "$scratch/cmd-env" 2>/dev/null)"
 
     # A command that cannot start found no failure, so nothing is written.
     cp "$cot/.headwater/probe.yml" "$scratch/cmd-probe.yml"
