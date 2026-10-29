@@ -6144,9 +6144,12 @@ same "phrasing.sh files: the file of phrasing 2 is its cut, byte for byte" "same
 printf 'The task of pa-1.\n' > "$scratch/phr/tasks/HW-PROBE-pa-1.md"
 printf -- '---\nid: HW-PROBE-pa\n---\n\n## Task\n\n### Phrasing 1\n\nOne.\n\n### Phrasing 2\n\nTwo.\n\n## Target\n\nA link.\n' \
     > "$scratch/phr/docs/probes/pa.md"
+printf 'A note.\n' > "$scratch/phr/tasks/HW-PROBE-pa.1-notes.md"
 sh "$phrasing" files "$scratch/phr" HW-PROBE-pa "$scratch/phr/tasks" > /dev/null
 same "phrasing.sh files: leaves the task file of a probe whose id is the probe's id and -1" "The task of pa-1." \
     "$(cat "$scratch/phr/tasks/HW-PROBE-pa-1.md" 2>/dev/null)"
+same "phrasing.sh files: and leaves a file whose name holds more than digits between the probe's id and .md" "A note." \
+    "$(cat "$scratch/phr/tasks/HW-PROBE-pa.1-notes.md" 2>/dev/null)"
 sh "$phrasing" files "$scratch/phr" HW-PROBE-pa-1 "$scratch/phr/tasks" > /dev/null
 same "phrasing.sh files: and the files of that probe leave the probe's phrasings in place" "One. Two." \
     "$(cat "$scratch/phr/tasks/HW-PROBE-pa.1.md" "$scratch/phr/tasks/HW-PROBE-pa.2.md" 2>/dev/null | tr '\n' ' ' | sed 's/ $//')"
@@ -6164,6 +6167,19 @@ same "phrasing.sh cut 1: a # line inside a fenced code block does not end the ph
 same "phrasing.sh cut 2: a fence closes only on its own marker, and a ## line inside it does not end the task" \
     "~~~~ \`\`\` ## inside a tilde fence ~~~~" \
     "$(sh "$phrasing" cut "$scratch/phr" HW-PROBE-phrf 2 | tr '\n' ' ' | sed 's/ $//')"
+# A fence closes on its own character alone, and on a marker at least as long
+# as the one that opened it: a line of four backticks does not close a tilde
+# fence, and a line of three backticks does not close a fence of four.
+printf -- '---\nid: HW-PROBE-phrc\n---\n\n## Task\n\n### Phrasing 1\n\n~~~\n````\n### Phrasing 7\n~~~\n\n### Phrasing 2\n\nTwo.\n\n## Target\n\nA link.\n' \
+    > "$scratch/phr/docs/probes/phrc.md"
+printf -- '---\nid: HW-PROBE-phrl\n---\n\n## Task\n\n### Phrasing 1\n\n````\n```\n### Phrasing 8\n````\n\n### Phrasing 2\n\nTwo.\n\n## Target\n\nA link.\n' \
+    > "$scratch/phr/docs/probes/phrl.md"
+# A false close reopens a fence on the real closing line, which hides the
+# next phrasing, so the cut of phrasing 2 is what tells the two apart.
+same "phrasing.sh cut 2: a backtick line does not close a tilde fence" "2 Two." \
+    "$(sh "$phrasing" count "$scratch/phr" HW-PROBE-phrc) $(sh "$phrasing" cut "$scratch/phr" HW-PROBE-phrc 2)"
+same "phrasing.sh cut 2: a marker shorter than the opening one does not close the fence" "2 Two." \
+    "$(sh "$phrasing" count "$scratch/phr" HW-PROBE-phrl) $(sh "$phrasing" cut "$scratch/phr" HW-PROBE-phrl 2)"
 sh "$phrasing" files "$scratch/phr" HW-PROBE-phr0 "$scratch/phr/tasks" > /dev/null
 same "phrasing.sh files: a task with no phrasing is <probe>.md, its whole task, and a count of 0" "0 The whole task." \
     "$(cat "$scratch/phr/tasks/HW-PROBE-phr0.phrasings") $(cat "$scratch/phr/tasks/HW-PROBE-phr0.md")"
