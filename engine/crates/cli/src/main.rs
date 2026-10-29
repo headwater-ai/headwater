@@ -7997,93 +7997,154 @@ fn init(
     harness_step
 }
 
-/// `headwater init --harness`: the skills and the agent Headwater ships.
+/// `headwater init --harness`: the skills, the agent, the hooks, the hook
+/// entries and the MCP server entry that Headwater ships.
 ///
 /// **It decides every path before it writes one.** A path that holds a file
 /// the step did not write, or one somebody edited since, is refused, and then
 /// no file of the set is written: a half-installed set would leave one
 /// harness reading this release and another reading an older one.
-/// [`headwater_cli::harness::classify`] is the decision.
+/// [`headwater_cli::harness::classify_as`] is the decision for a file the step
+/// owns, and [`headwater_cli::harness::merge`] is the decision for a JSON file
+/// it shares with the adopter.
 ///
 /// **Under `check` it writes nothing.** It reports each path that does not
-/// hold this release's bytes, so a repository that commits the set holds it
-/// the way `generate --check` holds a projection. It never binds.
+/// hold this release's bytes, or lacks an entry, so a repository that commits
+/// the set holds it the way `generate --check` holds a projection. It never
+/// binds.
 fn init_harness(root: &Path, check: bool) -> ExitCode {
-    use headwater_cli::harness::{classify, files, Found};
+    use headwater_cli::harness::{classify_as, files, merge, Found, Merged, CONFIGS};
+    /// One path of the step, decided.
+    struct Planned {
+        path: String,
+        bytes: String,
+        state: &'static str,
+        wrote: String,
+    }
     let files = files();
-    let mut writes = Vec::new();
-    let mut foreign = Vec::new();
+    let total = files.len() + CONFIGS.len();
+    let read = |path: &str| match std::fs::read(root.join(path)) {
+        Ok(bytes) => Ok(Some(bytes)),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(format!("cannot read {path}: {error}")),
+    };
+    let mut writes: Vec<Planned> = Vec::new();
+    let mut foreign: Vec<(String, Option<String>)> = Vec::new();
     for file in &files {
-        let existing = match std::fs::read(root.join(&file.path)) {
-            Ok(bytes) => Some(bytes),
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
-            Err(error) => return refuse(&format!("cannot read {}: {error}", file.path)),
+        let existing = match read(&file.path) {
+            Ok(existing) => existing,
+            Err(why) => return refuse(&why),
         };
-        match classify(existing.as_deref(), &file.bytes) {
-            Found::Current => {}
-            Found::Foreign => foreign.push(file),
-            found => writes.push((file, found)),
+        let (state, wrote) = match classify_as(existing.as_deref(), &file.bytes, file.form) {
+            Found::Current => continue,
+            Found::Foreign => {
+                foreign.push((file.path.clone(), None));
+                continue;
+            }
+            Found::Absent => ("is absent", format!("wrote {}", file.path)),
+            Found::Earlier => (
+                "holds an earlier release",
+                format!("wrote {} over the copy an earlier release wrote", file.path),
+            ),
+        };
+        writes.push(Planned {
+            path: file.path.clone(),
+            bytes: file.bytes.clone(),
+            state,
+            wrote,
+        });
+    }
+    for config in CONFIGS {
+        let path = config.path();
+        let existing = match read(path) {
+            Ok(existing) => existing,
+            Err(why) => return refuse(&why),
+        };
+        match merge(config, existing.as_deref()) {
+            Merged::Current => {}
+            Merged::Foreign(why) => foreign.push((path.to_string(), Some(why))),
+            Merged::Write {
+                bytes,
+                absent,
+                added,
+            } => {
+                let (state, wrote) = match absent {
+                    true => ("is absent", format!("wrote {path}")),
+                    false => (
+                        "lacks an entry of this release",
+                        format!(
+                            "added {added} {} of this release to {path}, and kept every entry \
+                             it held",
+                            match added {
+                                1 => "entry",
+                                _ => "entries",
+                            }
+                        ),
+                    ),
+                };
+                writes.push(Planned {
+                    path: path.to_string(),
+                    bytes,
+                    state,
+                    wrote,
+                });
+            }
         }
     }
     if check {
         if writes.is_empty() && foreign.is_empty() {
-            println!(
-                "the {} files of the harness set hold the bytes of this release",
-                files.len()
-            );
+            println!("the {total} files of the harness set hold the bytes of this release");
             return ExitCode::SUCCESS;
         }
-        for (file, found) in &writes {
-            let state = match found {
-                Found::Absent => "is absent",
-                _ => "holds an earlier release",
-            };
-            eprintln!("headwater: {} {state}", file.path);
+        for planned in &writes {
+            eprintln!("headwater: {} {}", planned.path, planned.state);
         }
-        for file in &foreign {
-            eprintln!(
-                "headwater: {} differs from this release, and the step did not write it",
-                file.path
-            );
+        for (path, why) in &foreign {
+            match why {
+                Some(why) => eprintln!(
+                    "headwater: {path} cannot take the entries of this release, because {why}"
+                ),
+                None => eprintln!(
+                    "headwater: {path} differs from this release, and the step did not write it"
+                ),
+            }
         }
         eprintln!("headwater: `headwater init --harness` writes the set");
         return ExitCode::FAILURE;
     }
     if !foreign.is_empty() {
-        for file in &foreign {
-            eprintln!(
-                "headwater: {}",
-                err(&format!(
-                    "{} holds a file that `headwater init --harness` did not write, or one \
-                     somebody edited",
-                    file.path
-                ))
-            );
+        for (path, why) in &foreign {
+            let message = match why {
+                Some(why) => format!(
+                    "{path} cannot take the entries of `headwater init --harness`, because {why}"
+                ),
+                None => format!(
+                    "{path} holds a file that `headwater init --harness` did not write, or one \
+                     somebody edited"
+                ),
+            };
+            eprintln!("headwater: {}", err(&message));
         }
         return refuse(
-            "the step wrote no file of the set. Move each file above away, or delete it, and \
-             run the step again",
+            "the step wrote no file of the set. Move each file above away, delete it, or \
+             correct it, and run the step again",
         );
     }
-    for (file, found) in &writes {
-        let at = root.join(&file.path);
+    for planned in &writes {
+        let at = root.join(&planned.path);
         if let Some(parent) = at.parent() {
             if let Err(error) = std::fs::create_dir_all(parent) {
                 return refuse(&format!("cannot create {}: {error}", parent.display()));
             }
         }
-        if let Err(error) = std::fs::write(&at, &file.bytes) {
-            return refuse(&format!("cannot write {}: {error}", file.path));
+        if let Err(error) = std::fs::write(&at, &planned.bytes) {
+            return refuse(&format!("cannot write {}: {error}", planned.path));
         }
-        match found {
-            Found::Absent => println!("wrote {}", file.path),
-            _ => println!("wrote {} over the copy an earlier release wrote", file.path),
-        }
+        println!("{}", planned.wrote);
     }
     if writes.is_empty() {
         println!(
-            "the {} files of the harness set already hold this release, so nothing was written",
-            files.len()
+            "the {total} files of the harness set already hold this release, so nothing was written"
         );
     }
     ExitCode::SUCCESS
