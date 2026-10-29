@@ -148,4 +148,6 @@ Each paid issue gets its own ceiling when its dry-run plan is posted on it. No r
 
 **The tools still carry the old design until their issues re-cut them.** `.headwater/probe.yml`, `tools/probe/*.spec` and the engine's `probe` crate still declare the fourteen scenarios and the old sets. #1872 re-cuts `probe.yml` to five layers and seven scenarios. #1873 adds the `action`, `moments` and `axes` facets. #1874 builds the 44-probe set, and #1875 builds the campaign tooling. Each of those issues repoints its own citations of HW-DR-0111. HW-DR-0111 keeps its `governs` edges on `tools/probe/` until #1872 or #1875 moves them.
 
+**The open claims of spec 13 stay open.** This record reads HW-OBL-0012, HW-OBL-0013, HW-OBL-0014 and HW-OBL-0016, and it closes none of them. The evaluation that phase B publishes is the record that can discharge them.
+
 **These rulings open again** if the owner changes the grid, the scenarios or the keep rule. They also open again if the owner approves a ceiling for a paid issue, or if a phase A layer cannot be kept or closed. The grid opens again if a held-out row saturates in the base of every scenario.
