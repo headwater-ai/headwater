@@ -2,7 +2,7 @@
 id: HW-PROBE-a-session-repairs-a-change-narration-finding-in-the-sidebar-decision-and-raises-no-other-finding
 status: current
 status_since: 2026-10-30
-summary: "A session rewrites the sentence of HW-DR-0108 that ends "as before" so the change-narration finding clears, and raises no finding the pin did not carry."
+summary: "A session rewrites the sentence of HW-DR-0108 that ends with the words as before, so the change-narration finding clears, and raises no finding the pin did not carry."
 last_verified: 2026-10-30
 probe_category: sufficiency
 expectation: patched
