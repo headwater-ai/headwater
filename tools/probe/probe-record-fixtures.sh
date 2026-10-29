@@ -5397,11 +5397,12 @@ if [ -x "$engine" ]; then
     present "and each leak-kept line on its own" "line 8 holds only leak-kept probes" "$scratch/dry.out"
 
     # A line that pools a leak-kept probe with one that is not fails the dry run,
-    # and a plan over its ceiling is printed rather than fatal: twenty
+    # and a plan over its ceiling is printed rather than fatal: thirty-four
     # sufficiency probes over the documentation tier's two arms at 30
-    # repetitions is 1200 sessions, $600.00 against its $130.00. Two of the
-    # twenty are the harder variants of #1718, two are the patched probes of
-    # the code set (#1835), and eight are the probes of rows 4 and 5 (#1874).
+    # repetitions is 2040 sessions, $1020.00 against its $130.00. Two of the
+    # thirty-four are the harder variants of #1718, two are the patched probes
+    # of the code set (#1835), eight are the probes of rows 4 and 5 (#1874),
+    # and fourteen are the probes of rows 6 to 9 (#1874.3).
     # The plan selects by category and not by status, so the six retired
     # sufficiency probes count too. This line names them by category and not
     # by identifier. The campaign
@@ -5412,7 +5413,7 @@ if [ -x "$engine" ]; then
     same "a line that pools a leak-kept probe fails the dry run with 8, not 5" "8" "$?"
     present "and names the line" "line 1 pools a probe under \`leaks_kept:\`" "$scratch/pooled.out"
     present "and the ceiling's refusal is printed as a line" \
-        "L1 1200 sessions project \$600.00 against a declared ceiling of \$130.00" "$scratch/pooled.out"
+        "L1 2040 sessions project \$1020.00 against a declared ceiling of \$130.00" "$scratch/pooled.out"
 
     # Any other refusal of a plan is the batch driver's 5.
     printf 'campaign present discovery\n' > "$scratch/refused.spec"
@@ -5908,15 +5909,16 @@ if [ -x "$engine" ]; then
         rm -rf "$scratch/run-tune-out"
         # Each line's jobs are its own plan's count, not the first line's
         # (verify round 1): the regression tier runs 1 repetition and the
-        # campaign tier 30, so one spec of both is 20 + 20 x 30 jobs. The
-        # sufficiency shelf is twenty probes since rows 4 and 5 of #1874 added
-        # eight, and the plan counts its six retired probes too.
+        # campaign tier 30, so one spec of both is 34 + 34 x 30 jobs. The
+        # sufficiency shelf is thirty-four probes since rows 4 and 5 of #1874
+        # added eight and rows 6 to 9 added fourteen, and the plan counts its
+        # six retired probes too.
         printf 'regression present sufficiency\ncampaign present sufficiency\n' > "$scratch/run-tiers.spec"
         rm -rf "$scratch/run-tiers-out"
         HEADWATER_PROBE_HOST_CONFIG="$scratch/run-host" CARGO_TARGET_DIR="$scratch/gate-target" PATH="$scratch/run-bin:$PATH" \
             sh "$root/tools/probe/campaign.sh" --out "$scratch/run-tiers-out" --model claude-haiku-4-5 \
             --spec "$scratch/run-tiers.spec" --max-turns 10 --max-sessions 1 > /dev/null 2> "$scratch/run-tiers.err"
-        same "a spec of two tiers runs each line at its own plan's count" "20 600" \
+        same "a spec of two tiers runs each line at its own plan's count" "34 1020" \
             "$(awk '$2 == 1' "$scratch/run-tiers-out/jobs" 2>/dev/null | wc -l | tr -d ' ') $(awk '$2 == 2' "$scratch/run-tiers-out/jobs" 2>/dev/null | wc -l | tr -d ' ')"
         rm -rf "$scratch/run-out" "$scratch/run-final-out" "$scratch/run-tiers-out"
     else

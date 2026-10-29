@@ -180,7 +180,7 @@ tree=$(fresh successor-prefix) && sed -i '/^  superseded_by:/,/^  [a-z]/s/^    -
 grep -q '^    - HW-DR-01120$' "$tree/$old" || echo "oracle-fixtures: the superseded_by line of $old was not rewritten, so the next case reads nothing." >&2
 expect 1 "successor-typed fails an old record that names an identifier the successor's is a prefix of" "$tree" successor-typed.sh HW-DR-0111
 tree=$(fresh successor-supersedes-prefix) && sed -i '/^  supersedes:/,/^  [a-z]/s/^    - HW-DR-0111$/    - HW-DR-01110/' "$tree/$new"
-grep -q '^    - HW-DR-01110$' "$tree/$new" || echo "oracle-fixtures: the supersedes line of $new was not rewritten, so the next case reads nothing." >&2
+grep -q '^    - HW-DR-011[1]0$' "$tree/$new" || echo "oracle-fixtures: the supersedes line of $new was not rewritten, so the next case reads nothing." >&2
 expect 1 "successor-typed fails a document that supersedes an identifier the old record's is a prefix of" "$tree" successor-typed.sh HW-DR-0111
 # A sealed tree holds errors elsewhere, so `--check-clean` reads the two
 # documents the script names: the old record and the successor it found.
