@@ -268,6 +268,10 @@ pub struct Scenario {
 /// The one value the `exception` field of a scenario takes.
 pub const FULL_STACK: &str = "full-stack";
 
+/// The name a `tooling` path carries in a scenario's delta, which no layer
+/// may take.
+pub const TOOLING: &str = "tooling";
+
 /// What a scenario's tree does with one path of one layer, against the
 /// present tree.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -302,46 +306,31 @@ impl Budgets {
     }
 
     /// How the tree of a scenario differs from the present tree: one entry
-    /// for each path of each layer, in declared order.
+    /// for each path of each layer, in declared order, then one for each
+    /// `tooling` path.
     ///
     /// A layer the scenario holds keeps each of its `paths` and writes each of
-    /// its `arms`. A layer it does not hold has each path removed. One rule
-    /// joins them: an `arms` file stands in for a path that another layer
-    /// holds from the present tree, so where the scenario holds that other
-    /// layer, the present file is kept and the stand-in is neither written
-    /// nor removed. The hook layer's one-entry `settings.json` is that case,
-    /// and the rest of the harness holds the whole file. `None` for a
-    /// scenario the file does not declare.
+    /// its `arms`. A layer it does not hold has each path removed. Every
+    /// scenario removes each `tooling` path, under the name `tooling`. No two
+    /// entries name one path, because `layers` refuses a path two layers
+    /// claim and `Budgets::read` refuses a tooling path a layer claims.
+    /// `None` for a scenario the file does not declare.
     pub fn scenario_delta(&self, number: u32) -> Option<Vec<(Hold, &str, &str)>> {
         let scenario = self.scenario(number)?;
-        let held = |layer: &Layer| scenario.layers.contains(&layer.name);
-        let kept_by_held = |path: &str| {
-            self.layers
-                .iter()
-                .any(|layer| held(layer) && layer.paths.iter().any(|kept| kept == path))
-        };
         let mut delta = Vec::new();
         for layer in &self.layers {
-            // Two layers never hold one path from the present tree, because
-            // `layers` refuses it, so a path here is kept or removed alone.
+            let held = scenario.layers.contains(&layer.name);
             for path in &layer.paths {
-                let hold = if held(layer) {
-                    Hold::Keeps
-                } else {
-                    Hold::Removes
-                };
+                let hold = if held { Hold::Keeps } else { Hold::Removes };
                 delta.push((hold, layer.name.as_str(), path.as_str()));
             }
             for path in &layer.arms {
-                let hold = if kept_by_held(path) {
-                    continue;
-                } else if held(layer) {
-                    Hold::Writes
-                } else {
-                    Hold::Removes
-                };
+                let hold = if held { Hold::Writes } else { Hold::Removes };
                 delta.push((hold, layer.name.as_str(), path.as_str()));
             }
+        }
+        for path in &self.tooling {
+            delta.push((Hold::Removes, TOOLING, path.as_str()));
         }
         Some(delta)
     }
@@ -459,6 +448,34 @@ impl Budgets {
             None => Vec::new(),
             Some(declared) => layers(&declared.value)?,
         };
+        let tooling = match root.get(TOOLING) {
+            None => Vec::new(),
+            Some(listed) => paths(&listed.value)
+                .ok_or_else(|| {
+                    Unreadable::Malformed(format!(
+                        "`{TOOLING}` in {PATH} is not a sequence of paths"
+                    ))
+                })?
+                .map_err(|entry| Unreadable::ToolingUnsafe { entry })?,
+        };
+        // Every scenario removes a tooling path, so a layer that claims one
+        // would add a path that its own scenario then removes (#1872).
+        for tooling_path in &tooling {
+            for layer in &layers {
+                if let Some(layer_path) = layer
+                    .paths
+                    .iter()
+                    .chain(&layer.arms)
+                    .find(|path| claimed_twice(path, tooling_path))
+                {
+                    return Err(Unreadable::ToolingInLayer {
+                        layer: layer.name.clone(),
+                        layer_path: layer_path.clone(),
+                        tooling_path: tooling_path.clone(),
+                    });
+                }
+            }
+        }
         let scenarios = match root.get("scenarios") {
             None => Vec::new(),
             Some(declared) => scenarios(&declared.value, &layers)?,
@@ -491,7 +508,7 @@ impl Budgets {
             folds,
             answer_keys,
             layers,
-            tooling: Vec::new(),
+            tooling,
             scenarios,
             sets,
             oracles,
@@ -821,12 +838,10 @@ fn envelope(tier: Tier, fields: &Mapping) -> Result<Envelope, Unreadable> {
 /// The `layers` mapping (#1774): each layer's name, and the paths it adds to
 /// plain code.
 ///
-/// It refuses a name that cannot be a directory under `tools/probe/arms/`, a
-/// layer with no path, an unsafe path, and a path that two layers claim. Two
-/// paths are claimed twice when they are equal or one is inside the other.
-/// The one pair it admits is an `arms` file equal to a path another layer
-/// keeps from the present tree: the file stands in for part of that path, and
-/// [`Budgets::scenario_delta`] keeps the present file where both are held.
+/// It refuses a name that cannot be a directory under `tools/probe/arms/`,
+/// the name `tooling`, a layer with no path, an unsafe path, and a path that
+/// two layers claim. Two paths are claimed twice when they are equal or one
+/// is inside the other, whether each is kept or written from `arms`.
 fn layers(value: &Value) -> Result<Vec<Layer>, Unreadable> {
     let Some(block) = value.as_map() else {
         return Err(Unreadable::Malformed(format!(
@@ -837,6 +852,7 @@ fn layers(value: &Value) -> Result<Vec<Layer>, Unreadable> {
     for entry in block {
         let name = entry.key.value.as_str().to_string();
         let named = !name.is_empty()
+            && name != TOOLING
             && name
                 .chars()
                 .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-');
@@ -883,32 +899,16 @@ fn layers(value: &Value) -> Result<Vec<Layer>, Unreadable> {
         layers.push(layer);
     }
 
-    let inside = |a: &str, b: &str| {
-        a == b
-            || a.strip_prefix(b).is_some_and(|rest| rest.starts_with('/'))
-            || b.strip_prefix(a).is_some_and(|rest| rest.starts_with('/'))
-    };
     for (index, first) in layers.iter().enumerate() {
         for second in &layers[index + 1..] {
-            let entries = |layer: &'_ Layer| {
-                layer
-                    .paths
-                    .iter()
-                    .map(|path| (path.clone(), false))
-                    .chain(layer.arms.iter().map(|path| (path.clone(), true)))
-                    .collect::<Vec<_>>()
-            };
-            for (a, a_arms) in entries(first) {
-                for (b, b_arms) in entries(second) {
-                    // An `arms` file that stands in for a path the other layer
-                    // keeps from the present tree.
-                    let stands_in = a == b && a_arms != b_arms;
-                    if inside(&a, &b) && !stands_in {
+            for a in first.paths.iter().chain(&first.arms) {
+                for b in second.paths.iter().chain(&second.arms) {
+                    if claimed_twice(a, b) {
                         return Err(Unreadable::PathInTwoLayers {
                             first_layer: first.name.clone(),
-                            first_path: a,
+                            first_path: a.clone(),
                             second_layer: second.name.clone(),
-                            second_path: b,
+                            second_path: b.clone(),
                         });
                     }
                 }
@@ -918,6 +918,14 @@ fn layers(value: &Value) -> Result<Vec<Layer>, Unreadable> {
     Ok(layers)
 }
 
+/// Two paths name one part of the tree: they are equal, or one is inside the
+/// other.
+fn claimed_twice(a: &str, b: &str) -> bool {
+    a == b
+        || a.strip_prefix(b).is_some_and(|rest| rest.starts_with('/'))
+        || b.strip_prefix(a).is_some_and(|rest| rest.starts_with('/'))
+}
+
 /// The `scenarios` mapping (#1774): each scenario's block, base and layers.
 ///
 /// It refuses a scenario that is not a whole number, a block outside the
@@ -925,6 +933,12 @@ fn layers(value: &Value) -> Result<Vec<Layer>, Unreadable> {
 /// scenario 0 that holds a layer or names a base, a scenario other than 0
 /// with no base or a base the file does not declare, and a scenario that
 /// differs from its base by anything but exactly one added layer.
+///
+/// The one exception (#1872, HW-DR-0112) is a scenario that declares
+/// `exception: full-stack`. It may add more than one layer to its base when
+/// it drops no layer of the base, holds every declared layer, and is the
+/// only scenario that declares the exception. Each of those conditions has
+/// its own refusal.
 fn scenarios(value: &Value, layers: &[Layer]) -> Result<Vec<Scenario>, Unreadable> {
     let Some(block) = value.as_map() else {
         return Err(Unreadable::Malformed(format!(
@@ -980,20 +994,30 @@ fn scenarios(value: &Value, layers: &[Layer]) -> Result<Vec<Scenario>, Unreadabl
         if let Some(field) = fields
             .iter()
             .map(|field| field.key.value.as_str())
-            .find(|key| !["block", "base", "layers"].contains(key))
+            .find(|key| !["block", "base", "layers", "exception"].contains(key))
         {
             return Err(Unreadable::Malformed(format!(
                 "scenario {number} in {PATH} declares `{field}`. A scenario declares `block`, \
-                 `base` and `layers`, and nothing else"
+                 `base`, `layers` and `exception`, and nothing else"
             )));
         }
+        let exception = match text(fields, "exception") {
+            None => false,
+            Some(found) if found == FULL_STACK => true,
+            Some(found) => {
+                return Err(Unreadable::ScenarioExceptionUnknown {
+                    scenario: number,
+                    found,
+                });
+            }
+        };
         declared.push((
             Scenario {
                 number,
                 block: chosen,
                 base: None,
                 layers: held,
-                exception: false,
+                exception,
             },
             text(fields, "base"),
         ));
@@ -1002,8 +1026,20 @@ fn scenarios(value: &Value, layers: &[Layer]) -> Result<Vec<Scenario>, Unreadabl
     if !declared.is_empty() && !declared.iter().any(|(scenario, _)| scenario.number == 0) {
         return Err(Unreadable::ScenariosWithoutPlainCode);
     }
+    let mut excepted: Option<u32> = None;
     let mut scenarios = Vec::new();
     for (mut scenario, base) in declared.iter().cloned() {
+        let missing: Vec<String> = layers
+            .iter()
+            .map(|layer| layer.name.clone())
+            .filter(|name| !scenario.layers.contains(name))
+            .collect();
+        if scenario.exception && scenario.number == 0 {
+            return Err(Unreadable::ScenarioExceptionNotFullStack {
+                scenario: 0,
+                missing,
+            });
+        }
         if scenario.number == 0 {
             if let Some(layer) = scenario.layers.first() {
                 return Err(Unreadable::PlainCodeHoldsLayer {
@@ -1042,7 +1078,31 @@ fn scenarios(value: &Value, layers: &[Layer]) -> Result<Vec<Scenario>, Unreadabl
             .filter(|layer| !scenario.layers.contains(layer))
             .cloned()
             .collect();
-        if added.len() != 1 || !dropped.is_empty() {
+        if scenario.exception {
+            if !dropped.is_empty() {
+                return Err(Unreadable::ScenarioExceptionDrops {
+                    scenario: scenario.number,
+                    base: under.number,
+                    dropped,
+                });
+            }
+            if !missing.is_empty() {
+                return Err(Unreadable::ScenarioExceptionNotFullStack {
+                    scenario: scenario.number,
+                    missing,
+                });
+            }
+            if let Some(first) = excepted {
+                return Err(Unreadable::ScenarioExceptionTwice {
+                    first,
+                    second: scenario.number,
+                });
+            }
+            excepted = Some(scenario.number);
+        }
+        let one_layer = added.len() == 1 && dropped.is_empty();
+        let full_stack = scenario.exception && !added.is_empty();
+        if !one_layer && !full_stack {
             return Err(Unreadable::ScenarioNotOneLayer {
                 scenario: scenario.number,
                 base: under.number,
