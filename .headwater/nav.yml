@@ -218,6 +218,7 @@ nav:
               - "109 — A task that repeats the declared name of a document names that document": "decisions/0109-a-task-that-repeats-the-declared-name-of-a-document-names-that-document.md"
               - "110 — A headless review of the nine hand-built pages joins CI, and the review of the generated half stays a run by hand": "decisions/0110-a-headless-review-of-the-nine-hand-built-pages-joins-ci-and-the-review-of-the-generated-half-stays-a-run-by-hand.md"
               - "111 — The additive campaign adds six layers to plain code in fourteen scenarios and registers one comparison each": "decisions/0111-the-additive-campaign-adds-six-layers-to-plain-code-in-fourteen-scenarios-and-registers-one-comparison-each.md"
+              - "112 — The additive campaign measures eleven actions by five layers in seven scenarios": "decisions/0112-the-additive-campaign-measures-eleven-actions-by-five-layers-in-seven-scenarios.md"
           - "Evaluations":
               - "Evaluations": "evaluations/README.md"
               - "A probe task section is the prompt, so commentary under that heading is prompt": "evaluations/a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt.md"

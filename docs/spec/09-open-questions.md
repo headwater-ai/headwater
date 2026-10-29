@@ -457,6 +457,10 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 [HW-DR-0110](../decisions/0110-a-headless-review-of-the-nine-hand-built-pages-joins-ci-and-the-review-of-the-generated-half-stays-a-run-by-hand.md) — CI reads the nine hand-built pages at 390 and 1280 pixels wide for 2.4 seconds a run. The same reading over 623 generated pages flags 81 for one table defect, so it stays a run by hand until that defect is fixed. (asserted, and no human has accepted it)
 
+## 112 — The additive campaign measures eleven actions by five layers in seven scenarios
+
+[HW-DR-0112](../decisions/0112-the-additive-campaign-measures-eleven-actions-by-five-layers-in-seven-scenarios.md) — The 0.07 campaign grades 11 canonical actions against 5 layers in 7 scenarios over 44 probes. Phase A tunes each layer pooled over the tuning probes, with a 22-session screen and a 145-session confirmation. Phase B reports held-out numbers per action. This record also keeps the probe shape, the verdict rule and the fixed model. (asserted, and no human has accepted it)
+
 ## 111 — The additive campaign adds six layers to plain code in fourteen scenarios and registers one comparison each
 
-[HW-DR-0111](../decisions/0111-the-additive-campaign-adds-six-layers-to-plain-code-in-fourteen-scenarios-and-registers-one-comparison-each.md) — The 0.07 campaign builds 14 scenarios by adding six layers to plain code. Each scenario has one base, one registered comparison and one verdict, over 9 probes split 5 for tuning and 4 held out. Only the skills, the hook and MCP are tuned. A code set of 5 probes asks whether the documents help an agent write code. (asserted, and no human has accepted it)
+[HW-DR-0111](../decisions/0111-the-additive-campaign-adds-six-layers-to-plain-code-in-fourteen-scenarios-and-registers-one-comparison-each.md) (superseded) — Superseded by HW-DR-0112, and this record decides nothing in force. HW-DR-0112 carries its probe shape, its verdict rule, its definition of a call to the server and its fixed model. It recorded 14 scenarios over 9 probes, and a code set of 5 probes. (asserted, and no human has accepted it)
