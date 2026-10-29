@@ -702,6 +702,7 @@ fn this_repository_generates_its_one_hundred_and_eighteen_artifacts_and_accounts
         &built.census,
         &built.graph,
         &built.config,
+        &built.shape,
         &budgets,
         &lock.digest,
         headwater_probe::Tier::Regression,

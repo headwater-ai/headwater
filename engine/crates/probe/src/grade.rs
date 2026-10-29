@@ -1890,6 +1890,8 @@ mod tests {
             oracle: None,
             answers: Vec::new(),
             expected: Vec::new(),
+            action: None,
+            moments: Vec::new(),
         }
     }
 

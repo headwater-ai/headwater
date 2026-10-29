@@ -37,6 +37,7 @@ use headwater_census::census::Census;
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::paint::{paint, ColorMode, Role};
+use headwater_check::Shape;
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Graph};
@@ -137,6 +138,7 @@ fn plan_at(tier: Tier, narrowing: &Narrowing) -> Plan {
         &taken,
         &graph,
         &Config::default(),
+        &Shape::read(&root).expect("the shape reads"),
         &budgets(),
         LOCK,
         tier,
@@ -153,6 +155,7 @@ fn plan_against(tier: Tier, budgets: &Budgets) -> Plan {
         &taken,
         &graph,
         &Config::default(),
+        &Shape::read(&root).expect("the shape reads"),
         budgets,
         LOCK,
         tier,
@@ -229,6 +232,7 @@ fn plan_over(dir: &Path) -> Plan {
         &taken,
         &graph,
         &Config::default(),
+        &Shape::read(&root).expect("the shape reads"),
         &budgets(),
         LOCK,
         Tier::Regression,
@@ -245,6 +249,7 @@ fn staleness_at(dir: &Path) -> Staleness {
         &taken,
         &graph,
         &config,
+        &Shape::read(&root).expect("the shape reads"),
         &budgets(),
         LOCK,
         Tier::Regression,
@@ -505,6 +510,7 @@ fn staleness_of(dir: &Path, source: &str) -> Staleness {
         &taken,
         &graph,
         &config,
+        &Shape::read(&root).expect("the shape reads"),
         &budgets(),
         LOCK,
         Tier::Regression,
@@ -717,7 +723,7 @@ fn a_call_that_named_no_document_of_this_corpus_is_reported_apart() {
 }
 
 /// The one call the committed transcript records, as it writes it.
-const THE_READ_CALL: &str = "    - tool: read\n      argument: corpus/probes/0002-answered.md\n      result: sha256:4ad8a68a9b14018c085d8cb9a67113d44e15eb624e8d383d7fc76fb5c3e6bc1b\n";
+const THE_READ_CALL: &str = "    - tool: read\n      argument: corpus/probes/0002-answered.md\n      result: sha256:be177fea7c3cb22bbc0419a39601ae4010234b283d8fabf6300995690a396630\n";
 
 /// The committed transcript at `dir` with its one call replaced by `calls`.
 fn with_calls(dir: &Path, calls: &str) -> String {
@@ -962,7 +968,7 @@ fn a_member_with_a_witness_is_reported_by_it_even_where_bash_named_it_first() {
     assert!(member.witness.is_some(), "{report}");
     assert!(
         report.contains(
-            "- corpus/probes/0002-answered.md (probe) sha256:4ad8a68a9b14018c085d8cb9a67113d44e15eb624e8d383d7fc76fb5c3e6bc1b\n    event 1 call 2 observed the same identity, so this document stands\n"
+            "- corpus/probes/0002-answered.md (probe) sha256:be177fea7c3cb22bbc0419a39601ae4010234b283d8fabf6300995690a396630\n    event 1 call 2 observed the same identity, so this document stands\n"
         ),
         "the witnessed member is not reported by its witness:\n{report}"
     );
@@ -1350,6 +1356,8 @@ fn the_grader_refuses_a_selection_the_plan_would_not_have_produced() {
         oracle: oracle.map(str::to_string),
         answers,
         expected: Vec::new(),
+        action: None,
+        moments: Vec::new(),
     };
     let record = record_of(&transcript("transcript.md"));
 
@@ -1472,6 +1480,7 @@ fn layer_plan(budgets: &Budgets, narrowing: &Narrowing) -> Plan {
         &taken,
         &graph,
         &Config::default(),
+        &Shape::read(&root).expect("the shape reads"),
         budgets,
         LOCK,
         Tier::Campaign,
@@ -1823,7 +1832,9 @@ fn a_category_that_no_probe_declares_refuses_rather_than_planning_nothing() {
     assert_eq!(
         plan.refusal,
         Some(Refusal::SelectionEmpty {
-            category: Some(Category::Consistency)
+            category: Some(Category::Consistency),
+            action: None,
+            moment: None,
         }),
         "an empty selection is a run over a denominator nobody declared"
     );
@@ -1913,6 +1924,7 @@ fn plan_over_probe(edit: &dyn Fn(&str) -> String) -> Plan {
         &taken,
         &graph,
         &config,
+        &Shape::read(&root).expect("the shape reads"),
         &budgets(),
         LOCK,
         Tier::Regression,
@@ -3221,6 +3233,7 @@ fn additive_plan(budgets: &Budgets, tier: Tier, narrowing: &Narrowing) -> Plan {
         &taken,
         &graph,
         &Config::default(),
+        &Shape::read(&root).expect("the shape reads"),
         budgets,
         LOCK,
         tier,

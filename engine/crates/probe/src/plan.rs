@@ -37,6 +37,7 @@ use crate::budget::{Budgets, Envelope};
 use crate::{dollars, Arm, Category, Cents, Expectation, Tier};
 use headwater_census::census::{Census, Outcome};
 use headwater_check::paint::{paint, ColorMode, Role};
+use headwater_check::Shape;
 use headwater_graph::edges::Target;
 use headwater_graph::{Config, Graph};
 
@@ -188,6 +189,12 @@ pub struct Selected {
     /// and empty for every other form. A proper subset of `answers`, which the
     /// plan enforces.
     pub expected: Vec<String>,
+    /// The canonical action of HW-DR-0112 the probe exercises, and `None` in a
+    /// corpus whose taxonomy declares no `action` facet (#1873).
+    pub action: Option<String>,
+    /// The hook moments the probe passes, in the order the probe lists them,
+    /// and empty where it lists none (#1873).
+    pub moments: Vec<String>,
 }
 
 /// Why a run does not happen.
@@ -199,8 +206,13 @@ pub struct Selected {
 pub enum Refusal {
     /// No document of the probe kind is classified in this corpus.
     NoProbes,
-    /// The selection filters left nothing.
-    SelectionEmpty { category: Option<Category> },
+    /// The selection filters left nothing. Each field is a narrowing the
+    /// caller named, so the refusal says which words selected nothing.
+    SelectionEmpty {
+        category: Option<Category>,
+        action: Option<String>,
+        moment: Option<String>,
+    },
     /// The declaration names no envelope for the tier asked for.
     TierUndeclared(Tier),
     /// A campaign narrowed to one arm. It would estimate nothing while
@@ -391,14 +403,30 @@ impl std::fmt::Display for Refusal {
                 "this corpus classifies no document of the `{KIND}` kind, so there is nothing to \
                  run and no claim it could measure"
             ),
-            Refusal::SelectionEmpty { category } => match category {
-                Some(category) => write!(
-                    f,
-                    "no probe of this corpus declares the `{}` category",
-                    category.name()
-                ),
-                None => write!(f, "the selection is empty"),
-            },
+            Refusal::SelectionEmpty {
+                category,
+                action,
+                moment,
+            } => {
+                let mut named = Vec::new();
+                if let Some(category) = category {
+                    named.push(format!("the `{}` category", category.name()));
+                }
+                if let Some(action) = action {
+                    named.push(format!("the `{action}` action"));
+                }
+                if let Some(moment) = moment {
+                    named.push(format!("the `{moment}` moment"));
+                }
+                match named.is_empty() {
+                    true => write!(f, "the selection is empty"),
+                    false => write!(
+                        f,
+                        "no probe of this corpus declares {}",
+                        named.join(" and ")
+                    ),
+                }
+            }
             Refusal::TierUndeclared(tier) => write!(
                 f,
                 "`{}` declares no envelope for the `{}` tier, so no ceiling exists to project \
@@ -679,6 +707,34 @@ pub struct Narrowing {
     /// selection across categories (#1774). The CLI refuses it beside a
     /// category, so the two never combine.
     pub set: Option<String>,
+    /// One canonical action of HW-DR-0112: the selection keeps the probes
+    /// whose `action` is this value (#1873). The CLI refuses a value outside
+    /// the taxonomy's closed set before the plan is taken.
+    pub action: Option<String>,
+    /// One hook moment: the selection keeps the probes whose `moments` list
+    /// holds this value as one item (#1873).
+    pub moment: Option<String>,
+}
+
+/// The two probe facets HW-DR-0112 added, as `Plan::over` reads them.
+pub const ACTION: &str = "action";
+pub const MOMENTS: &str = "moments";
+
+/// A facet's value written back as the author wrote it, for a refusal that
+/// quotes a value that is not a scalar.
+fn quoted(value: &headwater_yaml::value::Value) -> String {
+    match (value.as_scalar(), value.as_seq()) {
+        (Some(scalar), _) => scalar.text.clone(),
+        (None, Some(items)) => format!(
+            "[{}]",
+            items
+                .iter()
+                .map(|item| quoted(&item.value))
+                .collect::<Vec<_>>()
+                .join(", ")
+        ),
+        (None, None) => "a mapping".to_string(),
+    }
 }
 
 /// The selection digest: the identifiers selected, in identifier order, one per
@@ -713,10 +769,16 @@ impl Plan {
     /// It never fails. A run that does not happen produces a plan with a
     /// [`Refusal`] on it and the numbers that led to it, because the reason a
     /// run was refused is the thing the caller needs.
+    ///
+    /// `shape` is the resolved taxonomy. The closed sets of `action` and
+    /// `moments` are read from it and not from an enum in this crate, so a
+    /// re-cut of the grid of HW-DR-0112 edits one file (#1873).
+    #[allow(clippy::too_many_arguments)]
     pub fn over(
         census: &Census,
         graph: &Graph,
         config: &Config,
+        shape: &Shape,
         budgets: &Budgets,
         lock: &str,
         tier: Tier,
@@ -763,8 +825,34 @@ impl Plan {
             return plan;
         }
 
+        // A facet the taxonomy does not declare is not read, so a corpus from
+        // before HW-DR-0112 plans as it did. An empty value set is an open
+        // facet, which admits any scalar.
+        let admits =
+            |values: &[String], value: &str| values.is_empty() || values.iter().any(|v| v == value);
+        let declared_set = |name: &str| {
+            shape.facet(name).map(|facet| {
+                facet
+                    .admitted()
+                    .into_iter()
+                    .map(str::to_string)
+                    .collect::<Vec<_>>()
+            })
+        };
+        let action_set = declared_set(ACTION);
+        let action_required = shape
+            .required_facets(KIND)
+            .iter()
+            .any(|facet| facet == ACTION);
+        let moment_set = declared_set(MOMENTS);
+
         for row in probes {
             let facets = row.document.as_ref().map(|document| &document.facets);
+            let value_of = |key: &str| {
+                facets
+                    .and_then(|facets| facets.get(key))
+                    .map(|entry| &entry.value)
+            };
             let read = |key: &str| -> Option<String> {
                 facets?
                     .get(key)?
@@ -797,6 +885,50 @@ impl Plan {
                 });
                 return plan;
             };
+
+            // One probe has one action: a list would count it toward two rows
+            // of the grid. Absent is refused only where the kind requires it.
+            let action = match (&action_set, value_of(ACTION)) {
+                (None, _) => None,
+                (Some(_), None) if !action_required => None,
+                (Some(values), found) => match found.and_then(|value| value.as_scalar()) {
+                    Some(scalar) if admits(values, &scalar.text) => Some(scalar.text.clone()),
+                    _ => {
+                        plan.refusal = Some(Refusal::Undeclared {
+                            path: row.path.clone(),
+                            facet: ACTION,
+                            found: found.map(quoted),
+                        });
+                        return plan;
+                    }
+                },
+            };
+
+            // The moments are a list, and each item is read against the set,
+            // the way `invalid_pair` reads a list (#1542). A lone scalar is a
+            // list of one.
+            let mut moments = Vec::new();
+            if let (Some(values), Some(found)) = (&moment_set, value_of(MOMENTS)) {
+                let items: Vec<&headwater_yaml::value::Value> = match found.as_seq() {
+                    Some(items) => items.iter().map(|item| &item.value).collect(),
+                    None => vec![found],
+                };
+                for item in items {
+                    match item.as_scalar() {
+                        Some(scalar) if admits(values, &scalar.text) => {
+                            moments.push(scalar.text.clone())
+                        }
+                        _ => {
+                            plan.refusal = Some(Refusal::Undeclared {
+                                path: row.path.clone(),
+                                facet: MOMENTS,
+                                found: Some(quoted(item)),
+                            });
+                            return plan;
+                        }
+                    }
+                }
+            }
 
             let mut examines: Vec<Examined> = graph
                 .edges
@@ -919,16 +1051,21 @@ impl Plan {
                 oracle,
                 answers,
                 expected,
+                action,
+                moments,
             });
         }
 
+        let empty = || Refusal::SelectionEmpty {
+            category: narrowing.category,
+            action: narrowing.action.clone(),
+            moment: narrowing.moment.clone(),
+        };
         if let Some(category) = narrowing.category {
             plan.selected
                 .retain(|selected| selected.category == category);
             if plan.selected.is_empty() {
-                plan.refusal = Some(Refusal::SelectionEmpty {
-                    category: Some(category),
-                });
+                plan.refusal = Some(empty());
                 return plan;
             }
         }
@@ -956,6 +1093,20 @@ impl Plan {
             plan.selected
                 .retain(|selected| members.contains(&selected.id));
         }
+        // After the set, so that a set member another narrowing leaves out is
+        // still a member the set names, and not a `SetMemberUnknown`.
+        if let Some(action) = &narrowing.action {
+            plan.selected
+                .retain(|selected| selected.action.as_ref() == Some(action));
+        }
+        if let Some(moment) = &narrowing.moment {
+            plan.selected
+                .retain(|selected| selected.moments.contains(moment));
+        }
+        if plan.selected.is_empty() {
+            plan.refusal = Some(empty());
+            return plan;
+        }
         for excluded in &narrowing.exclude {
             let before = plan.selected.len();
             plan.selected.retain(|selected| &selected.id != excluded);
@@ -967,9 +1118,7 @@ impl Plan {
             }
         }
         if plan.selected.is_empty() {
-            plan.refusal = Some(Refusal::SelectionEmpty {
-                category: narrowing.category,
-            });
+            plan.refusal = Some(empty());
             return plan;
         }
         plan.selected.sort_by(|a, b| a.id.cmp(&b.id));
@@ -1277,6 +1426,12 @@ impl Plan {
             );
             let _ = writeln!(out, "    category: {}", selected.category.name());
             let _ = writeln!(out, "    expects: {}", selected.expectation.name());
+            if let Some(action) = &selected.action {
+                let _ = writeln!(out, "    action: {action}");
+            }
+            if !selected.moments.is_empty() {
+                let _ = writeln!(out, "    moments: {}", selected.moments.join(", "));
+            }
             if !selected.examines.is_empty() {
                 let _ = writeln!(
                     out,
@@ -1588,6 +1743,8 @@ mod tests {
             oracle: None,
             answers: Vec::new(),
             expected: Vec::new(),
+            action: None,
+            moments: Vec::new(),
         }
     }
 
