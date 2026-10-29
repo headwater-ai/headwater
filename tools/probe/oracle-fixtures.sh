@@ -372,6 +372,11 @@ expect 0 "lock-regenerated passes a retired term once resolved" "$retired" lock-
 expect 1 "lock-regenerated fails when one of two terms is not retired" "$retired" lock-regenerated.sh retires "$carrier" game-changer retires "$carrier" cutting-edge
 expect 1 "lock-regenerated fails a term whose entry has no replacement when the probe names one" "$retired" lock-regenerated.sh retires "$carrier" game-changer change
 expect 1 "lock-regenerated fails a term that only starts a retired one" "$retired" lock-regenerated.sh retires "$carrier" game
+# The finding is read for the term it names and not for a substring of its
+# message: a carrier that writes the retired `game-changer` raises a finding
+# whose message holds `game`, and `game` is still not retired.
+tree=$(fresh lock-substring) && rm -rf "$tree" && cp -a "$retired" "$tree" && printf '\nThe change was a game-changer for the team.\n' >> "$tree/$carrier"
+expect 1 "lock-regenerated fails a term that only the finding on a longer retired term holds" "$tree" lock-regenerated.sh retires "$carrier" game
 # The parent's mutant 5 of round 3: no entry for the term, and `term:
 # game-changer` inside the quoted reason of another entry, resolved.
 tree=$(fresh lock-quoted) && sed "s/^$anchor\$/        reason: \"it stands in for the failure the thing survives, term: game-changer\"/" "$base/$overlay" > "$tree/$overlay"
