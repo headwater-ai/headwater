@@ -426,8 +426,10 @@ fn the_shipped_configuration_calls_the_shipped_scripts_and_the_binary_on_the_pat
         let body = std::fs::read_to_string(root.join(format!(".claude/hooks/{script}.sh")))
             .expect("the script reads");
         assert!(
-            body.lines().last().is_some_and(|line| line
-                .starts_with("# installed by headwater init --harness, digest sha256:")),
+            body.lines()
+                .last()
+                .is_some_and(|line| line
+                    .starts_with("# installed by headwater init --harness, digest sha256:")),
             "{script} ends with its record"
         );
     }
@@ -565,6 +567,9 @@ fn a_hook_with_no_binary_on_the_path_does_nothing() {
             .expect("writes");
         let output = child.wait_with_output().expect("ends");
         succeeded(&output, &format!("the {name} hook with no binary"));
-        assert!(output.stdout.is_empty() && output.stderr.is_empty(), "{name}");
+        assert!(
+            output.stdout.is_empty() && output.stderr.is_empty(),
+            "{name}"
+        );
     }
 }

@@ -457,7 +457,10 @@ fn merge_settings(root: &mut Vec<(String, headwater_yaml::json::Json)>) -> Resul
             return Err("its `hooks` member is not an object".to_string());
         };
         let Json::Array(groups) = member(events, entry.event, Json::Array(Vec::new())) else {
-            return Err(format!("its `hooks.{}` member is not an array", entry.event));
+            return Err(format!(
+                "its `hooks.{}` member is not an array",
+                entry.event
+            ));
         };
         let command = entry.command();
         let hook = Json::Object(vec![
@@ -686,31 +689,54 @@ mod tests {
     fn a_hook_carries_its_record_as_a_shell_comment() {
         let current = installed_as("#!/bin/sh\nnew\n", Form::Hook);
         assert!(!current.ends_with(" -->\n"));
-        assert!(current
-            .lines()
-            .last()
-            .is_some_and(|line| line.starts_with("# installed by headwater init --harness, digest sha256:")));
+        assert!(current.lines().last().is_some_and(
+            |line| line.starts_with("# installed by headwater init --harness, digest sha256:")
+        ));
         let earlier = installed_as("#!/bin/sh\nold\n", Form::Hook);
-        assert_eq!(classify_as(Some(current.as_bytes()), &current, Form::Hook), Found::Current);
-        assert_eq!(classify_as(Some(earlier.as_bytes()), &current, Form::Hook), Found::Earlier);
         assert_eq!(
-            classify_as(Some(earlier.replacen("old", "mine", 1).as_bytes()), &current, Form::Hook),
+            classify_as(Some(current.as_bytes()), &current, Form::Hook),
+            Found::Current
+        );
+        assert_eq!(
+            classify_as(Some(earlier.as_bytes()), &current, Form::Hook),
+            Found::Earlier
+        );
+        assert_eq!(
+            classify_as(
+                Some(earlier.replacen("old", "mine", 1).as_bytes()),
+                &current,
+                Form::Hook
+            ),
             Found::Foreign
         );
         // The Markdown record on a script is not the step's.
         let wrong = installed("#!/bin/sh\nold\n");
-        assert_eq!(classify_as(Some(wrong.as_bytes()), &current, Form::Hook), Found::Foreign);
-        assert_eq!(classify(Some(earlier.as_bytes()), &installed("x\n")), Found::Foreign);
+        assert_eq!(
+            classify_as(Some(wrong.as_bytes()), &current, Form::Hook),
+            Found::Foreign
+        );
+        assert_eq!(
+            classify(Some(earlier.as_bytes()), &installed("x\n")),
+            Found::Foreign
+        );
     }
 
     #[test]
     fn a_fresh_settings_file_holds_every_entry_and_a_second_merge_writes_nothing() {
-        let Merged::Write { bytes, absent, added } = merge(Config::Settings, None) else {
+        let Merged::Write {
+            bytes,
+            absent,
+            added,
+        } = merge(Config::Settings, None)
+        else {
             panic!("an absent file is written");
         };
         assert!(absent);
         assert_eq!(added, HOOK_ENTRIES.len());
-        assert_eq!(merge(Config::Settings, Some(bytes.as_bytes())), Merged::Current);
+        assert_eq!(
+            merge(Config::Settings, Some(bytes.as_bytes())),
+            Merged::Current
+        );
         for entry in HOOK_ENTRIES {
             assert!(bytes.contains(&headwater_yaml::json::Json::string(entry.command()).render()));
         }
@@ -725,36 +751,66 @@ mod tests {
     #[test]
     fn a_merge_keeps_every_entry_of_the_adopter_in_its_place() {
         let theirs = r#"{"model": "x", "hooks": {"PreToolUse": [{"matcher": "Write|Edit", "hooks": [{"type": "command", "command": "mine.sh", "timeout": 5}]}, {"matcher": "Bash", "hooks": []}]}, "env": {"A": "1"}}"#;
-        let Merged::Write { bytes, absent, added } = merge(Config::Settings, Some(theirs.as_bytes()))
+        let Merged::Write {
+            bytes,
+            absent,
+            added,
+        } = merge(Config::Settings, Some(theirs.as_bytes()))
         else {
             panic!("a file that lacks entries is written");
         };
         assert!(!absent);
         assert_eq!(added, HOOK_ENTRIES.len());
-        let order = ["\"model\"", "\"hooks\"", "mine.sh", "write.sh", "touch.sh", "\"Bash\"", "read.sh", "\"env\""];
+        let order = [
+            "\"model\"",
+            "\"hooks\"",
+            "mine.sh",
+            "write.sh",
+            "touch.sh",
+            "\"Bash\"",
+            "read.sh",
+            "\"env\"",
+        ];
         let at: Vec<usize> = order
             .iter()
-            .map(|needle| bytes.find(needle).unwrap_or_else(|| panic!("{needle} is kept")))
+            .map(|needle| {
+                bytes
+                    .find(needle)
+                    .unwrap_or_else(|| panic!("{needle} is kept"))
+            })
             .collect();
         assert!(at.windows(2).all(|pair| pair[0] < pair[1]), "{bytes}");
         assert!(bytes.contains("\"timeout\": 5"));
-        assert_eq!(merge(Config::Settings, Some(bytes.as_bytes())), Merged::Current);
+        assert_eq!(
+            merge(Config::Settings, Some(bytes.as_bytes())),
+            Merged::Current
+        );
     }
 
     #[test]
     fn a_file_that_is_not_an_object_or_holds_another_headwater_server_is_refused() {
         for text in ["[1, 2]", "not json {", "{\"hooks\": []}"] {
             assert!(
-                matches!(merge(Config::Settings, Some(text.as_bytes())), Merged::Foreign(_)),
+                matches!(
+                    merge(Config::Settings, Some(text.as_bytes())),
+                    Merged::Foreign(_)
+                ),
                 "{text}"
             );
         }
         let other = r#"{"mcpServers": {"headwater": {"command": "./engine/target/release/headwater", "args": ["mcp"]}}}"#;
-        assert!(matches!(merge(Config::Mcp, Some(other.as_bytes())), Merged::Foreign(_)));
+        assert!(matches!(
+            merge(Config::Mcp, Some(other.as_bytes())),
+            Merged::Foreign(_)
+        ));
         let reordered = r#"{"mcpServers": {"other": {"command": "x"}, "headwater": {"args": ["mcp"], "command": "headwater"}}}"#;
-        assert_eq!(merge(Config::Mcp, Some(reordered.as_bytes())), Merged::Current);
+        assert_eq!(
+            merge(Config::Mcp, Some(reordered.as_bytes())),
+            Merged::Current
+        );
         let without = r#"{"mcpServers": {"other": {"command": "x"}}}"#;
-        let Merged::Write { bytes, added, .. } = merge(Config::Mcp, Some(without.as_bytes())) else {
+        let Merged::Write { bytes, added, .. } = merge(Config::Mcp, Some(without.as_bytes()))
+        else {
             panic!("a file without the server is written");
         };
         assert_eq!(added, 1);
