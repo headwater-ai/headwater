@@ -95,14 +95,16 @@ case ${1:-} in
         ;;
 esac
 
-# Whether a file holds <name> as a whole name: not preceded and not followed
-# by a letter, a digit, `_`, `-` or `.`, so `HW-DR-0112` is not found in
-# `HW-DR-01120` and `0112-x.md` is not found in `draft-0112-x.md`.
+# Whether a file holds <name> as a whole name: not preceded by a letter, a
+# digit, `_`, `-` or `.`, and not followed by one of them, except a period
+# that ends a sentence, which no letter, digit, `_` or `-` follows. So
+# `HW-DR-0112` is not found in `HW-DR-01120`, `HW-DR-0112.md` or
+# `HW-DR-0112.5`, and `0112-x.md` is not found in `draft-0112-x.md`.
 #
 #     hw_oracle_names_whole <name> <file>
 hw_oracle_names_whole() {
     hw_whole_pattern=$(printf '%s\n' "$1" | sed 's/[][\.*^$+?(){}|/]/\\&/g')
-    grep -E -q -- "(^|[^A-Za-z0-9_.-])$hw_whole_pattern([^A-Za-z0-9_-]|\\.[^A-Za-z0-9_-]|\\.\$|\$)" "$2"
+    grep -E -q -- "(^|[^A-Za-z0-9_.-])$hw_whole_pattern([^A-Za-z0-9_.-]|\\.[^A-Za-z0-9_-]|\\.\$|\$)" "$2"
 }
 
 #
