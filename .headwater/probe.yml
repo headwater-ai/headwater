@@ -498,6 +498,9 @@ tiers:
 # `skills` too: they are the engine's source copies of the same text, which
 # `include_str!` embeds in the binary. The campaign builds the binary from
 # its own checkout, so a scenario tree does not need them to have it.
+# `engine/crates/cli/harness/hooks` is the engine's source copy of the hooks
+# (#1871), and each script goes with the layer that holds its `.claude/hooks/`
+# copy: `intent.sh` and `lib.sh` with `hook`, the other four with `harness`.
 # `AGENTS.md` and `.codex` are the Codex copies of the standing
 # instructions and the hook, so they go with the rest of the harness, and
 # scenario 2 differs from scenario 1 by one copy of `CLAUDE.md`. The Copilot
@@ -541,6 +544,8 @@ layers:
       - .claude/hooks/intent.sh
       - .claude/hooks/lib.sh
       - .claude/hooks/lib.local.sh
+      - engine/crates/cli/harness/hooks/intent.sh
+      - engine/crates/cli/harness/hooks/lib.sh
     arms: [.claude/settings.json]
   mcp:
     arms: [.mcp.json]
@@ -571,6 +576,10 @@ layers:
       - .claude/hooks/touch.sh
       - .claude/hooks/wait.sh
       - .claude/hooks/write.sh
+      - engine/crates/cli/harness/hooks/read.sh
+      - engine/crates/cli/harness/hooks/review.sh
+      - engine/crates/cli/harness/hooks/touch.sh
+      - engine/crates/cli/harness/hooks/write.sh
       - .claude/run
       - .claude/settings.json
       - .claude/tutorial
