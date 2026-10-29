@@ -540,6 +540,7 @@ layers:
     paths:
       - .claude/hooks/intent.sh
       - .claude/hooks/lib.sh
+      - .claude/hooks/lib.local.sh
     arms: [.claude/settings.json]
   mcp:
     arms: [.mcp.json]
