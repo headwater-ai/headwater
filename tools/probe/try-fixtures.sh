@@ -108,6 +108,7 @@ cat > "$fix/driver-stub.sh" <<'EOF'
     printf '\n'
 } >> "$TRY_CALLS"
 echo "env versions=${HEADWATER_DRIVE_CLAUDE_VERSIONS:-} target=${CARGO_TARGET_DIR:-} tmp=${TMPDIR:-} pwd=$PWD stage=${HEADWATER_TUNING_STAGE:-}" >> "$TRY_CALLS"
+echo "usage stop=${HEADWATER_DRIVE_USAGE_STOP:-} late=${HEADWATER_DRIVE_USAGE_LATE:-} hours=${HEADWATER_DRIVE_USAGE_LATE_HOURS:-}" >> "$TRY_CALLS"
 if [ -f "$TRY_SLEEP" ]; then sleep 30; fi
 exit 0
 EOF
@@ -389,6 +390,9 @@ run status "$CASE/root"
 check "status: exits 0" code_is 0
 check "status: one line for the first try, with what it spent and its markers" out_has "docs-try1 spent=3000 driver=none markers=canary-passed done"
 check "status: one line for the dot-named try" out_has ".docs-try1-moved spent=3001"
+: > "$CASE/root/docs-try1/usage-gated"
+run status "$CASE/root"
+check "status: a stop of the usage gate is among the markers (#1876)" out_has "docs-try1 spent=3000 driver=none markers=canary-passed usage-gated done"
 check "status: the total against the approval" out_has "spent: 7001 of 10000 approved"
 check "status: the open layer" out_has "open: docs 1 2 3000"
 
@@ -610,6 +614,29 @@ for marker in done capped canary-failed stop; do
     rm "$CASE/root/docs-r2-v1/$marker"
 done
 check "relaunch: no refused relaunch invokes the driver" [ "$(calls_count)" = 2 ]
+# A stop of the usage gate is not a refusal: the driver reads the gate again
+# (#1876), and each start hands it the values of additive-launch.env.
+check "launch: the driver is handed the usage gate of additive-launch.env" sh -c "[ \"\$(grep -c '^usage stop=85 late=100 hours=24\$' '$CASE/calls')\" = 2 ]"
+echo "2026-10-29T00:00:00Z usage-gated: 7-day at 86% (from x), threshold 85%, resets 2026-10-30T00:00:00Z" > "$CASE/root/docs-r2-v1/usage-gated"
+run relaunch "$CASE/root" docs-r2-v1
+await_calls 3
+check "relaunch: usage-gated present exits 0" code_is 0
+check "relaunch: and invokes the driver" [ "$(calls_count)" = 3 ]
+check "relaunch: and hands it the usage gate again" sh -c "[ \"\$(grep -c '^usage stop=85 late=100 hours=24\$' '$CASE/calls')\" = 3 ]"
+rm "$CASE/root/docs-r2-v1/usage-gated"
+# The values come from additive-launch.env as it reads now, not from a figure
+# in try.sh and not from the launch: a copy of try.sh beside an env file that
+# says 70, 95 and 12 hands the driver those on a relaunch.
+mkdir -p "$fix/env-copy/tools/probe"
+cp "$try" "$fix/env-copy/tools/probe/try.sh"
+sed -e 's/^TRY_USAGE_STOP_PERCENT=.*/TRY_USAGE_STOP_PERCENT=70/' -e 's/^TRY_USAGE_LATE_PERCENT=.*/TRY_USAGE_LATE_PERCENT=95/' \
+    -e 's/^TRY_USAGE_LATE_HOURS=.*/TRY_USAGE_LATE_HOURS=12/' "$here/additive-launch.env" > "$fix/env-copy/tools/probe/additive-launch.env"
+try_was=$try
+try=$fix/env-copy/tools/probe/try.sh
+run relaunch "$CASE/root" docs-r2-v1
+try=$try_was
+await_calls 4
+check "relaunch: hands the driver the usage gate of the env file as it reads now" grep -q '^usage stop=70 late=95 hours=12$' "$CASE/calls"
 check "relaunch: no relaunch writes a.done" [ ! -e "$CASE/root/docs-r2-v1/a.done" ]
 run relaunch "$CASE/root" docs-try9
 check "relaunch: a try that does not exist exits 6" code_is 6
@@ -1095,6 +1122,25 @@ run wait "$CASE/root" docs-r2-v1
 check "wait: below the disk floor exits 0" code_is 0
 check "wait: and prints disk-floor" out_has disk-floor
 check "wait: and writes stop" [ -s "$CASE/root/docs-r2-v1/stop" ]
+# A driver that stopped on the usage gate (#1876): `wait` names the stop,
+# and the ledger records it once over two reads, and again for a new stop.
+new_case
+mkdir -p "$CASE/root/docs-r2-v1"
+printf '%s\n' "2026-10-29T00:00:00Z usage-gated: 7-day at 86% (from /u/s1.json), threshold 85%, resets 2026-10-30T00:00:00Z" \
+    'percent: 86' 'resets-at: 1793318400' 'threshold: 85' 'source: /u/s1.json' > "$CASE/root/docs-r2-v1/usage-gated"
+run wait "$CASE/root" docs-r2-v1
+check "wait: usage-gated exits 0" code_is 0
+check "wait: and prints usage-gated with the line" out_has "usage-gated: 2026-10-29T00:00:00Z usage-gated: 7-day at 86%"
+run wait "$CASE/root" docs-r2-v1
+check "wait: usage-gated read twice exits 0" code_is 0
+check "wait: and the ledger holds one gate event" [ "$(grep -c '"event": "gate"' "$CASE/root/ledger.jsonl")" = 1 ]
+check "wait: which names the try, the figure, the reset and the threshold" grep -q '"try": "docs-r2-v1", "percent": "86", "resets_at": 1793318400, "threshold": 85' "$CASE/root/ledger.jsonl"
+sed -i '1s/^2026-10-29T00:00:00Z/2026-10-29T06:00:00Z/' "$CASE/root/docs-r2-v1/usage-gated"
+run wait "$CASE/root" docs-r2-v1
+check "wait: a second stop appends a second gate event" [ "$(grep -c '"event": "gate"' "$CASE/root/ledger.jsonl")" = 2 ]
+: > "$CASE/root/docs-r2-v1/stop"
+run wait "$CASE/root" docs-r2-v1
+check "wait: stop is printed before usage-gated" sh -c "[ \"\$(cat '$CASE/out')\" = stop ]"
 new_case
 run wait "$CASE/root"
 check "wait: with no try named exits 2, because a round runs several tries" code_is 2
