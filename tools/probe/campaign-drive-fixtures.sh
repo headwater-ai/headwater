@@ -460,6 +460,7 @@ for value in 0 024 -1 x ''; do
     new_case
     drive --saturate-at "$value"
     check "usage: --saturate-at '$value' is a usage error" code_is 2
+    check "usage: --saturate-at '$value' invokes nothing" calls_are 0
 done
 
 # ------------------------------------------------- 0. arguments
@@ -1235,10 +1236,14 @@ check "saturation: the grade reads batch A's directory" grep -qx "counts $CASE/r
 check "saturation: the spec-b the person wrote is not changed" sh -c "[ \"\$(cat '$CASE/spec-b')\" = \"\$(printf 'additive scenario-1 final\nadditive scenario-6 final\njobs 10')\" ]"
 
 # A restart after the counts were taken grades nothing again, and batch B
-# gets the same spec.
+# gets the same spec, even when the plan would now select other probes,
+# because the driver writes the derived spec once.
 cp "$CASE/root/b.spec" "$CASE/b.spec.first"
+cp "$CASE/probes" "$CASE/probes.first"
+printf 'scenario-1 held-out P9 row_a\n' >> "$CASE/probes"
 rm -f "$CASE/root/b.done" "$CASE/root/done"
 drive --saturate-at 24
+cp "$CASE/probes.first" "$CASE/probes"
 check "saturation restart: exits 0" code_is 0
 check "saturation restart: batch A is not graded again" [ "$(wc -l < "$CASE/cells.calls")" = 1 ]
 check "saturation restart: batch B gets the same spec" cmp -s "$CASE/root/b.spec" "$CASE/b.spec.first"
@@ -1286,19 +1291,19 @@ check "saturation anchor: a scenario-0 line keeps every probe" sh -c "[ \"\$(hea
 check "saturation anchor: the ledger says no stop applies to scenario 0" grep -q '^runs row_a/scenario-0: 24 of 24, the anchor' "$CASE/root/saturated"
 
 # A cell graded past the stop count (a row of three probes) is not at the
-# count, and runs on.
+# count, and runs on, even when none of its sessions passed.
 saturation_case
 printf 'additive scenario-1 final\njobs 10\n' > "$CASE/spec-b"
 printf 'scenario-1 held-out P5 row_b\n' >> "$CASE/probes"
 cat > "$CASE/cells" <<'EOF'
 scenario-1 held-out row_a P1 12 12
 scenario-1 held-out row_a P2 12 12
-scenario-1 held-out row_b P3 12 12
-scenario-1 held-out row_b P4 12 12
-scenario-1 held-out row_b P5 12 12
+scenario-1 held-out row_b P3 0 12
+scenario-1 held-out row_b P4 0 12
+scenario-1 held-out row_b P5 0 12
 EOF
 drive --saturate-at 24
-check "saturation count: a cell of 36 of 36 is not at 24, and runs on" grep -qx 'runs row_b/scenario-1: 36 of 36' "$CASE/root/saturated"
+check "saturation count: a cell of 0 of 36 is not at 24, and runs on" grep -qx 'runs row_b/scenario-1: 0 of 36' "$CASE/root/saturated"
 check "saturation count: so only row_a is excluded" sh -c "[ \"\$(head -1 '$CASE/root/b.spec')\" = 'additive scenario-1 final P1 P2' ]"
 
 # A count that fails stops the driver before it spends on batch B.
@@ -1309,6 +1314,7 @@ drive --saturate-at 24
 check "saturation fail: a failed count exits 14" code_is 14
 check "saturation fail: and batch B is never invoked" [ -z "$(b_args)" ]
 check "saturation fail: and no cells.a or b.spec is left to read as a count" sh -c "[ ! -f '$CASE/root/cells.a' ] && [ ! -f '$CASE/root/b.spec' ]"
+check "saturation fail: the driver stops at the failed count, and goes on to no step after it" sh -c "grep -q 'the saturation count of batch A failed' '$CASE/root/drive.log' && ! grep -q 'graded batch A once' '$CASE/root/drive.log'"
 
 # Without --saturate-at, batch B runs the spec the person wrote, and the
 # seam is never called.
