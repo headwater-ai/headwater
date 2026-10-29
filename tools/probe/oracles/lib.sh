@@ -72,6 +72,39 @@ case ${1:-} in
         ;;
 esac
 
+# `--args <file>`, after `--check-clean` where both are given, reads the
+# script's own arguments from <file>, one argument per line. A line that
+# opens with `#` and an empty line are skipped. Nothing may follow <file> on
+# the command line. The command line in `.headwater/probe.yml` is a fold
+# that every workspace keeps, so an argument that states the answer, such as
+# a shelf, a kind or a ruling, goes in a held file that names its probe in
+# its first ten lines, and the seal removes it from every workspace
+# (HW-DR-0112, "The form of an oracle"). A missing file is a usage error.
+case ${1:-} in
+    --args)
+        [ $# -eq 2 ] || hw_oracle_usage "--args takes one file and is the last option: --args <file>"
+        hw_args_file=$2
+        [ -f "$hw_args_file" ] || hw_oracle_usage "no file of arguments at $hw_args_file"
+        set --
+        while IFS= read -r hw_args_line || [ -n "$hw_args_line" ]; do
+            case $hw_args_line in
+                '#'* | '') continue ;;
+            esac
+            set -- "$@" "$hw_args_line"
+        done < "$hw_args_file"
+        ;;
+esac
+
+# Whether a file holds <name> as a whole name: not preceded and not followed
+# by a letter, a digit, `_`, `-` or `.`, so `HW-DR-0112` is not found in
+# `HW-DR-01120` and `0112-x.md` is not found in `draft-0112-x.md`.
+#
+#     hw_oracle_names_whole <name> <file>
+hw_oracle_names_whole() {
+    hw_whole_pattern=$(printf '%s\n' "$1" | sed 's/[][\.*^$+?(){}|/]/\\&/g')
+    grep -E -q -- "(^|[^A-Za-z0-9_.-])$hw_whole_pattern([^A-Za-z0-9_-]|\\.[^A-Za-z0-9_-]|\\.\$|\$)" "$2"
+}
+
 hw_oracle_pass_clean() {
     if [ "$hw_oracle_clean" = yes ]; then
         hw_check_status=0
