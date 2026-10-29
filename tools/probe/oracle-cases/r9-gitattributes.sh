@@ -26,3 +26,9 @@ reference() {
 wrong() {
     sed -i "s/^last_verified: .*/last_verified: $(date -u +%F)/" docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md
 }
+
+# The governs edge deleted, which clears the suspect finding and verifies nothing. The keep line of the baseline fails it.
+deleted() {
+    sed -i '/^  governs:$/d; /^    - to: .gitattributes$/d; /^      verified_revision: sha256:7bec0c864a001745d8d0d7e64d63c749bc80d337bee7790d2faddd3ca6288c2a$/d' docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md && ! grep -q 'to: .gitattributes' docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md
+}
+more_wrong=deleted

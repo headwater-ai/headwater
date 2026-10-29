@@ -17,3 +17,9 @@ reference() {
 wrong() {
     sed -i "s/^The generated index of a shelf stays the first entry of its group, as before\.\$/The generated index of a shelf can't leave the first entry of its group./" docs/decisions/0108-the-site-sidebar-lists-a-shelf-in-path-order-and-the-shelf-index-keeps-the-reading-order.md && grep -q "can't leave" docs/decisions/0108-the-site-sidebar-lists-a-shelf-in-path-order-and-the-shelf-index-keeps-the-reading-order.md
 }
+
+# The sentence that carries the finding deleted. The keep line of the baseline fails it.
+deleted() {
+    sed -i '/^The generated index of a shelf stays the first entry of its group, as before\.$/d' docs/decisions/0108-the-site-sidebar-lists-a-shelf-in-path-order-and-the-shelf-index-keeps-the-reading-order.md && ! grep -q '^The generated index of a shelf' docs/decisions/0108-the-site-sidebar-lists-a-shelf-in-path-order-and-the-shelf-index-keeps-the-reading-order.md
+}
+more_wrong=deleted

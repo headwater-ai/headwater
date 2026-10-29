@@ -6,3 +6,4 @@
 # the scoped file or the seal changes, and the pin or the reference case
 # of `tools/probe/probe-oracle-fixtures.sh` then fails.
 # scope: docs/obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md
+# keep: docs/obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md report every document that a person renamed or typed by hand

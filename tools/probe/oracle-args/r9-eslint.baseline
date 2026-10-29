@@ -6,3 +6,4 @@
 # the scoped file or the seal changes, and the pin or the reference case
 # of `tools/probe/probe-oracle-fixtures.sh` then fails.
 # scope: docs/decisions/0012-migration-path-for-an-existing-corpus.md
+# keep: docs/decisions/0012-migration-path-for-an-existing-corpus.md carries a suppression

@@ -17,3 +17,9 @@ reference() {
 wrong() {
     sed -i 's/carries a suppression which no longer matches, and/carries a suppression whose pattern matches none of the lines in the file that it was written against when the author first added it, and/' docs/decisions/0012-migration-path-for-an-existing-corpus.md && grep -q 'first added it, and' docs/decisions/0012-migration-path-for-an-existing-corpus.md
 }
+
+# The sentence that carries the finding deleted. The keep line of the baseline fails it.
+deleted() {
+    sed -i 's/ESLint fails a run that carries a suppression which no longer matches, and that is the property `.ste-lint-baseline.json` lacked\. //' docs/decisions/0012-migration-path-for-an-existing-corpus.md && ! grep -q 'carries a suppression' docs/decisions/0012-migration-path-for-an-existing-corpus.md
+}
+more_wrong=deleted

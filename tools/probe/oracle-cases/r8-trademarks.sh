@@ -36,3 +36,10 @@ reference() {
 wrong() {
     awk '{ print } $0 == "      - .github/ISSUE_TEMPLATE/issue.md" { print "      - TRADEMARKS.md" }' "$overlay" > "$overlay.new" && mv "$overlay.new" "$overlay"
 }
+
+# The answer written only as a comment in the overlay, and resolved. The
+# engine reads no comment, so nothing changed, and the oracle must fail it.
+commented() {
+    printf '%s\n' '      # - TRADEMARKS.md' >> "$overlay" && resolve
+}
+more_wrong=commented

@@ -6,5 +6,6 @@
 # the scoped file or the seal changes, and the pin or the reference case
 # of `tools/probe/probe-oracle-fixtures.sh` then fails.
 # scope: docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md
+# keep: docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md to: .gitattributes
 language.controlled.not_met	docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md
 language.controlled.not_met	docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md

@@ -6,3 +6,4 @@
 # the scoped file or the seal changes, and the pin or the reference case
 # of `tools/probe/probe-oracle-fixtures.sh` then fails.
 # scope: docs/decisions/0108-the-site-sidebar-lists-a-shelf-in-path-order-and-the-shelf-index-keeps-the-reading-order.md
+# keep: docs/decisions/0108-the-site-sidebar-lists-a-shelf-in-path-order-and-the-shelf-index-keeps-the-reading-order.md The generated index of a shelf

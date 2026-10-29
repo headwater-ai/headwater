@@ -36,3 +36,10 @@ reference() {
 wrong() {
     retire cutting-edge "it stands in for how new the thing is and what that buys"
 }
+
+# The answer written only as a comment in the overlay, and resolved. The
+# engine reads no comment, so nothing changed, and the oracle must fail it.
+commented() {
+    printf '%s\n' '      # - term: cutting-edge' '      #   reason: it stands in for how new the thing is and what that buys' >> "$overlay" && resolve
+}
+more_wrong=commented

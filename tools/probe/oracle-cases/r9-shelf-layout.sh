@@ -17,3 +17,9 @@ reference() {
 wrong() {
     sed -i 's/^summary: "A shelf layout is read by the scaffolder and by nothing else, and a rule that read it would report every document that a person renamed or typed by hand."$/summary: "A shelf layout is read by the scaffolder and by nothing else. A rule that read it would report every document that no longer has the name the scaffolder gave it."/' docs/obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md && grep -q 'nothing else. A rule' docs/obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md
 }
+
+# The summary cut to its first clause, which drops what the second one says. The keep line of the baseline fails it.
+deleted() {
+    sed -i 's/^summary: "A shelf layout is read by the scaffolder and by nothing else, and a rule that read it would report every document that a person renamed or typed by hand."$/summary: "A shelf layout is read by the scaffolder and by nothing else."/' docs/obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md && ! grep -q 'renamed or typed by hand' docs/obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md
+}
+more_wrong=deleted

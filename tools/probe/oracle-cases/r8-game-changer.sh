@@ -36,3 +36,10 @@ reference() {
 wrong() {
     sed -i 's/"robust" as filler\./"robust" as filler, "game-changer"./' CLAUDE.md && grep -q game-changer CLAUDE.md
 }
+
+# The answer written only as a comment in the overlay, and resolved. The
+# engine reads no comment, so nothing changed, and the oracle must fail it.
+commented() {
+    printf '%s\n' '      # - term: game-changer' '      #   reason: it stands in for the change the thing makes' >> "$overlay" && resolve
+}
+more_wrong=commented

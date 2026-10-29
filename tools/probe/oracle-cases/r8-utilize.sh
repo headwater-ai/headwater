@@ -36,3 +36,10 @@ reference() {
 wrong() {
     retire utilize "it stands in for use" && resolve
 }
+
+# The answer written only as a comment in the overlay, and resolved. The
+# engine reads no comment, so nothing changed, and the oracle must fail it.
+commented() {
+    printf '%s\n' '      # - term: utilize' '      #   reason: it stands in for use' '      #   replacement: use' >> "$overlay" && resolve
+}
+more_wrong=commented
