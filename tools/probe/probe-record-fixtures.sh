@@ -3929,7 +3929,10 @@ STUB
         mkdir -p "$stagger/slice/started" "$stagger/slice/refused"
         printf '%s\n' "$gone" > "$stagger/slice/lock"
         printf '\n' > "$stagger/model"
-        : > "$stagger/repetitions"
+        # One repetition, because the plan of the tier's 30 over the
+        # thirty-four sufficiency probes since #1874.3 passes the campaign
+        # ceiling, and the plan then refuses the session this case needs.
+        printf '1\n' > "$stagger/repetitions"
         : > "$stagger/max-turns"
         printf '205200\n' > "$stagger/ceiling.campaign"
         printf '50\n' > "$stagger/unit.campaign"
@@ -5909,16 +5912,18 @@ if [ -x "$engine" ]; then
         rm -rf "$scratch/run-tune-out"
         # Each line's jobs are its own plan's count, not the first line's
         # (verify round 1): the regression tier runs 1 repetition and the
-        # campaign tier 30, so one spec of both is 34 + 34 x 30 jobs. The
-        # sufficiency shelf is thirty-four probes since rows 4 and 5 of #1874
-        # added eight and rows 6 to 9 added fourteen, and the plan counts its
-        # six retired probes too.
-        printf 'regression present sufficiency\ncampaign present sufficiency\n' > "$scratch/run-tiers.spec"
+        # campaign tier 30, so one spec of both is 17 + 17 x 30 jobs. The
+        # navigability shelf is seventeen probes, two of them from rows 6 to 9
+        # of #1874, and the plan counts its retired probes too. The line reads
+        # navigability and not sufficiency since #1874.3, because thirty-four
+        # sufficiency probes in the campaign tier project 6120 sessions,
+        # $3060.00, past its $2052.00, and the plan refuses the run.
+        printf 'regression present navigability\ncampaign present navigability\n' > "$scratch/run-tiers.spec"
         rm -rf "$scratch/run-tiers-out"
         HEADWATER_PROBE_HOST_CONFIG="$scratch/run-host" CARGO_TARGET_DIR="$scratch/gate-target" PATH="$scratch/run-bin:$PATH" \
             sh "$root/tools/probe/campaign.sh" --out "$scratch/run-tiers-out" --model claude-haiku-4-5 \
             --spec "$scratch/run-tiers.spec" --max-turns 10 --max-sessions 1 > /dev/null 2> "$scratch/run-tiers.err"
-        same "a spec of two tiers runs each line at its own plan's count" "34 1020" \
+        same "a spec of two tiers runs each line at its own plan's count" "17 510" \
             "$(awk '$2 == 1' "$scratch/run-tiers-out/jobs" 2>/dev/null | wc -l | tr -d ' ') $(awk '$2 == 2' "$scratch/run-tiers-out/jobs" 2>/dev/null | wc -l | tr -d ' ')"
         rm -rf "$scratch/run-out" "$scratch/run-final-out" "$scratch/run-tiers-out"
     else
