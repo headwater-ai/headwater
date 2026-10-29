@@ -96,7 +96,7 @@ The step writes each skill at two paths and the agent at one. Claude Code reads 
 - A hook entry is present when a group of the same event and the same `matcher` holds a hook with the same `command`. The step adds a missing hook to the end of that group, or adds a new group to the end of the event.
 - The `headwater` member of `mcpServers` is present when it equals the entry of this release. It calls `headwater mcp` on the `PATH`.
 - The step never removes, reorders or changes an entry. When it adds an entry, it writes the whole file again, indented by two spaces, with every member in its original order.
-- The step refuses a file that is not a JSON object, and a `headwater` member of `mcpServers` that differs from this release. It names the path on standard error, writes no file of the set, and exits 1.
+- The step reads an empty file as an empty object. It refuses a file that is not a JSON object, and a `headwater` member of `mcpServers` that differs from this release. It names the path on standard error, writes no file of the set, and exits 1.
 
 So a second run writes nothing. A later release that changes the `command` of a hook adds the new entry and keeps the old one. The step cannot tell its own entry from an entry of the adopter. <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=false_positive note=files headwater init --harness merges into the repository of the adopter -->
 
