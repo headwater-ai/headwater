@@ -247,7 +247,7 @@ oracles:
     holds: [tools/probe/oracles/moved.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r7-run-findings]
   r8-game-changer:
     paths: [.headwater/*]
-    command: sh tools/probe/oracles/lock-regenerated.sh
+    command: sh tools/probe/oracles/lock-regenerated.sh --check-clean --args tools/probe/oracle-args/r8-game-changer
     parser: exit
     holds: [tools/probe/oracles/lock-regenerated.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r8-game-changer]
 
