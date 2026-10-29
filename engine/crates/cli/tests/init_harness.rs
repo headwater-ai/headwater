@@ -684,3 +684,40 @@ fn the_harness_check_fails_on_an_absent_path_and_on_a_copy_an_earlier_release_wr
         earlier
     );
 }
+
+/// Every rule of the engine whose identifier opens `warrant.` is named, as a
+/// code span, in the paragraph of the shipped authoring skill that opens
+/// `**The provenance block.**` (#1852). That paragraph once said two checks
+/// read the block when five did, because nothing tied the list to the engine.
+///
+/// The prefix is the contract: every rule that reads the provenance block today
+/// carries it. A future rule that reads the block under another prefix is one
+/// this case cannot see.
+#[test]
+fn every_warrant_rule_the_engine_carries_is_named_in_the_provenance_paragraph_of_the_authoring_skill(
+) {
+    let path = "engine/crates/cli/harness/skills/headwater-authoring/SKILL.md";
+    let text = std::fs::read_to_string(repository().join(path)).expect("the skill reads");
+    let start = text
+        .find("**The provenance block.**")
+        .expect("the skill has a provenance-block paragraph");
+    let paragraph = text[start..].split("\n\n").next().expect("one paragraph");
+    let named: BTreeSet<&str> = spans(paragraph).into_iter().collect();
+    let warrant_rules: Vec<&str> = headwater_check::RULES
+        .iter()
+        .copied()
+        .filter(|rule| rule.starts_with("warrant."))
+        .collect();
+    assert!(
+        warrant_rules.len() >= 5,
+        "the engine carries at least the five warrant rules of #1852, and found {warrant_rules:?}"
+    );
+    let missing: Vec<&str> = warrant_rules
+        .into_iter()
+        .filter(|rule| !named.contains(rule))
+        .collect();
+    assert!(
+        missing.is_empty(),
+        "the provenance-block paragraph of {path} does not name {missing:?}"
+    );
+}
