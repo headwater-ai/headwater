@@ -44,16 +44,16 @@
 # inefficiencies before any spend. Every figure below is from
 # `campaign.sh --dry-run` of this spec, at 50 cents a session. NO CUT BELOW IS
 # APPLIED: every line of this spec still runs, and only the owner's ruling on
-# the $2,142.00 plan can remove one.
+# the $1,947.00 plan can remove one.
 #
-# The plan is 4284 sessions, $2,142.00. By tier and category:
+# The plan is 3894 sessions, $1,947.00. By tier and category:
 #
-#     campaign discovery                  2124 sessions  $1,062.00  49.6%
-#     campaign navigability                900 sessions    $450.00  21.0%
-#     campaign sufficiency                 720 sessions    $360.00  16.8%
-#     campaign sufficiency (leak-kept)     360 sessions    $180.00   8.4%
-#     documentation sufficiency            120 sessions     $60.00   2.8%
-#     documentation sufficiency (leak-k.)   60 sessions     $30.00   1.4%
+#     campaign discovery                  2124 sessions  $1,062.00  54.5%
+#     campaign navigability                720 sessions    $360.00  18.5%
+#     campaign sufficiency                 540 sessions    $270.00  13.9%
+#     campaign sufficiency (leak-kept)     360 sessions    $180.00   9.2%
+#     documentation sufficiency             90 sessions     $45.00   2.3%
+#     documentation sufficiency (leak-k.)   60 sessions     $30.00   1.5%
 #
 # Candidate 1, discovery powered in two arms only: saves 1056 sessions,
 # $528.00. Discovery runs 3 probes x 118 repetitions = 354 sessions in each of
@@ -65,8 +65,8 @@
 # = 360 sessions, $180.00). It gives up a powered discovery reading for each
 # component, which the plan does not give today.
 #
-# Candidate 2, the documentation absent arm (lines 7 and 14): saves 180
-# sessions, $90.00. HW-OBL-0223 is discharged at +57.5 points (Newcombe +47.1
+# Candidate 2, the documentation absent arm (lines 7 and 14): saves 150
+# sessions, $75.00. HW-OBL-0223 is discharged at +57.5 points (Newcombe +47.1
 # to +66.0). The cut gives up a second measurement of that comparison in the
 # same batch as the component arms. Its paragraph "The plan of #1472 keeps
 # this comparison" must be amended with the cut.
@@ -93,8 +93,8 @@
 # and 62 of 658 made more than 40. So a lower cap is not shown to change no
 # outcome, and this note does not propose one.
 #
-# Candidates 1 to 3 together save 1056 + 180 + 180 = 1416 sessions, $708.00,
-# and leave 2868 sessions, $1,434.00.
+# Candidates 1 to 3 together save 1056 + 150 + 180 = 1386 sessions, $693.00,
+# and leave 2508 sessions, $1,254.00.
 
 # Sufficiency, less the two leak-kept probes.
 campaign      present      sufficiency HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request HW-PROBE-a-session-names-the-event-that-makes-a-document-accepted HW-PROBE-a-session-follows-two-citations-from-a-record-the-task-does-not-name HW-PROBE-a-session-says-which-date-a-corrected-status-carries HW-PROBE-a-rule-that-reads-the-date-takes-it-from-the-run-and-ships-with-the-fixture-that-fails-it HW-PROBE-a-figure-a-session-adds-to-a-hand-built-page-is-measured-and-never-typed HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer HW-PROBE-a-session-tells-a-withheld-answer-from-an-absent-one-in-a-corpus-that-serves-no-tombstone HW-PROBE-a-session-says-whether-a-front-page-recording-may-show-a-number-a-live-run-does-not-produce-when-the-task-names-the-record-that-was-superseded HW-PROBE-a-session-records-as-owed-that-no-ruling-says-whether-a-hook-s-text-on-a-prompt-is-a-warning HW-PROBE-a-session-records-as-owed-the-corpus-size-axis-that-the-additive-campaign-defers HW-PROBE-a-session-records-as-owed-the-axis-of-an-adopter-s-own-repository-that-the-named-decision-defers HW-PROBE-a-session-records-as-owed-that-nothing-reports-a-pass-rate-for-each-phrasing-of-a-probe HW-PROBE-a-session-links-the-obligation-on-published-read-sets-to-the-evaluation-whose-measurement-discharged-it HW-PROBE-a-session-records-the-walkthrough-that-the-federation-part-rests-a-rule-on-as-the-evidence-it-cites HW-PROBE-a-session-records-the-owl-worked-example-as-evidence-of-the-check-layer-part-that-the-task-names HW-PROBE-a-session-links-the-governs-edges-evaluation-to-the-obligation-that-it-says-is-discharged
