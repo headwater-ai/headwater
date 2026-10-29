@@ -17,6 +17,9 @@ relations:
     - .headwater/probe.yml
     - tools/probe/oracles/**
     - tools/probe/oracle-fixtures.sh
+    - tools/probe/oracle-args/**
+    - tools/probe/oracle-cases/**
+    - tools/probe/probe-oracle-fixtures.sh
     - tools/probe/ablate.sh
     - tools/probe/additive-campaign.spec
     - tools/probe/additive-screening.spec
@@ -99,9 +102,13 @@ The oracle holds each script that its command runs, and `lib.sh`, which each scr
 
 A file that holds a value only the answer knows names its probe in its first ten lines, and the oracle holds it. A hidden test and a baseline of findings are two examples. The seal removes such a file from every workspace. A generic script names no probe. The seal keeps `probe.yml` as a fold, so each workspace still holds the command line. A command therefore states what the oracle checks and never the answer.
 
+Added on 2026-10-29 by the second slice of #1874. A command can read its arguments from a held file with `--args <file>`, one argument to a line, as the last option. Such a file names its probe in its first ten lines, as above. No key under `oracles:` and no held path names a probe, because the seal removes each line of `probe.yml` that names a removed document. The seal also leaves errors in a sealed tree, on documents that cite a removed record. So `--check-clean` in `typed-at.sh` and `reciprocal-link.sh` counts only the errors on the documents that the script names.
+
 Row 11 has two conditions. The `oracle:` facet names the oracle over the tree. `no-hook-warning.sh` reads the harness log of the session from `HEADWATER_ORACLE_HARNESS_LOG`, because the stream holds no hook attachment. #1875 exports that variable and runs the script on each session of row 11.
 
 `tools/probe/oracle-fixtures.sh` runs each script over a tree that it must pass and a tree that it must fail. An oracle that passes both trees, or fails both, fails CI. The pilot of #1835 found probes of each kind.
+
+`tools/probe/probe-oracle-fixtures.sh` runs the oracle of each probe in a sealed grading tree, in three fresh copies. The tree as it stands must fail, the reference change must pass, and the wrong change must fail. The two changes for each oracle are in `tools/probe/oracle-cases/<name>.sh`, which names its probe, so the seal removes it.
 
 ### The form of a phrasing
 
