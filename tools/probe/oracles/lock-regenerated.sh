@@ -16,6 +16,8 @@
 # `<file> <literal>` pair fails the oracle unless <file> holds <literal> as a
 # whole name, as `hw_oracle_names_whole` in `lib.sh` reads one. The pairs come
 # from a held file through `--args`, because a literal states the answer.
+# In a `.yml` or `.yaml` file, a literal that only a comment holds does not
+# count, because the engine reads no comment.
 # With `--check-clean` and at least one pair, the strict errors counted are
 # those on the files the pairs name.
 
@@ -27,7 +29,14 @@ hw_oracle_tmp
 held=""
 while [ $# -gt 0 ]; do
     [ -f "$1" ] || hw_oracle_usage "no file at $1, which a literal is read from"
-    hw_oracle_names_whole "$2" "$1" || hw_oracle_fail "$1 does not hold \`$2\` as a whole name"
+    # In a YAML file a comment is not a declaration, so a literal that only a
+    # comment holds does not count: each line loses what follows a `#` that
+    # opens it or that a blank precedes (#1874.3).
+    case $1 in
+        *.yml | *.yaml) sed -e 's/^[[:space:]]*#.*$//' -e 's/[[:space:]]#.*$//' "$1" > "$hw_oracle_scratch/literal-source" ;;
+        *) cp "$1" "$hw_oracle_scratch/literal-source" ;;
+    esac
+    hw_oracle_names_whole "$2" "$hw_oracle_scratch/literal-source" || hw_oracle_fail "$1 does not hold \`$2\` as a whole name outside a comment"
     case " $hw_oracle_subjects " in
         *" $1 "*) ;;
         *) hw_oracle_subjects="${hw_oracle_subjects:+$hw_oracle_subjects }$1" ;;

@@ -250,6 +250,29 @@ expect 1 "lock-regenerated fails the literal with no resolve" "$retired" lock-re
 expect 0 "lock-regenerated passes the literal once resolved" "$retired" lock-regenerated.sh "$overlay" 'term: game-changer'
 expect 1 "lock-regenerated fails when one of two literals is absent" "$retired" lock-regenerated.sh "$overlay" 'term: game-changer' "$overlay" 'replacement: use'
 expect 1 "lock-regenerated fails a literal that the file holds only as the start of a longer name" "$retired" lock-regenerated.sh "$overlay" 'term: game'
+# A literal that only a YAML comment holds declares nothing, so it fails,
+# both on a comment line and after a value. Each tree is resolved, so the
+# lock is not why it fails (verify of #1874.3).
+tree=$(fresh lock-commented) && awk '{ print } $0 == "        reason: it stands in for the failure the thing survives" { print "      # - term: game-changer" }' "$base/$overlay" > "$tree/$overlay"
+grep -q '^      # - term: game-changer$' "$tree/$overlay" || echo "oracle-fixtures: the comment line was not added, so the next case reads nothing." >&2
+"$engine" taxonomy resolve --root "$tree" > /dev/null 2>&1
+expect 1 "lock-regenerated fails a literal that only a comment line holds" "$tree" lock-regenerated.sh "$overlay" 'term: game-changer'
+tree=$(fresh lock-column-comment) && cp "$base/$overlay" "$tree/$overlay" && printf '# term: game-changer\n' >> "$tree/$overlay"
+"$engine" taxonomy resolve --root "$tree" > /dev/null 2>&1
+expect 1 "lock-regenerated fails a literal that only a comment in the first column holds" "$tree" lock-regenerated.sh "$overlay" 'term: game-changer'
+tree=$(fresh lock-trailing-comment) && sed -i 's/^        reason: it stands in for the failure the thing survives$/& # term: game-changer/' "$tree/$overlay"
+grep -q ' # term: game-changer$' "$tree/$overlay" || echo "oracle-fixtures: the trailing comment was not added, so the next case reads nothing." >&2
+"$engine" taxonomy resolve --root "$tree" > /dev/null 2>&1
+expect 1 "lock-regenerated fails a literal that only a comment after a value holds" "$tree" lock-regenerated.sh "$overlay" 'term: game-changer'
+# A finding that a directive suppresses is not an error a strict run fails
+# on, so a subject that carries one passes `--check-clean`. This how-to
+# holds suppressed `surface.local_path.instructed` errors (verify of #1874.3).
+suppressed=$("$engine" check --json --root "$base" 2> /dev/null | jq '[.findings[] | select(.path == "docs/how-to/publish-your-corpus-as-a-site.md" and .severity == "error" and .escape != "none")] | length')
+if [ "${suppressed:-0}" -eq 0 ]; then
+    echo "FAIL docs/how-to/publish-your-corpus-as-a-site.md holds no suppressed error, so the next case reads nothing. Name another file that does."
+    failures=$((failures + 1))
+fi
+expect 0 "lock-regenerated with --check-clean passes a file whose only errors a directive suppresses" "$base" lock-regenerated.sh --check-clean docs/how-to/publish-your-corpus-as-a-site.md 'id: HW-HOW-publish-your-corpus-as-a-site'
 spoil "$retired" docs/spec/12-check-layer.md
 expect 0 "lock-regenerated with --check-clean passes an error in a file it does not name" "$retired" lock-regenerated.sh --check-clean "$overlay" 'term: game-changer'
 expect 1 "lock-regenerated with --check-clean and no file fails the same error" "$retired" lock-regenerated.sh --check-clean
@@ -292,6 +315,18 @@ expect 0 "nothing-else-broken with a scope passes a new finding in another file"
 expect 0 "nothing-else-broken with a scope and --check-clean passes an error in another file" "$elsewhere" nothing-else-broken.sh --check-clean "$work/scoped"
 awk '!/^#/ && !gone { gone = 1; next } { print }' "$work/scoped" > "$work/scoped-less"
 expect 1 "nothing-else-broken with a scope fails the pin against a baseline less one of its findings" "$base" nothing-else-broken.sh "$work/scoped-less"
+# A `# keep: <path> <literal>` line fails a session that deletes the text the
+# repair keeps, which clears its finding and raises nothing (verify of
+# #1874.3).
+keep_literal='by the third slice of #1874'
+grep -q -F -- "$keep_literal" "$base/$new" || echo "oracle-fixtures: $new does not hold \`$keep_literal\`, so the keep cases read nothing." >&2
+{ cat "$work/scoped"; printf '# keep: %s %s\n' "$new" "$keep_literal"; } > "$work/scoped-keep"
+expect 0 "nothing-else-broken passes the pin when it keeps the text a keep line names" "$base" nothing-else-broken.sh --check-clean "$work/scoped-keep"
+tree=$(fresh keep-deleted) && grep -v -F -- "$keep_literal" "$base/$new" > "$tree/$new"
+expect 0 "nothing-else-broken with no keep line passes a tree that deleted the paragraph" "$tree" nothing-else-broken.sh "$work/scoped"
+expect 1 "nothing-else-broken with a keep line fails the same tree" "$tree" nothing-else-broken.sh "$work/scoped-keep"
+{ cat "$work/scoped"; printf '# keep: %s\n' "$new"; } > "$work/scoped-keep-bad"
+expect 2 "nothing-else-broken refuses a keep line with no literal" "$base" nothing-else-broken.sh "$work/scoped-keep-bad"
 
 # --- test-passes.sh -------------------------------------------------------
 

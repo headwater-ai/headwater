@@ -28,6 +28,12 @@
 # a probe scopes its baseline to the file the task repairs. `--record` keeps
 # the comment lines of a baseline that is already there, its scope included,
 # and records the findings of the scoped files alone.
+#
+# A comment line `# keep: <path> <literal>` fails the oracle unless <path>
+# holds <literal> as a whole name, as `hw_oracle_names_whole` in `lib.sh`
+# reads one (#1874.3). A session that deletes the sentence or the edge that
+# carries the finding clears it and raises nothing, so a probe names the text
+# that the repair keeps.
 
 set -u
 . "${0%/*}/lib.sh"
@@ -59,6 +65,20 @@ if [ -s "$hw_oracle_scratch/scope" ]; then
     awk -F '\t' 'NR == FNR { scope[$0] = 1; next } ($2 in scope)' "$hw_oracle_scratch/scope" "$hw_oracle_scratch/now" > "$hw_oracle_scratch/scoped"
     mv "$hw_oracle_scratch/scoped" "$hw_oracle_scratch/now"
     hw_oracle_subjects=$(tr '\n' ' ' < "$hw_oracle_scratch/scope")
+fi
+
+if [ "$record" = no ]; then
+    # Each `# keep: <path> <literal>` line names text the repair keeps. A
+    # session that deletes the sentence or the edge a finding is on clears
+    # the finding and raises nothing, so without this it passes (#1874.3).
+    sed -n 's/^# keep: *//p' "$hw_oracle_scratch/comments" > "$hw_oracle_scratch/keep"
+    while IFS= read -r hw_keep; do
+        hw_keep_path=${hw_keep%% *}
+        hw_keep_literal=${hw_keep#* }
+        [ -n "$hw_keep_path" ] && [ "$hw_keep_literal" != "$hw_keep" ] || hw_oracle_usage "a keep line is \`# keep: <path> <literal>\`, and $baseline has \`# keep: $hw_keep\`"
+        [ -f "$hw_keep_path" ] || hw_oracle_fail "nothing is at $hw_keep_path, which the repair keeps"
+        hw_oracle_names_whole "$hw_keep_literal" "$hw_keep_path" || hw_oracle_fail "$hw_keep_path does not hold \`$hw_keep_literal\`, so the session removed what the task asked it to repair"
+    done < "$hw_oracle_scratch/keep"
 fi
 
 if [ "$record" = yes ]; then
