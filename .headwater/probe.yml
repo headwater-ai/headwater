@@ -139,6 +139,45 @@ answer_keys:
 # the proof page that the pin's page does not carry, because a number typed
 # as plain text leaves the figures check clean. A hidden script does both,
 # and it names its probe for the same reason the hidden test does.
+# The form of an oracle of the 44-probe set (#1874, HW-DR-0112 "The form of
+# an oracle"). A probe of rows 2-9 or 11 of the grid declares `expectation:
+# patched` and `oracle: "command:<name>"` or `"test:<name>"`, and the entry
+# here is named for the probe. Its command calls a generic script under
+# `tools/probe/oracles/` with the probe's own arguments:
+#
+#   check-clean.sh                       `headwater check --strict` exits 0
+#   typed-at.sh <dir> <kind> <ruling> <title-pattern>
+#                                        a document under <dir>, of <kind>,
+#                                        cites <ruling>
+#   reciprocal-link.sh <doc-a> <doc-b>   each names the other in `relations:`
+#   successor-typed.sh <old>             a typed successor supersedes <old>,
+#                                        and <old> names it
+#   moved.sh <old-path> <new-path>       moved, and no link resolves to the
+#                                        old path
+#   lock-regenerated.sh                  `headwater taxonomy resolve --check`
+#   nothing-else-broken.sh <baseline>    no finding the pin did not carry
+#   test-passes.sh [--ignored] <crate> <test-target> [<filter>]
+#                                        cargo passes and ran a case
+#   no-hook-warning.sh                   row 11: no hook spoke in the
+#                                        harness log that
+#                                        $HEADWATER_ORACLE_HARNESS_LOG
+#                                        names (#1875 exports it and runs
+#                                        the script)
+#
+# `--check-clean` as the first argument of a tree script adds the condition
+# of check-clean.sh. Each script runs from the root of the grading copy,
+# exits 0 on a pass and 1 on a fail (2 on a usage error), and prints one
+# line of evidence on standard output. The entry holds each script its
+# command runs and `tools/probe/oracles/lib.sh`, so the recorder restores
+# them over a session's copy. A file that holds what only the answer knows,
+# such as a hidden test or a baseline, names its probe in its first ten
+# lines and is held too, so the seal removes it from every workspace. This
+# file is a fold that every workspace keeps, so a command line states what
+# is checked and never the answer. `tools/probe/oracle-fixtures.sh` runs
+# each script over a tree it must pass and one it must fail.
+# `every_mechanical_row_probe_grades_against_a_declared_oracle` in
+# `engine/crates/probe/tests/corpus.rs` holds the probes to this form.
+#
 oracles:
   future-date:
     paths: [engine/crates/check/*]

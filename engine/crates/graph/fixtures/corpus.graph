@@ -717,36 +717,68 @@ anchors
     cited by HW-PHOW-diagnose-an-isolation-failure
   code_path `tools/probe/ablate.sh` via source-tree
     cited by HW-DR-0111
+  code_path `tools/probe/ablate.sh` via source-tree
+    cited by HW-DR-0112
   code_path `tools/probe/additive-campaign.spec` via source-tree
     cited by HW-DR-0111
+  code_path `tools/probe/additive-campaign.spec` via source-tree
+    cited by HW-DR-0112
   code_path `tools/probe/additive-dry-run.sh` via source-tree
     cited by HW-DR-0111
+  code_path `tools/probe/additive-dry-run.sh` via source-tree
+    cited by HW-DR-0112
   code_path `tools/probe/additive-launch.env` via source-tree
     cited by HW-DR-0111
+  code_path `tools/probe/additive-launch.env` via source-tree
+    cited by HW-DR-0112
   code_path `tools/probe/additive-launch.env` via source-tree
     cited by HW-PD-0025
   code_path `tools/probe/additive-screening.spec` via source-tree
     cited by HW-DR-0111
+  code_path `tools/probe/additive-screening.spec` via source-tree
+    cited by HW-DR-0112
   code_path `tools/probe/arms/hooks/.claude/settings.json` via source-tree
     cited by HW-DR-0112
   code_path `tools/probe/code-campaign.spec` via source-tree
     cited by HW-DR-0111
+  code_path `tools/probe/code-campaign.spec` via source-tree
+    cited by HW-DR-0112
   code_path `tools/probe/code-pilot.spec` via source-tree
     cited by HW-DR-0111
+  code_path `tools/probe/code-pilot.spec` via source-tree
+    cited by HW-DR-0112
   code_path `tools/probe/declared.py` via source-tree
     cited by HW-DR-0111
+  code_path `tools/probe/declared.py` via source-tree
+    cited by HW-DR-0112
   code_path `tools/probe/egress-proxy.py` via source-tree
     cited by HW-SPEC-the-recorder-contract
+  code_path `tools/probe/leak.py` via source-tree
+    cited by HW-DR-0112
+  code_path `tools/probe/oracle-fixtures.sh` via source-tree
+    cited by HW-DR-0112
+  code_path `tools/probe/oracles/**` via source-tree
+    cited by HW-DR-0112
+  code_path `tools/probe/probe-record-fixtures.sh` via source-tree
+    cited by HW-DR-0112
   code_path `tools/probe/probe-record.sh` via source-tree
     cited by HW-SPEC-the-recorder-contract
   code_path `tools/probe/rdf-probe/emit.py` via source-tree
     cited by HW-EVAL-owl-skos-worked-example
+  code_path `tools/probe/seal.sh` via source-tree
+    cited by HW-DR-0112
+  code_path `tools/probe/try-fixtures.sh` via source-tree
+    cited by HW-DR-0112
   code_path `tools/probe/try.sh` via source-tree
     cited by HW-DR-0111
+  code_path `tools/probe/try.sh` via source-tree
+    cited by HW-DR-0112
   code_path `tools/probe/try.sh` via source-tree
     cited by HW-PD-0025
   code_path `tools/probe/usage.py` via source-tree
     cited by HW-DR-0111
+  code_path `tools/probe/usage.py` via source-tree
+    cited by HW-DR-0112
   code_path `tools/repo/decision-register-fixtures.sh` via source-tree
     cited by HW-REG-decisions
   code_path `tools/repo/obligation-register-fixtures.sh` via source-tree

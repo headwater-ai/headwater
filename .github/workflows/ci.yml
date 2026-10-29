@@ -759,6 +759,16 @@ jobs:
         # accepted. It needs `sh`, `git`, `python3` with the PyYAML installed
         # above, `diff`, `sha256sum` and `setsid`.
         run: sh tools/probe/try-fixtures.sh
+      - name: Each probe oracle passes the tree it must pass and fails the tree it must fail
+        # `tools/probe/oracles/` holds the generic oracle scripts of the
+        # 44-probe set (#1874, HW-DR-0112 "The form of an oracle"). Each
+        # case copies this checkout, changes the copy the way a session
+        # would, and holds the exact exit status and the one line of
+        # evidence. An oracle that passes both trees, or fails both, fails
+        # here: the #1835 pilot found probes that passed every session or
+        # failed every session. It needs the engine built above, `git`,
+        # `tar` and `python3`.
+        run: sh tools/probe/oracle-fixtures.sh
       - name: The run census counts a turn once per message and a call by what it is for
         # `tools/run/run-census.sh` is the measurement behind HW-PD-0003 as a
         # tool: one usage record per message id, because a response is
