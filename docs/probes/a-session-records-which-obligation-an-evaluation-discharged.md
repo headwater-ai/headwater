@@ -6,6 +6,8 @@ summary: The task names one file to change, and the check reports a finding on t
 last_verified: 2026-10-03
 probe_category: sufficiency
 expectation: patched
+action: edit_depended_document
+moments: [write, review]
 oracle: "relation.reciprocity.missing"
 title: "A session records which obligation an evaluation discharged"
 provenance:

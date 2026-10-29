@@ -438,6 +438,8 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 answer_keys,
                 category,
                 set,
+                action,
+                moment,
                 seed,
                 exclude,
                 repetitions,
@@ -445,9 +447,9 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 root,
                 tier.as_deref(),
                 arm.as_deref(),
-                // `--category` and `--set` are the one selection clap lets
-                // a caller name, so they travel as one argument.
-                (category.as_deref(), set),
+                // `--category`, `--set`, `--action` and `--moment` are the
+                // selection a caller names, so they travel as one argument.
+                (category.as_deref(), set, action, moment),
                 seed,
                 exclude,
                 repetitions,
@@ -4303,6 +4305,7 @@ impl Loaded {
             &self.census,
             &self.graph,
             &self.config,
+            &self.shape,
             &budgets,
             &self.bound.digest,
             headwater_probe::Tier::Regression,
@@ -5609,7 +5612,7 @@ fn probe_plan_read(
     root: &Path,
     tier: Option<&str>,
     arm: Option<&str>,
-    (category, set): (Option<&str>, Option<String>),
+    (category, set, action, moment): (Option<&str>, Option<String>, Option<String>, Option<String>),
     seed: u64,
     exclude: Vec<String>,
     repetitions: Option<u32>,
@@ -5659,6 +5662,8 @@ fn probe_plan_read(
         exclude,
         repetitions,
         set,
+        action,
+        moment,
     };
 
     let path = root.join(headwater_probe::budget::PATH);
@@ -5692,7 +5697,9 @@ fn probe_plan_read(
 ///
 /// The non-zero exits are a caller's rather than a run's: a tier, an arm or a
 /// category that names nothing, and a budget declaration this engine cannot
-/// read. All four are true before a corpus is walked.
+/// read. All four are true before a corpus is walked. An action or a moment
+/// outside the set the taxonomy declares is the fifth, and it is known once
+/// the taxonomy is loaded.
 ///
 /// # It writes nothing, and it reaches nothing
 ///
@@ -5709,10 +5716,37 @@ fn probe_plan(
         Ok(loaded) => loaded,
         Err(code) => return code,
     };
+    // `--action` and `--moment` are read against the sets the taxonomy
+    // declares, so they are refused here, after the load, and not in
+    // `probe_plan_read` with `--category`, whose set is this engine's (#1873).
+    for (flag, facet, value) in [
+        ("action", headwater_probe::plan::ACTION, &narrowing.action),
+        ("moment", headwater_probe::plan::MOMENTS, &narrowing.moment),
+    ] {
+        let Some(value) = value else { continue };
+        let admitted = loaded
+            .shape
+            .facet(facet)
+            .map(|facet| facet.admitted())
+            .unwrap_or_default();
+        if !admitted.contains(&value.as_str()) {
+            return refuse(&match admitted.is_empty() {
+                true => format!(
+                    "`--{flag} {value}` names a value of `{facet}`, and this corpus's taxonomy \
+                     declares no closed set for `{facet}`"
+                ),
+                false => format!(
+                    "`--{flag} {value}` names no value of `{facet}`. They are: {}",
+                    admitted.join(", ")
+                ),
+            });
+        }
+    }
     let plan = headwater_probe::Plan::over(
         &loaded.census,
         &loaded.graph,
         &loaded.config,
+        &loaded.shape,
         budgets,
         &loaded.bound.digest,
         tier,
@@ -5967,6 +6001,7 @@ fn grade_transcripts(root: &Path, paths: &[&Path]) -> Result<Grading, ExitCode> 
         &loaded.census,
         &loaded.graph,
         &loaded.config,
+        &loaded.shape,
         &budgets,
         &loaded.bound.digest,
         headwater_probe::Tier::Regression,
@@ -6038,6 +6073,7 @@ fn probe_record(root: &Path, path: &Path) -> ExitCode {
             &loaded.census,
             &loaded.graph,
             &loaded.config,
+            &loaded.shape,
             &budgets,
             &loaded.bound.digest,
             headwater_probe::Tier::Regression,
@@ -6099,6 +6135,7 @@ fn probe_stale(root: &Path) -> ExitCode {
         &loaded.census,
         &loaded.graph,
         &loaded.config,
+        &loaded.shape,
         &budgets,
         &loaded.bound.digest,
         headwater_probe::Tier::Regression,

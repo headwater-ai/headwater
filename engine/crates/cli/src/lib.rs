@@ -1211,6 +1211,26 @@ pub enum ProbeWord {
                     document carries. It is refused beside `--category`"
         )]
         set: Option<String>,
+        #[arg(
+            long,
+            value_name = "slug",
+            help = "narrow the selection to the probes whose `action` facet is this canonical \
+                    action of HW-DR-0112. The closed set is the one the taxonomy declares for \
+                    `action`, a value outside it is refused with the set printed, and an action \
+                    no probe of this corpus carries is refused rather than planned as a run of \
+                    nothing"
+        )]
+        action: Option<String>,
+        #[arg(
+            long,
+            value_name = "name",
+            help = "narrow the selection to the probes whose `moments` list holds this hook \
+                    moment as one item. The closed set is the one the taxonomy declares for \
+                    `moments`, a value outside it is refused with the set printed, and a moment \
+                    no probe of this corpus passes is refused rather than planned as a run of \
+                    nothing"
+        )]
+        moment: Option<String>,
         // Zero is the default and it is a value like any other. The seed is
         // the caller's, so a run that states none states zero, and a run that
         // repeats a seed repeats a selection.

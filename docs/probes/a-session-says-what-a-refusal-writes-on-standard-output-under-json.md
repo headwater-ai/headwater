@@ -6,6 +6,8 @@ summary: "The deliberate case where plain code states the answer in a macro and 
 last_verified: 2026-10-22
 probe_category: navigability
 expectation: answered
+action: ask_or_locate
+moments: [intent]
 oracle: "none"
 title: "A session says what a refusal writes on standard output under JSON"
 provenance:

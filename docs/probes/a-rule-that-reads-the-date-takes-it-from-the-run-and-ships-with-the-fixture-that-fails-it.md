@@ -6,6 +6,8 @@ summary: "A blind change to the check layer is graded by a hidden test, which pa
 last_verified: 2026-10-22
 probe_category: sufficiency
 expectation: patched
+action: change_governed_code
+moments: [intent, read, write, review]
 oracle: "test:future-date"
 title: "A rule that reads the date takes it from the run and ships with the fixture that fails it"
 provenance:

@@ -1090,6 +1090,8 @@ fn selected(row: &Harder) -> headwater_probe::plan::Selected {
         },
         answers: probe.answers.clone(),
         expected: probe.expected.clone(),
+        action: scalar(&document, "action"),
+        moments: Vec::new(),
     }
 }
 

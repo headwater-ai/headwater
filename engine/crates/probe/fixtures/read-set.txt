@@ -1,16 +1,16 @@
 Nothing this run read has moved. The read set covers 5 documents, and the digest the transcript recorded is the digest this corpus composes.
-recorded sha256:19500706cc3600bf0e57d880ba5c297009770751c81463fce1ee6cd925d6336b
-now      sha256:19500706cc3600bf0e57d880ba5c297009770751c81463fce1ee6cd925d6336b
+recorded sha256:662f7a5c4812c1f57bce8561be7eb24471042a7be1d472c72ca3b56ce5fad446
+now      sha256:662f7a5c4812c1f57bce8561be7eb24471042a7be1d472c72ca3b56ce5fad446
 
-- corpus/probes/0001-opened.md (probe) sha256:28bf168394e0844222a7cb698bb3813039432370f74c7bd03f295c6b11c6cdf4
+- corpus/probes/0001-opened.md (probe) sha256:2afd22625f685b4b8165b714eb4cbe00b1df1c64bba4718687dc62858fe1c974
     no recorded call named it, so no witness of this transcript says whether it moved
-- corpus/probes/0002-answered.md (probe) sha256:4ad8a68a9b14018c085d8cb9a67113d44e15eb624e8d383d7fc76fb5c3e6bc1b
+- corpus/probes/0002-answered.md (probe) sha256:be177fea7c3cb22bbc0419a39601ae4010234b283d8fabf6300995690a396630
     event 1 call 1 observed the same identity, so this document stands
-- corpus/probes/0003-not-opened.md (probe) sha256:05abcf25ed7a471bc6efae8a9876276537dcc1fc9f649284aac849bc865dd694
+- corpus/probes/0003-not-opened.md (probe) sha256:aab585942b9d2830ec664c60578711470be314e56da1d14efa4f37cdc1e9e18b
     no recorded call named it, so no witness of this transcript says whether it moved
-- corpus/probes/0004-cited.md (probe) sha256:69f4553f6eccc4e3fd84c90d23e2f70d7f4a6e83fcfbcb5b85754231893246c3
+- corpus/probes/0004-cited.md (probe) sha256:d2678766db020b242e9212550323604be2d02ce208e5a8b953b3250695a5c180
     no recorded call named it, so no witness of this transcript says whether it moved
-- corpus/probes/0005-patched.md (probe) sha256:e648e0327dfb6a3683ea92ac1bf669a6f72b5275f69ef66adfda11a5263cf774
+- corpus/probes/0005-patched.md (probe) sha256:5e031d9ca3db0bb4bb598e2536ffc77804ca2990e14dec9fe5db528a071d9359
     no recorded call named it, so no witness of this transcript says whether it moved
 
 1 session recorded no `calls` key, so nothing observed what it opened: PROBE-FIX-not-opened / 1. The read set still covers what the plan pointed it at. What no list covers is a document such a session opened that no probe of the selection names.

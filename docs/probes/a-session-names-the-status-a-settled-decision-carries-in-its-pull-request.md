@@ -6,6 +6,8 @@ summary: A session picks one of two status values for a settled decision in its 
 last_verified: 2026-09-27
 probe_category: sufficiency
 expectation: answered
+action: ask_or_locate
+moments: [intent]
 oracle: "none"
 title: "A session names the status a settled decision carries in its pull request"
 provenance:

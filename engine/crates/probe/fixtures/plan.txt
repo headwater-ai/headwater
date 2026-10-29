@@ -4,9 +4,9 @@ A regression probe run over 5 of the 6 classified documents of this corpus.
 
 ```yaml
 lock: sha256:fixture
-tree: sha256:7681b99cc61463b8aa136e5c6218de588dde95be355e2ce467e3124c54d574f5
+tree: sha256:253956cc8d6738bf5061a9776be34f1c0a051f00a0cdc7c4c6a089ec9f18d403
 selection: sha256:acb39c7d95c364df7aa7c4fd5a084010f3fbe9aacbf0586dc93126281a77084e
-read_set: sha256:19500706cc3600bf0e57d880ba5c297009770751c81463fce1ee6cd925d6336b
+read_set: sha256:662f7a5c4812c1f57bce8561be7eb24471042a7be1d472c72ca3b56ce5fad446
 seed: 0
 harness: 0.6.1
 tier: regression
@@ -26,34 +26,41 @@ Each session stops at a turn cap of 12, which the tier declares. A session the c
 - PROBE-FIX-answered (corpus/probes/0002-answered.md)
     category: sufficiency
     expects: answered
+    action: ask_or_locate
     answers: no, yes
     expected: no
 - PROBE-FIX-cited (corpus/probes/0004-cited.md)
     category: sufficiency
     expects: cited
+    action: add_document
+    moments: read, write
     examines: PROBE-FIX-answered at corpus/probes/0002-answered.md
 - PROBE-FIX-not-opened (corpus/probes/0003-not-opened.md)
     category: navigability
     expects: not_opened
+    action: ask_or_locate
     examines: PROBE-FIX-opened at corpus/probes/0001-opened.md
 - PROBE-FIX-opened (corpus/probes/0001-opened.md)
     category: discovery
     expects: opened
+    action: ask_or_locate
+    moments: read
     examines: PROBE-FIX-answered at corpus/probes/0002-answered.md
 - PROBE-FIX-patched (corpus/probes/0005-patched.md)
     category: sufficiency
     expects: patched
+    action: repair_check
     oracle: section.required.missing
 
 ## The read set
 
 5 documents the `read_set` digest above covers, which is every probe of the selection and every document one of them examines:
 
-- corpus/probes/0001-opened.md (probe) sha256:28bf168394e0844222a7cb698bb3813039432370f74c7bd03f295c6b11c6cdf4
-- corpus/probes/0002-answered.md (probe) sha256:4ad8a68a9b14018c085d8cb9a67113d44e15eb624e8d383d7fc76fb5c3e6bc1b
-- corpus/probes/0003-not-opened.md (probe) sha256:05abcf25ed7a471bc6efae8a9876276537dcc1fc9f649284aac849bc865dd694
-- corpus/probes/0004-cited.md (probe) sha256:69f4553f6eccc4e3fd84c90d23e2f70d7f4a6e83fcfbcb5b85754231893246c3
-- corpus/probes/0005-patched.md (probe) sha256:e648e0327dfb6a3683ea92ac1bf669a6f72b5275f69ef66adfda11a5263cf774
+- corpus/probes/0001-opened.md (probe) sha256:2afd22625f685b4b8165b714eb4cbe00b1df1c64bba4718687dc62858fe1c974
+- corpus/probes/0002-answered.md (probe) sha256:be177fea7c3cb22bbc0419a39601ae4010234b283d8fabf6300995690a396630
+- corpus/probes/0003-not-opened.md (probe) sha256:aab585942b9d2830ec664c60578711470be314e56da1d14efa4f37cdc1e9e18b
+- corpus/probes/0004-cited.md (probe) sha256:d2678766db020b242e9212550323604be2d02ce208e5a8b953b3250695a5c180
+- corpus/probes/0005-patched.md (probe) sha256:5e031d9ca3db0bb4bb598e2536ffc77804ca2990e14dec9fe5db528a071d9359
 
 A recorded result is stale when a document of this list moves, and it is not stale when any other document of this corpus moves. That is the whole of what the digest buys over the `tree` digest beside it, which moves on every commit.
 

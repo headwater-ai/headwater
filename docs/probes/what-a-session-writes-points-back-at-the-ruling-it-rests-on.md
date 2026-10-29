@@ -6,6 +6,8 @@ summary: No verb writes a traceability edge in this corpus, so a person types ev
 last_verified: 2026-09-11
 probe_category: navigability
 expectation: cited
+action: add_document
+moments: [write, review]
 oracle: "none"
 title: "What a session writes points back at the ruling it rests on"
 provenance:

@@ -6,6 +6,8 @@ summary: "The task asks for a change to the recorder that its contract forbids, 
 last_verified: 2026-10-22
 probe_category: navigability
 expectation: opened
+action: change_governed_code
+moments: [intent, read, write, review]
 oracle: "none"
 title: "A session that changes the recorder reaches the recorder contract"
 provenance:

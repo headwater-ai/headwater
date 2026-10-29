@@ -5,6 +5,8 @@ status_since: 2026-08-14
 summary: A predicate over a produced artifact, which reads an identifier where the two forms above read a path.
 probe_category: sufficiency
 expectation: cited
+action: add_document
+moments: [read, write]
 oracle: "none"
 relations:
   examines:
