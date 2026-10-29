@@ -22,4 +22,10 @@ wrong() {
 deleted() {
     sed -i '/^The generated index of a shelf stays the first entry of its group, as before\.$/d' docs/decisions/0108-the-site-sidebar-lists-a-shelf-in-path-order-and-the-shelf-index-keeps-the-reading-order.md && ! grep -q '^The generated index of a shelf' docs/decisions/0108-the-site-sidebar-lists-a-shelf-in-path-order-and-the-shelf-index-keeps-the-reading-order.md
 }
-more_wrong=deleted
+
+# The sentence that carries the finding put in an HTML comment. The keep line fails it, because it reads no comment.
+commented() {
+    sed -i 's/^The generated index of a shelf stays the first entry of its group, as before\.$/<!-- & -->/' docs/decisions/0108-the-site-sidebar-lists-a-shelf-in-path-order-and-the-shelf-index-keeps-the-reading-order.md && grep -q '^<!-- The generated index of a shelf stays' docs/decisions/0108-the-site-sidebar-lists-a-shelf-in-path-order-and-the-shelf-index-keeps-the-reading-order.md
+}
+
+more_wrong="deleted commented"

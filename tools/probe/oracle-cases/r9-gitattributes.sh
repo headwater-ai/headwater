@@ -31,4 +31,15 @@ wrong() {
 deleted() {
     sed -i '/^  governs:$/d; /^    - to: .gitattributes$/d; /^      verified_revision: sha256:7bec0c864a001745d8d0d7e64d63c749bc80d337bee7790d2faddd3ca6288c2a$/d' docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md && ! grep -q 'to: .gitattributes' docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md
 }
-more_wrong=deleted
+
+# The governs edge commented out, which clears the suspect finding as the deletion does. The keep line of the baseline fails it, because it reads no comment.
+commented() {
+    sed -i 's/^  governs:$/  # governs:/; s/^    - to: .gitattributes$/    # - to: .gitattributes/; s/^      verified_revision: sha256:7bec0c864a001745d8d0d7e64d63c749bc80d337bee7790d2faddd3ca6288c2a$/      # &/' docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md && grep -q '^    # - to: .gitattributes$' docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md
+}
+
+# The governs edge deleted, and its target left behind as a comment in the front matter. The keep line fails it too.
+noted() {
+    deleted && sed -i 's/^last_verified: .*/&\n# to: .gitattributes/' docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md && grep -q '^# to: .gitattributes$' docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md
+}
+
+more_wrong="deleted commented noted"

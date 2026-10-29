@@ -22,4 +22,10 @@ wrong() {
 deleted() {
     sed -i 's/ESLint fails a run that carries a suppression which no longer matches, and that is the property `.ste-lint-baseline.json` lacked\. //' docs/decisions/0012-migration-path-for-an-existing-corpus.md && ! grep -q 'carries a suppression' docs/decisions/0012-migration-path-for-an-existing-corpus.md
 }
-more_wrong=deleted
+
+# The sentence that carries the finding put in an HTML comment, which hides it from the engine as the deletion does. The keep line fails it, because it reads no comment.
+commented() {
+    sed -i 's/ESLint fails a run that carries a suppression which no longer matches, and that is the property `.ste-lint-baseline.json` lacked\./<!-- & -->/' docs/decisions/0012-migration-path-for-an-existing-corpus.md && grep -q '<!-- ESLint fails a run that carries a suppression' docs/decisions/0012-migration-path-for-an-existing-corpus.md
+}
+
+more_wrong="deleted commented"
