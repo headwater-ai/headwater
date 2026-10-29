@@ -151,7 +151,7 @@ done
 #
 # The start directory is the `cwd` of the transcript's first record that has
 # one. It is the harness's project directory, the one the hook reads its
-# engine from (`hw_engine` in `.claude/hooks/lib.sh`, pinned before the root
+# engine from (`hw_engine` in `.claude/hooks/lib.local.sh`, pinned before the root
 # is corrected to the prompt's own `cwd`). A session that enters a worktree
 # with no build of its own still logs through the start directory's engine,
 # so the prompt's own `cwd` is the wrong place to look (2026-09-30: 42 of 45
