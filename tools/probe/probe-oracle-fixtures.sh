@@ -185,14 +185,19 @@ while IFS="$(printf '\t')" read -r id oracle; do
         fail "$id: no case file tools/probe/oracle-cases/$key.sh"
         continue
     fi
-    sed -n '1,10p' "$case_file" | grep -q -F -- "$id" || {
-        fail "$id: tools/probe/oracle-cases/$key.sh does not name the probe in its first ten lines, so the seal leaves its reference change in every workspace"
-        continue
-    }
+    # The seal is read first. A case file that names no current probe stays
+    # in the sealed tree and fails here. One that names another probe is
+    # removed and fails the naming check below. With the naming check first,
+    # a file the seal keeps names no probe and fails that check, so this one
+    # could never fire (#1874.3).
     if [ -e "$sealed/tools/probe/oracle-cases/$key.sh" ]; then
         fail "$id: the sealed tree still holds tools/probe/oracle-cases/$key.sh"
         continue
     fi
+    sed -n '1,10p' "$case_file" | grep -q -F -- "$id" || {
+        fail "$id: tools/probe/oracle-cases/$key.sh does not name the probe in its first ten lines, so the seal leaves its reference change in every workspace"
+        continue
+    }
     command=$(awk -F '\t' -v key="$key" '$1 == key && $2 == "command" { sub(/^[^\t]*\t[^\t]*\t/, ""); print; exit }' "$work/oracles")
     if [ -z "$command" ]; then
         fail "$id: the sealed tree's probe.yml declares no command for \`$key\`, so the seal cut the entry or nothing declares it"
