@@ -3994,7 +3994,7 @@ STUB
         printf '%s\n' "$gone" > "$stagger/slice/lock"
         printf '\n' > "$stagger/model"
         # One repetition, because the plan of the tier's 30 over the
-        # thirty-four sufficiency probes since #1874.3 passes the campaign
+        # thirty-two sufficiency probes since #1874.3 passes the campaign
         # ceiling, and the plan then refuses the session this case needs.
         printf '1\n' > "$stagger/repetitions"
         : > "$stagger/max-turns"
@@ -5464,12 +5464,12 @@ if [ -x "$engine" ]; then
     present "and each leak-kept line on its own" "line 8 holds only leak-kept probes" "$scratch/dry.out"
 
     # A line that pools a leak-kept probe with one that is not fails the dry run,
-    # and a plan over its ceiling is printed rather than fatal: thirty-four
+    # and a plan over its ceiling is printed rather than fatal: thirty-two
     # sufficiency probes over the documentation tier's two arms at 30
-    # repetitions is 2040 sessions, $1020.00 against its $130.00. Two of the
-    # thirty-four are the harder variants of #1718, two are the patched probes
+    # repetitions is 1920 sessions, $960.00 against its $130.00. Two of the
+    # thirty-two are the harder variants of #1718, two are the patched probes
     # of the code set (#1835), eight are the probes of rows 4 and 5 (#1874),
-    # and fourteen are the probes of rows 6 to 9 (#1874.3).
+    # and twelve are the probes of rows 6 to 9 (#1874.3).
     # The plan selects by category and not by status, so the six retired
     # sufficiency probes count too. This line names them by category and not
     # by identifier. The campaign
@@ -5480,7 +5480,7 @@ if [ -x "$engine" ]; then
     same "a line that pools a leak-kept probe fails the dry run with 8, not 5" "8" "$?"
     present "and names the line" "line 1 pools a probe under \`leaks_kept:\`" "$scratch/pooled.out"
     present "and the ceiling's refusal is printed as a line" \
-        "L1 2040 sessions project \$1020.00 against a declared ceiling of \$130.00" "$scratch/pooled.out"
+        "L1 1920 sessions project \$960.00 against a declared ceiling of \$130.00" "$scratch/pooled.out"
 
     # Any other refusal of a plan is the batch driver's 5.
     printf 'campaign present discovery\n' > "$scratch/refused.spec"
@@ -5979,9 +5979,9 @@ if [ -x "$engine" ]; then
         # campaign tier 30, so one spec of both is 17 + 17 x 30 jobs. The
         # navigability shelf is seventeen probes, two of them from rows 6 to 9
         # of #1874, and the plan counts its retired probes too. The line reads
-        # navigability and not sufficiency since #1874.3, because thirty-four
-        # sufficiency probes in the campaign tier project 6120 sessions,
-        # $3060.00, past its $2052.00, and the plan refuses the run.
+        # navigability and not sufficiency since #1874.3, because thirty-two
+        # sufficiency probes in the campaign tier project 5760 sessions,
+        # $2880.00, past its $2052.00, and the plan refuses the run.
         printf 'regression present navigability\ncampaign present navigability\n' > "$scratch/run-tiers.spec"
         rm -rf "$scratch/run-tiers-out"
         HEADWATER_PROBE_HOST_CONFIG="$scratch/run-host" CARGO_TARGET_DIR="$scratch/gate-target" PATH="$scratch/run-bin:$PATH" \

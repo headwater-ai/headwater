@@ -1420,9 +1420,7 @@ const AWAITING_SPEND: &[&str] = &[
     "HW-PROBE-a-session-retires-a-word-with-its-replacement-so-that-the-check-offers-the-substitution",
     "HW-PROBE-a-session-adds-a-retired-term-to-the-overlay-that-the-task-names-and-leaves-the-lock-matching-it",
     "HW-PROBE-a-session-repairs-a-suspect-governs-edge-on-the-record-that-the-task-names-and-raises-no-other-finding",
-    "HW-PROBE-a-session-repairs-a-change-narration-finding-in-a-sentence-about-another-tool-and-raises-no-other-finding",
     "HW-PROBE-a-session-splits-the-long-summary-of-the-obligation-that-the-task-names-and-raises-no-other-finding",
-    "HW-PROBE-a-session-repairs-a-change-narration-finding-in-the-sidebar-decision-and-raises-no-other-finding",
 ];
 
 /// The campaign spec plans no probe that awaits the owner's approval of spend.

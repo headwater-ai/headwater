@@ -309,21 +309,11 @@ oracles:
     command: sh tools/probe/oracles/nothing-else-broken.sh --check-clean --args tools/probe/oracle-args/r9-gitattributes
     parser: exit
     holds: [tools/probe/oracles/nothing-else-broken.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r9-gitattributes, tools/probe/oracle-args/r9-gitattributes.baseline]
-  r9-eslint:
-    paths: [docs/*]
-    command: sh tools/probe/oracles/nothing-else-broken.sh --check-clean --args tools/probe/oracle-args/r9-eslint
-    parser: exit
-    holds: [tools/probe/oracles/nothing-else-broken.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r9-eslint, tools/probe/oracle-args/r9-eslint.baseline]
   r9-shelf-layout:
     paths: [docs/*]
     command: sh tools/probe/oracles/nothing-else-broken.sh --check-clean --args tools/probe/oracle-args/r9-shelf-layout
     parser: exit
     holds: [tools/probe/oracles/nothing-else-broken.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r9-shelf-layout, tools/probe/oracle-args/r9-shelf-layout.baseline]
-  r9-sidebar:
-    paths: [docs/*]
-    command: sh tools/probe/oracles/nothing-else-broken.sh --check-clean --args tools/probe/oracle-args/r9-sidebar
-    parser: exit
-    holds: [tools/probe/oracles/nothing-else-broken.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r9-sidebar, tools/probe/oracle-args/r9-sidebar.baseline]
 
 # Leak strings (#1472): for each probe, the strings whose presence in text the harness
 # loads into every session gives the probe's answer away. The seal finds an
@@ -436,9 +426,7 @@ leaks:
   HW-PROBE-a-session-retires-a-word-with-its-replacement-so-that-the-check-offers-the-substitution: []
   HW-PROBE-a-session-adds-a-retired-term-to-the-overlay-that-the-task-names-and-leaves-the-lock-matching-it: []
   HW-PROBE-a-session-repairs-a-suspect-governs-edge-on-the-record-that-the-task-names-and-raises-no-other-finding: []
-  HW-PROBE-a-session-repairs-a-change-narration-finding-in-a-sentence-about-another-tool-and-raises-no-other-finding: []
   HW-PROBE-a-session-splits-the-long-summary-of-the-obligation-that-the-task-names-and-raises-no-other-finding: []
-  HW-PROBE-a-session-repairs-a-change-narration-finding-in-the-sidebar-decision-and-raises-no-other-finding: []
 
 # The probes whose leak string stays in the present arm on purpose (#1472, the second
 # outcome the issue offers). The leak string of the status probe is in the
