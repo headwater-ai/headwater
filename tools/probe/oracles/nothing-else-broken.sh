@@ -29,13 +29,22 @@
 # the comment lines of a baseline that is already there, its scope included,
 # and records the findings of the scoped files alone.
 #
-# A comment line `# keep: <path> <literal>` fails the oracle unless <path>
-# holds <literal> as a whole name, as `hw_oracle_names_whole` in `lib.sh`
-# reads one (#1874.3). A session that deletes the sentence or the edge that
-# carries the finding clears it and raises nothing, so a probe names the text
-# that the repair keeps. A literal that only a comment holds is not kept, as
-# `hw_oracle_uncommented` in `lib.sh` reads a comment, because a session can
-# comment out an edge as well as delete it.
+# Two comment lines name the structure the repair keeps, because a session
+# that deletes the edge or the clause a finding is on clears the finding and
+# raises nothing (#1874.3). Each is read through `headwater explain --json`,
+# as `hw_oracle_explain` in `lib.sh` reads it, and never as lines of the
+# file, so a comment, a quoted value, a body line or an edge under another
+# key keeps nothing:
+#
+# - `# edge: <path> <relation> <target>` fails unless <path> declares an
+#   edge of <relation> whose targets hold <target>, as `hw_oracle_edge`
+#   reads one.
+# - `# summary: <path> <literal>` fails unless the summary the engine parsed
+#   for <path> holds <literal>. That is a match inside a value the engine
+#   parsed, and not inside a line of the file.
+#
+# The `# keep: <path> <literal>` line of round 3 matched lines of the file,
+# and a line that was not the structure satisfied it, so it is refused.
 
 set -u
 . "${0%/*}/lib.sh"
@@ -70,18 +79,23 @@ if [ -s "$hw_oracle_scratch/scope" ]; then
 fi
 
 if [ "$record" = no ]; then
-    # Each `# keep: <path> <literal>` line names text the repair keeps. A
-    # session that deletes the sentence or the edge a finding is on clears
-    # the finding and raises nothing, so without this it passes (#1874.3).
-    sed -n 's/^# keep: *//p' "$hw_oracle_scratch/comments" > "$hw_oracle_scratch/keep"
-    while IFS= read -r hw_keep; do
-        hw_keep_path=${hw_keep%% *}
-        hw_keep_literal=${hw_keep#* }
-        [ -n "$hw_keep_path" ] && [ "$hw_keep_literal" != "$hw_keep" ] || hw_oracle_usage "a keep line is \`# keep: <path> <literal>\`, and $baseline has \`# keep: $hw_keep\`"
-        [ -f "$hw_keep_path" ] || hw_oracle_fail "nothing is at $hw_keep_path, which the repair keeps"
-        hw_oracle_uncommented "$hw_keep_path" "$hw_oracle_scratch/keep-source"
-        hw_oracle_names_whole "$hw_keep_literal" "$hw_oracle_scratch/keep-source" || hw_oracle_fail "$hw_keep_path does not hold \`$hw_keep_literal\` outside a comment, so the session removed what the task asked it to repair"
-    done < "$hw_oracle_scratch/keep"
+    grep -q '^# keep:' "$hw_oracle_scratch/comments" && hw_oracle_usage "$baseline has a \`# keep:\` line, which matched lines of a file and is refused since round 4 of #1874.3: write \`# edge:\` or \`# summary:\`"
+    # Each `# edge:` line names an edge the repair keeps (#1874.3).
+    sed -n 's/^# edge: *//p' "$hw_oracle_scratch/comments" > "$hw_oracle_scratch/edges"
+    while read -r hw_edge_path hw_edge_relation hw_edge_target hw_edge_more; do
+        [ -n "$hw_edge_target" ] && [ -z "$hw_edge_more" ] || hw_oracle_usage "an edge line is \`# edge: <path> <relation> <target>\`, and $baseline has \`# edge: $hw_edge_path $hw_edge_relation $hw_edge_target $hw_edge_more\`"
+        hw_oracle_explain "$hw_edge_path" "$hw_oracle_scratch/edge.json" || hw_oracle_fail "the engine reads no document $hw_edge_path, which the repair keeps"
+        hw_oracle_edge "$hw_oracle_scratch/edge.json" "$hw_edge_relation" "$hw_edge_target" || hw_oracle_fail "$hw_edge_path declares no \`$hw_edge_relation\` edge to $hw_edge_target as the engine parses it, so the session removed what the task asked it to repair"
+    done < "$hw_oracle_scratch/edges"
+    # Each `# summary:` line names text the parsed summary keeps (#1874.3).
+    sed -n 's/^# summary: *//p' "$hw_oracle_scratch/comments" > "$hw_oracle_scratch/summaries"
+    while IFS= read -r hw_summary; do
+        hw_summary_path=${hw_summary%% *}
+        hw_summary_literal=${hw_summary#* }
+        [ -n "$hw_summary_path" ] && [ "$hw_summary_literal" != "$hw_summary" ] && [ -n "$hw_summary_literal" ] || hw_oracle_usage "a summary line is \`# summary: <path> <literal>\`, and $baseline has \`# summary: $hw_summary\`"
+        hw_oracle_explain "$hw_summary_path" "$hw_oracle_scratch/summary.json" || hw_oracle_fail "the engine reads no document $hw_summary_path, which the repair keeps"
+        jq -e --arg literal "$hw_summary_literal" '(.summary // "") | contains($literal)' "$hw_oracle_scratch/summary.json" > /dev/null 2>&1 || hw_oracle_fail "the summary the engine parses for $hw_summary_path does not hold \`$hw_summary_literal\`, so the session removed what the task asked it to repair"
+    done < "$hw_oracle_scratch/summaries"
 fi
 
 if [ "$record" = yes ]; then

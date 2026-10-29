@@ -9,13 +9,25 @@
 # new, so its identifier is not known in advance, and the script finds it. It
 # passes when all of these hold:
 #
-# 1. the front matter of <old-document> says `status: superseded`;
-# 2. some document under `docs/` names <old-document> under `supersedes` in
-#    its own front matter, and the engine types it;
-# 3. the `relations:` block of <old-document> names that successor, which is
-#    the `superseded_by` link the other end writes. A summary that says
-#    "superseded by" is not a link and is not read. The successor counts only
-#    as a whole name, so `HW-DR-01120` is not `HW-DR-0112` (#1874.3).
+# 1. the front matter of <old-document> says `status: superseded`, as a
+#    top-level key, so a comment or the same words under another key is no
+#    status;
+# 2. a document that the engine types declares a succession edge to
+#    <old-document>, and its own status is not `superseded`;
+# 3. <old-document> declares a succession edge to that successor, which is
+#    the `superseded_by` link the other end writes.
+#
+# Both edges are read through `headwater explain --json`, as
+# `hw_oracle_explain` and `hw_oracle_edge` in `lib.sh` read them, and never
+# as lines of the front matter (round 4 of #1874.3). So an edge that only a
+# comment holds, or that stands under another relation such as `traces_to`,
+# is no edge. The engine prints an edge declared under `superseded_by` as
+# `supersedes`, outbound, on the document that declares it, as it prints one
+# declared under `supersedes`, so the relation does not say which end is
+# old. Status says it: the old record is superseded, and a record it
+# superseded in turn is superseded too, so a successor is not. With
+# `--check-clean`, the strict check reads the keys themselves, and a key
+# written on the wrong end fails its reciprocity rule.
 #
 # With `--check-clean`, the strict errors counted are those on <old-document>
 # and on the successor, because a sealed tree holds errors elsewhere.
@@ -26,48 +38,42 @@
 set -u
 . "${0%/*}/lib.sh"
 [ $# -eq 1 ] || hw_oracle_usage "successor-typed.sh [--check-clean] <old-document>"
-old_path=$(hw_oracle_path_of "$1")
-[ -n "$old_path" ] && [ -f "$old_path" ] || hw_oracle_fail "the engine reads no document $1"
 hw_oracle_tmp
-old_id=$(hw_oracle_id_of "$old_path")
+hw_oracle_explain "$1" "$hw_oracle_scratch/old.json" || hw_oracle_fail "the engine reads no document $1"
+old_path=$(jq -r '.path // ""' "$hw_oracle_scratch/old.json")
+old_id=$(jq -r '.id // ""' "$hw_oracle_scratch/old.json")
+[ -n "$old_path" ] && [ -f "$old_path" ] || hw_oracle_fail "the engine reads no document $1"
 [ -n "$old_id" ] || hw_oracle_fail "$old_path declares no identifier"
-hw_oracle_front_matter "$old_path" | grep -E -q '^status: *"?superseded"? *$' || hw_oracle_fail "$old_path is not \`status: superseded\`"
-hw_oracle_relations "$old_path" > "$hw_oracle_scratch/old"
 
-# A successor names the old identifier inside a `supersedes:` list of its own
-# front matter: the list item lines that follow the key, or a flow list.
-grep -r -l -F -- "$old_id" docs > "$hw_oracle_scratch/candidates" 2> /dev/null || true
-found=""
+# The status of a file, as a top-level key of its front matter.
+superseded() {
+    hw_oracle_front_matter "$1" | grep -E -q '^status: *"?superseded"? *$'
+}
+superseded "$old_path" || hw_oracle_fail "$old_path is not \`status: superseded\`"
+
+# Each document that declares a succession edge to the old one is printed on
+# it as `superseded_by`, inbound, with that document's path.
+jq -r '[.related[]? | select(.inbound == true and .relation == "superseded_by") | .targets[]?] | unique | .[]' "$hw_oracle_scratch/old.json" > "$hw_oracle_scratch/candidates"
+found="" found_id="" typed="" refused=""
 while IFS= read -r candidate; do
     [ "$candidate" = "$old_path" ] && continue
-    hw_oracle_relations "$candidate" | awk -v id="$old_id" '
-        # Whether the line holds id as a whole name, as hw_oracle_names_whole
-        # reads one: no letter, digit, `_`, `-` or `.` on either side.
-        function whole(line, rest, at, before, after) {
-            rest = line
-            while ((at = index(rest, id)) > 0) {
-                before = at > 1 ? substr(rest, at - 1, 1) : ""
-                after = substr(rest, at + length(id), 1)
-                if (before !~ /[A-Za-z0-9_.-]/ && after !~ /[A-Za-z0-9_.-]/) return 1
-                rest = substr(rest, at + 1)
-            }
-            return 0
-        }
-        /^[^ ]/ || /^  [a-z_]+:/ { in_list = ($0 ~ /^ *supersedes:/) }
-        /^ *supersedes: *\[/ && whole($0) { hit = 1 }
-        in_list && /^ *- / && whole($0) { hit = 1 }
-        END { exit hit ? 0 : 1 }
-    ' || continue
-    found=$candidate
+    hw_oracle_explain "$candidate" "$hw_oracle_scratch/candidate.json" || continue
+    candidate_id=$(jq -r '.id // ""' "$hw_oracle_scratch/candidate.json")
+    hw_oracle_edge "$hw_oracle_scratch/candidate.json" supersedes "$old_id" "$old_path" || continue
+    if superseded "$candidate"; then
+        refused="$candidate"
+        continue
+    fi
+    found=$candidate found_id=$candidate_id
+    typed=$(jq -r '.kind // ""' "$hw_oracle_scratch/candidate.json")
     break
 done < "$hw_oracle_scratch/candidates"
-[ -n "$found" ] || hw_oracle_fail "no document under docs/ declares that it supersedes $old_id"
-
-hw_oracle_engine
-typed=$("$hw_engine" explain --root . "$found" 2> /dev/null | sed -n 's/^  kind \([^ ]*\).*/\1/p' | sed -n '1p')
-[ -n "$typed" ] || hw_oracle_fail "$found supersedes $old_id, and the engine types it as nothing"
-successor_id=$(hw_oracle_id_of "$found")
-[ -n "$successor_id" ] || hw_oracle_fail "$found supersedes $old_id and declares no identifier"
-hw_oracle_names_whole "$successor_id" "$hw_oracle_scratch/old" || hw_oracle_fail "$found supersedes $old_id, and $old_path does not name $successor_id"
+if [ -z "$found" ]; then
+    [ -n "$refused" ] && hw_oracle_fail "the only document with a succession edge to $old_id is $refused, which is superseded itself, so it is a record $old_id superseded and not its successor"
+    hw_oracle_fail "no document declares that it supersedes $old_id, as the engine parses the front matter"
+fi
+[ -n "$typed" ] && [ "$typed" != null ] || hw_oracle_fail "$found supersedes $old_id, and the engine types it as nothing"
+[ -n "$found_id" ] || hw_oracle_fail "$found supersedes $old_id and declares no identifier"
+hw_oracle_edge "$hw_oracle_scratch/old.json" supersedes "$found_id" "$found" || hw_oracle_fail "$found supersedes $old_id, and $old_path declares no superseded_by edge to $found_id, as the engine parses the front matter"
 hw_oracle_subjects="$old_path $found"
-hw_oracle_pass_clean "$successor_id, typed $typed, supersedes $old_id, and $old_path names it"
+hw_oracle_pass_clean "$found_id, typed $typed, supersedes $old_id, and $old_path names it"

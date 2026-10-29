@@ -107,48 +107,39 @@ hw_oracle_names_whole() {
     grep -E -q -- "(^|[^A-Za-z0-9_.-])$hw_whole_pattern([^A-Za-z0-9_.-]|\\.[^A-Za-z0-9_-]|\\.\$|\$)" "$2"
 }
 
-# Write <file> to <out> without its comments, because the engine reads no
-# comment, so a literal that only a comment holds declares nothing (#1874.3).
-# In a `.yml` or `.yaml` file, and in the front matter of a `.md` file, each
-# line loses what follows a `#` that opens it or that a blank precedes. In
-# the body of a `.md` file, each `<!-- ... -->` is removed, across lines too,
-# and a `#` there is a heading or a number and stays. Any other file is
-# copied. A quoted YAML value that holds ` #` is cut there, which makes a
-# false fail and never a false pass.
+# The engine's parse of one document, which the scripts read in place of
+# lines of its file, so a comment, a quoted value, a body line or an edge
+# under another key is not the structure they ask for (#1874.3).
 #
-#     hw_oracle_uncommented <file> <out>
-hw_oracle_uncommented() {
-    case $1 in
-        *.yml | *.yaml) hw_uncommented_form=yaml ;;
-        *.md) hw_uncommented_form=md ;;
-        *) cp -- "$1" "$2"; return ;;
+#     hw_oracle_explain <document> <out>
+#
+# Write `headwater explain --json` of <document>, an identifier or a path, to
+# <out>. Return 1 when the engine reads no such document. The shape is
+# versioned, and a major version other than 1 is a usage error, so a change
+# of shape stops a grade and never passes one.
+hw_oracle_explain() {
+    command -v jq > /dev/null 2>&1 || hw_oracle_usage "the scripts read \`headwater explain --json\` with jq, and no jq is on the path"
+    hw_oracle_engine
+    "$hw_engine" explain --json --root . "$1" > "$2" 2> /dev/null || return 1
+    hw_explain_version=$(jq -r '.version // ""' "$2" 2> /dev/null) || hw_oracle_usage "\`headwater explain --json $1\` wrote no JSON that jq reads"
+    case $hw_explain_version in
+        1.*) ;;
+        *) hw_oracle_usage "\`headwater explain --json\` reports version ${hw_explain_version:-none}, and the scripts read version 1" ;;
     esac
-    awk -v form="$hw_uncommented_form" '
-        function yaml(line) {
-            sub(/^[[:space:]]*#.*$/, "", line)
-            sub(/[[:space:]]#.*$/, "", line)
-            return line
-        }
-        form == "yaml" { print yaml($0); next }
-        FNR == 1 && $0 == "---" { front = 1; print; next }
-        front && $0 == "---" { front = 0; print; next }
-        front { print yaml($0); next }
-        {
-            line = $0; out = ""
-            while (1) {
-                if (inside) {
-                    at = index(line, "-->")
-                    if (!at) { line = ""; break }
-                    line = substr(line, at + 3); inside = 0
-                } else {
-                    at = index(line, "<!--")
-                    if (!at) { out = out line; break }
-                    out = out substr(line, 1, at - 1) " "; line = substr(line, at + 4); inside = 1
-                }
-            }
-            print out
-        }
-    ' "$1" > "$2"
+}
+
+# Whether the explained document <json> declares an edge of <relation> to
+# one of the <target>s, as `related` gives it: an entry with `inbound` false
+# whose `targets` holds the target as written. `oracle-fixtures.sh` fixes
+# what each `(relation, inbound)` pair means. An edge declared under
+# `superseded_by` is printed as `supersedes`, outbound, on the document that
+# declares it, so this reads the relation and not the key.
+#
+#     hw_oracle_edge <json> <relation> <target>...
+hw_oracle_edge() {
+    hw_edge_json=$1 hw_edge_relation=$2
+    shift 2
+    jq -e --arg relation "$hw_edge_relation" '[.related[]? | select(.inbound == false and .relation == $relation) | .targets[]?] as $declared | any($ARGS.positional[]; . as $target | any($declared[]; . == $target))' "$hw_edge_json" --args "$@" > /dev/null 2>&1
 }
 
 #

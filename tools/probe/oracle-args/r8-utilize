@@ -4,7 +4,7 @@
 # skips each line that opens with `#`. The file names its probe, so the seal
 # removes it from every workspace, and the oracle entry holds it. The
 # command is `sh tools/probe/oracles/lock-regenerated.sh --check-clean --args <this file>`.
-.headwater/overlay.yml
-term: utilize
-.headwater/overlay.yml
-replacement: use
+retires
+docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md
+utilize
+use

@@ -194,7 +194,8 @@ expect 1 "successor-typed with --check-clean fails an error in the successor" "$
 # is printed on that document as `supersedes`, outbound, with the target as
 # written. On the far document it is `superseded_by`, inbound, with the
 # declaring document's path. So the relation string does not say which key
-# was written, and successor-typed.sh tells the two ends apart by status.
+# was written, and successor-typed.sh tells the two ends apart by status. A
+# key that names nothing is printed as one outbound edge to the target `~`.
 # A case here fails when the engine prints these pairs another way.
 explain_pairs() {
     "$engine" explain --json --root "$1" "$2" 2> /dev/null | jq -c '[.related[] | select(.relation == "supersedes" or .relation == "superseded_by") | [.relation, .inbound, (.targets | map(sub("^docs/decisions/(?<n>[0-9]+)-.*"; "path:\(.n)")))]] | sort'
@@ -309,9 +310,12 @@ expect 0 "moved with --check-clean passes an error that does not name the moved 
 printf '\nSee [the record](../decisions/elsewhere/%s).\n' "${new##*/}" >> "$tree/docs/subsystems/measurement.md"
 expect 1 "moved with --check-clean fails an error that names the moved file in a file that links it" "$tree" moved.sh --check-clean "$new" "$moved"
 # A link rewritten to a path where nothing stands names the file and resolves
-# to neither path: `moved.sh` alone passes it, and the strict check does not.
+# to neither path. The regex of `moved.sh` reads no stale link there, and the
+# engine's link rule reads a link that names the file name and resolves to
+# nothing, so `moved.sh` fails it, with `--check-clean` and without (round 4
+# of #1874.3).
 tree=$(fresh moved-misrepaired) && rm -rf "$tree" && cp -a "$clean" "$tree" && sed -i "s#\.\./decisions/moved/${new##*/}#../decisions/elsewhere/${new##*/}#g" "$tree/docs/subsystems/measurement.md"
-expect 0 "moved passes a link repaired to a path where nothing stands" "$tree" moved.sh "$new" "$moved"
+expect 1 "moved fails a link repaired to a path where nothing stands" "$tree" moved.sh "$new" "$moved"
 expect 1 "moved with --check-clean fails the same link" "$tree" moved.sh --check-clean "$new" "$moved"
 # A link that the link regex of moved.sh does not read, a reference-style
 # link, still resolves to the old path in a file that links nothing else of

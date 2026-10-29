@@ -11,6 +11,10 @@
 # 3. no Markdown link in a `.md` file of the tree resolves to <old-path>. A
 #    link resolves against the directory of the file that holds it, or
 #    against the root when it opens with `/`, and its `#fragment` is dropped.
+#    Two readers decide it, and a link that either one sees fails the move:
+#    the inline-link regex below, and the engine's `link.path.unresolved`
+#    rule, which parses every link form, a reference-style link too
+#    (round 4 of #1874.3).
 #
 # For a shelf, name one document of the shelf, because a move of the shelf
 # moves it. A link by identifier does not depend on the path, so it needs no
@@ -69,6 +73,15 @@ PY
 sed -n 's/^stale\t//p' "$hw_oracle_scratch/links" > "$hw_oracle_scratch/stale"
 stale=$(sort -u "$hw_oracle_scratch/stale" | wc -l | tr -d ' ')
 [ "$stale" -eq 0 ] || hw_oracle_fail "$old moved to $new, and $stale file(s) still link to $old, the first $(sort -u "$hw_oracle_scratch/stale" | sed -n '1p')"
+# The engine's half: its link rule parses every link form, and the regex
+# above reads only an inline link. A `link.path.unresolved` finding of any
+# file, escaped or not, that names the old path or its file name is a link
+# the move left (round 4 of #1874.3).
+command -v jq > /dev/null 2>&1 || hw_oracle_usage "moved.sh reads the engine's link findings with jq, and no jq is on the path"
+hw_oracle_engine
+"$hw_engine" check --json --root . > "$hw_oracle_scratch/links.json" 2> "$hw_oracle_scratch/links.err" || true
+unresolved=$(jq -r --arg old "$old" --arg name "${old##*/}" '[.findings[]? | select(.rule == "link.path.unresolved" and ((.message // "") | contains($old) or contains($name))) | .path] | unique | (length | tostring) + " " + (.[0] // "")' "$hw_oracle_scratch/links.json" 2> /dev/null) || hw_oracle_usage "the engine wrote no findings that jq reads"
+[ "${unresolved%% *}" -eq 0 ] || hw_oracle_fail "$old moved to $new, and the engine reads a link to $old that resolves to nothing in ${unresolved%% *} file(s), the first ${unresolved#* }"
 hw_oracle_subjects=$new
 hw_oracle_linkers=$(sed -n 's/^near\t//p' "$hw_oracle_scratch/links" | sort -u | tr '\n' ' ')
 hw_oracle_mentions="${old##*/} ${new##*/}"
