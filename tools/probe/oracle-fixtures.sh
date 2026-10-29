@@ -188,6 +188,93 @@ expect 0 "successor-typed with --check-clean passes an error in a document it do
 expect 1 "successor-typed with --check-clean fails an error in the old record" "$elsewhere" successor-typed.sh --check-clean HW-DR-0111
 expect 1 "successor-typed with --check-clean fails an error in the successor" "$work/check-spoiled" successor-typed.sh --check-clean HW-DR-0111
 
+# The meaning of each `(relation, inbound)` pair of `headwater explain
+# --json`, fixed here because the oracles read it (#1874.3). An edge that a
+# document declares under `supersedes` or under its inverse `superseded_by`
+# is printed on that document as `supersedes`, outbound, with the target as
+# written. On the far document it is `superseded_by`, inbound, with the
+# declaring document's path. So the relation string does not say which key
+# was written, and successor-typed.sh tells the two ends apart by status.
+# A case here fails when the engine prints these pairs another way.
+explain_pairs() {
+    "$engine" explain --json --root "$1" "$2" 2> /dev/null | jq -c '[.related[] | select(.relation == "supersedes" or .relation == "superseded_by") | [.relation, .inbound, (.targets | map(sub("^docs/decisions/(?<n>[0-9]+)-.*"; "path:\(.n)")))]] | sort'
+}
+pairs_case() {
+    cases=$((cases + 1))
+    got=$(explain_pairs "$2" "$3")
+    if [ "$got" = "$4" ]; then
+        echo "ok   $1: $got"
+    else
+        echo "FAIL $1: explain --json prints $got, and the contract is $4"
+        failures=$((failures + 1))
+    fi
+}
+pairs_case "explain prints the superseded_by that HW-DR-0111 declares as supersedes, outbound, and the far end as superseded_by, inbound" "$base" HW-DR-0111 '[["superseded_by",true,["path:0112"]],["supersedes",false,["HW-DR-0112"]]]'
+pairs_case "explain prints the supersedes that HW-DR-0112 declares as supersedes, outbound, and the far end as superseded_by, inbound" "$base" HW-DR-0112 '[["superseded_by",true,["path:0111"]],["supersedes",false,["HW-DR-0111"]]]'
+pairs_case "explain prints no outbound supersedes to HW-DR-0112 on HW-DR-0111 once its superseded_by names nothing, and the empty key as the target ~" "$work/link-one-end" HW-DR-0111 '[["superseded_by",true,["path:0112"]],["supersedes",false,["~"]]]'
+pairs_case "explain prints no outbound supersedes to HW-DR-0111 on HW-DR-0112 once its supersedes names nothing, and the empty key as the target ~" "$work/link-other-end" HW-DR-0112 '[["superseded_by",true,["path:0111"]],["supersedes",false,["~"]]]'
+
+# move_items <file> <key-to-drop> <key-to-add> [flow]: move the items of one
+# relation of <file> to another, as a session that rewrites the text of an
+# edge does. With `flow`, the items go into a comment after an empty flow
+# list.
+move_items() {
+    python3 -I - "$@" << 'PY'
+import sys
+
+path, drop, add = sys.argv[1:4]
+flow = sys.argv[4:] == ["flow"]
+lines = open(path, encoding="utf-8").read().split("\n")
+end = lines.index("---", 1)
+front, rest = lines[1:end], lines[end:]
+items, kept, inside = [], [], False
+for line in front:
+    if line == "  " + drop + ":":
+        inside = True
+        continue
+    if inside and line.startswith("    - "):
+        items.append(line[6:])
+        continue
+    inside = False
+    kept.append(line)
+if not items:
+    sys.exit("no item under " + drop + " in " + path)
+if flow:
+    at = kept.index("relations:") + 1
+    kept[at:at] = ["  " + add + ": [] # " + " ".join(items)]
+elif "  " + add + ":" in kept:
+    at = kept.index("  " + add + ":") + 1
+    kept[at:at] = ["    - " + item for item in items]
+else:
+    at = kept.index("relations:") + 1
+    kept[at:at] = ["  " + add + ":"] + ["    - " + item for item in items]
+open(path, "w", encoding="utf-8").write("\n".join(["---"] + kept + rest))
+PY
+}
+# The successor's list written as an empty flow list whose comment names the
+# old record, and the old record naming its successor under traces_to: a
+# reader of lines finds both ends, and the engine parses neither (round 4 of
+# #1874.3, parent-slice-3-stop.md, mutants 2 and 3).
+tree=$(fresh successor-flow-comment) && move_items "$tree/$new" supersedes supersedes flow
+grep -q '^  supersedes: \[\] # HW-DR-0111$' "$tree/$new" || echo "oracle-fixtures: the supersedes list of $new was not rewritten, so the next case reads nothing." >&2
+expect 1 "successor-typed fails a successor whose supersedes is an empty flow list that a comment names the old record in" "$tree" successor-typed.sh HW-DR-0111
+tree=$(fresh successor-traces) && move_items "$tree/$old" superseded_by traces_to
+expect 1 "successor-typed fails an old record that names its successor under traces_to" "$tree" successor-typed.sh HW-DR-0111
+tree=$(fresh successor-both-text) && move_items "$tree/$new" supersedes supersedes flow && move_items "$tree/$old" superseded_by traces_to
+expect 1 "successor-typed with --check-clean fails both ends written as text and neither as an edge" "$tree" successor-typed.sh --check-clean HW-DR-0111
+# Status is read as the top-level key of the front matter. A comment, or the
+# same words under another key, is no status.
+tree=$(fresh successor-status-comment) && sed -i 's/^status: superseded$/status: current\n# status: superseded/' "$tree/$old"
+grep -q '^# status: superseded$' "$tree/$old" || echo "oracle-fixtures: the status of $old was not commented, so the next case reads nothing." >&2
+expect 1 "successor-typed fails a status that only a comment holds" "$tree" successor-typed.sh HW-DR-0111
+# A record that supersedes another is printed with an outbound `supersedes`
+# to it, as its successor is, so the record it superseded reads as its
+# successor unless the successor's own status is read: HW-DR-0112 marked
+# superseded has no successor, and HW-DR-0111 is not one.
+tree=$(fresh successor-predecessor) && sed -i 's/^status: current$/status: superseded/' "$tree/$new"
+grep -q '^status: superseded$' "$tree/$new" || echo "oracle-fixtures: the status of $new was not set, so the next case reads nothing." >&2
+expect 1 "successor-typed fails a record whose only succession edge is to the record it superseded" "$tree" successor-typed.sh HW-DR-0112
+
 # --- moved.sh -------------------------------------------------------------
 
 moved=docs/decisions/moved/${new##*/}
@@ -226,6 +313,13 @@ expect 1 "moved with --check-clean fails an error that names the moved file in a
 tree=$(fresh moved-misrepaired) && rm -rf "$tree" && cp -a "$clean" "$tree" && sed -i "s#\.\./decisions/moved/${new##*/}#../decisions/elsewhere/${new##*/}#g" "$tree/docs/subsystems/measurement.md"
 expect 0 "moved passes a link repaired to a path where nothing stands" "$tree" moved.sh "$new" "$moved"
 expect 1 "moved with --check-clean fails the same link" "$tree" moved.sh --check-clean "$new" "$moved"
+# A link that the link regex of moved.sh does not read, a reference-style
+# link, still resolves to the old path in a file that links nothing else of
+# the move. The engine's link rule reads that form, so moved.sh fails it on
+# the engine's `link.path.unresolved` finding (round 4 of #1874.3).
+tree=$(fresh moved-reference-link) && rm -rf "$tree" && cp -a "$clean" "$tree" && printf '\nThe [moved record][moved-old] is named here by a reference.\n\n[moved-old]: ../decisions/%s\n' "${new##*/}" >> "$tree/docs/spec/12-check-layer.md"
+expect 1 "moved fails a reference-style link that still resolves to the old path" "$tree" moved.sh "$new" "$moved"
+expect 1 "moved with --check-clean fails the same link" "$tree" moved.sh --check-clean "$new" "$moved"
 
 # --- lock-regenerated.sh --------------------------------------------------
 
@@ -237,33 +331,61 @@ expect 1 "lock-regenerated fails an overlay edit with no resolve" "$tree" lock-r
 "$engine" taxonomy resolve --root "$tree" > /dev/null 2>&1
 expect 0 "lock-regenerated passes the same edit once resolved" "$tree" lock-regenerated.sh
 # On a tree whose lock matches its sources the bare form passes, so a probe
-# names what the change must hold: `<file> <literal>` pairs, each read as a
-# whole name (#1874.3). `--check-clean` then reads the files it names.
+# names what the change must hold, and the engine's own retired-term rule
+# reads it in a scratch root: `retires <carrier> <term> [<replacement>]`
+# and `binds <path> <term>` (round 4 of #1874.3). No line of the overlay is
+# matched, so a term that only a comment or a quoted reason holds retires
+# nothing.
 overlay=.headwater/overlay.yml
-expect 1 "lock-regenerated fails a file that does not hold the literal" "$base" lock-regenerated.sh "$overlay" 'term: game-changer'
-expect 2 "lock-regenerated refuses a file with no literal" "$base" lock-regenerated.sh "$overlay"
-expect 2 "lock-regenerated refuses a file that does not exist" "$base" lock-regenerated.sh .headwater/no-such-file 'term: game-changer'
-retired=$(fresh lock-retired) && awk '{ print } $0 == "        reason: it stands in for the failure the thing survives" { print "      - term: game-changer"; print "        reason: it stands in for the change the thing makes" }' "$base/$overlay" > "$retired/$overlay"
+carrier=docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md
+[ -f "$base/$carrier" ] || echo "oracle-fixtures: $carrier is gone, so the retires cases read nothing. Name another decision here." >&2
+anchor='        reason: it stands in for the failure the thing survives'
+grep -q -x -F -- "$anchor" "$base/$overlay" || echo "oracle-fixtures: the overlay holds no line \`$anchor\`, so the retires cases read nothing." >&2
+expect 1 "lock-regenerated fails a term that no entry retires" "$base" lock-regenerated.sh retires "$carrier" game-changer
+expect 0 "lock-regenerated passes a term that the pin already retires" "$base" lock-regenerated.sh retires "$carrier" load-bearing
+expect 2 "lock-regenerated refuses a retires with no term" "$base" lock-regenerated.sh retires "$carrier"
+expect 2 "lock-regenerated refuses a carrier that does not exist" "$base" lock-regenerated.sh retires docs/decisions/no-such-record.md game-changer
+expect 2 "lock-regenerated refuses the line form of round 3, a file and a literal" "$base" lock-regenerated.sh "$overlay" 'term: game-changer'
+retired=$(fresh lock-retired) && awk -v a="$anchor" '{ print } $0 == a { print "      - term: game-changer"; print "        reason: it stands in for the change the thing makes" }' "$base/$overlay" > "$retired/$overlay"
 cmp -s "$base/$overlay" "$retired/$overlay" && echo "oracle-fixtures: the retired term was not added, so the next cases read nothing." >&2
-expect 1 "lock-regenerated fails the literal with no resolve" "$retired" lock-regenerated.sh "$overlay" 'term: game-changer'
+expect 1 "lock-regenerated fails a retired term with no resolve" "$retired" lock-regenerated.sh retires "$carrier" game-changer
 "$engine" taxonomy resolve --root "$retired" > /dev/null 2>&1
-expect 0 "lock-regenerated passes the literal once resolved" "$retired" lock-regenerated.sh "$overlay" 'term: game-changer'
-expect 1 "lock-regenerated fails when one of two literals is absent" "$retired" lock-regenerated.sh "$overlay" 'term: game-changer' "$overlay" 'replacement: use'
-expect 1 "lock-regenerated fails a literal that the file holds only as the start of a longer name" "$retired" lock-regenerated.sh "$overlay" 'term: game'
-# A literal that only a YAML comment holds declares nothing, so it fails,
-# both on a comment line and after a value. Each tree is resolved, so the
-# lock is not why it fails (verify of #1874.3).
-tree=$(fresh lock-commented) && awk '{ print } $0 == "        reason: it stands in for the failure the thing survives" { print "      # - term: game-changer" }' "$base/$overlay" > "$tree/$overlay"
-grep -q '^      # - term: game-changer$' "$tree/$overlay" || echo "oracle-fixtures: the comment line was not added, so the next case reads nothing." >&2
+expect 0 "lock-regenerated passes a retired term once resolved" "$retired" lock-regenerated.sh retires "$carrier" game-changer
+expect 1 "lock-regenerated fails when one of two terms is not retired" "$retired" lock-regenerated.sh retires "$carrier" game-changer retires "$carrier" cutting-edge
+expect 1 "lock-regenerated fails a term whose entry has no replacement when the probe names one" "$retired" lock-regenerated.sh retires "$carrier" game-changer change
+expect 1 "lock-regenerated fails a term that only starts a retired one" "$retired" lock-regenerated.sh retires "$carrier" game
+# The parent's mutant 5 of round 3: no entry for the term, and `term:
+# game-changer` inside the quoted reason of another entry, resolved.
+tree=$(fresh lock-quoted) && sed "s/^$anchor\$/        reason: \"it stands in for the failure the thing survives, term: game-changer\"/" "$base/$overlay" > "$tree/$overlay"
+grep -q 'survives, term: game-changer"$' "$tree/$overlay" || echo "oracle-fixtures: the quoted reason was not written, so the next case reads nothing." >&2
 "$engine" taxonomy resolve --root "$tree" > /dev/null 2>&1
-expect 1 "lock-regenerated fails a literal that only a comment line holds" "$tree" lock-regenerated.sh "$overlay" 'term: game-changer'
-tree=$(fresh lock-column-comment) && cp "$base/$overlay" "$tree/$overlay" && printf '# term: game-changer\n' >> "$tree/$overlay"
+expect 1 "lock-regenerated fails a term that only the quoted reason of another entry holds" "$tree" lock-regenerated.sh retires "$carrier" game-changer
+# A comment declares nothing, on a line of its own or after a value.
+tree=$(fresh lock-commented) && awk -v a="$anchor" '{ print } $0 == a { print "      # - term: game-changer" }' "$base/$overlay" > "$tree/$overlay"
 "$engine" taxonomy resolve --root "$tree" > /dev/null 2>&1
-expect 1 "lock-regenerated fails a literal that only a comment in the first column holds" "$tree" lock-regenerated.sh "$overlay" 'term: game-changer'
-tree=$(fresh lock-trailing-comment) && sed -i 's/^        reason: it stands in for the failure the thing survives$/& # term: game-changer/' "$tree/$overlay"
-grep -q ' # term: game-changer$' "$tree/$overlay" || echo "oracle-fixtures: the trailing comment was not added, so the next case reads nothing." >&2
+expect 1 "lock-regenerated fails a term that only a comment line holds" "$tree" lock-regenerated.sh retires "$carrier" game-changer
+tree=$(fresh lock-trailing-comment) && sed -i "s/^$anchor\$/& # - term: game-changer/" "$tree/$overlay"
 "$engine" taxonomy resolve --root "$tree" > /dev/null 2>&1
-expect 1 "lock-regenerated fails a literal that only a comment after a value holds" "$tree" lock-regenerated.sh "$overlay" 'term: game-changer'
+expect 1 "lock-regenerated fails a term that only a comment after a value holds" "$tree" lock-regenerated.sh retires "$carrier" game-changer
+# A replacement is read on the term's own entry: the finding's remediation
+# is `write <replacement>`. Two literals in two entries are not one entry.
+tree=$(fresh lock-replacement) && awk -v a="$anchor" '{ print } $0 == a { print "      - term: utilize"; print "        reason: it stands in for use"; print "        replacement: use" }' "$base/$overlay" > "$tree/$overlay"
+"$engine" taxonomy resolve --root "$tree" > /dev/null 2>&1
+expect 0 "lock-regenerated passes a term retired with its replacement" "$tree" lock-regenerated.sh retires "$carrier" utilize use
+expect 1 "lock-regenerated fails another replacement than the entry's" "$tree" lock-regenerated.sh retires "$carrier" utilize employ
+tree=$(fresh lock-split) && awk -v a="$anchor" '{ print } $0 == a { print "        replacement: use"; print "      - term: utilize"; print "        reason: it stands in for use" }' "$base/$overlay" > "$tree/$overlay"
+"$engine" taxonomy resolve --root "$tree" > /dev/null 2>&1
+expect 1 "lock-regenerated fails a term with no replacement beside a replacement on another entry" "$tree" lock-regenerated.sh retires "$carrier" utilize use
+# `binds <path> <term>`: the house rules reach <path>, which is how
+# `outside_root` binds a file outside the document roots.
+expect 1 "lock-regenerated fails a file that no list binds" "$base" lock-regenerated.sh binds TRADEMARKS.md load-bearing
+bound=$(fresh lock-bound) && awk '{ print } $0 == "      - .github/ISSUE_TEMPLATE/issue.md" { print "      - TRADEMARKS.md" }' "$base/$overlay" > "$bound/$overlay"
+"$engine" taxonomy resolve --root "$bound" > /dev/null 2>&1
+expect 0 "lock-regenerated passes a file that outside_root binds, once resolved" "$bound" lock-regenerated.sh binds TRADEMARKS.md load-bearing
+tree=$(fresh lock-bound-comment) && awk '{ print } $0 == "      - .github/ISSUE_TEMPLATE/issue.md" { print "      # - TRADEMARKS.md" }' "$base/$overlay" > "$tree/$overlay"
+"$engine" taxonomy resolve --root "$tree" > /dev/null 2>&1
+expect 1 "lock-regenerated fails a file that only a comment in outside_root names" "$tree" lock-regenerated.sh binds TRADEMARKS.md load-bearing
+expect 1 "lock-regenerated fails a bound file that is gone" "$bound" lock-regenerated.sh binds NO-SUCH-FILE.md load-bearing
 # A finding that a directive suppresses is not an error a strict run fails
 # on, so a subject that carries one passes `--check-clean`. This how-to
 # holds suppressed `surface.local_path.instructed` errors (verify of #1874.3).
@@ -272,10 +394,12 @@ if [ "${suppressed:-0}" -eq 0 ]; then
     echo "FAIL docs/how-to/publish-your-corpus-as-a-site.md holds no suppressed error, so the next case reads nothing. Name another file that does."
     failures=$((failures + 1))
 fi
-expect 0 "lock-regenerated with --check-clean passes a file whose only errors a directive suppresses" "$base" lock-regenerated.sh --check-clean docs/how-to/publish-your-corpus-as-a-site.md 'id: HW-HOW-publish-your-corpus-as-a-site'
+expect 0 "lock-regenerated with --check-clean passes a bound file whose only errors a directive suppresses" "$base" lock-regenerated.sh --check-clean binds docs/how-to/publish-your-corpus-as-a-site.md load-bearing
 spoil "$retired" docs/spec/12-check-layer.md
-expect 0 "lock-regenerated with --check-clean passes an error in a file it does not name" "$retired" lock-regenerated.sh --check-clean "$overlay" 'term: game-changer'
-expect 1 "lock-regenerated with --check-clean and no file fails the same error" "$retired" lock-regenerated.sh --check-clean
+expect 0 "lock-regenerated with --check-clean passes an error in a file it does not name" "$retired" lock-regenerated.sh --check-clean retires "$carrier" game-changer
+expect 1 "lock-regenerated with --check-clean and no form fails the same error" "$retired" lock-regenerated.sh --check-clean
+tree=$(fresh lock-overlay-error) && rm -rf "$tree" && cp -a "$retired" "$tree" && spoil "$tree" "$carrier"
+expect 0 "lock-regenerated with --check-clean passes an error in the carrier, which the session does not change" "$tree" lock-regenerated.sh --check-clean retires "$carrier" game-changer
 
 # --- nothing-else-broken.sh -----------------------------------------------
 
@@ -315,35 +439,45 @@ expect 0 "nothing-else-broken with a scope passes a new finding in another file"
 expect 0 "nothing-else-broken with a scope and --check-clean passes an error in another file" "$elsewhere" nothing-else-broken.sh --check-clean "$work/scoped"
 awk '!/^#/ && !gone { gone = 1; next } { print }' "$work/scoped" > "$work/scoped-less"
 expect 1 "nothing-else-broken with a scope fails the pin against a baseline less one of its findings" "$base" nothing-else-broken.sh "$work/scoped-less"
-# A `# keep: <path> <literal>` line fails a session that deletes the text the
-# repair keeps, which clears its finding and raises nothing (verify of
-# #1874.3).
-keep_literal='by the third slice of #1874'
-grep -q -F -- "$keep_literal" "$base/$new" || echo "oracle-fixtures: $new does not hold \`$keep_literal\`, so the keep cases read nothing." >&2
-{ cat "$work/scoped"; printf '# keep: %s %s\n' "$new" "$keep_literal"; } > "$work/scoped-keep"
-expect 0 "nothing-else-broken passes the pin when it keeps the text a keep line names" "$base" nothing-else-broken.sh --check-clean "$work/scoped-keep"
-tree=$(fresh keep-deleted) && grep -v -F -- "$keep_literal" "$base/$new" > "$tree/$new"
-expect 0 "nothing-else-broken with no keep line passes a tree that deleted the paragraph" "$tree" nothing-else-broken.sh "$work/scoped"
-expect 1 "nothing-else-broken with a keep line fails the same tree" "$tree" nothing-else-broken.sh "$work/scoped-keep"
-{ cat "$work/scoped"; printf '# keep: %s\n' "$new"; } > "$work/scoped-keep-bad"
-expect 2 "nothing-else-broken refuses a keep line with no literal" "$base" nothing-else-broken.sh "$work/scoped-keep-bad"
-# A keep literal that only a comment holds keeps nothing: a `#` line in the
-# front matter, and an HTML comment in the body. A literal in the front
-# matter outside a comment counts (verify round 2 of #1874.3).
-tree=$(fresh keep-html-comment) && sed "s|$keep_literal|<!-- & -->|" "$base/$new" > "$tree/$new"
-grep -q -F -- "<!-- $keep_literal -->" "$tree/$new" || echo "oracle-fixtures: the HTML comment was not added, so the next case reads nothing." >&2
-expect 0 "nothing-else-broken with no keep line passes a tree that put the kept text in an HTML comment" "$tree" nothing-else-broken.sh "$work/scoped"
-expect 1 "nothing-else-broken with a keep line fails a kept text that only an HTML comment holds" "$tree" nothing-else-broken.sh "$work/scoped-keep"
-tree=$(fresh keep-html-block) && awk -v k="$keep_literal" 'index($0, k) { print "<!--"; print; print "-->"; next } { print }' "$base/$new" > "$tree/$new"
-grep -q -x -- '<!--' "$tree/$new" || echo "oracle-fixtures: the HTML comment block was not added, so the next case reads nothing." >&2
-expect 1 "nothing-else-broken with a keep line fails a kept text that an HTML comment over several lines holds" "$tree" nothing-else-broken.sh "$work/scoped-keep"
-keep_front='- tools/probe/leak.py'
-grep -q -x -F -- "    $keep_front" "$base/$new" || echo "oracle-fixtures: $new does not hold \`$keep_front\` in its front matter, so the next cases read nothing." >&2
-{ cat "$work/scoped"; printf '# keep: %s %s\n' "$new" "$keep_front"; } > "$work/scoped-keep-front"
-expect 0 "nothing-else-broken passes a keep literal that the front matter holds outside a comment" "$base" nothing-else-broken.sh "$work/scoped-keep-front"
-tree=$(fresh keep-front-comment) && sed "s|^    $keep_front\$|    # $keep_front|" "$base/$new" > "$tree/$new"
-grep -q -x -F -- "    # $keep_front" "$tree/$new" || echo "oracle-fixtures: the front-matter comment was not added, so the next case reads nothing." >&2
-expect 1 "nothing-else-broken with a keep line fails a kept text that only a front-matter comment holds" "$tree" nothing-else-broken.sh "$work/scoped-keep-front"
+# A session that deletes the edge or the clause a finding is on clears the
+# finding and raises nothing, so a baseline names the structure the repair
+# keeps, and the engine reads it through `headwater explain --json`: `#
+# edge: <path> <relation> <target>` and `# summary: <path> <literal>`. No
+# line of the file is matched, so text that is not the structure keeps
+# nothing: a comment, a body line, another key (round 4 of #1874.3).
+edge_front='- .headwater/probe.yml'
+grep -q -x -F -- "    $edge_front" "$base/$new" || echo "oracle-fixtures: $new does not govern .headwater/probe.yml in its front matter, so the edge cases read nothing." >&2
+{ cat "$work/scoped"; printf '# edge: %s governs .headwater/probe.yml\n' "$new"; } > "$work/scoped-edge"
+expect 0 "nothing-else-broken passes the pin when it keeps the edge an edge line names" "$base" nothing-else-broken.sh --check-clean "$work/scoped-edge"
+tree=$(fresh edge-deleted) && grep -v -x -F -- "    $edge_front" "$base/$new" > "$tree/$new"
+expect 0 "nothing-else-broken with no edge line passes a tree that deleted the edge" "$tree" nothing-else-broken.sh "$work/scoped"
+expect 1 "nothing-else-broken with an edge line fails the same tree" "$tree" nothing-else-broken.sh "$work/scoped-edge"
+tree=$(fresh edge-body-line) && grep -v -x -F -- "    $edge_front" "$base/$new" > "$tree/$new" && printf '\nthe record is governs: .headwater/probe.yml in the notes.\n' >> "$tree/$new"
+expect 1 "nothing-else-broken with an edge line fails the edge deleted and its text written in the body" "$tree" nothing-else-broken.sh "$work/scoped-edge"
+tree=$(fresh edge-commented) && sed "s|^    $edge_front\$|    # $edge_front|" "$base/$new" > "$tree/$new"
+grep -q -x -F -- "    # $edge_front" "$tree/$new" || echo "oracle-fixtures: the edge was not commented, so the next case reads nothing." >&2
+expect 1 "nothing-else-broken with an edge line fails an edge that only a comment holds" "$tree" nothing-else-broken.sh "$work/scoped-edge"
+tree=$(fresh edge-other-key) && grep -v -x -F -- "    $edge_front" "$base/$new" | sed "s|^  traces_to:\$|&\n    $edge_front|" > "$tree/$new"
+grep -q -x -F -- "    $edge_front" "$tree/$new" || echo "oracle-fixtures: the edge was not moved under traces_to, so the next case reads nothing." >&2
+expect 1 "nothing-else-broken with an edge line fails the edge moved under another relation" "$tree" nothing-else-broken.sh "$work/scoped-edge"
+{ cat "$work/scoped"; printf '# edge: %s governs\n' "$new"; } > "$work/scoped-edge-bad"
+expect 2 "nothing-else-broken refuses an edge line with no target" "$base" nothing-else-broken.sh "$work/scoped-edge-bad"
+summary_clause='Phase B reports held-out numbers per action.'
+grep -q -F -- "$summary_clause" "$base/$new" || echo "oracle-fixtures: the summary of $new does not hold \`$summary_clause\`, so the summary cases read nothing." >&2
+{ cat "$work/scoped"; printf '# summary: %s %s\n' "$new" "$summary_clause"; } > "$work/scoped-summary"
+expect 0 "nothing-else-broken passes the pin when the summary holds what a summary line names" "$base" nothing-else-broken.sh --check-clean "$work/scoped-summary"
+tree=$(fresh summary-body-line) && sed "s| $summary_clause||" "$base/$new" > "$tree/$new" && printf '\n%s\n' "$summary_clause" >> "$tree/$new"
+expect 1 "nothing-else-broken with a summary line fails the clause moved out of the summary into the body" "$tree" nothing-else-broken.sh "$work/scoped-summary"
+tree=$(fresh summary-commented) && awk -v c=" $summary_clause" '/^summary: / { print "# " $0; sub(c, ""); print; next } { print }' "$base/$new" > "$tree/$new"
+grep -q '^# summary: ' "$tree/$new" || echo "oracle-fixtures: the summary was not commented, so the next case reads nothing." >&2
+expect 1 "nothing-else-broken with a summary line fails a summary that only a comment holds, above a shorter one" "$tree" nothing-else-broken.sh "$work/scoped-summary"
+tree=$(fresh summary-other-key) && sed "s| $summary_clause||; s|^title: \"\\(.*\\)\"\$|title: \"\\1. $summary_clause\"|" "$base/$new" > "$tree/$new"
+grep -q "^title: .*$summary_clause" "$tree/$new" || echo "oracle-fixtures: the clause was not moved into the title, so the next case reads nothing." >&2
+expect 1 "nothing-else-broken with a summary line fails the clause moved into another key" "$tree" nothing-else-broken.sh "$work/scoped-summary"
+{ cat "$work/scoped"; printf '# summary: %s\n' "$new"; } > "$work/scoped-summary-bad"
+expect 2 "nothing-else-broken refuses a summary line with no literal" "$base" nothing-else-broken.sh "$work/scoped-summary-bad"
+{ cat "$work/scoped"; printf '# keep: %s %s\n' "$new" "$summary_clause"; } > "$work/scoped-keep"
+expect 2 "nothing-else-broken refuses the keep line of round 3, which matched lines of a file" "$base" nothing-else-broken.sh "$work/scoped-keep"
 
 # --- test-passes.sh -------------------------------------------------------
 
