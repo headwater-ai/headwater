@@ -145,16 +145,10 @@ stop() {
     exit 0
 }
 
-# Every handover issue is in the log, so nothing is in flight.
+# Some handover is one `resume` still prints, so something is in flight.
+# `resume` owns which handovers count: a `Refs` slice keeps its issue open.
 handovers_open() {
-    [ -d "$run/handover" ] || return 1
-    logged=' '
-    [ -s "$run/log.jsonl" ] && logged=" $(jq -r '.issue // empty' "$run/log.jsonl" 2>/dev/null | tr '\n' ' ')"
-    for h in "$run"/handover/*; do
-        [ -f "$h" ] || continue
-        case "$logged" in *" ${h##*/} "*) ;; *) return 0 ;; esac
-    done
-    return 1
+    [ -n "$(sh "$rundir_tool" resume "$run" 2>/dev/null | grep -v '^DRAIN$')" ]
 }
 
 # The main checkout is the directory whose `.git` is the worktree's common
