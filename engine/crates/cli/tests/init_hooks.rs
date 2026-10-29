@@ -477,6 +477,15 @@ fn the_shipped_configuration_calls_the_shipped_scripts_and_the_binary_on_the_pat
     let scratch = an_adopter("configuration");
     let root = &scratch.0;
     let settings = std::fs::read_to_string(root.join(".claude/settings.json")).expect("reads");
+    // The hooks layer of the additive campaign writes this file into a
+    // scenario's tree, so its copy holds these bytes (#1872).
+    let arms = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../../tools/probe/arms/hooks/.claude/settings.json");
+    assert_eq!(
+        std::fs::read_to_string(&arms).expect("the hooks arms settings file reads"),
+        settings,
+        "tools/probe/arms/hooks/.claude/settings.json is not what `headwater init --harness` writes"
+    );
     for (event, hook) in [
         ("UserPromptSubmit", "intent"),
         ("PreToolUse", "write"),

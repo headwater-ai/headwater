@@ -20,7 +20,7 @@ skills  a `Skill` call in the stream, `<batch>/sessions/<id>/raw.jsonl`, that
         names a skill the skills layer ships. The shipped skills are the
         directories `.claude/skills/<name>` under `layers.skills.paths` in the
         declaration. A call that names `<plugin>:<name>` counts by its name.
-hook    a session that opened a path the intent hook printed as a pointer.
+hooks   a session that opened a path the intent hook printed as a pointer.
         The hook's text is in the harness's log,
         `<batch>/config/<id>/projects/**/*.jsonl`, as an attachment of one of
         two types. Claude Code 2.1.288, the version the campaign runs, logs
@@ -59,7 +59,7 @@ except ImportError:
     print("usage.py: python3 has no PyYAML, so the declaration cannot be read", file=sys.stderr)
     sys.exit(3)
 
-LAYERS = ("skills", "hook", "mcp")
+LAYERS = ("skills", "hooks", "mcp")
 PATH_WORD = re.compile(r"[A-Za-z0-9_.@-]*/[A-Za-z0-9_./@-]*\.[A-Za-z0-9]+")
 POINTER = re.compile(r"^  (" + PATH_WORD.pattern + r")(?: \(| \u2014 | \[|$)")
 HOOK_KINDS = ("hook_success", "hook_additional_context")

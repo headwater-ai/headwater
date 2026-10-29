@@ -191,7 +191,7 @@ print("used 0 sessions %d" % len(os.listdir(os.path.join(sys.argv[3], "sessions"
 EOF
 
 OPEN_DOCS='{layer: docs, scenario: 1, try: 2, cap_cents: 3000, plan: "https://example.org/accepted", change: none}'
-OPEN_HOOK='{layer: hook, scenario: 2, try: 1, cap_cents: 3000, plan: "https://example.org/accepted", change: none}'
+OPEN_HOOK='{layer: hooks, scenario: 2, try: 1, cap_cents: 3000, plan: "https://example.org/accepted", change: none}'
 
 # decl <open> <approved_cents> [<ceiling_cents>] [<base_ceiling_cents>]: the
 # declaration of the case. A session costs one cent, so a round of 4 variants
@@ -203,13 +203,13 @@ decl() {
     cat > "$CASE/probe.yml" <<EOF
 layers:
   docs: {}
-  hook: {}
+  hooks: {}
 sets:
   tuning: [HW-PROBE-a, HW-PROBE-b, HW-PROBE-c, HW-PROBE-d, HW-PROBE-e]
 scenarios:
   0: {layers: []}
   1: {base: 0, layers: [docs]}
-  2: {base: 0, layers: [hook]}
+  2: {base: 0, layers: [hooks]}
 tiers:
   additive: {session_cost_cents: 1}
 rounds:
@@ -222,7 +222,7 @@ rounds:
     confirm: 144
     variants: 4
     stop_after_empty: 2
-    order: [docs, hook]
+    order: [docs, hooks]
     ceiling_cents: ${3:-$(($2 - ${4:-1000}))}
     base_ceiling_cents: ${4:-1000}
     open: $1
@@ -684,7 +684,7 @@ EOF
 canary_case() {
     new_case
     decl "${1:-$OPEN_DOCS}" 10000
-    mkdir -p "$CASE/root/docs-r2-v1/a" "$CASE/root/hook-try1/a"
+    mkdir -p "$CASE/root/docs-r2-v1/a" "$CASE/root/hooks-try1/a"
     echo "additive scenario-1 tuning" > "$CASE/root/docs-r2-v1/spec"
     : > "$CASE/root/docs-r2-v1/canary-recorded"
     for j in 1 2 3 4 5 6 7 8; do record "L1-p1-r$j"; done
@@ -909,10 +909,10 @@ check "result: round 4's keep row is against round 2 still, because round 3 was 
 
 # A kept try of another layer is not the best so far of this one.
 result_case
-printf '%s\n' '{"event": "result", "try": "hook-r1-confirm", "layer": "hook", "scenario": "2", "stage": "confirm", "transcript": "docs/probe-runs/additive-screening-scenario-10.md", "used": 9, "sessions": 145, "count": 145, "kept": true}' >> "$CASE/root/ledger.jsonl"
+printf '%s\n' '{"event": "result", "try": "hooks-r1-confirm", "layer": "hooks", "scenario": "2", "stage": "confirm", "transcript": "docs/probe-runs/additive-screening-scenario-10.md", "used": 9, "sessions": 145, "count": 145, "kept": true}' >> "$CASE/root/ledger.jsonl"
 echo 'pooled: 51/72 against 39/72, +16.7 points [+0.9, +31.4]' > "$CASE/pooled-keep"
 run result "$CASE/root" docs-r2-confirm
-check "result: a kept try of the hook layer is not the best so far of docs" grep -q 'probe compare .*-docs-round-2-confirmation-scenario-1\.md .*/additive-screening-scenario-1\.md$' "$CASE/engine.log"
+check "result: a kept try of the hooks layer is not the best so far of docs" grep -q 'probe compare .*-docs-round-2-confirmation-scenario-1\.md .*/additive-screening-scenario-1\.md$' "$CASE/engine.log"
 
 # The spend: the session files against the driver's last `all=` line.
 result_case
@@ -1167,14 +1167,14 @@ rank_decl() {
 layers:
   skills: {paths: [.claude/skills/hw-x]}
   docs: {}
-  hook: {}
+  hooks: {}
 sets:
   tuning: [HW-PROBE-a, HW-PROBE-b, HW-PROBE-c, HW-PROBE-d, HW-PROBE-e]
 scenarios:
   0: {layers: []}
   1: {base: 0, layers: [skills]}
   2: {base: 0, layers: [docs]}
-  3: {base: 0, layers: [hook]}
+  3: {base: 0, layers: [hooks]}
 tiers:
   additive: {session_cost_cents: 1}
 rounds:
@@ -1187,7 +1187,7 @@ rounds:
     confirm: 144
     variants: 4
     stop_after_empty: 2
-    order: [skills, docs, hook]
+    order: [skills, docs, hooks]
     ceiling_cents: ${2:-99000}
     base_ceiling_cents: ${3:-1000}
     open: $1
@@ -1491,8 +1491,8 @@ check "base: and one at another pin does not" code_is 4
 new_case
 decl "$OPEN_HOOK" 10000
 run plan "$CASE/root"
-check "order: a round of hook while docs, before it, is open exits 6" code_is 6
-check "order: and names docs" err_has "the docs layer comes before hook"
+check "order: a round of hooks while docs, before it, is open exits 6" code_is 6
+check "order: and names docs" err_has "the docs layer comes before hooks"
 check "order: and builds nothing" no_trees
 round_event() { printf '{"event": "round", "layer": "%s", "round": %s, "kept": %s}\n' "$1" "$2" "$3" >> "$CASE/root/ledger.jsonl"; }
 round_event docs 1 false
@@ -1500,8 +1500,8 @@ run plan "$CASE/root"
 check "order: one empty round of docs does not stop it" code_is 6
 round_event docs 2 false
 run plan "$CASE/root"
-check "order: two empty rounds in a row stop docs, and hook plans" code_is 0
-check "order: as round 1 of hook" out_has "layer: hook open, rounds closed: -"
+check "order: two empty rounds in a row stop docs, and hooks plans" code_is 0
+check "order: as round 1 of hooks" out_has "layer: hooks open, rounds closed: -"
 decl "$OPEN_DOCS" 10000
 run plan "$CASE/root"
 check "order: a stopped layer plans no round" code_is 6
@@ -1523,7 +1523,7 @@ run plan "$CASE/root"
 check "order: a layer that took its 4 rounds exits 6" code_is 6
 check "order: and says so" err_has "took its 4 rounds"
 new_case
-sed -i 's/^    order: \[docs, hook\]$/    order: [hook]/' "$CASE/probe.yml"
+sed -i 's/^    order: \[docs, hooks\]$/    order: [hooks]/' "$CASE/probe.yml"
 run plan "$CASE/root"
 check "order: a layer that order does not name exits 6" code_is 6
 
@@ -1616,7 +1616,7 @@ check "split: naming the tuning ceiling" err_has "above the tuning ceiling of 50
 # base and three first bests are 4 x 7250 = 29000 cents, above 22000.
 four_case() {
     new_case
-    rank_decl '{layer: hook, scenario: 3, try: 1, cap_cents: 8000, plan: "https://example.org/accepted", change: none}' 78000 22000
+    rank_decl '{layer: hooks, scenario: 3, try: 1, cap_cents: 8000, plan: "https://example.org/accepted", change: none}' 78000 22000
     sed -i 's/session_cost_cents: 1}/session_cost_cents: 50}/' "$CASE/probe.yml"
     round_event skills 1 false
     round_event skills 2 false
@@ -1727,13 +1727,13 @@ usage_session "$b" s6 "$(tool_line Read '{"file_path":"docs/spec/03-z.md"}')" "$
 usage_session "$b" s7 "$(tool_line Read '{"file_path":"docs/spec/04-w.md"}')" "$inject"
 usage_session "$b" s8 "$(tool_line Read '{"file_path":"docs/spec/05-v.md"}')" "$inject"
 usage_session "$b" s9 "$(tool_line Read '{"file_path":"docs/spec/01-x.md"}')" "$other"
-usage_of hook
-check "usage: hook counts a Read or a reader in Bash of a pointer in the UserPromptSubmit hook_success, and no path the task names, no anchor, evidence or summary path, and no other hook" out_has "used 2 sessions 9"
+usage_of hooks
+check "usage: hooks counts a Read or a reader in Bash of a pointer in the UserPromptSubmit hook_success, and no path the task names, no anchor, evidence or summary path, and no other hook" out_has "used 2 sessions 9"
 rm -rf "$b"
 usage_session "$b" s1 "$(tool_line Read '{"file_path":"docs/spec/01-x.md"}')" "$older"
 usage_session "$b" s2 "$(tool_line Read '{"file_path":"docs/spec/03-z.md"}')" "$older"
-usage_of hook
-check "usage: hook still counts a pointer in the hook_additional_context of an older log, and not the path the task names" out_has "used 1 sessions 2"
+usage_of hooks
+check "usage: hooks still counts a pointer in the hook_additional_context of an older log, and not the path the task names" out_has "used 1 sessions 2"
 rm -rf "$b"
 usage_session "$b" s1 "$(tool_line mcp__headwater__explain '{"path":"x"}')"
 usage_session "$b" s2 "$(tool_line Read '{"file_path":"mcp__x"}')"

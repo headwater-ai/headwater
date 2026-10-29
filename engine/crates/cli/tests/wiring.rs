@@ -2394,9 +2394,9 @@ fn probe_plan_delta_prints_the_parsed_delta_of_each_arm() {
 /// `probe plan --scenario <n> --delta` prints the tree of one scenario of
 /// the additive campaign against the present tree, from the committed
 /// declaration and with no corpus, so that `tools/probe/ablate.sh` builds a
-/// scenario from it (#1774). The hook layer writes its one entry of
-/// `settings.json` where the rest of the harness is not held, and keeps the
-/// whole file where it is.
+/// scenario from it (#1774). The hooks layer writes the `settings.json` that
+/// `headwater init --harness` writes where it is held, and every scenario
+/// removes each `tooling` path (#1872).
 #[test]
 fn probe_plan_scenario_delta_prints_what_a_scenario_holds() {
     let at = std::env::temp_dir().join(format!(
@@ -2412,20 +2412,21 @@ fn probe_plan_scenario_delta_prints_what_a_scenario_holds() {
     )
     .expect("the declaration copies");
 
-    let five = root.run(&["probe", "plan", "--scenario", "5", "--delta"]);
-    assert_eq!(five.code, Some(0), "{}{}", five.out, five.err);
-    let lines: Vec<&str> = five.out.lines().collect();
+    let four = root.run(&["probe", "plan", "--scenario", "4", "--delta"]);
+    assert_eq!(four.code, Some(0), "{}{}", four.out, four.err);
+    let lines: Vec<&str> = four.out.lines().collect();
     for line in [
         "= docs docs",
-        "+ hook .claude/settings.json",
-        "- harness .claude/settings.json",
+        "= hooks .claude/hooks/review.sh",
+        "+ hooks .claude/settings.json",
         "- mcp .mcp.json",
-        "- claude-md CLAUDE.md",
+        "- tooling CLAUDE.md",
+        "- tooling .githooks",
     ] {
         assert!(
             lines.contains(&line),
-            "scenario 5 prints `{line}`:\n{}",
-            five.out
+            "scenario 4 prints `{line}`:\n{}",
+            four.out
         );
     }
     assert!(
@@ -2433,24 +2434,32 @@ fn probe_plan_scenario_delta_prints_what_a_scenario_holds() {
             .iter()
             .all(|line| line.starts_with("- ") || line.starts_with("= ") || line.starts_with("+ ")),
         "{}",
-        five.out
+        four.out
     );
 
-    let thirteen = root.run(&["probe", "plan", "--scenario", "13", "--delta"]);
-    assert_eq!(thirteen.code, Some(0), "{}{}", thirteen.out, thirteen.err);
-    let lines: Vec<&str> = thirteen.out.lines().collect();
+    let six = root.run(&["probe", "plan", "--scenario", "6", "--delta"]);
+    assert_eq!(six.code, Some(0), "{}{}", six.out, six.err);
+    let lines: Vec<&str> = six.out.lines().collect();
+    for line in [
+        "+ hooks .claude/settings.json",
+        "+ mcp .mcp.json",
+        "= skills .agents/skills",
+        "- tooling CLAUDE.md",
+        "- tooling AGENTS.md",
+    ] {
+        assert!(
+            lines.contains(&line),
+            "scenario 6 prints `{line}`:\n{}",
+            six.out
+        );
+    }
     assert!(
-        lines.contains(&"= harness .claude/settings.json"),
-        "{}",
-        thirteen.out
-    );
-    assert!(
-        !lines
+        lines
             .iter()
-            .any(|line| line.ends_with(" .claude/settings.json")
-                && line != &"= harness .claude/settings.json"),
-        "where the harness is held, it alone names settings.json:\n{}",
-        thirteen.out
+            .filter(|line| line.starts_with("- "))
+            .all(|line| line.starts_with("- tooling ")),
+        "scenario 6 holds every layer and removes only the tooling:\n{}",
+        six.out
     );
 
     let zero = root.run(&["probe", "plan", "--scenario", "0", "--delta"]);
@@ -2463,13 +2472,15 @@ fn probe_plan_scenario_delta_prints_what_a_scenario_holds() {
 
     // A scenario the declaration does not carry is refused with status 1 and
     // prints no path, because a script builds a tree from this output.
-    let fourteen = root.run(&["probe", "plan", "--scenario", "14", "--delta"]);
-    assert_eq!(fourteen.code, Some(1), "{}{}", fourteen.out, fourteen.err);
-    assert_eq!(fourteen.out, "", "a refused delta prints no path");
+    let seven = root.run(&["probe", "plan", "--scenario", "7", "--delta"]);
+    assert_eq!(seven.code, Some(1), "{}{}", seven.out, seven.err);
+    assert_eq!(seven.out, "", "a refused delta prints no path");
     assert!(
-        fourteen.err.contains("declares no scenario 14"),
+        seven
+            .err
+            .contains("declares no scenario 7. It declares 0, 1, 2, 3, 4, 5, 6"),
         "{}",
-        fourteen.err
+        seven.err
     );
 
     // `--scenario` needs `--delta`, and it cannot be used with `--arm`.

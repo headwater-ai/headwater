@@ -14,7 +14,6 @@ provenance:
 relations:
   governs:
     - tools/probe/ablate.sh
-    - tools/probe/arms/hook/.claude/settings.json
     - tools/probe/additive-campaign.spec
     - tools/probe/additive-screening.spec
     - tools/probe/try.sh

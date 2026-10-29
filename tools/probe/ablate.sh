@@ -120,13 +120,15 @@ plan_print() {
 
 # **The additive campaign (#1774).** `--scenario <n> <workspace>` builds
 # scenario <n> in a present-arm workspace, in place. Scenario 0 is plain code:
-# the present tree with the instrument and the path of every layer removed.
-# Every other scenario is plain code with its layers added. The delta is the
-# engine's, `headwater probe plan --scenario <n> --delta`, one line per path
-# of each layer:
+# the present tree with the instrument, the path of every layer and every
+# `tooling` path removed. Every other scenario is plain code with its layers
+# added. The delta is the engine's, `headwater probe plan --scenario <n>
+# --delta`, one line per path of each layer and one per tooling path:
 #
 # - `- <layer> <path>`: the scenario does not hold the layer, so the path is
 #   removed.
+# - `- tooling <path>`: the path is this repository's own tooling, which
+#   every scenario removes (#1872).
 # - `= <layer> <path>`: the scenario holds the layer, so the path is kept from
 #   the present tree the workspace already is.
 # - `+ <layer> <path>`: the scenario holds the layer, so the path is written
@@ -225,9 +227,9 @@ fi
 # outside this checkout, prints how the two differ, and deletes both copies.
 # A difference is expected where it falls under a path that scenario <n>
 # holds and the base does not hold in the same layer. That is every path of
-# the added layer, and `.claude/settings.json` of scenario 13 against 11,
-# where the rest of the harness holds the whole file in place of the hook
-# layer's one entry. It prints one line for each such path that differs:
+# each added layer: one layer, or the three that scenario 6 adds under the
+# declared exception (#1872). It prints one line for each such path that
+# differs:
 # `+ <path>` where files under it were added, and `~ <path>` where files
 # under it changed. Every other difference is printed as `unexpected <sign>
 # <file>`, with `-` for a removed file and `?` for one `diff` could not

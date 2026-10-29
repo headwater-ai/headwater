@@ -130,6 +130,12 @@ pub struct Budgets {
     /// The `layers` mapping of the additive campaign (#1774), in declared
     /// order. Empty where the file declares none.
     pub layers: Vec<Layer>,
+    /// The `tooling` sequence of the additive campaign (#1872): the paths of
+    /// this repository's own tooling, which no layer holds and every scenario
+    /// removes, scenario 6 included. `headwater init` ships none of them, so
+    /// a scenario that kept one would measure this repository rather than a
+    /// layer. Empty where the file declares none.
+    pub tooling: Vec<String>,
     /// The `scenarios` mapping of the additive campaign (#1774), in declared
     /// order. Empty where the file declares none.
     pub scenarios: Vec<Scenario>,
@@ -253,7 +259,18 @@ pub struct Scenario {
     pub block: Block,
     pub base: Option<u32>,
     pub layers: Vec<String>,
+    /// The scenario declares `exception: full-stack` (#1872, HW-DR-0112): it
+    /// holds every declared layer and adds more than one to its base. One
+    /// scenario at most declares it.
+    pub exception: bool,
 }
+
+/// The one value the `exception` field of a scenario takes.
+pub const FULL_STACK: &str = "full-stack";
+
+/// The name a `tooling` path carries in a scenario's delta, which no layer
+/// may take.
+pub const TOOLING: &str = "tooling";
 
 /// What a scenario's tree does with one path of one layer, against the
 /// present tree.
@@ -289,46 +306,31 @@ impl Budgets {
     }
 
     /// How the tree of a scenario differs from the present tree: one entry
-    /// for each path of each layer, in declared order.
+    /// for each path of each layer, in declared order, then one for each
+    /// `tooling` path.
     ///
     /// A layer the scenario holds keeps each of its `paths` and writes each of
-    /// its `arms`. A layer it does not hold has each path removed. One rule
-    /// joins them: an `arms` file stands in for a path that another layer
-    /// holds from the present tree, so where the scenario holds that other
-    /// layer, the present file is kept and the stand-in is neither written
-    /// nor removed. The hook layer's one-entry `settings.json` is that case,
-    /// and the rest of the harness holds the whole file. `None` for a
-    /// scenario the file does not declare.
+    /// its `arms`. A layer it does not hold has each path removed. Every
+    /// scenario removes each `tooling` path, under the name `tooling`. No two
+    /// entries name one path, because `layers` refuses a path two layers
+    /// claim and `Budgets::read` refuses a tooling path a layer claims.
+    /// `None` for a scenario the file does not declare.
     pub fn scenario_delta(&self, number: u32) -> Option<Vec<(Hold, &str, &str)>> {
         let scenario = self.scenario(number)?;
-        let held = |layer: &Layer| scenario.layers.contains(&layer.name);
-        let kept_by_held = |path: &str| {
-            self.layers
-                .iter()
-                .any(|layer| held(layer) && layer.paths.iter().any(|kept| kept == path))
-        };
         let mut delta = Vec::new();
         for layer in &self.layers {
-            // Two layers never hold one path from the present tree, because
-            // `layers` refuses it, so a path here is kept or removed alone.
+            let held = scenario.layers.contains(&layer.name);
             for path in &layer.paths {
-                let hold = if held(layer) {
-                    Hold::Keeps
-                } else {
-                    Hold::Removes
-                };
+                let hold = if held { Hold::Keeps } else { Hold::Removes };
                 delta.push((hold, layer.name.as_str(), path.as_str()));
             }
             for path in &layer.arms {
-                let hold = if kept_by_held(path) {
-                    continue;
-                } else if held(layer) {
-                    Hold::Writes
-                } else {
-                    Hold::Removes
-                };
+                let hold = if held { Hold::Writes } else { Hold::Removes };
                 delta.push((hold, layer.name.as_str(), path.as_str()));
             }
+        }
+        for path in &self.tooling {
+            delta.push((Hold::Removes, TOOLING, path.as_str()));
         }
         Some(delta)
     }
@@ -446,6 +448,34 @@ impl Budgets {
             None => Vec::new(),
             Some(declared) => layers(&declared.value)?,
         };
+        let tooling = match root.get(TOOLING) {
+            None => Vec::new(),
+            Some(listed) => paths(&listed.value)
+                .ok_or_else(|| {
+                    Unreadable::Malformed(format!(
+                        "`{TOOLING}` in {PATH} is not a sequence of paths"
+                    ))
+                })?
+                .map_err(|entry| Unreadable::ToolingUnsafe { entry })?,
+        };
+        // Every scenario removes a tooling path, so a layer that claims one
+        // would add a path that its own scenario then removes (#1872).
+        for tooling_path in &tooling {
+            for layer in &layers {
+                if let Some(layer_path) = layer
+                    .paths
+                    .iter()
+                    .chain(&layer.arms)
+                    .find(|path| claimed_twice(path, tooling_path))
+                {
+                    return Err(Unreadable::ToolingInLayer {
+                        layer: layer.name.clone(),
+                        layer_path: layer_path.clone(),
+                        tooling_path: tooling_path.clone(),
+                    });
+                }
+            }
+        }
         let scenarios = match root.get("scenarios") {
             None => Vec::new(),
             Some(declared) => scenarios(&declared.value, &layers)?,
@@ -478,6 +508,7 @@ impl Budgets {
             folds,
             answer_keys,
             layers,
+            tooling,
             scenarios,
             sets,
             oracles,
@@ -807,12 +838,10 @@ fn envelope(tier: Tier, fields: &Mapping) -> Result<Envelope, Unreadable> {
 /// The `layers` mapping (#1774): each layer's name, and the paths it adds to
 /// plain code.
 ///
-/// It refuses a name that cannot be a directory under `tools/probe/arms/`, a
-/// layer with no path, an unsafe path, and a path that two layers claim. Two
-/// paths are claimed twice when they are equal or one is inside the other.
-/// The one pair it admits is an `arms` file equal to a path another layer
-/// keeps from the present tree: the file stands in for part of that path, and
-/// [`Budgets::scenario_delta`] keeps the present file where both are held.
+/// It refuses a name that cannot be a directory under `tools/probe/arms/`,
+/// the name `tooling`, a layer with no path, an unsafe path, and a path that
+/// two layers claim. Two paths are claimed twice when they are equal or one
+/// is inside the other, whether each is kept or written from `arms`.
 fn layers(value: &Value) -> Result<Vec<Layer>, Unreadable> {
     let Some(block) = value.as_map() else {
         return Err(Unreadable::Malformed(format!(
@@ -823,6 +852,7 @@ fn layers(value: &Value) -> Result<Vec<Layer>, Unreadable> {
     for entry in block {
         let name = entry.key.value.as_str().to_string();
         let named = !name.is_empty()
+            && name != TOOLING
             && name
                 .chars()
                 .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-');
@@ -869,32 +899,16 @@ fn layers(value: &Value) -> Result<Vec<Layer>, Unreadable> {
         layers.push(layer);
     }
 
-    let inside = |a: &str, b: &str| {
-        a == b
-            || a.strip_prefix(b).is_some_and(|rest| rest.starts_with('/'))
-            || b.strip_prefix(a).is_some_and(|rest| rest.starts_with('/'))
-    };
     for (index, first) in layers.iter().enumerate() {
         for second in &layers[index + 1..] {
-            let entries = |layer: &'_ Layer| {
-                layer
-                    .paths
-                    .iter()
-                    .map(|path| (path.clone(), false))
-                    .chain(layer.arms.iter().map(|path| (path.clone(), true)))
-                    .collect::<Vec<_>>()
-            };
-            for (a, a_arms) in entries(first) {
-                for (b, b_arms) in entries(second) {
-                    // An `arms` file that stands in for a path the other layer
-                    // keeps from the present tree.
-                    let stands_in = a == b && a_arms != b_arms;
-                    if inside(&a, &b) && !stands_in {
+            for a in first.paths.iter().chain(&first.arms) {
+                for b in second.paths.iter().chain(&second.arms) {
+                    if claimed_twice(a, b) {
                         return Err(Unreadable::PathInTwoLayers {
                             first_layer: first.name.clone(),
-                            first_path: a,
+                            first_path: a.clone(),
                             second_layer: second.name.clone(),
-                            second_path: b,
+                            second_path: b.clone(),
                         });
                     }
                 }
@@ -904,6 +918,14 @@ fn layers(value: &Value) -> Result<Vec<Layer>, Unreadable> {
     Ok(layers)
 }
 
+/// Two paths name one part of the tree: they are equal, or one is inside the
+/// other.
+fn claimed_twice(a: &str, b: &str) -> bool {
+    a == b
+        || a.strip_prefix(b).is_some_and(|rest| rest.starts_with('/'))
+        || b.strip_prefix(a).is_some_and(|rest| rest.starts_with('/'))
+}
+
 /// The `scenarios` mapping (#1774): each scenario's block, base and layers.
 ///
 /// It refuses a scenario that is not a whole number, a block outside the
@@ -911,6 +933,12 @@ fn layers(value: &Value) -> Result<Vec<Layer>, Unreadable> {
 /// scenario 0 that holds a layer or names a base, a scenario other than 0
 /// with no base or a base the file does not declare, and a scenario that
 /// differs from its base by anything but exactly one added layer.
+///
+/// The one exception (#1872, HW-DR-0112) is a scenario that declares
+/// `exception: full-stack`. It may add more than one layer to its base when
+/// it drops no layer of the base, holds every declared layer, and is the
+/// only scenario that declares the exception. Each of those conditions has
+/// its own refusal.
 fn scenarios(value: &Value, layers: &[Layer]) -> Result<Vec<Scenario>, Unreadable> {
     let Some(block) = value.as_map() else {
         return Err(Unreadable::Malformed(format!(
@@ -966,19 +994,30 @@ fn scenarios(value: &Value, layers: &[Layer]) -> Result<Vec<Scenario>, Unreadabl
         if let Some(field) = fields
             .iter()
             .map(|field| field.key.value.as_str())
-            .find(|key| !["block", "base", "layers"].contains(key))
+            .find(|key| !["block", "base", "layers", "exception"].contains(key))
         {
             return Err(Unreadable::Malformed(format!(
                 "scenario {number} in {PATH} declares `{field}`. A scenario declares `block`, \
-                 `base` and `layers`, and nothing else"
+                 `base`, `layers` and `exception`, and nothing else"
             )));
         }
+        let exception = match text(fields, "exception") {
+            None => false,
+            Some(found) if found == FULL_STACK => true,
+            Some(found) => {
+                return Err(Unreadable::ScenarioExceptionUnknown {
+                    scenario: number,
+                    found,
+                });
+            }
+        };
         declared.push((
             Scenario {
                 number,
                 block: chosen,
                 base: None,
                 layers: held,
+                exception,
             },
             text(fields, "base"),
         ));
@@ -987,8 +1026,20 @@ fn scenarios(value: &Value, layers: &[Layer]) -> Result<Vec<Scenario>, Unreadabl
     if !declared.is_empty() && !declared.iter().any(|(scenario, _)| scenario.number == 0) {
         return Err(Unreadable::ScenariosWithoutPlainCode);
     }
+    let mut excepted: Option<u32> = None;
     let mut scenarios = Vec::new();
     for (mut scenario, base) in declared.iter().cloned() {
+        let missing: Vec<String> = layers
+            .iter()
+            .map(|layer| layer.name.clone())
+            .filter(|name| !scenario.layers.contains(name))
+            .collect();
+        if scenario.exception && scenario.number == 0 {
+            return Err(Unreadable::ScenarioExceptionNotFullStack {
+                scenario: 0,
+                missing,
+            });
+        }
         if scenario.number == 0 {
             if let Some(layer) = scenario.layers.first() {
                 return Err(Unreadable::PlainCodeHoldsLayer {
@@ -1027,7 +1078,31 @@ fn scenarios(value: &Value, layers: &[Layer]) -> Result<Vec<Scenario>, Unreadabl
             .filter(|layer| !scenario.layers.contains(layer))
             .cloned()
             .collect();
-        if added.len() != 1 || !dropped.is_empty() {
+        if scenario.exception {
+            if !dropped.is_empty() {
+                return Err(Unreadable::ScenarioExceptionDrops {
+                    scenario: scenario.number,
+                    base: under.number,
+                    dropped,
+                });
+            }
+            if !missing.is_empty() {
+                return Err(Unreadable::ScenarioExceptionNotFullStack {
+                    scenario: scenario.number,
+                    missing,
+                });
+            }
+            if let Some(first) = excepted {
+                return Err(Unreadable::ScenarioExceptionTwice {
+                    first,
+                    second: scenario.number,
+                });
+            }
+            excepted = Some(scenario.number);
+        }
+        let one_layer = added.len() == 1 && dropped.is_empty();
+        let full_stack = scenario.exception && !added.is_empty();
+        if !one_layer && !full_stack {
             return Err(Unreadable::ScenarioNotOneLayer {
                 scenario: scenario.number,
                 base: under.number,
@@ -1193,6 +1268,38 @@ pub enum Unreadable {
         base: u32,
         added: Vec<String>,
         dropped: Vec<String>,
+    },
+    /// A scenario declares an `exception` other than `full-stack`.
+    ScenarioExceptionUnknown {
+        scenario: u32,
+        found: String,
+    },
+    /// A scenario declares the exception and does not hold every layer.
+    ScenarioExceptionNotFullStack {
+        scenario: u32,
+        missing: Vec<String>,
+    },
+    /// A scenario declares the exception and drops a layer of its base.
+    ScenarioExceptionDrops {
+        scenario: u32,
+        base: u32,
+        dropped: Vec<String>,
+    },
+    /// A second scenario declares the exception.
+    ScenarioExceptionTwice {
+        first: u32,
+        second: u32,
+    },
+    /// A `tooling` path that leaves the tree.
+    ToolingUnsafe {
+        entry: String,
+    },
+    /// A `tooling` path that a layer also claims, equal or one inside the
+    /// other.
+    ToolingInLayer {
+        layer: String,
+        layer_path: String,
+        tooling_path: String,
     },
     ArmOutsideItsTier {
         tier: &'static str,
@@ -1446,11 +1553,65 @@ impl std::fmt::Display for Unreadable {
                     f,
                     "scenario {scenario} in {PATH} adds {} to its base {base} and drops {}. A \
                      scenario differs from its base by exactly one added layer, or its \
-                     difference from the base measures more than one thing",
+                     difference from the base measures more than one thing. The one \
+                     exception is a scenario that declares `exception: {FULL_STACK}` and \
+                     holds every declared layer",
                     listed(added),
                     listed(dropped)
                 )
             }
+            Unreadable::ScenarioExceptionUnknown { scenario, found } => write!(
+                f,
+                "scenario {scenario} in {PATH} declares the exception `{}`. The one exception \
+                 a scenario declares is `{FULL_STACK}`",
+                found.escape_debug()
+            ),
+            Unreadable::ScenarioExceptionNotFullStack { scenario, missing } => write!(
+                f,
+                "scenario {scenario} in {PATH} declares `exception: {FULL_STACK}` and does not \
+                 hold {}. The exception admits more than one added layer only for the scenario \
+                 that holds every declared layer",
+                missing
+                    .iter()
+                    .map(|layer| format!("`{layer}`"))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
+            Unreadable::ScenarioExceptionDrops {
+                scenario,
+                base,
+                dropped,
+            } => write!(
+                f,
+                "scenario {scenario} in {PATH} declares `exception: {FULL_STACK}` and drops {} \
+                 of its base {base}. The exception adds layers to its base and drops none",
+                dropped
+                    .iter()
+                    .map(|layer| format!("`{layer}`"))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
+            Unreadable::ScenarioExceptionTwice { first, second } => write!(
+                f,
+                "scenarios {first} and {second} in {PATH} both declare `exception: \
+                 {FULL_STACK}`. One scenario at most is the exception to the one-layer rule"
+            ),
+            Unreadable::ToolingUnsafe { entry } => write!(
+                f,
+                "`tooling` in {PATH} names `{}`, which leaves the tree",
+                entry.escape_debug()
+            ),
+            Unreadable::ToolingInLayer {
+                layer,
+                layer_path,
+                tooling_path,
+            } => write!(
+                f,
+                "`tooling` in {PATH} names `{}`, and the `{layer}` layer claims `{}`. Every \
+                 scenario removes a tooling path, so a layer that held it would hold nothing",
+                tooling_path.escape_debug(),
+                layer_path.escape_debug()
+            ),
             Unreadable::ArmOutsideItsTier { tier, arm } if arm.is_scenario() => write!(
                 f,
                 "the `{tier}` tier names the arm `{}`. A scenario arm is plain code with layers \
@@ -2259,26 +2420,23 @@ tiers:
         }
     }
 
-    // The additive campaign of #1774: six layers and the rest of the harness,
-    // and scenarios 0 to 13 as the milestone's issues #1780 to #1793 state
-    // them.
+    // The additive campaign as HW-DR-0112 cuts it (#1872): five layers, the
+    // repository's own tooling in no layer, and scenarios 0 to 6, where
+    // scenario 6 adds three layers to scenario 2 under the declared exception.
     const ADDITIVE: &str = "\
 layers:
   docs:
     paths: [docs, engine/crates/census/fixtures/corpus.census]
   engine:
     paths: [.headwater, engine/target/dev-release/headwater]
-  claude-md:
-    paths: [CLAUDE.md]
   skills:
     paths: [.claude/skills/headwater-orient, .agents/skills]
-  hook:
-    paths: [.claude/hooks/intent.sh, .claude/hooks/lib.sh]
+  hooks:
+    paths: [.claude/hooks/intent.sh, .claude/hooks/write.sh, .claude/hooks/lib.sh]
     arms: [.claude/settings.json]
   mcp:
     arms: [.mcp.json]
-  harness:
-    paths: [.claude/settings.json, .githooks, AGENTS.md]
+tooling: [CLAUDE.md, AGENTS.md, .githooks, .claude/commands]
 scenarios:
   0:
     block: answer-once
@@ -2288,69 +2446,52 @@ scenarios:
     base: 0
     layers: [docs]
   2:
-    block: interaction
-    base: 1
-    layers: [docs, claude-md]
-  3:
     block: answer-once
     base: 1
     layers: [docs, engine]
+  3:
+    block: answer-once
+    base: 2
+    layers: [docs, engine, skills]
   4:
     block: answer-once
-    base: 3
-    layers: [docs, engine, skills]
+    base: 2
+    layers: [docs, engine, hooks]
   5:
     block: answer-once
-    base: 3
-    layers: [docs, engine, hook]
+    base: 2
+    layers: [docs, engine, mcp]
   6:
     block: answer-once
-    base: 3
-    layers: [docs, engine, mcp]
-  7:
-    block: interaction
-    base: 5
-    layers: [docs, engine, hook, mcp]
-  8:
-    block: interaction
-    base: 4
-    layers: [docs, engine, claude-md, skills]
-  9:
-    block: interaction
-    base: 5
-    layers: [docs, engine, claude-md, hook]
-  10:
-    block: interaction
-    base: 5
-    layers: [docs, engine, skills, hook]
-  11:
-    block: answer-once
-    base: 10
-    layers: [docs, engine, claude-md, skills, hook]
-  12:
-    block: answer-once
-    base: 11
-    layers: [docs, engine, claude-md, skills, hook, mcp]
-  13:
-    block: answer-once
-    base: 11
-    layers: [docs, engine, claude-md, skills, hook, harness]
+    base: 2
+    exception: full-stack
+    layers: [docs, engine, skills, hooks, mcp]
 ";
 
     fn additive() -> String {
         format!("{GOOD}{ADDITIVE}")
     }
 
+    /// `additive()` with `from` replaced by `to`, which must change it.
+    fn recut(from: &str, to: &str) -> String {
+        let source = additive().replace(from, to);
+        assert_ne!(source, additive(), "{from:?} is not in ADDITIVE");
+        source
+    }
+
+    const TOOLING: &str = "tooling: [CLAUDE.md, AGENTS.md, .githooks, .claude/commands]\n";
+
     #[test]
     fn a_file_with_no_layers_declares_no_scenario() {
         let budgets = Budgets::read(GOOD).expect("reads");
         assert!(budgets.layers.is_empty());
+        assert!(budgets.tooling.is_empty());
         assert!(budgets.scenarios.is_empty());
         assert_eq!(budgets.scenario_delta(0), None);
     }
 
     #[test]
-    fn fourteen_scenarios_read_with_their_layers_blocks_and_bases() {
+    fn seven_scenarios_read_with_their_layers_bases_and_the_one_exception() {
         let budgets = Budgets::read(&additive()).expect("reads");
         assert_eq!(
             budgets
@@ -2358,59 +2499,44 @@ scenarios:
                 .iter()
                 .map(|layer| layer.name.as_str())
                 .collect::<Vec<_>>(),
+            ["docs", "engine", "skills", "hooks", "mcp"]
+        );
+        let hooks = &budgets.layers[3];
+        assert_eq!(
+            hooks.paths,
             [
-                "docs",
-                "engine",
-                "claude-md",
-                "skills",
-                "hook",
-                "mcp",
-                "harness"
+                ".claude/hooks/intent.sh",
+                ".claude/hooks/write.sh",
+                ".claude/hooks/lib.sh"
             ]
         );
-        let hook = &budgets.layers[4];
+        assert_eq!(hooks.arms, [".claude/settings.json"]);
         assert_eq!(
-            hook.paths,
-            [".claude/hooks/intent.sh", ".claude/hooks/lib.sh"]
+            budgets.tooling,
+            ["CLAUDE.md", "AGENTS.md", ".githooks", ".claude/commands"]
         );
-        assert_eq!(hook.arms, [".claude/settings.json"]);
-        assert_eq!(budgets.scenarios.len(), 14);
+        assert_eq!(budgets.scenarios.len(), 7);
         let bases: Vec<Option<u32>> = budgets.scenarios.iter().map(|s| s.base).collect();
         assert_eq!(
             bases,
-            [
-                None,
-                Some(0),
-                Some(1),
-                Some(1),
-                Some(3),
-                Some(3),
-                Some(3),
-                Some(5),
-                Some(4),
-                Some(5),
-                Some(5),
-                Some(10),
-                Some(11),
-                Some(11)
-            ]
+            [None, Some(0), Some(1), Some(2), Some(2), Some(2), Some(2)]
         );
-        let interaction: Vec<u32> = budgets
+        let excepted: Vec<u32> = budgets
             .scenarios
             .iter()
-            .filter(|s| s.block == Block::Interaction)
+            .filter(|s| s.exception)
             .map(|s| s.number)
             .collect();
-        assert_eq!(interaction, [2, 7, 8, 9, 10]);
+        assert_eq!(excepted, [6]);
         assert!(budgets.scenario(0).expect("plain code").layers.is_empty());
         assert_eq!(
-            budgets.scenario(13).expect("13").layers,
-            ["docs", "engine", "claude-md", "skills", "hook", "harness"]
+            budgets.scenario(6).expect("6").layers,
+            ["docs", "engine", "skills", "hooks", "mcp"]
         );
     }
 
     #[test]
-    fn plain_code_removes_the_path_of_every_layer() {
+    fn plain_code_removes_the_path_of_every_layer_and_the_tooling() {
         let budgets = Budgets::read(&additive()).expect("reads");
         let delta = budgets.scenario_delta(0).expect("declared");
         assert!(
@@ -2421,12 +2547,11 @@ scenarios:
             "docs",
             ".headwater",
             "engine/target/dev-release/headwater",
-            "CLAUDE.md",
             ".agents/skills",
             ".claude/hooks/intent.sh",
             ".claude/settings.json",
             ".mcp.json",
-            "AGENTS.md",
+            "CLAUDE.md",
             ".githooks",
         ] {
             assert!(
@@ -2437,100 +2562,112 @@ scenarios:
     }
 
     #[test]
-    fn the_hook_layer_writes_its_one_entry_and_the_harness_keeps_the_whole_file() {
+    fn every_scenario_removes_the_tooling_and_only_a_scenario_with_hooks_writes_settings() {
         let budgets = Budgets::read(&additive()).expect("reads");
-        let five = budgets.scenario_delta(5).expect("declared");
-        assert!(
-            five.contains(&(Hold::Writes, "hook", ".claude/settings.json")),
-            "{five:?}"
-        );
-        assert!(
-            five.contains(&(Hold::Removes, "harness", ".claude/settings.json")),
-            "{five:?}"
-        );
-        assert!(
-            five.contains(&(Hold::Keeps, "hook", ".claude/hooks/intent.sh")),
-            "{five:?}"
-        );
-        assert!(
-            five.contains(&(Hold::Keeps, "engine", ".headwater")),
-            "{five:?}"
-        );
-        assert!(
-            five.contains(&(Hold::Removes, "skills", ".agents/skills")),
-            "{five:?}"
-        );
-        let thirteen = budgets.scenario_delta(13).expect("declared");
-        assert!(
-            thirteen.contains(&(Hold::Keeps, "harness", ".claude/settings.json")),
-            "{thirteen:?}"
-        );
-        assert!(
-            !thirteen
+        for number in 0..=6 {
+            let delta = budgets.scenario_delta(number).expect("declared");
+            for path in ["CLAUDE.md", "AGENTS.md", ".githooks", ".claude/commands"] {
+                assert!(
+                    delta.contains(&(Hold::Removes, "tooling", path)),
+                    "scenario {number} keeps {path}: {delta:?}"
+                );
+                assert_eq!(
+                    delta.iter().filter(|(_, _, p)| *p == path).count(),
+                    1,
+                    "scenario {number}: {delta:?}"
+                );
+            }
+            let settings: Vec<_> = delta
                 .iter()
-                .any(|(hold, _, path)| *path == ".claude/settings.json" && *hold != Hold::Keeps),
-            "the stand-in is neither written nor removed where the whole file is held: \
-             {thirteen:?}"
-        );
-        // The harness held without the hook: the stand-in is not removed
-        // either, because a removal runs before every write and would take
-        // the whole file the harness keeps.
-        let source = additive().replace(
-            "  13:\n",
-            "  14:\n    block: answer-once\n    base: 0\n    layers: [harness]\n  13:\n",
-        );
-        let alone = Budgets::read(&source).expect("reads");
-        let fourteen = alone.scenario_delta(14).expect("declared");
+                .filter(|(_, _, p)| *p == ".claude/settings.json")
+                .collect();
+            let expected = if [4, 6].contains(&number) {
+                (Hold::Writes, "hooks", ".claude/settings.json")
+            } else {
+                (Hold::Removes, "hooks", ".claude/settings.json")
+            };
+            assert_eq!(settings, [&expected], "scenario {number}");
+        }
+    }
+
+    #[test]
+    fn the_hooks_layer_keeps_its_scripts_and_writes_its_settings_where_it_is_held() {
+        let budgets = Budgets::read(&additive()).expect("reads");
+        let four = budgets.scenario_delta(4).expect("declared");
+        for entry in [
+            (Hold::Keeps, "hooks", ".claude/hooks/intent.sh"),
+            (Hold::Keeps, "hooks", ".claude/hooks/write.sh"),
+            (Hold::Writes, "hooks", ".claude/settings.json"),
+            (Hold::Keeps, "engine", ".headwater"),
+            (Hold::Removes, "skills", ".agents/skills"),
+            (Hold::Removes, "mcp", ".mcp.json"),
+        ] {
+            assert!(four.contains(&entry), "{entry:?}: {four:?}");
+        }
+        let three = budgets.scenario_delta(3).expect("declared");
         assert!(
-            fourteen.contains(&(Hold::Keeps, "harness", ".claude/settings.json")),
-            "{fourteen:?}"
-        );
-        assert!(
-            !fourteen.contains(&(Hold::Removes, "hook", ".claude/settings.json")),
-            "{fourteen:?}"
-        );
-        assert!(
-            fourteen.contains(&(Hold::Removes, "hook", ".claude/hooks/intent.sh")),
-            "{fourteen:?}"
+            three.contains(&(Hold::Removes, "hooks", ".claude/hooks/write.sh")),
+            "{three:?}"
         );
         let six = budgets.scenario_delta(6).expect("declared");
         assert!(six.contains(&(Hold::Writes, "mcp", ".mcp.json")), "{six:?}");
-        assert_eq!(budgets.scenario_delta(14), None);
+        assert!(
+            six.contains(&(Hold::Keeps, "skills", ".agents/skills")),
+            "{six:?}"
+        );
+        assert_eq!(budgets.scenario_delta(7), None);
     }
 
     #[test]
     fn a_scenario_that_differs_from_its_base_by_more_or_less_than_one_layer_is_refused() {
         for (from, to, scenario, base, added, dropped) in [
-            // Two layers added: 4 against 1.
+            // Two layers added: 3 against 1.
             (
-                "    base: 3\n    layers: [docs, engine, skills]\n",
+                "    base: 2\n    layers: [docs, engine, skills]\n",
                 "    base: 1\n    layers: [docs, engine, skills]\n",
-                4,
+                3,
                 1,
                 vec!["engine", "skills"],
                 vec![],
             ),
-            // One added and one dropped: 2 against 3.
+            // One added and one dropped: 5 against 3.
             (
-                "    base: 1\n    layers: [docs, claude-md]\n",
-                "    base: 3\n    layers: [docs, claude-md]\n",
-                2,
-                3,
-                vec!["claude-md"],
-                vec!["engine"],
-            ),
-            // None added: 6 against 3 with 3's own layers.
-            (
+                "    base: 2\n    layers: [docs, engine, mcp]\n",
                 "    base: 3\n    layers: [docs, engine, mcp]\n",
-                "    base: 3\n    layers: [docs, engine]\n",
-                6,
+                5,
                 3,
+                vec!["mcp"],
+                vec!["skills"],
+            ),
+            // None added: 5 against 2 with 2's own layers.
+            (
+                "    base: 2\n    layers: [docs, engine, mcp]\n",
+                "    base: 2\n    layers: [docs, engine]\n",
+                5,
+                2,
+                vec![],
+                vec![],
+            ),
+            // The full stack without the declared exception: three added.
+            (
+                "    exception: full-stack\n",
+                "",
+                6,
+                2,
+                vec!["skills", "hooks", "mcp"],
+                vec![],
+            ),
+            // The exception adds no layer to a base that is itself.
+            (
+                "    base: 2\n    exception: full-stack\n",
+                "    base: 6\n    exception: full-stack\n",
+                6,
+                6,
                 vec![],
                 vec![],
             ),
         ] {
-            let source = additive().replace(from, to);
-            assert_ne!(source, additive(), "{from}");
+            let source = recut(from, to);
             let refused = Budgets::read(&source);
             assert_eq!(
                 refused,
@@ -2551,15 +2688,144 @@ scenarios:
     }
 
     #[test]
+    fn the_full_stack_exception_is_refused_wherever_one_of_its_conditions_fails() {
+        let names = |layers: &[&str]| layers.iter().map(|l| l.to_string()).collect::<Vec<_>>();
+        for (from, to, refusal) in [
+            // Not the full stack: 2 + skills + hooks.
+            (
+                "    layers: [docs, engine, skills, hooks, mcp]\n",
+                "    layers: [docs, engine, skills, hooks]\n",
+                Unreadable::ScenarioExceptionNotFullStack {
+                    scenario: 6,
+                    missing: names(&["mcp"]),
+                },
+            ),
+            // A second scenario that declares it.
+            (
+                "    exception: full-stack\n    layers: [docs, engine, skills, hooks, mcp]\n",
+                "    exception: full-stack\n    layers: [docs, engine, skills, hooks, mcp]\n  \
+                 7:\n    block: answer-once\n    base: 2\n    exception: full-stack\n    \
+                 layers: [docs, engine, skills, hooks, mcp]\n",
+                Unreadable::ScenarioExceptionTwice {
+                    first: 6,
+                    second: 7,
+                },
+            ),
+            // It drops a layer of its base: 3 holds skills, and the
+            // scenario does not.
+            (
+                "    base: 2\n    exception: full-stack\n    \
+                 layers: [docs, engine, skills, hooks, mcp]\n",
+                "    base: 3\n    exception: full-stack\n    layers: [docs, engine, hooks, mcp]\n",
+                Unreadable::ScenarioExceptionDrops {
+                    scenario: 6,
+                    base: 3,
+                    dropped: names(&["skills"]),
+                },
+            ),
+            // Plain code declares it.
+            (
+                "  0:\n    block: answer-once\n    layers: []\n",
+                "  0:\n    block: answer-once\n    exception: full-stack\n    layers: []\n",
+                Unreadable::ScenarioExceptionNotFullStack {
+                    scenario: 0,
+                    missing: names(&["docs", "engine", "skills", "hooks", "mcp"]),
+                },
+            ),
+            // An exception that is not the one declared.
+            (
+                "    exception: full-stack\n",
+                "    exception: two-layers\n",
+                Unreadable::ScenarioExceptionUnknown {
+                    scenario: 6,
+                    found: "two-layers".into(),
+                },
+            ),
+        ] {
+            let source = recut(from, to);
+            let refused = Budgets::read(&source);
+            assert_eq!(refused, Err(refusal), "{to}");
+            let message = refused.expect_err("refused").to_string();
+            assert!(message.contains("full-stack"), "{message}");
+        }
+    }
+
+    #[test]
+    fn a_tooling_path_that_a_layer_claims_or_that_leaves_the_tree_is_refused() {
+        for (to, layer, layer_path, tooling_path) in [
+            // The same path.
+            (
+                "tooling: [CLAUDE.md, .agents/skills]\n",
+                "skills",
+                ".agents/skills",
+                ".agents/skills",
+            ),
+            // A tooling path inside a layer path.
+            (
+                "tooling: [CLAUDE.md, docs/x.md]\n",
+                "docs",
+                "docs",
+                "docs/x.md",
+            ),
+            // A layer path inside a tooling path.
+            (
+                "tooling: [CLAUDE.md, .claude/hooks]\n",
+                "hooks",
+                ".claude/hooks/intent.sh",
+                ".claude/hooks",
+            ),
+            // An `arms` file of a layer.
+            (
+                "tooling: [CLAUDE.md, .claude/settings.json]\n",
+                "hooks",
+                ".claude/settings.json",
+                ".claude/settings.json",
+            ),
+        ] {
+            let source = recut(TOOLING, to);
+            assert_eq!(
+                Budgets::read(&source),
+                Err(Unreadable::ToolingInLayer {
+                    layer: layer.into(),
+                    layer_path: layer_path.into(),
+                    tooling_path: tooling_path.into(),
+                }),
+                "{to}"
+            );
+        }
+        let source = recut(TOOLING, "tooling: [CLAUDE.md, ../x]\n");
+        assert_eq!(
+            Budgets::read(&source),
+            Err(Unreadable::ToolingUnsafe {
+                entry: "../x".into()
+            })
+        );
+        let source = recut(TOOLING, "tooling: CLAUDE.md\n");
+        assert!(
+            matches!(Budgets::read(&source), Err(Unreadable::Malformed(_))),
+            "a scalar is not a sequence of paths"
+        );
+        // A layer named `tooling` would print a delta line no reader could
+        // tell from a tooling path.
+        let source = recut("  mcp:\n    arms:", "  tooling:\n    arms:");
+        assert_eq!(
+            Budgets::read(&source),
+            Err(Unreadable::LayerName {
+                found: "tooling".into()
+            })
+        );
+    }
+
+    #[test]
     fn a_scenario_that_names_an_undeclared_layer_is_refused() {
-        let source = additive().replace(
-            "    base: 3\n    layers: [docs, engine, mcp]\n",
-            "    base: 3\n    layers: [docs, engine, lsp]\n",
+        let source = recut(
+            "    base: 2\n    layers: [docs, engine, mcp]\n",
+            "    base: 2\n    layers: [docs, engine, lsp]\n",
         );
         assert_eq!(
             Budgets::read(&source),
             Err(Unreadable::ScenarioUnknownLayer {
-                scenario: 6,
+                scenario: 5,
                 layer: "lsp".into()
             })
         );
@@ -2567,36 +2833,45 @@ scenarios:
 
     #[test]
     fn a_path_two_layers_both_claim_is_refused() {
+        let skills = "    paths: [.claude/skills/headwater-orient, .agents/skills]\n";
         for (from, to, first, second) in [
             // The same path.
             (
-                "    paths: [CLAUDE.md]\n",
-                "    paths: [CLAUDE.md, AGENTS.md]\n",
-                ("claude-md", "AGENTS.md"),
-                ("harness", "AGENTS.md"),
+                skills,
+                "    paths: [.claude/skills/headwater-orient, .agents/skills, .claude/hooks/lib.sh]\n",
+                ("skills", ".claude/hooks/lib.sh"),
+                ("hooks", ".claude/hooks/lib.sh"),
             ),
             // One path inside another.
             (
-                "    paths: [CLAUDE.md]\n",
-                "    paths: [CLAUDE.md, .claude/hooks]\n",
-                ("claude-md", ".claude/hooks"),
-                ("hook", ".claude/hooks/intent.sh"),
+                skills,
+                "    paths: [.claude/skills/headwater-orient, .agents/skills, .claude/hooks]\n",
+                ("skills", ".claude/hooks"),
+                ("hooks", ".claude/hooks/intent.sh"),
             ),
-            // One path inside a path a later layer holds.
+            // One path inside a path an earlier layer holds.
             (
-                "    paths: [CLAUDE.md]\n",
-                "    paths: [CLAUDE.md, .githooks/pre-commit]\n",
-                ("claude-md", ".githooks/pre-commit"),
-                ("harness", ".githooks"),
+                "    paths: [.headwater, engine/target/dev-release/headwater]\n",
+                "    paths: [.headwater, engine/target/dev-release/headwater, docs/x.md]\n",
+                ("docs", "docs"),
+                ("engine", "docs/x.md"),
             ),
-            // Two stand-ins for one path.
+            // An `arms` file equal to a path another layer keeps: since
+            // #1872 no `arms` file stands in for part of another layer.
+            (
+                skills,
+                "    paths: [.claude/skills/headwater-orient, .agents/skills, .claude/settings.json]\n",
+                ("skills", ".claude/settings.json"),
+                ("hooks", ".claude/settings.json"),
+            ),
+            // Two `arms` files for one path.
             (
                 "    arms: [.mcp.json]\n",
                 "    arms: [.mcp.json, .claude/settings.json]\n",
-                ("hook", ".claude/settings.json"),
+                ("hooks", ".claude/settings.json"),
                 ("mcp", ".claude/settings.json"),
             ),
-            // A stand-in inside a path another layer holds whole.
+            // An `arms` file inside a path another layer holds whole.
             (
                 "    arms: [.mcp.json]\n",
                 "    arms: [.mcp.json, docs/x.md]\n",
@@ -2604,7 +2879,7 @@ scenarios:
                 ("mcp", "docs/x.md"),
             ),
         ] {
-            let source = additive().replace(from, to);
+            let source = recut(from, to);
             assert_eq!(
                 Budgets::read(&source),
                 Err(Unreadable::PathInTwoLayers {
@@ -2620,35 +2895,40 @@ scenarios:
 
     #[test]
     fn a_path_that_shares_a_name_prefix_with_another_layers_path_is_not_claimed_twice() {
-        // `.githooks-old` is beside `.githooks`, not inside it.
-        let source = additive().replace(
-            "    paths: [CLAUDE.md]\n",
-            "    paths: [CLAUDE.md, .githooks-old, AGENTS.md.bak]\n",
+        // `.claude/hooks/lib.sh.old` is beside `.claude/hooks/lib.sh`, not
+        // inside it, and `.mcp.json.bak` is beside `.mcp.json`.
+        let source = recut(
+            "    paths: [.claude/skills/headwater-orient, .agents/skills]\n",
+            "    paths: [.claude/skills/headwater-orient, .claude/hooks/lib.sh.old, .mcp.json.bak]\n",
         );
         let budgets = Budgets::read(&source).expect("reads");
         assert_eq!(
             budgets.layers[2].paths,
-            ["CLAUDE.md", ".githooks-old", "AGENTS.md.bak"]
+            [
+                ".claude/skills/headwater-orient",
+                ".claude/hooks/lib.sh.old",
+                ".mcp.json.bak"
+            ]
         );
     }
 
     #[test]
     fn a_layer_path_that_leaves_the_tree_is_refused() {
         for entry in ["../x", "/etc", "a/./b", ""] {
-            let source = additive().replace(
-                "    paths: [CLAUDE.md]\n",
-                &format!("    paths: [CLAUDE.md, \"{entry}\"]\n"),
+            let source = recut(
+                "    paths: [.claude/skills/headwater-orient, .agents/skills]\n",
+                &format!("    paths: [.agents/skills, \"{entry}\"]\n"),
             );
             assert_eq!(
                 Budgets::read(&source),
                 Err(Unreadable::LayerUnsafe {
-                    layer: "claude-md".into(),
+                    layer: "skills".into(),
                     entry: entry.into()
                 }),
                 "{entry:?}"
             );
         }
-        let source = additive().replace("    arms: [.mcp.json]\n", "    arms: [../.mcp.json]\n");
+        let source = recut("    arms: [.mcp.json]\n", "    arms: [../.mcp.json]\n");
         assert_eq!(
             Budgets::read(&source),
             Err(Unreadable::LayerUnsafe {
@@ -2660,7 +2940,7 @@ scenarios:
 
     #[test]
     fn plain_code_that_holds_a_layer_or_names_a_base_is_refused() {
-        let holds = additive().replace(
+        let holds = recut(
             "  0:\n    block: answer-once\n    layers: []\n",
             "  0:\n    block: answer-once\n    layers: [docs]\n",
         );
@@ -2670,7 +2950,7 @@ scenarios:
                 layer: "docs".into()
             })
         );
-        let based = additive().replace(
+        let based = recut(
             "  0:\n    block: answer-once\n    layers: []\n",
             "  0:\n    block: answer-once\n    base: 1\n    layers: []\n",
         );
@@ -2678,7 +2958,7 @@ scenarios:
             Budgets::read(&based),
             Err(Unreadable::PlainCodeHasBase { base: "1".into() })
         );
-        let missing = additive().replace("  0:\n    block: answer-once\n    layers: []\n", "");
+        let missing = recut("  0:\n    block: answer-once\n    layers: []\n", "");
         assert_eq!(
             Budgets::read(&missing),
             Err(Unreadable::ScenariosWithoutPlainCode)
@@ -2687,7 +2967,7 @@ scenarios:
 
     #[test]
     fn a_scenario_with_no_base_or_an_undeclared_base_or_block_is_refused() {
-        let no_base = additive().replace(
+        let no_base = recut(
             "  1:\n    block: answer-once\n    base: 0\n",
             "  1:\n    block: answer-once\n",
         );
@@ -2695,19 +2975,19 @@ scenarios:
             Budgets::read(&no_base),
             Err(Unreadable::ScenarioWithoutBase { scenario: 1 })
         );
-        let unknown = additive().replace(
-            "    base: 11\n    layers: [docs, engine, claude-md, skills, hook, mcp]\n",
-            "    base: 20\n    layers: [docs, engine, claude-md, skills, hook, mcp]\n",
+        let unknown = recut(
+            "    base: 2\n    layers: [docs, engine, mcp]\n",
+            "    base: 20\n    layers: [docs, engine, mcp]\n",
         );
         assert_eq!(
             Budgets::read(&unknown),
             Err(Unreadable::ScenarioUnknownBase {
-                scenario: 12,
+                scenario: 5,
                 base: "20".into()
             })
         );
-        let block = additive().replace(
-            "  2:\n    block: interaction\n",
+        let block = recut(
+            "  2:\n    block: answer-once\n",
             "  2:\n    block: pairwise\n",
         );
         assert_eq!(
@@ -2717,8 +2997,8 @@ scenarios:
                 found: "pairwise".into()
             })
         );
-        for found in ["thirteen", "013", "-1"] {
-            let named = additive().replace("  13:\n", &format!("  {found}:\n"));
+        for found in ["six", "06", "-1"] {
+            let named = recut("  6:\n", &format!("  {found}:\n"));
             assert_eq!(
                 Budgets::read(&named),
                 Err(Unreadable::ScenarioName {
@@ -2731,14 +3011,14 @@ scenarios:
 
     #[test]
     fn a_layer_with_no_path_or_a_name_that_is_not_a_directory_is_refused() {
-        let empty = additive().replace("    arms: [.mcp.json]\n", "    arms: []\n");
+        let empty = recut("    arms: [.mcp.json]\n", "    arms: []\n");
         assert_eq!(
             Budgets::read(&empty),
             Err(Unreadable::LayerEmpty {
                 layer: "mcp".into()
             })
         );
-        let named = additive().replace("  mcp:\n    arms:", "  MCP server:\n    arms:");
+        let named = recut("  mcp:\n    arms:", "  MCP server:\n    arms:");
         assert_eq!(
             Budgets::read(&named),
             Err(Unreadable::LayerName {
@@ -2787,15 +3067,12 @@ sets:
 
     #[test]
     fn an_additive_tier_reads_its_scenario_arms_and_a_ceiling_of_zero() {
-        let budgets = Budgets::read(&additive_tier(
-            "[scenario-0, scenario-1, scenario-13]",
-            SETS,
-        ))
-        .expect("reads");
+        let budgets = Budgets::read(&additive_tier("[scenario-0, scenario-1, scenario-6]", SETS))
+            .expect("reads");
         let envelope = budgets.of(Tier::Additive).expect("the additive tier");
         assert_eq!(
             envelope.arms,
-            vec![Arm::Scenario(0), Arm::Scenario(1), Arm::Scenario(13)]
+            vec![Arm::Scenario(0), Arm::Scenario(1), Arm::Scenario(6)]
         );
         assert_eq!(envelope.budget, 0, "a ceiling nobody approved is zero");
         assert_eq!(envelope.repetitions, 55);
@@ -2895,10 +3172,10 @@ sets:
     #[test]
     fn a_scenario_arm_the_file_does_not_declare_is_refused() {
         assert_eq!(
-            Budgets::read(&additive_tier("[scenario-0, scenario-14]", "")),
+            Budgets::read(&additive_tier("[scenario-0, scenario-7]", "")),
             Err(Unreadable::ScenarioArmUndeclared {
                 tier: "additive",
-                arm: Arm::Scenario(14)
+                arm: Arm::Scenario(7)
             })
         );
         // With no `scenarios` at all, scenario 0 is undeclared too.
