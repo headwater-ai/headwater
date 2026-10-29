@@ -42,4 +42,15 @@ wrong() {
 commented() {
     printf '%s\n' '      # - term: game-changer' '      #   reason: it stands in for the change the thing makes' >> "$overlay" && resolve
 }
-more_wrong=commented
+
+# The mutants of round 4 of #1874.3. Each one writes the answer as text
+# that is no entry of the list, and resolves, so a reader of lines passes it
+# and the engine's own retired-term rule does not (parent-slice-3-stop.md,
+# mutant 5).
+#
+# No entry for the term, and `term: game-changer` inside the quoted reason of
+# another entry.
+quoted() {
+    sed -i 's/^        reason: it stands in for the failure the thing survives$/        reason: "it stands in for the failure the thing survives, term: game-changer"/' "$overlay" && grep -q 'term: game-changer' "$overlay" && resolve
+}
+more_wrong="commented quoted"

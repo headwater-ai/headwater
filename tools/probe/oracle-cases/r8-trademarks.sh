@@ -42,4 +42,18 @@ wrong() {
 commented() {
     printf '%s\n' '      # - TRADEMARKS.md' >> "$overlay" && resolve
 }
-more_wrong=commented
+
+# The mutants of round 4 of #1874.3. Each one names the file in text that
+# binds nothing, and resolves, so a reader of lines passes it and the
+# engine's own retired-term rule does not.
+#
+# The file named inside the quoted reason of a retired term.
+quoted() {
+    sed -i 's/^        reason: it stands in for the failure the thing survives$/        reason: "it stands in for the failure the thing survives, - TRADEMARKS.md"/' "$overlay" && grep -q 'TRADEMARKS.md' "$overlay" && resolve
+}
+
+# The file named under another list than `outside_root`.
+other_list() {
+    awk '{ print } $0 == "    adopter_documents:" { print "      - TRADEMARKS.md" }' "$overlay" > "$overlay.new" && mv "$overlay.new" "$overlay" && grep -q '^      - TRADEMARKS.md$' "$overlay" && resolve
+}
+more_wrong="commented quoted other_list"

@@ -72,3 +72,18 @@ reference() {
 wrong() {
     relocate docs/obligations/0242-three-edges-and-a-comment-that-trail-a-change-of-run-20261012-2342.md docs/process/obligations/0242-three-edges-and-a-comment-that-trail-a-change-of-run-20261012-2342.md docs/obligations/README.md
 }
+
+# The mutant of round 4 of #1874.3: the move made as the reference change
+# makes it, and one link to the old path left as a reference-style link in a
+# file that links nothing else of the move. The link regex of moved.sh does
+# not read that form, and the engine's link rule does, so a reader of lines
+# passes it and the engine does not.
+r7_old=docs/obligations/0242-three-edges-and-a-comment-that-trail-a-change-of-run-20261012-2342.md
+r7_carrier=docs/spec/12-check-layer.md
+stale_reference() {
+    reference || return 1
+    [ -f "$r7_carrier" ] || return 1
+    r7_target=$(python3 -I -c 'import os, sys; print(os.path.relpath(sys.argv[1], os.path.dirname(sys.argv[2])))' "$r7_old" "$r7_carrier")
+    printf '\nThe [moved document][r7-old] is named here by a reference.\n\n[r7-old]: %s\n' "$r7_target" >> "$r7_carrier"
+}
+more_wrong=stale_reference

@@ -28,4 +28,26 @@ commented() {
     deleted && sed -i 's/^summary: "A shelf layout is read by the scaffolder and by nothing else."$/&\n# and a rule that read it would report every document that a person renamed or typed by hand/' docs/obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md && grep -q '^# and a rule that read it would report every document' docs/obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md
 }
 
-more_wrong="deleted commented"
+
+# The mutants of round 4 of #1874.3 (parent-slice-3-stop.md, mutants 1 to 3
+# applied to this probe). Each one keeps the text of the clause and takes it
+# out of the summary, so a reader of lines passes it and the summary as the
+# engine parses it does not.
+#
+# The summary cut to its first clause, and the clause appended as a line of
+# the body.
+body_line() {
+    deleted && printf '\nA rule that read it would report every document that a person renamed or typed by hand.\n' >> docs/obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md
+}
+
+# The whole summary commented out, and a shorter summary without the clause
+# written below it.
+summary_commented() {
+    sed -i 's/^summary: "A shelf layout is read by the scaffolder and by nothing else, and a rule that read it would report every document that a person renamed or typed by hand."$/# &\nsummary: "A shelf layout is read by the scaffolder and by nothing else."/' docs/obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md && grep -q '^# summary: ' docs/obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md
+}
+
+# The summary cut to its first clause, and the clause moved into the title.
+other_key() {
+    deleted && sed -i 's/^title: "A shelf layout names a file at birth and no rule reads it"$/title: "A shelf layout names a file at birth, and a rule that read it would report every document that a person renamed"/' docs/obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md && grep -q '^title: .*would report every document' docs/obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md
+}
+more_wrong="deleted commented body_line summary_commented other_key"

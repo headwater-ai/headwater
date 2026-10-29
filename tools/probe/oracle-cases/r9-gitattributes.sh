@@ -42,4 +42,18 @@ noted() {
     deleted && sed -i 's/^last_verified: .*/&\n# to: .gitattributes/' docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md && grep -q '^# to: .gitattributes$' docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md
 }
 
-more_wrong="deleted commented noted"
+
+# The mutants of round 4 of #1874.3 (parent-slice-3-stop.md, mutants 1 and
+# 3). Each one leaves the text of the edge and drops the edge, so a reader
+# of lines passes it and the engine's parse of the front matter does not.
+#
+# The governs edge deleted, and a body line that holds its text appended.
+stored() {
+    deleted && printf '\nthe record is stored to: .gitattributes in the notes.\n' >> docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md
+}
+
+# The governs edge deleted, and its target written under traces_to.
+under_traces() {
+    deleted && sed -i 's/^  traces_to:$/&\n    - .gitattributes/' docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md && grep -q '^    - .gitattributes$' docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md
+}
+more_wrong="deleted commented noted stored under_traces"
