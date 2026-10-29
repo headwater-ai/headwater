@@ -1948,7 +1948,10 @@ struct Graded<'a> {
 /// first ten lines, so the seal removes it from every workspace. Each generic
 /// script the command runs is held, and so is `lib.sh` that it sources,
 /// because the recorder restores a held file over the session's copy and a
-/// session can otherwise rewrite the script that grades it.
+/// session can otherwise rewrite the script that grades it. The command names
+/// no path under `docs/` and no identifier, because every workspace keeps
+/// `probe.yml`, and a file that `--args` reads is held (#1874.2). A
+/// superseded or deprecated probe is exempt: it is a record, in no set.
 fn mechanical_findings(
     probe: &Graded,
     oracles: &[headwater_probe::Oracle],
@@ -1956,6 +1959,11 @@ fn mechanical_findings(
 ) -> Vec<String> {
     let mut findings = Vec::new();
     if !MECHANICAL_ACTIONS.contains(&probe.action) {
+        return findings;
+    }
+    // A superseded or deprecated probe is the record of the runs that cite
+    // it, and it is in no set, so nothing grades it again.
+    if matches!(probe.status, "superseded" | "deprecated") {
         return findings;
     }
     let id = probe.id;
@@ -2030,6 +2038,26 @@ fn mechanical_findings(
             "{id}: the oracle `{}` runs a generic script and does not hold {lib}, which every one of them sources",
             probe.oracle
         ));
+    }
+    // `probe.yml` is a fold that every workspace keeps, so its command line
+    // states what is checked and never the answer. A path under `docs/` or
+    // an identifier is an answer, and it goes in a held `--args` file.
+    for word in entry.command.split_whitespace() {
+        if word.contains("docs/") || word.contains("HW-") {
+            findings.push(format!(
+                "{id}: the command of the oracle `{}` names `{word}`, which every workspace can read; put it in a held file that `--args` reads",
+                probe.oracle
+            ));
+        }
+    }
+    let words: Vec<&str> = entry.command.split_whitespace().collect();
+    for pair in words.windows(2) {
+        if pair[0] == "--args" && !entry.holds.iter().any(|held| held == pair[1]) {
+            findings.push(format!(
+                "{id}: the oracle `{}` reads its arguments from {} and does not hold it, so the grading copy has no such file",
+                probe.oracle, pair[1]
+            ));
+        }
     }
     findings
 }
