@@ -48,4 +48,4 @@ Repair the suspect-edge finding on `docs/decisions/0049-a-corpus-wide-fold-is-de
 
 **The baseline moves with its file.** The baseline holds the findings of one file in the sealed grading tree. A change to that file on `main`, or a seal that removes a document it links, moves them, and `tools/probe/probe-oracle-fixtures.sh` then fails this probe's reference change. Re-record it with `sh tools/probe/oracles/nothing-else-broken.sh --record <baseline>` in that tree, and delete the line of the finding the task repairs.
 
-**A deleted edge fails.** Deleting the `governs` entry also clears the finding and raises none. So the baseline holds the line `# keep: <this file> to: .gitattributes`, and the oracle fails a tree whose record does not hold that edge.
+**A deleted edge fails.** Deleting the `governs` entry also clears the finding and raises none. So the baseline holds the line `# edge: <this file> governs .gitattributes`, and the oracle fails a tree whose record does not declare that edge as `headwater explain --json` parses it. A commented edge, the edge under another relation and its text in the body each fail.

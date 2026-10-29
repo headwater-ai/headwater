@@ -47,3 +47,5 @@ Bring the summary of `docs/obligations/0106-a-shelf-layout-names-a-file-at-birth
 **The axes.** Each phrasing names the file, so the probe carries `names_file`. No superseded or contradicted record stands in the way, so the probe does not carry `superseded_target`.
 
 **The baseline moves with its file.** The baseline holds the findings of one file in the sealed grading tree. A change to that file on `main`, or a seal that removes a document it links, moves them, and `tools/probe/probe-oracle-fixtures.sh` then fails this probe's reference change. Re-record it with `sh tools/probe/oracles/nothing-else-broken.sh --record <baseline>` in that tree, and delete the line of the finding the task repairs.
+
+**A dropped clause fails.** Cutting the summary to its first clause also clears the finding and raises none. So the baseline holds a `# summary:` line with the text of the second clause, and the oracle fails a tree whose summary, as `headwater explain --json` parses it, does not hold that text. The clause in a comment, in the body or in another key each fail. The wrong change rewrites that clause too, so this line fails it before the findings are compared.

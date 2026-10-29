@@ -151,18 +151,24 @@ answer_keys:
 #                                        cites <ruling>
 #   reciprocal-link.sh <doc-a> <doc-b>   each names the other in `relations:`
 #   successor-typed.sh <old>             a typed successor supersedes <old>,
-#                                        and <old> names it
+#                                        and <old> names it, both edges as
+#                                        `headwater explain --json` reads
+#                                        them
 #   moved.sh <old-path> <new-path>       moved, and no link resolves to the
-#                                        old path
-#   lock-regenerated.sh [<file> <literal>]...
+#                                        old path, as the link regex or the
+#                                        engine's `link.path.unresolved`
+#                                        rule reads it
+#   lock-regenerated.sh [retires <carrier> <term> [<replacement>] | binds <path> <term>]...
 #                                        `headwater taxonomy resolve --check`,
-#                                        and each <file> holds its <literal>
-#                                        outside a comment
+#                                        and the engine's retired-term rule,
+#                                        run in a scratch root, retires each
+#                                        term and reaches each bound path
 #   nothing-else-broken.sh <baseline>    no finding the pin did not carry, on
 #                                        the files of a `# scope:` line of
 #                                        <baseline> where it has one, and
-#                                        each `# keep: <path> <literal>`
-#                                        line holds outside a comment
+#                                        each `# edge:` and `# summary:`
+#                                        line holds as `headwater explain
+#                                        --json` reads the document
 #   test-passes.sh [--ignored] <crate> <test-target> [<filter>]
 #                                        cargo passes and ran a case
 #   no-hook-warning.sh                   row 11: no hook spoke in the
