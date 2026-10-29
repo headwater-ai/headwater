@@ -209,7 +209,7 @@
 #   `TRY_SESSION_CENTS + TRY_OVERSHOOT_CENTS`, and the sentences of
 #   `tools/probe/probe-record.sh` that state 0 calls to a web tool, 0 paths
 #   outside its workspace and no refused provider fetch, and that the intent
-#   hook was live when the scenario of `<try>/spec` holds the `hook` layer
+#   hook was live when the scenario of `<try>/spec` holds the `hooks` layer
 #   and was not live otherwise. A count of 1 is written in the singular
 #   (`1 path`, `1 call`), so the reader matches the sentence of 0 and treats
 #   every other sentence, the "not counted" one included, as offending.
@@ -1504,7 +1504,7 @@ case $verb in
         scenarios=$(declared scenarios) || exit $?
         canary_layers=$(printf '%s\n' "$scenarios" | awk -v s="$canary_scenario" '$1 == s { $1 = ""; $2 = ""; print }')
         case " $canary_layers " in
-            *" hook "*) hook_expected=live ;;
+            *" hooks "*) hook_expected=live ;;
             *) hook_expected="not live" ;;
         esac
         bound=$((TRY_SESSION_CENTS + TRY_OVERSHOOT_CENTS))

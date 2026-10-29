@@ -310,7 +310,7 @@ fi
 #     leak <probe> <where> <leak string>      a leak string the declaration does not keep
 #     kept <probe> <where> <leak string>      a leak string kept on purpose, under `leaks_kept:`
 #     undeclared <probe>                  a probe that declares no leak string
-#     harness <probe> <where> <leak string>   with `--scenario`, a hit in a path of the `harness` layer
+#     harness <probe> <where> <leak string>   with `--scenario`, a hit in a path of the `tooling` list
 #
 # A probe whose `leaks:` entry is `[]` declares that no string states its
 # answer, and prints nothing. A missing entry, or one with no value, is
@@ -326,8 +326,8 @@ fi
 # order. It also reads the whole body of each skill, and, where the tree holds
 # `.claude/hooks/intent.sh`, the text that hook injects for each probe's task,
 # under `<where>` = `hook:<probe>` and read against that probe's strings alone.
-# A hit under a path the declaration's `harness` layer names prints as
-# `harness` and does not fail the check.
+# A hit under a path the declaration's `tooling` list names prints as
+# `harness` and does not fail the check (#1872).
 #
 # `--leak --bytes <workspace> <probe>...` measures in place of checking, and
 # comes in any order with `--config` and `--scenario` (#1776). It prints one
