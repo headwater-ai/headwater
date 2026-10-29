@@ -20,7 +20,7 @@ relations:
     - to: tools/probe/additive-launch.env
       verified_revision: sha256:b7bdd819610d49e23ca67556db5be04c29293570663489d1e966d27cc0e03b07
   traces_to:
-    - HW-DR-0111
+    - HW-DR-0112
     - HW-PD-0022
 ---
 
@@ -28,7 +28,7 @@ relations:
 
 ## Context
 
-The tuning round of the additive campaign spends money on probe sessions, one try at a time ([HW-DR-0111](../../decisions/0111-the-additive-campaign-adds-six-layers-to-plain-code-in-fourteen-scenarios-and-registers-one-comparison-each.md)). The owner ruled that a person reads each result before the next try (OWNER #1777, 2026-10-19). So one try is one launch, one wait and one record, and then a stop.
+The tuning round of the additive campaign spends money on probe sessions, one try at a time ([HW-DR-0112](../../decisions/0112-the-additive-campaign-measures-eleven-actions-by-five-layers-in-seven-scenarios.md)). The owner ruled that a person reads each result before the next try (OWNER #1777, 2026-10-19). So one try is one launch, one wait and one record, and then a stop.
 
 The first try, try 1 of the documents layer under #1777, went through the build order in run `20261018-0144`. `/next-run` queued #1777, and the loop for one issue ([HW-PD-0022](0022-the-verify-and-rework-loop-for-one-issue-runs-below-the-parent.md)) took the try as an issue to build and verify. `tools/run/run-census.sh` reads the agents of that chain from the subagent transcripts of the run's parent session `dd2c5bac-42af-45b6-8420-8f21d3af5d7e`:
 
