@@ -39,6 +39,7 @@ for file in "$dir"/*.md; do
         seen="$file does not cite $ruling"
         continue
     fi
+    hw_oracle_subjects=${file#./}
     hw_oracle_pass_clean "$file is typed $kind under $dir and cites $ruling"
 done
 [ "$titled" -gt 0 ] || hw_oracle_fail "no document under $dir has a title that matches the pattern"

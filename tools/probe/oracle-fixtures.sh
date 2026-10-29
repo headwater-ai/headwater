@@ -93,7 +93,7 @@ expect() {
 # A hard error the strict check fails on: a British spelling in a governed
 # record (CLAUDE.md, "American spelling").
 spoil() {
-    printf '\nThe organisation of this record is unchanged.\n' >> "$1/$new"
+    printf '\nThe organisation of this record is unchanged.\n' >> "$1/${2:-$new}"
 }
 
 # --- check-clean.sh -------------------------------------------------------
@@ -109,6 +109,11 @@ title='eleven actions by five layers'
 expect 0 "typed-at passes a decision under its shelf that cites its ruling" "$base" typed-at.sh docs/decisions decision HW-PD-0026 "$title"
 expect 0 "typed-at with --check-clean passes a clean tree" "$base" typed-at.sh --check-clean docs/decisions/ decision HW-PD-0026 "$title"
 expect 1 "typed-at with --check-clean fails a tree with an error" "$tree" typed-at.sh --check-clean docs/decisions decision HW-PD-0026 "$title"
+# A sealed tree carries errors the seal made in documents it did not remove,
+# so a document oracle reads the strict errors of the document it names.
+elsewhere=$(fresh check-elsewhere) && spoil "$elsewhere" "$old"
+expect 1 "check-clean fails an error in any document" "$elsewhere" check-clean.sh
+expect 0 "typed-at with --check-clean passes an error in a document it does not name" "$elsewhere" typed-at.sh --check-clean docs/decisions decision HW-PD-0026 "$title"
 expect 1 "typed-at fails the wrong kind" "$base" typed-at.sh docs/decisions obligation_record HW-PD-0026 "$title"
 expect 1 "typed-at fails the wrong shelf" "$base" typed-at.sh docs/obligations decision HW-PD-0026 "$title"
 expect 1 "typed-at fails a title nothing matches" "$base" typed-at.sh docs/decisions decision HW-PD-0026 'no document is titled this'
@@ -144,6 +149,9 @@ expect 1 "reciprocal-link fails a document the engine does not read" "$base" rec
 tree=$(fresh link-prefix) && sed -i "/^  superseded_by:/,/^  [a-z]/s#^    - HW-DR-0112\$#    - draft-${new##*/}#" "$tree/$old"
 grep -q "^    - draft-${new##*/}\$" "$tree/$old" || echo "oracle-fixtures: the superseded_by line of $old was not rewritten, so the next case reads nothing." >&2
 expect 1 "reciprocal-link fails a file name that the other document's name is a suffix of" "$tree" reciprocal-link.sh HW-DR-0112 HW-DR-0111
+expect 1 "reciprocal-link with --check-clean fails an error in one of its documents" "$elsewhere" reciprocal-link.sh --check-clean HW-DR-0112 HW-DR-0111
+tree=$(fresh link-error-elsewhere) && spoil "$tree" docs/spec/12-check-layer.md
+expect 0 "reciprocal-link with --check-clean passes an error in a document it does not name" "$tree" reciprocal-link.sh --check-clean HW-DR-0112 HW-DR-0111
 printf '# the two documents\nHW-DR-0112\nHW-DR-0111\n' > "$work/link.args"
 expect 0 "reciprocal-link reads its arguments from --args" "$base" reciprocal-link.sh --check-clean --args "$work/link.args"
 

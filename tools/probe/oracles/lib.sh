@@ -105,7 +105,27 @@ hw_oracle_names_whole() {
     grep -E -q -- "(^|[^A-Za-z0-9_.-])$hw_whole_pattern([^A-Za-z0-9_-]|\\.[^A-Za-z0-9_-]|\\.\$|\$)" "$2"
 }
 
+#
+# A script that names its documents sets `hw_oracle_subjects` to their paths,
+# separated by spaces, and then the condition reads the strict errors on
+# those documents alone: the findings of `headwater check --json` of
+# severity `error` that no directive or adoption task holds (`escape` is
+# `none`), which are the findings a strict run fails on. A sealed tree holds
+# errors the seal made in documents it kept, such as a relation to a removed
+# document, so a whole-tree condition fails every session there (#1874.2).
+# `check-clean.sh` and every script that sets no subject read the whole tree.
+hw_oracle_subjects=""
+
 hw_oracle_pass_clean() {
+    if [ "$hw_oracle_clean" = yes ] && [ -n "$hw_oracle_subjects" ]; then
+        command -v jq > /dev/null 2>&1 || hw_oracle_usage "--check-clean on a named document reads the findings with jq, and no jq is on the path"
+        hw_oracle_engine
+        hw_oracle_tmp
+        "$hw_engine" check --json --root . > "$hw_oracle_scratch/check.json" 2> "$hw_oracle_scratch/check.err"
+        hw_errors=$(jq -r --arg subjects " $hw_oracle_subjects " '[.findings[] | (.path // "") as $path | select(.severity == "error" and .escape == "none" and ($subjects | contains(" " + $path + " ")))] | length' "$hw_oracle_scratch/check.json" 2> /dev/null) || hw_oracle_usage "the engine wrote no findings that jq reads"
+        [ "$hw_errors" -eq 0 ] || hw_oracle_fail "$*, and \`headwater check --strict\` reports $hw_errors error(s) on it"
+        hw_oracle_pass "$*, and \`headwater check --strict\` reports no error on it"
+    fi
     if [ "$hw_oracle_clean" = yes ]; then
         hw_check_status=0
         hw_oracle_check_strict || hw_check_status=$?

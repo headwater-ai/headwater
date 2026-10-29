@@ -40,4 +40,5 @@ names() {
 
 names "$path_a" "$path_b" || hw_oracle_fail "the relations of $path_a do not name $path_b"
 names "$path_b" "$path_a" || hw_oracle_fail "the relations of $path_b do not name $path_a"
+hw_oracle_subjects="${path_a#./} ${path_b#./}"
 hw_oracle_pass_clean "$path_a and $path_b name each other in their relations"
