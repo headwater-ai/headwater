@@ -734,6 +734,7 @@ nav:
           - "A build-order parent restarts every few merges, drains to zero first, and resumes from the handover files on disk": "process/decisions/0023-a-build-order-parent-restarts-every-few-merges-drains-to-zero-first-and-resumes-from-the-handover-files-on-disk.md"
           - "A document that moves to a process shelf keeps its identifier": "process/decisions/0024-a-document-that-moves-to-a-process-shelf-keeps-its-identifier.md"
           - "A paid try runs under its own command and never under the build order": "process/decisions/0025-a-paid-try-runs-under-its-own-command-and-never-under-the-build-order.md"
+          - "We pivot rather than carry debt forward": "process/decisions/0026-we-pivot-rather-than-carry-debt-forward.md"
       - "Process evaluations":
           - "Process evaluations": "process/evaluations/README.md"
           - "One clone, many agents: how this repository isolates the sessions that build it": "process/evaluations/one-clone-many-agents-how-this-repository-isolates-the-sessions-that-build-it.md"
