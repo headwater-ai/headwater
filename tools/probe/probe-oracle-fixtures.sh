@@ -218,7 +218,7 @@ done < "$work/graded"
 
 rm -rf "$work"
 if [ "$failures" -ne 0 ]; then
-    echo "probe-oracle-fixtures: $failures of $cases cases failed."
+    echo "probe-oracle-fixtures: $failures failed, of the $cases cases run and the probes refused before a case."
     exit 1
 fi
 echo "probe-oracle-fixtures: all $cases cases hold."
