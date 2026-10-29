@@ -50,6 +50,9 @@ operations
   add.identifier_schemes.run_id (.headwater/overlay.yml)
   add.identifier_schemes.result_id (.headwater/overlay.yml)
   add.facets.probe_category (.headwater/overlay.yml)
+  add.facets.action (.headwater/overlay.yml)
+  add.facets.moments (.headwater/overlay.yml)
+  add.facets.axes (.headwater/overlay.yml)
   add.facets.expectation (.headwater/overlay.yml)
   add.facets.tier (.headwater/overlay.yml)
   add.facets.arm (.headwater/overlay.yml)
@@ -130,7 +133,7 @@ declarations, by member count
   version: 4.17.0
   purposes: 6 members
   vocabularies: 1 member
-  facets: 15 members
+  facets: 18 members
   regimes: 3 members
   anchors: 3 members
   kinds: 28 members

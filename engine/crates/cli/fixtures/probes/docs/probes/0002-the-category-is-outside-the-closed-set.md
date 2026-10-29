@@ -6,6 +6,7 @@ last_verified: 2026-08-01
 summary: A probe whose category is outside the closed set, which stops the plan after the probe above it was read.
 probe_category: provenance
 expectation: opened
+action: ask_or_locate
 oracle: "none"
 provenance:
   warrant: asserted

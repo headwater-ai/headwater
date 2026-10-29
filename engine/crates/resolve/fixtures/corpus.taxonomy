@@ -90,6 +90,33 @@ facets:
     type: string
     required: false
     volatility: stable
+  action:
+    guidance:
+      add_document: "the task asks the agent to add a document, and the oracle is that it is typed at the right path, cites its ruling and passes the check"
+      ask_or_locate: "the task asks the agent to find a document or answer a question from the corpus, and the grader reads the answer"
+      change_governed_code: "the task asks the agent to change code that a document governs, or to refuse the change the document forbids, and an oracle grades the result"
+      change_taxonomy: "the task asks the agent to change the taxonomy or the configuration, and the oracle is that the check is clean and the lock is regenerated"
+      edit_depended_document: "the task asks the agent to edit a document that other documents depend on, and the oracle is that the reciprocal link holds and the check is clean"
+      move_document: "the task asks the agent to move a document or a shelf, and the oracle is that the links are repaired and the check is clean"
+      refactor_across_files: "the task asks the agent to change several governed files at once, and the oracle is that the code builds and the check is clean"
+      repair_check: "the task asks the agent to repair a failing check, and the oracle is that the check is clean and nothing else broke"
+      review_change: "the task asks the agent to review a change somebody else made, and the grader reads whether the findings cite the right documents"
+      supersede_or_retire: "the task asks the agent to supersede or retire a document, and the oracle is that the successor is typed and the links are updated"
+      ungoverned_control: "the task touches nothing a document governs, and the oracle is that it is done with no hook warning"
+    required: false
+    values:
+      - ask_or_locate
+      - change_governed_code
+      - refactor_across_files
+      - add_document
+      - edit_depended_document
+      - supersede_or_retire
+      - move_document
+      - change_taxonomy
+      - repair_check
+      - review_change
+      - ungoverned_control
+    volatility: stable
   arm:
     guidance:
       absent: "the session ran against the declared ablation of it"
@@ -135,6 +162,15 @@ facets:
       - scenario-12
       - scenario-13
     volatility: stable
+  axes:
+    guidance:
+      names_file: "the task names the file the agent has to read or change"
+      superseded_target: "the target is superseded or contradicted, so a document that disagrees with a current one stands in the agent's way"
+    required: false
+    values:
+      - names_file
+      - superseded_target
+    volatility: stable
   doc_type:
     guidance:
       decision_register: "the one document that records settled decisions and the argument that settled each"
@@ -164,6 +200,19 @@ facets:
       - cited
       - answered
       - patched
+    volatility: stable
+  moments:
+    guidance:
+      intent: "the probe passes the moment a hook reads the task before any tool runs"
+      read: "the probe passes the moment a hook sees the agent open a file"
+      review: "the probe passes the moment a hook reads the finished change before it is proposed"
+      write: "the probe passes the moment a hook sees the agent write or edit a file"
+    required: false
+    values:
+      - intent
+      - read
+      - write
+      - review
     volatility: stable
   oracle:
     required: false
@@ -546,11 +595,15 @@ kinds:
     write_when: "the specification series owes something, and its register of obligations does not list it"
   probe:
     facets:
+      optional:
+        - moments
+        - axes
       require:
         - probe_category
         - expectation
         - oracle
         - title
+        - action
     identifier:
       scheme: probe_id
     is_a: governed_document

@@ -582,7 +582,7 @@
     {
       "rule": "facet.value.not_permitted",
       "scope": "document",
-      "version": 2,
+      "version": 3,
       "obligations": [
         "OB-FIX-4"
       ]
