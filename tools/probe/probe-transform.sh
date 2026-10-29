@@ -114,6 +114,11 @@ while [ $# -gt 0 ]; do
 done
 answer=${answer:-}
 config_dir=${config_dir%/}
+case $config_dir in
+    '') config_abs= ;;
+    /*) config_abs=$config_dir ;;
+    *) config_abs=$PWD/$config_dir ;;
+esac
 
 [ -n "$probe" ] && [ -n "$session" ] || {
     echo "usage: probe-transform.sh --probe <id> --session <name> [--root <dir>] [--workspace <dir>] [--oracle-tree <dir>] [--config-dir <dir>] [--produced <path>]… [--answer <text>]" >&2
@@ -498,7 +503,17 @@ step_run_oracles() {
             fi
         fi
         command_status=0
-        (cd "$run_in" && sh -c "$oracle_command") < /dev/null > "$scratch/oracle-$oracle_name.log" 2>&1 || command_status=$?
+        # The command reads the session's logs through two variables (#1875),
+        # each an absolute path because the command runs in <copy>, and each
+        # set here so that a value from the caller's environment never reaches
+        # it. `HEADWATER_ORACLE_TRANSCRIPT` is the stream this script read on
+        # its standard input. `HEADWATER_ORACLE_HARNESS_LOG` is the `projects`
+        # directory of `--config-dir`, where the harness writes its own session
+        # log with the hook attachments, and it is empty with no `--config-dir`,
+        # which `tools/probe/oracles/no-hook-warning.sh` fails.
+        (cd "$run_in" && HEADWATER_ORACLE_TRANSCRIPT=$scratch/log.jsonl \
+            HEADWATER_ORACLE_HARNESS_LOG=${config_abs:+$config_abs/projects} \
+            sh -c "$oracle_command") < /dev/null > "$scratch/oracle-$oracle_name.log" 2>&1 || command_status=$?
         case $command_status in
             126 | 127)
                 echo "probe-transform: the \`$oracle_name\` oracle's command could not start (exit $command_status): $oracle_command" >&2

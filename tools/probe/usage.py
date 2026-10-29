@@ -6,7 +6,7 @@
 
 `tools/probe/try.sh result` runs it on the batch of each try of the tuning
 round (#1838), and `try.sh rank` ranks the screened variants of a round on the
-count it prints, before their pass rate. It prints one line:
+count it prints, before their pass rate. It prints one line first:
 
     used <u> sessions <s>
 
@@ -26,7 +26,10 @@ hooks   a session that opened a path the intent hook printed as a pointer.
         two types. Claude Code 2.1.288, the version the campaign runs, logs
         the output of the `UserPromptSubmit` hook as `hook_success`, and only
         a `hook_success` of that hook counts. Older logs carry it as
-        `hook_additional_context`, which still counts. A pointer is a line of
+        `hook_additional_context`, which still counts when it names that
+        hook or names no hook. One that names another hook, such as
+        `PreToolUse:Read`, is the text of that hook and counts for it below,
+        not for intent (#1875). A pointer is a line of
         that text that opens with two spaces and a path, which is a word that
         holds a `/` and ends in a file extension, and the path is followed by
         ` (`, ` — `, ` [` or the end of the line. That is the line
@@ -40,6 +43,34 @@ hooks   a session that opened a path the intent hook printed as a pointer.
         `sed`, `head`, `tail` or `less` on a command that names it.
 mcp     a `tool_use` in the stream whose tool name starts with `mcp__`, the
         rule `tools/probe/probe-record.sh` counts calls to a server by.
+
+For the hooks layer it then prints the use of each of the four hooks the
+layer ships (#1875), one line each and in this order, and one line for each
+session that names the hooks it used, or `-` for none:
+
+    hook intent used <u> sessions <s>
+    hook read used <u> sessions <s>
+    hook write used <u> sessions <s>
+    hook review used <u> sessions <s>
+    session <id> <hook>...
+
+The first line keeps the intent rule above, because `try.sh rank` reads it
+and a rank must not change its meaning half way through a layer. The hooks
+are those `tools/probe/arms/hooks/.claude/settings.json` registers, and the
+harness names each `hook_success` by `<event>:<tool>`, or by the event alone:
+
+intent  `UserPromptSubmit`, by the pointer rule above.
+read    `PreToolUse:Read`.
+write   `PreToolUse:Write`, `PreToolUse:Edit`, `PostToolUse:Write` and
+        `PostToolUse:Edit`.
+review  `Stop`.
+
+Read, write and review count a session that has at least one such
+attachment, of either type above, with text: the hook said something to the
+session. Claude Code 2.1.312 logs a hook's added context as a
+`hook_additional_context` whose content is a list of strings, and the list
+counts as the text its strings hold. An attachment with no text is no use. That is how `touch.sh`, which
+shares the write matcher and prints nothing, stays out of the write count.
 
 Any other layer exits 2, because the tuning round tunes these three alone
 (#1833). It exits 2 when the batch has no `sessions` directory or the
@@ -63,7 +94,30 @@ LAYERS = ("skills", "hooks", "mcp")
 PATH_WORD = re.compile(r"[A-Za-z0-9_.@-]*/[A-Za-z0-9_./@-]*\.[A-Za-z0-9]+")
 POINTER = re.compile(r"^  (" + PATH_WORD.pattern + r")(?: \(| \u2014 | \[|$)")
 HOOK_KINDS = ("hook_success", "hook_additional_context")
+HOOKS = ("intent", "read", "write", "review")
+HOOK_NAMES = {
+    "PreToolUse:Read": "read",
+    "PreToolUse:Write": "write",
+    "PreToolUse:Edit": "write",
+    "PostToolUse:Write": "write",
+    "PostToolUse:Edit": "write",
+    "Stop": "review",
+}
 READERS = re.compile(r"(^|[\s;&|(])(cat|sed|head|tail|less)\s")
+
+
+def text_of(value):
+    """The text of an attachment: a string, or the strings of a list joined by lines.
+
+    Claude Code 2.1.312 logs a hook's `additionalContext` as a
+    `hook_additional_context` whose content, and whose `rendered`, is a list of
+    strings (measured 2026-10-29 on a log of this repository's own hooks).
+    """
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list):
+        return "\n".join(part for part in value if isinstance(part, str))
+    return ""
 
 
 def refuse(message):
@@ -130,11 +184,11 @@ def pointers(text):
 def used_hook(stream, config):
     injected = set()
     for row in recordings.log_events("s", config, True):
-        if row[2] not in HOOK_KINDS or not isinstance(row[7], str):
+        if row[2] not in HOOK_KINDS:
             continue
-        if row[2] == "hook_success" and row[3] != "UserPromptSubmit":
+        if row[3] != "UserPromptSubmit" and not (row[2] == "hook_additional_context" and row[3] == "-"):
             continue
-        injected.update(pointers(row[7]))
+        injected.update(pointers(text_of(row[7])))
     if not injected:
         return False
     for row in recordings.stream_events("s", stream, False):
@@ -150,6 +204,18 @@ def used_hook(stream, config):
     return False
 
 
+def hooks_spoken(config):
+    """The read, write and review hooks whose attachment in the log has text."""
+    spoken = set()
+    for row in recordings.log_events("s", config, True):
+        if row[2] not in HOOK_KINDS or not text_of(row[7]).strip():
+            continue
+        hook = HOOK_NAMES.get(row[3])
+        if hook:
+            spoken.add(hook)
+    return spoken
+
+
 def main(argv):
     if len(argv) != 3:
         refuse("usage: python3 tools/probe/usage.py <declaration> <layer> <batch>")
@@ -161,6 +227,8 @@ def main(argv):
         refuse(f"{batch} has no sessions directory")
     names = shipped_skills(declaration) if layer == "skills" else set()
     used = sessions = 0
+    per_hook = {hook: 0 for hook in HOOKS}
+    per_session = []
     for session in sorted(os.listdir(sessions_dir)):
         here = os.path.join(sessions_dir, session)
         if not os.path.isfile(os.path.join(here, "status")):
@@ -175,8 +243,17 @@ def main(argv):
             hit = has_stream and used_mcp(stream)
         else:
             hit = has_stream and used_hook(stream, config)
+            these = ({"intent"} if hit else set()) | hooks_spoken(config)
+            for hook in these:
+                per_hook[hook] += 1
+            per_session.append((session, [hook for hook in HOOKS if hook in these]))
         used += 1 if hit else 0
     print(f"used {used} sessions {sessions}")
+    if layer == "hooks":
+        for hook in HOOKS:
+            print(f"hook {hook} used {per_hook[hook]} sessions {sessions}")
+        for session, these in per_session:
+            print(f"session {session} {' '.join(these) or '-'}")
     return 0
 
 
