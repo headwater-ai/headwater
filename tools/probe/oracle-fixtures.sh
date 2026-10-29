@@ -71,11 +71,11 @@ fresh() {
 
 # expect <status> <label> <tree> <script> [<argument>...]
 expect() {
-    want=$1 label=$2 tree=$3 script=$4
+    want=$1 label=$2 case_tree=$3 script=$4
     shift 4
     cases=$((cases + 1))
     got=0
-    (cd "$tree" && sh "$oracles/$script" "$@") > "$work/out" 2> "$work/err" < /dev/null || got=$?
+    (cd "$case_tree" && sh "$oracles/$script" "$@") > "$work/out" 2> "$work/err" < /dev/null || got=$?
     lines=$(wc -l < "$work/out" | tr -d ' ')
     name=${script%.sh}
     if [ "$got" -ne "$want" ]; then
