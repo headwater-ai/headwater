@@ -6165,7 +6165,7 @@ same "phrasing.sh draw: the same key draws the same phrasing" \
 # Over 300 keys the draw reaches every phrasing, and no phrasing takes more
 # than half of them, so it is not one fixed index.
 same "phrasing.sh draw: over 300 keys each of 3 phrasings is drawn, none in more than half" "3 yes" \
-    "$(for k in $(seq 1 300); do sh "$phrasing" draw "$k" docs 1 HW-PROBE-phr3 1 3; done | sort | uniq -c | awk '{ n++; if ($1 > 150) big = 1 } END { print n, (big ? "no" : "yes") }')"
+    "$(for k in $(seq 1 300); do sh "$phrasing" draw "$k" docs 1 HW-PROBE-phr3 1 3; done | LC_ALL=C sort | uniq -c | awk '{ n++; if ($1 > 150) big = 1 } END { print n, (big ? "no" : "yes") }')"
 
 # `open` is a key of the tuning round alone. A round's key outside the list
 # used to break `rounds` and `approved`, and with them the round gate and
