@@ -767,7 +767,8 @@ jobs:
         # evidence. An oracle that passes both trees, or fails both, fails
         # here: the #1835 pilot found probes that passed every session or
         # failed every session. It needs the engine built above, `git`,
-        # `tar` and `python3`.
+        # `tar`, `jq` and `python3`: the oracles read the engine's JSON
+        # with `jq`.
         run: sh tools/probe/oracle-fixtures.sh
       - name: Each probe's own oracle fails the sealed tree, passes the reference change and fails the wrong one
         # `tools/probe/probe-oracle-fixtures.sh` (#1874) seals a copy of this
