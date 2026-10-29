@@ -215,6 +215,20 @@ pairs_case "explain prints the supersedes that HW-DR-0112 declares as supersedes
 pairs_case "explain prints no outbound supersedes to HW-DR-0112 on HW-DR-0111 once its superseded_by names nothing, and the empty key as the target ~" "$work/link-one-end" HW-DR-0111 '[["superseded_by",true,["path:0112"]],["supersedes",false,["~"]]]'
 pairs_case "explain prints no outbound supersedes to HW-DR-0111 on HW-DR-0112 once its supersedes names nothing, and the empty key as the target ~" "$work/link-other-end" HW-DR-0112 '[["superseded_by",true,["path:0111"]],["supersedes",false,["~"]]]'
 
+# The shape is versioned, and the scripts read version 1. An engine that
+# prints another major version stops the grade with a usage error, so a
+# change of shape never passes a session. A minor version reads as 1.
+explain_stub() {
+    printf '#!/bin/sh\nif [ "$1" = explain ]; then\n    "%s" "$@" | jq -c %s\n    exit 0\nfi\nexec "%s" "$@"\n' "$engine" "'.version = \"$1\"'" "$engine" > "$work/engine-$1.sh"
+    chmod +x "$work/engine-$1.sh"
+    printf '%s\n' "$work/engine-$1.sh"
+}
+HW_ORACLE_ENGINE=$(explain_stub 2.0)
+expect 2 "successor-typed refuses an explain --json of major version 2" "$base" successor-typed.sh HW-DR-0111
+HW_ORACLE_ENGINE=$(explain_stub 1.9)
+expect 0 "successor-typed reads an explain --json of version 1.9" "$base" successor-typed.sh HW-DR-0111
+HW_ORACLE_ENGINE=$engine
+
 # move_items <file> <key-to-drop> <key-to-add> [flow]: move the items of one
 # relation of <file> to another, as a session that rewrites the text of an
 # edge does. With `flow`, the items go into a comment after an empty flow
@@ -453,6 +467,9 @@ edge_front='- .headwater/probe.yml'
 grep -q -x -F -- "    $edge_front" "$base/$new" || echo "oracle-fixtures: $new does not govern .headwater/probe.yml in its front matter, so the edge cases read nothing." >&2
 { cat "$work/scoped"; printf '# edge: %s governs .headwater/probe.yml\n' "$new"; } > "$work/scoped-edge"
 expect 0 "nothing-else-broken passes the pin when it keeps the edge an edge line names" "$base" nothing-else-broken.sh --check-clean "$work/scoped-edge"
+HW_ORACLE_ENGINE=$(explain_stub 2.0)
+expect 2 "nothing-else-broken refuses an edge line read from an explain --json of major version 2" "$base" nothing-else-broken.sh "$work/scoped-edge"
+HW_ORACLE_ENGINE=$engine
 tree=$(fresh edge-deleted) && grep -v -x -F -- "    $edge_front" "$base/$new" > "$tree/$new"
 expect 0 "nothing-else-broken with no edge line passes a tree that deleted the edge" "$tree" nothing-else-broken.sh "$work/scoped"
 expect 1 "nothing-else-broken with an edge line fails the same tree" "$tree" nothing-else-broken.sh "$work/scoped-edge"

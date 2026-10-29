@@ -80,8 +80,17 @@ while IFS="$(printf '\t')" read -r form file term replacement; do
         hw_oracle_fail "nothing is at $file, which the house rules must reach"
     fi
     root=$hw_oracle_scratch/root.$n
-    mkdir -p "$root/$(dirname -- "$file")" || hw_oracle_usage "no scratch root could be made"
-    cp -R .headwater "$root/.headwater" && cp -- "$file" "$root/$file" || hw_oracle_usage "the scratch root could not be filled"
+    mkdir -p "$root/.headwater" "$root/$(dirname -- "$file")" || hw_oracle_usage "no scratch root could be made"
+    # Every entry of `.headwater/` but the ignored ones a build writes: the
+    # check cache, the embedding models and the site and export builds.
+    for entry in .headwater/* .headwater/.[!.]*; do
+        [ -e "$entry" ] || continue
+        case ${entry#.headwater/} in
+            cache | models | site-build | site-deploy | export.json) continue ;;
+        esac
+        cp -R -- "$entry" "$root/.headwater/" || hw_oracle_usage "the scratch root could not be filled"
+    done
+    cp -- "$file" "$root/$file" || hw_oracle_usage "the scratch root could not be filled"
     printf '\nThe team ships a %s change.\n' "$term" >> "$root/$file"
     "$hw_engine" check --json --root "$root" > "$root.json" 2> "$root.err" || true
     hits=$(jq -r --arg path "$file" --arg term "$term" --arg replacement "$replacement" '[.findings[]? | select(.rule == "language.retired_term.used" and .path == $path and ((.message // "") | contains(" retires `" + $term + "`, and ")) and ($replacement == "" or .remediation == "write `" + $replacement + "`"))] | length' "$root.json" 2> /dev/null) || hw_oracle_usage "\`headwater check --json\` in the scratch root wrote no findings that jq reads"
