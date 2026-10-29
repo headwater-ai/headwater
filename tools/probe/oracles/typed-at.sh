@@ -9,7 +9,8 @@
 # 1. a `title:` line in its front matter that matches <title-pattern>, an
 #    extended regular expression read without regard to case;
 # 2. the kind <kind>, as the `kind` line of `headwater explain` states it;
-# 3. the identifier <ruling> somewhere in its bytes, in a relation or a link.
+# 3. the identifier <ruling> as a whole name somewhere in its bytes, in a
+#    relation or a link, so that `HW-DR-01120` does not stand for `HW-DR-0112`.
 #
 # The grading copy holds no history, so nothing here can ask which file is
 # new. The title pattern is what selects the document the session wrote. A
@@ -34,10 +35,11 @@ for file in "$dir"/*.md; do
         seen="$file is typed ${typed:-as nothing}"
         continue
     fi
-    if ! grep -F -q -- "$ruling" "$file"; then
+    if ! hw_oracle_names_whole "$ruling" "$file"; then
         seen="$file does not cite $ruling"
         continue
     fi
+    hw_oracle_subjects=${file#./}
     hw_oracle_pass_clean "$file is typed $kind under $dir and cites $ruling"
 done
 [ "$titled" -gt 0 ] || hw_oracle_fail "no document under $dir has a title that matches the pattern"

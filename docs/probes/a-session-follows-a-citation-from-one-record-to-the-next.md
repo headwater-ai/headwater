@@ -1,8 +1,8 @@
 ---
 id: HW-PROBE-a-session-follows-a-citation-from-one-record-to-the-next
-status: current
-status_since: 2026-10-03
-summary: The answer is in no single record. One record names the ruling it rests on, and a second record states that a third replaced that ruling.
+status: deprecated
+status_since: 2026-10-29
+summary: "Deprecated on 2026-10-29 because no set of the additive campaign draws it, and the four probes of row 1 of HW-DR-0112 measure the action in its place (#1874)."
 last_verified: 2026-10-03
 probe_category: sufficiency
 expectation: answered

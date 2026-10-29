@@ -93,7 +93,7 @@ expect() {
 # A hard error the strict check fails on: a British spelling in a governed
 # record (CLAUDE.md, "American spelling").
 spoil() {
-    printf '\nThe organisation of this record is unchanged.\n' >> "$1/$new"
+    printf '\nThe organisation of this record is unchanged.\n' >> "$1/${2:-$new}"
 }
 
 # --- check-clean.sh -------------------------------------------------------
@@ -109,6 +109,11 @@ title='eleven actions by five layers'
 expect 0 "typed-at passes a decision under its shelf that cites its ruling" "$base" typed-at.sh docs/decisions decision HW-PD-0026 "$title"
 expect 0 "typed-at with --check-clean passes a clean tree" "$base" typed-at.sh --check-clean docs/decisions/ decision HW-PD-0026 "$title"
 expect 1 "typed-at with --check-clean fails a tree with an error" "$tree" typed-at.sh --check-clean docs/decisions decision HW-PD-0026 "$title"
+# A sealed tree carries errors the seal made in documents it did not remove,
+# so a document oracle reads the strict errors of the document it names.
+elsewhere=$(fresh check-elsewhere) && spoil "$elsewhere" "$old"
+expect 1 "check-clean fails an error in any document" "$elsewhere" check-clean.sh
+expect 0 "typed-at with --check-clean passes an error in a document it does not name" "$elsewhere" typed-at.sh --check-clean docs/decisions decision HW-PD-0026 "$title"
 expect 1 "typed-at fails the wrong kind" "$base" typed-at.sh docs/decisions obligation_record HW-PD-0026 "$title"
 expect 1 "typed-at fails the wrong shelf" "$base" typed-at.sh docs/obligations decision HW-PD-0026 "$title"
 expect 1 "typed-at fails a title nothing matches" "$base" typed-at.sh docs/decisions decision HW-PD-0026 'no document is titled this'
@@ -116,6 +121,32 @@ tree=$(fresh typed-uncited) && sed -i 's/HW-PD-0026/HW-PD-9999/g; s/0026-we-pivo
 expect 1 "typed-at fails a document that does not cite the ruling" "$tree" typed-at.sh docs/decisions decision HW-PD-0026 "$title"
 tree=$(fresh typed-elsewhere) && mkdir -p "$tree/docs/notes" && mv "$tree/$new" "$tree/docs/notes/"
 expect 1 "typed-at fails the document moved off its shelf" "$tree" typed-at.sh docs/decisions decision HW-PD-0026 "$title"
+tree=$(fresh typed-prefix) && sed -i 's/HW-PD-0026/HW-PD-00260/g' "$tree/$new"
+expect 1 "typed-at fails a citation of an identifier that the ruling is a prefix of" "$tree" typed-at.sh docs/decisions decision HW-PD-0026 "$title"
+# A period ends a whole name only when no letter, digit, `_` or `-` follows
+# it: `HW-PD-0026.md` and `HW-PD-0026.5` are other names (verify of #1874).
+tree=$(fresh typed-suffix) && sed -i 's/HW-PD-0026/HW-PD-0026.md/g' "$tree/$new"
+expect 1 "typed-at fails a citation that the ruling is followed by a file extension in" "$tree" typed-at.sh docs/decisions decision HW-PD-0026 "$title"
+tree=$(fresh typed-dotted) && sed -i 's/HW-PD-0026/HW-PD-0026.5/g' "$tree/$new"
+expect 1 "typed-at fails a citation that the ruling is followed by a period and a digit in" "$tree" typed-at.sh docs/decisions decision HW-PD-0026 "$title"
+tree=$(fresh typed-period) && sed -i 's/HW-PD-0026/HW-PD-0026. /g' "$tree/$new"
+expect 0 "typed-at passes a citation that ends a sentence" "$tree" typed-at.sh docs/decisions decision HW-PD-0026 "$title"
+
+# --- --args <file>, read by lib.sh for every script --------------------------
+
+# One argument to a printf word, and never an identifier straight after a
+# `\n` escape: the seal strips a line that names a deleted document as a
+# whole name, and the letter of the escape joins the identifier, so that
+# line would survive a sealed copy and name the record the seal deleted.
+printf '%s\n' '# The arguments of a probe, one per line. A comment line is skipped.' docs/decisions decision '' HW-PD-0026 "$title" > "$work/typed.args"
+expect 0 "--args reads the arguments of a script from a file" "$base" typed-at.sh --args "$work/typed.args"
+expect 2 "--args refuses a file that does not exist" "$base" typed-at.sh --args "$work/no-such.args"
+expect 2 "--args refuses an argument after the file" "$base" typed-at.sh --args "$work/typed.args" extra
+expect 0 "--check-clean before --args passes a clean tree" "$base" typed-at.sh --check-clean --args "$work/typed.args"
+expect 1 "--check-clean before --args fails a tree with an error" "$work/check-spoiled" typed-at.sh --check-clean --args "$work/typed.args"
+expect 2 "--check-clean after --args is refused" "$base" typed-at.sh --args "$work/typed.args" --check-clean
+printf '%s\n' docs/decisions decision HW-PD-0026 > "$work/short.args"
+expect 2 "--args with too few arguments in the file is the script's usage error" "$base" typed-at.sh --args "$work/short.args"
 
 # --- reciprocal-link.sh ---------------------------------------------------
 
@@ -127,6 +158,14 @@ expect 1 "reciprocal-link fails a link written at one end, though the summary na
 tree=$(fresh link-other-end) && sed -i '/^  supersedes:/,/^  [a-z]/{/^    - HW-DR-0111/d}' "$tree/$new"
 expect 1 "reciprocal-link fails when the other end drops the link" "$tree" reciprocal-link.sh HW-DR-0112 HW-DR-0111
 expect 1 "reciprocal-link fails a document the engine does not read" "$base" reciprocal-link.sh HW-DR-0112 HW-DR-9999
+tree=$(fresh link-prefix) && sed -i "/^  superseded_by:/,/^  [a-z]/s#^    - HW-DR-0112\$#    - draft-${new##*/}#" "$tree/$old"
+grep -q "^    - draft-${new##*/}\$" "$tree/$old" || echo "oracle-fixtures: the superseded_by line of $old was not rewritten, so the next case reads nothing." >&2
+expect 1 "reciprocal-link fails a file name that the other document's name is a suffix of" "$tree" reciprocal-link.sh HW-DR-0112 HW-DR-0111
+expect 1 "reciprocal-link with --check-clean fails an error in one of its documents" "$elsewhere" reciprocal-link.sh --check-clean HW-DR-0112 HW-DR-0111
+tree=$(fresh link-error-elsewhere) && spoil "$tree" docs/spec/12-check-layer.md
+expect 0 "reciprocal-link with --check-clean passes an error in a document it does not name" "$tree" reciprocal-link.sh --check-clean HW-DR-0112 HW-DR-0111
+printf '%s\n' '# the two documents' HW-DR-0112 HW-DR-0111 > "$work/link.args"
+expect 0 "reciprocal-link reads its arguments from --args" "$base" reciprocal-link.sh --check-clean --args "$work/link.args"
 
 # --- successor-typed.sh ---------------------------------------------------
 

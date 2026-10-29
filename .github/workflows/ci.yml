@@ -769,6 +769,19 @@ jobs:
         # failed every session. It needs the engine built above, `git`,
         # `tar` and `python3`.
         run: sh tools/probe/oracle-fixtures.sh
+      - name: Each probe's own oracle fails the sealed tree, passes the reference change and fails the wrong one
+        # `tools/probe/probe-oracle-fixtures.sh` (#1874) seals a copy of this
+        # checkout over every current probe and builds the grading tree, the
+        # way a campaign does. For each probe of a mechanical row it runs the
+        # command `.headwater/probe.yml` declares three times, each in a
+        # fresh copy: as the tree stands, which must fail; after the
+        # reference change of `tools/probe/oracle-cases/<oracle>.sh`, which
+        # must pass; and after its wrong change, which must fail. A case
+        # file that does not name its probe, or that survives the seal,
+        # fails here. A case that compiles a crate runs only under --cargo,
+        # which this step does not pass. It needs the engine built above,
+        # `git`, `tar`, `jq` and `python3`.
+        run: sh tools/probe/probe-oracle-fixtures.sh
       - name: The run census counts a turn once per message and a call by what it is for
         # `tools/run/run-census.sh` is the measurement behind HW-PD-0003 as a
         # tool: one usage record per message id, because a response is

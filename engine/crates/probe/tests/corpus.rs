@@ -1217,12 +1217,14 @@ fn every_harder_probe_fails_the_shallow_session_and_passes_the_sound_one() {
         }
 
         // A harder probe goes into its pull request settled (HW-DR-0052), and
-        // a draft one is a probe nobody has agreed to run (#1709).
+        // a draft one is a probe nobody has agreed to run (#1709). A harder
+        // probe that #1874 deprecated stays in the table as the record of its
+        // shape, and its runs still cite it.
         let (_, own) = front_matter(&root.join(&selected.path));
-        assert_eq!(
-            scalar(&own, "status").as_deref(),
-            Some("current"),
-            "{}: a harder probe holds `status: current`",
+        let status = scalar(&own, "status");
+        assert!(
+            matches!(status.as_deref(), Some("current" | "deprecated")),
+            "{}: a harder probe holds `status: current`, or `deprecated` once retired, and not {status:?}",
             row.id
         );
 
@@ -1364,6 +1366,20 @@ const AWAITING_SPEND: &[&str] = &[
     "HW-PROBE-a-session-says-where-a-check-gets-the-version-that-stood-before-a-change",
     "HW-PROBE-a-session-says-what-a-refusal-writes-on-standard-output-under-json",
     "HW-PROBE-a-session-says-what-a-verb-that-mints-an-identifier-writes-beside-the-document",
+    // The twelve probes of rows 1, 4 and 5 of the 44-probe set (#1874), which
+    // run in the additive campaign and in no round of this campaign.
+    "HW-PROBE-a-session-tells-a-withheld-answer-from-an-absent-one-in-a-corpus-that-serves-no-tombstone",
+    "HW-PROBE-a-session-reaches-the-adjudication-from-the-tombstone-that-the-task-names",
+    "HW-PROBE-a-session-says-whether-a-front-page-recording-may-show-a-number-a-live-run-does-not-produce-when-the-task-names-the-record-that-was-superseded",
+    "HW-PROBE-a-session-names-the-record-that-governs-the-scripts-that-grade-a-change-from-a-task-in-plain-words",
+    "HW-PROBE-a-session-records-as-owed-that-no-ruling-says-whether-a-hook-s-text-on-a-prompt-is-a-warning",
+    "HW-PROBE-a-session-records-as-owed-the-corpus-size-axis-that-the-additive-campaign-defers",
+    "HW-PROBE-a-session-records-as-owed-the-axis-of-an-adopter-s-own-repository-that-the-named-decision-defers",
+    "HW-PROBE-a-session-records-as-owed-that-nothing-reports-a-pass-rate-for-each-phrasing-of-a-probe",
+    "HW-PROBE-a-session-links-the-obligation-on-published-read-sets-to-the-evaluation-whose-measurement-discharged-it",
+    "HW-PROBE-a-session-records-the-walkthrough-that-the-federation-part-rests-a-rule-on-as-the-evidence-it-cites",
+    "HW-PROBE-a-session-records-the-owl-worked-example-as-evidence-of-the-check-layer-part-that-the-task-names",
+    "HW-PROBE-a-session-links-the-governs-edges-evaluation-to-the-obligation-that-it-says-is-discharged",
 ];
 
 /// The campaign spec plans no probe that awaits the owner's approval of spend.
@@ -1917,12 +1933,10 @@ const MECHANICAL_ACTIONS: [&str; 9] = [
 /// set or retire it with a reason, and delete its line here. The case below
 /// fails on a line whose probe now passes, so the list can only shrink.
 const AWAITING_ORACLE: &[&str] = &[
-    "HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks",
     "HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged",
     "HW-PROBE-a-session-that-changes-a-verb-s-default-reaches-the-verb-s-interface-contract",
     "HW-PROBE-a-session-that-changes-the-recorder-reaches-the-recorder-contract",
     "HW-PROBE-a-session-that-moves-a-shelf-reaches-the-relocation-guide",
-    "HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document",
     "HW-PROBE-what-a-session-writes-points-back-at-the-ruling-it-rests-on",
 ];
 
@@ -1933,6 +1947,7 @@ const GENERIC_ORACLES: &str = "tools/probe/oracles/";
 /// What the decisive case reads of one probe.
 struct Graded<'a> {
     id: &'a str,
+    status: &'a str,
     action: &'a str,
     expectation: &'a str,
     oracle: &'a str,
@@ -1947,7 +1962,10 @@ struct Graded<'a> {
 /// first ten lines, so the seal removes it from every workspace. Each generic
 /// script the command runs is held, and so is `lib.sh` that it sources,
 /// because the recorder restores a held file over the session's copy and a
-/// session can otherwise rewrite the script that grades it.
+/// session can otherwise rewrite the script that grades it. The command names
+/// no path under `docs/` and no identifier, because every workspace keeps
+/// `probe.yml`, and a file that `--args` reads is held (#1874.2). A
+/// superseded or deprecated probe is exempt: it is a record, in no set.
 fn mechanical_findings(
     probe: &Graded,
     oracles: &[headwater_probe::Oracle],
@@ -1955,6 +1973,11 @@ fn mechanical_findings(
 ) -> Vec<String> {
     let mut findings = Vec::new();
     if !MECHANICAL_ACTIONS.contains(&probe.action) {
+        return findings;
+    }
+    // A superseded or deprecated probe is the record of the runs that cite
+    // it, and it is in no set, so nothing grades it again.
+    if matches!(probe.status, "superseded" | "deprecated") {
         return findings;
     }
     let id = probe.id;
@@ -2030,6 +2053,26 @@ fn mechanical_findings(
             probe.oracle
         ));
     }
+    // `probe.yml` is a fold that every workspace keeps, so its command line
+    // states what is checked and never the answer. A path under `docs/` or
+    // an identifier is an answer, and it goes in a held `--args` file.
+    for word in entry.command.split_whitespace() {
+        if word.contains("docs/") || word.contains("HW-") {
+            findings.push(format!(
+                "{id}: the command of the oracle `{}` names `{word}`, which every workspace can read; put it in a held file that `--args` reads",
+                probe.oracle
+            ));
+        }
+    }
+    let words: Vec<&str> = entry.command.split_whitespace().collect();
+    for pair in words.windows(2) {
+        if pair[0] == "--args" && !entry.holds.iter().any(|held| held == pair[1]) {
+            findings.push(format!(
+                "{id}: the oracle `{}` reads its arguments from {} and does not hold it, so the grading copy has no such file",
+                probe.oracle, pair[1]
+            ));
+        }
+    }
     findings
 }
 
@@ -2098,13 +2141,48 @@ fn every_mechanical_row_probe_grades_against_a_declared_oracle() {
             headwater_probe::OracleParser::CargoTest,
             &[],
         ),
+        oracle(
+            "docs-path",
+            "sh tools/probe/oracles/moved.sh docs/a/one.md docs/b/one.md",
+            exit,
+            &["tools/probe/oracles/moved.sh", "tools/probe/oracles/lib.sh"],
+        ),
+        oracle(
+            "identifier",
+            "sh tools/probe/oracles/successor-typed.sh HW-DR-0111",
+            exit,
+            &[
+                "tools/probe/oracles/successor-typed.sh",
+                "tools/probe/oracles/lib.sh",
+            ],
+        ),
+        oracle(
+            "args",
+            "sh tools/probe/oracles/typed-at.sh --check-clean --args engine/crates/check/tests/probe_oracle_future_date.rs",
+            exit,
+            &[
+                "tools/probe/oracles/typed-at.sh",
+                "tools/probe/oracles/lib.sh",
+                "engine/crates/check/tests/probe_oracle_future_date.rs",
+            ],
+        ),
+        oracle(
+            "args-unheld",
+            "sh tools/probe/oracles/typed-at.sh --check-clean --args engine/crates/check/tests/probe_oracle_future_date.rs",
+            exit,
+            &[
+                "tools/probe/oracles/typed-at.sh",
+                "tools/probe/oracles/lib.sh",
+            ],
+        ),
     ];
     let date = "HW-PROBE-a-rule-that-reads-the-date-takes-it-from-the-run-and-ships-with-the-fixture-that-fails-it";
-    let seeded: [(&str, Graded, bool); 12] = [
+    let seeded: [(&str, Graded, bool); 18] = [
         (
             "a mechanical probe with `oracle: none`",
             Graded {
                 id: "HW-PROBE-seeded",
+                status: "current",
                 action: "add_document",
                 expectation: "patched",
                 oracle: "none",
@@ -2115,6 +2193,7 @@ fn every_mechanical_row_probe_grades_against_a_declared_oracle() {
             "a sound command oracle",
             Graded {
                 id: "HW-PROBE-seeded",
+                status: "current",
                 action: "add_document",
                 expectation: "patched",
                 oracle: "command:sound",
@@ -2125,6 +2204,7 @@ fn every_mechanical_row_probe_grades_against_a_declared_oracle() {
             "row 11 with `oracle: none`",
             Graded {
                 id: "HW-PROBE-seeded",
+                status: "current",
                 action: "ungoverned_control",
                 expectation: "patched",
                 oracle: "none",
@@ -2135,6 +2215,7 @@ fn every_mechanical_row_probe_grades_against_a_declared_oracle() {
             "row 1 keeps `oracle: none`",
             Graded {
                 id: "HW-PROBE-seeded",
+                status: "current",
                 action: "ask_or_locate",
                 expectation: "answered",
                 oracle: "none",
@@ -2145,6 +2226,7 @@ fn every_mechanical_row_probe_grades_against_a_declared_oracle() {
             "row 10 keeps `oracle: none`",
             Graded {
                 id: "HW-PROBE-seeded",
+                status: "current",
                 action: "review_change",
                 expectation: "cited",
                 oracle: "none",
@@ -2155,6 +2237,7 @@ fn every_mechanical_row_probe_grades_against_a_declared_oracle() {
             "an expectation other than `patched`",
             Graded {
                 id: "HW-PROBE-seeded",
+                status: "current",
                 action: "move_document",
                 expectation: "opened",
                 oracle: "command:sound",
@@ -2165,6 +2248,7 @@ fn every_mechanical_row_probe_grades_against_a_declared_oracle() {
             "a rule finding in place of an oracle",
             Graded {
                 id: "HW-PROBE-seeded",
+                status: "current",
                 action: "edit_depended_document",
                 expectation: "patched",
                 oracle: "relation.reciprocity.missing",
@@ -2175,6 +2259,7 @@ fn every_mechanical_row_probe_grades_against_a_declared_oracle() {
             "a generic script whose lib.sh is not held",
             Graded {
                 id: "HW-PROBE-seeded",
+                status: "current",
                 action: "add_document",
                 expectation: "patched",
                 oracle: "command:no-lib",
@@ -2185,6 +2270,7 @@ fn every_mechanical_row_probe_grades_against_a_declared_oracle() {
             "a generic script that is not held",
             Graded {
                 id: "HW-PROBE-seeded",
+                status: "current",
                 action: "add_document",
                 expectation: "patched",
                 oracle: "command:unheld",
@@ -2195,6 +2281,7 @@ fn every_mechanical_row_probe_grades_against_a_declared_oracle() {
             "a held file that does not exist",
             Graded {
                 id: "HW-PROBE-seeded",
+                status: "current",
                 action: "add_document",
                 expectation: "patched",
                 oracle: "command:absent",
@@ -2205,6 +2292,7 @@ fn every_mechanical_row_probe_grades_against_a_declared_oracle() {
             "a hidden test that names another probe",
             Graded {
                 id: "HW-PROBE-seeded",
+                status: "current",
                 action: "change_governed_code",
                 expectation: "patched",
                 oracle: "test:hidden",
@@ -2215,9 +2303,76 @@ fn every_mechanical_row_probe_grades_against_a_declared_oracle() {
             "a test oracle that holds no file",
             Graded {
                 id: date,
+                status: "current",
                 action: "change_governed_code",
                 expectation: "patched",
                 oracle: "test:bare-test",
+            },
+            false,
+        ),
+        (
+            "a superseded probe is a record in no set",
+            Graded {
+                id: "HW-PROBE-seeded",
+                status: "superseded",
+                action: "add_document",
+                expectation: "patched",
+                oracle: "none",
+            },
+            true,
+        ),
+        (
+            "a deprecated probe is a record in no set",
+            Graded {
+                id: "HW-PROBE-seeded",
+                status: "deprecated",
+                action: "add_document",
+                expectation: "opened",
+                oracle: "none",
+            },
+            true,
+        ),
+        (
+            "a command that names a path under docs/",
+            Graded {
+                id: "HW-PROBE-seeded",
+                status: "current",
+                action: "move_document",
+                expectation: "patched",
+                oracle: "command:docs-path",
+            },
+            false,
+        ),
+        (
+            "a command that names an identifier",
+            Graded {
+                id: "HW-PROBE-seeded",
+                status: "current",
+                action: "supersede_or_retire",
+                expectation: "patched",
+                oracle: "command:identifier",
+            },
+            false,
+        ),
+        (
+            "a command that reads its arguments from a held file that names the probe",
+            Graded {
+                id: date,
+                status: "current",
+                action: "add_document",
+                expectation: "patched",
+                oracle: "command:args",
+            },
+            true,
+        ),
+        (
+            "a command that reads its arguments from a file it does not hold",
+            Graded {
+                id: date,
+                status: "current",
+                action: "add_document",
+                expectation: "patched",
+                oracle: "command:args-unheld",
             },
             false,
         ),
@@ -2234,6 +2389,7 @@ fn every_mechanical_row_probe_grades_against_a_declared_oracle() {
     }
     let hidden = Graded {
         id: date,
+        status: "current",
         action: "change_governed_code",
         expectation: "patched",
         oracle: "test:hidden",
@@ -2246,6 +2402,7 @@ fn every_mechanical_row_probe_grades_against_a_declared_oracle() {
     }
     let none = Graded {
         id: "HW-PROBE-seeded",
+        status: "current",
         action: "add_document",
         expectation: "patched",
         oracle: "none",
@@ -2294,10 +2451,12 @@ fn every_mechanical_row_probe_grades_against_a_declared_oracle() {
         let (_, document) = front_matter(&root.join(&probe.path));
         let id = probe.id.clone().unwrap_or_else(|| probe.path.clone());
         let action = scalar(&document, "action").unwrap_or_default();
+        let status = scalar(&document, "status").unwrap_or_default();
         let oracle = scalar(&document, "oracle").unwrap_or_default();
         let expectation = probe.expectation.clone().unwrap_or_default();
         let graded = Graded {
             id: &id,
+            status: &status,
             action: &action,
             expectation: &expectation,
             oracle: &oracle,

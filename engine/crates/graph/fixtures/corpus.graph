@@ -755,9 +755,15 @@ anchors
     cited by HW-SPEC-the-recorder-contract
   code_path `tools/probe/leak.py` via source-tree
     cited by HW-DR-0112
+  code_path `tools/probe/oracle-args/**` via source-tree
+    cited by HW-DR-0112
+  code_path `tools/probe/oracle-cases/**` via source-tree
+    cited by HW-DR-0112
   code_path `tools/probe/oracle-fixtures.sh` via source-tree
     cited by HW-DR-0112
   code_path `tools/probe/oracles/**` via source-tree
+    cited by HW-DR-0112
+  code_path `tools/probe/probe-oracle-fixtures.sh` via source-tree
     cited by HW-DR-0112
   code_path `tools/probe/probe-record-fixtures.sh` via source-tree
     cited by HW-DR-0112
