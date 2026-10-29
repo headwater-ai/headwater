@@ -15,6 +15,12 @@
 # and each one states the whole task. The probe document is the file under
 # `<root>/docs/probes` that holds the line `id: <probe>`.
 #
+# A line inside a fenced code block is not a heading, so a `# comment` in a
+# shell fence ends no phrasing and no task, and a `### Phrasing <n>` line in
+# a fence is no phrasing. A fence opens on a line of three or more backticks
+# or tildes, indented three spaces at most, and closes on a line of the same
+# character, at least as long, with nothing after it (CommonMark).
+#
 # `count` prints the number of `### Phrasing <n>` headings under `## Task`,
 # and 0 for a task with none or for a probe that no document declares.
 #
@@ -27,11 +33,14 @@
 #
 # `files` writes the task files of the probe under `<dir>`, as
 # `campaign.sh` keeps them in `<out>/tasks/`: `<probe>.md`, the whole
-# `## Task`, for a task with no phrasing, and otherwise `<probe>-<n>.md`, the
-# cut of phrasing `<n>`, for each `<n>` from 1 to the count. It writes the
-# count in `<probe>.phrasings`, and it removes a task file of the probe that
-# the count does not name. It prints the path of the first file it wrote
-# empty, and nothing when each one holds a body.
+# `## Task`, for a task with no phrasing, and otherwise `<probe>.<n>.md`, the
+# cut of phrasing `<n>`, for each `<n>` from 1 to the count. A dot and not a
+# hyphen, because a probe id is a slug of hyphens, so the phrasing file of
+# probe `x` is never the task file of a probe `x-1`. It writes the count in
+# `<probe>.phrasings`, and it removes a task file of the probe that the count
+# does not name: `<probe>.md` and each `<probe>.<digits>.md`, and no other.
+# It prints the path of the first file it wrote empty, and nothing when each
+# one holds a body.
 #
 # `draw` prints the phrasing that a fixed draw gives the session, from 1 to
 # `<count>`, and 1 where `<count>` is 0, because a task with no phrasing is
@@ -62,6 +71,25 @@ whole() {
     case $1 in '' | *[!0-9]*) return 1 ;; esac
 }
 
+# FENCE: the awk function that keeps `fenced` true on each line of a fenced
+# code block, its opening and closing lines included. Every awk program
+# below that reads headings starts with it and its first rule.
+FENCE='
+function marker(s,   t, c, l) {
+    t = s
+    sub(/^ ? ? ?/, "", t)
+    c = substr(t, 1, 1)
+    if (c != "`" && c != "~") return 0
+    l = 0
+    while (substr(t, l + 1, 1) == c) l++
+    if (l < 3) return 0
+    if (fc == "") { fc = c; fl = l; return 1 }
+    if (c == fc && l >= fl && substr(t, l + 1) ~ /^[ \t]*$/) fc = ""
+    return 1
+}
+{ if (fc != "") { marker($0); fenced = 1 } else fenced = marker($0) }
+'
+
 # file <root> <probe>: the probe's document, or nothing.
 file() {
     [ -d "$1/docs/probes" ] || return 0
@@ -79,7 +107,12 @@ case $verb in
             echo 0
             exit 0
         fi
-        awk '/^## Task$/ { on = 1; next } on && /^## / { exit } on && /^### Phrasing [0-9]+$/ { n++ } END { print n + 0 }' "$p_file"
+        awk "$FENCE"'
+            fenced { next }
+            /^## Task$/ { on = 1; next }
+            on && /^## / { exit }
+            on && /^### Phrasing [0-9]+$/ { n++ }
+            END { print n + 0 }' "$p_file"
         ;;
     cut)
         [ $# = 2 ] || [ $# = 3 ] || usage
@@ -87,12 +120,12 @@ case $verb in
         [ -z "$p_n" ] || whole "$p_n" || usage
         p_file=$(file "$1" "$2")
         [ -n "$p_file" ] || exit 0
-        awk -v n="$p_n" '
-            /^## Task$/ { on = 1; next }
-            on && /^## / { exit }
+        awk -v n="$p_n" "$FENCE"'
+            !fenced && /^## Task$/ { on = 1; next }
+            on && !fenced && /^## / { exit }
             !on { next }
             n == "" { print; next }
-            /^(#|##|###) / { inside = ($0 == "### Phrasing " n); next }
+            !fenced && /^(#|##|###) / { inside = ($0 == "### Phrasing " n); next }
             inside { print }' "$p_file" \
             | awk 'NF { seen = 1 } seen' \
             | awk '{ lines[NR] = $0 } END { n = NR; while (n > 0 && lines[n] == "") n--; for (i = 1; i <= n; i++) print lines[i] }'
@@ -101,7 +134,12 @@ case $verb in
         [ $# = 3 ] || usage
         f_count=$(sh "$0" count "$1" "$2") || exit $?
         [ -d "$3" ] || { echo "phrasing: no directory at $3." >&2; exit 2; }
-        rm -f "$3/$2.md" "$3/$2"-[0-9]*.md
+        rm -f "$3/$2.md"
+        for f_old in "$3/$2".[0-9]*.md; do
+            f_n=${f_old#"$3/$2".}
+            f_n=${f_n%.md}
+            whole "$f_n" && rm -f "$f_old"
+        done
         printf '%s\n' "$f_count" > "$3/$2.phrasings"
         if [ "$f_count" = 0 ]; then
             sh "$0" cut "$1" "$2" > "$3/$2.md"
@@ -110,8 +148,8 @@ case $verb in
         fi
         f_n=1
         while [ "$f_n" -le "$f_count" ]; do
-            sh "$0" cut "$1" "$2" "$f_n" > "$3/$2-$f_n.md"
-            [ -s "$3/$2-$f_n.md" ] || { echo "$3/$2-$f_n.md"; exit 0; }
+            sh "$0" cut "$1" "$2" "$f_n" > "$3/$2.$f_n.md"
+            [ -s "$3/$2.$f_n.md" ] || { echo "$3/$2.$f_n.md"; exit 0; }
             f_n=$((f_n + 1))
         done
         ;;

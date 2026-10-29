@@ -285,7 +285,7 @@
 # **A session reads one phrasing of its probe's task (#1875).** A probe's
 # `## Task` holds two or three `### Phrasing <n>` subsections (HW-DR-0112),
 # and the prompt is the body of one of them (spec 15). The batch keeps each
-# phrasing in `<out>/tasks/<probe>-<n>.md`, the count in
+# phrasing in `<out>/tasks/<probe>.<n>.md`, the count in
 # `<out>/tasks/<probe>.phrasings`, and a task with no phrasing in
 # `<out>/tasks/<probe>.md`, as `tools/probe/phrasing.sh files` writes them.
 # Where `HEADWATER_CAMPAIGN_DRAW` names a file, the fixed draw of a screen
@@ -537,7 +537,7 @@ task_of() {
     if [ "$o_n" = 0 ]; then
         echo "$out/tasks/$2.md"
     else
-        echo "$out/tasks/$2-$o_n.md"
+        echo "$out/tasks/$2.$o_n.md"
     fi
 }
 
@@ -1118,7 +1118,7 @@ if [ "$repin" = 1 ]; then
         r_files=$probe.md
         if [ "$r_count" != 0 ]; then
             r_files= r_n=1
-            while [ "$r_n" -le "$r_count" ]; do r_files="$r_files $probe-$r_n.md"; r_n=$((r_n + 1)); done
+            while [ "$r_n" -le "$r_count" ]; do r_files="$r_files $probe.$r_n.md"; r_n=$((r_n + 1)); done
         fi
         r_moved=0
         for r_file in $r_files; do
