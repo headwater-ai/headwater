@@ -56,7 +56,7 @@ The override is one line of the form `<path> merge=headwater-regenerate` for eac
 
 ### The harness step
 
-`--harness` writes the agent support that Headwater ships: four skills and one agent. An agent harness reads these files from the repository. Each file tells an agent which verb to run at one moment of the work. The text of each file is compiled into the binary, so a release of the binary and its set are one version. No file of the set names a kind, an identifier, a path or a decision of the corpus that maintains this engine. A file reads what it needs from the lock of the repository or from a verb.
+`--harness` writes the agent support that Headwater ships: four skills, one agent, six hooks, the hook entries that call them and one MCP server entry. An agent harness reads these files from the repository. Each file tells an agent which verb to run at one moment of the work. The text of each file is compiled into the binary, so a release of the binary and its set are one version. No file of the set names a kind, an identifier, a path or a decision of the corpus that maintains this engine. A file reads what it needs from the lock of the repository or from a verb.
 
 The step writes each skill at two paths and the agent at one. Claude Code reads `.claude/skills/` and `.claude/agents/`. Copilot reads both directories too. Codex reads `.agents/skills/`. Codex states no agent file, so the step writes no agent file for it. <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=false_positive note=these are paths headwater init --harness writes into the repository of the adopter -->
 
@@ -71,19 +71,38 @@ The step writes each skill at two paths and the agent at one. Claude Code reads 
 | the `headwater-sweep` skill | `.claude/skills/headwater-sweep/SKILL.md` <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=false_positive note=a path the step writes for the adopter --> |
 | the `headwater-sweep` skill | `.agents/skills/headwater-sweep/SKILL.md` |
 | the `headwater-maintainer` agent | `.claude/agents/headwater-maintainer.md` <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=false_positive note=a path the step writes for the adopter --> |
+| the intent hook | `.claude/hooks/intent.sh` <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=false_positive note=a path the step writes for the adopter --> |
+| the read hook | `.claude/hooks/read.sh` <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=false_positive note=a path the step writes for the adopter --> |
+| the write hook | `.claude/hooks/write.sh` <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=false_positive note=a path the step writes for the adopter --> |
+| the review hook | `.claude/hooks/review.sh` <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=false_positive note=a path the step writes for the adopter --> |
+| what the hooks share | `.claude/hooks/lib.sh` <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=false_positive note=a path the step writes for the adopter --> |
+| the touch hook | `.claude/hooks/touch.sh` <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=false_positive note=a path the step writes for the adopter --> |
+| the hook entries of Claude Code | `.claude/settings.json` <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=false_positive note=a path the step writes for the adopter --> |
+| the `headwater` MCP server | `.mcp.json` <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=false_positive note=a path the step writes for the adopter --> |
 
-**The set holds no hook yet.** A hook needs a configuration that each harness reads, and a script or a verb that the configuration calls. Which of the two ships is not decided, so the step writes no hook and no hook configuration ([#1578](https://github.com/headwater-ai/headwater/issues/1578)).
+**The hooks are `sh` scripts, and each one calls `headwater` verbs only.** The intent hook routes the prompt of a person with `headwater route`. The read hook names the documents that govern a path before a read. The write hook refuses a raw write of a new document and names `headwater new`, and it names the documents that an edit affects. The touch hook records each path that a session writes. At the end of a turn, the review hook runs `headwater check --strict` and prints the errors on the paths that the session wrote. It blocks the turn when there is one. Each hook finds the binary on the `PATH`, and it does nothing when there is no binary. Beyond the binary, the hooks need `sh`, `git`, `awk`, `sed` and `cat`. The step writes the hook entries of Claude Code alone, and [HW-OBL-0232](../obligations/0232-headwater-init-harness-ships-no-hook-and-no-hook-configuration-for-any-harness.md) holds the configuration that Copilot and Codex still need. <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=false_positive note=the hooks headwater init --harness writes into the repository of the adopter -->
 
-**The last line of each file records that the step wrote it.** The line is `<!-- installed by headwater init --harness, digest sha256:<hex> -->`, and the digest is over every byte before that line. The step decides each path before it writes any path:
+**A repository can extend the hooks without an edit to them.** When `.claude/hooks/lib.local.sh` exists, `lib.sh` reads it last. That file can define `hw_engine` to find a binary that is not on the `PATH`. It can define `hw_local_intent`, which the intent hook calls after each route, and `hw_local_review`, which the review hook calls in place of its own check. The step never writes that file. <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=false_positive note=a file the adopter writes beside the hooks headwater init --harness writes -->
+
+**The last line of each file records that the step wrote it.** In a Markdown file, the line is `<!-- installed by headwater init --harness, digest sha256:<hex> -->`. In a hook script, the line is `# installed by headwater init --harness, digest sha256:<hex>`. The digest is over every byte before that line. The step decides each path before it writes any path:
 
 - When the path holds no file, the step writes the file.
 - When the file holds the bytes of this release, the step writes nothing. So a second run writes nothing.
 - When the file ends with the line and the digest agrees with the bytes before it, an earlier release wrote the file. Nobody edited it since. The step writes the text of this release over it.
 - In every other case, somebody edited the file or another tool wrote it. The step names the path on standard error, writes no file of the set, and exits 1. Move the file away, or delete it, and run the step again.
 
+**A JSON file holds no record line, so the step merges its entries into it.** `.claude/settings.json` and `.mcp.json` also hold the entries of the adopter. The step reads the file, and it adds each of its entries that the file does not hold: <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=false_positive note=files headwater init --harness merges into the repository of the adopter -->
+
+- A hook entry is present when a group of the same event and the same `matcher` holds a hook with the same `command`. The step adds a missing hook to the end of that group, or adds a new group to the end of the event.
+- The `headwater` member of `mcpServers` is present when it equals the entry of this release. It calls `headwater mcp` on the `PATH`.
+- The step never removes, reorders or changes an entry. When it adds an entry, it writes the whole file again, indented by two spaces, with every member in its original order.
+- The step reads an empty file as an empty object. It refuses a file that is not a JSON object, and a `headwater` member of `mcpServers` that differs from this release. It names the path on standard error, writes no file of the set, and exits 1.
+
+So a second run writes nothing. A later release that changes the `command` of a hook adds the new entry and keeps the old one. The step cannot tell its own entry from an entry of the adopter. <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=false_positive note=files headwater init --harness merges into the repository of the adopter -->
+
 **A copy whose only difference is its line endings is the step's own.** Git can check out a file with `\r\n` in place of each `\n`, for example under `core.autocrlf=true` on Windows. Before the step decides a path, it reads each `\r\n` of the file as `\n`. So the step reads such a copy of this release as this release, in the cases above and under `--check`. A second run over it writes nothing. A `\r` that ends no line is a changed byte. The step always writes `\n`.
 
-**`--check` writes nothing and reports.** It does not bind the repository and does no other step. It exits 0 when each path of the table holds the bytes of this release. Otherwise it names each path that differs or is absent, and it exits 1. A repository that commits the set can run `headwater init --harness --check` in CI, as it runs `headwater generate --check`.
+**`--check` writes nothing and reports.** It does not bind the repository and does no other step. It exits 0 when each path of the table holds the bytes of this release, and each JSON file holds every entry of this release. Otherwise it names each path that differs, is absent or lacks an entry, and it exits 1. A repository that commits the set can run `headwater init --harness --check` in CI, as it runs `headwater generate --check`.
 
 On a repository that is already bound, `--harness` skips the declaration and the overlay and does the harness step alone. With `--git` too, it does the git step and then the harness step.
 
@@ -99,7 +118,7 @@ Without `--git` or `--harness`, the repository must not already contain `.headwa
 | `--package <name>` | Names the package to consume. |
 | `--git` | Appends the `-merge` lines to `.gitattributes`. Prints the two `git config` lines that name the driver and the override lines that select it. On a bound repository, it does this and nothing else. |
 | `--git-config` | Also runs the two `git config` lines in this clone, and then appends the override lines to its `info/attributes`. It requires `--git`. |
-| `--harness` | Writes the skills and the agent of the harness step, at each path its table names. On a bound repository, it does this and nothing else, or this after the git step under `--git`. |
+| `--harness` | Writes the skills, the agent, the hooks and the JSON entries of the harness step, at each path its table names. On a bound repository, it does this and nothing else, or this after the git step under `--git`. |
 | `--check` | Writes no file of the harness step, and exits 1 when a path of its table does not hold the bytes of this release. It requires `--harness`. |
 | `--root <path>` | Selects the repository to initialize. |
 | `--no-color` | Force plain text on both streams: bold and dim weight plus glyphs, no escape sequence. The default already senses whether each stream is a terminal, and renders color only there. |
@@ -127,7 +146,7 @@ The command reads no environment variable. Under `--git`, it runs `git` from the
 | `.gitattributes` | Under `--git`, read, and appended to with one line for each derived file that it does not declare. |
 | `.git/config` | Under `--git-config`, written by the two `git config` lines. |
 | `info/attributes` in the git directory | Under `--git-config`, read, and appended to with one `merge=headwater-regenerate` line for each derived file that it does not select. Git names the path. Without `--git-config`, not written. |
-| `.claude/skills/headwater-*/SKILL.md`, `.agents/skills/headwater-*/SKILL.md` and `.claude/agents/headwater-maintainer.md` | Under `--harness`, read, and written where [the harness step](#the-harness-step) permits. Under `--check`, read and not written. <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=false_positive note=paths headwater init --harness writes into the repository of the adopter --> |
+| `.claude/skills/headwater-*/SKILL.md`, `.agents/skills/headwater-*/SKILL.md`, `.claude/agents/headwater-maintainer.md`, the six scripts under `.claude/hooks/`, `.claude/settings.json` and `.mcp.json` | Under `--harness`, read, and written where [the harness step](#the-harness-step) permits. Under `--check`, read and not written. <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=false_positive note=paths headwater init --harness writes into the repository of the adopter --> |
 
 ## See also
 

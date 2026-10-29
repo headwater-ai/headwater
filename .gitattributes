@@ -144,3 +144,11 @@ engine/crates/lock/fixtures/corpus.lock -merge
 # Vendor snapshots retain upstream bytes, including whitespace that this
 # repository does not own. Their fixture README pins their source revisions.
 docs/taxonomies/diataxis-site/fixtures/sources/** whitespace=-trailing-space,-space-before-tab
+
+# The MCP server file that `headwater init --harness` writes (#1871) stays out of
+# every tree built with `git archive`, which is how `tools/probe/campaign.sh` builds
+# the present tree of a probe. The `mcp` arm and the `mcp` layer of
+# `.headwater/probe.yml` write their own copy from `tools/probe/arms/mcp/`, so a
+# present arm that kept this one would hold the server that the `mcp` arm exists
+# to add. #1872 re-cuts the layers, and it removes this line or keeps it.
+/.mcp.json export-ignore

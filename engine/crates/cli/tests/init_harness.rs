@@ -126,11 +126,14 @@ fn files_under(base: &Path, directory: &Path, into: &mut BTreeSet<String>) {
 }
 
 /// The files a harness reads under a root: everything under `.claude/` and
-/// `.agents/`.
+/// `.agents/`, and `.mcp.json`.
 fn harness_files(root: &Path) -> BTreeSet<String> {
     let mut found = BTreeSet::new();
     files_under(root, &root.join(".claude"), &mut found);
     files_under(root, &root.join(".agents"), &mut found);
+    if root.join(".mcp.json").is_file() {
+        found.insert(".mcp.json".to_string());
+    }
     found
 }
 
@@ -202,12 +205,17 @@ fn internal_names() -> BTreeSet<String> {
     names
 }
 
-/// The name of the skill or the agent a harness path addresses.
+/// The name of the skill or the agent a harness path addresses. A hook script
+/// and a JSON file are named by their file name, extension and all, so that
+/// no name of an internal command or agent can be one of them.
 fn shipped_name(path: &str) -> Option<String> {
     let segments: Vec<&str> = path.split('/').collect();
     match segments.as_slice() {
         [_, "skills", name, "SKILL.md"] => Some((*name).to_string()),
         [".claude", "agents", file] => file.strip_suffix(".md").map(str::to_string),
+        [".claude", "hooks", file] if file.ends_with(".sh") => Some((*file).to_string()),
+        [".claude", "settings.json"] => Some("settings.json".to_string()),
+        [".mcp.json"] => Some(".mcp.json".to_string()),
         _ => None,
     }
 }
@@ -288,7 +296,8 @@ fn the_harness_step_writes_the_shipped_set_into_a_repository_bound_to_another_ta
     let internal = internal_names();
     let mut leaked = Vec::new();
     for path in &written {
-        let name = shipped_name(path).expect("every written path addresses a skill or an agent");
+        let name = shipped_name(path)
+            .expect("every written path addresses a skill, an agent, a hook or a JSON file");
         assert!(!internal.contains(&name), "{path} is an internal file");
         assert!(!name.starts_with("hw-"), "{path} is named as internal");
         let text = std::fs::read_to_string(root.join(path)).expect("a written file reads");
@@ -551,7 +560,7 @@ fn a_set_git_checked_out_with_crlf_line_endings_passes_the_check_and_a_rerun_wri
     let root = &scratch.0;
     succeeded(&headwater(root, &["init", "--harness"]), "the first run");
     let paths = harness_files(root);
-    assert_eq!(paths.len(), 9, "the step wrote the set");
+    assert_eq!(paths.len(), 17, "the step wrote the set");
 
     // Commit the set as the step wrote it, and clone it with autocrlf.
     let origin = Scratch::new("crlf-origin");

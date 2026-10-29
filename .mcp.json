@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "headwater": {
+      "command": "headwater",
+      "args": [
+        "mcp"
+      ]
+    }
+  }
+}
