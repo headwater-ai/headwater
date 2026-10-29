@@ -26,7 +26,10 @@ hooks   a session that opened a path the intent hook printed as a pointer.
         two types. Claude Code 2.1.288, the version the campaign runs, logs
         the output of the `UserPromptSubmit` hook as `hook_success`, and only
         a `hook_success` of that hook counts. Older logs carry it as
-        `hook_additional_context`, which still counts. A pointer is a line of
+        `hook_additional_context`, which still counts when it names that
+        hook or names no hook. One that names another hook, such as
+        `PreToolUse:Read`, is the text of that hook and counts for it below,
+        not for intent (#1875). A pointer is a line of
         that text that opens with two spaces and a path, which is a word that
         holds a `/` and ends in a file extension, and the path is followed by
         ` (`, ` — `, ` [` or the end of the line. That is the line
@@ -64,7 +67,9 @@ review  `Stop`.
 
 Read, write and review count a session that has at least one such
 attachment, of either type above, with text: the hook said something to the
-session. An attachment with no text is no use. That is how `touch.sh`, which
+session. Claude Code 2.1.312 logs a hook's added context as a
+`hook_additional_context` whose content is a list of strings, and the list
+counts as the text its strings hold. An attachment with no text is no use. That is how `touch.sh`, which
 shares the write matcher and prints nothing, stays out of the write count.
 
 Any other layer exits 2, because the tuning round tunes these three alone
@@ -99,6 +104,20 @@ HOOK_NAMES = {
     "Stop": "review",
 }
 READERS = re.compile(r"(^|[\s;&|(])(cat|sed|head|tail|less)\s")
+
+
+def text_of(value):
+    """The text of an attachment: a string, or the strings of a list joined by lines.
+
+    Claude Code 2.1.312 logs a hook's `additionalContext` as a
+    `hook_additional_context` whose content, and whose `rendered`, is a list of
+    strings (measured 2026-10-29 on a log of this repository's own hooks).
+    """
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list):
+        return "\n".join(part for part in value if isinstance(part, str))
+    return ""
 
 
 def refuse(message):
@@ -165,11 +184,11 @@ def pointers(text):
 def used_hook(stream, config):
     injected = set()
     for row in recordings.log_events("s", config, True):
-        if row[2] not in HOOK_KINDS or not isinstance(row[7], str):
+        if row[2] not in HOOK_KINDS:
             continue
-        if row[2] == "hook_success" and row[3] != "UserPromptSubmit":
+        if row[3] != "UserPromptSubmit" and not (row[2] == "hook_additional_context" and row[3] == "-"):
             continue
-        injected.update(pointers(row[7]))
+        injected.update(pointers(text_of(row[7])))
     if not injected:
         return False
     for row in recordings.stream_events("s", stream, False):
@@ -189,7 +208,7 @@ def hooks_spoken(config):
     """The read, write and review hooks whose attachment in the log has text."""
     spoken = set()
     for row in recordings.log_events("s", config, True):
-        if row[2] not in HOOK_KINDS or not isinstance(row[7], str) or not row[7].strip():
+        if row[2] not in HOOK_KINDS or not text_of(row[7]).strip():
             continue
         hook = HOOK_NAMES.get(row[3])
         if hook:

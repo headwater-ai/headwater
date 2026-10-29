@@ -1755,15 +1755,21 @@ usage_session "$b" s2 "$(tool_line Read '{"file_path":"docs/spec/02-y.md"}')" "$
 hook_line PreToolUse:Grep 'not a hook the layer ships' >> "$b/config/s2/projects/x/log.jsonl"
 usage_session "$b" s3 "$(tool_line Read '{"file_path":"docs/spec/02-y.md"}')" "$(hook_line PreToolUse:Write '')"
 hook_line Stop '\n ' >> "$b/config/s3/projects/x/log.jsonl"
+# Claude Code 2.1.312 logs a hook's added context as a hook_additional_context
+# whose content is a list of strings. A pointer line in the read hook's list
+# counts for read and never for intent, though the session opened it.
+listed='{"type":"attachment","rendered":["x"],"attachment":{"type":"hook_additional_context","hookName":"PreToolUse:Read","hookEvent":"PreToolUse","content":["Headwater routed this read.","  docs/spec/01-x.md (One) — A summary."]}}'
+usage_session "$b" s4 "$(tool_line Read '{"file_path":"docs/spec/01-x.md"}')" "$listed"
 usage_of hooks
-check "usage: hooks keeps the first line on the intent rule, which try.sh rank reads" out_first "used 1 sessions 3"
-check "usage: hooks counts the intent hook by the pointer it opened" out_line "hook intent used 1 sessions 3"
-check "usage: hooks counts the read hook by a PreToolUse:Read with text" out_line "hook read used 1 sessions 3"
-check "usage: hooks counts the write hook by a Pre or PostToolUse on Write or Edit with text, and no empty one" out_line "hook write used 2 sessions 3"
-check "usage: hooks counts the review hook by a Stop with text, and no empty one" out_line "hook review used 1 sessions 3"
+check "usage: hooks keeps the first line on the intent rule, which try.sh rank reads" out_first "used 1 sessions 4"
+check "usage: hooks counts the intent hook by the pointer it opened" out_line "hook intent used 1 sessions 4"
+check "usage: hooks counts the read hook by a PreToolUse:Read with text, as a string or a list" out_line "hook read used 2 sessions 4"
+check "usage: hooks counts the write hook by a Pre or PostToolUse on Write or Edit with text, and no empty one" out_line "hook write used 2 sessions 4"
+check "usage: hooks counts the review hook by a Stop with text, and no empty one" out_line "hook review used 1 sessions 4"
 check "usage: hooks prints the hooks each session used, in the order intent, read, write, review" out_line "session s1 intent read write review"
 check "usage: hooks prints a session by the hooks it used, and no hook the layer does not ship" out_line "session s2 write"
 check "usage: hooks prints a dash for a session that used no hook" out_line "session s3 -"
+check "usage: hooks reads the list content of a hook_additional_context, and counts another hook's pointer for that hook and not for intent" out_line "session s4 read"
 rm -rf "$b"
 usage_session "$b" s1 "$(tool_line mcp__headwater__explain '{"path":"x"}')"
 usage_session "$b" s2 "$(tool_line Read '{"file_path":"mcp__x"}')"
