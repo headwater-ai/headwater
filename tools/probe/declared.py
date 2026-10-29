@@ -60,6 +60,17 @@
 # exactly those six fields. `tools/probe/campaign.sh` refuses a tuning line
 # when no layer is open, and a tuning line of any scenario but the open one.
 #
+# The hooks layer declares a seventh field, `moment`: the hook moment of the
+# variant, one of `intent`, `read`, `write` and `review` (#1875). It is
+# required where `layer` is `hooks` and refused for every other layer. `open`
+# prints it as a seventh word, so the line of every other layer keeps its six
+# words. `tools/probe/try.sh` screens and confirms a hook variant on the
+# probes of its moment, plus row 11 (HW-DR-0112).
+#
+# `tuning_set` prints each member of the tuning round's set, one a line, in
+# the order the set declares them, and nothing for a declaration whose
+# tuning round names no set that `sets:` declares.
+#
 # The tuning round, and no other round, may also declare the seven fields of
 # its rounds (#1838), all seven or none: `screen` and `confirm`, the sessions
 # the owner ruled for one screened variant and for one confirmation, each a
@@ -190,6 +201,7 @@ def rounds(declared, approvals=False, quiet=False):
 
 
 OPEN_FIELDS = ("layer", "scenario", "try", "cap_cents", "plan", "change")
+MOMENTS = ("intent", "read", "write", "review")
 STAGE_FIELDS = ("screen", "confirm", "variants", "stop_after_empty", "order", "ceiling_cents", "base_ceiling_cents")
 
 
@@ -266,9 +278,9 @@ def open_layer(declared):
     where = "`rounds.tuning.open` in .headwater/probe.yml"
     if not isinstance(block, dict):
         refuse(f"{where} is {block!r}, and it is neither `none` nor a mapping of {', '.join(OPEN_FIELDS)}")
-    unknown = sorted(str(key) for key in block if key not in OPEN_FIELDS)
+    unknown = sorted(str(key) for key in block if key not in OPEN_FIELDS + ("moment",))
     if unknown:
-        refuse(f"{where} declares `{unknown[0]}`. An open layer declares {', '.join(OPEN_FIELDS)}, and nothing else")
+        refuse(f"{where} declares `{unknown[0]}`. An open layer declares {', '.join(OPEN_FIELDS)}, and nothing else, but for the `moment` of the hooks layer")
     for field in OPEN_FIELDS:
         if field not in block:
             refuse(f"{where} does not declare `{field}`. An open layer declares {', '.join(OPEN_FIELDS)}")
@@ -305,7 +317,24 @@ def open_layer(declared):
     change = str(block["change"]) if isinstance(block["change"], str) else None
     if change != "none" and (change is None or not 7 <= len(change) <= 40 or any(char not in "0123456789abcdef" for char in change)):
         refuse(f"`change` of {where} is {block['change']!r}, and it must be the commit of the try's change, in hexadecimal and quoted where it holds digits alone, or `none`")
-    print(" ".join(str(block[field]) for field in OPEN_FIELDS))
+    moment = block.get("moment")
+    if layer == "hooks":
+        if "moment" not in block:
+            refuse(f"{where} does not declare `moment`. The hooks layer declares the hook moment of its variant, one of {', '.join(MOMENTS)}")
+        if not isinstance(moment, str) or moment not in MOMENTS:
+            refuse(f"`moment` of {where} is {moment!r}, and it must be one of {', '.join(MOMENTS)}")
+    elif "moment" in block:
+        refuse(f"{where} declares `moment` for the {layer} layer, and only the hooks layer declares one")
+    print(" ".join([str(block[field]) for field in OPEN_FIELDS] + ([moment] if layer == "hooks" else [])))
+    return 0
+
+
+def tuning_set(declared):
+    rounds(declared, quiet=True)
+    tuning = (declared.get("rounds") or {}).get("tuning")
+    members = (declared.get("sets") or {}).get(tuning.get("set")) if isinstance(tuning, dict) else None
+    for member in members if isinstance(members, list) else []:
+        print(member)
     return 0
 
 
@@ -319,7 +348,7 @@ def base_invalidators(declared):
 
 
 def main(argv):
-    modes = ("power", "leaks_kept", "rounds", "scenarios", "approved", "open", "base_invalidators", "tuning")
+    modes = ("power", "leaks_kept", "rounds", "scenarios", "approved", "open", "base_invalidators", "tuning", "tuning_set")
     if len(argv) != 2 or argv[1] not in modes:
         refuse(f"usage: python3 tools/probe/declared.py <declaration> {'|'.join(modes)}")
     path, key = argv
@@ -353,6 +382,9 @@ def main(argv):
 
     if key == "tuning":
         return tuning_rounds(declared)
+
+    if key == "tuning_set":
+        return tuning_set(declared)
 
     if key == "scenarios":
         block = declared.get("scenarios") or {}

@@ -41,7 +41,9 @@
 # `<stage>` names one launch and its try root:
 #
 # - `screen <k>` runs variant `k` of the round at the screen's count, in
-#   `<root>/<layer>-r<n>-v<k>`. `k` is 1 to `variants`, so a fifth variant
+#   `<root>/<layer>-r<n>-v<k>`, on a fixed draw (#1875): with `screen: 22`
+#   over 22 tuning probes, that is one session for each probe. `k` is 1 to
+#   `variants`, so a fifth variant
 #   of four is refused. The variant is the commit of the checkout, and its
 #   scenario tree is built with `campaign.sh --scenario-tree` at `HEAD`. A
 #   variant whose tree has the digest of another variant's of the round is
@@ -66,6 +68,37 @@
 # `launch` writes the stage in `<try>/stage`, and each driver it starts gets
 # `HEADWATER_TUNING_STAGE`, `screen` or `confirm`, which the dry run reads
 # for the count of the batch. A best so far and a base run as `confirm`.
+#
+# **The fixed draw of a screen (#1875).** A probe's `## Task` holds two or
+# three `### Phrasing <n>` subsections (HW-DR-0112), and a task with none is
+# one phrasing. `plan screen <k>` prints one `draw: <probe> <n>` line for
+# each session of the screen, in the order of the set, and a probe at more
+# than one repetition has a line for each. The phrasing is
+# `tools/probe/phrasing.sh draw` of `TRY_SEED`, the open layer, the round
+# `n`, the probe and the repetition, over the probe's count of phrasings in
+# the checkout. So every variant of a round gets the same draw, and `plan`
+# writes nothing. `launch` writes the lines to `<try>/draw`, and `launch` and
+# `relaunch` give the driver `HEADWATER_CAMPAIGN_DRAW=<try>/draw`, from which
+# `campaign.sh` takes each session's phrasing. A best so far, a
+# confirmation and a base draw nothing: `campaign.sh` spreads the
+# phrasings of each probe evenly over its sessions.
+#
+# **A hook variant runs its moment plus row 11 (#1875).** The hooks layer
+# names its hook moment in `rounds.tuning.open`, as `moment`. A variant of
+# `read`, `write` or `review` runs the tuning probes that
+# `headwater probe plan --moment <m>` selects, together with those that
+# `--action ungoverned_control` selects, which is row 11 of HW-DR-0112. They
+# are two calls, because the two flags of one call give the probes that pass
+# both. A moment that no probe passes is an empty part of the union, and a
+# union of no probe is refused. An `intent` variant runs every probe.
+# `plan` prints one `selected: <probe>` line for each probe of a hooks layer
+# that the stage runs, and `launch` writes each other probe as an exclude on
+# `<try>/spec`. A stage runs its selection at the stage's repetitions, the
+# rule that a line which leaves probes out runs the others at the same
+# count (`tools/probe/additive-dry-run.sh`). So a `read` variant over 8 of 22
+# probes confirms at 7 x 8 = 56 sessions and not 145. HW-DR-0112 does not
+# say which count a subset holds, and that is the owner's question. A base
+# runs the whole set, because one base serves every layer of it.
 #
 # **Rank on use, then pass rate.** `result` counts, for each try, the
 # sessions that used the open layer with `tools/probe/usage.py`, from the
@@ -480,14 +513,69 @@ EOF
     fi
 }
 
-# open_fields: `rounds.tuning.open`, as `layer scenario try cap`, or `none`.
+# open_fields: `rounds.tuning.open`, as `layer scenario try cap`, with the
+# hooks layer's `moment` after them, or `none`.
 open_fields() {
     open_line=$(declared open) || exit $?
     if [ "$open_line" = none ]; then
         echo none
         return
     fi
-    printf '%s\n' "$open_line" | awk '{ print $1, $2, $3, $4 }'
+    printf '%s\n' "$open_line" | awk '{ print $1, $2, $3, $4, $7 }'
+}
+
+# select_probes: the probes of the tuning set that the stage runs, in the
+# order of the set, in `$selected`, their count in `$selected_n`, and the
+# others in `$excluded`. Every probe, but for a hook variant of a moment
+# other than intent, which runs the probes of its moment and those of row 11
+# (#1875).
+select_probes() {
+    set_members=$(declared tuning_set) || exit $?
+    selected=$set_members
+    if [ "$open_layer" = hooks ] && [ "$open_moment" != intent ] && [ "$stage_kind" != base ]; then
+        set_name=$(declared rounds | awk '$1 == "tuning" { print $2 }') || exit $?
+        [ -x "$engine" ] || { say "no engine at $engine, which selects the probes of a hook variant. Build it, or name it with HEADWATER_TRY_ENGINE."; exit 3; }
+        picked=
+        for select_flag in "--moment $open_moment" "--action ungoverned_control"; do
+            # shellcheck disable=SC2086
+            if ! select_out=$("$engine" probe plan --root "$checkout" --tier additive --arm "scenario-$open_scenario" \
+                --set "$set_name" $select_flag 2> /dev/null); then
+                say "headwater probe plan $select_flag did not run, so the probes of the $open_moment variant are not known."
+                exit 3
+            fi
+            picked="$picked $(printf '%s\n' "$select_out" | sed -n 's/^- \(HW-PROBE-[^ ]*\) (.*/\1/p' | tr '\n' ' ')"
+        done
+        selected=$(printf '%s\n' "$set_members" | while IFS= read -r member; do
+            case " $picked " in *" $member "*) printf '%s\n' "$member" ;; esac
+        done)
+    fi
+    selected_n=$(printf '%s\n' "$selected" | awk 'NF' | wc -l | tr -d ' ')
+    excluded=$(printf '%s\n' "$set_members" | while IFS= read -r member; do
+        case "
+$selected
+" in *"
+$member
+"*) ;; *) printf '%s ' "$member" ;; esac
+    done)
+    excluded=${excluded% }
+    if [ "$selected_n" = 0 ]; then
+        say "the $open_moment variant of the hooks layer selects no tuning probe: none passes --moment $open_moment, and none has the action ungoverned_control."
+        exit 6
+    fi
+}
+
+# draw_lines: the fixed draw of a screen, one `draw: <probe> <n>` line for
+# each session, in the order of the set (#1875).
+draw_lines() {
+    printf '%s\n' "$selected" | while IFS= read -r member; do
+        [ -n "$member" ] || continue
+        member_count=$(sh "$here/phrasing.sh" count "$checkout" "$member") || exit 3
+        repetition=1
+        while [ "$repetition" -le "$t_screen_reps" ]; do
+            printf 'draw: %s %s\n' "$member" "$(sh "$here/phrasing.sh" draw "$TRY_SEED" "$open_layer" "$open_try" "$member" "$repetition" "$member_count")"
+            repetition=$((repetition + 1))
+        done
+    done
 }
 
 # resolve_try: the try root a verb acts on, in `$try`.
@@ -1157,10 +1245,18 @@ plan_check() {
     fi
     # shellcheck disable=SC2086
     set -- $plan_open
-    open_layer=$1 open_scenario=$2 open_try=$3 open_cap=$4
+    open_layer=$1 open_scenario=$2 open_try=$3 open_cap=$4 open_moment=${5:-}
     tuning_read
     echo "open: $open_layer on scenario $open_scenario, round $open_try of at most $t_rounds"
     round_check
+    # The stage runs its selection at the stage's repetitions, and a base
+    # the whole set (#1875).
+    select_probes
+    s_screen=$((t_screen_reps * selected_n))
+    s_confirm=$((t_confirm_reps * selected_n))
+    if [ "$open_layer" = hooks ]; then
+        printf '%s\n' "$selected" | awk 'NF { print "selected: " $0 }'
+    fi
     approvals=$(declared approved) || exit $?
     approved=$(printf '%s\n' "$approvals" | awk '$1 == "tuning" { print $2 }')
     spent=$(spent_round) || exit $?
@@ -1176,10 +1272,10 @@ plan_check() {
     # stage's own: `left` under the tuning ceiling, `left_base` under the
     # base ceiling.
     case $stage_kind in
-        '') left=$((t_variants * t_screen + t_confirm + (best_due - best_base) * t_confirm)) left_base=$((best_base * t_confirm)) stage_sessions=0 ;;
-        screen) left=$(((t_variants - stage_arg + 1) * t_screen + t_confirm + (best_due - best_base) * t_confirm)) left_base=$((best_base * t_confirm)) stage_sessions=$t_screen ;;
-        best) left=$(((2 - best_base) * t_confirm)) left_base=$((best_base * t_confirm)) stage_sessions=$t_confirm ;;
-        confirm) left=$t_confirm left_base=0 stage_sessions=$t_confirm ;;
+        '') left=$((t_variants * s_screen + s_confirm + (best_due - best_base) * s_confirm)) left_base=$((best_base * s_confirm)) stage_sessions=0 ;;
+        screen) left=$(((t_variants - stage_arg + 1) * s_screen + s_confirm + (best_due - best_base) * s_confirm)) left_base=$((best_base * s_confirm)) stage_sessions=$s_screen ;;
+        best) left=$(((2 - best_base) * s_confirm)) left_base=$((best_base * s_confirm)) stage_sessions=$s_confirm ;;
+        confirm) left=$s_confirm left_base=0 stage_sessions=$s_confirm ;;
         base)
             if [ "$(charge_of "$(stage_root)")" = base ]; then left=0 left_base=$t_confirm; else left=$t_confirm left_base=0; fi
             stage_sessions=$t_confirm
@@ -1193,7 +1289,11 @@ plan_check() {
     echo "ceiling: $t_ceiling"
     echo "base ceiling: $t_base_ceiling"
     [ -n "$stage_kind" ] && echo "stage: $stage_kind${stage_arg:+ $stage_arg}, $stage_sessions sessions, $((stage_sessions * t_rate)) cents at $t_rate a session, in $(stage_root)"
-    echo "left: $left sessions of the round, $priced cents at $t_rate a session$([ $((best_due - best_base)) = 1 ] && echo ", the best so far at $t_confirm included")"
+    if [ "$stage_kind" = screen ]; then
+        screen_draw=$(draw_lines) || exit 3
+        printf '%s\n' "$screen_draw"
+    fi
+    echo "left: $left sessions of the round, $priced cents at $t_rate a session$([ $((best_due - best_base)) = 1 ] && echo ", the best so far at $s_confirm included")"
     echo "left of the bases: $left_base sessions, $priced_base cents at $t_rate a session"
     if [ $((spent + open_cap)) -gt "${approved:-0}" ]; then
         say "the round spent $spent cents, and a try of $open_cap more is $((spent + open_cap)), above the $approved cents approved for the tuning round. Nothing is launched."
@@ -1319,6 +1419,14 @@ start() {
         *) say "$start_try/stage names no stage, so the driver would not know the count of its batch."; exit 2 ;;
     esac
     export HEADWATER_TUNING_STAGE
+    # A screen's fixed draw, from the file launch wrote (#1875). Every other
+    # stage spreads the phrasings, so it names no draw.
+    if [ -f "$start_try/draw" ]; then
+        HEADWATER_CAMPAIGN_DRAW=$start_try/draw
+        export HEADWATER_CAMPAIGN_DRAW
+    else
+        unset HEADWATER_CAMPAIGN_DRAW
+    fi
     # The usage gate reads the current `additive-launch.env`, on a relaunch
     # as on a launch, and not `driver.argv` (#1876).
     HEADWATER_DRIVE_USAGE_STOP=$TRY_USAGE_STOP_PERCENT
@@ -1462,9 +1570,11 @@ case $verb in
         pin_ready "$pin"
         mkdir -p "$try" || exit 2
         if [ "$stage_kind" = base ]; then spec_scenario=$base; else spec_scenario=$open_scenario; fi
-        printf 'additive scenario-%s tuning\n' "$spec_scenario" > "$try/spec"
+        # A probe outside a hook variant's selection is an exclude (#1875).
+        printf 'additive scenario-%s tuning%s\n' "$spec_scenario" "${excluded:+ $excluded}" > "$try/spec"
         printf '%s\n' "$stage_kind${stage_arg:+ $stage_arg}" > "$try/stage"
         [ "$stage_kind" = screen ] && printf '%s\n' "$variant_tree" > "$try/tree"
+        [ "$stage_kind" = screen ] && printf '%s\n' "$screen_draw" > "$try/draw"
         printf '%s\n' --root "$try" --pin "$pin" --claude-version "$TRY_HARNESS" \
             --spec-a "$try/spec" --model "$TRY_MODEL" --session-cents "$TRY_SESSION_CENTS" \
             --cap-cents "$open_cap" --parallel "$TRY_PARALLEL" --overshoot-cents "$TRY_OVERSHOOT_CENTS" \
@@ -1633,8 +1743,16 @@ $records records of the canary, not 8"
         fi
         # The batch ran the stage's count, so a screen is never recorded as a
         # confirmation, nor a confirmation of another count (#1838).
+        # A try that left probes out ran the others at the stage's
+        # repetitions, so its count is those repetitions times the probes it
+        # ran (#1875).
         tuning_read
-        if [ "$result_stage" = screen ]; then result_count=$t_screen; else result_count=$t_confirm; fi
+        if [ "$result_stage" = screen ]; then result_reps=$t_screen_reps; else result_reps=$t_confirm_reps; fi
+        result_set_n=$(declared tuning_set | awk 'NF' | wc -l | tr -d ' ')
+        # shellcheck disable=SC2046
+        set -- $(head -1 "$try/spec" 2>/dev/null)
+        [ $# -ge 3 ] && shift 3
+        result_count=$((result_reps * (result_set_n - $#)))
         result_jobs=$(awk 'NF' "$try/a/jobs" 2>/dev/null | wc -l | tr -d ' ')
         if [ "$result_jobs" != "$result_count" ]; then
             say "a $result_stage runs $result_count sessions, and the batch of $try planned $result_jobs jobs, so it is not recorded as a $result_stage."
@@ -1695,8 +1813,8 @@ $records records of the canary, not 8"
             fi
             best=$(printf '%s\n' "$best_line" | cut -f1)
             best_count=$(printf '%s\n' "$best_line" | cut -f5)
-            if [ "$best_count" != "$t_confirm" ]; then
-                say "the best so far of $result_layer, $best, planned ${best_count:-an unrecorded count of} sessions, and the keep rule reads a confirmation against a best so far at $t_confirm alone."
+            if [ "$best_count" != "$result_count" ]; then
+                say "the best so far of $result_layer, $best, planned ${best_count:-an unrecorded count of} sessions, and the keep rule reads a confirmation against a best so far at $result_count alone."
                 exit 2
             fi
             [ -f "$checkout/$best" ] || { say "the best so far of $result_layer, $best, is not in $checkout."; exit 2; }

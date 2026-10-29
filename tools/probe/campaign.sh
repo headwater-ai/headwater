@@ -282,14 +282,29 @@
 # person's ruling on each session, because exit 5 is also how the recorder
 # reports no engine, an oracle tree with no `.headwater/` and a failing check.
 #
+# **A session reads one phrasing of its probe's task (#1875).** A probe's
+# `## Task` holds two or three `### Phrasing <n>` subsections (HW-DR-0112),
+# and the prompt is the body of one of them (spec 15). The batch keeps each
+# phrasing in `<out>/tasks/<probe>.<n>.md`, the count in
+# `<out>/tasks/<probe>.phrasings`, and a task with no phrasing in
+# `<out>/tasks/<probe>.md`, as `tools/probe/phrasing.sh files` writes them.
+# Where `HEADWATER_CAMPAIGN_DRAW` names a file, the fixed draw of a screen
+# that `tools/probe/try.sh launch` writes, repetition `r` of a probe takes the
+# phrasing of the `r`-th `draw: <probe> <n>` line for it. Otherwise
+# repetition `r` takes phrasing `((r - 1) mod count) + 1`, so a confirmation
+# spreads the phrasings evenly. A draw that leaves a job with no phrasing, or
+# names a phrasing above its probe's count, exits 5 before the harness is
+# asked anything.
+#
 # **A batch's pin moves with `--repin`, and only so (#1659).** A fix to the
 # recorder is a new commit, and the batch refuses a `HEAD` that is not its pin.
 # Check out the new commit, detached, and run `--repin` from it. It spends
 # nothing and runs no harness. It moves `<out>/head` only when a fresh build of
 # the engine hashes to `<out>/engine.sha256`, a fresh plan of every line prints
 # the same `lock`, `tree`, `selection`, `read_set`, `seed` and `harness` as
-# `<out>/plans/L<n>`, and every probe's `## Task` body is the same bytes as
-# `<out>/tasks/<probe>.md`. It refuses with 4 and names each member that moved.
+# `<out>/plans/L<n>`, and every probe's task is the same bytes as its file
+# under `<out>/tasks/`, phrasing by phrasing. It refuses with 4 and names each
+# member that moved.
 # A change to a classified document moves `tree`, so a pin moves only over a
 # commit range that changed no document, no task and no engine source. It
 # appends `<old> <new> <utc> <recorded-count>` to `<out>/pins`, and assembly
@@ -510,6 +525,33 @@ if [ "$unrecorded" = 1 ]; then
     exit 0
 fi
 
+# task_of <job name> <probe>: the task file of the job. The phrasing is
+# `phrasing.sh pick` of the job's repetition over the probe's count, from the
+# draw that `HEADWATER_CAMPAIGN_DRAW` names where it is set (the fixed draw of
+# a screen), and otherwise spread over the repetitions. A batch written before
+# #1875 holds no count, and reads as a probe with no phrasing.
+task_of() {
+    o_count=$(cat "$out/tasks/$2.phrasings" 2>/dev/null)
+    o_rep=${1##*-r}
+    o_n=$(sh "$root/tools/probe/phrasing.sh" pick "$2" "$o_rep" "${o_count:-0}" ${HEADWATER_CAMPAIGN_DRAW:+"$HEADWATER_CAMPAIGN_DRAW"}) || return 5
+    if [ "$o_n" = 0 ]; then
+        echo "$out/tasks/$2.md"
+    else
+        echo "$out/tasks/$2.$o_n.md"
+    fi
+}
+
+# draw_check <file of jobs>: every job has a phrasing, before the harness is
+# asked anything. A draw that names no phrasing for a job, or a phrasing its
+# probe's task does not hold, exits 5.
+draw_check() {
+    while IFS= read -r c_row; do
+        # shellcheck disable=SC2086
+        set -- $c_row
+        task_of "$1" "$6" > /dev/null || exit 5
+    done < "$1"
+}
+
 # ---------------------------------------------------------------------------
 # One job, run by a worker. The line is the job's row of `<out>/jobs`.
 # ---------------------------------------------------------------------------
@@ -526,6 +568,7 @@ run_job() {
     if [ -f "$dir/status" ] && [ "$(cat "$dir/status")" = 0 ]; then
         return 0
     fi
+    task=$(task_of "$name" "$probe") || exit 5
     # A session accepted with `--unrecorded` spent and was counted as a
     # non-record (#1659). Its workspace is gone, so a run again would be a new
     # paid draw and not a second recording of the same session.
@@ -683,7 +726,7 @@ run_job() {
     # reader of the session can see what planned its record.
     # shellcheck disable=SC2086
     set -- --probe "$probe" --session "$name" \
-        --task-file "$out/tasks/$probe.md" --workspace "$ws" --model "$model" \
+        --task-file "$task" --workspace "$ws" --model "$model" \
         --tier "$tier" --arm "$arm" $selects $excludes \
         ${plan_repetitions:+--repetitions "$plan_repetitions"} \
         ${max_turns:+--max-turns "$max_turns"} \
@@ -906,17 +949,14 @@ plan_line() {
         ${p_repetitions:+--repetitions "$p_repetitions"} > "$p_file" 2>&1
 }
 
-# extract_task <probe> <file>: the body of the probe's `## Task` and nothing
-# else (spec 15). A probe that no document declares writes an empty file.
-extract_task() {
-    t_file=$(grep -rlx -- "id: $1" "$root/docs/probes" | head -1)
-    if [ -z "$t_file" ]; then
-        : > "$2"
-        return 0
-    fi
-    awk '/^## Task$/ { on = 1; next } on && /^## / { exit } on { print }' "$t_file" \
-        | awk 'NF { seen = 1 } seen' | awk '{ lines[NR] = $0 } END { n = NR; while (n > 0 && lines[n] == "") n--; for (i = 1; i <= n; i++) print lines[i] }' \
-        > "$2"
+# extract_tasks <probe> <dir>: every task file of the probe under <dir>, and
+# `<dir>/<probe>.phrasings`, its count of phrasings, as
+# `tools/probe/phrasing.sh files` writes them. The prompt of a session is the
+# body of the probe's `## Task`, or of the one `### Phrasing <n>` it draws,
+# without the heading (spec 15, HW-DR-0112). It names the first file that is
+# empty, and prints nothing when each one holds a body.
+extract_tasks() {
+    sh "$root/tools/probe/phrasing.sh" files "$root" "$1" "$2"
 }
 
 # build_oracle <rev> <trees> <probe>...: the present tree of the commit
@@ -1069,10 +1109,26 @@ if [ "$repin" = 1 ]; then
             fi
         done
     done < "$out/lines"
-    # (c) The task of every probe the batch draws.
+    # (c) The task of every probe the batch draws, phrasing by phrasing, and
+    # its count of phrasings: a phrasing added or taken away moves the task.
     for probe in $(awk '{ print $2 }' "$out/pairs" | sort -u); do
-        extract_task "$probe" "$out/repin/task.md"
-        if [ ! -f "$out/tasks/$probe.md" ] || ! cmp -s "$out/tasks/$probe.md" "$out/repin/task.md"; then
+        mkdir -p "$out/repin/tasks"
+        extract_tasks "$probe" "$out/repin/tasks" > /dev/null
+        r_count=$(cat "$out/repin/tasks/$probe.phrasings")
+        r_files=$probe.md
+        if [ "$r_count" != 0 ]; then
+            r_files= r_n=1
+            while [ "$r_n" -le "$r_count" ]; do r_files="$r_files $probe.$r_n.md"; r_n=$((r_n + 1)); done
+        fi
+        r_moved=0
+        for r_file in $r_files; do
+            if [ ! -f "$out/tasks/$r_file" ] || ! cmp -s "$out/tasks/$r_file" "$out/repin/tasks/$r_file"; then
+                r_moved=1
+            fi
+        done
+        r_was=$(cat "$out/tasks/$probe.phrasings" 2>/dev/null || echo 0)
+        [ "$r_was" = "$r_count" ] || r_moved=1
+        if [ "$r_moved" = 1 ]; then
             echo "campaign: the \`## Task\` of $probe moved." >&2
             moved=1
         fi
@@ -1299,10 +1355,11 @@ while IFS= read -r line; do
 done < "$out/lines"
 sort -u "$out/pairs.tmp" > "$out/pairs" && rm -f "$out/pairs.tmp"
 
-# The task of each probe: the body of `## Task` and nothing else (spec 15).
+# The task of each probe: the body of `## Task` and nothing else (spec 15),
+# or of each `### Phrasing <n>` in a file of its own (HW-DR-0112).
 for probe in $probes; do
-    extract_task "$probe" "$out/tasks/$probe.md"
-    [ -s "$out/tasks/$probe.md" ] || { echo "campaign: $probe has no task body." >&2; exit 5; }
+    empty=$(extract_tasks "$probe" "$out/tasks")
+    [ -z "$empty" ] || { echo "campaign: $probe has no task body in $empty." >&2; exit 5; }
 done
 
 # The trees, built once, by the two functions `--scenario-tree` builds with.
@@ -1349,6 +1406,8 @@ if [ ! -f "$out/jobs" ]; then
         | awk -v seed="$seed" 'BEGIN { srand(seed) } { printf "%.12f\t%s\n", rand(), $0 }' \
         | sort -k1,1 | cut -f2- > "$out/jobs"
 fi
+# Every job has its phrasing before the harness is asked anything (#1875).
+draw_check "$out/jobs"
 
 # The harness is part of every session's identity, and assembly refuses a line
 # whose sessions disagree on it. A batch staggered over days can meet another

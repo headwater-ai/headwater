@@ -3175,6 +3175,43 @@ STUB
         present "and the record names it" "$batch/config/L1-campaign-present-p1-r1" \
             "$batch/sessions/L1-campaign-present-p1-r1/record.md"
 
+        # A job reads the task file of its own phrasing (#1875). In a copy of
+        # the batch, the probe's task has two phrasings, and the draw that
+        # `HEADWATER_CAMPAIGN_DRAW` names gives its session phrasing 2, so the
+        # prompt is the body of phrasing 2 alone. A draw that gives it a
+        # phrasing above its count exits 5 before the harness runs.
+        phr_batch=$scratch/batch-phrasing
+        rm -rf "$phr_batch"
+        cp -a "$batch" "$phr_batch"
+        printf 'The first phrasing of the task.\n' > "$phr_batch/tasks/HW-PROBE-$tombstone.1.md"
+        printf 'The second phrasing of the task.\n' > "$phr_batch/tasks/HW-PROBE-$tombstone.2.md"
+        printf '2\n' > "$phr_batch/tasks/HW-PROBE-$tombstone.phrasings"
+        printf 'draw: HW-PROBE-%s 2\n' "$tombstone" > "$phr_batch/draw"
+        rm -f "$args"
+        job="L1-campaign-present-p1-r1 1 campaign present sufficiency HW-PROBE-$tombstone"
+        rm -rf "$phr_batch/sessions/L1-campaign-present-p1-r1"
+        HEADWATER_CAMPAIGN_DRAW=$phr_batch/draw PATH="$scratch/bin:$PATH" \
+            sh "$root/tools/probe/campaign.sh" --out "$phr_batch" --job "$job" >/dev/null 2>"$scratch/batch-phrasing.err"
+        same "a job on a draw of phrasing 2 records" "0" \
+            "$(cat "$phr_batch/sessions/L1-campaign-present-p1-r1/status" 2>/dev/null)"
+        present "and the harness is asked the body of phrasing 2" "The second phrasing of the task." "$args"
+        absent "and no other phrasing" "The first phrasing of the task." "$args"
+        printf 'draw: HW-PROBE-%s 3\n' "$tombstone" > "$phr_batch/draw"
+        rm -f "$args"
+        rm -rf "$phr_batch/sessions/L1-campaign-present-p1-r1"
+        HEADWATER_CAMPAIGN_DRAW=$phr_batch/draw PATH="$scratch/bin:$PATH" \
+            sh "$root/tools/probe/campaign.sh" --out "$phr_batch" --job "$job" >/dev/null 2>"$scratch/batch-phrasing.err"
+        same "a draw of phrasing 3 for a task of 2 exits 5" "5" "$?"
+        same "and the harness is not asked" "no" "$([ -f "$args" ] && echo yes || echo no)"
+        present "and says why" "holds 2 phrasings" "$scratch/batch-phrasing.err"
+        # With no draw, repetition 2 of the job takes phrasing 2.
+        rm -f "$args"
+        job="L1-campaign-present-p1-r2 1 campaign present sufficiency HW-PROBE-$tombstone"
+        PATH="$scratch/bin:$PATH" \
+            sh "$root/tools/probe/campaign.sh" --out "$phr_batch" --job "$job" >/dev/null 2>"$scratch/batch-phrasing.err"
+        present "with no draw, repetition 2 of a probe of 2 phrasings is asked phrasing 2" "The second phrasing of the task." "$args"
+        rm -rf "$phr_batch"
+
         # The tier's ceiling reserves `--session-cents` too, not the declared
         # unit (#1659). The batch has spent 1 cent above and 50 in another
         # session of the tier, so with B = 60 a ceiling of 110 refuses the next
@@ -3472,6 +3509,26 @@ STUB
         same "and the harness ran 3 times in all, none twice" "3 3" \
             "$(LC_ALL=C sort -u "$scratch/probe-log/stagger.calls" | wc -l | tr -d ' ') $(wc -l < "$scratch/probe-log/stagger.calls" | tr -d ' ')"
 
+        # A draw that names the probe for its first session alone leaves the
+        # other two with no phrasing, so the batch exits 5 before it asks the
+        # harness its version or runs a session (#1875).
+        stagger_batch "$stagger"
+        rm -f "$scratch/probe-log/stagger.calls"
+        printf 'draw: HW-PROBE-%s 1\n' "$tombstone" > "$scratch/stagger.draw"
+        HEADWATER_CAMPAIGN_DRAW=$scratch/stagger.draw PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$stagger" \
+            --model claude-haiku-4-5 --spec "$scratch/stagger.spec" --repetitions 1 --max-sessions 2 >/dev/null 2>"$scratch/stagger-draw.err"
+        same "a batch whose draw does not cover a job exits 5" "5" "$?"
+        same "before it asks the harness its version or runs a session" "no no" \
+            "$([ -e "$stagger/claude-version" ] && echo yes || echo no) $([ -e "$scratch/probe-log/stagger.calls" ] && echo yes || echo no)"
+        present "and names the session the draw leaves out" "fewer than 2 times" "$scratch/stagger-draw.err"
+        printf 'draw: HW-PROBE-%s 1\ndraw: HW-PROBE-%s 1\ndraw: HW-PROBE-%s 1\n' "$tombstone" "$tombstone" "$tombstone" > "$scratch/stagger.draw"
+        stagger_batch "$stagger"
+        HEADWATER_CAMPAIGN_DRAW=$scratch/stagger.draw PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$stagger" \
+            --model claude-haiku-4-5 --spec "$scratch/stagger.spec" --repetitions 1 --max-sessions 2 >/dev/null 2>"$scratch/stagger-draw.err"
+        same "a draw of 1 for each session of a task with no phrasing runs the slice" "9 2" \
+            "$? $(stagger_recorded "$stagger")"
+        rm -f "$scratch/probe-log/stagger.calls"
+
         # The bound holds across parallel workers: 3 workers, 3 jobs, 2 tokens.
         # A token taken without O_EXCL lets a third worker through in about
         # one trial of three on a host whose `mkdir` checks and then creates,
@@ -3655,6 +3712,13 @@ STUB
         same "\`--repin\` refuses with 4 when a probe's task moved" "4" "$?"
         present "and names the probe" "\`## Task\` of HW-PROBE-$tombstone moved" "$scratch/repin.err"
         cp "$scratch/repin-task.keep" "$task_file"
+
+        # A batch that recorded phrasings of a task that has none now moved
+        # its task too: the count of phrasings is part of it (#1875).
+        printf '2\n' > "$unrec/tasks/HW-PROBE-$tombstone.phrasings"
+        repin_from "$oldpin"
+        same "\`--repin\` refuses with 4 when a probe's count of phrasings moved" "4" "$?"
+        rm -f "$unrec/tasks/HW-PROBE-$tombstone.phrasings"
 
         echo 0000 > "$unrec/engine.sha256"
         repin_from "$oldpin"
@@ -6019,6 +6083,154 @@ do
     same "declared.py open refuses $open_name, with 2 and its reason" "2 1 0" \
         "$? $(grep -cF -- "$open_needle" "$scratch/open-bad.err") $(wc -c < "$scratch/open-bad.out" | tr -d ' ')"
 done
+# A hooks layer names its hook moment as a seventh field, `moment`, one of
+# intent, read, write and review (#1875), and `open` prints it as a seventh
+# word. No other layer declares it, so the line of every other layer keeps
+# its six words. The rows are the hooks layer on scenario 4, which adds the
+# hooks over scenario 2.
+sed 's/^      layer: docs$/      layer: hooks/; s/^      scenario: 1$/      scenario: 4/; s/^      change: none$/      change: none\n      moment: read/' \
+    "$scratch/open-docs1.yml" > "$scratch/open-hooks4.yml"
+python3 "$declared_py" "$scratch/open-hooks4.yml" open > "$scratch/open-hooks4.out" 2> "$scratch/open-hooks4.err"
+same "declared.py open prints a hooks layer's moment as a seventh word" \
+    "0 hooks 4 1 6000 https://github.com/headwater-ai/headwater/issues/1777#issuecomment-6277195497 none read" \
+    "$? $(cat "$scratch/open-hooks4.out")"
+for open_case in \
+    "a hooks layer with no moment|open-hooks4|/^      moment: read$/d|does not declare \`moment\`" \
+    "a moment outside the four|open-hooks4|s/^      moment: read$/      moment: start/|\`moment\` of \`rounds.tuning.open\` in .headwater/probe.yml is 'start'" \
+    "a moment that is not a word|open-hooks4|s/^      moment: read$/      moment: [read]/|\`moment\` of \`rounds.tuning.open\` in .headwater/probe.yml is ['read']" \
+    "a moment on the docs layer|open-docs1|s/^      change: none$/      change: none\n      moment: read/|only the hooks layer declares one"
+do
+    open_name=${open_case%%|*}; open_rest=${open_case#*|}
+    open_from=${open_rest%%|*}; open_rest=${open_rest#*|}
+    open_sed=${open_rest%%|*}; open_needle=${open_rest#*|}
+    sed "$open_sed" "$scratch/$open_from.yml" > "$scratch/open-bad.yml"
+    python3 "$declared_py" "$scratch/open-bad.yml" open > "$scratch/open-bad.out" 2> "$scratch/open-bad.err"
+    same "declared.py open refuses $open_name, with 2 and its reason" "2 1 0" \
+        "$? $(grep -cF -- "$open_needle" "$scratch/open-bad.err") $(wc -c < "$scratch/open-bad.out" | tr -d ' ')"
+done
+
+# `tuning_set` prints the members of the tuning round's set, one a line, in
+# the order the set declares them, which `try.sh` draws and selects in.
+python3 "$declared_py" "$scratch/open-docs1.yml" tuning_set > "$scratch/tuning-set.out" 2> /dev/null
+same "declared.py tuning_set prints the tuning round's set, one member a line, in its order" \
+    "0 $(python3 -c 'import sys, yaml; d = yaml.safe_load(open(sys.argv[1])); print(" ".join(d["sets"][d["rounds"]["tuning"]["set"]]))' "$scratch/open-docs1.yml")" \
+    "$? $(tr '\n' ' ' < "$scratch/tuning-set.out" | sed 's/ $//')"
+
+# ---------------------------------------------------------------------------
+# `tools/probe/phrasing.sh` cuts a probe's task the one way the campaign and
+# the tuning round both read it (#1875, HW-DR-0112's form of a phrasing).
+# The prompt of a session is the body of the one phrasing it draws, without
+# the heading and without any other phrasing (spec 15).
+# ---------------------------------------------------------------------------
+phrasing=$root/tools/probe/phrasing.sh
+mkdir -p "$scratch/phr/docs/probes"
+printf -- '---\nid: HW-PROBE-phr3\n---\n\n# Three\n\n## Task\n\n### Phrasing 1\n\nFind the first.\n\n### Phrasing 2\n\nLocate the second,\nover two lines.\n\n#### A note\n\nInside phrasing 2.\n\n### Phrasing 3\n\nName the third.\n\n## Target\n\nA link.\n' \
+    > "$scratch/phr/docs/probes/phr3.md"
+printf -- '---\nid: HW-PROBE-phr0\n---\n\n# None\n\n## Task\n\n\nThe whole task.\n\n\n## Target\n\nA link.\n' \
+    > "$scratch/phr/docs/probes/phr0.md"
+same "phrasing.sh count: three phrasings under ## Task" "3" "$(sh "$phrasing" count "$scratch/phr" HW-PROBE-phr3)"
+same "phrasing.sh count: a task with none is 0" "0" "$(sh "$phrasing" count "$scratch/phr" HW-PROBE-phr0)"
+same "phrasing.sh count: a probe that no document declares is 0" "0" "$(sh "$phrasing" count "$scratch/phr" HW-PROBE-nobody)"
+sh "$phrasing" cut "$scratch/phr" HW-PROBE-phr3 2 > "$scratch/phr/cut2"
+printf 'Locate the second,\nover two lines.\n\n#### A note\n\nInside phrasing 2.\n' > "$scratch/phr/want2"
+same "phrasing.sh cut 2: the body of phrasing 2 alone, without its heading or another phrasing, byte for byte" \
+    "same" "$(cmp -s "$scratch/phr/cut2" "$scratch/phr/want2" && echo same || echo differs)"
+same "phrasing.sh cut 3: the last phrasing stops at the next ## heading" "Name the third." \
+    "$(sh "$phrasing" cut "$scratch/phr" HW-PROBE-phr3 3)"
+same "phrasing.sh cut 4: a phrasing the task does not hold is empty" "" \
+    "$(sh "$phrasing" cut "$scratch/phr" HW-PROBE-phr3 4)"
+same "phrasing.sh cut: a task with no phrasing is its whole body, trimmed" "The whole task." \
+    "$(sh "$phrasing" cut "$scratch/phr" HW-PROBE-phr0)"
+# `files` writes the task files that campaign.sh keeps under `<out>/tasks/`.
+mkdir -p "$scratch/phr/tasks"
+printf 'stale\n' > "$scratch/phr/tasks/HW-PROBE-phr3.md"
+printf 'stale\n' > "$scratch/phr/tasks/HW-PROBE-phr3.4.md"
+same "phrasing.sh files: prints nothing when every phrasing has a body" "" \
+    "$(sh "$phrasing" files "$scratch/phr" HW-PROBE-phr3 "$scratch/phr/tasks")"
+same "phrasing.sh files: writes the count, and one file for each phrasing, and no other" "3 HW-PROBE-phr3.1.md HW-PROBE-phr3.2.md HW-PROBE-phr3.3.md HW-PROBE-phr3.phrasings" \
+    "$(cat "$scratch/phr/tasks/HW-PROBE-phr3.phrasings") $(cd "$scratch/phr/tasks" && ls HW-PROBE-phr3* | tr '\n' ' ' | sed 's/ $//')"
+same "phrasing.sh files: the file of phrasing 2 is its cut, byte for byte" "same" \
+    "$(cmp -s "$scratch/phr/tasks/HW-PROBE-phr3.2.md" "$scratch/phr/want2" && echo same || echo differs)"
+# The task file of a probe whose id ends in `-1` is not a phrasing of the
+# probe whose id is that id without the `-1`, so `files` for the one leaves
+# the task file of the other in place.
+printf 'The task of pa-1.\n' > "$scratch/phr/tasks/HW-PROBE-pa-1.md"
+printf -- '---\nid: HW-PROBE-pa\n---\n\n## Task\n\n### Phrasing 1\n\nOne.\n\n### Phrasing 2\n\nTwo.\n\n## Target\n\nA link.\n' \
+    > "$scratch/phr/docs/probes/pa.md"
+printf 'A note.\n' > "$scratch/phr/tasks/HW-PROBE-pa.1-notes.md"
+sh "$phrasing" files "$scratch/phr" HW-PROBE-pa "$scratch/phr/tasks" > /dev/null
+same "phrasing.sh files: leaves the task file of a probe whose id is the probe's id and -1" "The task of pa-1." \
+    "$(cat "$scratch/phr/tasks/HW-PROBE-pa-1.md" 2>/dev/null)"
+same "phrasing.sh files: and leaves a file whose name holds more than digits between the probe's id and .md" "A note." \
+    "$(cat "$scratch/phr/tasks/HW-PROBE-pa.1-notes.md" 2>/dev/null)"
+sh "$phrasing" files "$scratch/phr" HW-PROBE-pa-1 "$scratch/phr/tasks" > /dev/null
+same "phrasing.sh files: and the files of that probe leave the probe's phrasings in place" "One. Two." \
+    "$(cat "$scratch/phr/tasks/HW-PROBE-pa.1.md" "$scratch/phr/tasks/HW-PROBE-pa.2.md" 2>/dev/null | tr '\n' ' ' | sed 's/ $//')"
+# A fenced code block is not markdown structure: a `# ` comment, a `## `
+# line and a `### Phrasing <n>` line inside a fence end no phrasing, end no
+# task and count as no phrasing (CommonMark's fenced code block).
+printf -- '---\nid: HW-PROBE-phrf\n---\n\n## Task\n\n### Phrasing 1\n\nRun this:\n\n```sh\n# a comment\n## not a heading\n### Phrasing 9\n```\n\nThen report.\n\n### Phrasing 2\n\n~~~~\n```\n## inside a tilde fence\n~~~~\n\n## Target\n\nA link.\n' \
+    > "$scratch/phr/docs/probes/phrf.md"
+printf 'Run this:\n\n```sh\n# a comment\n## not a heading\n### Phrasing 9\n```\n\nThen report.\n' > "$scratch/phr/wantf1"
+same "phrasing.sh count: a heading line inside a fenced code block is no phrasing" "2" \
+    "$(sh "$phrasing" count "$scratch/phr" HW-PROBE-phrf)"
+sh "$phrasing" cut "$scratch/phr" HW-PROBE-phrf 1 > "$scratch/phr/cutf1"
+same "phrasing.sh cut 1: a # line inside a fenced code block does not end the phrasing, byte for byte" \
+    "same" "$(cmp -s "$scratch/phr/cutf1" "$scratch/phr/wantf1" && echo same || echo differs)"
+same "phrasing.sh cut 2: a fence closes only on its own marker, and a ## line inside it does not end the task" \
+    "~~~~ \`\`\` ## inside a tilde fence ~~~~" \
+    "$(sh "$phrasing" cut "$scratch/phr" HW-PROBE-phrf 2 | tr '\n' ' ' | sed 's/ $//')"
+# A fence closes on its own character alone, and on a marker at least as long
+# as the one that opened it: a line of four backticks does not close a tilde
+# fence, and a line of three backticks does not close a fence of four.
+printf -- '---\nid: HW-PROBE-phrc\n---\n\n## Task\n\n### Phrasing 1\n\n~~~\n````\n### Phrasing 7\n~~~\n\n### Phrasing 2\n\nTwo.\n\n## Target\n\nA link.\n' \
+    > "$scratch/phr/docs/probes/phrc.md"
+printf -- '---\nid: HW-PROBE-phrl\n---\n\n## Task\n\n### Phrasing 1\n\n````\n```\n### Phrasing 8\n````\n\n### Phrasing 2\n\nTwo.\n\n## Target\n\nA link.\n' \
+    > "$scratch/phr/docs/probes/phrl.md"
+# A false close reopens a fence on the real closing line, which hides the
+# next phrasing, so the cut of phrasing 2 is what tells the two apart.
+same "phrasing.sh cut 2: a backtick line does not close a tilde fence" "2 Two." \
+    "$(sh "$phrasing" count "$scratch/phr" HW-PROBE-phrc) $(sh "$phrasing" cut "$scratch/phr" HW-PROBE-phrc 2)"
+same "phrasing.sh cut 2: a marker shorter than the opening one does not close the fence" "2 Two." \
+    "$(sh "$phrasing" count "$scratch/phr" HW-PROBE-phrl) $(sh "$phrasing" cut "$scratch/phr" HW-PROBE-phrl 2)"
+sh "$phrasing" files "$scratch/phr" HW-PROBE-phr0 "$scratch/phr/tasks" > /dev/null
+same "phrasing.sh files: a task with no phrasing is <probe>.md, its whole task, and a count of 0" "0 The whole task." \
+    "$(cat "$scratch/phr/tasks/HW-PROBE-phr0.phrasings") $(cat "$scratch/phr/tasks/HW-PROBE-phr0.md")"
+printf -- '---\nid: HW-PROBE-phre\n---\n\n## Task\n\n### Phrasing 1\n\nOne.\n\n### Phrasing 2\n\n## Target\n\nA link.\n' \
+    > "$scratch/phr/docs/probes/phre.md"
+same "phrasing.sh files: names the file of a phrasing with no body" "$scratch/phr/tasks/HW-PROBE-phre.2.md" \
+    "$(sh "$phrasing" files "$scratch/phr" HW-PROBE-phre "$scratch/phr/tasks")"
+same "phrasing.sh pick: no draw spreads 6 repetitions over 3 phrasings, two each" "1 2 3 1 2 3" \
+    "$(for r in 1 2 3 4 5 6; do sh "$phrasing" pick HW-PROBE-phr3 "$r" 3; done | tr '\n' ' ' | sed 's/ $//')"
+same "phrasing.sh pick: a task with no phrasing is 0, its whole task" "0" "$(sh "$phrasing" pick HW-PROBE-phr0 4 0)"
+printf 'draw: HW-PROBE-phr3 2\ndraw: HW-PROBE-phr0 1\ndraw: HW-PROBE-big 4\n' > "$scratch/phr/draw"
+same "phrasing.sh pick: a draw gives the job the phrasing it names" "2" \
+    "$(sh "$phrasing" pick HW-PROBE-phr3 1 3 "$scratch/phr/draw")"
+same "phrasing.sh pick: a draw of 1 for a task with no phrasing is its whole task" "0" \
+    "$(sh "$phrasing" pick HW-PROBE-phr0 1 0 "$scratch/phr/draw")"
+sh "$phrasing" pick HW-PROBE-big 1 3 "$scratch/phr/draw" > /dev/null 2> "$scratch/phr/err"
+same "phrasing.sh pick: a phrasing above the count exits 5" "5" "$?"
+sh "$phrasing" pick HW-PROBE-phr3 2 3 "$scratch/phr/draw" > /dev/null 2> "$scratch/phr/err"
+same "phrasing.sh pick: a session the draw does not name exits 5" "5" "$?"
+sh "$phrasing" pick HW-PROBE-other 1 3 "$scratch/phr/draw" > /dev/null 2> "$scratch/phr/err"
+same "phrasing.sh pick: a probe the draw does not name exits 5" "5" "$?"
+same "phrasing.sh draw: a task with no phrasing draws 1" "1" "$(sh "$phrasing" draw 0 docs 1 HW-PROBE-phr0 1 0)"
+same "phrasing.sh draw: the same key draws the same phrasing" \
+    "$(sh "$phrasing" draw 7 hooks 2 HW-PROBE-phr3 1 3)" "$(sh "$phrasing" draw 7 hooks 2 HW-PROBE-phr3 1 3)"
+# The key and the width of the draw, held by literals that Python's hashlib
+# gave outside this script: sha256 of `7 hooks 2 HW-PROBE-phr3 1` opens
+# `ca6112a8`, which is 3395359400. Over 3 phrasings that is phrasing 3. Over a
+# count of 2^32 the draw is the eight digits plus 1, so a key in another
+# order or a cut of seven digits draws another number.
+same "phrasing.sh draw: the key 7 hooks 2 HW-PROBE-phr3 1 over 3 phrasings is phrasing 3" "3" \
+    "$(sh "$phrasing" draw 7 hooks 2 HW-PROBE-phr3 1 3)"
+same "phrasing.sh draw: and over a count of 2^32 it is the first eight hex digits of the sha256, plus 1" "3395359401" \
+    "$(sh "$phrasing" draw 7 hooks 2 HW-PROBE-phr3 1 4294967296)"
+# Over 300 keys the draw reaches every phrasing, and no phrasing takes more
+# than half of them, so it is not one fixed index.
+same "phrasing.sh draw: over 300 keys each of 3 phrasings is drawn, none in more than half" "3 yes" \
+    "$(for k in $(seq 1 300); do sh "$phrasing" draw "$k" docs 1 HW-PROBE-phr3 1 3; done | LC_ALL=C sort | uniq -c | awk '{ n++; if ($1 > 150) big = 1 } END { print n, (big ? "no" : "yes") }')"
+
 # `open` is a key of the tuning round alone. A round's key outside the list
 # used to break `rounds` and `approved`, and with them the round gate and
 # both dry runs, so each still reads a declaration with an open layer.
