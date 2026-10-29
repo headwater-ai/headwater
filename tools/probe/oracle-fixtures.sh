@@ -123,6 +123,14 @@ tree=$(fresh typed-elsewhere) && mkdir -p "$tree/docs/notes" && mv "$tree/$new" 
 expect 1 "typed-at fails the document moved off its shelf" "$tree" typed-at.sh docs/decisions decision HW-PD-0026 "$title"
 tree=$(fresh typed-prefix) && sed -i 's/HW-PD-0026/HW-PD-00260/g' "$tree/$new"
 expect 1 "typed-at fails a citation of an identifier that the ruling is a prefix of" "$tree" typed-at.sh docs/decisions decision HW-PD-0026 "$title"
+# A period ends a whole name only when no letter, digit, `_` or `-` follows
+# it: `HW-PD-0026.md` and `HW-PD-0026.5` are other names (verify of #1874).
+tree=$(fresh typed-suffix) && sed -i 's/HW-PD-0026/HW-PD-0026.md/g' "$tree/$new"
+expect 1 "typed-at fails a citation that the ruling is followed by a file extension in" "$tree" typed-at.sh docs/decisions decision HW-PD-0026 "$title"
+tree=$(fresh typed-dotted) && sed -i 's/HW-PD-0026/HW-PD-0026.5/g' "$tree/$new"
+expect 1 "typed-at fails a citation that the ruling is followed by a period and a digit in" "$tree" typed-at.sh docs/decisions decision HW-PD-0026 "$title"
+tree=$(fresh typed-period) && sed -i 's/HW-PD-0026/HW-PD-0026. /g' "$tree/$new"
+expect 0 "typed-at passes a citation that ends a sentence" "$tree" typed-at.sh docs/decisions decision HW-PD-0026 "$title"
 
 # --- --args <file>, read by lib.sh for every script --------------------------
 
