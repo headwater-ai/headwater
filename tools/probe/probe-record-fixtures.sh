@@ -3705,6 +3705,13 @@ STUB
         present "and names the probe" "\`## Task\` of HW-PROBE-$tombstone moved" "$scratch/repin.err"
         cp "$scratch/repin-task.keep" "$task_file"
 
+        # A batch that recorded phrasings of a task that has none now moved
+        # its task too: the count of phrasings is part of it (#1875).
+        printf '2\n' > "$unrec/tasks/HW-PROBE-$tombstone.phrasings"
+        repin_from "$oldpin"
+        same "\`--repin\` refuses with 4 when a probe's count of phrasings moved" "4" "$?"
+        rm -f "$unrec/tasks/HW-PROBE-$tombstone.phrasings"
+
         echo 0000 > "$unrec/engine.sha256"
         repin_from "$oldpin"
         same "\`--repin\` refuses with 4 when the engine moved" "4" "$?"
