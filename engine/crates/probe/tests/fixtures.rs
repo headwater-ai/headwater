@@ -2200,7 +2200,11 @@ fn an_action_narrows_the_selection_to_the_probes_that_declare_it() {
     assert_eq!(plan.refusal, None, "{:?}", plan.refusal);
     assert_eq!(
         selected_ids(&plan),
-        ["PROBE-FIX-answered", "PROBE-FIX-not-opened", "PROBE-FIX-opened"]
+        [
+            "PROBE-FIX-answered",
+            "PROBE-FIX-not-opened",
+            "PROBE-FIX-opened"
+        ]
     );
     let opened = plan
         .selected
@@ -2248,8 +2252,7 @@ fn a_moment_outside_the_closed_set_stops_the_run() {
 
 #[test]
 fn an_action_outside_the_closed_set_stops_the_run() {
-    let plan =
-        plan_over_probe(&|source| source.replace("action: ask_or_locate", "action: wibble"));
+    let plan = plan_over_probe(&|source| source.replace("action: ask_or_locate", "action: wibble"));
     assert!(
         matches!(
             plan.refusal,
@@ -2269,7 +2272,11 @@ fn a_probe_without_an_action_stops_the_run() {
     assert!(
         matches!(
             plan.refusal,
-            Some(Refusal::Undeclared { facet: "action", found: None, .. })
+            Some(Refusal::Undeclared {
+                facet: "action",
+                found: None,
+                ..
+            })
         ),
         "{:?}",
         plan.refusal
@@ -2289,7 +2296,11 @@ fn an_action_that_is_a_list_stops_the_run() {
     assert!(
         matches!(
             plan.refusal,
-            Some(Refusal::Undeclared { facet: "action", found: Some(_), .. })
+            Some(Refusal::Undeclared {
+                facet: "action",
+                found: Some(_),
+                ..
+            })
         ),
         "{:?}",
         plan.refusal
