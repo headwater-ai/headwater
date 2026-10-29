@@ -116,6 +116,13 @@ out=$(sh "$tool" idle 2>&1)
 same 'stop the loop' 'STOPPED: idle, two sessions in a row merged nothing' "$(printf '%s\n' "$out" | grep '^STOPPED')"
 same '  after the second' 2 "$(cat "$STUB/count")"
 
+printf '\n# HW_SUPERVISE_RUN_ARGS reaches the prompt, so a resumed parent keeps its width\n'
+fresh width
+printf 'call 1 1000\n' > "$STUB/1.sh"
+out=$(HW_SUPERVISE_RUN_ARGS='--parallel 2' sh "$tool" width 2>&1)
+same 'HW_SUPERVISE_RUN_ARGS is appended to the resume prompt' \
+    '-p /next-run --resume width --parallel 2 --output-format stream-json --verbose' "$(cat "$STUB/args-1")"
+
 printf '\n# the queue and handover/ hold nothing\n'
 fresh empty ''
 out=$(sh "$tool" empty 2>&1)

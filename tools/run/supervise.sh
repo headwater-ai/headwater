@@ -73,7 +73,10 @@
 # main checkout; HW_SUPERVISE_TREE names another directory for the sessions
 # to run in, and a main checkout is refused. HW_SUPERVISE_CLAUDE names the
 # binary (default `claude`), and HW_SUPERVISE_ARGS adds arguments after the
-# fixed ones, such as a permission mode. `sh tools/run/supervise-fixtures.sh`
+# fixed ones, such as a permission mode. HW_SUPERVISE_RUN_ARGS adds
+# arguments to the `/next-run --resume <run-id>` prompt itself, such as
+# `--parallel 2`, because a resumed parent reads its width from nowhere else.
+# `sh tools/run/supervise-fixtures.sh`
 # holds every stop with a stub `claude`, so no fixture calls a model. The
 # loop leaves no process behind: a signal to it ends the session it started.
 #
@@ -217,7 +220,7 @@ while :; do
     rm -f "$fifo"
     mkfifo "$fifo" || exit 1
     # shellcheck disable=SC2086
-    (cd "$tree" && exec "$claude" -p "/next-run --resume $id" --output-format stream-json --verbose ${HW_SUPERVISE_ARGS:-}) > "$fifo" &
+    (cd "$tree" && exec "$claude" -p "/next-run --resume $id${HW_SUPERVISE_RUN_ARGS:+ $HW_SUPERVISE_RUN_ARGS}" --output-format stream-json --verbose ${HW_SUPERVISE_ARGS:-}) > "$fifo" &
     cpid=$!
     # One reader for the whole stream: keep it, and turn each call into its
     # context. The loop sees the merge count after each call too. The reader
