@@ -174,6 +174,16 @@ tree=$(fresh successor-current) && sed -i 's/^status: superseded$/status: curren
 expect 1 "successor-typed fails a record that is not superseded" "$tree" successor-typed.sh HW-DR-0111
 expect 1 "successor-typed fails when the successor drops supersedes" "$work/link-other-end" successor-typed.sh HW-DR-0111
 expect 1 "successor-typed fails when the old record does not name its successor" "$work/link-one-end" successor-typed.sh HW-DR-0111
+# The old record names a successor whose identifier the real one is a prefix
+# of, so a substring match would read it as the link (#1874.3).
+tree=$(fresh successor-prefix) && sed -i '/^  superseded_by:/,/^  [a-z]/s/^    - HW-DR-0112$/    - HW-DR-01120/' "$tree/$old"
+grep -q '^    - HW-DR-01120$' "$tree/$old" || echo "oracle-fixtures: the superseded_by line of $old was not rewritten, so the next case reads nothing." >&2
+expect 1 "successor-typed fails an old record that names an identifier the successor's is a prefix of" "$tree" successor-typed.sh HW-DR-0111
+# A sealed tree holds errors elsewhere, so `--check-clean` reads the two
+# documents the script names: the old record and the successor it found.
+expect 0 "successor-typed with --check-clean passes an error in a document it does not name" "$work/link-error-elsewhere" successor-typed.sh --check-clean HW-DR-0111
+expect 1 "successor-typed with --check-clean fails an error in the old record" "$elsewhere" successor-typed.sh --check-clean HW-DR-0111
+expect 1 "successor-typed with --check-clean fails an error in the successor" "$work/check-spoiled" successor-typed.sh --check-clean HW-DR-0111
 
 # --- moved.sh -------------------------------------------------------------
 
@@ -190,6 +200,24 @@ expect 1 "moved fails when one relative link still resolves to the old path" "$t
 tree=$(fresh moved-copied) && mkdir -p "$tree/docs/decisions/moved" && cp "$tree/$new" "$tree/$moved"
 expect 1 "moved fails a copy that left the old file" "$tree" moved.sh "$new" "$moved"
 expect 1 "moved fails when nothing is at the new path" "$base" moved.sh "docs/decisions/no-such-record.md" "$moved"
+# `--check-clean` reads the moved file and every file that links it by its
+# file name, wherever the link resolves (#1874.3). The repaired tree above
+# left the relative links inside the moved file as they were, so four of them
+# resolve to nothing now, and the strict check reports them on the moved file.
+expect 1 "moved with --check-clean fails a move that left the links inside the moved file broken" "$repaired" moved.sh --check-clean "$new" "$moved"
+clean=$(fresh moved-clean) && rm -rf "$clean" && cp -a "$repaired" "$clean" && sed -i 's#](\.\./#](../../#g; s#](0111-#](../0111-#g' "$clean/$moved"
+expect 0 "moved with --check-clean passes a move with every link repaired, inside the file too" "$clean" moved.sh --check-clean "$new" "$moved"
+tree=$(fresh moved-error-elsewhere) && rm -rf "$tree" && cp -a "$clean" "$tree" && spoil "$tree" docs/decisions/0001-implementation-language.md
+expect 0 "moved with --check-clean passes an error in a file that does not link the moved file" "$tree" moved.sh --check-clean "$new" "$moved"
+tree=$(fresh moved-error-moved) && rm -rf "$tree" && cp -a "$clean" "$tree" && spoil "$tree" "$moved"
+expect 1 "moved with --check-clean fails an error in the moved file" "$tree" moved.sh --check-clean "$new" "$moved"
+tree=$(fresh moved-error-linker) && rm -rf "$tree" && cp -a "$clean" "$tree" && spoil "$tree" docs/subsystems/measurement.md
+expect 1 "moved with --check-clean fails an error in a file that links the moved file" "$tree" moved.sh --check-clean "$new" "$moved"
+# A link rewritten to a path where nothing stands names the file and resolves
+# to neither path: `moved.sh` alone passes it, and the strict check does not.
+tree=$(fresh moved-misrepaired) && rm -rf "$tree" && cp -a "$clean" "$tree" && sed -i "s#\.\./decisions/moved/${new##*/}#../decisions/elsewhere/${new##*/}#g" "$tree/docs/subsystems/measurement.md"
+expect 0 "moved passes a link repaired to a path where nothing stands" "$tree" moved.sh "$new" "$moved"
+expect 1 "moved with --check-clean fails the same link" "$tree" moved.sh --check-clean "$new" "$moved"
 
 # --- lock-regenerated.sh --------------------------------------------------
 
@@ -200,6 +228,23 @@ cmp -s "$base/.headwater/overlay.yml" "$tree/.headwater/overlay.yml" && echo "or
 expect 1 "lock-regenerated fails an overlay edit with no resolve" "$tree" lock-regenerated.sh
 "$engine" taxonomy resolve --root "$tree" > /dev/null 2>&1
 expect 0 "lock-regenerated passes the same edit once resolved" "$tree" lock-regenerated.sh
+# On a tree whose lock matches its sources the bare form passes, so a probe
+# names what the change must hold: `<file> <literal>` pairs, each read as a
+# whole name (#1874.3). `--check-clean` then reads the files it names.
+overlay=.headwater/overlay.yml
+expect 1 "lock-regenerated fails a file that does not hold the literal" "$base" lock-regenerated.sh "$overlay" 'term: game-changer'
+expect 2 "lock-regenerated refuses a file with no literal" "$base" lock-regenerated.sh "$overlay"
+expect 2 "lock-regenerated refuses a file that does not exist" "$base" lock-regenerated.sh .headwater/no-such-file 'term: game-changer'
+retired=$(fresh lock-retired) && awk '{ print } $0 == "        reason: it stands in for the failure the thing survives" { print "      - term: game-changer"; print "        reason: it stands in for the change the thing makes" }' "$base/$overlay" > "$retired/$overlay"
+cmp -s "$base/$overlay" "$retired/$overlay" && echo "oracle-fixtures: the retired term was not added, so the next cases read nothing." >&2
+expect 1 "lock-regenerated fails the literal with no resolve" "$retired" lock-regenerated.sh "$overlay" 'term: game-changer'
+"$engine" taxonomy resolve --root "$retired" > /dev/null 2>&1
+expect 0 "lock-regenerated passes the literal once resolved" "$retired" lock-regenerated.sh "$overlay" 'term: game-changer'
+expect 1 "lock-regenerated fails when one of two literals is absent" "$retired" lock-regenerated.sh "$overlay" 'term: game-changer' "$overlay" 'replacement: use'
+expect 1 "lock-regenerated fails a literal that the file holds only as the start of a longer name" "$retired" lock-regenerated.sh "$overlay" 'term: game'
+spoil "$retired" docs/spec/12-check-layer.md
+expect 0 "lock-regenerated with --check-clean passes an error in a file it does not name" "$retired" lock-regenerated.sh --check-clean "$overlay" 'term: game-changer'
+expect 1 "lock-regenerated with --check-clean and no file fails the same error" "$retired" lock-regenerated.sh --check-clean
 
 # --- nothing-else-broken.sh -----------------------------------------------
 
@@ -221,6 +266,24 @@ expect 1 "nothing-else-broken fails a tree that holds one more finding of a pair
 printf '# the baseline of a probe names the probe in its first line\n' > "$work/baseline-commented" && cat "$work/baseline" >> "$work/baseline-commented"
 expect 0 "nothing-else-broken reads past a comment line" "$base" nothing-else-broken.sh "$work/baseline-commented"
 expect 1 "nothing-else-broken fails with no baseline" "$base" nothing-else-broken.sh "$work/no-baseline"
+# A baseline with `# scope: <path>` lines reads the findings on those files
+# alone, and `--check-clean` reads the strict errors on them (#1874.3). A
+# committed baseline of the whole tree moves with every finding any change
+# adds anywhere, so the baseline of a probe holds the file it repairs.
+printf '%s\n' '# the baseline of a probe, scoped to the file it repairs' "# scope: $new" > "$work/scoped"
+expect 0 "nothing-else-broken --record keeps the comments and the scope of a baseline" "$base" nothing-else-broken.sh --record "$work/scoped"
+if ! grep -q "^# scope: $new\$" "$work/scoped" || awk -F '\t' -v path="$new" '!/^#/ && $2 != path { bad = 1 } END { exit !bad }' "$work/scoped"; then
+    echo "FAIL nothing-else-broken --record keeps the scope line and records the scoped file alone"
+    failures=$((failures + 1))
+fi
+expect 1 "nothing-else-broken with a scope fails a new finding in the scoped file" "$work/broken-advisory" nothing-else-broken.sh "$work/scoped"
+tree=$(fresh broken-elsewhere)
+printf '\nThis sentence was added by a session that repaired one finding and in doing so wrote one long sentence that runs well past the twenty-five words the house style allows for it.\n' >> "$tree/$old"
+expect 1 "nothing-else-broken with no scope fails a new finding in another file" "$tree" nothing-else-broken.sh "$work/baseline"
+expect 0 "nothing-else-broken with a scope passes a new finding in another file" "$tree" nothing-else-broken.sh "$work/scoped"
+expect 0 "nothing-else-broken with a scope and --check-clean passes an error in another file" "$elsewhere" nothing-else-broken.sh --check-clean "$work/scoped"
+awk '!/^#/ && !gone { gone = 1; next } { print }' "$work/scoped" > "$work/scoped-less"
+expect 1 "nothing-else-broken with a scope fails the pin against a baseline less one of its findings" "$base" nothing-else-broken.sh "$work/scoped-less"
 
 # --- test-passes.sh -------------------------------------------------------
 
