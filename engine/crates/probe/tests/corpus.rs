@@ -1162,6 +1162,34 @@ fn grade(selected: &headwater_probe::plan::Selected, session: &Session) -> Verdi
 
 use headwater_probe::grade::Verdict;
 
+/// Whether a harder probe may hold `status` (#1874.3). A harder probe goes into
+/// its pull request settled (HW-DR-0052), and a draft one is a probe nobody has
+/// agreed to run (#1709). A harder probe that #1874 deprecated stays in the
+/// table as the record of its shape, and its runs still cite it.
+fn harder_status_admits(status: Option<&str>) -> bool {
+    matches!(status, Some("current" | "deprecated"))
+}
+
+/// The statuses `harder_status_admits` refuses and admits, seeded, so that a
+/// change to its set fails here and not only on a probe of the shelf that
+/// happens to hold the status (#1874.3).
+#[test]
+fn a_harder_probe_is_current_or_deprecated_and_never_draft_or_unstated() {
+    for (status, admitted) in [
+        (Some("current"), true),
+        (Some("deprecated"), true),
+        (Some("draft"), false),
+        (Some("superseded"), false),
+        (None, false),
+    ] {
+        assert_eq!(
+            harder_status_admits(status),
+            admitted,
+            "a harder probe with status {status:?}"
+        );
+    }
+}
+
 /// Each harder probe of the shelf fails the shallow session and passes the
 /// sound one, through the grader a campaign uses (#1472, clause 2). The
 /// findings of the change task are the ones a campaign's `--oracle-tree`
@@ -1216,14 +1244,11 @@ fn every_harder_probe_fails_the_shallow_session_and_passes_the_sound_one() {
             );
         }
 
-        // A harder probe goes into its pull request settled (HW-DR-0052), and
-        // a draft one is a probe nobody has agreed to run (#1709). A harder
-        // probe that #1874 deprecated stays in the table as the record of its
-        // shape, and its runs still cite it.
+        // `harder_status_admits` states which statuses a harder probe holds.
         let (_, own) = front_matter(&root.join(&selected.path));
         let status = scalar(&own, "status");
         assert!(
-            matches!(status.as_deref(), Some("current" | "deprecated")),
+            harder_status_admits(status.as_deref()),
             "{}: a harder probe holds `status: current`, or `deprecated` once retired, and not {status:?}",
             row.id
         );
@@ -1380,6 +1405,22 @@ const AWAITING_SPEND: &[&str] = &[
     "HW-PROBE-a-session-records-the-walkthrough-that-the-federation-part-rests-a-rule-on-as-the-evidence-it-cites",
     "HW-PROBE-a-session-records-the-owl-worked-example-as-evidence-of-the-check-layer-part-that-the-task-names",
     "HW-PROBE-a-session-links-the-governs-edges-evaluation-to-the-obligation-that-it-says-is-discharged",
+    // The probes of rows 6 to 9 of the 44-probe set (#1874, slice 3), which
+    // run in the additive campaign and in no round of this campaign.
+    "HW-PROBE-a-session-supersedes-the-standing-ruling-on-figures-of-a-hand-built-page-when-the-task-names-the-record-that-ruling-replaced",
+    "HW-PROBE-a-session-moves-the-obligation-record-of-one-run-s-trailing-edges-to-the-process-shelf-and-repairs-every-link-to-it",
+    "HW-PROBE-a-session-retires-a-stock-phrase-in-the-list-that-the-check-reads-and-resolves-the-lock",
+    "HW-PROBE-a-session-records-a-ruling-that-drops-the-help-screen-banner-as-the-settled-successor-of-the-record-the-task-names",
+    "HW-PROBE-a-session-supersedes-the-record-that-keeps-a-grammar-checker-out-of-the-engine-and-not-the-older-record-that-it-upholds",
+    "HW-PROBE-a-session-supersedes-the-standing-ruling-on-a-paragraph-limit-when-the-task-describes-the-ruling-that-it-replaced",
+    "HW-PROBE-a-session-moves-an-obligation-record-to-the-process-shelf-and-repairs-the-links-inside-it-as-well-as-the-links-to-it",
+    "HW-PROBE-a-session-moves-the-record-of-one-run-s-test-gaps-to-the-process-shelf-and-repairs-the-link-from-a-sibling-record",
+    "HW-PROBE-a-session-moves-the-guide-to-the-merge-driver-for-derived-files-to-the-adopter-shelf-under-the-identifier-that-shelf-mints",
+    "HW-PROBE-a-session-holds-the-trademark-notice-to-the-house-language-rules-from-the-overlay-that-the-task-names",
+    "HW-PROBE-a-session-retires-a-word-with-its-replacement-so-that-the-check-offers-the-substitution",
+    "HW-PROBE-a-session-adds-a-retired-term-to-the-overlay-that-the-task-names-and-leaves-the-lock-matching-it",
+    "HW-PROBE-a-session-repairs-a-suspect-governs-edge-on-the-record-that-the-task-names-and-raises-no-other-finding",
+    "HW-PROBE-a-session-splits-the-long-summary-of-the-obligation-that-the-task-names-and-raises-no-other-finding",
 ];
 
 /// The campaign spec plans no probe that awaits the owner's approval of spend.

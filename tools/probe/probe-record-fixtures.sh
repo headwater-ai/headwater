@@ -1510,7 +1510,13 @@ if [ "$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)" = "$root" ]; then
     # names its probe so that the seal removes it. The held arguments and the
     # case files of the probe oracles (#1874) each name their probe for the
     # same reason. A fold dropped from the list, or a new file that names a
-    # probe, moves this set, so each entry of the list is held here.
+    # probe, moves this set, so each entry of the list is held here. The held
+    # files are every file under `tools/probe/oracle-args/` and
+    # `tools/probe/oracle-cases/` of the archive, read from the two
+    # directories and not listed by hand, so a new probe's files join the set
+    # and each one that names no probe fails it (#1874.3).
+    held_files=$(cd "$scratch/corpus" && find tools/probe/oracle-args tools/probe/oracle-cases -type f 2> /dev/null | LC_ALL=C sort | tr '\n' ' ' | sed 's/ $//')
+    [ -n "$held_files" ] || fail "the archive holds the oracles' held arguments and case files" "neither tools/probe/oracle-args/ nor tools/probe/oracle-cases/ holds a file"
     : > "$scratch/outside-naming.txt"
     for shelf_probe in "$root"/docs/probes/*.md; do
         shelf_id=$(awk '/^id: */ { sub(/^id: */, ""); print; exit }' "$shelf_probe")
@@ -1519,7 +1525,7 @@ if [ "$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)" = "$root" ]; then
             | awk -v here="$scratch/corpus/" 'index($0, here) == 1 { $0 = substr($0, length(here) + 1) } $0 !~ /^docs\//' >> "$scratch/outside-naming.txt"
     done
     same "outside docs/, only the three files that state an answer, the two hidden oracles and the oracles' held arguments and case files name a probe and are not folds" \
-        ".claude/skills/fixtures.sh engine/crates/check/tests/probe_oracle_future_date.rs engine/crates/probe/tests/corpus.rs tools/probe/oracle-args/r4-adopter-axis tools/probe/oracle-args/r4-corpus-size tools/probe/oracle-args/r4-hook-warning tools/probe/oracle-args/r4-phrasing-rate tools/probe/oracle-args/r5-check-layer-owl tools/probe/oracle-args/r5-federation-walkthrough tools/probe/oracle-args/r5-hook-role tools/probe/oracle-args/r5-read-set tools/probe/oracle-cases/future-date.sh tools/probe/oracle-cases/r4-adopter-axis.sh tools/probe/oracle-cases/r4-corpus-size.sh tools/probe/oracle-cases/r4-hook-warning.sh tools/probe/oracle-cases/r4-phrasing-rate.sh tools/probe/oracle-cases/r5-check-layer-owl.sh tools/probe/oracle-cases/r5-federation-walkthrough.sh tools/probe/oracle-cases/r5-hook-role.sh tools/probe/oracle-cases/r5-read-set.sh tools/probe/oracle-cases/refresh-figures.sh tools/probe/oracle-figure-added.sh tools/probe/probe-record-fixtures.sh" \
+        "$(printf '%s\n' .claude/skills/fixtures.sh engine/crates/check/tests/probe_oracle_future_date.rs engine/crates/probe/tests/corpus.rs tools/probe/oracle-figure-added.sh tools/probe/probe-record-fixtures.sh $held_files | LC_ALL=C sort -u | tr '\n' ' ' | sed 's/ $//')" \
         "$(LC_ALL=C sort -u "$scratch/outside-naming.txt" | tr '\n' ' ' | sed 's/ $//')"
 
     # The figure oracle of the code set (#1835), in three directions, over a
@@ -3987,7 +3993,10 @@ STUB
         mkdir -p "$stagger/slice/started" "$stagger/slice/refused"
         printf '%s\n' "$gone" > "$stagger/slice/lock"
         printf '\n' > "$stagger/model"
-        : > "$stagger/repetitions"
+        # One repetition, because the plan of the tier's 30 over the
+        # thirty-two sufficiency probes since #1874.3 passes the campaign
+        # ceiling, and the plan then refuses the session this case needs.
+        printf '1\n' > "$stagger/repetitions"
         : > "$stagger/max-turns"
         printf '205200\n' > "$stagger/ceiling.campaign"
         printf '50\n' > "$stagger/unit.campaign"
@@ -5455,11 +5464,12 @@ if [ -x "$engine" ]; then
     present "and each leak-kept line on its own" "line 8 holds only leak-kept probes" "$scratch/dry.out"
 
     # A line that pools a leak-kept probe with one that is not fails the dry run,
-    # and a plan over its ceiling is printed rather than fatal: twenty
+    # and a plan over its ceiling is printed rather than fatal: thirty-two
     # sufficiency probes over the documentation tier's two arms at 30
-    # repetitions is 1200 sessions, $600.00 against its $130.00. Two of the
-    # twenty are the harder variants of #1718, two are the patched probes of
-    # the code set (#1835), and eight are the probes of rows 4 and 5 (#1874).
+    # repetitions is 1920 sessions, $960.00 against its $130.00. Two of the
+    # thirty-two are the harder variants of #1718, two are the patched probes
+    # of the code set (#1835), eight are the probes of rows 4 and 5 (#1874),
+    # and twelve are the probes of rows 6 to 9 (#1874.3).
     # The plan selects by category and not by status, so the six retired
     # sufficiency probes count too. This line names them by category and not
     # by identifier. The campaign
@@ -5470,7 +5480,7 @@ if [ -x "$engine" ]; then
     same "a line that pools a leak-kept probe fails the dry run with 8, not 5" "8" "$?"
     present "and names the line" "line 1 pools a probe under \`leaks_kept:\`" "$scratch/pooled.out"
     present "and the ceiling's refusal is printed as a line" \
-        "L1 1200 sessions project \$600.00 against a declared ceiling of \$130.00" "$scratch/pooled.out"
+        "L1 1920 sessions project \$960.00 against a declared ceiling of \$130.00" "$scratch/pooled.out"
 
     # Any other refusal of a plan is the batch driver's 5.
     printf 'campaign present discovery\n' > "$scratch/refused.spec"
@@ -5966,15 +5976,18 @@ if [ -x "$engine" ]; then
         rm -rf "$scratch/run-tune-out"
         # Each line's jobs are its own plan's count, not the first line's
         # (verify round 1): the regression tier runs 1 repetition and the
-        # campaign tier 30, so one spec of both is 20 + 20 x 30 jobs. The
-        # sufficiency shelf is twenty probes since rows 4 and 5 of #1874 added
-        # eight, and the plan counts its six retired probes too.
-        printf 'regression present sufficiency\ncampaign present sufficiency\n' > "$scratch/run-tiers.spec"
+        # campaign tier 30, so one spec of both is 17 + 17 x 30 jobs. The
+        # navigability shelf is seventeen probes, two of them from rows 6 to 9
+        # of #1874, and the plan counts its retired probes too. The line reads
+        # navigability and not sufficiency since #1874.3, because thirty-two
+        # sufficiency probes in the campaign tier project 5760 sessions,
+        # $2880.00, past its $2052.00, and the plan refuses the run.
+        printf 'regression present navigability\ncampaign present navigability\n' > "$scratch/run-tiers.spec"
         rm -rf "$scratch/run-tiers-out"
         HEADWATER_PROBE_HOST_CONFIG="$scratch/run-host" CARGO_TARGET_DIR="$scratch/gate-target" PATH="$scratch/run-bin:$PATH" \
             sh "$root/tools/probe/campaign.sh" --out "$scratch/run-tiers-out" --model claude-haiku-4-5 \
             --spec "$scratch/run-tiers.spec" --max-turns 10 --max-sessions 1 > /dev/null 2> "$scratch/run-tiers.err"
-        same "a spec of two tiers runs each line at its own plan's count" "20 600" \
+        same "a spec of two tiers runs each line at its own plan's count" "17 510" \
             "$(awk '$2 == 1' "$scratch/run-tiers-out/jobs" 2>/dev/null | wc -l | tr -d ' ') $(awk '$2 == 2' "$scratch/run-tiers-out/jobs" 2>/dev/null | wc -l | tr -d ' ')"
         rm -rf "$scratch/run-out" "$scratch/run-final-out" "$scratch/run-tiers-out"
     else

@@ -1,0 +1,7 @@
+# The arguments of the `r9-shelf-layout` oracle, one to a line, for the probe
+# HW-PROBE-a-session-splits-the-long-summary-of-the-obligation-that-the-task-names-and-raises-no-other-finding
+# (#1874). `tools/probe/oracles/lib.sh` reads this file for `--args` and
+# skips each line that opens with `#`. The file names its probe, so the seal
+# removes it from every workspace, and the oracle entry holds it. The
+# command is `sh tools/probe/oracles/nothing-else-broken.sh --check-clean --args <this file>`, and the argument is the baseline.
+tools/probe/oracle-args/r9-shelf-layout.baseline

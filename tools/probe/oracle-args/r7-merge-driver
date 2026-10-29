@@ -1,0 +1,8 @@
+# The arguments of the `r7-merge-driver` oracle, one to a line, for the probe
+# HW-PROBE-a-session-moves-the-guide-to-the-merge-driver-for-derived-files-to-the-adopter-shelf-under-the-identifier-that-shelf-mints
+# (#1874). `tools/probe/oracles/lib.sh` reads this file for `--args` and
+# skips each line that opens with `#`. The file names its probe, so the seal
+# removes it from every workspace, and the oracle entry holds it. The
+# command is `sh tools/probe/oracles/moved.sh --check-clean --args <this file>`.
+docs/process/how-to/keep-derived-files-from-conflicting-in-parallel-pull-requests.md
+docs/how-to/keep-derived-files-from-conflicting-in-parallel-pull-requests.md

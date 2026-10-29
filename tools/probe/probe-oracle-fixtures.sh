@@ -40,7 +40,11 @@
 # it is skipped with a line that says so otherwise. CI runs this script
 # without `--cargo`. A case file may set `reference_recorded` to where the
 # reference result is recorded by hand, in place of a `reference` function:
-# the script prints that line and runs the other two cases.
+# the script prints that line and runs the other two cases. A case file may
+# set `more_wrong` to the names of more functions, separated by spaces, and
+# each is one more wrong change that must exit 1, such as a session that
+# writes the answer only in a comment, or deletes what it was asked to
+# repair (#1874.3).
 #
 # It prints, as one line, what `headwater check --strict` exits over the
 # grading tree, because every `--check-clean` oracle assumes that a sealed
@@ -185,14 +189,19 @@ while IFS="$(printf '\t')" read -r id oracle; do
         fail "$id: no case file tools/probe/oracle-cases/$key.sh"
         continue
     fi
-    sed -n '1,10p' "$case_file" | grep -q -F -- "$id" || {
-        fail "$id: tools/probe/oracle-cases/$key.sh does not name the probe in its first ten lines, so the seal leaves its reference change in every workspace"
-        continue
-    }
+    # The seal is read first. A case file that names no current probe stays
+    # in the sealed tree and fails here. One that names another probe is
+    # removed and fails the naming check below. With the naming check first,
+    # a file the seal keeps names no probe and fails that check, so this one
+    # could never fire (#1874.3).
     if [ -e "$sealed/tools/probe/oracle-cases/$key.sh" ]; then
         fail "$id: the sealed tree still holds tools/probe/oracle-cases/$key.sh"
         continue
     fi
+    sed -n '1,10p' "$case_file" | grep -q -F -- "$id" || {
+        fail "$id: tools/probe/oracle-cases/$key.sh does not name the probe in its first ten lines, so the seal leaves its reference change in every workspace"
+        continue
+    }
     command=$(awk -F '\t' -v key="$key" '$1 == key && $2 == "command" { sub(/^[^\t]*\t[^\t]*\t/, ""); print; exit }' "$work/oracles")
     if [ -z "$command" ]; then
         fail "$id: the sealed tree's probe.yml declares no command for \`$key\`, so the seal cut the entry or nothing declares it"
@@ -200,6 +209,7 @@ while IFS="$(printf '\t')" read -r id oracle; do
     fi
     needs_cargo=no
     reference_recorded=""
+    more_wrong=""
     # shellcheck disable=SC1090 # the case file of this oracle
     . "$case_file"
     if [ "$needs_cargo" = yes ] && [ "$cargo" = no ]; then
@@ -213,6 +223,10 @@ while IFS="$(printf '\t')" read -r id oracle; do
         run_case 0 "$key: the reference change passes" "$key" "$command" reference
     fi
     run_case 1 "$key: the wrong change fails" "$key" "$command" wrong
+    for extra in $more_wrong; do
+        run_case 1 "$key: the wrong change \`$extra\` fails" "$key" "$command" "$extra"
+        unset -f "$extra" 2> /dev/null
+    done
     unset -f reference wrong 2> /dev/null
 done < "$work/graded"
 

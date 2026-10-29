@@ -1,0 +1,7 @@
+# The arguments of the `r6-figure-page` oracle, one to a line, for the probe
+# HW-PROBE-a-session-supersedes-the-standing-ruling-on-figures-of-a-hand-built-page-when-the-task-names-the-record-that-ruling-replaced
+# (#1874). `tools/probe/oracles/lib.sh` reads this file for `--args` and
+# skips each line that opens with `#`. The file names its probe, so the seal
+# removes it from every workspace, and the oracle entry holds it. The
+# command is `sh tools/probe/oracles/successor-typed.sh --check-clean --args <this file>`.
+HW-DR-0097

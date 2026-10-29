@@ -151,11 +151,24 @@ answer_keys:
 #                                        cites <ruling>
 #   reciprocal-link.sh <doc-a> <doc-b>   each names the other in `relations:`
 #   successor-typed.sh <old>             a typed successor supersedes <old>,
-#                                        and <old> names it
+#                                        and <old> names it, both edges as
+#                                        `headwater explain --json` reads
+#                                        them
 #   moved.sh <old-path> <new-path>       moved, and no link resolves to the
-#                                        old path
-#   lock-regenerated.sh                  `headwater taxonomy resolve --check`
-#   nothing-else-broken.sh <baseline>    no finding the pin did not carry
+#                                        old path, as the link regex or the
+#                                        engine's `link.path.unresolved`
+#                                        rule reads it
+#   lock-regenerated.sh [retires <carrier> <term> [<replacement>] | binds <path> <term>]...
+#                                        `headwater taxonomy resolve --check`,
+#                                        and the engine's retired-term rule,
+#                                        run in a scratch root, retires each
+#                                        term and reaches each bound path
+#   nothing-else-broken.sh <baseline>    no finding the pin did not carry, on
+#                                        the files of a `# scope:` line of
+#                                        <baseline> where it has one, and
+#                                        each `# edge:` and `# summary:`
+#                                        line holds as `headwater explain
+#                                        --json` reads the document
 #   test-passes.sh [--ignored] <crate> <test-target> [<filter>]
 #                                        cargo passes and ran a case
 #   no-hook-warning.sh                   row 11: no hook spoke in the
@@ -166,9 +179,11 @@ answer_keys:
 #
 # `--check-clean` as the first argument of a tree script adds the condition
 # of check-clean.sh, over the documents the script names where it names
-# them: typed-at.sh and reciprocal-link.sh count only the strict errors on
-# their own documents, because the seal leaves errors elsewhere in a sealed
-# tree. `--args <file>` as the last option reads the arguments from a held
+# them: typed-at.sh, reciprocal-link.sh, successor-typed.sh, moved.sh,
+# lock-regenerated.sh and nothing-else-broken.sh count only the strict
+# errors on their own documents, because the seal leaves errors elsewhere in
+# a sealed tree. moved.sh also counts an error that names the moved file on
+# a file that links it. `--args <file>` as the last option reads the arguments from a held
 # file, one to a line, which names its probe in its first ten lines; a key
 # or a held path never names a probe, because the seal strips such a line
 # from this file. Each script runs from the root of the grading copy,
@@ -235,6 +250,76 @@ oracles:
     command: sh tools/probe/oracles/reciprocal-link.sh --check-clean --args tools/probe/oracle-args/r5-hook-role
     parser: exit
     holds: [tools/probe/oracles/reciprocal-link.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r5-hook-role]
+  r6-figure-page:
+    paths: [docs/*]
+    command: sh tools/probe/oracles/successor-typed.sh --check-clean --args tools/probe/oracle-args/r6-figure-page
+    parser: exit
+    holds: [tools/probe/oracles/successor-typed.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r6-figure-page]
+  r7-run-findings:
+    paths: [docs/*]
+    command: sh tools/probe/oracles/moved.sh --check-clean --args tools/probe/oracle-args/r7-run-findings
+    parser: exit
+    holds: [tools/probe/oracles/moved.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r7-run-findings]
+  r8-game-changer:
+    paths: [.headwater/*]
+    command: sh tools/probe/oracles/lock-regenerated.sh --check-clean --args tools/probe/oracle-args/r8-game-changer
+    parser: exit
+    holds: [tools/probe/oracles/lock-regenerated.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r8-game-changer]
+  r6-banner:
+    paths: [docs/*]
+    command: sh tools/probe/oracles/successor-typed.sh --check-clean --args tools/probe/oracle-args/r6-banner
+    parser: exit
+    holds: [tools/probe/oracles/successor-typed.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r6-banner]
+  r6-harper:
+    paths: [docs/*]
+    command: sh tools/probe/oracles/successor-typed.sh --check-clean --args tools/probe/oracle-args/r6-harper
+    parser: exit
+    holds: [tools/probe/oracles/successor-typed.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r6-harper]
+  r6-paragraph-limit:
+    paths: [docs/*]
+    command: sh tools/probe/oracles/successor-typed.sh --check-clean --args tools/probe/oracle-args/r6-paragraph-limit
+    parser: exit
+    holds: [tools/probe/oracles/successor-typed.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r6-paragraph-limit]
+  r7-small-gaps:
+    paths: [docs/*]
+    command: sh tools/probe/oracles/moved.sh --check-clean --args tools/probe/oracle-args/r7-small-gaps
+    parser: exit
+    holds: [tools/probe/oracles/moved.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r7-small-gaps]
+  r7-test-gaps:
+    paths: [docs/*]
+    command: sh tools/probe/oracles/moved.sh --check-clean --args tools/probe/oracle-args/r7-test-gaps
+    parser: exit
+    holds: [tools/probe/oracles/moved.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r7-test-gaps]
+  r7-merge-driver:
+    paths: [docs/*]
+    command: sh tools/probe/oracles/moved.sh --check-clean --args tools/probe/oracle-args/r7-merge-driver
+    parser: exit
+    holds: [tools/probe/oracles/moved.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r7-merge-driver]
+  r8-trademarks:
+    paths: [.headwater/*]
+    command: sh tools/probe/oracles/lock-regenerated.sh --check-clean --args tools/probe/oracle-args/r8-trademarks
+    parser: exit
+    holds: [tools/probe/oracles/lock-regenerated.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r8-trademarks]
+  r8-utilize:
+    paths: [.headwater/*]
+    command: sh tools/probe/oracles/lock-regenerated.sh --check-clean --args tools/probe/oracle-args/r8-utilize
+    parser: exit
+    holds: [tools/probe/oracles/lock-regenerated.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r8-utilize]
+  r8-cutting-edge:
+    paths: [.headwater/*]
+    command: sh tools/probe/oracles/lock-regenerated.sh --check-clean --args tools/probe/oracle-args/r8-cutting-edge
+    parser: exit
+    holds: [tools/probe/oracles/lock-regenerated.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r8-cutting-edge]
+  r9-gitattributes:
+    paths: [docs/*]
+    command: sh tools/probe/oracles/nothing-else-broken.sh --check-clean --args tools/probe/oracle-args/r9-gitattributes
+    parser: exit
+    holds: [tools/probe/oracles/nothing-else-broken.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r9-gitattributes, tools/probe/oracle-args/r9-gitattributes.baseline]
+  r9-shelf-layout:
+    paths: [docs/*]
+    command: sh tools/probe/oracles/nothing-else-broken.sh --check-clean --args tools/probe/oracle-args/r9-shelf-layout
+    parser: exit
+    holds: [tools/probe/oracles/nothing-else-broken.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r9-shelf-layout, tools/probe/oracle-args/r9-shelf-layout.baseline]
 
 # Leak strings (#1472): for each probe, the strings whose presence in text the harness
 # loads into every session gives the probe's answer away. The seal finds an
@@ -331,6 +416,23 @@ leaks:
   HW-PROBE-a-session-records-the-walkthrough-that-the-federation-part-rests-a-rule-on-as-the-evidence-it-cites: []
   HW-PROBE-a-session-records-the-owl-worked-example-as-evidence-of-the-check-layer-part-that-the-task-names: []
   HW-PROBE-a-session-links-the-governs-edges-evaluation-to-the-obligation-that-it-says-is-discharged: []
+  # Rows 6 to 9 of the grid in HW-DR-0112 (#1874, slice 3). Each probe is
+  # `patched` and grades a structure that a command oracle reads, and no
+  # string states it, so each declares the empty sequence.
+  HW-PROBE-a-session-supersedes-the-standing-ruling-on-figures-of-a-hand-built-page-when-the-task-names-the-record-that-ruling-replaced: []
+  HW-PROBE-a-session-moves-the-obligation-record-of-one-run-s-trailing-edges-to-the-process-shelf-and-repairs-every-link-to-it: []
+  HW-PROBE-a-session-retires-a-stock-phrase-in-the-list-that-the-check-reads-and-resolves-the-lock: []
+  HW-PROBE-a-session-records-a-ruling-that-drops-the-help-screen-banner-as-the-settled-successor-of-the-record-the-task-names: []
+  HW-PROBE-a-session-supersedes-the-record-that-keeps-a-grammar-checker-out-of-the-engine-and-not-the-older-record-that-it-upholds: []
+  HW-PROBE-a-session-supersedes-the-standing-ruling-on-a-paragraph-limit-when-the-task-describes-the-ruling-that-it-replaced: []
+  HW-PROBE-a-session-moves-an-obligation-record-to-the-process-shelf-and-repairs-the-links-inside-it-as-well-as-the-links-to-it: []
+  HW-PROBE-a-session-moves-the-record-of-one-run-s-test-gaps-to-the-process-shelf-and-repairs-the-link-from-a-sibling-record: []
+  HW-PROBE-a-session-moves-the-guide-to-the-merge-driver-for-derived-files-to-the-adopter-shelf-under-the-identifier-that-shelf-mints: []
+  HW-PROBE-a-session-holds-the-trademark-notice-to-the-house-language-rules-from-the-overlay-that-the-task-names: []
+  HW-PROBE-a-session-retires-a-word-with-its-replacement-so-that-the-check-offers-the-substitution: []
+  HW-PROBE-a-session-adds-a-retired-term-to-the-overlay-that-the-task-names-and-leaves-the-lock-matching-it: []
+  HW-PROBE-a-session-repairs-a-suspect-governs-edge-on-the-record-that-the-task-names-and-raises-no-other-finding: []
+  HW-PROBE-a-session-splits-the-long-summary-of-the-obligation-that-the-task-names-and-raises-no-other-finding: []
 
 # The probes whose leak string stays in the present arm on purpose (#1472, the second
 # outcome the issue offers). The leak string of the status probe is in the
