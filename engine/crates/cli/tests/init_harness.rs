@@ -703,10 +703,17 @@ fn every_warrant_rule_the_engine_carries_is_named_in_the_provenance_paragraph_of
         .expect("the skill has a provenance-block paragraph");
     let paragraph = text[start..].split("\n\n").next().expect("one paragraph");
     let named: BTreeSet<&str> = spans(paragraph).into_iter().collect();
-    let missing: Vec<&str> = headwater_check::RULES
+    let warrant_rules: Vec<&str> = headwater_check::RULES
         .iter()
         .copied()
         .filter(|rule| rule.starts_with("warrant."))
+        .collect();
+    assert!(
+        warrant_rules.len() >= 5,
+        "the engine carries at least the five warrant rules of #1852, and found {warrant_rules:?}"
+    );
+    let missing: Vec<&str> = warrant_rules
+        .into_iter()
         .filter(|rule| !named.contains(rule))
         .collect();
     assert!(
