@@ -1,8 +1,8 @@
 ---
 id: HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document
-status: current
-status_since: 2026-09-06
-summary: Nothing makes a skill load, so its reach is a measurement, and this is the instrument that takes it.
+status: deprecated
+status_since: 2026-10-29
+summary: "Deprecated on 2026-10-29 because it grades by `opened`, which no command oracle reads, and row 4 of HW-DR-0112 now grades an added document with the typed-at oracle (#1874)."
 last_verified: 2026-08-14
 probe_category: discovery
 expectation: opened

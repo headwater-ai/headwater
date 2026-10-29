@@ -1,8 +1,8 @@
 ---
 id: HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request
-status: current
-status_since: 2026-09-27
-summary: A session picks one of two status values for a settled decision in its pull request, and a ruling under docs/decisions decides which.
+status: deprecated
+status_since: 2026-10-29
+summary: "Deprecated on 2026-10-29 because no set of the additive campaign draws it, and the four probes of row 1 of HW-DR-0112 measure the action in its place (#1874)."
 last_verified: 2026-09-27
 probe_category: sufficiency
 expectation: answered

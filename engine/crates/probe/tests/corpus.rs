@@ -1217,12 +1217,14 @@ fn every_harder_probe_fails_the_shallow_session_and_passes_the_sound_one() {
         }
 
         // A harder probe goes into its pull request settled (HW-DR-0052), and
-        // a draft one is a probe nobody has agreed to run (#1709).
+        // a draft one is a probe nobody has agreed to run (#1709). A harder
+        // probe that #1874 deprecated stays in the table as the record of its
+        // shape, and its runs still cite it.
         let (_, own) = front_matter(&root.join(&selected.path));
-        assert_eq!(
-            scalar(&own, "status").as_deref(),
-            Some("current"),
-            "{}: a harder probe holds `status: current`",
+        let status = scalar(&own, "status");
+        assert!(
+            matches!(status.as_deref(), Some("current" | "deprecated")),
+            "{}: a harder probe holds `status: current`, or `deprecated` once retired, and not {status:?}",
             row.id
         );
 
@@ -1364,6 +1366,20 @@ const AWAITING_SPEND: &[&str] = &[
     "HW-PROBE-a-session-says-where-a-check-gets-the-version-that-stood-before-a-change",
     "HW-PROBE-a-session-says-what-a-refusal-writes-on-standard-output-under-json",
     "HW-PROBE-a-session-says-what-a-verb-that-mints-an-identifier-writes-beside-the-document",
+    // The twelve probes of rows 1, 4 and 5 of the 44-probe set (#1874), which
+    // run in the additive campaign and in no round of this campaign.
+    "HW-PROBE-a-session-tells-a-withheld-answer-from-an-absent-one-in-a-corpus-that-serves-no-tombstone",
+    "HW-PROBE-a-session-reaches-the-adjudication-from-the-tombstone-that-the-task-names",
+    "HW-PROBE-a-session-says-whether-a-front-page-recording-may-show-a-number-a-live-run-does-not-produce-when-the-task-names-the-record-that-was-superseded",
+    "HW-PROBE-a-session-names-the-record-that-governs-the-scripts-that-grade-a-change-from-a-task-in-plain-words",
+    "HW-PROBE-a-session-records-as-owed-that-no-ruling-says-whether-a-hook-s-text-on-a-prompt-is-a-warning",
+    "HW-PROBE-a-session-records-as-owed-the-corpus-size-axis-that-the-additive-campaign-defers",
+    "HW-PROBE-a-session-records-as-owed-the-axis-of-an-adopter-s-own-repository-that-the-named-decision-defers",
+    "HW-PROBE-a-session-records-as-owed-that-nothing-reports-a-pass-rate-for-each-phrasing-of-a-probe",
+    "HW-PROBE-a-session-links-the-obligation-on-published-read-sets-to-the-evaluation-whose-measurement-discharged-it",
+    "HW-PROBE-a-session-records-the-walkthrough-that-the-federation-part-rests-a-rule-on-as-the-evidence-it-cites",
+    "HW-PROBE-a-session-records-the-owl-worked-example-as-evidence-of-the-check-layer-part-that-the-task-names",
+    "HW-PROBE-a-session-links-the-governs-edges-evaluation-to-the-obligation-that-it-says-is-discharged",
 ];
 
 /// The campaign spec plans no probe that awaits the owner's approval of spend.
@@ -1917,12 +1933,10 @@ const MECHANICAL_ACTIONS: [&str; 9] = [
 /// set or retire it with a reason, and delete its line here. The case below
 /// fails on a line whose probe now passes, so the list can only shrink.
 const AWAITING_ORACLE: &[&str] = &[
-    "HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks",
     "HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged",
     "HW-PROBE-a-session-that-changes-a-verb-s-default-reaches-the-verb-s-interface-contract",
     "HW-PROBE-a-session-that-changes-the-recorder-reaches-the-recorder-contract",
     "HW-PROBE-a-session-that-moves-a-shelf-reaches-the-relocation-guide",
-    "HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document",
     "HW-PROBE-what-a-session-writes-points-back-at-the-ruling-it-rests-on",
 ];
 

@@ -1,7 +1,7 @@
 ---
 id: HW-PROBE-an-agent-reaches-the-adjudication-from-the-document-that-lost-it
-status: current
-status_since: 2026-09-06
+status: superseded
+status_since: 2026-10-29
 summary: A session that meets the superseded register first either reaches the decision that replaced it or reports the stale answer.
 last_verified: 2026-08-14
 probe_category: navigability
@@ -22,6 +22,8 @@ relations:
     - HW-DR-0008
   traces_to:
     - HW-OBL-0014
+  superseded_by:
+    - HW-PROBE-a-session-reaches-the-adjudication-from-the-tombstone-that-the-task-names
 ---
 
 # An agent reaches the adjudication from the document that lost it

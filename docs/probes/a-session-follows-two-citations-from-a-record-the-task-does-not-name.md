@@ -1,8 +1,8 @@
 ---
 id: HW-PROBE-a-session-follows-two-citations-from-a-record-the-task-does-not-name
-status: current
-status_since: 2026-10-10
-summary: The answer is three records away from a record the task describes and does not name, so a session that follows one citation and answers from the record it reaches is wrong.
+status: deprecated
+status_since: 2026-10-29
+summary: "Deprecated on 2026-10-29 because no set of the additive campaign draws it, and the four probes of row 1 of HW-DR-0112 measure the action in its place (#1874)."
 last_verified: 2026-10-10
 probe_category: sufficiency
 expectation: answered

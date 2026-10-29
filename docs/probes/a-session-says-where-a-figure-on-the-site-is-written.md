@@ -1,8 +1,8 @@
 ---
 id: HW-PROBE-a-session-says-where-a-figure-on-the-site-is-written
-status: current
-status_since: 2026-10-03
-summary: A search by name reaches a replaced ruling before the ruling in force, and the two give different answers, so a session that stops at the first hit answers wrong.
+status: deprecated
+status_since: 2026-10-29
+summary: "Deprecated on 2026-10-29 because no set of the additive campaign draws it, and the four probes of row 1 of HW-DR-0112 measure the action in its place (#1874)."
 last_verified: 2026-10-03
 probe_category: navigability
 expectation: answered
