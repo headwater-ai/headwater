@@ -225,15 +225,19 @@ printf '%s\n%s\n' "$quiet" '{"type":"attachment","attachment":{"type":"hook_non_
 printf '%s\n%s\n' "$quiet" '{"type":"attachment","attachment":{"type":"hook_success","hookName":"UserPromptSubmit","content":"route: docs/spec/05-ai-integration.md"}}' > "$logs/intent.jsonl"
 printf '%s\n%s\n' "$quiet" '{"type":"attachment","attachment":{"type":"hook_blocking_error","hookName":"PreToolUse:Write","stderr":"refused"}}' > "$logs/blocked.jsonl"
 : > "$logs/empty.jsonl"
-expect 0 "no-hook-warning passes a log where a hook ran and said nothing" "$base" no-hook-warning.sh "$logs/silent/session.jsonl"
+export HEADWATER_ORACLE_HARNESS_LOG="$logs/silent/session.jsonl" && expect 0 "no-hook-warning passes a log where a hook ran and said nothing" "$base" no-hook-warning.sh
 expect 0 "no-hook-warning passes a directory of silent logs" "$base" no-hook-warning.sh "$logs/silent"
-expect 1 "no-hook-warning fails added context in a subagent's log" "$base" no-hook-warning.sh "$logs/spoken"
-expect 1 "no-hook-warning fails a non-blocking error" "$base" no-hook-warning.sh "$logs/error.jsonl"
-expect 1 "no-hook-warning fails a blocking error" "$base" no-hook-warning.sh "$logs/blocked.jsonl"
-expect 1 "no-hook-warning fails text a hook printed on success" "$base" no-hook-warning.sh "$logs/intent.jsonl"
-expect 1 "no-hook-warning fails an empty log" "$base" no-hook-warning.sh "$logs/empty.jsonl"
-expect 1 "no-hook-warning fails a missing log" "$base" no-hook-warning.sh "$logs/absent.jsonl"
-expect 2 "no-hook-warning refuses no argument" "$base" no-hook-warning.sh
+export HEADWATER_ORACLE_HARNESS_LOG="$logs/spoken" && expect 1 "no-hook-warning fails added context in a subagent's log" "$base" no-hook-warning.sh
+export HEADWATER_ORACLE_HARNESS_LOG="$logs/error.jsonl" && expect 1 "no-hook-warning fails a non-blocking error" "$base" no-hook-warning.sh
+export HEADWATER_ORACLE_HARNESS_LOG="$logs/blocked.jsonl" && expect 1 "no-hook-warning fails a blocking error" "$base" no-hook-warning.sh
+export HEADWATER_ORACLE_HARNESS_LOG="$logs/intent.jsonl" && expect 1 "no-hook-warning fails text a hook printed on success" "$base" no-hook-warning.sh
+export HEADWATER_ORACLE_HARNESS_LOG="$logs/empty.jsonl" && expect 1 "no-hook-warning fails an empty log" "$base" no-hook-warning.sh
+export HEADWATER_ORACLE_HARNESS_LOG="$logs/absent.jsonl" && expect 1 "no-hook-warning fails a missing log" "$base" no-hook-warning.sh
+export HEADWATER_ORACLE_HARNESS_LOG="$logs/silent/session.jsonl" && expect 1 "no-hook-warning reads a named log in place of the variable" "$base" no-hook-warning.sh "$logs/spoken"
+export HEADWATER_ORACLE_HARNESS_LOG="$logs/spoken" && expect 0 "no-hook-warning reads a named directory in place of the variable" "$base" no-hook-warning.sh "$logs/silent"
+unset HEADWATER_ORACLE_HARNESS_LOG && expect 1 "no-hook-warning fails with no variable and no log named" "$base" no-hook-warning.sh
+export HEADWATER_ORACLE_HARNESS_LOG="" && expect 1 "no-hook-warning fails an empty variable" "$base" no-hook-warning.sh
+unset HEADWATER_ORACLE_HARNESS_LOG
 
 rm -rf "$work"
 if [ "$failures" -ne 0 ]; then

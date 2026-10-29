@@ -17,6 +17,20 @@ relations:
     - .headwater/probe.yml
     - tools/probe/oracles/**
     - tools/probe/oracle-fixtures.sh
+    - tools/probe/ablate.sh
+    - tools/probe/additive-campaign.spec
+    - tools/probe/additive-screening.spec
+    - tools/probe/try.sh
+    - tools/probe/additive-launch.env
+    - tools/probe/code-campaign.spec
+    - tools/probe/code-pilot.spec
+    - tools/probe/declared.py
+    - tools/probe/usage.py
+    - tools/probe/additive-dry-run.sh
+    - tools/probe/leak.py
+    - tools/probe/seal.sh
+    - tools/probe/try-fixtures.sh
+    - tools/probe/probe-record-fixtures.sh
   supersedes:
     - HW-DR-0111
   traces_to:
@@ -85,7 +99,7 @@ The oracle holds each script that its command runs, and `lib.sh`, which each scr
 
 A file that holds a value only the answer knows names its probe in its first ten lines, and the oracle holds it. A hidden test and a baseline of findings are two examples. The seal removes such a file from every workspace. A generic script names no probe. The seal keeps `probe.yml` as a fold, so each workspace still holds the command line. A command therefore states what the oracle checks and never the answer.
 
-Row 11 has two conditions. The `oracle:` facet names the oracle over the tree. `no-hook-warning.sh` reads the log of the session, and #1875 makes the recorder run it on each session of row 11.
+Row 11 has two conditions. The `oracle:` facet names the oracle over the tree. `no-hook-warning.sh` reads the harness log of the session from `HEADWATER_ORACLE_HARNESS_LOG`, because the stream holds no hook attachment. #1875 exports that variable and runs the script on each session of row 11.
 
 `tools/probe/oracle-fixtures.sh` runs each script over a tree that it must pass and a tree that it must fail. An oracle that passes both trees, or fails both, fails CI. The pilot of #1835 found probes of each kind.
 

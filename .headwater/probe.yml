@@ -158,8 +158,11 @@ answer_keys:
 #   nothing-else-broken.sh <baseline>    no finding the pin did not carry
 #   test-passes.sh [--ignored] <crate> <test-target> [<filter>]
 #                                        cargo passes and ran a case
-#   no-hook-warning.sh <log>...          row 11: no hook spoke in the
-#                                        session's log (#1875 runs it)
+#   no-hook-warning.sh                   row 11: no hook spoke in the
+#                                        harness log that
+#                                        $HEADWATER_ORACLE_HARNESS_LOG
+#                                        names (#1875 exports it and runs
+#                                        the script)
 #
 # `--check-clean` as the first argument of a tree script adds the condition
 # of check-clean.sh. Each script runs from the root of the grading copy,

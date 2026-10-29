@@ -3,15 +3,22 @@
 # the grid in HW-DR-0112, "ungoverned control": the task is done, and the
 # count of hook warnings is zero.
 #
+#     sh tools/probe/oracles/no-hook-warning.sh
 #     sh tools/probe/oracles/no-hook-warning.sh <log>...
 #
-# This oracle reads the session's transcript and not its tree. The `oracle:`
-# facet of a row 11 probe names its oracle over the tree, for "done", and
-# the recorder runs this script beside it on each session of row 11. Each <log> is a file of the harness's own session log, or a directory that
-# holds such files, `*.jsonl`, which is searched. That log, and not the
-# stream the recorder reads, holds the hook attachments, as
-# `tools/probe/recordings.py` states. Passing the log path of a session to
-# this script is a change to the recorder, which #1875 makes.
+# This oracle reads the session's harness log and not its tree. The
+# `oracle:` facet of a row 11 probe names its oracle over the tree, for
+# "done", and the recorder runs this script beside it on each session of
+# row 11. With no argument it reads `$HEADWATER_ORACLE_HARNESS_LOG`, which
+# the recorder of #1875 exports for each session, beside
+# `HEADWATER_ORACLE_TRANSCRIPT` (the stream, `raw.jsonl`). The stream holds
+# no hook attachment, so this script never reads it. A <log> argument names
+# the log in place of the variable, for a run by hand. Each log is a file of
+# the harness's own session log, or a directory that holds such files,
+# `*.jsonl`, which is searched, subagent logs included. That log holds the
+# hook attachments, as `tools/probe/recordings.py` states. An unset or
+# empty variable with no argument fails, because a missing log must not
+# read as a silent session.
 #
 # A hook warning is a record of `"type": "attachment"` whose attachment is
 # one of these:
@@ -29,7 +36,10 @@
 
 set -u
 . "${0%/*}/lib.sh"
-[ $# -ge 1 ] || hw_oracle_usage "no-hook-warning.sh <log>..."
+if [ $# -eq 0 ]; then
+    [ -n "${HEADWATER_ORACLE_HARNESS_LOG:-}" ] || hw_oracle_fail "HEADWATER_ORACLE_HARNESS_LOG is not set and no log is named, so no harness log was read"
+    set -- "$HEADWATER_ORACLE_HARNESS_LOG"
+fi
 command -v python3 > /dev/null 2>&1 || hw_oracle_usage "no-hook-warning.sh needs python3 to read the log"
 for log in "$@"; do
     [ -e "$log" ] || hw_oracle_fail "no log at $log"
