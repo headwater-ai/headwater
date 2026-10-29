@@ -5714,7 +5714,7 @@ if [ -x "$engine" ]; then
             sh "$root/tools/probe/campaign.sh" --out "$scratch/gate-out" --model claude-haiku-4-5 \
             --spec "$root/tools/probe/additive-screening.spec" > /dev/null 2> "$scratch/gate.err"
         same "a batch of the screening spec stops with 8 on a leak in a scenario tree" "8" "$?"
-        present "and names the leak" "leak check, scenario-4 tree: leak HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged" "$scratch/gate.err"
+        present "and names the leak" "leak check, scenario-3 tree: leak HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged" "$scratch/gate.err"
         same "and it asked the harness nothing, not even its version, and planned no line" "no no" \
             "$([ -e "$scratch/gate-out/claude-version" ] && echo yes || echo no) $([ -e "$scratch/gate-out/lines" ] && echo yes || echo no)"
         rm -rf "$scratch/gate-out"
@@ -5759,13 +5759,13 @@ if [ -x "$engine" ]; then
             "$(grep -c ' additive scenario-4 screening ' "$scratch/run-out/jobs" 2>/dev/null)"
         present "and the line is planned at the round's count" "5 probes x 1 arms x 14 repetitions = 70 sessions" "$scratch/run-out/plans/L1"
         # The tree is the scenario's: every path of a layer scenario 4 does
-        # not hold is gone, and the skills layer it holds is there.
+        # not hold is gone, and the hooks layer it holds is there.
         "$engine" probe plan --root "$root" --scenario 4 --delta > "$scratch/run-delta" 2> /dev/null
         same "the tree of the line is the scenario-4 tree: no path of a layer it lacks is left" "0" \
             "$(sed -n 's/^- [^ ]* //p' "$scratch/run-delta" | while IFS= read -r p; do
                 [ -e "$scratch/run-out/trees/additive-scenario-4/$p" ] && echo "$p"; done | wc -l | tr -d ' ')"
         same "and the layers it holds are there" "yes" \
-            "$(awk '$1 == "=" && $2 == "skills" { print $3 }' "$scratch/run-delta" | head -1 | {
+            "$(awk '$1 == "=" && $2 == "hooks" { print $3 }' "$scratch/run-delta" | head -1 | {
                 read -r p; [ -n "$p" ] && [ -e "$scratch/run-out/trees/additive-scenario-4/$p" ] && echo yes || echo no; })"
         run_session=$(ls "$scratch/run-out/sessions" 2>/dev/null | head -1)
         run_argv=$scratch/run-out/sessions/$run_session/record.argv
