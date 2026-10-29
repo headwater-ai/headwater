@@ -15,8 +15,9 @@
 #
 # Three modes read nothing from the network. `--identity-only` prints the six
 # members `headwater probe plan` fixes, `--provider-only <log>` prints the
-# three the provider metadata carries, and `--answer-only <log> --answers
-# <set>` prints the final answer, each over a log already recorded.
+# three the provider metadata carries and the three token counts of its
+# `usage`, and `--answer-only <log> --answers <set>` prints the final
+# answer, each over a log already recorded.
 #
 # ## The channel, and the two ways to lose it
 #
@@ -65,7 +66,13 @@
 #                             without change
 #   step_derive_provider      `model`, `served_version` and `cost_cents`, read
 #                             from the harness `result` line, because a usage
-#                             record carries token counts and not cents
+#                             record carries token counts and not cents. It
+#                             also prints `cache_read_tokens`,
+#                             `cache_write_tokens` and `input_tokens` from the
+#                             `usage` of that line (#1875), which are not
+#                             identity members and which the record does not
+#                             carry: `campaign.sh` writes them to the
+#                             session's `tokens` file
 #   step_derive_answer        `answer`, read from the same `result` line, for a
 #                             probe that expects one and for no other
 #
@@ -413,8 +420,11 @@ step_derive_provider() {
             model: $name,
             served: ($own_dated // $name),
             cost_cents: (((($r.total_cost_usd // 0) * 100) | round)),
+            cache_read: ($r.usage.cache_read_input_tokens // 0),
+            cache_write: ($r.usage.cache_creation_input_tokens // 0),
+            input: ($r.usage.input_tokens // 0),
           }
-        | "model: \(.model)\nserved_version: \(.served)\ncost_cents: \(.cost_cents)"
+        | "model: \(.model)\nserved_version: \(.served)\ncost_cents: \(.cost_cents)\ncache_read_tokens: \(.cache_read)\ncache_write_tokens: \(.cache_write)\ninput_tokens: \(.input)"
     ' < "$raw"
 }
 

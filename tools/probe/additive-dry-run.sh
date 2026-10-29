@@ -35,6 +35,10 @@
 # A leak, a tree that is not its delta, an MCP server that lists nothing, or a
 # line that pools a probe with a `harness` hit with another probe exits 8.
 #
+# After the sums it prints the share of input the cache served over the
+# sessions that the batch has already recorded, from
+# `tools/probe/cached-share.sh` (#1875).
+#
 # `--priced` prints `<index> <declared> <round count> <how>` for each line,
 # as it does for every other spec, so the batch driver reads the round's count
 # from here.
@@ -323,6 +327,11 @@ awk '{ print $4 }' "$work/lines" | awk '!seen[$0]++' | while read -r a_round; do
         printf 'round %s: not approved, so the batch refuses its lines with 5\n' "$a_round"
     fi
 done
+# The share of input the cache served over the sessions the batch has already
+# recorded (#1875). `campaign.sh` names the batch in
+# `HEADWATER_CAMPAIGN_RECORDED`, and a batch that recorded nothing, or none
+# named, prints `cached share: no recorded sessions`.
+sh "$root/tools/probe/cached-share.sh" ${HEADWATER_CAMPAIGN_RECORDED:+"$HEADWATER_CAMPAIGN_RECORDED"}
 if [ -s "$work/refused" ]; then
     printf 'The ceiling refuses %s of %s plans, and only a person who agrees to spend more may move it. The first:\n' \
         "$(wc -l < "$work/refused" | tr -d ' ')" "$(wc -l < "$work/lines" | tr -d ' ')"

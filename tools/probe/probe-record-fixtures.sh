@@ -888,6 +888,18 @@ if [ -f "$live" ]; then
     same "the cost is whole cents, rounded from the dollars the harness reports" \
         "cost_cents: 1" \
         "$(printf '%s\n' "$provider" | grep '^cost_cents:')"
+    # The token counts of the `usage` of the `result` line (#1875), which
+    # `campaign.sh` writes to the session's `tokens` file beside `cost`. They
+    # are not identity members, so `record.md` does not carry them.
+    same "the cache-read tokens are the result's cache_read_input_tokens" \
+        "cache_read_tokens: 29244" \
+        "$(printf '%s\n' "$provider" | grep '^cache_read_tokens:')"
+    same "the cache-write tokens are the result's cache_creation_input_tokens" \
+        "cache_write_tokens: 687" \
+        "$(printf '%s\n' "$provider" | grep '^cache_write_tokens:')"
+    same "the input tokens are the result's uncached input_tokens" \
+        "input_tokens: 18" \
+        "$(printf '%s\n' "$provider" | grep '^input_tokens:')"
 
     # ---------------------------------------------------------------------
     # A second model in `modelUsage` that is not the one driven.
@@ -913,6 +925,9 @@ JSONL
     same "the model is still the name the harness announced" \
         "model: claude-sonnet-5" \
         "$(printf '%s\n' "$multi" | grep '^model:')"
+    same "a result with no usage counts 0 cache-read tokens rather than null" \
+        "cache_read_tokens: 0" \
+        "$(printf '%s\n' "$multi" | grep '^cache_read_tokens:')"
 
     # `answer` is the key that says what a closed-set session concluded, and
     # this script wrote `null` for every session it drove until #803, because
@@ -3187,7 +3202,7 @@ printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","ses
 printf '%s\n' '{"type":"assistant","message":{"id":"m1","content":[{"type":"tool_use","id":"t1","name":"Bash","input":{"command":"cat /home/someone/secret.md"}}]}}'
 printf '%s\n' '{"type":"assistant","message":{"id":"m2","content":[{"type":"tool_use","id":"t2","name":"Read","input":{"file_path":"/etc/hostname"}}]}}'
 printf '%s\n' '{"type":"assistant","message":{"id":"m3","content":[{"type":"server_tool_use","id":"t3","name":"WebSearch","input":{"query":"x"}}]}}'
-printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_cost_usd":0.01,"usage":{"input_tokens":10,"cache_creation_input_tokens":30,"cache_read_input_tokens":60},"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
 STUB
         chmod +x "$scratch/bin/claude"
         PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$leak" \
@@ -3197,6 +3212,12 @@ STUB
             "$(cat "$leak/sessions/L1-campaign-present-p1-r1/status" 2>/dev/null)"
         present "and its record counts one web-tool call" \
             "The session made 1 call to a web tool." "$leak/sessions/L1-campaign-present-p1-r1/record.md"
+        # The token record beside the cost (#1875), and not in the record.
+        same "the session's tokens file carries the three counts of the result's usage" \
+            "cache_read_tokens: 60 cache_write_tokens: 30 input_tokens: 10" \
+            "$(tr '\n' ' ' < "$leak/sessions/L1-campaign-present-p1-r1/tokens" 2>/dev/null | sed 's/ $//')"
+        absent "and the record's identity block carries none of them" \
+            "cache_read_tokens" "$leak/sessions/L1-campaign-present-p1-r1/record.md"
         cat > "$scratch/bin/claude" <<STUB
 #!/bin/sh
 printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s22"}'
@@ -3225,6 +3246,9 @@ STUB
             "$scratch/leak-assemble.err"
         absent "and the uncounted session is never reported as a batch of 0" \
             "named 0 paths" "$scratch/leak-assemble.err"
+        present "and the batch states the cached share of input over its one recorded session alone" \
+            "campaign: cached share: 60 of 100 input tokens read from the cache over 1 recorded sessions, 60.0%" \
+            "$scratch/leak-assemble.err"
 
         # A recorded session whose record states neither count is uncounted
         # too, never 0: the record of a stream that `jq -s` could not read,
@@ -3264,6 +3288,16 @@ STUB
         present "and so is each figure of the batch line" \
             "campaign: the batch named 6 paths outside the workspace over 4 sessions, 2 sessions uncounted, 3 web-tool calls" \
             "$scratch/leak-assemble5.err"
+        # A session recorded before #1875 has no token record, so it is named
+        # and adds nothing to either sum.
+        rm -f "$leak/sessions/L1-campaign-present-p1-r5/tokens"
+        printf 'cache_read_tokens: 0\ncache_write_tokens: 100\ninput_tokens: 0\n' > "$leak/sessions/L1-campaign-present-p1-r4/tokens"
+        same "the cached share sums the reads over the input of each recorded session, and names one with no token record" \
+            "cached share: 120 of 300 input tokens read from the cache over 3 recorded sessions, 40.0%, 1 recorded sessions without a token record" \
+            "$(sh "$root/tools/probe/cached-share.sh" "$leak")"
+        same "and a batch with no recorded session says so" \
+            "cached share: no recorded sessions" \
+            "$(sh "$root/tools/probe/cached-share.sh" "$scratch/no-such-batch")"
     else
         printf 'note not a checkout of this repository, so the campaign job case did not run.\n'
     fi
@@ -5489,6 +5523,8 @@ if [ -x "$engine" ]; then
         "line 8  additive scenario-0 tuning: a round of 4 variants x 5 probes x 5 repetitions (ceil(24 / 5)) = 100 sessions, a confirmation of 5 probes x 29 repetitions (round tuning, ceil(144 / 5)) = 145 sessions, and the best so far at 145 sessions where no measurement at that count exists: 390 sessions, \$195.00 a round" "$scratch/add.out"
     present "it prints the final round's sum" "round final: 1540 sessions, \$770.00" "$scratch/add.out"
     present "and one total" "total: 12950 sessions, \$6475.00" "$scratch/add.out"
+    present "and the cached share of input, with no batch recorded, as no recorded sessions (#1875)" \
+        "cached share: no recorded sessions" "$scratch/add.out"
     present "each round's count is computed from its rates" "so ceil(219 / 4) = 55 repetitions of each probe" "$scratch/add.out"
     # The owner approved the screening round at $700 (#1775). The
     # ceiling admits each plan, and the approval of each round says which
