@@ -16,12 +16,13 @@
 # moves it. A link by identifier does not depend on the path, so it needs no
 # repair and is not read. A probe of row 7 passes `--check-clean`.
 #
-# With `--check-clean`, the strict errors counted are those on <new-path> and
-# on every `.md` file that holds a link whose last path segment is the file
-# name of either path, wherever that link resolves (#1874.3). So a link
-# repaired to a path where nothing stands is read, and so is a broken
-# relative link inside the moved file, while the errors that a sealed tree
-# holds in files the move did not touch are not.
+# With `--check-clean`, the strict errors counted are every error on
+# <new-path>, and each error that names the file name of either path on a
+# `.md` file that holds a link whose last path segment is that file name,
+# wherever the link resolves (#1874.3). So a link repaired to a path where
+# nothing stands is read, and so is a broken relative link inside the moved
+# file. The errors that a sealed tree holds elsewhere are not, and neither
+# are the errors the seal made in a linking file, about its other links.
 
 set -u
 . "${0%/*}/lib.sh"
@@ -68,5 +69,7 @@ PY
 sed -n 's/^stale\t//p' "$hw_oracle_scratch/links" > "$hw_oracle_scratch/stale"
 stale=$(sort -u "$hw_oracle_scratch/stale" | wc -l | tr -d ' ')
 [ "$stale" -eq 0 ] || hw_oracle_fail "$old moved to $new, and $stale file(s) still link to $old, the first $(sort -u "$hw_oracle_scratch/stale" | sed -n '1p')"
-hw_oracle_subjects="$new $(sed -n 's/^near\t//p' "$hw_oracle_scratch/links" | sort -u | tr '\n' ' ')"
+hw_oracle_subjects=$new
+hw_oracle_linkers=$(sed -n 's/^near\t//p' "$hw_oracle_scratch/links" | sort -u | tr '\n' ' ')
+hw_oracle_mentions="${old##*/} ${new##*/}"
 hw_oracle_pass_clean "$old moved to $new, and no link resolves to $old"

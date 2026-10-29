@@ -116,7 +116,16 @@ hw_oracle_names_whole() {
 # errors the seal made in documents it kept, such as a relation to a removed
 # document, so a whole-tree condition fails every session there (#1874.2).
 # `check-clean.sh` and every script that sets no subject read the whole tree.
+#
+# A script may also set `hw_oracle_linkers` to more paths and
+# `hw_oracle_mentions` to names, both separated by spaces. On a linker, only
+# an error whose message holds one of the names counts. `moved.sh` sets the
+# files that link the moved file as linkers and its file names as mentions,
+# because such a file can carry an error the seal made, about another link,
+# in a sealed tree (#1874.3).
 hw_oracle_subjects=""
+hw_oracle_linkers=""
+hw_oracle_mentions=""
 
 hw_oracle_pass_clean() {
     if [ "$hw_oracle_clean" = yes ] && [ -n "$hw_oracle_subjects" ]; then
@@ -124,7 +133,7 @@ hw_oracle_pass_clean() {
         hw_oracle_engine
         hw_oracle_tmp
         "$hw_engine" check --json --root . > "$hw_oracle_scratch/check.json" 2> "$hw_oracle_scratch/check.err"
-        hw_errors=$(jq -r --arg subjects " $hw_oracle_subjects " '[.findings[] | (.path // "") as $path | select(.severity == "error" and .escape == "none" and ($subjects | contains(" " + $path + " ")))] | length' "$hw_oracle_scratch/check.json" 2> /dev/null) || hw_oracle_usage "the engine wrote no findings that jq reads"
+        hw_errors=$(jq -r --arg subjects " $hw_oracle_subjects " --arg linkers " $hw_oracle_linkers " --arg mentions "$hw_oracle_mentions" '($mentions | split(" ") | map(select(. != ""))) as $names | [.findings[] | (.path // "") as $path | (.message // "") as $message | select(.severity == "error" and .escape == "none" and (($subjects | contains(" " + $path + " ")) or (($linkers | contains(" " + $path + " ")) and any($names[]; . as $name | $message | contains($name)))))] | length' "$hw_oracle_scratch/check.json" 2> /dev/null) || hw_oracle_usage "the engine wrote no findings that jq reads"
         [ "$hw_errors" -eq 0 ] || hw_oracle_fail "$*, and \`headwater check --strict\` reports $hw_errors error(s) on it"
         hw_oracle_pass "$*, and \`headwater check --strict\` reports no error on it"
     fi

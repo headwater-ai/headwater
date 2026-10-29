@@ -214,8 +214,13 @@ tree=$(fresh moved-error-elsewhere) && rm -rf "$tree" && cp -a "$clean" "$tree" 
 expect 0 "moved with --check-clean passes an error in a file that does not link the moved file" "$tree" moved.sh --check-clean "$new" "$moved"
 tree=$(fresh moved-error-moved) && rm -rf "$tree" && cp -a "$clean" "$tree" && spoil "$tree" "$moved"
 expect 1 "moved with --check-clean fails an error in the moved file" "$tree" moved.sh --check-clean "$new" "$moved"
+# A sealed tree leaves errors in a file that links the moved file, about its
+# other links, so on such a file only an error that names the moved file's
+# name counts.
 tree=$(fresh moved-error-linker) && rm -rf "$tree" && cp -a "$clean" "$tree" && spoil "$tree" docs/subsystems/measurement.md
-expect 1 "moved with --check-clean fails an error in a file that links the moved file" "$tree" moved.sh --check-clean "$new" "$moved"
+expect 0 "moved with --check-clean passes an error that does not name the moved file in a file that links it" "$tree" moved.sh --check-clean "$new" "$moved"
+printf '\nSee [the record](../decisions/elsewhere/%s).\n' "${new##*/}" >> "$tree/docs/subsystems/measurement.md"
+expect 1 "moved with --check-clean fails an error that names the moved file in a file that links it" "$tree" moved.sh --check-clean "$new" "$moved"
 # A link rewritten to a path where nothing stands names the file and resolves
 # to neither path: `moved.sh` alone passes it, and the strict check does not.
 tree=$(fresh moved-misrepaired) && rm -rf "$tree" && cp -a "$clean" "$tree" && sed -i "s#\.\./decisions/moved/${new##*/}#../decisions/elsewhere/${new##*/}#g" "$tree/docs/subsystems/measurement.md"
