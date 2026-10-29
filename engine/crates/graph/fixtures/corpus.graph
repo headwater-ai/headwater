@@ -737,6 +737,10 @@ anchors
     cited by HW-DR-0111
   code_path `tools/probe/egress-proxy.py` via source-tree
     cited by HW-SPEC-the-recorder-contract
+  code_path `tools/probe/oracle-fixtures.sh` via source-tree
+    cited by HW-DR-0112
+  code_path `tools/probe/oracles/**` via source-tree
+    cited by HW-DR-0112
   code_path `tools/probe/probe-record.sh` via source-tree
     cited by HW-SPEC-the-recorder-contract
   code_path `tools/probe/rdf-probe/emit.py` via source-tree
