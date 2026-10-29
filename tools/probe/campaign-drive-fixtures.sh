@@ -704,8 +704,16 @@ check "usage: and it reads as unknown" out_has "usage unknown"
 new_case
 only_a
 echo 'exit=0 record=20 cents=10' > "$CASE/scenario"
-snap 99 "$((t0 - 1))"
-usage_case "a figure whose reset is past" 0 1
+# At 100 percent, so that a figure read as live would trip even the late
+# threshold.
+snap 100 "$((t0 - 1))"
+usage_case "a snapshot whose reset is past" 0 1
+check "usage: and logs nothing gated" sh -c "! grep -q 'usage-gated' '$CASE/out'"
+new_case
+only_a
+echo 'exit=0 record=20 cents=10' > "$CASE/scenario"
+transcript "$((t0 - 60))" "$(window 1.0 "$((t0 - 1))")"
+usage_case "a transcript whose reset is past" 0 1
 check "usage: and logs nothing gated" sh -c "! grep -q 'usage-gated' '$CASE/out'"
 new_case
 only_a

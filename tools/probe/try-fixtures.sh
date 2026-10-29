@@ -390,6 +390,9 @@ run status "$CASE/root"
 check "status: exits 0" code_is 0
 check "status: one line for the first try, with what it spent and its markers" out_has "docs-try1 spent=3000 driver=none markers=canary-passed done"
 check "status: one line for the dot-named try" out_has ".docs-try1-moved spent=3001"
+: > "$CASE/root/docs-try1/usage-gated"
+run status "$CASE/root"
+check "status: a stop of the usage gate is among the markers (#1876)" out_has "docs-try1 spent=3000 driver=none markers=canary-passed usage-gated done"
 check "status: the total against the approval" out_has "spent: 7001 of 10000 approved"
 check "status: the open layer" out_has "open: docs 1 2 3000"
 
@@ -621,6 +624,19 @@ check "relaunch: usage-gated present exits 0" code_is 0
 check "relaunch: and invokes the driver" [ "$(calls_count)" = 3 ]
 check "relaunch: and hands it the usage gate again" sh -c "[ \"\$(grep -c '^usage stop=85 late=100 hours=24\$' '$CASE/calls')\" = 3 ]"
 rm "$CASE/root/docs-r2-v1/usage-gated"
+# The values come from additive-launch.env as it reads now, not from a figure
+# in try.sh and not from the launch: a copy of try.sh beside an env file that
+# says 70, 95 and 12 hands the driver those on a relaunch.
+mkdir -p "$fix/env-copy/tools/probe"
+cp "$try" "$fix/env-copy/tools/probe/try.sh"
+sed -e 's/^TRY_USAGE_STOP_PERCENT=.*/TRY_USAGE_STOP_PERCENT=70/' -e 's/^TRY_USAGE_LATE_PERCENT=.*/TRY_USAGE_LATE_PERCENT=95/' \
+    -e 's/^TRY_USAGE_LATE_HOURS=.*/TRY_USAGE_LATE_HOURS=12/' "$here/additive-launch.env" > "$fix/env-copy/tools/probe/additive-launch.env"
+try_was=$try
+try=$fix/env-copy/tools/probe/try.sh
+run relaunch "$CASE/root" docs-r2-v1
+try=$try_was
+await_calls 4
+check "relaunch: hands the driver the usage gate of the env file as it reads now" grep -q '^usage stop=70 late=95 hours=12$' "$CASE/calls"
 check "relaunch: no relaunch writes a.done" [ ! -e "$CASE/root/docs-r2-v1/a.done" ]
 run relaunch "$CASE/root" docs-try9
 check "relaunch: a try that does not exist exits 6" code_is 6
