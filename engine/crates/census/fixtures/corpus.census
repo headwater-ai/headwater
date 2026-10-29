@@ -1196,6 +1196,8 @@ docs/probes/a-figure-a-session-adds-to-a-hand-built-page-is-measured-and-never-t
   typed: probe
 docs/probes/a-rule-that-reads-the-date-takes-it-from-the-run-and-ships-with-the-fixture-that-fails-it.md
   typed: probe
+docs/probes/a-session-adds-a-retired-term-to-the-overlay-that-the-task-names-and-leaves-the-lock-matching-it.md
+  typed: probe
 docs/probes/a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced.md
   typed: probe
 docs/probes/a-session-answers-from-the-register-without-opening-the-question-it-replaced.md
@@ -1206,9 +1208,19 @@ docs/probes/a-session-follows-a-citation-from-one-record-to-the-next.md
   typed: probe
 docs/probes/a-session-follows-two-citations-from-a-record-the-task-does-not-name.md
   typed: probe
+docs/probes/a-session-holds-the-trademark-notice-to-the-house-language-rules-from-the-overlay-that-the-task-names.md
+  typed: probe
 docs/probes/a-session-links-the-governs-edges-evaluation-to-the-obligation-that-it-says-is-discharged.md
   typed: probe
 docs/probes/a-session-links-the-obligation-on-published-read-sets-to-the-evaluation-whose-measurement-discharged-it.md
+  typed: probe
+docs/probes/a-session-moves-an-obligation-record-to-the-process-shelf-and-repairs-the-links-inside-it-as-well-as-the-links-to-it.md
+  typed: probe
+docs/probes/a-session-moves-the-guide-to-the-merge-driver-for-derived-files-to-the-adopter-shelf-under-the-identifier-that-shelf-mints.md
+  typed: probe
+docs/probes/a-session-moves-the-obligation-record-of-one-run-s-trailing-edges-to-the-process-shelf-and-repairs-every-link-to-it.md
+  typed: probe
+docs/probes/a-session-moves-the-record-of-one-run-s-test-gaps-to-the-process-shelf-and-repairs-the-link-from-a-sibling-record.md
   typed: probe
 docs/probes/a-session-names-the-event-that-makes-a-document-accepted.md
   typed: probe
@@ -1217,6 +1229,8 @@ docs/probes/a-session-names-the-record-that-governs-the-scripts-that-grade-a-cha
 docs/probes/a-session-names-the-status-a-settled-decision-carries-in-its-pull-request.md
   typed: probe
 docs/probes/a-session-reaches-the-adjudication-from-the-tombstone-that-the-task-names.md
+  typed: probe
+docs/probes/a-session-records-a-ruling-that-drops-the-help-screen-banner-as-the-settled-successor-of-the-record-the-task-names.md
   typed: probe
 docs/probes/a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks.md
   typed: probe
@@ -1234,6 +1248,16 @@ docs/probes/a-session-records-the-walkthrough-that-the-federation-part-rests-a-r
   typed: probe
 docs/probes/a-session-records-which-obligation-an-evaluation-discharged.md
   typed: probe
+docs/probes/a-session-repairs-a-change-narration-finding-in-a-sentence-about-another-tool-and-raises-no-other-finding.md
+  typed: probe
+docs/probes/a-session-repairs-a-change-narration-finding-in-the-sidebar-decision-and-raises-no-other-finding.md
+  typed: probe
+docs/probes/a-session-repairs-a-suspect-governs-edge-on-the-record-that-the-task-names-and-raises-no-other-finding.md
+  typed: probe
+docs/probes/a-session-retires-a-stock-phrase-in-the-list-that-the-check-reads-and-resolves-the-lock.md
+  typed: probe
+docs/probes/a-session-retires-a-word-with-its-replacement-so-that-the-check-offers-the-substitution.md
+  typed: probe
 docs/probes/a-session-says-how-a-governs-line-reaches-a-document.md
   typed: probe
 docs/probes/a-session-says-what-a-refusal-writes-on-standard-output-under-json.md
@@ -1249,6 +1273,14 @@ docs/probes/a-session-says-whether-a-command-or-a-hand-writes-a-governs-line.md
 docs/probes/a-session-says-whether-a-front-page-recording-may-show-a-number-a-live-run-does-not-produce-when-the-task-names-the-record-that-was-superseded.md
   typed: probe
 docs/probes/a-session-says-which-date-a-corrected-status-carries.md
+  typed: probe
+docs/probes/a-session-splits-the-long-summary-of-the-obligation-that-the-task-names-and-raises-no-other-finding.md
+  typed: probe
+docs/probes/a-session-supersedes-the-record-that-keeps-a-grammar-checker-out-of-the-engine-and-not-the-older-record-that-it-upholds.md
+  typed: probe
+docs/probes/a-session-supersedes-the-standing-ruling-on-a-paragraph-limit-when-the-task-describes-the-ruling-that-it-replaced.md
+  typed: probe
+docs/probes/a-session-supersedes-the-standing-ruling-on-figures-of-a-hand-built-page-when-the-task-names-the-record-that-ruling-replaced.md
   typed: probe
 docs/probes/a-session-tells-a-withheld-answer-from-an-absent-one-in-a-corpus-that-serves-no-tombstone.md
   typed: probe
