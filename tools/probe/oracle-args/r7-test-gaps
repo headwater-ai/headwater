@@ -1,0 +1,8 @@
+# The arguments of the `r7-test-gaps` oracle, one to a line, for the probe
+# HW-PROBE-a-session-moves-the-record-of-one-run-s-test-gaps-to-the-process-shelf-and-repairs-the-link-from-a-sibling-record
+# (#1874). `tools/probe/oracles/lib.sh` reads this file for `--args` and
+# skips each line that opens with `#`. The file names its probe, so the seal
+# removes it from every workspace, and the oracle entry holds it. The
+# command is `sh tools/probe/oracles/moved.sh --check-clean --args <this file>`.
+docs/obligations/0234-thirteen-test-gaps-that-the-verifiers-of-run-20261002-1233-left-in-the-recorder-the-probe-tools-and-the-spec-guards.md
+docs/process/obligations/0234-thirteen-test-gaps-that-the-verifiers-of-run-20261002-1233-left-in-the-recorder-the-probe-tools-and-the-spec-guards.md

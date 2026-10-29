@@ -1,0 +1,8 @@
+# The findings at the pin of the probe
+# HW-PROBE-a-session-repairs-a-suspect-governs-edge-on-the-record-that-the-task-names-and-raises-no-other-finding
+# (#1874), less the one finding the task repairs, so the pin fails.
+# `nothing-else-broken.sh --record` wrote it in a sealed grading copy, and
+# the line of the target finding was then removed by hand. It moves when
+# the scoped file or the seal changes, and the pin or the reference case
+# of `tools/probe/probe-oracle-fixtures.sh` then fails.
+# scope: docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md

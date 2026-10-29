@@ -1,0 +1,8 @@
+# The arguments of the `r8-cutting-edge` oracle, one to a line, for the probe
+# HW-PROBE-a-session-adds-a-retired-term-to-the-overlay-that-the-task-names-and-leaves-the-lock-matching-it
+# (#1874). `tools/probe/oracles/lib.sh` reads this file for `--args` and
+# skips each line that opens with `#`. The file names its probe, so the seal
+# removes it from every workspace, and the oracle entry holds it. The
+# command is `sh tools/probe/oracles/lock-regenerated.sh --check-clean --args <this file>`.
+.headwater/overlay.yml
+term: cutting-edge
