@@ -116,6 +116,20 @@ tree=$(fresh typed-uncited) && sed -i 's/HW-PD-0026/HW-PD-9999/g; s/0026-we-pivo
 expect 1 "typed-at fails a document that does not cite the ruling" "$tree" typed-at.sh docs/decisions decision HW-PD-0026 "$title"
 tree=$(fresh typed-elsewhere) && mkdir -p "$tree/docs/notes" && mv "$tree/$new" "$tree/docs/notes/"
 expect 1 "typed-at fails the document moved off its shelf" "$tree" typed-at.sh docs/decisions decision HW-PD-0026 "$title"
+tree=$(fresh typed-prefix) && sed -i 's/HW-PD-0026/HW-PD-00260/g' "$tree/$new"
+expect 1 "typed-at fails a citation of an identifier that the ruling is a prefix of" "$tree" typed-at.sh docs/decisions decision HW-PD-0026 "$title"
+
+# --- --args <file>, read by lib.sh for every script --------------------------
+
+printf '# The arguments of a probe, one per line. A comment line is skipped.\ndocs/decisions\ndecision\n\nHW-PD-0026\n%s\n' "$title" > "$work/typed.args"
+expect 0 "--args reads the arguments of a script from a file" "$base" typed-at.sh --args "$work/typed.args"
+expect 2 "--args refuses a file that does not exist" "$base" typed-at.sh --args "$work/no-such.args"
+expect 2 "--args refuses an argument after the file" "$base" typed-at.sh --args "$work/typed.args" extra
+expect 0 "--check-clean before --args passes a clean tree" "$base" typed-at.sh --check-clean --args "$work/typed.args"
+expect 1 "--check-clean before --args fails a tree with an error" "$work/check-spoiled" typed-at.sh --check-clean --args "$work/typed.args"
+expect 2 "--check-clean after --args is refused" "$base" typed-at.sh --args "$work/typed.args" --check-clean
+printf 'docs/decisions\ndecision\nHW-PD-0026\n' > "$work/short.args"
+expect 2 "--args with too few arguments in the file is the script's usage error" "$base" typed-at.sh --args "$work/short.args"
 
 # --- reciprocal-link.sh ---------------------------------------------------
 
@@ -127,6 +141,11 @@ expect 1 "reciprocal-link fails a link written at one end, though the summary na
 tree=$(fresh link-other-end) && sed -i '/^  supersedes:/,/^  [a-z]/{/^    - HW-DR-0111/d}' "$tree/$new"
 expect 1 "reciprocal-link fails when the other end drops the link" "$tree" reciprocal-link.sh HW-DR-0112 HW-DR-0111
 expect 1 "reciprocal-link fails a document the engine does not read" "$base" reciprocal-link.sh HW-DR-0112 HW-DR-9999
+tree=$(fresh link-prefix) && sed -i "/^  superseded_by:/,/^  [a-z]/s#^    - HW-DR-0112\$#    - draft-${new##*/}#" "$tree/$old"
+grep -q "^    - draft-${new##*/}\$" "$tree/$old" || echo "oracle-fixtures: the superseded_by line of $old was not rewritten, so the next case reads nothing." >&2
+expect 1 "reciprocal-link fails a file name that the other document's name is a suffix of" "$tree" reciprocal-link.sh HW-DR-0112 HW-DR-0111
+printf '# the two documents\nHW-DR-0112\nHW-DR-0111\n' > "$work/link.args"
+expect 0 "reciprocal-link reads its arguments from --args" "$base" reciprocal-link.sh --check-clean --args "$work/link.args"
 
 # --- successor-typed.sh ---------------------------------------------------
 
