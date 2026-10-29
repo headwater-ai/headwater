@@ -1770,6 +1770,15 @@ check "usage: hooks prints the hooks each session used, in the order intent, rea
 check "usage: hooks prints a session by the hooks it used, and no hook the layer does not ship" out_line "session s2 write"
 check "usage: hooks prints a dash for a session that used no hook" out_line "session s3 -"
 check "usage: hooks reads the list content of a hook_additional_context, and counts another hook's pointer for that hook and not for intent" out_line "session s4 read"
+# The intent hook as Claude Code 2.1.312 logs it: a list whose first element is
+# the heading and whose pointer line comes after it. A reader of the first
+# element alone hides every intent use that try.sh rank reads.
+intent_listed='{"type":"attachment","rendered":["x"],"attachment":{"type":"hook_additional_context","hookName":"UserPromptSubmit","hookEvent":"UserPromptSubmit","content":["Headwater routed this task.","  docs/spec/01-x.md (One) — A summary."]}}'
+rm -rf "$b"
+usage_session "$b" s1 "$(tool_line Read '{"file_path":"docs/spec/01-x.md"}')" "$intent_listed"
+usage_of hooks
+check "usage: hooks reads every element of the intent hook's list, and counts a pointer after the first" out_line "hook intent used 1 sessions 1"
+check "usage: hooks names intent for a session that opened a pointer from the intent hook's list" out_line "session s1 intent"
 rm -rf "$b"
 usage_session "$b" s1 "$(tool_line mcp__headwater__explain '{"path":"x"}')"
 usage_session "$b" s2 "$(tool_line Read '{"file_path":"mcp__x"}')"
