@@ -35,7 +35,7 @@ Retire the phrase "game-changer" from the prose of this repository, so that the 
 
 ## Target
 
-[The overlay](../../.headwater/overlay.yml), whose block `regimes.language.ste_house` holds `retired_terms`.
+`.headwater/overlay.yml`, whose block `regimes.language.ste_house` holds `retired_terms`.
 
 ## Key
 

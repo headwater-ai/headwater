@@ -35,7 +35,7 @@ The record `docs/obligations/0242-three-edges-and-a-comment-that-trail-a-change-
 
 ## Target
 
-[HW-OBL-0242](../obligations/0242-three-edges-and-a-comment-that-trail-a-change-of-run-20261012-2342.md), which moves to `docs/process/obligations/`.
+[HW-OBL-0242](../obligations/0242-three-edges-and-a-comment-that-trail-a-change-of-run-20261012-2342.md), which moves to the process obligations shelf.
 
 ## Key
 
