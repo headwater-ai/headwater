@@ -1,101 +1,51 @@
 #!/bin/sh
-# The write-time hook. Spec 5 gives this moment two mechanisms, and they want
-# opposite postures, so this file registers on two events and dispatches on the
-# one the harness names.
+# The write-time hook. It registers on two events and acts on the one the
+# harness names.
 #
-#   PreToolUse  Write|Edit   backfill, then impact detection, in that order.
+#   PreToolUse  Write|Edit   A refusal, then an advisory.
 #
-#                            Backfill: a new document written straight to disk
-#                            invents its front matter, its identifier, its
-#                            placement and its sections. `headwater new` derives
-#                            all four from the committed lock and refuses
-#                            eighteen ways before it writes a byte. So this
-#                            refuses the raw write and names the verb.
+#                            The refusal: a new document written straight to
+#                            disk invents its front matter, its identifier,
+#                            its place and its sections. `headwater new`
+#                            derives all four from the lock, and refuses
+#                            rather than guesses. So this hook refuses the raw
+#                            write of a new document and names the verb. An
+#                            edit to a file that exists always passes.
 #
-#                            Impact detection, for every call the refusal does
-#                            not deny: a document may declare that it governs a
-#                            code path, written as a pattern or as a list of
-#                            them (HW-DR-0074), and an edit to any path a
-#                            pattern admits raises an advisory prompt that names
-#                            the documents at risk. It comes before the edit,
-#                            so the agent reads the governing set while the
-#                            change is still a plan (#953). Spec 5 makes it
-#                            advisory on purpose: a gate here trains an author
-#                            to answer "no doc impact" by reflex, and that
-#                            destroys the signal.
+#                            The advisory, for every call the refusal does not
+#                            deny, in one JSON object of up to three parts:
+#                            - the documents that declare they govern the path,
+#                              or, for a path the governed scope admits and no
+#                              document governs, the account `headwater route`
+#                              gives of it;
+#                            - for a path that is itself a document, the code
+#                              paths it governs and the documents that declare
+#                              an edge onto it;
+#                            - for a path that a producer writes, its record
+#                              and the command that rebuilds it, and whether a
+#                              merge left it in conflict.
+#                            It comes before the edit, so the agent reads the
+#                            documents while the change is still a plan. It is
+#                            advisory on purpose: a gate here teaches an author
+#                            to answer "no impact" by reflex.
 #
-#                            A path that the governed scope admits and that no
-#                            document governs gets the engine's account instead
-#                            of silence: the scope fact and the front-matter
-#                            lines that would declare the edge (#953). The hook
-#                            writes nothing, and a path outside the scope stays
-#                            silent. `headwater route` decides both; this file
-#                            holds no scope pattern.
+#   PostToolUse Write|Edit   One line, or nothing. The line names each
+#                            governing edge of the path that the edit left
+#                            suspect.
 #
-#                            The reverse direction, in the same call and the
-#                            same JSON object: an edit to a document that
-#                            governs code paths, or that other documents
-#                            declare an edge onto, names those paths and those
-#                            documents (#1008). A document edited as if it
-#                            stood alone is how a governing decision drifts
-#                            from the code it rules. Every fact of this part
-#                            is read from `headwater explain --json`.
+# Every fact comes from an existing verb: `explain`, `route` and `derived`.
+# The hook adds no verb and holds no rule of its own.
 #
-#                            A third part, in the same object: an edit to a
-#                            path that a producer writes names the row and the
-#                            treatment of its record and the command that
-#                            rebuilds it (#1053). Where this worktree is
-#                            stopped in a merge and the path is unmerged, it
-#                            says so, and names the rebuild on the merged tree
-#                            as the resolution. Every fact of this part is read
-#                            from `headwater derived`, through
-#                            `hw_derived_report`, which `derived.sh` shares
-#                            for the conflict moment.
+# A refusal stops the tool call, and the agent reads the reason. A write
+# through a shell command reaches no hook, so the commit and the pull request
+# are what hold the result. The hook fails open, silently, on every path it
+# cannot decide.
 #
-#   PostToolUse Write|Edit   one line, or nothing. The line names each
-#                            governing edge of the edited path that the edit
-#                            left suspect: the edge records a
-#                            `verified_revision`, and the revision its target
-#                            has now differs (#953). It says that `headwater
-#                            check` reports the edge. The engine decides which
-#                            edges are suspect, with the comparison the check
-#                            makes, and `headwater route --json` carries them
-#                            on each anchored pointer. The pointers themselves
-#                            are not printed again: the advisory said them
-#                            before the edit.
-#
-# What it passes to the engine: one path. What it gets back: for the refusal,
-# the classification `headwater explain` reports on standard error for a path
-# with no document behind it — [#319](https://github.com/headwater-ai/headwater/issues/319)
-# is what put that answer inside the engine rather than in this file. The
-# question is answered by `explain`, an existing verb, and not by a new
-# `headwater hook write` verb: spec 5's hook contract states "no hook
-# introduces a verb", because "two entry points to one answer are two answers
-# as soon as one drifts". For the advisory, the pointers `headwater route`
-# resolves from the anchor, and the `related` entries `headwater explain
-# --json` reports for a document.
-#
-# What a refusal means: the harness does not run the tool call, and the agent
-# reads the reason. What happens when the harness ignores it: the write lands.
-# A `Bash` call that writes the same file matches no matcher here and this hook
-# never sees it. That bypass is one tool call away and it leaves no trace. The
-# commit hook and the CI job are what hold the result, and this position holds
-# nothing on its own.
-#
-# It fails open, silently, on every path it cannot decide.
-#
-# This is the one script spec 16 registers under three names: `.claude/`,
-# `.codex/hooks.json` and `.github/hooks/*.json` all point a `PreToolUse` and
-# a `PostToolUse` position at this file, the second silent for now, because a binding calls a verb that
-# ships and carries no rule of its own. `hook_event_name` and `tool_name`
-# agree across all three, confirmed live, and the one path a call names is the
-# one field that does not: Claude Code passes `tool_input.file_path`, Copilot
-# passes `tool_input.path` on the same `Write`/`Edit` tool names, and Codex's
-# edit tool is `apply_patch`, which passes the patch text under
-# `tool_input.command` rather than a bare path at all. `hw_patch_path` in
-# `lib.sh` is the one place that reads that last shape.
+# Claude Code names the path `tool_input.file_path`, Copilot names it
+# `tool_input.path`, and Codex passes a patch under `tool_input.command`.
+# `hw_patch_path` in `lib.sh` reads the last one.
 
-. "$(dirname "$0")/lib.sh"
+. "${0%/*}/lib.sh"
 
 input=$(cat)
 event=$(hw_field "$input" hook_event_name) || exit 0
@@ -105,12 +55,8 @@ path=$(hw_field "$input" tool_input file_path) \
     || exit 0
 [ -n "$path" ] || exit 0
 
-# Corrected from the payload's own `cwd` now that it is readable. Everything
-# below this line treats `hw_root` as the repository: the prefix comparison
-# right after it, and the `explain`/`route` calls each branch makes with
-# `--root "$hw_root"`. `event` and `path` above are payload reads, not
-# checkout reads, so they were worth taking through the pre-correction root
-# first.
+# Every read below treats `hw_root` as the repository. `event` and `path` are
+# fields of the payload, so they are read before this correction.
 hw_root=$(hw_resolve_root "$input")
 
 # The path as the corpus names it: relative to the repository root.
@@ -120,13 +66,8 @@ case $path in
     *) rel=$path ;;
 esac
 
-# The impact advisory, on standard output, or nothing. It is one JSON object
-# with up to three parts, worded for an edit that has not happened yet. The
-# forward part names the documents that govern the path. The reverse part,
-# for a path that is itself a document, names the code paths it governs and
-# the documents that declare an edge onto it (#1008). The derived part, for a
-# path a producer writes, names its record and its rebuild command (#1053).
-# Any part can be absent, and a call with none prints nothing.
+# The advisory, on standard output, or nothing. Any part can be absent, and a
+# call with no part prints nothing.
 advise() {
     advisory=
     named=
@@ -137,11 +78,8 @@ advise() {
 $pointers"
         named=1
     elif ungoverned=$(hw_ungoverned_in_scope "$rel"); then
-        # #953: the path is one the taxonomy expects a `governs` edge to reach,
-        # and none does. A term route over such a path reached a document for
-        # 3 of 213 in-scope ungoverned entries on 2026-09-26, so the advisory
-        # speaks whether or not it has a document to name. It proposes the
-        # edge and writes nothing.
+        # The taxonomy expects a `governs` edge to reach this path, and none
+        # does. The advisory proposes the edge and writes nothing.
         advisory="Headwater impact detection: \`$rel\`, which you are about to change, is a path this taxonomy expects a document to govern, and no document governs it.
 
 $ungoverned"
@@ -158,8 +96,8 @@ $ungoverned"
 $reverse"
         named=1
     fi
-    # #1053: the path is one a producer writes. The row, the treatment and the
-    # command are the engine's, read from `headwater derived`.
+    # The path is one a producer writes. The row, the treatment and the
+    # command come from `headwater derived`.
     if derived=$(hw_derived_report "$rel"); then
         heading=$(printf '%s\n' "$derived" | sed -n 1p)
         rebuild=$(printf '%s\n' "$derived" | sed -n 2p)
@@ -187,9 +125,7 @@ Rebuild it with \`$rebuild\` rather than editing it by hand. An edit by hand is 
         fi
     fi
     [ -n "$advisory" ] || exit 0
-    # "Read each one" only where the advisory names a document to read. An
-    # ungoverned path that no route reached names none (#953, verify finding 3),
-    # and neither does a derived artifact on its own (#1053).
+    # "Read each one" only where the advisory names a document to read.
     if [ -n "$named" ]; then
         advisory="$advisory
 
@@ -210,20 +146,14 @@ This is advisory. Nothing here blocks the edit."
 
 case $event in
 PreToolUse)
-    # The refusal is for a file that does not exist yet. An edit to a document
-    # that already has front matter is what `check --fix` and the commit hook
-    # hold, and refusing it here would refuse every edit this repository is
-    # made of. Every call the refusal does not deny gets the advisory instead.
+    # The refusal is for a file that does not exist yet. Every call it does
+    # not deny gets the advisory instead.
     [ -e "$hw_root/$rel" ] && advise
     case $rel in *.md) ;; *) advise ;; esac
 
     # Whether the corpus claims this path is a question `headwater explain`
-    # now answers for a path with no file behind it — the same
-    # `headwater_meta::pattern::Pattern` the walk itself matches an existing
-    # file against, reached through one verb rather than reimplemented here.
-    # #319: this used to read the generated corpus descriptor and match the
-    # exclusion patterns with a Python glob matcher, a second implementation
-    # nothing compared against the engine's own.
+    # answers for a path with no file behind it, with the matcher the walk
+    # itself uses.
     engine=$(hw_engine) || exit 0
     account=$("$engine" explain --root "$hw_root" "$rel" 2>&1 >/dev/null)
     case $account in
@@ -244,7 +174,7 @@ If the file is genuinely not a document of any kind this taxonomy declares, it d
     ;;
 PostToolUse)
     # One line where the edit left a governing edge suspect, and nothing
-    # otherwise. The header says why the pointers are not printed again.
+    # otherwise. The advisory named the pointers before the edit.
     line=$(hw_suspect_edges "$rel") || exit 0
     quoted=$(hw_quote "$line") || exit 0
     printf '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":%s}}\n' "$quoted"
@@ -254,3 +184,4 @@ PostToolUse)
     exit 0
     ;;
 esac
+# installed by headwater init --harness, digest sha256:0497f59bfe1030c5a38d215cc0c1f79a4654b24cdb4c4d622db2d77f0b78078c

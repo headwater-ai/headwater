@@ -363,7 +363,7 @@ same "the copy detector leaves a release fallback alone" "0" \
     "$(printf '%s\n' 'engine=$(hw_resolve_engine_bin "$root") || engine="$root/engine/target/release/headwater"' | grep -cE "$own_copy")"
 
 for migrated in \
-    .claude/hooks/lib.sh \
+    .claude/hooks/lib.local.sh \
     .claude/hooks/fixtures-live.sh \
     .claude/skills/fixtures.sh \
     tools/repo/readme-fixtures.sh \

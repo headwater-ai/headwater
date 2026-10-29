@@ -1,38 +1,20 @@
 #!/bin/sh
-# The read-time position. A document may declare that it governs a code path
-# (HW-DR-0074), and a session that opens that path hears the documents before
-# it reads a line of it, not only after it has changed the file (#953).
+# The read-time hook. A document can declare that it governs a code path, and
+# a session that opens that path hears of the document before it reads a
+# line of it.
 #
 #   PreToolUse  Read   route the one path the read names, and add the pointer
-#                      lines as context. It emits no permission decision, so it
-#                      never blocks a read and never asks for one.
+#                      lines as context. It writes no permission decision, so
+#                      it never blocks a read.
 #
-# This is not spec 5's read-time rule loading, which is a generated rule file a
-# harness attaches on a glob (capability C2). This is injected context, a hook
-# position, and spec 16 records it as C11.
+# It passes one path to `headwater route` and gets back the pointers. It is
+# silent when nothing governs the path, when the path is outside the
+# repository, when the payload names no path, and when there is no binary.
 #
-# A script of its own rather than a branch of `write.sh`: the two positions
-# share one answer, `hw_governing_pointers` in `lib.sh`, and nothing else. The
-# write position refuses and this one never does, so a branch in one file would
-# carry a refusal path that a read must never reach.
-#
-# What it passes to the engine: one path. What it gets back: the pointers
-# `headwater route` renders. No verb is new, per spec 5's hook contract.
-#
-# It is silent when nothing governs the path, when the path is outside the
-# root, when the payload names no path, and when there is no engine. It fails
-# open on every path it cannot decide, like every other position.
-#
-# A read through `Bash` (`cat`, `sed -n`) matches no matcher and reaches no
-# hook. The same bypass holds for a write, and spec 5 records it.
-#
-# Registered on Claude Code alone. Codex has no read tool that this repository
-# has seen: it reads through its shell, so a matcher here would match nothing.
-# Copilot's read tool name is not yet measured, and `fixtures-live.sh` records
-# it. Spec 16's C11 row carries both cells. The payload shapes still differ as
-# they do for `write.sh`, so this reads `tool_input.path` too.
+# A read through a shell command (`cat`, `sed -n`) reaches no hook. Copilot
+# names the path `tool_input.path`, so this reads that field too.
 
-. "$(dirname "$0")/lib.sh"
+. "${0%/*}/lib.sh"
 
 input=$(cat)
 event=$(hw_field "$input" hook_event_name) || exit 0
@@ -60,3 +42,4 @@ Read the ones that bear on your task before you change this file. This is contex
 quoted=$(hw_quote "$advisory") || exit 0
 printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":%s}}\n' "$quoted"
 exit 0
+# installed by headwater init --harness, digest sha256:fa4ac1596337207024790bfa5fa9efda39cf34392f9220062a70e19e65170f0f

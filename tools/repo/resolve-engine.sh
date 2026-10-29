@@ -44,7 +44,7 @@
 # environment variable, on purpose: sourcing this file sets no variable and
 # leaves no state a child process could inherit. That is what lets
 # `.claude/hooks/fixtures-live.sh` source it even though it must not source
-# `.claude/hooks/lib.sh` — that file's `hw_engine` reads `HEADWATER_HOOK_ROOT`,
+# `.claude/hooks/lib.sh` — that file reads `HEADWATER_HOOK_ROOT`,
 # and every harness process `fixtures-live.sh` drives is a child that would
 # inherit it and read the real repository in place of the scratch clone it was
 # handed.
