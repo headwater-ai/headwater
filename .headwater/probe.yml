@@ -154,8 +154,12 @@ answer_keys:
 #                                        and <old> names it
 #   moved.sh <old-path> <new-path>       moved, and no link resolves to the
 #                                        old path
-#   lock-regenerated.sh                  `headwater taxonomy resolve --check`
-#   nothing-else-broken.sh <baseline>    no finding the pin did not carry
+#   lock-regenerated.sh [<file> <literal>]...
+#                                        `headwater taxonomy resolve --check`,
+#                                        and each <file> holds its <literal>
+#   nothing-else-broken.sh <baseline>    no finding the pin did not carry, on
+#                                        the files of a `# scope:` line of
+#                                        <baseline> where it has one
 #   test-passes.sh [--ignored] <crate> <test-target> [<filter>]
 #                                        cargo passes and ran a case
 #   no-hook-warning.sh                   row 11: no hook spoke in the
@@ -166,9 +170,11 @@ answer_keys:
 #
 # `--check-clean` as the first argument of a tree script adds the condition
 # of check-clean.sh, over the documents the script names where it names
-# them: typed-at.sh and reciprocal-link.sh count only the strict errors on
-# their own documents, because the seal leaves errors elsewhere in a sealed
-# tree. `--args <file>` as the last option reads the arguments from a held
+# them: typed-at.sh, reciprocal-link.sh, successor-typed.sh, moved.sh,
+# lock-regenerated.sh and nothing-else-broken.sh count only the strict
+# errors on their own documents, because the seal leaves errors elsewhere in
+# a sealed tree. moved.sh also counts an error that names the moved file on
+# a file that links it. `--args <file>` as the last option reads the arguments from a held
 # file, one to a line, which names its probe in its first ten lines; a key
 # or a held path never names a probe, because the seal strips such a line
 # from this file. Each script runs from the root of the grading copy,
