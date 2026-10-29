@@ -1734,6 +1734,51 @@ usage_session "$b" s1 "$(tool_line Read '{"file_path":"docs/spec/01-x.md"}')" "$
 usage_session "$b" s2 "$(tool_line Read '{"file_path":"docs/spec/03-z.md"}')" "$older"
 usage_of hooks
 check "usage: hooks still counts a pointer in the hook_additional_context of an older log, and not the path the task names" out_has "used 1 sessions 2"
+# Each of the four hooks, per hook and per session (#1875). Intent keeps the
+# pointer-opened rule. Read, write and review count a hook_success with text:
+# `PreToolUse:Read`, `PreToolUse:Write`, `PostToolUse:Edit` and `Stop`. A hook
+# that printed nothing, or only white space, such as `touch.sh` on the write
+# matcher, is no use,
+# and neither is a hook the layer does not ship (`PreToolUse:Grep`).
+out_line() { grep -qxF -- "$1" "$CASE/out"; }
+out_first() { [ "$(head -1 "$CASE/out")" = "$1" ]; }
+hook_line() { printf '{"type":"attachment","attachment":{"type":"hook_success","hookName":"%s","hookEvent":"%s","content":"%s"}}\n' "$1" "${1%%:*}" "$2"; }
+rm -rf "$b"
+usage_session "$b" s1 "$(tool_line Read '{"file_path":"docs/spec/01-x.md"}')" "$inject"
+log=$b/config/s1/projects/x/log.jsonl
+hook_line PreToolUse:Read 'docs/spec/01-x.md is governed by HW-DR-0001.' >> "$log"
+hook_line PreToolUse:Write 'Use headwater new for a new document.' >> "$log"
+hook_line PreToolUse:Write '' >> "$log"
+hook_line PostToolUse:Edit '' >> "$log"
+hook_line Stop 'headwater check found 1 error.' >> "$log"
+usage_session "$b" s2 "$(tool_line Read '{"file_path":"docs/spec/02-y.md"}')" "$(hook_line PostToolUse:Edit 'The edit left a stale fold.')"
+hook_line PreToolUse:Grep 'not a hook the layer ships' >> "$b/config/s2/projects/x/log.jsonl"
+usage_session "$b" s3 "$(tool_line Read '{"file_path":"docs/spec/02-y.md"}')" "$(hook_line PreToolUse:Write '')"
+hook_line Stop '\n ' >> "$b/config/s3/projects/x/log.jsonl"
+# Claude Code 2.1.312 logs a hook's added context as a hook_additional_context
+# whose content is a list of strings. A pointer line in the read hook's list
+# counts for read and never for intent, though the session opened it.
+listed='{"type":"attachment","rendered":["x"],"attachment":{"type":"hook_additional_context","hookName":"PreToolUse:Read","hookEvent":"PreToolUse","content":["Headwater routed this read.","  docs/spec/01-x.md (One) — A summary."]}}'
+usage_session "$b" s4 "$(tool_line Read '{"file_path":"docs/spec/01-x.md"}')" "$listed"
+usage_of hooks
+check "usage: hooks keeps the first line on the intent rule, which try.sh rank reads" out_first "used 1 sessions 4"
+check "usage: hooks counts the intent hook by the pointer it opened" out_line "hook intent used 1 sessions 4"
+check "usage: hooks counts the read hook by a PreToolUse:Read with text, as a string or a list" out_line "hook read used 2 sessions 4"
+check "usage: hooks counts the write hook by a Pre or PostToolUse on Write or Edit with text, and no empty one" out_line "hook write used 2 sessions 4"
+check "usage: hooks counts the review hook by a Stop with text, and no empty one" out_line "hook review used 1 sessions 4"
+check "usage: hooks prints the hooks each session used, in the order intent, read, write, review" out_line "session s1 intent read write review"
+check "usage: hooks prints a session by the hooks it used, and no hook the layer does not ship" out_line "session s2 write"
+check "usage: hooks prints a dash for a session that used no hook" out_line "session s3 -"
+check "usage: hooks reads the list content of a hook_additional_context, and counts another hook's pointer for that hook and not for intent" out_line "session s4 read"
+# The intent hook as Claude Code 2.1.312 logs it: a list whose first element is
+# the heading and whose pointer line comes after it. A reader of the first
+# element alone hides every intent use that try.sh rank reads.
+intent_listed='{"type":"attachment","rendered":["x"],"attachment":{"type":"hook_additional_context","hookName":"UserPromptSubmit","hookEvent":"UserPromptSubmit","content":["Headwater routed this task.","  docs/spec/01-x.md (One) — A summary."]}}'
+rm -rf "$b"
+usage_session "$b" s1 "$(tool_line Read '{"file_path":"docs/spec/01-x.md"}')" "$intent_listed"
+usage_of hooks
+check "usage: hooks reads every element of the intent hook's list, and counts a pointer after the first" out_line "hook intent used 1 sessions 1"
+check "usage: hooks names intent for a session that opened a pointer from the intent hook's list" out_line "session s1 intent"
 rm -rf "$b"
 usage_session "$b" s1 "$(tool_line mcp__headwater__explain '{"path":"x"}')"
 usage_session "$b" s2 "$(tool_line Read '{"file_path":"mcp__x"}')"
