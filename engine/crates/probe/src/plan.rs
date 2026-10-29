@@ -917,7 +917,7 @@ impl Plan {
                 for item in items {
                     match item.as_scalar() {
                         Some(scalar) if admits(values, &scalar.text) => {
-                            moments.push(scalar.text.clone())
+                            moments.push(scalar.text.clone());
                         }
                         _ => {
                             plan.refusal = Some(Refusal::Undeclared {
