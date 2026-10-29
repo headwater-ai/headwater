@@ -126,14 +126,18 @@ expect 1 "typed-at fails a citation of an identifier that the ruling is a prefix
 
 # --- --args <file>, read by lib.sh for every script --------------------------
 
-printf '# The arguments of a probe, one per line. A comment line is skipped.\ndocs/decisions\ndecision\n\nHW-PD-0026\n%s\n' "$title" > "$work/typed.args"
+# One argument to a printf word, and never an identifier straight after a
+# `\n` escape: the seal strips a line that names a deleted document as a
+# whole name, and the letter of the escape joins the identifier, so that
+# line would survive a sealed copy and name the record the seal deleted.
+printf '%s\n' '# The arguments of a probe, one per line. A comment line is skipped.' docs/decisions decision '' HW-PD-0026 "$title" > "$work/typed.args"
 expect 0 "--args reads the arguments of a script from a file" "$base" typed-at.sh --args "$work/typed.args"
 expect 2 "--args refuses a file that does not exist" "$base" typed-at.sh --args "$work/no-such.args"
 expect 2 "--args refuses an argument after the file" "$base" typed-at.sh --args "$work/typed.args" extra
 expect 0 "--check-clean before --args passes a clean tree" "$base" typed-at.sh --check-clean --args "$work/typed.args"
 expect 1 "--check-clean before --args fails a tree with an error" "$work/check-spoiled" typed-at.sh --check-clean --args "$work/typed.args"
 expect 2 "--check-clean after --args is refused" "$base" typed-at.sh --args "$work/typed.args" --check-clean
-printf 'docs/decisions\ndecision\nHW-PD-0026\n' > "$work/short.args"
+printf '%s\n' docs/decisions decision HW-PD-0026 > "$work/short.args"
 expect 2 "--args with too few arguments in the file is the script's usage error" "$base" typed-at.sh --args "$work/short.args"
 
 # --- reciprocal-link.sh ---------------------------------------------------
@@ -152,7 +156,7 @@ expect 1 "reciprocal-link fails a file name that the other document's name is a 
 expect 1 "reciprocal-link with --check-clean fails an error in one of its documents" "$elsewhere" reciprocal-link.sh --check-clean HW-DR-0112 HW-DR-0111
 tree=$(fresh link-error-elsewhere) && spoil "$tree" docs/spec/12-check-layer.md
 expect 0 "reciprocal-link with --check-clean passes an error in a document it does not name" "$tree" reciprocal-link.sh --check-clean HW-DR-0112 HW-DR-0111
-printf '# the two documents\nHW-DR-0112\nHW-DR-0111\n' > "$work/link.args"
+printf '%s\n' '# the two documents' HW-DR-0112 HW-DR-0111 > "$work/link.args"
 expect 0 "reciprocal-link reads its arguments from --args" "$base" reciprocal-link.sh --check-clean --args "$work/link.args"
 
 # --- successor-typed.sh ---------------------------------------------------
