@@ -378,6 +378,34 @@ fn the_shipped_review_hook_blocks_on_an_error_in_a_file_the_session_wrote_and_a_
         "the review hook over a session whose files hold no error",
     );
 
+    // A session that wrote a file whose error a directive suppresses ends its
+    // turn: the report prints the error and marks it `not reported`.
+    succeeded(
+        &hook(
+            root,
+            "touch",
+            &tool_payload(root, "PreToolUse", "Write", "s4", "docs/answers/held.md"),
+        ),
+        "the touch hook",
+    );
+    answer(root, "held.md", "AC-A-0004", None, "");
+    let held = root.join("docs/answers/held.md");
+    let mut bytes = std::fs::read_to_string(&held).expect("reads");
+    bytes.push_str("\n<!-- headwater allow=facet.required.missing scope=file until=2099-12-31 reason=accepted_deviation note=the fixture holds a suppressed error -->\n");
+    std::fs::write(&held, bytes).expect("writes");
+    let report = headwater(root, &["check", "--strict", "--no-color"]);
+    assert!(
+        text(&report.stdout).contains("docs/answers/held.md")
+            && text(&report.stdout).contains("not reported ("),
+        "the check prints the suppressed error:\n{}",
+        text(&report.stdout)
+    );
+    let suppressed = hook(root, "review", &stop_payload(root, "s4", false));
+    succeeded(
+        &suppressed,
+        "the review hook over a session whose only error is suppressed",
+    );
+
     // The second run writes nothing, and settings.json keeps its bytes.
     let before = the_harness(root);
     let second = headwater(root, &["init", "--harness"]);
