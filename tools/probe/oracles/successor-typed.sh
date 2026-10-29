@@ -14,7 +14,11 @@
 #    its own front matter, and the engine types it;
 # 3. the `relations:` block of <old-document> names that successor, which is
 #    the `superseded_by` link the other end writes. A summary that says
-#    "superseded by" is not a link and is not read.
+#    "superseded by" is not a link and is not read. The successor counts only
+#    as a whole name, so `HW-DR-01120` is not `HW-DR-0112` (#1874.3).
+#
+# With `--check-clean`, the strict errors counted are those on <old-document>
+# and on the successor, because a sealed tree holds errors elsewhere.
 #
 # Retirement with no successor is not graded here: a probe of that kind
 # declares its own oracle.
@@ -37,9 +41,21 @@ found=""
 while IFS= read -r candidate; do
     [ "$candidate" = "$old_path" ] && continue
     hw_oracle_relations "$candidate" | awk -v id="$old_id" '
+        # Whether the line holds id as a whole name, as hw_oracle_names_whole
+        # reads one: no letter, digit, `_`, `-` or `.` on either side.
+        function whole(line, rest, at, before, after) {
+            rest = line
+            while ((at = index(rest, id)) > 0) {
+                before = at > 1 ? substr(rest, at - 1, 1) : ""
+                after = substr(rest, at + length(id), 1)
+                if (before !~ /[A-Za-z0-9_.-]/ && after !~ /[A-Za-z0-9_.-]/) return 1
+                rest = substr(rest, at + 1)
+            }
+            return 0
+        }
         /^[^ ]/ || /^  [a-z_]+:/ { in_list = ($0 ~ /^ *supersedes:/) }
-        /^ *supersedes: *\[/ && index($0, id) { hit = 1 }
-        in_list && /^ *- / && index($0, id) { hit = 1 }
+        /^ *supersedes: *\[/ && whole($0) { hit = 1 }
+        in_list && /^ *- / && whole($0) { hit = 1 }
         END { exit hit ? 0 : 1 }
     ' || continue
     found=$candidate
@@ -52,5 +68,6 @@ typed=$("$hw_engine" explain --root . "$found" 2> /dev/null | sed -n 's/^  kind 
 [ -n "$typed" ] || hw_oracle_fail "$found supersedes $old_id, and the engine types it as nothing"
 successor_id=$(hw_oracle_id_of "$found")
 [ -n "$successor_id" ] || hw_oracle_fail "$found supersedes $old_id and declares no identifier"
-grep -F -q -- "$successor_id" "$hw_oracle_scratch/old" || hw_oracle_fail "$found supersedes $old_id, and $old_path does not name $successor_id"
+hw_oracle_names_whole "$successor_id" "$hw_oracle_scratch/old" || hw_oracle_fail "$found supersedes $old_id, and $old_path does not name $successor_id"
+hw_oracle_subjects="$old_path $found"
 hw_oracle_pass_clean "$successor_id, typed $typed, supersedes $old_id, and $old_path names it"

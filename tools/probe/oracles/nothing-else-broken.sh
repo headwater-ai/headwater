@@ -19,6 +19,15 @@
 # history, so the baseline of a probe is a file, and the probe's oracle
 # `holds` it. Its first line is a comment that names the probe, so the seal
 # removes it from every workspace.
+#
+# A comment line `# scope: <path>` scopes the oracle to the files it names
+# (#1874.3). Then only the findings on those files are compared, and
+# `--check-clean` counts only the strict errors on them. A baseline of the
+# whole tree moves with every finding that any change adds anywhere, so a
+# probe's committed baseline would go stale with each document that lands;
+# a probe scopes its baseline to the file the task repairs. `--record` keeps
+# the comment lines of a baseline that is already there, its scope included,
+# and records the findings of the scoped files alone.
 
 set -u
 . "${0%/*}/lib.sh"
@@ -42,9 +51,19 @@ for f in findings:
 ' "$hw_oracle_scratch/check.json" 2> "$hw_oracle_scratch/parse.err" | LC_ALL=C sort > "$hw_oracle_scratch/now" || true
 [ -s "$hw_oracle_scratch/parse.err" ] && hw_oracle_fail "\`headwater check --json\` exits $status and writes no findings that parse"
 
+# The scope a baseline declares, one path a line, and the findings on it.
+: > "$hw_oracle_scratch/comments"
+[ -f "$baseline" ] && grep '^#' "$baseline" > "$hw_oracle_scratch/comments"
+sed -n 's/^# scope: *//p' "$hw_oracle_scratch/comments" > "$hw_oracle_scratch/scope"
+if [ -s "$hw_oracle_scratch/scope" ]; then
+    awk -F '\t' 'NR == FNR { scope[$0] = 1; next } ($2 in scope)' "$hw_oracle_scratch/scope" "$hw_oracle_scratch/now" > "$hw_oracle_scratch/scoped"
+    mv "$hw_oracle_scratch/scoped" "$hw_oracle_scratch/now"
+    hw_oracle_subjects=$(tr '\n' ' ' < "$hw_oracle_scratch/scope")
+fi
+
 if [ "$record" = yes ]; then
-    cp "$hw_oracle_scratch/now" "$baseline" || hw_oracle_usage "$baseline could not be written"
-    hw_oracle_pass "recorded $(wc -l < "$baseline" | tr -d ' ') finding(s) in $baseline"
+    cat "$hw_oracle_scratch/comments" "$hw_oracle_scratch/now" > "$hw_oracle_scratch/record" && cp "$hw_oracle_scratch/record" "$baseline" || hw_oracle_usage "$baseline could not be written"
+    hw_oracle_pass "recorded $(wc -l < "$hw_oracle_scratch/now" | tr -d ' ') finding(s) in $baseline"
 fi
 
 [ -f "$baseline" ] || hw_oracle_fail "no baseline at $baseline"
