@@ -12,6 +12,9 @@ provenance:
   activity: draft
   evidence_basis: evidenced
 relations:
+  governs:
+    - tools/probe/arms/hooks/.claude/settings.json
+    - .headwater/probe.yml
   supersedes:
     - HW-DR-0111
   traces_to:

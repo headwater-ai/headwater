@@ -10,6 +10,56 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "p=\"$CLAUDE_PROJECT_DIR/.claude/hooks/write.sh\"; if [ -f \"$p\" ]; then sh \"$p\"; else echo \"hook script not found: $p\" >&2; exit 1; fi",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "p=\"$CLAUDE_PROJECT_DIR/.claude/hooks/touch.sh\"; if [ -f \"$p\" ]; then sh \"$p\"; else echo \"hook script not found: $p\" >&2; exit 1; fi",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "p=\"$CLAUDE_PROJECT_DIR/.claude/hooks/read.sh\"; if [ -f \"$p\" ]; then sh \"$p\"; else echo \"hook script not found: $p\" >&2; exit 1; fi",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "p=\"$CLAUDE_PROJECT_DIR/.claude/hooks/write.sh\"; if [ -f \"$p\" ]; then sh \"$p\"; else echo \"hook script not found: $p\" >&2; exit 1; fi",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "p=\"$CLAUDE_PROJECT_DIR/.claude/hooks/review.sh\"; if [ -f \"$p\" ]; then sh \"$p\"; else echo \"hook script not found: $p\" >&2; exit 1; fi",
+            "timeout": 120
+          }
+        ]
+      }
     ]
   }
 }

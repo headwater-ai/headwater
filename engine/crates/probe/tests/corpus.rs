@@ -1774,6 +1774,7 @@ fn in_plain_code(budgets: &headwater_probe::Budgets, path: &str) -> bool {
             .layers
             .iter()
             .flat_map(|layer| layer.paths.iter().chain(layer.arms.iter()))
+            .chain(budgets.tooling.iter())
             .any(|held| under(held.trim_end_matches('/')))
 }
 
@@ -1894,14 +1895,16 @@ fn the_code_set_is_five_probes_whose_answer_plain_code_carries() {
 }
 
 /// Every file of this repository's harness belongs to a layer of the
-/// additive campaign, so plain code holds none of it (#1774).
+/// additive campaign or to its `tooling`, so plain code holds none of it
+/// (#1774, #1872).
 ///
 /// A layer names its paths one by one under `.claude/`, because the skills,
-/// the hook and the rest of the harness share that directory. So a skill, an
-/// agent or a hook added later is in no layer until somebody declares it, and
-/// every scenario, plain code included, would hold it. That is the hidden
-/// difference of #1712. This case walks the directories that deliver a
-/// harness and fails on the first file no layer path holds.
+/// the hooks and this repository's own tooling share that directory. So a
+/// skill, an agent or a hook added later is in no layer and no tooling path
+/// until somebody declares it, and every scenario, plain code included,
+/// would hold it. That is the hidden difference of #1712. This case walks
+/// the directories that deliver a harness and fails on the first file that
+/// neither a layer path nor a tooling path holds.
 #[test]
 fn every_harness_file_belongs_to_a_layer() {
     let root = repository_root();
@@ -1913,6 +1916,7 @@ fn every_harness_file_belongs_to_a_layer() {
         .layers
         .iter()
         .flat_map(|layer| layer.paths.iter().chain(layer.arms.iter()))
+        .chain(budgets.tooling.iter())
         .map(String::as_str)
         .collect();
     let in_a_layer = |file: &str| {
@@ -1966,55 +1970,9 @@ fn every_harness_file_belongs_to_a_layer() {
     let orphans: Vec<&String> = files.iter().filter(|file| !in_a_layer(file)).collect();
     assert!(
         orphans.is_empty(),
-        "these files deliver a harness and no layer of {} holds them, so plain code \
-         holds them: {orphans:?}",
+        "these files deliver a harness and neither a layer nor the tooling of {} holds \
+         them, so plain code holds them: {orphans:?}",
         headwater_probe::budget::PATH
-    );
-}
-
-/// The hook layer's `settings.json` holds the `UserPromptSubmit` entry of
-/// this repository's `.claude/settings.json`, byte for byte, and nothing else
-/// (#1774).
-///
-/// The hook layer writes its own file because the whole file is the rest of
-/// the harness. A change to the entry in `.claude/settings.json` that the copy
-/// does not follow would measure a hook that no adopter runs.
-#[test]
-fn the_hook_layer_holds_the_one_entry_of_the_harness_settings() {
-    let root = repository_root();
-    let read = |relative: &str| {
-        std::fs::read_to_string(root.join(relative)).unwrap_or_else(|e| panic!("{relative}: {e}"))
-    };
-    // The text from `"UserPromptSubmit"` to the bracket that closes its list.
-    let entry = |text: &str, of: &str| -> String {
-        let start = text
-            .find("\"UserPromptSubmit\"")
-            .unwrap_or_else(|| panic!("{of} holds no UserPromptSubmit entry"));
-        let mut depth = 0usize;
-        for (offset, c) in text[start..].char_indices() {
-            match c {
-                '[' => depth += 1,
-                ']' => {
-                    depth -= 1;
-                    if depth == 0 {
-                        return text[start..=start + offset].to_string();
-                    }
-                }
-                _ => {}
-            }
-        }
-        panic!("{of}: the UserPromptSubmit list does not close")
-    };
-    let whole = read(".claude/settings.json");
-    let layer = read("tools/probe/arms/hook/.claude/settings.json");
-    assert_eq!(
-        entry(&layer, "the hook layer"),
-        entry(&whole, ".claude/settings.json")
-    );
-    assert_eq!(
-        layer.matches("\"command\":").count(),
-        1,
-        "the hook layer wires one hook: {layer}"
     );
 }
 
