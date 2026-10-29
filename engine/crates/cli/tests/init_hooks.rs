@@ -406,6 +406,51 @@ fn the_shipped_review_hook_blocks_on_an_error_in_a_file_the_session_wrote_and_a_
         "the review hook over a session whose only error is suppressed",
     );
 
+    // An error that the report places at a line and a column has the head
+    // `  <path>:<line>:<column> ✗ error`, and the hook still matches it to the
+    // path the session wrote (verify of #1871: a missing facet has no position,
+    // so the cases above never reached the strip of `:<line>:<column>`).
+    succeeded(
+        &hook(
+            root,
+            "touch",
+            &tool_payload(root, "PreToolUse", "Write", "s5", "docs/answers/state.md"),
+        ),
+        "the touch hook",
+    );
+    std::fs::write(
+        root.join("docs/answers/state.md"),
+        "---\nid: AC-A-0005\ntitle: AC-A-0005\nstatus: bogus\nsummary: \"a state no vocabulary admits\"\n---\n\n# AC-A-0005\n",
+    )
+    .expect("the answer writes");
+    std::fs::write(
+        root.join(".headwater/ids/answer_id/AC-A-0005"),
+        "docs/answers/state.md\n",
+    )
+    .expect("the claim writes");
+    let report = headwater(root, &["check", "--strict", "--no-color"]);
+    assert!(
+        text(&report.stdout).contains("  docs/answers/state.md:4:9 ✗ error"),
+        "the check places the error at a line and a column:\n{}",
+        text(&report.stdout)
+    );
+    let placed = hook(root, "review", &stop_payload(root, "s5", false));
+    let stderr = text(&placed.stderr);
+    assert_eq!(
+        placed.status.code(),
+        Some(2),
+        "the review hook blocks on a placed error in a file the session wrote:\n{stderr}"
+    );
+    assert!(
+        stderr.contains("docs/answers/state.md:4:9")
+            && stderr.contains("facet.value.not_permitted"),
+        "the review hook prints the placed error:\n{stderr}"
+    );
+    assert!(
+        !stderr.contains("docs/answers/bad.md"),
+        "the review hook prints an error on a file this session did not write:\n{stderr}"
+    );
+
     // The second run writes nothing, and settings.json keeps its bytes.
     let before = the_harness(root);
     let second = headwater(root, &["init", "--harness"]);
