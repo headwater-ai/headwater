@@ -1,0 +1,8 @@
+# The arguments of the `r8-game-changer` oracle, one to a line, for the probe
+# HW-PROBE-a-session-retires-a-stock-phrase-in-the-list-that-the-check-reads-and-resolves-the-lock
+# (#1874). `tools/probe/oracles/lib.sh` reads this file for `--args` and
+# skips each line that opens with `#`. The file names its probe, so the seal
+# removes it from every workspace, and the oracle entry holds it. The
+# command is `sh tools/probe/oracles/lock-regenerated.sh --check-clean --args <this file>`.
+.headwater/overlay.yml
+term: game-changer

@@ -235,6 +235,21 @@ oracles:
     command: sh tools/probe/oracles/reciprocal-link.sh --check-clean --args tools/probe/oracle-args/r5-hook-role
     parser: exit
     holds: [tools/probe/oracles/reciprocal-link.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r5-hook-role]
+  r6-figure-page:
+    paths: [docs/*]
+    command: sh tools/probe/oracles/successor-typed.sh --check-clean --args tools/probe/oracle-args/r6-figure-page
+    parser: exit
+    holds: [tools/probe/oracles/successor-typed.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r6-figure-page]
+  r7-run-findings:
+    paths: [docs/*]
+    command: sh tools/probe/oracles/moved.sh --check-clean --args tools/probe/oracle-args/r7-run-findings
+    parser: exit
+    holds: [tools/probe/oracles/moved.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r7-run-findings]
+  r8-game-changer:
+    paths: [.headwater/*]
+    command: sh tools/probe/oracles/lock-regenerated.sh
+    parser: exit
+    holds: [tools/probe/oracles/lock-regenerated.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r8-game-changer]
 
 # Leak strings (#1472): for each probe, the strings whose presence in text the harness
 # loads into every session gives the probe's answer away. The seal finds an
@@ -331,6 +346,12 @@ leaks:
   HW-PROBE-a-session-records-the-walkthrough-that-the-federation-part-rests-a-rule-on-as-the-evidence-it-cites: []
   HW-PROBE-a-session-records-the-owl-worked-example-as-evidence-of-the-check-layer-part-that-the-task-names: []
   HW-PROBE-a-session-links-the-governs-edges-evaluation-to-the-obligation-that-it-says-is-discharged: []
+  # Rows 6 to 9 of the grid in HW-DR-0112 (#1874, slice 3). Each probe is
+  # `patched` and grades a structure that a command oracle reads, and no
+  # string states it, so each declares the empty sequence.
+  HW-PROBE-a-session-supersedes-the-standing-ruling-on-figures-of-a-hand-built-page-when-the-task-names-the-record-that-ruling-replaced: []
+  HW-PROBE-a-session-moves-the-obligation-record-of-one-run-s-trailing-edges-to-the-process-shelf-and-repairs-every-link-to-it: []
+  HW-PROBE-a-session-retires-a-stock-phrase-in-the-list-that-the-check-reads-and-resolves-the-lock: []
 
 # The probes whose leak string stays in the present arm on purpose (#1472, the second
 # outcome the issue offers). The leak string of the status probe is in the
