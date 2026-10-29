@@ -1737,6 +1737,10 @@ run launch "$CASE/root" screen 1
 await_calls 1
 check "draw: launch writes the draw in the try root, as plan printed it" cmp -s "$CASE/draw-v1" "$CASE/root/docs-r2-v1/draw"
 check "draw: and the driver gets HEADWATER_CAMPAIGN_DRAW" grep -qx "draw $CASE/root/docs-r2-v1/draw" "$CASE/calls"
+# The next reader is campaign.sh, which takes each job's phrasing from the
+# file with `phrasing.sh pick`: it reads the phrasing the plan drew.
+check "draw: and campaign.sh's pick reads the drawn phrasing from that file" \
+    [ "$(sh "$here/phrasing.sh" pick HW-PROBE-p01 1 3 "$CASE/root/docs-r2-v1/draw")" = "$(awk '$2 == "HW-PROBE-p01" { print $3 }' "$CASE/draw-v1")" ]
 echo 'another variant' >> "$CASE/tree-head/README.md"
 run launch "$CASE/root" screen 2
 await_calls 2
@@ -1807,6 +1811,22 @@ check "hook: at the screen's count" out_has "stage: screen 1, 25 sessions"
 new_case
 run plan "$CASE/root" screen 1
 check "docs: a layer that is not hooks prints no selection" sh -c "! grep -q '^selected: ' '$CASE/out'"
+# `result` reads the count of a try that left probes out as the stage's
+# repetitions times the probes it ran: 29 x 3 = 87 for a confirmation that
+# excludes 2 of 5. A batch of 145 jobs is then not that confirmation, and
+# a best so far at 145 is not the count the keep rule reads it against.
+saved_checkout=$checkout
+result_case
+echo "additive scenario-1 tuning HW-PROBE-d HW-PROBE-e" > "$CASE/root/docs-r2-confirm/spec"
+run result "$CASE/root" docs-r2-confirm
+check "subset: a confirmation that excludes 2 of 5 and planned 145 jobs exits 2" code_is 2
+check "subset: and says it runs 87" err_has "a confirm runs 87 sessions, and the batch of $CASE/root/docs-r2-confirm planned 145 jobs"
+result_case
+finished_try docs-r2-confirm 2452 "confirm docs-r2-v1" 87
+echo "additive scenario-1 tuning HW-PROBE-d HW-PROBE-e" > "$CASE/root/docs-r2-confirm/spec"
+run result "$CASE/root" docs-r2-confirm
+check "subset: at 87 jobs, a best so far at 145 is not the count the keep rule reads" err_has "and the keep rule reads a confirmation against a best so far at 87 alone"
+checkout=$saved_checkout
 
 # ----------------------------------------------- rounds: arguments (#1838)
 

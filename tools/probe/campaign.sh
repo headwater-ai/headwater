@@ -511,6 +511,33 @@ if [ "$unrecorded" = 1 ]; then
     exit 0
 fi
 
+# task_of <job name> <probe>: the task file of the job. The phrasing is
+# `phrasing.sh pick` of the job's repetition over the probe's count, from the
+# draw that `HEADWATER_CAMPAIGN_DRAW` names where it is set (the fixed draw of
+# a screen), and otherwise spread over the repetitions. A batch written before
+# #1875 holds no count, and reads as a probe with no phrasing.
+task_of() {
+    o_count=$(cat "$out/tasks/$2.phrasings" 2>/dev/null)
+    o_rep=${1##*-r}
+    o_n=$(sh "$root/tools/probe/phrasing.sh" pick "$2" "$o_rep" "${o_count:-0}" ${HEADWATER_CAMPAIGN_DRAW:+"$HEADWATER_CAMPAIGN_DRAW"}) || return 5
+    if [ "$o_n" = 0 ]; then
+        echo "$out/tasks/$2.md"
+    else
+        echo "$out/tasks/$2-$o_n.md"
+    fi
+}
+
+# draw_check <file of jobs>: every job has a phrasing, before the harness is
+# asked anything. A draw that names no phrasing for a job, or a phrasing its
+# probe's task does not hold, exits 5.
+draw_check() {
+    while IFS= read -r c_row; do
+        # shellcheck disable=SC2086
+        set -- $c_row
+        task_of "$1" "$6" > /dev/null || exit 5
+    done < "$1"
+}
+
 # ---------------------------------------------------------------------------
 # One job, run by a worker. The line is the job's row of `<out>/jobs`.
 # ---------------------------------------------------------------------------
@@ -940,33 +967,6 @@ extract_tasks() {
         [ -s "$2/$1-$e_n.md" ] || { echo "$2/$1-$e_n.md"; return 0; }
         e_n=$((e_n + 1))
     done
-}
-
-# task_of <job name> <probe>: the task file of the job. The phrasing is
-# `phrasing.sh pick` of the job's repetition over the probe's count, from the
-# draw that `HEADWATER_CAMPAIGN_DRAW` names where it is set (the fixed draw of
-# a screen), and otherwise spread over the repetitions. A batch written before
-# #1875 holds no count, and reads as a probe with no phrasing.
-task_of() {
-    o_count=$(cat "$out/tasks/$2.phrasings" 2>/dev/null)
-    o_rep=${1##*-r}
-    o_n=$(sh "$root/tools/probe/phrasing.sh" pick "$2" "$o_rep" "${o_count:-0}" ${HEADWATER_CAMPAIGN_DRAW:+"$HEADWATER_CAMPAIGN_DRAW"}) || return 5
-    if [ "$o_n" = 0 ]; then
-        echo "$out/tasks/$2.md"
-    else
-        echo "$out/tasks/$2-$o_n.md"
-    fi
-}
-
-# draw_check <file of jobs>: every job has a phrasing, before the harness is
-# asked anything. A draw that names no phrasing for a job, or a phrasing its
-# probe's task does not hold, exits 5.
-draw_check() {
-    while IFS= read -r c_row; do
-        # shellcheck disable=SC2086
-        set -- $c_row
-        task_of "$1" "$6" > /dev/null || exit 5
-    done < "$1"
 }
 
 # build_oracle <rev> <trees> <probe>...: the present tree of the commit
