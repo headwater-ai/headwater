@@ -230,7 +230,8 @@ pub enum Refusal {
     },
     /// A probe carries no identifier, so nothing can name its result.
     Unnameable { path: String },
-    /// A probe's category or expectation is missing or outside its closed set.
+    /// A probe's category, expectation or action is missing or outside its
+    /// closed set, or one of its moments is outside that set (#1873).
     Undeclared {
         path: String,
         facet: &'static str,

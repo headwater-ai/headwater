@@ -20,7 +20,8 @@ relations:
 
     headwater probe plan [--tier regression|campaign|documentation|additive]
                           [--arm present|absent|no-hook|no-skills|no-claude-md|mcp|scenario-<n>]
-                          [--category name | --set name] [--exclude probe]... [--repetitions n] [--seed n]
+                          [--category name | --set name] [--action slug] [--moment name]
+                          [--exclude probe]... [--repetitions n] [--seed n]
     headwater probe plan [--tier regression|campaign|documentation] --arm <arm> --delta
     headwater probe plan --scenario <n> --delta
     headwater probe plan --instrument
@@ -74,6 +75,8 @@ All subcommands require a readable `.headwater/probe.yml`, a readable taxonomy l
 | `plan` | `--oracles` | Plan nothing, and print each command oracle that the `oracles` mapping of `.headwater/probe.yml` declares. Each line has three fields that a tab separates. The lines are `<name> parser <parser>` and `<name> command <command>`, then one `<name> path <pattern>` line for each pattern. Last is one `<name> hold <path>` line for each file that the grading copy keeps. The option reads `.headwater/probe.yml` and does not load the corpus. It cannot be used with `--delta`, `--instrument`, `--folds` or `--answer-keys`. The recorder and the campaign read this output, so that no script parses the declaration. A declaration with no `oracles` prints nothing. |
 | `plan` | `--answer-keys <probe>` | Plan nothing, and print each path that the `answer_keys` mapping of `.headwater/probe.yml` declares for the probe, on its own line. An answer key is a document that an earlier session wrote in answer to the task of the probe. The seal removes these documents. The option reads `.headwater/probe.yml` and does not load the corpus. It cannot be used with `--delta`, `--instrument`, `--folds` or `--oracles`. A script that seals a workspace reads this output. A probe with no answer key prints nothing. |
 | `plan` | `--category <name>` | Narrow the selection to one declared category. |
+| `plan` | `--action <slug>` | Narrow the selection to the probes whose `action` facet has this value. The values are the eleven canonical actions of [HW-DR-0112](../decisions/0112-the-additive-campaign-measures-eleven-actions-by-five-layers-in-seven-scenarios.md), and the taxonomy declares the set, not the engine. A value outside the set is refused with status 1, and the refusal prints the set. An action that no probe carries refuses the run at status 0. The plan prints the `action` of each probe that it selects. |
+| `plan` | `--moment <name>` | Narrow the selection to the probes whose `moments` list holds this hook moment as one item. The taxonomy declares the set of moments. A value outside the set is refused with status 1, and the refusal prints the set. A moment that no probe passes refuses the run at status 0. The plan prints the `moments` of each probe that it selects. |
 | `plan` | `--exclude <probe>` | Remove one probe from the selection, by its identifier. Repeat the option for more than one probe. The selection digest excludes the probe. An identifier that is not in the selection refuses the run. |
 | `plan` | `--repetitions <n>` | Plan fewer repetitions than the tier declares, for a pilot. A number above the declared count refuses the run, and so does `0`. |
 | `plan` | `--seed <n>` | Record the caller's rotation seed. It does not select a subset. The default is `0`. |
@@ -87,7 +90,9 @@ Global `--root` selects the repository. `--help`, `--version`, `--wide` and `--n
 
 ## Exit status
 
-**0** when a subcommand completes, including when a probe refuses a run or a transcript contains findings. An arm, tier or category that a declaration or the corpus does not carry refuses the run at this status. Probe results never gate.
+**0** when a subcommand completes, including when a probe refuses a run or a transcript contains findings. An arm, tier or category that a declaration or the corpus does not carry refuses the run at this status. So does an action or a moment that no probe carries. Probe results never gate.
+
+`plan` exits 1 when `--action` or `--moment` names a value outside the set that the taxonomy declares. It refuses the run at status 0 when a probe has no `action`, or an `action` that is a list or is outside the set. It does the same for a `moments` item outside the set.
 
 `grade` also exits 0 when the intake refuses a transcript whole, for example a transcript with no `Run identity` block. That refusal is a probe result, and [spec 12](../spec/12-check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps) says why a probe result never gates. `grade` prints the refusal on standard output, not on standard error. A script tells the three results of `grade` apart by the start of the first line of standard output:
 
