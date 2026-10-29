@@ -3,7 +3,7 @@ id: HW-DR-0077
 status: current
 status_since: 2026-09-20
 summary: "An adopter needs the binary, a data-only package, Git, `sh`, `curl`, `tar`, eight POSIX utilities and the four APT programs, and nothing else. Every other program reaches Headwater through a verb that the binary configures on request, and no adopter-facing page instructs this repository's own tooling."
-last_verified: 2026-10-03
+last_verified: 2026-10-29
 title: "77 — The consumer surface is what an adopter receives, runs and must have installed, and it is a closed and declared list"
 relations:
   constrains:
@@ -57,7 +57,7 @@ The owner's statement for release 0.2 is that an adopter needs nothing but the `
 
 **A merge-driver verb does not break the rule of spec 5 that no hook introduces a verb.** That rule forbids a second entry point to `route` or to `check`. The driver answers a question that no verb answers, which is what a merge does with a derived fold.
 
-**The binary emits the skills and the harness hooks, and a hook configuration calls verbs only.** [HW-DR-0055](0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md) already requires the second half. [`headwater init --harness`](../interfaces/headwater-init.md#the-harness-step) writes the skills and the maintainer agent, and the first release after 0.5.0 carries it. The hooks do not ship yet. [#1648](https://github.com/headwater-ai/headwater/issues/1648) carries them as a `headwater hook` verb in milestone 0.16.
+**The binary emits the skills and the harness hooks, and a hook configuration calls verbs only.** [HW-DR-0055](0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md) already requires the second half. [`headwater init --harness`](../interfaces/headwater-init.md#the-harness-step) writes the skills and the maintainer agent, and the first release after 0.5.0 carries it. Since [#1871](https://github.com/headwater-ai/headwater/issues/1871), the same step also writes the hooks of Claude Code as `sh` scripts, their configuration and the MCP server entry. The amendment of 2026-10-29 states why.
 
 **The supported platforms of 0.2 are a static Linux x86_64 build and a macOS arm64 build at the least.** `cargo install` is a labeled alternative and never the lead route.
 
@@ -96,4 +96,12 @@ The owner's statement for release 0.2 is that an adopter needs nothing but the `
 
 **Amended 2026-10-03: a release carries the skills and the maintainer agent, and the hooks wait on #1648.** The first text kept the skills and the hooks out of release 0.2 and named release 0.3 as the first to carry them. Since [#1586](https://github.com/headwater-ai/headwater/pull/1586), `headwater init --harness` writes the skills and the maintainer agent, and no tag carries that verb yet. The owner ruled on [#1578](https://github.com/headwater-ai/headwater/issues/1578) to correct this record there ("Add to #1578"). The owner also ruled that one `headwater hook` verb delivers the hooks in a later milestone, and [#1648](https://github.com/headwater-ai/headwater/issues/1648) carries it. So no script body ships, and the vehicle clause does not change. The record is not superseded, and the other clauses do not change.
 
-**Whether `headwater neighbors` ships at all is a separate decision.** Its only caller is `.claude/hooks/intent.sh`, which is local to this repository. This record places the verb among the companions and rules nothing more about it.
+**Amended 2026-10-29: `headwater init --harness` writes the hooks as `sh` scripts, and the `headwater hook` verb does not come first.** The owner ruled on 2026-10-28 and 2026-10-29, in the body of epic [#1868](https://github.com/headwater-ai/headwater/issues/1868), that `headwater init` ships the hooks layer and the MCP server. [HW-DR-0112](0112-the-additive-campaign-measures-eleven-actions-by-five-layers-in-seven-scenarios.md) measures that layer, and [HW-PD-0026](../process/decisions/0026-we-pivot-rather-than-carry-debt-forward.md) prefers a pivot to a debt that waits. That ruling is later than the ruling of 2026-10-03 on #1578, and it is specific, so it replaces that ruling for the hooks. [#1871](https://github.com/headwater-ai/headwater/issues/1871) carries the change. Three clauses follow from it.
+
+- The step writes six `sh` scripts under `.claude/hooks/`, the hook entries in `.claude/settings.json` that call them, and a `headwater` server in `.mcp.json`. The binary carries the text of each file, so a release and its hooks are one thing. The clause "No script body ships" stays true of the git integration point, where a shim is one line.
+- Each script calls only `headwater` verbs and the prerequisites of the agent harness point. That point declares `git`, `awk`, `sed` and `cat` in addition to the platform prerequisites of population 1. A page for an adopter still does not instruct the last three, so `surface.commands` does not change.
+- [#1648](https://github.com/headwater-ai/headwater/issues/1648) can still replace the scripts with one `headwater hook` verb, but a hook does not wait on it. The configuration for Copilot and Codex is still owed, and [HW-OBL-0232](../obligations/0232-headwater-init-harness-ships-no-hook-and-no-hook-configuration-for-any-harness.md) holds it.
+
+The record is not superseded, and the other clauses do not change.
+
+**Whether `headwater neighbors` ships at all is a separate decision.** Its only caller is `.claude/hooks/lib.local.sh`, which is local to this repository. The shipped `intent.sh` does not call it. This record places the verb among the companions and rules nothing more about it.
