@@ -3501,6 +3501,26 @@ STUB
         same "and the harness ran 3 times in all, none twice" "3 3" \
             "$(LC_ALL=C sort -u "$scratch/probe-log/stagger.calls" | wc -l | tr -d ' ') $(wc -l < "$scratch/probe-log/stagger.calls" | tr -d ' ')"
 
+        # A draw that names the probe for its first session alone leaves the
+        # other two with no phrasing, so the batch exits 5 before it asks the
+        # harness its version or runs a session (#1875).
+        stagger_batch "$stagger"
+        rm -f "$scratch/probe-log/stagger.calls"
+        printf 'draw: HW-PROBE-%s 1\n' "$tombstone" > "$scratch/stagger.draw"
+        HEADWATER_CAMPAIGN_DRAW=$scratch/stagger.draw PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$stagger" \
+            --model claude-haiku-4-5 --spec "$scratch/stagger.spec" --repetitions 1 --max-sessions 2 >/dev/null 2>"$scratch/stagger-draw.err"
+        same "a batch whose draw does not cover a job exits 5" "5" "$?"
+        same "before it asks the harness its version or runs a session" "no no" \
+            "$([ -e "$stagger/claude-version" ] && echo yes || echo no) $([ -e "$scratch/probe-log/stagger.calls" ] && echo yes || echo no)"
+        present "and names the session the draw leaves out" "fewer than 2 times" "$scratch/stagger-draw.err"
+        printf 'draw: HW-PROBE-%s 1\ndraw: HW-PROBE-%s 1\ndraw: HW-PROBE-%s 1\n' "$tombstone" "$tombstone" "$tombstone" > "$scratch/stagger.draw"
+        stagger_batch "$stagger"
+        HEADWATER_CAMPAIGN_DRAW=$scratch/stagger.draw PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$stagger" \
+            --model claude-haiku-4-5 --spec "$scratch/stagger.spec" --repetitions 1 --max-sessions 2 >/dev/null 2>"$scratch/stagger-draw.err"
+        same "a draw of 1 for each session of a task with no phrasing runs the slice" "9 2" \
+            "$? $(stagger_recorded "$stagger")"
+        rm -f "$scratch/probe-log/stagger.calls"
+
         # The bound holds across parallel workers: 3 workers, 3 jobs, 2 tokens.
         # A token taken without O_EXCL lets a third worker through in about
         # one trial of three on a host whose `mkdir` checks and then creates,
@@ -6097,6 +6117,23 @@ same "phrasing.sh cut 4: a phrasing the task does not hold is empty" "" \
     "$(sh "$phrasing" cut "$scratch/phr" HW-PROBE-phr3 4)"
 same "phrasing.sh cut: a task with no phrasing is its whole body, trimmed" "The whole task." \
     "$(sh "$phrasing" cut "$scratch/phr" HW-PROBE-phr0)"
+# `files` writes the task files that campaign.sh keeps under `<out>/tasks/`.
+mkdir -p "$scratch/phr/tasks"
+printf 'stale\n' > "$scratch/phr/tasks/HW-PROBE-phr3.md"
+printf 'stale\n' > "$scratch/phr/tasks/HW-PROBE-phr3-4.md"
+same "phrasing.sh files: prints nothing when every phrasing has a body" "" \
+    "$(sh "$phrasing" files "$scratch/phr" HW-PROBE-phr3 "$scratch/phr/tasks")"
+same "phrasing.sh files: writes the count, and one file for each phrasing, and no other" "3 HW-PROBE-phr3-1.md HW-PROBE-phr3-2.md HW-PROBE-phr3-3.md HW-PROBE-phr3.phrasings" \
+    "$(cat "$scratch/phr/tasks/HW-PROBE-phr3.phrasings") $(cd "$scratch/phr/tasks" && ls HW-PROBE-phr3* | tr '\n' ' ' | sed 's/ $//')"
+same "phrasing.sh files: the file of phrasing 2 is its cut, byte for byte" "same" \
+    "$(cmp -s "$scratch/phr/tasks/HW-PROBE-phr3-2.md" "$scratch/phr/want2" && echo same || echo differs)"
+sh "$phrasing" files "$scratch/phr" HW-PROBE-phr0 "$scratch/phr/tasks" > /dev/null
+same "phrasing.sh files: a task with no phrasing is <probe>.md, its whole task, and a count of 0" "0 The whole task." \
+    "$(cat "$scratch/phr/tasks/HW-PROBE-phr0.phrasings") $(cat "$scratch/phr/tasks/HW-PROBE-phr0.md")"
+printf -- '---\nid: HW-PROBE-phre\n---\n\n## Task\n\n### Phrasing 1\n\nOne.\n\n### Phrasing 2\n\n## Target\n\nA link.\n' \
+    > "$scratch/phr/docs/probes/phre.md"
+same "phrasing.sh files: names the file of a phrasing with no body" "$scratch/phr/tasks/HW-PROBE-phre-2.md" \
+    "$(sh "$phrasing" files "$scratch/phr" HW-PROBE-phre "$scratch/phr/tasks")"
 same "phrasing.sh pick: no draw spreads 6 repetitions over 3 phrasings, two each" "1 2 3 1 2 3" \
     "$(for r in 1 2 3 4 5 6; do sh "$phrasing" pick HW-PROBE-phr3 "$r" 3; done | tr '\n' ' ' | sed 's/ $//')"
 same "phrasing.sh pick: a task with no phrasing is 0, its whole task" "0" "$(sh "$phrasing" pick HW-PROBE-phr0 4 0)"

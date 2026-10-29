@@ -6,6 +6,7 @@
 #
 #     sh tools/probe/phrasing.sh count <root> <probe>
 #     sh tools/probe/phrasing.sh cut <root> <probe> [<n>]
+#     sh tools/probe/phrasing.sh files <root> <probe> <dir>
 #     sh tools/probe/phrasing.sh draw <seed> <layer> <round> <probe> <repetition> <count>
 #     sh tools/probe/phrasing.sh pick <probe> <repetition> <count> [<draw-file>]
 #
@@ -23,6 +24,14 @@
 # phrasing reaches it. That body
 # is the prompt (spec 15). It prints nothing for a probe that no document
 # declares, and nothing for a phrasing the task does not hold.
+#
+# `files` writes the task files of the probe under `<dir>`, as
+# `campaign.sh` keeps them in `<out>/tasks/`: `<probe>.md`, the whole
+# `## Task`, for a task with no phrasing, and otherwise `<probe>-<n>.md`, the
+# cut of phrasing `<n>`, for each `<n>` from 1 to the count. It writes the
+# count in `<probe>.phrasings`, and it removes a task file of the probe that
+# the count does not name. It prints the path of the first file it wrote
+# empty, and nothing when each one holds a body.
 #
 # `draw` prints the phrasing that a fixed draw gives the session, from 1 to
 # `<count>`, and 1 where `<count>` is 0, because a task with no phrasing is
@@ -46,7 +55,7 @@
 set -u
 
 usage() {
-    echo "usage: sh tools/probe/phrasing.sh count <root> <probe> | cut <root> <probe> [<n>] | draw <seed> <layer> <round> <probe> <repetition> <count> | pick <probe> <repetition> <count> [<draw-file>]" >&2
+    echo "usage: sh tools/probe/phrasing.sh count <root> <probe> | cut <root> <probe> [<n>] | files <root> <probe> <dir> | draw <seed> <layer> <round> <probe> <repetition> <count> | pick <probe> <repetition> <count> [<draw-file>]" >&2
     exit 2
 }
 whole() {
@@ -87,6 +96,24 @@ case $verb in
             inside { print }' "$p_file" \
             | awk 'NF { seen = 1 } seen' \
             | awk '{ lines[NR] = $0 } END { n = NR; while (n > 0 && lines[n] == "") n--; for (i = 1; i <= n; i++) print lines[i] }'
+        ;;
+    files)
+        [ $# = 3 ] || usage
+        f_count=$(sh "$0" count "$1" "$2") || exit $?
+        [ -d "$3" ] || { echo "phrasing: no directory at $3." >&2; exit 2; }
+        rm -f "$3/$2.md" "$3/$2"-[0-9]*.md
+        printf '%s\n' "$f_count" > "$3/$2.phrasings"
+        if [ "$f_count" = 0 ]; then
+            sh "$0" cut "$1" "$2" > "$3/$2.md"
+            [ -s "$3/$2.md" ] || echo "$3/$2.md"
+            exit 0
+        fi
+        f_n=1
+        while [ "$f_n" -le "$f_count" ]; do
+            sh "$0" cut "$1" "$2" "$f_n" > "$3/$2-$f_n.md"
+            [ -s "$3/$2-$f_n.md" ] || { echo "$3/$2-$f_n.md"; exit 0; }
+            f_n=$((f_n + 1))
+        done
         ;;
     draw)
         [ $# = 6 ] || usage

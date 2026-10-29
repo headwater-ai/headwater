@@ -282,6 +282,20 @@
 # person's ruling on each session, because exit 5 is also how the recorder
 # reports no engine, an oracle tree with no `.headwater/` and a failing check.
 #
+# **A session reads one phrasing of its probe's task (#1875).** A probe's
+# `## Task` holds two or three `### Phrasing <n>` subsections (HW-DR-0112),
+# and the prompt is the body of one of them (spec 15). The batch keeps each
+# phrasing in `<out>/tasks/<probe>-<n>.md`, the count in
+# `<out>/tasks/<probe>.phrasings`, and a task with no phrasing in
+# `<out>/tasks/<probe>.md`, as `tools/probe/phrasing.sh files` writes them.
+# Where `HEADWATER_CAMPAIGN_DRAW` names a file, the fixed draw of a screen
+# that `tools/probe/try.sh launch` writes, repetition `r` of a probe takes the
+# phrasing of the `r`-th `draw: <probe> <n>` line for it. Otherwise
+# repetition `r` takes phrasing `((r - 1) mod count) + 1`, so a confirmation
+# spreads the phrasings evenly. A draw that leaves a job with no phrasing, or
+# names a phrasing above its probe's count, exits 5 before the harness is
+# asked anything.
+#
 # **A batch's pin moves with `--repin`, and only so (#1659).** A fix to the
 # recorder is a new commit, and the batch refuses a `HEAD` that is not its pin.
 # Check out the new commit, detached, and run `--repin` from it. It spends
@@ -759,11 +773,6 @@ if [ -n "$job" ]; then
         budget=$(awk -v c="$(cat "$out/session-cents")" 'BEGIN { printf "%.2f", c / 100 }')
     fi
     mkdir -p "$out/slice/started" "$out/slice/refused"
-    printf '%s\n' "$job" > "$out/slice/job.$$"
-    ( draw_check "$out/slice/job.$$" )
-    check_status=$?
-    rm -f "$out/slice/job.$$"
-    [ "$check_status" = 0 ] || exit 5
     run_job "$job"
     exit 0
 fi
@@ -940,33 +949,14 @@ plan_line() {
         ${p_repetitions:+--repetitions "$p_repetitions"} > "$p_file" 2>&1
 }
 
-# extract_task <probe> <file> [<n>]: the prompt of the probe (spec 15): the
-# body of its `## Task`, or with `<n>` the body of its `### Phrasing <n>`
-# alone, without the heading (HW-DR-0112, the form of a phrasing). A probe
-# that no document declares writes an empty file. `tools/probe/phrasing.sh`
-# cuts it, so `try.sh` counts the phrasings this function cuts.
-extract_task() {
-    sh "$root/tools/probe/phrasing.sh" cut "$root" "$1" ${3:+"$3"} > "$2"
-}
-
 # extract_tasks <probe> <dir>: every task file of the probe under <dir>, and
-# `<dir>/<probe>.phrasings`, its count of phrasings. A task with no phrasing
-# is `<probe>.md`, and phrasing <n> is `<probe>-<n>.md`. It names the first
-# file that is empty, and prints nothing when each one holds a body.
+# `<dir>/<probe>.phrasings`, its count of phrasings, as
+# `tools/probe/phrasing.sh files` writes them. The prompt of a session is the
+# body of the probe's `## Task`, or of the one `### Phrasing <n>` it draws,
+# without the heading (spec 15, HW-DR-0112). It names the first file that is
+# empty, and prints nothing when each one holds a body.
 extract_tasks() {
-    e_count=$(sh "$root/tools/probe/phrasing.sh" count "$root" "$1")
-    printf '%s\n' "$e_count" > "$2/$1.phrasings"
-    if [ "$e_count" = 0 ]; then
-        extract_task "$1" "$2/$1.md"
-        [ -s "$2/$1.md" ] || echo "$2/$1.md"
-        return 0
-    fi
-    e_n=1
-    while [ "$e_n" -le "$e_count" ]; do
-        extract_task "$1" "$2/$1-$e_n.md" "$e_n"
-        [ -s "$2/$1-$e_n.md" ] || { echo "$2/$1-$e_n.md"; return 0; }
-        e_n=$((e_n + 1))
-    done
+    sh "$root/tools/probe/phrasing.sh" files "$root" "$1" "$2"
 }
 
 # build_oracle <rev> <trees> <probe>...: the present tree of the commit
