@@ -198,7 +198,7 @@ expect 1 "successor-typed with --check-clean fails an error in the successor" "$
 # key that names nothing is printed as one outbound edge to the target `~`.
 # A case here fails when the engine prints these pairs another way.
 explain_pairs() {
-    "$engine" explain --json --root "$1" "$2" 2> /dev/null | jq -c '[.related[] | select(.relation == "supersedes" or .relation == "superseded_by") | [.relation, .inbound, (.targets | map(sub("^docs/decisions/(?<n>[0-9]+)-.*"; "path:\(.n)")))]] | sort'
+    "$engine" explain --json --root "$1" "$2" 2> /dev/null | jq -c '[.related[] | select(.relation == "supersedes" or .relation == "superseded_by") | [.relation, .inbound, (.targets | map(sub("^docs/decisions/(?<n>[0-9]+)-.*"; "path:\(.n)")))]] | sort_by(.)'
 }
 pairs_case() {
     cases=$((cases + 1))
