@@ -1898,6 +1898,21 @@ sh "$root/tools/probe/seal.sh" --evidence "$patched" "$scratch/no-such-record.ts
 same "seal.sh --evidence exits 2 on a record that is not there" "2" "$?"
 sh "$root/tools/probe/seal.sh" --evidence "$patched" > "$scratch/ev.out" 2> "$scratch/ev.err"
 same "and 2 with no record named" "2" "$?"
+# A key whose slug is generic is found by its path and its identifier, and
+# never by its file name alone, which every shelf's README would share.
+awk -v probe="$patched" '
+    /^answer_keys:/ { print; print "  " probe ": [docs/spec/glossary.md]"; skip = 1; next }
+    skip && !/^ / { skip = 0 }
+    !skip { print }' "$root/.headwater/probe.yml" > "$scratch/ev-generic.yml"
+printf 'key-oracle\tpass\tsee docs/spec/glossary.md\n' > "$scratch/ev-record.tsv"
+HW_PROBE_YML="$scratch/ev-generic.yml" sh "$root/tools/probe/seal.sh" --evidence "$patched" "$scratch/ev-record.tsv" \
+    > "$scratch/ev.out" 2> "$scratch/ev.err"
+same "an evidence line that holds the path of a key with a generic slug exits 1" "1" "$?"
+same "and names the key by its identifier" "evidence $patched key-oracle HW-SPEC-glossary" "$(cat "$scratch/ev.out")"
+printf 'key-oracle\tpass\tthe glossary.md of another shelf\n' > "$scratch/ev-record.tsv"
+HW_PROBE_YML="$scratch/ev-generic.yml" sh "$root/tools/probe/seal.sh" --evidence "$patched" "$scratch/ev-record.tsv" \
+    > "$scratch/ev.out" 2> "$scratch/ev.err"
+same "and an evidence line that holds only its generic file name exits 0" "0" "$?"
 HW_PROBE_YML="$scratch/refused-keys.yml" sh "$root/tools/probe/seal.sh" --folds \
     >"$scratch/refused-keys.out" 2>"$scratch/refused-keys.err"
 keys_status=$?
