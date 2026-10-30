@@ -3208,6 +3208,29 @@ fn exactly_one_draft_decision_is_the_axis_fixture_and_two_probes_name_it() {
         ],
         "0 current `superseded_target` probes",
     );
+    let mut three = two();
+    three.push(probe(
+        "HW-PROBE-the-fourth-probe",
+        "superseded_target",
+        "HW-DR-0002 as well.",
+    ));
+    refused(
+        "three probes name it",
+        shelf(&[&ruling, &fixture]),
+        three,
+        "3 current `superseded_target` probes",
+    );
+    let mut retired = two();
+    retired[1] = axis_probe_of(
+        "p.md",
+        "---\nid: HW-PROBE-the-second-probe\nstatus: deprecated\naxes: [superseded_target]\n---\n\n# x\n\nHW-DR-0002 too.\n",
+    );
+    refused(
+        "the second probe is deprecated",
+        shelf(&[&ruling, &fixture]),
+        retired,
+        "1 current `superseded_target` probes",
+    );
 
     let decisions: Vec<Decision> = shelf_sources(DECISIONS)
         .iter()
