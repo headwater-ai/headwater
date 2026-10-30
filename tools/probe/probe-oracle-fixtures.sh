@@ -50,6 +50,13 @@
 # grading tree, because every `--check-clean` oracle assumes that a sealed
 # tree is clean.
 #
+# It also holds the fixture of the superseded-target axis of HW-DR-0112 to
+# the seal: the `draft` decision whose summary says that it is that fixture
+# is still in the sealed tree, and its `conflicts_with` edge reaches a
+# decision that is `current` there (#1874, slice 4). The seal removes a file
+# that names a probe, so a fixture that names one leaves its probes nothing
+# in their way.
+#
 # It needs a built engine, `git`, `tar`, `jq` and what the seal needs. Exit 0
 # when every case holds, 1 when one does not, and 8 when no engine is built.
 
@@ -175,6 +182,46 @@ run_case() {
         echo "ok   $label: $(sed -n '$p' "$work/out")"
     fi
 }
+
+# The fixture of the superseded-target axis survives the seal (#1874, slice
+# 4; HW-DR-0112, "The circumstance axes"). Each `draft` decision of the
+# checkout whose summary says that it is the fixture must still be in the
+# sealed tree. A `conflicts_with` edge of it, as `headwater explain --json`
+# reads it in that tree, must reach a decision that is `current` there. The
+# seal removes a fixture that names a probe, and the probes that name the
+# fixture then have nothing in their way.
+fixture_mark="fixture of the superseded-target axis"
+fixtures=0
+for file in "$checkout"/docs/decisions/*.md; do
+    [ "$(facet status "$file")" = draft ] || continue
+    case $(facet summary "$file") in
+        *"$fixture_mark"*) ;;
+        *) continue ;;
+    esac
+    fixtures=$((fixtures + 1))
+    cases=$((cases + 1))
+    fixture_path=${file#"$checkout"/}
+    fixture_id=$(facet id "$file")
+    if [ ! -f "$sealed/$fixture_path" ]; then
+        fail "the axis fixture $fixture_id: the seal removed $fixture_path, so no probe has it in its way"
+        continue
+    fi
+    standing=""
+    for target in $("$engine" explain "$fixture_id" --json --root "$sealed" 2> /dev/null | jq -r '.related[]? | select(.inbound == false and .relation == "conflicts_with") | .targets[]?'); do
+        target_path=$("$engine" explain "$target" --json --root "$sealed" 2> /dev/null | jq -r '.path // empty')
+        [ -n "$target_path" ] && [ -f "$sealed/$target_path" ] || continue
+        [ "$(facet status "$sealed/$target_path")" = current ] && standing="$standing $target"
+    done
+    if [ -z "$standing" ]; then
+        fail "the axis fixture $fixture_id: in the sealed tree, it declares \`conflicts_with\` to no \`current\` decision"
+    else
+        echo "ok   the axis fixture $fixture_id survives the seal, and conflicts with$standing, which is current in the sealed tree"
+    fi
+done
+if [ "$fixtures" -eq 0 ]; then
+    cases=$((cases + 1))
+    fail "no \`draft\` decision says that it is the $fixture_mark"
+fi
 
 while IFS="$(printf '\t')" read -r id oracle; do
     case $oracle in
