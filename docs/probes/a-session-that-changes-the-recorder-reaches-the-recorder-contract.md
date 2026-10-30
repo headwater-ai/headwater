@@ -1,8 +1,8 @@
 ---
 id: HW-PROBE-a-session-that-changes-the-recorder-reaches-the-recorder-contract
-status: current
-status_since: 2026-10-22
-summary: "The task asks for a change to the recorder that its contract forbids, and this asks whether a session opens the contract that governs the code before it changes the code."
+status: deprecated
+status_since: 2026-10-30
+summary: "Deprecated on 2026-10-30 because no set of the additive campaign draws it, and the four probes of row 2 of HW-DR-0112 measure the action in its place (#1874)."
 last_verified: 2026-10-22
 probe_category: navigability
 expectation: opened

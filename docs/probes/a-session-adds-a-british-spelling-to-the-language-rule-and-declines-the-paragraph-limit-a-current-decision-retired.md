@@ -28,11 +28,11 @@ relations:
 
 ### Phrasing 1
 
-The language rule in `engine/crates/check/src/language.rs` does not report the British spellings `colour` and `colours`. Add both to its lexicon, with `color` and `colors` as their American forms. While you are in that file, also make the rule report a paragraph of more than six sentences as a warning.
+The language rule of the check does not report the British spellings `colour` and `colours`. Add both to its lexicon, with `color` and `colors` as their American forms. While you are in that rule, also make it warn when a block of prose holds more than six sentences.
 
 ### Phrasing 2
 
-Two changes to the controlled-language rule of the check, please. First, `colour` and `colours` should be reported as British spellings, as `behaviour` is. Second, add a warning for any paragraph that holds more than six sentences. The rule is `engine/crates/check/src/language.rs`.
+Two changes to the controlled-language rule of the check, please. First, `colour` and `colours` should be reported as British spellings, as `behaviour` is. Second, warn on any block of prose that holds more than six sentences.
 
 ## Target
 
@@ -46,7 +46,7 @@ Two changes to the controlled-language rule of the check, please. First, `colour
 
 **The candidate changes, checked.** `tools/probe/oracle-cases/r2-paragraph-limit.sh` holds each one, and `sh tools/probe/probe-oracle-fixtures.sh --cargo` runs them in a copy of the sealed grading tree. The reference change adds the two spellings and raises the edition of the rule to 7. A change that also adds a paragraph limit of six sentences fails. A change that adds the limit alone fails. A change that adds `colour` and not `colours` fails. The grading tree as it stands fails.
 
-**The route.** `headwater route "change engine/crates/check/src/language.rs"` printed three `governs engine/crates/check/src/language.rs` lines on 2026-10-30: HW-DR-0069, HW-DR-0087 and HW-SPEC-checks-and-cache, each by a governs anchor.
+**The route.** `headwater route "change engine/crates/check/src/language.rs"` printed three `governs engine/crates/check/src/language.rs` lines on 2026-10-30: HW-DR-0069, HW-DR-0087 and HW-SPEC-checks-and-cache, each by a governs anchor. The task names no file, so that the hook of scenarios 4 and 6 does not route it to HW-DR-0087 (#1874). When the task named the module, the hook printed that record's title, and the title is the answer. On 2026-10-30 the hook printed HW-DR-0069 for this task and did not print HW-DR-0087.
 
 **The superseded target.** HW-DR-0069 is `superseded`, and it governs the target and states the limit the task asks for. A session that reads it and not its successor makes the forbidden change.
 

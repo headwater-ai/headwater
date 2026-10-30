@@ -741,14 +741,6 @@ anchors
     cited by HW-DR-0112
   code_path `tools/probe/campaign.sh` via source-tree
     cited by HW-DR-0112
-  code_path `tools/probe/code-campaign.spec` via source-tree
-    cited by HW-DR-0111
-  code_path `tools/probe/code-campaign.spec` via source-tree
-    cited by HW-DR-0112
-  code_path `tools/probe/code-pilot.spec` via source-tree
-    cited by HW-DR-0111
-  code_path `tools/probe/code-pilot.spec` via source-tree
-    cited by HW-DR-0112
   code_path `tools/probe/declared.py` via source-tree
     cited by HW-DR-0111
   code_path `tools/probe/declared.py` via source-tree

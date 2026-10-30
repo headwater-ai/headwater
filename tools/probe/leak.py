@@ -71,6 +71,16 @@
 #   not fail the check. The dry run of the additive spec refuses a line that
 #   pools such a probe with another, as it refuses a pooled `leaks_kept` probe.
 #   A kept probe stays `kept`.
+# - a hit in the channel `hook:<probe>` of a probe whose `axes` hold
+#   `superseded_target`, on a leak string that is the whole identifier of a
+#   document that stands at `current` in this checkout, is the hook pointing
+#   the session at the record in force (#1874, parent ruling of 2026-10-30).
+#   That pointer is the effect scenarios 4 and 6 measure on the axis, so it
+#   prints as `treatment <probe> <where> <string>` and does not fail the
+#   check. The dry run pools it as it pools any probe. Every other hook hit
+#   still fails: a phrase, an identifier of a record that is not `current`, or
+#   a probe without the axis. The always-loaded set and the skill bodies keep
+#   the check as it was, so scenarios 1 to 3, which hold no hook, are unchanged.
 #
 # **The bytes the layers hand the model (#1776).** `--bytes` measures in place
 # of checking, for the bytes column of HW-DR-0111's table. It counts each text
@@ -335,6 +345,57 @@ def hook_text(workspace, task, probe):
     return ran.stdout
 
 
+def front_matter(path):
+    # The `key: value` lines between the two `---` fences that open a document,
+    # as plain strings. Only `id`, `status` and `axes` are read, and each is
+    # one line in this corpus, so no YAML parser is needed for them.
+    try:
+        lines = read_text(path).split("\n")
+    except OSError:
+        return {}
+    if not lines or lines[0].strip() != "---":
+        return {}
+    fields = {}
+    for line in lines[1:]:
+        if line.strip() == "---":
+            break
+        match = re.match(r"^([a-z_]+):\s*(.*?)\s*$", line)
+        if match:
+            fields[match.group(1)] = match.group(2).strip("\"'")
+    return fields
+
+
+def probe_axes(checkout, probe):
+    slug = probe[len("HW-PROBE-") :] if probe.startswith("HW-PROBE-") else probe
+    raw = front_matter(os.path.join(checkout, "docs/probes", f"{slug}.md")).get("axes", "")
+    return [axis.strip() for axis in raw.strip("[]").split(",") if axis.strip()]
+
+
+class Statuses:
+    # The `status` of each document of this checkout's `docs/`, by its `id`,
+    # read once and only when a hook hit asks.
+    def __init__(self, checkout):
+        self.checkout = checkout
+        self.by_id = None
+
+    def of(self, identifier):
+        if self.by_id is None:
+            self.by_id = {}
+            for path in markdown_under(os.path.join(self.checkout, "docs")):
+                fields = front_matter(path)
+                if fields.get("id"):
+                    self.by_id[fields["id"]] = fields.get("status", "")
+        return self.by_id.get(identifier)
+
+
+def in_force(string, statuses):
+    # A string is the identifier of a record in force when a document of this
+    # checkout carries it, whole, as its `id` and stands at `current`. The
+    # lookup is by the whole string, so a phrase that holds an identifier is
+    # no identifier.
+    return statuses.of(string) == "current"
+
+
 def harness_paths(declared):
     paths = declared.get("tooling") if isinstance(declared, dict) else None
     paths = paths if isinstance(paths, list) else []
@@ -469,6 +530,7 @@ def main(argv):
         return 0
 
     found = 0
+    statuses = Statuses(checkout)
     for probe in probes:
         entry = leaks.get(probe)
         # `[]` is a declaration with no answer string; a missing entry or one
@@ -481,6 +543,7 @@ def main(argv):
             print(f"undeclared {probe}")
             continue
         is_kept = probe in [str(item) for item in kept]
+        superseded = scenario and "superseded_target" in probe_axes(checkout, probe)
         records = loaded.records + ([hooked[probe]] if probe in hooked else [])
         seen = set()
         for string in strings:
@@ -491,6 +554,8 @@ def main(argv):
                         verdict = "kept"
                     elif under(where, harness):
                         verdict = "harness"
+                    elif superseded and where == f"hook:{probe}" and in_force(string, statuses):
+                        verdict = "treatment"
                     else:
                         verdict = "leak"
                     print(f"{verdict} {probe} {where} {string}")

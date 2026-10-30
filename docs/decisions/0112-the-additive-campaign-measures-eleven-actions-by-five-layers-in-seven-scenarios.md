@@ -25,8 +25,6 @@ relations:
     - tools/probe/additive-screening.spec
     - tools/probe/try.sh
     - tools/probe/additive-launch.env
-    - tools/probe/code-campaign.spec
-    - tools/probe/code-pilot.spec
     - tools/probe/declared.py
     - tools/probe/usage.py
     - tools/probe/additive-dry-run.sh
@@ -90,6 +88,8 @@ Three axes are deferred and recorded as debt: corpus size, tasks outside anythin
 
 The set has 11 actions × (2 tuning + 2 held-out) = 44 probes. Each probe is tagged with its action and the hook moments it passes through. Rows 2–9 and 11 pass or fail by a mechanical oracle. Rows 1 and 10 pass or fail by the grader. A probe for rows 2–9 with no mechanical oracle is refused from the set.
 
+Added on 2026-10-30 by #1874. The `held-out` set under `sets:` in `.headwater/probe.yml` is frozen as of the merge of #1874. It holds 22 probes, 2 for each action. No screen and no confirmation of phase A runs it. Its digest is `sha256:eb5812d6f7a8a0b206f22e8486eca737c948adc8aeb5c07bbf5bba0ca76021b2`. To get the digest again, sort the identifiers of the set. Write each identifier on a line that ends with a newline, and take the sha256 of the text. `printf '%s\n' <identifiers> | sha256sum` gives the same hex digits. A test of the `probe` crate compares this digest with the set, so a change to the set fails CI. This record names no probe of either set. The reason is that `tools/probe/seal.sh` removes each document that names the probe of a session from the tree of that session. `headwater probe plan --tier additive --set held-out` prints the identifiers.
+
 ### One probe shape
 
 Every probe has one shape: one task in plain words, one target, and one key. Each probe document states them under three headings of the same names, `Task`, `Target` and `Key`. The grader checks the key from the recorded transcript, with no model as a judge. For an oracle row, the key is the oracle: the probe passes when the oracle command passes in the grading copy. #1874 defines the form of an oracle.
@@ -122,7 +122,7 @@ Row 11 has two conditions. The `oracle:` facet names the oracle over the tree. `
 
 ### The form of a phrasing
 
-Added on 2026-10-29 by #1874. Under `## Task`, a probe has two or three subsections with the headings `### Phrasing 1`, `### Phrasing 2` and `### Phrasing 3`. Each one states the whole task in different words. The target and the key are the same for each phrasing. The shape check reads level-two headings only, so a probe with phrasings keeps the shape of `Task`, `Target` and `Key`. Until #1875 draws one phrasing for each session, a session reads every phrasing of its probe.
+Added on 2026-10-29 by #1874. Under `## Task`, a probe has two or three subsections with the headings `### Phrasing 1`, `### Phrasing 2` and `### Phrasing 3`. Each one states the whole task in different words. The target and the key are the same for each phrasing. The shape check reads level-two headings only, so a probe with phrasings keeps the shape of `Task`, `Target` and `Key`. Since #1875, a session reads one phrasing of its probe. `tools/probe/phrasing.sh` gives the screen a fixed draw for each session and spreads the phrasings evenly over the sessions of a confirmation.
 
 ### The seven scenarios
 
@@ -141,6 +141,8 @@ Each scenario except scenario 0 adds one layer to its base. Scenario 6 is the on
 `CLAUDE.md` is not a layer. The campaign tunes only the layers that `headwater init` ships. The skills, the hooks and the MCP server call the engine, so their additive base is scenario 2.
 
 The hooks layer is `intent.sh`, `read.sh`, `write.sh` and `review.sh`, with `lib.sh` and `touch.sh`, and the `settings.json` entries that wire them. `review.sh` runs `headwater check --strict` itself. So `.githooks` stays repository tooling and is in no layer.
+
+Added on 2026-10-30 by #1874: the intent hook can name the record in force for a probe with the `superseded_target` axis. The leak check of a scenario tree then prints that identifier as `treatment` and does not fail. That pointer is the effect that scenarios 4 and 6 measure. Every other hit in the hook text still fails.
 
 ### Phase A: tuning
 
@@ -202,7 +204,7 @@ Each paid issue gets its own ceiling when its dry-run plan is posted on it. No r
 
 **The design of HW-DR-0111 is retired.** The fourteen-scenario baselines, the 9-probe set, the code set of #1835, and the ceilings of $700, $1,512 and $130 are retired. Each stays as a dated record. The two evaluations of that campaign are records of a moment and stay as written: [the screening round of 2026-10-18](../evaluations/what-the-additive-screening-round-of-2026-10-18-measured-by-scenario-against-its-base.md) and [the tuning round](../evaluations/what-the-tuning-round-of-the-additive-campaign-measured-layer-by-layer.md). #1874 folds the code set into the 44-probe set.
 
-**The tools still carry the old design until their issues re-cut them.** `.headwater/probe.yml`, `tools/probe/*.spec` and the engine's `probe` crate still declare the fourteen scenarios and the old sets. #1872 re-cuts `probe.yml` to five layers and seven scenarios. #1873 adds the `action`, `moments` and `axes` facets. #1874 builds the 44-probe set, and #1875 builds the campaign tooling. Each of those issues repoints its own citations of HW-DR-0111. HW-DR-0111 keeps its `governs` edges on `tools/probe/` until #1872 or #1875 moves them.
+**The tools carry this design.** #1872 re-cut `probe.yml` to five layers and seven scenarios. #1873 added the `action`, `moments` and `axes` facets, and #1875 built the campaign tooling. #1874 built the 44-probe set and wrote the two sets of 22 under `sets:`. It deprecated the 14 probes of the old sets, which stay on the probe shelf as the record that their transcripts cite. It also removed the code round, its pilot and their two specs. HW-DR-0111 keeps each `governs` edge on `tools/probe/` that no later issue moved.
 
 **The open claims of spec 13 stay open.** This record reads HW-OBL-0012, HW-OBL-0013, HW-OBL-0014 and HW-OBL-0016, and it closes none of them. The evaluation that phase B publishes is the record that can discharge them.
 

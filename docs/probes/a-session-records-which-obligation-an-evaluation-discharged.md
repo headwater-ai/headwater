@@ -1,8 +1,8 @@
 ---
 id: HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged
-status: current
-status_since: 2026-10-03
-summary: The task names one file to change, and the check reports a finding on that file until the session also changes a second document that the task does not name.
+status: deprecated
+status_since: 2026-10-30
+summary: "Deprecated on 2026-10-30 because no set of the additive campaign draws it, and the four probes of row 5 of HW-DR-0112 measure the action in its place (#1874)."
 last_verified: 2026-10-03
 probe_category: sufficiency
 expectation: patched

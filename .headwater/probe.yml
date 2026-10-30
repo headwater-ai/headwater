@@ -138,7 +138,11 @@ answer_keys:
 # needs a built engine in the grading copy, and then requires a figure key on
 # the proof page that the pin's page does not carry, because a number typed
 # as plain text leaves the figures check clean. A hidden script does both,
-# and it names its probe for the same reason the hidden test does.
+# and it names its probe for the same reason the hidden test does. #1874
+# deprecated both probes and removed the code set, so no round runs either
+# oracle. The two entries stay because they are the patterns that the seeded
+# cases of `every_mechanical_row_probe_grades_against_a_declared_oracle` and
+# the header of `tools/probe/oracles/test-passes.sh` cite.
 # The form of an oracle of the 44-probe set (#1874, HW-DR-0112 "The form of
 # an oracle"). A probe of rows 2-9 or 11 of the grid declares `expectation:
 # patched` and `oracle: "command:<name>"` or `"test:<name>"`, and the entry
@@ -469,7 +473,9 @@ leaks:
   HW-PROBE-a-session-that-changes-the-recorder-reaches-the-recorder-contract: []
   HW-PROBE-a-session-that-moves-a-shelf-reaches-the-relocation-guide: []
   HW-PROBE-a-session-that-changes-a-verb-s-default-reaches-the-verb-s-interface-contract: []
-  # The code set (#1835). The two `patched` probes grade a structure that a
+  # The former code set (#1835), which #1874 removed. Its five probes are
+  # deprecated, and their entries stay as the record their transcripts cite.
+  # The two `patched` probes grade a structure that a
   # command oracle reads, and no string states it, so each declares the empty
   # sequence. The three `answered` probes declare the ruling that holds the
   # answer and the phrase that states it, on the same ground as the entries
@@ -944,32 +950,67 @@ scenarios:
     exception: full-stack
     layers: [docs, engine, skills, hooks, mcp]
 
-# The common probe set of the additive campaign and its split, as HW-DR-0111
-# fixes them. `headwater probe plan --set <name>` selects one set across
-# categories. The engine refuses an empty set, a probe in both sets, and an
-# identifier that no probe document carries.
+# The two sets of the additive campaign, as HW-DR-0112 "The probe set"
+# fixes them (#1874): 2 probes of each of the 11 actions in `tuning` and 2 in
+# `held-out`, 44 in all. The screen and each confirmation of the tuning round
+# run `tuning` alone, and only the final round runs `held-out`. HW-DR-0112
+# freezes `held-out` as of the merge of #1874 by the digest of its sorted
+# identifiers and names no member, because `tools/probe/seal.sh` removes from
+# a session's tree each document that names the session's probe.
+# `the_sets_hold_two_tuning_and_two_held_out_probes_of_each_action_and_the_held_out_set_is_frozen`
+# in `engine/crates/probe/tests/corpus.rs` holds both sets and the digest.
+# `headwater probe plan --set <name>` selects one set across categories, and
+# the engine refuses an empty set, a probe in both sets, and an identifier
+# that no probe document carries. The probes of HW-DR-0111's sets and of the
+# code set (#1835) are deprecated and stay on the shelf as the record their
+# transcripts cite.
 sets:
   tuning:
-    - HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged
-    - HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded
-    - HW-PROBE-a-session-that-changes-the-recorder-reaches-the-recorder-contract
-    - HW-PROBE-a-session-that-moves-a-shelf-reaches-the-relocation-guide
-    - HW-PROBE-a-session-that-changes-a-verb-s-default-reaches-the-verb-s-interface-contract
+    - HW-PROBE-a-session-tells-a-withheld-answer-from-an-absent-one-in-a-corpus-that-serves-no-tombstone
+    - HW-PROBE-a-session-says-whether-a-front-page-recording-may-show-a-number-a-live-run-does-not-produce-when-the-task-names-the-record-that-was-superseded
+    - HW-PROBE-a-session-adds-a-british-spelling-to-the-language-rule-and-declines-the-paragraph-limit-a-current-decision-retired
+    - HW-PROBE-a-session-adds-a-count-of-findings-by-severity-to-the-json-report-of-the-check
+    - HW-PROBE-a-session-renames-the-module-of-the-language-rule-and-moves-the-records-that-govern-it
+    - HW-PROBE-a-session-renames-the-pattern-module-of-the-meta-crate-and-its-callers
+    - HW-PROBE-a-session-records-as-owed-that-no-ruling-says-whether-a-hook-s-text-on-a-prompt-is-a-warning
+    - HW-PROBE-a-session-records-as-owed-the-corpus-size-axis-that-the-additive-campaign-defers
+    - HW-PROBE-a-session-links-the-obligation-on-published-read-sets-to-the-evaluation-whose-measurement-discharged-it
+    - HW-PROBE-a-session-records-the-owl-worked-example-as-evidence-of-the-check-layer-part-that-the-task-names
+    - HW-PROBE-a-session-records-a-ruling-that-drops-the-help-screen-banner-as-the-settled-successor-of-the-record-the-task-names
+    - HW-PROBE-a-session-supersedes-the-standing-ruling-on-a-paragraph-limit-when-the-task-describes-the-ruling-that-it-replaced
+    - HW-PROBE-a-session-moves-the-guide-to-the-merge-driver-for-derived-files-to-the-adopter-shelf-under-the-identifier-that-shelf-mints
+    - HW-PROBE-a-session-moves-an-obligation-record-to-the-process-shelf-and-repairs-the-links-inside-it-as-well-as-the-links-to-it
+    - HW-PROBE-a-session-adds-a-retired-term-to-the-overlay-that-the-task-names-and-leaves-the-lock-matching-it
+    - HW-PROBE-a-session-retires-a-stock-phrase-in-the-list-that-the-check-reads-and-resolves-the-lock
+    - HW-PROBE-a-session-repairs-a-suspect-governs-edge-on-the-record-that-the-task-names-and-raises-no-other-finding
+    - HW-PROBE-a-session-rewrites-the-change-narration-in-the-summary-of-the-obligation-on-the-site-review-marker-and-raises-no-other-finding
+    - HW-PROBE-a-session-that-reviews-an-agent-s-acceptance-stamp-cites-the-ruling-in-force-and-not-the-draft-that-the-pull-request-names
+    - HW-PROBE-a-session-that-reviews-a-change-shipping-the-vendored-package-as-the-taxonomy-release-cites-the-record-that-forbids-it
+    - HW-PROBE-a-session-lets-the-disk-free-script-take-its-floor-in-the-equals-form
+    - HW-PROBE-a-session-makes-the-footer-check-of-the-site-refuse-the-stock-theme-credit-as-well
   held-out:
-    - HW-PROBE-what-a-session-writes-points-back-at-the-ruling-it-rests-on
-    - HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens
-    - HW-PROBE-a-session-says-which-date-a-corrected-status-carries
-    - HW-PROBE-a-session-says-whether-a-command-or-a-hand-writes-a-governs-line
-  # The code set (#1835): five probes whose answer plain code carries, so
-  # that scenario 1 against scenario 0 reads as whether the documents help an
-  # agent write code. It is an addition to HW-DR-0111, and it changes neither
-  # fixed set.
-  code:
-    - HW-PROBE-a-rule-that-reads-the-date-takes-it-from-the-run-and-ships-with-the-fixture-that-fails-it
-    - HW-PROBE-a-figure-a-session-adds-to-a-hand-built-page-is-measured-and-never-typed
-    - HW-PROBE-a-session-says-where-a-check-gets-the-version-that-stood-before-a-change
-    - HW-PROBE-a-session-says-what-a-refusal-writes-on-standard-output-under-json
-    - HW-PROBE-a-session-says-what-a-verb-that-mints-an-identifier-writes-beside-the-document
+    - HW-PROBE-a-session-reaches-the-adjudication-from-the-tombstone-that-the-task-names
+    - HW-PROBE-a-session-names-the-record-that-governs-the-scripts-that-grade-a-change-from-a-task-in-plain-words
+    - HW-PROBE-a-session-lets-the-required-sections-rule-read-a-numbered-heading
+    - HW-PROBE-a-session-lets-the-graph-export-list-the-patterns-of-every-anchor
+    - HW-PROBE-a-session-renames-the-module-of-the-check-crate-that-reads-the-state-a-document-stands-in
+    - HW-PROBE-a-session-renames-the-identifier-index-of-the-graph-crate-and-its-callers
+    - HW-PROBE-a-session-records-as-owed-the-axis-of-an-adopter-s-own-repository-that-the-named-decision-defers
+    - HW-PROBE-a-session-records-as-owed-that-nothing-reports-a-pass-rate-for-each-phrasing-of-a-probe
+    - HW-PROBE-a-session-records-the-walkthrough-that-the-federation-part-rests-a-rule-on-as-the-evidence-it-cites
+    - HW-PROBE-a-session-links-the-governs-edges-evaluation-to-the-obligation-that-it-says-is-discharged
+    - HW-PROBE-a-session-supersedes-the-standing-ruling-on-figures-of-a-hand-built-page-when-the-task-names-the-record-that-ruling-replaced
+    - HW-PROBE-a-session-supersedes-the-record-that-keeps-a-grammar-checker-out-of-the-engine-and-not-the-older-record-that-it-upholds
+    - HW-PROBE-a-session-moves-the-obligation-record-of-one-run-s-trailing-edges-to-the-process-shelf-and-repairs-every-link-to-it
+    - HW-PROBE-a-session-moves-the-record-of-one-run-s-test-gaps-to-the-process-shelf-and-repairs-the-link-from-a-sibling-record
+    - HW-PROBE-a-session-holds-the-trademark-notice-to-the-house-language-rules-from-the-overlay-that-the-task-names
+    - HW-PROBE-a-session-retires-a-word-with-its-replacement-so-that-the-check-offers-the-substitution
+    - HW-PROBE-a-session-splits-the-long-summary-of-the-obligation-that-the-task-names-and-raises-no-other-finding
+    - HW-PROBE-a-session-rewrites-the-change-narration-in-the-summary-of-the-obligation-on-eight-stale-comments-and-raises-no-other-finding
+    - HW-PROBE-a-session-that-reviews-an-agent-s-acceptance-stamp-on-a-branch-that-needs-no-approval-cites-the-ruling-in-force-and-not-the-draft-that-disagrees-with-it
+    - HW-PROBE-a-session-that-reviews-a-change-dropping-the-release-digest-from-the-notes-of-the-engine-release-cites-the-record-that-governs-the-workflow
+    - HW-PROBE-a-session-lets-the-asset-size-check-of-the-site-take-its-limit-in-mebibytes-as-a-second-argument
+    - HW-PROBE-a-session-makes-the-script-that-prints-the-apt-block-remove-sudo-with-its-environment-flag-as-a-whole
 
 # The rounds of the additive campaign. Each round names the set it runs, the
 # two pooled rates it is sized to separate, and the most tries it may take.
@@ -1026,9 +1067,11 @@ sets:
 # alone. A layer takes at most `tries` rounds, and it stops after
 # `stop_after_empty` rounds in a row with nothing kept. The layers run in
 # `order`, and a round of a later layer waits while an earlier one is open.
-# The screen is 24 sessions and the confirmation 144, as ruled, and
-# `tools/probe/declared.py <declaration> tuning` rounds each up to a whole
-# number of repetitions over the probes of the set: 25 and 145 over five.
+# The screen is 22 sessions and the confirmation 145, as HW-DR-0112 "Phase
+# A" states (#1874), and `tools/probe/declared.py <declaration> tuning`
+# rounds each up to a whole number of repetitions over the probes of the
+# set: 22 and 154 over the 22 probes of `tuning`. The screen was 24 and the
+# confirmation 144 over the five probes of HW-DR-0111, which ran 25 and 145.
 # The owner split the approval in two on 2026-10-22 (#1777, comment
 # 6339176737). `base_ceiling_cents` is the most the bases may spend, $220.00:
 # the first `base` try, which measures scenario 3 at the confirmation's
@@ -1048,8 +1091,8 @@ rounds:
     rates: [0.625, 0.375]
     tries: 4
     approved_cents: 151200
-    screen: 24
-    confirm: 144
+    screen: 22
+    confirm: 145
     variants: 4
     stop_after_empty: 2
     order: [skills, hooks, mcp]
@@ -1061,25 +1104,6 @@ rounds:
     rates: [0.90, 0.80]
     tries: 1
     approved_cents: 0
-  # The code round and its pilot (#1835). The code round is sized as the
-  # final round is: 219 sessions per scenario, so ceil(219 / 5) = 44
-  # repetitions of each probe, 220 sessions per scenario and 440 over
-  # scenarios 0 and 1. The owner rules on its spend with #1778, so it is
-  # approved for nothing. The pilot measures each probe's rate, not a
-  # verdict, so its count is declared rather than computed: 18 repetitions,
-  # 90 sessions per scenario and 180 over the two. The owner approved $130
-  # for it on 2026-10-22 (#1777, comment 6339176737), and a reworded probe
-  # re-runs 18 sessions in scenario 0 under the same ceiling.
-  code:
-    set: code
-    rates: [0.90, 0.80]
-    tries: 1
-    approved_cents: 0
-  code-pilot:
-    set: code
-    repetitions: 18
-    tries: 1
-    approved_cents: 13000
 
 # The paths whose change can make a measured base stale, as the owner ruled
 # them on 2026-10-20 (HW-DR-0111): the engine's source and the scripts that

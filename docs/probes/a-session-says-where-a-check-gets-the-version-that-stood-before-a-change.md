@@ -1,8 +1,8 @@
 ---
 id: HW-PROBE-a-session-says-where-a-check-gets-the-version-that-stood-before-a-change
-status: current
-status_since: 2026-10-22
-summary: "Two module headers of plain code say a check reads only a manifest the caller names, and a third module that runs a version control command is the distractor, so the documents must make the one boundary reachable."
+status: deprecated
+status_since: 2026-10-30
+summary: "Deprecated on 2026-10-30 because no set of the additive campaign draws it, and the four probes of row 1 of HW-DR-0112 measure the action in its place (#1874)."
 last_verified: 2026-10-22
 probe_category: navigability
 expectation: answered

@@ -2441,7 +2441,7 @@ STUB
     # `scenarios:`, and scenario 0 is plain code alone. Neither is a delta
     # from the present tree.
     for n in 3 0; do
-        PATH="$scratch/bin:$PATH" sh "$driver" --probe HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged \
+        PATH="$scratch/bin:$PATH" sh "$driver" --probe HW-PROBE-a-session-adds-a-count-of-findings-by-severity-to-the-json-report-of-the-check \
             --session "fixture-scenario-$n" --tier additive --arm "scenario-$n" --set tuning --repetitions 18 \
             --task-file "$scratch/task.md" --workspace "$scratch/ws" \
             >"$scratch/scenario-$n-arm.md" 2>"$scratch/scenario-$n-arm.err"
@@ -5015,6 +5015,49 @@ HW_PROBE_YML="$scratch/hook-probe.yml" sh "$seal" --leak --scenario "$scratch/le
     > "$scratch/hook3.out" 2>&1
 same "a probe whose task the checkout does not hold stops a scenario check with 3" "3" "$?"
 
+# The hook naming the record in force (#1874, parent ruling of 2026-10-30).
+# For a probe with the `superseded_target` axis, a hit in its own hook channel
+# on the whole identifier of a `current` document is the pointer that
+# scenarios 4 and 6 measure: it prints as `treatment` and does not fail. Every
+# other hook hit still fails, and the always-loaded check does not change.
+stamp_probe=HW-PROBE-a-session-that-reviews-an-agent-s-acceptance-stamp-cites-the-ruling-in-force-and-not-the-draft-that-the-pull-request-names
+rm -rf "$scratch/leak-force"
+mkdir -p "$scratch/leak-force/.claude/hooks"
+printf '#!/bin/sh\ncat > /dev/null\nprintf "Pointer: against HW-DR-0034, the draft HW-DR-0069 and the corpus-wide fold\\n"\n' \
+    > "$scratch/leak-force/.claude/hooks/intent.sh"
+force_case() {
+    # force_case <yml> <probe> <out>: a scenario check of the stub hook tree.
+    HW_PROBE_YML="$1" sh "$seal" --leak --scenario "$scratch/leak-force" "$2" > "$3" 2>&1
+}
+printf 'leaks:\n  %s: [HW-DR-0034]\n' "$stamp_probe" > "$scratch/force.yml"
+force_case "$scratch/force.yml" "$stamp_probe" "$scratch/force1.out"
+same "the hook naming the record in force for a superseded-target probe does not fail" "0" "$?"
+present "and prints as treatment" "treatment $stamp_probe hook:$stamp_probe HW-DR-0034" "$scratch/force1.out"
+printf 'leaks:\n  %s: [corpus-wide fold]\n' "$stamp_probe" > "$scratch/force.yml"
+force_case "$scratch/force.yml" "$stamp_probe" "$scratch/force2.out"
+same "a phrase in the hook text of a superseded-target probe is still a leak" "1" "$?"
+present "and prints as leak" "leak $stamp_probe hook:$stamp_probe corpus-wide fold" "$scratch/force2.out"
+printf 'leaks:\n  %s: [HW-DR-0069]\n' "$stamp_probe" > "$scratch/force.yml"
+force_case "$scratch/force.yml" "$stamp_probe" "$scratch/force3.out"
+same "the identifier of a superseded record in the hook text is still a leak" "1" "$?"
+present "and prints as leak" "leak $stamp_probe hook:$stamp_probe HW-DR-0069" "$scratch/force3.out"
+printf 'leaks:\n  %s: [against HW-DR-0034]\n' "$stamp_probe" > "$scratch/force.yml"
+force_case "$scratch/force.yml" "$stamp_probe" "$scratch/force4.out"
+same "a string that holds the identifier and more is still a leak" "1" "$?"
+printf 'leaks:\n  %s: [HW-DR-0034]\n' "$ruling_probe" > "$scratch/force.yml"
+force_case "$scratch/force.yml" "$ruling_probe" "$scratch/force5.out"
+same "the same identifier for a probe without the axis is still a leak" "1" "$?"
+present "and prints as leak" "leak $ruling_probe hook:$ruling_probe HW-DR-0034" "$scratch/force5.out"
+printf 'In force: HW-DR-0034\n' > "$scratch/leak-force/CLAUDE.md"
+printf 'leaks:\n  %s: [HW-DR-0034]\n' "$stamp_probe" > "$scratch/force.yml"
+HW_PROBE_YML="$scratch/force.yml" sh "$seal" --leak "$scratch/leak-force" "$stamp_probe" > "$scratch/force6.out" 2>&1
+same "without --scenario the identifier in an always-loaded file is still a leak" "1" "$?"
+present "and prints as leak" "leak $stamp_probe CLAUDE.md HW-DR-0034" "$scratch/force6.out"
+force_case "$scratch/force.yml" "$stamp_probe" "$scratch/force7.out"
+same "with --scenario the always-loaded hit still fails beside the hook's treatment" "1" "$?"
+present "and the always-loaded hit prints as leak" "leak $stamp_probe CLAUDE.md HW-DR-0034" "$scratch/force7.out"
+present "and the hook hit still prints as treatment" "treatment $stamp_probe hook:$stamp_probe HW-DR-0034" "$scratch/force7.out"
+
 # `[]` is a declaration with no answer string: the two `opened` probes of the
 # additive set key on an act, and no string states it. The check prints
 # nothing for such a probe, and a probe with no entry is still undeclared.
@@ -5901,20 +5944,21 @@ if [ -x "$engine" ]; then
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$additive_spec" > "$scratch/add.out" 2> "$scratch/add.err"
     same "the dry run of the additive campaign exits 0" "0" "$?"
-    present "it prints the screening round's sum" "round screening: 490 sessions, \$245.00" "$scratch/add.out"
+    present "it prints the screening round's sum" "round screening: 616 sessions, \$308.00" "$scratch/add.out"
     # The tuning round runs in rounds (#1838): each tuning line is priced as
-    # one round of 4 variants at 25 sessions, a confirmation at 145 and the
-    # best so far at 145, 390 sessions over five probes, at most 4 rounds.
-    present "it prints the tuning round's sum at its most rounds" "round tuning: 10920 sessions, \$5460.00 (4 rounds at most)" "$scratch/add.out"
-    present "it prints the two counts the owner ruled, each rounded up over the five probes" \
-        "the owner ruled 24 sessions for a screened variant and 144 for a confirmation, so ceil(24 / 5) = 5 and ceil(144 / 5) = 29 repetitions" "$scratch/add.out"
+    # one round of 4 variants at 22 sessions, a confirmation at 154 and the
+    # best so far at 154, 396 sessions over the 22 probes of `tuning`, at
+    # most 4 rounds (#1874).
+    present "it prints the tuning round's sum at its most rounds" "round tuning: 11088 sessions, \$5544.00 (4 rounds at most)" "$scratch/add.out"
+    present "it prints the two counts HW-DR-0112 states, each rounded up over the 22 probes" \
+        "the owner ruled 22 sessions for a screened variant and 145 for a confirmation, so ceil(22 / 22) = 1 and ceil(145 / 22) = 7 repetitions" "$scratch/add.out"
     present "and prices a whole round on a tuning line" \
-        "line 8  additive scenario-0 tuning: a round of 4 variants x 5 probes x 5 repetitions (ceil(24 / 5)) = 100 sessions, a confirmation of 5 probes x 29 repetitions (round tuning, ceil(144 / 5)) = 145 sessions, and the best so far at 145 sessions where no measurement at that count exists: 390 sessions, \$195.00 a round" "$scratch/add.out"
+        "line 8  additive scenario-0 tuning: a round of 4 variants x 22 probes x 1 repetitions (ceil(22 / 22)) = 88 sessions, a confirmation of 22 probes x 7 repetitions (round tuning, ceil(145 / 22)) = 154 sessions, and the best so far at 154 sessions where no measurement at that count exists: 396 sessions, \$198.00 a round" "$scratch/add.out"
     present "it prints the final round's sum" "round final: 1540 sessions, \$770.00" "$scratch/add.out"
-    present "and one total" "total: 12950 sessions, \$6475.00" "$scratch/add.out"
+    present "and one total" "total: 13244 sessions, \$6622.00" "$scratch/add.out"
     present "and the cached share of input, with no batch recorded, as no recorded sessions (#1875)" \
         "cached share: no recorded sessions" "$scratch/add.out"
-    present "each round's count is computed from its rates" "so ceil(219 / 4) = 55 repetitions of each probe" "$scratch/add.out"
+    present "each round's count is computed from its rates" "so ceil(219 / 22) = 10 repetitions of each probe" "$scratch/add.out"
     # The owner approved the screening round at $700 (#1775). The
     # ceiling admits each plan, and the approval of each round says which
     # lines the batch runs.
@@ -5952,6 +5996,11 @@ if [ -x "$engine" ]; then
         "$(sed -n 's/^tree additive \(scenario-[0-9]*\)[ :].*/\1/p' "$scratch/add.out" | LC_ALL=C sort -u | wc -l | tr -d ' ')"
     absent "no scenario tree holds a skill of this repository's own tooling" " tree: harness " "$scratch/add.out"
     absent "and no scenario tree leaks" " tree: leak " "$scratch/add.out"
+    # The two row 10 probes are the superseded-target probes whose hook text
+    # names HW-DR-0034, the record in force, through the draft's summary
+    # (#1874). They print as treatment in each hook scenario, and in no other.
+    same "the hook's pointer to the record in force prints as treatment in scenarios 4 and 6 alone" "4 4 6 6" \
+        "$(sed -n 's/^leak check, scenario-\([0-9]*\) tree: treatment .* HW-DR-0034$/\1/p' "$scratch/add.out" | LC_ALL=C sort -n | tr '\n' ' ' | sed 's/ $//')"
 
     # additive_leaks <file> <probe> <string>: the committed declaration with
     # one leak string, on one probe, and `[]` on every other probe of the sets.
@@ -5983,20 +6032,23 @@ if [ -x "$engine" ]; then
     body_string=$(sed -n '/^## Before you change a file$/,/^## /{/^[A-Z]/p;}' "$root/.claude/skills/headwater-orient/SKILL.md" | head -n 1 | sed 's/.*\. //')
     same "the orient body has a start-of-task gate to plant a leak from" "yes" \
         "$([ -n "$body_string" ] && echo yes || echo no)"
-    additive_leaks "$scratch/add-body.yml" \
-        HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged "$body_string"
+    # A member of `tuning`, so the screening spec plans it (#1874).
+    body_probe=HW-PROBE-a-session-adds-a-count-of-findings-by-severity-to-the-json-report-of-the-check
+    additive_leaks "$scratch/add-body.yml" "$body_probe" "$body_string"
     HW_PROBE_YML="$scratch/add-body.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$additive_spec" > "$scratch/add-body.out" 2> "$scratch/add-body.err"
     same "a leak string in a skills-layer skill body fails the additive dry run with 8" "8" "$?"
     same "and it names every scenario that holds skills, and no other" "3 6" \
         "$(sed -n "s/^leak check, scenario-\([0-9]*\) tree: leak .*headwater-orient\/SKILL.md $body_string$/\1/p" "$scratch/add-body.out" | LC_ALL=C sort -n | tr '\n' ' ' | sed 's/ $//')"
-    present "and prints the round sums all the same" "total: 12950 sessions" "$scratch/add-body.out"
+    present "and prints the round sums all the same" "total: 13244 sessions" "$scratch/add-body.out"
 
-    # The hook's text: the pointer probe's route names its own target, and no
-    # file of a hook scenario's always-loaded text or skill bodies does, but
-    # the harness skill `hw-corpus`, which prints as harness.
-    hook_string="docs/obligations/0107-the-base-package-ships"
-    pointer_probe=HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens
+    # The hook's text: the intent hook opens the text it injects for the
+    # pointer probe's task with its own first sentence, and no file of a hook
+    # scenario's always-loaded text or skill bodies holds that sentence. The
+    # pointer probe is a member of `tuning` (#1874), so every scenario plans it.
+    hook_string="Headwater routed this task to the documents that govern it"
+    pointer_probe=HW-PROBE-a-session-records-as-owed-the-corpus-size-axis-that-the-additive-campaign-defers
+    held_probe=HW-PROBE-a-session-records-as-owed-that-nothing-reports-a-pass-rate-for-each-phrasing-of-a-probe
     additive_leaks "$scratch/add-hook.yml" "$pointer_probe" "$hook_string"
     HW_PROBE_YML="$scratch/add-hook.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$additive_spec" > "$scratch/add-hook.out" 2> "$scratch/add-hook.err"
@@ -6005,6 +6057,16 @@ if [ -x "$engine" ]; then
         "$(sed -n "s|^leak check, scenario-\([0-9]*\) tree: leak $pointer_probe hook:$pointer_probe $hook_string$|\1|p" "$scratch/add-hook.out" | LC_ALL=C sort -n | tr '\n' ' ' | sed 's/ $//')"
     same "and no scenario leaks through another channel" "0" \
         "$(grep ' tree: leak ' "$scratch/add-hook.out" | grep -vc " hook:$pointer_probe ")"
+    # The same phrase planted on a probe with the `superseded_target` axis, a
+    # member of `tuning`: a hook hit that is not the identifier of the record
+    # in force still fails in scenarios 4 and 6 (#1874).
+    stamp_probe=HW-PROBE-a-session-that-reviews-an-agent-s-acceptance-stamp-cites-the-ruling-in-force-and-not-the-draft-that-the-pull-request-names
+    additive_leaks "$scratch/add-force.yml" "$stamp_probe" "$hook_string"
+    HW_PROBE_YML="$scratch/add-force.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$additive_spec" > "$scratch/add-force.out" 2> "$scratch/add-force.err"
+    same "a phrase in a superseded-target probe's hook text fails the additive dry run with 8" "8" "$?"
+    same "and it names scenarios 4 and 6, and no other" "4 6" \
+        "$(sed -n "s|^leak check, scenario-\([0-9]*\) tree: leak $stamp_probe hook:$stamp_probe $hook_string$|\1|p" "$scratch/add-force.out" | LC_ALL=C sort -n | tr '\n' ' ' | sed 's/ $//')"
 
     printf 'additive scenario-6 final\n' > "$scratch/add-twelve.spec"
     # The refusals of a spec.
@@ -6021,28 +6083,8 @@ if [ -x "$engine" ]; then
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$scratch/add-round.spec" > "$scratch/add-round.out" 2> /dev/null
     same "a line of a round that rounds: does not declare is refused with 5" "5" "$?"
-    present "and the refusal names the rounds declared" "declares no round \`pilot\`. It declares screening tuning final code code-pilot" "$scratch/add-round.out"
-    # The code round and its pilot (#1835), each in its own spec. The code
-    # round's count is computed from its rates over the five probes of the
-    # code set, and the pilot's is the count it declares. The leak check runs
-    # over scenarios 0 and 1 for the five probes and finds nothing.
-    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
-        --spec "$root/tools/probe/code-campaign.spec" > "$scratch/add-code.out" 2> "$scratch/add-code.err"
-    same "the dry run of the code round exits 0, its leak check clean" "0" "$?"
-    present "it computes 44 repetitions of each code probe" "so ceil(219 / 5) = 44 repetitions of each probe" "$scratch/add-code.out"
-    present "and prices the round at 440 sessions" "round code: 440 sessions, \$220.00" "$scratch/add-code.out"
-    present "and prints it as not approved" "round code: not approved, so the batch refuses its lines with 5" "$scratch/add-code.out"
-    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
-        --spec "$root/tools/probe/code-pilot.spec" > "$scratch/add-pilot.out" 2> "$scratch/add-pilot.err"
-    same "the dry run of the pilot exits 0, its leak check clean" "0" "$?"
-    present "it plans the count the pilot declares" "5 probes x 18 repetitions (round code-pilot, declared) = 90 sessions" "$scratch/add-pilot.out"
-    present "and prices the pilot at 180 sessions" "round code-pilot: 180 sessions, \$90.00" "$scratch/add-pilot.out"
-    present "and prints it as approved to the owner's \$130" "round code-pilot: approved to \$130.00 over every attempt, so the batch runs its lines" "$scratch/add-pilot.out"
-    PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign-dry-run.sh" --priced "$root/tools/probe/code-pilot.spec" \
-        > "$scratch/add-pilot-priced.out" 2> /dev/null
-    same "--priced gives each pilot line the declared count" "18 18" \
-        "$(awk '{ print $3 }' "$scratch/add-pilot-priced.out" | tr '\n' ' ' | sed 's/ $//')"
-    printf 'additive scenario-3 screening %s\n' "$pointer_probe" > "$scratch/add-outside.spec"
+    present "and the refusal names the rounds declared" "declares no round \`pilot\`. It declares screening tuning final" "$scratch/add-round.out"
+    printf 'additive scenario-3 screening %s\n' "$held_probe" > "$scratch/add-outside.spec"
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$scratch/add-outside.spec" > "$scratch/add-outside.out" 2> /dev/null
     same "a line that leaves out a probe of another set is refused with 5" "5" "$?"
@@ -6058,18 +6100,18 @@ if [ -x "$engine" ]; then
     HW_PROBE_YML="$scratch/add-rates.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$scratch/add-twelve.spec" > "$scratch/add-rates.out" 2> /dev/null
     present "other rates for the final round price another count" "0.95 against 0.8, needs 88 sessions per scenario" "$scratch/add-rates.out"
-    present "and plan it" "4 probes x 22 repetitions (round final, ceil(88 / 4)) = 88 sessions" "$scratch/add-rates.out"
+    present "and plan it" "22 probes x 4 repetitions (round final, ceil(88 / 22)) = 88 sessions" "$scratch/add-rates.out"
     awk '/^  tuning:/ && !done { print; getline; done = 1; next } { print }' "$root/.headwater/probe.yml" > "$scratch/add-short.yml"
     printf 'additive scenario-5 screening\n' > "$scratch/add-short.spec"
     HW_PROBE_YML="$scratch/add-short.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$scratch/add-short.spec" > "$scratch/add-short.out" 2> /dev/null
     same "a set the plan counts otherwise than the declaration read is refused with 5" "5" "$?"
-    present "and the refusal names both counts" "the plan selects 5 probes, and the set tuning less the probes the line leaves out holds 4" "$scratch/add-short.out"
+    present "and the refusal names both counts" "the plan selects 22 probes, and the set tuning less the probes the line leaves out holds 21" "$scratch/add-short.out"
     # A tuning line runs one stage of a round (#1838), and the batch reads
     # the stage from HEADWATER_TUNING_STAGE, which tools/probe/try.sh sets.
     # With none, the priced counts exit 2, so no batch runs a tuning line at
-    # a count nobody chose. No count of 25 or 145 is typed anywhere: each is
-    # ceil(24 / 5) or ceil(144 / 5) over the five probes of the set.
+    # a count nobody chose. No count of 1 or 7 is typed anywhere: each is
+    # ceil(22 / 22) or ceil(145 / 22) over the 22 probes of the set (#1874).
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" \
         > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
     same "--priced of a tuning line with no stage exits 2" "2" "$?"
@@ -6077,23 +6119,23 @@ if [ -x "$engine" ]; then
     HEADWATER_TUNING_STAGE=screen PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" \
         > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
     same "--priced of the screen reads each additive line" "0 21" "$? $(wc -l < "$scratch/add-priced.out" | tr -d ' ')"
-    same "and gives each its round's count, 5 repetitions on a screened tuning line" "14 5 55" \
+    same "and gives each its round's count, 1 repetition on a screened tuning line" "4 1 10" \
         "$(awk '$1 == 1 || $1 == 8 || $1 == 15 { print $3 }' "$scratch/add-priced.out" | tr '\n' ' ' | sed 's/ $//')"
     HEADWATER_TUNING_STAGE=confirm PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" \
         > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
-    same "--priced of the confirmation gives a tuning line 29 repetitions" "0 29" \
+    same "--priced of the confirmation gives a tuning line 7 repetitions" "0 7" \
         "$? $(awk '$1 == 8 { print $3 }' "$scratch/add-priced.out")"
     HEADWATER_TUNING_STAGE=final PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" \
         > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
     same "--priced of a stage that is neither screen nor confirm exits 2" "2" "$?"
-    sed 's/^    screen: 24$/    screen: 30/; s/^    confirm: 144$/    confirm: 150/' "$root/.headwater/probe.yml" > "$scratch/add-counts.yml"
+    sed 's/^    screen: 22$/    screen: 30/; s/^    confirm: 145$/    confirm: 200/' "$root/.headwater/probe.yml" > "$scratch/add-counts.yml"
     HW_PROBE_YML="$scratch/add-counts.yml" HEADWATER_TUNING_STAGE=confirm PATH="$scratch/dry-bin:$PATH" \
         sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
-    same "a confirmation declared at 150 is priced at ceil(150 / 5) = 30 repetitions, read and not typed" "0 30" \
+    same "a confirmation declared at 200 is priced at ceil(200 / 22) = 10 repetitions, read and not typed" "0 10" \
         "$? $(awk '$1 == 8 { print $3 }' "$scratch/add-priced.out")"
     HW_PROBE_YML="$scratch/add-counts.yml" HEADWATER_TUNING_STAGE=screen PATH="$scratch/dry-bin:$PATH" \
         sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
-    same "and a screen declared at 30 at ceil(30 / 5) = 6" "0 6" \
+    same "and a screen declared at 30 at ceil(30 / 22) = 2" "0 2" \
         "$? $(awk '$1 == 8 { print $3 }' "$scratch/add-priced.out")"
     # The seven fields of the tuning round's rounds are declared together,
     # and each is read with PyYAML and refused when it does not hold.
@@ -6139,7 +6181,7 @@ if [ -x "$engine" ]; then
             sh "$root/tools/probe/campaign.sh" --out "$scratch/gate-out" --model claude-haiku-4-5 \
             --spec "$root/tools/probe/additive-screening.spec" > /dev/null 2> "$scratch/gate.err"
         same "a batch of the screening spec stops with 8 on a leak in a scenario tree" "8" "$?"
-        present "and names the leak" "leak check, scenario-3 tree: leak HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged" "$scratch/gate.err"
+        present "and names the leak" "leak check, scenario-3 tree: leak $body_probe" "$scratch/gate.err"
         same "and it asked the harness nothing, not even its version, and planned no line" "no no" \
             "$([ -e "$scratch/gate-out/claude-version" ] && echo yes || echo no) $([ -e "$scratch/gate-out/lines" ] && echo yes || echo no)"
         rm -rf "$scratch/gate-out"
@@ -6180,9 +6222,9 @@ if [ -x "$engine" ]; then
         run_status=$?
         same "a batch of one screening line passes the plan and starts a session" "yes" \
             "$([ "$run_status" != 5 ] && [ -e "$scratch/run-out/claude-version" ] && echo yes || echo no)"
-        same "its jobs are 5 probes x the round's 14 repetitions, not the tier's 55" "70" \
+        same "its jobs are 22 probes x the round's 4 repetitions, not the tier's 55" "88" \
             "$(grep -c ' additive scenario-4 screening ' "$scratch/run-out/jobs" 2>/dev/null)"
-        present "and the line is planned at the round's count" "5 probes x 1 arms x 14 repetitions = 70 sessions" "$scratch/run-out/plans/L1"
+        present "and the line is planned at the round's count" "22 probes x 1 arms x 4 repetitions = 88 sessions" "$scratch/run-out/plans/L1"
         # The tree is the scenario's: every path of a layer scenario 4 does
         # not hold is gone, and the hooks layer it holds is there.
         "$engine" probe plan --root "$root" --scenario 4 --delta > "$scratch/run-delta" 2> /dev/null
@@ -6206,7 +6248,7 @@ if [ -x "$engine" ]; then
         absent "and the recorder plans the line the batch planned" "headwater probe plan" \
             "$scratch/run-out/sessions/$run_session/record.err"
         same "the session the plan admitted is the one the batch planned" "$(sed -n 's/^selection: //p' "$scratch/run-out/plans/L1" | head -1)" \
-            "$("$engine" probe plan --root "$root" --tier additive --arm scenario-4 --set tuning --repetitions 14 2> /dev/null | sed -n 's/^selection: //p' | head -1)"
+            "$("$engine" probe plan --root "$root" --tier additive --arm scenario-4 --set tuning --repetitions 4 2> /dev/null | sed -n 's/^selection: //p' | head -1)"
         # The identity block holds the set only as its digest, so assembly
         # states the round and the set beside it. The one session did not
         # record, so assembly fails the line, and still names its round.
@@ -6507,15 +6549,20 @@ python3 "$declared_py" "$scratch/open-docs1.yml" rounds > /dev/null 2> /dev/null
 rounds_status=$?
 python3 "$declared_py" "$scratch/open-docs1.yml" approved > /dev/null 2> /dev/null
 same "declared.py rounds and approved still read a declaration with an open layer" "0 0" "$rounds_status $?"
-# A round may declare its own count in place of its rates (#1835): the pilot
-# of the code set measures each probe's rate and no difference. Its line
-# carries `repetitions <n>` where the rates stand, so the probes stay in the
-# same fields, and a round that declares both or neither is refused.
-python3 "$declared_py" "$root/.headwater/probe.yml" rounds > "$scratch/reps-rounds.out" 2> /dev/null
-same "declared.py rounds prints the pilot's declared count in place of its rates" "0 code-pilot code repetitions 18 1 5" \
-    "$? $(awk '$1 == "code-pilot" { print $1, $2, $3, $4, $5, NF - 5 }' "$scratch/reps-rounds.out")"
-same "and the code round's rates, as the final round's" "code code 0.9 0.8 1 5" \
-    "$(awk '$1 == "code" { print $1, $2, $3, $4, $5, NF - 5 }' "$scratch/reps-rounds.out")"
+# A round may declare its own count in place of its rates (#1835): a pilot
+# measures each probe's rate and no difference. Its line carries
+# `repetitions <n>` where the rates stand, so the probes stay in the same
+# fields, and a round that declares both or neither is refused. No round of
+# the real declaration uses the form since #1874 removed the code pilot, so
+# the cases read a scratch declaration that adds a pilot round over the
+# held-out set.
+awk '$0 == "  final:" { print "  pilot:"; print "    set: held-out"; print "    repetitions: 18"; print "    tries: 1"; print "    approved_cents: 13000" } { print }' \
+    "$root/.headwater/probe.yml" > "$scratch/reps.yml"
+python3 "$declared_py" "$scratch/reps.yml" rounds > "$scratch/reps-rounds.out" 2> /dev/null
+same "declared.py rounds prints the pilot's declared count in place of its rates" "0 pilot held-out repetitions 18 1 22" \
+    "$? $(awk '$1 == "pilot" { print $1, $2, $3, $4, $5, NF - 5 }' "$scratch/reps-rounds.out")"
+same "and the final round's rates beside it" "final held-out 0.9 0.8 1 22" \
+    "$(awk '$1 == "final" { print $1, $2, $3, $4, $5, NF - 5 }' "$scratch/reps-rounds.out")"
 # Each refusal exits 2 and states its own reason. `name|sed|needle`.
 for reps_case in \
     "a round with both rates and repetitions|s/^    repetitions: 18$/    repetitions: 18\n    rates: [0.90, 0.80]/|declares both \`rates\` and \`repetitions\`" \
@@ -6526,7 +6573,7 @@ for reps_case in \
 do
     reps_name=${reps_case%%|*}; reps_rest=${reps_case#*|}
     reps_sed=${reps_rest%%|*}; reps_needle=${reps_rest#*|}
-    sed "$reps_sed" "$root/.headwater/probe.yml" > "$scratch/reps-bad.yml"
+    sed "$reps_sed" "$scratch/reps.yml" > "$scratch/reps-bad.yml"
     python3 "$declared_py" "$scratch/reps-bad.yml" rounds > "$scratch/reps-bad.out" 2> "$scratch/reps-bad.err"
     same "declared.py rounds refuses $reps_name, with 2 and its reason" "2 1 0" \
         "$? $(grep -cF -- "$reps_needle" "$scratch/reps-bad.err") $(wc -c < "$scratch/reps-bad.out" | tr -d ' ')"

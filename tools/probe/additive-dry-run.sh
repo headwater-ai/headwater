@@ -44,11 +44,12 @@
 # from here.
 #
 # **The tuning round runs in rounds (#1838).** When the tuning round declares
-# the fields of its rounds, `declared.py tuning` computes the two counts the
-# owner ruled on 2026-10-22: a screened variant runs ceil(24 / k) repetitions
-# of each of the k probes of the set, and a confirmation, or the best so far
-# measured at the same count, runs ceil(144 / k). Over five probes that is 5
-# and 29, so 25 and 145 sessions. A tuning line then runs one stage, which
+# the fields of its rounds, `declared.py tuning` computes the two counts that
+# `screen` and `confirm` declare: a screened variant runs ceil(screen / k)
+# repetitions of each of the k probes of the set, and a confirmation, or the
+# best so far measured at the same count, runs ceil(confirm / k). HW-DR-0112
+# states 22 and 145, so over the 22 probes of `tuning` that is 1 and 7, which
+# is 22 and 154 sessions (#1874). A tuning line then runs one stage, which
 # `HEADWATER_TUNING_STAGE` names, `screen` or `confirm`, and which
 # `tools/probe/try.sh` sets for each driver it starts. With `--priced`, a
 # tuning line with no stage exits 2, so no batch runs a tuning line at a

@@ -1,8 +1,8 @@
 ---
 id: HW-PROBE-a-figure-a-session-adds-to-a-hand-built-page-is-measured-and-never-typed
-status: current
-status_since: 2026-10-22
-summary: "The deliberate case where plain code states the convention: the refresh script refuses a typed figure, so only an empty marker with a producer of its own passes, and the documents name the report member the producer reads."
+status: deprecated
+status_since: 2026-10-30
+summary: "Deprecated on 2026-10-30 because no set of the additive campaign draws it: the pilot of #1835 passed it in 15 of 15 sessions, outside the band of 15 to 70 percent, and the four probes of row 2 of HW-DR-0112 measure the action in its place (#1874)."
 last_verified: 2026-10-22
 probe_category: sufficiency
 expectation: patched
