@@ -877,7 +877,121 @@ STUB
     same "a command that cannot start refuses with exit 5" "5" "$?"
     same "and writes no event" "0" "$(wc -c < "$scratch/cmd-missing.yaml" | tr -d ' ')"
     present "and says the command could not start" "could not start" "$scratch/cmd-missing.err"
+    rm -f "$scratch/rec-missing.tsv"
+    printf 'pass\n' > "$cot/stub-mode"
+    sh "$transform" --probe HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged \
+        --session missing2 --root "$scratch/engine-only" --workspace "$scratch/cmd-ws" \
+        --oracle-tree "$cot" --produced src/lib.rs --oracle-record "$scratch/rec-missing.tsv" \
+        < "$scratch/watched-nothing.jsonl" > /dev/null 2>&1
+    same "and a refused transform asked for the record exits 5" "5" "$?"
+    same "and writes no oracle record" "absent" "$([ -e "$scratch/rec-missing.tsv" ] && echo present || echo absent)"
     cp "$scratch/cmd-probe.yml" "$cot/.headwater/probe.yml"
+
+    # The oracle record (#1875, clause 4): one line for each declared oracle,
+    # `<name>\t<verdict>\t<evidence>`, sorted by name. The verdict restates
+    # the findings: `fail` or `not-run` exactly where the oracle's finding is
+    # on the artifacts. The evidence of an `exit` oracle is the first line of
+    # its standard output alone, and never its standard error.
+    rot=$scratch/rec-oracle
+    rm -rf "$rot" "$scratch/rec-ws"
+    mkdir -p "$rot/src"
+    cp -a "$root/.headwater" "$root/CLAUDE.md" "$rot/"
+    awk 'skip && /^[^ ]/ { skip = 0 }
+    skip { next }
+    /^oracles:/ {
+        skip = 1
+        print "oracles:"
+        print "  b:"
+        print "    paths: [src/**]"
+        print "    command: sh b.sh"
+        print "    parser: exit"
+        print "  a:"
+        print "    paths: [src/**]"
+        print "    command: sh a.sh"
+        print "    parser: exit"
+        print "  c:"
+        print "    paths: [nowhere/**]"
+        print "    command: sh b.sh"
+        print "    parser: exit"
+        print "  d:"
+        print "    paths: [src/**]"
+        print "    command: sh d.sh"
+        print "    parser: exit"
+        print "  e:"
+        print "    paths: [src/**]"
+        print "    command: sh e.sh"
+        print "    parser: exit"
+        next
+    } { print }' "$root/.headwater/probe.yml" > "$rot/.headwater/probe.yml"
+    printf "printf 'a: fail: x\\\\nsecond line\\\\n'; printf 'noise\\\\n' >&2; exit 1\n" > "$rot/a.sh"
+    printf "printf 'b: pass: y\\\\n'\n" > "$rot/b.sh"
+    printf "printf 'd:\\\\tz\\\\r\\\\n'\n" > "$rot/d.sh"
+    printf "printf 'e: diagnostics only\\\\n' >&2\n" > "$rot/e.sh"
+    printf 'pub fn pinned() {}\n' > "$rot/src/lib.rs"
+    cp -a "$rot" "$scratch/rec-ws"
+    printf 'pub fn changed() {}\n' > "$scratch/rec-ws/src/lib.rs"
+    printf '# changed\n' > "$scratch/rec-ws/README.md"
+    tab=$(printf '\t')
+    # The carriage return of `d` becomes a space, so its evidence ends in one.
+    sp=' '
+    # rec_run <name> <record or -> <produced...>: one transform run over the
+    # record's oracle tree.
+    rec_run() {
+        r_name=$1 r_record=$2
+        shift 2
+        r_args=
+        for r_path in "$@"; do r_args="$r_args --produced $r_path"; done
+        [ "$r_record" = - ] || r_args="$r_args --oracle-record $r_record"
+        # shellcheck disable=SC2086
+        sh "$transform" --probe HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged \
+            --session "$r_name" --root "$scratch/engine-only" --workspace "$scratch/rec-ws" \
+            --oracle-tree "$rot" $r_args \
+            < "$scratch/watched-nothing.jsonl" > "$scratch/rec-$r_name.yaml" 2>"$scratch/rec-$r_name.err"
+    }
+    rm -f "$scratch/rec-three.tsv"
+    rec_run three "$scratch/rec-three.tsv" src/lib.rs README.md
+    same "a session recorded with --oracle-record records" "0" "$?"
+    same "and the record holds one line for each declared oracle, sorted, with its verdict and its evidence" \
+        "a${tab}fail${tab}a: fail: x
+b${tab}pass${tab}b: pass: y
+c${tab}not-run${tab}-
+d${tab}pass${tab}d: z${sp}
+e${tab}pass${tab}-" "$(cat "$scratch/rec-three.tsv" 2>/dev/null)"
+    absent "and the command's standard error is in no line" "noise" "$scratch/rec-three.tsv"
+    absent "and a command that wrote to standard error alone has no evidence from it" "diagnostics" "$scratch/rec-three.tsv"
+    # The invariant: each verdict agrees with the findings on both artifacts.
+    same "and \`a\`, which failed, is a finding on both artifacts" "2" \
+        "$(grep -cxF -- '        - "command:a"' "$scratch/rec-three.yaml")"
+    same "and \`b\`, which passed, is on none" "0" \
+        "$(grep -cxF -- '        - "command:b"' "$scratch/rec-three.yaml")"
+    same "and \`c\`, which did not run, is on both" "2" \
+        "$(grep -cxF -- '        - "command:c"' "$scratch/rec-three.yaml")"
+    rm -f "$scratch/rec-none.tsv"
+    rec_run none - src/lib.rs README.md
+    same "a session recorded with no --oracle-record records" "0" "$?"
+    same "and writes no record" "absent" "$([ -e "$scratch/rec-none.tsv" ] && echo present || echo absent)"
+    same "and its event is the event of the run with the record" \
+        "$(sed 's/three/none/' "$scratch/rec-three.yaml")" "$(cat "$scratch/rec-none.yaml")"
+    rm -f "$scratch/rec-empty.tsv"
+    rec_run empty "$scratch/rec-empty.tsv"
+    same "a session that produced no artifact records" "0" "$?"
+    same "and records every declared oracle as not-run" \
+        "a${tab}not-run${tab}-
+b${tab}not-run${tab}-
+c${tab}not-run${tab}-
+d${tab}not-run${tab}-
+e${tab}not-run${tab}-" "$(cat "$scratch/rec-empty.tsv" 2>/dev/null)"
+    # A `cargo-test` oracle's evidence is its last `test result:` line.
+    printf 'failcase\n' > "$cot/stub-mode"
+    rm -f "$scratch/rec-cargo.tsv"
+    sh "$transform" --probe HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged \
+        --session cargo --root "$scratch/engine-only" --workspace "$scratch/cmd-ws" \
+        --oracle-tree "$cot" --produced src/lib.rs --oracle-record "$scratch/rec-cargo.tsv" \
+        < "$scratch/watched-nothing.jsonl" > "$scratch/rec-cargo.yaml" 2>"$scratch/rec-cargo.err"
+    same "a cargo-test oracle records its last test result line as its evidence" \
+        "fixture-exit${tab}not-run${tab}-
+fixture-oracle${tab}fail${tab}test result: FAILED. 1 passed; 1 failed; 0 ignored" \
+        "$(cat "$scratch/rec-cargo.tsv" 2>/dev/null)"
 fi
 
 # ---------------------------------------------------------------------------
@@ -1745,6 +1859,64 @@ else
     fail "seal.sh --keys fails on a declaration the engine refuses" "exit 0"
 fi
 same "and prints no path" "" "$(cat "$scratch/refused-keys.out")"
+
+# The evidence check of the oracle record (#1875, clause 4). An oracle's
+# evidence line echoes identifiers and paths, so a line that names an answer
+# key would carry the answer out of the sealed session. The check reads the
+# answer keys alone and never `leaks:` (parent ruling on #1875, slice 1).
+ev() {
+    # ev <evidence>: a one-line record, checked for the patched probe.
+    printf 'key-oracle\tpass\t%s\n' "$1" > "$scratch/ev-record.tsv"
+    sh "$root/tools/probe/seal.sh" --evidence "$patched" "$scratch/ev-record.tsv" > "$scratch/ev.out" 2> "$scratch/ev.err"
+}
+ev "the gap is already HW-OBL-0198"
+same "seal.sh --evidence refuses an evidence line that holds the key's identifier with exit 1" "1" "$?"
+same "and prints the probe, the oracle and the key" "evidence $patched key-oracle HW-OBL-0198" "$(cat "$scratch/ev.out")"
+ev "see $key_doc"
+same "an evidence line that holds the key's path exits 1" "1" "$?"
+ev "the record ${key_doc##*/} is there"
+same "an evidence line that holds the key's <slug>.md exits 1" "1" "$?"
+same "and names the key by its identifier" "evidence $patched key-oracle HW-OBL-0198" "$(cat "$scratch/ev.out")"
+ev "key-oracle: pass: the claim is recorded"
+same "a clean evidence line exits 0" "0" "$?"
+same "and prints nothing" "" "$(cat "$scratch/ev.out")"
+printf 'a-oracle\tpass\tclean\nb-oracle\tfail\tHW-OBL-0198 and %s\n' "$key_doc" > "$scratch/ev-record.tsv"
+sh "$root/tools/probe/seal.sh" --evidence "$patched" "$scratch/ev-record.tsv" > "$scratch/ev.out" 2> "$scratch/ev.err"
+same "a record of two lines names only the oracle whose evidence holds the key, once" \
+    "evidence $patched b-oracle HW-OBL-0198" "$(cat "$scratch/ev.out")"
+printf 'a-oracle\tpass\tHW-OBL-0198 is not the verdict\n' > "$scratch/ev-record.tsv"
+sh "$root/tools/probe/seal.sh" --evidence HW-PROBE-$tombstone "$scratch/ev-record.tsv" > "$scratch/ev.out" 2> "$scratch/ev.err"
+same "a probe that declares no answer key passes any evidence" "0" "$?"
+awk -v probe="$patched" '
+    /^leaks:/ { print; print "  " probe ": [HW-DR-0052]"; next }
+    { print }' "$root/.headwater/probe.yml" > "$scratch/ev-leaks.yml"
+printf 'key-oracle\tpass\tHW-DR-0052 decides it\n' > "$scratch/ev-record.tsv"
+HW_PROBE_YML="$scratch/ev-leaks.yml" sh "$root/tools/probe/seal.sh" --evidence "$patched" "$scratch/ev-record.tsv" \
+    > "$scratch/ev.out" 2> "$scratch/ev.err"
+same "an evidence line that holds a leak string of the probe and no key exits 0, because leaks are not read" "0" "$?"
+HW_PROBE_YML="$scratch/refused-keys.yml" sh "$root/tools/probe/seal.sh" --evidence "$patched" "$scratch/ev-record.tsv" \
+    > "$scratch/ev.out" 2> "$scratch/ev.err"
+same "seal.sh --evidence exits 8 on a declaration the engine refuses" "8" "$?"
+same "and prints no hit" "" "$(cat "$scratch/ev.out")"
+sh "$root/tools/probe/seal.sh" --evidence "$patched" "$scratch/no-such-record.tsv" > "$scratch/ev.out" 2> "$scratch/ev.err"
+same "seal.sh --evidence exits 2 on a record that is not there" "2" "$?"
+sh "$root/tools/probe/seal.sh" --evidence "$patched" > "$scratch/ev.out" 2> "$scratch/ev.err"
+same "and 2 with no record named" "2" "$?"
+# A key whose slug is generic is found by its path and its identifier, and
+# never by its file name alone, which every shelf's README would share.
+awk -v probe="$patched" '
+    /^answer_keys:/ { print; print "  " probe ": [docs/spec/glossary.md]"; skip = 1; next }
+    skip && !/^ / { skip = 0 }
+    !skip { print }' "$root/.headwater/probe.yml" > "$scratch/ev-generic.yml"
+printf 'key-oracle\tpass\tsee docs/spec/glossary.md\n' > "$scratch/ev-record.tsv"
+HW_PROBE_YML="$scratch/ev-generic.yml" sh "$root/tools/probe/seal.sh" --evidence "$patched" "$scratch/ev-record.tsv" \
+    > "$scratch/ev.out" 2> "$scratch/ev.err"
+same "an evidence line that holds the path of a key with a generic slug exits 1" "1" "$?"
+same "and names the key by its identifier" "evidence $patched key-oracle HW-SPEC-glossary" "$(cat "$scratch/ev.out")"
+printf 'key-oracle\tpass\tthe glossary.md of another shelf\n' > "$scratch/ev-record.tsv"
+HW_PROBE_YML="$scratch/ev-generic.yml" sh "$root/tools/probe/seal.sh" --evidence "$patched" "$scratch/ev-record.tsv" \
+    > "$scratch/ev.out" 2> "$scratch/ev.err"
+same "and an evidence line that holds only its generic file name exits 0" "0" "$?"
 HW_PROBE_YML="$scratch/refused-keys.yml" sh "$root/tools/probe/seal.sh" --folds \
     >"$scratch/refused-keys.out" 2>"$scratch/refused-keys.err"
 keys_status=$?
@@ -3265,6 +3437,86 @@ STUB
         : > "$batch/cap"
         printf '30000\n' > "$batch/ceiling.campaign"
 
+        # The evidence check on the oracle record (#1875, clause 4). The
+        # session writes a file that an oracle of the grading tree matches,
+        # and the oracle's one line of evidence names an answer key of the
+        # session's probe. The batch keeps the verdict and stores the evidence
+        # as `refused`, with the hit beside it. The key is declared for the
+        # tombstone probe through HW_PROBE_YML, at a path no tree holds, so the
+        # guard of the recorder passes the workspace.
+        evb=$scratch/batch-evidence
+        rm -rf "$evb"
+        cp -a "$batch" "$evb"
+        rm -rf "$evb/sessions" "$evb/assembled" "$evb/config"
+        mkdir -p "$evb/sessions"
+        awk 'skip && /^[^ ]/ { skip = 0 }
+        skip { next }
+        /^oracles:/ {
+            skip = 1
+            print "oracles:"
+            print "  key-echo:"
+            print "    paths: [key-echo.txt]"
+            print "    command: printf \"zz-fixture-key-1875 is named\\\\n\""
+            print "    parser: exit"
+            next
+        } { print }' "$root/.headwater/probe.yml" > "$evb/trees/grading/.headwater/probe.yml"
+        awk -v probe="HW-PROBE-$tombstone" '/^answer_keys:/ { print; print "  " probe ": [docs/obligations/zz-fixture-key-1875.md]"; next } { print }' \
+            "$root/.headwater/probe.yml" > "$scratch/evb-keys.yml"
+        cat > "$scratch/bin/claude" <<STUB
+#!/bin/sh
+printf 'x\n' > key-echo.txt
+printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s31"}'
+printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+STUB
+        chmod +x "$scratch/bin/claude"
+        HW_PROBE_YML="$scratch/evb-keys.yml" PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$evb" \
+            --job "L1-campaign-present-p1-r1 1 campaign present sufficiency HW-PROBE-$tombstone" \
+            >/dev/null 2>"$scratch/evb.err"
+        same "a session whose oracle evidence names an answer key records" "0" \
+            "$(cat "$evb/sessions/L1-campaign-present-p1-r1/status" 2>/dev/null)"
+        same "and its oracle record keeps the verdict and stores the evidence as refused" \
+            "key-echo	pass	refused" "$(cat "$evb/sessions/L1-campaign-present-p1-r1/oracles" 2>/dev/null)"
+        same "and the hit is written beside it" \
+            "evidence HW-PROBE-$tombstone key-echo zz-fixture-key-1875" \
+            "$(cat "$evb/sessions/L1-campaign-present-p1-r1/oracles.refused" 2>/dev/null)"
+        absent "and the key is in no line of the record" "zz-fixture-key-1875" \
+            "$evb/sessions/L1-campaign-present-p1-r1/oracles"
+        # With no key declared, the same evidence is kept as written.
+        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$evb" \
+            --job "L1-campaign-present-p1-r2 1 campaign present sufficiency HW-PROBE-$tombstone" \
+            >/dev/null 2>"$scratch/evb2.err"
+        same "and a probe with no answer key keeps the evidence" \
+            "key-echo	pass	zz-fixture-key-1875 is named" "$(cat "$evb/sessions/L1-campaign-present-p1-r2/oracles" 2>/dev/null)"
+        # When the engine refuses the declaration, `seal.sh --evidence` exits
+        # 8 and nobody checked the evidence, so the batch keeps the verdict and
+        # stores every evidence field as `unchecked`, with no hit file. The
+        # recorder's guard reads the same declaration before the session and
+        # refuses a run on it, so the declaration is the workspace's own copy,
+        # which the stub harness breaks during the session, after the guard
+        # and before the check. The harness can write the workspace alone. The
+        # copy drops the comment lines, because one names a record that names
+        # the probe, and the recorder's guard refuses a workspace that does.
+        mkdir -p "$evb/trees/campaign-present/.headwater"
+        awk '!/^[[:space:]]*#/' "$root/.headwater/probe.yml" > "$evb/trees/campaign-present/.headwater/probe.yml"
+        cat > "$scratch/bin/claude" <<STUB
+#!/bin/sh
+printf 'x\n' > key-echo.txt
+printf 'oracles: [\n' > .headwater/probe.yml
+printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s32"}'
+printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+STUB
+        chmod +x "$scratch/bin/claude"
+        HW_PROBE_YML="$evb/ws/L1-campaign-present-p1-r3/.headwater/probe.yml" PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$evb" \
+            --job "L1-campaign-present-p1-r3 1 campaign present sufficiency HW-PROBE-$tombstone" \
+            >/dev/null 2>"$scratch/evb3.err"
+        same "a session whose evidence check cannot read the declaration records" "0" \
+            "$(cat "$evb/sessions/L1-campaign-present-p1-r3/status" 2>/dev/null)"
+        same "and its oracle record keeps the verdict and stores the evidence as unchecked" \
+            "key-echo	pass	unchecked" "$(cat "$evb/sessions/L1-campaign-present-p1-r3/oracles" 2>/dev/null)"
+        same "and no hit file is written for evidence nobody checked" "none" \
+            "$(ls "$evb/sessions/L1-campaign-present-p1-r3/oracles.refused" "$evb/sessions/L1-campaign-present-p1-r3/oracles.hits" 2>/dev/null || echo none)"
+        rm -rf "$evb"
+
         # THE decisive case of #1472's campaign report: assembly states the
         # paths outside the workspace that a line's sessions named and the
         # web-tool calls they made, and states a session it could not count as
@@ -3298,6 +3550,13 @@ STUB
             "$(tr '\n' ' ' < "$leak/sessions/L1-campaign-present-p1-r1/tokens" 2>/dev/null | sed 's/ $//')"
         absent "and the record's identity block carries none of them" \
             "cache_read_tokens" "$leak/sessions/L1-campaign-present-p1-r1/record.md"
+        # The oracle record beside the cost (#1875). The session produced no
+        # artifact, so every oracle the grading tree declares is `not-run`.
+        same "the session's oracles file holds one not-run line for each declared oracle" \
+            "$("$engine" probe plan --root "$leak/trees/grading" --oracles | awk -F '\t' '!seen[$1]++' | wc -l | tr -d ' ') 0" \
+            "$(awk 'END { print NR }' "$leak/sessions/L1-campaign-present-p1-r1/oracles" 2>/dev/null) $(awk -F '\t' '$2 != "not-run" || $3 != "-"' "$leak/sessions/L1-campaign-present-p1-r1/oracles" 2>/dev/null | wc -l | tr -d ' ')"
+        same "and it holds no refusal" "absent" \
+            "$([ -e "$leak/sessions/L1-campaign-present-p1-r1/oracles.refused" ] && echo present || echo absent)"
         cat > "$scratch/bin/claude" <<STUB
 #!/bin/sh
 printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s22"}'
@@ -3310,11 +3569,15 @@ STUB
         # that does not parse must not keep (#1875).
         mkdir -p "$leak/sessions/L1-campaign-present-p1-r2"
         printf 'cache_read_tokens: 5\ncache_write_tokens: 5\ninput_tokens: 5\n' > "$leak/sessions/L1-campaign-present-p1-r2/tokens"
+        printf 'stale\tpass\t-\n' > "$leak/sessions/L1-campaign-present-p1-r2/oracles"
+        printf 'evidence x stale y\n' > "$leak/sessions/L1-campaign-present-p1-r2/oracles.refused"
         PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$leak" \
             --job "L1-campaign-present-p1-r2 1 campaign present sufficiency HW-PROBE-$tombstone" \
             >/dev/null 2>"$scratch/leak-b.err"
         same "a job run again drops the token record of its earlier attempt when its log does not parse" "absent" \
             "$([ -e "$leak/sessions/L1-campaign-present-p1-r2/tokens" ] && echo present || echo absent)"
+        same "and the oracle record of its earlier attempt, with its refusals" "absent absent" \
+            "$([ -e "$leak/sessions/L1-campaign-present-p1-r2/oracles" ] && echo present || echo absent) $([ -e "$leak/sessions/L1-campaign-present-p1-r2/oracles.refused" ] && echo present || echo absent)"
         # The transform refuses a stream that does not parse, so the session
         # spent and did not record. Nobody counted what it named.
         same "a session whose stream does not parse does not record" "4" \

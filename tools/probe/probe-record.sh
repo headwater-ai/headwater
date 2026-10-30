@@ -169,7 +169,8 @@
 # `--max-turns` reaches the harness, so a batch can hold every session of both
 # arms to one cap. With no `--max-turns`, the cap is the one the tier declares
 # and the plan prints, and a tier that declares none runs with no cap.
-# `--oracle-tree` reaches the transform (see there). `--baseline` names the tree
+# `--oracle-tree` and `--oracle-record` reach the transform (see there), and
+# the second writes each command oracle's verdict to a file (#1875). `--baseline` names the tree
 # the workspace was copied from, and every file the session wrote or changed is
 # passed to the transform as produced (see `step_diff_baseline`).
 
@@ -213,6 +214,7 @@ while [ $# -gt 0 ]; do
         --max-turns) max_turns=${2:-}; shift 2 ;;
         --max-budget-usd) max_budget=${2:-}; shift 2 ;;
         --oracle-tree) transform_args="$transform_args --oracle-tree ${2:-}"; shift 2 ;;
+        --oracle-record) transform_args="$transform_args --oracle-record ${2:-}"; shift 2 ;;
         --identity-only) identity_only=1; shift ;;
         --provider-only) provider_only=1; raw=${2:-}; shift 2 ;;
         --answer-only) answer_only=1; raw=${2:-}; shift 2 ;;
