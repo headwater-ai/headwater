@@ -54,7 +54,8 @@
 #                 the harness reads the agent definitions from its working
 #                 tree, so a session would dispatch old ones (#1811). The
 #                 line is `tools/run/stale-main.sh`'s, after `STALE: `.
-#     empty       `run-dir.sh next` prints EMPTY and every handover is logged
+#     empty       `run-dir.sh next` prints EMPTY, `resume` prints no handover
+#                 and `integrations` lists no pull request
 #     merges      N merges are reached
 #     session     a session exited without a drain: it stopped on the stop
 #                 condition of `.claude/commands/next-run.md`, or a human did
@@ -104,6 +105,11 @@ k=${HW_SUPERVISE_K:-4}
 five_hour=${HW_SUPERVISE_FIVE_HOUR:-90}
 claude=${HW_SUPERVISE_CLAUDE:-claude}
 tree=${HW_SUPERVISE_TREE:-$root}
+# `claude -p` stops a background subagent ten minutes after the session's
+# last turn unless this is 0, and a parent ends its turn while hw-iterate
+# runs: session 1 of run 20261028-2310 lost "Build #1869" that way and
+# stopped `session` at 0 merges.
+export CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0
 
 if [ -n "${HEADWATER_RUN_ROOT:-}" ]; then
     runs=$HEADWATER_RUN_ROOT
@@ -145,16 +151,14 @@ stop() {
     exit 0
 }
 
-# Every handover issue is in the log, so nothing is in flight.
+# Some handover is one `resume` still prints, or some ruled pull request is
+# one `integrations` still lists, so something is in flight. `resume` owns
+# which handovers count: a `Refs` slice keeps its issue open. `resume` drops
+# an issue ruled gated even while its slice waits in the integrator queue,
+# and in run 20261028-2310 the loop stopped `empty` with PR #1896 queued.
 handovers_open() {
-    [ -d "$run/handover" ] || return 1
-    logged=' '
-    [ -s "$run/log.jsonl" ] && logged=" $(jq -r '.issue // empty' "$run/log.jsonl" 2>/dev/null | tr '\n' ' ')"
-    for h in "$run"/handover/*; do
-        [ -f "$h" ] || continue
-        case "$logged" in *" ${h##*/} "*) ;; *) return 0 ;; esac
-    done
-    return 1
+    [ -n "$(sh "$rundir_tool" resume "$run" 2>/dev/null | grep -v '^DRAIN$')" ] \
+        || [ -n "$(sh "$rundir_tool" integrations "$run" 2>/dev/null)" ]
 }
 
 # The main checkout is the directory whose `.git` is the worktree's common

@@ -86,7 +86,10 @@ case ${HW_CI:-green} in
 esac
 EOF
 export HW_QUEUE_DONE="$scratch/queue-done.sh" HW_CI_DONE="$scratch/ci-done.sh"
-export HW_SETTLE_CAP=1 HW_SETTLE_POLL=1
+# The stubs answer at once, so only a loaded runner meets the cap. A cap of 1
+# failed "a Refs merge closes nothing" on the CI of PR #1904 at 469f79af. The
+# one case that needs the wait to run out sets the cap to 1 itself.
+export HW_SETTLE_CAP=30 HW_SETTLE_POLL=1
 sha=0123456789abcdef0123456789abcdef01234567
 
 run() {
@@ -162,7 +165,7 @@ out=$(QUEUE=notqueued run settle "$r" 77 2>&1); status=$?
 same 'not queued: a LEFT line' "0 LEFT: #77 not queued: open, in no queue, and never removed from one" "$status $out"
 
 printf '\n# settle: the wait that runs out is a RE-ISSUE, passed through as exit 2\n'
-out=$(QUEUE=waiting run settle "$r" 77 2>&1); status=$?
+out=$(HW_SETTLE_CAP=1; QUEUE=waiting run settle "$r" 77 2>&1); status=$?
 same 'exit 2' 2 "$status"
 same '  and the RE-ISSUE line is the last' 1 "$(printf '%s\n' "$out" | tail -n 1 | grep -c 'RE-ISSUE')"
 

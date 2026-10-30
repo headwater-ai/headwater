@@ -16,8 +16,11 @@
 #
 # It stops at the first failed step, prints the block with that step named
 # and the log it wrote, and exits 1; the builder repairs and runs it again.
-# The fixture suites run as a set, because each takes seconds, and the block
-# names every one that failed. Exit 0 when every step passed. Exit 2 on a
+# The fixture suites run as a set, and the block names every one that failed.
+# Most take seconds; `tools/probe/probe-record-fixtures.sh` takes minutes and
+# needs `bwrap`, and it is here because PR #1894 printed `PRE-PR: ok` and
+# failed 9 of its cases in CI. The two oracle suites are here because #1902
+# printed `PRE-PR: ok` and went red in CI on two `oracle-fixtures.sh` cases. Exit 0 when every step passed. Exit 2 on a
 # refused argument, on the main checkout, and on `main` itself.
 #
 #     PRE-PR: ok | failed at <step>
@@ -44,7 +47,7 @@ set -u
 
 root=$(cd "$(dirname "$0")/../.." && pwd)
 cargo=${HW_CARGO:-$root/tools/hw-cargo}
-fixtures=${HW_PRE_PR_FIXTURES:-".claude/agents/fixtures.sh .claude/skills/fixtures.sh .claude/hooks/fixtures.sh tools/repo/developing-fixtures.sh tools/repo/engine-resolver-fixtures.sh tools/repo/collation-fixtures.sh tools/engine/build-declaration-fixtures.sh"}
+fixtures=${HW_PRE_PR_FIXTURES:-".claude/agents/fixtures.sh .claude/skills/fixtures.sh .claude/hooks/fixtures.sh tools/repo/developing-fixtures.sh tools/repo/engine-resolver-fixtures.sh tools/repo/collation-fixtures.sh tools/engine/build-declaration-fixtures.sh tools/probe/probe-record-fixtures.sh tools/probe/oracle-fixtures.sh tools/probe/probe-oracle-fixtures.sh"}
 
 usage() {
     sed -n '/^#     sh tools\/run\/pre-pr.sh/p' "$0" | sed 's/^# *//' >&2

@@ -415,6 +415,17 @@ sh "$tool" release "$resume" 13 >/dev/null 2>&1
 printf '{"iter":1,"issue":12,"pr":3,"merge":"m","verdict":"refused","proved":"p","opened":[],"closed":[]}\n' >> "$resume/log.jsonl"
 same 'next skips an issue the log records, and prints EMPTY when nothing is left' EMPTY "$(sh "$tool" next "$resume" 2>&1)"
 : > "$resume/log.jsonl"
+# A `Refs` slice merge closes nothing and does not release the issue, so the
+# next slice's handover still resumes; a merge that closes the issue ends it.
+printf '{"iter":1,"issue":11,"pr":911,"merge":"0123abcd","verdict":"merge","proved":"p","opened":[],"closed":[]}\n' >> "$resume/log.jsonl"
+same 'resume still prints an issue whose logged merge closed nothing' 'verified-fail iterate' \
+    "$(sh "$tool" resume "$resume" 2>&1 | awk '$1 == 11 { print $2, $3 }')"
+printf '{"iter":1,"issue":11,"pr":912,"merge":"4567cdef","verdict":"merge","proved":"p","opened":[],"closed":[11]}\n' >> "$resume/log.jsonl"
+same '  and drops it once a logged merge closes it' '' "$(sh "$tool" resume "$resume" 2>&1 | awk '$1 == 11')"
+: > "$resume/log.jsonl"
+printf -- '- 2026-10-29 — RULED #11 gated (run %s): remainder ruled a separate issue\n' "${resume##*/}" >> "$resume/decisions.md"
+same 'resume drops a handover whose issue this run ruled gated' '' "$(sh "$tool" resume "$resume" 2>&1 | awk '$1 == 11')"
+printf -- '- 2026-10-29 — RULED #11 open (run %s): back in\n' "${resume##*/}" >> "$resume/decisions.md"
 
 touch "$resume/drain"
 same 'in drain, next prints DRAIN instead of an issue' DRAIN "$(sh "$tool" next "$resume" 2>&1)"
@@ -895,6 +906,19 @@ same 'a veto writes verified-fail with the veto as the finding, and resume sends
     "$(sh "$tool" resume "$veto" 2>&1)|$(grep -E '^(verify|note|pr) ' "$veto/handover/50" | sort -r | paste -sd'|')"
 sh "$tool" stage "$veto" 50 ruled-merge >/dev/null 2>&1
 same 'resume, ruled-merge: integrate' '50 ruled-merge integrate' "$(sh "$tool" resume "$veto" 2>&1)"
+# Run 20261028-2310, #1874 and #1875: after a Refs slice merged, resume still
+# printed `ruled-merge queued`, and the parent had to infer that the next
+# slice was owed an adjudicate. The integrator queue still holds the entry.
+sh "$tool" integrate "$veto" 500 issue=50 branch=issue-50 sha=abc5000 ruling=MERGE footprint=f50 >/dev/null 2>&1
+printf '{"iter":1,"issue":50,"pr":500,"merge":"5000abcd","verdict":"merge","proved":"p","opened":[],"closed":[]}\n' >> "$veto/log.jsonl"
+same 'resume, ruled-merge whose pull request the log records merged by a Refs slice: adjudicate the next slice' \
+    '50 ruled-merge adjudicate' "$(sh "$tool" resume "$veto" 2>&1 | grep '^50 ')"
+# The next slice's adjudicated checkpoint carries nothing from the slice
+# before: handover/1874 after PR #1906 merged still named pr 1906, rounds 3.
+sh "$tool" stage "$veto" 50 adjudicated note=/s/adj-2.md footprint=f50b >/dev/null 2>&1
+same '  and the next slice'"'"'s adjudicated checkpoint carries no field from the slice before' \
+    'stage adjudicated|note /s/adj-2.md|footprint f50b' "$(paste -sd'|' "$veto/handover/50")"
+same '  and resume claims its own footprint' '50 adjudicated claim f50b' "$(sh "$tool" resume "$veto" 2>&1 | grep '^50 ')"
 sh "$tool" stage "$veto" 51 adjudicated note=/s/adj51.md branch=issue-51 footprint=none >/dev/null 2>&1
 same 'resume, adjudicated with footprint none: iterate, with nothing to claim' '51 adjudicated iterate' "$(sh "$tool" resume "$veto" 2>&1 | grep '^51 ')"
 
