@@ -197,6 +197,16 @@
 # batch, `campaign: cached share: ...`, from `tools/probe/cached-share.sh`,
 # and the dry run prints the same line for the batch it would resume.
 #
+# Beside them it writes `sessions/<name>/oracles` (#1875): the verdict of each
+# command oracle the declaration holds, one line `<name>\t<verdict>\t<evidence>`,
+# which `probe-transform.sh --oracle-record` writes and `tools/probe/try.sh
+# result` reads as the pass of a probe that has an oracle. `seal.sh
+# --evidence` then checks each evidence field for an answer key of the
+# session's probe. A field that holds one becomes `refused`, the verdict
+# stays, and the hits go to `sessions/<name>/oracles.refused`. Where the check
+# could not run, every evidence field becomes `unchecked`, because evidence
+# that nobody checked is not kept.
+#
 # ## One pinned commit
 #
 # The checkout must be clean, and every workspace is built from `git archive` of
@@ -694,7 +704,7 @@ run_job() {
         [ -f "$dir/spent-before" ] && before=$((before + $(cat "$dir/spent-before")))
         printf '%s\n' "$before" > "$dir/spent-before"
     fi
-    rm -f "$dir/status" "$dir/cost" "$dir/tokens"
+    rm -f "$dir/status" "$dir/cost" "$dir/tokens" "$dir/oracles" "$dir/oracles.refused"
     : > "$dir/started"
     # The second seam for the fixtures: it holds the lock after the marker,
     # so a fixture can see that the marker is written before the lock goes.
@@ -732,7 +742,7 @@ run_job() {
         ${max_turns:+--max-turns "$max_turns"} \
         ${budget:+--max-budget-usd "$budget"} \
         --baseline "$out/trees/$tier-$arm" \
-        --oracle-tree "$out/trees/grading" --raw "$dir/raw.jsonl"
+        --oracle-tree "$out/trees/grading" --oracle-record "$dir/oracles" --raw "$dir/raw.jsonl"
     printf '%s\n' "$@" > "$dir/record.argv"
     HEADWATER_PROBE_CONFIG_DIR=$out/config/$name \
         sh "$root/tools/probe/probe-record.sh" "$@" \
@@ -753,6 +763,26 @@ run_job() {
         sh "$root/tools/probe/probe-record.sh" --provider-only "$dir/raw.jsonl" 2>/dev/null \
             | grep -e '^cache_read_tokens: ' -e '^cache_write_tokens: ' -e '^input_tokens: ' > "$dir/tokens.tmp"
         [ -s "$dir/tokens.tmp" ] && mv "$dir/tokens.tmp" "$dir/tokens" || rm -f "$dir/tokens.tmp"
+    fi
+    # The oracle record (#1875): no evidence field leaves the session holding
+    # an answer key, and no field that went unchecked is kept as it was.
+    if [ -f "$dir/oracles" ]; then
+        evidence_status=0
+        sh "$root/tools/probe/seal.sh" --evidence "$probe" "$dir/oracles" > "$dir/oracles.hits" 2>/dev/null || evidence_status=$?
+        case $evidence_status in
+            0) rm -f "$dir/oracles.hits" ;;
+            1)
+                awk -F '\t' -v OFS='\t' 'FNR == NR { split($0, h, " "); hit[h[3]] = 1; next } ($1 in hit) { $3 = "refused" } { print }' \
+                    "$dir/oracles.hits" "$dir/oracles" > "$dir/oracles.tmp" && mv "$dir/oracles.tmp" "$dir/oracles" \
+                    || rm -f "$dir/oracles" "$dir/oracles.tmp"
+                mv "$dir/oracles.hits" "$dir/oracles.refused"
+                ;;
+            *)
+                rm -f "$dir/oracles.hits"
+                awk -F '\t' -v OFS='\t' '{ $3 = "unchecked"; print }' "$dir/oracles" > "$dir/oracles.tmp" \
+                    && mv "$dir/oracles.tmp" "$dir/oracles" || rm -f "$dir/oracles" "$dir/oracles.tmp"
+                ;;
+        esac
     fi
     printf '%s\n' "$status" > "$dir/status"
     if [ "$status" = 10 ]; then

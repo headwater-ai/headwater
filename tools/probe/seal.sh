@@ -210,6 +210,76 @@ if [ "${1:-}" = --keys ]; then
     exit 0
 fi
 
+# `--evidence <probe> <record>` checks the oracle record of one session
+# (#1875) for an answer key of the probe, and touches nothing. The record is
+# the file `tools/probe/probe-transform.sh --oracle-record` writes, one line
+# per oracle as `<name>\t<verdict>\t<evidence>`. An oracle's evidence line
+# echoes identifiers and paths, and a record that kept an answer key would
+# carry the answer out of the sealed session into the result. A line **holds
+# a key** when its evidence field contains the key's identifier, its path, or
+# `<slug>.md`: the names the seal strips. A generic slug gives no name, as in
+# `--named`: one word, or a file name that another tracked file shares. It
+# prints one line for each line and key that hit:
+#
+#     evidence <probe> <oracle> <key identifier>
+#
+# It reads the answer keys alone and never `leaks:`. A leak string is a string
+# whose presence in always-loaded text gives the answer away, and an evidence
+# line that names a ruling identifier is the oracle doing its work, so reading
+# `leaks:` here would refuse the evidence of a probe that is passing (parent
+# ruling on #1875, slice 1). It exits 1 when any line printed, 0 when none
+# did, 2 on a usage error or a record it cannot read, and 8 when the engine
+# does not read the declaration, as `--keys` does. `tools/probe/campaign.sh`
+# runs it on each session's record and keeps no evidence it did not check.
+if [ "${1:-}" = --evidence ]; then
+    [ -n "${2:-}" ] && [ -n "${3:-}" ] || { echo "usage: sh tools/probe/seal.sh --evidence <probe-id> <oracle-record>" >&2; exit 2; }
+    [ -f "$3" ] && [ -r "$3" ] || { echo "seal: no oracle record at $3" >&2; exit 2; }
+    evidence_probe=$2
+    evidence_status=0
+    evidence_keys=$(answer_keys "$evidence_probe") || evidence_status=$?
+    if [ "$evidence_status" -ne 0 ]; then
+        echo "seal: the answer keys of $evidence_probe could not be read from the probe declaration." >&2
+        exit 8
+    fi
+    [ -n "$evidence_keys" ] || exit 0
+    evidence_tab=$(printf '\t')
+    # Each key's names, one per line as `<identifier>\t<name>`.
+    evidence_names=$(printf '%s\n' "$evidence_keys" | while IFS=' ' read -r key_id key_path; do
+        [ -n "$key_id" ] || continue
+        printf '%s\t%s\n' "$key_id" "$key_id"
+        printf '%s\t%s\n' "$key_id" "$key_path"
+        key_slug=${key_path##*/}
+        key_slug=${key_slug%.md}
+        case $key_slug in
+            *-*|*_*)
+                key_others=$(git -C "$root" ls-files -- "$key_slug.md" "*/$key_slug.md" 2>/dev/null | awk -v own="$key_path" '$0 != own' | wc -l | tr -d ' ')
+                [ "$key_others" -gt 0 ] || printf '%s\t%s.md\n' "$key_id" "$key_slug"
+                ;;
+        esac
+    done)
+    evidence_hits=$(HW_SEAL_NAMES="$evidence_names" awk -F "$evidence_tab" -v probe="$evidence_probe" '
+        BEGIN {
+            n = split(ENVIRON["HW_SEAL_NAMES"], rows, "\n")
+            for (i = 1; i <= n; i++) {
+                if (rows[i] == "") continue
+                split(rows[i], f, "\t")
+                m++; key[m] = f[1]; name[m] = f[2]
+            }
+        }
+        {
+            delete said
+            for (i = 1; i <= m; i++) {
+                if (name[i] != "" && index($3, name[i]) && !(key[i] in said)) {
+                    said[key[i]] = 1
+                    print "evidence " probe " " $1 " " key[i]
+                }
+            }
+        }' "$3")
+    [ -n "$evidence_hits" ] || exit 0
+    printf '%s\n' "$evidence_hits"
+    exit 1
+fi
+
 # `--named <probe>` prints each name by which the seal strips a document that
 # names the probe, one per line as `<name> <path>`, and touches nothing. The
 # seal deletes such a document and every line that names it (#1293), so a
