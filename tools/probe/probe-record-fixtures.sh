@@ -2441,7 +2441,7 @@ STUB
     # `scenarios:`, and scenario 0 is plain code alone. Neither is a delta
     # from the present tree.
     for n in 3 0; do
-        PATH="$scratch/bin:$PATH" sh "$driver" --probe HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged \
+        PATH="$scratch/bin:$PATH" sh "$driver" --probe HW-PROBE-a-session-adds-a-count-of-findings-by-severity-to-the-json-report-of-the-check \
             --session "fixture-scenario-$n" --tier additive --arm "scenario-$n" --set tuning --repetitions 18 \
             --task-file "$scratch/task.md" --workspace "$scratch/ws" \
             >"$scratch/scenario-$n-arm.md" 2>"$scratch/scenario-$n-arm.err"
@@ -6042,18 +6042,18 @@ if [ -x "$engine" ]; then
     HW_PROBE_YML="$scratch/add-rates.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$scratch/add-twelve.spec" > "$scratch/add-rates.out" 2> /dev/null
     present "other rates for the final round price another count" "0.95 against 0.8, needs 88 sessions per scenario" "$scratch/add-rates.out"
-    present "and plan it" "4 probes x 22 repetitions (round final, ceil(88 / 4)) = 88 sessions" "$scratch/add-rates.out"
+    present "and plan it" "22 probes x 4 repetitions (round final, ceil(88 / 22)) = 88 sessions" "$scratch/add-rates.out"
     awk '/^  tuning:/ && !done { print; getline; done = 1; next } { print }' "$root/.headwater/probe.yml" > "$scratch/add-short.yml"
     printf 'additive scenario-5 screening\n' > "$scratch/add-short.spec"
     HW_PROBE_YML="$scratch/add-short.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$scratch/add-short.spec" > "$scratch/add-short.out" 2> /dev/null
     same "a set the plan counts otherwise than the declaration read is refused with 5" "5" "$?"
-    present "and the refusal names both counts" "the plan selects 5 probes, and the set tuning less the probes the line leaves out holds 4" "$scratch/add-short.out"
+    present "and the refusal names both counts" "the plan selects 22 probes, and the set tuning less the probes the line leaves out holds 21" "$scratch/add-short.out"
     # A tuning line runs one stage of a round (#1838), and the batch reads
     # the stage from HEADWATER_TUNING_STAGE, which tools/probe/try.sh sets.
     # With none, the priced counts exit 2, so no batch runs a tuning line at
-    # a count nobody chose. No count of 25 or 145 is typed anywhere: each is
-    # ceil(24 / 5) or ceil(144 / 5) over the five probes of the set.
+    # a count nobody chose. No count of 1 or 7 is typed anywhere: each is
+    # ceil(22 / 22) or ceil(145 / 22) over the 22 probes of the set (#1874).
     PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" \
         > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
     same "--priced of a tuning line with no stage exits 2" "2" "$?"
@@ -6061,23 +6061,23 @@ if [ -x "$engine" ]; then
     HEADWATER_TUNING_STAGE=screen PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" \
         > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
     same "--priced of the screen reads each additive line" "0 21" "$? $(wc -l < "$scratch/add-priced.out" | tr -d ' ')"
-    same "and gives each its round's count, 5 repetitions on a screened tuning line" "14 5 55" \
+    same "and gives each its round's count, 1 repetition on a screened tuning line" "4 1 10" \
         "$(awk '$1 == 1 || $1 == 8 || $1 == 15 { print $3 }' "$scratch/add-priced.out" | tr '\n' ' ' | sed 's/ $//')"
     HEADWATER_TUNING_STAGE=confirm PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" \
         > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
-    same "--priced of the confirmation gives a tuning line 29 repetitions" "0 29" \
+    same "--priced of the confirmation gives a tuning line 7 repetitions" "0 7" \
         "$? $(awk '$1 == 8 { print $3 }' "$scratch/add-priced.out")"
     HEADWATER_TUNING_STAGE=final PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" \
         > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
     same "--priced of a stage that is neither screen nor confirm exits 2" "2" "$?"
-    sed 's/^    screen: 24$/    screen: 30/; s/^    confirm: 144$/    confirm: 150/' "$root/.headwater/probe.yml" > "$scratch/add-counts.yml"
+    sed 's/^    screen: 22$/    screen: 30/; s/^    confirm: 145$/    confirm: 200/' "$root/.headwater/probe.yml" > "$scratch/add-counts.yml"
     HW_PROBE_YML="$scratch/add-counts.yml" HEADWATER_TUNING_STAGE=confirm PATH="$scratch/dry-bin:$PATH" \
         sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
-    same "a confirmation declared at 150 is priced at ceil(150 / 5) = 30 repetitions, read and not typed" "0 30" \
+    same "a confirmation declared at 200 is priced at ceil(200 / 22) = 10 repetitions, read and not typed" "0 10" \
         "$? $(awk '$1 == 8 { print $3 }' "$scratch/add-priced.out")"
     HW_PROBE_YML="$scratch/add-counts.yml" HEADWATER_TUNING_STAGE=screen PATH="$scratch/dry-bin:$PATH" \
         sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
-    same "and a screen declared at 30 at ceil(30 / 5) = 6" "0 6" \
+    same "and a screen declared at 30 at ceil(30 / 22) = 2" "0 2" \
         "$? $(awk '$1 == 8 { print $3 }' "$scratch/add-priced.out")"
     # The seven fields of the tuning round's rounds are declared together,
     # and each is read with PyYAML and refused when it does not hold.
@@ -6164,9 +6164,9 @@ if [ -x "$engine" ]; then
         run_status=$?
         same "a batch of one screening line passes the plan and starts a session" "yes" \
             "$([ "$run_status" != 5 ] && [ -e "$scratch/run-out/claude-version" ] && echo yes || echo no)"
-        same "its jobs are 5 probes x the round's 14 repetitions, not the tier's 55" "70" \
+        same "its jobs are 22 probes x the round's 4 repetitions, not the tier's 55" "88" \
             "$(grep -c ' additive scenario-4 screening ' "$scratch/run-out/jobs" 2>/dev/null)"
-        present "and the line is planned at the round's count" "5 probes x 1 arms x 14 repetitions = 70 sessions" "$scratch/run-out/plans/L1"
+        present "and the line is planned at the round's count" "22 probes x 1 arms x 4 repetitions = 88 sessions" "$scratch/run-out/plans/L1"
         # The tree is the scenario's: every path of a layer scenario 4 does
         # not hold is gone, and the hooks layer it holds is there.
         "$engine" probe plan --root "$root" --scenario 4 --delta > "$scratch/run-delta" 2> /dev/null
@@ -6190,7 +6190,7 @@ if [ -x "$engine" ]; then
         absent "and the recorder plans the line the batch planned" "headwater probe plan" \
             "$scratch/run-out/sessions/$run_session/record.err"
         same "the session the plan admitted is the one the batch planned" "$(sed -n 's/^selection: //p' "$scratch/run-out/plans/L1" | head -1)" \
-            "$("$engine" probe plan --root "$root" --tier additive --arm scenario-4 --set tuning --repetitions 14 2> /dev/null | sed -n 's/^selection: //p' | head -1)"
+            "$("$engine" probe plan --root "$root" --tier additive --arm scenario-4 --set tuning --repetitions 4 2> /dev/null | sed -n 's/^selection: //p' | head -1)"
         # The identity block holds the set only as its digest, so assembly
         # states the round and the set beside it. The one session did not
         # record, so assembly fails the line, and still names its round.
