@@ -381,6 +381,7 @@ fi
 #     kept <probe> <where> <leak string>      a leak string kept on purpose, under `leaks_kept:`
 #     undeclared <probe>                  a probe that declares no leak string
 #     harness <probe> <where> <leak string>   with `--scenario`, a hit in a path of the `tooling` list
+#     treatment <probe> <where> <leak string> with `--scenario`, the hook naming the record in force
 #
 # A probe whose `leaks:` entry is `[]` declares that no string states its
 # answer, and prints nothing. A missing entry, or one with no value, is
@@ -397,7 +398,11 @@ fi
 # `.claude/hooks/intent.sh`, the text that hook injects for each probe's task,
 # under `<where>` = `hook:<probe>` and read against that probe's strings alone.
 # A hit under a path the declaration's `tooling` list names prints as
-# `harness` and does not fail the check (#1872).
+# `harness` and does not fail the check (#1872). A hit in `hook:<probe>` of a
+# probe with the `superseded_target` axis, on a leak string that is the whole
+# identifier of a `current` document, prints as `treatment` and does not fail
+# either (#1874): the hook pointing at the record in force is what the
+# scenario measures. Every other hook hit is a `leak`.
 #
 # `--leak --bytes <workspace> <probe>...` measures in place of checking, and
 # comes in any order with `--config` and `--scenario` (#1776). It prints one

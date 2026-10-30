@@ -5015,6 +5015,49 @@ HW_PROBE_YML="$scratch/hook-probe.yml" sh "$seal" --leak --scenario "$scratch/le
     > "$scratch/hook3.out" 2>&1
 same "a probe whose task the checkout does not hold stops a scenario check with 3" "3" "$?"
 
+# The hook naming the record in force (#1874, parent ruling of 2026-10-30).
+# For a probe with the `superseded_target` axis, a hit in its own hook channel
+# on the whole identifier of a `current` document is the pointer that
+# scenarios 4 and 6 measure: it prints as `treatment` and does not fail. Every
+# other hook hit still fails, and the always-loaded check does not change.
+stamp_probe=HW-PROBE-a-session-that-reviews-an-agent-s-acceptance-stamp-cites-the-ruling-in-force-and-not-the-draft-that-the-pull-request-names
+rm -rf "$scratch/leak-force"
+mkdir -p "$scratch/leak-force/.claude/hooks"
+printf '#!/bin/sh\ncat > /dev/null\nprintf "Pointer: against HW-DR-0034, the draft HW-DR-0069 and the corpus-wide fold\\n"\n' \
+    > "$scratch/leak-force/.claude/hooks/intent.sh"
+force_case() {
+    # force_case <yml> <probe> <out>: a scenario check of the stub hook tree.
+    HW_PROBE_YML="$1" sh "$seal" --leak --scenario "$scratch/leak-force" "$2" > "$3" 2>&1
+}
+printf 'leaks:\n  %s: [HW-DR-0034]\n' "$stamp_probe" > "$scratch/force.yml"
+force_case "$scratch/force.yml" "$stamp_probe" "$scratch/force1.out"
+same "the hook naming the record in force for a superseded-target probe does not fail" "0" "$?"
+present "and prints as treatment" "treatment $stamp_probe hook:$stamp_probe HW-DR-0034" "$scratch/force1.out"
+printf 'leaks:\n  %s: [corpus-wide fold]\n' "$stamp_probe" > "$scratch/force.yml"
+force_case "$scratch/force.yml" "$stamp_probe" "$scratch/force2.out"
+same "a phrase in the hook text of a superseded-target probe is still a leak" "1" "$?"
+present "and prints as leak" "leak $stamp_probe hook:$stamp_probe corpus-wide fold" "$scratch/force2.out"
+printf 'leaks:\n  %s: [HW-DR-0069]\n' "$stamp_probe" > "$scratch/force.yml"
+force_case "$scratch/force.yml" "$stamp_probe" "$scratch/force3.out"
+same "the identifier of a superseded record in the hook text is still a leak" "1" "$?"
+present "and prints as leak" "leak $stamp_probe hook:$stamp_probe HW-DR-0069" "$scratch/force3.out"
+printf 'leaks:\n  %s: [against HW-DR-0034]\n' "$stamp_probe" > "$scratch/force.yml"
+force_case "$scratch/force.yml" "$stamp_probe" "$scratch/force4.out"
+same "a string that holds the identifier and more is still a leak" "1" "$?"
+printf 'leaks:\n  %s: [HW-DR-0034]\n' "$ruling_probe" > "$scratch/force.yml"
+force_case "$scratch/force.yml" "$ruling_probe" "$scratch/force5.out"
+same "the same identifier for a probe without the axis is still a leak" "1" "$?"
+present "and prints as leak" "leak $ruling_probe hook:$ruling_probe HW-DR-0034" "$scratch/force5.out"
+printf 'In force: HW-DR-0034\n' > "$scratch/leak-force/CLAUDE.md"
+printf 'leaks:\n  %s: [HW-DR-0034]\n' "$stamp_probe" > "$scratch/force.yml"
+HW_PROBE_YML="$scratch/force.yml" sh "$seal" --leak "$scratch/leak-force" "$stamp_probe" > "$scratch/force6.out" 2>&1
+same "without --scenario the identifier in an always-loaded file is still a leak" "1" "$?"
+present "and prints as leak" "leak $stamp_probe CLAUDE.md HW-DR-0034" "$scratch/force6.out"
+force_case "$scratch/force.yml" "$stamp_probe" "$scratch/force7.out"
+same "with --scenario the always-loaded hit still fails beside the hook's treatment" "1" "$?"
+present "and the always-loaded hit prints as leak" "leak $stamp_probe CLAUDE.md HW-DR-0034" "$scratch/force7.out"
+present "and the hook hit still prints as treatment" "treatment $stamp_probe hook:$stamp_probe HW-DR-0034" "$scratch/force7.out"
+
 # `[]` is a declaration with no answer string: the two `opened` probes of the
 # additive set key on an act, and no string states it. The check prints
 # nothing for such a probe, and a probe with no entry is still undeclared.
@@ -5953,6 +5996,11 @@ if [ -x "$engine" ]; then
         "$(sed -n 's/^tree additive \(scenario-[0-9]*\)[ :].*/\1/p' "$scratch/add.out" | LC_ALL=C sort -u | wc -l | tr -d ' ')"
     absent "no scenario tree holds a skill of this repository's own tooling" " tree: harness " "$scratch/add.out"
     absent "and no scenario tree leaks" " tree: leak " "$scratch/add.out"
+    # The two row 10 probes are the superseded-target probes whose hook text
+    # names HW-DR-0034, the record in force, through the draft's summary
+    # (#1874). They print as treatment in each hook scenario, and in no other.
+    same "the hook's pointer to the record in force prints as treatment in scenarios 4 and 6 alone" "4 4 6 6" \
+        "$(sed -n 's/^leak check, scenario-\([0-9]*\) tree: treatment .* HW-DR-0034$/\1/p' "$scratch/add.out" | LC_ALL=C sort -n | tr '\n' ' ' | sed 's/ $//')"
 
     # additive_leaks <file> <probe> <string>: the committed declaration with
     # one leak string, on one probe, and `[]` on every other probe of the sets.
@@ -6009,6 +6057,16 @@ if [ -x "$engine" ]; then
         "$(sed -n "s|^leak check, scenario-\([0-9]*\) tree: leak $pointer_probe hook:$pointer_probe $hook_string$|\1|p" "$scratch/add-hook.out" | LC_ALL=C sort -n | tr '\n' ' ' | sed 's/ $//')"
     same "and no scenario leaks through another channel" "0" \
         "$(grep ' tree: leak ' "$scratch/add-hook.out" | grep -vc " hook:$pointer_probe ")"
+    # The same phrase planted on a probe with the `superseded_target` axis, a
+    # member of `tuning`: a hook hit that is not the identifier of the record
+    # in force still fails in scenarios 4 and 6 (#1874).
+    stamp_probe=HW-PROBE-a-session-that-reviews-an-agent-s-acceptance-stamp-cites-the-ruling-in-force-and-not-the-draft-that-the-pull-request-names
+    additive_leaks "$scratch/add-force.yml" "$stamp_probe" "$hook_string"
+    HW_PROBE_YML="$scratch/add-force.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
+        --spec "$additive_spec" > "$scratch/add-force.out" 2> "$scratch/add-force.err"
+    same "a phrase in a superseded-target probe's hook text fails the additive dry run with 8" "8" "$?"
+    same "and it names scenarios 4 and 6, and no other" "4 6" \
+        "$(sed -n "s|^leak check, scenario-\([0-9]*\) tree: leak $stamp_probe hook:$stamp_probe $hook_string$|\1|p" "$scratch/add-force.out" | LC_ALL=C sort -n | tr '\n' ' ' | sed 's/ $//')"
 
     printf 'additive scenario-6 final\n' > "$scratch/add-twelve.spec"
     # The refusals of a spec.

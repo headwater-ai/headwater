@@ -142,6 +142,8 @@ Each scenario except scenario 0 adds one layer to its base. Scenario 6 is the on
 
 The hooks layer is `intent.sh`, `read.sh`, `write.sh` and `review.sh`, with `lib.sh` and `touch.sh`, and the `settings.json` entries that wire them. `review.sh` runs `headwater check --strict` itself. So `.githooks` stays repository tooling and is in no layer.
 
+Added on 2026-10-30 by #1874: the intent hook can name the record in force for a probe with the `superseded_target` axis. The leak check of a scenario tree then prints that identifier as `treatment` and does not fail. That pointer is the effect that scenarios 4 and 6 measure. Every other hit in the hook text still fails.
+
 ### Phase A: tuning
 
 Phase A tunes four layers, each against one comparison:
