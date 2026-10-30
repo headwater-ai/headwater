@@ -5965,10 +5965,10 @@ if [ -x "$engine" ]; then
     absent "the ceiling of \$700 refuses no plan" "The ceiling refuses" "$scratch/add.out"
     present "the dry run prints the screening round as approved" \
         "round screening: approved to \$700.00 over every attempt, so the batch runs its lines" "$scratch/add.out"
-    # The owner approved the tuning round on 2026-10-19 (#1777), at $1,512.00
-    # over every attempt and every layer, one layer at a time.
+    # The owner approved $1,300.00 for the engine layer of the tuning round
+    # on 2026-10-29 (#1877), over every attempt of that layer.
     present "and the tuning round as approved" \
-        "round tuning: approved to \$1512.00 over every attempt, so the batch runs its lines" "$scratch/add.out"
+        "round tuning: approved to \$1300.00 over every attempt, so the batch runs its lines" "$scratch/add.out"
     present "and the final round as not approved" "round final: not approved, so the batch refuses its lines with 5" "$scratch/add.out"
     # An approval is a whole number of cents at or above zero. A negative or
     # a non-integer one is refused, so no typo reads as an approval or as a
@@ -6142,10 +6142,10 @@ if [ -x "$engine" ]; then
     for bad in 'screen: 0|`screen` of the `tuning` round' 'confirm: "144"|`confirm` of the `tuning` round' \
         'variants: -1|`variants` of the `tuning` round' 'stop_after_empty: 0|`stop_after_empty` of the `tuning` round' \
         'order: [skills, nope]|names the layer nope' 'order: [skills, skills]|names a layer twice' \
-        'ceiling_cents: 151201|above the round'"'"'s `approved_cents` of 151200' \
+        'ceiling_cents: 130001|above the round'"'"'s `approved_cents` of 130000' \
         'base_ceiling_cents: -1|`base_ceiling_cents` of the `tuning` round' \
-        'base_ceiling_cents: "22000"|`base_ceiling_cents` of the `tuning` round' \
-        'base_ceiling_cents: 22201|together 151201, above the round'"'"'s `approved_cents` of 151200'; do
+        'base_ceiling_cents: "25000"|`base_ceiling_cents` of the `tuning` round' \
+        'base_ceiling_cents: 25001|together 130001, above the round'"'"'s `approved_cents` of 130000'; do
         bad_field=${bad%%:*}
         bad_line=${bad%%|*}
         sed "s/^    $bad_field: .*/    $bad_line/" "$root/.headwater/probe.yml" > "$scratch/stage-bad.yml"
@@ -6162,7 +6162,7 @@ if [ -x "$engine" ]; then
     same "declared.py tuning refuses a round with no base ceiling with 2" "2" "$?"
     present "and names it" "and not \`base_ceiling_cents\`" "$scratch/stage-bad.err"
     python3 "$root/tools/probe/declared.py" "$root/.headwater/probe.yml" tuning > "$scratch/stage-good.out"
-    same "declared.py tuning prints the base ceiling of the declaration" "base_ceiling_cents 22000" \
+    same "declared.py tuning prints the base ceiling of the declaration" "base_ceiling_cents 25000" \
         "$(grep '^base_ceiling_cents ' "$scratch/stage-good.out")"
 
     # The batch runs the same check before each invocation (clause 5: "the
@@ -6266,20 +6266,19 @@ if [ -x "$engine" ]; then
             "$([ -e "$scratch/run-final-out/claude-version" ] && echo yes || echo no) $([ -e "$scratch/run-final-out/lines" ] && echo yes || echo no) $([ -e "$scratch/run-final-out/trees" ] && echo yes || echo no) $([ -e "$scratch/run-final-out/sessions" ] && echo yes || echo no)"
         same "and it ran no dry run, so it built no scenario tree" "no" \
             "$([ -e "$scratch/run-final-out/leak-gate" ] && echo yes || echo no)"
-        # The owner approved the tuning round (#1777), and no layer it may
-        # open adds over scenario 1 since the ruling of 2026-10-22 withdrew
-        # the documents layer (#1819), whether a layer is open or none is.
-        # So a batch of a scenario-1 tuning line
-        # passes the round gate and is refused by the layer gate, with 5,
-        # before it builds a tree or asks the harness anything. The case of a
-        # declared open layer reads a scratch root, below, because the gate
-        # reads this checkout's declaration and no override.
-        printf 'additive scenario-1 tuning\n' > "$scratch/run-tune.spec"
+        # The owner approved the tuning round (#1877), and the layer it has
+        # open is the engine on scenario 2, over its base, scenario 1. So a
+        # batch of a scenario-3 tuning line, which is neither, passes the
+        # round gate and is refused by the layer gate, with 5, before it
+        # builds a tree or asks the harness anything. The case of a declared
+        # open layer reads a scratch root, below, because the gate reads this
+        # checkout's declaration and no override.
+        printf 'additive scenario-3 tuning\n' > "$scratch/run-tune.spec"
         rm -rf "$scratch/run-tune-out"
         HEADWATER_PROBE_HOST_CONFIG="$scratch/run-host" CARGO_TARGET_DIR="$scratch/gate-target" PATH="$scratch/run-bin:$PATH" \
             sh "$root/tools/probe/campaign.sh" --out "$scratch/run-tune-out" --model claude-haiku-4-5 \
             --spec "$scratch/run-tune.spec" --max-sessions 1 > /dev/null 2> "$scratch/run-tune.err"
-        same "a batch of a scenario-1 tuning line is refused with 5 by the layer gate" "5" "$?"
+        same "a batch of a scenario-3 tuning line is refused with 5 by the layer gate" "5" "$?"
         absent "and names no refusal of the tuning round's approval" "no person has approved spend on the tuning round" "$scratch/run-tune.err"
         present "and names the open rule" "the tuning round is open for" "$scratch/run-tune.err"
         same "and it wrote no harness version, no plan, no tree and no dry run" "no no no no" \
@@ -6374,7 +6373,7 @@ for open_case in \
     "scenario 0, which has no base|s/^      scenario: 1$/      scenario: 0/|scenario 0 names no base" \
     "a scenario that scenarios: does not declare|s/^      scenario: 1$/      scenario: 99/|\`scenarios:\` declares no scenario 99" \
     "a layer that layers: does not declare|s/^      layer: docs$/      layer: nope/|\`layers:\` declares no layer nope" \
-    "a cap above the round's approval|s/^      cap_cents: 6000$/      cap_cents: 151201/|above the tuning round's \`approved_cents\` of 151200" \
+    "a cap above the round's approval|s/^      cap_cents: 6000$/      cap_cents: 130001/|above the tuning round's \`approved_cents\` of 130000" \
     "a cap of zero|s/^      cap_cents: 6000$/      cap_cents: 0/|must be a whole number of cents above zero" \
     "a try past the round's tries|s/^      try: 1$/      try: 5/|must be a whole number from 1 to the round's \`tries\`, 4" \
     "a try of zero|s/^      try: 1$/      try: 0/|must be a whole number from 1 to the round's \`tries\`, 4" \
