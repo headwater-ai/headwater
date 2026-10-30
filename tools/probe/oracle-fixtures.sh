@@ -224,7 +224,7 @@ expect 1 "successor-typed with --check-clean fails an error in the successor" "$
 # written. On the far document it is `superseded_by`, inbound, with the
 # declaring document's path. So the relation string does not say which key
 # was written, and successor-typed.sh tells the two ends apart by status. A
-# key that names nothing is printed as one outbound edge to the target `~`.
+# key that names nothing declares no edge at all, the same as `[]` (#1902).
 # A case here fails when the engine prints these pairs another way.
 explain_pairs() {
     "$engine" explain --json --root "$1" "$2" 2> /dev/null | jq -c '[.related[] | select(.relation == "supersedes" or .relation == "superseded_by") | [.relation, .inbound, (.targets | map(sub("^docs/decisions/(?<n>[0-9]+)-.*"; "path:\(.n)")))]] | sort_by(.)'
@@ -241,8 +241,8 @@ pairs_case() {
 }
 pairs_case "explain prints the superseded_by that HW-DR-0111 declares as supersedes, outbound, and the far end as superseded_by, inbound" "$base" HW-DR-0111 '[["superseded_by",true,["path:0112"]],["supersedes",false,["HW-DR-0112"]]]'
 pairs_case "explain prints the supersedes that HW-DR-0112 declares as supersedes, outbound, and the far end as superseded_by, inbound" "$base" HW-DR-0112 '[["superseded_by",true,["path:0111"]],["supersedes",false,["HW-DR-0111"]]]'
-pairs_case "explain prints no outbound supersedes to HW-DR-0112 on HW-DR-0111 once its superseded_by names nothing, and the empty key as the target ~" "$work/link-one-end" HW-DR-0111 '[["superseded_by",true,["path:0112"]],["supersedes",false,["~"]]]'
-pairs_case "explain prints no outbound supersedes to HW-DR-0111 on HW-DR-0112 once its supersedes names nothing, and the empty key as the target ~" "$work/link-other-end" HW-DR-0112 '[["superseded_by",true,["path:0111"]],["supersedes",false,["~"]]]'
+pairs_case "explain prints no outbound supersedes to HW-DR-0112 on HW-DR-0111 once its superseded_by names nothing, and no edge for the empty key" "$work/link-one-end" HW-DR-0111 '[["superseded_by",true,["path:0112"]]]'
+pairs_case "explain prints no outbound supersedes to HW-DR-0111 on HW-DR-0112 once its supersedes names nothing, and no edge for the empty key" "$work/link-other-end" HW-DR-0112 '[["superseded_by",true,["path:0111"]]]'
 
 # The shape is versioned, and the scripts read version 1. An engine that
 # prints another major version stops the grade with a usage error, so a

@@ -1132,7 +1132,10 @@ fn a_null_relation_value_declares_no_edge() {
         ("bare", "  traces_to:\n"),
         ("tilde", "  traces_to: ~\n"),
         ("word", "  traces_to: null\n"),
+        ("title-word", "  traces_to: Null\n"),
+        ("upper-word", "  traces_to: NULL\n"),
         ("item", "  traces_to:\n    - ~\n"),
+        ("upper-item", "  traces_to:\n    - NULL\n"),
     ];
     for (label, null_relation) in cases {
         let at = scratch().join(format!("null-relation-{label}"));
