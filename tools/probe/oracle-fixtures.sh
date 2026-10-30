@@ -536,6 +536,19 @@ grep -q "^title: .*$summary_clause" "$tree/$new" || echo "oracle-fixtures: the c
 expect 1 "nothing-else-broken with a summary line fails the clause moved into another key" "$tree" nothing-else-broken.sh "$work/scoped-summary"
 { cat "$work/scoped"; printf '# summary: %s\n' "$new"; } > "$work/scoped-summary-bad"
 expect 2 "nothing-else-broken refuses a summary line with no literal" "$base" nothing-else-broken.sh "$work/scoped-summary-bad"
+# `# summary-not: <path> <literal>` is the converse: the parsed summary must
+# not hold <literal>. A file can carry the target finding in its summary and
+# a second finding of the same rule in its body, and then a repair of the
+# body alone matches the count of the baseline (#1874.3b). The words in a
+# comment or in the body are not the summary, so they do not fail it.
+{ cat "$work/scoped"; printf '# summary-not: %s %s\n' "$new" 'no summary holds these words'; } > "$work/scoped-summary-not-absent"
+expect 0 "nothing-else-broken passes the pin when the summary lacks what a summary-not line names" "$base" nothing-else-broken.sh --check-clean "$work/scoped-summary-not-absent"
+{ cat "$work/scoped"; printf '# summary-not: %s %s\n' "$new" "$summary_clause"; } > "$work/scoped-summary-not"
+expect 1 "nothing-else-broken with a summary-not line fails a summary that holds its literal" "$base" nothing-else-broken.sh "$work/scoped-summary-not"
+expect 0 "nothing-else-broken with a summary-not line passes the literal moved out of the summary into the body" "$work/summary-body-line" nothing-else-broken.sh "$work/scoped-summary-not"
+expect 0 "nothing-else-broken with a summary-not line passes the literal kept only in a commented summary" "$work/summary-commented" nothing-else-broken.sh "$work/scoped-summary-not"
+{ cat "$work/scoped"; printf '# summary-not: %s\n' "$new"; } > "$work/scoped-summary-not-bad"
+expect 2 "nothing-else-broken refuses a summary-not line with no literal" "$base" nothing-else-broken.sh "$work/scoped-summary-not-bad"
 { cat "$work/scoped"; printf '# keep: %s %s\n' "$new" "$summary_clause"; } > "$work/scoped-keep"
 expect 2 "nothing-else-broken refuses the keep line of round 3, which matched lines of a file" "$base" nothing-else-broken.sh "$work/scoped-keep"
 

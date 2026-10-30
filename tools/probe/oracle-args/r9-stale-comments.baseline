@@ -7,6 +7,7 @@
 # of `tools/probe/probe-oracle-fixtures.sh` then fails.
 # scope: docs/obligations/0230-comments-in-the-command-surface-crates-and-their-subsystem-spec-state-eight-stale-facts.md
 # summary: docs/obligations/0230-comments-in-the-command-surface-crates-and-their-subsystem-spec-state-eight-stale-facts.md Eight comments in cli, paint, generate, probe, sweep
+# summary-not: docs/obligations/0230-comments-in-the-command-surface-crates-and-their-subsystem-spec-state-eight-stale-facts.md no longer
 language.controlled.not_met	docs/obligations/0230-comments-in-the-command-surface-crates-and-their-subsystem-spec-state-eight-stale-facts.md
 language.controlled.not_met	docs/obligations/0230-comments-in-the-command-surface-crates-and-their-subsystem-spec-state-eight-stale-facts.md
 language.controlled.not_met	docs/obligations/0230-comments-in-the-command-surface-crates-and-their-subsystem-spec-state-eight-stale-facts.md
