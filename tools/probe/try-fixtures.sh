@@ -2047,6 +2047,17 @@ usage_session "$b" s2 "$(tool_line Read '{"file_path":"mcp__x"}')"
 usage_session "$b" s3 "$(tool_line mcp_headwater_explain '{"path":"x"}')"
 usage_of mcp
 check "usage: mcp counts a call to an MCP tool, named mcp__ and not mcp_, and nothing else" out_has "used 1 sessions 3"
+rm -rf "$b"
+usage_session "$b" s1 "$(tool_line Bash '{"command":"headwater route \"fix the check\""}')"
+usage_session "$b" s2 "$(tool_line Bash '{"command":"cd /work && /opt/hw/bin/headwater explain docs/x.md"}')"
+usage_session "$b" s3 "$(tool_line Bash '{"command":"ls; headwater check --root . | head"}')"
+usage_session "$b" s4 "$(tool_line Bash '{"command":"echo $(headwater check --root .)"}')"
+usage_session "$b" s5 "$(tool_line Bash '{"command":"cat .headwater/probe.yml && ls .headwater/packages"}')"
+usage_session "$b" s6 "$(tool_line Bash '{"command":"grep -rn headwater docs | head"}')"
+usage_session "$b" s7 "$(tool_line Bash '{"command":"ls .claude/skills/headwater-taxonomy"}')"
+usage_session "$b" s8 "$(tool_line Read '{"file_path":"/opt/hw/bin/headwater"}')"
+usage_of engine
+check "usage: engine counts a Bash call that runs headwater at a command start, after && ; | or \$(, or by a path that ends in /headwater, and no .headwater/ path, grep argument, skill name or Read" out_has "used 4 sessions 8"
 usage_of docs
 check "usage: a layer the round does not tune exits 2" code_is 2
 rm -rf "$b"
