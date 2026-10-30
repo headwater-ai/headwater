@@ -1277,6 +1277,82 @@ fn a_quoted_tilde_stays_a_target_and_an_unknown_null_relation_is_reported() {
     );
 }
 
+/// A null item skips itself, and the items after it still declare their edges.
+///
+/// [#1902](https://github.com/headwater-ai/headwater/issues/1902). The null
+/// item comes first in the list, so a reader that stopped at it, rather than
+/// stepping past it, would drop the real edge after it without a word.
+#[test]
+fn a_null_item_before_a_real_target_keeps_the_real_edge() {
+    let at = scratch().join("null-relation-then-real");
+    let _ = std::fs::remove_dir_all(&at);
+    std::fs::create_dir_all(at.join(".headwater")).expect("the declaration directory is there");
+    std::fs::create_dir_all(at.join("docs/interfaces")).expect("the shelf is there");
+    for name in ["taxonomy.lock", "taxonomy.yml", "overlay.yml"] {
+        std::fs::copy(
+            repository().join(".headwater").join(name),
+            at.join(".headwater").join(name),
+        )
+        .expect("the declaration copies");
+    }
+    std::fs::write(
+        at.join("docs/interfaces/headwater-real.md"),
+        "---\nid: HW-IFACE-headwater-real\nstatus: current\nstatus_since: 2026-10-30\nsummary: \"The real target of the list.\"\nlast_verified: 2026-10-30\ntitle: \"headwater real\"\n---\n\n# headwater real\n\n## Synopsis\n\n    headwater real\n",
+    )
+    .expect("the target document is written");
+    std::fs::write(
+        at.join("docs/interfaces/headwater-mixed.md"),
+        "---\nid: HW-IFACE-headwater-mixed\nstatus: current\nstatus_since: 2026-10-30\nsummary: \"A document whose relation list holds a null item before a real one.\"\nlast_verified: 2026-10-30\ntitle: \"headwater mixed\"\nrelations:\n  traces_to:\n    - ~\n    - HW-IFACE-headwater-real\n---\n\n# headwater mixed\n\n## Synopsis\n\n    headwater mixed\n",
+    )
+    .expect("the document is written");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args([
+            "explain",
+            "--json",
+            "docs/interfaces/headwater-mixed.md",
+            "--root",
+        ])
+        .arg(&at)
+        .output()
+        .expect("the binary runs");
+    let text = String::from_utf8_lossy(&output.stdout).into_owned();
+    assert_eq!(output.status.code(), Some(0), "{text}");
+    let related = related(&text);
+    assert!(
+        related.iter().any(|element| element.direction == "outbound"
+            && element.relation == "traces_to"
+            && (element.target == "HW-IFACE-headwater-real"
+                || element
+                    .targets
+                    .clone()
+                    .unwrap_or_default()
+                    .iter()
+                    .any(|m| m == "HW-IFACE-headwater-real"))),
+        "the real item after the null one still declares its edge\n{text}"
+    );
+    for element in &related {
+        let members = element.targets.clone().unwrap_or_default();
+        assert!(
+            element.target != "~" && !members.iter().any(|m| m == "~"),
+            "the null item prints no edge, and this one did: {} -> {:?}\n{text}",
+            element.relation,
+            element.target
+        );
+    }
+
+    let check = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(["check", "--root"])
+        .arg(&at)
+        .output()
+        .expect("the binary runs");
+    let findings = String::from_utf8_lossy(&check.stdout).into_owned();
+    assert!(
+        !findings.lines().any(|line| line.contains("-> ~")),
+        "check reports no edge to `~` for the null item\n{findings}"
+    );
+}
+
 /// Each member of `reach` carries the entries its one pattern matched.
 ///
 /// [#1093](https://github.com/headwater-ai/headwater/issues/1093). The edit-time
