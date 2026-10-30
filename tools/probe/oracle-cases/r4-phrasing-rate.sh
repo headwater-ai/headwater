@@ -29,3 +29,31 @@ wrong() {
     grep -q "^## Discharge" $file || return 1
     sed -i '/^## Discharge/,$d' $file
 }
+
+# The mutants of #1874.3b. Each one writes the reference record and cites
+# HW-DR-0112 where the engine parses no edge, so a reader of the file's
+# lines passes it and `typed-at.sh`, which reads the relation through
+# `headwater explain --json`, does not.
+#
+# The record that reference() writes, found by a listing before and after.
+reference_record() {
+    hw_case_before=$(mktemp "${TMPDIR:-/tmp}/r4-case.XXXXXX") || return 1
+    LC_ALL=C ls docs/obligations > "$hw_case_before"
+    reference || return 1
+    LC_ALL=C ls docs/obligations | LC_ALL=C comm -13 "$hw_case_before" - | sed 's#^#docs/obligations/#'
+    rm -f "$hw_case_before"
+}
+
+# The reference record with its relation lines removed, and the ruling named
+# in a line of the body.
+body_only() {
+    hw_case_file=$(reference_record) && [ -f "$hw_case_file" ] || return 1
+    sed -i '/^relations:$/d; /^  traces_to:$/d; /^    - HW-DR-0112$/d' "$hw_case_file" && printf '\nThis record traces to HW-DR-0112.\n' >> "$hw_case_file" && ! grep -q '^    - HW-DR-0112$' "$hw_case_file"
+}
+
+# The reference record with its relation lines turned into comments.
+commented_edge() {
+    hw_case_file=$(reference_record) && [ -f "$hw_case_file" ] || return 1
+    sed -i 's/^relations:$/# &/; s/^  traces_to:$/# &/; s/^    - HW-DR-0112$/# &/' "$hw_case_file" && grep -q '^#     - HW-DR-0112$' "$hw_case_file"
+}
+more_wrong="body_only commented_edge"

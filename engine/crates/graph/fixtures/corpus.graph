@@ -739,6 +739,8 @@ anchors
     cited by HW-DR-0112
   code_path `tools/probe/arms/hooks/.claude/settings.json` via source-tree
     cited by HW-DR-0112
+  code_path `tools/probe/campaign.sh` via source-tree
+    cited by HW-DR-0112
   code_path `tools/probe/code-campaign.spec` via source-tree
     cited by HW-DR-0111
   code_path `tools/probe/code-campaign.spec` via source-tree
@@ -762,6 +764,8 @@ anchors
   code_path `tools/probe/oracle-fixtures.sh` via source-tree
     cited by HW-DR-0112
   code_path `tools/probe/oracles/**` via source-tree
+    cited by HW-DR-0112
+  code_path `tools/probe/phrasing.sh` via source-tree
     cited by HW-DR-0112
   code_path `tools/probe/probe-oracle-fixtures.sh` via source-tree
     cited by HW-DR-0112
