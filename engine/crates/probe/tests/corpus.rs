@@ -3103,9 +3103,21 @@ fn exactly_one_draft_decision_is_the_axis_fixture_and_two_probes_name_it() {
     };
     let two = || {
         vec![
-            probe("HW-PROBE-the-first-probe", "superseded_target", "HW-DR-0002 is in the way."),
-            probe("HW-PROBE-the-second-probe", "names_file, superseded_target", "HW-DR-0002 too."),
-            probe("HW-PROBE-the-third-probe", "names_file", "HW-DR-0002, and no axis."),
+            probe(
+                "HW-PROBE-the-first-probe",
+                "superseded_target",
+                "HW-DR-0002 is in the way.",
+            ),
+            probe(
+                "HW-PROBE-the-second-probe",
+                "names_file, superseded_target",
+                "HW-DR-0002 too.",
+            ),
+            probe(
+                "HW-PROBE-the-third-probe",
+                "names_file",
+                "HW-DR-0002, and no axis.",
+            ),
         ]
     };
     assert_eq!(
@@ -3121,10 +3133,19 @@ fn exactly_one_draft_decision_is_the_axis_fixture_and_two_probes_name_it() {
             "{label}: wanted a finding with `{want}`, found {found:?}"
         );
     };
-    refused("no fixture", shelf(&[&ruling]), two(), "0 `draft` decisions");
+    refused(
+        "no fixture",
+        shelf(&[&ruling]),
+        two(),
+        "0 `draft` decisions",
+    );
     refused(
         "two fixtures",
-        shelf(&[&ruling, &fixture, &fm("HW-DR-0003", "draft", &mark, "HW-DR-0001")]),
+        shelf(&[
+            &ruling,
+            &fixture,
+            &fm("HW-DR-0003", "draft", &mark, "HW-DR-0001"),
+        ]),
         two(),
         "2 `draft` decisions",
     );
@@ -3136,7 +3157,10 @@ fn exactly_one_draft_decision_is_the_axis_fixture_and_two_probes_name_it() {
     );
     refused(
         "it conflicts with a draft",
-        shelf(&[&fm("HW-DR-0001", "draft", "A ruling.", "HW-DR-0009"), &fixture]),
+        shelf(&[
+            &fm("HW-DR-0001", "draft", "A ruling.", "HW-DR-0009"),
+            &fixture,
+        ]),
         two(),
         "to no `current` decision",
     );
@@ -3148,14 +3172,21 @@ fn exactly_one_draft_decision_is_the_axis_fixture_and_two_probes_name_it() {
     );
     refused(
         "it names a probe slug",
-        shelf(&[&ruling, &format!("{fixture}\nThe probe the-third-probe reads it.\n")]),
+        shelf(&[
+            &ruling,
+            &format!("{fixture}\nThe probe the-third-probe reads it.\n"),
+        ]),
         two(),
         "names the probe slug `the-third-probe`",
     );
     refused(
         "one probe names it",
         shelf(&[&ruling, &fixture]),
-        vec![probe("HW-PROBE-the-first-probe", "superseded_target", "HW-DR-0002.")],
+        vec![probe(
+            "HW-PROBE-the-first-probe",
+            "superseded_target",
+            "HW-DR-0002.",
+        )],
         "1 current `superseded_target` probes",
     );
     refused(
