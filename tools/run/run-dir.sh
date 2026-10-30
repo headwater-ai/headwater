@@ -700,14 +700,17 @@ stage() {
     done
     # Every field this call does not name carries from the checkpoint before,
     # so a parent that vetoes a PASS names only the stage and the veto file.
-    # The fields are written in the order `fields` declares.
+    # The fields are written in the order `fields` declares. An adjudicated
+    # checkpoint carries nothing: it starts an issue, or the next slice of a
+    # split one, and handover/1874 after PR #1906 merged still named the
+    # slice before's pr 1906 and rounds 3 (run 20261028-2310).
     body=$(printf 'stage %s' "$reached")
     for key in $fields; do
         value=''
         for pair in "$@"; do
             [ "${pair%%=*}" = "$key" ] && value=${pair#*=}
         done
-        [ -n "$value" ] || value=$(sed -n "s/^$key //p" "$dir/handover/$issue" 2>/dev/null | tail -n 1)
+        [ "$reached" = adjudicated ] || [ -n "$value" ] || value=$(sed -n "s/^$key //p" "$dir/handover/$issue" 2>/dev/null | tail -n 1)
         [ -n "$value" ] && body=$(printf '%s\n%s %s' "$body" "$key" "$value")
     done
     # An adjudicated checkpoint is what the next session claims and iterates
@@ -1176,6 +1179,17 @@ integrate_holds() {
         | . != null and .ruling != "ejected"' "$1/integrate.jsonl" >/dev/null 2>&1
 }
 
+# Whether log.jsonl records this pull request merged. A handover that reached
+# ruled-merge and is still open after its merge is a `Refs` slice (a merge
+# that closes the issue ends it in `logged_issues`), so the issue is owed an
+# adjudicate of its next slice (run 20261028-2310, #1874 and #1875).
+pr_merged() {
+    [ -n "$2" ] && [ -s "$1/log.jsonl" ] || return 1
+    need_jq
+    jq -se --arg p "$2" '[.[] | select((.pr | tostring) == $p
+        and ((.merge // "") | type == "string" and test("^[0-9a-f]{7,40}$")))] | length > 0' "$1/log.jsonl" >/dev/null 2>&1
+}
+
 # What a resumed parent does with each open handover, one line per issue:
 # `<issue> <stage> <action>`. An open handover is one the log does not record.
 #
@@ -1185,6 +1199,8 @@ integrate_holds() {
 #     verified-pass           rule                the parent rules, from the notes it names
 #     ruled-merge, not queued integrate           append to the integrator queue with `integrate`
 #     ruled-merge, queued     queued              nothing: integrate.jsonl already holds its PR or issue
+#     ruled-merge, merged     adjudicate          the log records its PR merged by a `Refs` slice, so
+#                                                 adjudicate the issue's next slice
 #
 # An adjudicate that reports while the run drains is not claimed: `claim`
 # writes nothing in drain. Its checkpoint carries the footprint instead, and
@@ -1218,7 +1234,10 @@ resume() {
             built|verified-fail) action=iterate ;;
             verified-pass) action=rule ;;
             ruled-merge)
-                if integrate_holds "$dir" "$issue" "$(sed -n 's/^pr //p' "$h")"; then
+                pr=$(sed -n 's/^pr //p' "$h")
+                if pr_merged "$dir" "$pr"; then
+                    action=adjudicate
+                elif integrate_holds "$dir" "$issue" "$pr"; then
                     action=queued
                 else
                     action=integrate
