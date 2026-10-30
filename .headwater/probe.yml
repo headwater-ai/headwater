@@ -169,9 +169,10 @@ answer_keys:
 #   nothing-else-broken.sh <baseline>    no finding the pin did not carry, on
 #                                        the files of a `# scope:` line of
 #                                        <baseline> where it has one, and
-#                                        each `# edge:` and `# summary:`
-#                                        line holds as `headwater explain
-#                                        --json` reads the document
+#                                        each `# edge:`, `# summary:` and
+#                                        `# summary-not:` line holds as
+#                                        `headwater explain --json` reads
+#                                        the document
 #   test-passes.sh [--ignored] <crate> <test-target> [<filter>]
 #                                        cargo passes and ran a case
 #   no-hook-warning.sh                   row 11: no hook spoke in the
