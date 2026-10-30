@@ -27,7 +27,7 @@ Run one paid try of the tuning round, then stop. `$ARGUMENTS` names the round ro
        sh tools/run/wait-for.sh 'sh tools/probe/try.sh wait <root> <try>'
 
    On `RE-ISSUE`, run the same call again. Never wait in the background.
-6. Read the line that `wait` printed. On `canary-needs-reader`, read the records that `<try>/canary-needs-reader` names, and put them to the owner. Write `canary-passed` only on the owner's word, then run `sh tools/probe/try.sh relaunch <root> <try>` and wait again. On `disk-floor`, `capped`, `canary-failed`, `stop` or `driver-exited`, report it to the owner and stop.
+6. Read the line that `wait` printed. On `canary-needs-reader`, read the records that `<try>/canary-needs-reader` names, and put them to the owner. Write `canary-passed` only on the owner's word, then run `sh tools/probe/try.sh relaunch <root> <try>` and wait again. On `disk-floor`, `capped`, `canary-failed`, `stop` or `driver-exited`, report it to the owner and stop. On `usage-gated`, report the figure it prints to the owner and stop; relaunch only after the reset.
 7. On `done`, run `sh tools/probe/try.sh result <root> <try>`. It writes the transcript and `result.md`, and it appends the event of the stage to `<root>/ledger.jsonl`. A screen and a best so far are never kept, and a confirmation is kept or not under the keep rule. Run `sh tools/probe/try.sh ledger <root>` to read the round so far.
 8. Open one pull request of your own. It commits the transcript, the figures of `result.md` and the narrative paragraphs the transcript leaves to a person. When the change was not kept, the same pull request reverts it. Name the issue with `Refs`, because the round is not finished.
 9. Report to the owner, and stop.
