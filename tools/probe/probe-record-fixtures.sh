@@ -3483,6 +3483,34 @@ STUB
             >/dev/null 2>"$scratch/evb2.err"
         same "and a probe with no answer key keeps the evidence" \
             "key-echo	pass	zz-fixture-key-1875 is named" "$(cat "$evb/sessions/L1-campaign-present-p1-r2/oracles" 2>/dev/null)"
+        # When the engine refuses the declaration, `seal.sh --evidence` exits
+        # 8 and nobody checked the evidence, so the batch keeps the verdict and
+        # stores every evidence field as `unchecked`, with no hit file. The
+        # recorder's guard reads the same declaration before the session and
+        # refuses a run on it, so the declaration is the workspace's own copy,
+        # which the stub harness breaks during the session, after the guard
+        # and before the check. The harness can write the workspace alone. The
+        # copy drops the comment lines, because one names a record that names
+        # the probe, and the recorder's guard refuses a workspace that does.
+        mkdir -p "$evb/trees/campaign-present/.headwater"
+        awk '!/^[[:space:]]*#/' "$root/.headwater/probe.yml" > "$evb/trees/campaign-present/.headwater/probe.yml"
+        cat > "$scratch/bin/claude" <<STUB
+#!/bin/sh
+printf 'x\n' > key-echo.txt
+printf 'oracles: [\n' > .headwater/probe.yml
+printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s32"}'
+printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+STUB
+        chmod +x "$scratch/bin/claude"
+        HW_PROBE_YML="$evb/ws/L1-campaign-present-p1-r3/.headwater/probe.yml" PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$evb" \
+            --job "L1-campaign-present-p1-r3 1 campaign present sufficiency HW-PROBE-$tombstone" \
+            >/dev/null 2>"$scratch/evb3.err"
+        same "a session whose evidence check cannot read the declaration records" "0" \
+            "$(cat "$evb/sessions/L1-campaign-present-p1-r3/status" 2>/dev/null)"
+        same "and its oracle record keeps the verdict and stores the evidence as unchecked" \
+            "key-echo	pass	unchecked" "$(cat "$evb/sessions/L1-campaign-present-p1-r3/oracles" 2>/dev/null)"
+        same "and no hit file is written for evidence nobody checked" "none" \
+            "$(ls "$evb/sessions/L1-campaign-present-p1-r3/oracles.refused" "$evb/sessions/L1-campaign-present-p1-r3/oracles.hits" 2>/dev/null || echo none)"
         rm -rf "$evb"
 
         # THE decisive case of #1472's campaign report: assembly states the
