@@ -1070,6 +1070,82 @@ fn a_relation_declared_under_its_inverse_name_reads_as_written_from_both_ends() 
     );
 }
 
+/// A relation that declares no inverse reads `<relation> of` from its far end.
+///
+/// The fixture tree has no edge between two documents under a relation with no
+/// inverse, so this builds a tree of two decisions in a directory of its own:
+/// the fixture taxonomy plus `cites`, which names no inverse, and DR-T-0001
+/// citing DR-T-0002. The cited end reads the edge inbound as `cites of`, and
+/// the citing end reads it outbound as `cites` (#1901). Without the fallback
+/// the cited end would print `cites` inbound, which reads as "this document
+/// cites the far end" and is the wrong way round.
+#[test]
+fn a_relation_with_no_inverse_reads_as_relation_of_from_its_far_end() {
+    let dir = std::env::temp_dir().join(format!(
+        "headwater-query-no-inverse-{}-{:?}",
+        std::process::id(),
+        std::thread::current().id()
+    ));
+    let decisions = dir.join("query/decisions");
+    std::fs::create_dir_all(&decisions).expect("the temporary tree");
+    let document = |id: &str, relations: &str| {
+        format!(
+            "---\nid: {id}\nstatus: current\nstatus_since: 2026-02-01\nsummary: the {id} \
+             record\nprovenance:\n  warrant: accepted\n  accepted_by: the fixture tree\n\
+             {relations}---\n\n# {id}\n\nA decision.\n"
+        )
+    };
+    std::fs::write(
+        decisions.join("citing.md"),
+        document("DR-T-0001", "relations:\n  cites:\n    - DR-T-0002\n"),
+    )
+    .expect("the citing record");
+    std::fs::write(decisions.join("cited.md"), document("DR-T-0002", ""))
+        .expect("the cited record");
+
+    let source = std::fs::read_to_string(fixtures_dir().join("query.taxonomy.yml"))
+        .expect("the fixture taxonomy");
+    let source = source.replacen(
+        "\nrelations:\n",
+        "\nrelations:\n  cites:\n    from: [decision]\n    to:   [decision]\n",
+        1,
+    );
+    let root = headwater_yaml::load(&source)
+        .expect("the taxonomy parses")
+        .value
+        .as_map()
+        .expect("a mapping")
+        .clone();
+    let corpus = Corpus::new(dir.clone(), "query");
+    let built = Built::over(&corpus, &root);
+    let surface = built.surface();
+    let read = |path: &str| -> Vec<(String, bool, String)> {
+        let document = surface.find(path).expect("the temporary record");
+        let mut triples: Vec<(String, bool, String)> = surface
+            .related(&document)
+            .into_iter()
+            .map(|neighbour| (neighbour.relation, neighbour.inbound, neighbour.target))
+            .collect();
+        triples.sort();
+        triples
+    };
+    let cited = read("query/decisions/cited.md");
+    let citing = read("query/decisions/citing.md");
+    let _ = std::fs::remove_dir_all(&dir);
+    assert_eq!(
+        cited,
+        vec![(
+            "cites of".to_owned(),
+            true,
+            "query/decisions/citing.md".to_owned()
+        )]
+    );
+    assert_eq!(
+        citing,
+        vec![("cites".to_owned(), false, "DR-T-0002".to_owned())]
+    );
+}
+
 /// A task that names a path routes by identity rather than by scent.
 ///
 /// The anchor is a node the graph already holds, so the documents that govern
