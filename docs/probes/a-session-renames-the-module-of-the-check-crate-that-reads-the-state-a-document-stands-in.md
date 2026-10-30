@@ -36,7 +36,7 @@ The module that reads which state a document stands in is called `lifecycle_stat
 
 ## Target
 
-`engine/crates/check/src/lifecycle_state.rs`, the module of `lifecycle.state.not_admitted`.
+`engine/crates/check/src/lifecycle_state.rs`, the module of the rule that reads which state a document stands in.
 
 ## Key
 

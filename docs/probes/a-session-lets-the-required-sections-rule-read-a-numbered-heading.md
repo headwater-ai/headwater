@@ -35,7 +35,7 @@ A decision record whose headings are `1. Context`, `2. Decision` and `3. Consequ
 
 ## Target
 
-`engine/crates/check/src/sections.rs`, the module of `section.required.missing`.
+`engine/crates/check/src/sections.rs`, the module of the rule that reports a missing required section.
 
 ## Key
 

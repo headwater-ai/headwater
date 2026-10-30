@@ -36,7 +36,7 @@ Two changes to the controlled-language rule of the check, please. First, `colour
 
 ## Target
 
-`engine/crates/check/src/language.rs`, the module of `language.controlled.not_met`.
+`engine/crates/check/src/language.rs`, the module of the language rule.
 
 ## Key
 
