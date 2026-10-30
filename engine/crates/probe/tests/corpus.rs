@@ -1384,8 +1384,8 @@ const AWAITING_SPEND: &[&str] = &[
     "HW-PROBE-a-session-that-changes-the-recorder-reaches-the-recorder-contract",
     "HW-PROBE-a-session-that-moves-a-shelf-reaches-the-relocation-guide",
     "HW-PROBE-a-session-that-changes-a-verb-s-default-reaches-the-verb-s-interface-contract",
-    // The five probes of the code set (#1835), which run in the additive
-    // campaign's code round and in no round of this campaign.
+    // The five probes of the former code set (#1835). #1874 removed that set
+    // and its round and deprecated the five, so no campaign runs them now.
     "HW-PROBE-a-rule-that-reads-the-date-takes-it-from-the-run-and-ships-with-the-fixture-that-fails-it",
     "HW-PROBE-a-figure-a-session-adds-to-a-hand-built-page-is-measured-and-never-typed",
     "HW-PROBE-a-session-says-where-a-check-gets-the-version-that-stood-before-a-change",

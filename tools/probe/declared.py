@@ -33,8 +33,8 @@
 # of each line counts the probes this prints, so the two readers cannot
 # disagree unseen. A declaration with no `rounds:` prints nothing.
 #
-# A round that measures rates rather than a difference, such as the pilot of
-# the code set (#1835), declares `repetitions`, a whole number above zero, in
+# A round that measures rates rather than a difference, as the pilot of
+# the former code set (#1835) did, declares `repetitions`, a whole number above zero, in
 # place of `rates`. Its line is `<round> <set> repetitions <n> <tries>
 # <probe>...`, so the probes stay in the same fields. A round declares
 # exactly one of `rates` and `repetitions`, and the reader refuses both or
