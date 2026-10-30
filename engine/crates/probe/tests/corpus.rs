@@ -1998,6 +1998,11 @@ fn the_sets_hold_two_tuning_and_two_held_out_probes_of_each_action_and_the_held_
         set_findings(&t, &h, &shelf, &former, &d),
         &format!("`{first}` has 3 members in `tuning`"),
     );
+    expect(
+        "3 tuning and 1 held-out, the short side",
+        set_findings(&t, &h, &shelf, &former, &d),
+        &format!("`{first}` has 1 members in `held-out`"),
+    );
 
     // A deprecated member.
     let mut s = shelf.clone();
@@ -2015,6 +2020,13 @@ fn the_sets_hold_two_tuning_and_two_held_out_probes_of_each_action_and_the_held_
         "a member with one phrasing",
         set_findings(&tuning, &held_out, &s, &former, &frozen),
         "has 1 phrasings",
+    );
+    let mut s = shelf.clone();
+    s[1].phrasings = 4;
+    expect(
+        "a member with four phrasings",
+        set_findings(&tuning, &held_out, &s, &former, &frozen),
+        "has 4 phrasings",
     );
 
     // A member with no action.
