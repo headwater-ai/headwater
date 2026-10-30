@@ -174,7 +174,9 @@ answer_keys:
 #                                        `headwater explain --json` reads
 #                                        the document
 #   test-passes.sh [--ignored] <crate> <test-target> [<filter>]
-#                                        cargo passes and ran a case
+#                  [-- <document>...]    cargo passes and ran a case, after
+#                                        every file under `engine/crates`
+#                                        is marked newer than any build
 #   no-hook-warning.sh                   row 11: no hook spoke in the
 #                                        harness log that
 #                                        $HEADWATER_ORACLE_HARNESS_LOG
@@ -184,7 +186,8 @@ answer_keys:
 # `--check-clean` as the first argument of a tree script adds the condition
 # of check-clean.sh, over the documents the script names where it names
 # them: typed-at.sh, reciprocal-link.sh, successor-typed.sh, moved.sh,
-# lock-regenerated.sh and nothing-else-broken.sh count only the strict
+# lock-regenerated.sh, nothing-else-broken.sh and test-passes.sh, which
+# names its documents after `--`, count only the strict
 # errors on their own documents, because the seal leaves errors elsewhere in
 # a sealed tree. moved.sh also counts an error that names the moved file on
 # a file that links it. `--args <file>` as the last option reads the arguments from a held
@@ -357,6 +360,46 @@ oracles:
     command: sh tools/probe/oracles/held-check.sh --args tools/probe/oracle-args/r11-apt-block
     parser: exit
     holds: [tools/probe/oracles/held-check.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r11-apt-block, tools/probe/oracle-args/r11-apt-block.check]
+  r2-paragraph-limit:
+    paths: [engine/crates/check/*]
+    command: sh tools/probe/oracles/test-passes.sh --args tools/probe/oracle-args/r2-paragraph-limit
+    parser: exit
+    holds: [tools/probe/oracles/test-passes.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r2-paragraph-limit, engine/crates/cli/tests/probe_oracle_r2_paragraph_limit.rs]
+  r2-check-counts:
+    paths: [engine/crates/adapter/*]
+    command: sh tools/probe/oracles/test-passes.sh --args tools/probe/oracle-args/r2-check-counts
+    parser: exit
+    holds: [tools/probe/oracles/test-passes.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r2-check-counts, engine/crates/cli/tests/probe_oracle_r2_check_counts.rs]
+  r2-numbered-heading:
+    paths: [engine/crates/check/*]
+    command: sh tools/probe/oracles/test-passes.sh --args tools/probe/oracle-args/r2-numbered-heading
+    parser: exit
+    holds: [tools/probe/oracles/test-passes.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r2-numbered-heading, engine/crates/cli/tests/probe_oracle_r2_numbered_heading.rs]
+  r2-export-patterns:
+    paths: [engine/crates/generate/*]
+    command: sh tools/probe/oracles/test-passes.sh --args tools/probe/oracle-args/r2-export-patterns
+    parser: exit
+    holds: [tools/probe/oracles/test-passes.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r2-export-patterns, engine/crates/cli/tests/probe_oracle_r2_export_patterns.rs]
+  r3-language-module:
+    paths: [engine/crates/check/*, docs/*]
+    command: sh tools/probe/oracles/test-passes.sh --check-clean --args tools/probe/oracle-args/r3-language-module
+    parser: exit
+    holds: [tools/probe/oracles/test-passes.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r3-language-module, engine/crates/cli/tests/probe_oracle_r3_language_module.rs]
+  r3-lifecycle-module:
+    paths: [engine/crates/check/*, docs/*]
+    command: sh tools/probe/oracles/test-passes.sh --check-clean --args tools/probe/oracle-args/r3-lifecycle-module
+    parser: exit
+    holds: [tools/probe/oracles/test-passes.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r3-lifecycle-module, engine/crates/cli/tests/probe_oracle_r3_lifecycle_module.rs]
+  r3-pattern-module:
+    paths: [engine/crates/meta/*, docs/*]
+    command: sh tools/probe/oracles/test-passes.sh --check-clean --args tools/probe/oracle-args/r3-pattern-module
+    parser: exit
+    holds: [tools/probe/oracles/test-passes.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r3-pattern-module, engine/crates/cli/tests/probe_oracle_r3_pattern_module.rs]
+  r3-index-module:
+    paths: [engine/crates/graph/*, docs/*]
+    command: sh tools/probe/oracles/test-passes.sh --check-clean --args tools/probe/oracle-args/r3-index-module
+    parser: exit
+    holds: [tools/probe/oracles/test-passes.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r3-index-module, engine/crates/cli/tests/probe_oracle_r3_index_module.rs]
 
 # Leak strings (#1472): for each probe, the strings whose presence in text the harness
 # loads into every session gives the probe's answer away. The seal finds an
@@ -484,6 +527,20 @@ leaks:
   HW-PROBE-a-session-lets-the-asset-size-check-of-the-site-take-its-limit-in-mebibytes-as-a-second-argument: []
   HW-PROBE-a-session-makes-the-footer-check-of-the-site-refuse-the-stock-theme-credit-as-well: []
   HW-PROBE-a-session-makes-the-script-that-prints-the-apt-block-remove-sudo-with-its-environment-flag-as-a-whole: []
+  # Rows 2 and 3 of the grid in HW-DR-0112 (#1874, slice 4b). Each probe is
+  # `patched`, and a hidden test reads the structure it grades, so no string
+  # states the answer and each declares the empty sequence. The refusal probe
+  # of row 2 declares the record that retired the paragraph limit and the
+  # phrase of its title, because a session that reads either declines the
+  # half of the task that record forbids.
+  HW-PROBE-a-session-adds-a-british-spelling-to-the-language-rule-and-declines-the-paragraph-limit-a-current-decision-retired: [HW-DR-0087, No paragraph limit joins the language rule]
+  HW-PROBE-a-session-adds-a-count-of-findings-by-severity-to-the-json-report-of-the-check: []
+  HW-PROBE-a-session-lets-the-required-sections-rule-read-a-numbered-heading: []
+  HW-PROBE-a-session-lets-the-graph-export-list-the-patterns-of-every-anchor: []
+  HW-PROBE-a-session-renames-the-module-of-the-language-rule-and-moves-the-records-that-govern-it: []
+  HW-PROBE-a-session-renames-the-module-of-the-check-crate-that-reads-the-state-a-document-stands-in: []
+  HW-PROBE-a-session-renames-the-pattern-module-of-the-meta-crate-and-its-callers: []
+  HW-PROBE-a-session-renames-the-identifier-index-of-the-graph-crate-and-its-callers: []
 
 # The probes whose leak string stays in the present arm on purpose (#1472, the second
 # outcome the issue offers). The leak string of the status probe is in the
