@@ -180,11 +180,18 @@ ${2%%=*}: ${2#*=}" ;;
             case "$*" in
                 *--moment*) cat "$CASE/plan-moment" 2>/dev/null ;;
                 *--action*) cat "$CASE/plan-action" 2>/dev/null ;;
+                # The plain plan of the round's set, which `result` reads
+                # for each probe's action and oracle (#1875).
+                *) cat "$CASE/plan-plain" 2>/dev/null ;;
             esac
             exit 0
         fi
         for control in "$@"; do :; done
-        echo "HW-PROBE-a: 9/18 against 9/18, +0.0 points [-30.0, +30.0]"
+        if [ -f "$CASE/probe-rows" ]; then
+            cat "$CASE/probe-rows"
+        else
+            echo "HW-PROBE-a: 9/18 against 9/18, +0.0 points [-30.0, +30.0]"
+        fi
         case $control in
             */additive-screening-scenario-0.md) cat "$CASE/pooled-base" ;;
             *) cat "$CASE/pooled-keep" ;;
@@ -1032,6 +1039,66 @@ check "result: and the markers" ledger_has '"markers": "capped"'
 check "result: and prints no keep: line" sh -c "! grep -q '^keep:' '$CASE/out'"
 check "result: and writes no result.md" [ ! -e "$CASE/root/docs-r2-confirm/result.md" ]
 check "result: and writes no transcript" sh -c "! grep -q '^new ' '$CASE/engine.log' 2>/dev/null"
+
+# result: the oracle's verdict is the pass (#1875, clause 4). A probe that
+# grades against a command oracle shows the oracle's verdict, read from each
+# session's `oracles` record, beside the grader's count, and never the
+# grader's count under the oracle's name. A probe with no command oracle
+# shows the grader's count. Here the oracle passed one session of two and the
+# grader passed both, so the line says they disagree.
+oracle_session() {
+    # oracle_session <session> <probe> <status> <verdict>
+    mkdir -p "$CASE/root/docs-r2-confirm/a/sessions/$1"
+    printf -- '--probe\n%s\n--session\n%s\n' "$2" "$1" > "$CASE/root/docs-r2-confirm/a/sessions/$1/record.argv"
+    echo "$3" > "$CASE/root/docs-r2-confirm/a/sessions/$1/status"
+    [ -z "${4:-}" ] || printf 'fixture-oracle\t%s\tfixture-oracle: %s: x\n' "$4" "$4" > "$CASE/root/docs-r2-confirm/a/sessions/$1/oracles"
+}
+oracle_case() {
+    result_case
+    echo 'pooled: 51/72 against 39/72, +16.7 points [+0.9, +31.4]' > "$CASE/pooled-keep"
+    printf -- '- HW-PROBE-a (docs/probes/a.md)\n    category: sufficiency\n    action: change_governed_code\n    oracle: command:fixture-oracle\n- HW-PROBE-b (docs/probes/b.md)\n    category: discovery\n    action: ask_or_locate\n' > "$CASE/plan-plain"
+    printf '%s\n' 'HW-PROBE-a: 2/2 against 2/2, +0.0 points [-50.0, +50.0]' 'HW-PROBE-b: 1/2 against 1/2, +0.0 points [-50.0, +50.0]' 'pooled: 3/4 against 3/4, +0.0 points [-40.0, +40.0]' > "$CASE/probe-rows"
+    oracle_session L1-p1-r1 HW-PROBE-a 0 pass
+    oracle_session L1-p1-r2 HW-PROBE-a 0 fail
+}
+oracle_case
+run result "$CASE/root" docs-r2-confirm
+check "result: the oracle's verdict: exits 0" code_is 0
+check "result: a command-oracle probe shows the oracle's pass beside the grader's" result_md_has "probe HW-PROBE-a (change_governed_code): 1 of 2 by the oracle fixture-oracle (grader 2 of 2) disagree"
+check "result: a probe with no command oracle shows the grader's count" result_md_has "probe HW-PROBE-b (ask_or_locate): 1 of 2 by the grader"
+check "result: a try with oracle records prints no not-recorded line" sh -c "! grep -q '^oracle: not recorded' '$CASE/root/docs-r2-confirm/result.md'"
+check "result: the plan is the round's set in the try's scenario" grep -q '^probe plan .*--tier additive --arm scenario-1 --set ' "$CASE/engine.log"
+check "result: the probe lines are not in the ledger" sh -c "! grep -q 'by the oracle' '$CASE/root/ledger.jsonl'"
+# A session that did not record (status other than 0), and a session of
+# another probe, count in no oracle pass. Both sessions pass, so the two
+# counts agree and the line carries no disagree.
+oracle_case
+oracle_session L1-p1-r2 HW-PROBE-a 0 pass
+oracle_session L1-p1-r3 HW-PROBE-a 3 fail
+oracle_session L1-p1-r4 HW-PROBE-b 0 fail
+run result "$CASE/root" docs-r2-confirm
+check "result: sessions that did not record, and other probes' sessions, are not counted" result_md_has "probe HW-PROBE-a (change_governed_code): 2 of 2 by the oracle fixture-oracle (grader 2 of 2)"
+# A try whose sessions hold no record at all predates the record, and still
+# renders, with the grader's count for every probe.
+oracle_case
+rm "$CASE/root/docs-r2-confirm/a/sessions/L1-p1-r1/oracles" "$CASE/root/docs-r2-confirm/a/sessions/L1-p1-r2/oracles"
+run result "$CASE/root" docs-r2-confirm
+check "result: a try with no oracle record exits 0" code_is 0
+check "result: and says the record predates #1875" result_md_has "oracle: not recorded (the batch predates #1875)"
+check "result: and shows the grader's count for a command-oracle probe" result_md_has "probe HW-PROBE-a (change_governed_code): 2 of 2 by the grader"
+# A screen writes the same lines.
+result_case
+rm -r "$CASE/root/docs-r2-confirm"
+finished_try docs-r2-v1 2452 "screen 1" 25
+printf -- '- HW-PROBE-a (docs/probes/a.md)\n    action: change_governed_code\n    oracle: command:fixture-oracle\n' > "$CASE/plan-plain"
+printf '%s\n' 'HW-PROBE-a: 2/2 against 2/2, +0.0 points [-50.0, +50.0]' > "$CASE/probe-rows"
+mkdir -p "$CASE/root/docs-r2-v1/a/sessions/L1-p1-r1"
+printf -- '--probe\nHW-PROBE-a\n' > "$CASE/root/docs-r2-v1/a/sessions/L1-p1-r1/record.argv"
+echo 0 > "$CASE/root/docs-r2-v1/a/sessions/L1-p1-r1/status"
+printf 'fixture-oracle\tpass\t-\n' > "$CASE/root/docs-r2-v1/a/sessions/L1-p1-r1/oracles"
+run result "$CASE/root" docs-r2-v1
+check "result: a screen shows the oracle's verdict too" grep -qxF "probe HW-PROBE-a (change_governed_code): 1 of 1 by the oracle fixture-oracle (grader 2 of 2) disagree" "$CASE/root/docs-r2-v1/result.md"
+rm -f "$CASE/plan-plain" "$CASE/probe-rows"
 checkout=$fix/repo
 
 # ------------------------------------------------------------------ ledger
