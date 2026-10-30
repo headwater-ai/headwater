@@ -1095,6 +1095,12 @@ printf 'fixture-oracle\tpass\t-\nfixture-test\tpass\ttest result: ok. 1 passed; 
 printf 'fixture-oracle\tpass\t-\nfixture-test\tfail\ttest result: FAILED. 0 passed; 1 failed\n' > "$CASE/root/docs-r2-confirm/a/sessions/L1-p1-r2/oracles"
 run result "$CASE/root" docs-r2-confirm
 check "result: a test-oracle probe shows the oracle's pass beside the grader's" result_md_has "probe HW-PROBE-a (change_governed_code): 1 of 2 by the oracle fixture-test (grader 2 of 2) disagree"
+# An oracle that did not run (`not-run`) fails whole, so its session is not
+# a pass: only `pass` counts, and a verdict that is merely not `fail` does not.
+oracle_case
+printf 'fixture-oracle\tnot-run\t-\n' > "$CASE/root/docs-r2-confirm/a/sessions/L1-p1-r2/oracles"
+run result "$CASE/root" docs-r2-confirm
+check "result: an oracle that did not run is not a pass" result_md_has "probe HW-PROBE-a (change_governed_code): 1 of 2 by the oracle fixture-oracle (grader 2 of 2) disagree"
 # A try whose sessions hold no record at all predates the record, and still
 # renders, with the grader's count for every probe.
 oracle_case
