@@ -40,7 +40,7 @@ The question is real for every record that an agent drafts in this repository. T
 
 ## Consequences
 
-**Until the owner rules, HW-DR-0034 is in force.** A review of a change that writes an agent's acceptance stamp cites HW-DR-0034, and not this record.
+**Until the owner rules, HW-DR-0034 is in force.** An agent that drafts a document follows HW-DR-0034 and not this record.
 
 **If the owner accepts this record, it supersedes HW-DR-0034 in part.** The acceptance rule stays: the merge is still the act that makes a document governed. Only the permission for an agent to write the stamp at draft time goes. HW-OBL-0167 then discharges. The documents that already carry an agent's stamp stay as written, as HW-DR-0034 ruled for the earlier habit.
 

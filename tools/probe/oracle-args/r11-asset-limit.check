@@ -1,0 +1,43 @@
+# The held check of the `r11-asset-limit` oracle, for the probe
+# HW-PROBE-a-session-lets-the-asset-size-check-of-the-site-take-its-limit-in-mebibytes-as-a-second-argument
+# (#1874). `tools/probe/oracles/held-check.sh` runs it from the root of the
+# grading copy, with `HW_ORACLE_TARGET` and `HW_ORACLE_SCRATCH` set. It
+# states the answer, so it names its probe and the seal removes it from every
+# workspace.
+#
+# The target takes an optional second argument, the limit in MiB (1048576
+# bytes). The argument takes precedence over the environment variable, a
+# value that is not a whole number is a usage error, and one argument works.
+s=$HW_ORACLE_SCRATCH
+mkdir -p "$s/site"
+head -c 2097152 /dev/zero > "$s/site/search.json"
+echo '<p>a page</p>' > "$s/site/index.html"
+limit_env=""
+
+# want <status> [<argument>...]
+want() {
+    w=$1
+    shift
+    got=0
+    if [ -n "$limit_env" ]; then
+        HEADWATER_SITE_ASSET_LIMIT_BYTES=$limit_env sh "$HW_ORACLE_TARGET" "$@" > "$s/out" 2> "$s/err" < /dev/null || got=$?
+    else
+        env -u HEADWATER_SITE_ASSET_LIMIT_BYTES sh "$HW_ORACLE_TARGET" "$@" > "$s/out" 2> "$s/err" < /dev/null || got=$?
+    fi
+    [ "$got" -eq "$w" ] || {
+        echo "\`check-site-asset-size.sh SITE $(printf '%s ' "$@" | sed "s|$s/site ||")\`${limit_env:+ with the variable at $limit_env} exits $got, not $w, over a file of 2 MiB"
+        exit 1
+    }
+}
+
+want 1 "$s/site" 1
+want 0 "$s/site" 2
+want 0 "$s/site" 3
+want 0 "$s/site"
+want 2 "$s/site" two
+want 2 "$s/site" ""
+limit_env=1000
+want 1 "$s/site"
+want 0 "$s/site" 3
+limit_env=""
+echo "takes the limit in MiB as a second argument over a file of 2 MiB, in 8 runs"

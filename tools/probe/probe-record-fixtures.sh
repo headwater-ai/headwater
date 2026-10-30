@@ -5464,12 +5464,13 @@ if [ -x "$engine" ]; then
     present "and each leak-kept line on its own" "line 8 holds only leak-kept probes" "$scratch/dry.out"
 
     # A line that pools a leak-kept probe with one that is not fails the dry run,
-    # and a plan over its ceiling is printed rather than fatal: thirty-four
+    # and a plan over its ceiling is printed rather than fatal: forty-two
     # sufficiency probes over the documentation tier's two arms at 30
-    # repetitions is 2040 sessions, $1020.00 against its $130.00. Two of the
-    # thirty-four are the harder variants of #1718, two are the patched probes
+    # repetitions is 2520 sessions, $1260.00 against its $130.00. Two of the
+    # forty-two are the harder variants of #1718, two are the patched probes
     # of the code set (#1835), eight are the probes of rows 4 and 5 (#1874),
-    # and fourteen are the probes of rows 6 to 9 (#1874.3).
+    # fourteen are the probes of rows 6 to 9 (#1874.3), and eight are the
+    # probes of rows 10 and 11 (#1874.4).
     # The plan selects by category and not by status, so the six retired
     # sufficiency probes count too. This line names them by category and not
     # by identifier. The campaign
@@ -5480,7 +5481,7 @@ if [ -x "$engine" ]; then
     same "a line that pools a leak-kept probe fails the dry run with 8, not 5" "8" "$?"
     present "and names the line" "line 1 pools a probe under \`leaks_kept:\`" "$scratch/pooled.out"
     present "and the ceiling's refusal is printed as a line" \
-        "L1 2040 sessions project \$1020.00 against a declared ceiling of \$130.00" "$scratch/pooled.out"
+        "L1 2520 sessions project \$1260.00 against a declared ceiling of \$130.00" "$scratch/pooled.out"
 
     # Any other refusal of a plan is the batch driver's 5.
     printf 'campaign present discovery\n' > "$scratch/refused.spec"

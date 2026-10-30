@@ -1,0 +1,37 @@
+# The held check of the `r11-site-footer` oracle, for the probe
+# HW-PROBE-a-session-makes-the-footer-check-of-the-site-refuse-the-stock-theme-credit-as-well
+# (#1874). `tools/probe/oracles/held-check.sh` runs it from the root of the
+# grading copy, with `HW_ORACLE_TARGET` and `HW_ORACLE_SCRATCH` set. It
+# states the answer, so it names its probe and the seal removes it from every
+# workspace.
+#
+# The target refuses a served page that carries the text `Material for
+# MkDocs`, and it still refuses the stock MkDocs footer, still passes a clean
+# site, and still refuses a site with too few pages.
+s=$HW_ORACLE_SCRATCH
+for site in clean stock theme; do
+    mkdir -p "$s/$site"
+    for n in 1 2 3; do
+        echo "<p>page $n</p>" > "$s/$site/p$n.html"
+    done
+done
+echo '<footer>Documentation built with MkDocs</footer>' >> "$s/stock/p2.html"
+echo '<footer>Made with <a href="https://squidfunk.github.io/mkdocs-material/">Material for MkDocs</a></footer>' >> "$s/theme/p3.html"
+minimum=3
+
+# want <status> <site>
+want() {
+    got=0
+    HEADWATER_SITE_FOOTER_MINIMUM_PAGES=$minimum sh "$HW_ORACLE_TARGET" "$s/$2" > "$s/out" 2> "$s/err" < /dev/null || got=$?
+    [ "$got" -eq "$1" ] || {
+        echo "\`check-site-footer.sh\` over the $2 site of 3 pages, with a minimum of $minimum, exits $got, not $1"
+        exit 1
+    }
+}
+
+want 0 clean
+want 1 stock
+want 1 theme
+minimum=4
+want 2 clean
+echo "refuses the theme credit and the stock footer, and passes a clean site, in 4 runs"
