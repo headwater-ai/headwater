@@ -50,7 +50,15 @@ use headwater_yaml::json::Json;
 /// contract page closed the set at `anchor` and `terms`, so a `1.0` reader may
 /// read every pointer that is not `anchor` as ranked and look for a `rank` that
 /// this pointer has none of. A `1.0` document never writes `name`.
-pub const VERSION: &str = "1.1";
+///
+/// `1.2` changed what `relation` means on an edge written under its inverse
+/// key (#1901). A `1.1` document named every outbound edge by the canonical
+/// relation and every inbound one by its inverse, so an author's
+/// `superseded_by` printed as `supersedes` on the end that wrote it. A `1.2`
+/// document names the relation as this document stands to the far end, from
+/// both ends. No member was added or removed, but a `1.1` reader that undid the
+/// old naming would now undo a correct one, so the version moved.
+pub const VERSION: &str = "1.2";
 
 /// One route as JSON.
 pub fn route(route: &Route) -> String {
@@ -420,7 +428,8 @@ fn of_permitted(permitted: &Permitted) -> Json {
 /// One edge, from the end being explained.
 ///
 /// `inbound` is written always, for the reason `unwarranted` is: it is a
-/// two-valued fact that decides how a reader takes the relation name beside it.
+/// two-valued fact that says which end wrote the edge. `relation` reads from
+/// this end whichever end wrote it, as [`Neighbour::relation`] states (#1901).
 /// `cue_is_declared` is written wherever a cue is, and nowhere else, because it
 /// is a fact about that cue rather than about the edge.
 ///

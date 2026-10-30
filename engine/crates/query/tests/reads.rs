@@ -657,7 +657,7 @@ fn a_task_names_only_the_documents_whose_name_it_repeats() {
 
 /// A named pointer comes after the anchored ones and before the ranked ones,
 /// once, and JSON writes its evidence as `by: name` with the words, in a
-/// document of version `1.1` (HW-DR-0109).
+/// document of version `1.1` or later (HW-DR-0109), `1.2` today (#1901).
 #[test]
 fn a_named_pointer_is_offered_once_before_the_ranked_ones_and_written_as_by_name() {
     let built = fixture_tree();
@@ -698,7 +698,7 @@ fn a_named_pointer_is_offered_once_before_the_ranked_ones_and_written_as_by_name
             headwater_yaml::Value::Map(_) => panic!("a mapping at {path:?}"),
         }
     };
-    assert_eq!(at(&["version"]), "1.1", "{json}");
+    assert_eq!(at(&["version"]), "1.2", "{json}");
     assert_eq!(at(&["pointers", "0", "evidence", "by"]), "name", "{json}");
     assert_eq!(
         at(&["pointers", "0", "evidence", "words"]),
