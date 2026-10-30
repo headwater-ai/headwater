@@ -1033,6 +1033,12 @@ sets:
 # the hook and the MCP layer are tuned, each against scenario 3, and that the
 # documents, the engine and `CLAUDE.md` are frozen (#1833). HW-DR-0111
 # records the three rulings. The final round waits on a ruling of its own.
+# The re-cut of 0.07 (#1868, HW-DR-0112) replaced that design: the engine is
+# tuned by the text its verbs print, in scenario 2 against scenario 1, and
+# the skills, the hooks and MCP each against scenario 2. The owner approved
+# $1,300.00 for the engine layer on 2026-10-29 (#1877), so `approved_cents`
+# is that figure, the approval of #1877 alone, and each later layer's issue
+# sets its own when its plan is posted.
 #
 # `open` holds the one-layer rule (#1819). It names the one layer whose plan
 # the owner accepted, or it is `none`, and only the tuning round declares it.
@@ -1057,7 +1063,9 @@ sets:
 # of 2026-10-22 accepts under the owner's standing ruling of rounds (#1777).
 # Round 1 kept its variant 1 on 2026-10-25, 127 of 145 against 81 of 142,
 # and the skills layer opened for its round 2 under the plan below, against
-# that confirmation as the best so far.
+# that confirmation as the best so far. Those rounds ran on the design of
+# HW-DR-0111 and closed with #1777. The engine layer now opens for its
+# round 1, scenario 2 against scenario 1, under the plan posted on #1877.
 #
 # The tuning round runs in rounds (#1838), as the owner ruled on 2026-10-22
 # (#1777): a round screens `variants` changes of the open layer at `screen`
@@ -1067,19 +1075,22 @@ sets:
 # alone. A layer takes at most `tries` rounds, and it stops after
 # `stop_after_empty` rounds in a row with nothing kept. The layers run in
 # `order`, and a round of a later layer waits while an earlier one is open.
+# The engine runs first, because the skills, the hooks and MCP measure
+# their scenarios against its pin of scenario 2 (#1868).
 # The screen is 22 sessions and the confirmation 145, as HW-DR-0112 "Phase
 # A" states (#1874), and `tools/probe/declared.py <declaration> tuning`
 # rounds each up to a whole number of repetitions over the probes of the
 # set: 22 and 154 over the 22 probes of `tuning`. The screen was 24 and the
 # confirmation 144 over the five probes of HW-DR-0111, which ran 25 and 145.
 # The owner split the approval in two on 2026-10-22 (#1777, comment
-# 6339176737). `base_ceiling_cents` is the most the bases may spend, $220.00:
-# the first `base` try, which measures scenario 3 at the confirmation's
-# count, and the first best so far of each layer (#1833). `ceiling_cents` is
-# the most every other try may spend, $1,290.00, a later base included. The
-# two together are inside the $1,512.00 approval, and `tools/probe/try.sh
-# plan` refuses a launch whose charge is priced above what is left under its
-# own ceiling.
+# 6339176737), and #1877 keeps the split. `base_ceiling_cents` is the most
+# the bases may spend, $154.00: the first `base` try, which measures
+# scenario 1 at the confirmation's count of 154 sessions, and the first best
+# so far of the engine layer, scenario 2 at the same count. `ceiling_cents`
+# is the most every other try may spend, $1,146.00, a later base included.
+# The two together are the $1,300.00 approval of #1877, and
+# `tools/probe/try.sh plan` refuses a launch whose charge is priced above
+# what is left under its own ceiling.
 rounds:
   screening:
     set: tuning
@@ -1090,15 +1101,21 @@ rounds:
     set: tuning
     rates: [0.625, 0.375]
     tries: 4
-    approved_cents: 151200
+    approved_cents: 130000
     screen: 22
     confirm: 145
     variants: 4
     stop_after_empty: 2
-    order: [skills, hooks, mcp]
-    ceiling_cents: 129000
-    base_ceiling_cents: 22000
-    open: none
+    order: [engine, skills, hooks, mcp]
+    ceiling_cents: 114600
+    base_ceiling_cents: 15400
+    open:
+      layer: engine
+      scenario: 2
+      try: 1
+      cap_cents: 8000
+      plan: PLAN_URL
+      change: none
   final:
     set: held-out
     rates: [0.90, 0.80]
