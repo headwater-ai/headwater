@@ -36,6 +36,8 @@ mkdir -p "$HEADWATER_RUN_ROOT" "$HW_SUPERVISE_TREE" "$scratch/bin"
 git init -q "$scratch/checkout"
 export HW_RUN_CHECKOUT="$scratch/checkout"
 unset HW_RUN_ALLOW_STALE
+# The loop must set this itself, so the host's value cannot pass the case.
+unset CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS
 
 passed=0
 failed=0
@@ -52,6 +54,7 @@ echo "$n" > "$STUB/count"
 printf '%s\n' "$*" > "$STUB/args-$n"
 if [ -e "$RUN/drain" ]; then echo yes; else echo no; fi > "$STUB/drain-at-start-$n"
 echo "$$" > "$STUB/pid-$n"
+printf '%s\n' "${CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS-unset}" > "$STUB/bg-ceiling-$n"
 call() { printf '{"type":"assistant","message":{"id":"m%s","usage":{"input_tokens":0,"cache_read_input_tokens":%s}}}\n' "$1" "$2"; }
 merge() { printf '{"iter":1,"issue":%s,"pr":1,"merge":"abc1234","verdict":"MERGE","proved":"p","opened":[],"closed":[]}\n' "$1" >> "$RUN/log.jsonl"; }
 [ -f "$STUB/$n.sh" ] && . "$STUB/$n.sh"
@@ -87,6 +90,8 @@ same '  and the call past 130000 drains session 1' 1 "$(printf '%s\n' "$out" | g
 same '  and a second session starts once the first exits' 2 "$(cat "$STUB/count")"
 same '  and drain is removed before it starts' no "$(cat "$STUB/drain-at-start-2")"
 same '  and each session is the resume form of next-run' '-p /next-run --resume ctx --output-format stream-json --verbose' "$(cat "$STUB/args-2")"
+same '  and each session runs with no ceiling on its background waits, so claude -p does not stop its subagents' \
+    '0|0' "$(cat "$STUB/bg-ceiling-1")|$(cat "$STUB/bg-ceiling-2")"
 same '  and a session that exits without a drain stops the loop, and says why' \
     'STOPPED: session, session 2 exited without a drain' "$(printf '%s\n' "$out" | grep '^STOPPED')"
 same '  and the context line is read over both sessions' \
@@ -127,6 +132,14 @@ printf 'stage built\n' > "$RUN/handover/10"
 printf 'merge 10\n' > "$STUB/1.sh"
 out=$(sh "$tool" inflight 2>&1)
 same 'an unlogged handover is in flight, so a session runs' 1 "$(cat "$STUB/count" 2>/dev/null || echo 0)"
+# A ruled pull request in the integrator queue is in flight even when resume
+# prints nothing for its issue, as when the issue is ruled gated after its
+# slice was queued (run 20261028-2310, PR #1896).
+fresh queued ''
+printf '{"pr":1,"issue":10,"branch":"b","sha":"abc1234","footprint":"x","ruling":"merge"}\n' > "$RUN/integrate.jsonl"
+printf 'merge 10\n' > "$STUB/1.sh"
+out=$(sh "$tool" queued 2>&1)
+same 'a pull request the integrator queue still lists is in flight, so a session runs' 1 "$(cat "$STUB/count" 2>/dev/null || echo 0)"
 
 printf '\n# the 5-hour window\n'
 fresh usage
