@@ -8,9 +8,16 @@
 #
 # 1. a `title:` line in its front matter that matches <title-pattern>, an
 #    extended regular expression read without regard to case;
-# 2. the kind <kind>, as the `kind` line of `headwater explain` states it;
-# 3. the identifier <ruling> as a whole name somewhere in its bytes, in a
-#    relation or a link, so that `HW-DR-01120` does not stand for `HW-DR-0112`.
+# 2. the kind <kind>, as `.kind` of `headwater explain --json` states it;
+# 3. an edge, of any relation, to <ruling>, as `headwater explain --json`
+#    reads it: an entry of `related` with `inbound` false whose `targets`
+#    holds <ruling> exactly, so that `HW-DR-01120` or `HW-DR-0112.` does not
+#    stand for `HW-DR-0112`.
+#
+# The citation is a relation and not a name in the file, so a ruling that a
+# body sentence or a commented relation line names is not cited (#1874.3b).
+# The title selects a candidate and decides nothing, so it is read from the
+# front matter.
 #
 # The grading copy holds no history, so nothing here can ask which file is
 # new. The title pattern is what selects the document the session wrote. A
@@ -23,24 +30,28 @@ set -u
 [ $# -eq 4 ] || hw_oracle_usage "typed-at.sh [--check-clean] <dir> <kind> <ruling> <title-pattern>"
 dir=${1%/} kind=$2 ruling=$3 pattern=$4
 [ -d "$dir" ] || hw_oracle_fail "$dir is not a directory"
-hw_oracle_engine
+hw_oracle_tmp
 
 titled=0 seen=""
 for file in "$dir"/*.md; do
     [ -f "$file" ] || continue
     hw_oracle_front_matter "$file" | grep -E -i -q "^title:.*($pattern)" || continue
     titled=$((titled + 1))
-    typed=$("$hw_engine" explain --root . "$file" 2> /dev/null | sed -n 's/^  kind \([^ ]*\).*/\1/p' | sed -n '1p')
+    if ! hw_oracle_explain "$file" "$hw_oracle_scratch/doc.json"; then
+        seen="the engine reads no document $file"
+        continue
+    fi
+    typed=$(jq -r '.kind // ""' "$hw_oracle_scratch/doc.json")
     if [ "$typed" != "$kind" ]; then
         seen="$file is typed ${typed:-as nothing}"
         continue
     fi
-    if ! hw_oracle_names_whole "$ruling" "$file"; then
-        seen="$file does not cite $ruling"
+    if ! hw_oracle_cites "$hw_oracle_scratch/doc.json" "$ruling"; then
+        seen="$file declares no edge to $ruling as the engine parses it"
         continue
     fi
     hw_oracle_subjects=${file#./}
-    hw_oracle_pass_clean "$file is typed $kind under $dir and cites $ruling"
+    hw_oracle_pass_clean "$file is typed $kind under $dir and cites $ruling in a relation"
 done
 [ "$titled" -gt 0 ] || hw_oracle_fail "no document under $dir has a title that matches the pattern"
 hw_oracle_fail "$seen"

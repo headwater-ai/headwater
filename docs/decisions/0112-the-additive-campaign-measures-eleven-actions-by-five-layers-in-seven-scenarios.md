@@ -34,6 +34,8 @@ relations:
     - tools/probe/seal.sh
     - tools/probe/try-fixtures.sh
     - tools/probe/probe-record-fixtures.sh
+    - tools/probe/phrasing.sh
+    - tools/probe/campaign.sh
   supersedes:
     - HW-DR-0111
   traces_to:
@@ -107,6 +109,8 @@ Added on 2026-10-29 by the second slice of #1874. A command can read its argumen
 Added on 2026-10-30 by the third slice of #1874. `successor-typed.sh`, `moved.sh`, `lock-regenerated.sh` and `nothing-else-broken.sh` also count only the errors on the documents that they name. `moved.sh` also reads each file that links the moved file, and there it counts only an error whose message names that file. A tree that nobody changed already passes `taxonomy resolve --check`. So a probe of row 8 names the rule that the change must make the engine apply, and the pin then fails. A baseline of row 9 names one file in a `# scope:` line, and the script compares only the findings on that file. A baseline of the whole tree changes with each finding that any change adds, so a committed baseline would go stale. A session that deletes the edge or the clause that carries the finding also clears it. So a baseline names the structure that the repair keeps, in an `# edge:` line or a `# summary:` line.
 
 Changed on 2026-10-30 by round 4 of the third slice of #1874. An oracle does not match a line of a file to decide on a relation, an entry or a kept text. A comment, a quoted value or a body line satisfied such a match. `successor-typed.sh` and `nothing-else-broken.sh` read each relation and each summary as `headwater explain --json` gives them. `lock-regenerated.sh` reads a retired term as the engine's own rule reports it. It writes one sentence into a copy of the tree in a scratch root, and it runs `headwater check --json` there. `moved.sh` also reads the engine's `link.path.unresolved` findings, which parse every link form.
+
+Changed on 2026-10-30 by slice 3b of #1874. `typed-at.sh` and `reciprocal-link.sh` also read each relation as `headwater explain --json` gives it. So `typed-at.sh` counts a citation of the ruling only when a relation of the document holds it. A citation in the body or in a comment does not count. A baseline of row 9 can also name text that the repair removes from a summary, in a `# summary-not:` line. A file can carry a second finding of the same rule in its body. Then a repair of the body alone matches the count of the baseline, and that line fails it.
 
 Row 11 has two conditions. The `oracle:` facet names the oracle over the tree. `no-hook-warning.sh` reads the harness log of the session from `HEADWATER_ORACLE_HARNESS_LOG`, because the stream holds no hook attachment. #1875 exports that variable and runs the script on each session of row 11.
 

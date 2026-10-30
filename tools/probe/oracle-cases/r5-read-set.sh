@@ -47,3 +47,43 @@ wrong() {
     link docs/evaluations/the-measurement-layer.md discharges HW-OBL-0017 &&
         link docs/obligations/0017-publishing-the-read-set-skips-a-re-run-on-two-of-the-eighteen.md discharged_by HW-EVAL-the-measurement-layer
 }
+
+# The mutants of #1874.3b. Each one writes the first half of the edge and
+# the second half where the engine parses no edge, so a reader of the
+# file's lines passes the commented one and `reciprocal-link.sh`, which
+# reads each edge through `headwater explain --json`, fails both.
+#
+# Turn the line of the target under the relation in the `relations:` block
+# into a comment, and the relation's own line too where no other target is
+# left under it.
+comment_out() {
+    python3 -I - "$1" "$2" "$3" <<'PY'
+import sys
+path, relation, target = sys.argv[1:]
+text = open(path).read()
+head, sep, body = text[4:].partition("\n---\n")
+lines = head.split("\n")
+key = "  " + relation + ":"
+at = lines.index(key)
+end = at + 1
+while end < len(lines) and lines[end].startswith("    "):
+    end += 1
+items = lines[at + 1:end]
+item = items.index("    - " + target)
+lines[at + 1 + item] = "    # - " + target
+if not any(line.startswith("    - ") for line in lines[at + 1:end]):
+    lines[at] = "  # " + relation + ":"
+open(path, "w").write("---\n" + "\n".join(lines) + sep + body)
+PY
+}
+
+# The reference change, with the second half as a commented relation line.
+commented_edge() {
+    reference && comment_out docs/obligations/0017-publishing-the-read-set-skips-a-re-run-on-two-of-the-eighteen.md discharged_by HW-EVAL-what-a-check-can-know && grep -q '^    # - HW-EVAL-what-a-check-can-know$' docs/obligations/0017-publishing-the-read-set-skips-a-re-run-on-two-of-the-eighteen.md
+}
+
+# The first half, with the second half as a sentence of the body.
+body_only() {
+    link docs/evaluations/what-a-check-can-know.md discharges HW-OBL-0017 && printf '\nThe measurement that discharges this record is HW-EVAL-what-a-check-can-know.\n' >> docs/obligations/0017-publishing-the-read-set-skips-a-re-run-on-two-of-the-eighteen.md
+}
+more_wrong="commented_edge body_only"

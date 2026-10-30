@@ -31,7 +31,8 @@
 #
 # Two comment lines name the structure the repair keeps, because a session
 # that deletes the edge or the clause a finding is on clears the finding and
-# raises nothing (#1874.3). Each is read through `headwater explain --json`,
+# raises nothing (#1874.3), and a third names text the repair removes. Each
+# is read through `headwater explain --json`,
 # as `hw_oracle_explain` in `lib.sh` reads it, and never as lines of the
 # file, so a comment, a quoted value, a body line or an edge under another
 # key keeps nothing:
@@ -42,6 +43,11 @@
 # - `# summary: <path> <literal>` fails unless the summary the engine parsed
 #   for <path> holds <literal>. That is a match inside a value the engine
 #   parsed, and not inside a line of the file.
+# - `# summary-not: <path> <literal>` fails when that summary holds
+#   <literal>. A file can carry the target finding in its summary and a
+#   second finding of the same rule in its body. The findings are compared
+#   by rule and path, so a repair of the body alone matches the baseline,
+#   and this line names the words the summary must lose (#1874.3b).
 #
 # The `# keep: <path> <literal>` line of round 3 matched lines of the file,
 # and a line that was not the structure satisfied it, so it is refused.
@@ -96,6 +102,16 @@ if [ "$record" = no ]; then
         hw_oracle_explain "$hw_summary_path" "$hw_oracle_scratch/summary.json" || hw_oracle_fail "the engine reads no document $hw_summary_path, which the repair keeps"
         jq -e --arg literal "$hw_summary_literal" '(.summary // "") | contains($literal)' "$hw_oracle_scratch/summary.json" > /dev/null 2>&1 || hw_oracle_fail "the summary the engine parses for $hw_summary_path does not hold \`$hw_summary_literal\`, so the session removed what the task asked it to repair"
     done < "$hw_oracle_scratch/summaries"
+    # Each `# summary-not:` line names text the parsed summary must lose
+    # (#1874.3b).
+    sed -n 's/^# summary-not: *//p' "$hw_oracle_scratch/comments" > "$hw_oracle_scratch/summaries-not"
+    while IFS= read -r hw_summary; do
+        hw_summary_path=${hw_summary%% *}
+        hw_summary_literal=${hw_summary#* }
+        [ -n "$hw_summary_path" ] && [ "$hw_summary_literal" != "$hw_summary" ] && [ -n "$hw_summary_literal" ] || hw_oracle_usage "a summary-not line is \`# summary-not: <path> <literal>\`, and $baseline has \`# summary-not: $hw_summary\`"
+        hw_oracle_explain "$hw_summary_path" "$hw_oracle_scratch/summary.json" || hw_oracle_fail "the engine reads no document $hw_summary_path, which the task names"
+        jq -e --arg literal "$hw_summary_literal" '(.summary // "") | contains($literal) | not' "$hw_oracle_scratch/summary.json" > /dev/null 2>&1 || hw_oracle_fail "the summary the engine parses for $hw_summary_path still holds \`$hw_summary_literal\`, so the session did not repair what the task names"
+    done < "$hw_oracle_scratch/summaries-not"
 fi
 
 if [ "$record" = yes ]; then
