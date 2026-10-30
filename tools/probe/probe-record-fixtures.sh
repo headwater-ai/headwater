@@ -932,6 +932,8 @@ STUB
     printf 'pub fn changed() {}\n' > "$scratch/rec-ws/src/lib.rs"
     printf '# changed\n' > "$scratch/rec-ws/README.md"
     tab=$(printf '\t')
+    # The carriage return of `d` becomes a space, so its evidence ends in one.
+    sp=' '
     # rec_run <name> <record or -> <produced...>: one transform run over the
     # record's oracle tree.
     rec_run() {
@@ -953,7 +955,7 @@ STUB
         "a${tab}fail${tab}a: fail: x
 b${tab}pass${tab}b: pass: y
 c${tab}not-run${tab}-
-d${tab}pass${tab}d: z
+d${tab}pass${tab}d: z${sp}
 e${tab}pass${tab}-" "$(cat "$scratch/rec-three.tsv" 2>/dev/null)"
     absent "and the command's standard error is in no line" "noise" "$scratch/rec-three.tsv"
     absent "and a command that wrote to standard error alone has no evidence from it" "diagnostics" "$scratch/rec-three.tsv"
