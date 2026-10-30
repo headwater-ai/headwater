@@ -121,6 +121,30 @@
 # difference is above zero. A screen or a best so far is never kept, and a
 # best so far whose sessions are not the confirmation's count is refused.
 #
+# **The oracle's verdict is the pass of a probe that has one** (#1875). Each
+# `result.md`, of every stage, holds one line for each probe of the try, in
+# one of two forms:
+#
+#     probe <id> (<action>): <p> of <n> by the oracle <name> (grader <x> of <g>)
+#     probe <id> (<action>): <x> of <g> by the grader
+#
+# The first form is for a probe whose plan line is `oracle: command:<name>`.
+# `<n>` is the number of the probe's sessions under `<try>/a/sessions/` that
+# recorded, with `status` 0, and hold an `oracles` file, which
+# `tools/probe/campaign.sh` writes. The probe of a session is the one its
+# `record.argv` names. `<p>` is the number of those whose line for `<name>`
+# reads `pass`. `<x>/<g>` is the probe's own row of `headwater probe compare`
+# of the transcript against itself, which is the grader's count. The line
+# ends ` disagree` when the two counts differ: the recorder writes each
+# oracle's verdict from the same findings the grader reads, so a
+# disagreement is a defect to look at. The second form is for every other
+# probe, including the probes that grade against a rule. The action and the
+# oracle come from `headwater probe plan` of the round's set in the try's
+# scenario, and never from a probe's YAML. A try whose sessions hold no
+# `oracles` file at all was recorded before #1875, prints
+# `oracle: not recorded (the batch predates #1875)`, and shows the grader's
+# count for every probe. These lines are not in `ledger.jsonl`.
+#
 # **Rounds and order.** A layer takes at most `tries` rounds, and it stops
 # after `stop_after_empty` rounds in a row with nothing kept. `plan` refuses
 # a round of a layer that `order` does not name, a round of a later layer
@@ -927,6 +951,58 @@ compare_row() {
     compare_line=$(printf '%s\n' "$compare_out" | grep '^pooled: ' | tail -1)
     [ -n "$compare_line" ] || { say "headwater probe compare $1 $2 printed no pooled: line."; exit 2; }
     printf '%s\n' "$compare_line"
+}
+
+# probe_lines <transcript> <scenario>: one line for each probe of the try,
+# the oracle's verdict beside the grader's count, in the two forms the header
+# states (#1875). The probes are those of the plan that the transcript's
+# compare grades, in the plan's order. It reads `$try`.
+probe_lines() {
+    pl_set=$(declared rounds | awk '$1 == "tuning" { print $2 }') || exit $?
+    if ! pl_plan=$("$engine" probe plan --root "$checkout" --tier additive --arm "scenario-$2" --set "$pl_set" 2> /dev/null); then
+        say "headwater probe plan of the set $pl_set did not run, so the oracle of each probe is not known."
+        exit 2
+    fi
+    if ! pl_compare=$("$engine" probe compare --root "$checkout" "$checkout/$1" "$checkout/$1" 2> /dev/null); then
+        say "headwater probe compare $1 $1 did not run, so the grader's count of each probe is not known."
+        exit 2
+    fi
+    pl_recorded=no
+    for pl_file in "$try"/a/sessions/*/oracles; do
+        [ -f "$pl_file" ] && pl_recorded=yes
+    done
+    [ "$pl_recorded" = yes ] || echo "oracle: not recorded (the batch predates #1875)"
+    printf '%s\n' "$pl_plan" | awk '
+        function flush() { if (id != "") print id, (action == "" ? "-" : action), (oracle == "" ? "-" : oracle) }
+        /^- HW-PROBE-/ { flush(); id = $2; action = ""; oracle = ""; next }
+        /^- / { flush(); id = ""; next }
+        id != "" && /^ +action: / { action = $2 }
+        id != "" && /^ +oracle: / { oracle = $2 }
+        END { flush() }
+    ' | while read -r pl_id pl_action pl_oracle; do
+        pl_grader=$(printf '%s\n' "$pl_compare" | awk -v p="$pl_id:" '$1 == p && $3 == "against" { print $2; exit }')
+        [ -n "$pl_grader" ] || continue
+        pl_x=${pl_grader%%/*} pl_g=${pl_grader#*/}
+        case $pl_recorded:$pl_oracle in
+            yes:command:*)
+                pl_name=${pl_oracle#command:}
+                pl_p=0 pl_n=0
+                for pl_dir in "$try"/a/sessions/*/; do
+                    [ -f "${pl_dir}oracles" ] || continue
+                    [ "$(head -1 "${pl_dir}status" 2>/dev/null)" = 0 ] || continue
+                    [ "$(awk 'previous == "--probe" { print; exit } { previous = $0 }' "${pl_dir}record.argv" 2>/dev/null)" = "$pl_id" ] || continue
+                    pl_n=$((pl_n + 1))
+                    if awk -F '\t' -v n="$pl_name" '$1 == n && $2 == "pass" { found = 1 } END { exit !found }' "${pl_dir}oracles"; then
+                        pl_p=$((pl_p + 1))
+                    fi
+                done
+                pl_line="probe $pl_id ($pl_action): $pl_p of $pl_n by the oracle $pl_name (grader $pl_x of $pl_g)"
+                [ "$pl_p/$pl_n" = "$pl_x/$pl_g" ] || pl_line="$pl_line disagree"
+                printf '%s\n' "$pl_line"
+                ;;
+            *) printf 'probe %s (%s): %s of %s by the grader\n' "$pl_id" "$pl_action" "$pl_x" "$pl_g" ;;
+        esac
+    done
 }
 
 # ------------------------------------------------------------ the base
@@ -1883,6 +1959,9 @@ $records records of the canary, not 8"
         fi
         # Step 5: the base row, and for a screen or a best so far, the record.
         base_row=$(compare_row "$transcript" "$base_row_control") || exit $?
+        # Each probe's pass: the oracle's verdict where the probe has a
+        # command oracle, and the grader's count otherwise (#1875).
+        result_probes=$(probe_lines "$transcript" "$result_scenario") || exit $?
         if [ "$result_stage" = base ]; then
             result_passed=$(printf '%s\n' "$base_row" | sed -n 's|^pooled: \([0-9][0-9]*\)/\([0-9][0-9]*\) against .*|\1 \2|p')
             if [ -z "$result_passed" ]; then
@@ -1899,6 +1978,7 @@ $records records of the canary, not 8"
                 echo "spent: $result_spent"
                 echo "transcript: $transcript"
                 echo "passed: $1 of $2"
+                [ -z "$result_probes" ] || printf '%s\n' "$result_probes"
                 echo "base row: $base_row, against $base_row_control"
                 echo "keep: never: a base is never kept; it is the measurement a confirmation reads (#1838)"
             } > "$try/result.md"
@@ -1924,6 +2004,7 @@ $records records of the canary, not 8"
                 echo "transcript: $transcript"
                 echo "used: $result_used of $result_sessions sessions used the $result_layer layer"
                 echo "passed: $1 of $2"
+                [ -z "$result_probes" ] || printf '%s\n' "$result_probes"
                 echo "base row: $base_row"
                 echo "keep: never: a $result_stage is never kept, and only a confirmation is (owner, 2026-10-22, #1777)"
             } > "$try/result.md"
@@ -1960,6 +2041,7 @@ $records records of the canary, not 8"
             echo "best so far: $best"
             echo "keep row: $keep_row"
             echo "base row: $base_row"
+            [ -z "$result_probes" ] || printf '%s\n' "$result_probes"
             echo "keep: $keep"
             echo "direction: $direction"
             echo "rule: keep a tuning change only when the whole uncertainty range of the difference against the best so far sits above zero (owner, 2026-10-20, #1777, ruling 7)"

@@ -186,11 +186,18 @@ ${2%%=*}: ${2#*=}" ;;
             esac
             exit 0
         fi
-        for control in "$@"; do :; done
+        treated= control=
+        for each in "$@"; do treated=$control control=$each; done
         if [ -f "$CASE/probe-rows" ]; then
             cat "$CASE/probe-rows"
         else
             echo "HW-PROBE-a: 9/18 against 9/18, +0.0 points [-30.0, +30.0]"
+        fi
+        # A transcript against itself is the grader's count of each probe,
+        # which `result` reads (#1875), and its pooled line is not read.
+        if [ "$treated" = "$control" ]; then
+            echo "pooled: 9/18 against 9/18, +0.0 points [-30.0, +30.0]"
+            exit 0
         fi
         case $control in
             */additive-screening-scenario-0.md) cat "$CASE/pooled-base" ;;
