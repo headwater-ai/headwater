@@ -1101,6 +1101,13 @@ oracle_case
 printf 'fixture-oracle\tnot-run\t-\n' > "$CASE/root/docs-r2-confirm/a/sessions/L1-p1-r2/oracles"
 run result "$CASE/root" docs-r2-confirm
 check "result: an oracle that did not run is not a pass" result_md_has "probe HW-PROBE-a (change_governed_code): 1 of 2 by the oracle fixture-oracle (grader 2 of 2) disagree"
+# The record line is the oracle's whole name: another oracle whose name
+# begins with it passes in both sessions and counts for nothing.
+oracle_case
+printf 'fixture-oracle-2\tpass\t-\nfixture-oracle\tfail\t-\n' > "$CASE/root/docs-r2-confirm/a/sessions/L1-p1-r1/oracles"
+printf 'fixture-oracle-2\tpass\t-\nfixture-oracle\tfail\t-\n' > "$CASE/root/docs-r2-confirm/a/sessions/L1-p1-r2/oracles"
+run result "$CASE/root" docs-r2-confirm
+check "result: an oracle whose name begins with the probe's oracle is not its pass" result_md_has "probe HW-PROBE-a (change_governed_code): 0 of 2 by the oracle fixture-oracle (grader 2 of 2) disagree"
 # A try whose sessions hold no record at all predates the record, and still
 # renders, with the grader's count for every probe.
 oracle_case
