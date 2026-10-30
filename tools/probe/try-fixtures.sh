@@ -1085,6 +1085,16 @@ oracle_session L1-p1-r3 HW-PROBE-a 3 fail
 oracle_session L1-p1-r4 HW-PROBE-b 0 fail
 run result "$CASE/root" docs-r2-confirm
 check "result: sessions that did not record, and other probes' sessions, are not counted" result_md_has "probe HW-PROBE-a (change_governed_code): 2 of 2 by the oracle fixture-oracle (grader 2 of 2)"
+# A probe whose plan line is `oracle: test:<name>` grades against a
+# cargo-test oracle, which is a row 2-9 or 11 oracle too (HW-DR-0112), so it
+# shows the oracle's verdict as a `command:` probe does, read from the record
+# line of the bare name.
+oracle_case
+printf -- '- HW-PROBE-a (docs/probes/a.md)\n    category: sufficiency\n    action: change_governed_code\n    oracle: test:fixture-test\n- HW-PROBE-b (docs/probes/b.md)\n    category: discovery\n    action: ask_or_locate\n' > "$CASE/plan-plain"
+printf 'fixture-oracle\tpass\t-\nfixture-test\tpass\ttest result: ok. 1 passed; 0 failed\n' > "$CASE/root/docs-r2-confirm/a/sessions/L1-p1-r1/oracles"
+printf 'fixture-oracle\tpass\t-\nfixture-test\tfail\ttest result: FAILED. 0 passed; 1 failed\n' > "$CASE/root/docs-r2-confirm/a/sessions/L1-p1-r2/oracles"
+run result "$CASE/root" docs-r2-confirm
+check "result: a test-oracle probe shows the oracle's pass beside the grader's" result_md_has "probe HW-PROBE-a (change_governed_code): 1 of 2 by the oracle fixture-test (grader 2 of 2) disagree"
 # A try whose sessions hold no record at all predates the record, and still
 # renders, with the grader's count for every probe.
 oracle_case
