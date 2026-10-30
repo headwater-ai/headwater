@@ -1733,246 +1733,402 @@ fn the_additive_spec_plans_each_scenario_in_each_round() {
     );
 }
 
-/// The probes the owner ruled into the tuning set on 2026-10-22 (#1833): the
-/// two kept probes, and the three of proposal 1 that replace the two dropped.
-const TUNING_SET: &[&str] = &[
+/// The decision that fixes the probe set of the additive campaign, and the
+/// subsection of it that freezes the `held-out` set.
+const SET_DECISION: &str =
+    "docs/decisions/0112-the-additive-campaign-measures-eleven-actions-by-five-layers-in-seven-scenarios.md";
+const SET_SUBSECTION: &str = "The probe set";
+
+/// The members of the sets before #1874: the five tuning and four held-out
+/// probes of HW-DR-0111, the five of the code set (#1835), and the two that
+/// the owner dropped from the tuning set on 2026-10-22 (#1833). Each one stays
+/// on the shelf as the record its transcripts cite, and none stands at
+/// `current`, so no set can draw it again.
+const FORMER_MEMBERS: &[&str] = &[
     "HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged",
     "HW-PROBE-an-agent-reaches-the-adjudication-when-the-decision-a-tombstone-links-is-superseded",
     "HW-PROBE-a-session-that-changes-the-recorder-reaches-the-recorder-contract",
     "HW-PROBE-a-session-that-moves-a-shelf-reaches-the-relocation-guide",
     "HW-PROBE-a-session-that-changes-a-verb-s-default-reaches-the-verb-s-interface-contract",
+    "HW-PROBE-what-a-session-writes-points-back-at-the-ruling-it-rests-on",
+    "HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens",
+    "HW-PROBE-a-session-says-which-date-a-corrected-status-carries",
+    "HW-PROBE-a-session-says-whether-a-command-or-a-hand-writes-a-governs-line",
+    "HW-PROBE-a-rule-that-reads-the-date-takes-it-from-the-run-and-ships-with-the-fixture-that-fails-it",
+    "HW-PROBE-a-figure-a-session-adds-to-a-hand-built-page-is-measured-and-never-typed",
+    "HW-PROBE-a-session-says-where-a-check-gets-the-version-that-stood-before-a-change",
+    "HW-PROBE-a-session-says-what-a-refusal-writes-on-standard-output-under-json",
+    "HW-PROBE-a-session-says-what-a-verb-that-mints-an-identifier-writes-beside-the-document",
+    "HW-PROBE-a-session-follows-two-citations-from-a-record-the-task-does-not-name",
+    "HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor",
 ];
 
-/// The tuning set is the five probes the owner ruled on 2026-10-22, and the
-/// two it dropped are in no set (#1833, clauses 1 and 2).
-///
-/// The two dropped probes stay on the shelf as records: the two-citations
-/// probe sat at the ceiling in every scenario that holds `docs/`, and the
-/// cold-agent probe asked for a rule that already exists. Each new probe keys
-/// on `opened`, so it declares no oracle.
-#[test]
-fn the_tuning_set_is_the_five_probes_the_owner_ruled_on_2026_10_22() {
-    let root = repository_root();
-    let path = root.join(headwater_probe::budget::PATH);
-    let source =
-        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
-    let budgets = headwater_probe::Budgets::read(&source).unwrap_or_else(|e| panic!("{e}"));
-
-    let mut tuning = budgets
-        .set("tuning")
-        .expect("the tuning set is declared")
-        .to_vec();
-    tuning.sort();
-    let mut expected: Vec<String> = TUNING_SET.iter().map(|id| id.to_string()).collect();
-    expected.sort();
-    assert_eq!(tuning, expected, "the tuning set of .headwater/probe.yml");
-
-    let dropped = [
-        "HW-PROBE-a-session-follows-two-citations-from-a-record-the-task-does-not-name",
-        "HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor",
-    ];
-    let shelf = probes();
-    for id in dropped {
-        assert!(
-            shelf.iter().any(|probe| probe.id.as_deref() == Some(id)),
-            "{id} left the shelf; it stays as a record"
-        );
-        // `code` is the set #1835 adds, and a set the file does not declare
-        // holds nothing.
-        for set in ["tuning", "held-out", "code"] {
-            let members = budgets.set(set).unwrap_or_default();
-            assert!(
-                !members.iter().any(|member| member == id),
-                "{id} is still a member of the set `{set}`"
-            );
-        }
-    }
-
-    // Each new probe examines its target, and the target stands at `current`:
-    // the relocation guide was `draft` with an accepted warrant, and the
-    // owner ruled that it is promoted before any base is measured (clause 4).
-    let targets = [
-        (
-            "HW-SPEC-the-recorder-contract",
-            "docs/spec/15-the-recorder-contract.md",
-        ),
-        ("HW-HOW-relocate-a-shelf", "docs/how-to/relocate-a-shelf.md"),
-        (
-            "HW-IFACE-headwater-route",
-            "docs/interfaces/headwater-route.md",
-        ),
-    ];
-    for (id, (target, target_path)) in TUNING_SET[2..].iter().zip(targets) {
-        let probe = shelf
-            .iter()
-            .find(|probe| probe.id.as_deref() == Some(*id))
-            .unwrap_or_else(|| panic!("{id} is not on {SHELF}"));
-        let (_, document) = front_matter(&root.join(&probe.path));
-        assert_eq!(
-            examines_of(&document),
-            vec![target.to_string()],
-            "{id}: examines"
-        );
-        let (_, examined) = front_matter(&root.join(target_path));
-        assert_eq!(
-            scalar(&examined, "id").as_deref(),
-            Some(target),
-            "{target_path}: id"
-        );
-        assert_eq!(
-            scalar(&examined, "status").as_deref(),
-            Some("current"),
-            "{target}, which {id} examines, stands at `current`"
-        );
-        assert_eq!(
-            scalar(&document, "expectation").as_deref(),
-            Some("opened"),
-            "{id}: expectation"
-        );
-        assert_eq!(
-            scalar(&document, "oracle").as_deref(),
-            Some("none"),
-            "{id}: oracle"
-        );
-    }
+/// What the set case reads of one probe on the shelf.
+#[derive(Clone)]
+struct SetProbe {
+    id: String,
+    status: String,
+    action: String,
+    /// The number of `### Phrasing` headings in the body.
+    phrasings: usize,
 }
 
-/// The lead-in of the paragraph under `## Key` that names where plain code
-/// carries what a code probe needs (#1835).
-const PLAIN_CODE: &str = "**Where plain code carries it.**";
-
-/// The path a code span names, less a `:<lines>` suffix.
-fn path_of(span: &str) -> &str {
-    span.split_once(':').map_or(span, |(path, _)| path)
+/// The eleven actions of the grid in HW-DR-0112: the nine mechanical rows,
+/// and rows 1 and 10, which the grader reads from the transcript.
+fn grid_actions() -> Vec<&'static str> {
+    let mut actions = vec!["ask_or_locate", "review_change"];
+    actions.extend(MECHANICAL_ACTIONS);
+    actions
 }
 
-/// Whether a path of the repository is in plain code: outside `docs/` and
-/// outside every path of every layer under `layers:`, so scenario 0 holds it.
-fn in_plain_code(budgets: &headwater_probe::Budgets, path: &str) -> bool {
-    let under = |prefix: &str| path == prefix || path.starts_with(&format!("{prefix}/"));
-    !under("docs")
-        && !budgets
-            .layers
-            .iter()
-            .flat_map(|layer| layer.paths.iter().chain(layer.arms.iter()))
-            .chain(budgets.tooling.iter())
-            .any(|held| under(held.trim_end_matches('/')))
+/// The body of one `### <heading>` subsection, up to the next heading of
+/// level two or three. Empty when the subsection is absent.
+fn subsection_of<'a>(source: &'a str, heading: &str) -> &'a str {
+    let open = format!("\n### {heading}\n");
+    let Some(start) = source.find(&open) else {
+        return "";
+    };
+    let rest = &source[start + open.len()..];
+    let end = [rest.find("\n### "), rest.find("\n## ")]
+        .into_iter()
+        .flatten()
+        .min()
+        .unwrap_or(rest.len());
+    &rest[..end]
 }
 
-/// The code set is five probes whose answer plain code carries (#1835).
-///
-/// A code probe compares scenario 1 with scenario 0, so a probe that cannot
-/// pass in scenario 0 by construction has its gain built in, and a `patched`
-/// probe that any write satisfies measures nothing. So, for each member of
-/// `sets.code`:
-///
-/// - it is in neither fixed set, which HW-DR-0111 keeps as #1833 left them;
-/// - a `patched` member grades against an oracle `.headwater/probe.yml`
-///   declares under `oracles:`, and each file that oracle `holds` exists and
-///   names the probe in its first lines, so the seal removes it from every
-///   workspace and no session reads the oracle;
-/// - its `## Key` has a paragraph that opens with the lead-in above and names
-///   at least one existing file outside `docs/` and outside every layer, so
-///   scenario 0 holds what the probe needs;
-/// - an `answered` member expects a proper part of its closed set.
-///
-/// No expected answer is written here, because the seal removes from a
-/// probe's arm tree every file that names it, and this file names none of
-/// the code probes.
-#[test]
-fn the_code_set_is_five_probes_whose_answer_plain_code_carries() {
-    let root = repository_root();
-    let path = root.join(headwater_probe::budget::PATH);
-    let source =
-        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
-    let budgets = headwater_probe::Budgets::read(&source).unwrap_or_else(|e| panic!("{e}"));
+/// The digest of a set by the rule HW-DR-0112 states: its identifiers sorted,
+/// one to a line, each line ended by a newline, so that
+/// `printf '%s\n' <identifiers> | sha256sum` gives the same hex digits.
+fn set_digest(members: &[String]) -> String {
+    let mut ids = members.to_vec();
+    ids.sort();
+    let text: String = ids.iter().map(|id| format!("{id}\n")).collect();
+    headwater_hash::digest(text.as_bytes())
+}
 
-    let code = budgets
-        .set("code")
-        .expect("the code set is declared under `sets:` (#1835)")
-        .to_vec();
-    assert_eq!(code.len(), 5, "the code set holds five probes: {code:?}");
+/// The first `sha256:` token of a text, with its sixty-four hex digits.
+fn digest_token(text: &str) -> Option<String> {
+    let at = text.find("sha256:")?;
+    let hex: String = text[at + "sha256:".len()..]
+        .chars()
+        .take_while(char::is_ascii_hexdigit)
+        .collect();
+    (hex.len() == 64).then(|| format!("sha256:{hex}"))
+}
 
-    let shelf = probes();
+/// Why the two sets are not the 44-probe split that HW-DR-0112 fixes, one
+/// line for each reason. Empty when they are.
+///
+/// Each of the eleven actions has 2 members in `tuning` and 2 in `held-out`.
+/// Each member is a `current` probe of the shelf with an action and two or
+/// three phrasings, and no probe is in both sets. Every `current` probe with
+/// an action is in one set. Each former member is on the shelf and not
+/// `current`. The decision states the digest of `held-out` in its subsection
+/// on the probe set, which is what freezes the set, and it names no member by
+/// identifier or by slug, because the seal removes from a session's tree each
+/// document that names the session's probe.
+fn set_findings(
+    tuning: &[String],
+    held_out: &[String],
+    shelf: &[SetProbe],
+    former: &[&str],
+    decision: &str,
+) -> Vec<String> {
     let mut findings = Vec::new();
-    for id in &code {
-        for fixed in ["tuning", "held-out"] {
-            if budgets.set(fixed).unwrap_or_default().contains(id) {
-                findings.push(format!("{id} is also in the fixed set `{fixed}`"));
+    let find = |id: &str| shelf.iter().find(|probe| probe.id == id);
+
+    for action in grid_actions() {
+        for (name, members) in [("tuning", tuning), ("held-out", held_out)] {
+            let count = members
+                .iter()
+                .filter(|id| find(id).is_some_and(|probe| probe.action == action))
+                .count();
+            if count != 2 {
+                findings.push(format!(
+                    "the action `{action}` has {count} members in `{name}`, and HW-DR-0112 wants 2"
+                ));
             }
         }
-        let Some(probe) = shelf.iter().find(|probe| probe.id.as_deref() == Some(id)) else {
-            findings.push(format!("{id} is not on {SHELF}"));
-            continue;
-        };
-        let (text, document) = front_matter(&root.join(&probe.path));
-        let slug = id.strip_prefix("HW-PROBE-").unwrap_or(id);
+    }
 
-        match probe.expectation.as_deref() {
-            Some("patched") => {
-                let oracle = scalar(&document, "oracle").unwrap_or_default();
-                match budgets.oracles.iter().find(|it| it.finding() == oracle) {
-                    None => findings.push(format!(
-                        "{id} grades against `{oracle}`, which no entry under `oracles:` is"
-                    )),
-                    Some(entry) => {
-                        if entry.holds.is_empty() && entry.parser.prefix() == "test" {
-                            findings.push(format!(
-                                "{id}: the oracle `{oracle}` runs a test and holds no file, so \
-                                 the session's tree holds the test it is graded by"
-                            ));
-                        }
-                        for held in &entry.holds {
-                            let head: String = std::fs::read_to_string(root.join(held))
-                                .unwrap_or_default()
-                                .lines()
-                                .take(10)
-                                .collect::<Vec<_>>()
-                                .join("\n");
-                            if !head.contains(slug) {
-                                findings.push(format!(
-                                    "{id}: {held}, which the oracle `{oracle}` holds, does not \
-                                     exist or does not name the probe in its first ten lines, \
-                                     so the seal leaves it in the session's tree"
-                                ));
-                            }
-                        }
-                    }
-                }
+    for (name, members) in [("tuning", tuning), ("held-out", held_out)] {
+        for id in members {
+            let Some(probe) = find(id) else {
+                findings.push(format!("{id} is in `{name}` and not on {SHELF}"));
+                continue;
+            };
+            if probe.status != "current" {
+                findings.push(format!(
+                    "{id} is in `{name}` and stands at `{}`, not `current`",
+                    probe.status
+                ));
             }
-            Some("answered") => {
-                if probe.expected.is_empty()
-                    || probe.expected.len() >= probe.answers.len()
-                    || probe.expected.iter().any(|it| !probe.answers.contains(it))
-                {
-                    findings.push(format!("{id} expects no proper part of its closed set"));
-                }
+            if probe.action.is_empty() {
+                findings.push(format!("{id} is in `{name}` and declares no action"));
             }
-            other => findings.push(format!(
-                "{id} declares the expectation {other:?}, and a code probe is `patched` or \
-                 `answered`"
-            )),
+            if !(2..=3).contains(&probe.phrasings) {
+                findings.push(format!(
+                    "{id} is in `{name}` and has {} phrasings, not two or three",
+                    probe.phrasings
+                ));
+            }
         }
+    }
+    for id in tuning.iter().filter(|id| held_out.contains(id)) {
+        findings.push(format!("{id} is in both `tuning` and `held-out`"));
+    }
 
-        let paragraph = section_of(&text, "Key")
-            .lines()
-            .find(|line| line.trim_start().starts_with(PLAIN_CODE))
-            .unwrap_or_default();
-        let carried = code_spans_in(paragraph)
-            .iter()
-            .map(|span| path_of(span))
-            .filter(|path| is_path(path))
-            .filter(|path| in_plain_code(&budgets, path))
-            .any(|path| root.join(path).is_file());
-        if !carried {
+    for probe in shelf {
+        if probe.status == "current"
+            && !probe.action.is_empty()
+            && !tuning.contains(&probe.id)
+            && !held_out.contains(&probe.id)
+        {
             findings.push(format!(
-                "{id}: `## Key` has no paragraph opening `{PLAIN_CODE}` that names an existing \
-                 path outside `docs/` and outside every layer, so nothing shows scenario 0 holds \
-                 what the probe needs"
+                "{} is a `current` probe of the action `{}` in neither set",
+                probe.id, probe.action
             ));
         }
     }
-    assert!(findings.is_empty(), "{}", findings.join("\n"));
+
+    for id in former {
+        match find(id) {
+            None => findings.push(format!(
+                "{id}, a former member, left {SHELF}; it stays as the record its transcripts cite"
+            )),
+            Some(probe) if probe.status == "current" => {
+                findings.push(format!("{id}, a former member, still stands at `current`"))
+            }
+            Some(_) => {}
+        }
+    }
+
+    let section = subsection_of(decision, SET_SUBSECTION);
+    let want = set_digest(held_out);
+    match digest_token(section) {
+        None => findings.push(format!(
+            "the subsection `{SET_SUBSECTION}` of the decision states no digest of `held-out`; \
+             it wants {want}"
+        )),
+        Some(stated) if stated != want => findings.push(format!(
+            "the decision freezes `held-out` at {stated}, and the set's digest is {want}: \
+             the set changed after it was frozen"
+        )),
+        Some(_) => {}
+    }
+
+    for id in tuning.iter().chain(held_out) {
+        let slug = id.strip_prefix("HW-PROBE-").unwrap_or(id);
+        if decision.contains(id.as_str()) || (!slug.is_empty() && decision.contains(slug)) {
+            findings.push(format!(
+                "the decision names the member {id}, so the seal removes it from that probe's tree"
+            ));
+        }
+    }
+    findings
+}
+
+/// The sets hold 2 `tuning` and 2 `held-out` probes of each of the eleven
+/// actions, and the `held-out` set is frozen by its digest in HW-DR-0112
+/// (#1874, clauses 1, 5 and 6).
+///
+/// The seeded shelf comes first: it passes as written, and each change to it
+/// is refused for the reason its label states. Then the real sets.
+#[test]
+fn the_sets_hold_two_tuning_and_two_held_out_probes_of_each_action_and_the_held_out_set_is_frozen()
+{
+    let probe = |id: &str, status: &str, action: &str, phrasings: usize| SetProbe {
+        id: id.to_owned(),
+        status: status.to_owned(),
+        action: action.to_owned(),
+        phrasings,
+    };
+    let mut shelf = vec![probe("HW-PROBE-old", "deprecated", "", 0)];
+    let mut tuning = Vec::new();
+    let mut held_out = Vec::new();
+    for action in grid_actions() {
+        for k in 1..=4 {
+            let id = format!("HW-PROBE-{action}-{k}");
+            shelf.push(probe(&id, "current", action, 2 + k % 2));
+            if k <= 2 {
+                tuning.push(id);
+            } else {
+                held_out.push(id);
+            }
+        }
+    }
+    let decision = |digest: &str| {
+        format!(
+            "# A decision\n\n### {SET_SUBSECTION}\n\nThe set is frozen at {digest}.\n\n### Next\n"
+        )
+    };
+    let frozen = decision(&set_digest(&held_out));
+    let former = ["HW-PROBE-old"];
+
+    let mut wrong = Vec::new();
+    let base = set_findings(&tuning, &held_out, &shelf, &former, &frozen);
+    if !base.is_empty() {
+        wrong.push(format!(
+            "seeded, the sound sets: wanted nothing, got {base:?}"
+        ));
+    }
+
+    let mut expect = |label: &str, found: Vec<String>, want: &str| {
+        if !found.iter().any(|it| it.contains(want)) {
+            wrong.push(format!(
+                "seeded, {label}: wanted a finding with `{want}`, got {found:?}"
+            ));
+        }
+    };
+
+    // An action with 3 tuning and 1 held-out member.
+    let first = grid_actions()[0];
+    let mut t = tuning.clone();
+    let mut h = held_out.clone();
+    let moved = h.remove(
+        h.iter()
+            .position(|id| id.starts_with(&format!("HW-PROBE-{first}-")))
+            .unwrap(),
+    );
+    t.push(moved);
+    let d = decision(&set_digest(&h));
+    expect(
+        "3 tuning and 1 held-out",
+        set_findings(&t, &h, &shelf, &former, &d),
+        &format!("`{first}` has 3 members in `tuning`"),
+    );
+
+    // A deprecated member.
+    let mut s = shelf.clone();
+    s[1].status = "deprecated".to_owned();
+    expect(
+        "a deprecated member",
+        set_findings(&tuning, &held_out, &s, &former, &frozen),
+        "stands at `deprecated`, not `current`",
+    );
+
+    // A member with one phrasing.
+    let mut s = shelf.clone();
+    s[1].phrasings = 1;
+    expect(
+        "a member with one phrasing",
+        set_findings(&tuning, &held_out, &s, &former, &frozen),
+        "has 1 phrasings",
+    );
+
+    // A member with no action.
+    let mut s = shelf.clone();
+    s[1].action = String::new();
+    expect(
+        "a member with no action",
+        set_findings(&tuning, &held_out, &s, &former, &frozen),
+        "declares no action",
+    );
+
+    // A 45th current probe in no set.
+    let mut s = shelf.clone();
+    s.push(probe("HW-PROBE-extra", "current", first, 2));
+    expect(
+        "a 45th probe in no set",
+        set_findings(&tuning, &held_out, &s, &former, &frozen),
+        "HW-PROBE-extra is a `current` probe",
+    );
+
+    // A former member deleted, and a former member still current.
+    let s: Vec<SetProbe> = shelf.clone().into_iter().skip(1).collect();
+    expect(
+        "a former member deleted",
+        set_findings(&tuning, &held_out, &s, &former, &frozen),
+        "HW-PROBE-old, a former member, left",
+    );
+    let mut s = shelf.clone();
+    s[0].status = "current".to_owned();
+    expect(
+        "a former member still current",
+        set_findings(&tuning, &held_out, &s, &former, &frozen),
+        "HW-PROBE-old, a former member, still stands at `current`",
+    );
+
+    // The case the freeze exists for: `held-out` changes by one member and
+    // the digest in the decision stays.
+    let mut t = tuning.clone();
+    let mut h = held_out.clone();
+    std::mem::swap(&mut t[0], &mut h[0]);
+    expect(
+        "held-out drifted under a stale digest",
+        set_findings(&t, &h, &shelf, &former, &frozen),
+        "the set changed after it was frozen",
+    );
+
+    // No digest at all, and a digest outside the subsection.
+    expect(
+        "no digest",
+        set_findings(&tuning, &held_out, &shelf, &former, &decision("no digest")),
+        "states no digest",
+    );
+    let outside = format!(
+        "# A decision\n\n### {SET_SUBSECTION}\n\nFrozen.\n\n### Next\n\n{}\n",
+        set_digest(&held_out)
+    );
+    expect(
+        "a digest outside the subsection",
+        set_findings(&tuning, &held_out, &shelf, &former, &outside),
+        "states no digest",
+    );
+
+    // The decision names one held-out slug.
+    let slug = held_out[0].strip_prefix("HW-PROBE-").unwrap();
+    let naming = format!("{frozen}\nSee {slug}.\n");
+    expect(
+        "the decision names a held-out slug",
+        set_findings(&tuning, &held_out, &shelf, &former, &naming),
+        "the decision names the member",
+    );
+
+    // A probe in both sets.
+    let mut h = held_out.clone();
+    h.push(tuning[0].clone());
+    let d = decision(&set_digest(&h));
+    expect(
+        "a probe in both sets",
+        set_findings(&tuning, &h, &shelf, &former, &d),
+        "is in both `tuning` and `held-out`",
+    );
+
+    // The real sets, the real shelf and the real decision.
+    let root = repository_root();
+    let path = root.join(headwater_probe::budget::PATH);
+    let source =
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    let budgets = headwater_probe::Budgets::read(&source).unwrap_or_else(|e| panic!("{e}"));
+    let real: Vec<SetProbe> = probes()
+        .iter()
+        .map(|it| {
+            let (text, document) = front_matter(&root.join(&it.path));
+            SetProbe {
+                id: it.id.clone().unwrap_or_else(|| it.path.clone()),
+                status: scalar(&document, "status").unwrap_or_default(),
+                action: scalar(&document, "action").unwrap_or_default(),
+                phrasings: text
+                    .lines()
+                    .filter(|line| line.starts_with("### Phrasing"))
+                    .count(),
+            }
+        })
+        .collect();
+    let decision_path = root.join(SET_DECISION);
+    let decision_text = std::fs::read_to_string(&decision_path)
+        .unwrap_or_else(|e| panic!("{}: {e}", decision_path.display()));
+    let found = set_findings(
+        &budgets.set("tuning").unwrap_or_default(),
+        &budgets.set("held-out").unwrap_or_default(),
+        &real,
+        FORMER_MEMBERS,
+        &decision_text,
+    );
+    wrong.extend(found);
+    assert!(wrong.is_empty(), "{}", wrong.join("\n"));
 }
 
 /// The actions of rows 2 to 9 and 11 of the grid in HW-DR-0112, which pass or
