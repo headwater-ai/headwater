@@ -1898,7 +1898,7 @@ fn set_findings(
                 "{id}, a former member, left {SHELF}; it stays as the record its transcripts cite"
             )),
             Some(probe) if probe.status == "current" => {
-                findings.push(format!("{id}, a former member, still stands at `current`"))
+                findings.push(format!("{id}, a former member, still stands at `current`"));
             }
             Some(_) => {}
         }
@@ -2133,8 +2133,8 @@ fn the_sets_hold_two_tuning_and_two_held_out_probes_of_each_action_and_the_held_
     let decision_text = std::fs::read_to_string(&decision_path)
         .unwrap_or_else(|e| panic!("{}: {e}", decision_path.display()));
     let found = set_findings(
-        &budgets.set("tuning").unwrap_or_default(),
-        &budgets.set("held-out").unwrap_or_default(),
+        budgets.set("tuning").unwrap_or_default(),
+        budgets.set("held-out").unwrap_or_default(),
         &real,
         FORMER_MEMBERS,
         &decision_text,
