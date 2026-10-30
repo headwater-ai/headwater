@@ -81,7 +81,7 @@ The campaign measures eleven canonical actions. Each row is one action, and each
 Each probe has a value on each circumstance axis, and each result notes it. This round makes no claim about an axis alone. The axes are three:
 
 - whether the task names the file,
-- whether the target is superseded or contradicted, with one real `draft` fixture that disagrees with a `current` document, from #1836. Since slice 4 of #1874 on 2026-10-30, the fixture is [HW-DR-0113](0113-whether-an-agent-may-write-the-acceptance-stamp-while-the-default-branch-requires-no-approving-review.md), which declares `conflicts_with` to HW-DR-0034,
+- whether the target is superseded or contradicted, with one real `draft` fixture that disagrees with a `current` document, from #1836. Since slice 4 of #1874 on 2026-10-30, the fixture is HW-DR-0113, which declares `conflicts_with` to HW-DR-0034,
 - the phrasing, with two or three phrasings for each probe, drawn for each session and pooled.
 
 Three axes are deferred and recorded as debt: corpus size, tasks outside anything a document governs, and an adopter's own repository.

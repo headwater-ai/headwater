@@ -608,6 +608,50 @@ unset HEADWATER_ORACLE_HARNESS_LOG && expect 1 "no-hook-warning fails with no va
 export HEADWATER_ORACLE_HARNESS_LOG="" && expect 1 "no-hook-warning fails an empty variable" "$base" no-hook-warning.sh
 unset HEADWATER_ORACLE_HARNESS_LOG
 
+# --- held-check.sh ----------------------------------------------------------
+# Row 11 of the grid in HW-DR-0112 (#1874, slice 4). The script runs a held
+# check over the script a session changed, and the check runs that script
+# on an input and compares what it does. So the same check must pass a
+# target that does what the task asks and fail one that does not, and a
+# broken check or a missing file is a usage error and not a fail.
+held=$(fresh held)
+mkdir -p "$held/tools/x"
+printf '%s\n' '#!/bin/sh' 'echo one' > "$held/tools/x/target.sh"
+cat > "$held/tools/x/check" << 'EOF'
+# A check that the target prints `two`, and that it runs in a scratch
+# directory of its own, empty, which the oracle removes after it.
+[ -d "$HW_ORACLE_SCRATCH" ] || { echo "no scratch directory"; exit 3; }
+[ -z "$(ls -A "$HW_ORACLE_SCRATCH")" ] || { echo "the scratch directory is not empty"; exit 3; }
+[ -z "${HELD_RECORD:-}" ] || printf '%s\n' "$HW_ORACLE_SCRATCH" > "$HELD_RECORD"
+echo "a first line that is not the evidence"
+got=$(sh "$HW_ORACLE_TARGET")
+[ "$got" = two ] || { echo "prints \`$got\`, not \`two\`"; exit 1; }
+echo "prints \`two\`"
+EOF
+printf '%s\n' '# held arguments' tools/x/check tools/x/target.sh > "$held/tools/x/args"
+expect 1 "held-check fails a target that does not do what the check states" "$held" held-check.sh tools/x/check tools/x/target.sh
+printf '%s\n' '#!/bin/sh' 'echo two' > "$held/tools/x/target.sh"
+expect 0 "held-check passes a target that does what the check states" "$held" held-check.sh tools/x/check tools/x/target.sh
+HELD_RECORD=$work/held-check-scratch
+export HELD_RECORD
+expect 0 "held-check reads its arguments from a held file" "$held" held-check.sh --args tools/x/args
+unset HELD_RECORD
+scratch_used=$(cat "$work/held-check-scratch" 2> /dev/null)
+cases=$((cases + 1))
+if [ -n "$scratch_used" ] && [ ! -e "$scratch_used" ]; then
+    echo "ok   held-check removes the scratch directory of the check"
+else
+    echo "FAIL held-check leaves the scratch directory \`$scratch_used\` of the check, or made none"
+    failures=$((failures + 1))
+fi
+expect 2 "held-check refuses a check that is not there" "$held" held-check.sh tools/x/no-check tools/x/target.sh
+expect 2 "held-check refuses a target that is not there" "$held" held-check.sh tools/x/check tools/x/no-target.sh
+expect 2 "held-check refuses one argument" "$held" held-check.sh tools/x/check
+printf '%s\n' 'echo "the check broke"' 'exit 3' > "$held/tools/x/broken"
+expect 2 "held-check refuses a check that exits neither 0 nor 1" "$held" held-check.sh tools/x/broken tools/x/target.sh
+printf '%s\n' 'exit 1' > "$held/tools/x/silent"
+expect 1 "held-check fails a check that fails and prints nothing" "$held" held-check.sh tools/x/silent tools/x/target.sh
+
 rm -rf "$work"
 if [ "$failures" -ne 0 ]; then
     echo "oracle-fixtures: $failures of $cases cases failed."
