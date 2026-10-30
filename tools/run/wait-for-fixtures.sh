@@ -94,7 +94,9 @@ else
 fi
 
 echo "a poll under ten seconds is a warning, not a refusal"
-sh "$tool" --cap 1 --poll 1 "true" > "$scratch/out" 2>"$scratch/err"
+# The cap is 30, not 1: a cap of 1 expired before the first poll on a loaded
+# runner and turned the push CI of main ab240bfa red (run 40680332821).
+sh "$tool" --cap 30 --poll 1 "true" > "$scratch/out" 2>"$scratch/err"
 status=$?
 if [ "$status" -eq 0 ] && grep -q 'under the floor' "$scratch/err"; then
     passed=$((passed + 1))
