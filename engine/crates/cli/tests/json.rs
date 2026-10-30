@@ -1117,6 +1117,242 @@ fn a_member_that_holds_a_comma_stays_one_member_of_targets() {
     assert_targets_join_to_target(&related);
 }
 
+/// A null relation value declares no edge, in `explain --json` and in `check`.
+///
+/// [#1902](https://github.com/headwater-ai/headwater/issues/1902). The loader
+/// reads `key:` as the plain scalar `~`, and the edge reader took that text as a
+/// target, so `explain` printed an edge to `~` and `check` reported it as
+/// unresolved. The contract in `docs/subsystems/graph-build.md` now says a null
+/// value is the same as `[]`. Each case also governs a path, so an `explain`
+/// that printed no `related` at all could not pass. The relation is
+/// `traces_to`, which the interface kind permits.
+#[test]
+fn a_null_relation_value_declares_no_edge() {
+    let cases = [
+        ("bare", "  traces_to:\n"),
+        ("tilde", "  traces_to: ~\n"),
+        ("word", "  traces_to: null\n"),
+        ("title-word", "  traces_to: Null\n"),
+        ("upper-word", "  traces_to: NULL\n"),
+        ("item", "  traces_to:\n    - ~\n"),
+        ("upper-item", "  traces_to:\n    - NULL\n"),
+    ];
+    for (label, null_relation) in cases {
+        let at = scratch().join(format!("null-relation-{label}"));
+        let _ = std::fs::remove_dir_all(&at);
+        std::fs::create_dir_all(at.join(".headwater")).expect("the declaration directory is there");
+        std::fs::create_dir_all(at.join("docs/interfaces")).expect("the shelf is there");
+        std::fs::create_dir_all(at.join("src")).expect("the source directory is there");
+        std::fs::write(at.join("src/a.rs"), "fn main() {}\n")
+            .expect("the governed file is written");
+        for name in ["taxonomy.lock", "taxonomy.yml", "overlay.yml"] {
+            std::fs::copy(
+                repository().join(".headwater").join(name),
+                at.join(".headwater").join(name),
+            )
+            .expect("the declaration copies");
+        }
+        std::fs::write(
+            at.join("docs/interfaces/headwater-null.md"),
+            format!("---\nid: HW-IFACE-headwater-null\nstatus: current\nstatus_since: 2026-10-30\nsummary: \"A document with a null relation value.\"\nlast_verified: 2026-10-30\ntitle: \"headwater null\"\nrelations:\n  governs: [src/a.rs]\n{null_relation}---\n\n# headwater null\n\n## Synopsis\n\n    headwater null\n"),
+        )
+        .expect("the document is written");
+
+        let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+            .args([
+                "explain",
+                "--json",
+                "docs/interfaces/headwater-null.md",
+                "--root",
+            ])
+            .arg(&at)
+            .output()
+            .expect("the binary runs");
+        let text = String::from_utf8_lossy(&output.stdout).into_owned();
+        assert_eq!(
+            output.status.code(),
+            Some(0),
+            "{label}: {text}\n{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let related = related(&text);
+        assert!(
+            related
+                .iter()
+                .any(|element| element.direction == "outbound" && element.relation == "governs"),
+            "{label}: the governs edge is still there\n{text}"
+        );
+        for element in &related {
+            let members = element.targets.clone().unwrap_or_default();
+            assert!(
+                element.relation != "traces_to"
+                    && element.target != "~"
+                    && !element.target.is_empty()
+                    && !members.iter().any(|m| m == "~" || m.is_empty()),
+                "{label}: a null value prints no edge, and this one did: {} -> {:?}\n{text}",
+                element.relation,
+                element.target
+            );
+        }
+
+        let check = Command::new(env!("CARGO_BIN_EXE_headwater"))
+            .args(["check", "--root"])
+            .arg(&at)
+            .output()
+            .expect("the binary runs");
+        let findings = String::from_utf8_lossy(&check.stdout).into_owned();
+        assert!(
+            !findings
+                .lines()
+                .any(|line| line.contains("traces_to") || line.contains("-> ~")),
+            "{label}: check reports a null value the way it reports `[]`, which is no finding\n{findings}"
+        );
+    }
+}
+
+/// The two edges of the null rule: quoted text stays a target, and an unknown
+/// relation name is still reported when its value is null.
+///
+/// [#1902](https://github.com/headwater-ai/headwater/issues/1902). Only a plain
+/// scalar is null, so `traces_to: "~"` is an author who wrote `~` and the edge
+/// stays, unresolved. The null test runs after the relation name is looked up,
+/// so `no_such_relation:` with no value is still an unknown relation.
+#[test]
+fn a_quoted_tilde_stays_a_target_and_an_unknown_null_relation_is_reported() {
+    let at = scratch().join("null-relation-boundaries");
+    let _ = std::fs::remove_dir_all(&at);
+    std::fs::create_dir_all(at.join(".headwater")).expect("the declaration directory is there");
+    std::fs::create_dir_all(at.join("docs/interfaces")).expect("the shelf is there");
+    for name in ["taxonomy.lock", "taxonomy.yml", "overlay.yml"] {
+        std::fs::copy(
+            repository().join(".headwater").join(name),
+            at.join(".headwater").join(name),
+        )
+        .expect("the declaration copies");
+    }
+    std::fs::write(
+        at.join("docs/interfaces/headwater-quoted.md"),
+        "---\nid: HW-IFACE-headwater-quoted\nstatus: current\nstatus_since: 2026-10-30\nsummary: \"A document whose relation value is a quoted tilde.\"\nlast_verified: 2026-10-30\ntitle: \"headwater quoted\"\nrelations:\n  traces_to: \"~\"\n  no_such_relation:\n---\n\n# headwater quoted\n\n## Synopsis\n\n    headwater quoted\n",
+    )
+    .expect("the document is written");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args([
+            "explain",
+            "--json",
+            "docs/interfaces/headwater-quoted.md",
+            "--root",
+        ])
+        .arg(&at)
+        .output()
+        .expect("the binary runs");
+    let text = String::from_utf8_lossy(&output.stdout).into_owned();
+    assert_eq!(output.status.code(), Some(0), "{text}");
+    assert!(
+        related(&text)
+            .iter()
+            .any(|element| element.direction == "outbound"
+                && element.relation == "traces_to"
+                && element.target == "~"),
+        "a quoted `~` is text the author wrote, so the edge stays\n{text}"
+    );
+
+    let check = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(["check", "--root"])
+        .arg(&at)
+        .output()
+        .expect("the binary runs");
+    let findings = String::from_utf8_lossy(&check.stdout).into_owned();
+    assert!(
+        findings
+            .lines()
+            .any(|line| line.contains("edge: `traces_to` -> ~ resolves to nothing")),
+        "the quoted `~` is still reported as resolving to nothing\n{findings}"
+    );
+    assert!(
+        findings
+            .lines()
+            .any(|line| line.contains("no_such_relation")),
+        "an unknown relation name with a null value is still reported\n{findings}"
+    );
+}
+
+/// A null item skips itself, and the items after it still declare their edges.
+///
+/// [#1902](https://github.com/headwater-ai/headwater/issues/1902). The null
+/// item comes first in the list, so a reader that stopped at it, rather than
+/// stepping past it, would drop the real edge after it without a word.
+#[test]
+fn a_null_item_before_a_real_target_keeps_the_real_edge() {
+    let at = scratch().join("null-relation-then-real");
+    let _ = std::fs::remove_dir_all(&at);
+    std::fs::create_dir_all(at.join(".headwater")).expect("the declaration directory is there");
+    std::fs::create_dir_all(at.join("docs/interfaces")).expect("the shelf is there");
+    for name in ["taxonomy.lock", "taxonomy.yml", "overlay.yml"] {
+        std::fs::copy(
+            repository().join(".headwater").join(name),
+            at.join(".headwater").join(name),
+        )
+        .expect("the declaration copies");
+    }
+    std::fs::write(
+        at.join("docs/interfaces/headwater-real.md"),
+        "---\nid: HW-IFACE-headwater-real\nstatus: current\nstatus_since: 2026-10-30\nsummary: \"The real target of the list.\"\nlast_verified: 2026-10-30\ntitle: \"headwater real\"\n---\n\n# headwater real\n\n## Synopsis\n\n    headwater real\n",
+    )
+    .expect("the target document is written");
+    std::fs::write(
+        at.join("docs/interfaces/headwater-mixed.md"),
+        "---\nid: HW-IFACE-headwater-mixed\nstatus: current\nstatus_since: 2026-10-30\nsummary: \"A document whose relation list holds a null item before a real one.\"\nlast_verified: 2026-10-30\ntitle: \"headwater mixed\"\nrelations:\n  traces_to:\n    - ~\n    - HW-IFACE-headwater-real\n---\n\n# headwater mixed\n\n## Synopsis\n\n    headwater mixed\n",
+    )
+    .expect("the document is written");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args([
+            "explain",
+            "--json",
+            "docs/interfaces/headwater-mixed.md",
+            "--root",
+        ])
+        .arg(&at)
+        .output()
+        .expect("the binary runs");
+    let text = String::from_utf8_lossy(&output.stdout).into_owned();
+    assert_eq!(output.status.code(), Some(0), "{text}");
+    let related = related(&text);
+    assert!(
+        related.iter().any(|element| element.direction == "outbound"
+            && element.relation == "traces_to"
+            && (element.target == "HW-IFACE-headwater-real"
+                || element
+                    .targets
+                    .clone()
+                    .unwrap_or_default()
+                    .iter()
+                    .any(|m| m == "HW-IFACE-headwater-real"))),
+        "the real item after the null one still declares its edge\n{text}"
+    );
+    for element in &related {
+        let members = element.targets.clone().unwrap_or_default();
+        assert!(
+            element.target != "~" && !members.iter().any(|m| m == "~"),
+            "the null item prints no edge, and this one did: {} -> {:?}\n{text}",
+            element.relation,
+            element.target
+        );
+    }
+
+    let check = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(["check", "--root"])
+        .arg(&at)
+        .output()
+        .expect("the binary runs");
+    let findings = String::from_utf8_lossy(&check.stdout).into_owned();
+    assert!(
+        !findings.lines().any(|line| line.contains("-> ~")),
+        "check reports no edge to `~` for the null item\n{findings}"
+    );
+}
+
 /// Each member of `reach` carries the entries its one pattern matched.
 ///
 /// [#1093](https://github.com/headwater-ai/headwater/issues/1093). The edit-time

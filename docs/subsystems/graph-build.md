@@ -65,7 +65,7 @@ It reads `inverse` because an author can write either half of a pair. It carries
 
 ### Edges
 
-`edges::build` reads the `relations:` block of each node. An entry is a scalar target or a mapping with `to:` and instance attributes, and both produce the same edge ([spec 1](../spec/01-conceptual-model.md#the-authored-form)). One entry and a sequence of one entry are also the same.
+`edges::build` reads the `relations:` block of each node. An entry is a scalar target or a mapping with `to:` and instance attributes, and both produce the same edge ([spec 1](../spec/01-conceptual-model.md#the-authored-form)). One entry and a sequence of one entry are also the same. An entry whose value is null (`key:`, `~`, `null`) or an empty sequence declares no edge and no finding. A null item in a sequence also declares no edge. A quoted `""` or `"~"` is text that the author wrote, so it stays a target.
 
 The identity of an edge is the triple of source identifier, relation name and normalized target (Q4). List order carries no meaning, so nothing downstream reads it. A repeated triple in one document is a `Problem::RepeatedTriple`. A document with no identifier gets one `Problem::SourceHasNoIdentifier`, and not one report per target.
 
