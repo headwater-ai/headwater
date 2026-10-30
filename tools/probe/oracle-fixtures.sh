@@ -313,13 +313,15 @@ expect 1 "successor-typed with --check-clean fails both ends written as text and
 tree=$(fresh successor-status-comment) && sed -i 's/^status: superseded$/status: current\n# status: superseded/' "$tree/$old"
 grep -q '^# status: superseded$' "$tree/$old" || echo "oracle-fixtures: the status of $old was not commented, so the next case reads nothing." >&2
 expect 1 "successor-typed fails a status that only a comment holds" "$tree" successor-typed.sh HW-DR-0111
-# A record that supersedes another is printed with an outbound `supersedes`
-# to it, as its successor is, so the record it superseded reads as its
-# successor unless the successor's own status is read: HW-DR-0112 marked
-# superseded has no successor, and HW-DR-0111 is not one.
+# HW-DR-0112 marked superseded has no successor. HW-DR-0111 wrote
+# `superseded_by: HW-DR-0112`, so the engine prints it on HW-DR-0112 as
+# `supersedes`, inbound, and HW-DR-0111 is no candidate (#1901). The same
+# tree read from HW-DR-0111 has a successor that is superseded itself, and
+# the status guard refuses it: without the guard, the second case passes.
 tree=$(fresh successor-predecessor) && sed -i 's/^status: current$/status: superseded/' "$tree/$new"
 grep -q '^status: superseded$' "$tree/$new" || echo "oracle-fixtures: the status of $new was not set, so the next case reads nothing." >&2
 expect 1 "successor-typed fails a record whose only succession edge is to the record it superseded" "$tree" successor-typed.sh HW-DR-0112
+expect 1 "successor-typed fails an old record whose only successor is superseded itself" "$tree" successor-typed.sh HW-DR-0111
 
 # --- moved.sh -------------------------------------------------------------
 

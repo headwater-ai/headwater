@@ -72,7 +72,7 @@ while IFS= read -r candidate; do
     break
 done < "$hw_oracle_scratch/candidates"
 if [ -z "$found" ]; then
-    [ -n "$refused" ] && hw_oracle_fail "the only document with a succession edge to $old_id is $refused, which is superseded itself, so it is a record $old_id superseded and not its successor"
+    [ -n "$refused" ] && hw_oracle_fail "the only document that supersedes $old_id is $refused, which is superseded itself, so it is not the successor that stands"
     hw_oracle_fail "no document declares that it supersedes $old_id, as the engine parses the front matter"
 fi
 [ -n "$typed" ] && [ "$typed" != null ] || hw_oracle_fail "$found supersedes $old_id, and the engine types it as nothing"
