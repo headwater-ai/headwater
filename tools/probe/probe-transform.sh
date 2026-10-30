@@ -12,7 +12,8 @@
 # what a transcript kept and what it dropped.
 #
 #     tools/probe/probe-record.sh … | tools/probe/probe-transform.sh --probe PROBE-X \
-#         --session one --root . [--workspace /tmp/copy] [--oracle-tree /tmp/ref] [--produced docs/x.md]…
+#         --session one --root . [--workspace /tmp/copy] [--oracle-tree /tmp/ref] [--produced docs/x.md]… \
+#         [--oracle-record /tmp/oracles]
 #
 # ## What it keeps
 #
@@ -60,6 +61,35 @@
 # `served_version` with `cost_cents` from the provider metadata — belong to the
 # driver, which is the half that has the plan and the metadata.
 #
+# ## The oracle record (#1875)
+#
+# With `--oracle-record <file>`, the transform also writes the verdict of
+# each command oracle into <file>, one line for each oracle that `headwater
+# probe plan --oracles` declares, sorted by name, tab-separated:
+#
+#     <name>\t<verdict>\t<evidence>
+#
+# `<verdict>` is `pass`, `fail` or `not-run`. `not-run` means that no
+# produced artifact matched the oracle's pattern, or that the session
+# produced no artifact inside the base, so the command never ran. The oracle
+# then fails whole, as `step_run_oracles` says. `<evidence>` is the first line
+# of an `exit` command's standard output alone, which is the one line of
+# evidence HW-DR-0112 has an oracle script write, and the last `test result:`
+# line of a `cargo-test` command. It is `-` for `not-run` and for an empty
+# output, and a tab or a carriage return in it becomes a space.
+#
+# **The record restates the findings and never decides a verdict of its own.**
+# A line's verdict is `fail` or `not-run` exactly when its `command:<name>` or
+# `test:<name>` is among the findings of every produced artifact inside the
+# base. The record reads no probe, so it holds every declared oracle and not
+# only the one a probe names: a recorder that wrote only the oracle a probe
+# grades against would be a grader ([spec 15]). Which line is a probe's pass
+# is the reader's choice, and `tools/probe/try.sh result` makes it.
+#
+# The record is written whole, to a temporary file renamed onto <file>, after
+# the event is composed. A transform that refuses writes no record. With no
+# `--oracle-record`, nothing is written and the event is the same.
+#
 # ## The three-state rule, which is where a wrong transform passes silently
 #
 # `calls: []` means the session was watched and made no call. An absent `calls`
@@ -85,8 +115,8 @@
 # no `findings` key — which is absence read as satisfaction, the reading this
 # whole tool exists to refuse. A refused run now writes no event at all.
 #
-# It gates nothing, it writes nothing outside standard output, and it needs
-# `jq` and `sha256sum`.
+# It gates nothing, it writes nothing outside standard output but the oracle
+# record it is asked for, and it needs `jq` and `sha256sum`.
 
 set -u
 
@@ -95,6 +125,7 @@ session=
 root=.
 workspace=
 oracle_tree=
+oracle_record=
 config_dir=
 produced_paths=
 
@@ -105,6 +136,7 @@ while [ $# -gt 0 ]; do
         --root) root=${2:-}; shift 2 ;;
         --workspace) workspace=${2:-}; shift 2 ;;
         --oracle-tree) oracle_tree=${2:-}; shift 2 ;;
+        --oracle-record) oracle_record=${2:-}; shift 2 ;;
         --config-dir) config_dir=${2:-}; shift 2 ;;
         --produced) produced_paths="$produced_paths${2:-}
 "; shift 2 ;;
@@ -121,7 +153,7 @@ case $config_dir in
 esac
 
 [ -n "$probe" ] && [ -n "$session" ] || {
-    echo "usage: probe-transform.sh --probe <id> --session <name> [--root <dir>] [--workspace <dir>] [--oracle-tree <dir>] [--config-dir <dir>] [--produced <path>]… [--answer <text>]" >&2
+    echo "usage: probe-transform.sh --probe <id> --session <name> [--root <dir>] [--workspace <dir>] [--oracle-tree <dir>] [--oracle-record <file>] [--config-dir <dir>] [--produced <path>]… [--answer <text>]" >&2
     exit 2
 }
 command -v jq >/dev/null 2>&1 || {
@@ -330,21 +362,27 @@ step_derive_cites() {
 # So a failure here refuses rather than writes one, on the same reasoning as
 # the observation guard above: a derivation that could not run is not a
 # derivation that found nothing.
-step_derive_findings() {
-    file=$1
-    # The newer of the two profiles answers, by the rule in
-    # `tools/repo/resolve-engine.sh`. Before #990 this preferred `dev-release`
-    # whenever it existed, so a stale `dev-release` binary shadowed a
-    # `release` one built after it. The resolver is read from beside this
-    # script and not from `$root`, because `--root` can name a tree that holds
-    # an engine and no `tools/`, and a `.` of a missing file ends the shell
-    # before the refusal below can print.
+# resolve_engine: the engine into `$engine`, or a failure.
+#
+# The newer of the two profiles answers, by the rule in
+# `tools/repo/resolve-engine.sh`. Before #990 this preferred `dev-release`
+# whenever it existed, so a stale `dev-release` binary shadowed a `release`
+# one built after it. The resolver is read from beside this script and not
+# from `$root`, because `--root` can name a tree that holds an engine and no
+# `tools/`, and a `.` of a missing file ends the shell before the caller's
+# refusal can print.
+resolve_engine() {
     case $0 in
         */*) transform_dir=${0%/*} ;;
         *) transform_dir=. ;;
     esac
     [ -r "$transform_dir/../repo/resolve-engine.sh" ] && . "$transform_dir/../repo/resolve-engine.sh"
-    engine=$(hw_resolve_engine_bin "$root" 2>/dev/null) || {
+    engine=$(hw_resolve_engine_bin "$root" 2>/dev/null)
+}
+
+step_derive_findings() {
+    file=$1
+    resolve_engine || {
         echo "probe-transform: no engine, so \`findings\` on $file cannot be derived." >&2
         echo "probe-transform: refusing to write an empty list, which claims that no rule reported." >&2
         hw_resolve_engine_missing_message "$root" >&2
@@ -434,6 +472,24 @@ step_derive_findings() {
 # A command that cannot start, exit 126 or 127, refuses with exit 5 and no
 # event, as a missing engine does: a command that did not run did not find a
 # failure.
+#
+# Each oracle's verdict also goes into `$scratch/oracle-verdicts.txt`, one
+# line `<name>\t<verdict>\t<evidence>`, which `--oracle-record` copies
+# (#1875, and the header says what each field holds):
+#
+#   no artifact matched   `not-run`, and the evidence is `-`
+#   exit                  `fail` where the command exited non-zero, and
+#                         `pass` otherwise; the evidence is the first line of
+#                         standard output
+#   cargo-test            `fail` exactly where `test:<name>` is written above,
+#                         and `pass` otherwise; the evidence is the last
+#                         `test result:` line
+#
+# So a verdict is `fail` or `not-run` exactly when the oracle's whole finding
+# is written. The command's standard output and standard error go to two
+# files, `oracle-<name>.out` and `oracle-<name>.err`, so that a line of
+# diagnostics is never read as the evidence. The parser reads the two
+# together, as it read one merged log before.
 step_run_oracles() {
     [ -f "$scratch/command-findings.txt" ] && return 0
     declared_in=${oracle_tree:-$root}
@@ -447,6 +503,7 @@ step_run_oracles() {
         : > "$scratch/oracles.tsv"
     fi
     : > "$scratch/command-findings.tmp"
+    : > "$scratch/oracle-verdicts.tmp"
     tab=$(printf '\t')
     awk -F "$tab" '!seen[$1]++ { print $1 }' "$scratch/oracles.tsv" > "$scratch/oracle-names.txt"
     # A held file is the oracle tree's, never the session's. The copy took
@@ -490,6 +547,7 @@ step_run_oracles() {
         done < "$scratch/oracle-paths.txt"
         if [ "$matched" = no ]; then
             printf '%s\n' "$oracle_whole" >> "$scratch/command-findings.tmp"
+            printf '%s\tnot-run\t-\n' "$oracle_name" >> "$scratch/oracle-verdicts.tmp"
             continue
         fi
         run_in=$1
@@ -513,7 +571,10 @@ step_run_oracles() {
         # which `tools/probe/oracles/no-hook-warning.sh` fails.
         (cd "$run_in" && HEADWATER_ORACLE_TRANSCRIPT=$scratch/log.jsonl \
             HEADWATER_ORACLE_HARNESS_LOG=${config_abs:+$config_abs/projects} \
-            sh -c "$oracle_command") < /dev/null > "$scratch/oracle-$oracle_name.log" 2>&1 || command_status=$?
+            sh -c "$oracle_command") < /dev/null > "$scratch/oracle-$oracle_name.out" \
+            2> "$scratch/oracle-$oracle_name.err" || command_status=$?
+        cat "$scratch/oracle-$oracle_name.out" "$scratch/oracle-$oracle_name.err" > "$scratch/oracle-$oracle_name.log"
+        oracle_failed=no
         case $command_status in
             126 | 127)
                 echo "probe-transform: the \`$oracle_name\` oracle's command could not start (exit $command_status): $oracle_command" >&2
@@ -530,15 +591,23 @@ step_run_oracles() {
                 fi
                 if [ "$command_status" -ne 0 ] || ! grep -Eq '^test result: ok\. [1-9][0-9]* passed' "$scratch/oracle-$oracle_name.log"; then
                     printf '%s\n' "$oracle_whole" >> "$scratch/command-findings.tmp"
+                    oracle_failed=yes
                 fi
+                oracle_evidence=$(grep '^test result:' "$scratch/oracle-$oracle_name.log" | tail -1)
                 ;;
             *)
                 if [ "$command_status" -ne 0 ]; then
                     printf '%s\n' "$oracle_whole" >> "$scratch/command-findings.tmp"
+                    oracle_failed=yes
                 fi
+                oracle_evidence=$(head -1 "$scratch/oracle-$oracle_name.out")
                 ;;
         esac
+        oracle_evidence=$(printf '%s' "$oracle_evidence" | tr '\t\r' '  ')
+        if [ "$oracle_failed" = yes ]; then oracle_verdict=fail; else oracle_verdict=pass; fi
+        printf '%s\t%s\t%s\n' "$oracle_name" "$oracle_verdict" "${oracle_evidence:--}" >> "$scratch/oracle-verdicts.tmp"
     done < "$scratch/oracle-names.txt"
+    LC_ALL=C sort -t "$tab" -k1,1 "$scratch/oracle-verdicts.tmp" > "$scratch/oracle-verdicts.txt"
     sort -u "$scratch/command-findings.tmp" > "$scratch/command-findings.txt"
 }
 
@@ -655,5 +724,37 @@ event=$scratch/event.yaml
         printf '  answer: %s\n' "$(scalar "$answer")"
     fi
 } > "$event" || exit $?
+
+# The oracle record (#1875), after the event is whole and before it is
+# copied out, so that a refused run writes neither. Where `step_run_oracles`
+# ran, the record is its verdicts. Where it never ran, because no artifact
+# was produced inside the base, every declared oracle is `not-run`, which is
+# the verdict the oracle has then: it fails whole when nothing matched.
+if [ -n "$oracle_record" ]; then
+    if [ ! -f "$scratch/oracle-verdicts.txt" ]; then
+        declared_in=${oracle_tree:-$root}
+        : > "$scratch/oracle-verdicts.txt"
+        if [ -f "$declared_in/.headwater/probe.yml" ]; then
+            resolve_engine || {
+                echo "probe-transform: no engine, so the oracles of $declared_in cannot be read for the oracle record." >&2
+                hw_resolve_engine_missing_message "$root" >&2
+                exit 5
+            }
+            "$engine" probe plan --root "$declared_in" --oracles > "$scratch/oracles.tsv" 2> "$scratch/oracles.err" || {
+                echo "probe-transform: \`headwater probe plan --oracles\` refused the declaration in $declared_in:" >&2
+                tail -3 "$scratch/oracles.err" >&2
+                exit 5
+            }
+            tab=$(printf '\t')
+            awk -F "$tab" '!seen[$1]++ { print $1 "\tnot-run\t-" }' "$scratch/oracles.tsv" \
+                | LC_ALL=C sort -t "$tab" -k1,1 > "$scratch/oracle-verdicts.txt"
+        fi
+    fi
+    if ! { cp "$scratch/oracle-verdicts.txt" "$oracle_record.tmp.$$" && mv -f "$oracle_record.tmp.$$" "$oracle_record"; }; then
+        rm -f "$oracle_record.tmp.$$"
+        echo "probe-transform: the oracle record could not be written at $oracle_record." >&2
+        exit 5
+    fi
+fi
 
 cat "$event"
