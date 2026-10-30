@@ -1,8 +1,8 @@
 ---
 id: HW-PROBE-a-session-says-whether-a-command-or-a-hand-writes-a-governs-line
-status: current
-status_since: 2026-10-10
-summary: "Many documents share the terms of this task, and a superseded record, a discharged one and two generated pages still say a person types a governs line, so a session must find the one record in force, over the tree that #1709 repaired."
+status: deprecated
+status_since: 2026-10-30
+summary: "Deprecated on 2026-10-30 because no set of the additive campaign draws it, and the four probes of row 1 of HW-DR-0112 measure the action in its place (#1874)."
 last_verified: 2026-10-10
 probe_category: navigability
 expectation: answered

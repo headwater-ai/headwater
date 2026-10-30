@@ -1,8 +1,8 @@
 ---
 id: HW-PROBE-a-session-that-moves-a-shelf-reaches-the-relocation-guide
-status: current
-status_since: 2026-10-22
-summary: "The task asks a session to move a shelf of records to a new directory, and this asks whether the session opens the guide that states the order of a shelf move."
+status: deprecated
+status_since: 2026-10-30
+summary: "Deprecated on 2026-10-30 because no set of the additive campaign draws it, and the four probes of row 7 of HW-DR-0112 measure the action in its place (#1874)."
 last_verified: 2026-10-22
 probe_category: discovery
 expectation: opened

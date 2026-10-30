@@ -1,8 +1,8 @@
 ---
 id: HW-PROBE-a-session-says-which-date-a-corrected-status-carries
-status: current
-status_since: 2026-10-10
-summary: A session corrects the status of a settled decision that is already on main and names the date its status_since then carries, which only the body of a ruling under docs/decisions states.
+status: deprecated
+status_since: 2026-10-30
+summary: "Deprecated on 2026-10-30 because no set of the additive campaign draws it, and the four probes of row 1 of HW-DR-0112 measure the action in its place (#1874)."
 last_verified: 2026-10-10
 probe_category: sufficiency
 expectation: answered

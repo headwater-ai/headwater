@@ -1,8 +1,8 @@
 ---
 id: HW-PROBE-the-pointer-this-corpus-offers-for-a-task-is-the-document-a-session-opens
-status: current
-status_since: 2026-09-11
-summary: Precision at intent time has no reading at all, and this takes the half of it that a transcript of tool calls can carry.
+status: deprecated
+status_since: 2026-10-30
+summary: "Deprecated on 2026-10-30 because no set of the additive campaign draws it, and the four probes of row 1 of HW-DR-0112 measure the action in its place (#1874)."
 last_verified: 2026-09-11
 probe_category: discovery
 expectation: opened

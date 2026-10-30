@@ -1,8 +1,8 @@
 ---
 id: HW-PROBE-what-a-session-writes-points-back-at-the-ruling-it-rests-on
-status: current
-status_since: 2026-09-11
-summary: No verb writes a traceability edge in this corpus, so a person types every one, and this asks whether an agent supplies the identifier with nobody asking for one.
+status: deprecated
+status_since: 2026-10-30
+summary: "Deprecated on 2026-10-30 because no set of the additive campaign draws it, and the four probes of row 4 of HW-DR-0112 measure the action in its place (#1874)."
 last_verified: 2026-09-11
 probe_category: navigability
 expectation: cited

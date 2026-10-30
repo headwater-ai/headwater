@@ -18,8 +18,6 @@ relations:
     - tools/probe/additive-screening.spec
     - tools/probe/try.sh
     - tools/probe/additive-launch.env
-    - tools/probe/code-campaign.spec
-    - tools/probe/code-pilot.spec
     - tools/probe/declared.py
     - tools/probe/usage.py
     - tools/probe/additive-dry-run.sh

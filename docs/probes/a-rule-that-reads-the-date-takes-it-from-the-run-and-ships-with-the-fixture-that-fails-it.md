@@ -1,8 +1,8 @@
 ---
 id: HW-PROBE-a-rule-that-reads-the-date-takes-it-from-the-run-and-ships-with-the-fixture-that-fails-it
-status: current
-status_since: 2026-10-22
-summary: "A blind change to the check layer is graded by a hidden test, which passes only a rule that reads the injected clock and ships a fixture it fails, and plain code shows both halves only across several files."
+status: deprecated
+status_since: 2026-10-30
+summary: "Deprecated on 2026-10-30 because no set of the additive campaign draws it: the pilot of #1835 passed it in 0 of 13 sessions, outside the band of 15 to 70 percent, and the four probes of row 2 of HW-DR-0112 measure the action in its place (#1874)."
 last_verified: 2026-10-22
 probe_category: sufficiency
 expectation: patched

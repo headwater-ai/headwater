@@ -2148,16 +2148,11 @@ const MECHANICAL_ACTIONS: [&str; 9] = [
 ];
 
 /// The probes of a mechanical row on the shelf that grade against no
-/// declared oracle yet. #1874.2 and #1874.3 rewrite each into the 44-probe
-/// set or retire it with a reason, and delete its line here. The case below
-/// fails on a line whose probe now passes, so the list can only shrink.
-const AWAITING_ORACLE: &[&str] = &[
-    "HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged",
-    "HW-PROBE-a-session-that-changes-a-verb-s-default-reaches-the-verb-s-interface-contract",
-    "HW-PROBE-a-session-that-changes-the-recorder-reaches-the-recorder-contract",
-    "HW-PROBE-a-session-that-moves-a-shelf-reaches-the-relocation-guide",
-    "HW-PROBE-what-a-session-writes-points-back-at-the-ruling-it-rests-on",
-];
+/// declared oracle yet. The case below fails on a line whose probe now
+/// passes, so the list can only shrink, and it is empty: #1874 deprecated the
+/// five probes it named, and a deprecated probe is graded by nothing. Add no
+/// line to it.
+const AWAITING_ORACLE: &[&str] = &[];
 
 /// The directory of the generic oracle scripts (#1874.1). A script there
 /// names no probe, because many probes call it with their own arguments.
@@ -2301,8 +2296,8 @@ fn mechanical_findings(
 /// The seeded probes come first, and each one is refused or accepted for the
 /// reason its label states. Then the shelf: each probe of rows 2 to 9 and 11
 /// has no finding unless `AWAITING_ORACLE` names it, and each probe that list
-/// names is on the shelf and still has one. #1874.3 adds the count of 4 for
-/// each action, 2 in `tuning` and 2 in `held-out`, to this case.
+/// names is on the shelf and still has one. The count of 4 for each action,
+/// 2 in `tuning` and 2 in `held-out`, is the case on the sets above.
 #[test]
 fn every_mechanical_row_probe_grades_against_a_declared_oracle() {
     let root = repository_root();
