@@ -594,6 +594,7 @@ export STUB_RESULT=pass && expect 1 "test-passes with --check-clean fails an err
 export STUB_RESULT=pass && expect 1 "test-passes with --check-clean and no document reads the whole tree" "$tree" test-passes.sh --check-clean headwater-check probe_oracle_x
 export STUB_RESULT=pass && expect 0 "test-passes with --check-clean and a document passes a clean tree" "$base" test-passes.sh --check-clean --ignored headwater-check probe_oracle_x one_case -- "$new"
 export STUB_RESULT=pass && expect 2 "test-passes refuses a document after -- with no target" "$base" test-passes.sh headwater-check -- "$new"
+export STUB_RESULT=pass && expect 2 "test-passes refuses a -- that names no document" "$base" test-passes.sh headwater-check probe_oracle_x --
 rm -rf "$tree"
 # Each workspace crate builds from the tree in front of it: before cargo runs,
 # every file under engine/crates is newer than anything a case built before
