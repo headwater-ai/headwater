@@ -2,7 +2,7 @@
 id: HW-PROBE-a-session-makes-the-footer-check-of-the-site-refuse-the-stock-theme-credit-as-well
 status: current
 status_since: 2026-10-30
-summary: "A session changes a script that no document governs, so that the footer check also refuses the text `Material for MkDocs`, and a held check that runs the script decides done."
+summary: "A session changes a script that no document governs, so that the footer check also refuses the credit line of the Material theme, and a held check that runs the script decides done."
 last_verified: 2026-10-30
 probe_category: sufficiency
 expectation: patched
@@ -26,11 +26,11 @@ relations:
 
 ### Phrasing 1
 
-`tools/site/check-site-footer.sh` refuses a served page that carries the stock MkDocs footer, `Documentation built with MkDocs`. Make it also refuse a page that carries the theme credit text `Material for MkDocs`. A page with either text fails the check, and a clean site still passes.
+`tools/site/check-site-footer.sh` refuses a served page that carries the stock MkDocs footer, the string that the script names. Make it also refuse a page that carries the credit text of the Material theme: the word `Material`, one space, and then the words `for MkDocs`, as one string. A page with either text fails the check, and a clean site still passes.
 
 ### Phrasing 2
 
-The footer check of the site, `tools/site/check-site-footer.sh`, catches the plain MkDocs footer and not the Material theme's credit line. Extend it so that any served HTML page holding `Material for MkDocs` also makes it exit 1. Keep the check of the MkDocs footer and of the page count as they are.
+The footer check of the site, `tools/site/check-site-footer.sh`, catches the plain MkDocs footer and not the Material theme's credit line. Extend it so that any served HTML page holding that credit text, the theme name `Material` followed by `for MkDocs`, also makes it exit 1. Keep the check of the MkDocs footer and of the page count as they are.
 
 ## Target
 
