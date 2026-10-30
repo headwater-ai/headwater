@@ -1631,6 +1631,10 @@ if [ "$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)" = "$root" ]; then
     # and each one that names no probe fails it (#1874.3).
     held_files=$(cd "$scratch/corpus" && find tools/probe/oracle-args tools/probe/oracle-cases -type f 2> /dev/null | LC_ALL=C sort | tr '\n' ' ' | sed 's/ $//')
     [ -n "$held_files" ] || fail "the archive holds the oracles' held arguments and case files" "neither tools/probe/oracle-args/ nor tools/probe/oracle-cases/ holds a file"
+    # The hidden tests of the oracles are read the same way, as every
+    # `tests/probe_oracle_*.rs` of a crate of the archive (#1874, slice 4b).
+    hidden_tests=$(cd "$scratch/corpus" && find engine/crates -path '*/tests/probe_oracle_*.rs' -type f 2> /dev/null | LC_ALL=C sort | tr '\n' ' ' | sed 's/ $//')
+    [ -n "$hidden_tests" ] || fail "the archive holds the hidden tests of the oracles" "no crate under engine/crates holds a tests/probe_oracle_*.rs"
     : > "$scratch/outside-naming.txt"
     for shelf_probe in "$root"/docs/probes/*.md; do
         shelf_id=$(awk '/^id: */ { sub(/^id: */, ""); print; exit }' "$shelf_probe")
@@ -1638,8 +1642,8 @@ if [ "$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)" = "$root" ]; then
         sh "$root/tools/probe/seal.sh" --naming "$scratch/corpus" "$shelf_id" \
             | awk -v here="$scratch/corpus/" 'index($0, here) == 1 { $0 = substr($0, length(here) + 1) } $0 !~ /^docs\//' >> "$scratch/outside-naming.txt"
     done
-    same "outside docs/, only the three files that state an answer, the two hidden oracles and the oracles' held arguments and case files name a probe and are not folds" \
-        "$(printf '%s\n' .claude/skills/fixtures.sh engine/crates/check/tests/probe_oracle_future_date.rs engine/crates/probe/tests/corpus.rs tools/probe/oracle-figure-added.sh tools/probe/probe-record-fixtures.sh $held_files | LC_ALL=C sort -u | tr '\n' ' ' | sed 's/ $//')" \
+    same "outside docs/, only the three files that state an answer, the oracles' hidden tests, the figure oracle and the oracles' held arguments and case files name a probe and are not folds" \
+        "$(printf '%s\n' .claude/skills/fixtures.sh engine/crates/probe/tests/corpus.rs tools/probe/oracle-figure-added.sh tools/probe/probe-record-fixtures.sh $hidden_tests $held_files | LC_ALL=C sort -u | tr '\n' ' ' | sed 's/ $//')" \
         "$(LC_ALL=C sort -u "$scratch/outside-naming.txt" | tr '\n' ' ' | sed 's/ $//')"
 
     # The figure oracle of the code set (#1835), in three directions, over a
@@ -5727,13 +5731,14 @@ if [ -x "$engine" ]; then
     present "and each leak-kept line on its own" "line 8 holds only leak-kept probes" "$scratch/dry.out"
 
     # A line that pools a leak-kept probe with one that is not fails the dry run,
-    # and a plan over its ceiling is printed rather than fatal: forty-two
+    # and a plan over its ceiling is printed rather than fatal: fifty
     # sufficiency probes over the documentation tier's two arms at 30
-    # repetitions is 2520 sessions, $1260.00 against its $130.00. Two of the
-    # forty-two are the harder variants of #1718, two are the patched probes
+    # repetitions is 3000 sessions, $1500.00 against its $130.00. Two of the
+    # fifty are the harder variants of #1718, two are the patched probes
     # of the code set (#1835), eight are the probes of rows 4 and 5 (#1874),
-    # fourteen are the probes of rows 6 to 9 (#1874.3), and eight are the
-    # probes of rows 10 and 11 (#1874.4).
+    # fourteen are the probes of rows 6 to 9 (#1874.3), eight are the
+    # probes of rows 10 and 11 (#1874.4), and eight are the probes of rows 2
+    # and 3 (#1874, slice 4b).
     # The plan selects by category and not by status, so the six retired
     # sufficiency probes count too. This line names them by category and not
     # by identifier. The campaign
@@ -5744,7 +5749,7 @@ if [ -x "$engine" ]; then
     same "a line that pools a leak-kept probe fails the dry run with 8, not 5" "8" "$?"
     present "and names the line" "line 1 pools a probe under \`leaks_kept:\`" "$scratch/pooled.out"
     present "and the ceiling's refusal is printed as a line" \
-        "L1 2520 sessions project \$1260.00 against a declared ceiling of \$130.00" "$scratch/pooled.out"
+        "L1 3000 sessions project \$1500.00 against a declared ceiling of \$130.00" "$scratch/pooled.out"
 
     # Any other refusal of a plan is the batch driver's 5.
     printf 'campaign present discovery\n' > "$scratch/refused.spec"

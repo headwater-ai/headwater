@@ -1,0 +1,10 @@
+# The arguments of the `r2-numbered-heading` oracle, one to a line, for the probe
+# HW-PROBE-a-session-lets-the-required-sections-rule-read-a-numbered-heading
+# (#1874, slice 4b). `tools/probe/oracles/lib.sh` reads this file for
+# `--args` and skips each line that opens with `#`. The file names its
+# probe, so the seal removes it from every workspace, and the oracle entry
+# holds it. The command is
+# `sh tools/probe/oracles/test-passes.sh --args <this file>`.
+--ignored
+headwater-cli
+probe_oracle_r2_numbered_heading
