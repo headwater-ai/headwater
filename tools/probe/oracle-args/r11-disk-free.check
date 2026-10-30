@@ -1,0 +1,38 @@
+# The held check of the `r11-disk-free` oracle, for the probe
+# HW-PROBE-a-session-lets-the-disk-free-script-take-its-floor-in-the-equals-form
+# (#1874). `tools/probe/oracles/held-check.sh` runs it from the root of the
+# grading copy, with `HW_ORACLE_TARGET` and `HW_ORACLE_SCRATCH` set. It
+# states the answer, so it names its probe and the seal removes it from every
+# workspace.
+#
+# The target takes `--floor=<G>` as it takes `--floor <G>`: the same floor,
+# the same refusal of a value that is not a whole number, and the old form
+# still works. It runs the target over two empty directories of the scratch.
+s=$HW_ORACLE_SCRATCH
+mkdir -p "$s/pool" "$s/worktrees"
+
+# want <status> [<argument>...]
+want() {
+    w=$1
+    shift
+    got=0
+    HW_CARGO_POOL="$s/pool" HW_WORKTREES="$s/worktrees" sh "$HW_ORACLE_TARGET" "$@" > "$s/out" 2> "$s/err" < /dev/null || got=$?
+    [ "$got" -eq "$w" ] || {
+        echo "\`disk-free.sh $*\` exits $got, not $w"
+        exit 1
+    }
+}
+
+want 0 --floor=0
+[ "$(grep -c -e '^pool ' -e '^worktrees ' "$s/out")" -eq 2 ] || {
+    echo "\`disk-free.sh --floor=0\` does not print the line of the pool and the line of the worktrees"
+    exit 1
+}
+want 1 --floor=999999999
+want 2 --floor=x
+want 2 --floor=
+want 0 --floor 0
+want 1 --floor 999999999
+want 2 --floor x
+want 0
+echo "takes --floor=<G> as it takes --floor <G>, in 8 runs"
