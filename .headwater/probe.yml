@@ -1084,10 +1084,13 @@ sets:
 # confirmation 144 over the five probes of HW-DR-0111, which ran 25 and 145.
 # The owner split the approval in two on 2026-10-22 (#1777, comment
 # 6339176737), and #1877 keeps the split. `base_ceiling_cents` is the most
-# the bases may spend, $154.00: the first `base` try, which measures
+# the bases may spend, $250.00: the first `base` try, which measures
 # scenario 1 at the confirmation's count of 154 sessions, and the first best
-# so far of the engine layer, scenario 2 at the same count. `ceiling_cents`
-# is the most every other try may spend, $1,146.00, a later base included.
+# so far of the engine layer, scenario 2 at the same count. The plan prices
+# each at $77.00 at the declared 50 cents a session, and the last round
+# realized about 72 cents, about $111 each, so the ceiling holds both at
+# that rate. `ceiling_cents` is the most every other try may spend,
+# $1,050.00, a later base included.
 # The two together are the $1,300.00 approval of #1877, and
 # `tools/probe/try.sh plan` refuses a launch whose charge is priced above
 # what is left under its own ceiling.
@@ -1107,8 +1110,8 @@ rounds:
     variants: 4
     stop_after_empty: 2
     order: [engine, skills, hooks, mcp]
-    ceiling_cents: 114600
-    base_ceiling_cents: 15400
+    ceiling_cents: 105000
+    base_ceiling_cents: 25000
     open:
       layer: engine
       scenario: 2

@@ -6144,8 +6144,8 @@ if [ -x "$engine" ]; then
         'order: [skills, nope]|names the layer nope' 'order: [skills, skills]|names a layer twice' \
         'ceiling_cents: 130001|above the round'"'"'s `approved_cents` of 130000' \
         'base_ceiling_cents: -1|`base_ceiling_cents` of the `tuning` round' \
-        'base_ceiling_cents: "15400"|`base_ceiling_cents` of the `tuning` round' \
-        'base_ceiling_cents: 15401|together 130001, above the round'"'"'s `approved_cents` of 130000'; do
+        'base_ceiling_cents: "25000"|`base_ceiling_cents` of the `tuning` round' \
+        'base_ceiling_cents: 25001|together 130001, above the round'"'"'s `approved_cents` of 130000'; do
         bad_field=${bad%%:*}
         bad_line=${bad%%|*}
         sed "s/^    $bad_field: .*/    $bad_line/" "$root/.headwater/probe.yml" > "$scratch/stage-bad.yml"
@@ -6162,7 +6162,7 @@ if [ -x "$engine" ]; then
     same "declared.py tuning refuses a round with no base ceiling with 2" "2" "$?"
     present "and names it" "and not \`base_ceiling_cents\`" "$scratch/stage-bad.err"
     python3 "$root/tools/probe/declared.py" "$root/.headwater/probe.yml" tuning > "$scratch/stage-good.out"
-    same "declared.py tuning prints the base ceiling of the declaration" "base_ceiling_cents 15400" \
+    same "declared.py tuning prints the base ceiling of the declaration" "base_ceiling_cents 25000" \
         "$(grep '^base_ceiling_cents ' "$scratch/stage-good.out")"
 
     # The batch runs the same check before each invocation (clause 5: "the
