@@ -55,6 +55,7 @@ use crate::index::Index;
 use crate::Config;
 use headwater_census::census::Census;
 use headwater_meta::pattern::Pattern;
+use headwater_yaml::core_schema::as_null;
 use headwater_yaml::{Entry, Mapping, Span, Value};
 
 /// A declared edge, resolved.
@@ -640,6 +641,14 @@ fn read_relation_entry(
 
     for item in items {
         let (raws, attributes, span): (Vec<String>, Vec<Entry>, Span) = match &item.value {
+            // A plain null (`key:`, `~`, `null`) declares no edge, the same as
+            // `[]`, whether it is the whole value or one item of a sequence
+            // ([#1902](https://github.com/headwater-ai/headwater/issues/1902)).
+            // A quoted `""` or `"~"` is text that the author wrote and stays a
+            // target, which is the split `facet_blank` makes for a facet. The
+            // relation name was already looked up, so an unknown name with a
+            // null value is still reported.
+            Value::Scalar(scalar) if as_null(scalar) => continue,
             Value::Scalar(scalar) => (vec![scalar.text.clone()], Vec::new(), item.span),
             Value::Map(map) => match target_of(map, anchor_only) {
                 Some((raws, span)) => (raws, instance_attributes(map), span),

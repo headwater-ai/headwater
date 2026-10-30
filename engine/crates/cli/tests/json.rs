@@ -1140,7 +1140,8 @@ fn a_null_relation_value_declares_no_edge() {
         std::fs::create_dir_all(at.join(".headwater")).expect("the declaration directory is there");
         std::fs::create_dir_all(at.join("docs/interfaces")).expect("the shelf is there");
         std::fs::create_dir_all(at.join("src")).expect("the source directory is there");
-        std::fs::write(at.join("src/a.rs"), "fn main() {}\n").expect("the governed file is written");
+        std::fs::write(at.join("src/a.rs"), "fn main() {}\n")
+            .expect("the governed file is written");
         for name in ["taxonomy.lock", "taxonomy.yml", "overlay.yml"] {
             std::fs::copy(
                 repository().join(".headwater").join(name),
@@ -1204,6 +1205,73 @@ fn a_null_relation_value_declares_no_edge() {
             "{label}: check reports a null value the way it reports `[]`, which is no finding\n{findings}"
         );
     }
+}
+
+/// The two edges of the null rule: quoted text stays a target, and an unknown
+/// relation name is still reported when its value is null.
+///
+/// [#1902](https://github.com/headwater-ai/headwater/issues/1902). Only a plain
+/// scalar is null, so `traces_to: "~"` is an author who wrote `~` and the edge
+/// stays, unresolved. The null test runs after the relation name is looked up,
+/// so `no_such_relation:` with no value is still an unknown relation.
+#[test]
+fn a_quoted_tilde_stays_a_target_and_an_unknown_null_relation_is_reported() {
+    let at = scratch().join("null-relation-boundaries");
+    let _ = std::fs::remove_dir_all(&at);
+    std::fs::create_dir_all(at.join(".headwater")).expect("the declaration directory is there");
+    std::fs::create_dir_all(at.join("docs/interfaces")).expect("the shelf is there");
+    for name in ["taxonomy.lock", "taxonomy.yml", "overlay.yml"] {
+        std::fs::copy(
+            repository().join(".headwater").join(name),
+            at.join(".headwater").join(name),
+        )
+        .expect("the declaration copies");
+    }
+    std::fs::write(
+        at.join("docs/interfaces/headwater-quoted.md"),
+        "---\nid: HW-IFACE-headwater-quoted\nstatus: current\nstatus_since: 2026-10-30\nsummary: \"A document whose relation value is a quoted tilde.\"\nlast_verified: 2026-10-30\ntitle: \"headwater quoted\"\nrelations:\n  traces_to: \"~\"\n  no_such_relation:\n---\n\n# headwater quoted\n\n## Synopsis\n\n    headwater quoted\n",
+    )
+    .expect("the document is written");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args([
+            "explain",
+            "--json",
+            "docs/interfaces/headwater-quoted.md",
+            "--root",
+        ])
+        .arg(&at)
+        .output()
+        .expect("the binary runs");
+    let text = String::from_utf8_lossy(&output.stdout).into_owned();
+    assert_eq!(output.status.code(), Some(0), "{text}");
+    assert!(
+        related(&text)
+            .iter()
+            .any(|element| element.direction == "outbound"
+                && element.relation == "traces_to"
+                && element.target == "~"),
+        "a quoted `~` is text the author wrote, so the edge stays\n{text}"
+    );
+
+    let check = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(["check", "--root"])
+        .arg(&at)
+        .output()
+        .expect("the binary runs");
+    let findings = String::from_utf8_lossy(&check.stdout).into_owned();
+    assert!(
+        findings
+            .lines()
+            .any(|line| line.contains("edge: `traces_to` -> ~ resolves to nothing")),
+        "the quoted `~` is still reported as resolving to nothing\n{findings}"
+    );
+    assert!(
+        findings
+            .lines()
+            .any(|line| line.contains("no_such_relation")),
+        "an unknown relation name with a null value is still reported\n{findings}"
+    );
 }
 
 /// Each member of `reach` carries the entries its one pattern matched.
