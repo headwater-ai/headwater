@@ -167,8 +167,14 @@ pub struct Pointer {
 /// at it.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Neighbour {
-    /// The relation as the far end is reached: the declared name for an
-    /// outbound edge, and the inverse where one is declared for an inbound one.
+    /// The relation as this document stands to the far end, so that every
+    /// entry reads "this document <relation> the far end" (#1901). An edge
+    /// read from the end that wrote it carries the key that end wrote, the
+    /// canonical name or its declared inverse. An edge read from the far end
+    /// carries the other name of the pair: the inverse where one is declared,
+    /// and `<name> of` where none is. So both ends of one supersession read
+    /// `supersedes` on the successor and `superseded_by` on the superseded
+    /// document, whichever end wrote the edge.
     pub relation: String,
     /// Whether this document declared the edge or the far end did.
     pub inbound: bool,
@@ -418,7 +424,12 @@ impl<'a> Surface<'a> {
 
     fn neighbour(&self, edge: &Edge, inbound: bool) -> Neighbour {
         let declared = self.relations.named(&edge.declared);
-        let relation = match inbound {
+        // The relation is named as the edge reads from this end (#1901).
+        // `edge.declared` is the canonical name, so an edge an author wrote
+        // under the inverse key reads the other way round already, and
+        // reading it from the far end flips it back.
+        let flipped = inbound != (edge.direction == Direction::Inverse);
+        let relation = match flipped {
             false => edge.declared.clone(),
             true => declared
                 .as_ref()

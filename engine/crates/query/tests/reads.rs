@@ -657,7 +657,7 @@ fn a_task_names_only_the_documents_whose_name_it_repeats() {
 
 /// A named pointer comes after the anchored ones and before the ranked ones,
 /// once, and JSON writes its evidence as `by: name` with the words, in a
-/// document of version `1.1` (HW-DR-0109).
+/// document of version `1.1` or later (HW-DR-0109), `1.2` today (#1901).
 #[test]
 fn a_named_pointer_is_offered_once_before_the_ranked_ones_and_written_as_by_name() {
     let built = fixture_tree();
@@ -698,7 +698,7 @@ fn a_named_pointer_is_offered_once_before_the_ranked_ones_and_written_as_by_name
             headwater_yaml::Value::Map(_) => panic!("a mapping at {path:?}"),
         }
     };
-    assert_eq!(at(&["version"]), "1.1", "{json}");
+    assert_eq!(at(&["version"]), "1.2", "{json}");
     assert_eq!(at(&["pointers", "0", "evidence", "by"]), "name", "{json}");
     assert_eq!(
         at(&["pointers", "0", "evidence", "words"]),
@@ -1022,6 +1022,127 @@ fn precedence_offers_the_nucleus_and_the_successor_first() {
         Some(&"query/decisions/edge-throttling.md"),
         "{}",
         route.render(PLAIN)
+    );
+}
+
+/// A relation written under its inverse name reads as written, from both ends
+/// (#1901).
+///
+/// The fixture writes one supersession twice: `per-service-limits.md`
+/// (DR-FIX-0007) declares `superseded_by: DR-FIX-0031`, and
+/// `edge-throttling.md` (DR-FIX-0031) declares `supersedes: DR-FIX-0007`.
+/// Every entry of `related` reads "this document <relation> the far end",
+/// whichever key either side wrote. Before #1901 the relation was named from
+/// the canonical relation alone, so the superseded document printed its own
+/// `superseded_by` as an outbound `supersedes`, and the successor printed that
+/// edge as an inbound `superseded_by`.
+#[test]
+fn a_relation_declared_under_its_inverse_name_reads_as_written_from_both_ends() {
+    let built = fixture_tree();
+    let surface = built.surface();
+    let triples = |path: &str| -> Vec<(String, bool, String)> {
+        let document = surface.find(path).expect("the fixture");
+        let mut triples: Vec<(String, bool, String)> = surface
+            .related(&document)
+            .into_iter()
+            .filter(|neighbour| neighbour.relation.starts_with("supersede"))
+            .map(|neighbour| (neighbour.relation, neighbour.inbound, neighbour.target))
+            .collect();
+        triples.sort();
+        triples
+    };
+    let entry = |relation: &str, inbound: bool, target: &str| {
+        (relation.to_owned(), inbound, target.to_owned())
+    };
+    assert_eq!(
+        triples("query/decisions/per-service-limits.md"),
+        vec![
+            entry("superseded_by", false, "DR-FIX-0031"),
+            entry("superseded_by", true, "query/decisions/edge-throttling.md"),
+        ]
+    );
+    assert_eq!(
+        triples("query/decisions/edge-throttling.md"),
+        vec![
+            entry("supersedes", false, "DR-FIX-0007"),
+            entry("supersedes", true, "query/decisions/per-service-limits.md"),
+        ]
+    );
+}
+
+/// A relation that declares no inverse reads `<relation> of` from its far end.
+///
+/// The fixture tree has no edge between two documents under a relation with no
+/// inverse, so this builds a tree of two decisions in a directory of its own:
+/// the fixture taxonomy plus `cites`, which names no inverse, and DR-T-0001
+/// citing DR-T-0002. The cited end reads the edge inbound as `cites of`, and
+/// the citing end reads it outbound as `cites` (#1901). Without the fallback
+/// the cited end would print `cites` inbound, which reads as "this document
+/// cites the far end" and is the wrong way round.
+#[test]
+fn a_relation_with_no_inverse_reads_as_relation_of_from_its_far_end() {
+    let dir = std::env::temp_dir().join(format!(
+        "headwater-query-no-inverse-{}-{:?}",
+        std::process::id(),
+        std::thread::current().id()
+    ));
+    let decisions = dir.join("query/decisions");
+    std::fs::create_dir_all(&decisions).expect("the temporary tree");
+    let document = |id: &str, relations: &str| {
+        format!(
+            "---\nid: {id}\nstatus: current\nstatus_since: 2026-02-01\nsummary: the {id} \
+             record\nprovenance:\n  warrant: accepted\n  accepted_by: the fixture tree\n\
+             {relations}---\n\n# {id}\n\nA decision.\n"
+        )
+    };
+    std::fs::write(
+        decisions.join("citing.md"),
+        document("DR-T-0001", "relations:\n  cites:\n    - DR-T-0002\n"),
+    )
+    .expect("the citing record");
+    std::fs::write(decisions.join("cited.md"), document("DR-T-0002", ""))
+        .expect("the cited record");
+
+    let source = std::fs::read_to_string(fixtures_dir().join("query.taxonomy.yml"))
+        .expect("the fixture taxonomy");
+    let source = source.replacen(
+        "\nrelations:\n",
+        "\nrelations:\n  cites:\n    from: [decision]\n    to:   [decision]\n",
+        1,
+    );
+    let root = headwater_yaml::load(&source)
+        .expect("the taxonomy parses")
+        .value
+        .as_map()
+        .expect("a mapping")
+        .clone();
+    let corpus = Corpus::new(dir.clone(), "query");
+    let built = Built::over(&corpus, &root);
+    let surface = built.surface();
+    let read = |path: &str| -> Vec<(String, bool, String)> {
+        let document = surface.find(path).expect("the temporary record");
+        let mut triples: Vec<(String, bool, String)> = surface
+            .related(&document)
+            .into_iter()
+            .map(|neighbour| (neighbour.relation, neighbour.inbound, neighbour.target))
+            .collect();
+        triples.sort();
+        triples
+    };
+    let cited = read("query/decisions/cited.md");
+    let citing = read("query/decisions/citing.md");
+    let _ = std::fs::remove_dir_all(&dir);
+    assert_eq!(
+        cited,
+        vec![(
+            "cites of".to_owned(),
+            true,
+            "query/decisions/citing.md".to_owned()
+        )]
+    );
+    assert_eq!(
+        citing,
+        vec![("cites".to_owned(), false, "DR-T-0002".to_owned())]
     );
 }
 
