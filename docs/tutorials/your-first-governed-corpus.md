@@ -476,14 +476,14 @@ docs/decisions/0002-deliver-at-least-once.md
   may declare traces_to to governed_document, code_path
   to ACME-DR-0001 supersedes — The queue keeps every delivery attempt in
     Postgres. (the target's own summary) [this document governs the reading]
-  from docs/decisions/0001-store-attempts-in-postgres.md superseded_by — The
-    queue keeps every delivery attempt in Postgres. (the target's own summary)
-    [this document governs the reading]
+  from docs/decisions/0001-store-attempts-in-postgres.md supersedes — The queue
+    keeps every delivery attempt in Postgres. (the target's own summary) [this
+    document governs the reading]
 ```
 
 **Check.** The first line of that output is the path of the document whose identifier you named.
 
-Every word this tutorial taught is on that screen at once. There you read the shelf, the kind, the facets, the sections, the relations and both halves of the edge. This is the verb to reach for before you open a file.
+Every word this tutorial taught is on that screen at once. There you read the shelf, the kind, the facets, the sections, the relations and both halves of the edge. Each edge line reads from this document, so the line from ACME-DR-0001 also says `supersedes`, although that document wrote `superseded_by`. This is the verb to reach for before you open a file.
 
 ### Step 15 — Ask a question in your own words
 

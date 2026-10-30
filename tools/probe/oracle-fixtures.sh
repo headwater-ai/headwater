@@ -218,14 +218,16 @@ expect 1 "successor-typed with --check-clean fails an error in the old record" "
 expect 1 "successor-typed with --check-clean fails an error in the successor" "$work/check-spoiled" successor-typed.sh --check-clean HW-DR-0111
 
 # The meaning of each `(relation, inbound)` pair of `headwater explain
-# --json`, fixed here because the oracles read it (#1874.3). An edge that a
-# document declares under `supersedes` or under its inverse `superseded_by`
-# is printed on that document as `supersedes`, outbound, with the target as
-# written. On the far document it is `superseded_by`, inbound, with the
-# declaring document's path. So the relation string does not say which key
-# was written, and successor-typed.sh tells the two ends apart by status. A
-# key that names nothing is printed as one outbound edge to the target `~`.
-# A case here fails when the engine prints these pairs another way.
+# --json`, fixed here because the oracles read it (#1874.3). Each entry reads
+# "this document <relation> the far end", whichever end wrote the key
+# (#1901). An edge is printed on the document that declares it outbound,
+# under the key it wrote and with the target as written. On the far
+# document it is inbound, under the other name of the pair and with the
+# declaring document's path. So the successor reads `supersedes` and the old
+# record reads `superseded_by` on both of its entries, and `inbound` says
+# which end wrote the key. A key that names nothing is printed as one
+# outbound edge to the target `~`. A case here fails when the engine prints
+# these pairs another way.
 explain_pairs() {
     "$engine" explain --json --root "$1" "$2" 2> /dev/null | jq -c '[.related[] | select(.relation == "supersedes" or .relation == "superseded_by") | [.relation, .inbound, (.targets | map(sub("^docs/decisions/(?<n>[0-9]+)-.*"; "path:\(.n)")))]] | sort_by(.)'
 }
@@ -239,10 +241,10 @@ pairs_case() {
         failures=$((failures + 1))
     fi
 }
-pairs_case "explain prints the superseded_by that HW-DR-0111 declares as supersedes, outbound, and the far end as superseded_by, inbound" "$base" HW-DR-0111 '[["superseded_by",true,["path:0112"]],["supersedes",false,["HW-DR-0112"]]]'
-pairs_case "explain prints the supersedes that HW-DR-0112 declares as supersedes, outbound, and the far end as superseded_by, inbound" "$base" HW-DR-0112 '[["superseded_by",true,["path:0111"]],["supersedes",false,["HW-DR-0111"]]]'
-pairs_case "explain prints no outbound supersedes to HW-DR-0112 on HW-DR-0111 once its superseded_by names nothing, and the empty key as the target ~" "$work/link-one-end" HW-DR-0111 '[["superseded_by",true,["path:0112"]],["supersedes",false,["~"]]]'
-pairs_case "explain prints no outbound supersedes to HW-DR-0111 on HW-DR-0112 once its supersedes names nothing, and the empty key as the target ~" "$work/link-other-end" HW-DR-0112 '[["superseded_by",true,["path:0111"]],["supersedes",false,["~"]]]'
+pairs_case "explain prints the superseded_by that HW-DR-0111 declares as superseded_by, outbound, and the supersedes of the far end as superseded_by, inbound" "$base" HW-DR-0111 '[["superseded_by",false,["HW-DR-0112"]],["superseded_by",true,["path:0112"]]]'
+pairs_case "explain prints the supersedes that HW-DR-0112 declares as supersedes, outbound, and the superseded_by of the far end as supersedes, inbound" "$base" HW-DR-0112 '[["supersedes",false,["HW-DR-0111"]],["supersedes",true,["path:0111"]]]'
+pairs_case "explain prints no outbound superseded_by to HW-DR-0112 on HW-DR-0111 once its superseded_by names nothing, and the empty key as the target ~" "$work/link-one-end" HW-DR-0111 '[["superseded_by",false,["~"]],["superseded_by",true,["path:0112"]]]'
+pairs_case "explain prints no outbound supersedes to HW-DR-0111 on HW-DR-0112 once its supersedes names nothing, and the empty key as the target ~" "$work/link-other-end" HW-DR-0112 '[["supersedes",false,["~"]],["supersedes",true,["path:0111"]]]'
 
 # The shape is versioned, and the scripts read version 1. An engine that
 # prints another major version stops the grade with a usage error, so a
@@ -311,13 +313,15 @@ expect 1 "successor-typed with --check-clean fails both ends written as text and
 tree=$(fresh successor-status-comment) && sed -i 's/^status: superseded$/status: current\n# status: superseded/' "$tree/$old"
 grep -q '^# status: superseded$' "$tree/$old" || echo "oracle-fixtures: the status of $old was not commented, so the next case reads nothing." >&2
 expect 1 "successor-typed fails a status that only a comment holds" "$tree" successor-typed.sh HW-DR-0111
-# A record that supersedes another is printed with an outbound `supersedes`
-# to it, as its successor is, so the record it superseded reads as its
-# successor unless the successor's own status is read: HW-DR-0112 marked
-# superseded has no successor, and HW-DR-0111 is not one.
+# HW-DR-0112 marked superseded has no successor. HW-DR-0111 wrote
+# `superseded_by: HW-DR-0112`, so the engine prints it on HW-DR-0112 as
+# `supersedes`, inbound, and HW-DR-0111 is no candidate (#1901). The same
+# tree read from HW-DR-0111 has a successor that is superseded itself, and
+# the status guard refuses it: without the guard, the second case passes.
 tree=$(fresh successor-predecessor) && sed -i 's/^status: current$/status: superseded/' "$tree/$new"
 grep -q '^status: superseded$' "$tree/$new" || echo "oracle-fixtures: the status of $new was not set, so the next case reads nothing." >&2
 expect 1 "successor-typed fails a record whose only succession edge is to the record it superseded" "$tree" successor-typed.sh HW-DR-0112
+expect 1 "successor-typed fails an old record whose only successor is superseded itself" "$tree" successor-typed.sh HW-DR-0111
 
 # --- moved.sh -------------------------------------------------------------
 
