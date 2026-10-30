@@ -1,0 +1,13 @@
+# The arguments of the `r3-pattern-module` oracle, one to a line, for the probe
+# HW-PROBE-a-session-renames-the-pattern-module-of-the-meta-crate-and-its-callers
+# (#1874, slice 4b). `tools/probe/oracles/lib.sh` reads this file for
+# `--args` and skips each line that opens with `#`. The file names its
+# probe, so the seal removes it from every workspace, and the oracle entry
+# holds it. The command is
+# `sh tools/probe/oracles/test-passes.sh --check-clean --args <this file>`.
+# The documents after `--` are the records that govern the module.
+--ignored
+headwater-cli
+probe_oracle_r3_pattern_module
+--
+docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md

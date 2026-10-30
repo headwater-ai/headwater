@@ -1,0 +1,15 @@
+# The arguments of the `r3-language-module` oracle, one to a line, for the probe
+# HW-PROBE-a-session-renames-the-module-of-the-language-rule-and-moves-the-records-that-govern-it
+# (#1874, slice 4b). `tools/probe/oracles/lib.sh` reads this file for
+# `--args` and skips each line that opens with `#`. The file names its
+# probe, so the seal removes it from every workspace, and the oracle entry
+# holds it. The command is
+# `sh tools/probe/oracles/test-passes.sh --check-clean --args <this file>`.
+# The documents after `--` are the records that govern the module.
+--ignored
+headwater-cli
+probe_oracle_r3_language_module
+--
+docs/decisions/0087-no-paragraph-limit-joins-the-language-rule-because-most-paragraphs-past-six-sentences-hold-one-topic.md
+docs/decisions/0069-a-paragraph-limit-counts-sentences-under-the-language-rule-and-never-words.md
+docs/evaluations/what-a-check-can-know.md

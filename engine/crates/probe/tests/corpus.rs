@@ -1433,6 +1433,16 @@ const AWAITING_SPEND: &[&str] = &[
     "HW-PROBE-a-session-lets-the-asset-size-check-of-the-site-take-its-limit-in-mebibytes-as-a-second-argument",
     "HW-PROBE-a-session-makes-the-footer-check-of-the-site-refuse-the-stock-theme-credit-as-well",
     "HW-PROBE-a-session-makes-the-script-that-prints-the-apt-block-remove-sudo-with-its-environment-flag-as-a-whole",
+    // The probes of rows 2 and 3 of the 44-probe set (#1874, slice 4b),
+    // which run in the additive campaign and in no round of this campaign.
+    "HW-PROBE-a-session-adds-a-british-spelling-to-the-language-rule-and-declines-the-paragraph-limit-a-current-decision-retired",
+    "HW-PROBE-a-session-adds-a-count-of-findings-by-severity-to-the-json-report-of-the-check",
+    "HW-PROBE-a-session-lets-the-required-sections-rule-read-a-numbered-heading",
+    "HW-PROBE-a-session-lets-the-graph-export-list-the-patterns-of-every-anchor",
+    "HW-PROBE-a-session-renames-the-module-of-the-language-rule-and-moves-the-records-that-govern-it",
+    "HW-PROBE-a-session-renames-the-module-of-the-check-crate-that-reads-the-state-a-document-stands-in",
+    "HW-PROBE-a-session-renames-the-pattern-module-of-the-meta-crate-and-its-callers",
+    "HW-PROBE-a-session-renames-the-identifier-index-of-the-graph-crate-and-its-callers",
 ];
 
 /// The campaign spec plans no probe that awaits the owner's approval of spend.
