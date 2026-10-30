@@ -559,7 +559,14 @@ expect 2 "nothing-else-broken refuses the keep line of round 3, which matched li
 # --- test-passes.sh -------------------------------------------------------
 
 cat > "$work/stub-cargo.sh" << 'EOF'
-# A stub of cargo for test-passes.sh. STUB_RESULT says what it prints.
+# A stub of cargo for test-passes.sh. STUB_RESULT says what it prints. Where
+# STUB_MARKER names a file, it fails first when a file under engine/crates is
+# not newer than that file, as cargo would read a unit that the last case
+# built as fresh (#1874, slice 4b).
+if [ -n "${STUB_MARKER:-}" ] && [ -n "$(find engine/crates -type f ! -newer "$STUB_MARKER" | sed -n '1p')" ]; then
+    echo "stub-cargo: a file under engine/crates is not newer than $STUB_MARKER" >&2
+    exit 101
+fi
 case $* in
     *" -- "*--ignored*) ignored=yes ;;
     *) ignored=no ;;
@@ -581,6 +588,25 @@ export STUB_RESULT=none && expect 1 "test-passes fails a filter that ran no case
 export STUB_RESULT=ignored && expect 0 "test-passes runs an ignored case under --ignored" "$base" test-passes.sh --ignored headwater-check probe_oracle_x
 export STUB_RESULT=ignored && expect 1 "test-passes without --ignored does not run it" "$base" test-passes.sh headwater-check probe_oracle_x
 export STUB_RESULT=pass && expect 2 "test-passes refuses a missing target" "$base" test-passes.sh headwater-check
+# `--check-clean` with documents after `--` counts the strict errors on those
+# documents alone, as the other tree scripts do, because a sealed tree holds
+# errors the seal made elsewhere (#1874, slice 4b; #1892). With no document,
+# it reads the whole tree, as check-clean.sh does.
+tree=$(fresh test-passes-spoiled) && spoil "$tree"
+export STUB_RESULT=pass && expect 0 "test-passes with --check-clean passes an error in a document it does not name" "$tree" test-passes.sh --check-clean headwater-check probe_oracle_x -- "$old"
+export STUB_RESULT=pass && expect 1 "test-passes with --check-clean fails an error in the document it names" "$tree" test-passes.sh --check-clean headwater-check probe_oracle_x -- "$new"
+export STUB_RESULT=pass && expect 1 "test-passes with --check-clean and no document reads the whole tree" "$tree" test-passes.sh --check-clean headwater-check probe_oracle_x
+export STUB_RESULT=pass && expect 0 "test-passes with --check-clean and a document passes a clean tree" "$base" test-passes.sh --check-clean --ignored headwater-check probe_oracle_x one_case -- "$new"
+export STUB_RESULT=pass && expect 2 "test-passes refuses a document after -- with no target" "$base" test-passes.sh headwater-check -- "$new"
+export STUB_RESULT=pass && expect 2 "test-passes refuses a -- that names no document" "$base" test-passes.sh headwater-check probe_oracle_x --
+rm -rf "$tree"
+# Each workspace crate builds from the tree in front of it: before cargo runs,
+# every file under engine/crates is newer than anything a case built before
+# (#1874, slice 4b). The stub fails where one is not.
+date > "$work/marker"
+sleep 1
+export STUB_RESULT=pass STUB_MARKER="$work/marker" && expect 0 "test-passes marks every file under engine/crates newer before cargo runs" "$base" test-passes.sh headwater-check probe_oracle_x
+unset STUB_MARKER
 unset HW_ORACLE_CARGO
 
 # --- no-hook-warning.sh ---------------------------------------------------

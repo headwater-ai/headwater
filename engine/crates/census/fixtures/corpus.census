@@ -1198,6 +1198,10 @@ docs/probes/a-figure-a-session-adds-to-a-hand-built-page-is-measured-and-never-t
   typed: probe
 docs/probes/a-rule-that-reads-the-date-takes-it-from-the-run-and-ships-with-the-fixture-that-fails-it.md
   typed: probe
+docs/probes/a-session-adds-a-british-spelling-to-the-language-rule-and-declines-the-paragraph-limit-a-current-decision-retired.md
+  typed: probe
+docs/probes/a-session-adds-a-count-of-findings-by-severity-to-the-json-report-of-the-check.md
+  typed: probe
 docs/probes/a-session-adds-a-retired-term-to-the-overlay-that-the-task-names-and-leaves-the-lock-matching-it.md
   typed: probe
 docs/probes/a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced.md
@@ -1215,6 +1219,10 @@ docs/probes/a-session-holds-the-trademark-notice-to-the-house-language-rules-fro
 docs/probes/a-session-lets-the-asset-size-check-of-the-site-take-its-limit-in-mebibytes-as-a-second-argument.md
   typed: probe
 docs/probes/a-session-lets-the-disk-free-script-take-its-floor-in-the-equals-form.md
+  typed: probe
+docs/probes/a-session-lets-the-graph-export-list-the-patterns-of-every-anchor.md
+  typed: probe
+docs/probes/a-session-lets-the-required-sections-rule-read-a-numbered-heading.md
   typed: probe
 docs/probes/a-session-links-the-governs-edges-evaluation-to-the-obligation-that-it-says-is-discharged.md
   typed: probe
@@ -1257,6 +1265,14 @@ docs/probes/a-session-records-the-owl-worked-example-as-evidence-of-the-check-la
 docs/probes/a-session-records-the-walkthrough-that-the-federation-part-rests-a-rule-on-as-the-evidence-it-cites.md
   typed: probe
 docs/probes/a-session-records-which-obligation-an-evaluation-discharged.md
+  typed: probe
+docs/probes/a-session-renames-the-identifier-index-of-the-graph-crate-and-its-callers.md
+  typed: probe
+docs/probes/a-session-renames-the-module-of-the-check-crate-that-reads-the-state-a-document-stands-in.md
+  typed: probe
+docs/probes/a-session-renames-the-module-of-the-language-rule-and-moves-the-records-that-govern-it.md
+  typed: probe
+docs/probes/a-session-renames-the-pattern-module-of-the-meta-crate-and-its-callers.md
   typed: probe
 docs/probes/a-session-repairs-a-suspect-governs-edge-on-the-record-that-the-task-names-and-raises-no-other-finding.md
   typed: probe

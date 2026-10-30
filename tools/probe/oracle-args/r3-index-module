@@ -1,0 +1,13 @@
+# The arguments of the `r3-index-module` oracle, one to a line, for the probe
+# HW-PROBE-a-session-renames-the-identifier-index-of-the-graph-crate-and-its-callers
+# (#1874, slice 4b). `tools/probe/oracles/lib.sh` reads this file for
+# `--args` and skips each line that opens with `#`. The file names its
+# probe, so the seal removes it from every workspace, and the oracle entry
+# holds it. The command is
+# `sh tools/probe/oracles/test-passes.sh --check-clean --args <this file>`.
+# The documents after `--` are the records that govern the module.
+--ignored
+headwater-cli
+probe_oracle_r3_index_module
+--
+docs/decisions/0068-the-front-matter-key-that-carries-a-minted-identifier-is-id.md

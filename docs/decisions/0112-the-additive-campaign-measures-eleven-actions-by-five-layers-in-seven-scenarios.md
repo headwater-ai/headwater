@@ -112,6 +112,8 @@ Changed on 2026-10-30 by round 4 of the third slice of #1874. An oracle does not
 
 Changed on 2026-10-30 by slice 3b of #1874. `typed-at.sh` and `reciprocal-link.sh` also read each relation as `headwater explain --json` gives it. So `typed-at.sh` counts a citation of the ruling only when a relation of the document holds it. A citation in the body or in a comment does not count. A baseline of row 9 can also name text that the repair removes from a summary, in a `# summary-not:` line. A file can carry a second finding of the same rule in its body. Then a repair of the body alone matches the count of the baseline, and that line fails it.
 
+Added on 2026-10-30 by slice 4b of #1874. `test-passes.sh` also counts only the errors on the documents that it names after `--`. Before it builds, it marks each file under `engine/crates` newer than any build. A grading copy holds no history, so a build that trusts the times of its files can serve the build of the case before it.
+
 Row 11 has two conditions. The `oracle:` facet names the oracle over the tree. `no-hook-warning.sh` reads the harness log of the session from `HEADWATER_ORACLE_HARNESS_LOG`, because the stream holds no hook attachment. #1875 exports that variable and runs the script on each session of row 11.
 
 `tools/probe/oracle-fixtures.sh` runs each script over a tree that it must pass and a tree that it must fail. An oracle that passes both trees, or fails both, fails CI. The pilot of #1835 found probes of each kind.

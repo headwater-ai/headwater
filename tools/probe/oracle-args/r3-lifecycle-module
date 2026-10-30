@@ -1,0 +1,13 @@
+# The arguments of the `r3-lifecycle-module` oracle, one to a line, for the probe
+# HW-PROBE-a-session-renames-the-module-of-the-check-crate-that-reads-the-state-a-document-stands-in
+# (#1874, slice 4b). `tools/probe/oracles/lib.sh` reads this file for
+# `--args` and skips each line that opens with `#`. The file names its
+# probe, so the seal removes it from every workspace, and the oracle entry
+# holds it. The command is
+# `sh tools/probe/oracles/test-passes.sh --check-clean --args <this file>`.
+# The documents after `--` are the records that govern the module.
+--ignored
+headwater-cli
+probe_oracle_r3_lifecycle_module
+--
+docs/decisions/0026-q26-whether-terminality-belongs-to-a-state-or-to-a-state-and-a-regime.md

@@ -1,0 +1,10 @@
+# The arguments of the `r2-export-patterns` oracle, one to a line, for the probe
+# HW-PROBE-a-session-lets-the-graph-export-list-the-patterns-of-every-anchor
+# (#1874, slice 4b). `tools/probe/oracles/lib.sh` reads this file for
+# `--args` and skips each line that opens with `#`. The file names its
+# probe, so the seal removes it from every workspace, and the oracle entry
+# holds it. The command is
+# `sh tools/probe/oracles/test-passes.sh --args <this file>`.
+--ignored
+headwater-cli
+probe_oracle_r2_export_patterns
