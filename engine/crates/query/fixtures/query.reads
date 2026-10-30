@@ -133,7 +133,7 @@ explain
     to src/ingest/mod.rs, src/ingest/rate_limit.rs governs [this document governs
       the reading] (reaches 2 entries — src/ingest/mod.rs: 1,
       src/ingest/rate_limit.rs: 1)
-    from query/decisions/per-service-limits.md superseded_by — why a per service
+    from query/decisions/per-service-limits.md supersedes — why a per service
       throttling design was rejected (the target's own summary) [this document
       governs the reading]
   query/specs/asserted-notes.md

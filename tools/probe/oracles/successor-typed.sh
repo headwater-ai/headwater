@@ -21,13 +21,14 @@
 # `hw_oracle_explain` and `hw_oracle_edge` in `lib.sh` read them, and never
 # as lines of the front matter (round 4 of #1874.3). So an edge that only a
 # comment holds, or that stands under another relation such as `traces_to`,
-# is no edge. The engine prints an edge declared under `superseded_by` as
-# `supersedes`, outbound, on the document that declares it, as it prints one
-# declared under `supersedes`, so the relation does not say which end is
-# old. Status says it: the old record is superseded, and a record it
-# superseded in turn is superseded too, so a successor is not. With
-# `--check-clean`, the strict check reads the keys themselves, and a key
-# written on the wrong end fails its reciprocity rule.
+# is no edge. The engine names each edge as the document explained stands to
+# the far end, whichever end wrote it (#1901): the successor reads
+# `supersedes` and the old record reads `superseded_by`, outbound for the key
+# that document wrote and inbound for the key the other end wrote. So the
+# relation says which end is old. Status still guards one case the relation
+# does not: a successor that was superseded in turn is not the successor
+# this grade asks for. With `--check-clean`, the strict check reads the keys
+# themselves, and a key written on the wrong end fails its reciprocity rule.
 #
 # With `--check-clean`, the strict errors counted are those on <old-document>
 # and on the successor, because a sealed tree holds errors elsewhere.
@@ -51,8 +52,10 @@ superseded() {
 }
 superseded "$old_path" || hw_oracle_fail "$old_path is not \`status: superseded\`"
 
-# Each document that declares a succession edge to the old one is printed on
-# it as `superseded_by`, inbound, with that document's path.
+# Each document that declares `supersedes` to the old one is printed on it as
+# `superseded_by`, inbound, with that document's path. A document that wrote
+# `superseded_by` to it is a record the old one superseded, and is printed as
+# `supersedes`, inbound, so it is no candidate.
 jq -r '[.related[]? | select(.inbound == true and .relation == "superseded_by") | .targets[]?] | unique | .[]' "$hw_oracle_scratch/old.json" > "$hw_oracle_scratch/candidates"
 found="" found_id="" typed="" refused=""
 while IFS= read -r candidate; do
@@ -69,11 +72,11 @@ while IFS= read -r candidate; do
     break
 done < "$hw_oracle_scratch/candidates"
 if [ -z "$found" ]; then
-    [ -n "$refused" ] && hw_oracle_fail "the only document with a succession edge to $old_id is $refused, which is superseded itself, so it is a record $old_id superseded and not its successor"
+    [ -n "$refused" ] && hw_oracle_fail "the only document that supersedes $old_id is $refused, which is superseded itself, so it is not the successor that stands"
     hw_oracle_fail "no document declares that it supersedes $old_id, as the engine parses the front matter"
 fi
 [ -n "$typed" ] && [ "$typed" != null ] || hw_oracle_fail "$found supersedes $old_id, and the engine types it as nothing"
 [ -n "$found_id" ] || hw_oracle_fail "$found supersedes $old_id and declares no identifier"
-hw_oracle_edge "$hw_oracle_scratch/old.json" supersedes "$found_id" "$found" || hw_oracle_fail "$found supersedes $old_id, and $old_path declares no superseded_by edge to $found_id, as the engine parses the front matter"
+hw_oracle_edge "$hw_oracle_scratch/old.json" superseded_by "$found_id" "$found" || hw_oracle_fail "$found supersedes $old_id, and $old_path declares no superseded_by edge to $found_id, as the engine parses the front matter"
 hw_oracle_subjects="$old_path $found"
 hw_oracle_pass_clean "$found_id, typed $typed, supersedes $old_id, and $old_path names it"

@@ -670,8 +670,14 @@ $routed"
         out=$("$engine" explain docs/spec/05-ai-integration.md --root "$root" 2>&1)
         case $out in
             *'  summary '*)
+                # An edge into the document is a line that opens `from`. The
+                # relation beside it names how this document stands to the far
+                # end (#1901), so an evaluation that wrote `cited_by` prints
+                # here as `cites_evidence`, and no relation name marks an
+                # inbound edge.
                 case $out in
-                    *' cited_by '*) pass "$name" ;;
+                    *'
+  from '*) pass "$name" ;;
                     *) fail "$name" 'it printed a summary and no edge into the document' ;;
                 esac ;;
             *) fail "$name" "it printed no summary line:
