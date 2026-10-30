@@ -31,7 +31,7 @@ relations:
 
 ### Phrasing 2
 
-The obligation that lists eight comments in the command-surface crates that state stale facts tells in its summary what the code used to hold, and the voice rule reports it. State what holds instead, with nothing new for the check to report.
+The obligation that lists eight comments in the command-surface crates that state stale facts narrates a change in its summary, and the voice rule reports it. State what holds instead, with nothing new for the check to report.
 
 ## Target
 

@@ -31,7 +31,7 @@ relations:
 
 ### Phrasing 2
 
-The process obligation on the site-review marker of the pre-push hook says in its summary what the site pages used to hold, and the voice rule reports it. State what holds instead, with nothing new for the check to report.
+The process obligation on the site-review marker of the pre-push hook narrates in its summary a change to the site pages, and the voice rule reports it. State what holds instead, with nothing new for the check to report.
 
 ## Target
 
