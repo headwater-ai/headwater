@@ -464,3 +464,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 ## 111 — The additive campaign adds six layers to plain code in fourteen scenarios and registers one comparison each
 
 [HW-DR-0111](../decisions/0111-the-additive-campaign-adds-six-layers-to-plain-code-in-fourteen-scenarios-and-registers-one-comparison-each.md) (superseded) — Superseded by HW-DR-0112, and this record decides nothing in force. HW-DR-0112 carries its probe shape, its verdict rule, its definition of a call to the server and its fixed model. It recorded 14 scenarios over 9 probes, and a code set of 5 probes. (asserted, and no human has accepted it)
+
+## 113 — Whether an agent may write the acceptance stamp while the default branch requires no approving review
+
+[HW-DR-0113](../decisions/0113-whether-an-agent-may-write-the-acceptance-stamp-while-the-default-branch-requires-no-approving-review.md) — Proposed, not ruled: while main requires no approving review, an agent writes no acceptance stamp, against HW-DR-0034. It is also the draft fixture of the superseded-target axis of HW-DR-0112. (asserted, and no human has accepted it)
