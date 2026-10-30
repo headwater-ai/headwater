@@ -156,5 +156,15 @@ same '  and nothing ran' 0 "$(grep -c . "$LOG")"
 out=$(cd "$wt" && sh "$tool" none 2>&1); status=$?
 same 'none is the run-lessons build, with its own scratch' "0 LOGS: $scratch/jobtmp/run-lessons/pre-pr" "$status $(printf '%s\n' "$out" | grep '^LOGS:')"
 
+printf '\n# the default list holds the probe suites CI runs\n'
+# PR #1894 and #1902 each printed PRE-PR: ok and failed one of these in CI.
+defaults=$(sed -n 's/^fixtures=\${HW_PRE_PR_FIXTURES:-"\(.*\)"}$/\1/p' "$tool")
+for suite in tools/probe/probe-record-fixtures.sh tools/probe/oracle-fixtures.sh tools/probe/probe-oracle-fixtures.sh; do
+    case " $defaults " in
+        *" $suite "*) pass "the default fixture list runs $suite" ;;
+        *) fail "the default fixture list runs $suite" "it is not in \`$defaults\`" ;;
+    esac
+done
+
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]
