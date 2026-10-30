@@ -1114,7 +1114,7 @@ rounds:
       scenario: 2
       try: 1
       cap_cents: 8000
-      plan: PLAN_URL
+      plan: https://github.com/headwater-ai/headwater/issues/1877#issuecomment-6526210603
       change: none
   final:
     set: held-out
