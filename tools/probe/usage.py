@@ -16,6 +16,12 @@ used the layer at least once. It reads the two sources of
 `tools/probe/recordings.py`, with that file's own readers, and never a
 workspace:
 
+engine  a `Bash` call in the stream whose command runs `headwater` as a
+        command: at the start of the command or of a line, after `&&`,
+        `;`, `|` or `$(`, by the bare name or by a path that ends in
+        `/headwater`. A word that only holds the name does not count, so
+        `cat .headwater/probe.yml`, `grep headwater x` and
+        `headwater-taxonomy` are no use of the engine (#1877).
 skills  a `Skill` call in the stream, `<batch>/sessions/<id>/raw.jsonl`, that
         names a skill the skills layer ships. The shipped skills are the
         directories `.claude/skills/<name>` under `layers.skills.paths` in the
@@ -72,8 +78,8 @@ session. Claude Code 2.1.312 logs a hook's added context as a
 counts as the text its strings hold. An attachment with no text is no use. That is how `touch.sh`, which
 shares the write matcher and prints nothing, stays out of the write count.
 
-Any other layer exits 2, because the tuning round tunes these three alone
-(#1833). It exits 2 when the batch has no `sessions` directory or the
+Any other layer exits 2, because the tuning round tunes these four alone
+(#1833, #1868). It exits 2 when the batch has no `sessions` directory or the
 declaration does not read, and 3 when python3 has no PyYAML.
 """
 
@@ -90,7 +96,7 @@ except ImportError:
     print("usage.py: python3 has no PyYAML, so the declaration cannot be read", file=sys.stderr)
     sys.exit(3)
 
-LAYERS = ("skills", "hooks", "mcp")
+LAYERS = ("engine", "skills", "hooks", "mcp")
 PATH_WORD = re.compile(r"[A-Za-z0-9_.@-]*/[A-Za-z0-9_./@-]*\.[A-Za-z0-9]+")
 POINTER = re.compile(r"^  (" + PATH_WORD.pattern + r")(?: \(| \u2014 | \[|$)")
 HOOK_KINDS = ("hook_success", "hook_additional_context")
@@ -103,6 +109,7 @@ HOOK_NAMES = {
     "PostToolUse:Edit": "write",
     "Stop": "review",
 }
+ENGINE_CALL = re.compile(r"(?:^|\n|&&|;|\||\$\()\s*(?:[^\s;&|()]*/)?headwater(?=$|[\s;&|)])")
 READERS = re.compile(r"(^|[\s;&|(])(cat|sed|head|tail|less)\s")
 
 
@@ -164,6 +171,13 @@ def used_skills(stream, names):
 def used_mcp(stream):
     for row in recordings.stream_events("s", stream, False):
         if row[2] == "tool_use" and isinstance(row[3], str) and row[3].startswith("mcp__"):
+            return True
+    return False
+
+
+def used_engine(stream):
+    for row in recordings.stream_events("s", stream, False):
+        if row[2] == "tool_use" and row[3] == "Bash" and isinstance(row[4], str) and ENGINE_CALL.search(row[4]):
             return True
     return False
 
@@ -237,7 +251,9 @@ def main(argv):
         stream = os.path.join(here, "raw.jsonl")
         config = os.path.join(batch, "config", session)
         has_stream = os.path.isfile(stream)
-        if layer == "skills":
+        if layer == "engine":
+            hit = has_stream and used_engine(stream)
+        elif layer == "skills":
             hit = has_stream and used_skills(stream, names)
         elif layer == "mcp":
             hit = has_stream and used_mcp(stream)
