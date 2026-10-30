@@ -128,7 +128,8 @@
 #     probe <id> (<action>): <p> of <n> by the oracle <name> (grader <x> of <g>)
 #     probe <id> (<action>): <x> of <g> by the grader
 #
-# The first form is for a probe whose plan line is `oracle: command:<name>`.
+# The first form is for a probe whose plan line is `oracle: command:<name>`
+# or `oracle: test:<name>`, the two oracle forms of rows 2-9 and 11.
 # `<n>` is the number of the probe's sessions under `<try>/a/sessions/` that
 # recorded, with `status` 0, and hold an `oracles` file, which
 # `tools/probe/campaign.sh` writes. The probe of a session is the one its
@@ -984,8 +985,8 @@ probe_lines() {
         [ -n "$pl_grader" ] || continue
         pl_x=${pl_grader%%/*} pl_g=${pl_grader#*/}
         case $pl_recorded:$pl_oracle in
-            yes:command:*)
-                pl_name=${pl_oracle#command:}
+            yes:command:* | yes:test:*)
+                pl_name=${pl_oracle#*:}
                 pl_p=0 pl_n=0
                 for pl_dir in "$try"/a/sessions/*/; do
                     [ -f "${pl_dir}oracles" ] || continue
