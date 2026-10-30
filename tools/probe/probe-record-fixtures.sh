@@ -3408,6 +3408,58 @@ STUB
         : > "$batch/cap"
         printf '30000\n' > "$batch/ceiling.campaign"
 
+        # The evidence check on the oracle record (#1875, clause 4). The
+        # session writes a file that an oracle of the grading tree matches,
+        # and the oracle's one line of evidence names an answer key of the
+        # session's probe. The batch keeps the verdict and stores the evidence
+        # as `refused`, with the hit beside it. The key is declared for the
+        # tombstone probe through HW_PROBE_YML, at a path no tree holds, so the
+        # guard of the recorder passes the workspace.
+        evb=$scratch/batch-evidence
+        rm -rf "$evb"
+        cp -a "$batch" "$evb"
+        rm -rf "$evb/sessions" "$evb/assembled" "$evb/config"
+        mkdir -p "$evb/sessions"
+        awk 'skip && /^[^ ]/ { skip = 0 }
+        skip { next }
+        /^oracles:/ {
+            skip = 1
+            print "oracles:"
+            print "  key-echo:"
+            print "    paths: [key-echo.txt]"
+            print "    command: printf \"zz-fixture-key-1875 is named\\\\n\""
+            print "    parser: exit"
+            next
+        } { print }' "$root/.headwater/probe.yml" > "$evb/trees/grading/.headwater/probe.yml"
+        awk -v probe="HW-PROBE-$tombstone" '/^answer_keys:/ { print; print "  " probe ": [docs/obligations/zz-fixture-key-1875.md]"; next } { print }' \
+            "$root/.headwater/probe.yml" > "$scratch/evb-keys.yml"
+        cat > "$scratch/bin/claude" <<STUB
+#!/bin/sh
+printf 'x\n' > key-echo.txt
+printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s31"}'
+printf '%s\n' '{"type":"result","subtype":"success","result":"withheld","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+STUB
+        chmod +x "$scratch/bin/claude"
+        HW_PROBE_YML="$scratch/evb-keys.yml" PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$evb" \
+            --job "L1-campaign-present-p1-r1 1 campaign present sufficiency HW-PROBE-$tombstone" \
+            >/dev/null 2>"$scratch/evb.err"
+        same "a session whose oracle evidence names an answer key records" "0" \
+            "$(cat "$evb/sessions/L1-campaign-present-p1-r1/status" 2>/dev/null)"
+        same "and its oracle record keeps the verdict and stores the evidence as refused" \
+            "key-echo	pass	refused" "$(cat "$evb/sessions/L1-campaign-present-p1-r1/oracles" 2>/dev/null)"
+        same "and the hit is written beside it" \
+            "evidence HW-PROBE-$tombstone key-echo zz-fixture-key-1875" \
+            "$(cat "$evb/sessions/L1-campaign-present-p1-r1/oracles.refused" 2>/dev/null)"
+        absent "and the key is in no line of the record" "zz-fixture-key-1875" \
+            "$evb/sessions/L1-campaign-present-p1-r1/oracles"
+        # With no key declared, the same evidence is kept as written.
+        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$evb" \
+            --job "L1-campaign-present-p1-r2 1 campaign present sufficiency HW-PROBE-$tombstone" \
+            >/dev/null 2>"$scratch/evb2.err"
+        same "and a probe with no answer key keeps the evidence" \
+            "key-echo	pass	zz-fixture-key-1875 is named" "$(cat "$evb/sessions/L1-campaign-present-p1-r2/oracles" 2>/dev/null)"
+        rm -rf "$evb"
+
         # THE decisive case of #1472's campaign report: assembly states the
         # paths outside the workspace that a line's sessions named and the
         # web-tool calls they made, and states a session it could not count as
