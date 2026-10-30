@@ -148,8 +148,11 @@ answer_keys:
 #   check-clean.sh                       `headwater check --strict` exits 0
 #   typed-at.sh <dir> <kind> <ruling> <title-pattern>
 #                                        a document under <dir>, of <kind>,
-#                                        cites <ruling>
-#   reciprocal-link.sh <doc-a> <doc-b>   each names the other in `relations:`
+#                                        cites <ruling> in a relation, as
+#                                        `headwater explain --json` reads it
+#   reciprocal-link.sh <doc-a> <doc-b>   each declares an edge to the other,
+#                                        as `headwater explain --json`
+#                                        reads them
 #   successor-typed.sh <old>             a typed successor supersedes <old>,
 #                                        and <old> names it, both edges as
 #                                        `headwater explain --json` reads
@@ -320,6 +323,16 @@ oracles:
     command: sh tools/probe/oracles/nothing-else-broken.sh --check-clean --args tools/probe/oracle-args/r9-shelf-layout
     parser: exit
     holds: [tools/probe/oracles/nothing-else-broken.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r9-shelf-layout, tools/probe/oracle-args/r9-shelf-layout.baseline]
+  r9-stale-comments:
+    paths: [docs/*]
+    command: sh tools/probe/oracles/nothing-else-broken.sh --check-clean --args tools/probe/oracle-args/r9-stale-comments
+    parser: exit
+    holds: [tools/probe/oracles/nothing-else-broken.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r9-stale-comments, tools/probe/oracle-args/r9-stale-comments.baseline]
+  r9-review-marker:
+    paths: [docs/*]
+    command: sh tools/probe/oracles/nothing-else-broken.sh --check-clean --args tools/probe/oracle-args/r9-review-marker
+    parser: exit
+    holds: [tools/probe/oracles/nothing-else-broken.sh, tools/probe/oracles/lib.sh, tools/probe/oracle-args/r9-review-marker, tools/probe/oracle-args/r9-review-marker.baseline]
 
 # Leak strings (#1472): for each probe, the strings whose presence in text the harness
 # loads into every session gives the probe's answer away. The seal finds an
@@ -433,6 +446,8 @@ leaks:
   HW-PROBE-a-session-adds-a-retired-term-to-the-overlay-that-the-task-names-and-leaves-the-lock-matching-it: []
   HW-PROBE-a-session-repairs-a-suspect-governs-edge-on-the-record-that-the-task-names-and-raises-no-other-finding: []
   HW-PROBE-a-session-splits-the-long-summary-of-the-obligation-that-the-task-names-and-raises-no-other-finding: []
+  HW-PROBE-a-session-rewrites-the-change-narration-in-the-summary-of-the-obligation-on-eight-stale-comments-and-raises-no-other-finding: []
+  HW-PROBE-a-session-rewrites-the-change-narration-in-the-summary-of-the-obligation-on-the-site-review-marker-and-raises-no-other-finding: []
 
 # The probes whose leak string stays in the present arm on purpose (#1472, the second
 # outcome the issue offers). The leak string of the status probe is in the
