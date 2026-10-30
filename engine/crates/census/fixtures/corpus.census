@@ -236,6 +236,8 @@ docs/decisions/0111-the-additive-campaign-adds-six-layers-to-plain-code-in-fourt
   typed: decision
 docs/decisions/0112-the-additive-campaign-measures-eleven-actions-by-five-layers-in-seven-scenarios.md
   typed: decision
+docs/decisions/0113-whether-an-agent-may-write-the-acceptance-stamp-while-the-default-branch-requires-no-approving-review.md
+  typed: decision
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md
@@ -1210,9 +1212,17 @@ docs/probes/a-session-follows-two-citations-from-a-record-the-task-does-not-name
   typed: probe
 docs/probes/a-session-holds-the-trademark-notice-to-the-house-language-rules-from-the-overlay-that-the-task-names.md
   typed: probe
+docs/probes/a-session-lets-the-asset-size-check-of-the-site-take-its-limit-in-mebibytes-as-a-second-argument.md
+  typed: probe
+docs/probes/a-session-lets-the-disk-free-script-take-its-floor-in-the-equals-form.md
+  typed: probe
 docs/probes/a-session-links-the-governs-edges-evaluation-to-the-obligation-that-it-says-is-discharged.md
   typed: probe
 docs/probes/a-session-links-the-obligation-on-published-read-sets-to-the-evaluation-whose-measurement-discharged-it.md
+  typed: probe
+docs/probes/a-session-makes-the-footer-check-of-the-site-refuse-the-stock-theme-credit-as-well.md
+  typed: probe
+docs/probes/a-session-makes-the-script-that-prints-the-apt-block-remove-sudo-with-its-environment-flag-as-a-whole.md
   typed: probe
 docs/probes/a-session-moves-an-obligation-record-to-the-process-shelf-and-repairs-the-links-inside-it-as-well-as-the-links-to-it.md
   typed: probe
@@ -1289,6 +1299,14 @@ docs/probes/a-session-that-changes-a-verb-s-default-reaches-the-verb-s-interface
 docs/probes/a-session-that-changes-the-recorder-reaches-the-recorder-contract.md
   typed: probe
 docs/probes/a-session-that-moves-a-shelf-reaches-the-relocation-guide.md
+  typed: probe
+docs/probes/a-session-that-reviews-a-change-dropping-the-release-digest-from-the-notes-of-the-engine-release-cites-the-record-that-governs-the-workflow.md
+  typed: probe
+docs/probes/a-session-that-reviews-a-change-shipping-the-vendored-package-as-the-taxonomy-release-cites-the-record-that-forbids-it.md
+  typed: probe
+docs/probes/a-session-that-reviews-an-agent-s-acceptance-stamp-cites-the-ruling-in-force-and-not-the-draft-that-the-pull-request-names.md
+  typed: probe
+docs/probes/a-session-that-reviews-an-agent-s-acceptance-stamp-on-a-branch-that-needs-no-approval-cites-the-ruling-in-force-and-not-the-draft-that-disagrees-with-it.md
   typed: probe
 docs/probes/an-agent-reaches-the-adjudication-from-the-document-that-lost-it.md
   typed: probe

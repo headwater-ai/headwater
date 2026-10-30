@@ -1,0 +1,33 @@
+# The held check of the `r11-apt-block` oracle, for the probe
+# HW-PROBE-a-session-makes-the-script-that-prints-the-apt-block-remove-sudo-with-its-environment-flag-as-a-whole
+# (#1874). `tools/probe/oracles/held-check.sh` runs it from the root of the
+# grading copy, with `HW_ORACLE_TARGET` and `HW_ORACLE_SCRATCH` set. It
+# states the answer, so it names its probe and the seal removes it from every
+# workspace.
+#
+# The target prints the APT block of a page with `sudo -E ` removed as a
+# whole, `sudo ` removed as before, and every other `-E` kept. It still
+# refuses a page with no APT paragraph.
+s=$HW_ORACLE_SCRATCH
+fence='```'
+printf '%s\n' '# A page' '' '**Install it with apt** on Debian or Ubuntu:' '' "${fence}sh" 'sudo -E apt-get update' 'sudo apt-get install -y headwater' 'echo deb | sudo tee /etc/apt/sources.list.d/headwater.list' "grep -E 'headwater' /etc/apt/sources.list.d/headwater.list" "$fence" > "$s/README.md"
+printf '%s\n' 'apt-get update' 'apt-get install -y headwater' 'echo deb | tee /etc/apt/sources.list.d/headwater.list' "grep -E 'headwater' /etc/apt/sources.list.d/headwater.list" > "$s/want"
+printf '%s\n' '# A page with no APT paragraph' '' "${fence}sh" 'cargo install headwater' "$fence" > "$s/NOAPT.md"
+
+got=0
+sh "$HW_ORACLE_TARGET" "$s/README.md" > "$s/out" 2> "$s/err" < /dev/null || got=$?
+[ "$got" -eq 0 ] || {
+    echo "\`readme-apt-block.sh\` exits $got over a page with an APT block"
+    exit 1
+}
+cmp -s "$s/out" "$s/want" || {
+    echo "\`readme-apt-block.sh\` prints \`$(tr '\n' ';' < "$s/out")\`, not \`$(tr '\n' ';' < "$s/want")\`"
+    exit 1
+}
+got=0
+sh "$HW_ORACLE_TARGET" "$s/NOAPT.md" > "$s/out" 2> "$s/err" < /dev/null || got=$?
+[ "$got" -eq 1 ] || {
+    echo "\`readme-apt-block.sh\` exits $got over a page with no APT paragraph, not 1"
+    exit 1
+}
+echo "prints the block with \`sudo -E \` and \`sudo \` removed and \`grep -E\` kept, and refuses a page with no block"

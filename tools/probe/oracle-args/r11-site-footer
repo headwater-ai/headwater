@@ -1,0 +1,10 @@
+# The arguments of the `r11-site-footer` oracle, one to a line, for the probe
+# HW-PROBE-a-session-makes-the-footer-check-of-the-site-refuse-the-stock-theme-credit-as-well
+# (#1874). `tools/probe/oracles/lib.sh` reads this file for `--args` and
+# skips each line that opens with `#`. The file names its probe, so the seal
+# removes it from every workspace, and the oracle entry holds it. The
+# command is `sh tools/probe/oracles/held-check.sh --args <this file>`. The
+# arguments are the held check and the script that the task changes, which
+# no document governs.
+tools/probe/oracle-args/r11-site-footer.check
+tools/site/check-site-footer.sh

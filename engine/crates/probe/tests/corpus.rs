@@ -1423,6 +1423,16 @@ const AWAITING_SPEND: &[&str] = &[
     "HW-PROBE-a-session-splits-the-long-summary-of-the-obligation-that-the-task-names-and-raises-no-other-finding",
     "HW-PROBE-a-session-rewrites-the-change-narration-in-the-summary-of-the-obligation-on-eight-stale-comments-and-raises-no-other-finding",
     "HW-PROBE-a-session-rewrites-the-change-narration-in-the-summary-of-the-obligation-on-the-site-review-marker-and-raises-no-other-finding",
+    // The probes of rows 10 and 11 of the 44-probe set (#1874, slice 4),
+    // which run in the additive campaign and in no round of this campaign.
+    "HW-PROBE-a-session-that-reviews-an-agent-s-acceptance-stamp-cites-the-ruling-in-force-and-not-the-draft-that-the-pull-request-names",
+    "HW-PROBE-a-session-that-reviews-an-agent-s-acceptance-stamp-on-a-branch-that-needs-no-approval-cites-the-ruling-in-force-and-not-the-draft-that-disagrees-with-it",
+    "HW-PROBE-a-session-that-reviews-a-change-dropping-the-release-digest-from-the-notes-of-the-engine-release-cites-the-record-that-governs-the-workflow",
+    "HW-PROBE-a-session-that-reviews-a-change-shipping-the-vendored-package-as-the-taxonomy-release-cites-the-record-that-forbids-it",
+    "HW-PROBE-a-session-lets-the-disk-free-script-take-its-floor-in-the-equals-form",
+    "HW-PROBE-a-session-lets-the-asset-size-check-of-the-site-take-its-limit-in-mebibytes-as-a-second-argument",
+    "HW-PROBE-a-session-makes-the-footer-check-of-the-site-refuse-the-stock-theme-credit-as-well",
+    "HW-PROBE-a-session-makes-the-script-that-prints-the-apt-block-remove-sudo-with-its-environment-flag-as-a-whole",
 ];
 
 /// The campaign spec plans no probe that awaits the owner's approval of spend.
@@ -2899,4 +2909,337 @@ fn no_probe_on_the_shelf_quotes_a_figure_marker() {
         "these probes carry the text `{MARKER}`, which the published page carries too and \
          `tools/site/refresh-figures.sh --into` reads as a marker it cannot fill: {quoting:?}"
     );
+}
+
+/// The decisions shelf, where the fixture of the superseded-target axis is.
+const DECISIONS: &str = "docs/decisions";
+
+/// The words in the `summary` of the one `draft` decision that is the fixture
+/// of the superseded-target axis of HW-DR-0112 (#1874, slice 4). The summary
+/// carries them, and no new facet does, because a facet moves the overlay and
+/// the lock.
+const FIXTURE_MARK: &str = "fixture of the superseded-target axis";
+
+/// One document of the decisions shelf, as the fixture case reads it.
+struct Decision {
+    path: String,
+    id: String,
+    status: String,
+    summary: String,
+    conflicts_with: Vec<String>,
+    source: String,
+}
+
+/// One probe of the shelf, as the fixture case reads it.
+struct AxisProbe {
+    id: String,
+    status: String,
+    axes: Vec<String>,
+    source: String,
+}
+
+/// The items of one list in the front matter: a facet such as `axes`, or a
+/// relation under `relations` when `relation` is set.
+fn list_of(document: &headwater_doc::Document, key: &str, relation: bool) -> Vec<String> {
+    let value = if relation {
+        document
+            .facets
+            .get("relations")
+            .and_then(|it| it.value.as_map())
+            .and_then(|it| it.get(key))
+            .map(|it| &it.value)
+    } else {
+        document.facets.get(key).map(|it| &it.value)
+    };
+    value
+        .and_then(|it| it.as_seq())
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(|it| it.value.as_scalar().map(|s| s.text.clone()))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// Every fenced document of a shelf, as its path and source, in path order.
+fn shelf_sources(shelf: &str) -> Vec<(String, String)> {
+    let dir = repository_root().join(shelf);
+    let mut entries: Vec<PathBuf> = std::fs::read_dir(&dir)
+        .unwrap_or_else(|e| panic!("{}: {e}", dir.display()))
+        .map(|entry| entry.expect("a shelf entry").path())
+        .filter(|path| path.extension().is_some_and(|it| it == "md"))
+        .collect();
+    entries.sort();
+    entries
+        .into_iter()
+        .filter_map(|path| {
+            let source = std::fs::read_to_string(&path)
+                .unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+            let name = path.file_name()?.to_string_lossy().into_owned();
+            source
+                .starts_with("---\n")
+                .then(|| (format!("{shelf}/{name}"), source))
+        })
+        .collect()
+}
+
+fn decision_of(path: &str, source: &str) -> Decision {
+    let document = headwater_doc::parse(source)
+        .unwrap_or_else(|_| panic!("{path}: the front matter does not parse"));
+    Decision {
+        path: path.to_string(),
+        id: scalar(&document, "id").unwrap_or_default(),
+        status: scalar(&document, "status").unwrap_or_default(),
+        summary: scalar(&document, "summary").unwrap_or_default(),
+        conflicts_with: list_of(&document, "conflicts_with", true),
+        source: source.to_string(),
+    }
+}
+
+fn axis_probe_of(path: &str, source: &str) -> AxisProbe {
+    let document = headwater_doc::parse(source)
+        .unwrap_or_else(|_| panic!("{path}: the front matter does not parse"));
+    AxisProbe {
+        id: scalar(&document, "id").unwrap_or_default(),
+        status: scalar(&document, "status").unwrap_or_default(),
+        axes: list_of(&document, "axes", false),
+        source: source.to_string(),
+    }
+}
+
+/// Why the shelves do not hold the one fixture of the superseded-target axis
+/// that HW-DR-0112 requires, one line for each reason. Empty when they do.
+///
+/// Exactly one decision is at `draft` and carries [`FIXTURE_MARK`] in its
+/// summary. It declares `conflicts_with` to a `current` decision, which is
+/// the disagreement as a structure the engine reads. Its text names no probe,
+/// by identifier or by slug, because the seal removes each file that names a
+/// probe, and a sealed fixture leaves its probes nothing in the way. Exactly
+/// two `current` probes carry `superseded_target` and name its identifier.
+fn fixture_findings(decisions: &[Decision], probes: &[AxisProbe]) -> Vec<String> {
+    let mut findings = Vec::new();
+    let marked: Vec<&Decision> = decisions
+        .iter()
+        .filter(|it| it.summary.contains(FIXTURE_MARK))
+        .collect();
+    for it in marked.iter().filter(|it| it.status != "draft") {
+        findings.push(format!(
+            "{} says it is the axis fixture and is at `{}`, not `draft`",
+            it.path, it.status
+        ));
+    }
+    let fixtures: Vec<&&Decision> = marked.iter().filter(|it| it.status == "draft").collect();
+    if fixtures.len() != 1 {
+        findings.push(format!(
+            "{} `draft` decisions say that they are the {FIXTURE_MARK}, and HW-DR-0112 wants exactly one",
+            fixtures.len()
+        ));
+        return findings;
+    }
+    let fixture = fixtures[0];
+    let current = fixture.conflicts_with.iter().any(|target| {
+        decisions
+            .iter()
+            .any(|it| &it.id == target && it.status == "current")
+    });
+    if !current {
+        findings.push(format!(
+            "{} declares `conflicts_with` to no `current` decision ({:?}), so nothing it disagrees with stands",
+            fixture.path, fixture.conflicts_with
+        ));
+    }
+    if fixture.source.contains("HW-PROBE-") {
+        findings.push(format!(
+            "{} names a probe identifier, so the seal removes it from every workspace",
+            fixture.path
+        ));
+    }
+    for probe in probes {
+        let slug = probe.id.strip_prefix("HW-PROBE-").unwrap_or(&probe.id);
+        if !slug.is_empty() && fixture.source.contains(slug) {
+            findings.push(format!(
+                "{} names the probe slug `{slug}`, so the seal removes it from every workspace",
+                fixture.path
+            ));
+        }
+    }
+    let naming: Vec<&str> = probes
+        .iter()
+        .filter(|it| it.status == "current")
+        .filter(|it| it.axes.iter().any(|axis| axis == "superseded_target"))
+        .filter(|it| it.source.contains(&fixture.id))
+        .map(|it| it.id.as_str())
+        .collect();
+    if naming.len() != 2 {
+        findings.push(format!(
+            "{} current `superseded_target` probes name {}, and the Done-when of #1874 wants 2: {naming:?}",
+            naming.len(),
+            fixture.id
+        ));
+    }
+    findings
+}
+
+/// The one fixture of the superseded-target axis is on the decisions shelf,
+/// and two probes stand it in their way (#1874, HW-DR-0112 "The circumstance
+/// axes").
+///
+/// The seeded shelves come first, each refused for the reason its label
+/// states, so that the case is held in each direction. Then the real
+/// shelves.
+#[test]
+fn exactly_one_draft_decision_is_the_axis_fixture_and_two_probes_name_it() {
+    let fm = |id: &str, status: &str, summary: &str, conflicts: &str| {
+        format!(
+            "---\nid: {id}\nstatus: {status}\nsummary: \"{summary}\"\nrelations:\n  conflicts_with:\n    - {conflicts}\n---\n\n# x\n"
+        )
+    };
+    let mark = format!("A proposal. It is the {FIXTURE_MARK} of HW-DR-0112.");
+    let ruling = fm("HW-DR-0001", "current", "A ruling.", "HW-DR-0009");
+    let fixture = fm("HW-DR-0002", "draft", &mark, "HW-DR-0001");
+    let shelf = |sources: &[&str]| -> Vec<Decision> {
+        sources
+            .iter()
+            .enumerate()
+            .map(|(n, source)| decision_of(&format!("d/{n}.md"), source))
+            .collect()
+    };
+    let probe = |id: &str, axes: &str, body: &str| {
+        axis_probe_of(
+            "p.md",
+            &format!("---\nid: {id}\nstatus: current\naxes: [{axes}]\n---\n\n# x\n\n{body}\n"),
+        )
+    };
+    let two = || {
+        vec![
+            probe(
+                "HW-PROBE-the-first-probe",
+                "superseded_target",
+                "HW-DR-0002 is in the way.",
+            ),
+            probe(
+                "HW-PROBE-the-second-probe",
+                "names_file, superseded_target",
+                "HW-DR-0002 too.",
+            ),
+            probe(
+                "HW-PROBE-the-third-probe",
+                "names_file",
+                "HW-DR-0002, and no axis.",
+            ),
+        ]
+    };
+    assert_eq!(
+        fixture_findings(&shelf(&[&ruling, &fixture]), &two()),
+        Vec::<String>::new(),
+        "the sound shelves"
+    );
+
+    let refused = |label: &str, decisions: Vec<Decision>, probes: Vec<AxisProbe>, want: &str| {
+        let found = fixture_findings(&decisions, &probes);
+        assert!(
+            found.iter().any(|it| it.contains(want)),
+            "{label}: wanted a finding with `{want}`, found {found:?}"
+        );
+    };
+    refused(
+        "no fixture",
+        shelf(&[&ruling]),
+        two(),
+        "0 `draft` decisions",
+    );
+    refused(
+        "two fixtures",
+        shelf(&[
+            &ruling,
+            &fixture,
+            &fm("HW-DR-0003", "draft", &mark, "HW-DR-0001"),
+        ]),
+        two(),
+        "2 `draft` decisions",
+    );
+    refused(
+        "the fixture is current",
+        shelf(&[&ruling, &fm("HW-DR-0002", "current", &mark, "HW-DR-0001")]),
+        two(),
+        "not `draft`",
+    );
+    refused(
+        "it conflicts with a draft",
+        shelf(&[
+            &fm("HW-DR-0001", "draft", "A ruling.", "HW-DR-0009"),
+            &fixture,
+        ]),
+        two(),
+        "to no `current` decision",
+    );
+    refused(
+        "it names a probe identifier",
+        shelf(&[&ruling, &format!("{fixture}\nSee HW-PROBE-elsewhere.\n")]),
+        two(),
+        "names a probe identifier",
+    );
+    refused(
+        "it names a probe slug",
+        shelf(&[
+            &ruling,
+            &format!("{fixture}\nThe probe the-third-probe reads it.\n"),
+        ]),
+        two(),
+        "names the probe slug `the-third-probe`",
+    );
+    refused(
+        "one probe names it",
+        shelf(&[&ruling, &fixture]),
+        vec![probe(
+            "HW-PROBE-the-first-probe",
+            "superseded_target",
+            "HW-DR-0002.",
+        )],
+        "1 current `superseded_target` probes",
+    );
+    refused(
+        "two probes name it with no axis",
+        shelf(&[&ruling, &fixture]),
+        vec![
+            probe("HW-PROBE-the-first-probe", "names_file", "HW-DR-0002."),
+            probe("HW-PROBE-the-second-probe", "names_file", "HW-DR-0002."),
+        ],
+        "0 current `superseded_target` probes",
+    );
+    let mut three = two();
+    three.push(probe(
+        "HW-PROBE-the-fourth-probe",
+        "superseded_target",
+        "HW-DR-0002 as well.",
+    ));
+    refused(
+        "three probes name it",
+        shelf(&[&ruling, &fixture]),
+        three,
+        "3 current `superseded_target` probes",
+    );
+    let mut retired = two();
+    retired[1] = axis_probe_of(
+        "p.md",
+        "---\nid: HW-PROBE-the-second-probe\nstatus: deprecated\naxes: [superseded_target]\n---\n\n# x\n\nHW-DR-0002 too.\n",
+    );
+    refused(
+        "the second probe is deprecated",
+        shelf(&[&ruling, &fixture]),
+        retired,
+        "1 current `superseded_target` probes",
+    );
+
+    let decisions: Vec<Decision> = shelf_sources(DECISIONS)
+        .iter()
+        .map(|(path, source)| decision_of(path, source))
+        .collect();
+    let probes: Vec<AxisProbe> = shelf_sources(SHELF)
+        .iter()
+        .map(|(path, source)| axis_probe_of(path, source))
+        .collect();
+    let found = fixture_findings(&decisions, &probes);
+    assert!(found.is_empty(), "the shelves: {found:#?}");
 }
