@@ -917,11 +917,16 @@ STUB
         print "    paths: [src/**]"
         print "    command: sh d.sh"
         print "    parser: exit"
+        print "  e:"
+        print "    paths: [src/**]"
+        print "    command: sh e.sh"
+        print "    parser: exit"
         next
     } { print }' "$root/.headwater/probe.yml" > "$rot/.headwater/probe.yml"
     printf "printf 'a: fail: x\\\\nsecond line\\\\n'; printf 'noise\\\\n' >&2; exit 1\n" > "$rot/a.sh"
     printf "printf 'b: pass: y\\\\n'\n" > "$rot/b.sh"
     printf "printf 'd:\\\\tz\\\\r\\\\n'\n" > "$rot/d.sh"
+    printf "printf 'e: diagnostics only\\\\n' >&2\n" > "$rot/e.sh"
     printf 'pub fn pinned() {}\n' > "$rot/src/lib.rs"
     cp -a "$rot" "$scratch/rec-ws"
     printf 'pub fn changed() {}\n' > "$scratch/rec-ws/src/lib.rs"
@@ -948,8 +953,10 @@ STUB
         "a${tab}fail${tab}a: fail: x
 b${tab}pass${tab}b: pass: y
 c${tab}not-run${tab}-
-d${tab}pass${tab}d: z " "$(cat "$scratch/rec-three.tsv" 2>/dev/null)"
+d${tab}pass${tab}d: z
+e${tab}pass${tab}-" "$(cat "$scratch/rec-three.tsv" 2>/dev/null)"
     absent "and the command's standard error is in no line" "noise" "$scratch/rec-three.tsv"
+    absent "and a command that wrote to standard error alone has no evidence from it" "diagnostics" "$scratch/rec-three.tsv"
     # The invariant: each verdict agrees with the findings on both artifacts.
     same "and \`a\`, which failed, is a finding on both artifacts" "2" \
         "$(grep -cxF -- '        - "command:a"' "$scratch/rec-three.yaml")"
@@ -970,7 +977,8 @@ d${tab}pass${tab}d: z " "$(cat "$scratch/rec-three.tsv" 2>/dev/null)"
         "a${tab}not-run${tab}-
 b${tab}not-run${tab}-
 c${tab}not-run${tab}-
-d${tab}not-run${tab}-" "$(cat "$scratch/rec-empty.tsv" 2>/dev/null)"
+d${tab}not-run${tab}-
+e${tab}not-run${tab}-" "$(cat "$scratch/rec-empty.tsv" 2>/dev/null)"
     # A `cargo-test` oracle's evidence is its last `test result:` line.
     printf 'failcase\n' > "$cot/stub-mode"
     rm -f "$scratch/rec-cargo.tsv"
