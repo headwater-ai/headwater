@@ -83,14 +83,20 @@ impl Corpus {
 fn at(document: &str, steps: &[&str]) -> Option<String> {
     field(
         document,
-        &steps.iter().map(|step| step.to_string()).collect::<Vec<_>>(),
+        &steps
+            .iter()
+            .map(|step| step.to_string())
+            .collect::<Vec<_>>(),
     )
 }
 
 fn len(document: &str, steps: &[&str]) -> Option<usize> {
     count(
         document,
-        &steps.iter().map(|step| step.to_string()).collect::<Vec<_>>(),
+        &steps
+            .iter()
+            .map(|step| step.to_string())
+            .collect::<Vec<_>>(),
     )
 }
 
@@ -139,7 +145,10 @@ fn every_anchor_lists_its_patterns_and_the_export_raises_its_version() {
     let export = corpus.export();
     let anchors = len(&export, &["graph", "anchors"])
         .unwrap_or_else(|| panic!("the export holds no `graph.anchors`:\n{export}"));
-    assert!(anchors >= 2, "the corpus declares two anchors, and the export holds {anchors}");
+    assert!(
+        anchors >= 2,
+        "the corpus declares two anchors, and the export holds {anchors}"
+    );
     let mut single = 0;
     for index in 0..anchors {
         let index = index.to_string();
@@ -150,11 +159,15 @@ fn every_anchor_lists_its_patterns_and_the_export_raises_its_version() {
             single += 1;
         }
     }
-    assert!(single >= 1, "the corpus declares an anchor of one pattern, and none holds one");
+    assert!(
+        single >= 1,
+        "the corpus declares an anchor of one pattern, and none holds one"
+    );
     let edges = len(&export, &["graph", "edges"]).unwrap_or(0);
     for index in 0..edges {
         let index = index.to_string();
-        if at(&export, &["graph", "edges", &index, "target", "bound"]).as_deref() == Some("anchor") {
+        if at(&export, &["graph", "edges", &index, "target", "bound"]).as_deref() == Some("anchor")
+        {
             if let Err(why) = lists_its_patterns(&export, &["graph", "edges", &index, "target"]) {
                 panic!("{why}");
             }

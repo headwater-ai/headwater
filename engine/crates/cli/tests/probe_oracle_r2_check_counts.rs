@@ -82,7 +82,10 @@ impl Corpus {
 fn at(document: &str, steps: &[&str]) -> Option<String> {
     field(
         document,
-        &steps.iter().map(|step| step.to_string()).collect::<Vec<_>>(),
+        &steps
+            .iter()
+            .map(|step| step.to_string())
+            .collect::<Vec<_>>(),
     )
 }
 

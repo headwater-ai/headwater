@@ -89,7 +89,10 @@ impl Corpus {
 fn at(document: &str, steps: &[&str]) -> Option<String> {
     field(
         document,
-        &steps.iter().map(|step| step.to_string()).collect::<Vec<_>>(),
+        &steps
+            .iter()
+            .map(|step| step.to_string())
+            .collect::<Vec<_>>(),
     )
 }
 
@@ -99,9 +102,7 @@ fn findings(report: &str) -> Vec<(String, String, String, usize)> {
     (0..total)
         .map(|index| {
             let index = index.to_string();
-            let read = |member: &str| {
-                at(report, &["findings", &index, member]).unwrap_or_default()
-            };
+            let read = |member: &str| at(report, &["findings", &index, member]).unwrap_or_default();
             (
                 read("rule"),
                 read("severity"),
@@ -164,7 +165,10 @@ fn the_allowed_change_lands_and_no_paragraph_limit_reports() {
     corpus.write("docs/decisions/0003-nine-paragraphs.md", &many);
     let report = corpus.check();
     let all = findings(&report);
-    assert!(!all.is_empty(), "the check reports nothing over the corpus:\n{report}");
+    assert!(
+        !all.is_empty(),
+        "the check reports nothing over the corpus:\n{report}"
+    );
 
     for word in ["colour of", "colours of"] {
         let line = line_of(&spelling, word);
@@ -187,7 +191,9 @@ fn the_allowed_change_lands_and_no_paragraph_limit_reports() {
     let tally = |path: &str| {
         let mut tally = BTreeMap::new();
         for (rule, severity, _, _) in all.iter().filter(|finding| finding.2 == path) {
-            *tally.entry((rule.clone(), severity.clone())).or_insert(0usize) += 1;
+            *tally
+                .entry((rule.clone(), severity.clone()))
+                .or_insert(0usize) += 1;
         }
         tally
     };

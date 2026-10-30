@@ -89,14 +89,20 @@ impl Corpus {
 fn at(document: &str, steps: &[&str]) -> Option<String> {
     field(
         document,
-        &steps.iter().map(|step| step.to_string()).collect::<Vec<_>>(),
+        &steps
+            .iter()
+            .map(|step| step.to_string())
+            .collect::<Vec<_>>(),
     )
 }
 
 fn len(document: &str, steps: &[&str]) -> usize {
     count(
         document,
-        &steps.iter().map(|step| step.to_string()).collect::<Vec<_>>(),
+        &steps
+            .iter()
+            .map(|step| step.to_string())
+            .collect::<Vec<_>>(),
     )
     .unwrap_or(0)
 }

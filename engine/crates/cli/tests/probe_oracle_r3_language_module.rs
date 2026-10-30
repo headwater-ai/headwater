@@ -43,14 +43,20 @@ fn repository() -> PathBuf {
 fn at(document: &str, steps: &[&str]) -> Option<String> {
     field(
         document,
-        &steps.iter().map(|step| step.to_string()).collect::<Vec<_>>(),
+        &steps
+            .iter()
+            .map(|step| step.to_string())
+            .collect::<Vec<_>>(),
     )
 }
 
 fn len(document: &str, steps: &[&str]) -> usize {
     count(
         document,
-        &steps.iter().map(|step| step.to_string()).collect::<Vec<_>>(),
+        &steps
+            .iter()
+            .map(|step| step.to_string())
+            .collect::<Vec<_>>(),
     )
     .unwrap_or(0)
 }
@@ -70,16 +76,24 @@ fn anchored(root: &Path, path: &str, governor: &str) -> Result<(), String> {
             continue;
         }
         if at(&route, &["pointers", &index, "evidence", "by"]).as_deref() != Some("anchor") {
-            return Err(format!("{governor} reaches {path}, and not by a governs anchor"));
+            return Err(format!(
+                "{governor} reaches {path}, and not by a governs anchor"
+            ));
         }
         let anchors = len(&route, &["pointers", &index, "evidence", "anchors"]);
         if (0..anchors).any(|slot| {
-            at(&route, &["pointers", &index, "evidence", "anchors", &slot.to_string()]).as_deref()
+            at(
+                &route,
+                &["pointers", &index, "evidence", "anchors", &slot.to_string()],
+            )
+            .as_deref()
                 == Some(path)
         }) {
             return Ok(());
         }
-        return Err(format!("{governor} is anchored, and its anchors do not hold {path}"));
+        return Err(format!(
+            "{governor} is anchored, and its anchors do not hold {path}"
+        ));
     }
     Err(format!(
         "`headwater route \"change {path}\"` offers no pointer to {governor}:\n{route}"
