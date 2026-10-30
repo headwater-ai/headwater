@@ -1025,6 +1025,51 @@ fn precedence_offers_the_nucleus_and_the_successor_first() {
     );
 }
 
+/// A relation written under its inverse name reads as written, from both ends
+/// (#1901).
+///
+/// The fixture writes one supersession twice: `per-service-limits.md`
+/// (DR-FIX-0007) declares `superseded_by: DR-FIX-0031`, and
+/// `edge-throttling.md` (DR-FIX-0031) declares `supersedes: DR-FIX-0007`.
+/// Every entry of `related` reads "this document <relation> the far end",
+/// whichever key either side wrote. Before #1901 the relation was named from
+/// the canonical relation alone, so the superseded document printed its own
+/// `superseded_by` as an outbound `supersedes`, and the successor printed that
+/// edge as an inbound `superseded_by`.
+#[test]
+fn a_relation_declared_under_its_inverse_name_reads_as_written_from_both_ends() {
+    let built = fixture_tree();
+    let surface = built.surface();
+    let triples = |path: &str| -> Vec<(String, bool, String)> {
+        let document = surface.find(path).expect("the fixture");
+        let mut triples: Vec<(String, bool, String)> = surface
+            .related(&document)
+            .into_iter()
+            .filter(|neighbour| neighbour.relation.starts_with("supersede"))
+            .map(|neighbour| (neighbour.relation, neighbour.inbound, neighbour.target))
+            .collect();
+        triples.sort();
+        triples
+    };
+    let entry = |relation: &str, inbound: bool, target: &str| {
+        (relation.to_owned(), inbound, target.to_owned())
+    };
+    assert_eq!(
+        triples("query/decisions/per-service-limits.md"),
+        vec![
+            entry("superseded_by", false, "DR-FIX-0031"),
+            entry("superseded_by", true, "query/decisions/edge-throttling.md"),
+        ]
+    );
+    assert_eq!(
+        triples("query/decisions/edge-throttling.md"),
+        vec![
+            entry("supersedes", false, "DR-FIX-0007"),
+            entry("supersedes", true, "query/decisions/per-service-limits.md"),
+        ]
+    );
+}
+
 /// A task that names a path routes by identity rather than by scent.
 ///
 /// The anchor is a node the graph already holds, so the documents that govern
