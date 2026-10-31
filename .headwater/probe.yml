@@ -1091,6 +1091,10 @@ sets:
 # realized about 72 cents, about $111 each, so the ceiling holds both at
 # that rate. `ceiling_cents` is the most every other try may spend,
 # $1,050.00, a later base included.
+# The bases spent $266.85: the best so far capped at 144 of 154, and the
+# owner ruled to grade it as it stands, with the overrun taken from the
+# $1,300.00 (#1877, comment 6540711867). So `base_ceiling_cents` is 26700
+# and `ceiling_cents` is 103300, and the sum is still the approval.
 # The two together are the $1,300.00 approval of #1877, and
 # `tools/probe/try.sh plan` refuses a launch whose charge is priced above
 # what is left under its own ceiling.
@@ -1115,8 +1119,8 @@ rounds:
     variants: 4
     stop_after_empty: 2
     order: [engine, skills, hooks, mcp]
-    ceiling_cents: 105000
-    base_ceiling_cents: 25000
+    ceiling_cents: 103300
+    base_ceiling_cents: 26700
     open:
       layer: engine
       scenario: 2
