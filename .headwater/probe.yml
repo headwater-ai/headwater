@@ -1094,6 +1094,11 @@ sets:
 # The two together are the $1,300.00 approval of #1877, and
 # `tools/probe/try.sh plan` refuses a launch whose charge is priced above
 # what is left under its own ceiling.
+# `cap_cents` is 15000, $150.00 for one launch. The base of 2026-10-31
+# realized about 81 cents a session and capped at 12000 with 141 of 154
+# recorded, and the owner raised that try to 13500 (#1877, comment
+# 6536880201). The best so far runs the same 154 sessions in scenario 2,
+# which adds the engine's calls, so its cap has the same room and more.
 rounds:
   screening:
     set: tuning
@@ -1116,7 +1121,7 @@ rounds:
       layer: engine
       scenario: 2
       try: 1
-      cap_cents: 12000
+      cap_cents: 15000
       plan: https://github.com/headwater-ai/headwater/issues/1877#issuecomment-6526210603
       change: none
   final:
