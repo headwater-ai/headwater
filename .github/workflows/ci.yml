@@ -1592,10 +1592,20 @@ jobs:
         # either a returned footer or a partial site below its stated floor.
         # The fixture below proves the clean, planted-footer, and empty-root
         # cases; the last is why an absence grep is not enough on its own.
+        # It walks a copy without `probe-runs/`: a probe-run transcript quotes
+        # its sessions verbatim, and the tuning probe that asks a session to
+        # extend this check quotes the forbidden string in its commands
+        # (#1916). The footer comes from the theme's template, so the other
+        # pages still show it. The script is that probe's target, so the
+        # exclusion lives here and the script stays as the probe found it.
         env:
           HEADWATER_SITE_FOOTER_MINIMUM_PAGES: 300
         run: |
-          sh tools/site/check-site-footer.sh .headwater/site-deploy
+          footer_site="$RUNNER_TEMP/footer-site"
+          rm -rf "$footer_site"
+          cp -R .headwater/site-deploy "$footer_site"
+          find "$footer_site" -type d -name probe-runs -prune -exec rm -rf {} +
+          sh tools/site/check-site-footer.sh "$footer_site"
           sh tools/site/site-footer-fixtures.sh
       - name: No served file is above the size Cloudflare Workers accepts
         # `wrangler deploy` refuses the whole upload when one asset is above
