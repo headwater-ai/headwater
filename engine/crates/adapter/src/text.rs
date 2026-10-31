@@ -20,11 +20,20 @@
 //!
 //! # The order of the blocks is the order of the pipeline
 //!
-//! Taxonomy, clock, census, graph, checks, read set. The two injected values
-//! come first because a verdict is a function of them, and a report that
-//! omitted them could not be reproduced from itself. The read set comes last
-//! because it is the artifact a later `headwater gate` reads, and it is the
-//! longest block by a wide margin.
+//! Taxonomy, clock, census, graph, checks, read set, summary. The two injected
+//! values come first because a verdict is a function of them, and a report
+//! that omitted them could not be reproduced from itself. The read set comes
+//! after the checks because it is the artifact a later `headwater gate` reads,
+//! and it is the longest block by a wide margin.
+//!
+//! The summary closes the report because a reader who pipes it into `tail`
+//! reads the last lines first. Before it, those lines were `input <path>
+//! <sha256>` and no finding: in the engine try of the 0.07 tuning (#1877), 42
+//! of the 51 sessions that ran `headwater check` were shown only read-set
+//! lines and ran the check again to find their findings. The summary repeats
+//! the tally of the `checks` block and says where the findings are and which
+//! command to run next. It names no rule, so `crate::blocks` reads it as no
+//! finding record.
 //!
 //! # The layout, and the one block that is exempt from it
 //!
@@ -163,6 +172,48 @@ pub fn render_at(
     // out, for that reason — see the module comment.
     out.push_str(&format!("\n{}\n", paint(Role::Heading, "read set", mode)));
     out.push_str(&indent(&run.read_set.render()));
+    out.push_str(&format!("\n{}\n", paint(Role::Heading, "summary", mode)));
+    out.push_str(&fill::filled(&indent(&summary(run, mode)), width));
+    out
+}
+
+/// The last lines of the report: the tally again, where the findings are, and
+/// the next command.
+///
+/// Laid out like every block but the read set. It repeats the tally the
+/// `checks` block opens its finding list with, so it states no number that
+/// block does not, and it names no rule, so the census of this format does
+/// not read it as a finding.
+fn summary(run: &Run, mode: ColorMode) -> String {
+    let counts: Vec<String> = run
+        .counts()
+        .into_iter()
+        .filter(|(_, count)| *count > 0)
+        .map(|(severity, count)| {
+            format!(
+                "{count} {}",
+                headwater_check::paint::severity_word(severity, mode)
+            )
+        })
+        .collect();
+    let mut out = match counts.is_empty() {
+        true => format!("{} findings\n", run.findings.len()),
+        false => format!("{} findings: {}\n", run.findings.len(), counts.join(", ")),
+    };
+    out.push_str(
+        "  each finding is listed under `checks` above, with a `fix:` line that \
+         says what to change. Search this report for the path of a file you \
+         changed to find its findings\n",
+    );
+    out.push_str(
+        "  the `read set` block above is the list of inputs `headwater gate` \
+         reads, and it holds no finding\n",
+    );
+    out.push_str(
+        "  next: `headwater check --strict` exits non-zero when a finding is an \
+         error, and `headwater explain <path>` names the documents that govern \
+         a file\n",
+    );
     out
 }
 

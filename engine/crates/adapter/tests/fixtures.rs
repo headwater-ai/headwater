@@ -2081,9 +2081,12 @@ fn the_read_set_block_is_not_laid_out_at_any_width() {
     assert!(!written.is_empty(), "the fixture run has a read set");
     for width in [headwater_check::fill::WIDTH, headwater_check::fill::WIDEST] {
         let report = render_at(&ran, Format::Text, width);
-        let (_, block) = report
+        let (_, rest) = report
             .split_once("\nread set\n")
             .expect("the report carries a read-set block");
+        let (block, _) = rest
+            .split_once("\nsummary\n")
+            .expect("the summary closes the report, after the read set");
         let indented: String = written
             .lines()
             .map(|line| match line.is_empty() {

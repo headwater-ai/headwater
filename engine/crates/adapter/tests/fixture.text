@@ -801,3 +801,13 @@ read set
   input check/spec/22-voice-facet-prose.md sha256:404a707df4c8b5fb0e958ce3e87f5a4eec0ed5d12588f0ebe6f6a3398f641822
   input check/spec/23-voice-empty-population.md sha256:43da22615732693705b57847374fa9b93eeadc834fa0007fbf6eecd929f30e6a
   input check/spec/24-voice-context-section.md sha256:fd29ca33cfa7fb0582f0131f5eddd05b3c032efd3cf63e45bf51dc87f963ffd5
+
+summary
+  68 findings: 40 ✗ error, 28 ▲ warn
+    each finding is listed under `checks` above, with a `fix:` line that says
+      what to change. Search this report for the path of a file you changed to
+      find its findings
+    the `read set` block above is the list of inputs `headwater gate` reads, and
+      it holds no finding
+    next: `headwater check --strict` exits non-zero when a finding is an error,
+      and `headwater explain <path>` names the documents that govern a file

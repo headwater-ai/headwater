@@ -1104,7 +1104,10 @@ fn the_read_set_block_of_the_report_is_the_artifact_the_flag_writes() {
     let block = out
         .split_once("\nread set\n")
         .expect("the report carries a read-set block")
-        .1;
+        .1
+        .split_once("\nsummary\n")
+        .expect("the summary closes the report, after the read set")
+        .0;
     let indented: String = file
         .lines()
         .map(|line| match line.is_empty() {
