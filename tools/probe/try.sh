@@ -107,13 +107,24 @@
 # an MCP tool. `rank` orders the screened variants of the round by the share
 # of their sessions that used the layer, and then by their pass rate.
 #
+# **The engine layer ranks on pass rate alone** (owner, 2026-11-02,
+# https://github.com/headwater-ai/headwater/issues/1877#issuecomment-6565289666).
+# A session uses the engine layer when it runs a `headwater` command, and a
+# variant of the layer changes only the text the verbs print, which a session
+# sees after it has run one. So no variant can change the use. For that layer,
+# `use_ungated` holds: `rank` orders by pass rate, and the rule below does not
+# apply. The use is still counted and printed, so the owner can read it.
+#
 # **No gain in use, no confirmation.** A variant is confirmed only when it is
 # the top of the rank, and only when its share of sessions that used the
 # layer is above the best so far's, read at the best so far's own
 # measurement at the confirmation's count. A variant that does not raise the
 # use is refused, whatever its pass rate. When the refused variant is the top
 # of the rank, no variant of the round raises the use, so `launch` closes the
-# round with nothing kept.
+# round with nothing kept. None of this applies to a layer where
+# `use_ungated` holds, the engine layer under the ruling above: its top
+# variant by pass rate is confirmed on the keep rule alone. It still needs a
+# best so far at the confirmation's count.
 #
 # **The keep rule reads the confirmation alone.** `result` of a confirmation
 # compares its transcript with the best so far's, both at the confirmation's
@@ -249,7 +260,9 @@
 # - `rank <root>` prints the best so far of the open layer, with its use, and
 #   then each screened variant of the open round that `result` recorded, in
 #   rank order: its use, its pass rate, and `gain` or `no gain` in use over
-#   the best so far, or `-` where no best so far is measured.
+#   the best so far, or `-` where no best so far is measured. For a layer
+#   where `use_ungated` holds, the rows are in order of pass rate, and each
+#   row ends with `ranked by pass rate (#1877 ruling)` in place of the gain.
 # - `relaunch <root> <try>` starts the driver again on a try root that
 #   `launch` made, with the same arguments, read from `driver.argv`. It
 #   exits 6 when the try root does not exist, when its driver runs, or when
@@ -361,7 +374,8 @@
 # `<root>/ledger.jsonl` holds one JSON object for each event. `result`
 # appends `screen`, `best`, `base`, `result`, `round` and `halt`, `accept` appends
 # `accept`, `wait` appends `gate` for each stop of the usage gate, and `launch` appends a `round` with `kept` false when it refuses
-# the top variant of a round for no gain in use.
+# the top variant of a round for no gain in use, which it never does for a
+# layer where `use_ungated` holds.
 #
 # ## The base tree, and `campaign.sh`
 #
@@ -760,9 +774,11 @@ ceilings() {
 #                                    `<transcript>\t<used>\t<sessions>\t<event>\t<count>`:
 #                                    the latest `best` event, or `result` of a
 #                                    confirmation with `kept` true, or nothing
-#   rank <layer> <round>             the `screen` events of the round, as
+#   rank <layer> <round> <order>     the `screen` events of the round, as
 #                                    `<try>\t<used>\t<sessions>\t<passed>\t<graded>`,
-#                                    by the share used, then the pass rate
+#                                    by the share used, then the pass rate,
+#                                    for <order> `use`, or by the pass rate,
+#                                    then the share used, for `pass`
 #   layers <rounds> <stop> <layer>...  for each layer, `<layer> <state>
 #                                    <closed rounds>`: `open`, `stopped` or
 #                                    `exhausted`, from the `round` events
@@ -841,8 +857,11 @@ elif mode == "rank":
             and event.get("layer") == args[0] and str(event.get("round")) == args[1]]
     def share(top, bottom):
         return Fraction(int(top), int(bottom)) if int(bottom) > 0 else Fraction(0)
-    rows.sort(key=lambda e: (-share(e.get("used", 0), e.get("sessions", 0)),
-                             -share(e.get("passed", 0), e.get("graded", 0)), str(e.get("try"))))
+    def key(e):
+        use = -share(e.get("used", 0), e.get("sessions", 0))
+        passed = -share(e.get("passed", 0), e.get("graded", 0))
+        return (passed, use, str(e.get("try"))) if args[2] == "pass" else (use, passed, str(e.get("try")))
+    rows.sort(key=key)
     for event in rows:
         print("\t".join(str(event.get(key, "")) for key in ("try", "used", "sessions", "passed", "graded")))
 elif mode == "layers":
@@ -1173,6 +1192,23 @@ share_above() {
     [ "$2" -gt 0 ] && [ $(($1 * $4)) -gt $(($3 * $2)) ]
 }
 
+# use_ungated <layer>: no variant of the layer can change whether a session
+# uses it, so its round ranks on pass rate and has no use gate. That is the
+# engine layer, under the owner's ruling of 2026-11-02 on #1877
+# (https://github.com/headwater-ai/headwater/issues/1877#issuecomment-6565289666).
+use_ungated() {
+    [ "$1" = engine ]
+}
+
+# ranked_rows <layer> <round>: the `rank` rows of the ledger, in the layer's order.
+ranked_rows() {
+    if use_ungated "$1"; then
+        ledger_py rank "$1" "$2" pass
+    else
+        ledger_py rank "$1" "$2" use
+    fi
+}
+
 # round_check: the rules of rounds and order, and of the stage, which refuse
 # with 6 before anything is priced or built. It sets `best_due`. A base is
 # no stage of a round, so it reads none of those rules: it refuses a base at
@@ -1239,7 +1275,8 @@ round_check() {
 }
 
 # confirm_check: the variant of `confirm <variant>` is the top of the rank
-# of the round, and it raises the use over the best so far.
+# of the round, and it raises the use over the best so far, unless
+# `use_ungated` holds for the layer.
 confirm_check() {
     case $stage_arg in
         "$open_layer-r$open_try-v"[1-9]*) ;;
@@ -1252,14 +1289,14 @@ confirm_check() {
             exit 6
         fi
     done
-    ranked=$(ledger_py rank "$open_layer" "$open_try") || exit $?
+    ranked=$(ranked_rows "$open_layer" "$open_try") || exit $?
     variant_row=$(printf '%s\n' "$ranked" | awk -F'\t' -v t="$stage_arg" '$1 == t')
     if [ -z "$variant_row" ]; then
         say "$stage_arg has no screen event in $root/ledger.jsonl, so it is not ranked."
         exit 6
     fi
     if [ -z "$best_line" ]; then
-        say "the $open_layer layer has no best so far at the confirmation's count, so no gain in use can be read. Launch the best so far first: sh tools/probe/try.sh launch $root best."
+        say "the $open_layer layer has no best so far at the confirmation's count, so the confirmation has nothing to be compared with. Launch the best so far first: sh tools/probe/try.sh launch $root best."
         exit 6
     fi
     top=$(printf '%s\n' "$ranked" | head -1 | cut -f1)
@@ -1271,7 +1308,7 @@ confirm_check() {
     best_sessions=$(printf '%s\n' "$best_line" | cut -f3)
     echo "best so far: $(printf '%s\n' "$best_line" | cut -f1), used in $best_used of $best_sessions sessions"
     echo "variant: $stage_arg, used in $variant_used of $variant_sessions sessions, passed $variant_passed of $variant_graded"
-    if ! share_above "$variant_used" "$variant_sessions" "$best_used" "$best_sessions"; then
+    if ! use_ungated "$open_layer" && ! share_above "$variant_used" "$variant_sessions" "$best_used" "$best_sessions"; then
         if [ "$stage_arg" = "$top" ] && [ "$verb" = launch ]; then
             ledger_py append event=s:round "layer=s:$open_layer" "round=i:$open_try" kept=b:false \
                 reason=s:no-gain-in-use "top=s:$top" "at=s:$(now)"
@@ -1610,14 +1647,19 @@ case $verb in
         else
             echo "best so far: none at the confirmation's count"
         fi
-        rank_rows=$(ledger_py rank "$open_layer" "$open_try") || exit $?
+        rank_rows=$(ranked_rows "$open_layer" "$open_try") || exit $?
         [ -n "$rank_rows" ] || echo "no screen of round $open_try of $open_layer is recorded"
+        if use_ungated "$open_layer"; then
+            echo "order: by pass rate, with no use gate, under the owner's ruling https://github.com/headwater-ai/headwater/issues/1877#issuecomment-6565289666"
+        fi
         rank_n=0
         printf '%s\n' "$rank_rows" | while IFS='	' read -r r_try r_used r_sessions r_passed r_graded; do
             [ -n "$r_try" ] || continue
             rank_n=$((rank_n + 1))
             r_gain=-
-            if [ -n "$rank_best" ]; then
+            if use_ungated "$open_layer"; then
+                r_gain="ranked by pass rate (#1877 ruling)"
+            elif [ -n "$rank_best" ]; then
                 if share_above "$r_used" "$r_sessions" "$rank_used" "$rank_sessions"; then r_gain=gain; else r_gain="no gain"; fi
             fi
             echo "rank $rank_n: $r_try used in $r_used of $r_sessions sessions, passed $r_passed of $r_graded, $r_gain"

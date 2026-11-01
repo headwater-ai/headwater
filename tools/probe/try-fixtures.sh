@@ -1497,6 +1497,56 @@ sed -i 's/"used": 5,/"used": 6,/' "$CASE/root/ledger.jsonl"
 run plan "$CASE/root" confirm docs-r2-v1
 check "confirm: and 6 of 25 is a gain" code_is 0
 
+# The engine layer ranks on pass rate, with no use gate (owner, 2026-11-02,
+# #1877#issuecomment-6565289666). Variant 2 uses the layer less than variant
+# 1 and less than the best so far, and passes more: it ranks first, and its
+# confirmation plans. The same ledger on the docs layer keeps the old rule.
+# use_rank_ledger <layer>: a best so far used in 130 of 145, variant 1 used
+# in 20 of 25 and passed 10, variant 2 used in 10 of 25 and passed 15.
+use_rank_ledger() {
+    printf '{"event": "best", "try": "%s-r1-best", "layer": "%s", "round": 1, "transcript": "x.md", "used": 130, "sessions": 145, "count": 145}\n' "$1" "$1" > "$CASE/root/ledger.jsonl"
+    for v in 1 2; do
+        mkdir -p "$CASE/root/$1-r2-v$v"
+        : > "$CASE/root/$1-r2-v$v/result.md"
+    done
+    printf '{"event": "screen", "try": "%s-r2-v1", "layer": "%s", "round": 2, "used": 20, "sessions": 25, "passed": 10, "graded": 25}\n' "$1" "$1" >> "$CASE/root/ledger.jsonl"
+    printf '{"event": "screen", "try": "%s-r2-v2", "layer": "%s", "round": 2, "used": 10, "sessions": 25, "passed": 15, "graded": 25}\n' "$1" "$1" >> "$CASE/root/ledger.jsonl"
+    measured_base
+}
+new_case
+sed -i 's/docs/engine/g' "$CASE/probe.yml"
+check "engine: the case opens the engine layer" grep -q '^    open: {layer: engine,' "$CASE/probe.yml"
+use_rank_ledger engine
+run rank "$CASE/root"
+check "engine: rank exits 0" code_is 0
+check "engine: and says the order is by pass rate under the ruling" \
+    out_has "order: by pass rate, with no use gate, under the owner's ruling https://github.com/headwater-ai/headwater/issues/1877#issuecomment-6565289666"
+check "engine: variant 2, used in 10 of 25 and passed 15 of 25, ranks first" \
+    out_has "rank 1: engine-r2-v2 used in 10 of 25 sessions, passed 15 of 25, ranked by pass rate (#1877 ruling)"
+check "engine: variant 1, used in 20 of 25 and passed 10 of 25, ranks second" \
+    out_has "rank 2: engine-r2-v1 used in 20 of 25 sessions, passed 10 of 25, ranked by pass rate (#1877 ruling)"
+check "engine: and prints no gain in use" sh -c "! grep -q 'gain\$' '$CASE/out'"
+run plan "$CASE/root" confirm engine-r2-v2
+check "engine: a confirmation of the top variant, with less use than the best so far, plans" code_is 0
+check "engine: and is not refused for no gain in use" sh -c "! grep -q 'no gain in use' '$CASE/err'"
+run plan "$CASE/root" confirm engine-r2-v1
+check "engine: a confirmation of variant 1, with more use, is not the top" code_is 6
+check "engine: and names the top" err_has "engine-r2-v2 is"
+run launch "$CASE/root" confirm engine-r2-v2
+check "engine: a launch of the top closes no round for no gain in use" sh -c "! grep -q 'no-gain-in-use' '$CASE/root/ledger.jsonl'"
+new_case
+use_rank_ledger docs
+run rank "$CASE/root"
+check "docs: the same ledger on docs ranks variant 1 first, on use" \
+    out_has "rank 1: docs-r2-v1 used in 20 of 25 sessions, passed 10 of 25, no gain"
+check "docs: and variant 2 second" out_has "rank 2: docs-r2-v2 used in 10 of 25 sessions, passed 15 of 25, no gain"
+run plan "$CASE/root" confirm docs-r2-v2
+check "docs: a confirmation of variant 2 is refused" code_is 6
+check "docs: for no gain in use" err_has "no gain in use"
+run launch "$CASE/root" confirm docs-r2-v1
+check "docs: a launch of the top with no gain in use exits 6" code_is 6
+check "docs: and closes the round with nothing kept" ledger_has '"reason": "no-gain-in-use"'
+
 # A change to the engine's source makes the base stale for a confirmation,
 # whatever the owner accepted, because it can change what route prints.
 new_case
