@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # The tuning round of the additive campaign, from the plan to the committed
-# record, as eleven verbs (#1821, #1822, #1838). Before this script, each try
+# record, as twelve verbs (#1821, #1822, #1838). Before this script, each try
 # had a launch script, a wait condition, a canary reader and a keep decision
 # typed by hand, the total spend of the round was prose that a person added
 # to by hand, and one hand reader read `named 1 path outside` as a blank field
@@ -21,6 +21,7 @@
 #     sh tools/probe/try.sh result   <root> <try>
 #     sh tools/probe/try.sh ledger   <root>
 #     sh tools/probe/try.sh accept   <root> <ruling-url>
+#     sh tools/probe/try.sh void     <root> <try> <ruling-url>
 #
 # `<root>` is the root of the tuning round: one directory that holds every
 # try root of the round and the two files of the round: `<root>/env`, which
@@ -52,7 +53,11 @@
 # - `best` measures the best so far of the layer at the confirmation's count,
 #   in `<root>/<layer>-r<n>-best`, at the checkout's `HEAD`. It runs only
 #   where the layer has no measurement at that count: no `best` event and no
-#   kept confirmation. Otherwise it is refused.
+#   kept confirmation that `void` has not taken back. Otherwise it is
+#   refused. A best so far that is due again, because every `best` event of
+#   the layer is voided, runs in a fresh try root,
+#   `<root>/<layer>-r<n>-best-<k>`, with `k` the first free number from 2,
+#   because the voided try keeps its root and its spend.
 # - `confirm <variant>` runs the variant named, a try root of a screen of
 #   the round, at the confirmation's count, in `<root>/<layer>-r<n>-confirm`,
 #   from a checkout at the commit that variant ran at.
@@ -63,7 +68,8 @@
 #   names no layer. It is no stage of a round: it reads no rule of rounds
 #   and order, and it builds no tree, because it is the measurement the
 #   base check asks for. It is refused where the ledger holds a `base` event
-#   at `HEAD`'s commit already. A confirmation waits for one (#1838).
+#   at `HEAD`'s commit already that is not voided. A confirmation waits for
+#   one (#1838).
 #
 # `launch` writes the stage in `<try>/stage`, and each driver it starts gets
 # `HEADWATER_TUNING_STAGE`, `screen` or `confirm`, which the dry run reads
@@ -197,10 +203,11 @@
 #   skips it is too low. It then prints the two parts of that total, each
 #   against its ceiling: the bases, `base-1` and the earliest
 #   `<layer>-r<n>-best` of each layer, against `base_ceiling_cents`, and
-#   every other try root against `ceiling_cents`. The part of a try root is
-#   read from its name, so no total is stored (#1838).
-# - `status <root>` prints each try root with what it spent, its markers and
-#   whether its driver runs, and then the total, the approval, the two parts
+#   every other try root against `ceiling_cents`, a `<layer>-r<n>-best-<k>`
+#   included. The part of a try root is read from its name, so no total is
+#   stored (#1838), and a voided try stays charged where it was.
+# - `status <root>` prints each try root with what it spent, its markers,
+#   whether its driver runs and `voided` for a voided try, and then the total, the approval, the two parts
 #   and the open layer.
 # - `plan <root> [<stage>]` exits 0 when the stage of the open layer's round
 #   may launch, or with no stage when the round may start, and prints the
@@ -303,7 +310,8 @@
 #   record, in seven steps:
 #   1. It reads the stage of the try from `<try>/stage`, and a try root with
 #      no stage, or with a name that is not `<layer>-r<n>-v<k>`,
-#      `<layer>-r<n>-best`, `<layer>-r<n>-confirm` or `base-<k>`, exits 2. A try that has
+#      `<layer>-r<n>-best`, `<layer>-r<n>-best-<k>`, `<layer>-r<n>-confirm`
+#      or `base-<k>`, exits 2. A try that has
 #      a `result.md` exits 6, so no try is recorded twice.
 #   2. When `<try>/done` is absent, it appends a `halt` event with the try's
 #      spend and markers to `<root>/ledger.jsonl` and exits 7. It prints no
@@ -370,10 +378,23 @@
 #   or of a pull request, `.../pull/<n>`, and any other text exits 2. The
 #   ledger is outside git, so the ruling's URL is the durable record, and a
 #   committed transcript cites it.
+# - `void <root> <try> <ruling-url>` records that the owner ruled a try
+#   mismeasured (owner, 2026-11-02,
+#   https://github.com/headwater-ai/headwater/issues/1877#issuecomment-6568926331).
+#   It appends a `void` event with the try, the ruling and the try's spend.
+#   A voided try stops counting as a measurement and keeps counting as
+#   spend: the reads of the best so far, of the base and of the rank skip
+#   every event whose `try` is voided, and `spent`, `status` and the two
+#   ceilings read the try's files as before. So a voided best so far is due
+#   again, in `<layer>-r<n>-best-<k>` under the tuning ceiling, and a voided
+#   base is measured again by `launch base`, as `base-<k>`, whose `result`
+#   writes the new pin. It exits 6 for a try root that does not exist, a try
+#   that no event of the ledger names and a try voided already. The ruling
+#   is the URL of a comment on an issue, and any other text exits 2.
 #
 # `<root>/ledger.jsonl` holds one JSON object for each event. `result`
 # appends `screen`, `best`, `base`, `result`, `round` and `halt`, `accept` appends
-# `accept`, `wait` appends `gate` for each stop of the usage gate, and `launch` appends a `round` with `kept` false when it refuses
+# `accept`, `void` appends `void`, `wait` appends `gate` for each stop of the usage gate, and `launch` appends a `round` with `kept` false when it refuses
 # the top variant of a round for no gain in use, which it never does for a
 # layer where `use_ungated` holds.
 #
@@ -413,8 +434,8 @@
 #
 #   0   the verb did what it states: `canary-passed` is written, the plan
 #       passes, the driver is started, `rank` printed, `wait` met its condition, `result`
-#       recorded a try kept or not kept, `ledger` printed, or `accept`
-#       recorded or had nothing to accept
+#       recorded a try kept or not kept, `ledger` printed, `accept`
+#       recorded or had nothing to accept, or `void` recorded the void
 #   1   `wait` alone: the driver runs and needs no reader
 #   2   a usage error, or a file it reads is missing or does not read:
 #       `<root>`, `<root>/env`, `<root>/base-pin`, `driver.argv`, a cost, a
@@ -438,7 +459,9 @@
 #       exists, `relaunch` on a try that is absent, running, done, capped,
 #       stopped or whose canary failed, `launch` or `relaunch` on a
 #       checkout the driver's pin check refuses, `canary` before
-#       `canary-recorded`, or `result` on a try that has a `result.md`; or
+#       `canary-recorded`, `result` on a try that has a `result.md`, or
+#       `void` on a try root that is absent, a try no event names or a try
+#       voided already; or
 #       the rules of rounds, order and stages refuse the round or the stage
 #       of `plan` or `launch`
 #   7   a person must read the try: `canary` wrote `canary-needs-reader`, or
@@ -457,7 +480,7 @@ engine=${HEADWATER_TRY_ENGINE:-$checkout/engine/target/dev-release/headwater}
 usage_counter=${HEADWATER_TRY_USAGE:-$here/usage.py}
 
 usage() {
-    echo "usage: sh tools/probe/try.sh status|spent|rank|ledger <root>, plan <root> [<stage>], launch <root> <stage>, relaunch|canary|wait|result <root> <try>, or accept <root> <ruling-url>, where <stage> is screen <k>, best, confirm <variant> or base" >&2
+    echo "usage: sh tools/probe/try.sh status|spent|rank|ledger <root>, plan <root> [<stage>], launch <root> <stage>, relaunch|canary|wait|result <root> <try>, accept <root> <ruling-url>, or void <root> <try> <ruling-url>, where <stage> is screen <k>, best, confirm <variant> or base" >&2
     exit 2
 }
 say() { printf 'try: %s\n' "$1" >&2; }
@@ -474,6 +497,7 @@ case $verb in
     launch) [ $# -ge 3 ] && [ $# -le 4 ] || usage; stage_kind=$3 stage_arg=${4:-} ;;
     relaunch | canary | wait | result) [ $# -le 3 ] || usage; try_name=${3:-} ;;
     accept) [ $# = 3 ] || usage; ruling=$3 ;;
+    void) [ $# = 4 ] || usage; try_name=$3 ruling=$4 ;;
     *) usage ;;
 esac
 case $stage_kind in
@@ -712,8 +736,8 @@ first_best() {
 # (#1838). `base` is the base ceiling, which pays for the bases of #1833:
 # `base-1`, the first measurement of the base scenario at the
 # confirmation's count, and the earliest best so far of each layer. Every
-# other try root, `base-2` and later included, is `tries`, the tuning
-# ceiling. A try root that does not exist yet is read as if it did.
+# other try root, `base-2` and later and `<layer>-r<n>-best-<k>` included,
+# is `tries`, the tuning ceiling. A void moves no try root. A try root that does not exist yet is read as if it did.
 charge_of() {
     charge_name=$1
     if [ "$charge_name" = base-1 ]; then
@@ -788,6 +812,12 @@ ceilings() {
 #   base <scenario> <pin> <count>    the latest `base` event of the scenario at
 #                                    that pin and count, `-` for any, as
 #                                    `<transcript>\t<pin>\t<count>\t<try>`
+#   voided                           each try a `void` event names, one a line
+#   named <try>                      the number of events other than `void`
+#                                    whose `try` is the try
+# `best`, `rank` and `base` skip every event whose `try` a `void` event
+# names, so a voided try is no measurement (#1877). An event with no `try`,
+# as `accept` and `gate` write, is never voided.
 # shellcheck disable=SC2016
 ledger_program='
 import json, sys
@@ -817,6 +847,16 @@ def events():
 def rows():
     return [row.split("\t", 1) for row in sys.stdin.read().splitlines() if row]
 
+def voided(found):
+    return {event.get("try") for event in found or [] if event.get("event") == "void"
+            and isinstance(event.get("try"), str)}
+
+def counted():
+    found = events() or []
+    gone = voided(found)
+    return [event for event in found if event.get("event") != "void"
+            and not (isinstance(event.get("try"), str) and event["try"] in gone)]
+
 if mode == "append":
     events()
     event = {}
@@ -843,7 +883,7 @@ elif mode == "print":
         print("%s: %s" % (event.get("event", "unknown"), rest))
 elif mode == "best":
     best = None
-    for event in events() or []:
+    for event in counted():
         if event.get("layer") != args[0]:
             continue
         if event.get("event") == "best" or (event.get("event") == "result" and event.get("stage") == "confirm"
@@ -853,7 +893,7 @@ elif mode == "best":
         print("\t".join(str(best.get(key, "")) for key in ("transcript", "used", "sessions", "event", "count")))
 elif mode == "rank":
     from fractions import Fraction
-    rows = [event for event in events() or [] if event.get("event") == "screen"
+    rows = [event for event in counted() if event.get("event") == "screen"
             and event.get("layer") == args[0] and str(event.get("round")) == args[1]]
     def share(top, bottom):
         return Fraction(int(top), int(bottom)) if int(bottom) > 0 else Fraction(0)
@@ -885,12 +925,17 @@ elif mode == "layers":
         print(layer, state, ",".join(str(number) for number in numbers) or "-")
 elif mode == "base":
     found = None
-    for event in events() or []:
+    for event in counted():
         if event.get("event") == "base" and str(event.get("scenario")) == args[0] \
                 and args[1] in ("-", event.get("pin")) and args[2] in ("-", str(event.get("count"))):
             found = event
     if found:
         print("\t".join(str(found.get(key, "")) for key in ("transcript", "pin", "count", "try")))
+elif mode == "voided":
+    for name in sorted(voided(events())):
+        print(name)
+elif mode == "named":
+    print(sum(1 for event in events() or [] if event.get("event") != "void" and event.get("try") == args[0]))
 elif mode == "cover":
     accepted = {}
     for event in events() or []:
@@ -1162,11 +1207,25 @@ base_check() {
     rm -rf "$base_dir"
 }
 
+# best_root: the try root of the open layer's best so far in the open
+# round: `<layer>-r<n>-best`, or, where a voided try holds that root, the
+# first `<layer>-r<n>-best-<k>` from 2 that no voided try holds (#1877).
+best_root() {
+    best_root_voided=$(ledger_py voided) || exit $?
+    best_root_name=$open_layer-r$open_try-best
+    best_root_k=2
+    while [ -e "$root/$best_root_name" ] && printf '%s\n' "$best_root_voided" | grep -qxF -- "$best_root_name"; do
+        best_root_name=$open_layer-r$open_try-best-$best_root_k
+        best_root_k=$((best_root_k + 1))
+    done
+    echo "$best_root_name"
+}
+
 # stage_root: the try root of the stage of `plan` or `launch`, by name.
 stage_root() {
     case $stage_kind in
         screen) echo "$open_layer-r$open_try-v$stage_arg" ;;
-        best) echo "$open_layer-r$open_try-best" ;;
+        best) best_root ;;
         confirm) echo "$open_layer-r$open_try-confirm" ;;
         base)
             stage_k=1
@@ -1292,7 +1351,7 @@ confirm_check() {
     ranked=$(ranked_rows "$open_layer" "$open_try") || exit $?
     variant_row=$(printf '%s\n' "$ranked" | awk -F'\t' -v t="$stage_arg" '$1 == t')
     if [ -z "$variant_row" ]; then
-        say "$stage_arg has no screen event in $root/ledger.jsonl, so it is not ranked."
+        say "$stage_arg has no screen event in $root/ledger.jsonl that is not voided, so it is not ranked."
         exit 6
     fi
     if [ -z "$best_line" ]; then
@@ -1377,9 +1436,10 @@ plan_check() {
     # shellcheck disable=SC2046
     set -- $(spent_split)
     spent_base=$1 spent_tries=$2
-    # The first best so far of a layer is charged to the base ceiling.
+    # The first best so far of a layer is charged to the base ceiling, and a
+    # best so far measured again in `-best-<k>` to the tuning ceiling.
     best_base=0
-    if [ "$best_due" = 1 ] && [ "$(charge_of "$open_layer-r$open_try-best")" = base ]; then
+    if [ "$best_due" = 1 ] && [ "$(charge_of "$(stage_kind=best && stage_root)")" = base ]; then
         best_base=1
     fi
     # The sessions left under each ceiling from this stage on, and the
@@ -1605,6 +1665,7 @@ case $verb in
         ;;
 
     status)
+        status_voided=$(ledger_py voided) || exit $?
         for status_try in "$root"/*/ "$root"/.[!.]*/ "$root"/..?*/; do
             [ -d "$status_try" ] || continue
             status_try=${status_try%/}
@@ -1612,7 +1673,9 @@ case $verb in
             if [ -f "$status_try/driver.pid" ]; then
                 if alive "$status_try"; then status_driver=running; else status_driver=exited; fi
             fi
-            echo "${status_try##*/} spent=$(try_spent "$status_try") driver=$status_driver markers=$(markers "$status_try")"
+            status_void=
+            printf '%s\n' "$status_voided" | grep -qxF -- "${status_try##*/}" && status_void=" voided"
+            echo "${status_try##*/} spent=$(try_spent "$status_try") driver=$status_driver markers=$(markers "$status_try")$status_void"
         done
         total=$(spent_round) || exit $?
         approvals=$(declared approved) || exit $?
@@ -1825,17 +1888,17 @@ $records records of the canary, not 8"
         resolve_try
         [ -d "$try" ] || { say "no try root at $try."; exit 2; }
         result_name=${try##*/}
-        result_fields=$(printf '%s\n' "$result_name" | sed -n 's/^\([a-z][a-z0-9-]*\)-r\([1-9][0-9]*\)-\(v[1-9][0-9]*\|best\|confirm\)$/\1 \2 \3/p')
+        result_fields=$(printf '%s\n' "$result_name" | sed -n 's/^\([a-z][a-z0-9-]*\)-r\([1-9][0-9]*\)-\(v[1-9][0-9]*\|best\|best-[2-9]\|best-[1-9][0-9][0-9]*\|confirm\)$/\1 \2 \3/p')
         if [ -z "$result_fields" ]; then
             result_fields=$(printf '%s\n' "$result_name" | sed -n 's/^base-\([1-9][0-9]*\)$/- \1 base/p')
         fi
         if [ -z "$result_fields" ]; then
-            say "$try is not a try root of a round or a base: <layer>-r<n>-v<k>, <layer>-r<n>-best, <layer>-r<n>-confirm or base-<k>."
+            say "$try is not a try root of a round or a base: <layer>-r<n>-v<k>, <layer>-r<n>-best, <layer>-r<n>-best-<k>, <layer>-r<n>-confirm or base-<k>."
             exit 2
         fi
         # shellcheck disable=SC2086
         set -- $result_fields
-        result_layer=$1 result_n=$2 result_part=$3
+        result_layer=$1 result_n=$2 result_part=${3%%-*}
         result_stage=$(awk '{ print $1; exit }' "$try/stage" 2>/dev/null)
         result_variant=$(awk '{ print $2; exit }' "$try/stage" 2>/dev/null)
         case $result_stage:$result_part in
@@ -2123,6 +2186,29 @@ $records records of the canary, not 8"
 $base_invalid
 EOF
         printf '%s\n' "$base_invalid" | awk -F'\t' -v r="$ruling" '{ print "accept: " $1 " at " $2 " (" r ")" }'
+        ;;
+
+    void)
+        printf '%s' "$ruling" | grep -Eqx 'https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/issues/[0-9]+#issuecomment-[0-9]+' || {
+            say "\`$ruling\` is not the URL of the owner's ruling: a comment on an issue, https://github.com/<owner>/<repo>/issues/<n>#issuecomment-<id>."
+            exit 2
+        }
+        resolve_try
+        [ -d "$try" ] || { say "no try root at $try, so there is no try to void."; exit 6; }
+        void_list=$(ledger_py voided) || exit $?
+        if printf '%s\n' "$void_list" | grep -qxF -- "$try_name"; then
+            say "$try_name is voided already in $root/ledger.jsonl."
+            exit 6
+        fi
+        void_named=$(ledger_py named "$try_name") || exit $?
+        if [ "$void_named" = 0 ]; then
+            say "no event of $root/ledger.jsonl names $try_name, so it holds no measurement to void."
+            exit 6
+        fi
+        void_spent=$(try_spent "$try")
+        ledger_py append event=s:void "try=s:$try_name" "ruling=s:$ruling" "spent=i:$void_spent" "at=s:$(now)"
+        if [ "$(charge_of "$try_name")" = base ]; then void_ceiling=base; else void_ceiling=tuning; fi
+        echo "void: $try_name ($ruling), and its $void_spent cents stay charged to the $void_ceiling ceiling"
         ;;
 esac
 exit 0
