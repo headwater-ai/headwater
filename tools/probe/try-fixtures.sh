@@ -1,8 +1,8 @@
 #!/bin/sh
 # SPDX-License-Identifier: Apache-2.0
 #
-# The fixtures of tools/probe/try.sh, the eleven verbs of the additive
-# campaign's tuning round (#1821, #1822, #1838).
+# The fixtures of tools/probe/try.sh, the twelve verbs of the additive
+# campaign's tuning round (#1821, #1822, #1838, #1877).
 #
 #     sh tools/probe/try-fixtures.sh
 #
@@ -2114,6 +2114,140 @@ rm -rf "$b"
 usage_of mcp
 check "usage: a batch with no sessions directory exits 2" code_is 2
 
+# ------------------- void: a mismeasured try, measured again (#1877)
+
+# The owner ruled the grader wrong on 2026-11-02 (#1877, comment 6568926331),
+# so the engine layer's base, best so far and screen 1 are mismeasured.
+# `void` takes each back as a measurement and leaves its spend charged.
+RULING=https://github.com/headwater-ai/headwater/issues/1877#issuecomment-6568926331
+void_best() {
+    printf '%s\n' '{"event": "best", "try": "docs-r2-best", "layer": "docs", "round": 2, "transcript": "x.md", "used": 1, "sessions": 145, "count": 145}' >> "$CASE/root/ledger.jsonl"
+}
+new_case
+decl "$OPEN_DOCS" 10000 5000
+void_best
+run void "$CASE/root" docs-r2-best "$RULING"
+check "void: a try root that does not exist exits 6" code_is 6
+check "void: and says so" err_has "no try root at $CASE/root/docs-r2-best"
+check "void: and appends nothing" sh -c "! grep -q '\"void\"' '$CASE/root/ledger.jsonl'"
+cost "$CASE/root/docs-r2-best/a/sessions/s1" 400
+mkdir -p "$CASE/root/docs-r2-v1"
+run void "$CASE/root" docs-r2-v1 "$RULING"
+check "void: a try that no event of the ledger names exits 6" code_is 6
+check "void: and says it holds no measurement" err_has "no event of $CASE/root/ledger.jsonl names docs-r2-v1"
+run void "$CASE/root" docs-r2-best https://example.org/ruling
+check "void: a ruling that is not a GitHub URL exits 2" code_is 2
+run void "$CASE/root" docs-r2-best https://github.com/headwater-ai/headwater/pull/1923
+check "void: a pull request is not the ruling, which is a comment on an issue, and exits 2" code_is 2
+run void "$CASE/root" docs-r2-best https://github.com/headwater-ai/headwater/issues/1877
+check "void: an issue with no comment exits 2" code_is 2
+check "void: no refused void appends an event" sh -c "! grep -q '\"void\"' '$CASE/root/ledger.jsonl'"
+run plan "$CASE/root" best
+check "void: before the void, a best so far measured at 145 refuses a second" code_is 6
+run rank "$CASE/root"
+check "void: before the void, rank reads the best so far" out_has "best so far: x.md, used in 1 of 145 sessions"
+run spent "$CASE/root"
+cp "$CASE/out" "$CASE/spent-before-void"
+run void "$CASE/root" docs-r2-best "$RULING"
+check "void: a measured try exits 0" code_is 0
+check "void: and appends one void event with the try and the ruling" sh -c "[ \"\$(grep -c '\"event\": \"void\", \"try\": \"docs-r2-best\", \"ruling\": \"$RULING\", \"spent\": 400' '$CASE/root/ledger.jsonl')\" = 1 ]"
+check "void: and says the spend stays charged to the base ceiling" out_has "its 400 cents stay charged to the base ceiling"
+run spent "$CASE/root"
+check "void: spent prints the same three lines after the void" cmp -s "$CASE/out" "$CASE/spent-before-void"
+check "void: with the voided best so far still among the bases" out_has "bases: 400 of the base ceiling, 1000"
+run status "$CASE/root"
+check "void: status marks the voided try" out_has "docs-r2-best spent=400 driver=none markers= voided"
+run void "$CASE/root" docs-r2-best "$RULING"
+check "void: a try voided already exits 6" code_is 6
+check "void: and says so" err_has "docs-r2-best is voided already"
+check "void: and appends no second void" sh -c "[ \"\$(grep -c '\"void\"' '$CASE/root/ledger.jsonl')\" = 1 ]"
+run rank "$CASE/root"
+check "void: rank reads no best so far once its only best event is voided" out_has "best so far: none at the confirmation's count"
+run ledger "$CASE/root"
+check "void: ledger prints the void" out_has "void: try=docs-r2-best ruling=$RULING spent=400"
+# The best so far is due again, in a fresh try root under the tuning
+# ceiling: the best and the confirmation, 290 cents, beside 4710 of tries is
+# the ceiling of 5000 exactly.
+cost "$CASE/root/docs-try1/a/sessions/s1" 4710
+run plan "$CASE/root" best
+check "void: plan best passes once the layer's only best is voided" code_is 0
+check "void: in docs-r2-best-2" out_has "stage: best, 145 sessions, 145 cents at 1 a session, in docs-r2-best-2"
+check "void: priced under the tuning ceiling, with the confirmation" out_has "left: 290 sessions of the round, 290 cents at 1 a session, the best so far at 145 included"
+check "void: and nothing under the base ceiling" out_has "left of the bases: 0 sessions, 0 cents"
+cost "$CASE/root/docs-try1/a/sessions/s2" 1
+run plan "$CASE/root" best
+check "void: one cent above the tuning ceiling with it exits 5" code_is 5
+check "void: naming the tuning ceiling" err_has "above the tuning ceiling of 5000 cents"
+rm -rf "$CASE/root/docs-try1/a/sessions/s2"
+run launch "$CASE/root" best
+await_calls 1
+check "void: launch best makes docs-r2-best-2" sh -c "[ \"\$(cat '$CASE/root/docs-r2-best-2/stage')\" = best ]"
+check "void: and starts its driver" grep -q -- "--root $CASE/root/docs-r2-best-2 " "$CASE/calls"
+run spent "$CASE/root"
+check "void: docs-r2-best-2 is charged to the tuning ceiling" out_has "tries: 4710 of the tuning ceiling, 5000"
+run result "$CASE/root" docs-r2-best-2
+check "void: result reads docs-r2-best-2 as a best so far, and halts it with no done" code_is 7
+check "void: and names it in the halt" grep -q '"event": "halt", "try": "docs-r2-best-2"' "$CASE/root/ledger.jsonl"
+# A measured docs-r2-best-2 is the best so far that rank and the keep rule read.
+printf '%s\n' '{"event": "best", "try": "docs-r2-best-2", "layer": "docs", "round": 2, "transcript": "y.md", "used": 2, "sessions": 145, "count": 145}' >> "$CASE/root/ledger.jsonl"
+run rank "$CASE/root"
+check "void: rank reads the best so far measured again" out_has "best so far: y.md, used in 2 of 145 sessions"
+run plan "$CASE/root" best
+check "void: and a third best so far is refused" code_is 6
+# An event written before void existed has no void beside it and counts.
+new_case
+printf '%s\n' '{"event": "best", "try": "docs-r1-best", "layer": "docs", "round": 1, "transcript": "x.md", "used": 1, "sessions": 145, "count": 145}' > "$CASE/root/ledger.jsonl"
+printf '%s\n' '{"event": "accept", "base": "0", "pin": "x", "ruling": "r", "paths": {}}' >> "$CASE/root/ledger.jsonl"
+run plan "$CASE/root" best
+check "void: an event with no void beside it still counts" code_is 6
+
+# A voided screen drops out of the rank.
+new_case
+for v in 1 2; do mkdir -p "$CASE/root/docs-r2-v$v"; : > "$CASE/root/docs-r2-v$v/result.md"; done
+printf '%s\n' '{"event": "screen", "try": "docs-r2-v1", "layer": "docs", "round": 2, "used": 9, "sessions": 25, "passed": 10, "graded": 25}' > "$CASE/root/ledger.jsonl"
+printf '%s\n' '{"event": "screen", "try": "docs-r2-v2", "layer": "docs", "round": 2, "used": 5, "sessions": 25, "passed": 12, "graded": 25}' >> "$CASE/root/ledger.jsonl"
+run rank "$CASE/root"
+check "void: rank lists the screen before it is voided" out_has "rank 1: docs-r2-v1 used in 9 of 25 sessions"
+run void "$CASE/root" docs-r2-v1 "$RULING"
+check "void: a screen exits 0" code_is 0
+check "void: and is charged to the tuning ceiling" out_has "stay charged to the tuning ceiling"
+run rank "$CASE/root"
+check "void: rank drops the voided screen" sh -c "! grep -q 'docs-r2-v1' '$CASE/out'"
+check "void: and ranks the other first" out_has "rank 1: docs-r2-v2 used in 5 of 25 sessions"
+printf '%s\n' '{"event": "best", "try": "docs-r1-best", "layer": "docs", "round": 1, "transcript": "x.md", "used": 1, "sessions": 145, "count": 145}' >> "$CASE/root/ledger.jsonl"
+measured_base
+run plan "$CASE/root" confirm docs-r2-v1
+check "void: a voided screen is not confirmed" code_is 6
+check "void: and plan says it is voided" err_has "that is not voided, so it is not ranked"
+
+# A voided base is no measurement: launch base runs at the commit again,
+# and base-2 is the base a confirmation reads.
+new_case
+mkdir -p "$CASE/root/base-1"
+printf '{"event": "base", "try": "base-1", "scenario": "0", "pin": "%s", "count": 145, "transcript": "b1.md"}\n' "$(git -C "$checkout" rev-parse HEAD)" > "$CASE/root/ledger.jsonl"
+run plan "$CASE/root" base
+check "void: before the void, a base at HEAD's commit refuses a second" code_is 6
+run void "$CASE/root" base-1 "$RULING"
+check "void: a base exits 0, its spend still on the base ceiling" out_has "stay charged to the base ceiling"
+run plan "$CASE/root" base
+check "void: launch base at the same commit plans once base-1 is voided" code_is 0
+check "void: in base-2, under the tuning ceiling" sh -c "grep -qF 'in base-2' '$CASE/out' && grep -qx 'left of the bases: 0 sessions, 0 cents at 1 a session' '$CASE/out'"
+new_case
+printf '%s\n' '{"event": "best", "try": "docs-r1-best", "layer": "docs", "round": 1, "transcript": "x.md", "used": 1, "sessions": 145, "count": 145}' > "$CASE/root/ledger.jsonl"
+printf '%s\n' '{"event": "screen", "try": "docs-r2-v1", "layer": "docs", "round": 2, "used": 6, "sessions": 25, "passed": 25, "graded": 25}' >> "$CASE/root/ledger.jsonl"
+measured_base
+mkdir -p "$CASE/root/base-1"
+run plan "$CASE/root" confirm docs-r2-v1
+check "void: a confirmation reads base-1 before the void" out_has "in base-1: docs/probe-runs/additive-screening-scenario-0.md"
+run void "$CASE/root" base-1 "$RULING"
+run plan "$CASE/root" confirm docs-r2-v1
+check "void: and once base-1 is voided, waits for a base measured again" code_is 4
+check "void: and says no base event measures the pin" err_has "no base event at 145 sessions"
+printf '{"event": "base", "try": "base-2", "scenario": "0", "pin": "%s", "count": 145, "transcript": "docs/probe-runs/b2.md"}\n' "$(awk '{ print $2 }' "$CASE/root/base-pin")" >> "$CASE/root/ledger.jsonl"
+run plan "$CASE/root" confirm docs-r2-v1
+check "void: base-2 at the pin is the base a confirmation reads" code_is 0
+check "void: and plan names base-2" out_has "in base-2: docs/probe-runs/b2.md"
+
 # ---------------------------------------------------------------- arguments
 
 new_case
@@ -2127,6 +2261,8 @@ run ledger "$CASE/root" extra
 check "args: ledger with a try exits 2" code_is 2
 run accept "$CASE/root"
 check "args: accept with no ruling URL exits 2" code_is 2
+run void "$CASE/root" base-1
+check "args: void with no ruling URL exits 2" code_is 2
 
 # TRY_FIXTURES_KEEP keeps the cases' directories, to read a failure.
 if [ -n "${TRY_FIXTURES_KEEP:-}" ]; then echo "try-fixtures: the cases are in $fix" >&2; else rm -rf "$fix"; fi
