@@ -172,7 +172,9 @@
 # `--oracle-tree` and `--oracle-record` reach the transform (see there), and
 # the second writes each command oracle's verdict to a file (#1875). `--baseline` names the tree
 # the workspace was copied from, and every file the session wrote or changed is
-# passed to the transform as produced (see `step_diff_baseline`).
+# passed to the transform as produced (see `step_diff_baseline`). With both,
+# the transform also applies every change of the workspace, deletions
+# included, to the tree the oracles run in (#1877).
 
 set -u
 
@@ -196,6 +198,7 @@ answer_only=0
 answers=
 transform_args=
 baseline=
+oracle_tree=
 
 while [ $# -gt 0 ]; do
     case $1 in
@@ -213,7 +216,7 @@ while [ $# -gt 0 ]; do
         --repetitions) repetitions=${2:-}; shift 2 ;;
         --max-turns) max_turns=${2:-}; shift 2 ;;
         --max-budget-usd) max_budget=${2:-}; shift 2 ;;
-        --oracle-tree) transform_args="$transform_args --oracle-tree ${2:-}"; shift 2 ;;
+        --oracle-tree) oracle_tree=${2:-}; transform_args="$transform_args --oracle-tree ${2:-}"; shift 2 ;;
         --oracle-record) transform_args="$transform_args --oracle-record ${2:-}"; shift 2 ;;
         --identity-only) identity_only=1; shift ;;
         --provider-only) provider_only=1; raw=${2:-}; shift 2 ;;
@@ -1177,20 +1180,39 @@ answer=
 # whose history names HW-DR-0049, and the grader passed the `cited` probe on
 # that file. A session that ran `headwater generate` rewrote `.headwater/nav.yml`
 # the same way. Only the present arm holds `.headwater/` and an engine that
-# runs, so counting those files tilts a rate toward that arm. So the diff passes
-# over `.headwater/` whole, at the root and in a worktree, and every file whose
-# first line carries the `headwater:generated` marker, such as a shelf index
-# under `docs/`. A session that edits a generated file by hand loses that edit
-# here, and `headwater generate` would have overwritten it too. The engine's
-# build directory and the probe log directory are passed over as well.
+# runs, so counting those files tilts a rate toward that arm. So `produced`
+# passes over `.headwater/` whole, at the root and in a worktree, and every file
+# whose first line carries the `headwater:generated` marker, such as a shelf
+# index under `docs/`. The engine's build directory and the probe log directory
+# are passed over as well.
+#
+# **The tree an oracle runs in gets every change, not only `produced`
+# (#1877).** Until #1877 the transform built that tree from the grading tree
+# and the `produced` files alone. So a file that the session removed or moved
+# through `Bash` was still there, and an oracle that checks a move failed a
+# session that made it. A lock that `headwater taxonomy resolve` rewrote, and
+# a claim file that `headwater new` wrote under `.headwater/ids/`, were not
+# there either, because `produced` passes over `.headwater/`. An oracle then
+# read the new overlay of the session beside the old lock of the pin, and
+# failed. So this step also writes `$diffdir/tree-diff`, which the transform
+# reads with `--tree-diff`. It holds one line `write<TAB><path>` for each file
+# that is new or changed, `.headwater/` and generated files included, and one
+# line `delete<TAB><path>` for each file of the baseline that the workspace no
+# longer holds at the same path. The grader still reads only `produced`.
+#
+# **A write never puts back a file that the arm took out.** A path that the
+# baseline does not hold and the oracle tree holds is a file that the arm
+# removed, such as a held test or the `.headwater/` of the absent arm. Its
+# `write` line is left out, so a session cannot replace the copy in the oracle
+# tree through the shell. A path in `produced` is the transform's as before,
+# and the transform puts each held file back after it applies every change.
 #
 # A file is unchanged when its size and its time match the baseline's, since a
 # `cp -a` keeps both, and otherwise when its content digest matches. It needs
 # GNU `find` for `-printf`. A path that holds a tab or a newline is passed over.
 step_diff_baseline() {
     list() {
-        (cd "$1" && find . \( -path ./engine/target -o -path ./.headwater \
-            -o -path './.claude/worktrees/*/engine/target' -o -path './.claude/worktrees/*/.headwater' \) \
+        (cd "$1" && find . \( -path ./engine/target -o -path './.claude/worktrees/*/engine/target' \) \
             -prune -o -type f -printf '%P\t%s\t%T@\n')
     }
     list "$baseline" > "$diffdir/base.tsv" || return 1
@@ -1211,7 +1233,7 @@ step_diff_baseline() {
             print "check\t" $1 "\t" key
         }
     ' "$diffdir/base.tsv" "$diffdir/here.tsv" > "$diffdir/candidates.tsv"
-    awk -F '\t' '$1 == "new" { print $2 }' "$diffdir/candidates.tsv" > "$diffdir/produced"
+    awk -F '\t' '$1 == "new" { print $2 }' "$diffdir/candidates.tsv" > "$diffdir/changed"
     awk -F '\t' '$1 == "check" { print $2 }' "$diffdir/candidates.tsv" > "$diffdir/here.list"
     awk -F '\t' '$1 == "check" { print $3 }' "$diffdir/candidates.tsv" > "$diffdir/base.list"
     if [ -s "$diffdir/here.list" ]; then
@@ -1224,12 +1246,31 @@ step_diff_baseline() {
              substr($0, 1, 64) != h[FNR] { print FNR }' "$diffdir/here.sum" "$diffdir/base.sum" \
             > "$diffdir/differ"
         awk 'NR == FNR { want[$1]; next } FNR in want' "$diffdir/differ" "$diffdir/here.list" \
-            >> "$diffdir/produced"
+            >> "$diffdir/changed"
     fi
-    sort -u "$diffdir/produced" | while IFS= read -r path; do
+    sort -u "$diffdir/changed" > "$diffdir/changed.sorted"
+    # A deletion: a file of the baseline that the workspace does not hold at
+    # the same path.
+    awk -F '\t' -v log_rel="$log_rel" '
+        NR == FNR { if (NF == 3) held[$1]; next }
+        NF != 3 { next }
+        log_rel != "" && index($1, log_rel) == 1 { next }
+        !($1 in held) { print $1 }
+    ' "$diffdir/here.tsv" "$diffdir/base.tsv" | sort -u > "$diffdir/deleted"
+    while IFS= read -r path; do
         [ -n "$path" ] || continue
+        if [ -n "$oracle_tree" ] && [ ! -e "$baseline/$path" ] && [ -e "$oracle_tree/$path" ]; then
+            continue
+        fi
+        printf 'write\t%s\n' "$path"
+    done < "$diffdir/changed.sorted" > "$diffdir/tree-diff"
+    awk '{ print "delete\t" $0 }' "$diffdir/deleted" >> "$diffdir/tree-diff"
+    while IFS= read -r path; do
+        case $path in
+            '' | .headwater/* | .claude/worktrees/*/.headwater/*) continue ;;
+        esac
         generated "$here/$path" || printf '%s\n' "$path"
-    done
+    done < "$diffdir/changed.sorted"
 }
 
 # Whether a file carries the generated-file marker where the engine puts it
@@ -1269,6 +1310,7 @@ if [ -n "$baseline" ]; then
     while IFS= read -r path; do
         [ -n "$path" ] && set -- "$@" --produced "$path"
     done < "$diffdir/produced.sorted"
+    [ -n "$oracle_tree" ] && set -- "$@" --tree-diff "$diffdir/tree-diff"
 fi
 
 # The transform reads the same stream this script wrote, on its standard input.

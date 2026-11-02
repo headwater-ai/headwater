@@ -3297,6 +3297,97 @@ STUB
     absent "the probe log directory inside the workspace is not produced" \
         ".probe-log/" "$scratch/bash-write.md"
 
+    # The oracles see every change of the session (#1877). On the first try
+    # of the engine round, a session moved a record with `mv` and the `moved`
+    # oracle said the record was still there, because the tree an oracle runs
+    # in held the grading tree and the `produced` files and nothing else. A
+    # lock that `headwater taxonomy resolve` rewrote was not there either,
+    # since `produced` passes over `.headwater/`. With `--baseline` and
+    # `--oracle-tree`, the driver hands the transform every change, and the
+    # transform applies it to the copy. A held file is still the oracle
+    # tree's: the session plants one that would pass, through the shell, at a
+    # path `produced` takes and at a path under `.headwater/` it does not.
+    gt=$scratch/grade-tree
+    rm -rf "$gt" "$scratch/grade-base" "$scratch/grade-ws" "$scratch/grade-oracles.tsv"
+    mkdir -p "$gt/docs" "$gt/held"
+    cp -a "$root/.headwater" "$root/CLAUDE.md" "$gt/"
+    awk 'skip && /^[^ ]/ { skip = 0 }
+    skip { next }
+    /^oracles:/ {
+        skip = 1
+        print "oracles:"
+        print "  moved:"
+        print "    paths: [docs/*]"
+        print "    command: sh o-moved.sh"
+        print "    parser: exit"
+        print "  shell-new:"
+        print "    paths: [docs/*]"
+        print "    command: sh o-new.sh"
+        print "    parser: exit"
+        print "  lock:"
+        print "    paths: [docs/*]"
+        print "    command: sh o-lock.sh"
+        print "    parser: exit"
+        print "  held:"
+        print "    paths: [docs/*]"
+        print "    command: sh held/answer.sh"
+        print "    parser: exit"
+        print "    holds: [held/answer.sh]"
+        print "  held-dot:"
+        print "    paths: [docs/*]"
+        print "    command: sh .headwater/held.sh"
+        print "    parser: exit"
+        print "    holds: [.headwater/held.sh]"
+        next
+    } { print }' "$root/.headwater/probe.yml" > "$gt/.headwater/probe.yml"
+    printf 'if [ -e docs/from.md ]; then echo "moved: fail: docs/from.md is still there"; exit 1; fi\n[ -f docs/sub/to.md ] || { echo "moved: fail: no docs/sub/to.md"; exit 1; }\necho "moved: pass"\n' > "$gt/o-moved.sh"
+    printf '[ -f docs/shell-new.md ] || { echo "shell-new: fail"; exit 1; }\necho "shell-new: pass"\n' > "$gt/o-new.sh"
+    printf 'grep -q session-lock .headwater/taxonomy.lock || { echo "lock: fail: the pin'"'"'s lock"; exit 1; }\necho "lock: pass"\n' > "$gt/o-lock.sh"
+    printf 'echo "held: fail: the pinned answer"; exit 1\n' > "$gt/held/answer.sh"
+    printf 'echo "held-dot: fail: the pinned answer"; exit 1\n' > "$gt/.headwater/held.sh"
+    printf 'from\n' > "$gt/docs/from.md"
+    # The arm's tree is the grading tree with the held files and every fold
+    # that names the probe taken out, as the seal takes them out, and the
+    # session works in a copy of it.
+    mkdir -p "$scratch/grade-base/.headwater"
+    cp -a "$gt/docs" "$gt/o-moved.sh" "$gt/o-new.sh" "$gt/o-lock.sh" "$scratch/grade-base/"
+    cp -a "$root/.headwater/taxonomy.lock" "$root/.headwater/taxonomy.yml" "$root/.headwater/packages" \
+        "$scratch/grade-base/.headwater/"
+    cp -a "$scratch/grade-base" "$scratch/grade-ws"
+    cat > "$scratch/bin/claude" <<'STUB'
+#!/bin/sh
+mkdir -p docs/sub && mv docs/from.md docs/sub/to.md
+printf 'new\n' > docs/shell-new.md
+printf '# session-lock\n' >> .headwater/taxonomy.lock
+mkdir -p held && printf 'echo planted\n' > held/answer.sh
+printf 'echo planted\n' > .headwater/held.sh
+printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s1877"}'
+printf '%s\n' '{"type":"assistant","message":{"content":[{"type":"tool_use","id":"t1","name":"Bash","input":{"command":"mv docs/from.md docs/sub/to.md"}}]}}'
+printf '%s\n' '{"type":"result","subtype":"success","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+STUB
+    chmod +x "$scratch/bin/claude"
+    HEADWATER_PROBE_LOG_DIR="$scratch/grade-ws/.probe-log" PATH="$scratch/bin:$PATH" \
+        sh "$driver" --probe "HW-PROBE-$tombstone" --session fixture-grade-every-change \
+        --task-file "$scratch/task.md" --workspace "$scratch/grade-ws" --baseline "$scratch/grade-base" \
+        --oracle-tree "$gt" --oracle-record "$scratch/grade-oracles.tsv" \
+        > "$scratch/grade.md" 2>"$scratch/grade.err"
+    same "a session graded over an oracle tree with a baseline records" "0" "$?"
+    grade_verdict() {
+        awk -F '\t' -v n="$1" '$1 == n { print $2 }' "$scratch/grade-oracles.tsv" 2>/dev/null
+    }
+    same "a Bash \`mv\` is graded as moved, the source gone from the oracle's tree" "pass" "$(grade_verdict moved)"
+    same "a file the shell wrote is in the oracle's tree" "pass" "$(grade_verdict shell-new)"
+    same "a lock an engine verb rewrote under .headwater/ is in the oracle's tree" "pass" "$(grade_verdict lock)"
+    same "a held file the session planted at a produced path is still the oracle tree's" "fail" "$(grade_verdict held)"
+    same "a held file the session planted under .headwater/ is still the oracle tree's" "fail" "$(grade_verdict held-dot)"
+    absent "and the moved file's old path is not produced" 'path: "docs/from.md"' "$scratch/grade.md"
+    absent "and the lock is still not produced" ".headwater/taxonomy.lock" "$scratch/grade.md"
+    if [ -f "$gt/docs/from.md" ] && ! grep -q session-lock "$gt/.headwater/taxonomy.lock"; then
+        pass "and the oracle tree itself is unchanged"
+    else
+        fail "and the oracle tree itself is unchanged" "$(ls "$gt/docs")"
+    fi
+
     # `campaign.sh` runs one job with the tier's cap and its tree as the
     # baseline, and assembly counts a capped session (#1384). The batch half
     # of the script needs a clean checkout and the harness, so the case builds
