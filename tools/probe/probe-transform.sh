@@ -126,6 +126,7 @@ root=.
 workspace=
 oracle_tree=
 oracle_record=
+tree_diff=
 config_dir=
 produced_paths=
 
@@ -137,6 +138,7 @@ while [ $# -gt 0 ]; do
         --workspace) workspace=${2:-}; shift 2 ;;
         --oracle-tree) oracle_tree=${2:-}; shift 2 ;;
         --oracle-record) oracle_record=${2:-}; shift 2 ;;
+        --tree-diff) tree_diff=${2:-}; shift 2 ;;
         --config-dir) config_dir=${2:-}; shift 2 ;;
         --produced) produced_paths="$produced_paths${2:-}
 "; shift 2 ;;
@@ -153,7 +155,7 @@ case $config_dir in
 esac
 
 [ -n "$probe" ] && [ -n "$session" ] || {
-    echo "usage: probe-transform.sh --probe <id> --session <name> [--root <dir>] [--workspace <dir>] [--oracle-tree <dir>] [--oracle-record <file>] [--config-dir <dir>] [--produced <path>]… [--answer <text>]" >&2
+    echo "usage: probe-transform.sh --probe <id> --session <name> [--root <dir>] [--workspace <dir>] [--oracle-tree <dir>] [--oracle-record <file>] [--tree-diff <file>] [--config-dir <dir>] [--produced <path>]… [--answer <text>]" >&2
     exit 2
 }
 command -v jq >/dev/null 2>&1 || {
@@ -358,6 +360,17 @@ step_derive_cites() {
 # was graded as two sessions that each patched one, and the oracle reported on
 # both. A session that produced one artifact gets the result it got before.
 #
+# **Every change goes in, not only the artifacts (#1877).** `--tree-diff`
+# names a file that `probe-record.sh` writes from its comparison with the
+# baseline: `write<TAB><path>` for a file that is new or changed in the base,
+# and `delete<TAB><path>` for a file of the baseline that the base no longer
+# holds. Each line is applied to the copy after the artifacts, so a move
+# through `Bash` is a move, and a lock or a claim file that an engine verb
+# wrote is there, although neither is an artifact. The held files of the
+# oracles are put back after this, in `step_run_oracles`. Without
+# `--oracle-tree` the run is over the base itself, which already holds every
+# change, so the file is not read.
+#
 # An empty `findings` list is a claim that no rule reported over the artifact.
 # So a failure here refuses rather than writes one, on the same reasoning as
 # the observation guard above: a derivation that could not run is not a
@@ -405,6 +418,26 @@ step_derive_findings() {
                     exit 5
                 }
             done < "$scratch/produced.txt"
+            if [ -n "$tree_diff" ]; then
+                tab=$(printf '\t')
+                while IFS="$tab" read -r change each; do
+                    case $each in
+                        '' | /* | ../* | */../*) continue ;;
+                    esac
+                    case $change in
+                        write)
+                            [ -f "$base/$each" ] || continue
+                            mkdir -p "$(dirname "$scratch/oracle/$each")" && cp "$base/$each" "$scratch/oracle/$each" || {
+                                echo "probe-transform: the change to $each could not be copied into the oracle tree." >&2
+                                exit 5
+                            }
+                            ;;
+                        delete)
+                            [ -e "$base/$each" ] || rm -f "$scratch/oracle/$each"
+                            ;;
+                    esac
+                done < "$tree_diff"
+            fi
             "$engine" check --root "$scratch/oracle" --format json > "$scratch/oracle.json" 2>"$scratch/check.err" || {
                 rm -f "$scratch/oracle.json"
                 echo "probe-transform: \`headwater check --format json\` failed over the oracle tree:" >&2
