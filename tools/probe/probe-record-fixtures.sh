@@ -636,6 +636,21 @@ if [ -x "$engine" ] && [ -f "$oprobe" ]; then
     absent "and the oracle reports over neither, because the copy holds the whole patch" \
         "        - \"$orule\"" "$scratch/ows-both.yaml"
 
+    # An artifact at the top of the tree copies over the file the oracle tree
+    # already holds (#1877). The directory was `${each%/*}`, which for a path
+    # with no slash is the path itself, so `mkdir -p CLAUDE.md` met the file
+    # and the recorder exited 5: session p1-r3 of base-2 edited DEVELOPING.md
+    # and halted its driver at 114 of 154 sessions.
+    rm -rf "$scratch/ows-top"
+    cp -a "$scratch/ows-one" "$scratch/ows-top"
+    printf '\nOne more line.\n' >> "$scratch/ows-top/CLAUDE.md"
+    sh "$transform" --probe HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged \
+        --session top-level --root "$scratch/engine-only" --workspace "$scratch/ows-top" \
+        --oracle-tree "$scratch/otree" --produced CLAUDE.md \
+        < "$scratch/watched-nothing.jsonl" > "$scratch/ows-top.yaml" 2>"$scratch/ows-top.err"
+    same "a session that edited a file at the top of the tree derives its findings through the oracle tree" "0" "$?"
+    same "and that file is in \`produced\`" '    - path: "CLAUDE.md"' "$(grep '^    - path:' "$scratch/ows-top.yaml")"
+
     # A write the harness refused landed nothing, so it is not an artifact
     # (#1659). Four sessions of the 2026-10-03 campaign met the workspace's
     # write hook: each `Write` named a path, the hook refused it, and the old

@@ -413,7 +413,7 @@ step_derive_findings() {
                 case $each in
                     '' | /*) continue ;;
                 esac
-                mkdir -p "$scratch/oracle/${each%/*}" && cp "$base/$each" "$scratch/oracle/$each" || {
+                mkdir -p "$(dirname "$scratch/oracle/$each")" && cp "$base/$each" "$scratch/oracle/$each" || {
                     echo "probe-transform: the artifact $each could not be copied into the oracle tree." >&2
                     exit 5
                 }
