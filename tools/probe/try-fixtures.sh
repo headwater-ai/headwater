@@ -1,8 +1,8 @@
 #!/bin/sh
 # SPDX-License-Identifier: Apache-2.0
 #
-# The fixtures of tools/probe/try.sh, the twelve verbs of the additive
-# campaign's tuning round (#1821, #1822, #1838, #1877).
+# The fixtures of tools/probe/try.sh, the thirteen verbs of the additive
+# campaign's tuning round (#1821, #1822, #1838, #1877, #1878).
 #
 #     sh tools/probe/try-fixtures.sh
 #
@@ -2248,6 +2248,142 @@ run plan "$CASE/root" confirm docs-r2-v1
 check "void: base-2 at the pin is the base a confirmation reads" code_is 0
 check "void: and plan names base-2" out_has "in base-2: docs/probe-runs/b2.md"
 
+# --------------- adopt: a base measured in another round root (#1878)
+
+# The owner ruled on 2026-11-03 (#1878, comment 6599224598) that the skills
+# layer's base is the engine layer's best so far, a `best` event of another
+# round root. `adopt` records it here as a `base` event that charges nothing.
+ADOPT_RULING=https://github.com/headwater-ai/headwater/issues/1878#issuecomment-6599224598
+adopt_head=$(git -C "$checkout" rev-parse HEAD)
+# adopt_source [<scenario> [<count> [<passed>]]]: a source round root, `src`,
+# whose `docs-r1-best` is a `best` event at 145 sessions that names no pin,
+# with the pin in its driver.argv, as the engine layer's best so far does.
+adopt_source() {
+    mkdir -p "$CASE/src/docs-r1-best"
+    printf -- '--root\n%s\n--pin\n%s\n--seed\n0\n' "$CASE/src/docs-r1-best" "$adopt_head" > "$CASE/src/docs-r1-best/driver.argv"
+    cost "$CASE/src/docs-r1-best/a/sessions/s1" 13696
+    adopt_passed_field=', "passed": 112'
+    [ "${3-112}" = 112 ] || adopt_passed_field=
+    printf '{"event": "best", "try": "docs-r1-best", "layer": "engine", "round": 1, "scenario": "%s", "spent": 13696, "transcript": "docs/probe-runs/best-2.md", "used": 53, "sessions": %s, "count": %s%s, "graded": %s}\n' \
+        "${1:-0}" "${2:-145}" "${2:-145}" "$adopt_passed_field" "${2:-145}" > "$CASE/src/ledger.jsonl"
+}
+adopt_none() { ! grep -q '"event": "base"' "$CASE/root/ledger.jsonl" 2>/dev/null; }
+
+new_case
+adopt_source
+echo "0 $adopt_head" > "$CASE/root/base-pin"
+run spent "$CASE/root"
+cp "$CASE/out" "$CASE/spent-before-adopt"
+run plan "$CASE/root" base
+check "adopt: before the adopt, plan base may launch" code_is 0
+run adopt "$CASE/root" "$CASE/src" docs-r1-best "$ADOPT_RULING"
+check "adopt: a best so far of another root at the base's scenario, count and pin exits 0" code_is 0
+check "adopt: and appends one base event with its figures, spent 0 and the source" sh -c "[ \"\$(grep -c '\"event\": \"base\", \"try\": \"docs-r1-best\", \"scenario\": \"0\", \"pin\": \"$adopt_head\", \"count\": 145, \"passed\": 112, \"graded\": 145, \"spent\": 0, \"adopted_spent\": 13696, \"transcript\": \"docs/probe-runs/best-2.md\", \"adopted_from\": \"$CASE/src/docs-r1-best\", \"ruling\": \"$ADOPT_RULING\"' '$CASE/root/ledger.jsonl')\" = 1 ]"
+check "adopt: and prints what it adopted" out_has "adopt: scenario 0 at $adopt_head, 112 of 145 passed in 145 sessions, from the best event of $CASE/src/docs-r1-best"
+check "adopt: and leaves the base-pin as it was" sh -c "[ \"\$(cat '$CASE/root/base-pin')\" = '0 $adopt_head' ]"
+run plan "$CASE/root" base
+check "adopt: plan base then says the base is measured, and exits 6" code_is 6
+check "adopt: naming the adopted try" err_has "scenario 0 is measured at $adopt_head already, in docs-r1-best"
+run spent "$CASE/root"
+check "adopt: the adopted cents are not charged here" cmp -s "$CASE/out" "$CASE/spent-before-adopt"
+check "adopt: and the bases spent nothing" out_has "bases: 0 of the base ceiling, 1000"
+run ledger "$CASE/root"
+check "adopt: ledger prints the adopted base" out_has "base: try=docs-r1-best scenario=0 pin=$adopt_head count=145"
+run adopt "$CASE/root" "$CASE/src" docs-r1-best "$ADOPT_RULING"
+check "adopt: a base recorded already refuses a second adopt with 6" code_is 6
+check "adopt: and says so" err_has "records a base of scenario 0 already"
+check "adopt: and appends no second base" sh -c "[ \"\$(grep -c '\"event\": \"base\"' '$CASE/root/ledger.jsonl')\" = 1 ]"
+
+# A confirmation reads the adopted base as it reads a measured one.
+new_case
+adopt_source
+echo "0 $adopt_head" > "$CASE/root/base-pin"
+run adopt "$CASE/root" "$CASE/src" docs-r1-best "$ADOPT_RULING"
+cost "$CASE/root/docs-r2-v1/a/sessions/s1" 25
+: > "$CASE/root/docs-r2-v1/result.md"
+printf '%s\n' '{"event": "screen", "try": "docs-r2-v1", "layer": "docs", "round": 2, "used": 9, "sessions": 25, "passed": 20, "graded": 25}' >> "$CASE/root/ledger.jsonl"
+printf '%s\n' '{"event": "best", "try": "docs-r2-best", "layer": "docs", "round": 2, "transcript": "x.md", "used": 1, "sessions": 145, "count": 145}' >> "$CASE/root/ledger.jsonl"
+run plan "$CASE/root" confirm docs-r2-v1
+check "adopt: a confirmation's plan passes on the adopted base" code_is 0
+check "adopt: and names it as the measured base" out_has "measured: scenario 0 at $adopt_head, 145 sessions, in docs-r1-best: docs/probe-runs/best-2.md"
+
+# With no base-pin, adopt writes it, as result of a base does.
+new_case
+adopt_source
+rm -f "$CASE/root/base-pin"
+run adopt "$CASE/root" "$CASE/src" docs-r1-best "$ADOPT_RULING"
+check "adopt: with no base-pin exits 0" code_is 0
+check "adopt: and writes the base-pin as the scenario and the pin" sh -c "[ \"\$(cat '$CASE/root/base-pin')\" = '0 $adopt_head' ]"
+
+# Each refusal appends nothing.
+new_case
+adopt_source
+echo "0 $adopt_head" > "$CASE/root/base-pin"
+printf '{"event": "void", "try": "docs-r1-best", "ruling": "%s", "spent": 13696}\n' "$RULING" >> "$CASE/src/ledger.jsonl"
+run adopt "$CASE/root" "$CASE/src" docs-r1-best "$ADOPT_RULING"
+check "adopt: a source try voided in its ledger exits 6" code_is 6
+check "adopt: and says it is voided" err_has "docs-r1-best is voided in $CASE/src/ledger.jsonl"
+check "adopt: and appends no base" adopt_none
+
+new_case
+adopt_source 0 145 ''
+echo "0 $adopt_head" > "$CASE/root/base-pin"
+run adopt "$CASE/root" "$CASE/src" docs-r1-best "$ADOPT_RULING"
+check "adopt: a source event with no passed exits 6" code_is 6
+check "adopt: and says it has no figures" err_has "so it has no figures to adopt"
+check "adopt: and appends no base" adopt_none
+run adopt "$CASE/root" "$CASE/src" docs-r1-v1 "$ADOPT_RULING"
+check "adopt: a try no event of the source names exits 6" code_is 6
+check "adopt: and says it has no figures, too" err_has "no base, best or kept confirmation event of docs-r1-v1"
+
+new_case
+adopt_source 1
+echo "0 $adopt_head" > "$CASE/root/base-pin"
+run adopt "$CASE/root" "$CASE/src" docs-r1-best "$ADOPT_RULING"
+check "adopt: a source of another scenario than the open layer's base exits 6" code_is 6
+check "adopt: and names both scenarios" err_has "docs-r1-best measured scenario 1, and the base of scenario 1, the open docs layer's, is scenario 0"
+check "adopt: and appends no base" adopt_none
+
+new_case
+adopt_source 0 144
+echo "0 $adopt_head" > "$CASE/root/base-pin"
+run adopt "$CASE/root" "$CASE/src" docs-r1-best "$ADOPT_RULING"
+check "adopt: a source below the confirmation's count exits 6" code_is 6
+check "adopt: and names both counts" err_has "docs-r1-best ran 144 sessions, and a base is read at the confirmation's count, 145"
+check "adopt: and appends no base" adopt_none
+
+new_case
+adopt_source
+echo '0 2d212a269a111fddb7af5b2b75ebaf2f9ab32f29' > "$CASE/root/base-pin"
+run adopt "$CASE/root" "$CASE/src" docs-r1-best "$ADOPT_RULING"
+check "adopt: a source pin that is not the base-pin's exits 6" code_is 6
+check "adopt: and names both" err_has "reads \`0 2d212a269a111fddb7af5b2b75ebaf2f9ab32f29\`, and docs-r1-best measured scenario 0 at $adopt_head"
+check "adopt: and appends no base" adopt_none
+check "adopt: and leaves the base-pin" sh -c "[ \"\$(cat '$CASE/root/base-pin')\" = '0 2d212a269a111fddb7af5b2b75ebaf2f9ab32f29' ]"
+
+new_case
+adopt_source
+echo "0 $adopt_head" > "$CASE/root/base-pin"
+measured_base
+run adopt "$CASE/root" "$CASE/src" docs-r1-best "$ADOPT_RULING"
+check "adopt: a root whose ledger measured the base already exits 6" code_is 6
+check "adopt: and names that base" err_has "already, at $adopt_head in base-1"
+
+new_case
+decl none 10000
+adopt_source
+run adopt "$CASE/root" "$CASE/src" docs-r1-best "$ADOPT_RULING"
+check "adopt: no open layer exits 5" code_is 5
+check "adopt: and appends no base" adopt_none
+
+new_case
+adopt_source
+run adopt "$CASE/root" "$CASE/src" docs-r1-best https://github.com/headwater-ai/headwater/pull/1927
+check "adopt: a ruling that is not a comment on an issue exits 2" code_is 2
+run adopt "$CASE/root" "$CASE/missing" docs-r1-best "$ADOPT_RULING"
+check "adopt: a source root that does not exist exits 2" code_is 2
+check "adopt: no refused adopt appends a base" adopt_none
+
 # ---------------------------------------------------------------- arguments
 
 new_case
@@ -2263,6 +2399,8 @@ run accept "$CASE/root"
 check "args: accept with no ruling URL exits 2" code_is 2
 run void "$CASE/root" base-1
 check "args: void with no ruling URL exits 2" code_is 2
+run adopt "$CASE/root" "$CASE/root" base-1
+check "args: adopt with no ruling URL exits 2" code_is 2
 
 # TRY_FIXTURES_KEEP keeps the cases' directories, to read a failure.
 if [ -n "${TRY_FIXTURES_KEEP:-}" ]; then echo "try-fixtures: the cases are in $fix" >&2; else rm -rf "$fix"; fi
