@@ -2082,6 +2082,25 @@ check "usage: hooks prints the hooks each session used, in the order intent, rea
 check "usage: hooks prints a session by the hooks it used, and no hook the layer does not ship" out_line "session s2 write"
 check "usage: hooks prints a dash for a session that used no hook" out_line "session s3 -"
 check "usage: hooks reads the list content of a hook_additional_context, and counts another hook's pointer for that hook and not for intent" out_line "session s4 read"
+# Claude Code 2.1.288, the version the campaign runs, as its logs of scenario
+# 13 of the screening round hold the hooks (#1879): a read or write hook that
+# spoke is a hook_additional_context list beside an empty hook_success, and the
+# Stop hook is a system record stop_hook_summary, whose hookErrors hold what a
+# blocking review printed. A summary with empty lists is a review that said
+# nothing.
+empty_success='{"type":"attachment","attachment":{"type":"hook_success","hookName":"PreToolUse:Edit","hookEvent":"PreToolUse","content":"","stdout":"","stderr":"","exitCode":0}}'
+edit_context='{"type":"attachment","attachment":{"type":"hook_additional_context","hookName":"PreToolUse:Edit","hookEvent":"PreToolUse","content":["docs/spec/01-x.md is governed by HW-DR-0001."]}}'
+stop_quiet='{"type":"system","subtype":"stop_hook_summary","hookCount":1,"hookInfos":[{"command":"sh review.sh","durationMs":20}],"hookErrors":[],"hookAdditionalContext":[],"preventedContinuation":false,"stopReason":"","hasOutput":false,"level":"suggestion"}'
+stop_blocked='{"type":"system","subtype":"stop_hook_summary","hookCount":1,"hookInfos":[{"command":"sh review.sh","durationMs":900}],"hookErrors":["headwater check found 1 error."],"hookAdditionalContext":[],"preventedContinuation":false,"stopReason":"","hasOutput":true,"level":"suggestion"}'
+rm -rf "$b"
+usage_session "$b" s1 "$(tool_line Read '{"file_path":"docs/spec/02-y.md"}')" "$empty_success"
+printf '%s\n' "$edit_context" "$stop_blocked" >> "$b/config/s1/projects/x/log.jsonl"
+usage_session "$b" s2 "$(tool_line Read '{"file_path":"docs/spec/02-y.md"}')" "$empty_success"
+printf '%s\n' "$stop_quiet" >> "$b/config/s2/projects/x/log.jsonl"
+usage_of hooks
+check "usage: hooks counts the write hook by the hook_additional_context list of Claude Code 2.1.288, and no empty hook_success" out_line "hook write used 1 sessions 2"
+check "usage: hooks counts the review hook by a stop_hook_summary of Claude Code 2.1.288 with text in hookErrors, and no summary without text" out_line "hook review used 1 sessions 2"
+check "usage: hooks names write and review for the 2.1.288 session whose hooks spoke, and a dash for the one whose hooks did not" out_line "session s2 -"
 # The intent hook as Claude Code 2.1.312 logs it: a list whose first element is
 # the heading and whose pointer line comes after it. A reader of the first
 # element alone hides every intent use that try.sh rank reads.
