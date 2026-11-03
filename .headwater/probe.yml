@@ -1036,9 +1036,13 @@ sets:
 # The re-cut of 0.07 (#1868, HW-DR-0112) replaced that design: the engine is
 # tuned by the text its verbs print, in scenario 2 against scenario 1, and
 # the skills, the hooks and MCP each against scenario 2. The owner approved
-# $1,300.00 for the engine layer on 2026-10-29 (#1877), so `approved_cents`
-# is that figure, the approval of #1877 alone, and each later layer's issue
-# sets its own when its plan is posted.
+# $1,300.00 for the engine layer on 2026-10-29 (#1877), and the same again
+# for each of the skills, the hooks and MCP, each after a priced plan on its
+# own issue. So `approved_cents` is the approval of the open layer alone.
+# `tools/probe/try.sh` checks it against the spend of one round root, so
+# each layer runs in a round root of its own: the engine's is
+# /mnt/build/hw-1877, which spent $544.96, and the skills' is
+# /mnt/build/hw-1878, which starts at zero.
 #
 # `open` holds the one-layer rule (#1819). It names the one layer whose plan
 # the owner accepted, or it is `none`, and only the tuning round declares it.
@@ -1064,8 +1068,12 @@ sets:
 # Round 1 kept its variant 1 on 2026-10-25, 127 of 145 against 81 of 142,
 # and the skills layer opened for its round 2 under the plan below, against
 # that confirmation as the best so far. Those rounds ran on the design of
-# HW-DR-0111 and closed with #1777. The engine layer now opens for its
-# round 1, scenario 2 against scenario 1, under the plan posted on #1877.
+# HW-DR-0111 and closed with #1777. The engine layer opened for its round
+# 1, scenario 2 against scenario 1, under the plan posted on #1877. The owner
+# ended that layer on 2026-11-03 with the engine as `main` ships it as its
+# best so far, 112 of 154 (#1877, comment 6598005063). The skills layer now
+# opens for its round 1, scenario 3 against scenario 2, under the plan posted
+# on #1878, which the owner's advance approval accepts (comment 6598068852).
 #
 # The tuning round runs in rounds (#1838), as the owner ruled on 2026-10-22
 # (#1777): a round screens `variants` changes of the open layer at `screen`
@@ -1075,34 +1083,36 @@ sets:
 # alone. A layer takes at most `tries` rounds, and it stops after
 # `stop_after_empty` rounds in a row with nothing kept. The layers run in
 # `order`, and a round of a later layer waits while an earlier one is open.
-# The engine runs first, because the skills, the hooks and MCP measure
-# their scenarios against its pin of scenario 2 (#1868).
+# The engine ran first, because the skills, the hooks and MCP measure
+# their scenarios against its pin of scenario 2 (#1868). `order` no longer
+# names it: `try.sh` treats a layer as ended only after `stop_after_empty`
+# empty rounds or `tries` rounds, so an engine layer still in `order` would
+# refuse every round of the skills, which the owner's ruling above ended.
 # The screen is 22 sessions and the confirmation 145, as HW-DR-0112 "Phase
 # A" states (#1874), and `tools/probe/declared.py <declaration> tuning`
 # rounds each up to a whole number of repetitions over the probes of the
 # set: 22 and 154 over the 22 probes of `tuning`. The screen was 24 and the
 # confirmation 144 over the five probes of HW-DR-0111, which ran 25 and 145.
 # The owner split the approval in two on 2026-10-22 (#1777, comment
-# 6339176737), and #1877 keeps the split. `base_ceiling_cents` is the most
-# the bases may spend, $250.00: the first `base` try, which measures
-# scenario 1 at the confirmation's count of 154 sessions, and the first best
-# so far of the engine layer, scenario 2 at the same count. The plan prices
-# each at $77.00 at the declared 50 cents a session, and the last round
-# realized about 72 cents, about $111 each, so the ceiling holds both at
-# that rate. `ceiling_cents` is the most every other try may spend,
-# $1,050.00, a later base included.
-# The bases spent $266.85: the best so far capped at 144 of 154, and the
-# owner ruled to grade it as it stands, with the overrun taken from the
-# $1,300.00 (#1877, comment 6540711867). So `base_ceiling_cents` is 26700
-# and `ceiling_cents` is 103300, and the sum is still the approval.
-# The two together are the $1,300.00 approval of #1877, and
+# 6339176737), and each layer keeps the split. The engine layer's bases
+# spent $266.85 of a base ceiling of $267.00, and its tries $278.11 of
+# $1,033.00 (#1877). For the skills layer, `base_ceiling_cents` is the most
+# the bases may spend, $300.00: the first `base` try, which measures
+# scenario 2 at the confirmation's count of 154 sessions, and the first best
+# so far of the skills layer, scenario 3 at the same count. The plan on
+# #1878 prices each at $77.00 at the declared 50 cents a session, and the
+# engine layer realized 81 to 89 cents a session, about $125 to $137 each,
+# so the ceiling holds both at up to about 97 cents. `ceiling_cents` is the
+# most every other try may spend, $1,000.00, a later base included.
+# The two together are the $1,300.00 approval of #1878, and
 # `tools/probe/try.sh plan` refuses a launch whose charge is priced above
 # what is left under its own ceiling.
 # `cap_cents` is 15000, $150.00 for one launch. The base of 2026-10-31
 # realized about 81 cents a session and capped at 12000 with 141 of 154
 # recorded, and the owner raised that try to 13500 (#1877, comment
-# 6536880201). The best so far runs the same 154 sessions in scenario 2,
-# which adds the engine's calls, so its cap has the same room and more.
+# 6536880201). The engine layer's best so far ran the same 154 sessions in
+# scenario 2 for $136.96, and the skills layer keeps the same cap for its
+# base and its best so far.
 rounds:
   screening:
     set: tuning
@@ -1118,15 +1128,15 @@ rounds:
     confirm: 145
     variants: 4
     stop_after_empty: 2
-    order: [engine, skills, hooks, mcp]
-    ceiling_cents: 103300
-    base_ceiling_cents: 26700
+    order: [skills, hooks, mcp]
+    ceiling_cents: 100000
+    base_ceiling_cents: 30000
     open:
-      layer: engine
-      scenario: 2
+      layer: skills
+      scenario: 3
       try: 1
       cap_cents: 15000
-      plan: https://github.com/headwater-ai/headwater/issues/1877#issuecomment-6526210603
+      plan: https://github.com/headwater-ai/headwater/issues/1878#issuecomment-6598068852
       change: none
   final:
     set: held-out

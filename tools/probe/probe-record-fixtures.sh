@@ -6268,7 +6268,7 @@ if [ -x "$engine" ]; then
     same "declared.py tuning refuses a round with no base ceiling with 2" "2" "$?"
     present "and names it" "and not \`base_ceiling_cents\`" "$scratch/stage-bad.err"
     python3 "$root/tools/probe/declared.py" "$root/.headwater/probe.yml" tuning > "$scratch/stage-good.out"
-    same "declared.py tuning prints the base ceiling of the declaration" "base_ceiling_cents 26700" \
+    same "declared.py tuning prints the base ceiling of the declaration" "base_ceiling_cents 30000" \
         "$(grep '^base_ceiling_cents ' "$scratch/stage-good.out")"
 
     # The batch runs the same check before each invocation (clause 5: "the
