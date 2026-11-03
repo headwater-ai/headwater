@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # The tuning round of the additive campaign, from the plan to the committed
-# record, as twelve verbs (#1821, #1822, #1838). Before this script, each try
+# record, as thirteen verbs (#1821, #1822, #1838, #1878). Before this script, each try
 # had a launch script, a wait condition, a canary reader and a keep decision
 # typed by hand, the total spend of the round was prose that a person added
 # to by hand, and one hand reader read `named 1 path outside` as a blank field
@@ -22,6 +22,7 @@
 #     sh tools/probe/try.sh ledger   <root>
 #     sh tools/probe/try.sh accept   <root> <ruling-url>
 #     sh tools/probe/try.sh void     <root> <try> <ruling-url>
+#     sh tools/probe/try.sh adopt    <root> <from-root> <try> <ruling-url>
 #
 # `<root>` is the root of the tuning round: one directory that holds every
 # try root of the round and the two files of the round: `<root>/env`, which
@@ -391,10 +392,39 @@
 #   writes the new pin. It exits 6 for a try root that does not exist, a try
 #   that no event of the ledger names and a try voided already. The ruling
 #   is the URL of a comment on an issue, and any other text exits 2.
+# - `adopt <root> <from-root> <try> <ruling-url>` records, as the base of
+#   the open layer in `<root>`, a measurement that another round root holds
+#   already (owner, 2026-11-03,
+#   https://github.com/headwater-ai/headwater/issues/1878#issuecomment-6599224598:
+#   the skills layer's base is the engine layer's best so far,
+#   `engine-r1-best-2` of `/mnt/build/hw-1877`). It reads the latest event of
+#   `<from-root>/ledger.jsonl` whose `try` is `<try>`, a `base`, a `best` or
+#   a `result` of a confirmation, and appends a `base` event to
+#   `<root>/ledger.jsonl` with its scenario, its pin, its count, its passed
+#   and graded and its transcript, `spent` 0, `adopted_spent` the cents it
+#   spent there, `adopted_from` as `<from-root>/<try>`, and the ruling. The
+#   pin is the event's `pin`, or else the `--pin` of
+#   `<from-root>/<try>/driver.argv`, because a `best` event names none. The
+#   spend of `<root>` reads session files and never the ledger, so an
+#   adopted base charges nothing here: its cents stay charged in the root
+#   that spent them. From then on `plan`, `rank`, the base check of a
+#   confirmation and the base row of `result` read the event as they read a
+#   measured base. Where `<root>/base-pin` is absent, `adopt` writes it as
+#   `<scenario> <pin>`, as `result` of a base does. It exits 5 when no layer
+#   is open, and 6 when the source try is voided in its ledger, when no
+#   such event of it holds a scenario, a count, passed, graded and a
+#   transcript, when its scenario is not the base of the open scenario,
+#   when its count is not the confirmation's, which is the only count that a
+#   confirmation reads a base at, when its pin is not the pin of
+#   `<root>/base-pin`, and when `<root>/ledger.jsonl` records a base of that
+#   scenario already that is not voided. The ruling is the URL of a comment
+#   on an issue, and any other text exits 2. A void of the source try in its
+#   own root does not reach the adopted event, and `void` in `<root>`
+#   refuses it, because `<root>` holds no try root of that name.
 #
 # `<root>/ledger.jsonl` holds one JSON object for each event. `result`
 # appends `screen`, `best`, `base`, `result`, `round` and `halt`, `accept` appends
-# `accept`, `void` appends `void`, `wait` appends `gate` for each stop of the usage gate, and `launch` appends a `round` with `kept` false when it refuses
+# `accept`, `void` appends `void`, `adopt` appends a `base`, `wait` appends `gate` for each stop of the usage gate, and `launch` appends a `round` with `kept` false when it refuses
 # the top variant of a round for no gain in use, which it never does for a
 # layer where `use_ungated` holds.
 #
@@ -435,7 +465,8 @@
 #   0   the verb did what it states: `canary-passed` is written, the plan
 #       passes, the driver is started, `rank` printed, `wait` met its condition, `result`
 #       recorded a try kept or not kept, `ledger` printed, `accept`
-#       recorded or had nothing to accept, or `void` recorded the void
+#       recorded or had nothing to accept, `void` recorded the void, or
+#       `adopt` recorded the base
 #   1   `wait` alone: the driver runs and needs no reader
 #   2   a usage error, or a file it reads is missing or does not read:
 #       `<root>`, `<root>/env`, `<root>/base-pin`, `driver.argv`, a cost, a
@@ -461,7 +492,8 @@
 #       checkout the driver's pin check refuses, `canary` before
 #       `canary-recorded`, `result` on a try that has a `result.md`, or
 #       `void` on a try root that is absent, a try no event names or a try
-#       voided already; or
+#       voided already, `adopt` of a try that the rules of `adopt` above
+#       refuse; or
 #       the rules of rounds, order and stages refuse the round or the stage
 #       of `plan` or `launch`
 #   7   a person must read the try: `canary` wrote `canary-needs-reader`, or
@@ -480,7 +512,7 @@ engine=${HEADWATER_TRY_ENGINE:-$checkout/engine/target/dev-release/headwater}
 usage_counter=${HEADWATER_TRY_USAGE:-$here/usage.py}
 
 usage() {
-    echo "usage: sh tools/probe/try.sh status|spent|rank|ledger <root>, plan <root> [<stage>], launch <root> <stage>, relaunch|canary|wait|result <root> <try>, accept <root> <ruling-url>, or void <root> <try> <ruling-url>, where <stage> is screen <k>, best, confirm <variant> or base" >&2
+    echo "usage: sh tools/probe/try.sh status|spent|rank|ledger <root>, plan <root> [<stage>], launch <root> <stage>, relaunch|canary|wait|result <root> <try>, accept <root> <ruling-url>, void <root> <try> <ruling-url>, or adopt <root> <from-root> <try> <ruling-url>, where <stage> is screen <k>, best, confirm <variant> or base" >&2
     exit 2
 }
 say() { printf 'try: %s\n' "$1" >&2; }
@@ -489,6 +521,7 @@ say() { printf 'try: %s\n' "$1" >&2; }
 verb=$1 root=$2
 try_name=
 ruling=
+from_root=
 stage_kind=
 stage_arg=
 case $verb in
@@ -498,6 +531,7 @@ case $verb in
     relaunch | canary | wait | result) [ $# -le 3 ] || usage; try_name=${3:-} ;;
     accept) [ $# = 3 ] || usage; ruling=$3 ;;
     void) [ $# = 4 ] || usage; try_name=$3 ruling=$4 ;;
+    adopt) [ $# = 5 ] || usage; from_root=$3 try_name=$4 ruling=$5 ;;
     *) usage ;;
 esac
 case $stage_kind in
@@ -815,6 +849,12 @@ ceilings() {
 #   voided                           each try a `void` event names, one a line
 #   named <try>                      the number of events other than `void`
 #                                    whose `try` is the try
+#   figures <try>                    `voided` where a `void` event names the
+#                                    try, or else its latest `base`, `best` or
+#                                    `result` of a confirmation, as
+#                                    `<event>\t<scenario>\t<pin>\t<count>\t<passed>\t<graded>\t<spent>\t<transcript>`,
+#                                    with a field it lacks empty, or nothing;
+#                                    `adopt` runs it on the source ledger
 # `best`, `rank` and `base` skip every event whose `try` a `void` event
 # names, so a voided try is no measurement (#1877). An event with no `try`,
 # as `accept` and `gate` write, is never voided.
@@ -934,6 +974,18 @@ elif mode == "base":
 elif mode == "voided":
     for name in sorted(voided(events())):
         print(name)
+elif mode == "figures":
+    if args[0] in voided(events()):
+        print("voided")
+    else:
+        found = None
+        for event in counted():
+            if event.get("try") == args[0] and (event.get("event") in ("base", "best")
+                                                or (event.get("event") == "result" and event.get("stage") == "confirm")):
+                found = event
+        if found:
+            print("\t".join("" if found.get(key) is None else str(found.get(key))
+                            for key in ("event", "scenario", "pin", "count", "passed", "graded", "spent", "transcript")))
 elif mode == "named":
     print(sum(1 for event in events() or [] if event.get("event") != "void" and event.get("try") == args[0]))
 elif mode == "cover":
@@ -951,7 +1003,7 @@ ledger_py() {
     command -v python3 >/dev/null 2>&1 || { say "python3 is not on the path."; exit 3; }
     ledger_mode=$1
     shift
-    python3 -c "$ledger_program" "$ledger_mode" "$root/ledger.jsonl" "$@" || exit 2
+    python3 -c "$ledger_program" "$ledger_mode" "${ledger_file:-$root/ledger.jsonl}" "$@" || exit 2
 }
 
 now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
@@ -2209,6 +2261,84 @@ EOF
         ledger_py append event=s:void "try=s:$try_name" "ruling=s:$ruling" "spent=i:$void_spent" "at=s:$(now)"
         if [ "$(charge_of "$try_name")" = base ]; then void_ceiling=base; else void_ceiling=tuning; fi
         echo "void: $try_name ($ruling), and its $void_spent cents stay charged to the $void_ceiling ceiling"
+        ;;
+
+    adopt)
+        printf '%s' "$ruling" | grep -Eqx 'https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/issues/[0-9]+#issuecomment-[0-9]+' || {
+            say "\`$ruling\` is not the URL of the owner's ruling: a comment on an issue, https://github.com/<owner>/<repo>/issues/<n>#issuecomment-<id>."
+            exit 2
+        }
+        [ -d "$from_root" ] || { say "no round root at $from_root to adopt a measurement from."; exit 2; }
+        from_root=$(cd "$from_root" && pwd -P)
+        resolve_try
+        adopt_open=$(open_fields) || exit $?
+        if [ "$adopt_open" = none ]; then
+            say "the tuning round is open for no layer, so no layer has a base to adopt."
+            exit 5
+        fi
+        # shellcheck disable=SC2086
+        set -- $adopt_open
+        open_layer=$1 open_scenario=$2 open_try=$3
+        tuning_read
+        open_base
+        adopt_line=$(ledger_file=$from_root/ledger.jsonl ledger_py figures "$try_name") || exit $?
+        if [ "$adopt_line" = voided ]; then
+            say "$try_name is voided in $from_root/ledger.jsonl, so it is no measurement to adopt."
+            exit 6
+        fi
+        adopt_event=$(printf '%s\n' "$adopt_line" | cut -f1)
+        adopt_scenario=$(printf '%s\n' "$adopt_line" | cut -f2)
+        adopt_pin=$(printf '%s\n' "$adopt_line" | cut -f3)
+        adopt_count=$(printf '%s\n' "$adopt_line" | cut -f4)
+        adopt_passed=$(printf '%s\n' "$adopt_line" | cut -f5)
+        adopt_graded=$(printf '%s\n' "$adopt_line" | cut -f6)
+        adopt_spent=$(printf '%s\n' "$adopt_line" | cut -f7)
+        adopt_transcript=$(printf '%s\n' "$adopt_line" | cut -f8)
+        case "$adopt_count:$adopt_passed:$adopt_graded" in
+            *[!0-9:]* | :* | *::* | *:) adopt_figures=0 ;;
+            *) adopt_figures=1 ;;
+        esac
+        if [ -z "$adopt_line" ] || [ -z "$adopt_scenario" ] || [ -z "$adopt_transcript" ] || [ "$adopt_figures" = 0 ]; then
+            say "no base, best or kept confirmation event of $try_name in $from_root/ledger.jsonl holds a scenario, a count, passed, graded and a transcript, so it has no figures to adopt."
+            exit 6
+        fi
+        case $adopt_spent in '' | *[!0-9]*) adopt_spent=0 ;; esac
+        if [ -z "$adopt_pin" ]; then
+            adopt_pin=$(awk 'previous == "--pin" { print; exit } { previous = $0 }' "$from_root/$try_name/driver.argv" 2>/dev/null)
+        fi
+        case $adopt_pin in
+            '' | *[!0-9a-f]*)
+                say "the $adopt_event event of $try_name names no pin, and $from_root/$try_name/driver.argv names no --pin, so the commit it measured is not known."
+                exit 6
+                ;;
+        esac
+        if [ "$adopt_scenario" != "$base" ]; then
+            say "$try_name measured scenario $adopt_scenario, and the base of scenario $open_scenario, the open $open_layer layer's, is scenario $base."
+            exit 6
+        fi
+        if [ "$adopt_count" != "$t_confirm" ]; then
+            say "$try_name ran $adopt_count sessions, and a base is read at the confirmation's count, $t_confirm."
+            exit 6
+        fi
+        adopt_has=$(ledger_py base "$base" - -) || exit $?
+        if [ -n "$adopt_has" ]; then
+            say "$root/ledger.jsonl records a base of scenario $base already, at $(printf '%s\n' "$adopt_has" | cut -f2) in $(printf '%s\n' "$adopt_has" | cut -f4), so there is no base to adopt."
+            exit 6
+        fi
+        if [ -f "$root/base-pin" ]; then
+            read_pin
+            if [ "$pin_scenario" != "$base" ] || [ "$pin_sha" != "$adopt_pin" ]; then
+                say "$pin_file reads \`$pin_scenario $pin_sha\`, and $try_name measured scenario $adopt_scenario at $adopt_pin."
+                exit 6
+            fi
+        fi
+        ledger_py append event=s:base "try=s:$try_name" "scenario=s:$adopt_scenario" "pin=s:$adopt_pin" \
+            "count=i:$adopt_count" "passed=i:$adopt_passed" "graded=i:$adopt_graded" spent=i:0 \
+            "adopted_spent=i:$adopt_spent" "transcript=s:$adopt_transcript" \
+            "adopted_from=s:$from_root/$try_name" "ruling=s:$ruling" "at=s:$(now)"
+        [ -f "$root/base-pin" ] || printf '%s %s\n' "$adopt_scenario" "$adopt_pin" > "$root/base-pin"
+        echo "adopt: scenario $adopt_scenario at $adopt_pin, $adopt_passed of $adopt_graded passed in $adopt_count sessions, from the $adopt_event event of $from_root/$try_name ($ruling)"
+        echo "adopt: its $adopt_spent cents stay charged in $from_root, and it charges 0 here"
         ;;
 esac
 exit 0
