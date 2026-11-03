@@ -1042,7 +1042,8 @@ sets:
 # `tools/probe/try.sh` checks it against the spend of one round root, so
 # each layer runs in a round root of its own: the engine's is
 # /mnt/build/hw-1877, which spent $544.96, and the skills' is
-# /mnt/build/hw-1878, which starts at zero.
+# /mnt/build/hw-1878, which spent $137.01, and the hooks' is
+# /mnt/build/hw-1879, which starts at zero.
 #
 # `open` holds the one-layer rule (#1819). It names the one layer whose plan
 # the owner accepted, or it is `none`, and only the tuning round declares it.
@@ -1071,9 +1072,14 @@ sets:
 # HW-DR-0111 and closed with #1777. The engine layer opened for its round
 # 1, scenario 2 against scenario 1, under the plan posted on #1877. The owner
 # ended that layer on 2026-11-03 with the engine as `main` ships it as its
-# best so far, 112 of 154 (#1877, comment 6598005063). The skills layer now
-# opens for its round 1, scenario 3 against scenario 2, under the plan posted
+# best so far, 112 of 154 (#1877, comment 6598005063). The skills layer then
+# opened for its round 1, scenario 3 against scenario 2, under the plan posted
 # on #1878, which the owner's advance approval accepts (comment 6598068852).
+# The owner ended the skills layer on 2026-11-04 after its best so far, 120
+# of 154 (#1878, comment 6612882278). The hooks layer now opens for its round
+# 1, scenario 4 against scenario 2, with the `intent` moment, under the plan
+# posted on #1879, which the owner's advance approval accepts (comment
+# 6613070923).
 #
 # The tuning round runs in rounds (#1838), as the owner ruled on 2026-10-22
 # (#1777): a round screens `variants` changes of the open layer at `screen`
@@ -1088,6 +1094,8 @@ sets:
 # names it: `try.sh` treats a layer as ended only after `stop_after_empty`
 # empty rounds or `tries` rounds, so an engine layer still in `order` would
 # refuse every round of the skills, which the owner's ruling above ended.
+# `order` no longer names the skills either, for the same reason and by the
+# owner's ruling of 2026-11-04 above.
 # The screen is 22 sessions and the confirmation 145, as HW-DR-0112 "Phase
 # A" states (#1874), and `tools/probe/declared.py <declaration> tuning`
 # rounds each up to a whole number of repetitions over the probes of the
@@ -1112,7 +1120,10 @@ sets:
 # recorded, and the owner raised that try to 13500 (#1877, comment
 # 6536880201). The engine layer's best so far ran the same 154 sessions in
 # scenario 2 for $136.96, and the skills layer keeps the same cap for its
-# base and its best so far.
+# base and its best so far. The hooks layer keeps the same three figures
+# under its own $1,300.00 (#1879): its plan prices the first best so far at
+# $77.00 under the base ceiling, with the base adopted, and the rounds under
+# the tuning ceiling.
 rounds:
   screening:
     set: tuning
@@ -1128,16 +1139,17 @@ rounds:
     confirm: 145
     variants: 4
     stop_after_empty: 2
-    order: [skills, hooks, mcp]
+    order: [hooks, mcp]
     ceiling_cents: 100000
     base_ceiling_cents: 30000
     open:
-      layer: skills
-      scenario: 3
+      layer: hooks
+      scenario: 4
       try: 1
       cap_cents: 15000
-      plan: https://github.com/headwater-ai/headwater/issues/1878#issuecomment-6598068852
+      plan: https://github.com/headwater-ai/headwater/issues/1879#issuecomment-6613070923
       change: none
+      moment: intent
   final:
     set: held-out
     rates: [0.90, 0.80]

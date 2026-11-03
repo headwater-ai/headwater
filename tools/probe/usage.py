@@ -78,6 +78,16 @@ session. Claude Code 2.1.312 logs a hook's added context as a
 counts as the text its strings hold. An attachment with no text is no use. That is how `touch.sh`, which
 shares the write matcher and prints nothing, stays out of the write count.
 
+Claude Code 2.1.288 logs the same shape for the read and write hooks: a
+`hook_additional_context` whose content is a list of strings, beside a
+`hook_success` with no text, and nothing for a hook that printed nothing
+(measured 2026-11-04 on the 36 logs of scenario 13 of the screening round,
+#1879). It logs the `Stop` hook as no attachment but as a `system` record of
+subtype `stop_hook_summary`, which holds what a blocking hook printed in
+`hookErrors` and its added context in `hookAdditionalContext`. So review also
+counts a session whose log holds such a record with text in either list. Of
+the 58 such records in those logs, none has text.
+
 Any other layer exits 2, because the tuning round tunes these four alone
 (#1833, #1868). It exits 2 when the batch has no `sessions` directory or the
 declaration does not read, and 3 when python3 has no PyYAML.
@@ -227,7 +237,21 @@ def hooks_spoken(config):
         hook = HOOK_NAMES.get(row[3])
         if hook:
             spoken.add(hook)
+    if stop_summary_spoke(config):
+        spoken.add("review")
     return spoken
+
+
+def stop_summary_spoke(config):
+    """A `stop_hook_summary` in the log with text in `hookErrors` or `hookAdditionalContext`."""
+    for path in recordings.log_files(config):
+        for record in recordings.lines(path):
+            if record.get("type") != "system" or record.get("subtype") != "stop_hook_summary":
+                continue
+            for field in ("hookErrors", "hookAdditionalContext"):
+                if text_of(record.get(field)).strip():
+                    return True
+    return False
 
 
 def main(argv):
