@@ -76,7 +76,10 @@
 # of an `exit` command's standard output alone, which is the one line of
 # evidence HW-DR-0112 has an oracle script write, and the last `test result:`
 # line of a `cargo-test` command. It is `-` for `not-run` and for an empty
-# output, and a tab or a carriage return in it becomes a space.
+# output, and a tab or a carriage return in it becomes a space. Where the
+# check refused the tree the session left, every line is `fail` and its
+# evidence is `check refused: ` and the engine's refusal on one line
+# (`step_check_refused`, #1879).
 #
 # **The record restates the findings and never decides a verdict of its own.**
 # A line's verdict is `fail` or `not-run` exactly when its `command:<name>` or
@@ -393,6 +396,31 @@ resolve_engine() {
     engine=$(hw_resolve_engine_bin "$root" 2>/dev/null)
 }
 
+# step_check_refused: the session left a tree that the check refuses (#1879).
+#
+# `headwater check` over the oracle copy exited non-zero and wrote no
+# findings, so the engine could not read the corpus the session left. In try
+# `hooks-r1-best`, a session edited `.headwater/taxonomy.lock` by hand, the
+# engine refused the lock, and the recorder exited 5 and halted its driver.
+# The owner ruled that such a session is a failed session, with the refusal
+# as its finding (#1879, comment 6619960661).
+#
+# So every artifact inside the base carries `check:refused`. Every command
+# oracle that `.headwater/probe.yml` declares fails whole, with the refusal
+# as its evidence, and no command runs, because an oracle measures a corpus
+# and the engine read none. Neither rule reads a probe. The refusal text also
+# goes to standard error. A check that exits non-zero and still writes its
+# findings is not a refusal, and the recorder refuses it as before.
+step_check_refused() {
+    tr '\n\t\r' '   ' < "$scratch/check.err" | sed 's/  */ /g; s/^ //; s/ $//' > "$scratch/check-refused.txt"
+    [ -s "$scratch/check-refused.txt" ] ||
+        printf '%s' "headwater check exited non-zero and wrote nothing" > "$scratch/check-refused.txt"
+    printf '%s\n' '{"findings": []}' > "$scratch/oracle.json"
+    echo "probe-transform: \`headwater check --format json\` refused the oracle tree with the session's changes in it, so every artifact carries \`check:refused\` and every command oracle fails:" >&2
+    cat "$scratch/check-refused.txt" >&2
+    echo >&2
+}
+
 step_derive_findings() {
     file=$1
     resolve_engine || {
@@ -439,10 +467,13 @@ step_derive_findings() {
                 done < "$tree_diff"
             fi
             "$engine" check --root "$scratch/oracle" --format json > "$scratch/oracle.json" 2>"$scratch/check.err" || {
-                rm -f "$scratch/oracle.json"
-                echo "probe-transform: \`headwater check --format json\` failed over the oracle tree:" >&2
-                tail -3 "$scratch/check.err" >&2
-                exit 5
+                if jq -e '.findings | type == "array"' < "$scratch/oracle.json" > /dev/null 2>&1; then
+                    rm -f "$scratch/oracle.json"
+                    echo "probe-transform: \`headwater check --format json\` failed over the oracle tree:" >&2
+                    tail -3 "$scratch/check.err" >&2
+                    exit 5
+                fi
+                step_check_refused
             }
         fi
         step_run_oracles "$scratch/oracle" || exit 5
@@ -450,6 +481,7 @@ step_derive_findings() {
             jq -r --arg path "$file" '.findings[] | select(.path == $path) | .rule' \
                 < "$scratch/oracle.json"
             cat "$scratch/command-findings.txt"
+            if [ -s "$scratch/check-refused.txt" ]; then echo check:refused; fi
         } | sort -u
         return 0
     fi
@@ -567,6 +599,12 @@ step_run_oracles() {
             cargo-test) oracle_whole=test:$oracle_name ;;
             *) oracle_whole=command:$oracle_name ;;
         esac
+        if [ -s "$scratch/check-refused.txt" ]; then
+            printf '%s\n' "$oracle_whole" >> "$scratch/command-findings.tmp"
+            printf '%s\tfail\t%s\n' "$oracle_name" "check refused: $(cat "$scratch/check-refused.txt")" \
+                >> "$scratch/oracle-verdicts.tmp"
+            continue
+        fi
         matched=no
         while IFS= read -r pattern; do
             while IFS= read -r each; do

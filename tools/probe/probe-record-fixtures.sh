@@ -854,6 +854,55 @@ STUB
     same "and the whole oracle fails on both artifacts" "2" "$(cmd_count test:fixture-oracle held)"
     cp "$cot/tests/hidden.sh" "$scratch/cmd-ws/tests/hidden.sh"
 
+    # A session that leaves a tree the check refuses is a failed session, not
+    # a recorder crash (#1879). Session p16-r1 of try `hooks-r1-best` added a
+    # retired term to the overlay and then wrote the same lines into
+    # `.headwater/taxonomy.lock` by hand, because the proxy refused
+    # `index.crates.io`. The engine refused the lock, whose digest no longer
+    # matched its taxonomy, and the transform exited 5. These are that
+    # session's two edits, applied through the tree diff the driver writes.
+    rm -rf "$scratch/cmd-lock-ws"
+    cp -a "$cot" "$scratch/cmd-lock-ws"
+    awk '{ print } $0 == "        reason: it stands in for the failure the thing survives" {
+        print "      - term: game-changer"
+        print "        reason: it stands in for the specific advantage the thing creates"
+    }' "$cot/.headwater/overlay.yml" > "$scratch/cmd-lock-ws/.headwater/overlay.yml"
+    awk '{ print } $0 == "            reason: \"it stands in for the failure the thing survives\"" {
+        print "          - term: game-changer"
+        print "            reason: \"it stands in for the specific advantage the thing creates\""
+    }' "$cot/.headwater/taxonomy.lock" > "$scratch/cmd-lock-ws/.headwater/taxonomy.lock"
+    printf 'write\t.headwater/overlay.yml\nwrite\t.headwater/taxonomy.lock\n' > "$scratch/cmd-lock.diff"
+    printf 'pass\n' > "$cot/stub-mode"
+    rm -f "$scratch/cmd-ran" "$scratch/cmd-lock.tsv"
+    if cmp -s "$cot/.headwater/taxonomy.lock" "$scratch/cmd-lock-ws/.headwater/taxonomy.lock"; then
+        fail "the fixture edits the lock by hand as session p16-r1 did" "the awk matched no line of the lock"
+    fi
+    sh "$transform" --probe HW-PROBE-a-session-retires-a-stock-phrase-in-the-list-that-the-check-reads-and-resolves-the-lock \
+        --session lock-by-hand --root "$scratch/engine-only" --workspace "$scratch/cmd-lock-ws" \
+        --oracle-tree "$cot" --tree-diff "$scratch/cmd-lock.diff" --oracle-record "$scratch/cmd-lock.tsv" \
+        --produced .headwater/overlay.yml --produced .headwater/taxonomy.lock \
+        < "$scratch/watched-nothing.jsonl" > "$scratch/cmd-lock-by-hand.yaml" 2>"$scratch/cmd-lock-by-hand.err"
+    same "a session that edited the lock by hand records, not a recorder crash" "0" "$?"
+    same "and both artifacts carry \`check:refused\`" "2" "$(cmd_count check:refused lock-by-hand)"
+    same "and both fail every command oracle, the one it did not attempt too" "2" \
+        "$(cmd_count command:fixture-exit lock-by-hand)"
+    same "and the code oracle fails whole on both" "2" "$(cmd_count test:fixture-oracle lock-by-hand)"
+    if [ -e "$scratch/cmd-ran" ]; then
+        fail "and no command ran over a tree the engine could not read" "the stub wrote its marker"
+    else
+        pass "and no command ran over a tree the engine could not read"
+    fi
+    same "and the oracle record fails every declared oracle" "0" \
+        "$(awk -F '\t' '$2 != "fail"' "$scratch/cmd-lock.tsv" | wc -l | tr -d ' ')"
+    present "and its evidence is the engine's refusal" "check refused: headwater: the lock declares the digest" \
+        "$scratch/cmd-lock.tsv"
+    present "and the refusal reaches standard error" "One of the two was edited by hand" \
+        "$scratch/cmd-lock-by-hand.err"
+    # A refusal is the refusal of that session alone: the same oracle tree
+    # with no hand edit still grades as before.
+    cmd_run after-refusal pass src/lib.rs README.md
+    same "and the next session over the same oracle tree records as before" "0" "$(grep -c 'check:refused' "$scratch/cmd-after-refusal.yaml")"
+
     # The command reads the session's logs through two variables (#1875): the
     # stream the transform read, and the `projects` directory of the
     # configuration the harness ran under. A value in the caller's

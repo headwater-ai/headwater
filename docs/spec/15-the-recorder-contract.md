@@ -251,6 +251,8 @@ A finding has two sources. It is a rule of the taxonomy, or it is the failure of
 
 The recorder runs a command when a produced artifact matches the pattern of its oracle. It runs the command in a copy of the tree, never in the workspace. It puts the findings of the command on every produced artifact inside the base, because the grader accepts any one clean artifact. When no artifact matches, the command does not run, and every artifact carries the whole-oracle finding. The tree under the pattern is then the pin's, so the session did not attempt what the oracle measures. Both rules read no probe, so they are part of the one computation that every probe gets.
 
+**A tree that the check refuses is a failed session, and the recorder records it.** A session can leave a tree that the engine cannot read, for example a lock that the session edited by hand. Then `headwater check` exits non-zero and writes no findings. The recorder puts `check:refused` on every produced artifact inside the base. Every declared command oracle fails whole on every artifact, and no command runs, because an oracle measures a corpus and the engine read none. The oracle record gives the refusal of the engine as the evidence of each oracle ([#1879](https://github.com/headwater-ai/headwater/issues/1879)). This rule reads no probe either. A `patched` probe that grades against a rule of the taxonomy still reads such an artifact as clean, because the grader does not read `check:refused`.
+
 ## What the engine confirms, and what it records without confirming
 
 `headwater probe record` confirms five things and evaluates no expectation.
