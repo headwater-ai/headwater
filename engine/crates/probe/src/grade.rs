@@ -76,8 +76,11 @@ use headwater_check::paint::{paint, ColorMode, Role};
 /// started at `0.5.0` because the grading code of engine 0.5.0 graded every
 /// result committed at that time. It moved to `0.5.1` when each session line
 /// started to state its calls to a tool of an MCP server (#1774): no verdict
-/// moved, and the rendered grade grew.
-pub const VERSION: &str = "0.5.1";
+/// moved, and the rendered grade grew. It moved to `0.5.2` when a session
+/// whose tree the check refused, an artifact with `check:refused`, started
+/// to satisfy no predicate (#1879). No committed transcript carries that
+/// finding, so no committed verdict moved.
+pub const VERSION: &str = "0.5.2";
 
 /// The confidence coefficient of the reported interval, at 95%.
 const Z: f64 = 1.959_964;
@@ -179,6 +182,10 @@ pub enum Miss {
     /// read. The pilot of #980 printed this as the oracle reporting "over each
     /// of the 0 produced artifacts", which names a finding nobody made.
     NothingProduced,
+    /// The session left a tree that `headwater check` refused, so the
+    /// recorder put [`CHECK_REFUSED`] on a produced artifact (#1879). The
+    /// engine read no corpus, so no predicate is satisfied, whatever it reads.
+    CheckRefused { event: usize, artifact: String },
 }
 
 impl std::fmt::Display for Miss {
@@ -227,6 +234,11 @@ impl std::fmt::Display for Miss {
             Miss::NothingProduced => write!(
                 f,
                 "the session produced no artifact, so the oracle had nothing to read"
+            ),
+            Miss::CheckRefused { event, artifact } => write!(
+                f,
+                "event {event}: `headwater check` refused the tree the session left, \
+                 so `{artifact}` carries `{CHECK_REFUSED}`"
             ),
         }
     }
@@ -969,15 +981,46 @@ fn sessions_of<'a>(record: &'a Record, probe: &str) -> Vec<Vec<&'a Event>> {
     out
 }
 
+/// The finding the recorder puts on every produced artifact of a session
+/// whose tree `headwater check` refused (#1879). `tools/probe/probe-transform.sh`
+/// writes it, and spec 15 states it.
+pub const CHECK_REFUSED: &str = "check:refused";
+
 /// The predicate, evaluated over one session.
+///
+/// A session that left a tree the check refused satisfies no predicate
+/// (#1879). The recorder cannot fail a `patched` probe that grades against a
+/// taxonomy rule without reading the probe, so the grader does it, for every
+/// expectation alike. A refusal stays a refusal: the session still leaves the
+/// denominator where a key is unrecorded or a declaration is missing.
 fn verdict(selected: &Selected, session: &[&Event]) -> Verdict {
-    match selected.expectation {
+    let verdict = match selected.expectation {
         Expectation::Opened => opened(selected, session),
         Expectation::NotOpened => not_opened(selected, session),
         Expectation::Cited => cited(selected, session),
         Expectation::Answered => answered(selected, session),
         Expectation::Patched => patched(selected, session),
+    };
+    if let Verdict::Refused(_) = verdict {
+        return verdict;
     }
+    match check_refused(session) {
+        Some((event, artifact)) => Verdict::NotSatisfied(Miss::CheckRefused { event, artifact }),
+        None => verdict,
+    }
+}
+
+/// The first produced artifact that carries [`CHECK_REFUSED`], where one does.
+fn check_refused(session: &[&Event]) -> Option<(usize, String)> {
+    recorded_produced(session)?
+        .into_iter()
+        .find(|(_, artifact)| {
+            artifact
+                .findings
+                .as_ref()
+                .is_some_and(|findings| findings.iter().any(|f| f == CHECK_REFUSED))
+        })
+        .map(|(at, artifact)| (at, artifact.path.clone()))
 }
 
 /// One tool call, located.
@@ -1878,6 +1921,98 @@ mod tests {
             produced: None,
             answer: Answer::Unrecorded,
         }
+    }
+
+    /// A session that would satisfy each expectation, and the same session
+    /// with `check:refused` on its one artifact (#1879). The artifact carries
+    /// the identifier `cited` reads and none of the rule `patched` reads, so
+    /// nothing but the refusal can be why the verdict differs. The `patched`
+    /// probe grades against a taxonomy rule, the case the recorder cannot
+    /// fail on its own.
+    fn refused_and_clean(expectation: Expectation) -> (Selected, Event, Event) {
+        let selected = Selected {
+            oracle: Some("relation.reciprocity.missing".into()),
+            answers: vec!["yes".into(), "no".into()],
+            expected: vec!["yes".into()],
+            ..over_the_probe_document(expectation)
+        };
+        let session = |findings: Vec<String>| Event {
+            produced: Some(vec![Produced {
+                path: "docs/x.md".into(),
+                result: "sha256:0".into(),
+                cites: vec!["PROBE-FIX-one".into()],
+                findings: Some(findings),
+            }]),
+            answer: Answer::Value("yes".into()),
+            ..event(
+                1,
+                "s",
+                Some(match expectation {
+                    Expectation::NotOpened => vec![call("Read", "docs/other.md")],
+                    _ => vec![call("Read", "docs/probes/one.md")],
+                }),
+            )
+        };
+        let clean = session(Vec::new());
+        let refused = session(vec![CHECK_REFUSED.into(), "command:r8-game-changer".into()]);
+        (selected, clean, refused)
+    }
+
+    fn assert_refused_fails(expectation: Expectation) {
+        let (selected, clean, refused) = refused_and_clean(expectation);
+        assert!(
+            matches!(verdict(&selected, &[&clean]), Verdict::Satisfied(_)),
+            "{expectation:?}: the clean session is satisfied: {:?}",
+            verdict(&selected, &[&clean])
+        );
+        assert_eq!(
+            verdict(&selected, &[&refused]),
+            Verdict::NotSatisfied(Miss::CheckRefused {
+                event: 1,
+                artifact: "docs/x.md".into(),
+            }),
+            "{expectation:?}: a tree the check refused satisfies nothing"
+        );
+    }
+
+    #[test]
+    fn an_opened_probe_is_not_satisfied_by_a_session_whose_tree_the_check_refused() {
+        assert_refused_fails(Expectation::Opened);
+    }
+
+    #[test]
+    fn a_not_opened_probe_is_not_satisfied_by_a_session_whose_tree_the_check_refused() {
+        assert_refused_fails(Expectation::NotOpened);
+    }
+
+    #[test]
+    fn a_cited_probe_is_not_satisfied_by_a_session_whose_tree_the_check_refused() {
+        assert_refused_fails(Expectation::Cited);
+    }
+
+    #[test]
+    fn an_answered_probe_is_not_satisfied_by_a_session_whose_tree_the_check_refused() {
+        assert_refused_fails(Expectation::Answered);
+    }
+
+    #[test]
+    fn a_patched_probe_on_a_rule_is_not_satisfied_by_a_session_whose_tree_the_check_refused() {
+        assert_refused_fails(Expectation::Patched);
+    }
+
+    /// A refusal stays a refusal: a session with no `calls` key leaves the
+    /// denominator, and `check:refused` does not pull it back in as a miss.
+    #[test]
+    fn a_refused_verdict_stays_refused_when_the_check_also_refused() {
+        let (selected, _, refused) = refused_and_clean(Expectation::Opened);
+        let unwatched = Event {
+            calls: None,
+            ..refused
+        };
+        assert_eq!(
+            verdict(&selected, &[&unwatched]),
+            Verdict::Refused(Refusal::Unrecorded { what: "calls" }),
+        );
     }
 
     fn opened_over_one_document() -> Selected {

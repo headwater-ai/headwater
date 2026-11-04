@@ -1166,6 +1166,7 @@ fn every_predicate_form_has_a_transcript_that_refutes_it() {
             Miss::Wrong { .. } => "Wrong",
             Miss::OracleReported { .. } => "OracleReported",
             Miss::NothingProduced => "NothingProduced",
+            Miss::CheckRefused { .. } => "CheckRefused",
         };
         assert_eq!(named, expected, "{probe}");
     }
