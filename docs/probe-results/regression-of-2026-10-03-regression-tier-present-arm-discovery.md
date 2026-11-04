@@ -26,7 +26,7 @@ The selection this transcript names is `sha256:5b475c384784c8cde8b275c1f41b15acc
 
 The `read_set` digest above covers every probe of the selection and every document one of them examines, by path and content. This file names it as provenance and compares it with nothing, and the same holds for the lock and the selection: an edit to a document, a new probe or a moved lock leaves these bytes alone. `headwater generate` names each result whose recorded lock, read set or selection moved, and `headwater probe stale` takes the digest and reports which recorded results a change voided. Neither one fails for it.
 
-Graded by grader 0.5.1.
+Graded by grader 0.5.2.
 A regression run in the present arm, on claude-sonnet-5 at served version claude-sonnet-5.
 
 ## The verdicts

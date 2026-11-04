@@ -1630,6 +1630,23 @@ check "base: and still refuses the confirmation with 4, whatever was accepted" c
 check "base: naming the route path" out_has "route: engine/crates/x/src/lib.rs (accepted by https://github.com/headwater-ai/headwater/issues/1777#issuecomment-2"
 check "base: and the launch that measures it" err_has "a route change makes scenario 0 stale for a confirmation"
 
+# The grader is not route (#1879). `headwater route` never reaches
+# `engine/crates/probe/src/grade.rs`, which runs after a session ends, so an
+# accepted change to it covers a confirmation as it covers a screen.
+new_case
+printf '%s\n' '{"event": "base", "try": "base-1", "scenario": "0", "pin": "2d212a269a111fddb7af5b2b75ebaf2f9ab32f29", "count": 145, "passed": 70, "graded": 145, "transcript": "b.md", "spent": 0}' > "$CASE/root/ledger.jsonl"
+printf '%s\n' '{"event": "best", "try": "docs-r1-best", "layer": "docs", "round": 1, "transcript": "x.md", "used": 1, "sessions": 145, "count": 145}' >> "$CASE/root/ledger.jsonl"
+printf '%s\n' '{"event": "screen", "try": "docs-r2-v1", "layer": "docs", "round": 2, "used": 5, "sessions": 25, "passed": 10, "graded": 25}' >> "$CASE/root/ledger.jsonl"
+mkdir -p "$CASE/tree-head/engine/crates/probe/src"
+echo 'pub const VERSION: &str = "9.9.9";' > "$CASE/tree-head/engine/crates/probe/src/grade.rs"
+run plan "$CASE/root" confirm docs-r2-v1
+check "grader: an unaccepted grader change makes the base stale for a confirmation" code_is 4
+run accept "$CASE/root" "https://github.com/headwater-ai/headwater/issues/1879#issuecomment-6623069015"
+run plan "$CASE/root" confirm docs-r2-v1
+check "grader: an accepted grader change lets a confirmation plan" code_is 0
+check "grader: and names the acceptance" out_has "accepted: engine/crates/probe/src/grade.rs"
+check "grader: and reads it as no route change" sh -c "! grep -q '^route: ' '$CASE/out'"
+
 # A base event at another count, or of another scenario, does not back the
 # pin: the confirmation reads a base at its own count.
 new_case

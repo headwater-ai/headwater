@@ -241,7 +241,9 @@
 #   confirmation's count has the scenario and the pin of `<root>/base-pin`,
 #   and no acceptance covers a path under `engine/crates/*/src/**`, because a
 #   change to the engine can change what `headwater route` prints to every
-#   session of the base scenario. Nothing here reads which change does, so
+#   session of the base scenario. The grader,
+#   `engine/crates/probe/src/grade.rs`, is the one exception, because route
+#   never reaches it (#1879). Nothing here reads which change does, so
 #   the gate errs toward stale: `launch <root> base` at the variant's commit
 #   measures the base again, and its `result` writes the new pin. Before
 #   either exit 4, `plan` prices that re-measure under the ceiling it is
@@ -1557,7 +1559,11 @@ plan_check() {
         if [ "$stage_kind" = confirm ]; then
             # A change to the engine's source can change what `headwater
             # route` prints, so no acceptance covers it for a confirmation.
+            # The grader is the one exception (#1879): `headwater route`
+            # never reaches `engine/crates/probe/src/grade.rs`, which runs
+            # after a session ends, so an acceptance covers it here too.
             cover=$(printf '%s\n' "$cover" | awk -F'\t' '
+                $1 == "covered" && $2 == "engine/crates/probe/src/grade.rs" { print; next }
                 $1 == "covered" && $2 ~ /^engine\/crates\/[^\/]*\/src\// { print "route\t" $2 "\t" $3; next }
                 { print }')
             printf '%s\n' "$cover" | awk -F'\t' '$1 == "route" { print "route: " $2 " (accepted by " $3 ", and no acceptance covers the engine for a confirmation)" }'
