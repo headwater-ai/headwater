@@ -6421,19 +6421,19 @@ if [ -x "$engine" ]; then
             "$([ -e "$scratch/run-final-out/claude-version" ] && echo yes || echo no) $([ -e "$scratch/run-final-out/lines" ] && echo yes || echo no) $([ -e "$scratch/run-final-out/trees" ] && echo yes || echo no) $([ -e "$scratch/run-final-out/sessions" ] && echo yes || echo no)"
         same "and it ran no dry run, so it built no scenario tree" "no" \
             "$([ -e "$scratch/run-final-out/leak-gate" ] && echo yes || echo no)"
-        # The owner approved the tuning round (#1879), and the layer it has
-        # open is the hooks on scenario 4, over its base, scenario 2. So a
-        # batch of a scenario-5 tuning line, which is neither, passes the
+        # The owner approved the tuning round (#1880), and the layer it has
+        # open is MCP on scenario 5, over its base, scenario 2. So a
+        # batch of a scenario-4 tuning line, which is neither, passes the
         # round gate and is refused by the layer gate, with 5, before it
         # builds a tree or asks the harness anything. The case of a declared
         # open layer reads a scratch root, below, because the gate reads this
         # checkout's declaration and no override.
-        printf 'additive scenario-5 tuning\n' > "$scratch/run-tune.spec"
+        printf 'additive scenario-4 tuning\n' > "$scratch/run-tune.spec"
         rm -rf "$scratch/run-tune-out"
         HEADWATER_PROBE_HOST_CONFIG="$scratch/run-host" CARGO_TARGET_DIR="$scratch/gate-target" PATH="$scratch/run-bin:$PATH" \
             sh "$root/tools/probe/campaign.sh" --out "$scratch/run-tune-out" --model claude-haiku-4-5 \
             --spec "$scratch/run-tune.spec" --max-sessions 1 > /dev/null 2> "$scratch/run-tune.err"
-        same "a batch of a scenario-5 tuning line is refused with 5 by the layer gate" "5" "$?"
+        same "a batch of a scenario-4 tuning line is refused with 5 by the layer gate" "5" "$?"
         absent "and names no refusal of the tuning round's approval" "no person has approved spend on the tuning round" "$scratch/run-tune.err"
         present "and names the open rule" "the tuning round is open for" "$scratch/run-tune.err"
         same "and it wrote no harness version, no plan, no tree and no dry run" "no no no no" \
