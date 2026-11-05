@@ -1647,6 +1647,29 @@ check "grader: an accepted grader change lets a confirmation plan" code_is 0
 check "grader: and names the acceptance" out_has "accepted: engine/crates/probe/src/grade.rs"
 check "grader: and reads it as no route change" sh -c "! grep -q '^route: ' '$CASE/out'"
 
+# The MCP server is not route either (#1880). Only `headwater mcp` reaches
+# `engine/crates/query/src/mcp.rs`, and no base session starts the server, so
+# an accepted change to it covers a confirmation. Another engine file changed
+# beside it is still route.
+new_case
+printf '%s\n' '{"event": "base", "try": "base-1", "scenario": "0", "pin": "2d212a269a111fddb7af5b2b75ebaf2f9ab32f29", "count": 145, "passed": 70, "graded": 145, "transcript": "b.md", "spent": 0}' > "$CASE/root/ledger.jsonl"
+printf '%s\n' '{"event": "best", "try": "docs-r1-best", "layer": "docs", "round": 1, "transcript": "x.md", "used": 1, "sessions": 145, "count": 145}' >> "$CASE/root/ledger.jsonl"
+printf '%s\n' '{"event": "screen", "try": "docs-r2-v1", "layer": "docs", "round": 2, "used": 5, "sessions": 25, "passed": 10, "graded": 25}' >> "$CASE/root/ledger.jsonl"
+mkdir -p "$CASE/tree-head/engine/crates/query/src"
+echo '// a reworded tool description' > "$CASE/tree-head/engine/crates/query/src/mcp.rs"
+run plan "$CASE/root" confirm docs-r2-v1
+check "mcp: an unaccepted change to the MCP server makes the base stale for a confirmation" code_is 4
+run accept "$CASE/root" "https://github.com/headwater-ai/headwater/issues/1880#issuecomment-6656833861"
+run plan "$CASE/root" confirm docs-r2-v1
+check "mcp: an accepted change to the MCP server lets a confirmation plan" code_is 0
+check "mcp: and names the acceptance" out_has "accepted: engine/crates/query/src/mcp.rs"
+check "mcp: and reads it as no route change" sh -c "! grep -q '^route: ' '$CASE/out'"
+echo '// another query change' > "$CASE/tree-head/engine/crates/query/src/lib.rs"
+run accept "$CASE/root" "https://github.com/headwater-ai/headwater/issues/1880#issuecomment-6656833861"
+run plan "$CASE/root" confirm docs-r2-v1
+check "mcp: a second engine file beside it still refuses the confirmation with 4" code_is 4
+check "mcp: naming that file as route" out_has "route: engine/crates/query/src/lib.rs"
+
 # A base event at another count, or of another scenario, does not back the
 # pin: the confirmation reads a base at its own count.
 new_case
