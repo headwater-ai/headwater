@@ -1043,7 +1043,8 @@ sets:
 # each layer runs in a round root of its own: the engine's is
 # /mnt/build/hw-1877, which spent $544.96, and the skills' is
 # /mnt/build/hw-1878, which spent $137.01, and the hooks' is
-# /mnt/build/hw-1879, which starts at zero.
+# /mnt/build/hw-1879, which spent $136.24, and MCP's is /mnt/build/hw-1880,
+# which starts at zero.
 #
 # `open` holds the one-layer rule (#1819). It names the one layer whose plan
 # the owner accepted, or it is `none`, and only the tuning round declares it.
@@ -1076,10 +1077,14 @@ sets:
 # opened for its round 1, scenario 3 against scenario 2, under the plan posted
 # on #1878, which the owner's advance approval accepts (comment 6598068852).
 # The owner ended the skills layer on 2026-11-04 after its best so far, 120
-# of 154 (#1878, comment 6612882278). The hooks layer now opens for its round
-# 1, scenario 4 against scenario 2, with the `intent` moment, under the plan
+# of 154 (#1878, comment 6612882278). The hooks layer then opened for its
+# round 1, scenario 4 against scenario 2, with the `intent` moment, under the plan
 # posted on #1879, which the owner's advance approval accepts (comment
-# 6613070923).
+# 6613070923). The owner ended the hooks layer on 2026-11-05 after its best
+# so far, 126 of 154 (#1879, comment 6654149789). The MCP layer now opens for
+# its round 1, scenario 5 against scenario 2, under the plan posted on
+# #1880, which the owner's advance approval accepts (comment
+# 6655760192).
 #
 # The tuning round runs in rounds (#1838), as the owner ruled on 2026-10-22
 # (#1777): a round screens `variants` changes of the open layer at `screen`
@@ -1095,7 +1100,8 @@ sets:
 # empty rounds or `tries` rounds, so an engine layer still in `order` would
 # refuse every round of the skills, which the owner's ruling above ended.
 # `order` no longer names the skills either, for the same reason and by the
-# owner's ruling of 2026-11-04 above.
+# owner's ruling of 2026-11-04 above, nor the hooks, by the ruling of
+# 2026-11-05 above.
 # The screen is 22 sessions and the confirmation 145, as HW-DR-0112 "Phase
 # A" states (#1874), and `tools/probe/declared.py <declaration> tuning`
 # rounds each up to a whole number of repetitions over the probes of the
@@ -1123,7 +1129,8 @@ sets:
 # base and its best so far. The hooks layer keeps the same three figures
 # under its own $1,300.00 (#1879): its plan prices the first best so far at
 # $77.00 under the base ceiling, with the base adopted, and the rounds under
-# the tuning ceiling.
+# the tuning ceiling. The MCP layer keeps the same three figures under its
+# own $1,300.00 (#1880), priced the same way.
 rounds:
   screening:
     set: tuning
@@ -1139,17 +1146,16 @@ rounds:
     confirm: 145
     variants: 4
     stop_after_empty: 2
-    order: [hooks, mcp]
+    order: [mcp]
     ceiling_cents: 100000
     base_ceiling_cents: 30000
     open:
-      layer: hooks
-      scenario: 4
+      layer: mcp
+      scenario: 5
       try: 1
       cap_cents: 15000
-      plan: https://github.com/headwater-ai/headwater/issues/1879#issuecomment-6613070923
+      plan: https://github.com/headwater-ai/headwater/issues/1880#issuecomment-6655760192
       change: none
-      moment: intent
   final:
     set: held-out
     rates: [0.90, 0.80]
@@ -1166,8 +1172,7 @@ rounds:
 # holds the approval of 2026-10-19 over every attempt before the re-cut
 # (#1777), and one entry for each layer of the re-cut whose priced plan the
 # owner accepted under the approval of 2026-10-29: the engine (#1877), the
-# skills (#1878) and the hooks (#1879). MCP (#1880) gets its entry when its
-# plan is accepted.
+# skills (#1878), the hooks (#1879) and MCP (#1880).
 approvals:
   - round: tuning
     cents: 151200
@@ -1181,6 +1186,9 @@ approvals:
   - round: tuning
     cents: 130000
     issue: 1879
+  - round: tuning
+    cents: 130000
+    issue: 1880
 
 # The paths whose change can make a measured base stale, as the owner ruled
 # them on 2026-10-20 (HW-DR-0111): the engine's source and the scripts that
