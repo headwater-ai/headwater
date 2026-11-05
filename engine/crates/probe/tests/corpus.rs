@@ -2866,21 +2866,49 @@ fn transcripts() -> Vec<Spent> {
         .collect()
 }
 
-/// `approved_cents` of each round under `rounds:` in `.headwater/probe.yml`.
+/// The approval of each round under `rounds:` in `.headwater/probe.yml`: the
+/// sum of its entries under `approvals:`, which records every approval a
+/// person gave it across the layers, or its `approved_cents` where it has none.
 fn approvals() -> Vec<(String, u64)> {
     let path = repository_root().join(".headwater/probe.yml");
     let source =
         std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     let loaded = headwater_yaml::load(&source).expect("the probe declaration parses");
-    let rounds = loaded
+    let root = loaded
         .value
         .as_map()
-        .and_then(|root| root.get("rounds"))
+        .expect("the probe declaration is a mapping");
+    let rounds = root
+        .get("rounds")
         .and_then(|rounds| rounds.value.as_map())
         .expect("`rounds:` is a mapping");
+    let ledger = root
+        .get("approvals")
+        .map(|ledger| ledger.value.as_map().expect("`approvals:` is a mapping"));
     rounds
         .iter()
         .map(|entry| {
+            let given = ledger.and_then(|ledger| ledger.get(&entry.key.value));
+            if let Some(given) = given {
+                let cents = given
+                    .value
+                    .as_seq()
+                    .unwrap_or_else(|| panic!("`approvals:` of {} is a list", entry.key.value))
+                    .iter()
+                    .map(|approval| {
+                        approval
+                            .value
+                            .as_map()
+                            .and_then(|approval| approval.get("cents"))
+                            .and_then(|cents| cents.value.as_scalar())
+                            .and_then(|cents| cents.text.parse::<u64>().ok())
+                            .unwrap_or_else(|| {
+                                panic!("an approval of {} has no whole cents", entry.key.value)
+                            })
+                    })
+                    .sum();
+                return (entry.key.value.clone(), cents);
+            }
             let cents = entry
                 .value
                 .value
