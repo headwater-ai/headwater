@@ -1156,6 +1156,32 @@ rounds:
     tries: 1
     approved_cents: 0
 
+# Every approval a person gave each round, one entry per ruling, with the
+# issue that records it. `approved_cents` above is what the open layer may
+# spend now, which `tools/probe/try.sh` checks against one round root. The
+# committed spend of a round is the sum over every transcript that names it,
+# across every layer and the attempts before the re-cut, so the spend test in
+# `engine/crates/probe/tests/corpus.rs` holds that sum to the sum of these
+# entries that name it, and to `approved_cents` for a round with none. The tuning round
+# holds the approval of 2026-10-19 over every attempt before the re-cut
+# (#1777), and one entry for each layer of the re-cut whose priced plan the
+# owner accepted under the approval of 2026-10-29: the engine (#1877), the
+# skills (#1878) and the hooks (#1879). MCP (#1880) gets its entry when its
+# plan is accepted.
+approvals:
+  - round: tuning
+    cents: 151200
+    issue: 1777
+  - round: tuning
+    cents: 130000
+    issue: 1877
+  - round: tuning
+    cents: 130000
+    issue: 1878
+  - round: tuning
+    cents: 130000
+    issue: 1879
+
 # The paths whose change can make a measured base stale, as the owner ruled
 # them on 2026-10-20 (HW-DR-0111): the engine's source and the scripts that
 # record, transform, contain, run and ablate a session. A base is stale when
