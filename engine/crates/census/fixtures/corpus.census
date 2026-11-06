@@ -890,6 +890,16 @@ docs/probe-results/additive-tuning-of-2026-11-05-hooks-round-1-best-so-far-scena
   generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/additive-tuning-of-2026-11-06-mcp-round-1-best-so-far-scenario-5.md
   generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-tuning-of-2026-11-06-mcp-round-1-confirmation-scenario-5.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-tuning-of-2026-11-06-mcp-round-1-variant-1-scenario-5.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-tuning-of-2026-11-06-mcp-round-1-variant-2-scenario-5.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-tuning-of-2026-11-06-mcp-round-1-variant-3-scenario-5.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-tuning-of-2026-11-06-mcp-round-1-variant-4-scenario-5.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/campaign-of-2026-09-28-campaign-tier-absent-arm-navigability.md
   generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/campaign-of-2026-09-28-campaign-tier-absent-arm-sufficiency.md
@@ -1091,6 +1101,16 @@ docs/probe-runs/additive-tuning-of-2026-11-03-skills-round-1-best-so-far-scenari
 docs/probe-runs/additive-tuning-of-2026-11-05-hooks-round-1-best-so-far-scenario-4.md
   typed: probe_transcript
 docs/probe-runs/additive-tuning-of-2026-11-06-mcp-round-1-best-so-far-scenario-5.md
+  typed: probe_transcript
+docs/probe-runs/additive-tuning-of-2026-11-06-mcp-round-1-confirmation-scenario-5.md
+  typed: probe_transcript
+docs/probe-runs/additive-tuning-of-2026-11-06-mcp-round-1-variant-1-scenario-5.md
+  typed: probe_transcript
+docs/probe-runs/additive-tuning-of-2026-11-06-mcp-round-1-variant-2-scenario-5.md
+  typed: probe_transcript
+docs/probe-runs/additive-tuning-of-2026-11-06-mcp-round-1-variant-3-scenario-5.md
+  typed: probe_transcript
+docs/probe-runs/additive-tuning-of-2026-11-06-mcp-round-1-variant-4-scenario-5.md
   typed: probe_transcript
 docs/probe-runs/campaign-of-2026-09-28-campaign-tier-absent-arm-navigability.md
   typed: probe_transcript

@@ -596,14 +596,14 @@ fn every_output_carries_its_own_marker() {
     }
 }
 
-/// This repository generates its one hundred and twenty-six artifacts, and it says
+/// This repository generates its one hundred and thirty-one artifacts, and it says
 /// why for everything else.
 ///
 /// A property and not a recording, for the reason the query crate states about
 /// its own repository run: the corpus is prose somebody edits. What is asserted
 /// is what a prose edit must not change.
 ///
-/// **Twenty-one of the one hundred and twenty-six are shelf indexes, one per shelf that holds a
+/// **Twenty-one of the one hundred and thirty-one are shelf indexes, one per shelf that holds a
 /// document.** The first is the decisions shelf, which the package has declared
 /// since the first-run walkthrough and which produced a reason rather than a
 /// file until #124 filled that shelf. The other twenty are the overlay's own
@@ -625,7 +625,7 @@ fn every_output_carries_its_own_marker() {
 /// documents onto each of them. The nineteenth, `subsystems`, gave a reason
 /// rather than a file until #1288 put the graph build subsystem spec on it.
 ///
-/// **Five of the other one hundred and five are one each, and one hundred are one per
+/// **Five of the other one hundred and ten are one each, and one hundred and five are one per
 /// committed transcript.** The count in the name of this test therefore moves when a
 /// transcript lands on `docs/probe-runs/`, and this paragraph is the only
 /// thing that says so. The redirect map that the open-questions
@@ -636,7 +636,7 @@ fn every_output_carries_its_own_marker() {
 /// HW-DR-0036 and #418 name: MkDocs's `nav:` over the reading order
 /// `by_precedence` derives. The descriptor, at the path Q14 fixes. And one
 /// probe result for each transcript the corpus holds, which is the
-/// one hundred: five regression recordings of 2026-09-09 to 2026-09-17, the
+/// one hundred and five: five regression recordings of 2026-09-09 to 2026-09-17, the
 /// seven transcripts of each of the two #980 pilots of 2026-09-28, the five
 /// of the #980 campaign of the same day, the two of the #1294 pilot of
 /// 2026-09-29, the two of the #1384 pilot of the same day, and the seven of
@@ -647,7 +647,7 @@ fn every_output_carries_its_own_marker() {
 /// the #1777 tuning round of 2026-10-20 to 2026-10-25, and the
 /// two of the #1877 tuning round of 2026-10-31, and the three of 2026-11-02,
 /// and the one of the #1878 tuning round of 2026-11-03, and the one of the
-/// #1879 tuning round of 2026-11-05, and the one of the #1880 tuning round
+/// #1879 tuning round of 2026-11-05, and the six of the #1880 tuning round
 /// of 2026-11-06.
 ///
 /// Two declarations produce a reason rather than a file. The package declares
@@ -663,7 +663,7 @@ fn every_output_carries_its_own_marker() {
 /// compares bytes, so a contributor who edits a `summary` and does not
 /// regenerate fails this test before CI runs.
 #[test]
-fn this_repository_generates_its_one_hundred_and_twenty_six_artifacts_and_accounts_for_the_rest() {
+fn this_repository_generates_its_one_hundred_and_thirty_one_artifacts_and_accounts_for_the_rest() {
     let root = repository_root();
     let resolved = headwater_resolve::repository(&root)
         .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)));
@@ -783,6 +783,11 @@ fn this_repository_generates_its_one_hundred_and_twenty_six_artifacts_and_accoun
             "docs/probe-results/additive-tuning-of-2026-11-03-skills-round-1-best-so-far-scenario-3.md",
             "docs/probe-results/additive-tuning-of-2026-11-05-hooks-round-1-best-so-far-scenario-4.md",
             "docs/probe-results/additive-tuning-of-2026-11-06-mcp-round-1-best-so-far-scenario-5.md",
+            "docs/probe-results/additive-tuning-of-2026-11-06-mcp-round-1-confirmation-scenario-5.md",
+            "docs/probe-results/additive-tuning-of-2026-11-06-mcp-round-1-variant-1-scenario-5.md",
+            "docs/probe-results/additive-tuning-of-2026-11-06-mcp-round-1-variant-2-scenario-5.md",
+            "docs/probe-results/additive-tuning-of-2026-11-06-mcp-round-1-variant-3-scenario-5.md",
+            "docs/probe-results/additive-tuning-of-2026-11-06-mcp-round-1-variant-4-scenario-5.md",
             "docs/probe-results/campaign-of-2026-09-28-campaign-tier-absent-arm-navigability.md",
             "docs/probe-results/campaign-of-2026-09-28-campaign-tier-absent-arm-sufficiency.md",
             "docs/probe-results/campaign-of-2026-09-28-campaign-tier-present-arm-navigability.md",
