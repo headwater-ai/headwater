@@ -1,5 +1,5 @@
 → {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05"}}
-← {"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2024-11-05","capabilities":{"tools":{"listChanged":false}},"serverInfo":{"name":"headwater","version":"0.6.1"}}}
+← {"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2024-11-05","capabilities":{"tools":{"listChanged":false}},"serverInfo":{"name":"headwater","version":"0.6.1"},"instructions":"This server answers from the governed documents of this repository. Before your first edit, call `route` with the task in your own words, and read the documents it points at. Before you change a document, call `explain` on it to see what its kind requires. Before you edit a file outside the documents, such as code or a script, call `governing_docs_for_path` on it. After your last edit, call `check` with format `text` and fix what it reports. Prefer these tools to the `headwater` command line for what they cover. If you want the command line, look first on `PATH`, then at `/usr/bin/headwater` (apt package), `~/.local/bin/headwater` (release archive) or `~/.cargo/bin/headwater` (`cargo install`)."}}
 → {"jsonrpc":"2.0","method":"notifications/initialized"}
 ← (a notification takes no response)
 → {"jsonrpc":"2.0","id":2,"method":"tools/list"}
