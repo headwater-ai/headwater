@@ -1130,7 +1130,10 @@ sets:
 # under its own $1,300.00 (#1879): its plan prices the first best so far at
 # $77.00 under the base ceiling, with the base adopted, and the rounds under
 # the tuning ceiling. The MCP layer keeps the same three figures under its
-# own $1,300.00 (#1880), priced the same way.
+# own $1,300.00 (#1880), priced the same way, and the owner raised its cap
+# to 20000, $200.00 for one launch, for the confirmation of round 1: its
+# first screen realized about 98 cents a session, so 154 sessions are about
+# $151 (#1880, comment 6678059833).
 rounds:
   screening:
     set: tuning
@@ -1153,7 +1156,7 @@ rounds:
       layer: mcp
       scenario: 5
       try: 1
-      cap_cents: 15000
+      cap_cents: 20000
       plan: https://github.com/headwater-ai/headwater/issues/1880#issuecomment-6655760192
       change: none
   final:
