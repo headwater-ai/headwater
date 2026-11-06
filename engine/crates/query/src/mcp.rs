@@ -347,6 +347,16 @@ impl Argument {
         }
     }
 
+    /// One string, and a call without it gets the default its handler names.
+    pub const fn optional(name: &'static str, description: &'static str) -> Argument {
+        Argument {
+            name,
+            description,
+            required: false,
+            repeatable: false,
+        }
+    }
+
     /// A list of strings, and an absent list is an empty one.
     pub const fn repeatable(name: &'static str, description: &'static str) -> Argument {
         Argument {
@@ -457,13 +467,12 @@ pub const QUERY_CLASS: [Tool; 7] = [
                       taxonomy it read, the date it evaluated against, the coverage, and each \
                       finding with its remediation. The bytes are those of `headwater check \
                       --format <format>` over the same corpus at the same date. It writes \
-                      nothing, and it uses no cache.",
-        arguments: &[Argument::required(
+                      nothing, and it uses no cache. Run it after your last edit.",
+        arguments: &[Argument::optional(
             "format",
-            "One of `text`, `json`, `sarif`, `markdown`. `text` is the whole report in the \
-             engine's own words, `markdown` is the findings as a job summary, `sarif` is a check \
-             run, and `json` is the finding shape itself. There is no default: the vocabulary is \
-             the caller's to choose.",
+            "One of `text`, `json`, `sarif`, `markdown`, and `text` when omitted. `text` is the \
+             whole report in the engine's own words, `markdown` is the findings as a job summary, \
+             `sarif` is a check run, and `json` is the finding shape itself.",
         )],
         writes: false,
     },
@@ -958,7 +967,13 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
                 }
             }
         }
-        "check" => check(server, &argument)?,
+        "check" => check(
+            server,
+            match argument.is_empty() {
+                true => "text",
+                false => &argument,
+            },
+        )?,
         // The taxonomy alone, through the one renderer the verb calls, so the
         // tool and `headwater taxonomy kinds` answer the same bytes (#1580).
         "kinds" => {
