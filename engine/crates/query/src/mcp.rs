@@ -399,7 +399,8 @@ macro_rules! path_spellings {
 pub const QUERY_CLASS: [Tool; 7] = [
     Tool {
         name: "route",
-        description: "Resolve a task description to the documents that govern it, as pointers: \
+        description: "Call this first, before you read or edit anything for a task. It \
+                      resolves a task description to the documents that govern it, as pointers: \
                       paths and one-line summaries, never content. Silent when nothing matches, \
                       because a wrong pointer costs more than a missing one.",
         arguments: &[Argument::required(
@@ -410,7 +411,8 @@ pub const QUERY_CLASS: [Tool; 7] = [
     },
     Tool {
         name: "explain",
-        description: "Why this document is the kind it is: the shelf that matched, the rule that \
+        description: "Call this before you change a document, and on each document `route` \
+                      points at. It says why the document is the kind it is: the shelf that matched, the rule that \
                       fired, the purpose it serves, and what is consequently required of it.",
         arguments: &[Argument::required(
             "target",
@@ -423,7 +425,8 @@ pub const QUERY_CLASS: [Tool; 7] = [
     },
     Tool {
         name: "related",
-        description: "What this document points at and what points at it, with the cue at each \
+        description: "Call this when you change a document, to find the documents that the \
+                      change can make stale. It says what this document points at and what points at it, with the cue at each \
                       edge and which end governs the reading.",
         arguments: &[Argument::required(
             "target",
@@ -436,7 +439,8 @@ pub const QUERY_CLASS: [Tool; 7] = [
     },
     Tool {
         name: "resolve_identifier",
-        description: "The document an identifier names, or the untyped document that carries it \
+        description: "Call this when a task or a document names an identifier, such as \
+                      `HW-DR-0001`, and you need its file. It returns the document an identifier names, or the untyped document that carries it \
                       verbatim where no typed document does.",
         arguments: &[Argument::required(
             "id",
@@ -446,14 +450,16 @@ pub const QUERY_CLASS: [Tool; 7] = [
     },
     Tool {
         name: "governing_docs_for_path",
-        description: "The documents that govern a path in the repository, through a declared \
+        description: "Call this before you edit a file outside the documents, such as code, a \
+                      script or a configuration file. It returns the documents that govern a path in the repository, through a declared \
                       governance edge onto that path.",
         arguments: &[Argument::required("path", path_spellings!())],
         writes: false,
     },
     Tool {
         name: "check",
-        description: "Run every check over the whole corpus and report what this run found: the \
+        description: "Call this after your last edit, and fix what it reports before you finish. \
+                      It runs every check over the whole corpus and reports what this run found: the \
                       taxonomy it read, the date it evaluated against, the coverage, and each \
                       finding with its remediation. The bytes are those of `headwater check \
                       --format <format>` over the same corpus at the same date. It writes \
@@ -469,7 +475,8 @@ pub const QUERY_CLASS: [Tool; 7] = [
     },
     Tool {
         name: "kinds",
-        description: "The kinds of document this repository's taxonomy keeps, read from its \
+        description: "Call this before you add a new document, to choose its kind and get the \
+                      command that scaffolds it. It returns the kinds of document this repository's taxonomy keeps, read from its \
                       lock: for each kind a document can be, its parent, its purpose and the \
                       questions that purpose answers, the shelf that carries it, the facets and \
                       sections it requires after inheritance, and the `headwater new` command for \
