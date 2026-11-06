@@ -566,6 +566,15 @@ pub fn registered(server: &Server<'_>) -> Vec<&'static Tool> {
     out
 }
 
+/// What the server tells a client to do with its tools, sent once in the reply to
+/// `initialize`. A client may show it to the model as standing guidance.
+const INSTRUCTIONS: &str = "This server answers from the governed documents of this repository. \
+    Before your first edit, call `route` with the task in your own words, and read the documents \
+    it points at. Before you change a document, call `explain` on it to see what its kind \
+    requires. Before you edit a file outside the documents, such as code or a script, call \
+    `governing_docs_for_path` on it. After your last edit, call `check` with format `text` and \
+    fix what it reports.";
+
 /// Answer one request, or `None` where the message is a notification.
 ///
 /// A notification carries no `id` and takes no response, which is the protocol's
@@ -594,6 +603,7 @@ pub fn respond(server: &Server<'_>, session: &mut Session, request: &str) -> Opt
                     ("version", Json::string(headwater_resolve::release::ENGINE)),
                 ]),
             ),
+            ("instructions", Json::string(INSTRUCTIONS)),
         ])),
         // The table is a fact about the registration and not about the tree, so
         // a spent server still answers it. What it may not do is call one.
