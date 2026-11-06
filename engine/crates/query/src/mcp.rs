@@ -589,7 +589,10 @@ const INSTRUCTIONS: &str = "This server answers from the governed documents of t
     it points at. Before you change a document, call `explain` on it to see what its kind \
     requires. Before you edit a file outside the documents, such as code or a script, call \
     `governing_docs_for_path` on it. After your last edit, call `check` with format `text` and \
-    fix what it reports.";
+    fix what it reports. Prefer these tools to the `headwater` command line for what they cover. \
+    If you want the command line, look first on `PATH`, then at `/usr/bin/headwater` (apt \
+    package), `~/.local/bin/headwater` (release archive) or `~/.cargo/bin/headwater` \
+    (`cargo install`).";
 
 /// Answer one request, or `None` where the message is a notification.
 ///
