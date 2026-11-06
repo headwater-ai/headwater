@@ -347,6 +347,16 @@ impl Argument {
         }
     }
 
+    /// One string, and a call without it gets the default its handler names.
+    pub const fn optional(name: &'static str, description: &'static str) -> Argument {
+        Argument {
+            name,
+            description,
+            required: false,
+            repeatable: false,
+        }
+    }
+
     /// A list of strings, and an absent list is an empty one.
     pub const fn repeatable(name: &'static str, description: &'static str) -> Argument {
         Argument {
@@ -399,7 +409,8 @@ macro_rules! path_spellings {
 pub const QUERY_CLASS: [Tool; 7] = [
     Tool {
         name: "route",
-        description: "Resolve a task description to the documents that govern it, as pointers: \
+        description: "Call this first, before you read or edit anything for a task. It \
+                      resolves a task description to the documents that govern it, as pointers: \
                       paths and one-line summaries, never content. Silent when nothing matches, \
                       because a wrong pointer costs more than a missing one.",
         arguments: &[Argument::required(
@@ -410,7 +421,8 @@ pub const QUERY_CLASS: [Tool; 7] = [
     },
     Tool {
         name: "explain",
-        description: "Why this document is the kind it is: the shelf that matched, the rule that \
+        description: "Call this before you change a document, and on each document `route` \
+                      points at. It says why the document is the kind it is: the shelf that matched, the rule that \
                       fired, the purpose it serves, and what is consequently required of it.",
         arguments: &[Argument::required(
             "target",
@@ -423,7 +435,8 @@ pub const QUERY_CLASS: [Tool; 7] = [
     },
     Tool {
         name: "related",
-        description: "What this document points at and what points at it, with the cue at each \
+        description: "Call this when you change a document, to find the documents that the \
+                      change can make stale. It says what this document points at and what points at it, with the cue at each \
                       edge and which end governs the reading.",
         arguments: &[Argument::required(
             "target",
@@ -436,7 +449,8 @@ pub const QUERY_CLASS: [Tool; 7] = [
     },
     Tool {
         name: "resolve_identifier",
-        description: "The document an identifier names, or the untyped document that carries it \
+        description: "Call this when a task or a document names an identifier, such as \
+                      `HW-DR-0001`, and you need its file. It returns the document an identifier names, or the untyped document that carries it \
                       verbatim where no typed document does.",
         arguments: &[Argument::required(
             "id",
@@ -446,30 +460,32 @@ pub const QUERY_CLASS: [Tool; 7] = [
     },
     Tool {
         name: "governing_docs_for_path",
-        description: "The documents that govern a path in the repository, through a declared \
+        description: "Call this before you edit a file outside the documents, such as code, a \
+                      script or a configuration file. It returns the documents that govern a path in the repository, through a declared \
                       governance edge onto that path.",
         arguments: &[Argument::required("path", path_spellings!())],
         writes: false,
     },
     Tool {
         name: "check",
-        description: "Run every check over the whole corpus and report what this run found: the \
+        description: "Call this after your last edit, and fix what it reports before you finish. \
+                      It runs every check over the whole corpus and reports what this run found: the \
                       taxonomy it read, the date it evaluated against, the coverage, and each \
                       finding with its remediation. The bytes are those of `headwater check \
                       --format <format>` over the same corpus at the same date. It writes \
-                      nothing, and it uses no cache.",
-        arguments: &[Argument::required(
+                      nothing, and it uses no cache. Run it after your last edit.",
+        arguments: &[Argument::optional(
             "format",
-            "One of `text`, `json`, `sarif`, `markdown`. `text` is the whole report in the \
-             engine's own words, `markdown` is the findings as a job summary, `sarif` is a check \
-             run, and `json` is the finding shape itself. There is no default: the vocabulary is \
-             the caller's to choose.",
+            "One of `text`, `json`, `sarif`, `markdown`, and `text` when omitted. `text` is the \
+             whole report in the engine's own words, `markdown` is the findings as a job summary, \
+             `sarif` is a check run, and `json` is the finding shape itself.",
         )],
         writes: false,
     },
     Tool {
         name: "kinds",
-        description: "The kinds of document this repository's taxonomy keeps, read from its \
+        description: "Call this before you add a new document, to choose its kind and get the \
+                      command that scaffolds it. It returns the kinds of document this repository's taxonomy keeps, read from its \
                       lock: for each kind a document can be, its parent, its purpose and the \
                       questions that purpose answers, the shelf that carries it, the facets and \
                       sections it requires after inheritance, and the `headwater new` command for \
@@ -566,6 +582,15 @@ pub fn registered(server: &Server<'_>) -> Vec<&'static Tool> {
     out
 }
 
+/// What the server tells a client to do with its tools, sent once in the reply to
+/// `initialize`. A client may show it to the model as standing guidance.
+const INSTRUCTIONS: &str = "This server answers from the governed documents of this repository. \
+    Before your first edit, call `route` with the task in your own words, and read the documents \
+    it points at. Before you change a document, call `explain` on it to see what its kind \
+    requires. Before you edit a file outside the documents, such as code or a script, call \
+    `governing_docs_for_path` on it. After your last edit, call `check` with format `text` and \
+    fix what it reports.";
+
 /// Answer one request, or `None` where the message is a notification.
 ///
 /// A notification carries no `id` and takes no response, which is the protocol's
@@ -594,6 +619,7 @@ pub fn respond(server: &Server<'_>, session: &mut Session, request: &str) -> Opt
                     ("version", Json::string(headwater_resolve::release::ENGINE)),
                 ]),
             ),
+            ("instructions", Json::string(INSTRUCTIONS)),
         ])),
         // The table is a fact about the registration and not about the tree, so
         // a spent server still answers it. What it may not do is call one.
@@ -958,7 +984,13 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
                 }
             }
         }
-        "check" => check(server, &argument)?,
+        "check" => check(
+            server,
+            match argument.is_empty() {
+                true => "text",
+                false => &argument,
+            },
+        )?,
         // The taxonomy alone, through the one renderer the verb calls, so the
         // tool and `headwater taxonomy kinds` answer the same bytes (#1580).
         "kinds" => {
