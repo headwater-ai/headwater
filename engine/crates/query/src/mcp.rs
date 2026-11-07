@@ -831,6 +831,8 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
     // The text block is for a person and is not a parse target: a path may hold
     // ` (`, and a summary may hold any word an evidence line starts with.
     let mut structured: Option<Json> = None;
+    // A second text block after the report, where a tool adds one (#1880).
+    let mut extra = String::new();
     let text = match tool.name {
         "route" => {
             // The tool holds no tree, but it reads a link inside the root as
@@ -873,7 +875,15 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
             // and never as a document (#1366).
             Some(explanation) => match explanation.refusal() {
                 Some(refusal) => format!("{refusal}\n"),
-                None => explanation.render(headwater_check::paint::ColorMode::Plain),
+                None => {
+                    let mut text = explanation.render(headwater_check::paint::ColorMode::Plain);
+                    text.push_str(&claim_note(
+                        server,
+                        explanation.id.as_deref(),
+                        explanation.kind.as_deref(),
+                    ));
+                    text
+                }
             },
             None => missing(server, &argument),
         },
@@ -914,7 +924,15 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
             Resolved::NearMiss(path) => {
                 format!("no typed document carries {argument}; {path} carries it, untyped\n")
             }
-            Resolved::Nothing => format!("no document carries {argument}\n"),
+            Resolved::Nothing => match scheme_of(server, &argument) {
+                Some(scheme) => format!(
+                    "no document carries {argument}\nIf you are adding the document that carries \
+                     it, its claim is `{}`.\n{}",
+                    headwater_check::claim::path_of(&scheme, &argument),
+                    minting(server, &scheme, "<kind>")
+                ),
+                None => format!("no document carries {argument}\n"),
+            },
         },
         // The argument is a code path and not a document, so it is always
         // read through `within` rather than retried: `./src/x.rs` is
@@ -979,6 +997,7 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
                 }
             };
             structured = Some(kinds.json());
+            extra = kinds_note(server);
             text
         }
         // Unreachable: `tool` came out of `registered`. Answered rather than
@@ -987,7 +1006,7 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
         other => format!("`{other}` is registered and not implemented\n"),
     };
 
-    let mut result = blocks(&[text], true);
+    let mut result = blocks(&[text, extra], true);
     if let (Some(structured), Json::Object(members)) = (structured, &mut result) {
         members.push(("structuredContent".to_string(), structured));
     }
@@ -1030,6 +1049,92 @@ fn missing(server: &Server<'_>, argument: &str) -> String {
         None => format!("{}\n", crate::outside_text(argument)),
         Some(_) => format!("{argument} is not a document of this corpus\n"),
     }
+}
+
+/// The command that runs this engine from the repository root: the server's
+/// own executable, relative to the root where it lies under it (#1880, round
+/// 2). A session whose `PATH` holds no `headwater` can still run the verb a
+/// sentence of this server names.
+fn command(server: &Server<'_>) -> String {
+    let Ok(exe) = std::env::current_exe() else {
+        return "headwater".to_string();
+    };
+    let root = std::fs::canonicalize(server.root).unwrap_or_else(|_| server.root.to_path_buf());
+    match exe.strip_prefix(&root) {
+        Ok(relative) => format!("./{}", relative.display()),
+        Err(_) => exe.display().to_string(),
+    }
+}
+
+/// The scheme an identifier is claimed under: the scheme of its own claim, or
+/// of a claim whose identifier shares its prefix (`HW-DR` of `HW-DR-0114`).
+/// `None` where no claim of this store is like it (#1880, round 2).
+fn scheme_of(server: &Server<'_>, id: &str) -> Option<String> {
+    let entries = server.claims.entries();
+    if let Some(claim) = entries.iter().find(|claim| claim.id == id) {
+        return Some(claim.scheme.clone());
+    }
+    let prefix = id.rsplit_once('-').map(|(head, _)| head)?;
+    entries
+        .iter()
+        .find(|claim| claim.id.rsplit_once('-').map(|(head, _)| head) == Some(prefix))
+        .map(|claim| claim.scheme.clone())
+}
+
+/// The sentences on how a new document gets its claim (#1880, round 2).
+fn minting(server: &Server<'_>, scheme: &str, kind: &str) -> String {
+    let cmd = command(server);
+    let highest = server.claims.ids_of(scheme).max().unwrap_or("none");
+    format!(
+        "A new document of this kind needs a claim of its own: one file, \
+         `.headwater/ids/{scheme}/<identifier>`, that holds the new document's path on one \
+         line. The highest identifier claimed under `{scheme}` is {highest}. `{cmd} new {kind} \
+         --title \"<title>\"`, run from the repository root, mints the next identifier and writes \
+         the document and its claim together. A document written by hand without its claim \
+         fails `check --strict` with `identifier.claim.missing`.\n"
+    )
+}
+
+/// What `explain` adds for a document with an identifier: where its claim is,
+/// and how a new document of its kind gets one (#1880, round 2).
+fn claim_note(server: &Server<'_>, id: Option<&str>, kind: Option<&str>) -> String {
+    let (Some(id), Some(kind)) = (id, kind) else {
+        return String::new();
+    };
+    let Some(scheme) = scheme_of(server, id) else {
+        return String::new();
+    };
+    let claim = headwater_check::claim::path_of(&scheme, id);
+    let head = match server.claims.claimant(&scheme, id) {
+        Some(claimant) => format!("claim `{claim}` holds this document's path, `{claimant}`.\n"),
+        None => format!(
+            "claim: no file of `.headwater/ids` claims {id}, so `check --strict` reports \
+             `identifier.claim.missing` here until `{claim}` holds this document's path.\n"
+        ),
+    };
+    format!("{head}{}", minting(server, &scheme, kind))
+}
+
+/// What `kinds` adds after its report (#1880, round 2).
+fn kinds_note(server: &Server<'_>) -> String {
+    let cmd = command(server);
+    let mut schemes: Vec<&str> = server
+        .claims
+        .entries()
+        .iter()
+        .map(|claim| claim.scheme.as_str())
+        .collect();
+    schemes.dedup();
+    format!(
+        "The `headwater` of each `draft` line is this engine, which this server runs as \
+         `{cmd}`. Run that from the repository root, because `headwater` may not be on `PATH`. A \
+         document of a kind whose shelf mints identifiers also needs a claim: one file, \
+         `.headwater/ids/<scheme>/<identifier>`, that holds the document's path on one line. \
+         `new` writes the document and its claim together. A document written by hand without \
+         its claim fails `check --strict` with `identifier.claim.missing`. This repository \
+         claims under {}.\n",
+        schemes.join(", ")
+    )
 }
 
 /// One or two content blocks, in the shape a tool result takes.
