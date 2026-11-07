@@ -873,7 +873,11 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
             // and never as a document (#1366).
             Some(explanation) => match explanation.refusal() {
                 Some(refusal) => format!("{refusal}\n"),
-                None => explanation.render(headwater_check::paint::ColorMode::Plain),
+                None => {
+                    let mut text = explanation.render(headwater_check::paint::ColorMode::Plain);
+                    text.push_str(&stale_note(server, &explanation.path));
+                    text
+                }
             },
             None => missing(server, &argument),
         },
@@ -889,10 +893,12 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
                     out.push_str(&neighbour.render());
                     out.push('\n');
                 }
-                match out.is_empty() {
+                let mut text = match out.is_empty() {
                     true => format!("{argument} declares no relation, and none names it\n"),
                     false => out,
-                }
+                };
+                text.push_str(&stale_note(server, document.path));
+                text
             }
             // A row the walk could not read is not a document, and it is
             // refused in the sentence `explain` refuses it in, with this
@@ -945,7 +951,7 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
                 None => Vec::new(),
             };
             structured = Some(crate::json::pointers_value(&governing));
-            match governing.is_empty() {
+            let mut text = match governing.is_empty() {
                 true if reached.is_none() => format!("{}\n", crate::outside_text(&argument)),
                 true => format!("no document governs {argument}\n"),
                 false => {
@@ -956,9 +962,13 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
                     }
                     out
                 }
+            };
+            if let Some(relative) = &reached {
+                text.push_str(&stale_note(server, relative));
             }
+            text
         }
-        "check" => check(server, &argument)?,
+        "check" => format!("{}{}", check_note(server), check(server, &argument)?),
         // The taxonomy alone, through the one renderer the verb calls, so the
         // tool and `headwater taxonomy kinds` answer the same bytes (#1580).
         "kinds" => {
@@ -1028,7 +1038,124 @@ fn retried<T>(
 fn missing(server: &Server<'_>, argument: &str) -> String {
     match headwater_census::walk::within(server.root, server.corpus_root, argument) {
         None => format!("{}\n", crate::outside_text(argument)),
+        Some(relative) if server.root.join(&relative).is_file() => format!(
+            "{argument} is on disk, but it is not in this server's walk of the corpus, which the \
+             server took when it started. No tool of this server sees a file written or moved \
+             after that walk. To read the tree as it is now, run `{cmd} explain {relative}` or `{cmd} check --strict --no-cache` from the repository root.\n",
+            cmd = command(server)
+        ),
         Some(_) => format!("{argument} is not a document of this corpus\n"),
+    }
+}
+
+/// The command that runs this engine from the repository root: the server's
+/// own executable, relative to the root where it lies under it (#1880, round
+/// 2). A session whose `PATH` holds no `headwater` can still run the verb a
+/// sentence of this server names.
+fn command(server: &Server<'_>) -> String {
+    let Ok(exe) = std::env::current_exe() else {
+        return "headwater".to_string();
+    };
+    let root = std::fs::canonicalize(server.root).unwrap_or_else(|_| server.root.to_path_buf());
+    match exe.strip_prefix(&root) {
+        Ok(relative) => format!("./{}", relative.display()),
+        Err(_) => exe.display().to_string(),
+    }
+}
+
+/// When this server started. The walk behind every answer was taken before
+/// it, so a file modified after it is one that no answer of the walk sees
+/// (#1880, round 2).
+static STARTED: std::sync::OnceLock<std::time::SystemTime> = std::sync::OnceLock::new();
+
+fn started() -> std::time::SystemTime {
+    *STARTED.get_or_init(std::time::SystemTime::now)
+}
+
+/// Whether the file at `relative` under the root changed after this server
+/// started, so that the walk describes it as it was before the change.
+fn changed(server: &Server<'_>, relative: &str) -> bool {
+    std::fs::metadata(server.root.join(relative))
+        .and_then(|meta| meta.modified())
+        .map(|modified| modified > started())
+        .unwrap_or(false)
+}
+
+/// Every file under the root that changed after this server started, by its
+/// path from the root. Version control and build output are not walked.
+fn changed_since_start(server: &Server<'_>) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut stack = vec![server.root.to_path_buf()];
+    while let Some(dir) = stack.pop() {
+        let Ok(entries) = std::fs::read_dir(&dir) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let Ok(kind) = entry.file_type() else {
+                continue;
+            };
+            let path = entry.path();
+            if kind.is_dir() {
+                let name = entry.file_name();
+                if name != ".git" && name != "target" && name != "node_modules" {
+                    stack.push(path);
+                }
+            } else if kind.is_file() {
+                let newer = entry
+                    .metadata()
+                    .and_then(|meta| meta.modified())
+                    .map(|modified| modified > started())
+                    .unwrap_or(false);
+                if newer {
+                    if let Ok(relative) = path.strip_prefix(server.root) {
+                        out.push(relative.display().to_string());
+                    }
+                }
+            }
+        }
+    }
+    out.sort();
+    out
+}
+
+/// The line a path answer ends with when its file changed after the walk
+/// (#1880, round 2). Empty otherwise.
+fn stale_note(server: &Server<'_>, relative: &str) -> String {
+    match changed(server, relative) {
+        false => String::new(),
+        true => format!(
+            "note: {relative} changed on disk after this server walked the corpus at start-up, \
+             so this answer shows it as it was before your edit. To read it as it is now, \
+             run `{cmd} check --strict --no-cache` from the repository root.\n",
+            cmd = command(server)
+        ),
+    }
+}
+
+/// The paragraph the `check` report starts with (#1880, round 2): which tree
+/// it is of, and what changed after it.
+fn check_note(server: &Server<'_>) -> String {
+    let cmd = command(server);
+    let changed = changed_since_start(server);
+    match changed.is_empty() {
+        true => format!(
+            "This report is of the tree as this server read it when it started, and no file has \
+             changed since. After an edit, run `{cmd} check --strict --no-cache` from the \
+             repository root to check the tree as it is then.\n\n"
+        ),
+        false => {
+            let mut shown: Vec<&str> = changed.iter().take(20).map(String::as_str).collect();
+            if changed.len() > 20 {
+                shown.push("…");
+            }
+            format!(
+                "This report is of the tree as this server read it when it started. {} file(s) \
+                 changed after that, and no finding below reflects them: {}. To check the tree \
+                 as it is now, run `{cmd} check --strict --no-cache` from the repository root.\n\n",
+                changed.len(),
+                shown.join(", ")
+            )
+        }
     }
 }
 
@@ -1261,6 +1388,9 @@ pub fn serve(
     mut output: impl std::io::Write,
 ) -> std::io::Result<()> {
     let mut session = Session::default();
+    // The walk is behind every answer already, so a file modified after this
+    // moment is one that no answer of the walk sees (#1880, round 2).
+    started();
     for line in input.lines() {
         let Ok(line) = line else { return Ok(()) };
         if line.trim().is_empty() {
