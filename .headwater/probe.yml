@@ -1084,7 +1084,10 @@ sets:
 # so far, 126 of 154 (#1879, comment 6654149789). The MCP layer now opens for
 # its round 1, scenario 5 against scenario 2, under the plan posted on
 # #1880, which the owner's advance approval accepts (comment
-# 6655760192).
+# 6655760192). Round 1 kept nothing: its confirmation of variant 4 solved
+# 108 of 154 against the best so far's 116 of 154 (#1939). The owner ruled
+# a round 2 on 2026-11-07 (#1880, comment 6701580649), and it opens under
+# that ruling.
 #
 # The tuning round runs in rounds (#1838), as the owner ruled on 2026-10-22
 # (#1777): a round screens `variants` changes of the open layer at `screen`
@@ -1155,9 +1158,9 @@ rounds:
     open:
       layer: mcp
       scenario: 5
-      try: 1
+      try: 2
       cap_cents: 20000
-      plan: https://github.com/headwater-ai/headwater/issues/1880#issuecomment-6655760192
+      plan: https://github.com/headwater-ai/headwater/issues/1880#issuecomment-6701580649
       change: none
   final:
     set: held-out
