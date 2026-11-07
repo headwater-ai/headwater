@@ -831,6 +831,8 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
     // The text block is for a person and is not a parse target: a path may hold
     // ` (`, and a summary may hold any word an evidence line starts with.
     let mut structured: Option<Json> = None;
+    // A second text block after the report, where a tool adds one (#1880).
+    let mut extra = String::new();
     let text = match tool.name {
         "route" => {
             // The tool holds no tree, but it reads a link inside the root as
@@ -873,7 +875,16 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
             // and never as a document (#1366).
             Some(explanation) => match explanation.refusal() {
                 Some(refusal) => format!("{refusal}\n"),
-                None => explanation.render(headwater_check::paint::ColorMode::Plain),
+                None => {
+                    let mut text = explanation.render(headwater_check::paint::ColorMode::Plain);
+                    text.push_str(&stale_note(server, &explanation.path));
+                    text.push_str(&claim_note(
+                        server,
+                        explanation.id.as_deref(),
+                        explanation.kind.as_deref(),
+                    ));
+                    text
+                }
             },
             None => missing(server, &argument),
         },
@@ -889,10 +900,12 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
                     out.push_str(&neighbour.render());
                     out.push('\n');
                 }
-                match out.is_empty() {
+                let mut text = match out.is_empty() {
                     true => format!("{argument} declares no relation, and none names it\n"),
                     false => out,
-                }
+                };
+                text.push_str(&stale_note(server, document.path));
+                text
             }
             // A row the walk could not read is not a document, and it is
             // refused in the sentence `explain` refuses it in, with this
@@ -914,7 +927,15 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
             Resolved::NearMiss(path) => {
                 format!("no typed document carries {argument}; {path} carries it, untyped\n")
             }
-            Resolved::Nothing => format!("no document carries {argument}\n"),
+            Resolved::Nothing => match scheme_of(server, &argument) {
+                Some(scheme) => format!(
+                    "no document carries {argument}\nIf you are adding the document that carries \
+                     it, its claim is `{}`.\n{}",
+                    headwater_check::claim::path_of(&scheme, &argument),
+                    minting(server, &scheme, "<kind>")
+                ),
+                None => format!("no document carries {argument}\n"),
+            },
         },
         // The argument is a code path and not a document, so it is always
         // read through `within` rather than retried: `./src/x.rs` is
@@ -945,7 +966,7 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
                 None => Vec::new(),
             };
             structured = Some(crate::json::pointers_value(&governing));
-            match governing.is_empty() {
+            let mut text = match governing.is_empty() {
                 true if reached.is_none() => format!("{}\n", crate::outside_text(&argument)),
                 true => format!("no document governs {argument}\n"),
                 false => {
@@ -956,9 +977,13 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
                     }
                     out
                 }
+            };
+            if let Some(relative) = &reached {
+                text.push_str(&stale_note(server, relative));
             }
+            text
         }
-        "check" => check(server, &argument)?,
+        "check" => fresh_check(server, &argument)?,
         // The taxonomy alone, through the one renderer the verb calls, so the
         // tool and `headwater taxonomy kinds` answer the same bytes (#1580).
         "kinds" => {
@@ -979,6 +1004,7 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
                 }
             };
             structured = Some(kinds.json());
+            extra = kinds_note(server);
             text
         }
         // Unreachable: `tool` came out of `registered`. Answered rather than
@@ -987,7 +1013,7 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
         other => format!("`{other}` is registered and not implemented\n"),
     };
 
-    let mut result = blocks(&[text], true);
+    let mut result = blocks(&[text, extra], true);
     if let (Some(structured), Json::Object(members)) = (structured, &mut result) {
         members.push(("structuredContent".to_string(), structured));
     }
@@ -1028,8 +1054,363 @@ fn retried<T>(
 fn missing(server: &Server<'_>, argument: &str) -> String {
     match headwater_census::walk::within(server.root, server.corpus_root, argument) {
         None => format!("{}\n", crate::outside_text(argument)),
+        Some(relative) if server.root.join(&relative).is_file() => format!(
+            "{argument} is on disk, but it is not in this server's walk of the corpus, which the \
+             server took when it started. No tool of this server sees a file written or moved \
+             after that walk. To read the tree as it is now, run the `check` tool, which walks the tree as it is now, or run `{cmd} explain {relative}` from the repository root.\n",
+            cmd = command(server)
+        ),
         Some(_) => format!("{argument} is not a document of this corpus\n"),
     }
+}
+
+/// The command that runs this engine from the repository root: the server's
+/// own executable, relative to the root where it lies under it (#1880, round
+/// 2). A session whose `PATH` holds no `headwater` can still run the verb a
+/// sentence of this server names.
+fn command(server: &Server<'_>) -> String {
+    let Ok(exe) = std::env::current_exe() else {
+        return "headwater".to_string();
+    };
+    let root = std::fs::canonicalize(server.root).unwrap_or_else(|_| server.root.to_path_buf());
+    match exe.strip_prefix(&root) {
+        Ok(relative) => format!("./{}", relative.display()),
+        Err(_) => exe.display().to_string(),
+    }
+}
+
+/// When this server started. The walk behind every answer was taken before
+/// it, so a file modified after it is one that no answer of the walk sees
+/// (#1880, round 2).
+static STARTED: std::sync::OnceLock<std::time::SystemTime> = std::sync::OnceLock::new();
+
+fn started() -> std::time::SystemTime {
+    *STARTED.get_or_init(std::time::SystemTime::now)
+}
+
+/// Whether the file at `relative` under the root changed after this server
+/// started, so that the walk describes it as it was before the change.
+fn changed(server: &Server<'_>, relative: &str) -> bool {
+    std::fs::metadata(server.root.join(relative))
+        .and_then(|meta| meta.modified())
+        .map(|modified| modified > started())
+        .unwrap_or(false)
+}
+
+/// Every file under the root that changed after this server started, by its
+/// path from the root. Version control and build output are not walked.
+fn changed_since_start(server: &Server<'_>) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut stack = vec![server.root.to_path_buf()];
+    while let Some(dir) = stack.pop() {
+        let Ok(entries) = std::fs::read_dir(&dir) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let Ok(kind) = entry.file_type() else {
+                continue;
+            };
+            let path = entry.path();
+            if kind.is_dir() {
+                let name = entry.file_name();
+                if name != ".git" && name != "target" && name != "node_modules" {
+                    stack.push(path);
+                }
+            } else if kind.is_file() {
+                let newer = entry
+                    .metadata()
+                    .and_then(|meta| meta.modified())
+                    .map(|modified| modified > started())
+                    .unwrap_or(false);
+                if newer {
+                    if let Ok(relative) = path.strip_prefix(server.root) {
+                        out.push(relative.display().to_string());
+                    }
+                }
+            }
+        }
+    }
+    out.sort();
+    out
+}
+
+/// The line a path answer ends with when its file changed after the walk
+/// (#1880, round 2). Empty otherwise.
+fn stale_note(server: &Server<'_>, relative: &str) -> String {
+    match changed(server, relative) {
+        false => String::new(),
+        true => format!(
+            "note: {relative} changed on disk after this server walked the corpus at start-up, \
+             so this answer shows it as it was before your edit. To read it as it is now, \
+             run the `check` tool of this server, which walks the tree as it is now, or run `{cmd} check --strict --no-cache` from the repository root.\n",
+            cmd = command(server)
+        ),
+    }
+}
+
+/// `check` over the tree as it is now (#1880, round 2): the server's own
+/// binary, run as `headwater check --no-cache`, so the run walks the current
+/// tree and writes nothing. For `text` and `json` the answer is the totals,
+/// every finding on a file changed since this server started or naming one,
+/// and a count by rule for the rest. `sarif` and `markdown` are the run's own
+/// bytes.
+fn fresh_check(server: &Server<'_>, format: &str) -> Result<String, Failure> {
+    if Format::parse(format).is_none() {
+        let names: Vec<&str> = Format::ALL.iter().map(|format| format.name()).collect();
+        return Err(Failure {
+            code: -32602,
+            message: format!("`check` takes a format, one of {}", names.join(", ")),
+        });
+    }
+    let cmd = command(server);
+    let machine = format == "text" || format == "json";
+    let wanted = if machine { "json" } else { format };
+    let exe = std::env::current_exe().map_err(|error| Failure {
+        code: -32603,
+        message: format!("this server cannot name its own executable to run the check: {error}"),
+    })?;
+    let output = std::process::Command::new(exe)
+        .args(["check", "--no-cache", "--format", wanted, "--root"])
+        .arg(server.root)
+        .output()
+        .map_err(|error| Failure {
+            code: -32603,
+            message: format!("`{cmd} check` did not start: {error}"),
+        })?;
+    let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
+    if stdout.trim().is_empty() {
+        return Ok(format!(
+            "`{cmd} check --no-cache` over the tree as it is now refused, and wrote:\n{}",
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+    if !machine {
+        return Ok(stdout);
+    }
+    let Some(findings) = headwater_yaml::load(&stdout).ok().and_then(|parsed| {
+        let map = parsed.value.as_map()?;
+        let list = map.get("findings")?.value.as_seq()?;
+        Some(
+            list.iter()
+                .filter_map(|node| node.value.as_map())
+                .map(|finding| {
+                    let field = |key: &str| scalar(finding, key).unwrap_or_default();
+                    [
+                        field("rule"),
+                        field("severity"),
+                        field("path"),
+                        field("line"),
+                        field("column"),
+                        field("message"),
+                        field("remediation"),
+                    ]
+                })
+                .collect::<Vec<[String; 7]>>(),
+        )
+    }) else {
+        return Ok(stdout);
+    };
+    let changed = changed_since_start(server);
+    let mine = |finding: &[String; 7]| {
+        changed
+            .iter()
+            .any(|path| finding[2] == *path || finding[5].contains(path.as_str()))
+    };
+    let count = |severity: &str| findings.iter().filter(|f| f[1] == severity).count();
+    let (errors, warns, infos) = (count("error"), count("warn"), count("info"));
+    let ours: Vec<&[String; 7]> = findings.iter().filter(|f| mine(f)).take(200).collect();
+    let mut others: Vec<(String, String, usize)> = Vec::new();
+    for finding in findings.iter().filter(|f| !mine(f)) {
+        match others
+            .iter_mut()
+            .find(|(rule, severity, _)| *rule == finding[0] && *severity == finding[1])
+        {
+            Some(entry) => entry.2 += 1,
+            None => others.push((finding[0].clone(), finding[1].clone(), 1)),
+        }
+    }
+    others.sort_by(|a, b| b.2.cmp(&a.2).then(a.0.cmp(&b.0)));
+    if format == "json" {
+        let finding_json = |f: &[String; 7]| {
+            Json::Object(vec![
+                ("rule".to_string(), Json::string(f[0].clone())),
+                ("severity".to_string(), Json::string(f[1].clone())),
+                ("path".to_string(), Json::string(f[2].clone())),
+                (
+                    "line".to_string(),
+                    Json::Raw(if f[3].is_empty() {
+                        "null".to_string()
+                    } else {
+                        f[3].clone()
+                    }),
+                ),
+                (
+                    "column".to_string(),
+                    Json::Raw(if f[4].is_empty() {
+                        "null".to_string()
+                    } else {
+                        f[4].clone()
+                    }),
+                ),
+                ("message".to_string(), Json::string(f[5].clone())),
+                ("remediation".to_string(), Json::string(f[6].clone())),
+            ])
+        };
+        return Ok(Json::Object(vec![
+            ("walked".to_string(), Json::string("the tree as it is now")),
+            (
+                "totals".to_string(),
+                Json::Object(vec![
+                    (
+                        "findings".to_string(),
+                        Json::Raw(findings.len().to_string()),
+                    ),
+                    ("error".to_string(), Json::Raw(errors.to_string())),
+                    ("warn".to_string(), Json::Raw(warns.to_string())),
+                    ("info".to_string(), Json::Raw(infos.to_string())),
+                ]),
+            ),
+            (
+                "changed_since_start".to_string(),
+                Json::Array(
+                    changed
+                        .iter()
+                        .map(|path| Json::string(path.clone()))
+                        .collect(),
+                ),
+            ),
+            (
+                "findings_on_changed_files".to_string(),
+                Json::Array(ours.iter().map(|f| finding_json(f)).collect()),
+            ),
+            (
+                "other_findings_by_rule".to_string(),
+                Json::Array(
+                    others
+                        .iter()
+                        .map(|(rule, severity, n)| {
+                            Json::Object(vec![
+                                ("rule".to_string(), Json::string(rule.clone())),
+                                ("severity".to_string(), Json::string(severity.clone())),
+                                ("count".to_string(), Json::Raw(n.to_string())),
+                            ])
+                        })
+                        .collect(),
+                ),
+            ),
+        ])
+        .render_pretty());
+    }
+    let mut out = format!(
+        "This is a run of `{cmd} check --no-cache` over the tree as it is now, not over the walk \
+         this server took when it started.\n{} findings: {errors} error, {warns} warn, {infos} info.\n\n",
+        findings.len()
+    );
+    match changed.is_empty() {
+        true => out.push_str("No file has changed since this server started.\n"),
+        false => {
+            out.push_str(&format!(
+                "Every finding on the {} file(s) changed since this server started, or that names \
+                 one of them ({}):\n",
+                changed.len(),
+                ours.len()
+            ));
+            for f in &ours {
+                out.push_str(&format!(
+                    "  {}:{}:{} {}\n    {}: {}\n",
+                    f[2], f[3], f[4], f[1], f[0], f[5]
+                ));
+                if !f[6].is_empty() {
+                    out.push_str(&format!("    fix: {}\n", f[6]));
+                }
+            }
+            if ours.is_empty() {
+                out.push_str("  none\n");
+            }
+        }
+    }
+    out.push_str(
+        "\nThe other findings, counted by rule. None of them is on a file changed since this \
+         server started:\n",
+    );
+    for (rule, severity, n) in &others {
+        out.push_str(&format!("  {n} {severity} {rule}\n"));
+    }
+    out.push_str(&format!(
+        "For every finding in full, run `{cmd} check --no-cache` from the repository root.\n"
+    ));
+    Ok(out)
+}
+
+/// The scheme an identifier is claimed under: the scheme of its own claim, or
+/// of a claim whose identifier shares its prefix (`HW-DR` of `HW-DR-0114`).
+/// `None` where no claim of this store is like it (#1880, round 2).
+fn scheme_of(server: &Server<'_>, id: &str) -> Option<String> {
+    let entries = server.claims.entries();
+    if let Some(claim) = entries.iter().find(|claim| claim.id == id) {
+        return Some(claim.scheme.clone());
+    }
+    let prefix = id.rsplit_once('-').map(|(head, _)| head)?;
+    entries
+        .iter()
+        .find(|claim| claim.id.rsplit_once('-').map(|(head, _)| head) == Some(prefix))
+        .map(|claim| claim.scheme.clone())
+}
+
+/// The sentences on how a new document gets its claim (#1880, round 2).
+fn minting(server: &Server<'_>, scheme: &str, kind: &str) -> String {
+    let cmd = command(server);
+    let highest = server.claims.ids_of(scheme).max().unwrap_or("none");
+    format!(
+        "A new document of this kind needs a claim of its own: one file, \
+         `.headwater/ids/{scheme}/<identifier>`, that holds the new document's path on one \
+         line. The highest identifier claimed under `{scheme}` is {highest}. `{cmd} new {kind} \
+         --title \"<title>\"`, run from the repository root, mints the next identifier and writes \
+         the document and its claim together. A document written by hand without its claim \
+         fails `check --strict` with `identifier.claim.missing`.\n"
+    )
+}
+
+/// What `explain` adds for a document with an identifier: where its claim is,
+/// and how a new document of its kind gets one (#1880, round 2).
+fn claim_note(server: &Server<'_>, id: Option<&str>, kind: Option<&str>) -> String {
+    let (Some(id), Some(kind)) = (id, kind) else {
+        return String::new();
+    };
+    let Some(scheme) = scheme_of(server, id) else {
+        return String::new();
+    };
+    let claim = headwater_check::claim::path_of(&scheme, id);
+    let head = match server.claims.claimant(&scheme, id) {
+        Some(claimant) => format!("claim `{claim}` holds this document's path, `{claimant}`.\n"),
+        None => format!(
+            "claim: no file of `.headwater/ids` claims {id}, so `check --strict` reports \
+             `identifier.claim.missing` here until `{claim}` holds this document's path.\n"
+        ),
+    };
+    format!("{head}{}", minting(server, &scheme, kind))
+}
+
+/// What `kinds` adds after its report (#1880, round 2).
+fn kinds_note(server: &Server<'_>) -> String {
+    let cmd = command(server);
+    let mut schemes: Vec<&str> = server
+        .claims
+        .entries()
+        .iter()
+        .map(|claim| claim.scheme.as_str())
+        .collect();
+    schemes.dedup();
+    format!(
+        "The `headwater` of each `draft` line is this engine, which this server runs as \
+         `{cmd}`. Run that from the repository root, because `headwater` may not be on `PATH`. A \
+         document of a kind whose shelf mints identifiers also needs a claim: one file, \
+         `.headwater/ids/<scheme>/<identifier>`, that holds the document's path on one line. \
+         `new` writes the document and its claim together. A document written by hand without \
+         its claim fails `check --strict` with `identifier.claim.missing`. This repository \
+         claims under {}.\n",
+        schemes.join(", ")
+    )
 }
 
 /// One or two content blocks, in the shape a tool result takes.
@@ -1173,6 +1554,7 @@ fn write(
 /// rather than decided here, and the fourth is this function's argument. What
 /// is left is the call the CLI makes with the same five values, so the bytes
 /// are the CLI's bytes.
+#[allow(dead_code)]
 fn check(server: &Server<'_>, format: &str) -> Result<String, Failure> {
     let Some(format) = Format::parse(format) else {
         let names: Vec<&str> = Format::ALL.iter().map(|format| format.name()).collect();
@@ -1261,6 +1643,9 @@ pub fn serve(
     mut output: impl std::io::Write,
 ) -> std::io::Result<()> {
     let mut session = Session::default();
+    // The walk is behind every answer already, so a file modified after this
+    // moment is one that no answer of the walk sees (#1880, round 2).
+    started();
     for line in input.lines() {
         let Ok(line) = line else { return Ok(()) };
         if line.trim().is_empty() {
