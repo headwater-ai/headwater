@@ -1547,6 +1547,51 @@ run launch "$CASE/root" confirm docs-r2-v1
 check "docs: a launch of the top with no gain in use exits 6" code_is 6
 check "docs: and closes the round with nothing kept" ledger_has '"reason": "no-gain-in-use"'
 
+# Round 2 of the mcp layer ranks on pass rate, a tie going to the lower cost
+# per session, with no use gate (owner, 2026-11-08, #1880#issuecomment-6713732364).
+# Variants 2 and 3 pass 15 of 25 and use the layer less than the best so far;
+# variant 3 costs less a session, so it ranks first and its confirmation
+# plans. Round 3 of the layer keeps the use gate.
+mcp_rank_ledger() {
+    use_rank_ledger mcp
+    mkdir -p "$CASE/root/mcp-r2-v3"
+    : > "$CASE/root/mcp-r2-v3/result.md"
+    sed -i 's/"passed": 15, "graded": 25}/"passed": 15, "graded": 25, "spent": 50}/' "$CASE/root/ledger.jsonl"
+    printf '%s\n' '{"event": "screen", "try": "mcp-r2-v3", "layer": "mcp", "round": 2, "used": 12, "sessions": 25, "passed": 15, "graded": 25, "spent": 40}' >> "$CASE/root/ledger.jsonl"
+}
+new_case
+sed -i 's/docs/mcp/g' "$CASE/probe.yml"
+check "mcp round 2: the case opens round 2 of the mcp layer" grep -q '^    open: {layer: mcp, scenario: 1, try: 2,' "$CASE/probe.yml"
+mcp_rank_ledger
+run rank "$CASE/root"
+check "mcp round 2: rank exits 0" code_is 0
+check "mcp round 2: and says the order is by pass rate, then cost, under the ruling" \
+    out_has "order: by pass rate, then the lower cost per session, with no use gate, under the owner's ruling https://github.com/headwater-ai/headwater/issues/1880#issuecomment-6713732364"
+check "mcp round 2: variant 3, passed 15 of 25 at 40 cents, ranks first" \
+    out_has "rank 1: mcp-r2-v3 used in 12 of 25 sessions, passed 15 of 25, ranked by pass rate (#1880 ruling)"
+check "mcp round 2: variant 2, passed 15 of 25 at 50 cents, ranks second" \
+    out_has "rank 2: mcp-r2-v2 used in 10 of 25 sessions, passed 15 of 25, ranked by pass rate (#1880 ruling)"
+check "mcp round 2: variant 1, passed 10 of 25, ranks third" \
+    out_has "rank 3: mcp-r2-v1 used in 20 of 25 sessions, passed 10 of 25, ranked by pass rate (#1880 ruling)"
+run plan "$CASE/root" confirm mcp-r2-v3
+check "mcp round 2: a confirmation of the top variant, with less use than the best so far, plans" code_is 0
+check "mcp round 2: and is not refused for no gain in use" sh -c "! grep -q 'no gain in use' '$CASE/err'"
+run plan "$CASE/root" confirm mcp-r2-v2
+check "mcp round 2: the variant that ties on passes and costs more is not the top" code_is 6
+check "mcp round 2: and names the top" err_has "mcp-r2-v3 is"
+new_case
+sed -i 's/docs/mcp/g; s/try: 2,/try: 3,/' "$CASE/probe.yml"
+check "mcp round 3: the case opens round 3 of the mcp layer" grep -q '^    open: {layer: mcp, scenario: 1, try: 3,' "$CASE/probe.yml"
+mcp_rank_ledger
+sed -i 's/"round": 2,/"round": 3,/; s/-r2-/-r3-/g' "$CASE/root/ledger.jsonl"
+for v in 1 2 3; do mv "$CASE/root/mcp-r2-v$v" "$CASE/root/mcp-r3-v$v"; done
+run rank "$CASE/root"
+check "mcp round 3: ranks on use, variant 1 first" \
+    out_has "rank 1: mcp-r3-v1 used in 20 of 25 sessions, passed 10 of 25, no gain"
+run plan "$CASE/root" confirm mcp-r3-v1
+check "mcp round 3: the top variant with no gain in use is refused" code_is 6
+check "mcp round 3: for no gain in use" err_has "no gain in use"
+
 # A change to the engine's source makes the base stale for a confirmation,
 # whatever the owner accepted, because it can change what route prints.
 new_case

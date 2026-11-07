@@ -122,15 +122,23 @@
 # `use_ungated` holds: `rank` orders by pass rate, and the rule below does not
 # apply. The use is still counted and printed, so the owner can read it.
 #
+# **Round 2 of the mcp layer ranks on pass rate, then on cost** (owner,
+# 2026-11-08, https://github.com/headwater-ai/headwater/issues/1880#issuecomment-6713732364).
+# Round 1 raised the use of the server from 101 to 146 of 154 sessions and
+# passed fewer, so round 2 aims at passes. `use_ungated` holds for that round
+# alone: `rank` orders by pass rate, a tie goes to the lower cost per
+# session, and the rule below does not apply. Every other round of the layer
+# keeps the use gate.
+#
 # **No gain in use, no confirmation.** A variant is confirmed only when it is
 # the top of the rank, and only when its share of sessions that used the
 # layer is above the best so far's, read at the best so far's own
 # measurement at the confirmation's count. A variant that does not raise the
 # use is refused, whatever its pass rate. When the refused variant is the top
 # of the rank, no variant of the round raises the use, so `launch` closes the
-# round with nothing kept. None of this applies to a layer where
-# `use_ungated` holds, the engine layer under the ruling above: its top
-# variant by pass rate is confirmed on the keep rule alone. It still needs a
+# round with nothing kept. None of this applies to a round where
+# `use_ungated` holds, under the rulings above: its top variant by pass rate
+# is confirmed on the keep rule alone. It still needs a
 # best so far at the confirmation's count.
 #
 # **The keep rule reads the confirmation alone.** `result` of a confirmation
@@ -272,9 +280,11 @@
 # - `rank <root>` prints the best so far of the open layer, with its use, and
 #   then each screened variant of the open round that `result` recorded, in
 #   rank order: its use, its pass rate, and `gain` or `no gain` in use over
-#   the best so far, or `-` where no best so far is measured. For a layer
+#   the best so far, or `-` where no best so far is measured. For a round
 #   where `use_ungated` holds, the rows are in order of pass rate, and each
-#   row ends with `ranked by pass rate (#1877 ruling)` in place of the gain.
+#   row ends with `ranked by pass rate (#1877 ruling)` in place of the gain,
+#   or `(#1880 ruling)` for round 2 of the mcp layer, where a tie in pass
+#   rate goes to the lower cost per session.
 # - `relaunch <root> <try>` starts the driver again on a try root that
 #   `launch` made, with the same arguments, read from `driver.argv`. It
 #   exits 6 when the try root does not exist, when its driver runs, or when
@@ -430,7 +440,7 @@
 # appends `screen`, `best`, `base`, `result`, `round` and `halt`, `accept` appends
 # `accept`, `void` appends `void`, `adopt` appends a `base`, `wait` appends `gate` for each stop of the usage gate, and `launch` appends a `round` with `kept` false when it refuses
 # the top variant of a round for no gain in use, which it never does for a
-# layer where `use_ungated` holds.
+# round where `use_ungated` holds.
 #
 # ## The base tree, and `campaign.sh`
 #
@@ -944,7 +954,11 @@ elif mode == "rank":
     def key(e):
         use = -share(e.get("used", 0), e.get("sessions", 0))
         passed = -share(e.get("passed", 0), e.get("graded", 0))
-        return (passed, use, str(e.get("try"))) if args[2] == "pass" else (use, passed, str(e.get("try")))
+        if args[2] == "pass":
+            return (passed, use, str(e.get("try")))
+        if args[2] == "cost":
+            return (passed, share(e.get("spent", 0), e.get("sessions", 0)), str(e.get("try")))
+        return (use, passed, str(e.get("try")))
     rows.sort(key=key)
     for event in rows:
         print("\t".join(str(event.get(key, "")) for key in ("try", "used", "sessions", "passed", "graded")))
@@ -1307,18 +1321,31 @@ share_above() {
     [ "$2" -gt 0 ] && [ $(($1 * $4)) -gt $(($3 * $2)) ]
 }
 
-# use_ungated <layer>: no variant of the layer can change whether a session
-# uses it, so its round ranks on pass rate and has no use gate. That is the
-# engine layer, under the owner's ruling of 2026-11-02 on #1877
-# (https://github.com/headwater-ai/headwater/issues/1877#issuecomment-6565289666).
+# use_ungated <layer> <round>: the round ranks on pass rate and has no use
+# gate. That is the engine layer, whose variants cannot change whether a
+# session uses it, under the owner's ruling of 2026-11-02 on #1877
+# (https://github.com/headwater-ai/headwater/issues/1877#issuecomment-6565289666),
+# and round 2 of the mcp layer, under the owner's ruling of 2026-11-08 on
+# #1880 (https://github.com/headwater-ai/headwater/issues/1880#issuecomment-6713732364).
 use_ungated() {
-    [ "$1" = engine ]
+    [ "$1" = engine ] || { [ "$1" = mcp ] && [ "$2" = 2 ]; }
+}
+
+# ungated_ruling <layer>: the issue and the comment of the ruling that
+# ungates a round of the layer.
+ungated_ruling() {
+    case $1 in
+        engine) echo "1877 https://github.com/headwater-ai/headwater/issues/1877#issuecomment-6565289666" ;;
+        *) echo "1880 https://github.com/headwater-ai/headwater/issues/1880#issuecomment-6713732364" ;;
+    esac
 }
 
 # ranked_rows <layer> <round>: the `rank` rows of the ledger, in the layer's order.
 ranked_rows() {
-    if use_ungated "$1"; then
+    if [ "$1" = engine ]; then
         ledger_py rank "$1" "$2" pass
+    elif use_ungated "$1" "$2"; then
+        ledger_py rank "$1" "$2" cost
     else
         ledger_py rank "$1" "$2" use
     fi
@@ -1391,7 +1418,7 @@ round_check() {
 
 # confirm_check: the variant of `confirm <variant>` is the top of the rank
 # of the round, and it raises the use over the best so far, unless
-# `use_ungated` holds for the layer.
+# `use_ungated` holds for the round.
 confirm_check() {
     case $stage_arg in
         "$open_layer-r$open_try-v"[1-9]*) ;;
@@ -1423,7 +1450,7 @@ confirm_check() {
     best_sessions=$(printf '%s\n' "$best_line" | cut -f3)
     echo "best so far: $(printf '%s\n' "$best_line" | cut -f1), used in $best_used of $best_sessions sessions"
     echo "variant: $stage_arg, used in $variant_used of $variant_sessions sessions, passed $variant_passed of $variant_graded"
-    if ! use_ungated "$open_layer" && ! share_above "$variant_used" "$variant_sessions" "$best_used" "$best_sessions"; then
+    if ! use_ungated "$open_layer" "$open_try" && ! share_above "$variant_used" "$variant_sessions" "$best_used" "$best_sessions"; then
         if [ "$stage_arg" = "$top" ] && [ "$verb" = launch ]; then
             ledger_py append event=s:round "layer=s:$open_layer" "round=i:$open_try" kept=b:false \
                 reason=s:no-gain-in-use "top=s:$top" "at=s:$(now)"
@@ -1776,16 +1803,23 @@ case $verb in
         fi
         rank_rows=$(ranked_rows "$open_layer" "$open_try") || exit $?
         [ -n "$rank_rows" ] || echo "no screen of round $open_try of $open_layer is recorded"
-        if use_ungated "$open_layer"; then
-            echo "order: by pass rate, with no use gate, under the owner's ruling https://github.com/headwater-ai/headwater/issues/1877#issuecomment-6565289666"
+        if use_ungated "$open_layer" "$open_try"; then
+            # shellcheck disable=SC2046
+            set -- $(ungated_ruling "$open_layer")
+            rank_issue=$1
+            if [ "$open_layer" = engine ]; then
+                echo "order: by pass rate, with no use gate, under the owner's ruling $2"
+            else
+                echo "order: by pass rate, then the lower cost per session, with no use gate, under the owner's ruling $2"
+            fi
         fi
         rank_n=0
         printf '%s\n' "$rank_rows" | while IFS='	' read -r r_try r_used r_sessions r_passed r_graded; do
             [ -n "$r_try" ] || continue
             rank_n=$((rank_n + 1))
             r_gain=-
-            if use_ungated "$open_layer"; then
-                r_gain="ranked by pass rate (#1877 ruling)"
+            if use_ungated "$open_layer" "$open_try"; then
+                r_gain="ranked by pass rate (#$rank_issue ruling)"
             elif [ -n "$rank_best" ]; then
                 if share_above "$r_used" "$r_sessions" "$rank_used" "$rank_sessions"; then r_gain=gain; else r_gain="no gain"; fi
             fi
