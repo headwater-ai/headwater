@@ -6634,6 +6634,7 @@ fn mcp(root: &Path, now: Option<Date>, writing: bool) -> ExitCode {
                 fix: &fixing,
             }),
         },
+        rerun: headwater_query::mcp::Rerun::Executable,
     };
     if let Err(error) =
         headwater_query::mcp::serve(&server, std::io::stdin().lock(), std::io::stdout().lock())

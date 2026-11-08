@@ -249,6 +249,23 @@ pub struct Server<'a> {
     /// reach. Spec 5 fixes the default, because a client may connect to a
     /// checkout that the user did not intend to change.
     pub writing: Option<Writing<'a>>,
+    /// What the `check` tool runs to check the tree as it is now. `headwater
+    /// mcp` runs its own executable, and a test runs the check layer in its own
+    /// process, because a test binary is not `headwater` (#1880, PR #1943).
+    pub rerun: Rerun,
+}
+
+/// What the `check` tool runs to check the tree as it is now (#1880, round 2).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Rerun {
+    /// The server's own executable, as `headwater check --no-cache --now
+    /// <the server's date>`. This is what `headwater mcp` runs.
+    #[default]
+    Executable,
+    /// The check layer in this process, over the walk the server took when it
+    /// started, at the server's date. It writes the bytes the executable writes
+    /// over a tree that did not change, and it is the seam a test uses.
+    InProcess,
 }
 
 /// The two verbs of the working-tree write class, as the caller runs them.
@@ -958,7 +975,7 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
                 }
             }
         }
-        "check" => check(server, &argument)?,
+        "check" => fresh_check(server, &argument)?,
         // The taxonomy alone, through the one renderer the verb calls, so the
         // tool and `headwater taxonomy kinds` answer the same bytes (#1580).
         "kinds" => {
@@ -1030,6 +1047,285 @@ fn missing(server: &Server<'_>, argument: &str) -> String {
         None => format!("{}\n", crate::outside_text(argument)),
         Some(_) => format!("{argument} is not a document of this corpus\n"),
     }
+}
+
+/// The command that runs this engine from the repository root: the server's
+/// own executable, relative to the root where it lies under it (#1880, round
+/// 2). A session whose `PATH` holds no `headwater` can still run the verb a
+/// sentence of this server names.
+fn command(server: &Server<'_>) -> String {
+    let Ok(exe) = std::env::current_exe() else {
+        return "headwater".to_string();
+    };
+    let root = std::fs::canonicalize(server.root).unwrap_or_else(|_| server.root.to_path_buf());
+    match exe.strip_prefix(&root) {
+        Ok(relative) => format!("./{}", relative.display()),
+        Err(_) => exe.display().to_string(),
+    }
+}
+
+/// When this server started. The walk behind every answer was taken before
+/// it, so a file modified after it is one that no answer of the walk sees
+/// (#1880, round 2).
+static STARTED: std::sync::OnceLock<std::time::SystemTime> = std::sync::OnceLock::new();
+
+fn started() -> std::time::SystemTime {
+    *STARTED.get_or_init(std::time::SystemTime::now)
+}
+
+/// Every file under the root that changed after this server started, by its
+/// path from the root. Version control and build output are not walked.
+// Regular files only, as the measured variant walked them: `!is_dir()` would
+// also take symlinks and other entries, which changes the answer (#1880).
+#[allow(clippy::filetype_is_file)]
+fn changed_since_start(server: &Server<'_>) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut stack = vec![server.root.to_path_buf()];
+    while let Some(dir) = stack.pop() {
+        let Ok(entries) = std::fs::read_dir(&dir) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let Ok(kind) = entry.file_type() else {
+                continue;
+            };
+            let path = entry.path();
+            if kind.is_dir() {
+                let name = entry.file_name();
+                if name != ".git" && name != "target" && name != "node_modules" {
+                    stack.push(path);
+                }
+            } else if kind.is_file() {
+                let newer = entry
+                    .metadata()
+                    .and_then(|meta| meta.modified())
+                    .map(|modified| modified > started())
+                    .unwrap_or(false);
+                if newer {
+                    if let Ok(relative) = path.strip_prefix(server.root) {
+                        out.push(relative.display().to_string());
+                    }
+                }
+            }
+        }
+    }
+    out.sort();
+    out
+}
+
+/// `check` over the tree as it is now (#1880, round 2): the server's own
+/// binary, run as `headwater check --no-cache`, so the run walks the current
+/// tree and writes nothing. For `text` and `json` the answer is the totals,
+/// every finding on a file changed since this server started or naming one,
+/// and a count by rule for the rest. `sarif` and `markdown` are the run's own
+/// bytes.
+fn fresh_check(server: &Server<'_>, format: &str) -> Result<String, Failure> {
+    if Format::parse(format).is_none() {
+        let names: Vec<&str> = Format::ALL.iter().map(|format| format.name()).collect();
+        return Err(Failure {
+            code: -32602,
+            message: format!("`check` takes a format, one of {}", names.join(", ")),
+        });
+    }
+    let cmd = command(server);
+    let machine = format == "text" || format == "json";
+    let wanted = if machine { "json" } else { format };
+    // The date the server fixed when it started, and not the host's date: spec
+    // 5 fixes the clock for the life of the server (#1880, PR #1943).
+    let now = server.now.now().render();
+    let stdout = match server.rerun {
+        Rerun::InProcess => check(server, wanted)?,
+        Rerun::Executable => {
+            let exe = std::env::current_exe().map_err(|error| Failure {
+                code: -32603,
+                message: format!(
+                    "this server cannot name its own executable to run the check: {error}"
+                ),
+            })?;
+            let output = std::process::Command::new(exe)
+                .args([
+                    "check",
+                    "--no-cache",
+                    "--format",
+                    wanted,
+                    "--now",
+                    &now,
+                    "--root",
+                ])
+                .arg(server.root)
+                .output()
+                .map_err(|error| Failure {
+                    code: -32603,
+                    message: format!("`{cmd} check` did not start: {error}"),
+                })?;
+            let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
+            if stdout.trim().is_empty() {
+                return Ok(format!(
+                    "`{cmd} check --no-cache` over the tree as it is now refused, and wrote:\n{}",
+                    String::from_utf8_lossy(&output.stderr)
+                ));
+            }
+            stdout
+        }
+    };
+    if !machine {
+        return Ok(stdout);
+    }
+    let Some(findings) = headwater_yaml::load(&stdout).ok().and_then(|parsed| {
+        let map = parsed.value.as_map()?;
+        let list = map.get("findings")?.value.as_seq()?;
+        Some(
+            list.iter()
+                .filter_map(|node| node.value.as_map())
+                .map(|finding| {
+                    let field = |key: &str| scalar(finding, key).unwrap_or_default();
+                    [
+                        field("rule"),
+                        field("severity"),
+                        field("path"),
+                        field("line"),
+                        field("column"),
+                        field("message"),
+                        field("remediation"),
+                    ]
+                })
+                .collect::<Vec<[String; 7]>>(),
+        )
+    }) else {
+        return Ok(stdout);
+    };
+    let changed = changed_since_start(server);
+    let mine = |finding: &[String; 7]| {
+        changed
+            .iter()
+            .any(|path| finding[2] == *path || finding[5].contains(path.as_str()))
+    };
+    let count = |severity: &str| findings.iter().filter(|f| f[1] == severity).count();
+    let (errors, warns, infos) = (count("error"), count("warn"), count("info"));
+    let ours: Vec<&[String; 7]> = findings.iter().filter(|f| mine(f)).take(200).collect();
+    let mut others: Vec<(String, String, usize)> = Vec::new();
+    for finding in findings.iter().filter(|f| !mine(f)) {
+        match others
+            .iter_mut()
+            .find(|(rule, severity, _)| *rule == finding[0] && *severity == finding[1])
+        {
+            Some(entry) => entry.2 += 1,
+            None => others.push((finding[0].clone(), finding[1].clone(), 1)),
+        }
+    }
+    others.sort_by(|a, b| b.2.cmp(&a.2).then(a.0.cmp(&b.0)));
+    if format == "json" {
+        let finding_json = |f: &[String; 7]| {
+            Json::Object(vec![
+                ("rule".to_string(), Json::string(f[0].clone())),
+                ("severity".to_string(), Json::string(f[1].clone())),
+                ("path".to_string(), Json::string(f[2].clone())),
+                (
+                    "line".to_string(),
+                    Json::Raw(if f[3].is_empty() {
+                        "null".to_string()
+                    } else {
+                        f[3].clone()
+                    }),
+                ),
+                (
+                    "column".to_string(),
+                    Json::Raw(if f[4].is_empty() {
+                        "null".to_string()
+                    } else {
+                        f[4].clone()
+                    }),
+                ),
+                ("message".to_string(), Json::string(f[5].clone())),
+                ("remediation".to_string(), Json::string(f[6].clone())),
+            ])
+        };
+        return Ok(Json::Object(vec![
+            ("walked".to_string(), Json::string("the tree as it is now")),
+            ("now".to_string(), Json::string(now.clone())),
+            (
+                "totals".to_string(),
+                Json::Object(vec![
+                    (
+                        "findings".to_string(),
+                        Json::Raw(findings.len().to_string()),
+                    ),
+                    ("error".to_string(), Json::Raw(errors.to_string())),
+                    ("warn".to_string(), Json::Raw(warns.to_string())),
+                    ("info".to_string(), Json::Raw(infos.to_string())),
+                ]),
+            ),
+            (
+                "changed_since_start".to_string(),
+                Json::Array(
+                    changed
+                        .iter()
+                        .map(|path| Json::string(path.clone()))
+                        .collect(),
+                ),
+            ),
+            (
+                "findings_on_changed_files".to_string(),
+                Json::Array(ours.iter().map(|f| finding_json(f)).collect()),
+            ),
+            (
+                "other_findings_by_rule".to_string(),
+                Json::Array(
+                    others
+                        .iter()
+                        .map(|(rule, severity, n)| {
+                            Json::Object(vec![
+                                ("rule".to_string(), Json::string(rule.clone())),
+                                ("severity".to_string(), Json::string(severity.clone())),
+                                ("count".to_string(), Json::Raw(n.to_string())),
+                            ])
+                        })
+                        .collect(),
+                ),
+            ),
+        ])
+        .render_pretty());
+    }
+    let mut out = format!(
+        "This is a run of `{cmd} check --no-cache` over the tree as it is now, not over the walk \
+         this server took when it started.\nThe date is {now}, fixed when this server started.\n{} \
+         findings: {errors} error, {warns} warn, {infos} info.\n\n",
+        findings.len()
+    );
+    match changed.is_empty() {
+        true => out.push_str("No file has changed since this server started.\n"),
+        false => {
+            out.push_str(&format!(
+                "Every finding on the {} file(s) changed since this server started, or that names \
+                 one of them ({}):\n",
+                changed.len(),
+                ours.len()
+            ));
+            for f in &ours {
+                out.push_str(&format!(
+                    "  {}:{}:{} {}\n    {}: {}\n",
+                    f[2], f[3], f[4], f[1], f[0], f[5]
+                ));
+                if !f[6].is_empty() {
+                    out.push_str(&format!("    fix: {}\n", f[6]));
+                }
+            }
+            if ours.is_empty() {
+                out.push_str("  none\n");
+            }
+        }
+    }
+    out.push_str(
+        "\nThe other findings, counted by rule. None of them is on a file changed since this \
+         server started:\n",
+    );
+    for (rule, severity, n) in &others {
+        out.push_str(&format!("  {n} {severity} {rule}\n"));
+    }
+    out.push_str(&format!(
+        "For every finding in full, run `{cmd} check --no-cache` from the repository root.\n"
+    ));
+    Ok(out)
 }
 
 /// One or two content blocks, in the shape a tool result takes.
@@ -1261,6 +1557,9 @@ pub fn serve(
     mut output: impl std::io::Write,
 ) -> std::io::Result<()> {
     let mut session = Session::default();
+    // The walk is behind every answer already, so a file modified after this
+    // moment is one that no answer of the walk sees (#1880, round 2).
+    started();
     for line in input.lines() {
         let Ok(line) = line else { return Ok(()) };
         if line.trim().is_empty() {

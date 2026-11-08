@@ -28,7 +28,9 @@ use headwater_check::{Cache, Context, Date, Declared, Shape};
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Graph};
-use headwater_query::mcp::{self, Server, Session, Writing, Written, QUERY_CLASS, WRITE_CLASS};
+use headwater_query::mcp::{
+    self, Rerun, Server, Session, Writing, Written, QUERY_CLASS, WRITE_CLASS,
+};
 use headwater_query::Surface;
 use headwater_yaml::{Spanned, Value};
 use std::path::{Path, PathBuf};
@@ -192,6 +194,9 @@ impl Built {
             version: "0.0.0",
             now: Context::at(Date::parse(at).expect("a date")),
             writing: None,
+            // A test binary is not `headwater`, so the `check` tool runs the
+            // check layer in this process rather than its own executable.
+            rerun: Rerun::InProcess,
         }
     }
 
@@ -758,14 +763,17 @@ fn the_write_tools_take_the_arguments_their_verbs_take() {
     );
 }
 
-/// The tool answers what the CLI answers, in all four formats.
+/// The tool answers what the CLI answers in `sarif` and `markdown`, and a
+/// summary of the same run in `text` and `json`.
 ///
 /// This is the whole of the "second set of defaults" question, asserted rather
 /// than argued. The run on the right is built here from the clock, the
 /// declarations, the census and the graph, and rendered through the dispatcher
 /// `headwater check` renders through. A tool that reached for a clock of its
 /// own, opened a cache, or walked the corpus again would answer something else
-/// in at least one format.
+/// in at least one format. Since #1880 round 2, `text` and `json` answer the
+/// totals and the findings on changed files rather than the verb's bytes, so
+/// for those two the test holds the totals of the same run.
 #[test]
 fn the_check_tool_answers_the_bytes_the_cli_answers() {
     let built = fixture_tree();
@@ -789,12 +797,18 @@ fn the_check_tool_answers_the_bytes_the_cli_answers() {
     for format in Format::ALL {
         let expected =
             headwater_adapter::render(&run, &built.census, &built.graph, &subject, format);
-        assert_eq!(
-            expected,
-            call_check(&server, format.name()),
-            "the {} format",
-            format.name()
-        );
+        let answered = call_check(&server, format.name());
+        match format.name() {
+            "text" => assert!(
+                answered.contains(&format!("\n{} findings: ", run.findings.len())),
+                "the text format states the totals of the run\n{answered}"
+            ),
+            "json" => assert!(
+                answered.contains(&format!("\"findings\": {},", run.findings.len())),
+                "the json format states the totals of the run\n{answered}"
+            ),
+            _ => assert_eq!(expected, answered, "the {} format", format.name()),
+        }
     }
 }
 

@@ -285,8 +285,9 @@ fn the_fixer_reports_no_set_twice_finding_at_the_orphan() {
 }
 
 /// The MCP `check` tool promises the bytes of `headwater check --format
-/// <format>` over the same corpus at the same date. On an orphan corpus the
-/// two must agree, and neither names the orphan.
+/// <format>` over the same corpus at the same date for `sarif` and `markdown`,
+/// and a summary of that run for `text` and `json` (#1880, round 2). On an
+/// orphan corpus the two must agree, and neither names the orphan.
 #[test]
 fn the_mcp_check_tool_and_the_check_verb_agree_on_an_orphan() {
     let (root, named) = orphan_corpus("mcp");
@@ -308,6 +309,8 @@ fn the_mcp_check_tool_and_the_check_verb_agree_on_an_orphan() {
             "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{}}\n",
             "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":",
             "{\"name\":\"check\",\"arguments\":{\"format\":\"json\"}}}\n",
+            "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/call\",\"params\":",
+            "{\"name\":\"check\",\"arguments\":{\"format\":\"sarif\"}}}\n",
         ),
     );
     assert!(
@@ -315,12 +318,14 @@ fn the_mcp_check_tool_and_the_check_verb_agree_on_an_orphan() {
         "no {RULE} finding at {named} from the MCP tool"
     );
     // The artifact rides in the response as one JSON string, escaped the way
-    // the server escapes every string.
-    let artifact = headwater_yaml::json::Json::string(checked.out.as_str()).render();
+    // the server escapes every string. `json` is a summary of the run since
+    // #1880 round 2, so the bytes are compared in `sarif`.
+    let sarif = root.run(&["check", "--no-cache", "--format", "sarif", "--now", NOW]);
+    let artifact = headwater_yaml::json::Json::string(sarif.out.as_str()).render();
     assert!(
         served.out.contains(&artifact),
         "the MCP tool answers the bytes of the verb ({} bytes from the verb, {} from the server)\n{}",
-        checked.out.len(),
+        sarif.out.len(),
         served.out.len(),
         served.err
     );
