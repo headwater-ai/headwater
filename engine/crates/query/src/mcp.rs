@@ -249,6 +249,23 @@ pub struct Server<'a> {
     /// reach. Spec 5 fixes the default, because a client may connect to a
     /// checkout that the user did not intend to change.
     pub writing: Option<Writing<'a>>,
+    /// What the `check` tool runs to check the tree as it is now. `headwater
+    /// mcp` runs its own executable, and a test runs the check layer in its own
+    /// process, because a test binary is not `headwater` (#1880, PR #1943).
+    pub rerun: Rerun,
+}
+
+/// What the `check` tool runs to check the tree as it is now (#1880, round 2).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Rerun {
+    /// The server's own executable, as `headwater check --no-cache --now
+    /// <the server's date>`. This is what `headwater mcp` runs.
+    #[default]
+    Executable,
+    /// The check layer in this process, over the walk the server took when it
+    /// started, at the server's date. It writes the bytes the executable writes
+    /// over a tree that did not change, and it is the seam a test uses.
+    InProcess,
 }
 
 /// The two verbs of the working-tree write class, as the caller runs them.
@@ -1058,6 +1075,9 @@ fn started() -> std::time::SystemTime {
 
 /// Every file under the root that changed after this server started, by its
 /// path from the root. Version control and build output are not walked.
+// Regular files only, as the measured variant walked them: `!is_dir()` would
+// also take symlinks and other entries, which changes the answer (#1880).
+#[allow(clippy::filetype_is_file)]
 fn changed_since_start(server: &Server<'_>) -> Vec<String> {
     let mut out = Vec::new();
     let mut stack = vec![server.root.to_path_buf()];
@@ -1110,25 +1130,44 @@ fn fresh_check(server: &Server<'_>, format: &str) -> Result<String, Failure> {
     let cmd = command(server);
     let machine = format == "text" || format == "json";
     let wanted = if machine { "json" } else { format };
-    let exe = std::env::current_exe().map_err(|error| Failure {
-        code: -32603,
-        message: format!("this server cannot name its own executable to run the check: {error}"),
-    })?;
-    let output = std::process::Command::new(exe)
-        .args(["check", "--no-cache", "--format", wanted, "--root"])
-        .arg(server.root)
-        .output()
-        .map_err(|error| Failure {
-            code: -32603,
-            message: format!("`{cmd} check` did not start: {error}"),
-        })?;
-    let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
-    if stdout.trim().is_empty() {
-        return Ok(format!(
-            "`{cmd} check --no-cache` over the tree as it is now refused, and wrote:\n{}",
-            String::from_utf8_lossy(&output.stderr)
-        ));
-    }
+    // The date the server fixed when it started, and not the host's date: spec
+    // 5 fixes the clock for the life of the server (#1880, PR #1943).
+    let now = server.now.now().render();
+    let stdout = match server.rerun {
+        Rerun::InProcess => check(server, wanted)?,
+        Rerun::Executable => {
+            let exe = std::env::current_exe().map_err(|error| Failure {
+                code: -32603,
+                message: format!(
+                    "this server cannot name its own executable to run the check: {error}"
+                ),
+            })?;
+            let output = std::process::Command::new(exe)
+                .args([
+                    "check",
+                    "--no-cache",
+                    "--format",
+                    wanted,
+                    "--now",
+                    &now,
+                    "--root",
+                ])
+                .arg(server.root)
+                .output()
+                .map_err(|error| Failure {
+                    code: -32603,
+                    message: format!("`{cmd} check` did not start: {error}"),
+                })?;
+            let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
+            if stdout.trim().is_empty() {
+                return Ok(format!(
+                    "`{cmd} check --no-cache` over the tree as it is now refused, and wrote:\n{}",
+                    String::from_utf8_lossy(&output.stderr)
+                ));
+            }
+            stdout
+        }
+    };
     if !machine {
         return Ok(stdout);
     }
@@ -1203,6 +1242,7 @@ fn fresh_check(server: &Server<'_>, format: &str) -> Result<String, Failure> {
         };
         return Ok(Json::Object(vec![
             ("walked".to_string(), Json::string("the tree as it is now")),
+            ("now".to_string(), Json::string(now.clone())),
             (
                 "totals".to_string(),
                 Json::Object(vec![
@@ -1248,7 +1288,8 @@ fn fresh_check(server: &Server<'_>, format: &str) -> Result<String, Failure> {
     }
     let mut out = format!(
         "This is a run of `{cmd} check --no-cache` over the tree as it is now, not over the walk \
-         this server took when it started.\n{} findings: {errors} error, {warns} warn, {infos} info.\n\n",
+         this server took when it started.\nThe date is {now}, fixed when this server started.\n{} \
+         findings: {errors} error, {warns} warn, {infos} info.\n\n",
         findings.len()
     );
     match changed.is_empty() {
@@ -1428,7 +1469,6 @@ fn write(
 /// rather than decided here, and the fourth is this function's argument. What
 /// is left is the call the CLI makes with the same five values, so the bytes
 /// are the CLI's bytes.
-#[allow(dead_code)]
 fn check(server: &Server<'_>, format: &str) -> Result<String, Failure> {
     let Some(format) = Format::parse(format) else {
         let names: Vec<&str> = Format::ALL.iter().map(|format| format.name()).collect();
