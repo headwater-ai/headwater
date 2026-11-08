@@ -2218,6 +2218,47 @@ rm -rf "$b"
 usage_of mcp
 check "usage: a batch with no sessions directory exits 2" code_is 2
 
+# ------------------- keep: the owner keeps a confirmation the rule did not (#1880)
+# A confirmation that the keep rule did not keep becomes the best so far on
+# the owner's ruling, and its round stays one that kept nothing.
+new_case
+keep_ledger() {
+    mkdir -p "$CASE/root/docs-r2-confirm" "$CASE/root/docs-r2-v1"
+    printf '%s\n' \
+        '{"event": "best", "try": "docs-r1-best", "layer": "docs", "transcript": "best.md", "used": 1, "sessions": 145, "count": 145}' \
+        '{"event": "result", "try": "docs-r2-confirm", "layer": "docs", "stage": "confirm", "round": 2, "variant": "docs-r2-v1", "spent": 300, "transcript": "confirm.md", "keep_row": "pooled: 100/145 against 95/145, +3.4 points [-5.0, +12.0]", "used": 2, "sessions": 145, "count": 145, "kept": false, "direction": "up"}' \
+        '{"event": "round", "layer": "docs", "round": 2, "kept": false, "try": "docs-r2-confirm"}' \
+        > "$CASE/root/ledger.jsonl"
+}
+keep_ledger
+run keep "$CASE/root" docs-r2-confirm https://example.org/ruling
+check "keep: a ruling that is not a GitHub URL exits 2" code_is 2
+run keep "$CASE/root" docs-r2-confirm https://github.com/headwater-ai/headwater/pull/1941
+check "keep: a pull request is not the ruling, and exits 2" code_is 2
+run keep "$CASE/root" docs-r3-confirm "$RULING"
+check "keep: a try root that does not exist exits 6" code_is 6
+check "keep: and says so" err_has "no try root at $CASE/root/docs-r3-confirm"
+run keep "$CASE/root" docs-r2-v1 "$RULING"
+check "keep: a try with no result of a confirmation exits 6" code_is 6
+check "keep: and says there is no verdict to override" err_has "no result event of a confirmation in $CASE/root/ledger.jsonl names docs-r2-v1"
+check "keep: no refused keep appends an event" sh -c "[ \"\$(wc -l < '$CASE/root/ledger.jsonl')\" = 3 ]"
+run keep "$CASE/root" docs-r2-confirm "$RULING"
+check "keep: a confirmation not kept exits 0" code_is 0
+check "keep: and says the owner kept it over the rule, with the keep row" \
+    out_has "keep: docs-r2-confirm kept by the owner's ruling $RULING, over the keep rule's verdict, not kept (pooled: 100/145 against 95/145, +3.4 points [-5.0, +12.0])"
+check "keep: and appends one result event with kept true, the ruling and what it overrides" \
+    sh -c "tail -1 '$CASE/root/ledger.jsonl' | grep -q '\"try\": \"docs-r2-confirm\".*\"kept\": true.*\"ruling\": \"$RULING\", \"overrides\": \"not kept\"'"
+check "keep: and no round event" sh -c "[ \"\$(grep -c '\"event\": \"round\"' '$CASE/root/ledger.jsonl')\" = 1 ]"
+run rank "$CASE/root"
+check "keep: rank reads the kept confirmation as the best so far" out_has "best so far: confirm.md, used in 2 of 145 sessions"
+run keep "$CASE/root" docs-r2-confirm "$RULING"
+check "keep: a confirmation kept already exits 6" code_is 6
+check "keep: and says so" err_has "docs-r2-confirm is kept already"
+printf '%s\n' '{"event": "void", "try": "docs-r2-confirm", "ruling": "x", "spent": 300}' >> "$CASE/root/ledger.jsonl"
+run keep "$CASE/root" docs-r2-confirm "$RULING"
+check "keep: a voided confirmation exits 6" code_is 6
+check "keep: and says it is voided" err_has "docs-r2-confirm is voided"
+
 # ------------------- void: a mismeasured try, measured again (#1877)
 
 # The owner ruled the grader wrong on 2026-11-02 (#1877, comment 6568926331),
