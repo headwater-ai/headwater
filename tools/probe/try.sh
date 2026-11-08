@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # The tuning round of the additive campaign, from the plan to the committed
-# record, as thirteen verbs (#1821, #1822, #1838, #1878). Before this script, each try
+# record, as fourteen verbs (#1821, #1822, #1838, #1878, #1880). Before this script, each try
 # had a launch script, a wait condition, a canary reader and a keep decision
 # typed by hand, the total spend of the round was prose that a person added
 # to by hand, and one hand reader read `named 1 path outside` as a blank field
@@ -23,6 +23,7 @@
 #     sh tools/probe/try.sh accept   <root> <ruling-url>
 #     sh tools/probe/try.sh void     <root> <try> <ruling-url>
 #     sh tools/probe/try.sh adopt    <root> <from-root> <try> <ruling-url>
+#     sh tools/probe/try.sh keep     <root> <try> <ruling-url>
 #
 # `<root>` is the root of the tuning round: one directory that holds every
 # try root of the round and the two files of the round: `<root>/env`, which
@@ -435,10 +436,27 @@
 #   on an issue, and any other text exits 2. A void of the source try in its
 #   own root does not reach the adopted event, and `void` in `<root>`
 #   refuses it, because `<root>` holds no try root of that name.
+# - `keep <root> <try> <ruling-url>` records that the owner kept a
+#   confirmation the keep rule did not keep (owner, 2026-11-08,
+#   https://github.com/headwater-ai/headwater/issues/1880#issuecomment-6721106418,
+#   recorded by this verb under
+#   https://github.com/headwater-ai/headwater/issues/1880#issuecomment-6727464365:
+#   `mcp-r2-v2` at 122 of 154 against 116). It reads the latest `result`
+#   event of the try's confirmation and appends a copy of it with `kept`
+#   true, the ruling, `overrides` as `not kept` and the time. From then on
+#   the read of the best so far finds that event, so `rank`, `plan` and the
+#   keep row of the next confirmation read the try as the best so far. It
+#   appends no `round` event: the round stays one that kept nothing under
+#   the rule, so a layer that stopped on `stop_after_empty` stays stopped,
+#   and the owner's ruling, not this verb, opens another round. It leaves
+#   `result.md` as `result` wrote it, because that is the rule's verdict. It
+#   exits 6 for a try root that does not exist, a try that is voided, a try
+#   with no `result` event of a confirmation, and one kept already. The
+#   ruling is the URL of a comment on an issue, and any other text exits 2.
 #
 # `<root>/ledger.jsonl` holds one JSON object for each event. `result`
 # appends `screen`, `best`, `base`, `result`, `round` and `halt`, `accept` appends
-# `accept`, `void` appends `void`, `adopt` appends a `base`, `wait` appends `gate` for each stop of the usage gate, and `launch` appends a `round` with `kept` false when it refuses
+# `accept`, `void` appends `void`, `adopt` appends a `base`, `keep` appends a `result` with `kept` true, `wait` appends `gate` for each stop of the usage gate, and `launch` appends a `round` with `kept` false when it refuses
 # the top variant of a round for no gain in use, which it never does for a
 # round where `use_ungated` holds.
 #
@@ -479,8 +497,8 @@
 #   0   the verb did what it states: `canary-passed` is written, the plan
 #       passes, the driver is started, `rank` printed, `wait` met its condition, `result`
 #       recorded a try kept or not kept, `ledger` printed, `accept`
-#       recorded or had nothing to accept, `void` recorded the void, or
-#       `adopt` recorded the base
+#       recorded or had nothing to accept, `void` recorded the void,
+#       `adopt` recorded the base, or `keep` recorded the owner's keep
 #   1   `wait` alone: the driver runs and needs no reader
 #   2   a usage error, or a file it reads is missing or does not read:
 #       `<root>`, `<root>/env`, `<root>/base-pin`, `driver.argv`, a cost, a
@@ -507,7 +525,7 @@
 #       `canary-recorded`, `result` on a try that has a `result.md`, or
 #       `void` on a try root that is absent, a try no event names or a try
 #       voided already, `adopt` of a try that the rules of `adopt` above
-#       refuse; or
+#       refuse, `keep` of a try that the rules of `keep` above refuse; or
 #       the rules of rounds, order and stages refuse the round or the stage
 #       of `plan` or `launch`
 #   7   a person must read the try: `canary` wrote `canary-needs-reader`, or
@@ -526,7 +544,7 @@ engine=${HEADWATER_TRY_ENGINE:-$checkout/engine/target/dev-release/headwater}
 usage_counter=${HEADWATER_TRY_USAGE:-$here/usage.py}
 
 usage() {
-    echo "usage: sh tools/probe/try.sh status|spent|rank|ledger <root>, plan <root> [<stage>], launch <root> <stage>, relaunch|canary|wait|result <root> <try>, accept <root> <ruling-url>, void <root> <try> <ruling-url>, or adopt <root> <from-root> <try> <ruling-url>, where <stage> is screen <k>, best, confirm <variant> or base" >&2
+    echo "usage: sh tools/probe/try.sh status|spent|rank|ledger <root>, plan <root> [<stage>], launch <root> <stage>, relaunch|canary|wait|result <root> <try>, accept <root> <ruling-url>, void|keep <root> <try> <ruling-url>, or adopt <root> <from-root> <try> <ruling-url>, where <stage> is screen <k>, best, confirm <variant> or base" >&2
     exit 2
 }
 say() { printf 'try: %s\n' "$1" >&2; }
@@ -544,7 +562,7 @@ case $verb in
     launch) [ $# -ge 3 ] && [ $# -le 4 ] || usage; stage_kind=$3 stage_arg=${4:-} ;;
     relaunch | canary | wait | result) [ $# -le 3 ] || usage; try_name=${3:-} ;;
     accept) [ $# = 3 ] || usage; ruling=$3 ;;
-    void) [ $# = 4 ] || usage; try_name=$3 ruling=$4 ;;
+    void | keep) [ $# = 4 ] || usage; try_name=$3 ruling=$4 ;;
     adopt) [ $# = 5 ] || usage; from_root=$3 try_name=$4 ruling=$5 ;;
     *) usage ;;
 esac
@@ -869,6 +887,13 @@ ceilings() {
 #                                    `<event>\t<scenario>\t<pin>\t<count>\t<passed>\t<graded>\t<spent>\t<transcript>`,
 #                                    with a field it lacks empty, or nothing;
 #                                    `adopt` runs it on the source ledger
+#   override <try> <ruling> <at>     append a copy of the latest `result` of
+#                                    the try's confirmation with `kept` true,
+#                                    the ruling, `overrides` and the time,
+#                                    and print `kept\t<keep row>`; print
+#                                    `none` where there is no such event and
+#                                    `already` where it is kept, and append
+#                                    nothing
 # `best`, `rank` and `base` skip every event whose `try` a `void` event
 # names, so a voided try is no measurement (#1877). An event with no `try`,
 # as `accept` and `gate` write, is never voided.
@@ -1004,6 +1029,21 @@ elif mode == "figures":
         if found:
             print("\t".join("" if found.get(key) is None else str(found.get(key))
                             for key in ("event", "scenario", "pin", "count", "passed", "graded", "spent", "transcript")))
+elif mode == "override":
+    found = None
+    for event in counted():
+        if event.get("try") == args[0] and event.get("event") == "result" and event.get("stage") == "confirm":
+            found = event
+    if found is None:
+        print("none")
+    elif found.get("kept") is True:
+        print("already")
+    else:
+        event = dict(found)
+        event.update(kept=True, ruling=args[1], overrides="not kept", at=args[2])
+        with open(ledger, "a", encoding="utf-8") as handle:
+            handle.write(json.dumps(event) + "\n")
+        print("kept\t%s" % found.get("keep_row", ""))
 elif mode == "named":
     print(sum(1 for event in events() or [] if event.get("event") != "void" and event.get("try") == args[0]))
 elif mode == "cover":
@@ -2385,6 +2425,27 @@ EOF
         [ -f "$root/base-pin" ] || printf '%s %s\n' "$adopt_scenario" "$adopt_pin" > "$root/base-pin"
         echo "adopt: scenario $adopt_scenario at $adopt_pin, $adopt_passed of $adopt_graded passed in $adopt_count sessions, from the $adopt_event event of $from_root/$try_name ($ruling)"
         echo "adopt: its $adopt_spent cents stay charged in $from_root, and it charges 0 here"
+        ;;
+
+    keep)
+        printf '%s' "$ruling" | grep -Eqx 'https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/issues/[0-9]+#issuecomment-[0-9]+' || {
+            say "\`$ruling\` is not the URL of the owner's ruling: a comment on an issue, https://github.com/<owner>/<repo>/issues/<n>#issuecomment-<id>."
+            exit 2
+        }
+        resolve_try
+        [ -d "$try" ] || { say "no try root at $try, so there is no confirmation to keep."; exit 6; }
+        keep_voided=$(ledger_py voided) || exit $?
+        if printf '%s\n' "$keep_voided" | grep -qxF -- "$try_name"; then
+            say "$try_name is voided in $root/ledger.jsonl, so it is no measurement to keep."
+            exit 6
+        fi
+        keep_line=$(ledger_py override "$try_name" "$ruling" "$(now)") || exit $?
+        case $keep_line in
+            none) say "no result event of a confirmation in $root/ledger.jsonl names $try_name, so there is no verdict to override."; exit 6 ;;
+            already) say "$try_name is kept already in $root/ledger.jsonl."; exit 6 ;;
+        esac
+        echo "keep: $try_name kept by the owner's ruling $ruling, over the keep rule's verdict, not kept ($(printf '%s\n' "$keep_line" | cut -f2))"
+        echo "keep: it is the best so far of its layer, and its round stays one that kept nothing"
         ;;
 esac
 exit 0
