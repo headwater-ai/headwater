@@ -329,6 +329,30 @@
 # message, because no log of one is recorded to match against. The next
 # invocation clears the halt and runs the failed job again.
 #
+# **A session the provider refused on policy grounds is `refused` (#1881).**
+# The owner ruled on 2026-11-09 (issue 1881, comment 6730867194) that a
+# session the API refuses on policy grounds is recorded as refused, is not
+# run again, is not graded, and does not count toward its line's sessions.
+# The harness ends such a session with a last `result` line whose
+# `is_error` is true and whose `result` opens `API Error:` and names the
+# usage policy (`can't help with this`, or a link to `/legal/aup`). The
+# recorder exits 10 for it, as for any other harness failure. So a job whose
+# recorder exited 10, and whose `raw.jsonl` ends that way, raises no halt:
+# the job writes `<out>/refused/<name>` with the UTC time and the first line
+# of the error, and keeps `status` 10, `cost`, `spent-before` and
+# `raw.jsonl`, which is the session's transcript. A job with the marker is
+# never drawn again, and a job an earlier invocation left at `status` 10
+# whose log ends that way gets the marker before it is drawn, so it is not
+# run a second time. The tally counts a refused job as neither failed nor
+# left, assembly counts it in no line's sessions and adds its cost to the
+# line's, and the cap and the ceiling count what it spent. A refused
+# session is not replaced: its job was one of the batch's fixed set. The
+# word is the grader's: a session the grader reaches no verdict on is
+# refused and in no denominator (`headwater probe grade`), and this is the
+# same outcome one step earlier. It is not `slice/refused/<name>`, which is
+# a job the cap, the ceiling or a moved `HEAD` kept from starting in one
+# invocation, and which the next invocation draws again.
+#
 # **A staggered batch** runs in several invocations against one pinned commit,
 # for example to stay inside the harness's 5-hour usage window. Detach a
 # worktree of its own at the pin (`git worktree add --detach <dir> <pin>`) and
@@ -562,6 +586,27 @@ draw_check() {
     done < "$1"
 }
 
+# mark_refused <name> <session dir>: when the session's `raw.jsonl` ends with
+# the provider's refusal on policy grounds (#1881), write
+# `<out>/refused/<name>` with the UTC time and the first line of the error,
+# say so, and return 0. Otherwise return 1 and write nothing. The test reads
+# the last `result` line alone, so a session that only quoted such text in a
+# tool result is not refused.
+mark_refused() {
+    [ -f "$2/raw.jsonl" ] || return 1
+    refusal=$(jq -s -r '
+        [.[] | select(type == "object" and .type == "result")] | last
+        | select(. != null and .is_error == true)
+        | (.result // "") as $r
+        | select(($r | startswith("API Error:")) and ($r | test("can.t help with this|/legal/aup")))
+        | $r | split("\n") | .[0]' < "$2/raw.jsonl" 2>/dev/null)
+    [ -n "$refusal" ] || return 1
+    mkdir -p "$out/refused"
+    printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$refusal" > "$out/refused/$1"
+    echo "campaign: $1: the provider refused the session on policy grounds ($refusal), so it is recorded as refused, is not graded and is not drawn again." >&2
+    return 0
+}
+
 # ---------------------------------------------------------------------------
 # One job, run by a worker. The line is the job's row of `<out>/jobs`.
 # ---------------------------------------------------------------------------
@@ -583,6 +628,15 @@ run_job() {
     # non-record (#1659). Its workspace is gone, so a run again would be a new
     # paid draw and not a second recording of the same session.
     if [ -f "$out/unrecorded/$name" ]; then
+        return 0
+    fi
+    # A session the provider refused on policy grounds is never drawn again
+    # (#1881), and nor is one an earlier invocation left halted whose log
+    # shows that refusal: it gets its marker here, before any token.
+    if [ -f "$out/refused/$name" ]; then
+        return 0
+    fi
+    if [ "$(cat "$dir/status" 2>/dev/null)" = 10 ] && mark_refused "$name" "$dir"; then
         return 0
     fi
     # A halted invocation starts nothing more, and leaves the job to the next.
@@ -785,7 +839,9 @@ run_job() {
         esac
     fi
     printf '%s\n' "$status" > "$dir/status"
-    if [ "$status" = 10 ]; then
+    if [ "$status" = 10 ] && mark_refused "$name" "$dir"; then
+        :
+    elif [ "$status" = 10 ]; then
         : > "$out/slice/halt"
         echo "campaign: $name: the harness failed for a reason other than the turn cap or the budget, so this invocation starts no other job (halt). A usage limit stops a session this way." >&2
     fi
@@ -833,12 +889,22 @@ if [ "$assemble" = 1 ]; then
         budgeted=0
         outside=0
         uncounted=0
+        refused=0
         web=0
         first_at=
         : > "$out/assembled/$stem.events.yaml"
         for dir in "$out"/sessions/L$index-*; do
             [ -d "$dir" ] || continue
             batch_sessions=$((batch_sessions + 1))
+            # A session the provider refused on policy grounds (#1881) is in no
+            # line's sessions and is not graded. It spent, so its cost is in
+            # the line's.
+            if [ -f "$out/refused/$(basename "$dir")" ]; then
+                echo "campaign: $(basename "$dir") was refused by the provider ($(cat "$dir/cost" 2>/dev/null || echo 0) cents): $(cut -d' ' -f2- "$out/refused/$(basename "$dir")")" >&2
+                refused=$((refused + 1))
+                [ -s "$dir/cost" ] && cost=$((cost + $(cat "$dir/cost")))
+                continue
+            fi
             # A session accepted with `--unrecorded` is uncounted and does not
             # fail the line (#1659). It spent, so its cost is in the line's.
             if [ "$(cat "$dir/status" 2>/dev/null)" != 0 ] && [ -f "$out/unrecorded/$(basename "$dir")" ]; then
@@ -891,6 +957,9 @@ if [ "$assemble" = 1 ]; then
         printf '%s sessions, %s cents, the intent hook live in %s, %s stopped at the turn cap, %s stopped at the session budget, %s paths outside the workspace named, %s sessions uncounted, %s web-tool calls\n' \
             "$count" "$cost" "$live" "$capped" "$budgeted" "$outside" "$uncounted" "$web" \
             > "$out/assembled/$stem.summary"
+        if [ "$refused" -gt 0 ]; then
+            printf '%s sessions refused by the provider\n' "$refused" >> "$out/assembled/$stem.summary"
+        fi
         printf 'campaign: %s: %s' "$stem" "$(cat "$out/assembled/$stem.summary")" >&2
         printf '\n' >&2
         # An additive line names its round in place of a category, and runs
@@ -1468,6 +1537,7 @@ recorded=0
 failed=0
 remain=0
 unrecorded_count=0
+refused_count=0
 while IFS= read -r row; do
     name=${row%% *}
     status=$(cat "$out/sessions/$name/status" 2>/dev/null)
@@ -1476,6 +1546,9 @@ while IFS= read -r row; do
     elif [ -f "$out/unrecorded/$name" ]; then
         # Accepted with `--unrecorded` (#1659): neither failed nor left.
         unrecorded_count=$((unrecorded_count + 1))
+    elif [ -f "$out/refused/$name" ]; then
+        # Refused by the provider on policy grounds (#1881): neither.
+        refused_count=$((refused_count + 1))
     elif [ -f "$out/slice/refused/$name" ]; then
         failed=$((failed + 1))
     elif [ ! -f "$out/slice/started/$name" ]; then
@@ -1500,6 +1573,8 @@ else
 fi
 [ "$unrecorded_count" = 0 ] ||
     echo "campaign: $unrecorded_count sessions are unrecorded by \`--unrecorded\`, and none is drawn again." >&2
+[ "$refused_count" = 0 ] ||
+    echo "campaign: $refused_count sessions were refused by the provider on policy grounds, and none is graded or drawn again." >&2
 [ "$failed" = 0 ] || exit 7
 [ "$remain" = 0 ] || exit 9
 exit 0

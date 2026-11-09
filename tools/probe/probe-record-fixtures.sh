@@ -3884,7 +3884,9 @@ STUB
                     "$r" "$tombstone" >> "$1/jobs"
             done
         }
-        # $1 is `ok` or `fail-first`. The stub runs confined, so it logs to
+        # $1 is `ok`, `fail-first` or `refuse-first`, the last a first session
+        # the provider refuses on policy grounds, as the harness ended one on
+        # 2026-11-09 (#1881). The stub runs confined, so it logs to
         # the probe log directory, the one path the driver binds read-write
         # for every session, which is `$scratch/probe-log/stagger.calls`.
         stagger_stub() {
@@ -3896,6 +3898,10 @@ printf '%s %s\n' "\${CLAUDE_CONFIG_DIR:-}" "\$(pwd)" >> "\$calls"
 printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s16"}'
 if [ "$1" = fail-first ] && [ "\$(wc -l < "\$calls")" -le 1 ]; then
     printf '%s\n' '{"type":"result","subtype":"error_during_execution","is_error":true,"total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
+    exit 1
+fi
+if [ "$1" = refuse-first ] && [ "\$(wc -l < "\$calls")" -le 1 ]; then
+    printf '%s\n' '{"type":"result","subtype":"success","is_error":true,"terminal_reason":"api_error","result":"API Error: Sonnet 5 can\u0027t help with this. Start a new session to continue.\n\nLearn more: https://www.anthropic.com/legal/aup\n\nDetails: [bio]","total_cost_usd":0.07,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
     exit 1
 fi
 printf '%s\n' '{"type":"result","subtype":"success","is_error":false,"result":"done","total_cost_usd":0.01,"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10}}}'
@@ -3983,6 +3989,68 @@ STUB
             --model claude-haiku-4-5 --spec "$scratch/stagger.spec" --repetitions 1 \
             >/dev/null 2>"$scratch/stagger-4.err"
         same "and a rerun with a working harness finishes all 3" "0 3" "$? $(stagger_recorded "$stagger")"
+
+        # A session the provider refuses on policy grounds (#1881, the owner's
+        # ruling of 2026-11-09) is recorded as refused: no halt, never drawn
+        # again, kept out of the line's sessions, and its cost kept.
+        stagger_batch "$stagger"
+        rm -f "$scratch/probe-log/stagger.calls"
+        stagger_stub refuse-first
+        stagger_run "$stagger" "$scratch/stagger-r1.err"
+        same "a refused session raises no halt: the slice goes on and stops on its bound with 9" "9 2" \
+            "$? $(wc -l < "$scratch/probe-log/stagger.calls" 2>/dev/null | tr -d ' ')"
+        absent "and nothing halts" "(halt)" "$scratch/stagger-r1.err"
+        present "and the batch says it was refused" "L1-campaign-present-p1-r1: the provider refused the session on policy grounds (API Error: Sonnet 5 can't help with this." "$scratch/stagger-r1.err"
+        present "and its marker holds the first line of the error" "API Error: Sonnet 5 can't help with this. Start a new session to continue." "$stagger/refused/L1-campaign-present-p1-r1"
+        same "and the session keeps its status 10, its cost and its transcript" "10 7 yes" \
+            "$(cat "$stagger/sessions/L1-campaign-present-p1-r1/status") $(cat "$stagger/sessions/L1-campaign-present-p1-r1/cost") $([ -s "$stagger/sessions/L1-campaign-present-p1-r1/raw.jsonl" ] && echo yes || echo no)"
+        stagger_stub ok
+        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$stagger" \
+            --model claude-haiku-4-5 --spec "$scratch/stagger.spec" --repetitions 1 \
+            >/dev/null 2>"$scratch/stagger-r2.err"
+        same "the next slice finishes with 0 and never draws the refused job again" "0 3 2" \
+            "$? $(wc -l < "$scratch/probe-log/stagger.calls" | tr -d ' ') $(stagger_recorded "$stagger")"
+        present "and the tally counts it as refused" "1 sessions were refused by the provider on policy grounds" "$scratch/stagger-r2.err"
+        sh "$root/tools/probe/campaign.sh" --out "$stagger" --assemble >/dev/null 2>"$scratch/stagger-r3.err"
+        same "assembly exits 0 over a refused session" "0" "$?"
+        same "and counts it in no line's sessions, with its cost in the line's" "2 sessions, 9 cents" \
+            "$(head -1 "$stagger/assembled/L1-campaign-present-sufficiency.summary" | sed 's/, the intent.*//')"
+        same "and its summary states the refusal" "1 sessions refused by the provider" \
+            "$(sed -n 2p "$stagger/assembled/L1-campaign-present-sufficiency.summary")"
+        same "and its events name no refused session" "" \
+            "$(grep 'p1-r1' "$stagger/assembled/L1-campaign-present-sufficiency.events.yaml")"
+        # A job an earlier invocation left halted at status 10, whose log
+        # ends in that refusal, gets its marker before it is drawn, so the
+        # code that ships the ruling is not a second paid draw of it.
+        stagger_batch "$stagger"
+        rm -f "$scratch/probe-log/stagger.calls"
+        mkdir -p "$stagger/sessions/L1-campaign-present-p1-r1"
+        echo 10 > "$stagger/sessions/L1-campaign-present-p1-r1/status"
+        echo 52 > "$stagger/sessions/L1-campaign-present-p1-r1/cost"
+        echo campaign > "$stagger/sessions/L1-campaign-present-p1-r1/tier"
+        printf '%s\n' '{"type":"result","is_error":true,"result":"API Error: Sonnet 5 can\u0027t help with this.\n\nLearn more: https://www.anthropic.com/legal/aup"}' \
+            > "$stagger/sessions/L1-campaign-present-p1-r1/raw.jsonl"
+        stagger_stub ok
+        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$stagger" \
+            --model claude-haiku-4-5 --spec "$scratch/stagger.spec" --repetitions 1 \
+            >/dev/null 2>"$scratch/stagger-r4.err"
+        same "a halted job whose log shows the refusal is marked, not drawn again, and the batch finishes" "0 2 yes 10 52" \
+            "$? $(wc -l < "$scratch/probe-log/stagger.calls" | tr -d ' ') $([ -f "$stagger/refused/L1-campaign-present-p1-r1" ] && echo yes || echo no) $(cat "$stagger/sessions/L1-campaign-present-p1-r1/status") $(cat "$stagger/sessions/L1-campaign-present-p1-r1/cost")"
+        # A halted job whose log shows another harness failure is run again.
+        stagger_batch "$stagger"
+        rm -f "$scratch/probe-log/stagger.calls"
+        mkdir -p "$stagger/sessions/L1-campaign-present-p1-r1"
+        echo 10 > "$stagger/sessions/L1-campaign-present-p1-r1/status"
+        echo 3 > "$stagger/sessions/L1-campaign-present-p1-r1/cost"
+        echo campaign > "$stagger/sessions/L1-campaign-present-p1-r1/tier"
+        printf '%s\n' '{"type":"result","is_error":true,"result":"API Error: 529 overloaded"}' \
+            > "$stagger/sessions/L1-campaign-present-p1-r1/raw.jsonl"
+        PATH="$scratch/bin:$PATH" sh "$root/tools/probe/campaign.sh" --out "$stagger" \
+            --model claude-haiku-4-5 --spec "$scratch/stagger.spec" --repetitions 1 \
+            >/dev/null 2>"$scratch/stagger-r5.err"
+        same "a halted job whose log shows another API error is drawn again, and no marker is written" "0 3 no 3" \
+            "$? $(wc -l < "$scratch/probe-log/stagger.calls" | tr -d ' ') $([ -e "$stagger/refused" ] && echo yes || echo no) $(stagger_recorded "$stagger")"
+        rm -f "$scratch/probe-log/stagger.calls"
 
         # A spent session the recorder could not record is accepted once, by
         # a person, as a counted non-record (#1659). Four sessions of the

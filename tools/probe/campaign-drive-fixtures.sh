@@ -9,7 +9,8 @@
 # No case spends, calls a model or reaches the network. Each case runs the
 # driver against a stub `campaign.sh` that writes the layout the real one
 # leaves (`jobs`, `sessions/<name>/{status,cost,spent-before,started}`,
-# `slice/{halt,started/<name>,refused/<name>}` and `claude-version`), a stub
+# `slice/{halt,started/<name>,refused/<name>}`, `refused/<name>` and
+# `claude-version`), a stub
 # clock whose sleep adds to a file and never waits, a directory of fake
 # `claude` versions, a credentials file the case writes, and a throwaway git
 # repository detached at the pin. A `claude` on `PATH` and every fake version
@@ -155,10 +156,11 @@ fi
 [ -f "$out/claude-version" ] || printf '%s\n' "$ver" > "$out/claude-version"
 rm -rf "$out/slice"
 mkdir -p "$out/slice/started" "$out/slice/refused"
-code= record=0 cents=0 halt=n skip=0 refuse=0 fail=0 auto=n provider=0 unrec=0 nomark=n waithalt=n
+code= record=0 cents=0 halt=n skip=0 refuse=0 fail=0 auto=n provider=0 unrec=0 nomark=n waithalt=n declined=0
 for word in $line; do
     case $word in
         auto) auto=y ;;
+        declined=*) declined=${word#declined=} ;;
         waithalt) waithalt=y ;;
         unrec=*) unrec=${word#unrec=} ;;
         nomark) nomark=y ;;
@@ -205,6 +207,11 @@ while read -r name rest; do
         echo "skip-unrecorded $name" >> "$CASE/events"
         continue
     fi
+    # Nor a job the provider refused on policy grounds (#1881).
+    if [ -f "$out/refused/$name" ]; then
+        echo "skip-refused $name" >> "$CASE/events"
+        continue
+    fi
     if [ "$auto" = y ]; then
         if [ "$started" -ge "$max" ]; then
             left=1
@@ -241,6 +248,15 @@ while read -r name rest; do
         echo 2 > "$out/sessions/$name/status"
         echo "$cents" > "$out/sessions/$name/cost"
         fail=$((fail - 1))
+    elif [ "$declined" -gt 0 ]; then
+        # A session the provider refused on policy grounds (#1881): the
+        # recorder exits 10, and campaign.sh marks it and raises no halt.
+        start "$name"
+        echo 10 > "$out/sessions/$name/status"
+        echo "$cents" > "$out/sessions/$name/cost"
+        mkdir -p "$out/refused"
+        echo "2026-11-09T02:29:00Z API Error: Sonnet 5 can't help with this. Start a new session to continue." > "$out/refused/$name"
+        declined=$((declined - 1))
     elif [ "$unrec" -gt 0 ]; then
         # A recorder exit 5 that a person accepted with `--unrecorded`, or,
         # with `nomark`, one nobody accepted.
@@ -1180,6 +1196,28 @@ printf 'exit=9 record=5 cents=50 halt=y\nexit=9 record=3 cents=50\nexit=0 record
 drive
 check "canary: a halted canary asks for the 3 sessions it still owes" grep -q '/root/a cap=99980 max=3$' "$CASE/calls.short"
 check "canary: and then passes" code_is 0
+# A session the provider refused on policy grounds (#1881) is no halt and
+# counts toward no number of sessions: the canary asks for one more session
+# at once, with no backoff, and never draws the refused job again.
+new_case
+: > "$CASE/root/b.done"
+printf 'exit=9 record=7 cents=50 declined=1 cents=50\nexit=9 record=1 cents=50\nexit=0 record=11 cents=50\n' > "$CASE/scenario"
+: > "$CASE/root/canary-passed"
+drive
+check "refused by the provider: the canary is not halted and finishes" code_is 0
+check "refused by the provider: the first canary line counts it beside the recorded" out_has " canary exit=9 recorded=7/20 new=7 cents=400 all=400/100000 bound refused=1\$"
+check "refused by the provider: and no line of the canary is a halt" sh -c "! grep -q ' canary .* halt' '$CASE/out' && ! grep -q 'sleeping' '$CASE/out'"
+check "refused by the provider: the canary asks for the one session it still owes" grep -q '/root/a cap=99980 max=1$' "$CASE/calls.short"
+check "refused by the provider: and never draws the refused job again" sh -c "grep -q '^skip-refused a-008' '$CASE/events' && [ \"\$(cat '$CASE/root/a/sessions/a-008/status')\" = 10 ]"
+check "refused by the provider: the canary range reads the 8 recorded sessions alone" grep -qx '50 50' "$CASE/root/canary-range"
+check "refused by the provider: its cost stays in the spend" out_has " a exit=0 recorded=19/20 new=11 cents=1000 all=1000/100000 refused=1\$"
+new_case
+only_a
+printf 'exit=0 record=19 cents=10 declined=1 cents=10\n' > "$CASE/scenario"
+drive
+check "refused by the provider: a batch whose only unrecorded job was refused finishes" code_is 0
+check "refused by the provider: and is not a recorder failure" sh -c "! grep -q 'a recorder failed' '$CASE/out'"
+
 new_case
 only_a
 echo 'exit=0 record=20 cents=10' > "$CASE/scenario"
@@ -1193,7 +1231,8 @@ check "canary: started again after canary-recorded and canary-passed, runs no ca
 # row (the probe's `action`) in one scenario. Batch A ran 24 sessions of
 # each cell, and batch B buys the other 48 only for a cell whose result is
 # not already fixed. The decisive case has four cells: 24 of 24 and 0 of 24
-# stop, and 13 of 24 and 23 of 23 graded (one session refused) run on.
+# stop, and 13 of 24 and 23 of 23 graded (one session the provider refused,
+# #1881) run on.
 
 # saturation_case: batch A done, batch B not, a spec-b of a scenario-1 line,
 # a scenario-6 line and the stub's `jobs` line, and two rows of two probes.
@@ -1223,7 +1262,7 @@ scenario-1 held-out row_b P4 6 12
 scenario-6 held-out row_a P1 0 12
 scenario-6 held-out row_a P2 0 12
 scenario-6 held-out row_b P3 12 12
-scenario-6 held-out row_b P4 11 11
+scenario-6 held-out row_b P4 11 11 1
 EOF
 # The count phase B passes, as `additive-launch.env` declares it.
 TRY_SATURATE_AT=
@@ -1238,12 +1277,12 @@ check "saturation: batch B runs once, from the derived spec <root>/b.spec" sh -c
 check "saturation: batch B keeps --repetitions-b" sh -c "grep -- '--out $CASE/root/b ' '$CASE/calls.argv' | grep -q -- '--repetitions 118'"
 check "saturation: row_a stopped in both scenarios, so P1 and P2 are excludes on both lines (saw: $(tr '\n' '|' < "$CASE/root/b.spec" 2>/dev/null))" \
     sh -c "[ \"\$(cat '$CASE/root/b.spec')\" = \"\$(printf 'additive scenario-1 final P1 P2\nadditive scenario-6 final P1 P2\njobs 10')\" ]"
-check "saturation: the ledger states row_a/scenario-1 stopped at 24 of 24" grep -qx 'stopped row_a/scenario-1 at 24: 24 of 24' "$CASE/root/saturated"
-check "saturation: the ledger states row_a/scenario-6 stopped at 0 of 24" grep -qx 'stopped row_a/scenario-6 at 24: 0 of 24' "$CASE/root/saturated"
-check "saturation: the ledger states row_b/scenario-1 runs at 13 of 24" grep -qx 'runs row_b/scenario-1: 13 of 24' "$CASE/root/saturated"
-check "saturation: a cell of 23 of 23 graded has not reached 24, and runs on" grep -qx 'runs row_b/scenario-6: 23 of 23' "$CASE/root/saturated"
+check "saturation: the ledger states row_a/scenario-1 stopped at 24 of 24" grep -qx 'stopped row_a/scenario-1 at 24: 24 of 24, 0 refused' "$CASE/root/saturated"
+check "saturation: the ledger states row_a/scenario-6 stopped at 0 of 24" grep -qx 'stopped row_a/scenario-6 at 24: 0 of 24, 0 refused' "$CASE/root/saturated"
+check "saturation: the ledger states row_b/scenario-1 runs at 13 of 24" grep -qx 'runs row_b/scenario-1: 13 of 24, 0 refused' "$CASE/root/saturated"
+check "saturation: a cell of 23 of 23 graded, one refused by the provider, has not reached 24, runs on, and states the refusal" grep -qx 'runs row_b/scenario-6: 23 of 23, 1 refused' "$CASE/root/saturated"
 check "saturation: the ledger has a line for each of the four cells, and none for scenario 0, which spec-b does not run" [ "$(wc -l < "$CASE/root/saturated")" = 4 ]
-check "saturation: drive.log states each stop" grep -q 'stopped row_a/scenario-6 at 24: 0 of 24' "$CASE/root/drive.log"
+check "saturation: drive.log states each stop" grep -q 'stopped row_a/scenario-6 at 24: 0 of 24, 0 refused' "$CASE/root/drive.log"
 check "saturation: batch A is graded once" [ "$(wc -l < "$CASE/cells.calls")" = 1 ]
 check "saturation: the grade reads batch A's directory" grep -qx "counts $CASE/root/a" "$CASE/cells.calls"
 check "saturation: the spec-b the person wrote is not changed" sh -c "[ \"\$(cat '$CASE/spec-b')\" = \"\$(printf 'additive scenario-1 final\nadditive scenario-6 final\njobs 10')\" ]"
@@ -1287,7 +1326,7 @@ check "saturation all: batch B is never invoked" [ -z "$(b_args)" ]
 check "saturation all: b.done and done are written" sh -c "[ -f '$CASE/root/b.done' ] && [ -f '$CASE/root/done' ]"
 check "saturation all: the log says batch B has no line left" grep -q 'batch B has no line left' "$CASE/root/drive.log"
 check "saturation all: the derived spec holds no line" [ ! -s "$CASE/root/b.spec" ]
-check "saturation all: a line that already excludes P4 is dropped once the rest of its probes stopped, and its cell counts batch A's P4" grep -qx 'stopped row_b/scenario-6 at 24: 24 of 24' "$CASE/root/saturated"
+check "saturation all: a line that already excludes P4 is dropped once the rest of its probes stopped, and its cell counts batch A's P4" grep -qx 'stopped row_b/scenario-6 at 24: 24 of 24, 0 refused' "$CASE/root/saturated"
 
 # Every cell stopped, in a spec-b that carries comments and a blank line:
 # the comments are copied into the derived spec, and a spec of nothing but
@@ -1346,7 +1385,7 @@ scenario-0 held-out row_b P4 0 12
 EOF
 drive --saturate-at 24
 check "saturation anchor: a scenario-0 line keeps every probe" sh -c "[ \"\$(head -1 '$CASE/root/b.spec')\" = 'additive scenario-0 final' ]"
-check "saturation anchor: the ledger says no stop applies to scenario 0" grep -q '^runs row_a/scenario-0: 24 of 24, the anchor' "$CASE/root/saturated"
+check "saturation anchor: the ledger says no stop applies to scenario 0" grep -q '^runs row_a/scenario-0: 24 of 24, 0 refused, the anchor' "$CASE/root/saturated"
 
 # A cell graded past the stop count (a row of three probes) is not at the
 # count, and runs on, even when none of its sessions passed.
@@ -1361,7 +1400,7 @@ scenario-1 held-out row_b P4 0 12
 scenario-1 held-out row_b P5 0 12
 EOF
 drive --saturate-at 24
-check "saturation count: a cell of 0 of 36 is not at 24, and runs on" grep -qx 'runs row_b/scenario-1: 0 of 36' "$CASE/root/saturated"
+check "saturation count: a cell of 0 of 36 is not at 24, and runs on" grep -qx 'runs row_b/scenario-1: 0 of 36, 0 refused' "$CASE/root/saturated"
 check "saturation count: so only row_a is excluded" sh -c "[ \"\$(head -1 '$CASE/root/b.spec')\" = 'additive scenario-1 final P1 P2' ]"
 
 # A count that fails stops the driver before it spends on batch B.
@@ -1435,15 +1474,15 @@ check "batches: each batch of B runs once, from its own derived spec" sh -c "for
 check "batches: no batch of an additive spec is given --repetitions" sh -c "! grep -q -- '--repetitions' '$CASE/calls.argv'"
 check "batches: the 12 stop excludes row_a of scenario 1 and row_b of scenario 6 from b (saw: $(tr '\n' '|' < "$CASE/root/b.spec" 2>/dev/null))" \
     sh -c "[ \"\$(cat '$CASE/root/b.spec')\" = \"\$(printf 'additive scenario-1 final P1 P2\nadditive scenario-6 final P3 P4\njobs 10')\" ]"
-check "batches: the ledger of b states the two stops at 12" sh -c "grep -qx 'stopped row_a/scenario-1 at 12: 12 of 12' '$CASE/root/saturated' && grep -qx 'stopped row_b/scenario-6 at 12: 0 of 12' '$CASE/root/saturated'"
-check "batches: a cell of 10 of 10 graded is at neither count, and runs on" grep -qx 'runs row_a/scenario-6: 10 of 10' "$CASE/root/saturated"
+check "batches: the ledger of b states the two stops at 12" sh -c "grep -qx 'stopped row_a/scenario-1 at 12: 12 of 12, 0 refused' '$CASE/root/saturated' && grep -qx 'stopped row_b/scenario-6 at 12: 0 of 12, 0 refused' '$CASE/root/saturated'"
+check "batches: a cell of 10 of 10 graded is at neither count, and runs on" grep -qx 'runs row_a/scenario-6: 10 of 10, 0 refused' "$CASE/root/saturated"
 check "batches: the 24 stop takes row_a of scenario 6 in b2, the 12 stops hold, and the scenario-6 line, with every probe stopped, is dropped (saw: $(tr '\n' '|' < "$CASE/root/b2.spec" 2>/dev/null))" \
     sh -c "[ \"\$(cat '$CASE/root/b2.spec')\" = \"\$(printf 'additive scenario-1 final P1 P2\njobs 10')\" ]"
-check "batches: the ledger of b2 states the stop at 24 over the sum of a and b" grep -qx 'stopped row_a/scenario-6 at 24: 24 of 24' "$CASE/root/saturated.b2"
-check "batches: and keeps the stop at 12, with its counts unchanged" grep -qx 'stopped row_a/scenario-1 at 12: 12 of 12' "$CASE/root/saturated.b2"
-check "batches: a cell of 15 of 24 runs on" grep -qx 'runs row_b/scenario-1: 15 of 24' "$CASE/root/saturated.b2"
+check "batches: the ledger of b2 states the stop at 24 over the sum of a and b" grep -qx 'stopped row_a/scenario-6 at 24: 24 of 24, 0 refused' "$CASE/root/saturated.b2"
+check "batches: and keeps the stop at 12, with its counts unchanged" grep -qx 'stopped row_a/scenario-1 at 12: 12 of 12, 0 refused' "$CASE/root/saturated.b2"
+check "batches: a cell of 15 of 24 runs on" grep -qx 'runs row_b/scenario-1: 15 of 24, 0 refused' "$CASE/root/saturated.b2"
 check "batches: b3 runs what b2 ran, because no count after 24 stops a cell" cmp -s "$CASE/root/b2.spec" "$CASE/root/b3.spec"
-check "batches: the ledger of b3 sums a, b and b2" grep -qx 'runs row_b/scenario-1: 21 of 36' "$CASE/root/saturated.b3"
+check "batches: the ledger of b3 sums a, b and b2" grep -qx 'runs row_b/scenario-1: 21 of 36, 0 refused' "$CASE/root/saturated.b3"
 check "batches: each batch before the last is graded once, in order" sh -c "[ \"\$(tr '\n' '|' < '$CASE/cells.calls')\" = 'counts $CASE/root/a|counts $CASE/root/b|counts $CASE/root/b2|' ]"
 # A restart after the last batch started grades nothing again and derives
 # no spec again.
@@ -1562,7 +1601,7 @@ printf 'HW-PROBE-p1: 12/12 against 12/12, +0.0 points [-24.2, +24.2]\nHW-PROBE-p
 cells counts "$CASE/batch"
 check "cells: counts exits 0" code_is 0
 check "cells: each probe the line selects gets the grader's satisfied over graded (saw: $(tr '\n' '|' < "$CASE/out"))" \
-    sh -c "[ \"\$(cat '$CASE/out')\" = \"\$(printf 'scenario-1 held-out row_a HW-PROBE-p1 12 12\nscenario-1 held-out row_b HW-PROBE-p2 0 0')\" ]"
+    sh -c "[ \"\$(cat '$CASE/out')\" = \"\$(printf 'scenario-1 held-out row_a HW-PROBE-p1 12 12 0\nscenario-1 held-out row_b HW-PROBE-p2 0 0 0')\" ]"
 check "cells: a probe the line excludes is not counted" sh -c "! grep -q p3 '$CASE/out'"
 check "cells: the plan is asked with the line's exclude" grep -q -- '--set held-out --exclude HW-PROBE-p3' "$CASE/engine.calls"
 check "cells: a line of another tier is neither graded nor planned" sh -c "[ \"\$(grep -c 'probe compare' '$CASE/engine.calls')\" = 1 ] && ! grep -q 'arm present' '$CASE/engine.calls'"
@@ -1576,7 +1615,22 @@ cells_case
 printf 'HW-PROBE-p1: 0/11 against 0/11, +0.0 points [-25.9, +25.9]\nHW-PROBE-p2: 7/12 against 7/12, +0.0 points [-37.0, +37.0]\npooled: 7/23 against 7/23, +0.0 points [-25.0, +25.0]\n' > "$CASE/compare"
 cells counts "$CASE/batch"
 check "cells: the counts are compare's, a refused session out of the denominator (saw: $(tr '\n' '|' < "$CASE/out"))" \
-    sh -c "[ \"\$(cat '$CASE/out')\" = \"\$(printf 'scenario-1 held-out row_a HW-PROBE-p1 0 11\nscenario-1 held-out row_b HW-PROBE-p2 7 12')\" ]"
+    sh -c "[ \"\$(cat '$CASE/out')\" = \"\$(printf 'scenario-1 held-out row_a HW-PROBE-p1 0 11 0\nscenario-1 held-out row_b HW-PROBE-p2 7 12 0')\" ]"
+# A session the provider refused on policy grounds (#1881) is in no count,
+# and the third number counts it for its probe on its line alone: a refused
+# job of another line, or of a probe the line does not select, is not.
+cells_case
+printf 'HW-PROBE-p1: 11/11 against 11/11, +0.0 points [-25.9, +25.9]\nHW-PROBE-p2: 7/12 against 7/12, +0.0 points [-37.0, +37.0]\npooled: 18/23 against 18/23, +0.0 points [-25.0, +25.0]\n' > "$CASE/compare"
+printf '%s\n' 'L1-additive-scenario-1-p1-r1 1 additive scenario-1 final HW-PROBE-p1' \
+    'L1-additive-scenario-1-p1-r2 1 additive scenario-1 final HW-PROBE-p1' \
+    'L1-additive-scenario-1-p2-r1 1 additive scenario-1 final HW-PROBE-p2' \
+    'L2-campaign-present-p1-r1 2 campaign present sufficiency HW-PROBE-p1' > "$CASE/batch/jobs"
+mkdir -p "$CASE/batch/refused"
+echo "2026-11-09T02:29:00Z API Error: refused" > "$CASE/batch/refused/L1-additive-scenario-1-p1-r2"
+echo "2026-11-09T02:29:00Z API Error: refused" > "$CASE/batch/refused/L2-campaign-present-p1-r1"
+cells counts "$CASE/batch"
+check "cells: a session the provider refused is counted beside its probe's passes and count (saw: $(tr '\n' '|' < "$CASE/out"))" \
+    sh -c "[ \"\$(cat '$CASE/out')\" = \"\$(printf 'scenario-1 held-out row_a HW-PROBE-p1 11 11 1\nscenario-1 held-out row_b HW-PROBE-p2 7 12 0')\" ]"
 # A transcript the intake refuses is not a count of zero.
 cells_case
 printf 'The treated transcript reached no grader, so nothing was compared: no Run identity block\n' > "$CASE/compare"

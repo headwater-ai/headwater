@@ -148,7 +148,10 @@
 # `<root>/cells.<dir>`: `cells.a`, `cells.b` and on. A batch of B that no
 # cell ran has no directory and no count. The count is the grader's and
 # never a recorder status, and a refused session is in no denominator. A
-# cell's counts are the sum over every batch before the one about to run.
+# session the provider refused on policy grounds (#1881) is never graded, so
+# it is in no count either, and `counts` prints the number of them beside
+# each probe's. A cell's counts are the sum over every batch before the one
+# about to run.
 # For each line of spec-b, the same script's `probes` names the probes the
 # line selects and the action of each. Then:
 #
@@ -160,7 +163,10 @@
 #   stopped;
 # - any other cell **runs**, including one with fewer than `<n>` graded
 #   sessions and one graded past `<n>`. So under `12,24` a cell stops at 24
-#   only where a refused session kept it off 12;
+#   only where a refused session kept it off 12. A cell in which the
+#   provider refused a session is graded one short of each count and is
+#   not topped up, so it does not stop early, and runs to the end of the
+#   last batch of B, which the worst-case price already holds;
 # - a line whose every probe stopped is dropped, and a line that selects
 #   no probe, such as a line of another tier, is copied as it is;
 # - scenario 0, the anchor, is pooled and is not a cell, so a spec-b line
@@ -173,8 +179,10 @@
 # B, and `<root>/saturated.b2` and on before each later batch, one line per
 # cell, each also in `drive.log`:
 #
-#     stopped <action>/scenario-<k> at <n>: <s> of <n>
-#     runs <action>/scenario-<k>: <s> of <g>
+#     stopped <action>/scenario-<k> at <n>: <s> of <n>, <r> refused
+#     runs <action>/scenario-<k>: <s> of <g>, <r> refused
+#
+# where `<r>` counts the cell's sessions the provider refused (#1881).
 #
 # When no line is left, the driver writes the batch's marker, logs `batch B
 # has no line left` (or `B2` and on), and invokes no such batch. A count that
@@ -257,11 +265,25 @@
 #   recorder failure: a person accepted it as a counted non-record (#1659),
 #   so the driver counts it as neither failed nor left, and a status 5 with
 #   no marker still exits 7.
+# - A session the provider refused on policy grounds (#1881) is neither a
+#   halt nor a recorder failure. `campaign.sh` marks it `<dir>/refused/<name>`
+#   and never draws it again (see its header), and the driver counts it as
+#   neither failed nor left, and not as recorded. The owner ruled on
+#   2026-11-09 (issue 1881, comment 6730867194) that such a session is not
+#   retried, not graded, and counts toward no cell's number of sessions and
+#   no early stop. So the canary records 8 other sessions, and a refused
+#   session in a cell is not replaced: the cell's sessions are its fixed set
+#   of jobs, one fewer is graded, and no batch grows. The worst-case price
+#   of the batches stays what it was, and every refused session's cost is in
+#   `spent` and so in the cap.
 # - 4, 5, 6 and any other code: stop with that code.
 #
 # Each invocation logs one line, on standard output and in `drive.log`:
 #
-#     <time> <canary|a|b> exit=<n> recorded=<r>/<total> new=<d> cents=<spent(dir)> all=<spent(a)+spent(b)>/<C> [halt|bound|capped|refused-only]
+#     <time> <canary|a|b> exit=<n> recorded=<r>/<total> new=<d> cents=<spent(dir)> all=<spent(a)+spent(b)>/<C> [halt|bound|capped|refused-only] [refused=<k>]
+#
+# where `refused=<k>`, when `k` is above 0, counts the batch's sessions the
+# provider refused on policy grounds.
 #
 # `HEADWATER_DRIVE_NOW` and `HEADWATER_DRIVE_SLEEP` name the commands that
 # print the epoch seconds and sleep, `date +%s` and `sleep` by default, so
@@ -438,17 +460,20 @@ spent_all() {
 }
 
 # classify <dir>: one pass over the jobs of the batch, printing
-# `<recorded> <total> <refused> <failed> <halt> <unrecorded> [<failed
-# names>...]`. A job is recorded at `status` 0, unrecorded with
-# `unrecorded/<name>`, refused with `slice/refused/<name>`, left when this
+# `<recorded> <total> <refused> <failed> <halt> <unrecorded> <declined>
+# [<failed names>...]`. A job is recorded at `status` 0, unrecorded with
+# `unrecorded/<name>`, declined with `refused/<name>`, the provider's refusal
+# on policy grounds (#1881), refused with `slice/refused/<name>`, left when this
 # invocation did not start it or when it is the job a halt left, and failed
 # otherwise. `slice/started/<name>` matters: a job a halt left with `status`
 # 10 in an earlier invocation, and this one did not start, still carries that
 # status. An unrecorded job is a spent session a person accepted with
 # `campaign.sh --unrecorded` as a counted non-record (#1659). It is neither
-# failed nor left, and `campaign.sh` never draws it again.
+# failed nor left, and `campaign.sh` never draws it again. A declined job is
+# neither as well: the owner ruled that a refused session is not run again
+# and counts toward no number of sessions.
 classify() {
-    [ -f "$1/jobs" ] || { echo "0 0 0 0 0 0"; return; }
+    [ -f "$1/jobs" ] || { echo "0 0 0 0 0 0 0"; return; }
     awk -v d="$1" '
         function exists(p,   line, r) { r = (getline line < p); close(p); return r >= 0 }
         function first(p,   line) { line = ""; if ((getline line < p) <= 0) line = ""; close(p); return line }
@@ -458,12 +483,13 @@ classify() {
             status = first(d "/sessions/" name "/status")
             if (status == "0") recorded++
             else if (exists(d "/unrecorded/" name)) unrecorded++
+            else if (exists(d "/refused/" name)) declined++
             else if (exists(d "/slice/refused/" name)) refused++
             else if (!exists(d "/slice/started/" name)) left++
             else if (status == "10" && halt) left++
             else { failed++; names = names " " name }
         }
-        END { printf "%d %d %d %d %d %d%s\n", recorded, total, refused, failed, halt, unrecorded, names }
+        END { printf "%d %d %d %d %d %d %d%s\n", recorded, total, refused, failed, halt, unrecorded, declined, names }
     ' "$1/jobs"
 }
 
@@ -789,8 +815,8 @@ run_batch() {
         wait "$campaign_pid"
         code=$?
         set -- $(classify "$root/$dir")
-        rec=$1 total=$2 failed=$4 halt=$5
-        shift 6
+        rec=$1 total=$2 failed=$4 halt=$5 declined=$7
+        shift 7
         names=$*
         new=$((rec - before))
         mine=$(spent "$root/$dir")
@@ -814,6 +840,7 @@ run_batch() {
             *) action=stop ;;
         esac
         case $action in halt | bound | capped | refused-only) tag=" $action" ;; esac
+        [ "$declined" -gt 0 ] && tag="$tag refused=$declined"
         say "$phase exit=$code recorded=$rec/$total new=$new cents=$mine all=$all/$cap$tag"
         if [ "$all" -gt "$cap" ]; then
             say "overspend: spent $all of $cap cents (a $(spent "$root/a"), b $(spent "$root/b"), $((all - $(spent "$root/a") - $(spent "$root/b"))) in earlier attempts)"
@@ -955,18 +982,19 @@ saturate_b() {
                     k = order[c]
                     sk = s[k] + 0
                     gk = g[k] + 0
+                    rk = r[k] + 0
                     if (arm[k] == "scenario-0")
-                        printf "runs %s/%s: %d of %d, the anchor, which no stop applies to\n", act[k], arm[k], sk, gk > ledger
+                        printf "runs %s/%s: %d of %d, %d refused, the anchor, which no stop applies to\n", act[k], arm[k], sk, gk, rk > ledger
                     else if ((gk in at) && (sk == 0 || sk == gk)) {
                         stop[k] = 1
-                        printf "stopped %s/%s at %d: %d of %d\n", act[k], arm[k], gk, sk, gk > ledger
+                        printf "stopped %s/%s at %d: %d of %d, %d refused\n", act[k], arm[k], gk, sk, gk, rk > ledger
                     } else
-                        printf "runs %s/%s: %d of %d\n", act[k], arm[k], sk, gk > ledger
+                        printf "runs %s/%s: %d of %d, %d refused\n", act[k], arm[k], sk, gk, rk > ledger
                 }
                 close(ledger)
             }
             BEGIN { m = split(counts, list, ","); for (j = 1; j <= m; j++) at[list[j] + 0] = 1 }
-            FILENAME == cellsf { k = $1 SUBSEP $2 SUBSEP $3; s[k] += $5; g[k] += $6; next }
+            FILENAME == cellsf { k = $1 SUBSEP $2 SUBSEP $3; s[k] += $5; g[k] += $6; r[k] += $7; next }
             FILENAME == probesf {
                 k = $2 SUBSEP $3 SUBSEP $5
                 sel[$1] = sel[$1] " " $4
