@@ -1162,11 +1162,24 @@ rounds:
       cap_cents: 20000
       plan: https://github.com/headwater-ai/headwater/issues/1880#issuecomment-6701580649
       change: none
+  # The final round is phase B (#1881), on the owner's design of 2026-11-09
+  # (comment 6729558243), which amends HW-DR-0112 "Phase B: the report":
+  # scenarios 0 and 2 at 66 sessions each, pooled, so 3 repetitions of each
+  # of the 22 held-out probes; scenarios 1 and 6 per row at 48 sessions, so
+  # 24 repetitions of each of a row's two probes. A line of a scenario
+  # under `rows` runs `row_repetitions` in one batch, 12 sessions of each
+  # row, and `tools/probe/campaign-drive.sh --batches-b 3` runs spec-b three
+  # times after batch A. A cell stops after 12 sessions that all pass or all
+  # fail, and at 24 (`TRY_SATURATE_AT` in `tools/probe/additive-launch.env`).
+  # The owner set the ceiling at $1,050.00 for the whole of phase B, the
+  # worst case of $1,010 plus the driver's usual 4% for sessions that fail.
   final:
     set: held-out
-    rates: [0.90, 0.80]
+    repetitions: 3
+    rows: [1, 6]
+    row_repetitions: 6
     tries: 1
-    approved_cents: 0
+    approved_cents: 105000
 
 # Every approval a person gave each round, one entry per ruling, with the
 # issue that records it. `approved_cents` above is what the open layer may
@@ -1195,6 +1208,9 @@ approvals:
   - round: tuning
     cents: 130000
     issue: 1880
+  - round: final
+    cents: 105000
+    issue: 1881
 
 # The paths whose change can make a measured base stale, as the owner ruled
 # them on 2026-10-20 (HW-DR-0111): the engine's source and the scripts that

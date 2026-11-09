@@ -9,7 +9,7 @@
 # and a person or an agent reads its log.
 #
 #     sh tools/probe/campaign-drive.sh --root <dir> --pin <sha> --claude-version <v> \
-#         --spec-a <file> [--spec-b <file> --repetitions-b <n> [--saturate-at <n>]] --model <m> \
+#         --spec-a <file> [--spec-b <file> [--repetitions-b <n>] [--batches-b <k>] [--saturate-at <n>[,<n>...]]] --model <m> \
 #         --session-cents <B> --cap-cents <C> [--parallel <P> | --ramp <P1,P2,...>] \
 #         [--overshoot-cents <M>] [--seed <n>] [--on-canary <cmd>] [--on-done <cmd>]
 #
@@ -116,55 +116,70 @@
 # 2. Batch A at `--parallel P --max-sessions 500`, until it exits 0.
 # 3. Under `--saturate-at <n>`, the saturation stop: see "The saturation
 #    stop" below. It may stop cells of batch B, or all of it.
-# 4. Batch B the same, with `--spec <spec-b> --repetitions <n>`, or with
-#    `--spec <root>/b.spec` under `--saturate-at`.
-# 5. `<root>/done`, written only when `a.done` exists, and `b.done` where
-#    the driver runs batch B. A driver started with `done` present invokes
+# 4. Batch B the same, with `--spec <spec-b>` and `--repetitions <n>` where
+#    `--repetitions-b` gives one, or with `--spec <root>/b.spec` under
+#    `--saturate-at`. Under `--batches-b <k>`, steps 3 and 4 run again for
+#    each of `b2` to `b<k>`, in `<root>/b2` and on, each with its own spec
+#    and its own marker `b2.done` and on (#1881).
+# 5. `<root>/done`, written only when `a.done` exists, and the marker of
+#    each batch of B where the driver runs batch B. A driver started with `done` present invokes
 #    nothing and exits 0. `--on-done <cmd>` runs `sh -c <cmd>` once, right
 #    after the driver writes `done`, and the driver logs its status and
 #    exits 0. A driver started with `done` present runs neither hook.
 #
 # ## The saturation stop
 #
-# Phase B of the additive campaign (HW-DR-0112, "Phase B: the report") runs
-# each row in scenarios 1 and 6 at 72 sessions, and "a cell that saturates
-# stops at 24 sessions. A cell saturates when all its sessions pass or all
-# fail at 24." A cell is one row, the probe's `action` facet, in one
-# scenario and set. Batch A runs the first 24 sessions of each cell, 12
-# repetitions of each of a row's two held-out probes, and batch B the other
-# 48. `--saturate-at <n>` needs `--spec-b`, and the driver holds no default:
-# phase B passes `TRY_SATURATE_AT` of `tools/probe/additive-launch.env`,
-# which is 24. Without the option, nothing here runs.
+# Phase B of the additive campaign (#1881) runs each row in scenarios 1 and
+# 6 at 48 sessions, and a cell stops early "after 12 sessions that all pass
+# or all fail, as well as at 24" (the owner's ruling of 2026-11-09, comment
+# 6729558243, which amends HW-DR-0112, "Phase B: the report"). A cell is one
+# row, the probe's `action` facet, in one scenario and set. Batch A runs the
+# first 12 sessions of each cell, 6 repetitions of each of a row's two
+# held-out probes, and `--batches-b 3` runs spec-b three times more, 12
+# sessions of each cell each time. `--saturate-at <n>[,<n>...]` needs
+# `--spec-b`, and the driver holds no default: phase B passes
+# `TRY_SATURATE_AT` of `tools/probe/additive-launch.env`, which is `12,24`.
+# Without the option, nothing here runs.
 #
-# After `a.done` and before batch B, the driver grades batch A once with
-# `$HEADWATER_DRIVE_CELLS` (default `tools/probe/cell-passes.sh` in the
-# current directory), whose `counts` prints the grader's satisfied and
-# graded sessions of each probe, into `<root>/cells.a`. The count is the
-# grader's and never a recorder status, and a refused session is in no
-# denominator. For each line of spec-b, the same script's `probes` names the
-# probes the line selects and the action of each. Then:
+# After `a.done` and before each batch of B, the driver grades each batch
+# before it once with `$HEADWATER_DRIVE_CELLS` (default
+# `tools/probe/cell-passes.sh` in the current directory), whose `counts`
+# prints the grader's satisfied and graded sessions of each probe, into
+# `<root>/cells.<dir>`: `cells.a`, `cells.b` and on. A batch of B that no
+# cell ran has no directory and no count. The count is the grader's and
+# never a recorder status, and a refused session is in no denominator. A
+# cell's counts are the sum over every batch before the one about to run.
+# For each line of spec-b, the same script's `probes` names the probes the
+# line selects and the action of each. Then:
 #
-# - a cell with exactly `<n>` graded sessions and 0 or `<n>` satisfied
-#   **stops**: each of its probes becomes an exclude on each line of batch
-#   B's spec that selects it, the form `campaign.sh` reads as `--exclude`;
+# - a cell whose graded sessions are exactly one of the counts `<n>`, and
+#   whose satisfied are 0 or all of them, **stops**: each of its probes
+#   becomes an exclude on each line of the batch's spec that selects it,
+#   the form `campaign.sh` reads as `--exclude`. A stopped cell runs no more
+#   sessions, so its sum is the same before every later batch, and it stays
+#   stopped;
 # - any other cell **runs**, including one with fewer than `<n>` graded
-#   sessions and one graded past `<n>`;
+#   sessions and one graded past `<n>`. So under `12,24` a cell stops at 24
+#   only where a refused session kept it off 12;
 # - a line whose every probe stopped is dropped, and a line that selects
 #   no probe, such as a line of another tier, is copied as it is;
-# - scenario 0, the anchor, is pooled at 145 sessions and is not a cell, so
-#   a spec-b line of scenario 0 runs whole.
+# - scenario 0, the anchor, is pooled and is not a cell, so a spec-b line
+#   of scenario 0 runs whole. Phase B runs it, and scenario 2, in batch A
+#   alone, at 66 sessions each, so spec-b holds no line of either.
 #
-# The derived spec is `<root>/b.spec`, written once, so a restart gives
-# batch B the same spec and grades nothing again. The ledger of the stop is
-# `<root>/saturated`, one line per cell, each also in `drive.log`:
+# The derived spec is `<root>/b.spec`, and `<root>/b2.spec` and on, each
+# written once, so a restart gives the batch the same spec and grades
+# nothing again. The ledger of the stop is `<root>/saturated` before batch
+# B, and `<root>/saturated.b2` and on before each later batch, one line per
+# cell, each also in `drive.log`:
 #
 #     stopped <action>/scenario-<k> at <n>: <s> of <n>
 #     runs <action>/scenario-<k>: <s> of <g>
 #
-# When no line is left, the driver writes `b.done`, logs `batch B has no
-# line left`, and invokes no batch B. A count that fails writes no
-# `cells.a`, a plan that fails writes no `b.spec`, and either one exits 14
-# before batch B spends. `try.sh ledger` reads phase A
+# When no line is left, the driver writes the batch's marker, logs `batch B
+# has no line left` (or `B2` and on), and invokes no such batch. A count that
+# fails writes no `cells.<dir>`, a plan that fails writes no spec, and either
+# one exits 14 before the batch spends. `try.sh ledger` reads phase A
 # alone, so the stop writes nothing to `ledger.jsonl`.
 #
 # Every invocation is `sh $HEADWATER_DRIVE_CAMPAIGN` (default
@@ -273,17 +288,17 @@
 #   12  12 halts in a row recorded nothing, and the 13th stopped the driver
 #   13  the usage gate tripped: `usage-gated` holds the figure, and
 #       `tools/probe/try.sh relaunch` goes on below the threshold
-#   14  under `--saturate-at`, the grade of batch A or the plan of a line of
-#       spec-b failed, and batch B did not start
+#   14  under `--saturate-at`, the grade of a batch or the plan of a line of
+#       spec-b failed, and the next batch of B did not start
 
 set -u
 
 usage() {
-    echo "usage: sh tools/probe/campaign-drive.sh --root <dir> --pin <sha> --claude-version <v> --spec-a <file> [--spec-b <file> --repetitions-b <n> [--saturate-at <n>]] --model <m> --session-cents <B> --cap-cents <C> [--parallel <P> | --ramp <P1,P2,...>] [--overshoot-cents <M>] [--seed <n>] [--on-canary <cmd>] [--on-done <cmd>]" >&2
+    echo "usage: sh tools/probe/campaign-drive.sh --root <dir> --pin <sha> --claude-version <v> --spec-a <file> [--spec-b <file> [--repetitions-b <n>] [--batches-b <k>] [--saturate-at <n>[,<n>...]]] --model <m> --session-cents <B> --cap-cents <C> [--parallel <P> | --ramp <P1,P2,...>] [--overshoot-cents <M>] [--seed <n>] [--on-canary <cmd>] [--on-done <cmd>]" >&2
     exit 2
 }
 
-root= pin= version= spec_a= spec_b= reps_b= saturate= saturate_given= model= budget= cap= parallel=4 parallel_given= ramp= margin=100 seed=0 on_canary= on_done=
+root= pin= version= spec_a= spec_b= reps_b= batches_b= saturate= saturate_given= model= budget= cap= parallel=4 parallel_given= ramp= margin=100 seed=0 on_canary= on_done=
 while [ $# -gt 0 ]; do
     [ $# -ge 2 ] || usage
     case $1 in
@@ -293,6 +308,7 @@ while [ $# -gt 0 ]; do
         --spec-a) spec_a=$2 ;;
         --spec-b) spec_b=$2 ;;
         --repetitions-b) reps_b=$2 ;;
+        --batches-b) batches_b=$2 ;;
         --saturate-at) saturate=$2 saturate_given=1 ;;
         --model) model=$2 ;;
         --session-cents) budget=$2 ;;
@@ -316,17 +332,34 @@ positive() {
 for value in "$budget" "$cap" "$parallel" "$margin"; do
     positive "$value" || usage
 done
-# Batch B is optional (#1775): `--spec-b` and `--repetitions-b` come
-# together or not at all, and without them the driver runs batch A alone.
-if [ -n "$spec_b" ] || [ -n "$reps_b" ]; then
+# Batch B is optional (#1775): without `--spec-b` the driver runs batch A
+# alone. `--repetitions-b` and `--batches-b` need it. An additive spec takes
+# no `--repetitions-b`, because `campaign.sh` refuses `--repetitions` on one
+# (#1881).
+if [ -n "$reps_b" ]; then
     [ -n "$spec_b" ] || usage
     positive "$reps_b" || usage
 fi
+if [ -n "$batches_b" ]; then
+    [ -n "$spec_b" ] || usage
+    positive "$batches_b" || usage
+fi
+batches_b=${batches_b:-1}
 # The saturation stop (#1875) stops cells of batch B, so it needs one, and
-# the driver holds no default for the count.
+# the driver holds no default for the counts. A list of counts is a stop at
+# each, each above the one before (#1881).
 if [ -n "$saturate_given" ]; then
     [ -n "$spec_b" ] || usage
-    positive "$saturate" || usage
+    case $saturate in '' | ,* | *, | *,,*) usage ;; esac
+    last=0
+    for value in $(printf '%s' "$saturate" | tr ',' ' '); do
+        positive "$value" || usage
+        if [ "$value" -le "$last" ]; then
+            echo "campaign-drive: each count of --saturate-at must be above the one before." >&2
+            exit 2
+        fi
+        last=$value
+    done
 fi
 case $seed in '' | *[!0-9]*) usage ;; esac
 # The ramp: steps of --parallel, each above the one before.
@@ -674,7 +707,7 @@ harness_check() {
         "$version "*) ;;
         *) echo "campaign-drive: $root/bin/claude reports '$seen', not $version." >&2; exit 4 ;;
     esac
-    for batch in a b; do
+    for batch in a $(b_names); do
         if [ -f "$root/$batch/claude-version" ] && [ "$(cat "$root/$batch/claude-version")" != "$seen" ]; then
             echo "campaign-drive: $root/$batch was started with $(cat "$root/$batch/claude-version"), not $seen." >&2
             exit 4
@@ -847,27 +880,53 @@ run_batch() {
 
 # ------------------------------------------------------------ the saturation stop
 
-# saturate_b: under `--saturate-at <n>`, sets `spec_run` to `<root>/b.spec`,
-# the spec of batch B less every probe of a cell that saturated in batch A,
-# and writes the ledger `<root>/saturated`. It grades batch A once, into
-# `<root>/cells.a`, and derives the spec once, so a restart gives batch B
-# the same spec and grades nothing again. It writes `b.done` when no line
-# is left. A count or a plan that fails exits 14 before batch B spends.
+# b_names: the batch directories of batch B in order, `b` and then `b2` to
+# `b<k>` under `--batches-b <k>` (#1881). Batch B alone is `b`.
+b_names() {
+    printf 'b'
+    b_index=2
+    while [ "$b_index" -le "$batches_b" ]; do
+        printf ' b%s' "$b_index"
+        b_index=$((b_index + 1))
+    done
+    echo
+}
+
+# saturate_b <batch>: under `--saturate-at <n>[,<n>...]`, sets `spec_run` to
+# `<root>/<batch>.spec`, the spec of batch B less every probe of a cell that
+# saturated in the batches before it, and writes the ledger: `<root>/saturated`
+# for `b`, and `<root>/saturated.<batch>` for each later batch. It grades each
+# batch before it once, into `<root>/cells.<dir>`, and derives the spec once,
+# so a restart gives the batch the same spec and grades nothing again. A
+# cell's counts are summed over every batch before it, so a cell that stopped
+# keeps its counts and stays stopped. It writes `<batch>.done` when no line
+# is left. A count or a plan that fails exits 14 before the batch spends.
 saturate_b() {
-    if [ ! -f "$root/cells.a" ]; then
-        if ! sh "$cells" counts "$root/a" > "$root/cells.a.part" 2> "$root/cells.err" < /dev/null; then
-            rm -f "$root/cells.a.part"
-            say "the saturation count of batch A failed, so batch B does not start: $(tail -1 "$root/cells.err")"
-            exit 14
+    s_batch=$1
+    s_name=$(printf '%s' "$s_batch" | tr ab AB)
+    : > "$root/cells.upto"
+    for s_dir in a $(b_names); do
+        [ "$s_dir" = "$s_batch" ] && break
+        # A batch of B that every cell skipped has no directory, and no count.
+        [ "$s_dir" = a ] || [ -d "$root/$s_dir" ] || continue
+        if [ ! -f "$root/cells.$s_dir" ]; then
+            if ! sh "$cells" counts "$root/$s_dir" > "$root/cells.$s_dir.part" 2> "$root/cells.err" < /dev/null; then
+                rm -f "$root/cells.$s_dir.part"
+                say "the saturation count of batch $(printf %s "$s_dir" | tr ab AB) failed, so batch $s_name does not start: $(tail -1 "$root/cells.err")"
+                exit 14
+            fi
+            mv "$root/cells.$s_dir.part" "$root/cells.$s_dir"
+            say "graded batch $(printf %s "$s_dir" | tr ab AB) once for the saturation stop at $saturate: $(wc -l < "$root/cells.$s_dir" | tr -d ' ') probe counts in cells.$s_dir"
         fi
-        mv "$root/cells.a.part" "$root/cells.a"
-        say "graded batch A once for the saturation stop at $saturate: $(wc -l < "$root/cells.a" | tr -d ' ') probe counts in cells.a"
-    fi
-    spec_run=$root/b.spec
-    if [ ! -f "$root/b.spec" ]; then
+        cat "$root/cells.$s_dir" >> "$root/cells.upto"
+    done
+    s_ledger=$root/saturated
+    [ "$s_batch" = b ] || s_ledger=$root/saturated.$s_batch
+    spec_run=$root/$s_batch.spec
+    if [ ! -f "$spec_run" ]; then
         # The probes each line of spec-b selects, by line number, as
         # `<line> <arm> <set> <probe> <action>`.
-        : > "$root/b.probes"
+        : > "$root/$s_batch.probes"
         index=0
         while IFS= read -r line || [ -n "$line" ]; do
             index=$((index + 1))
@@ -876,19 +935,19 @@ saturate_b() {
             # shellcheck disable=SC2086
             set -- $line
             set +f
-            if ! sh "$cells" probes "$@" > "$root/b.line" 2>> "$root/cells.err" < /dev/null; then
-                say "the plan of line $index of $spec_b failed, so batch B does not start: $(tail -1 "$root/cells.err")"
+            if ! sh "$cells" probes "$@" > "$root/$s_batch.line" 2>> "$root/cells.err" < /dev/null; then
+                say "the plan of line $index of $spec_b failed, so batch $s_name does not start: $(tail -1 "$root/cells.err")"
                 exit 14
             fi
-            awk -v i="$index" 'NF { print i, $0 }' "$root/b.line" >> "$root/b.probes"
+            awk -v i="$index" 'NF { print i, $0 }' "$root/$s_batch.line" >> "$root/$s_batch.probes"
         done < "$spec_b"
-        # A cell is one action in one arm and set. It stops when batch A
-        # graded exactly n of its sessions and all of them, or none,
-        # satisfied. A line keeps every probe of a cell that runs on, gets
-        # each probe of a stopped cell as an exclude, and is dropped when
-        # every probe it selects stopped. A line that selects no probe, such
-        # as a line of another tier, is copied as it is.
-        awk -v n="$saturate" -v cellsf="$root/cells.a" -v probesf="$root/b.probes" -v ledger="$root/saturated.part" '
+        # A cell is one action in one arm and set. It stops when the batches
+        # before this one graded exactly one of the counts of its sessions,
+        # and all of them, or none, satisfied. A line keeps every probe of a
+        # cell that runs on, gets each probe of a stopped cell as an exclude,
+        # and is dropped when every probe it selects stopped. A line that
+        # selects no probe, such as a line of another tier, is copied as it is.
+        awk -v counts="$saturate" -v cellsf="$root/cells.upto" -v probesf="$root/$s_batch.probes" -v ledger="$s_ledger.part" '
             function decide(    c, k, sk, gk) {
                 decided = 1
                 printf "" > ledger
@@ -898,14 +957,15 @@ saturate_b() {
                     gk = g[k] + 0
                     if (arm[k] == "scenario-0")
                         printf "runs %s/%s: %d of %d, the anchor, which no stop applies to\n", act[k], arm[k], sk, gk > ledger
-                    else if (gk == n && (sk == 0 || sk == n)) {
+                    else if ((gk in at) && (sk == 0 || sk == gk)) {
                         stop[k] = 1
-                        printf "stopped %s/%s at %d: %d of %d\n", act[k], arm[k], n, sk, gk > ledger
+                        printf "stopped %s/%s at %d: %d of %d\n", act[k], arm[k], gk, sk, gk > ledger
                     } else
                         printf "runs %s/%s: %d of %d\n", act[k], arm[k], sk, gk > ledger
                 }
                 close(ledger)
             }
+            BEGIN { m = split(counts, list, ","); for (j = 1; j <= m; j++) at[list[j] + 0] = 1 }
             FILENAME == cellsf { k = $1 SUBSEP $2 SUBSEP $3; s[k] += $5; g[k] += $6; next }
             FILENAME == probesf {
                 k = $2 SUBSEP $3 SUBSEP $5
@@ -927,17 +987,18 @@ saturate_b() {
                 if (left > 0) print $0 added
             }
             END { if (!decided) decide() }
-        ' "$root/cells.a" "$root/b.probes" "$spec_b" > "$root/b.spec.part" || exit 14
-        mv "$root/saturated.part" "$root/saturated"
-        mv "$root/b.spec.part" "$root/b.spec"
-        rm -f "$root/b.probes" "$root/b.line"
+        ' "$root/cells.upto" "$root/$s_batch.probes" "$spec_b" > "$spec_run.part" || exit 14
+        mv "$s_ledger.part" "$s_ledger"
+        mv "$spec_run.part" "$spec_run"
+        rm -f "$root/$s_batch.probes" "$root/$s_batch.line"
         while IFS= read -r entry; do
             say "saturation: $entry"
-        done < "$root/saturated"
+        done < "$s_ledger"
     fi
-    if ! grep -qv '^[[:space:]]*\(#.*\)\{0,1\}$' "$root/b.spec"; then
-        : > "$root/b.done"
-        say "batch B has no line left: every cell of spec-b stopped at $saturate (see saturated), so no batch B runs"
+    rm -f "$root/cells.upto"
+    if ! grep -qv '^[[:space:]]*\(#.*\)\{0,1\}$' "$spec_run"; then
+        : > "$root/$s_batch.done"
+        say "batch $s_name has no line left: every cell of spec-b stopped at $saturate (see ${s_ledger##*/}), so no batch $s_name runs"
     fi
 }
 
@@ -994,15 +1055,25 @@ if [ ! -f "$root/a.done" ]; then
     run_batch a a "$spec_a" "$parallel" 500
     : > "$root/a.done"
 fi
-if [ -n "$spec_b" ] && [ ! -f "$root/b.done" ]; then
-    spec_run=$spec_b
-    [ -z "$saturate" ] || saturate_b
-    if [ ! -f "$root/b.done" ]; then
-        run_batch b b "$spec_run" "$parallel" 500 "$reps_b"
-        : > "$root/b.done"
-    fi
+# Each batch of B in turn (#1881): `b`, then `b2` to `b<k>`, each of spec-b,
+# and under `--saturate-at` each from the spec the batches before it leave.
+# `checks` loops over `batch`, so this loop names its own variable.
+b_left=
+if [ -n "$spec_b" ]; then
+    for b_batch in $(b_names); do
+        [ -f "$root/$b_batch.done" ] && continue
+        spec_run=$spec_b
+        [ -z "$saturate" ] || saturate_b "$b_batch"
+        if [ ! -f "$root/$b_batch.done" ]; then
+            run_batch "$b_batch" "$b_batch" "$spec_run" "$parallel" 500 "$reps_b"
+            : > "$root/$b_batch.done"
+        fi
+    done
+    for b_batch in $(b_names); do
+        [ -f "$root/$b_batch.done" ] || b_left=$b_batch
+    done
 fi
-if [ -f "$root/a.done" ] && { [ -z "$spec_b" ] || [ -f "$root/b.done" ]; }; then
+if [ -f "$root/a.done" ] && [ -z "$b_left" ]; then
     : > "$root/done"
     say "done"
     hook done "$on_done"

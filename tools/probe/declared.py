@@ -6,6 +6,7 @@
 #     python3 tools/probe/declared.py <declaration> power
 #     python3 tools/probe/declared.py <declaration> leaks_kept
 #     python3 tools/probe/declared.py <declaration> rounds
+#     python3 tools/probe/declared.py <declaration> rows
 #     python3 tools/probe/declared.py <declaration> scenarios
 #     python3 tools/probe/declared.py <declaration> approved
 #     python3 tools/probe/declared.py <declaration> open
@@ -39,6 +40,16 @@
 # <probe>...`, so the probes stay in the same fields. A round declares
 # exactly one of `rates` and `repetitions`, and the reader refuses both or
 # neither.
+#
+# A round that declares `repetitions` may also declare `rows` and
+# `row_repetitions`, both or neither (#1881): the scenarios it measures per
+# row, as a sequence of scenario numbers that `scenarios:` declares, each
+# once, and the repetitions of each probe that a line of one of those
+# scenarios runs in place of `repetitions`. `rows` prints one line per round
+# that declares them, `<round> <row_repetitions> <scenario>...`, and nothing
+# for a declaration with none. The final round of phase B runs scenarios 0
+# and 2 pooled at its `repetitions` and scenarios 1 and 6 per row at its
+# `row_repetitions` in each batch of `tools/probe/campaign-drive.sh`.
 #
 # A round may also declare `approved_cents`, a whole number of cents at or
 # above zero: the spend a person approved for every attempt of the round
@@ -140,7 +151,7 @@ def rate(round_name, value):
     return value
 
 
-def rounds(declared, approvals=False, quiet=False):
+def rounds(declared, approvals=False, quiet=False, rows_only=False):
     block = declared.get("rounds")
     if block is None:
         return 0
@@ -150,13 +161,14 @@ def rounds(declared, approvals=False, quiet=False):
     if not isinstance(sets, dict):
         refuse("`sets:` in .headwater/probe.yml is not a mapping of set name to probe identifiers")
     lines = []
+    row_lines = []
     for name, fields in block.items():
         name = str(name)
         if not isinstance(fields, dict):
             refuse(f"the `{name}` round in .headwater/probe.yml is not a mapping of `set`, `rates` and `tries`")
-        unknown = sorted(str(key) for key in fields if key not in ("set", "rates", "repetitions", "tries", "approved_cents", "open") + STAGE_FIELDS)
+        unknown = sorted(str(key) for key in fields if key not in ("set", "rates", "repetitions", "tries", "approved_cents", "open") + ROW_FIELDS + STAGE_FIELDS)
         if unknown:
-            refuse(f"the `{name}` round in .headwater/probe.yml declares `{unknown[0]}`. A round declares `set`, `rates` or `repetitions`, `tries`, `approved_cents` and, on the tuning round, `open`, {', '.join(f'`{field}`' for field in STAGE_FIELDS)}, and nothing else")
+            refuse(f"the `{name}` round in .headwater/probe.yml declares `{unknown[0]}`. A round declares `set`, `rates` or `repetitions`, `tries`, `approved_cents`, with `repetitions` `rows` and `row_repetitions`, and, on the tuning round, `open`, {', '.join(f'`{field}`' for field in STAGE_FIELDS)}, and nothing else")
         if "open" in fields and name != "tuning":
             refuse(f"the `{name}` round in .headwater/probe.yml declares `open`, and only the tuning round declares `open`: the one layer whose plan the owner accepted")
         staged = [field for field in STAGE_FIELDS if field in fields]
@@ -188,6 +200,9 @@ def rounds(declared, approvals=False, quiet=False):
             refuse(f"`tries` of the `{name}` round in .headwater/probe.yml is {tries!r}, and it must be a whole number above zero")
         if staged:
             stages(declared, name, fields, approved)
+        row_line = row_fields(declared, name, fields)
+        if row_line:
+            row_lines.append(row_line)
         if approvals:
             lines.append(f"{name} {approved}")
         else:
@@ -195,13 +210,40 @@ def rounds(declared, approvals=False, quiet=False):
     # Every round is read before any line is printed, so a refusal leaves
     # nothing on standard output for a caller to read as a declaration.
     if not quiet:
-        for line in lines:
+        for line in row_lines if rows_only else lines:
             print(line)
     return 0
 
 
+def row_fields(declared, name, fields):
+    """Check `rows` and `row_repetitions` of one round (#1881), and return
+    its `rows` line, or None for a round that declares neither."""
+    given = [field for field in ROW_FIELDS if field in fields]
+    if not given:
+        return None
+    if len(given) != len(ROW_FIELDS):
+        refuse(f"the `{name}` round in .headwater/probe.yml declares `{given[0]}` alone. A round declares `rows` and `row_repetitions` together or neither")
+    if "repetitions" not in fields:
+        refuse(f"the `{name}` round in .headwater/probe.yml declares `rows`, and only a round that declares its own `repetitions` measures some scenarios per row")
+    count = fields["row_repetitions"]
+    if not whole(count) or count < 1:
+        refuse(f"`row_repetitions` of the `{name}` round in .headwater/probe.yml is {count!r}, and it must be a whole number above zero")
+    rows_ = fields["rows"]
+    declared_scenarios = declared.get("scenarios") or {}
+    known = {number_ for number_ in declared_scenarios} if isinstance(declared_scenarios, dict) else set()
+    if not isinstance(rows_, list) or not rows_ or not all(whole(entry) for entry in rows_):
+        refuse(f"`rows` of the `{name}` round in .headwater/probe.yml is {rows_!r}, and it must be a sequence of scenario numbers")
+    if len(set(rows_)) != len(rows_):
+        refuse(f"`rows` of the `{name}` round in .headwater/probe.yml names a scenario twice")
+    for entry in rows_:
+        if entry not in known:
+            refuse(f"`rows` of the `{name}` round in .headwater/probe.yml names the scenario {entry}, which `scenarios:` does not declare")
+    return " ".join([name, str(count)] + [str(entry) for entry in rows_])
+
+
 OPEN_FIELDS = ("layer", "scenario", "try", "cap_cents", "plan", "change")
 MOMENTS = ("intent", "read", "write", "review")
+ROW_FIELDS = ("rows", "row_repetitions")
 STAGE_FIELDS = ("screen", "confirm", "variants", "stop_after_empty", "order", "ceiling_cents", "base_ceiling_cents")
 
 
@@ -348,7 +390,7 @@ def base_invalidators(declared):
 
 
 def main(argv):
-    modes = ("power", "leaks_kept", "rounds", "scenarios", "approved", "open", "base_invalidators", "tuning", "tuning_set")
+    modes = ("power", "leaks_kept", "rounds", "rows", "scenarios", "approved", "open", "base_invalidators", "tuning", "tuning_set")
     if len(argv) != 2 or argv[1] not in modes:
         refuse(f"usage: python3 tools/probe/declared.py <declaration> {'|'.join(modes)}")
     path, key = argv
@@ -373,6 +415,9 @@ def main(argv):
 
     if key == "approved":
         return rounds(declared, approvals=True)
+
+    if key == "rows":
+        return rounds(declared, rows_only=True)
 
     if key == "open":
         return open_layer(declared)

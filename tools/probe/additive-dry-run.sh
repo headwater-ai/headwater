@@ -39,6 +39,15 @@
 # sessions that the batch has already recorded, from
 # `tools/probe/cached-share.sh` (#1875).
 #
+# **A round may measure some scenarios per row (#1881).** A round that
+# declares `repetitions` may also declare `rows` and `row_repetitions`, which
+# `declared.py rows` prints. A line of a scenario under `rows` runs
+# `row_repetitions` of each probe, and every other line of the round runs
+# its `repetitions`. The final round of phase B runs scenarios 0 and 2 at 3
+# and scenarios 1 and 6 at 6, in each batch of
+# `tools/probe/campaign-drive.sh`, so this prices one batch, and a line of
+# spec-b is priced again for each batch of B it runs in.
+#
 # `--priced` prints `<index> <declared> <round count> <how>` for each line,
 # as it does for every other spec, so the batch driver reads the round's count
 # from here.
@@ -67,6 +76,7 @@ fi
 python3 "$root/tools/probe/declared.py" "$declaration" rounds > "$work/rounds" || finish $?
 python3 "$root/tools/probe/declared.py" "$declaration" scenarios > "$work/scenarios" || finish $?
 python3 "$root/tools/probe/declared.py" "$declaration" tuning > "$work/tuning" || finish $?
+python3 "$root/tools/probe/declared.py" "$declaration" rows > "$work/rows" || finish $?
 stage=${HEADWATER_TUNING_STAGE:-}
 if [ -s "$work/tuning" ]; then
     case $stage in
@@ -163,6 +173,14 @@ while IFS= read -r line; do
             reps=$(tuning_field confirm 3)
         fi
     fi
+    # A line of a scenario the round measures per row runs the round's
+    # `row_repetitions` (#1881).
+    row_reps=$(awk -v r="$round" -v s="${arm#scenario-}" '$1 == r { for (i = 3; i <= NF; i++) if ($i == s) print $2 }' "$work/rows")
+    if [ -n "$row_reps" ]; then
+        staged=row
+        reps=$row_reps
+        round_n=$((reps * set_k))
+    fi
     members=$(awk -v r="$round" '$1 == r { for (i = 6; i <= NF; i++) print $i }' "$work/rounds")
     excludes=
     bad=
@@ -241,9 +259,10 @@ $excluded
         continue
     fi
     how="round $round, ceil($round_n / $set_k)"
-    [ -n "$staged" ] && [ "$staged" != round ] && how="round $round, the $staged, ceil($round_n / $set_k)"
+    [ -n "$staged" ] && [ "$staged" != round ] && [ "$staged" != row ] && how="round $round, the $staged, ceil($round_n / $set_k)"
     if awk -v r="$round" '$1 == r && $3 == "repetitions" { found = 1 } END { exit !found }' "$work/rounds"; then
         how="round $round, declared"
+        [ "$staged" = row ] && how="round $round, declared for a row scenario"
     fi
     if [ "$priced" = 1 ]; then
         printf '%s %s %s %s\n' "$index" "$declared" "$reps" "$how"

@@ -22,7 +22,8 @@
 # what the other batch spent less `--parallel` times the overshoot margin.
 #
 # Section 7a holds the saturation stop of phase B (#1875) against a stub of
-# its seam, and 7b holds the seam, `tools/probe/cell-passes.sh`, against a
+# its seam, 7c the batches of B and the two stops of the owner's design of
+# phase B (#1881), and 7b holds the seam, `tools/probe/cell-passes.sh`, against a
 # stub engine and a stub `campaign.sh --assemble`. Its decisive case is the
 # first of 7a: of four cells, 24 of 24 and 0 of 24 stop and 13 of 24 and 23
 # of 23 graded run on.
@@ -263,7 +264,8 @@ EOF
 
 # The seam of the saturation stop (#1875), `tools/probe/cell-passes.sh`.
 # `counts <batch>` logs the call to $CASE/cells.calls and prints
-# $CASE/cells, the graded counts of batch A as
+# $CASE/cells.<dir> where it exists and $CASE/cells otherwise, the graded
+# counts of the batch as
 # `<arm> <set> <action> <probe> <satisfied> <graded>`, or exits 4 when
 # $CASE/cells-fail exists. `probes <tier> <arm> <round> [<exclude>...]`
 # prints each row of $CASE/probes, `<arm> <set> <probe> <action>`, whose
@@ -277,7 +279,7 @@ case $verb in
     counts)
         echo "counts $*" >> "$CASE/cells.calls"
         [ -f "$CASE/cells-fail" ] && { echo "cell-passes: the grade refused the transcript" >&2; exit 4; }
-        cat "$CASE/cells"
+        if [ -f "$CASE/cells.${1##*/}" ]; then cat "$CASE/cells.${1##*/}"; else cat "$CASE/cells"; fi
         ;;
     probes)
         [ "$1" = additive ] || exit 0
@@ -338,7 +340,15 @@ drive() {
         cd "$CASE/repo" || exit 99
         if [ -n "$RAMP" ]; then set -- --ramp "$RAMP" "$@"; else set -- --parallel "$P" "$@"; fi
         # A_ONLY runs the driver with no batch B at all (#1775).
-        [ -n "${A_ONLY:-}" ] || set -- --spec-b "$CASE/spec-b" --repetitions-b 118 "$@"
+        # NO_REPS_B gives batch B no --repetitions-b, as an additive spec
+        # takes none (#1881).
+        if [ -z "${A_ONLY:-}" ]; then
+            if [ -n "${NO_REPS_B:-}" ]; then
+                set -- --spec-b "$CASE/spec-b" "$@"
+            else
+                set -- --spec-b "$CASE/spec-b" --repetitions-b 118 "$@"
+            fi
+        fi
         HEADWATER_DRIVE_CAMPAIGN=$fix/campaign-stub.sh \
         HEADWATER_DRIVE_CELLS=$fix/cells-stub.sh \
         HEADWATER_DRIVE_NOW="sh $fix/now.sh" \
@@ -1217,8 +1227,10 @@ scenario-6 held-out row_b P4 11 11
 EOF
 # The count phase B passes, as `additive-launch.env` declares it.
 TRY_SATURATE_AT=
+TRY_BATCHES_B=
 . "$here/additive-launch.env"
-check "saturation: additive-launch.env declares the 24 of HW-DR-0112" [ "$TRY_SATURATE_AT" = 24 ]
+check "saturation: additive-launch.env declares the 12 and 24 of the owner's design of phase B (#1881)" [ "$TRY_SATURATE_AT" = 12,24 ]
+check "saturation: and three batches of spec-b after batch A, 48 sessions of a cell that never stops" [ "$TRY_BATCHES_B" = 3 ]
 drive --saturate-at "$TRY_SATURATE_AT"
 check "saturation: the driver finishes batch B and exits 0" code_is 0
 check "saturation: it writes b.done and done" sh -c "[ -f '$CASE/root/b.done' ] && [ -f '$CASE/root/done' ]"
@@ -1381,6 +1393,100 @@ saturation_case
 drive
 check "saturation off: batch B runs spec-b itself" grep -q -- "--spec $CASE/spec-b " "$CASE/calls.argv"
 check "saturation off: and nothing is graded" [ ! -f "$CASE/cells.calls" ]
+
+# ------------------------------------------------- 7c. phase B in batches, two stops
+#
+# The owner's design of phase B (#1881, comment 6729558243): 48 sessions a
+# row, and a cell stops after 12 sessions that all pass or all fail, as well
+# as at 24. So batch A runs 12 of each cell and spec-b runs in three batches
+# of 12 more, `b`, `b2` and `b3`, under `--batches-b 3 --saturate-at 12,24`.
+# Before each batch the counts of every batch before it are summed, a cell
+# that stopped keeps its counts and so stays stopped, and an additive spec
+# takes no `--repetitions`. Each batch's counts come from its own stub file,
+# `cells.<dir>`.
+saturation_case
+cat > "$CASE/cells.a" <<'EOF'
+scenario-1 held-out row_a P1 6 6
+scenario-1 held-out row_a P2 6 6
+scenario-1 held-out row_b P3 3 6
+scenario-1 held-out row_b P4 2 6
+scenario-6 held-out row_a P1 5 5
+scenario-6 held-out row_a P2 5 5
+scenario-6 held-out row_b P3 0 6
+scenario-6 held-out row_b P4 0 6
+EOF
+# Batch b ran row_b of scenario 1 and row_a of scenario 6 alone. The second
+# reached 24 graded sessions, every one passed, and it stops there.
+cat > "$CASE/cells.b" <<'EOF'
+scenario-1 held-out row_b P3 4 6
+scenario-1 held-out row_b P4 6 6
+scenario-6 held-out row_a P1 7 7
+scenario-6 held-out row_a P2 7 7
+EOF
+cat > "$CASE/cells.b2" <<'EOF'
+scenario-1 held-out row_b P3 5 6
+scenario-1 held-out row_b P4 1 6
+EOF
+: > "$CASE/cells"
+NO_REPS_B=1 drive --batches-b 3 --saturate-at 12,24
+check "batches: the driver finishes every batch and exits 0" code_is 0
+check "batches: it writes b.done, b2.done, b3.done and done" sh -c "[ -f '$CASE/root/b.done' ] && [ -f '$CASE/root/b2.done' ] && [ -f '$CASE/root/b3.done' ] && [ -f '$CASE/root/done' ]"
+check "batches: each batch of B runs once, from its own derived spec" sh -c "for d in b b2 b3; do [ \"\$(grep -c -- \"--out $CASE/root/\$d --model .* --spec $CASE/root/\$d.spec \" '$CASE/calls.argv')\" = 1 ] || exit 1; done"
+check "batches: no batch of an additive spec is given --repetitions" sh -c "! grep -q -- '--repetitions' '$CASE/calls.argv'"
+check "batches: the 12 stop excludes row_a of scenario 1 and row_b of scenario 6 from b (saw: $(tr '\n' '|' < "$CASE/root/b.spec" 2>/dev/null))" \
+    sh -c "[ \"\$(cat '$CASE/root/b.spec')\" = \"\$(printf 'additive scenario-1 final P1 P2\nadditive scenario-6 final P3 P4\njobs 10')\" ]"
+check "batches: the ledger of b states the two stops at 12" sh -c "grep -qx 'stopped row_a/scenario-1 at 12: 12 of 12' '$CASE/root/saturated' && grep -qx 'stopped row_b/scenario-6 at 12: 0 of 12' '$CASE/root/saturated'"
+check "batches: a cell of 10 of 10 graded is at neither count, and runs on" grep -qx 'runs row_a/scenario-6: 10 of 10' "$CASE/root/saturated"
+check "batches: the 24 stop takes row_a of scenario 6 in b2, the 12 stops hold, and the scenario-6 line, with every probe stopped, is dropped (saw: $(tr '\n' '|' < "$CASE/root/b2.spec" 2>/dev/null))" \
+    sh -c "[ \"\$(cat '$CASE/root/b2.spec')\" = \"\$(printf 'additive scenario-1 final P1 P2\njobs 10')\" ]"
+check "batches: the ledger of b2 states the stop at 24 over the sum of a and b" grep -qx 'stopped row_a/scenario-6 at 24: 24 of 24' "$CASE/root/saturated.b2"
+check "batches: and keeps the stop at 12, with its counts unchanged" grep -qx 'stopped row_a/scenario-1 at 12: 12 of 12' "$CASE/root/saturated.b2"
+check "batches: a cell of 15 of 24 runs on" grep -qx 'runs row_b/scenario-1: 15 of 24' "$CASE/root/saturated.b2"
+check "batches: b3 runs what b2 ran, because no count after 24 stops a cell" cmp -s "$CASE/root/b2.spec" "$CASE/root/b3.spec"
+check "batches: the ledger of b3 sums a, b and b2" grep -qx 'runs row_b/scenario-1: 21 of 36' "$CASE/root/saturated.b3"
+check "batches: each batch before the last is graded once, in order" sh -c "[ \"\$(tr '\n' '|' < '$CASE/cells.calls')\" = 'counts $CASE/root/a|counts $CASE/root/b|counts $CASE/root/b2|' ]"
+# A restart after the last batch started grades nothing again and derives
+# no spec again.
+rm -f "$CASE/root/b3.done" "$CASE/root/done"
+NO_REPS_B=1 drive --batches-b 3 --saturate-at 12,24
+check "batches restart: exits 0, and grades nothing again" sh -c "[ \"\$(cat '$CASE/code')\" = 0 ] && [ \"\$(wc -l < '$CASE/cells.calls')\" = 3 ]"
+check "batches restart: only b3 runs again" sh -c "[ \"\$(grep -c -- '--out $CASE/root/b3 ' '$CASE/calls.argv')\" = 2 ] && [ \"\$(grep -c -- '--out $CASE/root/b2 ' '$CASE/calls.argv')\" = 1 ]"
+
+# When every cell stops at 12, no batch of B runs, and each batch says so.
+saturation_case
+printf 'additive scenario-1 final\nadditive scenario-6 final\n' > "$CASE/spec-b"
+cat > "$CASE/cells.a" <<'EOF'
+scenario-1 held-out row_a P1 6 6
+scenario-1 held-out row_a P2 6 6
+scenario-1 held-out row_b P3 0 6
+scenario-1 held-out row_b P4 0 6
+scenario-6 held-out row_a P1 0 6
+scenario-6 held-out row_a P2 0 6
+scenario-6 held-out row_b P3 6 6
+scenario-6 held-out row_b P4 6 6
+EOF
+: > "$CASE/cells"
+NO_REPS_B=1 drive --batches-b 3 --saturate-at 12,24
+check "batches all: exits 0 with done" sh -c "[ \"\$(cat '$CASE/code')\" = 0 ] && [ -f '$CASE/root/done' ]"
+check "batches all: no batch of B is invoked" sh -c "! grep -q -- '--out $CASE/root/b' '$CASE/calls.argv'"
+check "batches all: the log says each batch has no line left" sh -c "grep -q 'batch B has no line left' '$CASE/root/drive.log' && grep -q 'batch B2 has no line left' '$CASE/root/drive.log' && grep -q 'batch B3 has no line left' '$CASE/root/drive.log'"
+check "batches all: only batch A is graded, because no batch of B made a directory" [ "$(wc -l < "$CASE/cells.calls")" = 1 ]
+
+# The arguments of the batches and the list of counts.
+for value in 12,12 24,12 12, ,12 12,,24 12,x; do
+    new_case
+    drive --saturate-at "$value"
+    check "usage: --saturate-at '$value' is a usage error" code_is 2
+    check "usage: --saturate-at '$value' invokes nothing" calls_are 0
+done
+new_case
+A_ONLY=1 drive --batches-b 3
+check "usage: --batches-b without --spec-b is a usage error" code_is 2
+for value in 0 x 03; do
+    new_case
+    drive --batches-b "$value"
+    check "usage: --batches-b '$value' is a usage error" code_is 2
+done
 
 # ------------------------------------------------- 7b. the seam behind the stop
 #
