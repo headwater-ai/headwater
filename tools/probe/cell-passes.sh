@@ -15,9 +15,13 @@
 # --assemble`, and prints one line for each probe of each additive line of
 # the batch:
 #
-#     <arm> <set> <action> <probe> <satisfied> <graded>
+#     <arm> <set> <action> <probe> <satisfied> <graded> <refused>
 #
-# The two numbers are the grader's, never a recorder status. For each line
+# The first two numbers are the grader's, never a recorder status. The third
+# counts the probe's sessions of the line that the provider refused on policy
+# grounds, which `campaign.sh` marks `<batch-dir>/refused/<name>` and never
+# grades (#1881), so the phase B ledger states them beside the passes and the
+# count. For each line
 # it wraps the assembled identity and events blocks in a bare transcript,
 # `<batch-dir>/assembled/<stem>.transcript.md`, and reads
 # `headwater probe compare <t> <t>`, which grades each transcript as `grade`
@@ -123,17 +127,24 @@ counts() {
             *) echo "cell-passes: the grade of $stem refused it: $(printf '%s\n' "$graded" | head -1)" >&2; return 4 ;;
         esac
         selected=$(probes "$tier" "$arm" "$round" "$@" < /dev/null) || return 4
-        printf '%s\n' "$graded" | awk -v selected="$selected" '
+        # The probe of each job of this line the provider refused (#1881).
+        refused=$(awk -v d="$batch" -v i="$index" '
+            function exists(p,   line, r) { r = (getline line < p); close(p); return r >= 0 }
+            $2 == i && exists(d "/refused/" $1) { printf "%s ", $6 }
+        ' "$batch/jobs" 2>/dev/null)
+        printf '%s\n' "$graded" | awk -v selected="$selected" -v refused="$refused" '
             BEGIN {
                 n = split(selected, rows, "\n")
                 for (i = 1; i <= n; i++) { split(rows[i], f, " "); probe[i] = f[3]; line[i] = f[1] " " f[2] " " f[4] " " f[3] }
+                m = split(refused, gone, " ")
+                for (i = 1; i <= m; i++) r[gone[i]]++
             }
             /^HW-PROBE-[^:]*: [0-9]+\/[0-9]+ against / {
                 name = substr($1, 1, length($1) - 1)
                 split($2, xn, "/")
                 x[name] = xn[1]; g[name] = xn[2]
             }
-            END { for (i = 1; i <= n; i++) if (probe[i] != "") printf "%s %d %d\n", line[i], x[probe[i]], g[probe[i]] }
+            END { for (i = 1; i <= n; i++) if (probe[i] != "") printf "%s %d %d %d\n", line[i], x[probe[i]], g[probe[i]], r[probe[i]] }
         ' >> "$batch/cells.part"
     done < "$batch/lines"
     cat "$batch/cells.part"
