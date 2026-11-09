@@ -174,6 +174,8 @@ Phase B runs on the kept pin and on the held-out set only. It runs each row in s
 
 A cell that saturates stops at 24 sessions. A cell saturates when all its sessions pass or all fail at 24.
 
+Amended on 2026-11-09 by the owner on #1881, to fit phase B under one week of the plan. Each row runs 48 sessions in scenario 1 and in scenario 6, not 72. Scenarios 0 and 2 each run 66 sessions, pooled, on the held-out set. A cell also stops after 12 sessions that all pass or all fail. The ceiling for phase B is $1,050. The owner accepts a margin of about 14 points for each row. The owner also accepts that a row that passes about 95% or 5% of the time can stop early and read as 100% or 0%. `rounds.final` in `.headwater/probe.yml` declares these counts.
+
 The published table carries the held-out number of each row. The skills, hooks and MCP columns carry the pooled layer result from phase A, and a per-cell indication marked unconfirmed. No tuning-probe cell table is bought.
 
 ### The keep rule
