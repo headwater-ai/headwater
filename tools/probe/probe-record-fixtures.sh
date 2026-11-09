@@ -6109,11 +6109,19 @@ if [ -x "$engine" ]; then
         "the owner ruled 22 sessions for a screened variant and 145 for a confirmation, so ceil(22 / 22) = 1 and ceil(145 / 22) = 7 repetitions" "$scratch/add.out"
     present "and prices a whole round on a tuning line" \
         "line 8  additive scenario-0 tuning: a round of 4 variants x 22 probes x 1 repetitions (ceil(22 / 22)) = 88 sessions, a confirmation of 22 probes x 7 repetitions (round tuning, ceil(145 / 22)) = 154 sessions, and the best so far at 154 sessions where no measurement at that count exists: 396 sessions, \$198.00 a round" "$scratch/add.out"
-    present "it prints the final round's sum" "round final: 1540 sessions, \$770.00" "$scratch/add.out"
-    present "and one total" "total: 13244 sessions, \$6622.00" "$scratch/add.out"
+    # The final round is phase B (#1881): scenarios 1 and 6 per row at 6
+    # repetitions in one batch, 132 sessions each, and the other five
+    # scenarios at its 3, 66 sessions each.
+    present "it prints the final round's sum" "round final: 594 sessions, \$297.00" "$scratch/add.out"
+    present "and one total" "total: 12298 sessions, \$6149.00" "$scratch/add.out"
     present "and the cached share of input, with no batch recorded, as no recorded sessions (#1875)" \
         "cached share: no recorded sessions" "$scratch/add.out"
-    present "each round's count is computed from its rates" "so ceil(219 / 22) = 10 repetitions of each probe" "$scratch/add.out"
+    present "each round's count is computed from its rates" "so ceil(70 / 22) = 4 repetitions of each probe" "$scratch/add.out"
+    present "and the final round's from its declared count" "the set held-out of 22 probes at the 3 repetitions of each probe the round declares, 66 sessions per scenario" "$scratch/add.out"
+    present "a final line of a row scenario runs the round's row_repetitions (#1881)" \
+        "line 16  additive scenario-1 final: 22 probes x 6 repetitions (round final, declared for a row scenario) = 132 sessions, \$66.00" "$scratch/add.out"
+    present "and a final line of any other scenario its repetitions" \
+        "line 17  additive scenario-2 final: 22 probes x 3 repetitions (round final, declared) = 66 sessions, \$33.00" "$scratch/add.out"
     # The owner approved the screening round at $700 (#1775). The
     # ceiling admits each plan, and the approval of each round says which
     # lines the batch runs.
@@ -6124,7 +6132,8 @@ if [ -x "$engine" ]; then
     # on 2026-10-29 (#1877), over every attempt of that layer.
     present "and the tuning round as approved" \
         "round tuning: approved to \$1300.00 over every attempt, so the batch runs its lines" "$scratch/add.out"
-    present "and the final round as not approved" "round final: not approved, so the batch refuses its lines with 5" "$scratch/add.out"
+    # The owner set the ceiling of phase B at $1,050.00 on 2026-11-09 (#1881).
+    present "and the final round as approved" "round final: approved to \$1050.00 over every attempt, so the batch runs its lines" "$scratch/add.out"
     # An approval is a whole number of cents at or above zero. A negative or
     # a non-integer one is refused, so no typo reads as an approval or as a
     # refusal it does not state.
@@ -6195,7 +6204,7 @@ if [ -x "$engine" ]; then
     same "a leak string in a skills-layer skill body fails the additive dry run with 8" "8" "$?"
     same "and it names every scenario that holds skills, and no other" "3 6" \
         "$(sed -n "s/^leak check, scenario-\([0-9]*\) tree: leak .*headwater-orient\/SKILL.md $body_string$/\1/p" "$scratch/add-body.out" | LC_ALL=C sort -n | tr '\n' ' ' | sed 's/ $//')"
-    present "and prints the round sums all the same" "total: 13244 sessions" "$scratch/add-body.out"
+    present "and prints the round sums all the same" "total: 12298 sessions" "$scratch/add-body.out"
 
     # The hook's text: the intent hook opens the text it injects for the
     # pointer probe's task with its own first sentence, and no file of a hook
@@ -6251,7 +6260,7 @@ if [ -x "$engine" ]; then
     # final round. And the plan's own count of a line's probes must agree with
     # the set `declared.py` reads, so a declaration whose set the plan does
     # not select is refused.
-    sed 's/^    rates: \[0\.90, 0\.80\]/    rates: [0.95, 0.80]/' "$root/.headwater/probe.yml" > "$scratch/add-rates.yml"
+    sed '/^    repetitions: 3$/{N;N;s/.*/    rates: [0.95, 0.80]/;}' "$root/.headwater/probe.yml" > "$scratch/add-rates.yml"
     HW_PROBE_YML="$scratch/add-rates.yml" PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign.sh" --dry-run \
         --spec "$scratch/add-twelve.spec" > "$scratch/add-rates.out" 2> /dev/null
     present "other rates for the final round price another count" "0.95 against 0.8, needs 88 sessions per scenario" "$scratch/add-rates.out"
@@ -6274,8 +6283,8 @@ if [ -x "$engine" ]; then
     HEADWATER_TUNING_STAGE=screen PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" \
         > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
     same "--priced of the screen reads each additive line" "0 21" "$? $(wc -l < "$scratch/add-priced.out" | tr -d ' ')"
-    same "and gives each its round's count, 1 repetition on a screened tuning line" "4 1 10" \
-        "$(awk '$1 == 1 || $1 == 8 || $1 == 15 { print $3 }' "$scratch/add-priced.out" | tr '\n' ' ' | sed 's/ $//')"
+    same "and gives each its round's count, 1 repetition on a screened tuning line, and 3 and 6 on a final line of scenario 0 and 1" "4 1 3 6" \
+        "$(awk '$1 == 1 || $1 == 8 || $1 == 15 || $1 == 16 { print $3 }' "$scratch/add-priced.out" | tr '\n' ' ' | sed 's/ $//')"
     HEADWATER_TUNING_STAGE=confirm PATH="$scratch/dry-bin:$PATH" sh "$root/tools/probe/campaign-dry-run.sh" --priced "$additive_spec" \
         > "$scratch/add-priced.out" 2> "$scratch/add-priced.err"
     same "--priced of the confirmation gives a tuning line 7 repetitions" "0 7" \
@@ -6343,10 +6352,11 @@ if [ -x "$engine" ]; then
         CARGO_TARGET_DIR="$scratch/gate-target" PATH="$scratch/gate-bin:$PATH" \
             sh "$root/tools/probe/campaign.sh" --out "$scratch/gate-out" --model claude-haiku-4-5 \
             --spec "$additive_spec" > /dev/null 2> "$scratch/gate-clean.err"
-        same "the whole campaign's spec is still refused with 5, now on the round nobody approved" "5" "$?"
-        present "and the refusal names the final round" "no person has approved spend on the final round" "$scratch/gate-clean.err"
+        same "the whole campaign's spec is still refused with 5, now on its tuning lines outside the open layer" "5" "$?"
+        present "and the refusal names a tuning line of a scenario the open layer is not" "and the spec holds a tuning line of scenario-1." "$scratch/gate-clean.err"
         absent "and not the tuning round, which the owner approved (#1777)" "approved spend on the tuning round" "$scratch/gate-clean.err"
         absent "and not the screening round" "approved spend on the screening round" "$scratch/gate-clean.err"
+        absent "and not the final round, which the owner approved (#1881)" "approved spend on the final round" "$scratch/gate-clean.err"
         same "and it ran no dry run, planned no line and asked the harness nothing" "no no no" \
             "$([ -e "$scratch/gate-out/leak-gate" ] && echo yes || echo no) $([ -e "$scratch/gate-out/lines" ] && echo yes || echo no) $([ -e "$scratch/gate-out/claude-version" ] && echo yes || echo no)"
         rm -rf "$scratch/gate-out"
@@ -6410,17 +6420,6 @@ if [ -x "$engine" ]; then
         sh "$root/tools/probe/campaign.sh" --out "$scratch/run-out" --assemble > /dev/null 2> "$scratch/run-assemble.err"
         same "assembly states the line's round and set beside its identity" "round: screening set: tuning" \
             "$(tr '\n' ' ' < "$scratch/run-out/assembled/L1-additive-scenario-4-screening.round" 2>/dev/null | sed 's/ $//')"
-        printf 'additive scenario-4 final\n' > "$scratch/run-final.spec"
-        rm -rf "$scratch/run-final-out"
-        HEADWATER_PROBE_HOST_CONFIG="$scratch/run-host" CARGO_TARGET_DIR="$scratch/gate-target" PATH="$scratch/run-bin:$PATH" \
-            sh "$root/tools/probe/campaign.sh" --out "$scratch/run-final-out" --model claude-haiku-4-5 \
-            --spec "$scratch/run-final.spec" > /dev/null 2> "$scratch/run-final.err"
-        same "a line of the final round, which nobody approved, is refused with 5" "5" "$?"
-        present "and the refusal names the round" "no person has approved spend on the final round" "$scratch/run-final.err"
-        same "and it wrote no harness version, no plan, no tree and no session" "no no no no" \
-            "$([ -e "$scratch/run-final-out/claude-version" ] && echo yes || echo no) $([ -e "$scratch/run-final-out/lines" ] && echo yes || echo no) $([ -e "$scratch/run-final-out/trees" ] && echo yes || echo no) $([ -e "$scratch/run-final-out/sessions" ] && echo yes || echo no)"
-        same "and it ran no dry run, so it built no scenario tree" "no" \
-            "$([ -e "$scratch/run-final-out/leak-gate" ] && echo yes || echo no)"
         # The owner approved the tuning round (#1880), and the layer it has
         # open is MCP on scenario 5, over its base, scenario 2. So a
         # batch of a scenario-4 tuning line, which is neither, passes the
@@ -6715,7 +6714,7 @@ awk '$0 == "  final:" { print "  pilot:"; print "    set: held-out"; print "    
 python3 "$declared_py" "$scratch/reps.yml" rounds > "$scratch/reps-rounds.out" 2> /dev/null
 same "declared.py rounds prints the pilot's declared count in place of its rates" "0 pilot held-out repetitions 18 1 22" \
     "$? $(awk '$1 == "pilot" { print $1, $2, $3, $4, $5, NF - 5 }' "$scratch/reps-rounds.out")"
-same "and the final round's rates beside it" "final held-out 0.9 0.8 1 22" \
+same "and the final round's declared count beside it (#1881)" "final held-out repetitions 3 1 22" \
     "$(awk '$1 == "final" { print $1, $2, $3, $4, $5, NF - 5 }' "$scratch/reps-rounds.out")"
 # Each refusal exits 2 and states its own reason. `name|sed|needle`.
 for reps_case in \
@@ -6731,6 +6730,32 @@ do
     python3 "$declared_py" "$scratch/reps-bad.yml" rounds > "$scratch/reps-bad.out" 2> "$scratch/reps-bad.err"
     same "declared.py rounds refuses $reps_name, with 2 and its reason" "2 1 0" \
         "$? $(grep -cF -- "$reps_needle" "$scratch/reps-bad.err") $(wc -c < "$scratch/reps-bad.out" | tr -d ' ')"
+done
+# A round that declares its own count may also measure some scenarios per
+# row (#1881): `rows` names them and `row_repetitions` is the count a line
+# of one of them runs. Phase B declares scenarios 1 and 6 at 6, so 12
+# sessions of each row in one batch.
+python3 "$declared_py" "$root/.headwater/probe.yml" rows > "$scratch/rows.out" 2> /dev/null
+same "declared.py rows prints the final round's row count and its row scenarios" "0 final 6 1 6" "$? $(cat "$scratch/rows.out")"
+sed '/^    rows: /d; /^    row_repetitions: /d' "$root/.headwater/probe.yml" > "$scratch/rows-none.yml"
+python3 "$declared_py" "$scratch/rows-none.yml" rows > "$scratch/rows-none.out" 2> /dev/null
+same "and nothing for a declaration whose rounds declare no rows" "0 0" "$? $(wc -c < "$scratch/rows-none.out" | tr -d ' ')"
+for rows_case in \
+    "rows without row_repetitions|/^    row_repetitions: 6$/d|declares \`rows\` alone" \
+    "row_repetitions without rows|/^    rows: \[1, 6\]$/d|declares \`row_repetitions\` alone" \
+    "a row count of zero|s/^    row_repetitions: 6$/    row_repetitions: 0/|must be a whole number above zero" \
+    "a row scenario that scenarios: does not declare|s/^    rows: \[1, 6\]$/    rows: [1, 9]/|names the scenario 9, which" \
+    "a row scenario named twice|s/^    rows: \[1, 6\]$/    rows: [6, 6]/|names a scenario twice" \
+    "rows on a round of rates|s/^    repetitions: 3$/    rates: [0.90, 0.80]/|only a round that declares its own \`repetitions\`"
+do
+    rows_name=${rows_case%%|*}; rows_rest=${rows_case#*|}
+    rows_sed=${rows_rest%%|*}; rows_needle=${rows_rest#*|}
+    sed "$rows_sed" "$root/.headwater/probe.yml" > "$scratch/rows-bad.yml"
+    python3 "$declared_py" "$scratch/rows-bad.yml" rows > "$scratch/rows-bad.out" 2> "$scratch/rows-bad.err"
+    rows_status=$?
+    python3 "$declared_py" "$scratch/rows-bad.yml" rounds > /dev/null 2> /dev/null
+    same "declared.py rows and rounds refuse $rows_name, with 2 and its reason" "2 2 1 0" \
+        "$rows_status $? $(grep -cF -- "$rows_needle" "$scratch/rows-bad.err") $(wc -c < "$scratch/rows-bad.out" | tr -d ' ')"
 done
 awk '$0 == "    approved_cents: 70000" { print; print "    open: none"; next } { print }' "$root/.headwater/probe.yml" > "$scratch/open-screening.yml"
 python3 "$declared_py" "$scratch/open-screening.yml" approved > /dev/null 2> "$scratch/open-screening.err"
@@ -6768,6 +6793,15 @@ open_wrote() {
         "$([ -e "$scratch/open-out/trees" ] && echo yes || echo no)" \
         "$([ -e "$scratch/open-out/claude-version" ] && echo yes || echo no)"
 }
+# A line of a round whose approval is 0 is refused with 5 before anything
+# is built. The owner approved the final round on 2026-11-09 (#1881), so the
+# case reads a declaration that takes the approval back.
+sed 's/^    approved_cents: 105000$/    approved_cents: 0/' "$root/.headwater/probe.yml" > "$scratch/final-unapproved.yml"
+printf 'additive scenario-4 final\n' > "$scratch/run-final.spec"
+same "a line of a final round that nobody approved is refused with 5" "5" \
+    "$(open_batch "$scratch/final-unapproved.yml" "$scratch/run-final.spec" "$scratch/run-final.err")"
+present "and the refusal names the round" "no person has approved spend on the final round" "$scratch/run-final.err"
+same "and it ran no dry run, planned no line, built no tree and asked the harness nothing" "no no no no" "$(open_wrote)"
 # The decisive case of #1819: a paid tuning line of a layer whose plan
 # nobody accepted. With docs open on scenario 1, a tuning line of scenario 3
 # is refused, and the refusal names the open layer and scenario.
