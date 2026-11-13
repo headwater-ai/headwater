@@ -160,6 +160,61 @@ expect 2 "--check-clean after --args is refused" "$base" typed-at.sh --args "$wo
 printf '%s\n' docs/decisions decision HW-PD-0026 > "$work/short.args"
 expect 2 "--args with too few arguments in the file is the script's usage error" "$base" typed-at.sh --args "$work/short.args"
 
+# --- the claims a strict check needs (#1881) ------------------------------
+
+# A session of a scenario without the engine has no `.headwater/ids/` to
+# write a claim into, so the strict check failed its document on
+# `identifier.claim.missing` alone. The owner ruled on 2026-11-13 that the
+# grader writes the claims `headwater check --fix` would write before every
+# strict check, in every scenario alike. Each case also holds that the
+# grader removes them again, so the next oracle in the same copy reads the
+# tree the session left.
+claim=.headwater/ids/decision_id/HW-DR-0112
+[ -f "$base/$claim" ] || echo "oracle-fixtures: $claim is gone, so the claim cases read nothing." >&2
+# unclaimed <label> <tree>: a case that the claim is still absent.
+unclaimed() {
+    cases=$((cases + 1))
+    if [ -e "$2/$claim" ]; then
+        echo "FAIL $1: the grader left $claim in the tree"
+        failures=$((failures + 1))
+    else
+        echo "ok   $1"
+    fi
+}
+unclaim=$(fresh claim-missing) && rm "$unclaim/$claim"
+expect 0 "check-clean passes a tree whose one error is a missing claim" "$unclaim" check-clean.sh
+unclaimed "check-clean removes the claim it wrote" "$unclaim"
+expect 0 "typed-at with --check-clean passes a document whose one error is its missing claim" "$unclaim" typed-at.sh --check-clean docs/decisions decision HW-PD-0026 "$title"
+unclaimed "typed-at with --check-clean removes the claim it wrote" "$unclaim"
+expect 0 "successor-typed with --check-clean passes a successor whose one error is its missing claim" "$unclaim" successor-typed.sh --check-clean HW-DR-0111
+unclaimed "successor-typed with --check-clean removes the claim it wrote" "$unclaim"
+tree=$(fresh claim-missing-spoiled) && rm "$tree/$claim" && spoil "$tree"
+expect 1 "check-clean still fails another error beside a missing claim" "$tree" check-clean.sh
+expect 1 "typed-at with --check-clean still fails another error beside a missing claim" "$tree" typed-at.sh --check-clean docs/decisions decision HW-PD-0026 "$title"
+unclaimed "a failing strict check removes the claim it wrote" "$tree"
+# A claim that stands is never overwritten, stale or not: a stale claim is
+# advisory, and the file is the only record of the other claimant.
+tree=$(fresh claim-stale) && printf '%s\n' docs/decisions/0112-another-path.md > "$tree/$claim"
+expect 0 "check-clean passes a stale claim, which is advisory" "$tree" check-clean.sh
+cases=$((cases + 1))
+if [ "$(cat "$tree/$claim")" = docs/decisions/0112-another-path.md ]; then
+    echo "ok   the grader never overwrites a claim that stands"
+else
+    echo "FAIL the grader overwrote the claim at $claim: $(cat "$tree/$claim")"
+    failures=$((failures + 1))
+fi
+# The store is gone whole, as in a tree with no engine layer: the grader
+# makes the directory, and removes what it made.
+tree=$(fresh claim-no-scheme) && rm -r "$tree/.headwater/ids/decision_id"
+expect 0 "check-clean passes a tree whose scheme directory of the store is gone" "$tree" check-clean.sh
+cases=$((cases + 1))
+if [ -e "$tree/.headwater/ids/decision_id" ]; then
+    echo "FAIL the grader left the directory .headwater/ids/decision_id it made"
+    failures=$((failures + 1))
+else
+    echo "ok   the grader removes the directory of the store that it made"
+fi
+
 # --- reciprocal-link.sh ---------------------------------------------------
 
 expect 0 "reciprocal-link passes two records that name each other" "$base" reciprocal-link.sh HW-DR-0112 HW-DR-0111

@@ -16,8 +16,8 @@
 # Three modes read nothing from the network. `--identity-only` prints the six
 # members `headwater probe plan` fixes, `--provider-only <log>` prints the
 # three the provider metadata carries and the three token counts of its
-# `usage`, and `--answer-only <log> --answers <set>` prints the final
-# answer, each over a log already recorded.
+# `usage`, and `--answer-only <log> --answers <set> [--corpus <dir>]` prints
+# the final answer, each over a log already recorded.
 #
 # ## The channel, and the two ways to lose it
 #
@@ -94,6 +94,9 @@
 # that word and nothing else. A session whose last line is a sentence gave no
 # answer in the closed set, and `null` is the true record of it. An answer of
 # two words is compared as a set of words, so their order is not read (#1384).
+# Markdown emphasis, backticks and trailing punctuation around the line are
+# format, and a document path, slug or file number of a declared identifier
+# names that identifier (#1881, step_derive_answer says how).
 #
 # Until #980 the rule read the whole final message. The pilot of 2026-09-28
 # found 7 of 27 sessions that wrote one sentence of justification and then the
@@ -196,6 +199,7 @@ identity_only=0
 provider_only=0
 answer_only=0
 answers=
+answer_corpus=
 transform_args=
 baseline=
 oracle_tree=
@@ -222,6 +226,7 @@ while [ $# -gt 0 ]; do
         --provider-only) provider_only=1; raw=${2:-}; shift 2 ;;
         --answer-only) answer_only=1; raw=${2:-}; shift 2 ;;
         --answers) answers=${2:-}; shift 2 ;;
+        --corpus) answer_corpus=${2:-}; shift 2 ;;
         --produced) transform_args="$transform_args --produced ${2:-}"; shift 2 ;;
         --baseline) baseline=${2:-}; shift 2 ;;
         *) echo "probe-record: unknown argument \`$1\`" >&2; exit 2 ;;
@@ -243,6 +248,9 @@ root=$(cd "$invoked_from/../.." && pwd)
 # binary shadowed a `release` one built after it. Now the newer one answers.
 . "$root/tools/repo/resolve-engine.sh"
 engine=$(hw_resolve_engine_bin "$root") || engine=
+# The corpus a spelling of an answer is resolved against (#1881): the checkout
+# the plan is taken over, unless `--corpus` names another.
+answer_corpus=${answer_corpus:-$root}
 
 # The arguments and the workspace guard are checked **before anything about
 # this host**, because they are the two refusals that are the same everywhere.
@@ -447,10 +455,20 @@ fi
 # the `null` the contract asks for.
 #
 # The comparison folds case and trims surrounding space, because a harness that
-# ends a session with `Present.` has said the same word. It does not strip a
-# trailing period or match a substring: `the answer is present` is prose that
-# contains an answer, and a recorder that took the word out of it would be
-# reading the session rather than observing it.
+# ends a session with `Present.` has said the same word. It does not match a
+# substring: `the answer is present` is prose that contains an answer, and a
+# recorder that took the word out of it would be reading the session rather
+# than observing it.
+#
+# **Format is not content (#1881).** Phase B of the additive campaign graded
+# `**HW-DR-0090**`, a backticked identifier, the path
+# `docs/decisions/0090-….md`, its slug and the bare `0090` as no answer, and
+# each of them names the record the probe expects. The prompt says "the
+# identifier" and does not say which form. The owner ruled on 2026-11-13 that
+# the recorder strips Markdown emphasis, backticks and trailing punctuation
+# from the final line (step_answer_line), and then resolves a document path, a
+# file name, a slug or a file number to its identifier (step_resolve_answer).
+# Neither step reads a word out of a sentence, so prose is still no answer.
 #
 # An answer of more than one word is compared as a set of words (#1384): the
 # line and the declared answer are split on space, folded, and sorted, and the
@@ -464,14 +482,109 @@ words() {
     printf '%s\n' "$1" | tr '[:upper:]' '[:lower:]' | tr -s ' \t' '\n\n' | awk 'NF' | sort | tr '\n' ' '
 }
 
+# step_answer_line <line>: the line with its format taken off (#1881). Space
+# is trimmed, and then, up to three times so that ``**`HW-DR-0090`**.`` comes
+# apart, a run of trailing `.`, `,`, `;`, `:`, `!` or `?` is dropped, and a
+# pair of `**`, `__`, `*`, `_` or a backtick that wraps the whole line is
+# taken off. A mark inside the line is kept, so `HW_DR` keeps its `_` and a
+# sentence keeps its words. A list bullet and a heading mark are not emphasis
+# and are kept, so `- merge` is still no answer.
+step_answer_line() {
+    printf '%s\n' "$1" | sed '
+        s/^[[:space:]]*//; s/[[:space:]]*$//
+        s/[.,;:!?]*$//
+        s/^\*\*\(.*\)\*\*$/\1/; s/^__\(.*\)__$/\1/; s/^\*\(.*\)\*$/\1/; s/^_\(.*\)_$/\1/; s/^`\(.*\)`$/\1/
+        s/^[[:space:]]*//; s/[[:space:]]*$//
+        s/[.,;:!?]*$//
+        s/^\*\*\(.*\)\*\*$/\1/; s/^__\(.*\)__$/\1/; s/^\*\(.*\)\*$/\1/; s/^_\(.*\)_$/\1/; s/^`\(.*\)`$/\1/
+        s/^[[:space:]]*//; s/[[:space:]]*$//
+        s/[.,;:!?]*$//
+        s/^\*\*\(.*\)\*\*$/\1/; s/^__\(.*\)__$/\1/; s/^\*\(.*\)\*$/\1/; s/^_\(.*\)_$/\1/; s/^`\(.*\)`$/\1/
+        s/^[[:space:]]*//; s/[[:space:]]*$//
+    '
+}
+
+# answer_document <identifier>: the path, under the corpus root, of the one
+# document whose front matter states `id: <identifier>`, and nothing where no
+# document or more than one does. The corpus is `--corpus`, by default the
+# checkout this script is in, which is the corpus the plan was taken over and
+# the grader reads. It is never the workspace, which a session can write.
+answer_document() {
+    [ -d "$answer_corpus/docs" ] || return 0
+    found=$(cd "$answer_corpus" && grep -rlxF --include='*.md' -e "id: $1" -e "id: \"$1\"" docs 2> /dev/null |
+        while IFS= read -r file; do
+            awk -v want="$1" '
+                NR == 1 && $0 != "---" { exit 1 }
+                NR > 1 && $0 == "---" { exit 1 }
+                NR > 1 && ($0 == "id: " want || $0 == "id: \"" want "\"") { exit 0 }
+            ' "$file" && printf '%s\n' "$file"
+        done)
+    [ "$(printf '%s\n' "$found" | awk 'NF' | wc -l | tr -d ' ')" = 1 ] && printf '%s\n' "$found"
+}
+
+# step_resolve_answer <line>: the one declared answer that a line of one word
+# names by its document, and nothing otherwise (#1881). Each declared answer of
+# one word that is the identifier of one document of the corpus is spelled
+# five more ways: the document's path, that path after `./` or at the end of
+# a longer path, its file name, the file name less `.md` (the slug), and the
+# digits before the first `-` of the file name (the file number). The
+# comparison folds case. **A spelling that names two declared answers names
+# neither.** So `0090` names `HW-DR-0090` in a set that holds no other answer
+# numbered 0090, and nothing in a set that also holds `HW-OBL-0090`, where a
+# number alone cannot say which record was meant. A spelling that names no
+# declared answer is no answer, as before, so a resolution never makes a value
+# outside the closed set. The value written is the declared form, and the
+# grader then rules it right or wrong as it rules any other value.
+step_resolve_answer() {
+    case $1 in
+        '' | *[[:space:]]*) return 0 ;;
+    esac
+    line=$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')
+    named=
+    count=0
+    old_ifs=$IFS
+    IFS=,
+    set -f
+    # shellcheck disable=SC2086
+    for one in $answers; do
+        IFS=$old_ifs
+        one=$(printf '%s' "$one" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+        case $one in
+            '' | *[[:space:]]*) continue ;;
+        esac
+        path=$(answer_document "$one")
+        [ -n "$path" ] || continue
+        path=$(printf '%s' "$path" | tr '[:upper:]' '[:lower:]')
+        file=${path##*/}
+        slug=${file%.md}
+        number=${file%%-*}
+        case $number in
+            '' | *[!0-9]*) number= ;;
+        esac
+        hit=no
+        case $line in
+            "$path" | "./$path" | */"$path" | "$file" | "$slug") hit=yes ;;
+        esac
+        [ -n "$number" ] && [ "$line" = "$number" ] && hit=yes
+        if [ "$hit" = yes ]; then
+            named=$one
+            count=$((count + 1))
+        fi
+    done
+    set +f
+    IFS=$old_ifs
+    [ "$count" = 1 ] && printf '%s' "$named"
+    return 0
+}
+
 step_derive_answer() {
     [ -n "$answers" ] || return 0
     # The final non-empty line of the final message (#980). A message that is
     # one word is its own final line, so the whole-message reading is the case
     # of one line and not a second rule.
     said=$(jq -s -r '([.[] | select(.type == "result")] | last | .result // "")' < "$raw" \
-        | tr -d '\r' | awk 'NF { last = $0 } END { print last }' \
-        | sed 's/^[[:space:]]*//; s/[[:space:]]*$//; s/\.$//')
+        | tr -d '\r' | awk 'NF { last = $0 } END { print last }')
+    said=$(step_answer_line "$said")
     [ -n "$said" ] || return 0
     folded=$(words "$said")
     # `printf '%s\n'` and never `printf '%s'`: a set of one answer carries no
@@ -479,18 +592,24 @@ step_derive_answer() {
     # `while read` stops before the body on that. The fixture below caught it
     # dropping the last answer of every set, which for a three-answer probe is
     # a value the recorder would have written as `null` forever.
-    printf '%s\n' "$answers" | tr ',' '\n' | while read -r one; do
+    matched=$(printf '%s\n' "$answers" | tr ',' '\n' | while read -r one; do
         one=$(printf '%s' "$one" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
         [ -n "$one" ] || continue
         if [ "$folded" = "$(words "$one")" ]; then
             printf '%s' "$one"
-            return 0
+            break
         fi
-    done
+    done)
+    if [ -n "$matched" ]; then
+        printf '%s' "$matched"
+        return 0
+    fi
+    step_resolve_answer "$said"
 }
 
-# `--answer-only <log> --answers <set>` runs that step alone, so the derivation
-# is held by a fixture without spending a session or an engine.
+# `--answer-only <log> --answers <set> [--corpus <dir>]` runs that step alone,
+# so the derivation is held by a fixture without spending a session or an
+# engine, and a recorded log can be read again under a later rule.
 if [ "$answer_only" = 1 ]; then
     [ -f "$raw" ] || { echo "probe-record: no log at $raw" >&2; exit 2; }
     step_derive_answer
