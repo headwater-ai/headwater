@@ -1169,7 +1169,8 @@ fi
 # The final line is the answer (#980). The pilot of 2026-09-28 found sessions
 # that wrote one sentence of reasoning and then the word on its own line, and
 # the whole-message rule recorded each as no answer. A word inside a sentence
-# is still no answer, and so is a word in Markdown emphasis.
+# is still no answer. A word in Markdown emphasis was no answer until #1881,
+# and the owner ruled on 2026-11-13 that emphasis is format, so it is the word.
 printf '%s\n' '{"type":"result","result":"Found it: HW-DR-0034 rules on this.\n\nmerge\n"}' \
     > "$scratch/last-line.jsonl"
 same "a word alone on the final line after a sentence is the answer" \
@@ -1182,9 +1183,55 @@ same "a word inside a sentence on the final line is no answer" \
     "$(sh "$driver" --answer-only "$scratch/in-sentence.jsonl" --answers "merge, stamp" 2>/dev/null)"
 printf '%s\n' '{"type":"result","result":"Reasoning first.\n**merge**"}' \
     > "$scratch/emphasis.jsonl"
-same "a word in Markdown emphasis on the final line is no answer" \
-    "" \
+same "a word in Markdown emphasis on the final line is the word (#1881)" \
+    "merge" \
     "$(sh "$driver" --answer-only "$scratch/emphasis.jsonl" --answers "merge, stamp" 2>/dev/null)"
+
+# Format is not content (#1881). Phase B graded `**HW-DR-0090**`, a path, a
+# slug and the bare `0090` as no answer, and each names the record expected.
+# The recorder now strips emphasis, backticks and trailing punctuation, and
+# resolves a path, file name, slug or file number of a declared identifier
+# against the corpus. The corpus here is built for the case, so a change to
+# this repository's own records moves no expectation: two decisions and an
+# obligation that shares a file number with one of them.
+answer_corpus=$scratch/answer-corpus
+mkdir -p "$answer_corpus/docs/decisions" "$answer_corpus/docs/obligations"
+printf -- '---\nid: HW-DR-0090\nstatus: current\n---\n\n# Each release states its digest\n' \
+    > "$answer_corpus/docs/decisions/0090-each-release-states-its-digest.md"
+printf -- '---\nid: HW-DR-0089\nstatus: current\n---\n\n# The other release\n' \
+    > "$answer_corpus/docs/decisions/0089-the-other-release.md"
+printf -- '---\nid: "HW-OBL-0090"\nstatus: current\n---\n\n# One rule carries four parts\n' \
+    > "$answer_corpus/docs/obligations/0090-one-rule-carries-four-parts.md"
+printf -- '---\ntitle: a note\n---\n\nid: HW-DR-0022\n' > "$answer_corpus/docs/decisions/0022-a-body-line.md"
+digest="HW-DR-0090, HW-DR-0089, HW-DR-0022, HW-DR-0046"
+# answer_case <label> <want> <final line> [<answer set>]
+answer_case() {
+    jq -n --arg r "I read the workflow.
+
+$3" '{type: "result", result: $r}' > "$scratch/spelled.jsonl"
+    same "$1" "$2" \
+        "$(sh "$driver" --answer-only "$scratch/spelled.jsonl" --answers "${4:-$digest}" --corpus "$answer_corpus" 2>/dev/null)"
+}
+answer_case "an identifier in bold is the identifier" "HW-DR-0090" '**HW-DR-0090**'
+answer_case "an identifier in backticks is the identifier" "HW-DR-0090" '`HW-DR-0090`'
+answer_case "bold around backticks and a period after them come apart" "HW-DR-0090" '**`HW-DR-0090`**.'
+answer_case "a trailing colon is punctuation" "HW-DR-0090" 'HW-DR-0090:'
+answer_case "the path of the document names its identifier" "HW-DR-0090" 'docs/decisions/0090-each-release-states-its-digest.md'
+answer_case "the path at the end of a longer path names its identifier" "HW-DR-0090" '/work/ws/docs/decisions/0090-each-release-states-its-digest.md'
+answer_case "the slug of the document names its identifier" "HW-DR-0090" '0090-each-release-states-its-digest'
+answer_case "the file name of the document names its identifier" "HW-DR-0090" '0090-each-release-states-its-digest.md'
+answer_case "the file number names the one declared answer it numbers" "HW-DR-0090" '0090'
+answer_case "a file number in backticks is the file number" "HW-DR-0090" '`0090`'
+answer_case "a wrong identifier in bold is still that wrong identifier, which the grader fails" "HW-DR-0089" '**HW-DR-0089**'
+answer_case "the file number of a wrong record names that wrong record" "HW-DR-0089" '0089'
+answer_case "a number no declared answer carries is no answer" "" '0091'
+answer_case "a number with a digit short is no answer" "" '090'
+answer_case "a declared answer no document holds is not resolved by a body line" "" '0022'
+answer_case "a number two declared answers carry names neither" "" '0090' "HW-DR-0090, HW-OBL-0090, HW-DR-0022"
+answer_case "a quoted identifier in front matter is still found, and its slug names it" "HW-OBL-0090" '0090-one-rule-carries-four-parts' "HW-DR-0090, HW-OBL-0090, HW-DR-0022"
+answer_case "an identifier followed by prose is still no answer" "" 'HW-DR-0090 — it governs the workflow'
+answer_case "a list bullet is not emphasis, so a bulleted number is no answer" "" '- 0090'
+answer_case "a path inside a sentence is no answer" "" 'It breaks docs/decisions/0090-each-release-states-its-digest.md'
 
 # A declared answer of two words is compared as a set of words (#1384). The
 # status pilot of 2026-09-29 recorded `HW-DR-0052 current` as no answer for
