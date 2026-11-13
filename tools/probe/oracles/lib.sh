@@ -26,6 +26,7 @@ hw_oracle_scratch=""
 hw_oracle_end() {
     hw_status=$1
     shift
+    hw_oracle_unclaim
     [ -n "$hw_oracle_scratch" ] && rm -rf "$hw_oracle_scratch"
     printf '%s: %s\n' "$hw_oracle_name" "$*"
     exit "$hw_status"
@@ -53,11 +54,73 @@ hw_oracle_engine() {
     [ -x "$hw_engine" ] || hw_oracle_end 2 "no engine at $hw_engine, so nothing can be graded"
 }
 
+# The claims `headwater check --fix` would write, written before every strict
+# check, in every scenario alike (#1881, the owner's ruling of 2026-11-13).
+#
+# `.headwater/probe.yml` puts the claim store `.headwater/ids/` in the engine
+# layer. So a session of a scenario without the engine has no store to write
+# into and no `headwater new` to write a claim with. Its document can be
+# typed, placed and related as the task asks, and the strict check still
+# failed it on `identifier.claim.missing` alone. That graded the cut of the
+# layers and not the session. So the grader writes each claim that a finding
+# of that rule names before it counts strict errors. A session of a scenario
+# with the engine, which wrote the claim itself, is graded the same way.
+#
+# The finding carries its patch only as text, "writes `<claim>` holding
+# `<path>`", so this reads that text. A finding of the rule whose text does
+# not parse is a usage error, so a change of wording stops a grade and never
+# passes one. A claim is written only under `.headwater/ids/`, only where no
+# file stands, and as the one line that `headwater_check::claim::contents_for`
+# writes. So an existing claim, stale or not, is never overwritten. Only an
+# error that no directive or adoption task holds (`escape` is `none`) is
+# read, because only that error fails a strict run. Nothing else that
+# `check --fix` would write is written: the ruling names the claim alone.
+#
+# The scripts run one after another in one grading copy, so hw_oracle_end
+# removes every claim written here. The next oracle then reads the tree the
+# session left, and the order of the oracles changes no verdict.
+hw_oracle_claimed=""
+hw_oracle_claim() {
+    command -v jq > /dev/null 2>&1 || hw_oracle_usage "the claims a strict check needs are read with jq, and no jq is on the path"
+    hw_oracle_engine
+    hw_oracle_tmp
+    "$hw_engine" check --json --root . > "$hw_oracle_scratch/claims.json" 2> "$hw_oracle_scratch/claims.err" || true
+    jq -r '.findings[] | select(.rule == "identifier.claim.missing" and .severity == "error" and .escape == "none") | .remediation // ""' \
+        "$hw_oracle_scratch/claims.json" > "$hw_oracle_scratch/claims.txt" 2> /dev/null ||
+        hw_oracle_usage "the engine wrote no findings that jq reads, so the claims a strict check needs cannot be written"
+    while IFS= read -r hw_claim_text; do
+        hw_claim=$(printf '%s\n' "$hw_claim_text" | sed -n 's/.*writes `\([^`]*\)` holding `\([^`]*\)`.*/\1/p')
+        hw_claimant=$(printf '%s\n' "$hw_claim_text" | sed -n 's/.*writes `\([^`]*\)` holding `\([^`]*\)`.*/\2/p')
+        case $hw_claim in
+            */../* | */./*) hw_oracle_usage "an \`identifier.claim.missing\` finding names a claim outside the store: $hw_claim" ;;
+            .headwater/ids/*/*) ;;
+            *) hw_oracle_usage "an \`identifier.claim.missing\` finding names no claim that this script can write: $hw_claim_text" ;;
+        esac
+        [ -n "$hw_claimant" ] || hw_oracle_usage "an \`identifier.claim.missing\` finding names no claimant: $hw_claim_text"
+        [ -e "$hw_claim" ] && continue
+        mkdir -p "${hw_claim%/*}" || hw_oracle_usage "the directory of the claim $hw_claim could not be made"
+        (set -C && printf '%s\n' "$hw_claimant" > "$hw_claim") 2> /dev/null || continue
+        hw_oracle_claimed="$hw_oracle_claimed $hw_claim"
+    done < "$hw_oracle_scratch/claims.txt"
+}
+
+# Remove every claim that hw_oracle_claim wrote, and each directory of the
+# store that this left empty, so the grading copy holds what the session left.
+hw_oracle_unclaim() {
+    for hw_claim in $hw_oracle_claimed; do
+        rm -f "$hw_claim"
+        rmdir "${hw_claim%/*}" 2> /dev/null || true
+    done
+    hw_oracle_claimed=""
+}
+
 # Run `headwater check --strict` over the tree. Return its exit status, and
-# leave its report in "$hw_oracle_scratch/check.out".
+# leave its report in "$hw_oracle_scratch/check.out". The claims that
+# hw_oracle_claim writes are in the tree first.
 hw_oracle_check_strict() {
     hw_oracle_engine
     hw_oracle_tmp
+    hw_oracle_claim
     "$hw_engine" check --strict --root . > "$hw_oracle_scratch/check.out" 2> "$hw_oracle_scratch/check.err"
 }
 
@@ -169,6 +232,7 @@ hw_oracle_pass_clean() {
         command -v jq > /dev/null 2>&1 || hw_oracle_usage "--check-clean on a named document reads the findings with jq, and no jq is on the path"
         hw_oracle_engine
         hw_oracle_tmp
+        hw_oracle_claim
         "$hw_engine" check --json --root . > "$hw_oracle_scratch/check.json" 2> "$hw_oracle_scratch/check.err"
         hw_errors=$(jq -r --arg subjects " $hw_oracle_subjects " --arg linkers " $hw_oracle_linkers " --arg mentions "$hw_oracle_mentions" '($mentions | split(" ") | map(select(. != ""))) as $names | [.findings[] | (.path // "") as $path | (.message // "") as $message | select(.severity == "error" and .escape == "none" and (($subjects | contains(" " + $path + " ")) or (($linkers | contains(" " + $path + " ")) and any($names[]; . as $name | $message | contains($name)))))] | length' "$hw_oracle_scratch/check.json" 2> /dev/null) || hw_oracle_usage "the engine wrote no findings that jq reads"
         [ "$hw_errors" -eq 0 ] || hw_oracle_fail "$*, and \`headwater check --strict\` reports $hw_errors error(s) on it"
