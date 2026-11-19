@@ -201,6 +201,8 @@ The fixture suites, which are shell and Python rather than cargo, and which you 
     sh tools/repo/readme-fixtures.sh
     sh tools/repo/release-guide-fixtures.sh
     sh tools/repo/retire-worktree-fixtures.sh
+    sh tools/ci/beside-fixtures.sh
+    sh tools/ci/beside.sh wait <name>
     sh tools/ci/governed-scope-fixtures.sh ./engine/target/release/headwater
     sh tools/site/refresh-crawler-files.sh --check
     sh tools/site/refresh-figures.sh --check
@@ -262,6 +264,8 @@ Each one holds an artifact that no rule of the engine reads: a workflow, a manif
 Search Console reports three reasons that need no fix. "Excluded by noindex tag" names a page under `/process/`, which is `noindex` on purpose ([HW-DR-0107](docs/decisions/0107-the-process-shelves-stay-published-in-a-labeled-section-of-the-site-that-a-search-engine-does-not-index.md)). "Page with redirect" and "Duplicate without user-selected canonical" name an `http://` URL that the host redirects to https. "Not found (404)" does need a fix, unless the page was deleted and has no successor.
 
 Two things are deliberately absent from that list. `.githooks/change-manifest` is a producer the workflow calls rather than a gate that can fail on its own. `.claude/hooks/fixtures-live.sh` spends real AI credits against a real login, so no job runs it and nothing gates on it.
+
+Five of them do not run one after another in CI. `tools/ci/beside.sh start` puts a suite in the background of the `headwater` job, and `tools/ci/beside.sh wait` is the step that carries its name and exits with its status. The four suites of `color-fixtures.sh`, `try-fixtures.sh`, `oracle-fixtures.sh` and `probe-oracle-fixtures.sh` run at the same time, and the browser console check runs beside the site checks that follow it. Each of the five writes only under a temporary directory, which is the condition for a start. Run each one by its own line above on your machine, because the tool is for a job and adds nothing there.
 
 One of them is the only thing in this repository that runs the engine under a terminal. `tools/engine/color-fixtures.sh` attaches a pseudo-terminal with util-linux `script` and asserts that a verb whose interface contract promises to sense its stream emits an escape sequence there, and none through a pipe, under `NO_COLOR` or under `--no-color`. Everything else in this workflow reaches the engine through a pipe, where [HW-DR-0045](docs/decisions/0045-coloring-the-cli-and-where-the-banner-goes.md)'s refusal of a `--color=always` flag makes the painter the identity, so a renderer wired to plain output forever is green in every other gate. On a host with no `script` it prints one line saying every case is unrun and exits 0, so read its output and not only its status.
 
