@@ -169,6 +169,7 @@ A **regime** is a reusable, named bundle of rules that a kind opts into. Regimes
 
 - **Voice regime** — the voice in which a document is written, with the machine-checkable part of it: e.g. *declarative present-state* (no future intent, no narration of change, no phased-rollout language), *narrative* (time-boxed exploration, changelogs), or *unconstrained*.
 - **Lifecycle regime** — a state machine over the state facet: states, legal transitions, terminal states, and what each state implies (e.g. superseded documents are retained and delinked from live dependency paths).
+- **Language regime** — the language, the variant, and the controlled profile that a kind writes in. The lexical checks read the spelling lexicon, the sentence limits, and the retired terms from it ([spec 2](02-taxonomy-model.md#language-is-declared-not-assumed)).
 
 An earlier draft had two more regimes, and each was one parameter in a wrapper. **Freshness policy** — the staleness threshold, drift weighting, and posture — lives on the freshness facet itself, and it is mandatory. A facet that carries the freshness role without applicable policy is invalid. **Size budgets** live on the agent-facing kinds and projections that they meter, and they are mandatory there. An agent-facing projection without an applicable budget is invalid. The protections moved to their enforcement points. Only the wrappers were deleted.
 

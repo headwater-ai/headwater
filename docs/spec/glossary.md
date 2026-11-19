@@ -565,7 +565,7 @@ Whether the target of a relation must acknowledge the source, and with which inv
 
 ### Regime
 
-A reusable, named bundle of rules that a kind opts into, so that a rule is declared once and referenced many times. Two survive: [voice](#voice-regime) and [lifecycle](#lifecycle-regime). See [spec 1](01-conceptual-model.md#regimes).
+A reusable, named bundle of rules that a kind opts into, so that a rule is declared once and referenced many times. The families are [voice](#voice-regime), [lifecycle](#lifecycle-regime), and [language](02-taxonomy-model.md#language-is-declared-not-assumed). See [spec 1](01-conceptual-model.md#regimes).
 
 ### Register projection
 
