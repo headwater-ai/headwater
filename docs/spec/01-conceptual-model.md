@@ -181,7 +181,7 @@ A statement that the corpus commits to, expressed as an **invariant** with a sta
 
 ### Control
 
-A mechanism that discharges an obligation: an engine check, a CI job, a git hook, an agent behavior, a scheduled scan, a human audit. A control declares what it verifies, when it runs, and its **posture** — advisory, blocking, or detective.
+A mechanism that discharges an obligation: an engine check, a CI job, a git hook, an agent behavior, a scheduled scan, a human audit. A control declares what it verifies, when it runs, and its **posture** — advisory or blocking. It also declares the class that it acts in, such as detective ([spec 4](04-assurance-model.md#controls-are-data)).
 
 These are the section's only two concepts. Their binding is visible in the **register projection**: the generated, checked view of which controls discharge which obligations. The view also gives the explicit disposition of every obligation with none — *gap* (tracked, wanted) or *unverifiable* (no mechanism can exist, accepted) — and control health, suppressions, and waivers. Every obligation carries exactly one disposition.
 

@@ -249,7 +249,7 @@ The [voice regime](#voice-regime) for present-state documents. It forbids future
 
 ### Detective
 
-A posture. The control acts after the mistake lands, and never blocks. Staleness and participation expectations are permanently detective. See [spec 4](04-assurance-model.md#assurance-not-enforcement).
+A control class, and not a [posture](#posture). The control acts after the mistake lands. Staleness and participation expectations are permanently detective. See [spec 4](04-assurance-model.md#assurance-not-enforcement).
 
 ### Discriminator
 
@@ -497,7 +497,7 @@ A path plus a one-line summary. Routing returns pointers and never content, so t
 
 ### Posture
 
-How a control acts: advisory, blocking, or detective. Posture belongs to the control. [Severity](#severity) belongs to the check. See [spec 12](12-check-layer.md#severity-is-the-checks-posture-is-the-controls).
+Whether a finding of a control blocks a gate: advisory or blocking. The class that a control acts in, such as [detective](#detective), is a second member. Posture belongs to the control. [Severity](#severity) belongs to the check. See [spec 12](12-check-layer.md#severity-is-the-checks-posture-is-the-controls).
 
 ### Preventive
 
