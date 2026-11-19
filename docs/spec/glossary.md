@@ -517,7 +517,7 @@ The document that grades one run: a projection over the [probe transcript](#prob
 
 ### Probe suite
 
-The probes that a corpus declares, run against it in a controlled session and graded from the tool-call transcript rather than from the model's self-report. It runs in two tiers, regression and [campaign](#campaign). See [spec 5](05-ai-integration.md#measuring-whether-any-of-this-works).
+The probes that a corpus declares, run against it in a controlled session and graded from the tool-call transcript rather than from the model's self-report. It runs in tiers: regression, [campaign](#campaign), documentation, and additive. See [spec 5](05-ai-integration.md#measuring-whether-any-of-this-works).
 
 ### Probe transcript
 
