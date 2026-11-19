@@ -862,6 +862,16 @@ fn replays(recorded: &str, computed: &[Row], commit: &str) -> Replays {
     replays
 }
 
+/// The replays the standing test hands [`judge`]: each moved corpus rebuilt
+/// at the commit that last wrote the ledger, and none where git cannot name
+/// that commit.
+fn standing_replays(recorded: &str, computed: &[Row]) -> Replays {
+    match ledger_commit() {
+        Some(commit) => replays(recorded, computed, &commit),
+        None => Replays::new(),
+    }
+}
+
 fn bless() -> bool {
     std::env::var_os("HEADWATER_BLESS").is_some()
 }
@@ -871,11 +881,12 @@ fn bless() -> bool {
 fn every_ledgered_rule_decides_what_its_version_recorded() {
     let path = ledger_path();
     let recorded = std::fs::read_to_string(&path).unwrap_or_default();
-    let replays = match ledger_commit() {
-        Some(commit) => replays(&recorded, computed(), &commit),
-        None => Replays::new(),
-    };
-    let judgement = judge(&recorded, computed(), &replays, bless());
+    let judgement = judge(
+        &recorded,
+        computed(),
+        &standing_replays(&recorded, computed()),
+        bless(),
+    );
     if bless() && judgement.ledger != recorded {
         std::fs::write(&path, &judgement.ledger).expect("cannot write the ledger");
     }
@@ -1147,6 +1158,42 @@ fn replays_answers_a_moved_corpus_from_the_corpus_head_records() {
     assert_eq!(judgement.failures.len(), 1, "{:?}", judgement.failures);
     assert!(judgement.failures[0].contains("raise VERSION"));
     assert_eq!(judgement.ledger, rewritten);
+
+    // A recorded row whose rule reaches no verdict over the replayed corpus:
+    // the replay answers "no verdict", which is not what the row records, and
+    // bless refuses it.
+    let head = recorded
+        .iter()
+        .find(|row| row.corpus == SUSPECT_CORPUS)
+        .expect("HEAD's ledger has a row over the suspect corpus");
+    let phantom = Row {
+        rule: "no.such.rule".to_string(),
+        corpus: SUSPECT_CORPUS.to_string(),
+        version: 1,
+        inputs: head.inputs.clone(),
+        digest: "sha256:a-verdict-no-rule-reaches".to_string(),
+        instances: 1,
+    };
+    let mut with_phantom = recorded.clone();
+    with_phantom.push(phantom.clone());
+    let ledger = render(&with_phantom);
+    let mut moved = moved.clone();
+    moved.push(Row {
+        inputs: "sha256:the-corpus-after-an-edit".to_string(),
+        ..phantom
+    });
+    let answered = replays(&ledger, &moved, "HEAD");
+    assert_eq!(
+        answered.get(&("no.such.rule".to_string(), SUSPECT_CORPUS.to_string())),
+        Some(&Replayed {
+            digest: "no verdict".to_string(),
+            instances: 0,
+        })
+    );
+    let judgement = judge(&ledger, &moved, &answered, true);
+    assert_eq!(judgement.failures.len(), 1, "{:?}", judgement.failures);
+    assert!(judgement.failures[0].contains("no.such.rule"));
+    assert!(judgement.failures[0].contains("raise VERSION"));
 }
 
 /// The decisive case of HW-OBL-0222: one commit edits the corpus and changes
@@ -1243,4 +1290,27 @@ fn a_row_that_pins_nothing_and_a_rule_with_no_row_fail_outside_bless() {
     let judgement = judge(&ledger, rows, &Replays::new(), true);
     assert!(judgement.failures.is_empty(), "{:?}", judgement.failures);
     assert_eq!(judgement.ledger, render(rows));
+}
+
+/// The standing test's replays come from the commit that last wrote the
+/// ledger. A computed row whose corpus moved against the ledger of that
+/// commit gets a replay, and bless re-records it, because nothing but the
+/// corpus fingerprint moved.
+#[test]
+fn the_standing_test_replays_from_the_commit_that_last_wrote_the_ledger() {
+    let commit = ledger_commit().expect("git names the commit that last wrote the ledger");
+    let ledger = String::from_utf8(
+        git(&["show", &format!("{commit}:./{LEDGER}")]).expect("git reads that ledger"),
+    )
+    .expect("the ledger is text");
+    let (recorded, _) = parse(&ledger);
+    let moved = with(&recorded, suspect::RULE, SUSPECT_CORPUS, |r| {
+        r.inputs = "sha256:the-corpus-after-an-edit".to_string();
+    });
+
+    let answered = standing_replays(&ledger, &moved);
+    assert_eq!(answered.len(), 1, "{answered:?}");
+    let judgement = judge(&ledger, &moved, &answered, true);
+    assert!(judgement.failures.is_empty(), "{:?}", judgement.failures);
+    assert_eq!(judgement.ledger, render(&moved));
 }
