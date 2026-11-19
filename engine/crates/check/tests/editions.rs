@@ -549,6 +549,18 @@ fn declaring_file(rule: &str) -> String {
         .unwrap_or_else(|| "the module that declares it".to_string())
 }
 
+/// What this binary reaches for one rule over a corpus rebuilt as the ledger
+/// recorded it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct Replayed {
+    digest: String,
+    instances: usize,
+}
+
+/// The replays of the rows whose corpus moved, keyed by rule and corpus. A
+/// row with no entry is a row whose recorded corpus could not be rebuilt.
+type Replays = BTreeMap<(String, String), Replayed>;
+
 /// What a comparison decided: the ledger to write under bless, and every
 /// failure. Under bless the ledger is written and the failures still fail.
 #[derive(Debug)]
@@ -568,7 +580,7 @@ struct Judgement {
 /// are each a reason for a verdict to move, so either one lets bless
 /// re-record the row. Only when neither moved is a moved verdict the code's
 /// alone, and that row is refused in both modes.
-fn judge(recorded: &str, computed: &[Row], bless: bool) -> Judgement {
+fn judge(recorded: &str, computed: &[Row], _replays: &Replays, bless: bool) -> Judgement {
     let (rows, mut failures) = parse(recorded);
     let mut old: BTreeMap<(&str, &str), &Row> = rows.iter().map(|row| (row.key(), row)).collect();
     let mut kept = Vec::new();
@@ -649,7 +661,7 @@ fn bless() -> bool {
 fn every_ledgered_rule_decides_what_its_version_recorded() {
     let path = ledger_path();
     let recorded = std::fs::read_to_string(&path).unwrap_or_default();
-    let judgement = judge(&recorded, computed(), bless());
+    let judgement = judge(&recorded, computed(), &Replays::new(), bless());
     if bless() && judgement.ledger != recorded {
         std::fs::write(&path, &judgement.ledger).expect("cannot write the ledger");
     }
@@ -754,7 +766,7 @@ fn a_moved_digest_at_an_unchanged_version_fails_and_bless_keeps_the_row() {
     let ledger = render(&older);
 
     for bless in [false, true] {
-        let judgement = judge(&ledger, rows, bless);
+        let judgement = judge(&ledger, rows, &Replays::new(), bless);
         assert_eq!(judgement.failures.len(), 1, "{:?}", judgement.failures);
         let message = &judgement.failures[0];
         assert!(message.contains(suspect::RULE), "{message}");
@@ -785,15 +797,68 @@ fn a_moved_corpus_asks_for_a_re_record_and_bless_takes_it() {
     });
     let ledger = render(&older);
 
-    let judgement = judge(&ledger, rows, false);
+    let judgement = judge(&ledger, rows, &Replays::new(), false);
     assert_eq!(judgement.failures.len(), 1, "{:?}", judgement.failures);
     assert!(judgement.failures[0].contains(SUSPECT_CORPUS));
     assert!(judgement.failures[0].contains("re-record"));
     assert!(!judgement.failures[0].contains("raise VERSION"));
 
-    let judgement = judge(&ledger, rows, true);
+    let judgement = judge(&ledger, rows, &Replays::new(), true);
     assert!(judgement.failures.is_empty(), "{:?}", judgement.failures);
     assert_eq!(judgement.ledger, render(rows));
+}
+
+/// The decisive case of HW-OBL-0222: one commit edits the corpus and changes
+/// the rule. The fingerprint, the digest and the instance count of
+/// `relation.target.suspect` all moved at an unchanged VERSION, and this
+/// binary over the corpus as the ledger recorded it reaches a digest other
+/// than the recorded one. So the code moved the verdicts, and the row is
+/// refused in both modes, where it stays as it was.
+#[test]
+fn a_moved_corpus_whose_verdicts_also_moved_over_the_recorded_corpus_fails_and_bless_keeps_the_row()
+{
+    let rows = computed();
+    let version = rows
+        .iter()
+        .find(|row| row.rule == suspect::RULE)
+        .expect("relation.target.suspect is ledgered")
+        .version;
+    let older = with(rows, suspect::RULE, SUSPECT_CORPUS, |r| {
+        r.inputs = "sha256:the-corpus-before-an-edit".to_string();
+        r.digest = "sha256:the-verdicts-before-an-edit".to_string();
+        r.instances -= 1;
+    });
+    let ledger = render(&older);
+    let replays = Replays::from([(
+        (suspect::RULE.to_string(), SUSPECT_CORPUS.to_string()),
+        Replayed {
+            digest: "sha256:what-this-binary-reaches-over-the-recorded-corpus".to_string(),
+            instances: rows
+                .iter()
+                .find(|row| row.rule == suspect::RULE && row.corpus == SUSPECT_CORPUS)
+                .expect("relation.target.suspect has a row over its corpus")
+                .instances
+                - 1,
+        },
+    )]);
+
+    for bless in [false, true] {
+        let judgement = judge(&ledger, rows, &replays, bless);
+        assert_eq!(judgement.failures.len(), 1, "{:?}", judgement.failures);
+        let message = &judgement.failures[0];
+        assert!(message.contains(suspect::RULE), "{message}");
+        assert!(message.contains(&format!("VERSION {version}")), "{message}");
+        assert!(
+            message.contains("engine/crates/check/src/suspect.rs"),
+            "{message}"
+        );
+        assert!(message.contains(SUSPECT_CORPUS), "{message}");
+        assert!(message.contains("raise VERSION"), "{message}");
+        assert_eq!(
+            judgement.ledger, ledger,
+            "bless={bless} rewrote a row whose verdicts moved over the recorded corpus"
+        );
+    }
 }
 
 /// A raised `VERSION` with an unchanged digest asks for a re-record outside
@@ -805,12 +870,12 @@ fn a_raised_version_asks_for_a_re_record_and_bless_takes_it() {
     let older = with(rows, suspect::RULE, SUSPECT_CORPUS, |r| r.version -= 1);
     let ledger = render(&older);
 
-    let judgement = judge(&ledger, rows, false);
+    let judgement = judge(&ledger, rows, &Replays::new(), false);
     assert_eq!(judgement.failures.len(), 1, "{:?}", judgement.failures);
     assert!(judgement.failures[0].contains(suspect::RULE));
     assert!(judgement.failures[0].contains("re-record"));
 
-    let judgement = judge(&ledger, rows, true);
+    let judgement = judge(&ledger, rows, &Replays::new(), true);
     assert!(judgement.failures.is_empty(), "{:?}", judgement.failures);
     assert_eq!(judgement.ledger, render(rows));
 }
@@ -823,7 +888,7 @@ fn a_row_that_pins_nothing_and_a_rule_with_no_row_fail_outside_bless() {
     let mut ledger = render(&rows[1..]);
     ledger.push_str("no.such.rule\tcheck\t1\tsha256:0\tsha256:0\t1\n");
 
-    let judgement = judge(&ledger, rows, false);
+    let judgement = judge(&ledger, rows, &Replays::new(), false);
     assert_eq!(judgement.failures.len(), 2, "{:?}", judgement.failures);
     assert!(judgement
         .failures
@@ -834,7 +899,7 @@ fn a_row_that_pins_nothing_and_a_rule_with_no_row_fail_outside_bless() {
         .iter()
         .any(|f| f.contains(&rows[0].rule) && f.contains("no row")));
 
-    let judgement = judge(&ledger, rows, true);
+    let judgement = judge(&ledger, rows, &Replays::new(), true);
     assert!(judgement.failures.is_empty(), "{:?}", judgement.failures);
     assert_eq!(judgement.ledger, render(rows));
 }
