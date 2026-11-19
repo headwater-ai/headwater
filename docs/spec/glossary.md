@@ -93,7 +93,7 @@ The single component that owns identity for one anchor type. It normalizes ancho
 
 ### Arm
 
-Whether a probe run had the corpus present or absent. Every probe runs in one arm, and a published efficacy claim needs the pair. See [spec 5](05-ai-integration.md#probe-categories).
+The tree that a probe session ran in. It is `present`, `absent`, a component arm that removes or adds one part of the layer, or a scenario arm of the additive tier. Every session runs in one arm, and a published efficacy claim needs a pair. See [spec 5](05-ai-integration.md#probe-categories).
 
 ### Assembly
 
@@ -601,7 +601,7 @@ The intent-time match of a task description against declared purposes, before an
 
 ### Run identity
 
-What a probe run records about itself. It holds the served model version, the corpus tree, the lock hash, the probe selection, the seed, the harness version, the [arm](#arm), and the time. A model name alone is not a pin. See [spec 5](05-ai-integration.md#a-run-produces-a-snapshot-and-a-document).
+What a probe run records about itself. A plan fixes the lock, the corpus tree, the probe selection, the read set, the seed, and the harness version. The recorder adds the model, its served version, the tier, the [arm](#arm), the time, and the realized cost. A model name alone is not a pin. See [spec 15](15-the-recorder-contract.md#the-run-identity-which-carries-twelve-keys).
 
 ### Sampler
 
