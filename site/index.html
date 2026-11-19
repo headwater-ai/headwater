@@ -415,23 +415,19 @@
       </div>
       <div class="cards">
         <div class="card-front">
-          <!-- An excerpt of the front matter of
-               docs/decisions/0037-…-projection-of-this-corpus.md. Every line of
-               it is checked against that record by
-               tools/refresh-figures.sh, so this card cannot quote a
-               field the record no longer carries. The volatile facets of that
-               record are deliberately not quoted here. -->
-          <pre class="quotes-0037"><span class="dim">---</span>
-<span class="key">id:</span> HW-DR-0037
-<span class="key">relations:</span>
-  <span class="key">governs:</span>
-    - site/index.html
-    - site/how-it-works/index.html
-    - site/compare/index.html
-    - site/proof/index.html
-    - site/tutorial/index.html
-<span class="dim">---</span></pre>
-          <div class="cardnote">A real record from this repository: the decision that governs this page. Each <code>governs</code> line is a link an author declared, and Headwater checks it.</div>
+          <!-- The finding that step 12 of
+               docs/tutorials/your-first-governed-corpus.md prints. Every line
+               of it is checked against that document by
+               tools/site/refresh-figures.sh, so this card cannot quote
+               output the tutorial no longer shows. -->
+          <pre class="quotes-tutorial" style="white-space: pre-wrap; overflow-wrap: anywhere;"><span class="dim">$ headwater check</span>
+<span class="key">docs/decisions/0002-deliver-at-least-once.md:11:7 ✗ error</span>
+  relation.reciprocity.missing (OB-REL-1): `ACME-DR-0002` declares
+  `supersedes: ACME-DR-0001`, and `supersedes` requires both ends, so
+  docs/decisions/0001-store-attempts-in-postgres.md owes `superseded_by`
+<span class="dim">fix (mechanical): add `superseded_by: ACME-DR-0002` under `relations:` in
+docs/decisions/0001-store-attempts-in-postgres.md</span></pre>
+          <div class="cardnote">A finding from the tutorial. One decision replaces another, and only one of the two files says so. Headwater names the file, the rule and the fix.</div>
         </div>
         <div class="card-back">
           <!-- Every figure below is written by tools/refresh-figures.sh

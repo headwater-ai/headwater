@@ -496,10 +496,12 @@ for d in drift:
 print("%d verbatim tutorial blocks checked against the document, %d adrift"
       % (len(blocks), len(drift)))
 
-# --- the landing page's quotation of HW-DR-0037 --------------------------
-# The hero card quotes the front matter of the record that governs these
-# pages. A field that record no longer carries is drift of the same kind the
-# tutorial check catches, so it is caught the same way.
+# --- the landing page's quotation of the tutorial -------------------------
+# The hero card quotes the finding that step 12 of the tutorial document
+# prints. A line the document no longer carries is drift of the same kind the
+# tutorial check catches, so it is caught the same way. The card quoted the
+# front matter of HW-DR-0037 until the owner ruled that a newcomer reads a
+# finding first, and that record still governs the page by name.
 #
 # `landing` is the landing check's own list, and it is printed rather than a
 # tail of `drift`. A slice of `drift` here printed the last three TUTORIAL
@@ -511,17 +513,26 @@ if not home.exists():
     sys.exit("refresh-figures.sh: site/index.html is not there, and HW-DR-0037 "
              "governs that page by name, so its absence is an error and not a "
              "skip")
-rec = next(root.glob("docs/decisions/0037-*.md")).read_text()
-m = re.search(r'<pre class="quotes-0037">(.*?)</pre>', home.read_text(), re.S)
+m = re.search(r'<pre class="quotes-tutorial"[^>]*>(.*?)</pre>', home.read_text(), re.S)
 if not m:
-    landing.append("site/index.html no longer quotes HW-DR-0037")
+    landing.append("site/index.html no longer quotes the tutorial")
 else:
     quoted = _html.unescape(re.sub(r"<[^>]+>", "", m.group(1)))
+    held = 0
     for line in quoted.split("\n"):
-        if line.strip() in ("", "---"):
+        if not line.strip():
             continue
-        if line not in rec:
-            landing.append("HW-DR-0037 no longer carries %r" % line.strip())
+        held += 1
+        # The page shows a `$` prompt before a command, and the document's
+        # fence carries the command alone.
+        text = line.strip()
+        if text.startswith("$ "):
+            text = text[2:]
+        if text not in tut:
+            landing.append("the tutorial no longer carries %r" % text)
+    # An empty card is not agreement.
+    if not held:
+        landing.append("the card on site/index.html quotes no line")
 for d in landing:
     print("landing drift: %s" % d, file=sys.stderr)
 drift.extend(landing)
