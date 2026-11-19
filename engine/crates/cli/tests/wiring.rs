@@ -2893,7 +2893,13 @@ fn publish_acme_x(scratch: &Path, doctrine: Option<&str>) -> String {
             artifact.to_str().expect("the path is UTF-8"),
         ],
     );
-    assert_eq!(published.code, Some(0), "{}{}", published.out, published.err);
+    assert_eq!(
+        published.code,
+        Some(0),
+        "{}{}",
+        published.out,
+        published.err
+    );
     published
         .out
         .lines()
@@ -2935,8 +2941,18 @@ fn taxonomy_vendor_reports_the_doctrine_directory_the_artifact_declares() {
                 &digest,
             ],
         );
-        assert_eq!(vendored.code, Some(0), "{label}: {}{}", vendored.out, vendored.err);
-        assert!(vendored.says("vendored acme/x 1.0.0"), "{label}: {}", vendored.out);
+        assert_eq!(
+            vendored.code,
+            Some(0),
+            "{label}: {}{}",
+            vendored.out,
+            vendored.err
+        );
+        assert!(
+            vendored.says("vendored acme/x 1.0.0"),
+            "{label}: {}",
+            vendored.out
+        );
         let lines: Vec<&str> = vendored
             .out
             .lines()
