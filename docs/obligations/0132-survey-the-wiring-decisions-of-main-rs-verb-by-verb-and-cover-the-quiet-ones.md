@@ -27,7 +27,7 @@ Two further sites are already named. `probe stale` is the third caller of `Plan:
 
 ## Survey
 
-The second slice of [#1494](https://github.com/headwater-ai/headwater/issues/1494) made this survey on 2026-11-20. `main.rs` was then 9,227 lines. Its `dispatch` matches 27 arms of `Verb`, and four of them take a second word from `JsonWord`, `SweepWord`, `ProbeWord` or `TaxonomyWord` in `engine/crates/cli/src/lib.rs`. So the table has 50 rows. 23 rows are the arms that take no second word, and 23 rows are the second words. The other 4 rows are the four verbs given no second word.
+The second slice of [#1494](https://github.com/headwater-ai/headwater/issues/1494) made this survey on 2026-11-20. `main.rs` was then 9,227 lines. Its `dispatch` matches 27 arms of `Verb`, and four of them take a second word from `JsonWord`, `SweepWord`, `ProbeWord` or `TaxonomyWord` in `engine/crates/cli/src/lib.rs`. So the table has 50 rows. 23 rows are the arms that take no second word, and 23 rows are the second words. The other 4 rows are the four verbs given no second word. The Discharge section below says thirty verbs, which was the count when this record was filed. The 50 command lines are the unit that the table uses now.
 
 Two passes found the decisions. The first read each arm of `dispatch` and the function it calls. The second listed every site in `main.rs` that can turn a failure into a default: `.ok()`, `unwrap_or`, `unwrap_or_default`, `unwrap_or_else`, `filter_map` and `let _ =`. Such a site is a quiet failure when it is wrong. It found 81 sites. 37 of them are `let _ = writeln!` into a `String`, which cannot fail. The other 44 were read one at a time, and each decision they make is in a row below.
 
