@@ -2,7 +2,7 @@
 name: hw-adjudicate
 description: Checks one issue of the Headwater build order against the corpus before anything is built, declares what a sound change would regenerate, and is licensed to refuse. Use as the first stage of every iteration, on one issue at a time. It writes an adjudication note for the build agent, names the decisive fixture, and never builds or edits the board.
 tools: Bash, Read, Grep, Glob, Write, Skill
-model: claude-opus-5-5
+model: claude-fable-5-2
 effort: medium
 ---
 
