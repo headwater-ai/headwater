@@ -13,8 +13,8 @@
 #         doctrine.md      copied from .claude/run/doctrine.md at start
 #         log.jsonl        one object per iteration
 #         findings.jsonl   one object per finding handed forward
-#         lessons.md       prose, seeded from the previous run
-#         decisions.md     prose, seeded from the previous run
+#         lessons.md       prose, this run's alone; its first line names the previous run's file
+#         decisions.md     prose; opens with the OWNER lines of the previous run, and names its file
 #         parent.session   each parent session's id prefix, one per line, for the review hook
 #         usage.jsonl      one plan-usage sample per start, log and end
 #
@@ -335,6 +335,46 @@ applies() {
     awk '/ [|] APPLY[[:space:]]*$/ { print; n++ } END { printf "APPLY: %d\n", n }' "$dir/intake.md"
 }
 
+# The form of an OWNER line that answers an issue: every `#N` between
+# `OWNER (<date>)` and the first colon. `decide --owner` writes it,
+# `answered_issues` reads it, and `seed` carries it, so the three agree on one
+# pattern.
+owner_form='OWNER( [(][^)]*[)])?( #[0-9]+)+:'
+
+# What a new run inherits from the run before it: the OWNER lines, and the
+# path of everything else.
+#
+# `start` used to copy the previous run's lessons.md and decisions.md whole,
+# so each run carried every run before it. Run 20261119-1302 began with a
+# decisions.md of 647 KB and a lessons.md of 184 KB, which is the ledger
+# [HW-PD-0005] split, grown back in two files. Of those 2,878 lines, 130 were
+# in the form below, and they are the only lines a later run reads: `next` and
+# `rulings` through `answered_issues`, and hw-adjudicate and the product owner
+# by their definitions. A RULED line binds the run that wrote it
+# (`ruled_issues`), a SCOPE line states one run's scope, and nothing reads the
+# rest. No lesson is carried either: one that a later run must obey reaches
+# the file that owns it through intake.md and the run-lessons pull request.
+#
+# Nothing is lost. Each file's first line names the previous run's file, which
+# stays whole in its own directory and names the one before it. The previous
+# run is the newest other directory by name, which is the newest by date under
+# the default id.
+seed() {
+    previous=$(ls -1 "$1" | grep -vx "$2" | sort | tail -1)
+    : > "$1/$2/lessons.md"
+    : > "$1/$2/decisions.md"
+    [ -n "$previous" ] || return 0
+    if [ -s "$1/$previous/lessons.md" ]; then
+        printf 'Lessons of run %s alone. No lesson of an earlier run is carried here, and run %s kept its own in %s.\n' \
+            "$2" "$previous" "$1/$previous/lessons.md" > "$1/$2/lessons.md"
+    fi
+    if [ -s "$1/$previous/decisions.md" ]; then
+        printf 'Decisions of run %s. The OWNER lines that follow this one are carried from run %s, because the answer of the owner binds every run. Nothing else that run decided binds this one, and all of it stays in %s.\n' \
+            "$2" "$previous" "$1/$previous/decisions.md" > "$1/$2/decisions.md"
+        awk -v form="$owner_form" 'match($0, form)' "$1/$previous/decisions.md" >> "$1/$2/decisions.md"
+    fi
+}
+
 start() {
     id=${1:-$(date -u +%Y%m%d-%H%M)}
     if ! stale_check && [ "${HW_RUN_ALLOW_STALE:-}" != 1 ]; then
@@ -357,17 +397,7 @@ start() {
     fi
     : > "$dir/log.jsonl"
     : > "$dir/findings.jsonl"
-    # Seed the prose from the most recent run that has any, so a lesson
-    # survives the run that learned it. The newest directory by name, which
-    # is the newest by date under the default id.
-    previous=$(ls -1 "$runs" | grep -vx "$id" | sort | tail -1)
-    for file in lessons.md decisions.md; do
-        if [ -n "$previous" ] && [ -s "$runs/$previous/$file" ]; then
-            cp "$runs/$previous/$file" "$dir/$file"
-        else
-            : > "$dir/$file"
-        fi
-    done
+    seed "$runs" "$id"
     sample "$dir" start
     printf '%s\n' "$dir"
 }
@@ -641,10 +671,10 @@ claims() {
 # nothing is still waiting to happen under that run. This drops the whole
 # `claims/` subtree rather than the run directory itself, because
 # `log.jsonl`, `findings.jsonl`, `lessons.md` and `decisions.md` are the
-# record the next run reads — `start`'s own seeding step reads `lessons.md`
-# and `decisions.md` out of the newest other directory, and a run this deleted
-# outright could stop being that newest directory's source between one run
-# ending and the next one starting. [#926] is the finding this answers: a
+# record of the run — `start`'s own `seed` step reads the OWNER lines of
+# `decisions.md` out of the newest other directory and names both prose files
+# as the history, and a run this deleted outright could stop being that newest
+# directory's source between one run ending and the next one starting. [#926] is the finding this answers: a
 # stale claim from a run that will never finish reported `WAITS-ON` against a
 # claimant that could otherwise have gone straight through.
 end() {
@@ -747,10 +777,11 @@ logged_issues() {
 }
 
 # The last ruling of each issue in decisions.md that this run wrote, one
-# `<issue> <kind>` per line. `start` seeds decisions.md from the previous run,
-# so a RULED line names the run that wrote it and binds that run alone: a
-# deferral is "for this run alone" (hw-run-policy), and a gate or a refusal is
-# ruled again by the run that meets the issue again.
+# `<issue> <kind>` per line. A RULED line names the run that wrote it and
+# binds that run alone: a deferral is "for this run alone" (hw-run-policy),
+# and a gate or a refusal is ruled again by the run that meets the issue
+# again. `seed` carries none forward, and a RULED line of another run that
+# reaches the file some other way still binds nothing.
 ruled_issues() {
     [ -f "$1/decisions.md" ] || return 0
     sed -n 's/^.* — RULED #\([0-9][0-9]*\) \(gated\|deferred\|refused\|open\) (run \([^)]*\)):.*/\1 \2 \3/p' "$1/decisions.md" \
@@ -771,7 +802,7 @@ ruled_issues() {
 # answers nothing.
 answered_issues() {
     [ -f "$1/decisions.md" ] || return 0
-    awk 'match($0, /OWNER( [(][^)]*[)])?( #[0-9]+)+:/) {
+    awk -v form="$owner_form" 'match($0, form) {
         s = substr($0, RSTART, RLENGTH)
         sub(/^OWNER( [(][^)]*[)])?/, "", s)
         while (match(s, /#[0-9]+/)) {
