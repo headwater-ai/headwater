@@ -3093,3 +3093,68 @@ fn probe_grade_grades_a_part_planned_run_against_the_part() {
         graded.out
     );
 }
+
+/// `mcp` offers the two write tools under `--write` and only there (#1494).
+///
+/// The binary maps the flag onto `Server::writing`: `None` without it, and the
+/// two closures that scaffold and fix with it. The query crate holds what a
+/// server does with each value. What no test held is the mapping, and both of
+/// its wrong forms exit 0: a server that dropped the closures under `--write`
+/// refuses every write over the protocol, and a server that kept them without
+/// the flag writes into a working tree that nobody opened to writes.
+#[test]
+fn mcp_offers_the_write_tools_under_write_and_only_there() {
+    use std::io::Write;
+    let root = Root::over("probe-stale", "mcp-write-flag");
+    let listed = |write: bool| -> String {
+        let mut command = Command::new(env!("CARGO_BIN_EXE_headwater"));
+        command.arg("mcp");
+        if write {
+            command.arg("--write");
+        }
+        let mut child = command
+            .args(["--now", "2026-11-20", "--root"])
+            .arg(&root.at)
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .spawn()
+            .expect("the binary runs");
+        let mut input = child.stdin.take().expect("the standard input is piped");
+        input
+            .write_all(
+                b"{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{}}\n\
+                  {\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/list\",\"params\":{}}\n",
+            )
+            .expect("the requests write");
+        drop(input);
+        let output = child.wait_with_output().expect("the server ends");
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        String::from_utf8_lossy(&output.stdout)
+            .lines()
+            .find(|line| line.contains("\"id\":2"))
+            .expect("the server answers the tool list")
+            .to_string()
+    };
+
+    let read_only = listed(false);
+    assert!(read_only.contains("\"name\":\"check\""), "{read_only}");
+    for tool in ["new", "fix"] {
+        assert!(
+            !read_only.contains(&format!("\"name\":\"{tool}\"")),
+            "without `--write` the server offers no `{tool}` tool: {read_only}"
+        );
+    }
+
+    let writing = listed(true);
+    for tool in ["new", "fix"] {
+        assert!(
+            writing.contains(&format!("\"name\":\"{tool}\"")),
+            "under `--write` the server offers the `{tool}` tool: {writing}"
+        );
+    }
+}
