@@ -390,9 +390,9 @@
   <div class="bar" style="padding-top: 5rem; padding-bottom: 4rem;">
     <div class="herogrid">
       <div>
-        <p class="eyebrow">An open-source checker for documentation</p>
+        <p class="eyebrow">Open-source checks for documentation</p>
         <h1>Documentation <em>rots</em> because nothing fails when it does.</h1>
-        <p class="lede">Headwater is a command-line tool that checks your documentation on every commit, the way tests check code. You declare the kinds of document you keep and how they link. Headwater reports each missing field, each broken link and each file it could not classify. <em>No language model takes part in a verdict.</em></p>
+        <p class="lede">Headwater is a command-line tool that checks your documentation on every commit, as tests check code. You declare the kinds of document you keep and how they link. It reports each missing field, broken link and unclassified file. <em>No language model is involved.</em></p>
         <div class="ctarow">
           <a class="cta" href="/tutorial/">Run the tutorial →</a>
           <a class="sans" href="/how-it-works/">How it works</a>
@@ -410,7 +410,7 @@
                tools/repo/readme-fixtures.sh holds this panel to that one
                line and the script to the README's release. Every other route
                lives on /install/. -->
-          <div class="note">Linux x86_64 and macOS on Apple silicon. <a href="/install/" style="white-space: nowrap">All install options →</a></div>
+          <div class="note">Linux x86_64 and macOS on Apple silicon. <a href="/install/" style="white-space: nowrap">Other installs →</a></div>
         </div>
       </div>
       <div class="cards">
@@ -427,7 +427,7 @@
   docs/decisions/0001-store-attempts-in-postgres.md owes `superseded_by`
 <span class="dim">fix (mechanical): add `superseded_by: ACME-DR-0002` under `relations:` in
 docs/decisions/0001-store-attempts-in-postgres.md</span></pre>
-          <div class="cardnote">A finding from the tutorial. One decision replaces another, and only one of the two files says so. Headwater names the file, the rule and the fix.</div>
+          <div class="cardnote">A finding from the tutorial. One decision replaces another, and only one of the two files says so.</div>
         </div>
         <div class="card-back">
           <!-- Every figure below is written by tools/refresh-figures.sh
@@ -453,8 +453,8 @@ census
      translate of -50% loops seamlessly. Pure CSS, no script. -->
 <div class="tickerwrap" aria-hidden="true">
   <div class="tickerrun">
-    <span class="tickseg"><span data-figure="census.seen"></span> files in the documentation tree · <span data-figure="census.typed"></span> with a declared kind · <span data-figure="census.untyped"></span> without one, each reported · <span data-figure="census.unaccounted"></span> skipped without a report · <span data-figure="census.instances"></span> checks run · <span data-figure="findings.reported"></span> findings, each with its rule and location · <span data-figure="findings.suppressed"></span> suppressed, each by a dated exception · taxonomy <span data-figure="taxonomy.package"></span> <span data-figure="taxonomy.version"></span> · </span>
-    <span class="tickseg"><span data-figure="census.seen"></span> files in the documentation tree · <span data-figure="census.typed"></span> with a declared kind · <span data-figure="census.untyped"></span> without one, each reported · <span data-figure="census.unaccounted"></span> skipped without a report · <span data-figure="census.instances"></span> checks run · <span data-figure="findings.reported"></span> findings, each with its rule and location · <span data-figure="findings.suppressed"></span> suppressed, each by a dated exception · taxonomy <span data-figure="taxonomy.package"></span> <span data-figure="taxonomy.version"></span> · </span>
+    <span class="tickseg"><span data-figure="census.seen"></span> files · <span data-figure="census.typed"></span> with a kind · <span data-figure="census.untyped"></span> without · <span data-figure="census.unaccounted"></span> skipped unreported · <span data-figure="census.instances"></span> checks · <span data-figure="findings.reported"></span> findings · <span data-figure="findings.suppressed"></span> suppressed · taxonomy <span data-figure="taxonomy.package"></span> <span data-figure="taxonomy.version"></span> · </span>
+    <span class="tickseg"><span data-figure="census.seen"></span> files · <span data-figure="census.typed"></span> with a kind · <span data-figure="census.untyped"></span> without · <span data-figure="census.unaccounted"></span> skipped unreported · <span data-figure="census.instances"></span> checks · <span data-figure="findings.reported"></span> findings · <span data-figure="findings.suppressed"></span> suppressed · taxonomy <span data-figure="taxonomy.package"></span> <span data-figure="taxonomy.version"></span> · </span>
   </div>
 </div>
 
@@ -465,26 +465,26 @@ census
       <h2>Headwater run on its own repository, <span data-figure="run.date"></span></h2>
       <span class="secline"></span>
     </div>
-    <p style="font-size: 1.35rem; max-width: 46rem; margin: 0 0 3rem; line-height: 1.45;">This project checks its own documentation with Headwater on every commit. These numbers come from that check, unfixed findings included.</p>
+    <p style="font-size: 1.35rem; max-width: 46rem; margin: 0 0 3rem; line-height: 1.45;">Headwater checks its own documentation on every commit. These are the numbers, unfixed findings included.</p>
     <!-- Every figure in this band is written by tools/refresh-figures.sh.
          Denominators, stated in the label under each one, because a bare count
          is a trap: the first three tiles are out of the file count on the
          first tile, and the last three are out of the findings the run raised.
          The full census partition is on /proof/. -->
     <div class="statgrid">
-      <div><div class="statnum" data-figure="census.seen"></div><div class="statlab">files in the documentation tree</div></div>
-      <div><div class="statnum" data-figure="census.typed"></div><div class="statlab">of those files have a declared kind, and all <span data-figure="census.checked"></span> were checked</div></div>
-      <div><div class="statnum" data-figure="census.unaccounted"></div><div class="statlab">of those files skipped without a report</div></div>
-      <div><div class="statnum" data-figure="findings.reported"></div><div class="statlab">findings reported, each with its rule and location</div></div>
-      <div><div class="statnum" data-figure="findings.suppressed"></div><div class="statlab">more findings suppressed, each by a dated exception that states its reason</div></div>
-      <div><div class="statnum" data-figure="findings.errors"></div><div class="statlab">of the <span data-figure="findings.reported"></span> reported findings are errors, each with a mechanical repair</div></div>
+      <div><div class="statnum" data-figure="census.seen"></div><div class="statlab">files in the tree</div></div>
+      <div><div class="statnum" data-figure="census.typed"></div><div class="statlab">with a declared kind, <span data-figure="census.checked"></span> checked</div></div>
+      <div><div class="statnum" data-figure="census.unaccounted"></div><div class="statlab">skipped without a report</div></div>
+      <div><div class="statnum" data-figure="findings.reported"></div><div class="statlab">findings reported</div></div>
+      <div><div class="statnum" data-figure="findings.suppressed"></div><div class="statlab">suppressed by a dated exception</div></div>
+      <div><div class="statnum" data-figure="findings.errors"></div><div class="statlab">of those <span data-figure="findings.reported"></span> are errors</div></div>
     </div>
-    <p style="font-size: 0.95rem; max-width: 52rem; margin: 0 0 2.5rem; opacity: 0.85;">The check ran <span data-figure="rules.wired"></span> rules over those <span data-figure="census.typed"></span> documents, and <span data-figure="rules.fired"></span> of the rules found something. <a href="/proof/" style="color: var(--accent-on-ink);">Read the whole run →</a></p>
+    <p style="font-size: 0.95rem; max-width: 52rem; margin: 0 0 2.5rem; opacity: 0.85;"><span data-figure="rules.wired"></span> rules ran, and <span data-figure="rules.fired"></span> found something. <a href="/proof/" style="color: var(--accent-on-ink);">The whole run →</a></p>
     <div class="emptyrow">
       <span style="font-size: 1rem;">Benchmark against other tools</span>
       <span class="tag">unmeasured</span>
     </div>
-    <p class="sans" style="font-size: 0.82rem; opacity: 0.6; margin: 0.9rem 0 0; max-width: 48rem;">Nobody has measured Headwater against the tools it is compared with, so this row carries no number. The experiments so far compared this repository with and without parts of Headwater.</p>
+    <p class="sans" style="font-size: 0.82rem; opacity: 0.6; margin: 0.9rem 0 0; max-width: 48rem;">Nobody has measured Headwater against other tools, so this row has no number.</p>
   </div>
 </section>
 
@@ -498,7 +498,7 @@ census
     <div class="two">
       <div>
         <h3><span class="step">1 ·</span>Declare what you keep</h3>
-        <p class="prose">One versioned file, the taxonomy, lists the kinds of document you keep, the fields each kind must carry and the links it may declare.</p>
+        <p class="prose">One versioned file lists the kinds of document you keep, the fields each must carry and the links it may declare.</p>
         <pre class="block">shelves:
   decisions: docs/decisions/**
 kinds:
@@ -509,7 +509,7 @@ kinds:
       </div>
       <div>
         <h3><span class="step">2 ·</span>Authors link the documents</h3>
-        <p class="prose">Each document states its kind and its links to other documents in its front matter. People write those links, and no language model guesses them.</p>
+        <p class="prose">Each document states its kind and its links in its front matter. A link names its target by identifier, so a rename breaks nothing.</p>
         <div class="box">
           <div class="node">0002-deliver-at-least-once.md</div>
           <div class="edge">
@@ -521,17 +521,13 @@ kinds:
       </div>
       <div>
         <h3><span class="step">3 ·</span>The check finds what broke</h3>
-        <p class="prose">A finding names the rule, the file and line, and the repair. One command applies each repair that needs no judgment.</p>
-        <pre class="block wrapped"><span class="key">0002-deliver-at-least-once.md:9:7 error</span>
-relation.reciprocity.missing (OB-REL-1):
-`supersedes` requires both ends, so
-0001-store-attempts-in-postgres.md
-owes `superseded_by`
-<span class="dim">fix (mechanical): headwater check --fix</span></pre>
+        <p class="prose">A finding names the rule, the place and the repair. One command applies each repair that needs no judgment.</p>
+        <pre class="block wrapped"><span class="dim">$</span> headwater check --fix
+<span class="key">headwater: fixed docs/decisions/0001-store-attempts-in-postgres.md (1 patch)</span></pre>
       </div>
       <div>
         <h3><span class="step">4 ·</span>Headwater generates the rest</h3>
-        <p class="prose">Headwater writes the indexes, the site navigation, the instruction file an AI agent reads and a JSON export. A hand edit to a generated file fails the build.</p>
+        <p class="prose">Headwater writes the indexes, the site navigation and the instruction file an AI agent reads. A hand edit to one fails the build.</p>
         <div class="box" style="line-height: 2;">
           <div>docs/spec/README.md <span class="dim">← generated</span></div>
           <div>docs/interfaces/README.md <span class="dim">← generated</span></div>
@@ -541,7 +537,7 @@ owes `superseded_by`
         </div>
       </div>
     </div>
-    <p class="sans" style="font-size: 0.92rem; margin: 2.2rem 0 0;"><a href="/how-it-works/">The four steps in detail, and what Headwater does not check →</a></p>
+    <p class="sans" style="font-size: 0.92rem; margin: 2.2rem 0 0;"><a href="/how-it-works/">The steps in detail, and what Headwater does not check →</a></p>
   </div>
 </section>
 
@@ -554,13 +550,13 @@ owes `superseded_by`
     </div>
     <p class="pull">Authors <b style="color: var(--accent);">declare</b> how documents relate. No language model <b style="color: var(--muted);">extracts</b> it.</p>
     <div style="max-width: 54rem;">
-      <div class="fieldrow"><b>LeanCTX</b><span>Compresses what a coding agent reads, to save tokens. It does not check the documents.</span></div>
-      <div class="fieldrow"><b>TrustGraph</b><span>A language model extracts a graph from your documents. Headwater checks the documents themselves.</span></div>
-      <div class="fieldrow"><b>Vale</b><span>The closest relative. Vale checks prose style, line by line. Headwater checks kinds, fields and links. Use both.</span></div>
-      <div class="fieldrow"><b>Plain linters</b><span>Check lines inside one file, not the links between documents.</span></div>
+      <div class="fieldrow"><b>LeanCTX</b><span>Compresses what a coding agent reads. It checks nothing.</span></div>
+      <div class="fieldrow"><b>TrustGraph</b><span>A language model extracts a graph from your documents. Headwater checks the documents.</span></div>
+      <div class="fieldrow"><b>Vale</b><span>Checks prose style. Headwater checks structure. Use both.</span></div>
+      <div class="fieldrow"><b>Plain linters</b><span>Check lines in one file, not links between files.</span></div>
       <div class="fieldrow"><b>Site generators</b><span>Publish what you give them, correct or not.</span></div>
     </div>
-    <p class="sans" style="font-size: 0.92rem; margin: 1.6rem 0 0;"><a href="/compare/">The full comparison, with the arguments against Headwater →</a></p>
+    <p class="sans" style="font-size: 0.92rem; margin: 1.6rem 0 0;"><a href="/compare/">The comparison, with the arguments against Headwater →</a></p>
   </div>
 </section>
 
@@ -571,25 +567,25 @@ owes `superseded_by`
       <h2>What works, and what is unproven</h2>
       <span class="secline"></span>
     </div>
-    <p style="font-size: 0.98rem; max-width: 46rem; margin: 0 0 1.1rem;">The engine runs, and this repository checks its own documentation with it on every commit. Two experiments have measured whether Headwater helps an AI agent. In <a href="https://github.com/headwater-ai/headwater/blob/main/docs/evaluations/what-the-counterfactual-campaign-of-2026-09-30-measured-by-component.md">the first</a>, the documents had a large effect on whether an agent gave a sufficient answer, and the campaign found no detectable gain from the hooks and skills. In <a href="https://github.com/headwater-ai/headwater/issues/1777">the second</a>, rewritten skills raised the pass rate by a large margin, on the same probes the rewrites were chosen on. No run has tested them on new probes. The hook has shown no gain yet, and nothing has measured the MCP server or whether Headwater improves the documentation itself. The work still open is on <a href="https://github.com/headwater-ai/headwater/milestones">the milestones page</a>.</p>
+    <p style="font-size: 0.98rem; max-width: 46rem; margin: 0 0 1.1rem;">The engine runs, and this repository checks its own documentation with it on every commit. Experiments on this repository found that the documents have a large effect on whether an AI agent gives a sufficient answer. The skills helped only after tuning that no fresh test has confirmed, and the hook has shown no gain. Nothing has measured the MCP server, or whether Headwater improves the documentation itself.</p>
     <!-- Both figures below come from the refresh script: the emitter split is
          read off the `Emitter` enum and `is_built` in
          engine/crates/generate/src/profile.rs, and the verb figures come from
          docs/interfaces/README.md, which is a generated projection. -->
-    <p style="font-size: 0.98rem; max-width: 46rem; margin: 0;">The command line has <span data-figure="verbs.count"></span> commands, and <span data-figure="verbs.contracts"></span> of them carry a written contract. Of <span data-figure="emitters.total"></span> export formats, <span data-figure="emitters.built"></span> are built and <span data-figure="emitters.waiting"></span> are not. <a href="/proof/">The self-assessment has the full run and both experiments.</a></p>
+    <p style="font-size: 0.98rem; max-width: 46rem; margin: 0;"><span data-figure="verbs.count"></span> commands, <span data-figure="verbs.contracts"></span> with a written contract. <span data-figure="emitters.total"></span> export formats, <span data-figure="emitters.built"></span> built and <span data-figure="emitters.waiting"></span> waiting. <a href="/proof/">The self-assessment has the detail.</a></p>
   </div>
 </section>
 
 <section class="tint" id="final-cta">
   <div class="bar pad" style="text-align: center;">
-    <p style="font-size: 1.3rem; max-width: 40rem; margin: 0 auto 2rem; font-family: var(--serif);">The tutorial takes an empty directory to a passing check, one command at a time.</p>
+    <p style="font-size: 1.3rem; max-width: 40rem; margin: 0 auto 2rem; font-family: var(--serif);">The tutorial takes an empty directory to a passing check.</p>
     <a class="cta" href="/tutorial/">Run the tutorial →</a>
   </div>
 </section>
 
 <footer>
   <div class="bar foot">
-    <p>This project publishes its own documentation here from the repository: <a href="/spec/">the specification</a>, <a href="/decisions/">the decisions</a>, <a href="/obligations/">the obligation records</a>, and <a href="/corpus.json">the machine-readable descriptor</a>.</p>
+    <p>Headwater's own documentation is published here: <a href="/spec/">the specification</a>, <a href="/decisions/">the decisions</a>, <a href="/obligations/">the obligation records</a> and <a href="/corpus.json">the machine-readable descriptor</a>.</p>
     <!-- headwater:footer -->
     <p>The source of this project is <a href="https://github.com/headwater-ai/headwater">github.com/headwater-ai/headwater</a>, under Apache-2.0. The engine, the taxonomy library and the corpus these pages describe are all in it.</p>
     <div class="footgroups">
