@@ -1082,7 +1082,10 @@ fn a_corpus_rebuilt_from_head_reaches_the_rows_head_records() {
         .iter()
         .filter(|row| row.corpus == SUSPECT_CORPUS)
         .collect();
-    assert!(!over.is_empty(), "HEAD's ledger has rows over {SUSPECT_CORPUS}");
+    assert!(
+        !over.is_empty(),
+        "HEAD's ledger has rows over {SUSPECT_CORPUS}"
+    );
 
     let replayed = replay("HEAD", SUSPECT_CORPUS, &over[0].inputs)
         .expect("the suspect corpus rebuilds at HEAD with the recorded fingerprint");
@@ -1134,7 +1137,6 @@ fn replays_answers_a_moved_corpus_from_the_corpus_head_records() {
     assert!(judgement.failures[0].contains("raise VERSION"));
     assert_eq!(judgement.ledger, rewritten);
 }
-
 
 /// The decisive case of HW-OBL-0222: one commit edits the corpus and changes
 /// the rule. The fingerprint, the digest and the instance count of
