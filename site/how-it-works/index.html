@@ -13,7 +13,7 @@
   gtag('config', 'G-4DJ9K52SWZ');
 </script>
 <title>How Headwater works</title>
-<meta name="description" content="Declare the taxonomy, build the graph, run the checks, project. The four steps of a Headwater run, and where its reasoning stops.">
+<meta name="description" content="You declare the kinds of document you keep, authors link the documents, Headwater checks the result and generates the indexes. The four steps, and what Headwater does not check.">
 <link rel="canonical" href="https://headwater.tools/how-it-works/">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🜄</text></svg>">
 <style>
@@ -205,8 +205,8 @@
 
 <header class="bar" style="padding-top: 4.5rem; padding-bottom: 3.5rem;">
   <p class="eyebrow">How it works</p>
-  <h1>Taxonomy → graph → checks → projections.</h1>
-  <p class="lede">Four steps, each one derived from the last. Declare the structure once, and validation, navigation, templates, agent context and publishing all fall out of it. Every example below uses real documents and real output from this repository.</p>
+  <h1>How Headwater checks a documentation tree, in four steps.</h1>
+  <p class="lede">You declare the kinds of document you keep. Authors link the documents. Headwater checks the result, then generates the indexes, the navigation and the agent context from it. Each example below is a real document or real output.</p>
   <div class="pipeline">
     <div class="stage">
       <div class="stagehead">1 · taxonomy</div>
@@ -250,10 +250,10 @@
 <section id="taxonomy">
   <div class="bar pad split">
     <div>
-      <h2 class="step"><span class="n">1 ·</span>Declare the taxonomy</h2>
-      <p style="max-width: 34rem;">A <strong>shelf</strong> is a region of the tree that carries a purpose. A <strong>kind</strong> is what a document permanently is — it names the facets a document must declare, the sections it must carry, and the relations it may declare. All of it is data in one versioned schema, so two organizations with different documentation cultures run the same engine over different taxonomies.</p>
-      <p style="max-width: 34rem;">The split has a standard name. Description logic calls the terminology a TBox and the assertions an ABox. A taxonomy is the terminology, and a corpus is the assertions. That is why the validation of a taxonomy and the check of a corpus are two different operations.</p>
-      <p class="quiet">Resolution merges the base package with the overlays above it, validates the result against a meta-schema, and writes a content-hashed lock. Everything downstream reads the lock and never the sources. Your <strong>overlay</strong> adds what a package cannot know: your namespace, your phrases, your extra kinds. Customizing the taxonomy never means forking the tooling.</p>
+      <h2 class="step"><span class="n">1 ·</span>Declare what you keep</h2>
+      <p style="max-width: 34rem;">The <strong>taxonomy</strong> is a versioned file that says what your documentation is made of. A <strong>shelf</strong> is a part of the tree with a purpose, such as decisions. A <strong>kind</strong> is a type of document. It names the fields a document must declare, called <strong>facets</strong>, the sections it must carry, and the links it may declare, called <strong>relations</strong>.</p>
+      <p style="max-width: 34rem;">The taxonomy is data. Two organizations with different documentation habits run the same engine over different taxonomies.</p>
+      <p class="quiet">You start from a published package and add an <strong>overlay</strong> for what is yours: your namespace, your phrases, your extra kinds. Headwater merges the two, validates the result and writes a lock with a content hash. Each later step reads the lock. You customize the taxonomy and never fork the tool.</p>
     </div>
     <pre class="block"><span class="dim"># .headwater/packages/headwater-standard/taxonomy.yml</span>
 shelves:
@@ -274,10 +274,10 @@ add:
 <section class="tint" id="graph">
   <div class="bar pad split">
     <div>
-      <h2 class="step"><span class="n">2 ·</span>Authors declare the graph</h2>
-      <p style="max-width: 34rem;">The engine parses each file once and builds one typed graph. Documents are typed nodes. Front-matter references are typed edges, and an edge names its target by identifier rather than by path — a path dies at the first rename and an identifier does not. A relation that requires both ends owes both ends, and the engine writes the far half for you.</p>
-      <p style="max-width: 34rem;">The build also emits a census, which is every file under the corpus root and what became of each one. The census fixes the denominator before any check runs, so a document that failed to classify is counted, reported, and visibly unchecked, rather than absent.</p>
-      <p class="quiet">No language model issues a verdict. The graph is what the authors said, checked, and not what a model guessed. Nothing stores the graph either: every run rebuilds it from the documents and the lock, and a cache only makes that derivation cheap.</p>
+      <h2 class="step"><span class="n">2 ·</span>Authors link the documents</h2>
+      <p style="max-width: 34rem;">Each document states its kind and its links to other documents in its front matter. Headwater reads each file once and builds a graph: documents are the nodes and links are the edges. A link names its target by identifier, so renaming a file breaks nothing. Some relations need both ends, as <code>supersedes</code> needs <code>superseded_by</code>. Declare one end and Headwater writes the other.</p>
+      <p style="max-width: 34rem;">Headwater also lists each file under the documentation root and what became of it. That list is the <strong>census</strong>. A file that failed to classify appears in it as unchecked. It does not drop out of the report.</p>
+      <p class="quiet">No language model takes part. The graph holds what authors declared. Nothing stores it: each run rebuilds it from the documents and the lock, and a cache keeps that fast.</p>
     </div>
     <div class="box">
       <div class="node">0002-deliver-at-least-once.md</div>
@@ -293,10 +293,10 @@ add:
 <section id="checks">
   <div class="bar pad split">
     <div>
-      <h2 class="step"><span class="n">3 ·</span>Every rule constrains that graph</h2>
-      <p style="max-width: 34rem;">A check is a pure function from a scoped view of the graph to a set of findings: it reads no file, opens no socket, and reads no clock. Each finding names the rule that fired, the location, the repair, and — in parentheses — the <strong>obligation</strong> it discharges.</p>
-      <p style="max-width: 34rem;">An obligation is a claim the system makes about itself, with the rule that verifies it named beside it. A run reaches that claim in two phases, in an order that fixes a failure mode: phase A classifies every file and builds the graph, and phase B runs the checks over what phase A produced. The census is fixed first, so a document that fails to parse is counted and reported rather than dropped behind a clean result.</p>
-      <p class="quiet">A rule is an <em>error</em> when its repair takes no judgment, and <em>advisory</em> when the repair is a rewrite. <code>headwater check --fix</code> applies every mechanical repair in one command, and it never touches an advisory finding — a plausible automatic fix for a defect that needs judgment would be worse than none, because it would be applied unread.</p>
+      <h2 class="step"><span class="n">3 ·</span>Rules check the graph</h2>
+      <p style="max-width: 34rem;">A rule reads the graph and reports findings. It reads no file, opens no socket and reads no clock, so the same documents and taxonomy give the same findings. Each finding names the rule, the location and the repair.</p>
+      <p style="max-width: 34rem;">The code in parentheses is an <strong>obligation</strong>: a claim Headwater makes about itself, with the rule that verifies it named beside it.</p>
+      <p class="quiet">A finding is an <em>error</em> when its repair takes no judgment, and <em>advisory</em> when the repair is a rewrite. <code>headwater check --fix</code> applies each mechanical repair in one command. It leaves advisory findings alone, because a person has to read a rewrite.</p>
     </div>
     <div>
       <pre class="block wrapped"><span class="key">docs/decisions/0002-deliver-at-least-once.md:9:7 error</span>
@@ -310,7 +310,7 @@ fix (mechanical): add `superseded_by: ACME-DR-0002`</pre>
   <span data-figure="oblig.total"></span> obligations: <span data-figure="oblig.verified"></span> verified, <span data-figure="oblig.gap"></span> gap, <span data-figure="oblig.unverifiable"></span> unverifiable
      each gap names its owner
   every rule this engine carries reaches one obligation</span></pre>
-      <p class="sans" style="font-size: 0.8rem; color: var(--muted); margin: 0.8rem 0 0;">That block is this repository's own run of <span data-figure="run.date"></span>. <a href="/proof/">The self-assessment carries the rest of it.</a></p>
+      <p class="sans" style="font-size: 0.8rem; color: var(--muted); margin: 0.8rem 0 0;">This repository's own register, from the run of <span data-figure="run.date"></span>. <a href="/proof/">Read the whole run.</a></p>
     </div>
   </div>
 </section>
@@ -318,10 +318,10 @@ fix (mechanical): add `superseded_by: ACME-DR-0002`</pre>
 <section class="tint" id="projections">
   <div class="bar pad split">
     <div>
-      <h2 class="step"><span class="n">4 ·</span>Everything derived is a projection</h2>
-      <p style="max-width: 34rem;">Shelf indexes, decision-lineage views, site navigation, agent instruction context — generated from the graph, never maintained by hand. If a person can change a generated file and the system does not see it, that file will drift and readers will trust a file that is wrong.</p>
-      <p style="max-width: 34rem;">So the system checks that generated files agree with their sources. <code>headwater generate --check</code> fails the build when the two drift apart. This repository's own specification index and verb index both work that way.</p>
-      <p class="quiet">A projection may be filtered, and a filtered projection says so. An export profile names an audience and a filter over facet values, and what it carries and what it withholds partition the corpus. A document held back is a loss with a declared reason, and the census reports it like any other loss. No profile may produce a view that presents itself as total.</p>
+      <h2 class="step"><span class="n">4 ·</span>Headwater generates the rest</h2>
+      <p style="max-width: 34rem;">Headwater writes the shelf indexes, the decision lineage, the site navigation and the instruction context an AI agent reads. Nobody maintains them by hand.</p>
+      <p style="max-width: 34rem;"><code>headwater generate --check</code> fails the build when a generated file and its sources differ, so a hand edit does not pass unseen. This repository's specification index and command index work that way.</p>
+      <p class="quiet">An export can be filtered for an audience. A filtered export states what it withholds and why, and the census reports each withheld document.</p>
     </div>
     <div class="box" style="line-height: 2.1;">
       <div class="dim" style="margin-bottom: 0.2rem;">the graph, projected:</div>
@@ -337,23 +337,22 @@ fix (mechanical): add `superseded_by: ACME-DR-0002`</pre>
 
 <section id="boundary">
   <div class="bar pad">
-    <h2 class="label">Where the reasoning stops</h2>
-    <p style="max-width: 44rem;">The assertions here are about documents. This document exists, it is of this kind, it governs that code path, it supersedes that other document. They are not about the claims inside the prose.</p>
-    <p style="max-width: 44rem;"><em>The service returns 404 on a missing key</em> is a sentence. The system knows the document that contains it, and what that document governs. It does not know what the sentence asserts about the world. Reasoning stops at the document boundary, and a promise of semantic consistency past that boundary is a promise that this project cannot keep.</p>
+    <h2 class="label">What Headwater does not check</h2>
+    <p style="max-width: 44rem;">Headwater checks facts about documents: this document exists, it is of this kind, it governs that code path, it supersedes that other document. It does not check the claims inside the prose.</p>
+    <p style="max-width: 44rem;">Take the sentence <em>The service returns 404 on a missing key</em>. Headwater knows which document contains it and what that document governs. It does not know whether the service returns 404.</p>
   </div>
 </section>
 
 <section id="advanced-usage">
   <div class="bar pad">
-    <h2 class="label">Advanced usage</h2>
-    <p style="max-width: 44rem;">The four steps above describe the default shape: a shelf lives where the standard package puts it. An adopter with an existing tree does not have to match that shape — an overlay relocates a shelf with one override key, though the move breaks every relative link into the old path until you repair them.</p>
-    <p style="max-width: 44rem;"><a href="/how-to/relocate-a-shelf/">Relocate a shelf</a> walks through the whole move, on this repository's own corpus, with the real output of every command.</p>
+    <h2 class="label">If your tree already has a layout</h2>
+    <p style="max-width: 44rem;">The standard package puts each shelf at a default path. Your tree does not have to match: one override key in the overlay relocates a shelf. The move breaks each relative link into the old path until you repair it. <a href="/how-to/relocate-a-shelf/">Relocate a shelf</a> shows the whole move, with the real output of each command.</p>
   </div>
 </section>
 
 <section class="tint">
   <div class="bar pad">
-    <p style="font-size: 1.3rem; max-width: 44rem; margin: 0 0 1.8rem;">Sixteen steps take an empty directory to a passing strict check, and every output block in the tutorial is held against the run that produced it — no example on it can go stale quietly.</p>
+    <p style="font-size: 1.3rem; max-width: 44rem; margin: 0 0 1.8rem;">The tutorial takes an empty directory to a passing strict check in sixteen steps. CI runs the page against the engine, so no output block on it goes stale unseen.</p>
     <div class="ctarow">
       <a class="cta" href="/tutorial/">Run the tutorial →</a>
       <a class="sans" href="/compare/">Or read the comparison</a>
