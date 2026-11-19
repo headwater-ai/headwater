@@ -217,7 +217,7 @@
        `data-figure` element from the result. The run date below is the clock
        reading of that run, and it is a fact about a measurement rather than a
        schedule. No date on this site refers to a release or to publication. -->
-  <p class="lede">Each figure below came from a run of <code>headwater check</code> on this repository, dated <span data-figure="run.date"></span>. Nobody typed one: a script runs the engine and writes the figures into this page when the site is published. A publish that cannot measure publishes nothing.</p>
+  <p class="lede">Each figure below comes from <code>headwater check</code> on this repository, run <span data-figure="run.date"></span>. A script fills them in when the site is published, and nobody types one.</p>
 </header>
 
 <section class="ink">
@@ -228,21 +228,21 @@
          rather than assuming it. `findings reported` and `findings suppressed`
          partition the findings the run raised. -->
     <div class="statgrid">
-      <div><div class="statnum" data-figure="census.seen"></div><div class="statlab">files in the documentation tree</div></div>
-      <div><div class="statnum" data-figure="census.typed"></div><div class="statlab">of those have a declared kind, and all <span data-figure="census.checked"></span> were checked</div></div>
-      <div><div class="statnum" data-figure="census.untyped"></div><div class="statlab">of those have no kind, and the report names each one</div></div>
-      <div><div class="statnum" data-figure="census.excluded"></div><div class="statlab">of those excluded by a declared rule that states its reason</div></div>
-      <div><div class="statnum" data-figure="census.unaccounted"></div><div class="statlab">of those skipped without a report</div></div>
-      <div><div class="statnum" data-figure="findings.reported"></div><div class="statlab">findings reported, each with its rule and location</div></div>
+      <div><div class="statnum" data-figure="census.seen"></div><div class="statlab">files in the tree</div></div>
+      <div><div class="statnum" data-figure="census.typed"></div><div class="statlab">with a declared kind, <span data-figure="census.checked"></span> checked</div></div>
+      <div><div class="statnum" data-figure="census.untyped"></div><div class="statlab">with no kind, each named</div></div>
+      <div><div class="statnum" data-figure="census.excluded"></div><div class="statlab">excluded by a declared rule</div></div>
+      <div><div class="statnum" data-figure="census.unaccounted"></div><div class="statlab">skipped without a report</div></div>
+      <div><div class="statnum" data-figure="findings.reported"></div><div class="statlab">findings reported</div></div>
     </div>
     <div class="runs">
-      <div>Each of those <b data-figure="census.seen"></b> files falls in one group. <b data-figure="census.typed"></b> have a kind, <b data-figure="census.generated"></b> are generated files that <code>headwater generate --check</code> holds, <b data-figure="census.untyped"></b> have no kind, <b data-figure="census.excluded"></b> are excluded, and <b data-figure="census.notdoc"></b> are not Markdown.</div>
-      <div>The run raised <b data-figure="findings.raised"></b> findings. <b data-figure="findings.reported"></b> of them are reported and <b data-figure="findings.suppressed"></b> are suppressed by <b data-figure="findings.directives"></b> dated exceptions, each of which states a reason.</div>
-      <div>Of the <b data-figure="findings.reported"></b> reported, <b data-figure="findings.errors"></b> are errors and <b data-figure="findings.advisory"></b> are advisory. The repair of an error is mechanical, and the repair of an advisory finding is a rewrite.</div>
-      <div><b data-figure="census.instances"></b> checks ran over the <b data-figure="census.typed"></b> documents that have a kind. <b data-figure="rules.wired"></b> rules are wired, and <b data-figure="rules.fired"></b> of them found anything.</div>
-      <div>An obligation is a claim Headwater makes about itself. Of <b data-figure="oblig.total"></b> obligations, <b data-figure="oblig.verified"></b> are verified by a rule, <b data-figure="oblig.gap"></b> are gaps that each name an owner, <b data-figure="oblig.unverifiable"></b> cannot be verified, and <b data-figure="oblig.nodisposition"></b> have no status.</div>
-      <div>The run used the taxonomy <b data-figure="taxonomy.package"></b> <b data-figure="taxonomy.version"></b>, at lock <b data-figure="taxonomy.lock"></b></div>
-      <div>The command line has <b data-figure="verbs.count"></b> commands in <b data-figure="verbs.groups"></b> groups. <b data-figure="verbs.contracts"></b> of them carry a written contract, and <b data-figure="verbs.nocontract"></b> carry none.</div>
+      <div>The <b data-figure="census.seen"></b> files: <b data-figure="census.typed"></b> with a kind, <b data-figure="census.generated"></b> generated, <b data-figure="census.untyped"></b> with no kind, <b data-figure="census.excluded"></b> excluded, <b data-figure="census.notdoc"></b> not Markdown.</div>
+      <div><b data-figure="findings.raised"></b> findings raised: <b data-figure="findings.reported"></b> reported, <b data-figure="findings.suppressed"></b> suppressed by <b data-figure="findings.directives"></b> dated exceptions that each state a reason.</div>
+      <div>Of those reported, <b data-figure="findings.errors"></b> are errors with a mechanical repair, and <b data-figure="findings.advisory"></b> are advisory and need a rewrite.</div>
+      <div><b data-figure="census.instances"></b> checks ran. <b data-figure="rules.wired"></b> rules are wired, and <b data-figure="rules.fired"></b> of them found anything.</div>
+      <div><b data-figure="oblig.total"></b> obligations, the claims Headwater makes about itself: <b data-figure="oblig.verified"></b> verified, <b data-figure="oblig.gap"></b> gaps with a named owner, <b data-figure="oblig.unverifiable"></b> unverifiable, <b data-figure="oblig.nodisposition"></b> with no status.</div>
+      <div>Taxonomy <b data-figure="taxonomy.package"></b> <b data-figure="taxonomy.version"></b>, lock <b data-figure="taxonomy.lock"></b></div>
+      <div><b data-figure="verbs.count"></b> commands in <b data-figure="verbs.groups"></b> groups: <b data-figure="verbs.contracts"></b> with a written contract, <b data-figure="verbs.nocontract"></b> without.</div>
     </div>
   </div>
 </section>
@@ -258,7 +258,7 @@
       <span style="font-size: 1rem;">Benchmark against other tools</span>
       <span class="tag">unmeasured</span>
     </div>
-    <p style="font-size: 1rem; max-width: 44rem; margin: 1.2rem 0 0;">Nobody has measured Headwater against the projects that the <a href="/compare/">comparison page</a> names. The experiments below compared this repository with and without parts of Headwater. This row stays empty until a run makes that comparison.</p>
+    <p style="font-size: 1rem; max-width: 44rem; margin: 1.2rem 0 0;">Nobody has measured Headwater against the projects on the <a href="/compare/">comparison page</a>. This row stays empty until a run does.</p>
   </div>
 </section>
 
@@ -273,22 +273,22 @@
          `is_built` in engine/crates/generate/src/profile.rs, read by the
          refresh script. The table below names each target, and the built ones
          are the arms of that function. -->
-    <p style="max-width: 46rem;">Headwater declares <span data-figure="emitters.total"></span> export formats, and <span data-figure="emitters.built"></span> of them are built. The other <span data-figure="emitters.waiting"></span> parse their arguments and report the consumer each one waits on. They emit nothing.</p>
+    <p style="max-width: 46rem;">Of <span data-figure="emitters.total"></span> export formats, <span data-figure="emitters.built"></span> are built. The other <span data-figure="emitters.waiting"></span> emit nothing and report the consumer each waits on.</p>
     <div class="tablewrap">
       <table>
         <thead><tr><th scope="col">Target</th><th scope="col">State</th><th scope="col">What it is</th></tr></thead>
         <tbody>
-          <tr><th scope="row"><code>json</code></th><td class="num built">built</td><td>The whole graph, with no loss.</td></tr>
-          <tr><th scope="row"><code>jsonschema</code></th><td class="num built">built</td><td>A JSON Schema that constrains front matter.</td></tr>
-          <tr><th scope="row"><code>shacl</code></th><td class="num">waiting</td><td>Parses, and reports the consumer it waits on.</td></tr>
-          <tr><th scope="row"><code>rdf</code></th><td class="num">waiting</td><td>Parses, and reports the consumer it waits on.</td></tr>
-          <tr><th scope="row"><code>skos</code></th><td class="num">waiting</td><td>Parses, and reports the consumer it waits on.</td></tr>
-          <tr><th scope="row"><code>okf</code></th><td class="num">waiting</td><td>Parses, and reports the consumer it waits on.</td></tr>
-          <tr><th scope="row"><code>linkml</code></th><td class="num">waiting</td><td>Parses, and reports the consumer it waits on.</td></tr>
+          <tr><th scope="row"><code>json</code></th><td class="num built">built</td><td>The whole graph.</td></tr>
+          <tr><th scope="row"><code>jsonschema</code></th><td class="num built">built</td><td>A schema for front matter.</td></tr>
+          <tr><th scope="row"><code>shacl</code></th><td class="num">waiting</td><td>Not built.</td></tr>
+          <tr><th scope="row"><code>rdf</code></th><td class="num">waiting</td><td>Not built.</td></tr>
+          <tr><th scope="row"><code>skos</code></th><td class="num">waiting</td><td>Not built.</td></tr>
+          <tr><th scope="row"><code>okf</code></th><td class="num">waiting</td><td>Not built.</td></tr>
+          <tr><th scope="row"><code>linkml</code></th><td class="num">waiting</td><td>Not built.</td></tr>
         </tbody>
       </table>
     </div>
-    <p class="note" style="margin-top: 1.2rem;">The conformance levels measure how much of Headwater a repository has wired up. This repository reaches <span data-figure="conformance.level"></span> against <span data-figure="taxonomy.package"></span> <span data-figure="taxonomy.version"></span>. Each level above it names the gap and the remedy.</p>
+    <p class="note" style="margin-top: 1.2rem;">Conformance measures how much of Headwater a repository has wired up. This one reaches <span data-figure="conformance.level"></span> against <span data-figure="taxonomy.package"></span> <span data-figure="taxonomy.version"></span>.</p>
   </div>
 </section>
 
@@ -299,10 +299,10 @@
       <h2>What works, and what is unproven</h2>
       <span class="secline"></span>
     </div>
-    <p style="font-size: 1rem; max-width: 46rem;"><strong>Working.</strong> The engine runs. This repository types its own documentation, checks it on every commit, and scaffolds, explains, routes, generates and exports it. It consumes its own taxonomy as a pinned published package, not as a local file.</p>
-    <p style="font-size: 1rem; max-width: 46rem;"><strong>Measured.</strong> Two experiments asked whether Headwater helps an AI agent. <a href="https://github.com/headwater-ai/headwater/blob/main/docs/evaluations/what-the-counterfactual-campaign-of-2026-09-30-measured-by-component.md">The counterfactual campaign of 2026-09-30</a> measured it by component, with parts removed. The documents under <code>docs/</code> have a large measured effect on whether an agent gives a sufficient answer, and the campaign found no detectable gain from the hooks and skills. The evaluation states each figure, with its interval and its cost. <a href="https://github.com/headwater-ai/headwater/issues/1777">The tuning round of 2026-10-20 to 2026-10-25</a> then rewrote the skills in two kept rounds and measured them on five harder probes. The pass rate rose by a large margin over the documents and the engine alone, and <a href="https://github.com/headwater-ai/headwater/blob/main/docs/probe-runs/additive-tuning-of-2026-10-25-skills-round-2-confirmation-scenario-4.md">the confirmation</a> states the figure. That result is tuned: the rewrites were chosen on those probes, and the round that tests them on probes no rewrite saw has not run.</p>
-    <p style="font-size: 1rem; max-width: 46rem;"><strong>Unproven.</strong> The hook is in tuning and has shown no gain yet. No experiment measured the MCP server or the quality of governance itself, and those efficacy claims stay open until one does. The work still open is on <a href="https://github.com/headwater-ai/headwater/milestones">the milestones page</a>.</p>
-    <p style="font-size: 1rem; max-width: 46rem;"><strong>Installing.</strong> v0.6.1 carries a static Linux x86_64 archive and a macOS arm64 archive, each with a checksum. The release workflow runs both on a host with no Rust toolchain before it creates the release, so the download needs no toolchain. <code>cargo install headwater-cli --locked</code> is the alternative, and crates.io serves v0.6.1. <a href="/install/">The install page</a> has each route.</p>
+    <p style="font-size: 1rem; max-width: 46rem;"><strong>Working.</strong> The engine runs. This repository checks its own documentation on every commit, and consumes its taxonomy as a pinned published package.</p>
+    <p style="font-size: 1rem; max-width: 46rem;"><strong>Measured.</strong> <a href="https://github.com/headwater-ai/headwater/blob/main/docs/evaluations/what-the-counterfactual-campaign-of-2026-09-30-measured-by-component.md">The campaign of 2026-09-30</a> found that the documents under <code>docs/</code> have a large effect on whether an AI agent gives a sufficient answer, and found no detectable gain from the hooks and skills. <a href="https://github.com/headwater-ai/headwater/issues/1777">A tuning round</a> then rewrote the skills, and the pass rate on harder probes rose by a large margin: <a href="https://github.com/headwater-ai/headwater/blob/main/docs/probe-runs/additive-tuning-of-2026-10-25-skills-round-2-confirmation-scenario-4.md">the confirmation</a> states the figure. That result is tuned. The rewrites were chosen on those probes, and no run has tested them on new ones.</p>
+    <p style="font-size: 1rem; max-width: 46rem;"><strong>Unproven.</strong> The hook has shown no gain yet. No experiment measured the MCP server or the quality of governance itself. Open work is on <a href="https://github.com/headwater-ai/headwater/milestones">the milestones page</a>.</p>
+    <p style="font-size: 1rem; max-width: 46rem;"><strong>Installing.</strong> v0.6.1 carries a static Linux x86_64 archive and a macOS arm64 archive, each with a checksum, and neither needs a Rust toolchain. <code>cargo install headwater-cli --locked</code> is the alternative. <a href="/install/">The install page</a> has each route.</p>
   </div>
 </section>
 
@@ -313,9 +313,8 @@
       <h2>How to check this page yourself</h2>
       <span class="secline"></span>
     </div>
-    <p style="max-width: 46rem;">This page is a self-assessment: the project measured itself, and that is the weakest form of evidence.</p>
-    <p style="max-width: 46rem;">You can repeat it. The repository is public, and <code>sh tools/site/refresh-figures.sh --print</code> runs the engine over it and prints each figure on this page. The script reads <code>headwater check --json</code>, the obligation register, the generated command index and the list of export formats in the engine source.</p>
-    <p style="max-width: 46rem; margin: 0;">The missing part is one we cannot supply alone. Nobody has yet measured this engine on documentation that is not ours.</p>
+    <p style="max-width: 46rem;">The project measured itself here, which is the weakest form of evidence. You can repeat it: the repository is public, and <code>sh tools/site/refresh-figures.sh --print</code> runs the engine and prints each figure on this page.</p>
+    <p style="max-width: 46rem; margin: 0;">Nobody has yet measured this engine on documentation that is not ours.</p>
   </div>
 </section>
 
