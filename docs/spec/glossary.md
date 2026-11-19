@@ -621,7 +621,7 @@ The proximal cue that predicts distal value, and the thing that routing trades i
 
 ### Scope
 
-What a check declares that it needs to see. The values are `Document`, `Edge`, `Neighbourhood`, `Shelf`, and `Corpus`, plus flags for the body, the clock, and the prior version. See [spec 12](12-check-layer.md#scope--the-declaration-everything-else-rests-on).
+What a check declares that it needs to see. The values are `Document`, `Edge`, `Neighbourhood`, `Corpus`, and `Taxonomy`. A flag names each further input that a check needs, such as the body, the clock, or the prior version. See [spec 12](12-check-layer.md#scope--the-declaration-everything-else-rests-on).
 
 ### Scoped view
 
