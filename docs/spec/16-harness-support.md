@@ -64,7 +64,7 @@ The cost of C11 is paid on every read. `.claude/hooks/fixtures-live.sh` times th
 
 ### Invocation: commands, skills, agents
 
-**C7 — commands.** A procedure a person invokes by name. The workflow commands of this repository are three: the build-order iteration, the stacked run, and the board review. The terms: a file per command in the checkout, and the harness offers it under the name the file carries.
+**C7 — commands.** A procedure a person invokes by name. The workflow commands of this repository include the build-order iteration, the stacked run, and the board review. The terms: a file per command in the checkout, and the harness offers it under the name the file carries.
 
 **C8 — skills.** An instruction package the model selects by description, which spec 5 grades as [scent](05-ai-integration.md#scent-is-the-thing-being-engineered) and measures rather than trusts. The terms: a directory per skill in the checkout, a description the harness serves to the model, and loading on selection rather than always.
 
