@@ -2977,3 +2977,117 @@ fn taxonomy_vendor_reports_the_doctrine_directory_the_artifact_declares() {
         }
     }
 }
+
+/// `probe record` composes the plan that lets a transcript whose lock moved be
+/// read over this tree, and hands its selection to the intake (#1292, #1494).
+///
+/// The committed transcript of `probe-stale` names a lock that is not the lock
+/// of any tree, and its read set is the one this tree composes. So the intake
+/// reads it, but only where the caller read `.headwater/probe.yml`, composed a
+/// plan and handed `Tree::selected` the selection. The verb exits 0 whatever it
+/// decided, because a record is a probe result and never a gate. A binary that
+/// read the declaration from the wrong path, or passed `selected: None`, refused
+/// the transcript with the same exit code, and nothing but this case noticed.
+///
+/// The contrast is the corpus with no budget declaration. There the verb has no
+/// plan, so it refuses the transcript as it did before #1292, and the refusal
+/// names that no read set was composed.
+#[test]
+fn probe_record_reads_a_moved_lock_transcript_through_the_plan_it_composed() {
+    let root = Root::over("probe-stale", "record-composes-the-plan");
+    let committed = root
+        .path("docs/probe-runs/first-regression.md")
+        .display()
+        .to_string();
+
+    let read = root.run(&["probe", "record", &committed]);
+    assert_eq!(read.code, Some(0), "{}{}", read.out, read.err);
+    assert!(
+        read.says(
+            "The read set of its probes is the one this tree composes, so the move reaches no \
+             document a verdict reads, and the transcript is read over this tree."
+        ),
+        "the verb did not hand the intake the selection its plan composed:\n{}",
+        read.out
+    );
+    assert!(
+        read.says("2 events over 2 of the 2 probes this corpus declares"),
+        "{}",
+        read.out
+    );
+
+    std::fs::remove_file(root.path(".headwater/probe.yml")).expect("the declaration is removed");
+    let refused = root.run(&["probe", "record", &committed]);
+    assert_eq!(refused.code, Some(0), "{}{}", refused.out, refused.err);
+    assert!(
+        refused.says(
+            "no read set was composed over its probes to show that the move left them alone"
+        ),
+        "with no budget declaration there is no plan, and the moved lock refuses the file:\n{}",
+        refused.out
+    );
+}
+
+/// `probe grade` grades a run planned over part of the selection against that
+/// part, the way `generate` grades it (#980, #1494).
+///
+/// The binary composes the plan, and then for each transcript it asks
+/// `grade::narrowed` for the part the run was planned over and grades against
+/// that part where there is one. A binary that skipped the narrowing graded
+/// such a run against the whole selection and exited 0, as a grade always does.
+///
+/// The transcript here is the committed one with the events of one probe
+/// removed, and its `selection` set to the digest that `probe plan --exclude`
+/// prints for the other probe alone. So its recorded selection is the digest of
+/// the part its events name, and the grade is over one probe of one.
+#[test]
+fn probe_grade_grades_a_part_planned_run_against_the_part() {
+    let root = Root::over("probe-stale", "grade-narrows-to-the-part");
+    let other = "HW-PROBE-the-session-reads-the-other-document";
+    let planned = root.run(&["probe", "plan", "--exclude", other]);
+    assert_eq!(planned.code, Some(0), "{}{}", planned.out, planned.err);
+    let part = planned
+        .out
+        .lines()
+        .find_map(|line| line.strip_prefix("selection: "))
+        .expect("the plan prints the digest of its selection")
+        .to_string();
+    assert!(part.starts_with("sha256:"), "{}", planned.out);
+
+    let source = std::fs::read_to_string(root.path("docs/probe-runs/first-regression.md"))
+        .expect("the committed transcript reads");
+    let at = source
+        .find("selection: sha256:")
+        .expect("the fixture names its selection");
+    let end = at + "selection: ".len() + "sha256:".len() + 64;
+    let mut transcript = format!("{}selection: {part}{}", &source[..at], &source[end..]);
+    let event = transcript
+        .find(&format!("- probe: {other}"))
+        .expect("the fixture names the other probe in its events");
+    let close = event + transcript[event..].find("```").expect("the events block closes");
+    transcript.replace_range(event..close, "");
+    let path = root.path("part.md");
+    std::fs::write(&path, transcript).expect("the part transcript writes");
+
+    let graded = root.run(&["probe", "grade", &path.display().to_string()]);
+    assert_eq!(graded.code, Some(0), "{}{}", graded.out, graded.err);
+    assert!(
+        graded
+            .out
+            .lines()
+            .next()
+            .is_some_and(|first| first.starts_with("Graded by grader ")),
+        "the part transcript grades:\n{}",
+        graded.out
+    );
+    assert!(
+        !graded.says(other),
+        "a run planned over one probe names no verdict for the probe it did not plan:\n{}",
+        graded.out
+    );
+    assert!(
+        graded.says("0 of 1 graded sessions satisfied their expectation"),
+        "the rate is over the part the run was planned over:\n{}",
+        graded.out
+    );
+}
