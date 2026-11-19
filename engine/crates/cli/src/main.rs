@@ -2430,7 +2430,7 @@ fn vendor(root: &Path, source: &str, expect: Option<&str>) -> ExitCode {
     let flattened = record.package.replace('/', "-");
     let installed = root
         .join(headwater_resolve::package::PACKAGES)
-        .join(&flattened);
+        .join(format!("{flattened}s"));
     let doctrine = headwater_resolve::package::manifest_at(&installed)
         .ok()
         .and_then(|manifest| headwater_resolve::package::doctrine(&manifest));
