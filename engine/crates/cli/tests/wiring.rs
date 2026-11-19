@@ -3020,9 +3020,8 @@ fn probe_record_reads_a_moved_lock_transcript_through_the_plan_it_composed() {
     let refused = root.run(&["probe", "record", &committed]);
     assert_eq!(refused.code, Some(0), "{}{}", refused.out, refused.err);
     assert!(
-        refused.says(
-            "no read set was composed over its probes to show that the move left them alone"
-        ),
+        refused
+            .says("no read set was composed over its probes to show that the move left them alone"),
         "with no budget declaration there is no plan, and the moved lock refuses the file:\n{}",
         refused.out
     );
@@ -3064,7 +3063,10 @@ fn probe_grade_grades_a_part_planned_run_against_the_part() {
     let event = transcript
         .find(&format!("- probe: {other}"))
         .expect("the fixture names the other probe in its events");
-    let close = event + transcript[event..].find("```").expect("the events block closes");
+    let close = event
+        + transcript[event..]
+            .find("```")
+            .expect("the events block closes");
     transcript.replace_range(event..close, "");
     let path = root.path("part.md");
     std::fs::write(&path, transcript).expect("the part transcript writes");
