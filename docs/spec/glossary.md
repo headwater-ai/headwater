@@ -325,7 +325,7 @@ Five acceptance tests for a facet: relevance, ascertainability, permanence, diff
 
 ### Facet role
 
-One of five engine-significant roles that a facet may carry: `state`, `state_entered`, `created`, `freshness`, and `scent`. The registry is closed, and a role outside it is a validation error. See [spec 2](02-taxonomy-model.md#the-meta-schema).
+One of the engine-significant roles that a facet may carry: `state`, `state_entered`, `created`, `freshness`, `scent`, and `name`. The registry is closed, and a role outside it is a validation error. See [spec 2](02-taxonomy-model.md#the-meta-schema).
 
 ### Family
 
@@ -489,7 +489,7 @@ A source corpus's [export](#export), named by identity, content hash, and locati
 
 ### Plugin
 
-Adopter check code behind a narrow interface. It receives the same scoped view as a built-in check, obeys the same scope enforcement, and must name the obligation that it serves. See [spec 12](12-check-layer.md#the-plugin-interface).
+Adopter check code behind a narrow interface. It receives the same scoped view as a built-in check and obeys the same scope enforcement. It names no obligation, because a control binds a rule to the obligation that it serves. See [spec 12](12-check-layer.md#the-plugin-interface).
 
 ### Pointer
 
@@ -673,7 +673,7 @@ The date when a document entered its current state. Whatever performs the transi
 
 ### Stop rules
 
-The four refusals that an assistant working in the corpus must show. No rationale without external evidence. No hand edit of a generated file. No new shelf, kind, or facet invented in place. No duplication of a fact that exists elsewhere. See [spec 5](05-ai-integration.md#the-stop-rules).
+The refusals that an assistant working in the corpus must show. No rationale without external evidence. No hand edit of a generated file. No new shelf, kind, or facet invented in place. No duplication of a fact that exists elsewhere. No self-acceptance. See [spec 5](05-ai-integration.md#the-stop-rules).
 
 ### Succession
 
