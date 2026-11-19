@@ -43,7 +43,7 @@ A byte-identity differential compares verdicts and cannot see a rule that has be
 
 ## Re-derive one number by hand
 
-One claimed number, with your own script, naming the denominator. Two agents once reported 32 findings where the parent believed 27, and both were right about a different denominator. A number without its denominator is not a claim.
+One claimed number, with your own script, naming the denominator. Two agents once reported 32 findings where the parent believed 27, and both were right about a different denominator. A number without its denominator is not a claim. Count occurrences with `grep -o <pattern> | wc -l`: `grep -c` counts lines, and this repository writes one paragraph to a line, so one line can hold many matches.
 
 ## Validate with something that is not this system
 
