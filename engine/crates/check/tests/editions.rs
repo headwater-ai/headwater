@@ -29,23 +29,33 @@
 //!   re-record with a blanket `HEADWATER_BLESS=1 cargo test -p
 //!   headwater-check`, and a bless that rewrote this row would ship exactly
 //!   the #952 defect;
-//! - a `VERSION` that moved, a corpus whose fingerprint moved, and a row that
-//!   is new fail outside bless and are re-recorded under it. So an author who
-//!   edits a recorded corpus re-records it without raising any `VERSION`;
+//! - a `VERSION` that moved and a row that is new fail outside bless and are
+//!   re-recorded under it;
+//! - a corpus whose fingerprint moved at an unchanged `VERSION` is replayed:
+//!   the test rebuilds the corpus from git as the ledger recorded it, at the
+//!   commit that last wrote the ledger, and runs this binary over it. Where
+//!   that replay reaches the recorded digest and count, the corpus moved the
+//!   verdicts, so the row fails outside bless and is re-recorded under it. An
+//!   author who edits a recorded corpus re-records it without raising any
+//!   `VERSION`. Where the replay reaches anything else, the code moved them
+//!   too, and the row **fails under bless too**, as the first arm does. A
+//!   corpus that git cannot rebuild with the recorded fingerprint fails in
+//!   both modes as well, because nothing can tell the two edits apart
+//!   (HW-OBL-0222);
 //! - a row that reached no instance fails outside bless, because it pins
 //!   nothing, and bless drops it.
 //!
 //! What the ledger cannot see: a change that no recorded corpus exercises, a
 //! rule with no instance on any of them (listed in [`UNCOVERED`] with the
-//! reason), a rule change that lands in the same commit as an edit to the
-//! corpus it is read over, and a change visible only against a warm cache
-//! that an older binary wrote. The last is the digest over the compiled rule
+//! reason), and a change visible only against a warm cache that an older
+//! binary wrote. The last is the digest over the compiled rule
 //! that
 //! [HW-OBL-0074](../../../../docs/obligations/0074-a-check-version-is-raised-by-hand-and-nothing-catches-a-stale.md)
 //! asks for. The ledger approximates it over fixtures and does not close it.
-//! A corpus that reads a file outside its input directory would report an
-//! edit to that file as a rule change, and bless would refuse it. None of the
-//! recorded corpora below does.
+//! A corpus that reads a file outside its input directory and its taxonomy
+//! would report an edit to that file as a rule change, and bless would refuse
+//! it. Its replay would also lack that file. None of the recorded corpora
+//! below reads one.
 //!
 //!     HEADWATER_BLESS=1 cargo test -p headwater-check --test editions
 //!
@@ -493,9 +503,10 @@ fn computed() -> &'static [Row] {
 const HEADER: &str = "\
 # The verdict ledger of tests/editions.rs: rule, recorded corpus, VERSION,
 # fingerprint of the corpus, digest of every verdict, instance count.
-# HEADWATER_BLESS=1 re-records a row whose VERSION or corpus moved, and never a
-# row whose verdicts moved over the same corpus at the same VERSION: raise
-# VERSION for that.
+# HEADWATER_BLESS=1 re-records a row whose VERSION moved, or whose corpus moved
+# where the corpus as recorded still gives the recorded verdicts. It never
+# re-records a row whose verdicts moved over the same corpus at the same VERSION:
+# raise VERSION for that.
 ";
 
 fn render(rows: &[Row]) -> String {
