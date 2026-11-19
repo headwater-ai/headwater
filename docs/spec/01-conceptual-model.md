@@ -136,7 +136,7 @@ A prose link is evidence that an author found a reference worth making at one po
 
 The cost of that ruling is a reference written twice. [Spec 4](04-assurance-model.md#declaration-moves-the-boundary) absorbs most of it: an extracted link with no declared relation is an advisory finding, and the fix writes the declaration.
 
-Relation types that an adopter is likely to want (all shipped with the default package, none hard-coded in the engine): `supersedes` / `superseded_by`, `derives_from`, `governs`, `verifies`, `implements`, `cites`, `owns`, `refines`, `conflicts_with`. Shipped does not mean enabled: the default *enables* a minimal four. The rest are complete declarations that an overlay pulls in by reference ([spec 2](02-taxonomy-model.md#the-decision-relation-vocabulary)).
+Relation types that an adopter is likely to want (all shipped with the default package, none hard-coded in the engine): `supersedes` / `superseded_by`, `derives_from`, `governs`, `verifies`, `implements`, `cites`, `owns`, `refines`, `conflicts_with`. Shipped does not mean enabled: the default *enables* a minimal set. The rest are complete declarations that an overlay pulls in by reference ([spec 2](02-taxonomy-model.md#the-decision-relation-vocabulary)).
 
 A kind may also declare a participation **expectation**. The expectation says that its documents, in a given state, get a named relation within a window measured from a declared origin date ([spec 2](02-taxonomy-model.md#participation-expectations)). Expectations are the only construct that finds a document that **should exist and does not**. Every other check validates artifacts that are present. They model what genre theory calls a *genre system*: proposal → decision → specification → evidence.
 
