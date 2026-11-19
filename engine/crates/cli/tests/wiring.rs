@@ -3158,3 +3158,46 @@ fn mcp_offers_the_write_tools_under_write_and_only_there() {
         );
     }
 }
+
+/// `infer` dates the debt it proposes ninety days past the run's clock where
+/// no `--until` is given, and on the given date where one is (#1494).
+///
+/// The binary makes this choice itself, out of `DEFAULT_WINDOW`, before the
+/// adoption crate sees a date. Both wrong forms exit 0 with a proposal that
+/// reads as well formed: a window that moved, and a `--until` that the default
+/// overrode. `docs/interfaces/headwater-infer.md` states the window.
+#[test]
+fn infer_dates_its_debt_ninety_days_out_unless_until_names_a_date() {
+    let root = Root::over("probe-stale", "infer-default-window");
+
+    let defaulted = root.run(&["infer", "--owner", "a test", "--now", "2026-01-01"]);
+    assert_eq!(
+        defaulted.code,
+        Some(0),
+        "{}{}",
+        defaulted.out,
+        defaulted.err
+    );
+    assert!(
+        defaulted.says(", expiring 2026-04-01"),
+        "the default window is ninety days from the run's clock:\n{}",
+        defaulted.out
+    );
+    assert!(defaulted.says("until: 2026-04-01"), "{}", defaulted.out);
+
+    let named = root.run(&[
+        "infer",
+        "--owner",
+        "a test",
+        "--now",
+        "2026-01-01",
+        "--until",
+        "2026-02-02",
+    ]);
+    assert_eq!(named.code, Some(0), "{}{}", named.out, named.err);
+    assert!(
+        named.says(", expiring 2026-02-02") && !named.says("2026-04-01"),
+        "a named `--until` is the date, and the default does not apply:\n{}",
+        named.out
+    );
+}
