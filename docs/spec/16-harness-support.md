@@ -64,7 +64,7 @@ The cost of C11 is paid on every read. `.claude/hooks/fixtures-live.sh` times th
 
 ### Invocation: commands, skills, agents
 
-**C7 — commands.** A procedure a person invokes by name. The workflow commands of this repository are three: the build-order iteration, the stacked run, and the board review. The terms: a file per command in the checkout, and the harness offers it under the name the file carries.
+**C7 — commands.** A procedure a person invokes by name. The workflow commands of this repository include the build-order iteration, the stacked run, and the board review. The terms: a file per command in the checkout, and the harness offers it under the name the file carries.
 
 **C8 — skills.** An instruction package the model selects by description, which spec 5 grades as [scent](05-ai-integration.md#scent-is-the-thing-being-engineered) and measures rather than trusts. The terms: a directory per skill in the checkout, a description the harness serves to the model, and loading on selection rather than always.
 
@@ -120,4 +120,4 @@ Every Claude Code cell except C2 is bound. The Codex and Copilot rows for C3 thr
 
 **The IDE differs from the CLI under one vendor name.** Copilot's completion surface reads none of this table, and its IDE cannot block a turn where its CLI can. Its code reviewer reads instructions from the base branch rather than the feature branch. The column records the most capable surface, and a person binding one surface reads the vendor's own reference for that surface.
 
-**No column moves enforcement.** The table prices where a finding arrives, and the [hook contract](05-ai-integration.md#the-hook-contract-and-what-a-hook-cannot-bind) already prices what that is worth. A refusal at write time costs one retry, and the same refusal at review time costs a rewrite. Whether any cell earns its context cost is a [probe](05-ai-integration.md#measuring-whether-any-of-this-works) question, no probe has run, and no cell of this table rests on one.
+**No column moves enforcement.** The table prices where a finding arrives, and the [hook contract](05-ai-integration.md#the-hook-contract-and-what-a-hook-cannot-bind) already prices what that is worth. A refusal at write time costs one retry, and the same refusal at review time costs a rewrite. Whether any cell earns its context cost is a [probe](05-ai-integration.md#measuring-whether-any-of-this-works) question. Probe campaigns have measured the hook and skills layer of the Claude Code column, and [spec 13](13-open-obligations.md#unmeasured-claims) states what each one read. No cell of this table rests on a result.
