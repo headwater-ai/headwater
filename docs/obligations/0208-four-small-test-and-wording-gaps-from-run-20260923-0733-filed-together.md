@@ -1,8 +1,8 @@
 ---
 id: HW-OBL-0208
-status: current
-status_since: 2026-09-26
-summary: "Of four small gaps from one run, three are closed, and the recurring board-card gap waits on HW-OBL-0203."
+status: discharged
+status_since: 2026-11-20
+summary: "Four small gaps from one run are closed. Three closed with the first slice of #1494, and the board-card gap closed when board-move.sh started to add a missing card."
 last_verified: 2026-09-23
 title: "Four small test and wording gaps from run 20260923-0733 filed together"
 waiting_on: build
@@ -16,7 +16,7 @@ The intake of run `20260923-0733` held four findings that name no reader outside
 
 ## Obligation
 
-**The board-card gap of HW-OBL-0203 recurred.** In this run, `board-move.sh` found no project-board card for #1030, #974, #975, #1038 and #976, and remainder issue #1051 was filed without one. [HW-OBL-0203](../process/obligations/0203-three-small-run-tooling-gaps-from-run-20260922-1121-filed-together.md) asks whether the gap is systemic. Six issues in one run is evidence that it is. This is the one gap of the four that is still owed.
+**The board-card gap of HW-OBL-0203 recurred.** In this run, `board-move.sh` found no project-board card for #1030, #974, #975, #1038 and #976, and remainder issue #1051 was filed without one. [HW-OBL-0203](../process/obligations/0203-three-small-run-tooling-gaps-from-run-20260922-1121-filed-together.md) asks whether the gap is systemic. Six issues in one run is evidence that it is.
 
 The first slice of [#1494](https://github.com/headwater-ai/headwater/issues/1494) closed the other three on 2026-10-15.
 
@@ -27,3 +27,5 @@ The first slice of [#1494](https://github.com/headwater-ai/headwater/issues/1494
 ## Discharge
 
 This record discharges with the board-item gap of HW-OBL-0203, and adds nothing to the Discharge clause of that record.
+
+The second slice of [#1494](https://github.com/headwater-ai/headwater/issues/1494) discharged this record on 2026-11-20. Nothing was built for it, because all four gaps were already closed. The first slice of #1494, PR #1766, closed the three test and wording gaps on 2026-10-15. PR #1047 closed the board-card gap. Since that change, `tools/run/board-move.sh` finds the card with `gh project item-add`. That call returns the card that the issue has, and it adds a card when the issue has none. So an issue that has no card gets one when the script claims it, and the header of the script records this. HW-OBL-0203 has been `discharged` since 2026-10-13, and nobody recorded here that this gap closed with it.

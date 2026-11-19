@@ -2422,25 +2422,13 @@ fn vendor(root: &Path, source: &str, expect: Option<&str>) -> ExitCode {
     );
     println!("  digest {}", record.digest);
 
-    // The path is read back off the installed manifest rather than returned by
-    // `package::vendor`, because `Release` is the release record and a doctrine
-    // path is not one of its fields. That verb has already held the same key to
-    // the artifact and refused every value it could not open, so this reads a
-    // key one line above proved readable.
-    let flattened = record.package.replace('/', "-");
-    let installed = root
-        .join(headwater_resolve::package::PACKAGES)
-        .join(&flattened);
-    let doctrine = headwater_resolve::package::manifest_at(&installed)
-        .ok()
-        .and_then(|manifest| headwater_resolve::package::doctrine(&manifest));
-    if let Some(at) = doctrine {
-        println!(
-            "  doctrine at {}/{}/{}",
-            headwater_resolve::package::PACKAGES,
-            flattened,
-            at.display()
-        );
+    // Both halves of the path come out of `package::vendor`, which named the
+    // directory it installed into and held the declared doctrine to the
+    // artifact before it wrote anything. Until #1494 this flattened the name a
+    // second time and read the key back off the installed manifest with
+    // `.ok()`, so a read that failed dropped the line and exited 0.
+    if let Some(at) = &vendored.doctrine {
+        println!("  doctrine at {}/{}", vendored.under, at.display());
         println!(
             "\nThe doctrine directory is prose the publisher wrote for a person to read. It is \
              not schema, nothing resolves it, and no check reads it."

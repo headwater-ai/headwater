@@ -3722,10 +3722,14 @@ pub const TEMPLATES: &str = "templates";
 /// The `contents.doctrine` node a manifest declares, and nothing where it
 /// declares none.
 ///
-/// One lookup, two readers: [`doctrine_at`] holds the value to an artifact and
-/// reports every shape it refuses, and [`doctrine`] answers the shallow
-/// question the CLI asks after that verb returned. Where the key sits in a
-/// manifest is stated here alone.
+/// [`doctrine_at`] holds the value to an artifact and reports every shape it
+/// refuses, and [`vendor`] carries the path it returns out in [`Vendored`].
+/// Where the key sits in a manifest is stated here alone.
+///
+/// The CLI read the key back off the installed manifest until #1494, with
+/// `.ok()` on the read, so a read that failed printed no doctrine line and
+/// exited 0. The path now travels out of the run that held it, and no second
+/// reader is left to drop it.
 fn declared_doctrine(
     manifest: &Mapping,
 ) -> Option<&headwater_yaml::Spanned<headwater_yaml::Value>> {
@@ -3733,25 +3737,6 @@ fn declared_doctrine(
         .get("contents")
         .and_then(|node| node.value.as_map())
         .and_then(|contents| contents.get(DOCTRINE))
-}
-
-/// The directory a manifest declares its prose in, relative to the package.
-///
-/// Shallow on purpose. It answers what the key says, and [`doctrine_at`] is
-/// what holds that value to an artifact. `headwater taxonomy vendor` reads it
-/// off the manifest of the package it has just installed, so every shape this
-/// answers `None` for — an absent key, a list, an empty value — is a shape
-/// [`vendor`] refused before it installed anything.
-///
-/// This is what keeps [`Release`] a record of bytes. A doctrine path is not one
-/// of the record's fields, and widening the record so that one line of a report
-/// could be printed would make it one.
-pub fn doctrine(manifest: &Mapping) -> Option<PathBuf> {
-    let text = declared_doctrine(manifest)?.value.as_scalar()?.text.clone();
-    match text.is_empty() {
-        true => None,
-        false => Some(PathBuf::from(text)),
-    }
 }
 
 /// The prose a fetched artifact declares, held to that artifact before
@@ -4189,10 +4174,10 @@ pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Vendored, Vec
     // writes nothing and this is the last read, so a manifest that names
     // doctrine the artifact does not carry returns above every write below:
     // nothing is staged, nothing is renamed aside, and an installed package
-    // stands as it stood. The value is dropped here because `Release` is a
-    // record of bytes and this is not one of them -- the CLI reads the key back
-    // off the installed manifest to name the path it printed.
-    let _ = doctrine_at(fetched, &manifest_at(fetched)?, &name)?;
+    // stands as it stood. The value travels out in [`Vendored`] and not in
+    // `Release`, because `Release` is a record of bytes and this is not one of
+    // them.
+    let doctrine = doctrine_at(fetched, &manifest_at(fetched)?, &name)?;
 
     // Every refusal below leaves one state, and this is that state said once.
     let stands = match installed {
@@ -4266,6 +4251,8 @@ pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Vendored, Vec
     Ok(Vendored {
         release: record,
         divergence,
+        under,
+        doctrine,
     })
 }
 
@@ -4288,6 +4275,16 @@ pub struct Vendored {
     /// this run found one. `None` on a first install, on a version that moved,
     /// and on an artifact whose bytes are the bytes already installed.
     pub divergence: Option<Divergence>,
+    /// Where the package now stands, relative to the root, as a reader types it:
+    /// `.headwater/packages/<flattened>`, where a scoped name `acme/x` flattens
+    /// to `acme-x`. This run named the directory it installed into, so a
+    /// reporter that flattens the name again is a second answer to one question.
+    pub under: String,
+    /// The doctrine directory the artifact declares, relative to the package,
+    /// as [`doctrine_at`] held it to the artifact before anything was written.
+    /// `None` where the manifest declares no `contents.doctrine`. A reporter
+    /// prints `<under>/<doctrine>` and reads no manifest of its own.
+    pub doctrine: Option<PathBuf>,
 }
 
 /// Two published artifacts of one package that state one version and different

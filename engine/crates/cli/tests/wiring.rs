@@ -2840,3 +2840,364 @@ fn probe_plan_oracles_print_the_parsed_declaration() {
         assert_eq!(both.out, "", "{other}");
     }
 }
+
+/// One invocation of the binary over `root`, for the cases below that need two
+/// roots: a publisher and a consumer. [`Root::run`] names the one fixture root
+/// it was made over, and these cases hold no fixture corpus.
+fn run_at(root: &Path, arguments: &[&str]) -> Ran {
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(arguments)
+        .arg("--root")
+        .arg(root)
+        .output()
+        .expect("the binary runs");
+    Ran {
+        code: output.status.code(),
+        out: String::from_utf8_lossy(&output.stdout).into_owned(),
+        err: String::from_utf8_lossy(&output.stderr).into_owned(),
+    }
+}
+
+/// Publish the smallest package `taxonomy publish` takes, `acme/x`, into
+/// `<scratch>/artifact`, and return the digest it printed.
+///
+/// `doctrine` is the `contents.doctrine` value the manifest declares, with
+/// prose planted at that path, or `None` for a manifest that declares none.
+fn publish_acme_x(scratch: &Path, doctrine: Option<&str>) -> String {
+    let package = scratch.join("publisher/.headwater/packages/acme-x");
+    std::fs::create_dir_all(&package).expect("the package directory is made");
+    let mut manifest =
+        String::from("package: acme/x\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n");
+    if let Some(at) = doctrine {
+        manifest.push_str(&format!("  doctrine: {at}\n"));
+        std::fs::create_dir_all(package.join(at)).expect("the doctrine directory is made");
+        std::fs::write(package.join(at).join("method.md"), "# Method\n\nWhy.\n")
+            .expect("the prose writes");
+    }
+    std::fs::write(package.join("package.yml"), manifest).expect("the manifest writes");
+    std::fs::write(
+        package.join("taxonomy.yml"),
+        "taxonomy: acme/x\nversion: 1.0.0\npurposes:\n  rationale: {intent: explain why a choice was made}\n",
+    )
+    .expect("the taxonomy source writes");
+
+    let artifact = scratch.join("artifact");
+    let published = run_at(
+        &scratch.join("publisher"),
+        &[
+            "taxonomy",
+            "publish",
+            "--from",
+            package.to_str().expect("the path is UTF-8"),
+            "--out",
+            artifact.to_str().expect("the path is UTF-8"),
+        ],
+    );
+    assert_eq!(
+        published.code,
+        Some(0),
+        "{}{}",
+        published.out,
+        published.err
+    );
+    published
+        .out
+        .lines()
+        .find_map(|line| line.trim().strip_prefix("digest "))
+        .unwrap_or_else(|| panic!("publish printed no digest: {}", published.out))
+        .to_string()
+}
+
+/// `taxonomy vendor` names the doctrine directory the artifact declares, under
+/// the directory it installed into, and names none where none is declared
+/// (HW-OBL-0132, #1494).
+///
+/// Until #1494 the CLI re-derived the installed directory by flattening the
+/// package name a second time, and read the declared path back off the
+/// installed manifest with `.ok()`. A read that failed there printed no
+/// doctrine line, exited 0, and no test noticed. Both values now travel out of
+/// `package::vendor` in `Vendored`, so the line is printed from what the run
+/// that installed the package held, and this case holds the line itself.
+///
+/// The declared directory is two segments deep and the name is scoped, so a
+/// reporter that guessed `doctrine/` or kept the `/` in `acme/x` prints a line
+/// this case refuses.
+#[test]
+fn taxonomy_vendor_reports_the_doctrine_directory_the_artifact_declares() {
+    for (label, doctrine) in [("with", Some("prose/method")), ("without", None)] {
+        let scratch = out_dir(&format!("vendor-doctrine-{label}"));
+        let digest = publish_acme_x(&scratch, doctrine);
+        let consumer = scratch.join("consumer");
+        std::fs::create_dir_all(&consumer).expect("the consumer root is made");
+        let artifact = scratch.join("artifact");
+
+        let vendored = run_at(
+            &consumer,
+            &[
+                "taxonomy",
+                "vendor",
+                artifact.to_str().expect("the path is UTF-8"),
+                "--expect",
+                &digest,
+            ],
+        );
+        assert_eq!(
+            vendored.code,
+            Some(0),
+            "{label}: {}{}",
+            vendored.out,
+            vendored.err
+        );
+        assert!(
+            vendored.says("vendored acme/x 1.0.0"),
+            "{label}: {}",
+            vendored.out
+        );
+        let lines: Vec<&str> = vendored
+            .out
+            .lines()
+            .filter(|line| line.contains("doctrine at"))
+            .collect();
+        match doctrine {
+            Some(_) => {
+                assert_eq!(
+                    lines,
+                    ["  doctrine at .headwater/packages/acme-x/prose/method"],
+                    "{}",
+                    vendored.out
+                );
+                assert!(
+                    consumer
+                        .join(".headwater/packages/acme-x/prose/method/method.md")
+                        .is_file(),
+                    "the line names a directory that did not arrive"
+                );
+            }
+            None => assert!(lines.is_empty(), "{}", vendored.out),
+        }
+    }
+}
+
+/// `probe record` composes the plan that lets a transcript whose lock moved be
+/// read over this tree, and hands its selection to the intake (#1292, #1494).
+///
+/// The committed transcript of `probe-stale` names a lock that is not the lock
+/// of any tree, and its read set is the one this tree composes. So the intake
+/// reads it, but only where the caller read `.headwater/probe.yml`, composed a
+/// plan and handed `Tree::selected` the selection. The verb exits 0 whatever it
+/// decided, because a record is a probe result and never a gate. A binary that
+/// read the declaration from the wrong path, or passed `selected: None`, refused
+/// the transcript with the same exit code, and nothing but this case noticed.
+///
+/// The contrast is the corpus with no budget declaration. There the verb has no
+/// plan, so it refuses the transcript as it did before #1292, and the refusal
+/// names that no read set was composed.
+#[test]
+fn probe_record_reads_a_moved_lock_transcript_through_the_plan_it_composed() {
+    let root = Root::over("probe-stale", "record-composes-the-plan");
+    let committed = root
+        .path("docs/probe-runs/first-regression.md")
+        .display()
+        .to_string();
+
+    let read = root.run(&["probe", "record", &committed]);
+    assert_eq!(read.code, Some(0), "{}{}", read.out, read.err);
+    assert!(
+        read.says(
+            "The read set of its probes is the one this tree composes, so the move reaches no \
+             document a verdict reads, and the transcript is read over this tree."
+        ),
+        "the verb did not hand the intake the selection its plan composed:\n{}",
+        read.out
+    );
+    assert!(
+        read.says("2 events over 2 of the 2 probes this corpus declares"),
+        "{}",
+        read.out
+    );
+
+    std::fs::remove_file(root.path(".headwater/probe.yml")).expect("the declaration is removed");
+    let refused = root.run(&["probe", "record", &committed]);
+    assert_eq!(refused.code, Some(0), "{}{}", refused.out, refused.err);
+    assert!(
+        refused
+            .says("no read set was composed over its probes to show that the move left them alone"),
+        "with no budget declaration there is no plan, and the moved lock refuses the file:\n{}",
+        refused.out
+    );
+}
+
+/// `probe grade` grades a run planned over part of the selection against that
+/// part, the way `generate` grades it (#980, #1494).
+///
+/// The binary composes the plan, and then for each transcript it asks
+/// `grade::narrowed` for the part the run was planned over and grades against
+/// that part where there is one. A binary that skipped the narrowing graded
+/// such a run against the whole selection and exited 0, as a grade always does.
+///
+/// The transcript here is the committed one with the events of one probe
+/// removed, and its `selection` set to the digest that `probe plan --exclude`
+/// prints for the other probe alone. So its recorded selection is the digest of
+/// the part its events name, and the grade is over one probe of one.
+#[test]
+fn probe_grade_grades_a_part_planned_run_against_the_part() {
+    let root = Root::over("probe-stale", "grade-narrows-to-the-part");
+    let other = "HW-PROBE-the-session-reads-the-other-document";
+    let planned = root.run(&["probe", "plan", "--exclude", other]);
+    assert_eq!(planned.code, Some(0), "{}{}", planned.out, planned.err);
+    let part = planned
+        .out
+        .lines()
+        .find_map(|line| line.strip_prefix("selection: "))
+        .expect("the plan prints the digest of its selection")
+        .to_string();
+    assert!(part.starts_with("sha256:"), "{}", planned.out);
+
+    let source = std::fs::read_to_string(root.path("docs/probe-runs/first-regression.md"))
+        .expect("the committed transcript reads");
+    let at = source
+        .find("selection: sha256:")
+        .expect("the fixture names its selection");
+    let end = at + "selection: ".len() + "sha256:".len() + 64;
+    let mut transcript = format!("{}selection: {part}{}", &source[..at], &source[end..]);
+    let event = transcript
+        .find(&format!("- probe: {other}"))
+        .expect("the fixture names the other probe in its events");
+    let close = event
+        + transcript[event..]
+            .find("```")
+            .expect("the events block closes");
+    transcript.replace_range(event..close, "");
+    let path = root.path("part.md");
+    std::fs::write(&path, transcript).expect("the part transcript writes");
+
+    let graded = root.run(&["probe", "grade", &path.display().to_string()]);
+    assert_eq!(graded.code, Some(0), "{}{}", graded.out, graded.err);
+    assert!(
+        graded
+            .out
+            .lines()
+            .next()
+            .is_some_and(|first| first.starts_with("Graded by grader ")),
+        "the part transcript grades:\n{}",
+        graded.out
+    );
+    assert!(
+        !graded.says(other),
+        "a run planned over one probe names no verdict for the probe it did not plan:\n{}",
+        graded.out
+    );
+    assert!(
+        graded.says("0 of 1 graded sessions satisfied their expectation"),
+        "the rate is over the part the run was planned over:\n{}",
+        graded.out
+    );
+}
+
+/// `mcp` offers the two write tools under `--write` and only there (#1494).
+///
+/// The binary maps the flag onto `Server::writing`: `None` without it, and the
+/// two closures that scaffold and fix with it. The query crate holds what a
+/// server does with each value. What no test held is the mapping, and both of
+/// its wrong forms exit 0: a server that dropped the closures under `--write`
+/// refuses every write over the protocol, and a server that kept them without
+/// the flag writes into a working tree that nobody opened to writes.
+#[test]
+fn mcp_offers_the_write_tools_under_write_and_only_there() {
+    use std::io::Write;
+    let root = Root::over("probe-stale", "mcp-write-flag");
+    let listed = |write: bool| -> String {
+        let mut command = Command::new(env!("CARGO_BIN_EXE_headwater"));
+        command.arg("mcp");
+        if write {
+            command.arg("--write");
+        }
+        let mut child = command
+            .args(["--now", "2026-11-20", "--root"])
+            .arg(&root.at)
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .spawn()
+            .expect("the binary runs");
+        let mut input = child.stdin.take().expect("the standard input is piped");
+        input
+            .write_all(
+                b"{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{}}\n\
+                  {\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/list\",\"params\":{}}\n",
+            )
+            .expect("the requests write");
+        drop(input);
+        let output = child.wait_with_output().expect("the server ends");
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        String::from_utf8_lossy(&output.stdout)
+            .lines()
+            .find(|line| line.contains("\"id\":2"))
+            .expect("the server answers the tool list")
+            .to_string()
+    };
+
+    let read_only = listed(false);
+    assert!(read_only.contains("\"name\":\"check\""), "{read_only}");
+    for tool in ["new", "fix"] {
+        assert!(
+            !read_only.contains(&format!("\"name\":\"{tool}\"")),
+            "without `--write` the server offers no `{tool}` tool: {read_only}"
+        );
+    }
+
+    let writing = listed(true);
+    for tool in ["new", "fix"] {
+        assert!(
+            writing.contains(&format!("\"name\":\"{tool}\"")),
+            "under `--write` the server offers the `{tool}` tool: {writing}"
+        );
+    }
+}
+
+/// `infer` dates the debt it proposes ninety days past the run's clock where
+/// no `--until` is given, and on the given date where one is (#1494).
+///
+/// The binary makes this choice itself, out of `DEFAULT_WINDOW`, before the
+/// adoption crate sees a date. Both wrong forms exit 0 with a proposal that
+/// reads as well formed: a window that moved, and a `--until` that the default
+/// overrode. `docs/interfaces/headwater-infer.md` states the window.
+#[test]
+fn infer_dates_its_debt_ninety_days_out_unless_until_names_a_date() {
+    let root = Root::over("probe-stale", "infer-default-window");
+
+    let defaulted = root.run(&["infer", "--owner", "a test", "--now", "2026-01-01"]);
+    assert_eq!(
+        defaulted.code,
+        Some(0),
+        "{}{}",
+        defaulted.out,
+        defaulted.err
+    );
+    assert!(
+        defaulted.says(", expiring 2026-04-01"),
+        "the default window is ninety days from the run's clock:\n{}",
+        defaulted.out
+    );
+    assert!(defaulted.says("until: 2026-04-01"), "{}", defaulted.out);
+
+    let named = root.run(&[
+        "infer",
+        "--owner",
+        "a test",
+        "--now",
+        "2026-01-01",
+        "--until",
+        "2026-02-02",
+    ]);
+    assert_eq!(named.code, Some(0), "{}{}", named.out, named.err);
+    assert!(
+        named.says(", expiring 2026-02-02") && !named.says("2026-04-01"),
+        "a named `--until` is the date, and the default does not apply:\n{}",
+        named.out
+    );
+}
