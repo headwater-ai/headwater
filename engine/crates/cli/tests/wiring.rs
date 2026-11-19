@@ -2840,3 +2840,124 @@ fn probe_plan_oracles_print_the_parsed_declaration() {
         assert_eq!(both.out, "", "{other}");
     }
 }
+
+/// One invocation of the binary over `root`, for the cases below that need two
+/// roots: a publisher and a consumer. [`Root::run`] names the one fixture root
+/// it was made over, and these cases hold no fixture corpus.
+fn run_at(root: &Path, arguments: &[&str]) -> Ran {
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(arguments)
+        .arg("--root")
+        .arg(root)
+        .output()
+        .expect("the binary runs");
+    Ran {
+        code: output.status.code(),
+        out: String::from_utf8_lossy(&output.stdout).into_owned(),
+        err: String::from_utf8_lossy(&output.stderr).into_owned(),
+    }
+}
+
+/// Publish the smallest package `taxonomy publish` takes, `acme/x`, into
+/// `<scratch>/artifact`, and return the digest it printed.
+///
+/// `doctrine` is the `contents.doctrine` value the manifest declares, with
+/// prose planted at that path, or `None` for a manifest that declares none.
+fn publish_acme_x(scratch: &Path, doctrine: Option<&str>) -> String {
+    let package = scratch.join("publisher/.headwater/packages/acme-x");
+    std::fs::create_dir_all(&package).expect("the package directory is made");
+    let mut manifest =
+        String::from("package: acme/x\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n");
+    if let Some(at) = doctrine {
+        manifest.push_str(&format!("  doctrine: {at}\n"));
+        std::fs::create_dir_all(package.join(at)).expect("the doctrine directory is made");
+        std::fs::write(package.join(at).join("method.md"), "# Method\n\nWhy.\n")
+            .expect("the prose writes");
+    }
+    std::fs::write(package.join("package.yml"), manifest).expect("the manifest writes");
+    std::fs::write(
+        package.join("taxonomy.yml"),
+        "taxonomy: acme/x\nversion: 1.0.0\npurposes:\n  rationale: {intent: explain why a choice was made}\n",
+    )
+    .expect("the taxonomy source writes");
+
+    let artifact = scratch.join("artifact");
+    let published = run_at(
+        &scratch.join("publisher"),
+        &[
+            "taxonomy",
+            "publish",
+            "--from",
+            package.to_str().expect("the path is UTF-8"),
+            "--out",
+            artifact.to_str().expect("the path is UTF-8"),
+        ],
+    );
+    assert_eq!(published.code, Some(0), "{}{}", published.out, published.err);
+    published
+        .out
+        .lines()
+        .find_map(|line| line.trim().strip_prefix("digest "))
+        .unwrap_or_else(|| panic!("publish printed no digest: {}", published.out))
+        .to_string()
+}
+
+/// `taxonomy vendor` names the doctrine directory the artifact declares, under
+/// the directory it installed into, and names none where none is declared
+/// (HW-OBL-0132, #1494).
+///
+/// Until #1494 the CLI re-derived the installed directory by flattening the
+/// package name a second time, and read the declared path back off the
+/// installed manifest with `.ok()`. A read that failed there printed no
+/// doctrine line, exited 0, and no test noticed. Both values now travel out of
+/// `package::vendor` in `Vendored`, so the line is printed from what the run
+/// that installed the package held, and this case holds the line itself.
+///
+/// The declared directory is two segments deep and the name is scoped, so a
+/// reporter that guessed `doctrine/` or kept the `/` in `acme/x` prints a line
+/// this case refuses.
+#[test]
+fn taxonomy_vendor_reports_the_doctrine_directory_the_artifact_declares() {
+    for (label, doctrine) in [("with", Some("prose/method")), ("without", None)] {
+        let scratch = out_dir(&format!("vendor-doctrine-{label}"));
+        let digest = publish_acme_x(&scratch, doctrine);
+        let consumer = scratch.join("consumer");
+        std::fs::create_dir_all(&consumer).expect("the consumer root is made");
+        let artifact = scratch.join("artifact");
+
+        let vendored = run_at(
+            &consumer,
+            &[
+                "taxonomy",
+                "vendor",
+                artifact.to_str().expect("the path is UTF-8"),
+                "--expect",
+                &digest,
+            ],
+        );
+        assert_eq!(vendored.code, Some(0), "{label}: {}{}", vendored.out, vendored.err);
+        assert!(vendored.says("vendored acme/x 1.0.0"), "{label}: {}", vendored.out);
+        let lines: Vec<&str> = vendored
+            .out
+            .lines()
+            .filter(|line| line.contains("doctrine at"))
+            .collect();
+        match doctrine {
+            Some(_) => {
+                assert_eq!(
+                    lines,
+                    ["  doctrine at .headwater/packages/acme-x/prose/method"],
+                    "{}",
+                    vendored.out
+                );
+                assert!(
+                    consumer
+                        .join(".headwater/packages/acme-x/prose/method/method.md")
+                        .is_file(),
+                    "the line names a directory that did not arrive"
+                );
+            }
+            None => assert!(lines.is_empty(), "{}", vendored.out),
+        }
+    }
+}
