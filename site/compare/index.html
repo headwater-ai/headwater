@@ -13,7 +13,7 @@
   gtag('config', 'G-4DJ9K52SWZ');
 </script>
 <title>Headwater compared — LeanCTX, TrustGraph, Vale</title>
-<meta name="description" content="Authors declare the graph here and a language model extracts it there. The field side by side, including the arguments against Headwater.">
+<meta name="description" content="How Headwater differs from LeanCTX, TrustGraph and Vale: authors declare how documents relate, and no language model extracts it. With the arguments against Headwater.">
 <link rel="canonical" href="https://headwater.tools/compare/">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🜄</text></svg>">
 <style>
@@ -170,15 +170,15 @@
 
 <header class="bar" style="padding-top: 4.5rem; padding-bottom: 3.5rem;">
   <p class="eyebrow">Comparison</p>
-  <h1>Authors <em class="a">declare</em> the graph here. A language model <em class="b">extracts</em> it there.</h1>
-  <p class="lede">None of these projects is a competitor, and this page says so by name. It also carries the arguments against us, because a comparison that hides its counter-evidence is not one you should trust.</p>
+  <h1>Authors <em class="a">declare</em> how documents relate. No language model <em class="b">extracts</em> it.</h1>
+  <p class="lede">Three projects sit closest to Headwater, and none of them is a competitor: each does a different job. The second half of this page gives the arguments against Headwater.</p>
 </header>
 
 <section>
   <div class="bar pad">
     <div class="sechead">
       <span class="secnum">01</span>
-      <h2>The field, side by side</h2>
+      <h2>Side by side</h2>
       <span class="secline"></span>
     </div>
     <div class="tablewrap">
@@ -195,30 +195,30 @@
         <tbody>
           <tr>
             <th class="rowlab" scope="row">What it is</th>
-            <td class="us">A documentation governance engine. Types the corpus, checks it as a graph.</td>
+            <td class="us">A command-line checker for documentation. It checks the kind, the fields and the links of each document.</td>
             <td>A context-engineering layer for coding agents. One local binary that compresses what passes through.</td>
             <td>A containerized context platform. Builds a semantic layer with a hypergraph.</td>
             <td>A prose style checker. A command-line tool, with rules over lines of text.</td>
           </tr>
           <tr>
             <th class="rowlab" scope="row">The pitch</th>
-            <td class="us">Whether the documents are <em>true</em>. “Is this corpus still true?”</td>
+            <td class="us">Documentation that fails a build when its structure breaks.</td>
             <td>Token economics. It offers an agent a smaller thing to read.</td>
             <td>A unified semantic context layer.</td>
             <td>Consistent prose, enforced in the build.</td>
           </tr>
           <tr>
             <th class="rowlab" scope="row">The graph</th>
-            <td class="us">Authors declare it. Documents are typed nodes, front-matter references are typed edges.</td>
-            <td>No graph. A shared file format — the Open Knowledge Format, which it defines.</td>
-            <td>A language model extracts it. Documents are feedstock, dissolved into triples.</td>
+            <td class="us">Authors declare it. Documents are the nodes, and the links in their front matter are the edges.</td>
+            <td>No graph. It defines a shared file format, the Open Knowledge Format.</td>
+            <td>A language model extracts it. Documents are the input, and triples are the output.</td>
             <td>No graph. Lines of prose.</td>
           </tr>
           <tr>
             <th class="rowlab" scope="row">Verdicts</th>
-            <td class="us">Deterministic. No language model issues a verdict, ever.</td>
-            <td>Not a validator. Nothing governs the source documents.</td>
-            <td>A language model is in the loop. Nothing governs the source documents — it mines them.</td>
+            <td class="us">Deterministic. No language model issues a verdict.</td>
+            <td>Not a validator. It does not check the source documents.</td>
+            <td>A language model is in the loop. It reads the source documents and does not check them.</td>
             <td>Deterministic, over style. Structure is out of scope.</td>
           </tr>
           <tr>
@@ -231,14 +231,14 @@
           <tr>
             <th class="rowlab" scope="row">Where we meet</th>
             <td class="us">—</td>
-            <td>An Open Knowledge Format emitter is staged in our emitter order, with LeanCTX as the named consumer. A shared serialization costs us nothing.</td>
-            <td>A candidate integration, not a rival. A governed corpus is an unusually good input to an extractor — kinds, facets and declared edges arrive as structure it would otherwise guess at.</td>
-            <td>Composable alongside. Vale checks the prose, Headwater checks the structure.</td>
+            <td>Headwater plans an Open Knowledge Format export, with LeanCTX as its named consumer. It is not built yet.</td>
+            <td>A candidate integration. A checked documentation tree hands an extractor the kinds, fields and declared links it would otherwise guess at.</td>
+            <td>Use both. Vale checks the prose, and Headwater checks the structure.</td>
           </tr>
         </tbody>
       </table>
     </div>
-    <p class="note">Descriptions of other projects paraphrase their own public materials, and the links above go to them — read their side too. Their claims are theirs: we have not measured them, and principle 11 keeps us from pretending otherwise. That is also why no row here carries a figure about anybody. The wider survey reads <a href="https://linkml.io">LinkML</a> and two further projects against this design as well.</p>
+    <p class="note">Each description paraphrases that project's own public material, and the column headings link to it. We have measured none of their claims, so no row carries a figure about them. The wider survey also reads <a href="https://linkml.io">LinkML</a> and two further projects against this design.</p>
   </div>
 </section>
 
@@ -246,29 +246,29 @@
   <div class="bar pad">
     <div class="sechead">
       <span class="secnum">02</span>
-      <h2>The arguments against us</h2>
+      <h2>The arguments against Headwater</h2>
       <span class="secline"></span>
     </div>
-    <p style="font-size: 1.15rem; max-width: 44rem; margin: 0 0 2rem;">Our own survey of adjacent work records these, and we publish them. A comparison page that carries its own counter-evidence is unusual enough to be the difference.</p>
+    <p style="font-size: 1.15rem; max-width: 44rem; margin: 0 0 2rem;">Our own survey of adjacent work found these reasons to doubt the approach.</p>
     <div class="grid2">
       <div class="against">
-        <h3>A neighboring project declined this whole approach.</h3>
-        <p>A project solving a neighboring problem looked at the same standards stack and chose not to adopt it. Their reasons are recorded in our survey, and they are not paraphrased away.</p>
+        <h3>A neighboring project declined the standards stack.</h3>
+        <p>A project that solves a neighboring problem looked at the same standards stack and chose not to adopt it. The survey records its reasons.</p>
       </div>
       <div class="against">
         <h3>The opposite mechanism has the enterprise adoption.</h3>
-        <p>TrustGraph ships extraction rather than declaration, and it is the one with named enterprise deployments. Declaration asks authors for work that extraction does not.</p>
+        <p>TrustGraph extracts where Headwater declares, and TrustGraph is the one with named enterprise deployments. Declaration asks authors for work that extraction does not.</p>
       </div>
       <div class="against">
-        <h3>The closest analog is in another language.</h3>
-        <p>Vale is the nearest observed analog to this engine, and its lesson cuts both ways: the command-line checker is not the product. The place a person cannot easily self-host is.</p>
+        <h3>The closest analog does not sell its checker.</h3>
+        <p>Vale is the nearest analog to this engine, and its command-line checker is not the product. The product is the hosted part that a person cannot easily run alone.</p>
       </div>
       <div class="against ours">
-        <h3>The survey licenses no efficacy conclusion at all.</h3>
-        <p>Adjacent projects converge on this substrate, and almost none of them measured it. Convergence is a shared prior, not evidence. This repository measured itself once, with parts removed, and <a href="/proof/">the self-assessment</a> says what that found. It has measured nothing against these projects.</p>
+        <h3>The survey does not show that the approach works.</h3>
+        <p>Adjacent projects chose a similar foundation, and almost none of them measured the result. Their agreement is a shared assumption. This repository has measured only itself, and <a href="/proof/">the self-assessment</a> says what that found. It has measured nothing against these projects.</p>
       </div>
     </div>
-    <p class="note">The full record is this project's evaluation of adjacent work, <a href="https://github.com/headwater-ai/headwater/blob/main/docs/evaluations/adjacent-work.md">adjacent-work.md</a> in the repository. <a href="/proof/">The self-assessment states what a run of this engine measures instead.</a></p>
+    <p class="note">The full survey is <a href="https://github.com/headwater-ai/headwater/blob/main/docs/evaluations/adjacent-work.md">adjacent-work.md</a> in the repository. <a href="/proof/">The self-assessment</a> states what this engine measures about itself. To judge it on your own files, <a href="/tutorial/">run the tutorial</a>.</p>
   </div>
 </section>
 
