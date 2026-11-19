@@ -132,34 +132,30 @@ pub use grade::Results;
 pub use intake::Record;
 pub use plan::Plan;
 
-/// What a probe asks, from the closed set
-/// [spec 5](../../../../docs/spec/05-ai-integration.md#probe-categories)
-/// declares.
-///
-/// Four, and two earlier ones are deliberately absent. Fidelity is not a probe,
-/// because `generate --check` already proves that a projection agrees with its
-/// source. The counterfactual is not a category either: it is the [`Arm`] of
-/// every probe.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Category {
-    /// Does the agent find the governing document at all?
-    Discovery,
-    /// Once it has, does it have enough to act correctly?
-    Sufficiency,
-    /// Can it get from a code path to the governing document, and back?
-    Navigability,
-    /// Same question, different phrasings, same answer?
-    Consistency,
+headwater_check::enumerated! {
+    /// What a probe asks, from the closed set
+    /// [spec 5](../../../../docs/spec/05-ai-integration.md#probe-categories)
+    /// declares.
+    ///
+    /// Four, and two earlier ones are deliberately absent. Fidelity is not a probe,
+    /// because `generate --check` already proves that a projection agrees with its
+    /// source. The counterfactual is not a category either: it is the [`Arm`] of
+    /// every probe.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+    pub enum Category {
+        /// Does the agent find the governing document at all?
+        Discovery,
+        /// Once it has, does it have enough to act correctly?
+        Sufficiency,
+        /// Can it get from a code path to the governing document, and back?
+        Navigability,
+        /// Same question, different phrasings, same answer?
+        Consistency,
+    }
+    const ALL;
 }
 
 impl Category {
-    pub const ALL: [Category; 4] = [
-        Category::Discovery,
-        Category::Sufficiency,
-        Category::Navigability,
-        Category::Consistency,
-    ];
-
     pub fn name(self) -> &'static str {
         match self {
             Category::Discovery => "discovery",
@@ -174,37 +170,32 @@ impl Category {
     }
 }
 
-/// The predicate a probe declares, from the closed set
-/// [spec 5](../../../../docs/spec/05-ai-integration.md#a-probe-is-a-document-with-a-declared-expectation)
-/// fixes.
-///
-/// Closed because a grader evaluates it. A question whose answer needs a rubric
-/// is not a probe: it is a coherence question, and the
-/// [sweep](../../sweep/index.html) owns those.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Expectation {
-    /// The transcript shows that the session read one of the named documents.
-    Opened,
-    /// It read none of them.
-    NotOpened,
-    /// A produced artifact cites one of the named identifiers.
-    Cited,
-    /// The final answer is one named value from a closed set the probe
-    /// declares.
-    Answered,
-    /// A produced patch passes a named check, which is the oracle route.
-    Patched,
+headwater_check::enumerated! {
+    /// The predicate a probe declares, from the closed set
+    /// [spec 5](../../../../docs/spec/05-ai-integration.md#a-probe-is-a-document-with-a-declared-expectation)
+    /// fixes.
+    ///
+    /// Closed because a grader evaluates it. A question whose answer needs a rubric
+    /// is not a probe: it is a coherence question, and the
+    /// [sweep](../../sweep/index.html) owns those.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+    pub enum Expectation {
+        /// The transcript shows that the session read one of the named documents.
+        Opened,
+        /// It read none of them.
+        NotOpened,
+        /// A produced artifact cites one of the named identifiers.
+        Cited,
+        /// The final answer is one named value from a closed set the probe
+        /// declares.
+        Answered,
+        /// A produced patch passes a named check, which is the oracle route.
+        Patched,
+    }
+    const ALL;
 }
 
 impl Expectation {
-    pub const ALL: [Expectation; 5] = [
-        Expectation::Opened,
-        Expectation::NotOpened,
-        Expectation::Cited,
-        Expectation::Answered,
-        Expectation::Patched,
-    ];
-
     pub fn name(self) -> &'static str {
         match self {
             Expectation::Opened => "opened",
@@ -234,39 +225,35 @@ impl Expectation {
     }
 }
 
-/// Which run watches for a change and which estimates a difference.
-///
-/// Spec 5: cadence follows the purpose of the run and never the category.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Tier {
-    /// A fixed scenario set, one arm, against a recorded baseline. It
-    /// establishes no effect, so no published claim rests on it.
-    Regression,
-    /// Both arms, powered, one batch, one model version, for one named claim.
-    /// Its absent arm removes the governance paths and keeps `docs/`, so the
-    /// claim it measures is that the governance changes what an agent builds.
-    Campaign,
-    /// Both arms, like the campaign, and an absent arm that also removes the
-    /// documents. Present against absent here measures documents and
-    /// governance together; the documents alone are this tier's absent arm
-    /// against the campaign's, from one batch on one model version.
-    Documentation,
-    /// The additive campaign (#1774): plain code with layers added, one
-    /// scenario arm for each scenario `.headwater/probe.yml` declares. Each
-    /// scenario is compared with its declared base and not with a present
-    /// arm, so the tier runs no present arm and does not pair in the sense of
-    /// [`Tier::pairs_arms`].
-    Additive,
+headwater_check::enumerated! {
+    /// Which run watches for a change and which estimates a difference.
+    ///
+    /// Spec 5: cadence follows the purpose of the run and never the category.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub enum Tier {
+        /// A fixed scenario set, one arm, against a recorded baseline. It
+        /// establishes no effect, so no published claim rests on it.
+        Regression,
+        /// Both arms, powered, one batch, one model version, for one named claim.
+        /// Its absent arm removes the governance paths and keeps `docs/`, so the
+        /// claim it measures is that the governance changes what an agent builds.
+        Campaign,
+        /// Both arms, like the campaign, and an absent arm that also removes the
+        /// documents. Present against absent here measures documents and
+        /// governance together; the documents alone are this tier's absent arm
+        /// against the campaign's, from one batch on one model version.
+        Documentation,
+        /// The additive campaign (#1774): plain code with layers added, one
+        /// scenario arm for each scenario `.headwater/probe.yml` declares. Each
+        /// scenario is compared with its declared base and not with a present
+        /// arm, so the tier runs no present arm and does not pair in the sense of
+        /// [`Tier::pairs_arms`].
+        Additive,
+    }
+    const ALL;
 }
 
 impl Tier {
-    pub const ALL: [Tier; 4] = [
-        Tier::Regression,
-        Tier::Campaign,
-        Tier::Documentation,
-        Tier::Additive,
-    ];
-
     pub fn name(self) -> &'static str {
         match self {
             Tier::Regression => "regression",
@@ -300,35 +287,38 @@ impl Tier {
     }
 }
 
-/// Which tree a run had: the corpus present, the corpus absent, or the present
-/// tree with one component of the Headwater layer taken away or put in.
-///
-/// Spec 5 removed the counterfactual from the category list because it applies
-/// to every category, and listing it beside them hid that the pair doubles the
-/// cost of whatever it measures.
-///
-/// The four component arms (#1472) separate the parts of the layer that the
-/// absent arm removes together. Each one names its delta against the present
-/// tree in `.headwater/probe.yml`, under `components`, so the name fixes
-/// only the direction of the delta and the declaration fixes its paths.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Arm {
-    Present,
-    Absent,
-    /// The present tree less the intent hook's script.
-    NoHook,
-    /// The present tree less the skills.
-    NoSkills,
-    /// The present tree less the standing instructions.
-    NoClaudeMd,
-    /// The present tree with a project MCP server declared.
-    Mcp,
-    /// The tree of one scenario of the additive campaign (#1774), named
-    /// `scenario-<n>`: plain code with the layers the scenario holds. Its
-    /// tree is built from `headwater probe plan --scenario <n> --delta`. It
-    /// is outside [`Arm::ALL`], because the scenarios are the declaration's
-    /// and not this engine's, so no loop over the components meets it.
-    Scenario(u32),
+headwater_check::enumerated! {
+    /// Which tree a run had: the corpus present, the corpus absent, or the present
+    /// tree with one component of the Headwater layer taken away or put in.
+    ///
+    /// Spec 5 removed the counterfactual from the category list because it applies
+    /// to every category, and listing it beside them hid that the pair doubles the
+    /// cost of whatever it measures.
+    ///
+    /// The four component arms (#1472) separate the parts of the layer that the
+    /// absent arm removes together. Each one names its delta against the present
+    /// tree in `.headwater/probe.yml`, under `components`, so the name fixes
+    /// only the direction of the delta and the declaration fixes its paths.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+    pub enum Arm {
+        Present,
+        Absent,
+        /// The present tree less the intent hook's script.
+        NoHook,
+        /// The present tree less the skills.
+        NoSkills,
+        /// The present tree less the standing instructions.
+        NoClaudeMd,
+        /// The present tree with a project MCP server declared.
+        Mcp;
+        /// The tree of one scenario of the additive campaign (#1774), named
+        /// `scenario-<n>`: plain code with the layers the scenario holds. Its
+        /// tree is built from `headwater probe plan --scenario <n> --delta`. It
+        /// is outside [`Arm::ALL`], because the scenarios are the declaration's
+        /// and not this engine's, so no loop over the components meets it.
+        Scenario(u32),
+    }
+    const ALL;
 }
 
 /// `a`, `b` and `c`, each in a code span.
@@ -341,15 +331,6 @@ fn and_listed(names: impl Iterator<Item = String>) -> String {
 }
 
 impl Arm {
-    pub const ALL: [Arm; 6] = [
-        Arm::Present,
-        Arm::Absent,
-        Arm::NoHook,
-        Arm::NoSkills,
-        Arm::NoClaudeMd,
-        Arm::Mcp,
-    ];
-
     /// The prefix of a scenario arm's name.
     pub const SCENARIO: &'static str = "scenario-";
 

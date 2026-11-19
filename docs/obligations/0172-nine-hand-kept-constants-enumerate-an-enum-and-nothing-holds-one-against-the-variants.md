@@ -2,8 +2,8 @@
 id: HW-OBL-0172
 status: current
 status_since: 2026-09-07
-summary: "Nine constants named ALL type the variant list of an enum by hand, the array length is part of the type, and no assertion compares either against the exhaustive match beside it."
-last_verified: 2026-09-07
+summary: "The constants named ALL are now written from their enums. The length literals of the suite still copy a population size into a test, and nobody has sorted them."
+last_verified: 2026-11-20
 title: "Nine hand-kept constants enumerate an enum and nothing holds one against the variants"
 waiting_on: build
 provenance:
@@ -32,12 +32,14 @@ The same grain runs through the suite. `assert_eq!(<expression>.len(), <literal>
 
 ## Obligation
 
-Nothing in this workspace ties a hand-kept list to the variants of the enum it enumerates. Nothing ties a length literal to the declaration that sizes it. A variant added to any of the nine enums compiles, passes the whole suite, and narrows every reader of the array.
+The debt had two halves, and they are not the same size. The constants were a bounded set with one remedy each, and that half is closed (see Discharge). The length literals are the half that stays. Nothing ties a length literal to the declaration that sizes it.
 
-The debt has two halves and they are not the same size. The nine constants are a bounded set with one remedy each. The 146 length literals are a grain question rather than a defect list. Many of them assert a fixture the test itself built, and a literal is the honest form there.
+On 2026-11-20, on `d359c244`, the same pattern found 391 length literals in 102 files. That is a grain question rather than a defect list. Many of them assert a fixture that the test itself built, and a literal is the honest form there. Nobody has measured how many of the 391 copy a population that a declaration produces.
 
 ## Discharge
 
-A constant is discharged when a value derived from the enum holds it. An exhaustive `match` in a function that returns the array does that at compile time. A test that maps every variant through `name` and compares the result against the array does it at test time. The remedy is per constant and no declaration of this taxonomy reaches it.
+**The constant half is discharged** by PR_REF, slice C of [#1494](https://github.com/headwater-ai/headwater/issues/1494). On `d359c244` there were ten constants in `src`, not nine, because `Block::ALL` in `engine/crates/probe/src/budget.rs` was new. A test file held an eleventh, `Shape::ALL` in `engine/crates/probe/tests/corpus.rs`. The macro `headwater_check::enumerated!` now declares each of these enums, except `Shell`, and writes its `ALL` from the same list of variants. So a variant that `ALL` omits cannot be written. The one exception is a variant after a `;` in the list, which is outside `ALL` on purpose and where a reader sees it. `Arm::Scenario` is that case. `Shell` derives `clap::ValueEnum`, and `Shell::all()` returns the list that the derive writes.
+
+The text below is the condition as it was recorded. A constant is discharged when a value derived from the enum holds it. An exhaustive `match` in a function that returns the array does that at compile time. A test that maps every variant through `name` and compares the result against the array does it at test time. The remedy is per constant and no declaration of this taxonomy reaches it.
 
 A length literal is discharged when the test names the source of the number. Where the population comes from a declaration, the assertion reads that declaration. Where the test built the input, the literal stays and no work is owed. Reading all 146 for that distinction is the measurement this record does not carry.
