@@ -1027,8 +1027,12 @@ impl Shell {
         }
     }
 
-    /// The four, in the order a caller meets them in the help.
-    pub const ALL: &'static [Shell] = &[Shell::Bash, Shell::Zsh, Shell::Fish, Shell::Powershell];
+    /// The four, in the order a caller meets them in the help. The
+    /// `clap::ValueEnum` derive writes this list from the variants, so a fifth
+    /// variant is in it (HW-OBL-0172).
+    pub fn all() -> &'static [Shell] {
+        <Shell as clap::ValueEnum>::value_variants()
+    }
 }
 
 // The second word of `json`.
