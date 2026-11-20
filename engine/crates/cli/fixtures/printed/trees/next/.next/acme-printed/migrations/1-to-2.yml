@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: Apache-2.0
+
+migration:
+  format: 1
+  from: ">=1 <2"
+  to: ">=2 <3"
+
+steps:
+  - subject: facet_value
+    facet: status
+    from: draft
+    to: [outline]
+    because: >-
+      The initial state is named for the shape of a document rather than for the
+      stage of its argument.

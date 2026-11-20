@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: Apache-2.0
+
+conformance:
+  format: 1
+  rules:
+    - name: lock.current
+      title: The lock is what the sources resolve to
+      decided_by: tree
+      statement: The committed lock is what the package resolves to.
+      remediation: Run `headwater taxonomy resolve` and commit the lock.
+    - name: corpus.classified
+      title: Every file under the corpus root is classified
+      decided_by: tree
+      statement: The census holds no file that a shelf claims and no kind types.
+      remediation: Give each untyped file a kind.
+    - name: projections.current
+      title: Every declared projection is regenerated
+      decided_by: tree
+      statement: Each projection the taxonomy declares is what this corpus and this lock produce.
+      remediation: Run `headwater generate` and commit the result.
+  levels:
+    - name: L0
+      title: Pointed at
+      rules: [lock.current]
+    - name: L1
+      title: Classified
+      rules: [corpus.classified]
+    - name: L2
+      title: Regenerated
+      rules: [projections.current]

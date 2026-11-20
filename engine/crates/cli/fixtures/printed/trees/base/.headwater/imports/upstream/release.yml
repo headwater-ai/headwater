@@ -1,0 +1,8 @@
+release:
+  format: 1
+  package: acme/work-items
+  version: "2026-01-10"
+  digest: sha256:422187182abb3e25f9e4ec59b93080b4e436e471dd3fab017cc89e90aac10fcd
+  members:
+    - path: snapshot.yml
+      digest: sha256:02f81d5d90bcf4d71e39f3ff983bd733b9e9ff039745988a20eea6c4f789c8f1

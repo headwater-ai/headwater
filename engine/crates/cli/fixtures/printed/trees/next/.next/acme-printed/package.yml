@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+
+package: acme/printed
+version: 2.0.0
+requires_engine: ">=0.1 <2"
+
+contents:
+  taxonomy: taxonomy.yml
+  conformance: conformance.yml
+  migrations: migrations
