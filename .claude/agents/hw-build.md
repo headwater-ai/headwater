@@ -2,7 +2,7 @@
 name: hw-build
 description: Constructs one adjudicated issue of the Headwater build order in its own worktree and opens the pull request. Dispatched by hw-iterate, after hw-adjudicate has written its note. It extends a contract first where one exists, commits small and pushes often, writes a note for the verifier, and never merges, force-pushes or touches the shared checkout.
 tools: Bash, Read, Edit, Write, Grep, Glob, Skill, Agent
-model: claude-fable-5-2
+model: claude-opus-5-5
 effort: medium
 ---
 
