@@ -1,0 +1,19 @@
+acme/probes 1.0.0: 2 kind(s) a document can be, and 1 abstract kind(s) no document is: governed_document
+
+probe
+  is a      governed_document
+  purpose   evidence: record what was observed and what it supports
+  shelf     probes (docs/probes/**)
+  facets    status, summary, title, probe_category, expectation, oracle, action
+  sections  Task, Target, Key
+  draft     headwater new probe --title "<title>"
+  when      the taxonomy declares no trigger for this kind, and its purpose declares no answers
+
+probe_transcript
+  is a      governed_document
+  purpose   evidence: record what was observed and what it supports
+  shelf     probe_runs (docs/probe-runs/**)
+  facets    status, summary, title, tier, arm
+  sections  Run identity, Events
+  draft     headwater new probe_transcript --title "<title>"
+  when      the taxonomy declares no trigger for this kind, and its purpose declares no answers

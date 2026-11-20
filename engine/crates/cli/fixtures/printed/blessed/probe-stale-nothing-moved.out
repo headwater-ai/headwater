@@ -1,0 +1,12 @@
+## The result of docs/probe-runs/first-regression.md
+
+Nothing this run read has moved. The read set covers 2 documents, and the digest the transcript recorded is the digest this corpus composes.
+recorded sha256:ac1e3801b1f468f6fb03496ce0698d4d1a5a083a6424e6d2050846daaa2acc48
+now      sha256:ac1e3801b1f468f6fb03496ce0698d4d1a5a083a6424e6d2050846daaa2acc48
+
+- docs/probes/0001-the-session-reads-the-document.md (probe) sha256:b6eb71cc3bba305a21f115c399fff288a180f0ec425afb6da0015591b3175c7d
+    no recorded call named it, so no witness of this transcript says whether it moved
+- docs/probes/0002-the-session-reads-the-other-document.md (probe) sha256:d1a0837ad98b67919b6d4be0d55e8783dd4f3242f4847894fb94103b25da95b8
+    no recorded call named it, so no witness of this transcript says whether it moved
+
+Of 1 committed transcript, this tree moved the read set of 0.

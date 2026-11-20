@@ -1,0 +1,37 @@
+{
+  "version": "1.2",
+  "task": "why a choice was made",
+  "terms": [
+    "why",
+    "choice",
+    "was",
+    "made"
+  ],
+  "separating": [
+    "why",
+    "choice",
+    "was",
+    "made"
+  ],
+  "distinctive": [
+    "why",
+    "choice",
+    "was",
+    "made"
+  ],
+  "anchors": [],
+  "matched": [
+    {
+      "purpose": "rationale",
+      "score": 4
+    }
+  ],
+  "pointers": [],
+  "withheld": 0,
+  "ungoverned": [],
+  "silence": {
+    "reason": "no_document_reached",
+    "says": "a purpose matched and no document under it was reached, so the route is silent"
+  },
+  "text": "route \"why a choice was made\"\n  terms why choice was made\n  distinctive why choice was made\n  purpose rationale 4\n  a purpose matched and no document under it was reached, so the route is silent\n"
+}

@@ -1,0 +1,2 @@
+headwater: nothing was vendored
+  artifact: this repository pins sha256:1111 and the artifact is sha256:ca0f2bc30713ea81b7d586ca410f811395d525cf18480d44026b3381099b707a. The pin is what a fetch is checked against, so the artifact is refused

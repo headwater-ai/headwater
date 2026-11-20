@@ -1,0 +1,15 @@
+
+  .headwater/taxonomy.lock is a derived artifact, and this merge did not reconcile it.
+
+  It holds a fold over the whole corpus, and both sides moved it. A merge of the two
+  would state a value true of neither tree. The current side deleted it, and the path is
+  marked conflicted.
+
+  Finish the merge, then rebuild it and stage it. Where the lock is conflicted too,
+  resolve it first, because every generated file records the lock:
+
+      headwater taxonomy resolve
+      git add .headwater/taxonomy.lock
+
+  `headwater taxonomy resolve --check` holds the result.
+

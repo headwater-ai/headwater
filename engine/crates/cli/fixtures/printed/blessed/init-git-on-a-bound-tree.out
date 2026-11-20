@@ -1,0 +1,15 @@
+wrote .gitattributes
+  .headwater/taxonomy.lock -merge
+  .headwater/capture-cost.jsonl merge=union
+  .headwater/adoption.jsonl merge=union
+
+git takes no merge driver from a repository, so run these once in each clone:
+  git config merge.headwater-regenerate.name "regenerate a derived artifact"
+  git config merge.headwater-regenerate.driver "headwater merge-driver %O %A %B %P"
+
+and add these lines to the file `git rev-parse --git-path info/attributes` names, which wins over `.gitattributes` in that clone alone. Add them only with the two lines above, because a driver no config defines is an ordinary text merge:
+  .headwater/taxonomy.lock merge=headwater-regenerate
+
+or run `headwater init --git --git-config` to do both here
+
+the driver runs `headwater`, so the binary must be on the PATH git runs with. Run the step again after a producer writes a new file, and `headwater derived` names any it missed

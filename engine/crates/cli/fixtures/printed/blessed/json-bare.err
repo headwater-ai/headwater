@@ -1,0 +1,2 @@
+headwater: `json` takes a second word: `field`, `count` and `quote`
+headwater: run `headwater --help` for the grammar

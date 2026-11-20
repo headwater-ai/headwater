@@ -1,0 +1,3 @@
+headwater: nowhere is not a published artifact this engine can read
+  nowhere carries no release.yml, so it is not a published package. `headwater taxonomy publish` writes one
+

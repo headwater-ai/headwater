@@ -1,0 +1,3 @@
+headwater: nothing was imported
+  the artifact is not what its own record says it is, in 1 place:
+    snapshot.yml was published as sha256:02f81d5d90bcf4d71e39f3ff983bd733b9e9ff039745988a20eea6c4f789c8f1 and these bytes are sha256:3d11b974e38ad6ebcc821ce25de78e4310687a8abc86111f26eb0f2ed48de39a

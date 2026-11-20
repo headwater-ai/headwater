@@ -1,0 +1,8 @@
+A regression run in the present arm, on a-model at 2026-08-01.
+served version a-model-20260701, tree sha256:fixture-tree, selection sha256:f42c669753dc4e211eaee04b9d79b8fb0f78499300923e1341f815bb5a5ce0af, read set sha256:ac1e3801b1f468f6fb03496ce0698d4d1a5a083a6424e6d2050846daaa2acc48, seed 0, harness 0.1.0.
+realized cost $0.50, which the adaptive layer reads as the cost of its own instrument.
+It was planned against taxonomy sha256:fixture, and this tree carries another. The read set of its probes is the one this tree composes, so the move reaches no document a verdict reads, and the transcript is read over this tree.
+
+2 events over 2 of the 2 probes this corpus declares, in 2 sessions and 0 tool calls.
+
+The engine confirmed the taxonomy, that every member of the run identity is present, the membership of every probe named, that no key outside the closed set appears, and that a realized cost was recorded. Present is not confirmed: of the six members a plan fixes before a run, the lock is the one compared here. A lock that differs refuses the file only where this tree composes no read set over its probes, and a read set that differs marks the verdicts and keeps them. `headwater probe stale` compares the read set against the tree in front of it. It graded nothing: a verdict is a function of this transcript, the expectations these probes declare and a grader version, and `headwater probe grade` is the verb that holds all three.

@@ -1,0 +1,7 @@
+docs/answers/recovery.md
+  kind answer
+    shelf `answers` matched on `docs/answers/**`
+    `answers` is homogeneous, so placement carries the kind `answer`
+  purpose rationale, to explain why a choice was made and what it forecloses
+  summary The recovery word is amber.
+  requires the facets status, summary, title

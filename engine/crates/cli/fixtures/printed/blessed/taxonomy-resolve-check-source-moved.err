@@ -1,0 +1,2 @@
+headwater: the taxonomy does not validate, so no lock is written. A lock is a validated taxonomy or it is nothing
+  the resolved taxonomy `purposes.rationale`: purpose completeness: is declared and no concrete kind serves it, so no document can answer it

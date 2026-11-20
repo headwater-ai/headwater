@@ -1,0 +1,15 @@
+wrote docs/answers/a-new-answer.md
+
+what the taxonomy decided
+  kind answer on the shelf `answers`
+  no identifier: `answer` names no scheme, and no relation may name a document of it
+  status — `regimes.lifecycle.standard` opens at `draft`
+  summary — no declaration determines it, and this run states the question instead
+  title — the facet is in the `name` role, and `--title` is the name
+
+assisted fraction of this run
+  2 of 3 — front matter 2/3, sections 0/0, identifier 0/0, edge halves 0/0
+  It counts a section heading and never its prose, and it counts one run rather than this corpus. Q4 keeps `created_by` on the relation type, so no reader of a committed corpus can tell a scaffolded edge from a hand-typed one
+  recorded in `.headwater/capture-cost.jsonl`, which is where it trends. It names no person and no agent, and `headwater capture` reads it back
+
+Run `headwater check` over the result. Nothing this verb wrote is exempt from a rule

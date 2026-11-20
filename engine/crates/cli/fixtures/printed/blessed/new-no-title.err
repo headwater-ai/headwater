@@ -1,0 +1,2 @@
+headwater: `new` takes `--title <text>`. The file name and the document's own name both come from it, and this engine invents neither
+headwater: run `headwater --help` for the grammar

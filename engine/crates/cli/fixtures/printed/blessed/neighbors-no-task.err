@@ -1,0 +1,2 @@
+headwater: `neighbors` takes a task description. Try `headwater neighbors "add rate limiting to the ingest API"`
+headwater: run `headwater --help` for the grammar

@@ -1,0 +1,2 @@
+headwater: `nosuch` is not a verb this binary carries yet. It carries `check`, `change`, `gate`, `conformance`, `derived`, `site`, `merge-driver`, `route`, `neighbors`, `explain`, `show`, `query`, `capture`, `mcp`, `new`, `infer`, `generate`, `import`, `export`, `sweep`, `probe`, `init`, `taxonomy`, `json`, `help` and `completions`
+headwater: run `headwater --help` for the grammar

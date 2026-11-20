@@ -1,0 +1,2 @@
+headwater: nothing was published
+  artifact: the output directory holds files already, and a published artifact is every file under its root. Publish into a directory that does not exist yet

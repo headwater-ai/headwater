@@ -1,0 +1,4 @@
+headwater: invalid value 'tcsh' for '[shell]'
+headwater: [possible values: bash, zsh, fish, powershell]
+headwater: tip: a similar value exists: 'zsh'
+headwater: run `headwater --help` for the grammar

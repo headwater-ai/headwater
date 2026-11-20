@@ -1,0 +1,27 @@
+conformance
+  acme/printed 1.0.0
+  no digest pinned
+  at 2026-01-15
+
+rules
+  lock.current met
+    The lock is what the sources resolve to
+  corpus.classified met
+    Every file under the corpus root is classified
+  projections.current gap
+    Every declared projection is regenerated
+    4 projections are not what this corpus and this lock produce:
+    exports/control.json, exports/filtered.json, .headwater/nav.yml,
+    .headwater/corpus.json
+    fix: Run `headwater generate` and commit the result.
+
+levels
+  L0 Pointed at — reached, 1 of 1 rules met
+  L1 Classified — reached, 2 of 2 rules met
+  L2 Regenerated — not reached, 2 of 3 rules met
+    1 gap, 0 of them waived
+
+L1 reached, against acme/printed 1.0.0
+  a level states what this repository wired up. It measures nothing about the
+  corpus, no key declares one, and a waiver moves the exit status and never the
+  level.
