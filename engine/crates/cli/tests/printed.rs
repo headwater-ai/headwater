@@ -40,9 +40,11 @@
 //!   scratch directory or this crate's own path fails before any comparison,
 //!   because such a file passes here and fails on every other checkout.
 //!
-//! There is one `#[test]`. Cargo runs the cases of a target as threads of one
-//! process, and a second case that read a blessed file while a bless truncated
-//! it is what HW-OBL-0176 and HW-OBL-0215 record.
+//! One `#[test]` reads and writes the blessed files, and no other case opens
+//! one. Cargo runs the cases of a target as threads of one process, and a
+//! second case that read a blessed file while a bless truncated it is what
+//! HW-OBL-0176 and HW-OBL-0215 record. The cases at the end of this file hold
+//! the manifest reader and the coverage rule over lines they build in memory.
 
 mod common;
 
@@ -735,96 +737,21 @@ fn every_command_line_prints_what_its_blessed_files_hold() {
     }
 
     let mut moved = Vec::new();
-    let mut expected_files = BTreeSet::new();
+    let mut named = BTreeSet::new();
     for line in &lines {
         let (scratch, root) = rooted(line);
         prepare(line, &scratch.0, &root);
         let ran = ran(line, &scratch.0, &root);
-
-        // The manifest states the outcome, and the status is held to it apart
-        // from the blessed file, so a bless cannot record a refusal as the
-        // passing line of a row.
-        assert_eq!(
-            ran.status,
-            format!("{}\n", line.outcome.code()),
-            "[{}] (manifest line {}) is stated as `{}` and `headwater {}` exited otherwise:\n{}{}",
-            line.label,
-            line.at,
-            line.outcome.name(),
-            line.run.join(" "),
-            String::from_utf8_lossy(&ran.out),
-            String::from_utf8_lossy(&ran.err)
-        );
-
-        let streams: [(&str, &[u8]); 3] = [
-            ("out", &ran.out),
-            ("err", &ran.err),
-            ("status", ran.status.as_bytes()),
-        ];
-        for (name, bytes) in streams {
-            for (what, path) in local_paths(&scratch.0) {
-                assert!(
-                    !holds(bytes, &path),
-                    "[{}] `headwater {}` prints {what} on standard {name}, so its blessed file would hold a path of this run and fail on every other checkout:\n{}",
-                    line.label,
-                    line.run.join(" "),
-                    String::from_utf8_lossy(bytes)
-                );
-            }
-            let file = format!("{}.{name}", line.label);
-            let path = blessed.join(&file);
-            expected_files.insert(file);
-            if bless {
-                // Written only where the bytes moved, so a second bless
-                // touches nothing.
-                if std::fs::read(&path).ok().as_deref() != Some(bytes) {
-                    std::fs::write(&path, bytes).expect("the blessed file writes");
-                    eprintln!("blessed: wrote {}", path.display());
-                }
-                continue;
-            }
-            let stream = match name {
-                "out" => "standard output",
-                "err" => "standard error",
-                _ => "the exit status",
-            };
-            match std::fs::read(&path) {
-                Err(error) => moved.push(format!(
-                    "[{}] {stream} has no blessed file: fixtures/printed/blessed/{}.{name}: {error}",
-                    line.label, line.label
-                )),
-                Ok(recorded) if recorded != bytes => moved.push(format!(
-                    "[{}] {stream} of `headwater {}` moved from fixtures/printed/blessed/{}.{name}\n      {}",
-                    line.label,
-                    line.run.join(" "),
-                    line.label,
-                    first_difference(&recorded, bytes)
-                )),
-                Ok(_) => {}
-            }
-        }
+        moved.extend(judge(
+            line,
+            &ran,
+            &local_paths(&scratch.0),
+            &blessed,
+            bless,
+            &mut named,
+        ));
     }
-
-    // The blessed directory holds what the manifest names and nothing else,
-    // so a line that left the manifest does not leave three files behind.
-    if let Ok(entries) = std::fs::read_dir(&blessed) {
-        for entry in entries {
-            let entry = entry.expect("the entry reads");
-            let name = entry.file_name().to_string_lossy().into_owned();
-            if expected_files.contains(&name) {
-                continue;
-            }
-            match bless {
-                true => {
-                    std::fs::remove_file(entry.path()).expect("the stray file is removed");
-                    eprintln!("blessed: removed {}", entry.path().display());
-                }
-                false => moved.push(format!(
-                    "fixtures/printed/blessed/{name} is the blessed file of no line of the manifest"
-                )),
-            }
-        }
-    }
+    moved.extend(strays(&blessed, &named, bless));
 
     assert!(
         moved.is_empty(),
@@ -834,4 +761,554 @@ fn every_command_line_prints_what_its_blessed_files_hold() {
         moved.len(),
         moved.join("\n  ")
     );
+}
+
+/// Hold what one line printed against its three blessed files, or write them
+/// under a bless, and return every complaint.
+///
+/// Two complaints are ones a bless cannot answer, and a bless writes no file
+/// of a line that raises either. The first is a status that is not the outcome
+/// the manifest states: recording it would make a refusal the passing line of
+/// a row. The second is a stream that holds one of `local`, the paths of this
+/// run: its blessed file would pass here and fail on every other checkout.
+///
+/// `named` gains the three file names of the line, so [`strays`] can tell a
+/// blessed file no line names.
+fn judge(
+    line: &Line,
+    ran: &Ran,
+    local: &[(String, Vec<u8>)],
+    blessed: &Path,
+    bless: bool,
+    named: &mut BTreeSet<String>,
+) -> Vec<String> {
+    let command = format!("headwater {}", line.run.join(" "));
+    let streams: [(&str, &str, &[u8]); 3] = [
+        ("out", "standard output", &ran.out),
+        ("err", "standard error", &ran.err),
+        ("status", "the exit status", ran.status.as_bytes()),
+    ];
+    let mut complaints = Vec::new();
+    let mut unblessable = false;
+
+    if ran.status != format!("{}\n", line.outcome.code()) {
+        unblessable = true;
+        complaints.push(format!(
+            "[{}] (manifest line {}) is stated as `{}`, which is exit {}, and `{command}` exited {}. \
+             A bless does not record this: the row loses its `{}` line, so the manifest has to change too",
+            line.label,
+            line.at,
+            line.outcome.name(),
+            line.outcome.code(),
+            ran.status.trim_end(),
+            line.outcome.name()
+        ));
+    }
+    for (name, stream, bytes) in streams {
+        named.insert(format!("{}.{name}", line.label));
+        for (what, path) in local {
+            if holds(bytes, path) {
+                unblessable = true;
+                complaints.push(format!(
+                    "[{}] {stream} of `{command}` holds {what}. A bless does not record this: \
+                     the file would pass on this checkout and fail on every other",
+                    line.label
+                ));
+                break;
+            }
+        }
+    }
+    for (name, stream, bytes) in streams {
+        let path = blessed.join(format!("{}.{name}", line.label));
+        let recorded = std::fs::read(&path);
+        if bless {
+            // Written only where the bytes moved, so a second bless touches
+            // nothing.
+            if !unblessable && recorded.ok().as_deref() != Some(bytes) {
+                std::fs::write(&path, bytes).expect("the blessed file writes");
+                eprintln!("blessed: wrote {}", path.display());
+            }
+            continue;
+        }
+        match recorded {
+            Err(error) => complaints.push(format!(
+                "[{}] {stream} has no blessed file: fixtures/printed/blessed/{}.{name}: {error}",
+                line.label, line.label
+            )),
+            Ok(recorded) if recorded != bytes => complaints.push(format!(
+                "[{}] {stream} of `{command}` moved from fixtures/printed/blessed/{}.{name}\n      {}",
+                line.label,
+                line.label,
+                first_difference(&recorded, bytes)
+            )),
+            Ok(_) => {}
+        }
+    }
+    complaints
+}
+
+/// The blessed directory holds what the manifest names and nothing else, so a
+/// line that left the manifest does not leave three files behind. A bless
+/// removes each such file, and any other run complains of it.
+fn strays(blessed: &Path, named: &BTreeSet<String>, bless: bool) -> Vec<String> {
+    let mut complaints = Vec::new();
+    let Ok(entries) = std::fs::read_dir(blessed) else {
+        return complaints;
+    };
+    let mut names: Vec<String> = entries
+        .map(|entry| {
+            entry
+                .expect("the entry reads")
+                .file_name()
+                .to_string_lossy()
+                .into_owned()
+        })
+        .filter(|name| !named.contains(name))
+        .collect();
+    names.sort();
+    for name in names {
+        match bless {
+            true => {
+                std::fs::remove_file(blessed.join(&name)).expect("the stray file is removed");
+                eprintln!("blessed: removed {}", blessed.join(&name).display());
+            }
+            false => complaints.push(format!(
+                "fixtures/printed/blessed/{name} is the blessed file of no line of the manifest"
+            )),
+        }
+    }
+    complaints
+}
+
+/// A line as the manifest would state it, for the cases below. They read no
+/// blessed file, so they do not race the one case that writes them.
+fn stated(label: &str, row: &str, outcome: Outcome, only: Option<&str>, run: &str) -> Line {
+    Line {
+        label: label.to_string(),
+        row: row.to_string(),
+        outcome,
+        only: only.map(str::to_string),
+        trees: Vec::new(),
+        setup: Vec::new(),
+        stdin: None,
+        run: words(run, 0),
+        at: 0,
+    }
+}
+
+/// The lines that cover every row but `headwater check`, so a case can add
+/// its own lines for that row and read the one complaint they cause.
+fn all_but_check() -> Vec<Line> {
+    let mut lines = Vec::new();
+    for row in rows() {
+        if row == "headwater check" {
+            continue;
+        }
+        let run = match row.split_once(' ').expect("a row has a word").1 {
+            "<unknown>" => "nosuch".to_string(),
+            other => other.replace("<other>", "nosuch"),
+        };
+        for outcome in [Outcome::Pass, Outcome::Refuse] {
+            let label = format!("{}-{}", run.replace(' ', "-"), outcome.name());
+            lines.push(stated(&label, &row, outcome, None, &run));
+        }
+    }
+    lines
+}
+
+/// What [`coverage`] says about a manifest that covers every other row and
+/// holds `extra`.
+fn complaints(extra: Vec<Line>) -> Vec<String> {
+    let mut lines = all_but_check();
+    lines.extend(extra);
+    coverage(&lines)
+}
+
+#[test]
+fn the_rows_are_the_fifty_command_lines_of_the_survey() {
+    let rows = rows();
+    let forms: usize = headwater_verbs::VERBS
+        .iter()
+        .map(|verb| verb.forms().len())
+        .sum();
+    let worded = headwater_verbs::VERBS
+        .iter()
+        .filter(|verb| !verb.words.is_empty())
+        .count();
+    assert_eq!(rows.len(), forms + 2 * worded + 1);
+    // The count HW-OBL-0132 states. A verb that joins `VERBS` moves it, and
+    // the survey table gains a row in the same change.
+    assert_eq!(rows.len(), 50, "{rows:?}");
+    let distinct: BTreeSet<&String> = rows.iter().collect();
+    assert_eq!(distinct.len(), rows.len(), "no row is listed twice");
+}
+
+#[test]
+fn a_row_needs_both_outcomes_or_a_stated_reason() {
+    let check = |label: &str, outcome, only| {
+        stated(label, "headwater check", outcome, only, "check --root .")
+    };
+    let none: [&str; 0] = [];
+
+    assert_eq!(
+        complaints(Vec::new()),
+        ["`headwater check` is covered by no line"]
+    );
+    assert_eq!(
+        complaints(vec![
+            check("a", Outcome::Pass, None),
+            check("b", Outcome::Refuse, None)
+        ]),
+        none
+    );
+    let one = complaints(vec![check("a", Outcome::Pass, None)]);
+    assert_eq!(one.len(), 1, "{one:?}");
+    assert!(one[0].contains("has only a line that is `pass`"), "{one:?}");
+    let two_passes = complaints(vec![
+        check("a", Outcome::Pass, None),
+        check("b", Outcome::Pass, None),
+    ]);
+    assert_eq!(
+        two_passes.len(),
+        1,
+        "two lines of one outcome are one outcome: {two_passes:?}"
+    );
+    assert_eq!(
+        complaints(vec![check("a", Outcome::Refuse, Some("it cannot pass"))]),
+        none
+    );
+    let both_and_only = complaints(vec![
+        check("a", Outcome::Pass, None),
+        check("b", Outcome::Refuse, Some("it cannot pass")),
+    ]);
+    assert_eq!(both_and_only.len(), 1, "{both_and_only:?}");
+    assert!(
+        both_and_only[0].contains("states `only`"),
+        "{both_and_only:?}"
+    );
+}
+
+#[test]
+fn a_line_is_counted_only_for_the_row_it_runs() {
+    // A line that names `check` and runs another verb covers nothing.
+    let other = complaints(vec![
+        stated(
+            "a",
+            "headwater check",
+            Outcome::Pass,
+            None,
+            "explain --root . x",
+        ),
+        stated(
+            "b",
+            "headwater check",
+            Outcome::Refuse,
+            None,
+            "check --root .",
+        ),
+    ]);
+    assert_eq!(other.len(), 2, "{other:?}");
+    assert!(
+        other[0].contains("which is another command line"),
+        "{other:?}"
+    );
+    assert!(
+        other[1].contains("has only a line that is `refuse`"),
+        "{other:?}"
+    );
+    // A row the survey does not hold, and a label stated twice.
+    let unknown = complaints(vec![stated(
+        "a",
+        "headwater nosuch",
+        Outcome::Pass,
+        None,
+        "nosuch",
+    )]);
+    assert!(
+        unknown[0].contains("is no row of the survey"),
+        "{unknown:?}"
+    );
+    let twice = complaints(vec![
+        stated("a", "headwater check", Outcome::Pass, None, "check"),
+        stated("a", "headwater check", Outcome::Refuse, None, "check"),
+    ]);
+    assert_eq!(twice, ["[a] is the label of two lines"]);
+
+    let run = |text: &str| words(text, 0);
+    assert!(runs_its_row(
+        "headwater sweep plan",
+        &run("sweep plan --root .")
+    ));
+    assert!(!runs_its_row(
+        "headwater sweep plan",
+        &run("sweep report x")
+    ));
+    assert!(runs_its_row("headwater sweep", &run("sweep")));
+    assert!(!runs_its_row("headwater sweep", &run("sweep plan")));
+    assert!(runs_its_row(
+        "headwater sweep <other>",
+        &run("sweep nosuch")
+    ));
+    assert!(!runs_its_row("headwater sweep <other>", &run("sweep plan")));
+    assert!(!runs_its_row(
+        "headwater sweep <other>",
+        &run("sweep --help")
+    ));
+    assert!(runs_its_row("headwater <unknown>", &run("nosuch")));
+    assert!(!runs_its_row("headwater <unknown>", &run("check")));
+    assert!(!runs_its_row("headwater <unknown>", &run("--version")));
+}
+
+#[test]
+fn a_manifest_value_reads_as_words_and_bytes() {
+    let none: [&str; 0] = [];
+    assert_eq!(
+        words(r#"new --title "A new answer" x"#, 0),
+        ["new", "--title", "A new answer", "x"]
+    );
+    assert_eq!(words(r#""a\n\t\"\\b""#, 0), ["a\n\t\"\\b"]);
+    assert_eq!(words("  ", 0), none);
+    assert_eq!(bytes("a%FF%25b", 0), [b'a', 0xFF, b'%', b'b']);
+    assert!(matches!(
+        step("drop-lines f \"barrier \"", 0),
+        Step::DropLines(path, prefix) if path == "f" && prefix == "barrier "
+    ));
+    assert!(matches!(
+        step("write f \"x\\n\"", 0),
+        Step::Write(path, content) if path == "f" && content == "x\n"
+    ));
+}
+
+#[test]
+fn a_stream_that_names_where_it_ran_is_found_and_a_difference_is_located() {
+    assert!(holds(b"at /tmp/scratch-1/root now", b"/tmp/scratch-1"));
+    assert!(!holds(b"at ./root now", b"/tmp/scratch-1"));
+    assert!(!holds(b"anything", b""));
+    let scratch = Path::new("/nonexistent/headwater-cli-printed-0-x");
+    let paths = local_paths(scratch);
+    assert!(paths
+        .iter()
+        .any(|(_, path)| path == b"/nonexistent/headwater-cli-printed-0-x"));
+    assert!(paths
+        .iter()
+        .any(|(_, path)| path == env!("CARGO_MANIFEST_DIR").as_bytes()));
+    assert_eq!(
+        first_difference(b"a\nb\nc\n", b"a\nc\nb\n"),
+        "line 2: blessed `b`, printed `c`"
+    );
+    assert_eq!(
+        first_difference(b"a\n", b"a\nb\n"),
+        "line 2: blessed ``, printed `b`"
+    );
+}
+
+/// A directory of blessed files for one case, removed when it is dropped.
+fn planted(label: &str, files: &[(&str, &str)]) -> Scratch {
+    let at = Scratch(common::scratch_base().join(format!(
+        "headwater-cli-printed-{}-planted-{label}",
+        std::process::id()
+    )));
+    let _ = std::fs::remove_dir_all(&at.0);
+    std::fs::create_dir_all(&at.0).expect("the directory is made");
+    for (name, content) in files {
+        std::fs::write(at.0.join(name), content).expect("the planted file writes");
+    }
+    at
+}
+
+fn printed(out: &str, err: &str, status: &str) -> Ran {
+    Ran {
+        out: out.as_bytes().to_vec(),
+        err: err.as_bytes().to_vec(),
+        status: status.to_string(),
+    }
+}
+
+#[test]
+fn each_of_the_three_is_compared_apart_and_a_failure_names_which_moved() {
+    let line = stated("x", "headwater check", Outcome::Pass, None, "check");
+    let files = [
+        ("x.out", "report\n"),
+        ("x.err", "statistic\n"),
+        ("x.status", "0\n"),
+    ];
+    let judged = |label: &str, ran: &Ran| {
+        let blessed = planted(label, &files);
+        let mut named = BTreeSet::new();
+        let complaints = judge(&line, ran, &[], &blessed.0, false, &mut named);
+        assert_eq!(
+            named.iter().map(String::as_str).collect::<Vec<_>>(),
+            ["x.err", "x.out", "x.status"]
+        );
+        complaints
+    };
+    let none: [&str; 0] = [];
+
+    assert_eq!(
+        judged("same", &printed("report\n", "statistic\n", "0\n")),
+        none
+    );
+
+    // The same bytes on the other stream are two differences, and neither is
+    // hidden by the other stream holding what moved.
+    let swapped = judged("swapped", &printed("statistic\n", "report\n", "0\n"));
+    assert_eq!(swapped.len(), 2, "{swapped:?}");
+    assert!(
+        swapped[0].starts_with(
+            "[x] standard output of `headwater check` moved from fixtures/printed/blessed/x.out"
+        ),
+        "{swapped:?}"
+    );
+    assert!(
+        swapped[1].starts_with(
+            "[x] standard error of `headwater check` moved from fixtures/printed/blessed/x.err"
+        ),
+        "{swapped:?}"
+    );
+
+    let out_only = judged("out", &printed("report \n", "statistic\n", "0\n"));
+    assert_eq!(
+        out_only.len(),
+        1,
+        "one trailing blank is a difference: {out_only:?}"
+    );
+    assert!(out_only[0].contains("x.out"), "{out_only:?}");
+
+    let err_only = judged("err", &printed("report\n", "", "0\n"));
+    assert_eq!(err_only.len(), 1, "{err_only:?}");
+    assert!(
+        err_only[0].contains("standard error") && err_only[0].contains("x.err"),
+        "{err_only:?}"
+    );
+
+    // A status that moved is the blessed file and the stated outcome both.
+    let status = judged("status", &printed("report\n", "statistic\n", "1\n"));
+    assert_eq!(status.len(), 2, "{status:?}");
+    assert!(
+        status[0].contains("is stated as `pass`, which is exit 0")
+            && status[0].contains("exited 1"),
+        "{status:?}"
+    );
+    assert!(
+        status[1].starts_with(
+            "[x] the exit status of `headwater check` moved from fixtures/printed/blessed/x.status"
+        ),
+        "{status:?}"
+    );
+
+    // A file that is not there is a complaint that names it, and never a pass.
+    let absent = planted("absent", &files[..2]);
+    let missing = judge(
+        &line,
+        &printed("report\n", "statistic\n", "0\n"),
+        &[],
+        &absent.0,
+        false,
+        &mut BTreeSet::new(),
+    );
+    assert_eq!(missing.len(), 1, "{missing:?}");
+    assert!(
+        missing[0].starts_with(
+            "[x] the exit status has no blessed file: fixtures/printed/blessed/x.status"
+        ),
+        "{missing:?}"
+    );
+}
+
+#[test]
+fn a_bless_writes_what_moved_and_refuses_what_it_cannot_answer() {
+    let line = stated("x", "headwater check", Outcome::Pass, None, "check");
+    let read = |at: &Scratch, name: &str| std::fs::read_to_string(at.0.join(name)).ok();
+    let local = [(
+        "the scratch directory".to_string(),
+        b"/scratch/here".to_vec(),
+    )];
+    let none: [&str; 0] = [];
+
+    // A bless records all three.
+    let fresh = planted("bless-fresh", &[]);
+    let wrote = judge(
+        &line,
+        &printed("report\n", "", "0\n"),
+        &local,
+        &fresh.0,
+        true,
+        &mut BTreeSet::new(),
+    );
+    assert_eq!(wrote, none);
+    assert_eq!(read(&fresh, "x.out").as_deref(), Some("report\n"));
+    assert_eq!(read(&fresh, "x.err").as_deref(), Some(""));
+    assert_eq!(read(&fresh, "x.status").as_deref(), Some("0\n"));
+
+    // A refusal is not recorded as the passing line of a row.
+    let refused = planted("bless-refused", &[]);
+    let outcome = judge(
+        &line,
+        &printed("", "refused\n", "1\n"),
+        &local,
+        &refused.0,
+        true,
+        &mut BTreeSet::new(),
+    );
+    assert_eq!(outcome.len(), 1, "{outcome:?}");
+    assert!(
+        outcome[0].contains("A bless does not record this"),
+        "{outcome:?}"
+    );
+    assert_eq!(read(&refused, "x.status"), None, "nothing is written");
+    assert_eq!(read(&refused, "x.err"), None, "nothing is written");
+
+    // A stream that names where this run was is not recorded, on a bless or
+    // on any other run.
+    for bless in [true, false] {
+        let leaked = planted(
+            &format!("leak-{bless}"),
+            &[("x.out", "report\n"), ("x.err", ""), ("x.status", "0\n")],
+        );
+        let leak = judge(
+            &line,
+            &printed("report\n", "read /scratch/here/root\n", "0\n"),
+            &local,
+            &leaked.0,
+            bless,
+            &mut BTreeSet::new(),
+        );
+        assert!(
+            leak[0]
+                .starts_with("[x] standard error of `headwater check` holds the scratch directory"),
+            "{leak:?}"
+        );
+        assert_eq!(
+            read(&leaked, "x.err").as_deref(),
+            Some(""),
+            "the file is left"
+        );
+    }
+}
+
+#[test]
+fn a_blessed_file_no_line_names_is_a_complaint_and_a_bless_removes_it() {
+    let named: BTreeSet<String> = ["x.out", "x.err", "x.status"]
+        .into_iter()
+        .map(str::to_string)
+        .collect();
+    let files = [
+        ("x.out", ""),
+        ("x.err", ""),
+        ("x.status", "0\n"),
+        ("gone.out", ""),
+    ];
+    let at = planted("strays", &files);
+    assert_eq!(
+        strays(&at.0, &named, false),
+        ["fixtures/printed/blessed/gone.out is the blessed file of no line of the manifest"]
+    );
+    assert!(
+        at.0.join("gone.out").is_file(),
+        "a plain run removes nothing"
+    );
+    let none: [&str; 0] = [];
+    assert_eq!(strays(&at.0, &named, true), none);
+    assert!(!at.0.join("gone.out").exists(), "a bless removes it");
+    assert!(at.0.join("x.out").is_file(), "and nothing a line names");
 }
