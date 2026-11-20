@@ -208,6 +208,10 @@ fn step(value: &str, at: usize) -> Step {
     }
 }
 
+/// A section being read: its label, the line it opens on, and each key with
+/// its values and the line of each.
+type Section<'a> = (String, usize, BTreeMap<&'a str, Vec<(String, usize)>>);
+
 /// Read the manifest. Every malformed line is a panic that names its number,
 /// because a manifest this target half-read is a fixture that half-ran.
 fn manifest() -> Vec<Line> {
@@ -215,9 +219,8 @@ fn manifest() -> Vec<Line> {
     let text = std::fs::read_to_string(&path)
         .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
     let mut lines: Vec<Line> = Vec::new();
-    let mut open: Option<(String, usize, BTreeMap<&str, Vec<(String, usize)>>)> = None;
-    let close = |open: Option<(String, usize, BTreeMap<&str, Vec<(String, usize)>>)>,
-                 lines: &mut Vec<Line>| {
+    let mut open: Option<Section<'_>> = None;
+    let close = |open: Option<Section<'_>>, lines: &mut Vec<Line>| {
         let Some((label, at, mut keys)) = open else {
             return;
         };
