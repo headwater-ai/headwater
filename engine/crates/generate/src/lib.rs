@@ -229,35 +229,44 @@ pub struct Transcript {
     pub source: String,
 }
 
-/// A projection kind.
-///
-/// Twelve of them. Ten a taxonomy declares, and two the engine defines. See
-/// the module header for why that split exists.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Kind {
-    ShelfIndex,
-    /// One heading, and therefore one anchor, for each document on a shelf.
-    ShelfSections,
-    RelationView,
-    AgentRules,
-    SiteNav,
-    GraphExport,
-    Template,
-    Transcription,
-    /// Spec 5: the verdicts the grader returned over one committed transcript,
-    /// written as a document of the corpus.
-    ProbeResult,
-    /// #257: every verb the binary dispatches, and the contract that describes
-    /// it where one exists. The rows come from the engine rather than from the
-    /// graph, and the empty cell is the point of the artifact.
-    VerbIndex,
-    /// #1051: the consumer surface of HW-DR-0077, as a page an adopter reads.
-    /// The rows are the `surface` block of the taxonomy and nothing else.
-    ConsumerSurface,
-    /// Spec 4: the register, engine-defined and non-optional.
-    CoverageReport,
-    /// Q14: `.headwater/corpus.json`, engine-defined and non-optional.
-    CorpusDescriptor,
+headwater_check::enumerated! {
+    /// A projection kind.
+    ///
+    /// Twelve of them. Ten a taxonomy declares, and two the engine defines. See
+    /// the module header for why that split exists.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub enum Kind {
+        ShelfIndex,
+        /// One heading, and therefore one anchor, for each document on a shelf.
+        ShelfSections,
+        RelationView,
+        AgentRules,
+        SiteNav,
+        GraphExport,
+        Template,
+        Transcription,
+        /// Spec 5: the verdicts the grader returned over one committed transcript,
+        /// written as a document of the corpus.
+        ProbeResult,
+        /// #257: every verb the binary dispatches, and the contract that describes
+        /// it where one exists. The rows come from the engine rather than from the
+        /// graph, and the empty cell is the point of the artifact.
+        VerbIndex,
+        /// #1051: the consumer surface of HW-DR-0077, as a page an adopter reads.
+        /// The rows are the `surface` block of the taxonomy and nothing else.
+        ConsumerSurface,
+        /// Spec 4: the register, engine-defined and non-optional.
+        CoverageReport,
+        /// Q14: `.headwater/corpus.json`, engine-defined and non-optional.
+        CorpusDescriptor,
+    }
+    /// Every kind, declarable or engine-defined, in declaration order.
+    ///
+    /// [`headwater_check::enumerated!`] writes it from the variants above, so a
+    /// fourteenth variant is in it (HW-OBL-0172). `DECLARABLE` in the `impl`
+    /// below is still a hand-kept list. [`unbuilt`] and [`Kind::name`] hold it
+    /// only as far as their exhaustive `match` forces an author into this file.
+    const ALL;
 }
 
 impl Kind {
@@ -300,29 +309,6 @@ impl Kind {
     pub fn declarable(self) -> bool {
         !matches!(self, Kind::CoverageReport | Kind::CorpusDescriptor)
     }
-
-    /// Every kind, declarable or engine-defined.
-    ///
-    /// A hand-kept list, and the compiler does not hold it complete: a
-    /// fourteenth variant added without a line here compiles. What forces an
-    /// author into this file is [`unbuilt`], whose `match` is exhaustive, and
-    /// [`Kind::name`], whose `match` is too. `DECLARABLE` below carries the
-    /// identical exposure and has since #257 added the tenth entry.
-    pub const ALL: [Kind; 13] = [
-        Kind::ShelfIndex,
-        Kind::ShelfSections,
-        Kind::RelationView,
-        Kind::AgentRules,
-        Kind::SiteNav,
-        Kind::GraphExport,
-        Kind::Template,
-        Kind::Transcription,
-        Kind::ProbeResult,
-        Kind::VerbIndex,
-        Kind::ConsumerSurface,
-        Kind::CoverageReport,
-        Kind::CorpusDescriptor,
-    ];
 
     /// The declarable kinds, in the order the meta-schema lists them.
     pub const DECLARABLE: [Kind; 11] = [
