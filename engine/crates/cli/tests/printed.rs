@@ -1414,3 +1414,71 @@ fn a_committed_lock_needs_a_passing_check_line_over_its_tree_alone() {
         base
     );
 }
+
+#[test]
+fn a_stream_is_compared_as_bytes_and_not_as_the_text_it_decodes_to() {
+    // Neither byte is UTF-8, so a lossy decoding reads both as U+FFFD and
+    // calls them equal.
+    let line = stated("x", "headwater check", Outcome::Pass, None, "check");
+    let blessed = planted("bytes", &[("x.err", ""), ("x.status", "0\n")]);
+    std::fs::write(blessed.0.join("x.out"), [b'a', 0xFF, b'\n']).expect("the planted file writes");
+    let ran = |out: &[u8]| Ran {
+        out: out.to_vec(),
+        err: Vec::new(),
+        status: "0\n".to_string(),
+    };
+    let judged = |ran: &Ran| judge(&line, ran, &[], &blessed.0, false, &mut BTreeSet::new());
+    let none: [&str; 0] = [];
+
+    assert_eq!(judged(&ran(&[b'a', 0xFF, b'\n'])), none);
+    let moved = judged(&ran(&[b'a', 0xFE, b'\n']));
+    assert_eq!(moved.len(), 1, "{moved:?}");
+    assert!(
+        moved[0].starts_with(
+            "[x] standard output of `headwater check` moved from fixtures/printed/blessed/x.out"
+        ),
+        "{moved:?}"
+    );
+}
+
+#[test]
+fn a_setup_step_that_does_not_exit_0_stops_the_line_and_names_itself() {
+    let prepared = |label: &str, step: Step| {
+        let scratch = planted(label, &[]);
+        let root = scratch.0.join("root");
+        std::fs::create_dir_all(&root).expect("the root is made");
+        std::fs::create_dir_all(scratch.0.join("home")).expect("the home is made");
+        let mut line = stated(label, "headwater check", Outcome::Pass, None, "check");
+        line.setup = vec![step];
+        line.at = 7;
+        std::panic::catch_unwind(|| prepare(&line, &scratch.0, &root)).map_err(|panic| {
+            panic
+                .downcast_ref::<String>()
+                .cloned()
+                .unwrap_or_else(|| "a panic that is no string".to_string())
+        })
+    };
+    let words = |text: &str| words(text, 0);
+
+    let refused = prepared("setup-refused", Step::Headwater(words("nosuch")))
+        .expect_err("a `headwater` step that exits 1 stops the line");
+    assert!(
+        refused.starts_with("[setup-refused] (manifest line 7) the setup step `")
+            && refused.contains("headwater nosuch` did not exit 0:")
+            && refused.contains("`nosuch` is not a verb"),
+        "{refused}"
+    );
+    let git = prepared("setup-git", Step::Git(words("nosuch")))
+        .expect_err("a `git` step that fails stops the line");
+    assert!(
+        git.starts_with(
+            "[setup-git] (manifest line 7) the setup step `git nosuch` did not exit 0:"
+        ),
+        "{git}"
+    );
+    assert_eq!(
+        prepared("setup-held", Step::Git(words("init --quiet"))),
+        Ok(()),
+        "a step that exits 0 lets the line run"
+    );
+}
