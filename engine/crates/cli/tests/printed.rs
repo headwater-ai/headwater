@@ -1312,3 +1312,102 @@ fn a_blessed_file_no_line_names_is_a_complaint_and_a_bless_removes_it() {
     assert!(!at.0.join("gone.out").exists(), "a bless removes it");
     assert!(at.0.join("x.out").is_file(), "and nothing a line names");
 }
+
+#[test]
+fn a_line_runs_under_the_stated_environment_and_nothing_else() {
+    let scratch = planted("environment", &[]);
+    let output = command("env", &scratch.0, &scratch.0)
+        .output()
+        .expect("`env` runs");
+    assert!(output.status.success());
+    let printed = String::from_utf8_lossy(&output.stdout).into_owned();
+    let mut names: Vec<&str> = printed
+        .lines()
+        .filter_map(|line| line.split_once('=').map(|(name, _)| name))
+        .collect();
+    names.sort_unstable();
+    // Cargo exports `CARGO_MANIFEST_DIR` and more to this process, so a
+    // command that inherited its environment would print them here.
+    assert!(std::env::var_os("CARGO_MANIFEST_DIR").is_some());
+    assert_eq!(
+        names,
+        [
+            "GIT_AUTHOR_DATE",
+            "GIT_AUTHOR_EMAIL",
+            "GIT_AUTHOR_NAME",
+            "GIT_CEILING_DIRECTORIES",
+            "GIT_COMMITTER_DATE",
+            "GIT_COMMITTER_EMAIL",
+            "GIT_COMMITTER_NAME",
+            "GIT_CONFIG_GLOBAL",
+            "GIT_CONFIG_NOSYSTEM",
+            "HOME",
+            "LC_ALL",
+            "PATH",
+            "TZ",
+        ],
+        "{printed}"
+    );
+    assert!(printed.contains("TZ=UTC\n"), "{printed}");
+    assert!(printed.contains("LC_ALL=C\n"), "{printed}");
+    assert!(
+        printed.contains("GIT_COMMITTER_DATE=2026-01-15T00:00:00+00:00\n"),
+        "{printed}"
+    );
+}
+
+#[test]
+fn a_committed_lock_needs_a_passing_check_line_over_its_tree_alone() {
+    let locked: Vec<String> = trees()
+        .into_iter()
+        .filter(|tree| {
+            fixture()
+                .join("trees")
+                .join(tree)
+                .join(".headwater/taxonomy.lock")
+                .is_file()
+        })
+        .collect();
+    assert!(
+        locked.contains(&"base".to_string()),
+        "the tree most lines run over commits a lock: {locked:?}"
+    );
+    let line = |tree: &str, run: &str| {
+        let mut line = stated(tree, "headwater taxonomy resolve", Outcome::Pass, None, run);
+        line.trees = vec![tree.to_string()];
+        line
+    };
+    let held = |change: &dyn Fn(&mut Line)| {
+        let mut lines: Vec<Line> = locked
+            .iter()
+            .map(|tree| line(tree, "taxonomy resolve --root . --check"))
+            .collect();
+        change(
+            lines
+                .iter_mut()
+                .find(|line| line.label == "base")
+                .expect("base"),
+        );
+        unheld_locks(&lines)
+    };
+    let none: [&str; 0] = [];
+    let base = ["the tree `base` commits a lock, and no passing line runs `taxonomy resolve --check` over it alone with no setup"];
+
+    assert_eq!(unheld_locks(&[]).len(), locked.len());
+    assert_eq!(held(&|_| {}), none);
+    // A line that writes the lock holds nothing about the committed one.
+    assert_eq!(
+        held(&|line| line.run.retain(|word| word != "--check")),
+        base
+    );
+    assert_eq!(held(&|line| line.outcome = Outcome::Refuse), base);
+    assert_eq!(held(&|line| line.row = "headwater check".to_string()), base);
+    // A second tree or a setup step can replace or repair the lock first.
+    assert_eq!(held(&|line| line.trees.push("next".to_string())), base);
+    assert_eq!(
+        held(&|line| line
+            .setup
+            .push(Step::Remove(".headwater/taxonomy.lock".to_string()))),
+        base
+    );
+}
