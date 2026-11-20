@@ -1,0 +1,7 @@
+published acme/printed 1.0.0
+  into artifact
+  3 files
+  for an engine in >=0.1 <2
+  digest sha256:9a9443394920994c5661f34d4764b37692c43c6632c5c8f5c288edb362b7f82f
+
+State that digest where a consumer reads it, and never only inside the artifact. A consumer pins it as `taxonomy.digest` in `.headwater/taxonomy.yml`, and `headwater taxonomy vendor` checks a fetched copy against the pin.

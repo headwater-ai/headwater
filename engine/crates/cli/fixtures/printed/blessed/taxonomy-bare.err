@@ -1,0 +1,2 @@
+headwater: `taxonomy` takes a second word: `validate`, `resolve`, `audit`, `publish`, `vendor`, `diff`, `migrate`, `graph` and `kinds`
+headwater: run `headwater --help` for the grammar

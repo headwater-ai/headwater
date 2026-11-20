@@ -1,0 +1,7 @@
+vendored acme/printed 2.0.0
+  from artifact
+  4 files, all of them the pinned bytes
+  digest sha256:ca0f2bc30713ea81b7d586ca410f811395d525cf18480d44026b3381099b707a
+
+The digest says these are the bytes the pin was written for. It is not a signature, so it says nothing about who published them. Run `headwater taxonomy resolve` to write the lock this package produces.
+  .headwater/taxonomy.yml does not read as a consumer declaration, so no pin was written. Write `digest: sha256:ca0f2bc30713ea81b7d586ca410f811395d525cf18480d44026b3381099b707a` under `taxonomy:` there

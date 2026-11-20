@@ -1,0 +1,2 @@
+headwater: `route` takes a task description. Try `headwater route "add rate limiting to the ingest API"`
+headwater: run `headwater --help` for the grammar

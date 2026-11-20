@@ -1,0 +1,3 @@
+  the resolved taxonomy `kinds.answer.is_a`: referential integrity: reads `nosuch`, and no kind of that name is declared
+  the resolved taxonomy `kinds.answer`: coverage: is concrete and no shelf reaches it, so no document can ever be one
+  the resolved taxonomy `kinds.answer`: purpose completeness: declares no purpose and inherits none. Every concrete kind serves a reader intent

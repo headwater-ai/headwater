@@ -1,0 +1,13 @@
+
+migration  acme/printed, from 1.0.0 to 2.0.0
+  payload  migrations/1-to-2.yml
+
+  facet_value status/draft  becomes `outline`
+    docs/answers/recovery.md  `status`
+
+  0 tasks for an author, and no run writes any of them
+
+  `.headwater/taxonomy.yml` pins no digest, so this run cannot write a verifiable `adoption.from` (HW-DR-0046). Take the digest the publisher states and write it as `taxonomy.digest` in `.headwater/taxonomy.yml`, by hand or with `headwater taxonomy vendor <dir-or-location> --expect <digest>`, and a later run of this verb records the migration. Every other file below is still written on `--apply`
+
+  wrote 1 value in 1 file
+    docs/answers/recovery.md

@@ -1,0 +1,2 @@
+headwater: `probe nosuch` is not a verb this binary carries. It carries `plan`, `record`, `grade`, `compare` and `stale`
+headwater: run `headwater --help` for the grammar

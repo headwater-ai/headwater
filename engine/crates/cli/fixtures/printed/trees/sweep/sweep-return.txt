@@ -1,0 +1,18 @@
+taxonomy: sha256:f7b59451cdd1886258a459d887aad5bfda131ebe2fb7747321712eecdbcb8b51
+slice: .
+findings:
+  - class: undefined_concept
+    documents:
+      - docs/answers/context.md
+      - docs/answers/recovery.md
+    evidence:
+      - path: docs/answers/recovery.md
+        quote: The recovery word is `amber`.
+    message: The recovery word is used in both documents and neither says what a recovery is.
+  - class: quiet_supersession
+    documents:
+      - docs/answers/context.md
+    evidence:
+      - path: docs/answers/context.md
+        quote: This passage is in no document.
+    message: A finding whose quotation the intake cannot find.

@@ -1,0 +1,137 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The smallest taxonomy the `probe` verbs read: a probe kind with the facets
+# the planner reads by name, a transcript kind, and the relation that names
+# what a probe examines.
+
+taxonomy: acme/probes
+version: 1.0.0
+
+purposes:
+  evidence: {intent: record what was observed and what it supports}
+
+vocabularies:
+  lifecycle_state:
+    - {value: draft, role: initial}
+    - {value: current, role: live}
+    - {value: superseded, role: terminal-retained}
+
+facets:
+  status:
+    role: state
+    values: $vocabularies.lifecycle_state
+    required: true
+    volatility: mutable
+    guidance:
+      draft: it is being argued over, and nothing may rely on it
+      current: it states what holds now
+      superseded: a later document replaced it
+  summary:
+    role: scent
+    required: true
+    volatility: mutable
+  title:
+    role: name
+    required: true
+    volatility: stable
+  probe_category:
+    values: [discovery, sufficiency]
+    required: false
+    volatility: stable
+    guidance:
+      discovery: the probe asks whether the agent finds the governing document at all
+      sufficiency: the probe asks whether the agent has enough to act correctly
+  action:
+    values: [ask_or_locate, ungoverned_control]
+    required: false
+    volatility: stable
+    guidance:
+      ask_or_locate: the task asks the agent to find a document or answer a question from the corpus
+      ungoverned_control: the task touches nothing a document governs
+  expectation:
+    values: [opened, not_opened]
+    required: false
+    volatility: stable
+    guidance:
+      opened: the transcript shows that the session read one of the documents this probe names
+      not_opened: the transcript shows that the session read none of them
+  oracle:
+    type: string
+    required: false
+    volatility: stable
+  tier:
+    values: [regression, campaign]
+    required: false
+    volatility: stable
+    guidance:
+      regression: a fixed scenario set in one arm against a recorded baseline
+      campaign: both arms, powered, for one named claim
+  arm:
+    values: [present, absent]
+    required: false
+    volatility: stable
+    guidance:
+      present: the session ran against the corpus
+      absent: the session ran against the declared ablation of it
+
+regimes:
+  lifecycle:
+    standard:
+      initial: draft
+      transitions: {draft: [current], current: [superseded]}
+      retain_terminal: true
+
+kinds:
+  governed_document:
+    abstract: true
+    facets: {require: [status, summary]}
+  probe:
+    is_a: governed_document
+    purpose: evidence
+    lifecycle: standard
+    identifier: {scheme: probe_id}
+    facets:
+      require: [probe_category, expectation, oracle, action]
+    sections:
+      require: [Task, Target, Key]
+  probe_transcript:
+    is_a: governed_document
+    purpose: evidence
+    lifecycle: standard
+    identifier: {scheme: run_id}
+    facets:
+      require: [tier, arm]
+    sections:
+      require: [Run identity, Events]
+
+relations:
+  examines:
+    family: evidence
+    from: [probe]
+    to: [governed_document]
+    cardinality: many
+    created_by: author
+
+shelves:
+  probes:
+    path: docs/probes/**
+    homogeneous: true
+    kind: probe
+  probe_runs:
+    path: docs/probe-runs/**
+    homogeneous: true
+    kind: probe_transcript
+
+identifier_schemes:
+  probe_id:
+    pattern: "{namespace}-PROBE-{slug}"
+    namespace: AC
+    allocation: minted-once
+  run_id:
+    pattern: "{namespace}-RUN-{slug}"
+    namespace: AC
+    allocation: minted-once
+
+core:
+  requires:
+    - facet_role: state

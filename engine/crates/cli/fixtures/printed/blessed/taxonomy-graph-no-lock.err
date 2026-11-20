@@ -1,0 +1,1 @@
+headwater: ./.headwater/taxonomy.lock is not there. Everything downstream reads the lock and never the sources, so run `headwater taxonomy resolve` to write one

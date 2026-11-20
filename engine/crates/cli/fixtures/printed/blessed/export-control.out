@@ -1,0 +1,39 @@
+{
+  "headwater:generated": "graph_export. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.",
+  "version": "1.3",
+  "export_version": "1.3",
+  "profile": {
+    "name": "control",
+    "target": "json",
+    "filtered": false
+  },
+  "loss_set": [],
+  "census": {
+    "accounted for": [],
+    "unaccounted for": []
+  },
+  "graph": {
+    "documents": [
+      {
+        "path": "docs/answers/context.md",
+        "kind": "answer",
+        "facets": {
+          "status": "current",
+          "summary": "The recovery record uses one word and only its draft states that word.",
+          "title": "Recovery context"
+        }
+      },
+      {
+        "path": "docs/answers/recovery.md",
+        "kind": "answer",
+        "facets": {
+          "status": "draft",
+          "summary": "The recovery word is amber.",
+          "title": "Recovery answer"
+        }
+      }
+    ],
+    "anchors": [],
+    "edges": []
+  }
+}

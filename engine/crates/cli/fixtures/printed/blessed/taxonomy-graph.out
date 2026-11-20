@@ -1,0 +1,6 @@
+flowchart LR
+%% The resolved taxonomy of acme/printed 1.0.0, drawn by `headwater taxonomy graph` from .headwater/taxonomy.lock.
+%% A lane is a purpose, a rectangle is a concrete kind, a hexagon is an anchor, and an edge is labeled with its relation.
+  subgraph purpose_rationale["rationale"]
+    kind_answer["answer"]
+  end

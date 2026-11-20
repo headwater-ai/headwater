@@ -1,0 +1,2 @@
+headwater: `taxonomy nosuch` is not a verb this binary carries yet. It carries `validate`, `resolve`, `audit`, `publish`, `vendor`, `diff`, `migrate`, `graph` and `kinds`
+headwater: run `headwater --help` for the grammar

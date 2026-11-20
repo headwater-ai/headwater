@@ -1,0 +1,2 @@
+headwater: `probe` takes a second word: `plan`, `record`, `grade`, `compare` and `stale`
+headwater: run `headwater --help` for the grammar

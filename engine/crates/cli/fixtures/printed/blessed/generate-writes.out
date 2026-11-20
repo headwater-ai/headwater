@@ -1,0 +1,21 @@
+projections
+  graph_export exports/control.json
+    written
+  graph_export exports/filtered.json
+    written
+  site_nav .headwater/nav.yml
+    written
+  corpus_descriptor .headwater/corpus.json
+    written
+
+what this verb does not write, and why
+  relation_view no declaration names one
+    a relation view needs the traceability grain that the obligation and control register holds, and no document states which relations a view covers
+  agent_rules no declaration names one
+    the glossary names the artifact and no document states its form, so an emitter here would be this engine inventing a schema for somebody else's consumer
+  template no declaration names one
+    a template is the permitted relations, facets and sections of a kind, which `headwater explain` already prints. What no document states is the file it goes in
+  transcription no declaration names one
+    a transcription needs a resolver that reads text from a pinned snapshot, and Q19 leaves whether it ships at all to the first adopter who asks
+  coverage_report the register
+    its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it

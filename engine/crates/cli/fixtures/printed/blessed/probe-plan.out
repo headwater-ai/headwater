@@ -1,0 +1,49 @@
+A regression probe run over 2 of the 3 classified documents of this corpus.
+
+## The run identity this plan fixes
+
+```yaml
+lock: sha256:ca3c47a2f8b062bab1b62b6f5849be25b89110ec578b22da01968aa51148c4c7
+tree: sha256:f445be2bee480bd419137a84965ce7f5bffe67a3335819be0e41fd1bebb1878d
+selection: sha256:f42c669753dc4e211eaee04b9d79b8fb0f78499300923e1341f815bb5a5ce0af
+read_set: sha256:ac1e3801b1f468f6fb03496ce0698d4d1a5a083a6424e6d2050846daaa2acc48
+seed: 0
+harness: 0.6.1
+tier: regression
+arms: [present]
+```
+
+The model, its served version, the wall-clock time and the realized cost belong to the run. The recorder writes those four into the transcript, and `headwater probe record` holds the rest of the identity to the six above.
+
+## The cost
+
+2 probes x 1 arms x 1 repetitions = 2 sessions, at a declared $0.25 each: $0.50 against a ceiling of $20.00.
+The unit cost is a number a person declared in `.headwater/probe.yml`. No run has happened, so no realized cost has been recorded against it and this is arithmetic rather than a forecast.
+
+## The selection
+
+- AC-PROBE-the-session-reads-the-document (docs/probes/0001-the-session-reads-the-document.md)
+    category: discovery
+    expects: opened
+    action: ask_or_locate
+    examines: AC-PROBE-the-session-reads-the-other-document at docs/probes/0002-the-session-reads-the-other-document.md
+- AC-PROBE-the-session-reads-the-other-document (docs/probes/0002-the-session-reads-the-other-document.md)
+    category: discovery
+    expects: opened
+    action: ask_or_locate
+    examines: AC-PROBE-the-session-reads-the-document at docs/probes/0001-the-session-reads-the-document.md
+
+## The read set
+
+2 documents the `read_set` digest above covers, which is every probe of the selection and every document one of them examines:
+
+- docs/probes/0001-the-session-reads-the-document.md (probe) sha256:b6eb71cc3bba305a21f115c399fff288a180f0ec425afb6da0015591b3175c7d
+- docs/probes/0002-the-session-reads-the-other-document.md (probe) sha256:d1a0837ad98b67919b6d4be0d55e8783dd4f3242f4847894fb94103b25da95b8
+
+A recorded result is stale when a document of this list moves, and it is not stale when any other document of this corpus moves. That is the whole of what the digest buys over the `tree` digest beside it, which moves on every commit.
+
+## What the recorder writes back
+
+One `probe_transcript` document on `docs/probe-runs/`, then `headwater probe record <path>`. The transcript is the ordered tool-call events of each session, and it holds no model prose: the intake refuses a key outside the closed set, which is how the omission is enforced rather than asked for.
+
+**A transcript that an agent wrote about its own session is a self-report, and spec 5 refuses one.** The events have to be observed from outside the session by the process that drove it. That process reaches the network and it is not in this repository, so no verb here writes a transcript and there is no flag that makes one.

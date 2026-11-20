@@ -1,0 +1,8 @@
+snapshot:
+  format: 1
+  source: acme/work-items
+  fetched: 2026-01-10
+  items:
+    - id: "12345"
+      revision: "7"
+      title: The service refuses an unauthenticated request

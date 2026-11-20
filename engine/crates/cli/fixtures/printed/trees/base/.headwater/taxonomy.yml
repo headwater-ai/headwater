@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: Apache-2.0
+
+taxonomy:
+  package: acme/printed
+  version: 1.0.0
+
+corpus:
+  root: docs
+
+imports:
+  upstream:
+    at: .headwater/imports/upstream
+    digest: sha256:422187182abb3e25f9e4ec59b93080b4e436e471dd3fab017cc89e90aac10fcd
+    channel: the release page of the publisher
+    resolver: upstream-snapshot

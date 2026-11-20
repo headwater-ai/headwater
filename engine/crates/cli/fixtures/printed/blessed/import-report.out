@@ -1,0 +1,7 @@
+import upstream from acme/work-items
+  fetched 2026-01-10
+  digest sha256:422187182abb3e25f9e4ec59b93080b4e436e471dd3fab017cc89e90aac10fcd
+  channel the release page of the publisher
+  1 item, 0 links
+
+0 edge halves to write, and nothing was written. Run it again with `--write`.

@@ -1,0 +1,753 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The command lines `tests/printed.rs` runs, and what each one covers.
+#
+# One section is one line. The test runs it over a fresh copy of its trees and
+# compares standard output, standard error and the exit status with
+# `blessed/<label>.out`, `blessed/<label>.err` and `blessed/<label>.status`.
+# After a change that means to move what a command prints, record it with
+#
+#     HEADWATER_BLESS=1 cargo test -p headwater-cli --test printed
+#
+# and read the diff of `blessed/` before you commit it.
+#
+#   [label]     names the three blessed files: lower-case letters, digits, `-`
+#   row         the command line of the survey table in HW-OBL-0132 this covers.
+#               The test derives the rows from `headwater_verbs::VERBS`, and it
+#               refuses a row that is not one and a `run` that is not its row
+#   outcome     `pass` for exit 0 and `refuse` for exit 1. The test holds the
+#               status to it, so a bless cannot record a refusal as a pass
+#   only        why the row has no line of the other outcome. A row needs a
+#               line of each outcome, or one line that states this
+#   tree        the directories under `trees/` copied into the root, in order.
+#               None is an empty root
+#   setup       one step that shapes the root before the line runs, repeatable
+#               and run in order: `headwater <words>` and `git <words>` are
+#               held to exit 0 and what they print is not compared,
+#               `write <path> <content>`, `remove <path>`, and
+#               `drop-lines <path> <prefix>`
+#   stdin       one quoted word fed to standard input. `%HH` is one byte
+#   run         the words after `headwater`
+#
+# A word is a run of characters with no blank, or a double-quoted string with
+# the escapes `\n`, `\t`, `\"` and `\\`.
+#
+# Every line that reads the clock passes `--now 2026-01-15`. No line passes
+# `--wide`, so the width is 80. Every line names its root as `--root .`, so a
+# printed root is relative. A line that would print the engine version moves
+# at every release: `probe-plan` is the one line that does, and no other may
+# be added without that cost being meant.
+
+# ---------------------------------------------------------------- check
+
+[check-clean]
+row = headwater check
+outcome = pass
+tree = base
+run = check --root . --now 2026-01-15
+
+[check-strict-error]
+row = headwater check
+outcome = refuse
+tree = base
+setup = write docs/answers/broken.md "---\nstatus: nosuch\ntitle: Broken\n---\n\n# Broken\n"
+run = check --root . --now 2026-01-15 --strict
+
+[check-no-lock]
+row = headwater check
+outcome = refuse
+tree = base
+setup = remove .headwater/taxonomy.lock
+run = check --root . --now 2026-01-15
+
+# ---------------------------------------------------------------- change
+
+[change-one-document]
+row = headwater change
+outcome = pass
+tree = base
+setup = git init -q
+setup = git add -A
+setup = git commit -q -m first
+setup = write docs/answers/context.md "---\nstatus: current\nsummary: The summary moved.\ntitle: Recovery context\n---\n\n# Recovery context\n\nThe text moved.\n"
+run = change --root . HEAD out
+
+[change-unknown-revision]
+row = headwater change
+outcome = refuse
+tree = base
+setup = git init -q
+setup = git add -A
+setup = git commit -q -m first
+run = change --root . nosuchrev out
+
+[change-outside-git]
+row = headwater change
+outcome = refuse
+tree = base
+run = change --root . HEAD out
+
+# ---------------------------------------------------------------- gate
+
+# A read set that `check` writes always lists the eight rules whose verdict is
+# a predicate over the whole census, and the gate carries none of them. So the
+# passing line holds a read set with those lines taken out, which is the only
+# read set whose verdicts carry.
+[gate-carries]
+row = headwater gate
+outcome = pass
+tree = base
+setup = headwater check --root . --now 2026-01-15 --read-set run.readset
+setup = drop-lines run.readset "barrier "
+run = gate --root . --now 2026-01-15 --read-set run.readset
+
+[gate-barriers]
+row = headwater gate
+outcome = refuse
+tree = base
+setup = headwater check --root . --now 2026-01-15 --read-set run.readset
+run = gate --root . --now 2026-01-15 --read-set run.readset
+
+[gate-document-moved]
+row = headwater gate
+outcome = refuse
+tree = base
+setup = headwater check --root . --now 2026-01-15 --read-set run.readset
+setup = drop-lines run.readset "barrier "
+setup = write docs/answers/context.md "---\nstatus: current\nsummary: The summary moved.\ntitle: Recovery context\n---\n\n# Recovery context\n\nThe text moved.\n"
+run = gate --root . --now 2026-01-15 --read-set run.readset
+
+# ---------------------------------------------------------------- conformance
+
+[conformance-report]
+row = headwater conformance
+outcome = pass
+tree = base
+run = conformance --root . --now 2026-01-15
+
+[conformance-level-not-reached]
+row = headwater conformance
+outcome = refuse
+tree = base
+run = conformance --root . --now 2026-01-15 --level L2
+
+# ---------------------------------------------------------------- derived
+
+[derived-attributes-written]
+row = headwater derived
+outcome = pass
+tree = base
+setup = headwater init --root . --git
+run = derived --root .
+
+[derived-lock-merges-as-text]
+row = headwater derived
+outcome = refuse
+tree = base
+run = derived --root .
+
+# ---------------------------------------------------------------- site
+
+[site-clean]
+row = headwater site
+outcome = pass
+tree = base site
+setup = headwater generate --root .
+run = site --root . site
+
+[site-dead-links]
+row = headwater site
+outcome = refuse
+tree = base site
+setup = headwater generate --root .
+setup = write site/answers/recovery/index.html "<!doctype html><html><body><h1 id=\"recovery-answer\">Recovery answer</h1><a href=\"../context/#nowhere\">the context</a><a href=\"../gone/\">gone</a></body></html>\n"
+run = site --root . site
+
+# ---------------------------------------------------------------- merge-driver
+
+[merge-driver-lock-deleted]
+row = headwater merge-driver
+outcome = refuse
+only = the body leaves the current side in place and returns failure on every path, so that git records a conflict
+tree = base
+run = merge-driver --root . ancestor current other .headwater/taxonomy.lock
+
+[merge-driver-projection-kept]
+row = headwater merge-driver
+outcome = refuse
+tree = base
+run = merge-driver --root . ancestor docs/answers/context.md other exports/control.json
+
+# ---------------------------------------------------------------- route
+
+[route-purpose-matched]
+row = headwater route
+outcome = pass
+tree = base
+run = route --root . why a choice was made
+
+[route-json]
+row = headwater route
+outcome = pass
+tree = base
+run = route --root . --json why a choice was made
+
+[route-no-lock]
+row = headwater route
+outcome = refuse
+tree = base
+setup = remove .headwater/taxonomy.lock
+run = route --root . why a choice was made
+
+[route-no-task]
+row = headwater route
+outcome = refuse
+tree = base
+run = route --root .
+
+# ---------------------------------------------------------------- neighbors
+
+[neighbors-no-task]
+row = headwater neighbors
+outcome = refuse
+only = a passing line needs an embedding model file, and #1958 excludes one from this fixture
+tree = base
+run = neighbors --root .
+
+[neighbors-no-model]
+row = headwater neighbors
+outcome = refuse
+tree = base
+run = neighbors --root . add rate limiting
+
+# ---------------------------------------------------------------- explain
+
+[explain-document]
+row = headwater explain
+outcome = pass
+tree = base
+run = explain --root . docs/answers/recovery.md
+
+[explain-unwritten-path]
+row = headwater explain
+outcome = refuse
+tree = base
+run = explain --root . docs/answers/nowhere.md
+
+# ---------------------------------------------------------------- show
+
+[show-document]
+row = headwater show
+outcome = pass
+tree = base
+run = show --root . docs/answers/context.md
+
+[show-unwritten-path]
+row = headwater show
+outcome = refuse
+tree = base
+run = show --root . docs/answers/nowhere.md
+
+# ---------------------------------------------------------------- query
+
+[query-unimplemented]
+row = headwater query
+outcome = refuse
+only = no document states what an expression is, so `dispatch` gives this verb no arm that returns success
+tree = base
+run = query --root . status=current
+
+# ---------------------------------------------------------------- capture
+
+[capture-empty-store]
+row = headwater capture
+outcome = pass
+tree = base
+run = capture --root .
+
+[capture-after-new]
+row = headwater capture
+outcome = pass
+tree = base
+setup = headwater new --root . --now 2026-01-15 answer --title "A new answer"
+run = capture --root .
+
+[capture-no-lock]
+row = headwater capture
+outcome = refuse
+tree = base
+setup = remove .headwater/taxonomy.lock
+run = capture --root .
+
+# ---------------------------------------------------------------- mcp
+
+# No `initialize` request, because its answer carries the engine version.
+[mcp-list-and-route]
+row = headwater mcp
+outcome = pass
+tree = base
+stdin = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}\n{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"route\",\"arguments\":{\"task\":\"why a choice was made\"}}}\n"
+run = mcp --root . --now 2026-01-15
+
+[mcp-no-lock]
+row = headwater mcp
+outcome = refuse
+tree = base
+setup = remove .headwater/taxonomy.lock
+stdin = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}\n"
+run = mcp --root . --now 2026-01-15
+
+# ---------------------------------------------------------------- new
+
+[new-answer]
+row = headwater new
+outcome = pass
+tree = base
+run = new --root . --now 2026-01-15 answer --title "A new answer"
+
+[new-unknown-kind]
+row = headwater new
+outcome = refuse
+tree = base
+run = new --root . --now 2026-01-15 nosuch --title "A new answer"
+
+[new-no-title]
+row = headwater new
+outcome = refuse
+tree = base
+run = new --root . --now 2026-01-15 answer
+
+# ---------------------------------------------------------------- infer
+
+[infer-no-debt]
+row = headwater infer
+outcome = pass
+tree = base
+run = infer --root . --now 2026-01-15
+
+[infer-no-lock]
+row = headwater infer
+outcome = refuse
+tree = base
+setup = remove .headwater/taxonomy.lock
+run = infer --root . --now 2026-01-15
+
+[infer-write-without-owner]
+row = headwater infer
+outcome = refuse
+tree = base
+run = infer --root . --now 2026-01-15 --write
+
+# ---------------------------------------------------------------- generate
+
+[generate-writes]
+row = headwater generate
+outcome = pass
+tree = base
+run = generate --root .
+
+[generate-check-stale]
+row = headwater generate
+outcome = refuse
+tree = base
+run = generate --root . --check
+
+# ---------------------------------------------------------------- import
+
+[import-report]
+row = headwater import
+outcome = pass
+tree = base
+run = import --root .
+
+[import-undeclared]
+row = headwater import
+outcome = refuse
+tree = base
+run = import --root . nosuch
+
+[import-snapshot-moved]
+row = headwater import
+outcome = refuse
+tree = base
+setup = write .headwater/imports/upstream/snapshot.yml "snapshot:\n  format: 1\n  source: acme/work-items\n  fetched: 2026-01-11\n  items: []\n"
+run = import --root .
+
+# ---------------------------------------------------------------- export
+
+[export-control]
+row = headwater export
+outcome = pass
+tree = base
+run = export --root . --profile control --format json
+
+[export-unknown-profile]
+row = headwater export
+outcome = refuse
+tree = base
+run = export --root . --profile nosuch --format json
+
+# ---------------------------------------------------------------- sweep
+
+[sweep-bare]
+row = headwater sweep
+outcome = refuse
+only = `dispatch` gives a verb with no second word no arm that returns success
+run = sweep
+
+[sweep-other]
+row = headwater sweep <other>
+outcome = refuse
+only = `dispatch` gives a second word this verb does not carry no arm that returns success
+run = sweep nosuch
+
+[sweep-plan-whole-corpus]
+row = headwater sweep plan
+outcome = pass
+tree = base
+run = sweep plan --root .
+
+[sweep-plan-no-lock]
+row = headwater sweep plan
+outcome = refuse
+tree = base
+setup = remove .headwater/taxonomy.lock
+run = sweep plan --root .
+
+[sweep-report-one-carried-one-refused]
+row = headwater sweep report
+outcome = pass
+tree = base sweep
+run = sweep report --root . sweep-return.txt
+
+[sweep-report-no-file]
+row = headwater sweep report
+outcome = refuse
+tree = base
+run = sweep report --root . nowhere.txt
+
+# ---------------------------------------------------------------- probe
+
+[probe-bare]
+row = headwater probe
+outcome = refuse
+only = `dispatch` gives a verb with no second word no arm that returns success
+run = probe
+
+[probe-other]
+row = headwater probe <other>
+outcome = refuse
+only = `dispatch` gives a second word this verb does not carry no arm that returns success
+run = probe nosuch
+
+# This line prints `harness: <engine version>`, so its blessed file moves at
+# every release. It is the only one.
+[probe-plan]
+row = headwater probe plan
+outcome = pass
+tree = probes
+run = probe plan --root .
+
+[probe-plan-unknown-tier]
+row = headwater probe plan
+outcome = refuse
+tree = probes
+run = probe plan --root . --tier nosuch
+
+[probe-record-transcript]
+row = headwater probe record
+outcome = pass
+tree = probes
+run = probe record --root . docs/probe-runs/first-regression.md
+
+[probe-record-no-file]
+row = headwater probe record
+outcome = refuse
+tree = probes
+run = probe record --root . nowhere.md
+
+[probe-grade-transcript]
+row = headwater probe grade
+outcome = pass
+tree = probes
+run = probe grade --root . docs/probe-runs/first-regression.md
+
+[probe-grade-no-envelope]
+row = headwater probe grade
+outcome = refuse
+tree = probes
+setup = remove .headwater/probe.yml
+run = probe grade --root . docs/probe-runs/first-regression.md
+
+[probe-compare-one-run-with-itself]
+row = headwater probe compare
+outcome = pass
+tree = probes
+run = probe compare --root . docs/probe-runs/first-regression.md docs/probe-runs/first-regression.md
+
+[probe-compare-no-envelope]
+row = headwater probe compare
+outcome = refuse
+tree = probes
+setup = remove .headwater/probe.yml
+run = probe compare --root . docs/probe-runs/first-regression.md docs/probe-runs/first-regression.md
+
+[probe-stale-nothing-moved]
+row = headwater probe stale
+outcome = pass
+tree = probes
+run = probe stale --root .
+
+[probe-stale-no-envelope]
+row = headwater probe stale
+outcome = refuse
+tree = probes
+setup = remove .headwater/probe.yml
+run = probe stale --root .
+
+# ---------------------------------------------------------------- init
+
+[init-git-on-a-bound-tree]
+row = headwater init
+outcome = pass
+tree = base
+run = init --root . --git
+
+[init-already-bound]
+row = headwater init
+outcome = refuse
+tree = base
+run = init --root .
+
+# ---------------------------------------------------------------- taxonomy
+
+[taxonomy-bare]
+row = headwater taxonomy
+outcome = refuse
+only = `dispatch` gives a verb with no second word no arm that returns success
+run = taxonomy
+
+[taxonomy-other]
+row = headwater taxonomy <other>
+outcome = refuse
+only = `dispatch` gives a second word this verb does not carry no arm that returns success
+run = taxonomy nosuch
+
+[taxonomy-validate]
+row = headwater taxonomy validate
+outcome = pass
+tree = base
+run = taxonomy validate --root .
+
+[taxonomy-validate-unresolved-parent]
+row = headwater taxonomy validate
+outcome = refuse
+tree = base
+setup = write .headwater/packages/acme-printed/taxonomy.yml "taxonomy: acme/printed\nversion: 1.0.0\nkinds:\n  answer:\n    is_a: nosuch\n"
+run = taxonomy validate --root .
+
+# These two lines are what hold the committed locks: a lock that is not what
+# its sources resolve to fails here, and the test refuses a manifest that has
+# no such line for a tree that commits a lock.
+[taxonomy-resolve-check-base]
+row = headwater taxonomy resolve
+outcome = pass
+tree = base
+run = taxonomy resolve --root . --check
+
+[taxonomy-resolve-check-probes]
+row = headwater taxonomy resolve
+outcome = pass
+tree = probes
+run = taxonomy resolve --root . --check
+
+[taxonomy-resolve-check-source-moved]
+row = headwater taxonomy resolve
+outcome = refuse
+tree = base
+setup = write .headwater/packages/acme-printed/taxonomy.yml "taxonomy: acme/printed\nversion: 1.0.0\npurposes:\n  rationale: {intent: explain why a choice was made}\n"
+run = taxonomy resolve --root . --check
+
+[taxonomy-audit]
+row = headwater taxonomy audit
+outcome = pass
+tree = base
+run = taxonomy audit --root . --now 2026-01-15
+
+[taxonomy-audit-no-lock]
+row = headwater taxonomy audit
+outcome = refuse
+tree = base
+setup = remove .headwater/taxonomy.lock
+run = taxonomy audit --root . --now 2026-01-15
+
+[taxonomy-publish]
+row = headwater taxonomy publish
+outcome = pass
+tree = base
+run = taxonomy publish --root . --out artifact
+
+[taxonomy-publish-into-a-full-directory]
+row = headwater taxonomy publish
+outcome = refuse
+tree = base
+setup = headwater taxonomy publish --root . --out artifact
+run = taxonomy publish --root . --out artifact
+
+# The digest is the one `taxonomy publish` prints for `trees/next`. It moves
+# when a file of that package moves, and the status of this line then says so.
+[taxonomy-vendor]
+row = headwater taxonomy vendor
+outcome = pass
+tree = next
+setup = headwater taxonomy publish --root . --from .next/acme-printed --out artifact
+run = taxonomy vendor --root . artifact --expect sha256:ca0f2bc30713ea81b7d586ca410f811395d525cf18480d44026b3381099b707a
+
+[taxonomy-vendor-wrong-pin]
+row = headwater taxonomy vendor
+outcome = refuse
+tree = next
+setup = headwater taxonomy publish --root . --from .next/acme-printed --out artifact
+run = taxonomy vendor --root . artifact --expect sha256:1111
+
+[taxonomy-diff-to-next-major]
+row = headwater taxonomy diff
+outcome = pass
+tree = base next
+setup = headwater taxonomy publish --root . --from .next/acme-printed --out artifact
+run = taxonomy diff --root . artifact --to 2.0.0 --now 2026-01-15
+
+[taxonomy-diff-no-artifact]
+row = headwater taxonomy diff
+outcome = refuse
+tree = base
+run = taxonomy diff --root . nowhere --now 2026-01-15
+
+[taxonomy-migrate-dry-run]
+row = headwater taxonomy migrate
+outcome = pass
+tree = base next
+setup = headwater taxonomy publish --root . --from .next/acme-printed --out artifact
+run = taxonomy migrate --root . artifact --to 2.0.0 --now 2026-01-15
+
+[taxonomy-migrate-apply]
+row = headwater taxonomy migrate
+outcome = pass
+tree = base next
+setup = headwater taxonomy publish --root . --from .next/acme-printed --out artifact
+run = taxonomy migrate --root . artifact --to 2.0.0 --now 2026-01-15 --apply
+
+[taxonomy-migrate-other-version]
+row = headwater taxonomy migrate
+outcome = refuse
+tree = base next
+setup = headwater taxonomy publish --root . --from .next/acme-printed --out artifact
+run = taxonomy migrate --root . artifact --to 3.0.0 --now 2026-01-15
+
+[taxonomy-graph]
+row = headwater taxonomy graph
+outcome = pass
+tree = base
+run = taxonomy graph --root .
+
+[taxonomy-graph-no-lock]
+row = headwater taxonomy graph
+outcome = refuse
+tree = base
+setup = remove .headwater/taxonomy.lock
+run = taxonomy graph --root .
+
+[taxonomy-kinds]
+row = headwater taxonomy kinds
+outcome = pass
+tree = probes
+run = taxonomy kinds --root .
+
+[taxonomy-kinds-no-lock]
+row = headwater taxonomy kinds
+outcome = refuse
+tree = base
+setup = remove .headwater/taxonomy.lock
+run = taxonomy kinds --root .
+
+# ---------------------------------------------------------------- json
+
+[json-bare]
+row = headwater json
+outcome = refuse
+only = `dispatch` gives a verb with no second word no arm that returns success
+run = json
+
+[json-other]
+row = headwater json <other>
+outcome = refuse
+only = `dispatch` gives a second word this verb does not carry no arm that returns success
+run = json nosuch
+
+[json-field]
+row = headwater json field
+outcome = pass
+stdin = "{\"tool_input\":{\"file_path\":\"docs/answers/context.md\"},\"calls\":[1,2,3]}\n"
+run = json field tool_input file_path
+
+[json-field-no-member]
+row = headwater json field
+outcome = refuse
+stdin = "{\"tool_input\":{\"file_path\":\"docs/answers/context.md\"},\"calls\":[1,2,3]}\n"
+run = json field tool_input nosuch
+
+[json-count]
+row = headwater json count
+outcome = pass
+stdin = "{\"tool_input\":{\"file_path\":\"docs/answers/context.md\"},\"calls\":[1,2,3]}\n"
+run = json count calls
+
+[json-count-a-scalar]
+row = headwater json count
+outcome = refuse
+stdin = "{\"tool_input\":{\"file_path\":\"docs/answers/context.md\"},\"calls\":[1,2,3]}\n"
+run = json count tool_input file_path
+
+[json-quote]
+row = headwater json quote
+outcome = pass
+stdin = "a \"quoted\" line\tand a tab\n"
+run = json quote
+
+[json-quote-not-text]
+row = headwater json quote
+outcome = refuse
+stdin = "%FF%FE"
+run = json quote
+
+# ---------------------------------------------------------------- help
+
+[help-one-verb]
+row = headwater help
+outcome = pass
+run = help check
+
+[help-unknown-verb]
+row = headwater help
+outcome = refuse
+run = help nosuch
+
+# ---------------------------------------------------------------- completions
+
+[completions-bash]
+row = headwater completions
+outcome = pass
+run = completions bash
+
+[completions-unknown-shell]
+row = headwater completions
+outcome = refuse
+run = completions tcsh
+
+# ---------------------------------------------------------------- no verb
+
+[unknown-verb]
+row = headwater <unknown>
+outcome = refuse
+only = `dispatch` gives a first word that is no verb no arm that returns success
+run = nosuch

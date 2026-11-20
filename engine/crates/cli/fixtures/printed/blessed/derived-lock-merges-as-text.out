@@ -1,0 +1,28 @@
+1 derived artifacts, computed from 3 producers
+
+  headwater generate — carries the generated-file marker, 0 outputs
+
+  headwater export — carries the marker of an export built at publish time, 0 outputs
+
+  headwater taxonomy resolve — is the committed taxonomy lock, 1 output
+    .headwater/taxonomy.lock
+
+these are written by a producer and carry neither `-merge` nor `merge=headwater-regenerate`, so two branches that move one to the same value merge it silently:
+    .headwater/taxonomy.lock — is the committed taxonomy lock, rerun with `headwater taxonomy resolve`
+no declared path is without a producer
+
+1 paths hold a record whose shape decides its merge
+
+  A line that depends on nothing — takes `merge=union`, because a reading depends on no other reading, so both sides may be kept
+    (no path of this tree)
+
+  One record for each entity, in a fixed order — takes `no merge attribute`, because two branches write two different lines, so an ordinary conflict is the correct report and no attribute is wanted
+    (no path of this tree)
+
+  A fold over those records / A fold over everything — takes `-merge`, because a fold depends on every record, so a merge keeps the current side and conflicts, and it is rewritten rather than reconciled. A clone that ran `headwater init --git --git-config` overrides it with `merge=headwater-regenerate` in `info/attributes`, which also agrees
+    .headwater/taxonomy.lock — rerun with `headwater taxonomy resolve`
+
+these carry a merge attribute that their shape does not take, and each line says what the merge of it costs:
+    .headwater/taxonomy.lock — A fold over those records / A fold over everything, and it declares no merge attribute: two branches that move the fold to one value merge it in silence, into a value that was true on neither
+      it takes `-merge`, and `headwater taxonomy resolve` rebuilds it
+no merge attribute is behind a pattern this verb cannot expand

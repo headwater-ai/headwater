@@ -1,0 +1,2 @@
+headwater: `json nosuch` is not a verb this binary carries. It carries `field`, `count` and `quote`
+headwater: run `headwater --help` for the grammar

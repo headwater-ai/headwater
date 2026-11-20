@@ -1,0 +1,108 @@
+Run the pipeline over the corpus, against the taxonomy in the committed lock.
+
+Usage: headwater check [OPTIONS]
+
+Options:
+      --root <path>
+          the repository to read. Defaults to the working directory
+      --strict
+          exit non-zero when a finding is an error. Without it the run is
+          advisory and always exits 0, which is the default spec 6 fixes
+      --fix
+          write the patch that rides with a finding, in this working tree. A
+          finding carries one only when the fix is mechanical and total, and a
+          finding an author suppressed carries none. Every patch is held against
+          the bytes it names and the result is read back before it lands, so a
+          file whose shape this engine guessed wrong is refused with nothing
+          written. The report that follows is the run after the write, and the
+          account of what was written goes to standard error. It exits non-zero
+          on a refusal
+  -V, --version
+          the version of this engine. It is the number a package's
+          `requires_engine` range is read against, and it is the number to quote
+          in a bug report. One line on standard output, and no repository is
+          needed to ask
+      --no-cache
+          read and write no cache, and evaluate every instance. This run and a
+          cached one write the same bytes to standard output, and a difference
+          between them is a defect in the cache rather than a result
+      --wide
+          lay the help, and the report of `headwater check`, out at the width
+          `COLUMNS` states, held to the range 80 to 120. A reading that is
+          absent or is not a number gives 80, which is what a run with no flag
+          gives. Without it nothing reads `COLUMNS`, so a run piped into a file
+          and a run under a terminal write the same bytes. A shell keeps
+          `COLUMNS` to itself, so the form that carries it is `COLUMNS=100
+          headwater --wide --help`. A run that lays nothing out, a machine
+          format included, refuses it rather than accepting a flag that does
+          nothing
+      --no-color
+          force plain text on both streams: bold and dim weight and glyphs, no
+          escape sequence. Without it, this binary senses whether each stream is
+          a terminal and renders color there, plain text otherwise. `NO_COLOR`,
+          set to any value, has the same effect. It is declared so that a caller
+          who writes it out of habit is answered rather than refused
+      --now <date>
+          the date to evaluate against, as `YYYY-MM-DD`. Defaults to today. Spec
+          12 makes the clock an injected value rather than a syscall inside a
+          check, and this flag is where it is injected: same corpus, same lock,
+          same date, same bytes
+      --change <manifest>
+          the manifest of a change, which the rules that read a transition use.
+          It does not narrow the documents that the run checks. The first line
+          is `headwater change 1`, and a file that opens with anything else is
+          refused rather than read. Each line after it names one document the
+          change carries, as `added<tab><path>` or
+          `prior<tab><path><tab><file>`, and the second form names a file
+          holding the bytes that stood before the change. A document the
+          manifest does not name did not change. It is what a rule that reads a
+          transition needs, and without it every instance of such a rule is
+          reported as skipped rather than passed. This engine walks no history:
+          the caller anchors the prior version to the state on the branch where
+          the change lands, which spec 12 fixes as the merge base of a proposed
+          change and the committed `HEAD` of a working-tree hook. Every path is
+          held against the corpus this run walks, and one that reaches no row of
+          it is counted and named in the report rather than absorbed. No path is
+          normalized, so `./docs/a.md` reaches no row. What this engine cannot
+          check is whether the manifest tells the truth: a line that says
+          `added` for a document that already stood, and a document the change
+          carried and the manifest omits, are both invisible without the history
+          that spec 12 rules out as an input
+      --no-banner
+          suppress the masthead: the line naming this binary and its version,
+          and the rule beneath it, that the root help screen alone prints above
+          `Usage:`. `HEADWATER_NO_BANNER`, set to any value, has the same
+          effect. It is accepted, and inert, on every verb's own page, the same
+          posture `--no-color` already takes for a flag that changes nothing
+          there
+      --read-set <path>
+          write the read set of this run to a file as well as to the report. The
+          artifact is what decides whether a verdict survives a merge without
+          running the checks again, and `headwater gate` is what reads it
+      --register <path>
+          write the register of this run to a file as well as to the report.
+          Spec 4 makes it a projection of the `obligations` and `controls`
+          declarations, generated and never authored: every obligation with its
+          disposition, every control with its health, and what escaped under
+          each
+      --format <text|json|sarif|markdown>
+          which vocabulary to write the run in. `text` is the report a person
+          reads and the default. `sarif` is what a forge ingests as a check run,
+          `markdown` is a job summary or a review comment, and `json` is the
+          finding shape spec 4 declares, for an adapter nobody here wrote.
+          `sarif` writes its own loss set into the artifact. `markdown` declares
+          one in the source and not in the artifact, because nothing it writes
+          is machine-readable. `text` declares one drop there too, the routing
+          of each skip, and carries the census and the graph that no other
+          format holds. `json` declares one there as well, the per-document
+          account of coverage, and writes no loss set of its own. A run that
+          refuses writes nothing here: the account is one English sentence on
+          standard error and the status is 1
+      --json
+          write this run as one JSON document on standard output. It is the
+          artifact `--format json` writes, byte for byte. A run that states both
+          is refused rather than resolved, because two names for one target is a
+          question answered twice. A run that refuses writes nothing here: the
+          account is one English sentence on standard error and the status is 1
+  -h, --help
+          Print help
