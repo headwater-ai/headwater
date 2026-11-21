@@ -93,7 +93,7 @@ The single component that owns identity for one anchor type. It normalizes ancho
 
 ### Arm
 
-Whether a probe run had the corpus present or absent. Every probe runs in one arm, and a published efficacy claim needs the pair. See [spec 5](05-ai-integration.md#probe-categories).
+The tree that a probe session ran in. It is `present`, `absent`, a component arm that removes or adds one part of the layer, or a scenario arm of the additive tier. Every session runs in one arm, and a published efficacy claim needs a pair. See [spec 5](05-ai-integration.md#probe-categories).
 
 ### Assembly
 
@@ -249,7 +249,7 @@ The [voice regime](#voice-regime) for present-state documents. It forbids future
 
 ### Detective
 
-A posture. The control acts after the mistake lands, and never blocks. Staleness and participation expectations are permanently detective. See [spec 4](04-assurance-model.md#assurance-not-enforcement).
+A control class, and not a [posture](#posture). The control acts after the mistake lands. Staleness and participation expectations are permanently detective. See [spec 4](04-assurance-model.md#assurance-not-enforcement).
 
 ### Discriminator
 
@@ -325,7 +325,7 @@ Five acceptance tests for a facet: relevance, ascertainability, permanence, diff
 
 ### Facet role
 
-One of five engine-significant roles that a facet may carry: `state`, `state_entered`, `created`, `freshness`, and `scent`. The registry is closed, and a role outside it is a validation error. See [spec 2](02-taxonomy-model.md#the-meta-schema).
+One of the engine-significant roles that a facet may carry: `state`, `state_entered`, `created`, `freshness`, `scent`, and `name`. The registry is closed, and a role outside it is a validation error. See [spec 2](02-taxonomy-model.md#the-meta-schema).
 
 ### Family
 
@@ -489,7 +489,7 @@ A source corpus's [export](#export), named by identity, content hash, and locati
 
 ### Plugin
 
-Adopter check code behind a narrow interface. It receives the same scoped view as a built-in check, obeys the same scope enforcement, and must name the obligation that it serves. See [spec 12](12-check-layer.md#the-plugin-interface).
+Adopter check code behind a narrow interface. It receives the same scoped view as a built-in check and obeys the same scope enforcement. It names no obligation, because a control binds a rule to the obligation that it serves. See [spec 12](12-check-layer.md#the-plugin-interface).
 
 ### Pointer
 
@@ -497,7 +497,7 @@ A path plus a one-line summary. Routing returns pointers and never content, so t
 
 ### Posture
 
-How a control acts: advisory, blocking, or detective. Posture belongs to the control. [Severity](#severity) belongs to the check. See [spec 12](12-check-layer.md#severity-is-the-checks-posture-is-the-controls).
+Whether a finding of a control blocks a gate: advisory or blocking. The class that a control acts in, such as [detective](#detective), is a second member. Posture belongs to the control. [Severity](#severity) belongs to the check. See [spec 12](12-check-layer.md#severity-is-the-checks-posture-is-the-controls).
 
 ### Preventive
 
@@ -517,7 +517,7 @@ The document that grades one run: a projection over the [probe transcript](#prob
 
 ### Probe suite
 
-The probes that a corpus declares, run against it in a controlled session and graded from the tool-call transcript rather than from the model's self-report. It runs in two tiers, regression and [campaign](#campaign). See [spec 5](05-ai-integration.md#measuring-whether-any-of-this-works).
+The probes that a corpus declares, run against it in a controlled session and graded from the tool-call transcript rather than from the model's self-report. It runs in tiers: regression, [campaign](#campaign), documentation, and additive. See [spec 5](05-ai-integration.md#measuring-whether-any-of-this-works).
 
 ### Probe transcript
 
@@ -565,7 +565,7 @@ Whether the target of a relation must acknowledge the source, and with which inv
 
 ### Regime
 
-A reusable, named bundle of rules that a kind opts into, so that a rule is declared once and referenced many times. Two survive: [voice](#voice-regime) and [lifecycle](#lifecycle-regime). See [spec 1](01-conceptual-model.md#regimes).
+A reusable, named bundle of rules that a kind opts into, so that a rule is declared once and referenced many times. The families are [voice](#voice-regime), [lifecycle](#lifecycle-regime), and [language](02-taxonomy-model.md#language-is-declared-not-assumed). See [spec 1](01-conceptual-model.md#regimes).
 
 ### Register projection
 
@@ -601,7 +601,7 @@ The intent-time match of a task description against declared purposes, before an
 
 ### Run identity
 
-What a probe run records about itself. It holds the served model version, the corpus tree, the lock hash, the probe selection, the seed, the harness version, the [arm](#arm), and the time. A model name alone is not a pin. See [spec 5](05-ai-integration.md#a-run-produces-a-snapshot-and-a-document).
+What a probe run records about itself. A plan fixes the lock, the corpus tree, the probe selection, the read set, the seed, and the harness version. The recorder adds the model, its served version, the tier, the [arm](#arm), the time, and the realized cost. A model name alone is not a pin. See [spec 15](15-the-recorder-contract.md#the-run-identity-which-carries-twelve-keys).
 
 ### Sampler
 
@@ -621,7 +621,7 @@ The proximal cue that predicts distal value, and the thing that routing trades i
 
 ### Scope
 
-What a check declares that it needs to see. The values are `Document`, `Edge`, `Neighbourhood`, `Shelf`, and `Corpus`, plus flags for the body, the clock, and the prior version. See [spec 12](12-check-layer.md#scope--the-declaration-everything-else-rests-on).
+What a check declares that it needs to see. The values are `Document`, `Edge`, `Neighbourhood`, `Corpus`, and `Taxonomy`. A flag names each further input that a check needs, such as the body, the clock, or the prior version. See [spec 12](12-check-layer.md#scope--the-declaration-everything-else-rests-on).
 
 ### Scoped view
 
@@ -673,7 +673,7 @@ The date when a document entered its current state. Whatever performs the transi
 
 ### Stop rules
 
-The four refusals that an assistant working in the corpus must show. No rationale without external evidence. No hand edit of a generated file. No new shelf, kind, or facet invented in place. No duplication of a fact that exists elsewhere. See [spec 5](05-ai-integration.md#the-stop-rules).
+The refusals that an assistant working in the corpus must show. No rationale without external evidence. No hand edit of a generated file. No new shelf, kind, or facet invented in place. No duplication of a fact that exists elsewhere. No self-acceptance. See [spec 5](05-ai-integration.md#the-stop-rules).
 
 ### Succession
 

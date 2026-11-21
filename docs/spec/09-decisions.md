@@ -226,7 +226,7 @@ Vale does not become a declared regime backend, and its findings are not transla
 
 ## Q42 — What "one screen" means for the first help screen
 
-"One screen" is retired as a claim about a terminal and replaced by a claim about content. The first screen carries one line per entry, and the ceiling that follows from it is 60 lines. The record is [HW-DR-0042](../decisions/0042-q42-what-one-screen-means-for-the-first-help-screen.md).
+"One screen" is retired as a claim about a terminal and replaced by a claim about content. The first screen carries one line per entry, and a ceiling on its height follows from that. The record is [HW-DR-0042](../decisions/0042-q42-what-one-screen-means-for-the-first-help-screen.md), and it states the ceiling.
 
 **This question came from [#342](https://github.com/headwater-ai/headwater/issues/342), and no layout at 80 columns could ever have met the reading that was retired.** One line per verb costs 24 lines for eighteen verbs, and the headings and separators cost eleven more. So 35 lines are spent before one flag or one example is printed. The lever is what the screen says, and 25 of its 76 lines were the whole description of five global flags. `GLOBALS` in [`engine/crates/cli/src/lib.rs`](https://github.com/headwater-ai/headwater/blob/main/engine/crates/cli/src/lib.rs) now declares a one-line summary beside each description, and the screen prints the summaries. The descriptions stay on all 32 verb pages, where [HW-DR-0033](../decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md) already puts them. The measured screen is 56 lines.
 

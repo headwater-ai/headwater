@@ -59,7 +59,7 @@ So each obligation declares which it is, and different mechanisms discharge the 
 | Decidable | Yes, deterministically | No, it needs judgment |
 | Mechanism | Engine checks | Sampled audit, efficacy probes, reader feedback |
 | Coverage | Total (every document, every run) | Sampled (a subset, at intervals) |
-| Posture | Advisory → blocking | Detective, always |
+| Posture | Advisory → blocking | Advisory, always |
 | Failure mode | False positives | Sampling misses things |
 
 The system does not pretend that one covers the other. A green check run is never reported as "the corpus is coherent". It means that the corpus is *cohesive*. That is a real and useful thing to know, and a smaller claim.

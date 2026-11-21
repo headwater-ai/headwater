@@ -911,6 +911,6 @@ The third column is the real test. If a regulated adopter can express control ma
 
 ## Deliberate limits
 
-The taxonomy language is **not** a general programming language. It has no conditionals, no user-defined functions, and no arbitrary expressions. Rules that the taxonomy language cannot express declaratively become **check plugins** with a documented interface (see [engine architecture](06-engine-architecture.md)). That boundary is defended: the moment that the schema grows an `if`, the drift between declared and actual structure comes back.
+The taxonomy language is **not** a general programming language. It has no conditionals, no user-defined functions, and no arbitrary expressions. Rules that the taxonomy language cannot express declaratively become **check plugins** with a documented interface (see [the check layer](12-check-layer.md#the-plugin-interface)). That boundary is defended: the moment that the schema grows an `if`, the drift between declared and actual structure comes back.
 
 The relation family set is **closed**. An adopter may declare any number of relation types, but every one must belong to one of the six families. A taxonomy that needs a seventh family tells us something about the model. That conversation should happen upstream, and an escape hatch should not settle it locally.

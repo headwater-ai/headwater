@@ -136,7 +136,7 @@ A prose link is evidence that an author found a reference worth making at one po
 
 The cost of that ruling is a reference written twice. [Spec 4](04-assurance-model.md#declaration-moves-the-boundary) absorbs most of it: an extracted link with no declared relation is an advisory finding, and the fix writes the declaration.
 
-Relation types that an adopter is likely to want (all shipped with the default package, none hard-coded in the engine): `supersedes` / `superseded_by`, `derives_from`, `governs`, `verifies`, `implements`, `cites`, `owns`, `refines`, `conflicts_with`. Shipped does not mean enabled: the default *enables* a minimal four. The rest are complete declarations that an overlay pulls in by reference ([spec 2](02-taxonomy-model.md#the-decision-relation-vocabulary)).
+Relation types that an adopter is likely to want (all shipped with the default package, none hard-coded in the engine): `supersedes` / `superseded_by`, `derives_from`, `governs`, `verifies`, `implements`, `cites`, `owns`, `refines`, `conflicts_with`. Shipped does not mean enabled: the default *enables* a minimal set. The rest are complete declarations that an overlay pulls in by reference ([spec 2](02-taxonomy-model.md#the-decision-relation-vocabulary)).
 
 A kind may also declare a participation **expectation**. The expectation says that its documents, in a given state, get a named relation within a window measured from a declared origin date ([spec 2](02-taxonomy-model.md#participation-expectations)). Expectations are the only construct that finds a document that **should exist and does not**. Every other check validates artifacts that are present. They model what genre theory calls a *genre system*: proposal → decision → specification → evidence.
 
@@ -169,6 +169,7 @@ A **regime** is a reusable, named bundle of rules that a kind opts into. Regimes
 
 - **Voice regime** — the voice in which a document is written, with the machine-checkable part of it: e.g. *declarative present-state* (no future intent, no narration of change, no phased-rollout language), *narrative* (time-boxed exploration, changelogs), or *unconstrained*.
 - **Lifecycle regime** — a state machine over the state facet: states, legal transitions, terminal states, and what each state implies (e.g. superseded documents are retained and delinked from live dependency paths).
+- **Language regime** — the language, the variant, and the controlled profile that a kind writes in. The lexical checks read the spelling lexicon, the sentence limits, and the retired terms from it ([spec 2](02-taxonomy-model.md#language-is-declared-not-assumed)).
 
 An earlier draft had two more regimes, and each was one parameter in a wrapper. **Freshness policy** — the staleness threshold, drift weighting, and posture — lives on the freshness facet itself, and it is mandatory. A facet that carries the freshness role without applicable policy is invalid. **Size budgets** live on the agent-facing kinds and projections that they meter, and they are mandatory there. An agent-facing projection without an applicable budget is invalid. The protections moved to their enforcement points. Only the wrappers were deleted.
 
@@ -180,7 +181,7 @@ A statement that the corpus commits to, expressed as an **invariant** with a sta
 
 ### Control
 
-A mechanism that discharges an obligation: an engine check, a CI job, a git hook, an agent behavior, a scheduled scan, a human audit. A control declares what it verifies, when it runs, and its **posture** — advisory, blocking, or detective.
+A mechanism that discharges an obligation: an engine check, a CI job, a git hook, an agent behavior, a scheduled scan, a human audit. A control declares what it verifies, when it runs, and its **posture** — advisory or blocking. It also declares the class that it acts in, such as detective ([spec 4](04-assurance-model.md#controls-are-data)).
 
 These are the section's only two concepts. Their binding is visible in the **register projection**: the generated, checked view of which controls discharge which obligations. The view also gives the explicit disposition of every obligation with none — *gap* (tracked, wanted) or *unverifiable* (no mechanism can exist, accepted) — and control health, suppressions, and waivers. Every obligation carries exactly one disposition.
 
