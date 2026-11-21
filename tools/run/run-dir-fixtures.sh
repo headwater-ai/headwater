@@ -200,11 +200,59 @@ same 'net is derived from the lines, never read from one' 'iterations 3  opened 
 printf '%s\n' '{"iter":4,"issue":106,"pr":12,"merge":"x","verdict":"PASS","proved":"x","opened":0,"closed":1}' >> "$dir/log.jsonl"
 same '  and an older line that stored counts is still counted' 'iterations 4  opened 3  closed 5  net -2' "$(sh "$tool" net "$dir")"
 
-printf '\n# a second run seeds its prose from the first\n'
+printf '\n# a second run is seeded with the OWNER lines of the first, and with the path of the rest\n'
+# Run 20261119-1302 began with a decisions.md of 647 KB and a lessons.md of
+# 184 KB, because `start` copied both whole from the run before, which had
+# copied them from the run before that. The only lines a later run reads are
+# the OWNER lines in the form `answered_issues` parses. The decisive case is
+# the size: a first run that holds far more history than answers seeds a
+# second run with the answers and one line, however long the history is.
 printf 'A lesson the first run learned.\n' > "$dir/lessons.md"
+{
+    printf '## A heading of narrative\n\n'
+    printf -- '- 2026-10-01 — OWNER (2026-10-01) #7: "Build it"\n'
+    printf -- '- 2026-10-01 — RULED #8 deferred (run first): not this run\n'
+    printf -- '- 2026-10-01 — SCOPE: #7 #8 and nothing else\n'
+    printf -- '- 2026-10-01 — OWNER (2026-10-01) run: drain the queue, and leave #9 alone.\n'
+    printf -- '- 2026-10-02 — OWNER (2026-10-02) #9 #10: "Build both"\n'
+    i=0
+    while [ "$i" -lt 400 ]; do
+        printf -- '- 2026-10-02 — the parent filled slot %s, and wrote a paragraph about it that no later run reads\n' "$i"
+        i=$((i + 1))
+    done
+} > "$dir/decisions.md"
 second=$(sh "$tool" start second 2>/dev/null)
-same 'the lesson is carried into the next run' 'A lesson the first run learned.' "$(cat "$second/lessons.md")"
+same 'no lesson is carried into the next run, and the one line names the file that holds them' \
+    "Lessons of run second alone. No lesson of an earlier run is carried here, and run first kept its own in $scratch/runs/first/lessons.md." \
+    "$(cat "$second/lessons.md")"
+same '  and the file it names still holds the lesson' 'A lesson the first run learned.' "$(cat "$scratch/runs/first/lessons.md")"
+same '  and decisions.md opens with one line that names the previous file' \
+    "Decisions of run second. The OWNER lines that follow this one are carried from run first, because the answer of the owner binds every run. Nothing else that run decided binds this one, and all of it stays in $scratch/runs/first/decisions.md." \
+    "$(sed -n 1p "$second/decisions.md")"
+same '  and every OWNER line that answers an issue follows it, verbatim and in order' \
+    '- 2026-10-01 — OWNER (2026-10-01) #7: "Build it"
+- 2026-10-02 — OWNER (2026-10-02) #9 #10: "Build both"' \
+    "$(sed 1d "$second/decisions.md")"
+same '  and no RULED line, no SCOPE line, no heading and no OWNER line that answers no issue is carried' 0 \
+    "$(grep -c -e RULED -e SCOPE -e '^## ' -e 'drain the queue' "$second/decisions.md")"
+same '  and four hundred and seven lines of history seed three lines' 3 "$(wc -l < "$second/decisions.md" | tr -d ' ')"
+same '  and the previous file is left whole' 407 "$(wc -l < "$scratch/runs/first/decisions.md" | tr -d ' ')"
+q "$second" 7 mark=ruling; q "$second" 9 mark=ruling; q "$second" 10 mark=ruling
+same '  and next reads each carried answer' '7 9 10' "$(echo $(
+    sh "$tool" next "$second" 2>&1; sh "$tool" claim "$second" 7 issue-7 f7 >/dev/null 2>&1
+    sh "$tool" next "$second" 2>&1; sh "$tool" claim "$second" 9 issue-9 f9 >/dev/null 2>&1
+    sh "$tool" next "$second" 2>&1))"
+third_seed=$(sh "$tool" start second-b 2>/dev/null)
+same '  and a third run carries the same answers on, so the chain does not drop one' \
+    "$(sed 1d "$second/decisions.md")" "$(sed 1d "$third_seed/decisions.md")"
 same '  and its log starts empty' 0 "$(wc -c < "$second/log.jsonl" | tr -d ' ')"
+rm -rf "$third_seed"
+bare_root="$scratch/bare-runs"
+mkdir -p "$bare_root/older"
+: > "$bare_root/older/decisions.md"
+lone=$(HEADWATER_RUN_ROOT="$bare_root" sh "$tool" start lone 2>/dev/null)
+same 'a run after one with no prose starts with both files empty' '0 0' \
+    "$(wc -c < "$lone/lessons.md" | tr -d ' ') $(wc -c < "$lone/decisions.md" | tr -d ' ')"
 
 printf '\n# import\n'
 cat > "$scratch/ledger.md" <<'EOF'
@@ -238,7 +286,7 @@ sh "$tool" import "$scratch/ledger.md" "$third" >"$scratch/out" 2>&1; status=$?
 same 'import exits 0' 0 "$status"
 same '  and the Lessons section reaches lessons.md' 2 "$(grep -c '^- ' "$third/lessons.md")"
 same '  and a later heading of the same name is not taken' 0 "$(grep -c 'Not the ledger' "$third/lessons.md")"
-same '  and the decisions reach decisions.md' '- A decision.' "$(grep '^- ' "$third/decisions.md")"
+same '  and the decisions reach decisions.md, after the OWNER lines start carried' '- A decision.' "$(grep '^- ' "$third/decisions.md" | grep -v ' — OWNER ')"
 same '  and the old log is kept whole rather than parsed' 1 "$(grep -c '^|' "$third/log-imported.md")"
 
 printf '\n# claims: a footprint quoted as one argument\n'
@@ -838,10 +886,13 @@ same '  and in drain resume prints DRAIN and nothing else' DRAIN "$(sh "$tool" r
 rm -f "$inflight/drain"
 
 printf '\n# a ruling binds the run that wrote it, and an OWNER line binds every run\n'
-# Verify-1 of PR #1281: `start` seeds decisions.md from the previous run, so
-# a deferral written in run A skipped the issue again in run B, although
-# hw-run-policy defers "for this run alone". An OWNER line is different: the
-# owner's answer is posted on the issue and holds until the owner changes it.
+# Verify-1 of PR #1281: `start` then copied decisions.md whole from the
+# previous run, so a deferral written in run A skipped the issue again in run
+# B, although hw-run-policy defers "for this run alone". `start` now carries
+# no RULED line, and `ruled_issues` still reads the run in each one, so a
+# RULED line of another run that reaches the file by hand binds nothing. An
+# OWNER line is different: the owner's answer is posted on the issue and holds
+# until the owner changes it.
 rm -rf "$HEADWATER_RUN_ROOT"
 mkdir -p "$HEADWATER_RUN_ROOT"
 runa=$(sh "$tool" start 2026-a 2>/dev/null)
@@ -853,8 +904,10 @@ runb=$(sh "$tool" start 2026-b 2>/dev/null)
 same '  and the next run is seeded with no queue, no rulings and no integrator queue' '1 1 1' \
     "$([ -e "$runb/queue.jsonl" ]; echo $?) $([ -e "$runb/rulings.jsonl" ]; echo $?) $([ -e "$runb/integrate.jsonl" ]; echo $?)"
 q "$runb" 40; q "$runb" 41 mark=ruling; q "$runb" 42
-same '  and the next run is seeded with the RULED line' 1 "$(grep -c 'RULED #40 deferred (run 2026-a)' "$runb/decisions.md")"
-same '  but the next run hands the issue out again' 40 "$(sh "$tool" next "$runb" 2>&1)"
+same '  and the next run is not seeded with the RULED line' 0 "$(grep -c 'RULED #40 deferred (run 2026-a)' "$runb/decisions.md")"
+same '  so the next run hands the issue out again' 40 "$(sh "$tool" next "$runb" 2>&1)"
+grep 'RULED #40 deferred (run 2026-a)' "$runa/decisions.md" >> "$runb/decisions.md"
+same '  and a RULED line of the earlier run, copied in by hand, still binds nothing' 40 "$(sh "$tool" next "$runb" 2>&1)"
 sh "$tool" claim "$runb" 40 issue-40 f40 >/dev/null 2>&1
 same '  and the OWNER line of the earlier run still answers the ruling line' 41 "$(sh "$tool" next "$runb" 2>&1)"
 
