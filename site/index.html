@@ -172,6 +172,12 @@
   @keyframes hw-blink { 50% { opacity: 0; } }
 
   .cards { position: relative; min-width: 0; }
+  /* Two columns only: the card stack reaches 3rem into the 4rem gap so
+     the tutorial finding prints at its own line breaks on a wide screen.
+     One column has no gap to reach into. */
+  @media (min-width: 62rem) {
+    .cards { margin-left: -3rem; }
+  }
   .card-front {
     background: var(--bg); border: 1px solid var(--accent);
     padding: 1.1rem 1.3rem; position: relative; z-index: 2;
