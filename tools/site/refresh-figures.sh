@@ -343,10 +343,12 @@ put("verbs.groups", len(re.findall(r"^## ", verbs, re.M)),
 
 # --- 7. the emitter split, from the engine source ------------------------
 prof = (root / "engine/crates/generate/src/profile.rs").read_text()
-m = re.search(r"pub enum Emitter \{(.*?)\n\}", prof, re.S)
+# The enum may sit inside a macro such as `enumerated!`, so neither the
+# closing brace nor the variants are pinned to a column.
+m = re.search(r"pub enum Emitter \{(.*?)\n\s*\}", prof, re.S)
 if not m:
     sys.exit("refresh-figures.sh: no `Emitter` enum in profile.rs")
-variants = re.findall(r"^\s{4}([A-Z]\w*),\s*$", m.group(1), re.M)
+variants = re.findall(r"^\s+([A-Z]\w*),\s*$", m.group(1), re.M)
 m = re.search(r"pub fn is_built\(self\) -> bool \{\n(.*?)\n    \}", prof, re.S)
 if not m:
     sys.exit("refresh-figures.sh: no `is_built` in profile.rs")
