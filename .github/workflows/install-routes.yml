@@ -69,7 +69,7 @@ jobs:
 
   archive-macos:
     name: The macOS archive block installs headwater into an empty home
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
