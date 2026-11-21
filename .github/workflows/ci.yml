@@ -567,22 +567,6 @@ jobs:
         # untracked file into a scratch repository, and every step below writes
         # a report into the workspace that would ride along.
         run: sh .githooks/fixtures.sh
-      - name: A verb that promises to sense a terminal does sense one
-        # `docs/interfaces/` states on seventeen pages that the default senses
-        # whether each stream is a terminal and colors only there. Nothing else
-        # in this workflow can observe it. HW-DR-0045 refuses a
-        # `--color=always` flag, so every run below reaches this job through a
-        # pipe, where the painter is the identity — a renderer wired to
-        # `ColorMode::Plain` forever is green everywhere but here.
-        #
-        # It blocks, for the reason the step above blocks: a published contract
-        # that nothing holds is one nobody finds out is false.
-        #
-        # It attaches a real pseudo-terminal with util-linux `script`, which
-        # this runner has. A host without one prints a skip and exits 0, so read
-        # the step's output rather than its status when the question is whether
-        # the cases ran.
-        run: sh tools/engine/color-fixtures.sh
       - name: The committed lock is what the sources resolve to
         # This one blocks, and it is the only step here that does. It is not a
         # finding about the corpus: a stale lock means the verdict below was
@@ -742,6 +726,43 @@ jobs:
         # phase B (#1875) with `tools/probe/cell-passes.sh` behind a stub
         # engine. It needs `sh`, `git`, `jq` and `python3`.
         run: sh tools/probe/campaign-drive-fixtures.sh
+      - name: A suite that runs beside other steps cannot pass without its own exit status
+        # `tools/ci/beside.sh` puts a suite in the background, and a later
+        # step of this job reads its verdict. That later step is then the only
+        # reader of the suite, so this suite provokes each way it could go
+        # green over nothing: a suite that failed, a name that nothing
+        # started, a shell that was killed, and a second start under one
+        # name. It runs before the first start below, because a broken tool
+        # makes every verdict it reports worthless. It writes only under a
+        # temporary directory.
+        run: sh tools/ci/beside-fixtures.sh
+      - name: Four suites start here and run at the same time
+        # These four suites took 387 seconds of this job, one after another
+        # (medians of 143, 32, 82 and 130 seconds over 55 self-hosted runs,
+        # 2026-11-02 to 2026-11-19), and this job is the longer of the two
+        # that every merge waits on. They now run at the same time as each
+        # other, and the four steps below read their verdicts in turn. Each
+        # keeps the step that carries its name, and that step fails when the
+        # suite fails: `tools/ci/beside.sh wait` exits with the status of the
+        # suite, and exits nonzero when it has none. So no gate moved and none
+        # is weaker.
+        #
+        # What makes these four safe to run this way. Each reads the tracked
+        # files of this checkout, through `git ls-files`, `git archive` or the
+        # engine, and writes only under a temporary directory. None of the
+        # four holds a deadline that a busy runner would break.
+        #
+        # No other step runs between this one and the four waits, and that is
+        # on purpose. The driver-loop suite above times a backoff and a wait,
+        # and on a hosted runner the recorder's cases above run for 18 minutes
+        # and count sessions against a clock. A suite that plants a file in
+        # the checkout, as the harness-hook suite does under
+        # `docs/obligations/`, must never start here.
+        run: |
+          sh tools/ci/beside.sh start color-fixtures sh tools/engine/color-fixtures.sh
+          sh tools/ci/beside.sh start try-fixtures sh tools/probe/try-fixtures.sh
+          sh tools/ci/beside.sh start oracle-fixtures sh tools/probe/oracle-fixtures.sh
+          sh tools/ci/beside.sh start probe-oracle-fixtures sh tools/probe/probe-oracle-fixtures.sh
       - name: A try of the tuning round launches only inside the round's approval and on a base that is not stale
         # `tools/probe/try.sh` starts a try of the additive campaign's tuning
         # round from its plan and reads its canary (#1821). Its fixtures run
@@ -759,7 +780,10 @@ jobs:
         # record `plan` reads only while each path holds the digest it
         # accepted. It needs `sh`, `git`, `python3` with the PyYAML installed
         # above, `diff`, `sha256sum` and `setsid`.
-        run: sh tools/probe/try-fixtures.sh
+        #
+        # The step "Four suites start here and run at the same time" started
+        # it, and this step reads its verdict.
+        run: sh tools/ci/beside.sh wait try-fixtures
       - name: Each probe oracle passes the tree it must pass and fails the tree it must fail
         # `tools/probe/oracles/` holds the generic oracle scripts of the
         # 44-probe set (#1874, HW-DR-0112 "The form of an oracle"). Each
@@ -769,7 +793,10 @@ jobs:
         # here: the #1835 pilot found probes that passed every session or
         # failed every session. It needs the engine built above, `git`,
         # `tar` and `python3`.
-        run: sh tools/probe/oracle-fixtures.sh
+        #
+        # The step "Four suites start here and run at the same time" started
+        # it, and this step reads its verdict.
+        run: sh tools/ci/beside.sh wait oracle-fixtures
       - name: Each probe's own oracle fails the sealed tree, passes the reference change and fails the wrong one
         # `tools/probe/probe-oracle-fixtures.sh` (#1874) seals a copy of this
         # checkout over every current probe and builds the grading tree, the
@@ -782,7 +809,29 @@ jobs:
         # fails here. A case that compiles a crate runs only under --cargo,
         # which this step does not pass. It needs the engine built above,
         # `git`, `tar`, `jq` and `python3`.
-        run: sh tools/probe/probe-oracle-fixtures.sh
+        #
+        # The step "Four suites start here and run at the same time" started
+        # it, and this step reads its verdict.
+        run: sh tools/ci/beside.sh wait probe-oracle-fixtures
+      - name: A verb that promises to sense a terminal does sense one
+        # `docs/interfaces/` states on seventeen pages that the default senses
+        # whether each stream is a terminal and colors only there. Nothing else
+        # in this workflow can observe it. HW-DR-0045 refuses a
+        # `--color=always` flag, so every run below reaches this job through a
+        # pipe, where the painter is the identity — a renderer wired to
+        # `ColorMode::Plain` forever is green everywhere but here.
+        #
+        # It blocks, for the reason the step above blocks: a published contract
+        # that nothing holds is one nobody finds out is false.
+        #
+        # It attaches a real pseudo-terminal with util-linux `script`, which
+        # this runner has. A host without one prints a skip and exits 0, so read
+        # the step's output rather than its status when the question is whether
+        # the cases ran.
+        #
+        # The step "Four suites start here and run at the same time" started
+        # it, and this step reads its verdict.
+        run: sh tools/ci/beside.sh wait color-fixtures
       - name: The run census counts a turn once per message and a call by what it is for
         # `tools/run/run-census.sh` is the measurement behind HW-PD-0003 as a
         # tool: one usage record per message id, because a response is
@@ -1577,6 +1626,30 @@ jobs:
         run: |
           sh tools/site/refresh-figures.sh --into .headwater/site-deploy
           sh tools/site/check-site-figures.sh .headwater/site-deploy
+      - name: The live-site checker refuses what it claims to refuse
+        # `tools/site/check-live-site.py` runs after `wrangler deploy` and asks
+        # the deployed host what the repository cannot see. This serves a
+        # scratch tree from a local server that behaves as Workers static
+        # assets does and provokes each refusal: a sitemap URL that is a 404, a
+        # link to a path that is a 404, and case 5, a host that ignores
+        # `_redirects`. It writes only under a temporary directory.
+        #
+        # It stands above the step that starts the browser, and not below it,
+        # because two of its cases hold an elapsed time, and the browser
+        # check loads every core of a hosted runner while it runs.
+        run: sh tools/site/site-live-fixtures.sh
+      - name: The browser starts loading every served page beside the steps below
+        # The console check took 179 seconds of this job (median over 55
+        # self-hosted runs, 2026-11-02 to 2026-11-19). It reads
+        # `.headwater/site-deploy`, and the step above is the last one that
+        # writes there: every step from here to "Every served page loads in a
+        # browser with an empty console" reads that directory or runs fixtures
+        # under a temporary directory, and none of them holds a deadline. So
+        # the check starts here, and the step of that name reads its verdict,
+        # with the same three exit statuses.
+        # `tools/ci/beside.sh` carries what a wait does with a suite that
+        # failed or left no status.
+        run: sh tools/ci/beside.sh start site-console python3 tools/site/check-site-console.py
       - name: A figure is measured at publish, and a deploy that cannot measure publishes nothing
         # `tools/site/figures-fixtures.sh` adds a document to a scratch copy
         # of this tree and holds that no byte under `site/` moves, then runs
@@ -1668,14 +1741,6 @@ jobs:
         # and leaves its old URL unanswered, which is how the 44 URLs were lost.
         # It writes only under a temporary directory.
         run: sh tools/site/site-redirects-fixtures.sh
-      - name: The live-site checker refuses what it claims to refuse
-        # `tools/site/check-live-site.py` runs after `wrangler deploy` and asks
-        # the deployed host what the repository cannot see. This serves a
-        # scratch tree from a local server that behaves as Workers static
-        # assets does and provokes each refusal: a sitemap URL that is a 404, a
-        # link to a path that is a 404, and case 5, a host that ignores
-        # `_redirects`. It writes only under a temporary directory.
-        run: sh tools/site/site-live-fixtures.sh
       - name: Every hand-built page carries the narrow content policy
         # `site/_headers` sets the wide policy under `/*`, because a generated
         # page links its stylesheet, its script, its fonts and its search
@@ -1795,7 +1860,7 @@ jobs:
         #   by writing one here and watching the job fail.
         run: |
           status=0
-          python3 tools/site/check-site-console.py || status=$?
+          sh tools/ci/beside.sh wait site-console || status=$?
           if [ "$status" = 3 ]; then
             echo "::warning title=Browser console check skipped::No Chrome or Chromium on this runner, so no page was loaded and this step checked nothing. Install one, or set HEADWATER_CHROME."
             exit 0
