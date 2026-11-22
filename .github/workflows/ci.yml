@@ -926,8 +926,10 @@ jobs:
         # by anything until run 20260923-0733 read two of them wrong in
         # production. Every suite fakes `gh`, `cargo` or `df` on PATH, or a
         # reader script by an environment variable, so this step needs no
-        # network, no token and no toolchain, and writes only under temporary
-        # directories.
+        # network and no token, and writes only under temporary directories.
+        # One case needs the toolchain this job already has: the pre-pull-
+        # request suite runs the real engine README suite over a scratch
+        # tree, and that suite calls `cargo metadata --locked` (#1995).
         # It needs `jq`, which ubuntu-latest and the self-hosted runner both
         # carry, as the run directory step above shows: the fake `gh` of the
         # CI-finished and queue-finished suites runs each script's own

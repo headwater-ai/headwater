@@ -20,8 +20,77 @@
 # Most take seconds; `tools/probe/probe-record-fixtures.sh` takes minutes and
 # needs `bwrap`, and it is here because PR #1894 printed `PRE-PR: ok` and
 # failed 9 of its cases in CI. The two oracle suites are here because #1902
-# printed `PRE-PR: ok` and went red in CI on two `oracle-fixtures.sh` cases. Exit 0 when every step passed. Exit 2 on a
-# refused argument, on the main checkout, and on `main` itself.
+# printed `PRE-PR: ok` and went red in CI on two `oracle-fixtures.sh` cases.
+# `tools/engine/engine-readme-fixtures.sh` is here because #1959 (PR #1991)
+# printed `PRE-PR: ok` and failed it in CI, on a new crate with no row in
+# `engine/README.md`. Exit 0 when every step passed. Exit 2 on a refused
+# argument, on the main checkout, and on `main` itself.
+#
+# The default list is kept by hand, and it is not every suite CI runs: some
+# need a built site, a browser, a release binary or minutes, and that would
+# make this script the CI job. So each other fixture script that a workflow
+# runs is named below by its exact path, with the reason it is not run here.
+# `tools/run/pre-pr-fixtures.sh` fails when a suite CI runs is in neither the
+# default list nor this one, when a line here has no reason or names a suite
+# CI no longer runs, and when a line uses a glob (#1995). A new suite in CI
+# goes into one list or the other.
+#
+#   not run here: .claude/tutorial/fixtures.sh  drives the tutorial end to end against a released engine in a scratch repository; minutes
+#   not run here: .githooks/fixtures.sh  tests the commit gate's refusals on planted commits; this script runs that gate itself
+#   not run here: tools/ci/beside-fixtures.sh  tests a CI helper on planted suites; reads no corpus content a build edits
+#   not run here: tools/ci/governed-scope-fixtures.sh  tests a jq filter of the CI job summary on planted JSON; reads no corpus content a build edits
+#   not run here: tools/cite/check-citations-fixtures.sh  reads the corpus, fast and offline; not added by #1995, and an intake line asks whether it belongs here
+#   not run here: tools/engine/color-fixtures.sh  takes about three minutes on the host (measured 2026-11-22)
+#   not run here: tools/hw-cargo-fixtures.sh  tests the cargo slot wrapper against a stub cargo; reads no corpus content a build edits
+#   not run here: tools/hw-cargo-link-fixtures.sh  tests the cargo slot wrapper's ownership of a pooled target; reads no corpus content a build edits
+#   not run here: tools/probe/campaign-drive-fixtures.sh  tests the campaign driver on planted batches; reads no corpus content a build edits
+#   not run here: tools/probe/ci-confine-fixtures.sh  tests the recorder's confinement gate with bwrap and sudo taken off the path; reads no corpus content a build edits
+#   not run here: tools/probe/try-fixtures.sh  tests the tuning round's verbs on planted trees; reads no corpus content a build edits
+#   not run here: tools/repo/decision-record-fixtures.sh  reads the corpus, fast and offline; not added by #1995, and an intake line asks whether it belongs here
+#   not run here: tools/repo/decision-register-fixtures.sh  reads the corpus, fast and offline; not added by #1995, and an intake line asks whether it belongs here
+#   not run here: tools/repo/diataxis-facet-fixtures.sh  reads the corpus, fast and offline; not added by #1995, and an intake line asks whether it belongs here
+#   not run here: tools/repo/diataxis-fixtures.sh  reads the corpus, fast and offline; not added by #1995, and an intake line asks whether it belongs here
+#   not run here: tools/repo/fix-fixed-point-fixtures.sh  tests the fixed-point step against a stub engine; this script runs the commit gate itself
+#   not run here: tools/repo/id-store-fixtures.sh  tests the identifier claim store's merges in scratch repositories; reads no corpus content a build edits
+#   not run here: tools/repo/integrations-fixtures.sh  reads the corpus, fast and offline; not added by #1995, and an intake line asks whether it belongs here
+#   not run here: tools/repo/library-index-fixtures.sh  reads the corpus, fast and offline; not added by #1995, and an intake line asks whether it belongs here
+#   not run here: tools/repo/new-worktree-fixtures.sh  tests the worktree script on scratch repositories; reads no corpus content a build edits
+#   not run here: tools/repo/obligation-register-fixtures.sh  reads the corpus, fast and offline; not added by #1995, and an intake line asks whether it belongs here
+#   not run here: tools/repo/readme-fixtures.sh  reads the corpus, fast and offline; not added by #1995, and an intake line asks whether it belongs here
+#   not run here: tools/repo/release-guide-fixtures.sh  reads the corpus, fast and offline; not added by #1995, and an intake line asks whether it belongs here
+#   not run here: tools/repo/retire-worktree-fixtures.sh  tests the retirement sweep on scratch repositories; reads no corpus content a build edits
+#   not run here: tools/run/board-move-fixtures.sh  fakes gh and tests a run tool; reads no corpus content a build edits
+#   not run here: tools/run/ci-done-fixtures.sh  fakes gh and tests a run tool; reads no corpus content a build edits
+#   not run here: tools/run/disk-free-fixtures.sh  fakes df and tests a run tool; reads no corpus content a build edits
+#   not run here: tools/run/gh-issue-fixtures.sh  fakes gh and tests a run tool; reads no corpus content a build edits
+#   not run here: tools/run/integrate-fixtures.sh  fakes gh and tests a run tool; reads no corpus content a build edits
+#   not run here: tools/run/pre-pr-fixtures.sh  tests this script itself; a build that edits it runs it
+#   not run here: tools/run/pr-settled-fixtures.sh  fakes gh and tests a run tool; reads no corpus content a build edits
+#   not run here: tools/run/queue-done-fixtures.sh  fakes gh and tests a run tool; reads no corpus content a build edits
+#   not run here: tools/run/relevance-grade-fixtures.sh  tests a run tool on planted histories and logs; reads no corpus content a build edits
+#   not run here: tools/run/rerank-experiment-fixtures.sh  tests a run tool on planted grades; reads no corpus content a build edits
+#   not run here: tools/run/run-census-fixtures.sh  tests a run tool on planted transcripts; reads no corpus content a build edits
+#   not run here: tools/run/run-dir-fixtures.sh  tests a run tool on scratch run directories; reads no corpus content a build edits
+#   not run here: tools/run/shadow-capture-fixtures.sh  tests a run tool on planted shadow logs; reads no corpus content a build edits
+#   not run here: tools/run/shadow-mine-fixtures.sh  tests a run tool on planted shadow logs; reads no corpus content a build edits
+#   not run here: tools/run/supervise-fixtures.sh  tests the restart loop against a stub parent; reads no corpus content a build edits
+#   not run here: tools/run/verify-setup-fixtures.sh  tests a run tool on scratch repositories; reads no corpus content a build edits
+#   not run here: tools/run/wait-for-fixtures.sh  tests a run tool on planted conditions; reads no corpus content a build edits
+#   not run here: tools/site/fetch-apt-fixtures.sh  serves a release from a local HTTP server; a step of the site deploy job
+#   not run here: tools/site/figures-fixtures.sh  runs the site's publish steps on a scratch tree; a step of the site deploy job
+#   not run here: tools/site/render-tutorial-fixtures.sh  tests the site's tutorial renderer, which needs Python; a step of the site jobs
+#   not run here: tools/site/site-asset-size-fixtures.sh  tests a site checker on planted files; a step of the site jobs
+#   not run here: tools/site/site-canonical-fixtures.sh  tests a site checker on planted pages; a step of the site jobs
+#   not run here: tools/site/site-console-fixtures.sh  tests a site checker that needs a browser; a step of the site jobs
+#   not run here: tools/site/site-figures-fixtures.sh  tests the hand-built site pages; a step of the site jobs
+#   not run here: tools/site/site-footer-fixtures.sh  tests a site checker on planted pages; a step of the site jobs
+#   not run here: tools/site/site-fragments-fixtures.sh  tests a site checker on planted pages; a step of the site jobs
+#   not run here: tools/site/site-links-fixtures.sh  tests a site checker on planted pages; a step of the site jobs
+#   not run here: tools/site/site-live-fixtures.sh  tests a site checker on planted pages; a step of the site jobs
+#   not run here: tools/site/site-noindex-fixtures.sh  tests a site checker on planted pages; a step of the site jobs
+#   not run here: tools/site/site-redirects-fixtures.sh  tests a site checker on planted pages; a step of the site jobs
+#   not run here: tools/site/site-review-fixtures.sh  tests a site review tool that needs a browser; a step of the site jobs
+#   not run here: tools/taxonomy/n8n-fixtures.sh  reads the corpus, fast and offline; not added by #1995, and an intake line asks whether it belongs here
 #
 #     PRE-PR: ok | failed at <step>
 #     MERGED: origin/main at <sha>, <n> commits brought in | conflict on <files>
@@ -47,7 +116,7 @@ set -u
 
 root=$(cd "$(dirname "$0")/../.." && pwd)
 cargo=${HW_CARGO:-$root/tools/hw-cargo}
-fixtures=${HW_PRE_PR_FIXTURES:-".claude/agents/fixtures.sh .claude/skills/fixtures.sh .claude/hooks/fixtures.sh tools/repo/developing-fixtures.sh tools/repo/engine-resolver-fixtures.sh tools/repo/collation-fixtures.sh tools/engine/build-declaration-fixtures.sh tools/probe/probe-record-fixtures.sh tools/probe/oracle-fixtures.sh tools/probe/probe-oracle-fixtures.sh"}
+fixtures=${HW_PRE_PR_FIXTURES:-".claude/agents/fixtures.sh .claude/skills/fixtures.sh .claude/hooks/fixtures.sh tools/repo/developing-fixtures.sh tools/repo/engine-resolver-fixtures.sh tools/repo/collation-fixtures.sh tools/engine/build-declaration-fixtures.sh tools/probe/probe-record-fixtures.sh tools/probe/oracle-fixtures.sh tools/probe/probe-oracle-fixtures.sh tools/engine/engine-readme-fixtures.sh"}
 
 usage() {
     sed -n '/^#     sh tools\/run\/pre-pr.sh/p' "$0" | sed 's/^# *//' >&2
