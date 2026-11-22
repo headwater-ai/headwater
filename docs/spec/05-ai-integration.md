@@ -306,7 +306,7 @@ Where a human already settled the conflict, the agent cites the **adjudication**
 
 These are explicit behaviors that an assistant who works in the corpus must show:
 
-1. **No decision record without external evidence.** If no work item, commit, discussion, or measurement supports it, halt and ask. If the human confirms that none exists, record the document as `unevidenced` ([spec 3](03-authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two)). Never invent rationale — a fabricated *why* is worse than an admitted absence, because someone will cite it.
+1. **No decision record without evidence.** A ruling that the person states in the conversation is evidence for the record. The assistant records who ruled and when, in the provenance or the rationale as the kind's facets and sections allow, and continues. It halts and asks only when neither the conversation nor any work item, commit, discussion, or measurement supports the decision. If the human confirms that none exists, record the document as `unevidenced` ([spec 3](03-authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two)). Never invent rationale — a fabricated *why* is worse than an admitted absence, because someone will cite it.
 2. **No hand edits to a generated file.** Change the source and regenerate.
 3. **No new shelf, kind, or facet invented in place.** Structural change is a taxonomy change: propose it, version it, migrate it.
 4. **No duplication of a fact that exists elsewhere.** Link. If the target is hard to find, fix the routing — do not copy.
