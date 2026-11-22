@@ -528,6 +528,20 @@
               }
             },
             {
+              "id": "relation.mention.undeclared",
+              "shortDescription": {
+                "text": "corpus scope, every row of the census, and it is a barrier"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "corpus",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
               "id": "warrant.promoted",
               "shortDescription": {
                 "text": "document scope, one document and its front matter, and the version of it that stood before the change"
@@ -1298,6 +1312,37 @@
           }
         },
         {
+          "ruleId": "relation.mention.undeclared",
+          "ruleIndex": 34,
+          "level": "note",
+          "kind": "fail",
+          "message": {
+            "text": "the prose names `SPEC-FIX-fragment-target` and the front matter declares no relation to it; the taxonomy offers the relation `assesses` from `design_spec` to `design_spec`",
+            "markdown": "the prose names `SPEC-FIX-fragment-target` and the front matter declares no relation to it; the taxonomy offers the relation `assesses` from `design_spec` to `design_spec`\n\n**Fix:** if this document rests on `SPEC-FIX-fragment-target`, declare it under `relations:`, for example `assesses: [SPEC-FIX-fragment-target]`; if the mention is an aside, leave it. `headwater explain SPEC-FIX-fragment-target` names the document, and `headwater explain` on a relation says what it means"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/00-both-halves.md"
+                },
+                "region": {
+                  "startLine": 30,
+                  "startColumn": 14
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "info",
+              "fixable": false,
+              "remediation": "if this document rests on `SPEC-FIX-fragment-target`, declare it under `relations:`, for example `assesses: [SPEC-FIX-fragment-target]`; if the mention is an aside, leave it. `headwater explain SPEC-FIX-fragment-target` names the document, and `headwater explain` on a relation says what it means",
+              "escape": "none"
+            }
+          }
+        },
+        {
           "ruleId": "relation.reciprocity.missing",
           "ruleIndex": 8,
           "level": "error",
@@ -1365,7 +1410,7 @@
         },
         {
           "ruleId": "coverage.document_unchecked",
-          "ruleIndex": 41,
+          "ruleIndex": 42,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2332,6 +2377,37 @@
           }
         },
         {
+          "ruleId": "relation.mention.undeclared",
+          "ruleIndex": 34,
+          "level": "note",
+          "kind": "fail",
+          "message": {
+            "text": "the prose names `SPEC-FIX-cited-only` and the front matter declares no relation to it; the taxonomy offers the relation `assesses` from `design_spec` to `design_spec`",
+            "markdown": "the prose names `SPEC-FIX-cited-only` and the front matter declares no relation to it; the taxonomy offers the relation `assesses` from `design_spec` to `design_spec`\n\n**Fix:** if this document rests on `SPEC-FIX-cited-only`, declare it under `relations:`, for example `assesses: [SPEC-FIX-cited-only]`; if the mention is an aside, leave it. `headwater explain SPEC-FIX-cited-only` names the document, and `headwater explain` on a relation says what it means"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 81,
+                  "startColumn": 71
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "info",
+              "fixable": false,
+              "remediation": "if this document rests on `SPEC-FIX-cited-only`, declare it under `relations:`, for example `assesses: [SPEC-FIX-cited-only]`; if the mention is an aside, leave it. `headwater explain SPEC-FIX-cited-only` names the document, and `headwater explain` on a relation says what it means",
+              "escape": "none"
+            }
+          }
+        },
+        {
           "ruleId": "identifier.claim.missing",
           "ruleIndex": 22,
           "level": "error",
@@ -3232,7 +3308,7 @@
         },
         {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 43,
+          "ruleIndex": 44,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3261,7 +3337,7 @@
         },
         {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 43,
+          "ruleIndex": 44,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3290,7 +3366,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 42,
+          "ruleIndex": 43,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3319,7 +3395,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 42,
+          "ruleIndex": 43,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3348,7 +3424,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 42,
+          "ruleIndex": 43,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3377,7 +3453,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 42,
+          "ruleIndex": 43,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3406,7 +3482,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 42,
+          "ruleIndex": 43,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3448,7 +3524,7 @@
             "classified": 29,
             "checked": 28,
             "generated": 1,
-            "instances": 427,
+            "instances": 428,
             "skipped": 118,
             "skips": [
               {

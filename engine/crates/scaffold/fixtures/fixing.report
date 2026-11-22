@@ -9,6 +9,7 @@ findings before
   check/evaluations/eta.md relation.endpoint.not_permitted `assesses` declares `from: [design_spec]`, and `EVAL-FIX-eta` at that end has the kind `evaluation`
   check/evaluations/gamma.md shelf.placement_is_primary `evaluations` is homogeneous and carries the kind `evaluation`, and this document restates it as `doc_type: evaluation`
   check/evaluations/gamma.md relation.reciprocity.missing `EVAL-FIX-gamma` declares `cited_by: SPEC-FIX-both-halves`, and `cites_evidence` requires both ends, so check/spec/00-both-halves.md owes `cites_evidence`
+  check/spec/00-both-halves.md relation.mention.undeclared the prose names `SPEC-FIX-fragment-target` and the front matter declares no relation to it; the taxonomy offers the relation `assesses` from `design_spec` to `design_spec`
   check/spec/01-one-half.md relation.reciprocity.missing `SPEC-FIX-one-half` declares `cites_evidence: EVAL-FIX-beta`, and `cites_evidence` requires both ends, so check/evaluations/beta.md owes `cited_by`
   check/spec/01-one-half.md language.controlled.not_met `ste_house` holds prose to 25 words a sentence, and this one has 34
   check/spec/03-no-instance.md coverage.document_unchecked this document is classified and all 4 of its check instances were skipped
@@ -41,6 +42,7 @@ findings before
   check/spec/07-prose-defects.md link.path.unresolved `19-renamed.md?v=2` names no file of this repository: nothing stands at `check/spec/19-renamed.md`
   check/spec/07-prose-defects.md link.path.unresolved `/spec/00-both-halves.md` names no file of this repository: nothing stands at `/spec/00-both-halves.md`
   check/spec/07-prose-defects.md link.identifier.mismatch the link text names `SPEC-FIX-cited-only`, but `20-fragment-target.md` reaches `check/spec/20-fragment-target.md`, which is `SPEC-FIX-fragment-target`
+  check/spec/07-prose-defects.md relation.mention.undeclared the prose names `SPEC-FIX-cited-only` and the front matter declares no relation to it; the taxonomy offers the relation `assesses` from `design_spec` to `design_spec`
   check/spec/08-contract-met.md identifier.claim.missing `DR-FIX-0008` is spent by check/spec/08-contract-met.md and no file of `.headwater/ids` claims it, so this identifier is invisible to the allocator of every other branch and a second document can be minted onto it
   check/spec/09-contract-missing.md section.required.missing `decision_record` requires the section `Decision`, and no heading of this document says so
   check/spec/09-contract-missing.md identifier.claim.missing `DR-FIX-0009` is spent by check/spec/09-contract-missing.md and no file of `.headwater/ids` claims it, so this identifier is invisible to the allocator of every other branch and a second document can be minted onto it
@@ -78,6 +80,7 @@ findings after
   check/evaluations/epsilon.md relation.participation.overdue `evidence-cited`: 221 days since `status_since`, and this `evaluation` reaches no `cites_evidence` to a `design_spec` inside the 30 days the taxonomy allows
   check/evaluations/eta.md relation.endpoint.not_permitted `assesses` declares `from: [design_spec]`, and `EVAL-FIX-eta` at that end has the kind `evaluation`
   check/evaluations/gamma.md shelf.placement_is_primary `evaluations` is homogeneous and carries the kind `evaluation`, and this document restates it as `doc_type: evaluation`
+  check/spec/00-both-halves.md relation.mention.undeclared the prose names `SPEC-FIX-fragment-target` and the front matter declares no relation to it; the taxonomy offers the relation `assesses` from `design_spec` to `design_spec`
   check/spec/01-one-half.md language.controlled.not_met `ste_house` holds prose to 25 words a sentence, and this one has 34
   check/spec/03-no-instance.md coverage.document_unchecked this document is classified and all 4 of its check instances were skipped
   check/spec/04-untyped.md shelf.discriminator.unresolved the shelf is heterogeneous and the document declares no `doc_type`, so no kind resolves and no check of a kind reaches this document
@@ -105,6 +108,7 @@ findings after
   check/spec/07-prose-defects.md link.path.unresolved `19-renamed.md?v=2` names no file of this repository: nothing stands at `check/spec/19-renamed.md`
   check/spec/07-prose-defects.md link.path.unresolved `/spec/00-both-halves.md` names no file of this repository: nothing stands at `/spec/00-both-halves.md`
   check/spec/07-prose-defects.md link.identifier.mismatch the link text names `SPEC-FIX-cited-only`, but `20-fragment-target.md` reaches `check/spec/20-fragment-target.md`, which is `SPEC-FIX-fragment-target`
+  check/spec/07-prose-defects.md relation.mention.undeclared the prose names `SPEC-FIX-cited-only` and the front matter declares no relation to it; the taxonomy offers the relation `assesses` from `design_spec` to `design_spec`
   check/spec/09-contract-missing.md section.required.missing `decision_record` requires the section `Decision`, and no heading of this document says so
   check/spec/10-suppressed.md language.controlled.not_met `ste_house` holds prose to 25 words a sentence, and this one has 31
   check/spec/11-identifier-mismatch.md identifier.pattern.not_met `SPEC-XX-mismatch` does not match `SPEC-FIX-<slug>`, which scheme `spec_id` declares: `XX-mismatch` is where the namespace `FIX` was expected
