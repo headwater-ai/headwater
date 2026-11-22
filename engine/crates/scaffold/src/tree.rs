@@ -402,6 +402,12 @@ impl Reserved {
     pub fn over(root: &Path, files: Vec<Composed>) -> Result<Reserved, Unopened> {
         let mut held = Vec::with_capacity(files.len());
         for file in files {
+            if let Some(escape) = headwater_resolve::containment::escapes(&file.path) {
+                return Err(Unopened {
+                    why: format!("the path is `{}`, {}", file.path, escape.reason()),
+                    path: file.path,
+                });
+            }
             let at = root.join(&file.path);
             let mut open = std::fs::OpenOptions::new()
                 .read(true)
@@ -448,11 +454,17 @@ impl Reserved {
     /// argument, the create is the answer, and a `Composed::created` set three
     /// functions upstream never reaches this decision.
     pub fn making(mut self, root: &Path, path: &str, text: String) -> Result<Reserved, Unopened> {
-        let at = root.join(path);
         let refuse = |why: String| Unopened {
             path: path.to_string(),
             why,
         };
+        // Before the first directory is made: a path that leaves the root
+        // would make one outside the repository, and the lock reader's refusal
+        // of the declaration is the guard this one stands behind (#1967).
+        if let Some(escape) = headwater_resolve::containment::escapes(path) {
+            return Err(refuse(format!("the path is `{path}`, {}", escape.reason())));
+        }
+        let at = root.join(path);
         // Observed before `create_dir_all` runs, because afterwards there is
         // nothing left to see.
         let dirs = match at.parent() {
@@ -853,6 +865,38 @@ mod tests {
                 text: text.to_string(),
             })
             .collect()
+    }
+
+    /// A target that climbs out of the root, or that is absolute, is refused
+    /// before it is opened or made, whatever the declaration that placed it
+    /// (#1967). The root is a directory inside the scratch directory, so a
+    /// write that escaped would land beside it, where the case looks.
+    #[test]
+    fn a_target_outside_the_root_is_neither_opened_nor_made() {
+        let dir = Dir::with("outside", &[("a.md", "one")]);
+        let inner = dir.path().join("inner");
+        std::fs::create_dir_all(&inner).expect("the inner root");
+
+        let opened = Reserved::over(&inner, composed(&[("../a.md", "ONE")]));
+        if let Ok(reserved) = opened {
+            let _ = reserved.commit();
+            panic!("a target above the root was opened");
+        }
+        assert_eq!(dir.read("a.md"), "one");
+
+        let absolute = dir.path().join("a.md").display().to_string();
+        assert!(Reserved::over(&inner, composed(&[(&absolute, "ONE")])).is_err());
+        assert_eq!(dir.read("a.md"), "one");
+
+        let held = Reserved::over(&inner, Vec::new()).expect("nothing to open");
+        let made = held.making(&inner, "../made/new.md", "NEW".to_string());
+        if let Ok(reserved) = made {
+            let _ = reserved.commit();
+        }
+        assert!(
+            !dir.path().join("made").exists(),
+            "no directory or file was made above the root"
+        );
     }
 
     #[test]
