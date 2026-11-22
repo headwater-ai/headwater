@@ -2839,6 +2839,12 @@ if [ -f "$release_wf" ]; then
                 "the notes do not name \`headwater/standard\` $good_version, so a reader cannot tell which package the digest is of" ;;
         esac
         case $notes_body in
+            *"--expect $good_digest\`"*)
+                pass "  and the vendor command in the notes passes that digest to \`--expect\`" ;;
+            *) fail "  and the vendor command in the notes passes that digest to \`--expect\`" \
+                "the notes do not carry \`--expect $good_digest\`, so the command a reader copies pins something other than the digest" ;;
+        esac
+        case $notes_body in
             *"as it stands in the source tree of this tag"*)
                 pass "  and the notes say the digest is of the copy in this tag's source tree" ;;
             *) fail "  and the notes say the digest is of the copy in this tag's source tree" \
