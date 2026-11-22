@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The library under the `headwater` binary: one load of a corpus, as a value.
 //!
 //! [Spec 6](../../../../docs/spec/06-engine-architecture.md) says the CLI is a
