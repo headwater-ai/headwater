@@ -2620,7 +2620,7 @@ fn a_spent_record_behind_an_unspent_one_is_not_claimed_twice() {
 /// `dev` profile. Ceiling CEIL.
 #[test]
 fn many_records_on_one_document_are_audited_in_linear_time() {
-    const MANY_RECORDS: usize = 40_000;
+    const MANY_RECORDS: usize = 320_000;
     let ran = fixture_run();
     let (rule, path) = a_repeated_pair(&ran);
     let one = ran
