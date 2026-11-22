@@ -181,6 +181,15 @@ same 'exit 1' 1 "$status"
 same '  and the FIXTURES line names the README suite' 'FIXTURES: failed: tools/engine/engine-readme-fixtures.sh' "$(printf '%s\n' "$out" | grep '^FIXTURES:')"
 same '  and its log fails the row judge' 1 "$(grep -c '^ *FAIL  *every crate in the tree has a row$' "$readme_log" 2>/dev/null)"
 same '  and the log names the crate' 1 "$(grep -q 'nonesuch' "$readme_log" 2>/dev/null && echo 1 || echo 0)"
+git -C "$wt" checkout -q -- docs/derived.md
+# The same tree without that directory passes the row judge, so the failure
+# above is the missing row. The suite as a whole still fails in this scratch
+# tree, on its floor group, which counts statements of the Rust floor across
+# tracked pages that are not copied here; so this reads the row judge alone.
+rm -rf "$wt/engine/crates/nonesuch"
+out=$(cd "$wt" && env -u HW_PRE_PR_FIXTURES sh "$tool" 7 2>&1); status=$?
+same 'the same tree with every crate in the table passes the row judge' 1 "$(grep -c '^ *ok  *every crate in the tree has a row$' "$readme_log" 2>/dev/null)"
+same '  and its log names no nonesuch' 0 "$(grep -c 'nonesuch' "$readme_log" 2>/dev/null)"
 rm -rf "$wt/engine" "$wt/tools"
 git -C "$wt" checkout -q -- docs/derived.md
 
