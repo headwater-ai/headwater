@@ -89,4 +89,19 @@ sweep_dropped() {
 count_dropped() {
     sed -i "s/$pin/summary: \"Comments in cli, paint, generate, probe, sweep and the command-surface subsystem spec state facts the code does not hold, found by the builds and verifies of run 20261001-1107.\"/" "$target" && grep -q 'summary: "Comments in cli, paint' "$target"
 }
-more_wrong="$more_wrong sweep_dropped count_dropped"
+crates_less() {
+    sed -i "s/$pin/summary: \"Eight comments in $1 and the command-surface subsystem spec state facts the code does not hold, found by the builds and verifies of run 20261001-1107.\"/" "$target" && grep -q -F "summary: \"Eight comments in $1 and the" "$target"
+}
+cli_dropped() {
+    crates_less "paint, generate, probe, sweep"
+}
+paint_dropped() {
+    crates_less "cli, generate, probe, sweep"
+}
+generate_dropped() {
+    crates_less "cli, paint, probe, sweep"
+}
+probe_dropped() {
+    crates_less "cli, paint, generate, sweep"
+}
+more_wrong="$more_wrong sweep_dropped count_dropped cli_dropped paint_dropped generate_dropped probe_dropped"

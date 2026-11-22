@@ -60,7 +60,7 @@ paraphrase() {
 }
 more_sound="paraphrase"
 
-# Three splits that each drop one concept of the summary and raise no
+# Splits that each drop one concept of the summary and raise no
 # finding, so that only the `# summary-any:` line of that concept fails each
 # one (#1978).
 shelf_split() {
@@ -75,4 +75,10 @@ renamed_dropped() {
 nothing_else_dropped() {
     shelf_split "A shelf layout is read by the scaffolder. A rule that read it would report every document that a person renamed or typed by hand."
 }
-more_wrong="$more_wrong hand_dropped renamed_dropped nothing_else_dropped"
+scaffolder_dropped() {
+    shelf_split "A shelf layout is read at birth and by nothing else. A rule that read it would report every document that a person renamed or typed by hand."
+}
+report_dropped() {
+    shelf_split "A shelf layout is read by the scaffolder and by nothing else. A rule that read it would fail every document that a person renamed or typed by hand."
+}
+more_wrong="$more_wrong hand_dropped renamed_dropped nothing_else_dropped scaffolder_dropped report_dropped"
