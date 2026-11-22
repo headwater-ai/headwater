@@ -9,6 +9,8 @@ projections, held to regeneration
     not committed, and this run would write it
 
 what this verb does not write, and why
+  shelf_index shelf `answers`
+    no `shelf_index` declaration names the shelf `answers`, so no index is written for it. To add one, name `answers` in the `for` of a `shelf_index` declaration, or declare `{kind: shelf_index, for: [answers], output: "{shelf}/README.md"}` under `add_to: projections:` in `.headwater/overlay.yml`
   relation_view no declaration names one
     a relation view needs the traceability grain that the obligation and control register holds, and no document states which relations a view covers
   agent_rules no declaration names one
