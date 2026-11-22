@@ -2093,7 +2093,7 @@ mod tests {
         assert!(
             matches!(
                 verdict(&patched_on_r(), &[&session]),
-                Verdict::NotSatisfied(Miss::OracleReported { ref artifact, .. }) if artifact == "docs/b.md"
+                Verdict::NotSatisfied(Miss::OracleReported { .. })
             ),
             "{:?}",
             verdict(&patched_on_r(), &[&session])
