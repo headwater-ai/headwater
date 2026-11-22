@@ -669,6 +669,12 @@
       "obligations": []
     },
     {
+      "rule": "lifecycle.state.set_after_initial",
+      "scope": "edge",
+      "version": 1,
+      "obligations": []
+    },
+    {
       "rule": "relation.pair.invalid",
       "scope": "edge",
       "version": 2,

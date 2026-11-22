@@ -800,3 +800,31 @@ fn the_first_stop_rule_of_the_authoring_skill_counts_a_ruling_stated_in_the_conv
         );
     }
 }
+
+/// The status paragraph of the shipped authoring skill carries the owner's
+/// ruling on #1973: a settled document is proposed at its kind's first settled
+/// state, unless the repository states its own rule. It once ended "Where the
+/// repository states no rule, ask", and in phase B of #1881, 16 of 28 failed
+/// supersessions left the successor at `draft`. The paragraph is pinned whole,
+/// so a sentence added beside it, or the old "ask" put back, fails the case.
+/// The relations paragraph names the warning that reports a pending
+/// supersession. Change this table with the rule.
+#[test]
+fn the_authoring_skill_proposes_a_settled_document_at_its_first_settled_state() {
+    let path = "engine/crates/cli/harness/skills/headwater-authoring/SKILL.md";
+    let text = std::fs::read_to_string(repository().join(path)).expect("the file reads");
+    let status = text
+        .lines()
+        .find(|line| line.starts_with("**The `status` line"))
+        .unwrap_or_else(|| panic!("{path} has a status paragraph"));
+    assert_eq!(
+        status,
+        "**The `status` line opens at the initial state of the kind's regime, and a settled document leaves it before you propose it.** `headwater new` writes the initial state, because a regime opens there. When the conversation has settled the decision, propose the document at the kind's first settled state, for example `current`, and not at `draft`. Keep the initial state only where you ask a reader to comment and not to rely on the document. Follow this rule unless the repository states its own rule, for example in its overlay."
+    );
+    assert!(
+        text.contains(
+            "Until then, `lifecycle.state.set_after_initial` warns against the new document, and that warning tells you that the supersession is still pending."
+        ),
+        "{path} does not name the warning of a pending supersession"
+    );
+}
