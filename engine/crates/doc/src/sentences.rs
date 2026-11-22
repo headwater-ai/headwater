@@ -125,48 +125,151 @@ fn collapse_parentheticals(text: &str) -> String {
 
 /// Every sentence of a body, in document order.
 pub fn of(body: &Body) -> Vec<Sentence> {
+    let links = Links::of(&body.links);
     body.blocks
         .iter()
-        .flat_map(|block| of_block(block, &body.links))
+        .flat_map(|block| of_block(block, &links))
         .collect()
 }
 
+/// The links of a body, indexed so that whether an offset falls inside one is
+/// a binary search rather than a scan of every link (#1968).
+///
+/// `starts` holds the start offset of each link, sorted, and `reach[i]` the
+/// furthest end offset of the links `0..=i` in that order. An offset is inside
+/// a link exactly when some link that starts at or before it ends after it,
+/// which is when the reach of the last such link passes it. The answer is the
+/// same as the scan's whatever order the parse gave the links in, and whether
+/// or not one link holds another.
+struct Links {
+    starts: Vec<usize>,
+    reach: Vec<usize>,
+}
+
+impl Links {
+    fn of(links: &[Link]) -> Links {
+        let mut spans: Vec<(usize, usize)> = links
+            .iter()
+            .map(|link| (link.span.start.offset, link.span.end.offset))
+            .collect();
+        spans.sort_unstable();
+        let mut reach = Vec::with_capacity(spans.len());
+        let mut furthest = 0usize;
+        for &(_, end) in &spans {
+            furthest = furthest.max(end);
+            reach.push(furthest);
+        }
+        Links {
+            starts: spans.into_iter().map(|(start, _)| start).collect(),
+            reach,
+        }
+    }
+
+    fn hold(&self, at: usize) -> bool {
+        let opened = self.starts.partition_point(|&start| start <= at);
+        opened > 0 && self.reach[opened - 1] > at
+    }
+}
+
+/// The text of one block with the tables that turn a character offset into a
+/// run, a byte offset and a position in constant or logarithmic time.
+///
+/// The sentence reader asks for a character offset many times for each
+/// sentence. Before #1968 each question walked the runs of the block from the
+/// first and counted the characters of each, so a paragraph of many sentences,
+/// or one long run, took time in proportion to its square.
+struct Layout<'a> {
+    block: &'a Block,
+    /// The text a reader sees: the runs of the block, joined.
+    text: String,
+    chars: Vec<char>,
+    /// The byte offset in `text` of each character, and of the end.
+    bytes: Vec<usize>,
+    /// The character offset where each run starts, and the end of the last.
+    starts: Vec<usize>,
+}
+
+impl<'a> Layout<'a> {
+    fn of(block: &'a Block) -> Layout<'a> {
+        let text: String = block.runs.iter().map(|run| run.text.as_str()).collect();
+        let mut chars = Vec::new();
+        let mut bytes = Vec::new();
+        for (byte, c) in text.char_indices() {
+            chars.push(c);
+            bytes.push(byte);
+        }
+        bytes.push(text.len());
+        let mut starts = Vec::with_capacity(block.runs.len() + 1);
+        let mut at = 0usize;
+        for run in &block.runs {
+            starts.push(at);
+            at += run.text.chars().count();
+        }
+        starts.push(at);
+        Layout {
+            block,
+            text,
+            chars,
+            bytes,
+            starts,
+        }
+    }
+
+    /// The run that holds the character at `index`, and none past the end.
+    ///
+    /// An empty run holds no character, so the run found is the last one that
+    /// starts at or before `index`, which is the first run whose end passes it.
+    fn run_at(&self, index: usize) -> Option<usize> {
+        let runs = self.block.runs.len();
+        if index >= self.starts[runs] {
+            return None;
+        }
+        Some(self.starts[..runs].partition_point(|&start| start <= index) - 1)
+    }
+
+    /// The text between two character offsets.
+    fn slice(&self, from: usize, to: usize) -> &str {
+        &self.text[self.bytes[from]..self.bytes[to]]
+    }
+}
+
 /// The sentences of one block, and none for a block that holds no prose.
-fn of_block(block: &Block, links: &[Link]) -> Vec<Sentence> {
+fn of_block(block: &Block, links: &Links) -> Vec<Sentence> {
     if block.quote_depth > 0 || matches!(block.kind, BlockKind::Code | BlockKind::Html) {
         return Vec::new();
     }
-    let text: String = block.runs.iter().map(|run| run.text.as_str()).collect();
-    let chars: Vec<char> = text.chars().collect();
+    let layout = Layout::of(block);
+    let chars = &layout.chars;
 
     let mut sentences = Vec::new();
     let mut start = 0usize;
     let mut index = 0usize;
     while index < chars.len() {
-        if ends_a_sentence(&chars, index, block, links) {
+        if ends_a_sentence(&layout, index, links) {
             // The break is after the terminator and any closing punctuation,
             // and the whitespace between the two sentences belongs to neither.
             let end = index + 1;
-            push(&mut sentences, block, &chars, start, end);
-            start = skip_space(&chars, end);
+            push(&mut sentences, &layout, start, end);
+            start = skip_space(chars, end);
             index = start;
             continue;
         }
         index += 1;
     }
-    push(&mut sentences, block, &chars, start, chars.len());
+    push(&mut sentences, &layout, start, chars.len());
     sentences
 }
 
 /// Whether the character at `index` closes a sentence.
-fn ends_a_sentence(chars: &[char], index: usize, block: &Block, links: &[Link]) -> bool {
+fn ends_a_sentence(layout: &Layout, index: usize, links: &Links) -> bool {
+    let chars = &layout.chars;
     let c = chars[index];
     if !matches!(c, '.' | '!' | '?') {
         return false;
     }
     // A period inside a code span is part of a name, and the parser is what
     // knows that. See the module comment.
-    if ownership_at(block, index) == Ownership::Code {
+    if ownership_at(layout, index) == Ownership::Code {
         return false;
     }
     // Closing quotation and brackets ride with the sentence that ends.
@@ -181,7 +284,7 @@ fn ends_a_sentence(chars: &[char], index: usize, block: &Block, links: &[Link]) 
     if !next.is_whitespace() {
         return false;
     }
-    if c == '.' && closes_an_abbreviation(chars, index, block) {
+    if c == '.' && closes_an_abbreviation(layout, index) {
         return false;
     }
     let opening = skip_space(chars, after);
@@ -196,11 +299,11 @@ fn ends_a_sentence(chars: &[char], index: usize, block: &Block, links: &[Link]) 
         // into the sentence before it. Found by differential against
         // `tools/ste-lint.py`, which stands a `CODE` token in its place and so
         // never met this.
-        Some(_) if ownership_at(block, opening) == Ownership::Code => true,
+        Some(_) if ownership_at(layout, opening) == Ownership::Code => true,
         // A link opens a sentence on the same terms and for the same reason.
         // The parser removed the brackets, so `[spec 1](…) explicitly forswears
         // that` reaches this rule as a lower-case `s`.
-        Some(_) if opens_a_link(block, opening, links) => true,
+        Some(_) if opens_a_link(layout, opening, links) => true,
         // A name can open in lower case, and its shape says it is a name and
         // not the tail of an abbreviation the list misses: `n8n`, `macOS`, or
         // an issue reference such as `#791`. The case test alone merged each
@@ -260,14 +363,12 @@ fn opens_as_a_name(chars: &[char], opening: usize) -> bool {
 /// A link is the second construct whose markup the parse removed, and the two
 /// have to be recognized here rather than by a rule that reads the text: a rule
 /// downstream sees the link's text and nothing that says it was a link.
-fn opens_a_link(block: &Block, index: usize, links: &[Link]) -> bool {
-    let at = position(block, index).offset;
-    links
-        .iter()
-        .any(|link| link.span.start.offset <= at && at < link.span.end.offset)
+fn opens_a_link(layout: &Layout, index: usize, links: &Links) -> bool {
+    links.hold(position(layout, index).offset)
 }
 
-fn closes_an_abbreviation(chars: &[char], index: usize, block: &Block) -> bool {
+fn closes_an_abbreviation(layout: &Layout, index: usize) -> bool {
+    let chars = &layout.chars;
     ABBREVIATIONS.iter().any(|abbreviation| {
         let letters: Vec<char> = abbreviation.chars().collect();
         if letters.len() > index + 1 {
@@ -285,7 +386,7 @@ fn closes_an_abbreviation(chars: &[char], index: usize, block: &Block) -> bool {
         // only part of an entry.
         letters.iter().enumerate().all(|(offset, letter)| {
             chars[from + offset].eq_ignore_ascii_case(letter)
-                && ownership_at(block, from + offset) != Ownership::Code
+                && ownership_at(layout, from + offset) != Ownership::Code
         })
     })
 }
@@ -299,41 +400,35 @@ fn skip_space(chars: &[char], from: usize) -> usize {
 }
 
 /// The ownership of the run that holds the character at `index`.
-fn ownership_at(block: &Block, index: usize) -> Ownership {
-    let mut at = 0usize;
-    for run in &block.runs {
-        let length = run.text.chars().count();
-        if index < at + length {
-            return run.ownership;
-        }
-        at += length;
+fn ownership_at(layout: &Layout, index: usize) -> Ownership {
+    match layout.run_at(index) {
+        Some(run) => layout.block.runs[run].ownership,
+        None => Ownership::Authored,
     }
-    Ownership::Authored
 }
 
-fn push(sentences: &mut Vec<Sentence>, block: &Block, chars: &[char], start: usize, end: usize) {
-    let text: String = chars[start.min(chars.len())..end.min(chars.len())]
-        .iter()
-        .collect();
+fn push(sentences: &mut Vec<Sentence>, layout: &Layout, start: usize, end: usize) {
+    let length = layout.chars.len();
+    let text = layout.slice(start.min(length), end.min(length));
     if text.trim().is_empty() {
         return;
     }
     sentences.push(Sentence {
-        authored: authored_between(block, start, end),
-        words: words_between(block, start, end),
-        span: Span::new(position(block, start), position(block, end)),
+        authored: authored_between(layout, start, end),
+        words: words_between(layout, start, end),
+        span: Span::new(position(layout, start), position(layout, end)),
         text: text.trim().to_string(),
-        kind: block.kind,
+        kind: layout.block.kind,
     });
 }
 
 /// The words of one sentence, with each code span counted as one.
-fn words_between(block: &Block, start: usize, end: usize) -> usize {
+fn words_between(layout: &Layout, start: usize, end: usize) -> usize {
     let mut countable = String::new();
-    for (run, from, to) in overlapping(block, start, end) {
+    for (run, text) in overlapping(layout, start, end) {
         match run.ownership {
             Ownership::Code => countable.push_str(" code "),
-            _ => countable.extend(run.text.chars().skip(from).take(to - from)),
+            _ => countable.push_str(text),
         }
     }
     collapse_parentheticals(&countable)
@@ -342,27 +437,35 @@ fn words_between(block: &Block, start: usize, end: usize) -> usize {
         .count()
 }
 
-/// Each run that overlaps a range, with the range inside the run's own text.
-fn overlapping(block: &Block, start: usize, end: usize) -> Vec<(&Run, usize, usize)> {
+/// Each run that overlaps a range, with the part of its text inside the range.
+///
+/// Only the runs from the one that holds `start` onward are visited, and the
+/// walk stops at the first run that starts at or past `end`.
+fn overlapping<'a>(layout: &'a Layout, start: usize, end: usize) -> Vec<(&'a Run, &'a str)> {
+    let runs = &layout.block.runs;
+    let first = layout.starts[..runs.len()]
+        .partition_point(|&from| from <= start)
+        .saturating_sub(1);
     let mut out = Vec::new();
-    let mut at = 0usize;
-    for run in &block.runs {
-        let (from, to) = (at, at + run.text.chars().count());
-        at = to;
+    for (index, run) in runs.iter().enumerate().skip(first) {
+        let (from, to) = (layout.starts[index], layout.starts[index + 1]);
+        if from >= end {
+            break;
+        }
         let (lower, upper) = (from.max(start), to.min(end));
         if lower < upper {
-            out.push((run, lower - from, upper - from));
+            out.push((run, layout.slice(lower, upper)));
         }
     }
     out
 }
 
 /// The part of one sentence that this document's own author wrote as prose.
-fn authored_between(block: &Block, start: usize, end: usize) -> String {
+fn authored_between(layout: &Layout, start: usize, end: usize) -> String {
     let mut out = String::new();
-    for (run, from, to) in overlapping(block, start, end) {
+    for (run, text) in overlapping(layout, start, end) {
         if run.ownership == Ownership::Authored {
-            out.extend(run.text.chars().skip(from).take(to - from));
+            out.push_str(text);
         }
     }
     out.trim().to_string()
@@ -374,22 +477,19 @@ fn authored_between(block: &Block, start: usize, end: usize) -> String {
 /// paragraph arrives as its own run. So a position inside a run is its start
 /// advanced along one line, and no newline can be crossed without the run
 /// changing.
-fn position(block: &Block, index: usize) -> Position {
-    let mut at = 0usize;
-    let mut last = block.span.start;
-    for run in &block.runs {
-        let length = run.text.chars().count();
-        if index < at + length {
-            return advanced(run, index - at);
-        }
-        at += length;
-        last = run.span.end;
+fn position(layout: &Layout, index: usize) -> Position {
+    let block = layout.block;
+    match layout.run_at(index) {
+        Some(run) => advanced(layout, run, index),
+        None => block.runs.last().map_or(block.span.start, |run| run.span.end),
     }
-    last
 }
 
-fn advanced(run: &Run, characters: usize) -> Position {
-    let bytes: usize = run.text.chars().take(characters).map(char::len_utf8).sum();
+/// The position of the character at `index`, inside the run `at`.
+fn advanced(layout: &Layout, at: usize, index: usize) -> Position {
+    let run = &layout.block.runs[at];
+    let characters = index - layout.starts[at];
+    let bytes = layout.bytes[index] - layout.bytes[layout.starts[at]];
     // The run's own end is the ceiling. A source that escapes an entity holds
     // more bytes than the text does, and a position past the run would name a
     // line that is not the one the reader wants.
