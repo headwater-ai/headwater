@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Whether a declared path stays inside the directory it is read from.
 //!
 //! A taxonomy and a consumer declaration name paths that the engine later joins
