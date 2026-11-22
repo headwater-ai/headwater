@@ -153,6 +153,7 @@ pub mod dependency;
 pub mod discriminator;
 pub mod duplicate;
 pub mod endpoint;
+pub mod enumerated;
 pub mod facet_blank;
 pub mod facet_required;
 pub mod facet_value;

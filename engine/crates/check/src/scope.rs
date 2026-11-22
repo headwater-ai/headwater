@@ -32,6 +32,83 @@
 //!    digest of the file. A key over a path alone would survive every edit to
 //!    the document it names.
 //!
+//! # The failing fixture is a program that must not compile
+//!
+//! Spec 12 asks each correctness root for a fixture that fails. Where the
+//! enforcement is a type, that fixture is a program the compiler refuses: a
+//! `compile_fail` doctest. Stable rustdoc does not check the error code, so a
+//! block that fails for another reason, such as a missing import, also passes.
+//! So each block below has a compiling twin, and the two differ only in the
+//! forbidden line (HW-OBL-0079).
+//!
+//! A document-scoped check that reads the corpus does not compile, because
+//! [`DocumentView`] has no corpus accessor. [`CorpusView::edges`] is one that
+//! a wider view has:
+//!
+//! ```compile_fail
+//! use headwater_check::{DocumentCheck, DocumentView, Outcome};
+//! struct Sibling;
+//! impl DocumentCheck for Sibling {
+//!     const RULE: &'static str = "example.sibling.read";
+//!     const VERSION: u32 = 1;
+//!     fn evaluate(&self, view: &DocumentView<'_>) -> Outcome {
+//!         let _ = view.edges();
+//!         Outcome::Passed
+//!     }
+//! }
+//! ```
+//!
+//! Its twin reads the document's own path, and compiles:
+//!
+//! ```
+//! use headwater_check::{DocumentCheck, DocumentView, Outcome};
+//! struct Sibling;
+//! impl DocumentCheck for Sibling {
+//!     const RULE: &'static str = "example.sibling.read";
+//!     const VERSION: u32 = 1;
+//!     fn evaluate(&self, view: &DocumentView<'_>) -> Outcome {
+//!         let _ = view.path();
+//!         Outcome::Passed
+//!     }
+//! }
+//! ```
+//!
+//! Code outside this crate that mints a wider [`Scope`] does not compile,
+//! because its fields are private:
+//!
+//! ```compile_fail
+//! use headwater_check::scope::document_scope;
+//! use headwater_check::{DocumentCheck, DocumentView, Grain, Outcome, Scope};
+//! struct Own;
+//! impl DocumentCheck for Own {
+//!     const RULE: &'static str = "example.scope.minted";
+//!     const VERSION: u32 = 1;
+//!     fn evaluate(&self, _: &DocumentView<'_>) -> Outcome {
+//!         Outcome::Passed
+//!     }
+//! }
+//! let scope: Scope = Scope { grain: Grain::Corpus, ..document_scope::<Own>() };
+//! assert_eq!(scope, document_scope::<Own>());
+//! ```
+//!
+//! Its twin takes the scope that the engine derives from the trait, and
+//! compiles:
+//!
+//! ```
+//! use headwater_check::scope::document_scope;
+//! use headwater_check::{DocumentCheck, DocumentView, Grain, Outcome, Scope};
+//! struct Own;
+//! impl DocumentCheck for Own {
+//!     const RULE: &'static str = "example.scope.minted";
+//!     const VERSION: u32 = 1;
+//!     fn evaluate(&self, _: &DocumentView<'_>) -> Outcome {
+//!         Outcome::Passed
+//!     }
+//! }
+//! let scope: Scope = document_scope::<Own>();
+//! assert_eq!(scope, document_scope::<Own>());
+//! ```
+//!
 //! # What a check still declares, and what it cannot
 //!
 //! The grain comes from the trait. `NEEDS_BODY`, `NEEDS_PHASE_A` and
@@ -60,11 +137,12 @@
 //! a digest of what the cache would store for every verdict it reaches there.
 //! A digest that moves while `VERSION` and the corpus stay fails, and
 //! `HEADWATER_BLESS` does not re-record it. An edit to a corpus is re-recorded
-//! by bless. The ledger cannot see four things: a change that no recorded
-//! corpus exercises, a rule with no instance on any of them (the test lists
-//! each one with the reason), a rule change in the same commit as an edit to
-//! its corpus, and a change visible only against a warm cache that an older
-//! binary wrote. The last is the digest over the compiled rule that
+//! by bless only when this binary over the corpus as the ledger recorded it,
+//! rebuilt from git, still reaches the recorded verdicts. So a rule change in
+//! the same commit as an edit to its corpus fails too. The ledger cannot see
+//! three things: a change that no recorded corpus exercises, a rule with no
+//! instance on any of them (the test lists each one with the reason), and a
+//! change visible only against a warm cache that an older binary wrote. The last is the digest over the compiled rule that
 //! [13 — Open obligations](../../../../docs/spec/13-open-obligations.md)
 //! still carries.
 //!

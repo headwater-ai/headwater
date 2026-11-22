@@ -76,7 +76,7 @@ None of the three links `headwater-fetch`, which is the crate that holds the HTT
 
 ### The probe vocabulary is four closed sets
 
-`probe/src/lib.rs` holds the four enums that a probe document and a budget name: `Category`, `Expectation`, `Tier` and `Arm`. Each one is closed, because a grader evaluates it and a report totals it. Each enum has an `ALL` constant that a person keeps by hand, and its `read` function looks a name up in that constant. [HW-OBL-0172](../obligations/0172-nine-hand-kept-constants-enumerate-an-enum-and-nothing-holds-one-against-the-variants.md) records that nothing holds the constant against the enum.
+`probe/src/lib.rs` holds the four enums that a probe document and a budget name: `Category`, `Expectation`, `Tier` and `Arm`. Each one is closed, because a grader evaluates it and a report totals it. Each enum has an `ALL` constant, and its `read` function looks a name up in that constant. The macro `headwater_check::enumerated!` writes each `ALL` from the variants of its enum, so a new variant is in it ([HW-OBL-0172](../obligations/0172-nine-hand-kept-constants-enumerate-an-enum-and-nothing-holds-one-against-the-variants.md)). `Arm::Scenario` is outside `ALL` on purpose, because the scenarios are the declaration's and not the engine's.
 
 `Expectation::names_documents` marks the three forms that are predicates over the documents that a probe `examines`. `Tier::pairs_arms` marks the tiers that run two arms, so a caller asks the tier and does not compare it with `Tier::Campaign`.
 
@@ -164,7 +164,7 @@ The waivers live in the consumer declaration and not in the package. `taxonomy v
 
 ### A sweep is three parts, and this crate is two
 
-`sweep/src/lib.rs` holds the closed set `Class` and its hand-kept `ALL`, which HW-OBL-0172 counts. Each class names two things that do not fit, so a reader can judge it in seconds. `PROVENANCE` is `"agent"` on every finding.
+`sweep/src/lib.rs` holds the closed set `Class` and its `ALL`, which `headwater_check::enumerated!` writes from the variants. Each class names two things that do not fit, so a reader can judge it in seconds. `PROVENANCE` is `"agent"` on every finding.
 
 `plan.rs` writes the briefing. A `Plan` carries pointers: paths, identifiers, kinds, titles and summaries. It never carries the content of a document. The agent opens each file itself, because a passage that it never opened is a passage that it cannot cite. The plan also lists, as `Declared`, every edge that the graph already holds among its members. The plan states its extent as its members against the classified documents of the corpus.
 
