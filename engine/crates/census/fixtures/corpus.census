@@ -300,6 +300,8 @@ docs/evaluations/what-a-check-can-know.md
   typed: evaluation
 docs/evaluations/what-an-offline-cross-encoder-rerank-of-the-blind-graded-routing-offers-showed.md
   typed: evaluation
+docs/evaluations/what-the-additive-campaign-measured-for-the-eleven-actions-headwater-supports.md
+  typed: evaluation
 docs/evaluations/what-the-additive-screening-round-of-2026-10-18-measured-by-scenario-against-its-base.md
   typed: evaluation
 docs/evaluations/what-the-counterfactual-campaign-of-2026-09-30-measured-by-component.md
@@ -814,10 +816,36 @@ docs/obligations/0241-three-questions-from-run-20261012-2342-about-an-engine-ran
   typed: obligation_record
 docs/obligations/0242-three-edges-and-a-comment-that-trail-a-change-of-run-20261012-2342.md
   typed: obligation_record
+docs/obligations/0243-the-additive-campaign-measured-the-actions-at-one-corpus-size-and-no-run-measures-them-as-a-corpus-grows.md
+  typed: obligation_record
+docs/obligations/0244-the-additive-campaign-measured-no-action-on-a-target-that-no-document-governs.md
+  typed: obligation_record
+docs/obligations/0245-the-additive-campaign-ran-on-this-repository-alone-and-no-run-measures-the-actions-in-an-adopter-s-own-repository.md
+  typed: obligation_record
 docs/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-final-round-of-2026-11-09-batch-a-scenario-0.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-final-round-of-2026-11-09-batch-a-scenario-1.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-final-round-of-2026-11-09-batch-a-scenario-2.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-final-round-of-2026-11-09-batch-a-scenario-6.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-final-round-of-2026-11-09-batch-b-scenario-1.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-final-round-of-2026-11-09-batch-b-scenario-6.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-final-round-of-2026-11-10-batch-b2-scenario-1.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-final-round-of-2026-11-10-batch-b2-scenario-6.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-final-round-of-2026-11-12-batch-b3-scenario-1.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
+docs/probe-results/additive-final-round-of-2026-11-12-batch-b3-scenario-6.md
+  generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/additive-screening-of-2026-10-18-scenario-0.md
   generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/additive-screening-of-2026-10-18-scenario-1.md
@@ -1038,6 +1066,26 @@ docs/probe-results/tombstone-probe-pilot-of-2026-09-29-campaign-tier-present-arm
   generated: `probe_result`, resolved as `probe_result`, and `headwater generate --check` holds it rather than this census
 docs/probe-runs/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/probe-runs/additive-final-round-of-2026-11-09-batch-a-scenario-0.md
+  typed: probe_transcript
+docs/probe-runs/additive-final-round-of-2026-11-09-batch-a-scenario-1.md
+  typed: probe_transcript
+docs/probe-runs/additive-final-round-of-2026-11-09-batch-a-scenario-2.md
+  typed: probe_transcript
+docs/probe-runs/additive-final-round-of-2026-11-09-batch-a-scenario-6.md
+  typed: probe_transcript
+docs/probe-runs/additive-final-round-of-2026-11-09-batch-b-scenario-1.md
+  typed: probe_transcript
+docs/probe-runs/additive-final-round-of-2026-11-09-batch-b-scenario-6.md
+  typed: probe_transcript
+docs/probe-runs/additive-final-round-of-2026-11-10-batch-b2-scenario-1.md
+  typed: probe_transcript
+docs/probe-runs/additive-final-round-of-2026-11-10-batch-b2-scenario-6.md
+  typed: probe_transcript
+docs/probe-runs/additive-final-round-of-2026-11-12-batch-b3-scenario-1.md
+  typed: probe_transcript
+docs/probe-runs/additive-final-round-of-2026-11-12-batch-b3-scenario-6.md
+  typed: probe_transcript
 docs/probe-runs/additive-screening-of-2026-10-18-scenario-0.md
   typed: probe_transcript
 docs/probe-runs/additive-screening-of-2026-10-18-scenario-1.md
