@@ -64,6 +64,12 @@ headwater-probe = { workspace = true }
 # points this way so that nothing in the engine below can reach a forge.
 headwater-adapter = { workspace = true }
 
+# One load of a corpus as a value, and the clap-free library that this binary
+# and an in-process verb (`lsp`, `hook`, `mcp`) share. A refusal comes back as
+# a value and this binary prints it, so nothing below the shell writes to a
+# stream.
+headwater-api = { workspace = true }
+
 # `taxonomy audit`. Every reading is taken in the library and the verb prints
 # it, so a test reads the audit of a tree without starting a process.
 headwater-audit = { workspace = true }
