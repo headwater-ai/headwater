@@ -818,10 +818,19 @@ pub trait CorpusCheck {
     /// It joins no cache key, on [`CorpusCheck::NEEDS_LINKS`]'s terms. The
     /// edges are a reading of the documents this instance already reads, and
     /// a generated document is a row that carries a document, so it is in the
-    /// read set already. The one rule that declares this reads the edges
-    /// `headwater generate` reads, onto the documents it writes. See
-    /// [`crate::state_set_twice`].
+    /// read set already. [`crate::state_set_twice`] reads the edges
+    /// `headwater generate` reads, onto the documents it writes, and
+    /// [`crate::mention`] reads them to find whether a pair is joined.
     const NEEDS_GRAPH: bool = false;
+
+    /// Whether the view carries the first prose mention of each document by
+    /// each other document, as [`headwater_graph::mentions`] bound them.
+    ///
+    /// It joins no cache key, on [`CorpusCheck::NEEDS_LINKS`]'s terms: a
+    /// mention is a reading of the bodies this instance already reads, and
+    /// the identifier and kind of the named document are readings of the
+    /// rows of the same read set. See [`crate::mention`].
+    const NEEDS_MENTIONS: bool = false;
 
     /// Whether the view carries the marked files the projection plan claims no
     /// output for, as [`Context::orphaned`] holds them.
@@ -1525,6 +1534,7 @@ pub struct CorpusView<'a> {
     departed: &'a [Departed<'a>],
     claims: Option<&'a crate::claim::Claims>,
     links: Option<&'a [headwater_graph::links::Link]>,
+    mentions: Option<&'a [headwater_graph::mentions::Mention]>,
     anchors: Option<&'a crate::fragment::Anchors>,
     edges: Option<&'a [Edge]>,
     generated: Option<Vec<Generated<'a>>>,
@@ -1635,6 +1645,15 @@ impl<'a> CorpusView<'a> {
         self.links
     }
 
+    /// The first prose mention of each document by each other document, and
+    /// only for a check that declared `NEEDS_MENTIONS`.
+    ///
+    /// `None` is a run whose scope did not admit them, and an empty slice is a
+    /// corpus whose prose names no identifier of another document.
+    pub fn mentions(&self) -> Option<&'a [headwater_graph::mentions::Mention]> {
+        self.mentions
+    }
+
     /// The heading anchors of every document of this corpus, and only for a
     /// check that declared `NEEDS_ANCHORS`.
     ///
@@ -1661,6 +1680,7 @@ impl<'a> CorpusView<'a> {
             departed: &[],
             claims: None,
             links,
+            mentions: None,
             anchors: None,
             edges: None,
             generated: None,
@@ -1679,6 +1699,7 @@ impl<'a> CorpusView<'a> {
             departed: &[],
             claims,
             links: None,
+            mentions: None,
             anchors: None,
             edges: None,
             generated: None,
@@ -1698,11 +1719,34 @@ impl<'a> CorpusView<'a> {
             departed: &[],
             claims: None,
             links: None,
+            mentions: None,
             anchors: None,
             edges: None,
             generated: None,
             orphaned: None,
             unresolved,
+            reads: Vec::new(),
+        }
+    }
+
+    /// A view carrying the mentions and the edges, for the tests of the rule
+    /// that reads both. `cfg(test)` on [`CorpusView::only_links`]'s terms.
+    #[cfg(test)]
+    pub(crate) fn only_mentions_and_edges(
+        mentions: Option<&'a [headwater_graph::mentions::Mention]>,
+        edges: Option<&'a [Edge]>,
+    ) -> Self {
+        CorpusView {
+            identity: None,
+            departed: &[],
+            claims: None,
+            links: None,
+            mentions,
+            anchors: None,
+            edges,
+            generated: None,
+            orphaned: None,
+            unresolved: None,
             reads: Vec::new(),
         }
     }
@@ -1719,6 +1763,7 @@ impl<'a> CorpusView<'a> {
             departed: &[],
             claims: None,
             links,
+            mentions: None,
             anchors,
             edges: None,
             generated: None,
@@ -2295,6 +2340,12 @@ pub fn over_corpus<C: CorpusCheck>(
         // documents already listed above rather than injected beside them.
         links: match C::NEEDS_LINKS {
             true => Some(&graph.links),
+            false => None,
+        },
+        // No input joins the read set with them, on the same argument. See
+        // `NEEDS_MENTIONS`.
+        mentions: match C::NEEDS_MENTIONS {
+            true => Some(&graph.mentions),
             false => None,
         },
         anchors: anchors.as_ref(),

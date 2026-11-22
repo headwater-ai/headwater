@@ -173,6 +173,7 @@ pub mod language;
 pub mod lifecycle_state;
 pub mod link_identifier;
 pub mod link_path;
+pub mod mention;
 pub mod observation;
 pub mod outside_root;
 pub mod paint;
@@ -241,7 +242,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 51] = [
+pub const RULES: [&str; 52] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
@@ -276,6 +277,7 @@ pub const RULES: [&str; 51] = [
     fragment::RULE,
     link_path::RULE,
     link_identifier::RULE,
+    mention::RULE,
     promotion::RULE,
     transition::RULE,
     lifecycle_state::RULE,
@@ -653,6 +655,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::corpus_exports::<link_identifier::Identifiers>(),
         ),
         (
+            mention::RULE,
+            scope::corpus_scope::<mention::Mentioned<'_>>(),
+            scope::corpus_version::<mention::Mentioned<'_>>(),
+            scope::corpus_exports::<mention::Mentioned<'_>>(),
+        ),
+        (
             promotion::RULE,
             scope::document_scope::<promotion::Promoted>(),
             scope::document_version::<promotion::Promoted>(),
@@ -905,6 +913,11 @@ pub fn run(
     // and it is corpus-scoped for `link_path`'s reason: a renumbering of the
     // target changes no byte of the citing file. See [`link_identifier`].
     let link_identifiers = link_identifier::Identifiers;
+    // A document whose prose names another document's identifier and that
+    // declares no relation to it, over the relations the taxonomy declares for
+    // the pair. Corpus-scoped for `link_identifier`'s reason, and because an
+    // edge the named document writes silences it. See [`mention`].
+    let mentioned = mention::Mentioned::over(declared.relations, declared.shape);
     // The one rule that declares `NEEDS_PRIOR`, and it carries no declaration:
     // the transition it reads is spec 3's act rather than a member of any
     // taxonomy. See [`promotion`].
@@ -1161,6 +1174,9 @@ pub fn run(
         claims,
         ctx,
         cache,
+    ));
+    instances.extend(scope::over_corpus(
+        &mentioned, census, graph, claims, ctx, cache,
     ));
     instances.extend(scope::over_documents(&promoted, census, graph, ctx, cache));
     instances.extend(scope::over_documents(
