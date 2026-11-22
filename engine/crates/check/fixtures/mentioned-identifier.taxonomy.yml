@@ -1,0 +1,57 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy of tests/mentioned_identifier.rs (#1977). Two kinds and one
+# relation between them, forward from an obligation to a decision. No relation
+# goes from a decision to an obligation, so a decision that names an obligation
+# in prose has no relation to be offered: the case HW-OBL-0055 records for the
+# spec-to-spec pairs of this repository's own corpus.
+
+facets:
+  status:
+    role: state
+    values:
+      - {value: draft,   role: initial}
+      - {value: current, role: live}
+  summary:
+    role: scent
+
+regimes:
+  lifecycle:
+    standard:
+      initial: draft
+      transitions: {draft: [current]}
+
+identifier_schemes:
+  obligation_id: {pattern: "OBL-{namespace}-{seq:04d}", namespace: MEN, allocation: minted-once}
+  decision_id:   {pattern: "DEC-{namespace}-{seq:04d}", namespace: MEN, allocation: minted-once}
+
+relations:
+  traces_to:
+    family: association
+    from: [obligation]
+    to:   [decision]
+    inverse: traced_by
+    created_by: author
+
+core:
+  requires:
+    - facet_role: state
+    - relation_family: association
+
+kinds:
+  obligation:
+    identifier: {scheme: obligation_id}
+    lifecycle: standard
+  decision:
+    identifier: {scheme: decision_id}
+    lifecycle: standard
+
+shelves:
+  obligations:
+    path: mentioned-identifier/obligations/**
+    homogeneous: true
+    kind: obligation
+  decisions:
+    path: mentioned-identifier/decisions/**
+    homogeneous: true
+    kind: decision
