@@ -15,7 +15,10 @@ use common::{Ran, Root};
 /// the stack of a debug test binary before the fix.
 const LEVELS: usize = 20_000;
 
-const NAME: &str = "9999-nested-past-the-bound.md";
+const NAME: &str = "9999-past-the-bound.md";
+
+/// The words of the refusal, which the file name above does not contain.
+const REFUSAL: &str = "nest more than 256 deep";
 
 fn deep_front_matter() -> String {
     format!(
@@ -44,22 +47,28 @@ fn assert_reported(verb: &str, ran: &Ran) {
         ran.code,
         tail(&ran.err)
     );
+    // A report prints the path on one line and its findings indented under
+    // it, so the refusal is read from the path's line and the few after it.
     let both = format!("{}\n{}", ran.out, ran.err);
-    let named = both
-        .lines()
-        .find(|line| line.contains(NAME) && line.contains("nest"));
-    let line = named.unwrap_or_else(|| {
+    let lines: Vec<&str> = both.lines().collect();
+    let block = lines
+        .iter()
+        .enumerate()
+        .filter(|(_, line)| line.contains(NAME))
+        .map(|(at, _)| lines[at..(at + 4).min(lines.len())].join("\n"))
+        .find(|block| block.contains(REFUSAL));
+    let block = block.unwrap_or_else(|| {
         panic!(
             "`{verb}` did not name {NAME} with the depth refusal:\nstdout:\n{}\nstderr:\n{}",
             tail(&ran.out),
             tail(&ran.err)
         )
     });
-    // `3:` is the line of the front matter that opens the deep list: the
-    // opening `---` is line 1 and `x:` is line 2.
+    // Line 3 of the file opens the deep list: the opening `---` is line 1 and
+    // `x:` is line 2. The refusal points at the collection 257 levels down.
     assert!(
-        line.contains(":3:"),
-        "`{verb}` named the file without the line and column of the refusal: {line}"
+        block.contains("3:"),
+        "`{verb}` named the file without the line and column of the refusal:\n{block}"
     );
 }
 
