@@ -2233,6 +2233,68 @@ same "  the retired label judge names nine lines of labels, once each, and leave
     "1$label_hit""2$label_hit""3$label_hit""6$label_hit""7$label_hit""8$label_hit""9$label_hit""10$label_hit""14$label_hit" \
     "$(retired_milestone_judge "$scratch/labels.html" | tr '\n' '|')"
 
+# 5f. Every figure the Status blockquote quotes is in an evaluation that the
+#     blockquote links. The authority is in the tree: an evaluation under
+#     `docs/evaluations/` carries the table, and the page may state no more than
+#     it shows (#1882). The population guard first, so a Status that quotes no
+#     figure, or links no evaluation, is a failure rather than a quiet pass.
+same "the Status blockquote links at least one evaluation that exists" yes \
+    "$(status_evaluations "$readme" | while read -r e; do [ -f "$e" ] && echo yes; done | head -1)"
+more_than "the Status blockquote quotes at least one figure" 0 \
+    "$(status_figures "$readme" | wc -l | tr -d ' ')"
+same "every figure in the Status blockquote is in an evaluation it links" "" \
+    "$(status_figure_judge "$readme" | tr '\n' '|')"
+
+# 5f, provoked. A planted page links a scratch evaluation. A figure that the
+#     evaluation does not carry is refused with its line, in each of the four
+#     shapes a figure takes; the same page with every figure present passes.
+#     A link target, an issue number, a date and a version are not figures, and
+#     a figure in an evaluation the blockquote does not link does not count.
+mkdir -p "$scratch/sf/docs/evaluations"
+printf '%s\n' \
+    '# An evaluation' \
+    '' \
+    'The skills passed 134 of 145 sessions, +40.0 points [+30.3, +48.7], or 92%.' >"$scratch/sf/docs/evaluations/linked.md"
+printf '%s\n' \
+    '# Another evaluation' \
+    '' \
+    'It measured 99 of 145.' >"$scratch/sf/docs/evaluations/unlinked.md"
+printf '%s\n' \
+    '# Project' \
+    '' \
+    '## Status' \
+    '' \
+    '> [The evaluation](docs/evaluations/linked.md) of 2026-11-22 (#1882, v0.6.1) measured 99 of 145.' \
+    '>' \
+    '> It found +41.0 points [+30.3, +48.8], or 93%, and the rest is open.' \
+    '' \
+    '## Next' \
+    '' \
+    'Below the Status section, 7 of 9 is not judged.' >"$scratch/sf/README.md"
+sf_hit=" is in no evaluation the Status blockquote links|"
+same "  the figure judge names each figure the linked evaluation does not carry, by line" \
+    "5: 99 of 145$sf_hit""7: [+30.3, +48.8]$sf_hit""7: 93%$sf_hit""7: +41.0$sf_hit" \
+    "$(status_figure_judge "$scratch/sf/README.md" | tr '\n' '|')"
+printf '%s\n' \
+    '# Project' \
+    '' \
+    '## Status' \
+    '' \
+    '> [The evaluation](docs/evaluations/linked.md) of 2026-11-22 (#1882, v0.6.1) measured 134 of 145.' \
+    '>' \
+    '> It found +40.0 points [+30.3, +48.7], or 92%, and the rest is open.' >"$scratch/sf/README.md"
+same "  the same page passes when the linked evaluation carries every figure" "" \
+    "$(status_figure_judge "$scratch/sf/README.md" | tr '\n' '|')"
+same "  a link target, an issue, a date and a version are not figures" \
+    "134 of 145|[+30.3, +48.7]|92%|+40.0|" \
+    "$(status_figures "$scratch/sf/README.md" | cut -f2 | tr '\n' '|')"
+printf '%s\n' \
+    '## Status' \
+    '' \
+    '> The engine measured 99 of 145, and this page links no evaluation.' >"$scratch/sf/README.md"
+same "  a figure with no linked evaluation is refused" "3: 99 of 145$sf_hit" \
+    "$(status_figure_judge "$scratch/sf/README.md" | tr '\n' '|')"
+
 echo "the command the page tells a newcomer to run"
 
 # The first group here that RUNS a command out of the page. Every group above
