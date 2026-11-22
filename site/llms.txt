@@ -11,5 +11,5 @@
 - [Headwater — a documentation governance system](https://headwater.tools/): Headwater is an open-source command-line tool that checks a documentation tree on every commit: each document has a declared kind, each link between documents is checked, and each file is accounted for.
 - [Install — Headwater](https://headwater.tools/install/): Every way to install the headwater binary: a release download for Linux and macOS, an APT repository for Debian and Ubuntu, cargo, and a build from source.
 - [The Headwater namespace — https://w3id.org/headwater/](https://headwater.tools/ns/): The permanent identifier that Headwater artifacts carry, what resolves under it, and why it is not the project domain.
-- [Headwater's self-assessment](https://headwater.tools/proof/): Headwater checks its own documentation on every commit. The result of that check, what two experiments measured, and what nobody has measured yet.
+- [Headwater's self-assessment](https://headwater.tools/proof/): Headwater checks its own documentation on every commit. The result of that check, what its experiments measured, and what nobody has measured yet.
 - [Your first governed corpus](https://headwater.tools/tutorial/): Sixteen steps take an empty directory to a passing strict check, and you leave holding shelf, kind, facet, overlay and obligation.

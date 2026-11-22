@@ -13,7 +13,7 @@
   gtag('config', 'G-4DJ9K52SWZ');
 </script>
 <title>Headwater's self-assessment</title>
-<meta name="description" content="Headwater checks its own documentation on every commit. The result of that check, what two experiments measured, and what nobody has measured yet.">
+<meta name="description" content="Headwater checks its own documentation on every commit. The result of that check, what its experiments measured, and what nobody has measured yet.">
 <link rel="canonical" href="https://headwater.tools/proof/">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🜄</text></svg>">
 <style>
@@ -300,8 +300,8 @@
       <span class="secline"></span>
     </div>
     <p style="font-size: 1rem; max-width: 46rem;"><strong>Working.</strong> The engine runs. This repository checks its own documentation on every commit, and consumes its taxonomy as a pinned published package.</p>
-    <p style="font-size: 1rem; max-width: 46rem;"><strong>Measured.</strong> <a href="https://github.com/headwater-ai/headwater/blob/main/docs/evaluations/what-the-counterfactual-campaign-of-2026-09-30-measured-by-component.md">The campaign of 2026-09-30</a> found that the documents under <code>docs/</code> have a large effect on whether an AI agent gives a sufficient answer, and found no detectable gain from the hooks and skills. <a href="https://github.com/headwater-ai/headwater/issues/1777">A tuning round</a> then rewrote the skills, and the pass rate on harder probes rose by a large margin: <a href="https://github.com/headwater-ai/headwater/blob/main/docs/probe-runs/additive-tuning-of-2026-10-25-skills-round-2-confirmation-scenario-4.md">the confirmation</a> states the figure. That result is tuned. The rewrites were chosen on those probes, and no run has tested them on new ones.</p>
-    <p style="font-size: 1rem; max-width: 46rem;"><strong>Unproven.</strong> The hook has shown no gain yet. No experiment measured the MCP server or the quality of governance itself. Open work is on <a href="https://github.com/headwater-ai/headwater/milestones">the milestones page</a>.</p>
+    <p style="font-size: 1rem; max-width: 46rem;"><strong>Measured.</strong> An earlier campaign found that the documents under <code>docs/</code> have a large effect on whether an AI agent gives a sufficient answer. <a href="https://github.com/headwater-ai/headwater/blob/main/docs/evaluations/what-the-additive-campaign-measured-for-the-eleven-actions-headwater-supports.md">The additive campaign</a> then measured eleven actions that an agent takes in a governed repository, on tasks that no tuning change saw. Against the documents alone, what <code>headwater init</code> ships helped on the two code actions and showed no clear effect on most of the others, where the documents alone already pass almost every time. Of the layers tuned one at a time, only the engine showed a gain. The evaluation states every figure, its interval and the probes it rests on.</p>
+    <p style="font-size: 1rem; max-width: 46rem;"><strong>Unproven.</strong> What Headwater ships made an agent worse at superseding a document, and the defect behind that is open. The skills, the hooks and the MCP server showed no gain clear of chance. Every session ran one model on this one repository, the code sessions had no compiler, and no experiment measured the quality of governance itself. Open work is on <a href="https://github.com/headwater-ai/headwater/milestones">the milestones page</a>.</p>
     <p style="font-size: 1rem; max-width: 46rem;"><strong>Installing.</strong> v0.6.1 carries a static Linux x86_64 archive and a macOS arm64 archive, each with a checksum, and neither needs a Rust toolchain. <code>cargo install headwater-cli --locked</code> is the alternative. <a href="/install/">The install page</a> has each route.</p>
   </div>
 </section>
