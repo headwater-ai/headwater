@@ -96,7 +96,12 @@
 # two words is compared as a set of words, so their order is not read (#1384).
 # Markdown emphasis, backticks and trailing punctuation around the line are
 # format, and a document path, slug or file number of a declared identifier
-# names that identifier (#1881, step_derive_answer says how).
+# names that identifier (#1881, step_derive_answer says how). One prefix is
+# also read: a declared answer of one word that opens the line, followed by a
+# reason after ` — `, ` – `, ` - `, `:`, `,`, `;` or ` (` (#1980,
+# step_leading_answer says how). Phase B of #1881 recorded two sessions that
+# answered `HW-DR-0090 — <reason>` as no answer. The prefix is a stated form,
+# so the rule still searches no sentence: a lead of two words gives nothing.
 #
 # Until #980 the rule read the whole final message. The pilot of 2026-09-28
 # found 7 of 27 sessions that wrote one sentence of justification and then the
@@ -604,7 +609,52 @@ step_derive_answer() {
         printf '%s' "$matched"
         return 0
     fi
-    step_resolve_answer "$said"
+    resolved=$(step_resolve_answer "$said")
+    if [ -n "$resolved" ]; then
+        printf '%s' "$resolved"
+        return 0
+    fi
+    step_leading_answer "$said"
+}
+
+# step_leading_answer <line>: the declared answer that opens the line and is
+# followed by a reason, and nothing otherwise (#1980). The lead is the text
+# before the first separator: ` — `, ` – `, ` - `, `:`, `,`, `;` or ` (`. It
+# counts only where it is one word once its format is taken off, so a
+# sentence that holds an identifier is still no answer, and so is a list
+# bullet. The word is compared with each declared answer of one word, and
+# then resolved as a spelling by step_resolve_answer. A prefix that ends at a
+# separator is a stated form, and reading it is not a search of the sentence.
+step_leading_answer() {
+    lead=$(printf '%s\n' "$1" | awk '{
+        n = split(" — | – | - |:|,|;| (", seps, "|")
+        best = 0
+        for (i = 1; i <= n; i++) {
+            p = index($0, seps[i])
+            if (p > 0 && (best == 0 || p < best)) best = p
+        }
+        if (best > 1) print substr($0, 1, best - 1)
+    }')
+    lead=$(step_answer_line "$lead")
+    case $lead in
+        '' | *[[:space:]]*) return 0 ;;
+    esac
+    folded=$(words "$lead")
+    matched=$(printf '%s\n' "$answers" | tr ',' '\n' | while read -r one; do
+        one=$(printf '%s' "$one" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+        case $one in
+            '' | *[[:space:]]*) continue ;;
+        esac
+        if [ "$folded" = "$(words "$one")" ]; then
+            printf '%s' "$one"
+            break
+        fi
+    done)
+    if [ -n "$matched" ]; then
+        printf '%s' "$matched"
+        return 0
+    fi
+    step_resolve_answer "$lead"
 }
 
 # `--answer-only <log> --answers <set> [--corpus <dir>]` runs that step alone,
