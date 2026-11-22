@@ -10,7 +10,9 @@
 # in `headwater --version` and fails when the version printed is not the one
 # the route installs. A route breaks with no change here: a release asset
 # moves, a distribution's archive moves, a crate stops building on the newest
-# toolchain. The schedule is what finds it.
+# toolchain. The schedule is what finds it. One more job, `tutorial-site`, is
+# not an install route: it fetches the tutorial URL that the README's "Start
+# here" line names, and fails when the site does not answer 200 (#1985).
 #
 # `tools/repo/readme-install-block.sh` prints each route's commands from the
 # page, and it is the only copy of them outside the page. It exits nonzero when
@@ -183,9 +185,32 @@ jobs:
           fi
           echo "the source block builds $printed with $(cargo --version)"
 
+  tutorial-site:
+    # The README's "Start here" line sends a newcomer to the tutorial on the
+    # site, not to the file in this repository (#1985). Group 15 of
+    # `tools/repo/readme-fixtures.sh` holds, on every push, that the README
+    # carries the URL and that the assembled site has the page it names. This
+    # job holds that the URL answers 200 on the live site.
+    name: The tutorial URL the README names answers on headwater.tools
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch the URL, and fail on anything but 200
+        run: |
+          url=$(grep -oE 'https://headwater\.tools/tutorials/your-first-governed-corpus/' README.md | head -n 1)
+          if [ -z "$url" ]; then
+              echo "::error::README.md names no https://headwater.tools/tutorials/your-first-governed-corpus/ URL" && exit 1
+          fi
+          code=$(curl -sSIL -o /dev/null -w '%{http_code}' "$url")
+          if [ "$code" != 200 ]; then
+              echo "::error::$url answers $code, not 200" && exit 1
+          fi
+          echo "$url answers $code"
+
   report:
     name: A failed route opens or updates one issue labeled bug
-    needs: [archive, archive-macos, apt, deb-file, cargo, source]
+    needs: [archive, archive-macos, apt, deb-file, cargo, source, tutorial-site]
     if: failure()
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -206,3 +231,4 @@ jobs:
           deb-file=${{ needs.deb-file.result }}
           cargo=${{ needs.cargo.result }}
           source=${{ needs.source.result }}
+          tutorial-site=${{ needs.tutorial-site.result }}
