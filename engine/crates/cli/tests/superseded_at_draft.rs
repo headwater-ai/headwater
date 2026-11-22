@@ -321,3 +321,55 @@ fn the_mcp_check_tool_carries_the_same_finding() {
         served.err
     );
 }
+
+/// The output of `explain` folded to one line, because the report wraps an
+/// edge across lines. No line of it but an edge says who governs.
+fn supersession_line(out: &str) -> String {
+    flat(out)
+}
+
+/// `explain` does not say a draft governs. From the draft, the supersession
+/// reads that this document will govern once it leaves `draft`; from the
+/// target, that that document will. Neither end reads "governs the reading".
+/// Once the draft is current, both ends read that it governs.
+#[test]
+fn explain_says_a_draft_will_govern_and_not_that_it_governs() {
+    let (root, target, successor, _target_id, _successor_id) = draft_over_current("explain");
+    let path = |file: &Path| {
+        file.strip_prefix(&root.at)
+            .expect("under the root")
+            .to_str()
+            .expect("a path")
+            .to_string()
+    };
+
+    let from_draft = root.run(&["explain", &path(&successor)]);
+    let line = supersession_line(&from_draft.out);
+    assert!(
+        line.contains("[this document will govern the reading once it leaves `draft`]"),
+        "{}{}",
+        from_draft.out,
+        from_draft.err
+    );
+    assert!(!line.contains("governs the reading"), "{line}");
+
+    let from_target = root.run(&["explain", &path(&target)]);
+    let line = supersession_line(&from_target.out);
+    assert!(
+        line.contains("[that document will govern the reading once it leaves `draft`]"),
+        "{}{}",
+        from_target.out,
+        from_target.err
+    );
+    assert!(!line.contains("governs the reading"), "{line}");
+
+    set_facet(&successor, "status", "current");
+    let settled = root.run(&["explain", &path(&successor)]);
+    let line = supersession_line(&settled.out);
+    assert!(
+        line.contains("[this document governs the reading]"),
+        "{}",
+        settled.out
+    );
+    assert!(!line.contains("will govern"), "{line}");
+}
