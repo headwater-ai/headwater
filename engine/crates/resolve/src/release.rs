@@ -91,6 +91,7 @@
 use crate::error::{ResolveError, ResolveErrorKind};
 use headwater_yaml::json::Json;
 use headwater_yaml::Mapping;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 /// The file a published package carries at its root.
@@ -617,9 +618,21 @@ pub fn at(dir: &Path) -> Result<Release, ReleaseError> {
 /// with a bundle added to it would pass every comparison the record can drive.
 pub fn diverged(dir: &Path, release: &Release) -> Result<Vec<Divergence>, ReleaseError> {
     let actual = members(dir)?;
+    // Each side indexed on the path, because a search of the other side for
+    // each member was quadratic in a record of many members (#1968). The first
+    // member of a path is the one found, as the search found it.
+    let mut by_path = HashMap::new();
+    for member in &actual {
+        by_path.entry(member.path.as_str()).or_insert(member);
+    }
+    let named: HashSet<&str> = release
+        .members
+        .iter()
+        .map(|member| member.path.as_str())
+        .collect();
     let mut out = Vec::new();
     for published in &release.members {
-        match actual.iter().find(|member| member.path == published.path) {
+        match by_path.get(published.path.as_str()) {
             None => out.push(Divergence::Missing(published.path.clone())),
             Some(found) if found.digest != published.digest => out.push(Divergence::Changed {
                 path: published.path.clone(),
@@ -630,11 +643,7 @@ pub fn diverged(dir: &Path, release: &Release) -> Result<Vec<Divergence>, Releas
         }
     }
     for found in &actual {
-        if !release
-            .members
-            .iter()
-            .any(|member| member.path == found.path)
-        {
+        if !named.contains(found.path.as_str()) {
             out.push(Divergence::Unnamed(found.path.clone()));
         }
     }

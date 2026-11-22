@@ -14,6 +14,7 @@ use crate::error::{ErrorKind, LoadError};
 use crate::span::{Origin, Position, Span, Spanned};
 use crate::value::{Entry, Mapping, Scalar, Style, Value};
 use saphyr_parser::{Event, Parser, ScalarStyle, ScanError};
+use std::collections::hash_map::{self, HashMap};
 
 /// What the loader accepts, and where the source sits.
 ///
@@ -375,6 +376,9 @@ fn build_map(
     errors: &mut Vec<LoadError>,
 ) -> (Vec<Entry>, Span) {
     let mut entries: Vec<Entry> = Vec::new();
+    // The span of the first occurrence of each key, so that a repeat is found
+    // in constant time rather than by a search of every key before it (#1968).
+    let mut first_spans: HashMap<&str, Span> = HashMap::new();
     loop {
         let Some((event, span)) = events.get(*cursor) else {
             let end = entries.last().map(|e| e.value.span).unwrap_or_default();
@@ -392,14 +396,17 @@ fn build_map(
                 if text == "<<" && *style == Style::Plain {
                     errors.push(LoadError::new(ErrorKind::MergeKey, span));
                 }
-                if let Some(first) = entries.iter().find(|e| e.key.value == *text) {
-                    errors.push(LoadError::new(
+                match first_spans.entry(text.as_str()) {
+                    hash_map::Entry::Occupied(first) => errors.push(LoadError::new(
                         ErrorKind::DuplicateKey {
                             key: text.clone(),
-                            first: first.key.span,
+                            first: *first.get(),
                         },
                         span,
-                    ));
+                    )),
+                    hash_map::Entry::Vacant(slot) => {
+                        slot.insert(span);
+                    }
                 }
                 let key = Spanned::new(text.clone(), span);
                 let value = build_value(events, cursor, Some(span), errors);
@@ -570,6 +577,40 @@ mod tests {
             }
             other => panic!("wrong error: {other:?}"),
         }
+    }
+
+    /// Keys that differ in case are two keys, and the index of first spans
+    /// keeps them apart: `a` and `A` load, and a repeated `a` names the first
+    /// `a` rather than the `A` between them (#1968).
+    #[test]
+    fn keys_that_differ_in_case_are_two_keys_and_a_repeat_names_its_own_first() {
+        assert!(load("a: 1\nA: 2\n").is_ok(), "`a` and `A` are two keys");
+        let errors = load("A: 0\na: 1\nA: 2\na: 3\n").expect_err("rejected");
+        let seen: Vec<(String, usize, usize)> = errors
+            .iter()
+            .map(|error| match &error.kind {
+                ErrorKind::DuplicateKey { key, first } => {
+                    (key.clone(), first.start.line, error.span.start.line)
+                }
+                other => panic!("wrong error: {other:?}"),
+            })
+            .collect();
+        assert_eq!(seen, vec![("A".to_string(), 1, 3), ("a".to_string(), 2, 4)]);
+    }
+
+    #[test]
+    fn a_key_repeated_three_times_names_the_first_in_both_errors() {
+        let errors = load("a: 1\nb: 2\na: 3\na: 4\n").expect_err("rejected");
+        let seen: Vec<(String, usize, usize)> = errors
+            .iter()
+            .map(|error| match &error.kind {
+                ErrorKind::DuplicateKey { key, first } => {
+                    (key.clone(), first.start.line, error.span.start.line)
+                }
+                other => panic!("wrong error: {other:?}"),
+            })
+            .collect();
+        assert_eq!(seen, vec![("a".to_string(), 1, 3), ("a".to_string(), 1, 4)]);
     }
 
     #[test]
