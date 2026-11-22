@@ -255,6 +255,9 @@ fn a_shelf_index_with_no_for_covers_every_shelf_and_leaves_no_line() {
     // no generated-file marker and this declaration now covers that shelf too.
     // The report is what this case reads, and a refused run prints it whole.
     let ran = root.run(&["generate"]);
-    assert!(ran.out.contains("shelf_index docs/guides/README.md"), "{ran:?}");
+    assert!(
+        ran.out.contains("shelf_index docs/guides/README.md"),
+        "{ran:?}"
+    );
     assert_eq!(uncovered(&ran.out), Vec::<String>::new(), "{}", ran.out);
 }
