@@ -850,7 +850,7 @@ The taxonomy language has a formal schema, published with the engine and version
 - **context safety** — every agent-facing kind or projection has an applicable size budget, and every facet that carries the freshness role has an applicable staleness policy. The regimes that once wrapped these are gone. The mandates are not.
 - **overlay confluence** — the overlay set commutes.
 - **mapping integrity** — every mapping names kinds and facet values that exist in both taxonomies, with a valid SKOS relation.
-- projection targets — every projection writes inside the corpus and does not collide with an authored path. Every path that a language regime lists outside the corpus root stays inside the repository, and one literal path answers to one regime.
+- projection targets — every projection writes inside the corpus and does not collide with an authored path. Every shelf path stays inside the repository: a path that is absolute or that climbs above the repository root is refused. Every path that a language regime lists outside the corpus root stays inside the repository, and one literal path answers to one regime. The consumer declaration holds `corpus.root` to the same test, and the lock reader runs the test again on every shelf path and projection output that a lock carries.
 
 The engine never applies a taxonomy that does not validate. There is no partial-load mode. That sentence governs the taxonomy, not the corpus. A corpus may be legitimately between valid states during a major migration, and the tolerance mechanism is the migration state ([spec 7](07-distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)).
 
