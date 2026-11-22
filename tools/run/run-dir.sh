@@ -53,7 +53,7 @@
 #     sh tools/run/run-dir.sh rulings <dir>          render rulings.md, each block marked answered or not, and print it
 #     sh tools/run/run-dir.sh integrate <dir> <pr> issue=<N|none> branch=… ruling=… footprint=<a,b> [sha=…]
 #                                               append one merge ruling to integrate.jsonl; without sha=, read the head from GitHub
-#     sh tools/run/run-dir.sh integrations <dir>     each ruled pull request the log has not recorded merged
+#     sh tools/run/run-dir.sh integrations <dir>     each ruled pull request the log has not recorded merged, a commit in merge
 #     sh tools/run/run-dir.sh lesson <dir> <file>    append a file of prose to lessons.md
 #     sh tools/run/run-dir.sh withdraw <dir> <match> <line>
 #                                               replace the one intake line that holds <match>
@@ -761,6 +761,12 @@ stage() {
     return 0
 }
 
+# The jq test that a log line records its pull request merged: `merge` holds
+# the squash commit. hw-integrate writes `ejected`, `null`, `pending` or an
+# empty string there on every other outcome, and `verdict` is free text that
+# reads `MERGE` on an ejected line too (PR #1991 of run 20261122-next1959).
+merged_def='def merged: (.merge // "") | type == "string" and test("^[0-9a-f]{7,40}$");'
+
 # The issues the log records, space-separated. A log line means the run is
 # done with the issue, whatever its verdict, so nothing hands it out again,
 # with one exception: a merge that closes nothing is a `Refs` slice, and a
@@ -770,8 +776,8 @@ stage() {
 logged_issues() {
     [ -s "$1/log.jsonl" ] || return 0
     need_jq
-    jq -r '. as $l | select(.issue != null)
-        | select((((.merge // "") | type == "string" and test("^[0-9a-f]{7,40}$"))
+    jq -r "$merged_def"'. as $l | select(.issue != null)
+        | select((merged
             and ((.closed // []) | map(tostring) | index($l.issue | tostring) == null)) | not)
         | .issue' "$1/log.jsonl" 2>/dev/null | tr '\n' ' '
 }
@@ -1179,14 +1185,16 @@ integrate() {
     printf 'INTEGRATE: PR #%s queued, entry %s\n' "$pr" "$(wc -l < "$dir/integrate.jsonl" | tr -d ' ')"
 }
 
-# Each pull request of integrate.jsonl that no log line records and whose
-# last ruling is not `ejected`, in the order it was first ruled, with its
-# last ruling. The integrator merges these.
+# Each pull request of integrate.jsonl that no log line records merged, a
+# commit in `merge`, and whose last ruling is not `ejected`, in the order it
+# was first ruled, with its last ruling. The integrator merges these. A log
+# line of an ejection does not drop the pull request, so the parent's next
+# ruling at the new head is printed again (#1996).
 integrations() {
     need_jq
     need_dir "$1"
     [ -s "$1/integrate.jsonl" ] || return 0
-    merged=$( [ -s "$1/log.jsonl" ] && jq -cs '[.[].pr | numbers]' "$1/log.jsonl" 2>/dev/null)
+    merged=$( [ -s "$1/log.jsonl" ] && jq -cs "$merged_def"'[.[] | select(merged) | .pr | numbers]' "$1/log.jsonl" 2>/dev/null)
     jq -rs --argjson merged "${merged:-[]}" '
         reduce .[] as $e ({order: [], last: {}};
             (if .last[$e.pr | tostring] then . else .order += [$e.pr] end) | .last[$e.pr | tostring] = $e)
@@ -1217,8 +1225,7 @@ integrate_holds() {
 pr_merged() {
     [ -n "$2" ] && [ -s "$1/log.jsonl" ] || return 1
     need_jq
-    jq -se --arg p "$2" '[.[] | select((.pr | tostring) == $p
-        and ((.merge // "") | type == "string" and test("^[0-9a-f]{7,40}$")))] | length > 0' "$1/log.jsonl" >/dev/null 2>&1
+    jq -se --arg p "$2" "$merged_def"'[.[] | select((.pr | tostring) == $p and merged)] | length > 0' "$1/log.jsonl" >/dev/null 2>&1
 }
 
 # What a resumed parent does with each open handover, one line per issue:
