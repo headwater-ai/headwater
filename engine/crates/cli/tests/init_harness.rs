@@ -721,3 +721,82 @@ fn every_warrant_rule_the_engine_carries_is_named_in_the_provenance_paragraph_of
         "the provenance-block paragraph of {path} does not name {missing:?}"
     );
 }
+
+/// The first item under `## The stop rules` of `path`, up to its newline. It
+/// panics when the heading or the item is missing, so that a moved heading
+/// fails the case rather than passing it with nothing to read.
+fn first_stop_rule(path: &str) -> String {
+    let text = std::fs::read_to_string(repository().join(path)).expect("the file reads");
+    let start = text
+        .find("\n## The stop rules\n")
+        .unwrap_or_else(|| panic!("{path} has a `## The stop rules` section"));
+    let section = &text[start + 1..];
+    let end = section[1..]
+        .find("\n## ")
+        .map_or(section.len(), |at| at + 1);
+    section[..end]
+        .lines()
+        .find(|line| line.starts_with("1. "))
+        .unwrap_or_else(|| panic!("the stop rules of {path} have an item that opens `1. `"))
+        .to_owned()
+}
+
+/// Stop rule 1 of the shipped authoring skill, and of spec 5 which it restates,
+/// counts a ruling that the person states in the conversation as evidence for
+/// a decision record (#1974). The rule once said "if no work item, commit,
+/// discussion or measurement supports it, halt and ask", and in phase B of
+/// #1881, 8 of 28 failed supersessions halted for an outside link after the
+/// person had just ruled. The owner ruled on 2026-11-22 that the ruling is the
+/// evidence and that the record names who ruled and when.
+///
+/// This is a pin on the text. The replay that would show an agent now records
+/// the ruling and goes on was not run: the owner ruled no paid rerun (#1882).
+#[test]
+fn the_first_stop_rule_of_the_authoring_skill_counts_a_ruling_stated_in_the_conversation_as_evidence(
+) {
+    for path in [
+        "engine/crates/cli/harness/skills/headwater-authoring/SKILL.md",
+        "docs/spec/05-ai-integration.md",
+    ] {
+        let item = first_stop_rule(path).to_lowercase();
+        for phrase in [
+            // Through the full stop, so that a condition appended to the
+            // sentence fails the case rather than narrowing the rule unseen.
+            "ruling that the person states in the conversation is evidence for the record.",
+            "who ruled and when",
+            // The session goes on after a stated ruling. Without this pin, a
+            // rule that records the ruling and then stops passes the case.
+            "and continue",
+            "only when neither the conversation nor",
+            "halt",
+            // The fallback when nothing supports the decision.
+            "confirms that none exists, record the document as",
+            "unevidenced",
+            "fabricated",
+        ] {
+            assert!(
+                item.contains(phrase),
+                "stop rule 1 of {path} does not say {phrase:?}: {item}"
+            );
+        }
+    }
+    // A text pin of phrases passes a contrary sentence added beside them, such
+    // as "It counts only after the person signs it in a work item." So each
+    // item is pinned whole as well. Change this table with the rule.
+    for (path, ruled) in [
+        (
+            "engine/crates/cli/harness/skills/headwater-authoring/SKILL.md",
+            "1. **No decision record with no evidence.** A ruling that the person states in the conversation is evidence for the record. Record who ruled and when, in the provenance or the rationale as the kind's facets and sections allow, and continue. Halt and ask only when neither the conversation nor a work item, commit, discussion or measurement supports the decision. Where the human confirms that none exists, record the document as unevidenced. A fabricated rationale is worse than an admitted absence, because somebody will cite it.",
+        ),
+        (
+            "docs/spec/05-ai-integration.md",
+            "1. **No decision record without evidence.** A ruling that the person states in the conversation is evidence for the record. The assistant records who ruled and when, in the provenance or the rationale as the kind's facets and sections allow, and continues. It halts and asks only when neither the conversation nor any work item, commit, discussion, or measurement supports the decision. If the human confirms that none exists, record the document as `unevidenced` ([spec 3](03-authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two)). Never invent rationale — a fabricated *why* is worse than an admitted absence, because someone will cite it.",
+        ),
+    ] {
+        assert_eq!(
+            first_stop_rule(path),
+            ruled,
+            "stop rule 1 of {path} is not the text the owner ruled on 2026-11-22"
+        );
+    }
+}

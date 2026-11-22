@@ -60,7 +60,7 @@ A relation that declares `created_by: author` is yours to type into the front ma
 
 These are the behaviors that pressure to be helpful breaks first, so they are stop conditions rather than preferences.
 
-1. **No decision record with no external evidence.** If no work item, commit, discussion or measurement supports it, halt and ask. Where the human confirms that none exists, record the document as unevidenced. A fabricated rationale is worse than an admitted absence, because somebody will cite it.
+1. **No decision record with no evidence.** A ruling that the person states in the conversation is evidence for the record. Record who ruled and when, in the provenance or the rationale as the kind's facets and sections allow, and continue. Halt and ask only when neither the conversation nor a work item, commit, discussion or measurement supports the decision. Where the human confirms that none exists, record the document as unevidenced. A fabricated rationale is worse than an admitted absence, because somebody will cite it.
 2. **No hand edit to a generated file.** Change the source and run `headwater generate`.
 3. **No new shelf, kind or facet invented in place.** That is a taxonomy change, and the `headwater-taxonomy` skill owns it.
 4. **No second copy of a fact that exists elsewhere.** Link to it. Where the target is hard to find, repair its summary.
