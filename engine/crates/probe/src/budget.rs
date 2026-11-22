@@ -226,18 +226,19 @@ pub struct Layer {
     pub arms: Vec<String>,
 }
 
-/// Which of the two blocks of the milestone a scenario belongs to (#1774).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Block {
-    /// The scenarios that answer each layer once.
-    AnswerOnce,
-    /// The scenarios that measure how two layers interact.
-    Interaction,
+headwater_check::enumerated! {
+    /// Which of the two blocks of the milestone a scenario belongs to (#1774).
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub enum Block {
+        /// The scenarios that answer each layer once.
+        AnswerOnce,
+        /// The scenarios that measure how two layers interact.
+        Interaction,
+    }
+    const ALL;
 }
 
 impl Block {
-    pub const ALL: [Block; 2] = [Block::AnswerOnce, Block::Interaction];
-
     pub fn name(self) -> &'static str {
         match self {
             Block::AnswerOnce => "answer-once",

@@ -87,33 +87,34 @@ pub const TOOL: &str = "headwater";
 /// Where a reader finds out what the tool is.
 pub const TOOL_URI: &str = "https://github.com/headwater-ai/headwater";
 
-/// One output format of `headwater check`.
-///
-/// The set is closed by [spec 6](../../../../docs/spec/06-engine-architecture.md#cli)
-/// and this enum is that list. It is deliberately not
-/// `headwater_generate::Emitter`: `export --format` names a vocabulary for the
-/// *graph* and `check --format` names one for the *findings*, the two lists
-/// share the word `json` and mean different artifacts by it, and one enum over
-/// both would let `check --format shacl` parse.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Format {
-    /// The report a person reads in a terminal, in the engine's own words. See
-    /// [`text`].
-    Text,
-    /// The finding shape spec 4 declares. Not an adapter.
-    Json,
-    /// Static Analysis Results Interchange Format 2.1.0 (OASIS), which is what
-    /// a forge ingests as a check run.
-    Sarif,
-    /// A job summary or a review comment, which is the other vocabulary spec 6
-    /// names.
-    Markdown,
+headwater_check::enumerated! {
+    /// One output format of `headwater check`.
+    ///
+    /// The set is closed by [spec 6](../../../../docs/spec/06-engine-architecture.md#cli)
+    /// and this enum is that list. It is deliberately not
+    /// `headwater_generate::Emitter`: `export --format` names a vocabulary for the
+    /// *graph* and `check --format` names one for the *findings*, the two lists
+    /// share the word `json` and mean different artifacts by it, and one enum over
+    /// both would let `check --format shacl` parse.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub enum Format {
+        /// The report a person reads in a terminal, in the engine's own words. See
+        /// [`text`].
+        Text,
+        /// The finding shape spec 4 declares. Not an adapter.
+        Json,
+        /// Static Analysis Results Interchange Format 2.1.0 (OASIS), which is what
+        /// a forge ingests as a check run.
+        Sarif,
+        /// A job summary or a review comment, which is the other vocabulary spec 6
+        /// names.
+        Markdown,
+    }
+    /// Every format, in the order spec 6 lists them.
+    const ALL;
 }
 
 impl Format {
-    /// Every format, in the order spec 6 lists them.
-    pub const ALL: [Format; 4] = [Format::Text, Format::Json, Format::Sarif, Format::Markdown];
-
     pub fn name(self) -> &'static str {
         match self {
             Format::Text => "text",

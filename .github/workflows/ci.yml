@@ -1471,7 +1471,7 @@ jobs:
         # pattern cannot read. It also holds the verbatim blocks of
         # `site/tutorial/index.html` against the tutorial document that
         # `.claude/tutorial/fixtures.sh` runs, and the landing page's
-        # quotation of HW-DR-0037.
+        # quotation of that document.
         #
         # This step carries no escape hatch. The step after the assembly
         # fills the figures into the assembled directory, which is what the
