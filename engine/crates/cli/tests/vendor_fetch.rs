@@ -205,7 +205,13 @@ fn kill_mid_unpack(root: &Path, location: &str, tmpdir: &Path) -> Option<PathBuf
     let mut child = vendor(root, location, Some(tmpdir));
     let started = Instant::now();
     loop {
-        if let Some(left) = fetch_dirs(tmpdir).into_iter().next() {
+        // Kill once the member file exists, so that the kill lands inside
+        // the unpack and not in the moment between making the directory and
+        // locking it, which a sweep cannot tell from a live fetch.
+        let writing = fetch_dirs(tmpdir).into_iter().find(|dir| {
+            dir.join("zeros.bin").exists() || dir.join("artifact").join("zeros.bin").exists()
+        });
+        if let Some(left) = writing {
             let _ = child.kill();
             // A signal leaves no exit code. A code means the vendor finished
             // before the kill landed, and its own drop removed the directory.
