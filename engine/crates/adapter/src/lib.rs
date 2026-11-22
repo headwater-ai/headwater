@@ -80,6 +80,7 @@ use headwater_check::suppression::Suppression;
 use headwater_check::{Finding, Run, Severity};
 use headwater_graph::Graph;
 use headwater_yaml::{Spanned, Value};
+use std::collections::HashMap;
 
 /// The name this tool reports under, in every format that names it.
 pub const TOOL: &str = "headwater";
@@ -944,14 +945,30 @@ pub fn census_with(run: &Run, format: Format, artifact: &str, loss: &[Loss]) -> 
     let held_to = recorded(&all);
     let written = records(format, artifact);
     let mut spent = vec![false; written.len()];
+    // The records of each path in written order, and the first of them that
+    // may still be unspent. A search of every record for each finding passed
+    // over every spent record before it, so a run of many findings took time in
+    // proportion to their square (#1968). The record found is the same one:
+    // the first unspent record, in written order, of the finding's path whose
+    // rule text holds the finding's rule.
+    let mut by_path: HashMap<&str, (usize, Vec<usize>)> = HashMap::new();
+    for (at, record) in written.iter().enumerate() {
+        by_path.entry(record.path.as_str()).or_default().1.push(at);
+    }
     let mut unaccounted = Vec::new();
     let mut carried = 0;
     for entry in &held_to {
-        let found = written.iter().enumerate().position(|(at, record)| {
-            !spent[at]
-                && record.path == entry.finding.path
-                && record.rule.contains(entry.finding.rule)
-        });
+        let found = by_path
+            .get_mut(entry.finding.path.as_str())
+            .and_then(|(first, ats)| {
+                while *first < ats.len() && spent[ats[*first]] {
+                    *first += 1;
+                }
+                ats[*first..]
+                    .iter()
+                    .copied()
+                    .find(|&at| !spent[at] && written[at].rule.contains(entry.finding.rule))
+            });
         match found {
             Some(at) => {
                 spent[at] = true;
