@@ -394,4 +394,260 @@ mod tests {
             Pattern::new("docs/spec/**").specificity()
         );
     }
+
+    // The matcher before the memo, copied verbatim with its own parse, so that
+    // the tables below compare the rewrite with the answers it replaced and not
+    // with itself. The parse keeps every `**` segment, so a collapse in
+    // `Pattern::new` is compared with the uncollapsed language.
+    fn reference_segments(source: &str) -> Vec<Segment> {
+        source
+            .split('/')
+            .filter(|segment| !segment.is_empty())
+            .map(|segment| match segment {
+                "**" => Segment::AnyDepth,
+                _ if segment.contains(['*', '?']) => Segment::Glob(segment.to_string()),
+                _ => Segment::Literal(segment.to_string()),
+            })
+            .collect()
+    }
+
+    fn reference_matches(pattern: &[Segment], path: &[&str]) -> bool {
+        match pattern.split_first() {
+            None => path.is_empty(),
+            Some((Segment::AnyDepth, rest)) => {
+                (0..=path.len()).any(|taken| reference_matches(rest, &path[taken..]))
+            }
+            Some((head, rest)) => match path.split_first() {
+                None => false,
+                Some((segment, tail)) => {
+                    let matched = match head {
+                        Segment::Literal(text) => text == segment,
+                        Segment::Glob(glob) => glob_matches(glob, segment),
+                        Segment::AnyDepth => unreachable!("handled above"),
+                    };
+                    matched && reference_matches(rest, tail)
+                }
+            },
+        }
+    }
+
+    fn reference_overlaps(left: &[Segment], right: &[Segment]) -> bool {
+        match (left.split_first(), right.split_first()) {
+            (None, None) => true,
+            (None, Some((Segment::AnyDepth, rest))) => reference_overlaps(&[], rest),
+            (Some((Segment::AnyDepth, rest)), None) => reference_overlaps(rest, &[]),
+            (None, Some(_)) | (Some(_), None) => false,
+            (Some((Segment::AnyDepth, rest)), _) => {
+                (0..=right.len()).any(|taken| reference_overlaps(rest, &right[taken..]))
+            }
+            (_, Some((Segment::AnyDepth, rest))) => {
+                (0..=left.len()).any(|taken| reference_overlaps(&left[taken..], rest))
+            }
+            (Some((head, left_rest)), Some((other, right_rest))) => {
+                let text = |segment: &Segment| match segment {
+                    Segment::Literal(text) | Segment::Glob(text) => {
+                        text.chars().collect::<Vec<char>>()
+                    }
+                    Segment::AnyDepth => unreachable!("handled above"),
+                };
+                reference_glob_overlaps(&text(head), &text(other))
+                    && reference_overlaps(left_rest, right_rest)
+            }
+        }
+    }
+
+    fn reference_glob_overlaps(left: &[char], right: &[char]) -> bool {
+        match (left.split_first(), right.split_first()) {
+            (None, None) => true,
+            (None, Some(('*', rest))) => reference_glob_overlaps(&[], rest),
+            (Some(('*', rest)), None) => reference_glob_overlaps(rest, &[]),
+            (None, Some(_)) | (Some(_), None) => false,
+            (Some(('*', rest)), _) => {
+                reference_glob_overlaps(rest, right) || reference_glob_overlaps(left, &right[1..])
+            }
+            (_, Some(('*', rest))) => {
+                reference_glob_overlaps(left, rest) || reference_glob_overlaps(&left[1..], right)
+            }
+            (Some(('?', left_rest)), Some((_, right_rest)))
+            | (Some((_, left_rest)), Some(('?', right_rest))) => {
+                reference_glob_overlaps(left_rest, right_rest)
+            }
+            (Some((one, left_rest)), Some((two, right_rest))) => {
+                one == two && reference_glob_overlaps(left_rest, right_rest)
+            }
+        }
+    }
+
+    const TABLE_PATTERNS: &[&str] = &[
+        "docs/spec/**",
+        "docs/*.md",
+        "docs/??-*.md",
+        "docs/**/README.md",
+        "docs/**",
+        "docs/*/README.md",
+        "docs/*-spec.md",
+        "docs/evaluations/**",
+        "docs/special-cases/**",
+        "docs/spec/*.md",
+        "docs/a?.md",
+        "docs/abc.md",
+        "docs/**/a.md",
+        ".claude/hooks",
+        ".claude/hooks/**",
+        "a/**/**/b",
+        "a/**/b",
+        "a/**/**/**/b",
+        "**",
+        "**/**",
+        "**/x/**",
+        "**/**/x/**/**",
+        "a/*/**",
+        "a/**/*",
+        "a/**/*/**/b",
+        "?",
+        "*.md",
+        "*",
+        "",
+        "a",
+        "a/b",
+    ];
+
+    const TABLE_PATHS: &[&str] = &[
+        "",
+        "a",
+        "b",
+        "x",
+        "a/b",
+        "a/x/b",
+        "a/x/y/b",
+        "a/b/b",
+        "a/b/c",
+        "x/a/b",
+        "a/x",
+        "x/y/x/z",
+        "docs",
+        "docs/README.md",
+        "docs/spec",
+        "docs/spec/02.md",
+        "docs/spec/deep/a.md",
+        "docs/spec/12-check-layer.md",
+        "docs/12-check-layer.md",
+        "docs/1-check-layer.md",
+        "docs/evaluations/a.md",
+        "docs/special-cases/a.md",
+        "docs/taxonomies/design-spec/README.md",
+        "docs/taxonomies/README.txt",
+        "docs/ab.md",
+        "docs/abc.md",
+        "docs/a.md",
+        "docs/x/a.md",
+        ".claude/hooks",
+        ".claude/hooks/write.sh",
+        "README.md",
+        "q",
+    ];
+
+    #[test]
+    fn matching_keeps_the_answers_of_the_matcher_it_replaced() {
+        for source in TABLE_PATTERNS {
+            let pattern = Pattern::new(source);
+            let reference = reference_segments(source);
+            for path in TABLE_PATHS {
+                let split: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();
+                assert_eq!(
+                    pattern.matches(path),
+                    reference_matches(&reference, &split),
+                    "{source} against {path}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn overlap_keeps_the_answers_of_the_search_it_replaced() {
+        for left in TABLE_PATTERNS {
+            for right in TABLE_PATTERNS {
+                assert_eq!(
+                    Pattern::new(left).overlaps(&Pattern::new(right)),
+                    reference_overlaps(&reference_segments(left), &reference_segments(right)),
+                    "{left} and {right}"
+                );
+            }
+        }
+        for left in ["*", "a*", "*a", "*a*", "?*", "*?", "a?c", "**", "*b*", "ab"] {
+            for right in ["*", "b*", "*b", "*a*b*", "??", "abc", "a", "", "*c", "a*?"] {
+                let chars = |text: &str| text.chars().collect::<Vec<char>>();
+                assert_eq!(
+                    glob_overlaps(&chars(left), &chars(right)),
+                    reference_glob_overlaps(&chars(left), &chars(right)),
+                    "{left} and {right}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn adjacent_any_depth_segments_match_the_same_set_as_one() {
+        for (repeated, single) in [
+            ("a/**/**/b", "a/**/b"),
+            ("a/**/**/**/b", "a/**/b"),
+            ("**/**", "**"),
+            ("**/**/x/**/**", "**/x/**"),
+        ] {
+            let (repeated, single) = (Pattern::new(repeated), Pattern::new(single));
+            for path in TABLE_PATHS {
+                assert_eq!(
+                    repeated.matches(path),
+                    single.matches(path),
+                    "{} and {} against {path}",
+                    repeated.source(),
+                    single.source()
+                );
+            }
+            // The collapse is not visible to a reader of the pattern.
+            assert_eq!(repeated.specificity(), single.specificity());
+            assert!(repeated.source().contains("**/**"));
+        }
+    }
+
+    // The three timing tests below are the hostile input of #1969. Before the
+    // memo, eight `**` segments took 5.2 s on one path and twenty did not finish.
+    // The bound is one second in a debug build, which the memoized walk misses
+    // by three orders of magnitude.
+    fn many_any_depth(count: usize, last: &str) -> String {
+        format!("docs/{}{last}", "**/".repeat(count))
+    }
+
+    #[test]
+    fn twenty_any_depth_segments_match_a_deep_path_in_bounded_time() {
+        let pattern = Pattern::new(&many_any_depth(20, "nomatch"));
+        let path = format!("docs/{}file.md", "d/".repeat(39));
+        assert_eq!(path.split('/').count(), 41);
+        let started = std::time::Instant::now();
+        assert!(!pattern.matches(&path));
+        assert!(started.elapsed() < std::time::Duration::from_secs(1));
+    }
+
+    #[test]
+    fn twenty_any_depth_segments_on_both_sides_overlap_in_bounded_time() {
+        // `**/x` between the stars keeps the collapse from making this trivial.
+        let interleaved = |last: &str| format!("docs/{}{last}", "**/x/".repeat(20));
+        let left = Pattern::new(&interleaved("left"));
+        let right = Pattern::new(&interleaved("right"));
+        let started = std::time::Instant::now();
+        assert!(!left.overlaps(&right));
+        assert!(!Pattern::new(&many_any_depth(20, "left"))
+            .overlaps(&Pattern::new(&many_any_depth(20, "right"))));
+        assert!(started.elapsed() < std::time::Duration::from_secs(1));
+    }
+
+    #[test]
+    fn thirty_stars_in_one_segment_overlap_in_bounded_time() {
+        // Every text both globs admit would end in `a` and in `b` at once.
+        let left = Pattern::new(&format!("docs/{}a", "*a".repeat(30)));
+        let right = Pattern::new(&format!("docs/{}b", "*b".repeat(30)));
+        let started = std::time::Instant::now();
+        assert!(!left.overlaps(&right));
+        assert!(started.elapsed() < std::time::Duration::from_secs(1));
+    }
 }
