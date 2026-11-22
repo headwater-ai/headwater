@@ -327,6 +327,66 @@ def stale_prose_counts_are_refused(text, blocks):
     return not survivors, 'the prose claim passed a stale paragraph: ' + '; '.join(survivors)
 
 
+INSTALLS_VERSION = re.compile(r'This installs version (\d+\.\d+\.\d+)\b')
+
+
+def version_matches_page(text, printed):
+    """In release mode, the engine under test must be the release the page
+    installs (#1985): `headwater --version` must print exactly the version that
+    the page's one "This installs version X" line names, outside any fence.
+
+    Before #1985 the page was held to whatever engine the runner built, and the
+    claim here was only that `--version` prints a number. So the page could
+    match the default branch and not the release its first block downloads.
+    Returns `(ok, detail)`.
+    """
+    outside, inside = [], False
+    for line in text.split('\n'):
+        if FENCE_MARKER.match(line.strip()):
+            inside = not inside
+        elif not inside:
+            outside.append(line)
+    found = [m.group(1) for line in outside for m in INSTALLS_VERSION.finditer(line)]
+    if len(found) != 1:
+        return False, f'expected one "This installs version X" line and found {len(found)}'
+    printed = printed.strip()
+    if printed != found[0]:
+        return False, (f'the page installs version {found[0]} and the engine under test '
+                       f'prints {printed!r}; release mode drives the release the page installs')
+    return True, f'the engine under test prints {printed}, the version the page installs'
+
+
+def version_claim_refuses_another_engine(text):
+    """The self-test for `version_matches_page`, in three directions: the
+    version the page names passes, and another version, a version with a
+    suffix, empty output, a page with no "This installs version" line and a
+    page with two each fail. The cases start from the page's own line, so this
+    fails only when the check is broken. Returns `(ok, detail)`.
+    """
+    match = INSTALLS_VERSION.search(text)
+    if not match:
+        return False, 'the self-test needs a "This installs version X" line on the page'
+    named = match.group(1)
+    ok, detail = version_matches_page(text, named + '\n')
+    if not ok:
+        return False, f'the version claim refused the version the page names: {detail}'
+    major, minor, patch = (int(n) for n in named.split('.'))
+    line = match.group(0)
+    survivors = []
+    for case, (page, printed) in {
+        'a later release': (text, f'{major}.{minor}.{patch + 1}'),
+        'an earlier minor release': (text, f'{major}.{max(minor - 1, 0)}.{patch}' if minor else f'{major + 1}.0.0'),
+        'the named version with a suffix': (text, named + '-dev'),
+        'no output': (text, ''),
+        'no "This installs version" line': (text.replace(line, 'This installs the engine'), named),
+        'two "This installs version" lines': (text + '\n\n' + line + ' again.', named),
+        'the only line is quoted inside a fence': (text.replace(line, '```\n' + line + '\n```'), named),
+    }.items():
+        if version_matches_page(page, printed)[0]:
+            survivors.append(case)
+    return not survivors, 'the version claim passed: ' + '; '.join(survivors)
+
+
 def read_blocks(root):
     """Every fenced code block of the tutorial body, and whether it is marked trimmed.
 
@@ -418,6 +478,8 @@ def main():
     assert_true('step 9: the jump paragraph states the counts its blocks show', ok, detail)
     ok, detail = stale_prose_counts_are_refused(body, blocks)
     assert_true('step 9: the jump paragraph claim refuses a stale paragraph', ok, detail)
+    ok, detail = version_claim_refuses_another_engine(body)
+    assert_true('before you start: the release-mode version claim refuses another engine', ok, detail)
 
     ok, detail = clock_reads_the_engine_s_day_and_not_the_local_one()
     assert_true("the substitution clock reads the engine's UTC day, not the local one", ok, detail)
@@ -454,8 +516,14 @@ def main():
 
     try:
         # Before you start. The release download is the one block not run.
+        # In release mode `fixtures.sh` ran it in effect, and the engine must
+        # be the release the page installs (#1985).
+        printed = run('headwater --version').stdout
         assert_true('before you start: headwater --version prints a number',
-                    re.match(r'^\d+\.\d+\.\d+', run('headwater --version').stdout.strip()) is not None)
+                    re.match(r'^\d+\.\d+\.\d+', printed.strip()) is not None)
+        if os.environ.get('HEADWATER_TUTORIAL_RELEASE') == '1':
+            ok, detail = version_matches_page(body, printed)
+            assert_true('before you start: the engine is the release the page installs', ok, detail)
 
         def cut(label, actual, index):
             """A block the page presents as a cut of the real output."""

@@ -29,16 +29,49 @@
 # `--profile dev-release` and not `--release` — had no `release` binary,
 # this suite reported "no engine" against a real one sitting beside it, and
 # CI's own gate never noticed because CI builds `--release` for itself.
+#
+# `HEADWATER_TUTORIAL_RELEASE=1` holds the page to the release it installs and
+# not to the engine of this tree (#1985). The page's first block downloads one
+# release archive, and a reader who follows it runs that release. So a page
+# that matches the default branch and not that release is wrong for every
+# reader. In this mode the script reads the tag out of the page's own download
+# line, downloads the Linux archive and its `.sha256` file, verifies the
+# archive, and drives the tutorial with the binary inside it. `drive.py` then
+# also requires that `headwater --version` prints the version the page's
+# "This installs version" line names. CI's tutorial step runs this mode. A
+# `HEADWATER_BIN` set by the caller still answers in this mode, so a person
+# can hold a page to a binary they already have, and the version claim says
+# whether it is the release the page installs. Without the switch the script
+# drives the engine of this tree, as before.
 set -eu
 
 root=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 . "$root/tools/repo/resolve-engine.sh"
+python3 "$root/.claude/tutorial/adopter_interface.py" "$root"
+
 bin=${HEADWATER_BIN:-}
+fetched=
+if [ -z "$bin" ] && [ "${HEADWATER_TUTORIAL_RELEASE:-}" = 1 ]; then
+  page="$root/docs/tutorials/your-first-governed-corpus.md"
+  # The first archive URL on the page is block 0's `curl` line.
+  url=$(grep -o 'https://github.com/headwater-ai/headwater/releases/download/v[0-9][0-9.]*/headwater-v[0-9][0-9.]*-x86_64-unknown-linux-musl\.tar\.gz' "$page" | head -n 1) || url=
+  if [ -z "$url" ]; then
+    echo "tutorial fixtures: release mode found no x86_64-unknown-linux-musl archive URL in $page" >&2
+    exit 1
+  fi
+  fetched=$(mktemp -d "${TMPDIR:-/tmp}/headwater-tutorial-release.XXXXXX")
+  archive=${url##*/}
+  echo "tutorial fixtures: release mode, driving $archive" >&2
+  if ! (cd "$fetched" && curl -fsSLO "$url" && curl -fsSLO "$url.sha256" && sha256sum -c "$archive.sha256" >/dev/null && tar -xzf "$archive" headwater); then
+    echo "tutorial fixtures: could not download, verify and unpack $url" >&2
+    rm -rf "$fetched"
+    exit 1
+  fi
+  bin=$fetched/headwater
+fi
 if [ -z "$bin" ]; then
   bin=$(hw_resolve_engine_bin "$root") || bin=
 fi
-
-python3 "$root/.claude/tutorial/adopter_interface.py" "$root"
 
 if [ -z "$bin" ] || [ ! -x "$bin" ]; then
   echo "tutorial fixtures:" >&2
@@ -46,4 +79,10 @@ if [ -z "$bin" ] || [ ! -x "$bin" ]; then
   exit 1
 fi
 
-HEADWATER_BIN=$bin exec python3 "$root/.claude/tutorial/drive.py" "$root"
+if [ -z "$fetched" ]; then
+  HEADWATER_BIN=$bin exec python3 "$root/.claude/tutorial/drive.py" "$root"
+fi
+status=0
+HEADWATER_BIN=$bin python3 "$root/.claude/tutorial/drive.py" "$root" || status=$?
+rm -rf "$fetched"
+exit "$status"
