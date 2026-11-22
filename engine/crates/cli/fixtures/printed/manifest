@@ -60,6 +60,49 @@ tree = base
 setup = remove .headwater/taxonomy.lock
 run = check --root . --now 2026-01-15
 
+# The refusals of one load of the corpus past the lock, one line for each that
+# a setup can reach (#1959). The load moved out of `main.rs` into
+# `headwater-api`, and these hold what the shell prints for each refusal it
+# hands back. A taxonomy in the lock that does not read needs a lock whose
+# digest matches it, which no setup step writes, so
+# `a_lock_whose_taxonomy_does_not_read_is_refused_byte_for_byte` in
+# `tests/printed.rs` holds that one.
+
+[check-consumer-refused]
+row = headwater check
+outcome = refuse
+tree = base
+setup = write .headwater/taxonomy.yml "taxonomy:\n  package: acme/printed\n  version: 1.0.0\n\nengine: \"~0.5\"\n\ncorpus:\n  root: docs\n"
+run = check --root . --now 2026-01-15
+
+[check-imports-refused]
+row = headwater check
+outcome = refuse
+tree = base
+setup = write .headwater/taxonomy.yml "taxonomy:\n  package: acme/printed\n  version: 1.0.0\n\ncorpus:\n  root: docs\n\nimports:\n  broken: 3\n"
+run = check --root . --now 2026-01-15
+
+[check-harvests-refused]
+row = headwater check
+outcome = refuse
+tree = base
+setup = write .headwater/taxonomy.yml "taxonomy:\n  package: acme/printed\n  version: 1.0.0\n\ncorpus:\n  root: docs\n\nharvests: 3\n"
+run = check --root . --now 2026-01-15
+
+[check-resolvers-ambiguous-import]
+row = headwater check
+outcome = refuse
+tree = base
+setup = write .headwater/taxonomy.yml "taxonomy:\n  package: acme/printed\n  version: 1.0.0\n\ncorpus:\n  root: docs\n\nimports:\n  upstream:\n    at: .headwater/imports/upstream\n    digest: sha256:422187182abb3e25f9e4ec59b93080b4e436e471dd3fab017cc89e90aac10fcd\n    channel: the release page of the publisher\n    resolver: upstream-snapshot\n  again:\n    at: .headwater/imports/upstream\n    digest: sha256:422187182abb3e25f9e4ec59b93080b4e436e471dd3fab017cc89e90aac10fcd\n    channel: the release page of the publisher\n    resolver: upstream-snapshot\n"
+run = check --root . --now 2026-01-15
+
+[check-resolvers-ambiguous-harvest]
+row = headwater check
+outcome = refuse
+tree = base
+setup = write .headwater/taxonomy.yml "taxonomy:\n  package: acme/printed\n  version: 1.0.0\n\ncorpus:\n  root: docs\n\nimports:\n  upstream:\n    at: .headwater/imports/upstream\n    digest: sha256:422187182abb3e25f9e4ec59b93080b4e436e471dd3fab017cc89e90aac10fcd\n    channel: the release page of the publisher\n    resolver: upstream-snapshot\n\nharvests:\n  other:\n    at: .headwater/imports/upstream\n    resolver: upstream-snapshot\n"
+run = check --root . --now 2026-01-15
+
 # ---------------------------------------------------------------- change
 
 [change-one-document]
@@ -316,6 +359,15 @@ row = headwater new
 outcome = refuse
 tree = base
 run = new --root . --now 2026-01-15 answer
+
+# `new` maps a load that failed to a string of its own after the shell printed
+# the refusal, so this line holds that the refusal still prints (#1959).
+[new-consumer-refused]
+row = headwater new
+outcome = refuse
+tree = base
+setup = write .headwater/taxonomy.yml "taxonomy:\n  package: acme/printed\n  version: 1.0.0\n\nengine: \"~0.5\"\n\ncorpus:\n  root: docs\n"
+run = new --root . --now 2026-01-15 answer --title "A new answer"
 
 # ---------------------------------------------------------------- infer
 
@@ -622,6 +674,16 @@ row = headwater taxonomy diff
 outcome = refuse
 tree = base
 run = taxonomy diff --root . nowhere --now 2026-01-15
+
+# A load against a candidate taxonomy, which reaches the refusal through the
+# second entry point of the load (#1959).
+[taxonomy-diff-imports-refused]
+row = headwater taxonomy diff
+outcome = refuse
+tree = base next
+setup = headwater taxonomy publish --root . --from .next/acme-printed --out artifact
+setup = write .headwater/taxonomy.yml "taxonomy:\n  package: acme/printed\n  version: 1.0.0\n\ncorpus:\n  root: docs\n\nimports:\n  broken: 3\n"
+run = taxonomy diff --root . artifact --to 2.0.0 --now 2026-01-15
 
 [taxonomy-migrate-dry-run]
 row = headwater taxonomy migrate

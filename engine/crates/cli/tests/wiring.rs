@@ -9,7 +9,7 @@
 //! it. Three defects of exactly that shape have been found in `main.rs`, all
 //! three by hand and none by the suite:
 //!
-//! 1. `Loaded::runs()` took `Plan::over(..).selected` and dropped the refusal
+//! 1. `Session::runs()` took `Plan::over(..).selected` and dropped the refusal
 //!    beside it, so a corpus whose plan stopped partway still published a rate
 //!    over a denominator no document declares (#172).
 //! 2. `probe grade` tested `plan.selected.is_empty()` where the rule is
@@ -832,7 +832,7 @@ fn probe_stale_holds_a_whole_selection_transcript_against_the_whole() {
     );
 }
 
-/// The `Loaded::runs()` call site hands the generator the plan and not the
+/// The `Session::runs()` call site hands the generator the plan and not the
 /// selection.
 ///
 /// `Runs::graded_against` is the rule and it is held by two tests of its own
@@ -1008,6 +1008,28 @@ fn the_version_flag_reads_the_named_constant_and_not_a_local_env_read() {
     );
 }
 
+/// The binary, the library it loads a corpus through, and the constant
+/// `--version` prints are one version (#1959).
+///
+/// `headwater-api` is published on its own, so a build could pair this binary
+/// with a library of another version. A session that library opens would
+/// then judge a corpus's engine range against a number this binary does not
+/// print. Each `env!` here reads the manifest of the crate it is compiled
+/// in, so a manifest that moved on its own fails this case.
+#[test]
+fn the_binary_and_the_library_it_links_are_built_at_one_version() {
+    assert_eq!(
+        env!("CARGO_PKG_VERSION"),
+        headwater_api::VERSION,
+        "headwater-cli and the headwater-api it links carry different versions"
+    );
+    assert_eq!(
+        headwater_api::VERSION,
+        headwater_resolve::release::ENGINE,
+        "headwater-api and the engine constant `--version` prints carry different versions"
+    );
+}
+
 /// Every `.rs` file under `engine/`, recursively, skipping `target`.
 fn source_files(dir: &Path, out: &mut Vec<PathBuf>) {
     let Ok(entries) = std::fs::read_dir(dir) else {
@@ -1058,6 +1080,26 @@ fn exactly_one_site_defines_the_engine_version_constant() {
             }
         }
     }
+    // Two reads exist to compare versions and not to state one (#1959):
+    // `headwater_api::VERSION`, the version that library was built at, and
+    // the case `the_binary_and_the_library_it_links_are_built_at_one_version`,
+    // which holds this crate's own read equal to it and to the constant. Each
+    // file may hold one such line, and a second line in either is a site.
+    let comparisons = [
+        root.join("crates/api/src/lib.rs"),
+        root.join("crates/cli/tests/wiring.rs"),
+    ];
+    for compared in &comparisons {
+        let at = sites.iter().position(|(path, _)| {
+            path.canonicalize().ok() == Some(compared.canonicalize().unwrap())
+        });
+        assert!(
+            at.is_some(),
+            "{} no longer reads the version it compares: {sites:?}",
+            compared.display()
+        );
+        sites.remove(at.unwrap());
+    }
     assert_eq!(
         sites.len(),
         1,
@@ -1083,7 +1125,7 @@ fn exactly_one_site_defines_the_engine_version_constant() {
 /// sets in one process.
 ///
 /// So the case holds three things over every `src/` file outside the check
-/// crate. The CLI calls `Cache::compiled` once, in `Loaded::cache`, and that
+/// crate. The CLI calls `Cache::compiled` once, in `Session::cache`, and that
 /// call is the one a test of `check` holds. No other file calls a
 /// constructor of the check cache except `Cache::disabled`: a name that a
 /// file imports as the check crate's `Cache`, under any alias, or the full
@@ -1092,12 +1134,12 @@ fn exactly_one_site_defines_the_engine_version_constant() {
 /// fourth part reads `crates/check/src/cache.rs`, and holds that `Cache` has
 /// the three constructors `disabled`, `at` and `compiled`, so that a new
 /// constructor that takes a digest is a failure here and a reason to extend
-/// this case. A frozen lock digest inside `Loaded::cache` is held by
+/// this case. A frozen lock digest inside `Session::cache` is held by
 /// `tests/cache_key.rs`.
 ///
 /// `check --fix` builds a cache that the report run after it writes over, so
 /// a frozen key in the fix run alone costs time and moves no verdict, and no
-/// run can show it. That is why both runs share `Loaded::cache`.
+/// run can show it. That is why both runs share `Session::cache`.
 ///
 /// The needles are split so that this file does not match them, although it
 /// is under `tests/` and the walk reads `src/` alone.
@@ -1180,11 +1222,11 @@ fn the_cli_builds_its_check_cache_in_one_place_and_names_no_rule_set_digest() {
     assert!(
         sites.is_empty(),
         "a source file outside the check crate builds a check cache through a constructor that \
-         takes the rule-set digest, or names that digest; call `Loaded::cache`: {sites:?}"
+         takes the rule-set digest, or names that digest; call `Session::cache`: {sites:?}"
     );
     assert_eq!(
         compiled, 1,
-        "`Loaded::cache` is the one place the CLI builds a check cache, so a test of `check` \
+        "`Session::cache` is the one place the CLI builds a check cache, so a test of `check` \
          holds the cache of `check --fix` too"
     );
 

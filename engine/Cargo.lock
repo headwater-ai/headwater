@@ -501,6 +501,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "headwater-api"
+version = "0.6.1"
+dependencies = [
+ "headwater-census",
+ "headwater-check",
+ "headwater-generate",
+ "headwater-graph",
+ "headwater-import",
+ "headwater-lock",
+ "headwater-probe",
+ "headwater-query",
+ "headwater-resolve",
+ "headwater-verbs",
+ "headwater-yaml",
+]
+
+[[package]]
 name = "headwater-audit"
 version = "0.6.1"
 dependencies = [
@@ -551,6 +568,7 @@ dependencies = [
  "clap",
  "clap_complete",
  "headwater-adapter",
+ "headwater-api",
  "headwater-audit",
  "headwater-census",
  "headwater-check",

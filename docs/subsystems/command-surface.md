@@ -14,6 +14,7 @@ provenance:
 relations:
   governs:
     - engine/crates/cli/src/**
+    - engine/crates/api/src/**
     - engine/crates/verbs/src/**
     - engine/crates/paint/src/**
   traces_to:
@@ -37,13 +38,14 @@ relations:
 
 ## Scope
 
-This spec describes the inside of the command surface of [spec 6](../spec/06-engine-architecture.md#subsystems). Three crates under `engine/crates/` build it: `cli`, `verbs` and `paint`. The subsystem runs no stage of the pipeline. It reads a command line, selects one verb, calls the crates that do the work, and writes the result on the two standard streams.
+This spec describes the inside of the command surface of [spec 6](../spec/06-engine-architecture.md#subsystems). Four crates under `engine/crates/` build it: `cli`, `api`, `verbs` and `paint`. The subsystem runs no stage of the pipeline. It reads a command line, selects one verb, calls the crates that do the work, and writes the result on the two standard streams.
 
-The subsystem has three parts:
+The subsystem has four parts:
 
 - `verbs` holds the list of every verb and every second word, with the words that a caller reads about each one.
 - `cli` holds the parser, the help, the color and width of the text, the body of each verb, and the Mermaid renderer of `headwater taxonomy graph`.
 - `paint` holds the palette and the pure functions that apply it.
+- `api` holds one load of a corpus as a value, with no `clap` and no `headwater-fetch`. `cli` and each verb that runs in process call it. It returns a refusal and an unmet engine range as values, and `cli` prints them.
 
 Other documents state what a caller gets, and this spec does not repeat them:
 
