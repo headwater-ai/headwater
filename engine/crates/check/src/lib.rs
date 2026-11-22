@@ -193,6 +193,7 @@ pub mod self_target;
 pub mod shape;
 pub mod source_form;
 pub mod state_not_set_by_edge;
+pub mod state_set_after_initial;
 pub mod state_set_twice;
 pub mod suppression;
 pub mod surface;
@@ -240,7 +241,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 50] = [
+pub const RULES: [&str; 51] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
@@ -254,6 +255,7 @@ pub const RULES: [&str; 50] = [
     dependency::RULE,
     initial_dependency::RULE,
     state_not_set_by_edge::RULE,
+    state_set_after_initial::RULE,
     invalid_pair::RULE,
     basis::RULE,
     participation::RULE,
@@ -523,6 +525,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::edge_scope::<state_not_set_by_edge::NotSetByEdge<'_>>(),
             scope::edge_version::<state_not_set_by_edge::NotSetByEdge<'_>>(),
             scope::edge_exports::<state_not_set_by_edge::NotSetByEdge<'_>>(),
+        ),
+        (
+            state_set_after_initial::RULE,
+            scope::edge_scope::<state_set_after_initial::SetAfterInitial<'_>>(),
+            scope::edge_version::<state_set_after_initial::SetAfterInitial<'_>>(),
+            scope::edge_exports::<state_set_after_initial::SetAfterInitial<'_>>(),
         ),
         (
             invalid_pair::RULE,
@@ -832,6 +840,11 @@ pub fn run(
     // Edge-scoped for [`dependency`]'s reason. See [`state_not_set_by_edge`].
     let not_set_by_edge =
         state_not_set_by_edge::NotSetByEdge::over(declared.relations, declared.shape);
+    // A source at its initial state over the same relations, whose edge has
+    // not landed yet. It reports what HW-DR-0086 leaves pending, against the
+    // source. See [`state_set_after_initial`].
+    let set_after_initial =
+        state_set_after_initial::SetAfterInitial::over(declared.relations, declared.shape);
     // Two documents joined by a relation whose declared `invalid_when`
     // condition holds at both ends, over the relations that declare one.
     // Edge-scoped for [`dependency`]'s reason. See [`invalid_pair`].
@@ -1002,6 +1015,15 @@ pub fn run(
     ));
     instances.extend(scope::over_edges(
         &not_set_by_edge,
+        census,
+        graph,
+        &digests,
+        declared.observations,
+        ctx,
+        cache,
+    ));
+    instances.extend(scope::over_edges(
+        &set_after_initial,
         census,
         graph,
         &digests,
