@@ -6,14 +6,16 @@
 //! seconds or minutes, because a reader searched everything it had already
 //! read once for each new item: the loader for a repeated key, the graph and
 //! the edge scope for a repeated relation, the sentence reader for the run
-//! that owns a position and for an open link, and the line table for a
-//! column. Each case below builds one such document and holds the whole run
-//! under a ceiling that the code before the fix exceeded by more than ten
-//! times in the same test profile.
+//! that owns a position and for an open link, the line table for a column,
+//! and the audit of the rendered report for the record of each finding. Each
+//! case below builds one such document and holds the whole run under a
+//! ceiling that the code before the fix exceeded by more than ten times in the
+//! same test profile.
 //!
 //! The ceilings are wall time in the `dev` profile (no optimization), so each
-//! leaves the fixed code a wide margin on a loaded runner. The doc comment on
-//! each case records the time measured before and after the fix.
+//! leaves the fixed code a margin on a loaded runner. The doc comment on each
+//! case records the time measured before and after the fix, on the build host
+//! (18 cores, shared with other builds) on 2026-11-23.
 
 mod common;
 use common::{Ran, Root};
@@ -45,9 +47,9 @@ fn tail(text: &str) -> String {
     lines[lines.len().saturating_sub(20)..].join("\n")
 }
 
-/// `check --strict` ended with a status, under the ceiling, and read the
-/// document.
-fn assert_in_time(label: &str, text: &str, ceiling: Duration) {
+/// `check --strict` ended with a status, reported on the document, and took
+/// less than the ceiling.
+fn assert_in_time(label: &str, text: &str, ceiling: Duration) -> Ran {
     let root = root(label, text);
     let started = Instant::now();
     let ran: Ran = root.run(&["check", "--strict"]);
@@ -60,54 +62,81 @@ fn assert_in_time(label: &str, text: &str, ceiling: Duration) {
         tail(&ran.err)
     );
     assert!(
+        ran.out.contains(NAME),
+        "`check --strict` did not report on {NAME}, so the case measured nothing:\n{}",
+        tail(&ran.out)
+    );
+    assert!(
         took < ceiling,
         "`check --strict` took {took:?} on {label}, over the ceiling of {ceiling:?}"
     );
+    ran
 }
 
 /// Unknown front-matter keys, each one distinct. The loader searched every
 /// key already read for a duplicate of each new one.
+///
+/// 160,000 keys: RED_KEYS before the fix, 0.72 s after. Ceiling 6 s.
 #[test]
 fn many_unknown_front_matter_keys_check_in_linear_time() {
     let extra: String = (0..KEYS).map(|i| format!("k{i}: v\n")).collect();
-    assert_in_time("linear-keys", &document(&extra, "One paragraph."), CEILING);
+    assert_in_time(
+        "linear-keys",
+        &document(&extra, "One paragraph."),
+        Duration::from_secs(6),
+    );
 }
 
 /// Distinct relation targets that resolve to nothing. The graph searched the
-/// triples of the document for a repeat of each edge, and the edge scope
-/// searched its groups for each edge once for each edge-scoped rule.
+/// triples of the document for a repeat of each edge, the edge scope searched
+/// its groups for each edge once for each edge-scoped rule, and the audit of
+/// the report searched every record for the record of each finding.
+///
+/// 80,000 targets: RED_TARGETS before the fix, 9.2 s after. Ceiling 18 s.
 #[test]
 fn many_unresolved_relation_targets_check_in_linear_time() {
     let targets: String = (0..TARGETS)
         .map(|i| format!("    - HW-DR-{:05}\n", i + 10_000))
         .collect();
     let extra = format!("relations:\n  traces_to:\n{targets}");
-    assert_in_time(
+    let ran = assert_in_time(
         "linear-targets",
         &document(&extra, "One paragraph."),
-        CEILING,
+        Duration::from_secs(18),
+    );
+    assert!(
+        ran.out
+            .contains(&format!("HW-DR-{:05}", TARGETS - 1 + 10_000)),
+        "the last target is not reported, so not every edge was read"
     );
 }
 
 /// Sentences in one paragraph. The sentence reader walked every run of the
 /// block, and counted the characters of each, for each position it asked.
+///
+/// 10,000 sentences: RED_SENTENCES before the fix, 0.32 s after. Ceiling 6 s.
 #[test]
 fn many_sentences_in_one_paragraph_check_in_linear_time() {
     let body = "This is a sentence. ".repeat(SENTENCES);
-    assert_in_time("linear-sentences", &document("", &body), CEILING);
+    assert_in_time(
+        "linear-sentences",
+        &document("", &body),
+        Duration::from_secs(6),
+    );
 }
 
 /// Links on one line. The line table counted the characters from the start
 /// of the line for each column, and the sentence reader scanned every link
 /// of the body for each terminator.
+///
+/// 160,000 links: RED_LINKS before the fix, 1.04 s after. Ceiling 6 s.
 #[test]
 fn many_links_on_one_line_check_in_linear_time() {
     let body = "[a](0001-the-warrant-a-person-set.md) ".repeat(LINKS);
-    assert_in_time("linear-links", &document("", &body), CEILING);
+    assert_in_time("linear-links", &document("", &body), Duration::from_secs(6));
 }
 
-const KEYS: usize = 40_000;
-const TARGETS: usize = 20_000;
-const SENTENCES: usize = 20_000;
-const LINKS: usize = 20_000;
-const CEILING: Duration = Duration::from_secs(600);
+const KEYS: usize = 160_000;
+const TARGETS: usize = 80_000;
+const SENTENCES: usize = 10_000;
+const LINKS: usize = 160_000;
