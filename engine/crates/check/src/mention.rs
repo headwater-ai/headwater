@@ -271,6 +271,52 @@ mod tests {
         assert!(finding(&mention(Some("decision"), Some("obligation")), &[]).is_none());
     }
 
+    fn edge(source: &str, written: &str, target: Target) -> Edge {
+        Edge {
+            source: headwater_graph::edges::Source {
+                id: source.to_string(),
+                path: "obligations/a.md".to_string(),
+                kind: "obligation".to_string(),
+                kind_span: None,
+            },
+            name: "traces_to".to_string(),
+            declared: "traces_to".to_string(),
+            direction: headwater_graph::declarations::Direction::AsDeclared,
+            raw_target: written.to_string(),
+            raw_targets: vec![written.to_string()],
+            target,
+            attributes: Vec::new(),
+            created_by: None,
+            span: Span::default(),
+        }
+    }
+
+    /// An edge whose target bound to nothing still names the identifier as
+    /// written, and the pair it names is joined: its defect is another
+    /// rule's news.
+    #[test]
+    fn an_edge_that_bound_to_nothing_still_joins_the_pair_it_names() {
+        let unbound = Target::Unbound(headwater_graph::edges::Unbound::NoSuchTarget {
+            also_tried: Vec::new(),
+        });
+        let edges = [edge("OBL-1", "DEC-1", unbound)];
+        assert!(joined(&edges).contains(&pair("DEC-1", "OBL-1")));
+    }
+
+    /// A bound edge joins its two documents whichever end wrote it.
+    #[test]
+    fn a_bound_edge_joins_its_documents_in_either_order() {
+        let bound = Target::Document {
+            id: "DEC-1".to_string(),
+            path: "decisions/b.md".to_string(),
+            kind: "decision".to_string(),
+        };
+        let edges = [edge("OBL-1", "decisions/b.md", bound)];
+        let joined = joined(&edges);
+        assert!(joined.contains(&pair("DEC-1", "OBL-1")));
+        assert!(joined.contains(&pair("OBL-1", "DEC-1")));
+    }
+
     #[test]
     fn a_pair_is_unordered() {
         assert_eq!(pair("OBL-1", "DEC-1"), pair("DEC-1", "OBL-1"));

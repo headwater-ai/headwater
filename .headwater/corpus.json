@@ -21,8 +21,8 @@
       ],
       "taxonomy": {
         "package": "headwater/standard",
-        "version": "4.18.0",
-        "lock": "sha256:76a305842f6b5dd24f6bac80dfbb97969b5e97c856945458e7a3b90ad2afb075"
+        "version": "4.19.0",
+        "lock": "sha256:2d346dcc4b1cc9a3e45b412b73586fedbb168e2e3f4d7e0dc8ff872412b3b88c"
       },
       "entry_points": [
         {
