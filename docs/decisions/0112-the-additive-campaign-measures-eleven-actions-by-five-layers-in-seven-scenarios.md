@@ -200,6 +200,8 @@ A call to the server is a `tool_use` event whose tool name starts with `mcp__`. 
 
 The subject model is `claude-sonnet-5`, on one version of one harness, and each record names that version. The engine is built from a recorded commit, and the transcript of each session names its digest. A table on another model is #1700's business, and another harness is #503's.
 
+Added on 2026-11-22 by #1981. The workspace of a session holds no vendored crates, and it reaches no registry. `tools/probe/egress-proxy.py` lets a session reach the API host and refuses every other host. So `cargo build` and `cargo test` cannot run in the workspace. The two code rows, `change_governed_code` and `refactor_across_files`, therefore measure a session that has no compiler for the workspace. A session can compile one file with `rustc`, but a missed caller in another crate stays invisible to it. In phase B, `refactor_across_files` failed 2 of its 48 sessions in scenario 6, and the transcripts of both show a missed caller. The owner ruled on 2026-11-22, on #1981, that this campaign keeps the workspace without a compiler. The evaluation of phase B, #1882, states this in one sentence beside the code rows.
+
 ### A base that a change makes stale
 
 A base that a later change can alter is measured again before a confirmation compares with it. `.headwater/probe.yml` declares `base_invalidators`, the paths whose change can make a measured base stale. A base is accepted again only by an owner acceptance that records the digest of each changed path. A confirmation waits for a base measured at its own commit. `tools/probe/try.sh` holds this mechanism, and this record keeps it.
@@ -216,4 +218,4 @@ Each paid issue gets its own ceiling when its dry-run plan is posted on it. No r
 
 **The open claims of spec 13 stay open.** This record reads HW-OBL-0012, HW-OBL-0013, HW-OBL-0014 and HW-OBL-0016, and it closes none of them. The evaluation that phase B publishes is the record that can discharge them.
 
-**These rulings open again** if the owner changes the grid, the scenarios or the keep rule. They also open again if the owner approves a ceiling for a paid issue, or if a phase A layer cannot be kept or closed. The grid opens again if a held-out row saturates in the base of every scenario. The held-out set opens again for the three probes of #1979 before any rerun.
+**These rulings open again** if the owner changes the grid, the scenarios or the keep rule. They also open again if the owner approves a ceiling for a paid issue, or if a phase A layer cannot be kept or closed. The grid opens again if a held-out row saturates in the base of every scenario. The workspace without a compiler opens again before any rerun of the code rows. The remedy then is vendored crates or a local registry sealed into the workspace, with no host added to the proxy. The held-out set opens again for the three probes of #1979 before any rerun.
