@@ -1729,28 +1729,6 @@ impl<'a> CorpusView<'a> {
         }
     }
 
-    /// A view carrying the mentions and the edges, for the tests of the rule
-    /// that reads both. `cfg(test)` on [`CorpusView::only_links`]'s terms.
-    #[cfg(test)]
-    pub(crate) fn only_mentions_and_edges(
-        mentions: Option<&'a [headwater_graph::mentions::Mention]>,
-        edges: Option<&'a [Edge]>,
-    ) -> Self {
-        CorpusView {
-            identity: None,
-            departed: &[],
-            claims: None,
-            links: None,
-            mentions,
-            anchors: None,
-            edges,
-            generated: None,
-            orphaned: None,
-            unresolved: None,
-            reads: Vec::new(),
-        }
-    }
-
     /// A view carrying the links and the anchors, for the tests of the rule
     /// that reads both. `cfg(test)` on [`CorpusView::only_links`]'s terms.
     #[cfg(test)]

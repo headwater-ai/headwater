@@ -163,6 +163,19 @@ fn its_own_identifier_and_a_ghost_token_are_silent() {
     assert!(on(&run(), "obligations/self-and-ghost.md").is_empty());
 }
 
+/// A generated document's prose and front matter are the generator's, so its
+/// author has nowhere to declare the relation.
+#[test]
+fn a_generated_source_is_silent() {
+    let run = run();
+    assert!(
+        run.findings.iter().all(|finding| finding.path != path("obligations/generated.md")
+            || finding.rule != RULE),
+        "{:#?}",
+        run.findings
+    );
+}
+
 /// One missing edge is one finding, at the first mention, however many times
 /// the prose names the document. A trailing hyphen is trimmed from the token.
 #[test]

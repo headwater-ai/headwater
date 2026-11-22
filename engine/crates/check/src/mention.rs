@@ -35,10 +35,16 @@
 //!   through the `is_a` chain as [`crate::endpoint`] reads it, in the forward
 //!   direction only. With no candidate there is nothing to offer.
 //!   [HW-OBL-0055](../../../../docs/obligations/0055-the-tradition-has-no-relation-for-the-link-that-this-corpus.md)
-//!   records that this corpus's most common citation, one specification part
-//!   naming another, has no relation in the tradition, and those pairs are
-//!   silent here for that reason.
+//!   records that the tradition has no relation for this corpus's most common
+//!   citation, one specification part naming another. A taxonomy that declares
+//!   none for a pair gets no note on it. A taxonomy whose `traces_to` or
+//!   `supersedes` admits every governed document at both ends, as
+//!   `headwater/standard` does, offers those two for every typed pair, and the
+//!   note names them so that the author can see how little the offer says.
 //! - **Either end has no kind.** A kind is what a relation's ends are made of.
+//! - **The source is generated.** `headwater generate` writes its prose and its
+//!   front matter, so nobody can declare the relation in it, and the remedy
+//!   this rule names would be overwritten by the next run.
 //!
 //! A `relations:` block that names a relation the taxonomy does not declare
 //! makes no edge, so a misspelled `trace_to` leaves the pair unjoined and
@@ -137,9 +143,18 @@ impl CorpusCheck for Mentioned<'_> {
             return Outcome::Skipped(NO_EDGES.to_string());
         };
         let joined = joined(edges);
+        // A generated document's prose is the generator's, so its author has
+        // no front matter to declare a relation in.
+        let generated: HashSet<&str> = view
+            .generated()
+            .unwrap_or_default()
+            .iter()
+            .map(|document| document.path)
+            .collect();
         Outcome::failed(
             mentions
                 .iter()
+                .filter(|mention| !generated.contains(mention.source_path.as_str()))
                 .filter(|mention| !joined.contains(&pair(&mention.source_id, &mention.named)))
                 .filter_map(|mention| finding(mention, &self.candidates(mention)))
                 .collect(),
@@ -196,7 +211,9 @@ fn finding(mention: &Mention, candidates: &[&str]) -> Option<Finding> {
         column: mention.span.start.col,
         message: format!(
             "the prose names `{named}` and the front matter declares no relation to it; \
-             the taxonomy offers the {relation} {offered} from this kind to `{named}`'s"
+             the taxonomy offers the {relation} {offered} from `{from}` to `{to}`",
+            from = mention.source_kind.as_deref().unwrap_or_default(),
+            to = mention.named_kind.as_deref().unwrap_or_default(),
         ),
         remediation: format!(
             "if this document rests on `{named}`, declare {these} under `relations:`, \
@@ -237,7 +254,9 @@ mod tests {
         assert_eq!(found.severity, Severity::Info);
         assert_eq!((found.line, found.column), (9, 19));
         assert!(
-            found.message.contains("relations `traces_to`, `cites`"),
+            found
+                .message
+                .contains("relations `traces_to`, `cites` from `obligation` to `decision`"),
             "{found:#?}"
         );
         assert!(
