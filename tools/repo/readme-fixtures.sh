@@ -711,6 +711,75 @@ unmeasured_judge() {
     ' "$1"
 }
 
+# status_lines FILE — each line of the blockquote under the `## Status` heading
+# of FILE, as `<line number><TAB><text>`. The section ends at the next level-two
+# heading, and only its lines that open with `>` are read.
+status_lines() {
+    awk '
+        /^## / { in_status = ($0 ~ /^## Status[ \t]*$/) }
+        in_status && /^>/ { print NR "\t" $0 }
+    ' "$1"
+}
+
+# status_evaluations FILE — the path of each evaluation the Status blockquote
+# of FILE links, resolved from the directory FILE stands in. A link counts when
+# its target is a `.md` file under `docs/evaluations/`; a fragment is dropped.
+status_evaluations() {
+    sfe_dir=$(dirname "$1")
+    status_lines "$1" | grep -o '](docs/evaluations/[^)#]*\.md' | sed "s|^](|$sfe_dir/|" | sort -u
+}
+
+# status_figures FILE — each figure the Status blockquote of FILE quotes, as
+# `<line number><TAB><figure>`. A figure is `<n> of <m>`, a bracketed interval
+# `[a, b]`, `<n>%`, or a signed point difference such as `+40.0` that stands
+# after a space or an opening parenthesis. A link target, an issue number
+# `#<n>` and a date are removed before any figure is read, and a version
+# matches none of the four shapes. An interval is read first and then removed,
+# so its two bounds are not read again as differences.
+status_figures() {
+    status_lines "$1" | awk -F '\t' '
+        function each(text, pattern, skip,    t) {
+            t = text
+            while (match(t, pattern)) {
+                print line "\t" substr(t, RSTART + skip, RLENGTH - skip)
+                t = substr(t, RSTART + RLENGTH)
+            }
+        }
+        {
+            line = $1
+            s = substr($0, length($1) + 2)
+            gsub(/\]\([^)]*\)/, "]", s)
+            gsub(/#[0-9]+/, "", s)
+            gsub(/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/, "", s)
+            interval = "\\[(\\+|-|−)?[0-9]+(\\.[0-9]+)?, (\\+|-|−)?[0-9]+(\\.[0-9]+)?\\]"
+            each(s, interval, 0)
+            gsub(interval, "", s)
+            each(s, "[0-9]+ of [0-9]+", 0)
+            each(s, "[0-9]+(\\.[0-9]+)?%", 0)
+            each(" " s, "[ (](\\+|-|−)[0-9]+(\\.[0-9]+)?", 1)
+        }
+    '
+}
+
+# status_figure_judge FILE — each figure of the Status blockquote that no
+# evaluation it links carries. A figure is matched as a fixed string bounded by
+# a character that is not a letter, a digit or `_`, so `4 of 6` is not found
+# inside `14 of 6`. A page that links no evaluation has every figure refused,
+# because a figure with no evaluation behind it is what #1882 exists to stop.
+status_figure_judge() {
+    status_evaluations "$1" >"$scratch/sfj.evals"
+    status_figures "$1" | while IFS="$(printf '\t')" read -r sfj_line sfj_figure; do
+        sfj_found=no
+        while read -r sfj_eval; do
+            if [ -f "$sfj_eval" ] && grep -Fqw -e "$sfj_figure" "$sfj_eval"; then
+                sfj_found=yes
+                break
+            fi
+        done <"$scratch/sfj.evals"
+        [ "$sfj_found" = yes ] || echo "$sfj_line: $sfj_figure is in no evaluation the Status blockquote links"
+    done
+}
+
 # retired_milestone_judge FILE — a milestone named by its retired label, `M7` or
 # `M6b`. HW-PD-0008 made every open milestone a version, so a label of that shape
 # names something the board no longer holds. A label is `M`, digits and an
