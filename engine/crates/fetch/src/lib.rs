@@ -932,36 +932,56 @@ mod tests {
         assert!(!dir.exists(), "the drop left the directory");
     }
 
-    /// A listener on 127.0.0.1 that answers `/a` with a redirect to `/b`
-    /// and holds every other request open without a byte.
-    fn redirect_then_silence() -> String {
+    /// A listener on 127.0.0.1. `/a` waits `SLOW_HOP` and then redirects to
+    /// `/b`. `/c` sends its headers and never its body. Every other request
+    /// is held open without a byte. The count is of requests received.
+    fn slow_redirect_then_silence() -> (String, std::sync::Arc<AtomicU64>) {
         use std::io::{Read, Write};
         let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
         let base = format!("http://{}", listener.local_addr().unwrap());
+        let count = std::sync::Arc::new(AtomicU64::new(0));
+        let seen = std::sync::Arc::clone(&count);
         std::thread::spawn(move || {
             let mut held = Vec::new();
             for stream in listener.incoming() {
                 let Ok(mut stream) = stream else { continue };
                 let mut request = [0_u8; 4096];
                 let read = stream.read(&mut request).unwrap_or(0);
+                if read == 0 {
+                    continue;
+                }
+                seen.fetch_add(1, Ordering::SeqCst);
                 let line = String::from_utf8_lossy(&request[..read]).to_string();
-                if line.split_whitespace().nth(1) == Some("/a") {
-                    let _ = stream.write_all(
-                        b"HTTP/1.1 302 Found\r\nLocation: /b\r\nContent-Length: 0\r\n\r\n",
-                    );
+                match line.split_whitespace().nth(1) {
+                    Some("/a") => {
+                        std::thread::sleep(SLOW_HOP);
+                        let _ = stream.write_all(
+                            b"HTTP/1.1 302 Found\r\nLocation: /b\r\nContent-Length: 0\r\n\r\n",
+                        );
+                    }
+                    Some("/c") => {
+                        let _ = stream.write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\n");
+                    }
+                    _ => {}
                 }
                 held.push(stream);
             }
         });
-        base
+        (base, count)
     }
 
-    /// #1971: the bound is on the whole fetch. A redirect to a silent path
-    /// fails inside one bound, and the sentence names the location and the
-    /// bound.
+    /// How long `/a` of [`slow_redirect_then_silence`] waits before it
+    /// answers: most of a one-second bound, so that a bound reset at each hop
+    /// would run well past one bound in all.
+    const SLOW_HOP: Duration = Duration::from_millis(700);
+
+    /// #1971: the bound is on the whole fetch and not on one hop. The first
+    /// hop spends 0.7 s of a 1 s bound, and the silent second hop gets the
+    /// 0.3 s left, so the fetch ends near 1 s. A bound reset at each hop ends
+    /// near 1.7 s. The sentence names the location and the bound.
     #[test]
     fn the_bound_holds_across_a_redirect_to_a_server_that_never_answers() {
-        let base = redirect_then_silence();
+        let (base, _count) = slow_redirect_then_silence();
         let started = Instant::now();
         let refused = fetch_within(
             &format!("{base}/a"),
@@ -970,22 +990,52 @@ mod tests {
         )
         .unwrap_err();
         let elapsed = started.elapsed();
-        assert!(elapsed < Duration::from_secs(3), "took {elapsed:?}");
+        assert!(
+            elapsed >= Duration::from_millis(900) && elapsed < Duration::from_millis(1400),
+            "the fetch took {elapsed:?} against a bound of 1 s over the whole fetch"
+        );
         let text = refused.to_string();
         assert!(matches!(refused, Error::Transport(_)), "{text}");
         assert!(
-            text.contains("127.0.0.1") && text.contains("timed out after 1 s"),
+            text.contains(&format!("{base}/b")) && text.contains("timed out after 1 s"),
             "{text}"
         );
     }
 
-    /// #1971: a fetch whose bound is spent before a hop requests nothing more.
+    /// #1971: a body that never arrives is held by the same bound, and names
+    /// it, rather than failing as an ordinary read error.
+    #[test]
+    fn a_body_that_never_arrives_is_held_by_the_bound() {
+        let (base, _count) = slow_redirect_then_silence();
+        let started = Instant::now();
+        let refused = fetch_within(
+            &format!("{base}/c"),
+            Duration::from_secs(1),
+            Duration::from_secs(1),
+        )
+        .unwrap_err();
+        let elapsed = started.elapsed();
+        assert!(elapsed < Duration::from_secs(3), "took {elapsed:?}");
+        let text = refused.to_string();
+        assert!(
+            text.contains(&format!("{base}/c")) && text.contains("timed out after 1 s"),
+            "{text}"
+        );
+    }
+
+    /// #1971: a fetch whose bound is spent before a hop sends no request.
     #[test]
     fn a_spent_bound_refuses_before_the_next_request() {
-        let base = redirect_then_silence();
+        let (base, count) = slow_redirect_then_silence();
         let refused =
             fetch_within(&format!("{base}/a"), Duration::from_secs(1), Duration::ZERO).unwrap_err();
         assert!(refused.to_string().contains("timed out"), "{refused}");
+        std::thread::sleep(Duration::from_millis(200));
+        assert_eq!(
+            count.load(Ordering::SeqCst),
+            0,
+            "a request went out on a spent bound"
+        );
     }
 
     /// #1971: a connection that does not open names the connect bound, not
