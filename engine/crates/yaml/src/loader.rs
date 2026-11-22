@@ -6,6 +6,9 @@
 //! there is no tree to say anything about. Every other rejection is collected,
 //! so that an author who wrote three anchors reads three lines rather than
 //! running the loader three times.
+//!
+//! A source that nests collections more than [`MAX_DEPTH`] deep stops
+//! everything too, and it stops before any tree is built (#1966).
 
 use crate::error::{ErrorKind, LoadError};
 use crate::span::{Origin, Position, Span, Spanned};
@@ -60,6 +63,41 @@ impl Options {
     }
 }
 
+/// The deepest a source may nest its collections, block and flow counted
+/// together: 256.
+///
+/// The tree is built by recursion, one call for each level, and a `Value` is
+/// dropped by recursion too, so a source nested 20,000 deep overflowed the
+/// stack and killed the process with a signal that printed nothing (#1966).
+/// The parser already refuses flow nesting at 256, because it counts flow
+/// levels in a `u8`, and it counts block nesting nowhere. One bound for both
+/// styles keeps the rule the same whichever style an author writes. No
+/// taxonomy source or front matter comes near it.
+pub const MAX_DEPTH: usize = 256;
+
+/// The refusal of the first collection that opens past [`MAX_DEPTH`], read
+/// from the events before any tree is built, so that neither the build nor
+/// the drop of a tree recurses past the bound.
+fn too_deep(events: &[(Ev, Span)]) -> Option<LoadError> {
+    let mut depth = 0_usize;
+    for (event, span) in events {
+        match event {
+            Ev::SeqStart(..) | Ev::MapStart(..) => {
+                depth += 1;
+                if depth > MAX_DEPTH {
+                    return Some(LoadError::new(
+                        ErrorKind::TooDeep { limit: MAX_DEPTH },
+                        *span,
+                    ));
+                }
+            }
+            Ev::SeqEnd | Ev::MapEnd => depth = depth.saturating_sub(1),
+            _ => {}
+        }
+    }
+    None
+}
+
 /// Load a taxonomy source.
 ///
 /// The errors come back in source order, and the list is empty only when the
@@ -95,6 +133,10 @@ pub fn load_with(source: &str, options: Options) -> Result<Spanned<Value>, Vec<L
             Err(error) => return Err(vec![syntax_error(&error, &offsets)]),
         };
         events.push((Ev::from(event), offsets.span(span)));
+    }
+
+    if let Some(error) = too_deep(&events) {
+        return Err(vec![error]);
     }
 
     let mut errors = Vec::new();
@@ -393,6 +435,35 @@ fn empty_scalar() -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A source whose collections nest exactly `depth` deep: one mapping at
+    /// the root, and `depth - 1` block sequences under its one key.
+    fn nested(depth: usize) -> String {
+        format!("x:\n  {}1\n", "- ".repeat(depth - 1))
+    }
+
+    /// The bound is exact: 256 levels load and 257 refuse, and the refusal
+    /// points at the collection that opened past the bound (#1966).
+    #[test]
+    fn collections_load_to_the_bound_and_refuse_one_past_it() {
+        assert!(load(&nested(MAX_DEPTH)).is_ok(), "256 levels must load");
+        let errors = load(&nested(MAX_DEPTH + 1)).expect_err("257 levels must refuse");
+        assert_eq!(errors.len(), 1, "a refusal past the bound stops everything");
+        assert_eq!(errors[0].kind, ErrorKind::TooDeep { limit: MAX_DEPTH });
+        // The 257th collection is the 256th sequence: its `-` is at column
+        // 3 + 2 * 255 of line 2.
+        assert_eq!(errors[0].span.start.line, 2);
+        assert_eq!(errors[0].span.start.col, 3 + 2 * 255);
+    }
+
+    /// Closing a collection gives its level back, so two siblings each nested
+    /// to the bound load: the count is depth, not the number of collections.
+    #[test]
+    fn sibling_collections_each_nest_to_the_bound() {
+        let inner = "- ".repeat(MAX_DEPTH - 1);
+        let source = format!("a:\n  {inner}1\nb:\n  {inner}2\n");
+        assert!(load(&source).is_ok(), "two siblings at the bound must load");
+    }
 
     /// The two conventions this crate corrects, asserted against the dependency
     /// rather than assumed. Either one changing upstream silently moves every

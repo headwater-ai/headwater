@@ -3514,6 +3514,62 @@ fn a_location_vendors_the_bytes_the_same_artifact_vendors_by_path() {
     );
 }
 
+/// #1966: an archive whose `release.yml` nests past the loader's bound is
+/// refused with an exit status, writes nothing, and leaves no temporary
+/// directory behind.
+///
+/// Before the bound, a block list nested 20,000 deep overflowed the stack
+/// while the record loaded, so the process died on a signal with the fetched
+/// archive still unpacked under the temporary directory. The child runs with
+/// its own `TMPDIR`, so the case can see what a run leaves there.
+#[cfg(feature = "fetch")]
+#[test]
+fn a_release_nested_past_the_bound_is_refused_and_leaves_nothing() {
+    let root = Root::scratch("vendor-deep-release");
+    let (artifact, _record) = published_fixture(&root);
+    let release = artifact.join("release.yml");
+    let text = std::fs::read_to_string(&release).expect("the release reads");
+    let deep = format!("{text}zz_deep:\n  {}1\n", "- ".repeat(20_000));
+    std::fs::write(&release, deep).expect("the release writes");
+    let base = serve_artifact(zipped(&artifact));
+
+    let adopter = root.path().join("adopter");
+    std::fs::create_dir_all(&adopter).expect("the adopter root is made");
+    let temporary = root.path().join("tmp");
+    std::fs::create_dir_all(&temporary).expect("the temporary directory is made");
+    let location = format!("{base}/x.zip");
+    let wrong = "sha256:0000000000000000000000000000000000000000000000000000000000000000";
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(["taxonomy", "vendor", &location, "--expect", wrong])
+        .arg("--root")
+        .arg(&adopter)
+        .env("TMPDIR", &temporary)
+        .output()
+        .expect("the binary runs");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert_eq!(
+        output.status.code(),
+        Some(1),
+        "a release nested past the bound did not refuse with a status:\n{stderr}"
+    );
+    assert!(
+        stderr.contains("nest"),
+        "the refusal does not name the depth bound:\n{stderr}"
+    );
+    assert!(
+        !adopter.join(package::PACKAGES).exists(),
+        "a refused vendor wrote into the package area"
+    );
+    let left: Vec<_> = std::fs::read_dir(&temporary)
+        .expect("the temporary directory reads")
+        .map(|entry| entry.expect("the entry reads").file_name())
+        .collect();
+    assert!(
+        left.is_empty(),
+        "the refused vendor left {left:?} in its temporary directory"
+    );
+}
+
 /// #1113: a plain-http location reaches this machine even when the
 /// environment names a proxy.
 ///

@@ -39,6 +39,9 @@ pub enum ErrorKind {
     SecondDocument,
     /// A source with no document in it.
     Empty,
+    /// Collections nested past [`crate::MAX_DEPTH`], block and flow counted
+    /// together. Nothing below ran, as with a syntax error.
+    TooDeep { limit: usize },
 }
 
 impl std::fmt::Display for LoadError {
@@ -97,6 +100,11 @@ impl std::fmt::Display for ErrorKind {
                 write!(f, "a source holds one document, and this is the second")
             }
             ErrorKind::Empty => write!(f, "the source holds no document"),
+            ErrorKind::TooDeep { limit } => write!(
+                f,
+                "collections nest more than {limit} deep; the loader refuses a \
+                 source nested past that bound"
+            ),
         }
     }
 }

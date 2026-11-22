@@ -53,6 +53,8 @@ A descriptor that records no emitter set is a descriptor an earlier engine wrote
 
 Under *what this verb does not write, and why*, a run reports every projection kind this engine does not emit. It reports a kind the taxonomy declared at the output path of that declaration, and a kind no declaration named at `no declaration names one`. A reason is a property of this engine rather than of the corpus, so a reader gets it before writing the declaration.
 
+Under *unreadable documents*, a run names each file under the corpus root that the census could not read. Each entry gives the reason, and the line and column where the reader gives them. No projection holds such a file, so without this section a run would drop the file from every index and say nothing. Front matter that nests its collections more than 256 deep is one such file. The section is a report and not a refusal: it changes no exit status, and `headwater check` is the gate on an unreadable file.
+
 A `consumer_surface` declaration writes one page from the `surface` block of the taxonomy. The page lists the archive, the integration points with what each one needs, the prerequisites, the companions and the commands. It does not list `adopter_documents` or `local_roots`, because they configure a check and an adopter does not receive or run them. A taxonomy with no `surface` block writes no page, and the run reports the declaration under *what this verb does not write, and why*. A change to the block makes the page stale, and `--check` reports it.
 
 ### What a projection writes, and why
@@ -126,7 +128,7 @@ The repository must have a readable consumer declaration, taxonomy lock, corpus 
 
 ## Exit status
 
-**0** means that all declared projections match or were written.
+**0** means that all declared projections match or were written. A document that the census cannot read does not change the status.
 
 **1** means that loading, planning or writing failed, that `--check` found drift, or that `--check` found a producer difference. The two `--check` failures print different sentences, because only one of them has a remedy this command can name. Without `--check`, a refusal leaves the tree as the command found it.
 

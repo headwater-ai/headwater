@@ -51,7 +51,7 @@ The public Rust API of the crates is not in this spec ([HW-DR-0098](../decisions
 
 ### A loader on the Q2 dialect
 
-`yaml` is the only crate that knows YAML. `loader.rs` reads an event stream and gives a tree with a span on every node. A syntax error stops the load, because no tree exists to say more about. The loader collects every other refusal, so an author who wrote three anchors reads three lines in one run.
+`yaml` is the only crate that knows YAML. `loader.rs` reads an event stream and gives a tree with a span on every node. A syntax error stops the load, because no tree exists to say more about. A source that nests its collections more than 256 deep also stops the load, before the loader builds a tree. `MAX_DEPTH` states that bound, and it counts block and flow collections together. The tree builder calls itself once for each level, so a source nested 20,000 deep used all of the stack and stopped the process with a signal and no message. The loader collects every other refusal, so an author who wrote three anchors reads three lines in one run.
 
 The loader refuses a duplicate key, an anchor, an alias, a merge key and an explicit tag. A `$`-reference is the one reuse mechanism, and an overlay cannot address an alias. `value.rs` has no `Null`, `Bool` or `Int` variant. A scalar keeps its text and its style, because the meta-schema and not the YAML resolver decides a type. `core_schema.rs` gives that type only where a declared type asks for it. So `no` stays the string `no`.
 
