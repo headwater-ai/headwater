@@ -2,6 +2,7 @@
 [workspace]
 members = [
     "crates/adapter",
+    "crates/api",
     "crates/audit",
     "crates/census",
     "crates/check",
@@ -123,6 +124,7 @@ repository = "https://github.com/headwater-ai/headwater"
 # that version, and names the entry a bump missed (#1315).
 [workspace.dependencies]
 headwater-adapter = { path = "crates/adapter", version = "0.6.1" }
+headwater-api = { path = "crates/api", version = "0.6.1" }
 headwater-audit = { path = "crates/audit", version = "0.6.1" }
 headwater-census = { path = "crates/census", version = "0.6.1" }
 headwater-check = { path = "crates/check", version = "0.6.1" }

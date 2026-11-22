@@ -1,0 +1,3 @@
+headwater: the resolver set is ambiguous
+  two resolvers are both named `upstream-snapshot`, and exactly one component owns each anchor identity
+
