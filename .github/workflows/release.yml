@@ -83,7 +83,7 @@ jobs:
             archive: headwater-${TAG}-x86_64-unknown-linux-musl.tar.gz
             checksum: headwater-${TAG}-x86_64-unknown-linux-musl.tar.gz.sha256
           - target: aarch64-apple-darwin
-            runner: macos-14
+            runner: macos-15
             archive: headwater-${TAG}-aarch64-apple-darwin.tar.gz
             checksum: headwater-${TAG}-aarch64-apple-darwin.tar.gz.sha256
     runs-on: ${{ matrix.runner }}
@@ -240,11 +240,11 @@ jobs:
   smoke-macos:
     name: The macOS archive runs on a host that did not build it
     needs: [tag, build]
-    # A second `macos-14` host that installs nothing. The hosted image does
+    # A second `macos-15` host that installs nothing. The hosted image does
     # carry a Rust toolchain, so the binary runs with an environment that
     # holds only `/usr/bin` and `/bin`, and every library it loads must be
     # one the operating system ships. Publishing waits on this job.
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/download-artifact@v4
         with:

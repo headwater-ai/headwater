@@ -207,7 +207,6 @@ The second said that a control declares one posture and that spec 4 writes two v
 - [HW-OBL-0075](../obligations/0075-a-participation-expectation-needs-depth-one-and-edge.md) — A participation expectation needs depth one, and `Edge` does not reach it
 - [HW-OBL-0076](../obligations/0076-a-generated-check-reads-its-severity-from-the-taxonomy.md) — A generated check reads its severity from the taxonomy
 - [HW-OBL-0078](../obligations/0078-two-positions-that-the-meta-schema-marks-a-gap-are-a-closed.md) — Two positions that the meta-schema marks a gap are a closed set in the engine
-- [HW-OBL-0079](../obligations/0079-a-correctness-root-that-is-a-type-has-no-failing-fixture.md) — A correctness root that is a type has no failing fixture
 - [HW-OBL-0080](../obligations/0080-changed-only-is-the-content-addressed-cache-under-another-name.md) — `--changed-only` is the content-addressed cache under another name
 - [HW-OBL-0081](../obligations/0081-a-published-read-set-never-says-which-instances-must-run-again.md) — A published read set never says which instances must run again
 - [HW-OBL-0082](../obligations/0082-the-lock-is-half-generated-and-half-authored-and-nothing.md) — The lock is half generated and half authored, and nothing states the rule for the seam
@@ -333,7 +332,6 @@ This class dates from 2026-08-26. Before that date, such a finding was filed as 
 - [HW-OBL-0196](../obligations/0196-a-relation-writes-a-state-onto-a-kind-that-binds-no-lifecycle-regime-and-nothing-reads-that-pair.md) — A relation writes a state onto a kind that binds no lifecycle regime and nothing reads that pair
 - [HW-OBL-0201](../obligations/0201-no-coverage-or-mutation-measurement-has-ever-been-taken-over-the-engine-s-test-suite.md) — No coverage or mutation measurement has ever been taken over the engine's test suite
 - [HW-OBL-0214](../obligations/0214-the-commit-gate-does-not-see-docs-taxonomies-readme-md-drift-from-its-vendored-copy.md) — The commit gate does not see docs/taxonomies/README.md drift from its vendored copy
-- [HW-OBL-0222](../obligations/0222-ten-rules-of-the-editions-ledger-have-one-recorded-corpus-so-a-rule-change-blessed-with-an-edit-to-that-corpus-passes.md) — Ten rules of the editions ledger have one recorded corpus, so a rule change blessed with an edit to that corpus passes
 - [HW-OBL-0226](../obligations/0226-six-corpus-gaps-from-run-20260929-1205-filed-together.md) — Six corpus gaps from run 20260929-1205, filed together
 - [HW-OBL-0228](../obligations/0228-the-subsystem-specs-claim-evidence-their-targets-do-not-carry-and-two-rules-of-the-shelf-live-only-in-a-test.md) — The subsystem specs claim evidence their targets do not carry, and two rules of the shelf live only in a test
 - [HW-OBL-0229](../obligations/0229-the-counterfactual-campaign-evaluation-withholds-its-discharges-edge-until-a-person-promotes-it.md) — The counterfactual campaign evaluation withholds its discharges edge until a person promotes it

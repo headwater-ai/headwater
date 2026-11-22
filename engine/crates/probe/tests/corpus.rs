@@ -713,40 +713,35 @@ fn the_shape_refuses_each_way_a_probe_can_miss_it() {
     }
 }
 
-/// The five shapes of a probe that a shallow strategy fails (#1472, clause 2).
-///
-/// The #1384 re-run put the absent arm at the ceiling, because a search by
-/// name answered every probe. Each shape below is one way a name search or a
-/// one-document read reaches a wrong answer, and the case after this enum
-/// holds one probe of the shelf to each.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Shape {
-    /// The words of the task occur in no identifier, file name or title of
-    /// the governing document.
-    VocabularyMismatch,
-    /// A name search reaches a superseded document first, and its value is a
-    /// value of the closed set.
-    SupersessionTrap,
-    /// The expected value comes from two or more documents and from no one of
-    /// them alone.
-    MultiDocument,
-    /// Many documents share the terms of the task, and one or more of them
-    /// state another value of the closed set.
-    Distractors,
-    /// The oracle reports a finding over a patch that touches the asked file
-    /// alone.
-    ChangeTask,
+headwater_check::enumerated! {
+    /// The five shapes of a probe that a shallow strategy fails (#1472, clause 2).
+    ///
+    /// The #1384 re-run put the absent arm at the ceiling, because a search by
+    /// name answered every probe. Each shape below is one way a name search or a
+    /// one-document read reaches a wrong answer, and the case after this enum
+    /// holds one probe of the shelf to each.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum Shape {
+        /// The words of the task occur in no identifier, file name or title of
+        /// the governing document.
+        VocabularyMismatch,
+        /// A name search reaches a superseded document first, and its value is a
+        /// value of the closed set.
+        SupersessionTrap,
+        /// The expected value comes from two or more documents and from no one of
+        /// them alone.
+        MultiDocument,
+        /// Many documents share the terms of the task, and one or more of them
+        /// state another value of the closed set.
+        Distractors,
+        /// The oracle reports a finding over a patch that touches the asked file
+        /// alone.
+        ChangeTask,
+    }
+    const ALL;
 }
 
-impl Shape {
-    const ALL: [Shape; 5] = [
-        Shape::VocabularyMismatch,
-        Shape::SupersessionTrap,
-        Shape::MultiDocument,
-        Shape::Distractors,
-        Shape::ChangeTask,
-    ];
-}
+impl Shape {}
 
 /// What one synthetic session of a harder probe did, in the terms a recorder
 /// writes.

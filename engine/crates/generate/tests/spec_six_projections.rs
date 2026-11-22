@@ -38,9 +38,9 @@
 //! [#596](https://github.com/headwater-ai/headwater/issues/596) a run over any
 //! corpus prints all five, which
 //! [`every_unbuilt_reason_reaches_a_reader_of_a_corpus_that_declares_none`]
-//! holds. `Kind::ALL` is a hand-kept list the
-//! compiler does not hold complete; the exhaustive `match` in `unbuilt` is
-//! what forces a thirteenth variant into that file.
+//! holds. `headwater_check::enumerated!` writes `Kind::ALL` from the
+//! variants, so a new variant is in it (HW-OBL-0172), and the exhaustive
+//! `match` in `unbuilt` forces its reason into that file.
 
 use headwater_check::paint::ColorMode;
 use std::collections::BTreeSet;

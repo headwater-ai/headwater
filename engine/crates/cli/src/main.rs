@@ -845,7 +845,7 @@ fn flush_stdout() -> std::io::Result<()> {
 /// is empty, and no `\x1b` byte is on either stream.
 fn completions(shell: Option<headwater_cli::Shell>) -> ExitCode {
     let Some(shell) = shell else {
-        let named: Vec<&str> = headwater_cli::Shell::ALL
+        let named: Vec<&str> = headwater_cli::Shell::all()
             .iter()
             .map(|one| one.typed())
             .collect();
