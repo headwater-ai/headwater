@@ -2015,6 +2015,129 @@ mod tests {
         );
     }
 
+    /// One session event that produced each `(path, findings)` in order, each
+    /// citing `PROBE-FIX-one` (#1980).
+    fn produced_session(artifacts: &[(&str, Option<Vec<&str>>)]) -> Event {
+        Event {
+            produced: Some(
+                artifacts
+                    .iter()
+                    .map(|(path, findings)| Produced {
+                        path: (*path).into(),
+                        result: "sha256:0".into(),
+                        cites: vec!["PROBE-FIX-one".into()],
+                        findings: findings
+                            .as_ref()
+                            .map(|f| f.iter().map(|r| (*r).to_string()).collect()),
+                    })
+                    .collect(),
+            ),
+            ..event(1, "s", Some(vec![call("Read", "docs/probes/one.md")]))
+        }
+    }
+
+    fn patched_on_r() -> Selected {
+        Selected {
+            oracle: Some("R".into()),
+            ..over_the_probe_document(Expectation::Patched)
+        }
+    }
+
+    /// The case of `a/L4-additive-scenario-6-p4-r2` in phase B of #1881: the
+    /// session's workspace file carries the oracle, and a scratch file under
+    /// `/tmp` carries no `findings` key, because nothing checks a file outside
+    /// the workspace. Before #1980 the scratch file took the session out of
+    /// the denominator as unchecked, so a session that failed was not counted.
+    #[test]
+    fn a_file_outside_the_workspace_neither_removes_the_session_nor_counts_toward_it() {
+        let session = produced_session(&[
+            ("docs/x.md", Some(vec!["R"])),
+            ("/tmp/strip_check.rs", None),
+        ]);
+        assert!(
+            matches!(
+                verdict(&patched_on_r(), &[&session]),
+                Verdict::NotSatisfied(Miss::OracleReported { .. })
+            ),
+            "{:?}",
+            verdict(&patched_on_r(), &[&session])
+        );
+        let clean = produced_session(&[("/tmp/strip_check.rs", None), ("docs/x.md", Some(vec![]))]);
+        assert!(
+            matches!(
+                verdict(&patched_on_r(), &[&clean]),
+                Verdict::Satisfied(Witness::Clean { ref artifact, .. }) if artifact == "docs/x.md"
+            ),
+            "{:?}",
+            verdict(&patched_on_r(), &[&clean])
+        );
+    }
+
+    /// A session whose only file is outside the workspace patched nothing in
+    /// it, which is a scored failure and not a recorder fault.
+    #[test]
+    fn a_session_whose_only_file_is_outside_the_workspace_produced_nothing() {
+        let session = produced_session(&[("/tmp/x.rs", None)]);
+        assert_eq!(
+            verdict(&patched_on_r(), &[&session]),
+            Verdict::NotSatisfied(Miss::NothingProduced)
+        );
+    }
+
+    /// A `patched` session passes only when every file inside the workspace is
+    /// clean (#1980). Before, one clean file beside a broken one passed.
+    #[test]
+    fn a_patched_session_passes_only_when_every_file_inside_the_workspace_is_clean() {
+        let session =
+            produced_session(&[("docs/a.md", Some(vec![])), ("docs/b.md", Some(vec!["R"]))]);
+        assert!(
+            matches!(
+                verdict(&patched_on_r(), &[&session]),
+                Verdict::NotSatisfied(Miss::OracleReported { ref artifact, .. }) if artifact == "docs/b.md"
+            ),
+            "{:?}",
+            verdict(&patched_on_r(), &[&session])
+        );
+    }
+
+    /// A file inside the workspace that nothing checked is still a recorder
+    /// fault, and it still takes out of the count a session that no checked
+    /// file fails.
+    #[test]
+    fn an_unchecked_file_inside_the_workspace_is_still_refused() {
+        let session = produced_session(&[("docs/a.md", Some(vec![])), ("docs/b.md", None)]);
+        assert_eq!(
+            verdict(&patched_on_r(), &[&session]),
+            Verdict::Refused(Refusal::NotChecked {
+                artifact: "docs/b.md".into()
+            })
+        );
+    }
+
+    /// An identifier that only a file outside the workspace cites was not
+    /// cited in the workspace (#1980).
+    #[test]
+    fn a_citation_in_a_file_outside_the_workspace_is_not_a_citation() {
+        let selected = over_the_probe_document(Expectation::Cited);
+        let both = produced_session(&[("docs/a.md", Some(vec![])), ("/tmp/x.md", None)]);
+        assert!(
+            matches!(verdict(&selected, &[&both]), Verdict::Satisfied(_)),
+            "{:?}",
+            verdict(&selected, &[&both])
+        );
+        let mut only_outside = both.clone();
+        if let Some(produced) = only_outside.produced.as_mut() {
+            produced[0].cites.clear();
+        }
+        assert_eq!(
+            verdict(&selected, &[&only_outside]),
+            Verdict::NotSatisfied(Miss::NeverCited {
+                artifacts: 1,
+                over: 1
+            })
+        );
+    }
+
     fn opened_over_one_document() -> Selected {
         Selected {
             path: "probes/one.md".into(),
