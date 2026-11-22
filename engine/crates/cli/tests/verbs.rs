@@ -535,3 +535,72 @@ fn the_spec_span_reader_cuts_at_the_backtick_skips_a_fence_and_scopes_the_list_t
         vec!["a.md:6 migrate".to_string()]
     );
 }
+
+/// The most lines `src/main.rs` may hold (#1959).
+///
+/// The shell moves into libraries one step at a time, and each step lowers
+/// this number to the count it leaves. No step raises it. A new verb body goes
+/// into a library and not into `main.rs`, and a change that adds lines here
+/// without moving as many out fails the case below. 9,227 lines before the
+/// corpus load moved into `headwater-api`.
+const MAIN_RS_LINES: usize = 8762;
+
+/// `src/main.rs` holds no more lines than [`MAIN_RS_LINES`].
+#[test]
+fn main_rs_does_not_grow_past_its_recorded_line_count() {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/main.rs");
+    let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    let lines = text.lines().count();
+    assert!(
+        lines <= MAIN_RS_LINES,
+        "src/main.rs has {lines} lines and the ratchet allows {MAIN_RS_LINES}. Put the new code \
+         in a library crate, or move as many lines out of main.rs as this change adds"
+    );
+}
+
+/// No file of `headwater-api` writes to a stream or decides an exit status
+/// (#1959).
+///
+/// The library hands back a refusal and the unmet engine range as values, and
+/// the binary prints them. A print in the library would reach the standard
+/// error of an editor or an MCP host, where no reader expects it.
+#[test]
+fn the_library_under_the_shell_prints_nothing_and_decides_no_exit_status() {
+    let mut files = Vec::new();
+    let mut directories = vec![Path::new(env!("CARGO_MANIFEST_DIR")).join("../api/src")];
+    while let Some(directory) = directories.pop() {
+        for entry in
+            std::fs::read_dir(&directory).unwrap_or_else(|e| panic!("{}: {e}", directory.display()))
+        {
+            let path = entry.expect("the entry reads").path();
+            match path.is_dir() {
+                true => directories.push(path),
+                false => files.push(path),
+            }
+        }
+    }
+    files.sort();
+    assert!(!files.is_empty(), "headwater-api has source files");
+    let mut found = Vec::new();
+    for path in files {
+        let text =
+            std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+        for (index, line) in text.lines().enumerate() {
+            if line.trim_start().starts_with("//") {
+                continue;
+            }
+            for word in [
+                "print!",
+                "println!",
+                "ExitCode",
+                "std::io::stdout",
+                "std::io::stderr",
+            ] {
+                if line.contains(word) {
+                    found.push(format!("{}:{} {word}", path.display(), index + 1));
+                }
+            }
+        }
+    }
+    assert_eq!(found, Vec::<String>::new());
+}
