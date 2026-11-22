@@ -159,7 +159,7 @@ same 'none is the run-lessons build, with its own scratch' "0 LOGS: $scratch/job
 printf '\n# the default list holds the probe suites CI runs\n'
 # PR #1894 and #1902 each printed PRE-PR: ok and failed one of these in CI.
 defaults=$(sed -n 's/^fixtures=\${HW_PRE_PR_FIXTURES:-"\(.*\)"}$/\1/p' "$tool")
-for suite in tools/probe/probe-record-fixtures.sh tools/probe/oracle-fixtures.sh tools/probe/probe-oracle-fixtures.sh; do
+for suite in tools/probe/probe-record-fixtures.sh tools/probe/campaign-fixtures.sh tools/probe/oracle-fixtures.sh tools/probe/probe-oracle-fixtures.sh; do
     case " $defaults " in
         *" $suite "*) pass "the default fixture list runs $suite" ;;
         *) fail "the default fixture list runs $suite" "it is not in \`$defaults\`" ;;

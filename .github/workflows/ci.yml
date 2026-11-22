@@ -679,7 +679,7 @@ jobs:
         # It needs nothing but git. It builds its own repository under a
         # temporary directory and writes nothing inside this checkout.
         run: sh tools/repo/retire-worktree-fixtures.sh
-      - name: A recorder's transform drops every block the harness did not tag as a call
+      - name: A recorder keeps only the calls the harness tagged, and confines every session it drives
         # `tools/probe/probe-transform.sh` is the half of a recorder that decides
         # what reaches `docs/probe-runs/`, and the failure it exists to
         # prevent is silent: a model's account of its own process arriving as
@@ -689,7 +689,10 @@ jobs:
         # a filter by position, by index or by the tags in a sample fails. It
         # also holds spec 15's three-state rule, where `calls: []` for a
         # stream nobody watched turns an unobserved run into a clean result.
-        # It needs `jq` and skips with a warning without it.
+        # It needs `jq` and skips with a warning without it. The suite holds
+        # the driver and the batch driver too, which start every session
+        # through the same confinement. The campaign's own tools are the
+        # next step's suite.
         #
         # It also needs `bwrap` with unprivileged user namespaces, because the
         # recorder confines every session to its workspace and refuses to run
@@ -707,6 +710,27 @@ jobs:
         env:
           RUNNER_KIND: ${{ runner.environment }}
         run: sh tools/probe/ci-confine.sh
+      - name: A campaign's trees, leak check and dry runs are what its declaration says
+        # `tools/probe/campaign-fixtures.sh` holds what a campaign builds and
+        # checks before it spends: `ablate.sh`'s arm and scenario trees, the
+        # leak check of `seal.sh`, the reader of the raw recordings, both dry
+        # runs, the layer gate of the tuning round and `phrasing.sh`. It was
+        # the second half of the recorder's suite until 2026-11-22, when that
+        # suite took 22 minutes on `ubuntu-latest` and 82% of it went to
+        # these cases rebuilding the same trees.
+        #
+        # Its dry runs share their trees. The suite sets
+        # `HW_CAMPAIGN_TREE_CACHE`, so the first dry run of a set of inputs
+        # builds the present tree and each scenario's tree, and every later
+        # one with the same inputs runs only its leak check over them.
+        # `tools/probe/dry-run-trees.sh` states the key.
+        #
+        # Its batch cases start sessions through the recorder's confinement,
+        # so it runs behind the same gate as the step above, and skips on
+        # the self-hosted runner for the same reason.
+        env:
+          RUNNER_KIND: ${{ runner.environment }}
+        run: sh tools/probe/ci-confine.sh tools/probe/campaign-fixtures.sh
       - name: The recorder's confinement gate runs, skips or fails where it should
         # `tools/probe/ci-confine.sh` decides above whether a case of the
         # recorder runs at all, and its first version turned `main` red by
@@ -2483,10 +2507,11 @@ jobs:
         run: sh tools/repo/decision-record-fixtures.sh
 
   recorder:
-    # The recorder's fixtures need `bwrap` and a user namespace (#1467), and
-    # the self-hosted runner's container has neither, so the step of the
-    # `headwater` job that runs them skips there with a warning that names
-    # this job. This job runs the same step on `ubuntu-latest` in exactly the
+    # The recorder's and the campaign's fixtures need `bwrap` and a user
+    # namespace (#1467), and the self-hosted runner's container has neither,
+    # so the steps of the `headwater` job that run them skip there with a
+    # warning that names this job. This job runs the same steps on
+    # `ubuntu-latest` in exactly the
     # runs where the `headwater` job is self-hosted: a `push` or a
     # `merge_group` that `route` did not move and that `CI_RUNNER` opts in. In
     # every other run that job is hosted and runs the cases itself, and a
@@ -2525,13 +2550,20 @@ jobs:
         # confinement cases need the one the `headwater` job builds.
         run: cargo build --release -p headwater-cli --locked
         working-directory: engine
-      - name: A recorder's transform drops every block the harness did not tag as a call
+      - name: A recorder keeps only the calls the harness tagged, and confines every session it drives
         # The `headwater` job's step of this name carries what the suite
         # holds. Here the runner is hosted, so a runner that cannot confine
         # fails this step rather than skipping it.
         env:
           RUNNER_KIND: ${{ runner.environment }}
         run: sh tools/probe/ci-confine.sh
+      - name: A campaign's trees, leak check and dry runs are what its declaration says
+        # The `headwater` job's step of this name carries what the suite
+        # holds, and this one fails where the runner cannot confine, as the
+        # step above does.
+        env:
+          RUNNER_KIND: ${{ runner.environment }}
+        run: sh tools/probe/ci-confine.sh tools/probe/campaign-fixtures.sh
 
   deploy:
     # The one deploy path of https://headwater.tools/ since #1273. The job

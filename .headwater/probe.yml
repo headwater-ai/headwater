@@ -40,11 +40,12 @@ instrument:
 # file, a hand-written declaration, or a route fixture of an IDE client that
 # names a probe as a path. `tools/probe/seal.sh` removes every other file
 # outside `docs/` and the instrument that names a sealed probe, and
-# `probe-record.sh` refuses a workspace that still holds one (exit 9). Two
+# `probe-record.sh` refuses a workspace that still holds one (exit 9). Three
 # committed files are not folds and are removed, because each states an
 # answer: `.claude/skills/fixtures.sh` asserts the answer of the status probe,
-# and `tools/probe/probe-record-fixtures.sh` names the tombstone probe with
-# its record (#1384). An entry is a path relative to the root, in the block
+# `tools/probe/probe-record-fixtures.sh` names the tombstone probe with its
+# record (#1384), and `tools/probe/campaign-fixtures.sh` names the status
+# probe with the leak strings that give its answer away. An entry is a path relative to the root, in the block
 # form or the flow form. The engine reads this block, and `headwater probe
 # plan --folds` prints it, which is what the seal and the guard read.
 # A new file that names a probe is refused until it is declared here, so the

@@ -15,7 +15,7 @@
 #
 # Keep these lines the same as the screening lines of
 # `tools/probe/additive-campaign.spec`. The fixtures in
-# `tools/probe/probe-record-fixtures.sh` compare the two.
+# `tools/probe/campaign-fixtures.sh` compare the two.
 
 additive scenario-0 screening
 additive scenario-1 screening

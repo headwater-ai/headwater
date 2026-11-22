@@ -374,6 +374,7 @@ for migrated in \
     tools/site/refresh-figures.sh \
     tools/probe/probe-record.sh \
     tools/probe/probe-record-fixtures.sh \
+    tools/probe/campaign-fixtures.sh \
     tools/probe/probe-transform.sh; do
     if ! grep -q 'hw_resolve_engine_bin' "$root/$migrated"; then
         fail "$migrated resolves through the shared resolver" "it does not call hw_resolve_engine_bin"

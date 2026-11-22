@@ -170,5 +170,21 @@ else
     printf 'FAIL a refused namespace gets exactly the sysctl that lifts it\n  sudo got: %s\n' "$(cat "$w/sudo.log" 2>/dev/null)"; failed=$((failed + 1))
 fi
 
+# The argument names the suite (CI runs `campaign-fixtures.sh` through the
+# same gate), and `HW_RECORDER_SUITE` still names the stub over it.
+printf '#!/bin/sh\necho NAMED-SUITE-RAN\n' > "$w/named.sh"
+out=$(env -u HW_RECORDER_SUITE PATH="$w/good:$w/sudo:$w/base" GITHUB_ACTIONS=true RUNNER_KIND=github-hosted sh "$gate" "$w/named.sh" 2>&1)
+if printf '%s\n' "$out" | grep -qx NAMED-SUITE-RAN; then
+    printf 'ok   the suite the argument names is the suite that runs\n'; passed=$((passed + 1))
+else
+    printf 'FAIL the suite the argument names is the suite that runs\n  it printed: %s\n' "$out"; failed=$((failed + 1))
+fi
+out=$(PATH="$w/good:$w/sudo:$w/base" GITHUB_ACTIONS=true RUNNER_KIND=github-hosted HW_RECORDER_SUITE="$w/suite.sh" sh "$gate" "$w/named.sh" 2>&1)
+if printf '%s\n' "$out" | grep -qx SUITE-RAN && ! printf '%s\n' "$out" | grep -q NAMED-SUITE-RAN; then
+    printf 'ok   and HW_RECORDER_SUITE still runs the stub over the argument\n'; passed=$((passed + 1))
+else
+    printf 'FAIL and HW_RECORDER_SUITE still runs the stub over the argument\n  it printed: %s\n' "$out"; failed=$((failed + 1))
+fi
+
 printf '%d passed, %d failed\n' "$passed" "$failed"
 [ "$failed" = 0 ]
