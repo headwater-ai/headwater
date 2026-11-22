@@ -90,6 +90,37 @@ pub fn make(root: &Path, claim: &str, claimant: &str) -> Result<(), Refusal> {
     Ok(())
 }
 
+/// Write the claim this plan mints, then the composed files, and withdraw the
+/// claim when the files cannot be written.
+///
+/// The one caller of [`write`], so the order and its undo live in one place. A
+/// claim that cannot be made refuses with nothing written. A refusal of
+/// [`crate::write::apply`] removes the claim this call made, with [`withdraw`],
+/// and the message ends with the sentence [`withdrawn`] writes, so it names
+/// the claim it removed or the claim it could not remove (#1972).
+pub fn land(
+    root: &Path,
+    plan: &Plan,
+    composed: &[crate::write::Composed],
+) -> Result<Option<String>, String> {
+    let claimed = write(root, plan).map_err(|why| why.to_string())?;
+    let Err(why) = crate::write::apply(root, composed) else {
+        return Ok(claimed);
+    };
+    let why = why.to_string();
+    Err(match &claimed {
+        None => why,
+        Some(claim) => {
+            let outcome = withdraw(root, claim);
+            format!(
+                "{}. {}",
+                why.trim_end_matches('.'),
+                withdrawn(claim, &outcome)
+            )
+        }
+    })
+}
+
 /// Remove one claim file that this run made, because its document was not
 /// created.
 ///
