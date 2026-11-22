@@ -682,6 +682,177 @@ fn resolve_refuses_an_outside_root_pattern_that_leaves_the_repository() {
     }
 }
 
+/// Replace the one line `from` of a root's file at `relative` with `to`.
+fn rewrite_line(root: &Root, relative: &str, from: &str, to: &str) {
+    let file = root.at.join(relative);
+    let text = std::fs::read_to_string(&file).expect("the file reads");
+    assert_eq!(
+        text.matches(from).count(),
+        1,
+        "{relative} holds `{from}` once"
+    );
+    std::fs::write(&file, text.replacen(from, to, 1)).expect("the file writes");
+}
+
+/// A shelf path and a corpus root are declared paths like a projection output,
+/// so `taxonomy resolve` refuses one that is absolute or that climbs above the
+/// repository root, names the key and the file that declared it, and writes no
+/// lock (#1967, HW-DR-0084 clause 2 widened to every declared path). A corpus
+/// root is read by `check` from the consumer declaration and not from the lock,
+/// so `check --strict` refuses it too, rather than walking the directory.
+#[test]
+fn resolve_refuses_a_shelf_path_or_corpus_root_that_leaves_the_repository() {
+    let shelf = "    path: docs/probes/**\n";
+    let corpus = "  root: docs\n";
+    for (label, file, from, to, key, also_check) in [
+        (
+            "shelf-path-climbs",
+            ".headwater/overlay.yml",
+            shelf,
+            "    path: ../sibling/**\n",
+            "shelves.probes.path",
+            false,
+        ),
+        (
+            "shelf-path-absolute",
+            ".headwater/overlay.yml",
+            shelf,
+            "    path: /abs/**\n",
+            "shelves.probes.path",
+            false,
+        ),
+        (
+            "corpus-root-climbs",
+            ".headwater/taxonomy.yml",
+            corpus,
+            "  root: ..\n",
+            "corpus.root",
+            true,
+        ),
+        (
+            "corpus-root-etc",
+            ".headwater/taxonomy.yml",
+            corpus,
+            "  root: /etc\n",
+            "corpus.root",
+            true,
+        ),
+        (
+            "corpus-root-proc",
+            ".headwater/taxonomy.yml",
+            corpus,
+            "  root: /proc/self\n",
+            "corpus.root",
+            true,
+        ),
+    ] {
+        let root = Root::new(label);
+        let first = root.run(&["taxonomy", "resolve"]);
+        assert_eq!(first.code, Some(0), "the fixture resolves: {first:?}");
+        let lock = root.at.join(".headwater/taxonomy.lock");
+        let written = std::fs::read(&lock).expect("the fixture resolved once");
+        rewrite_line(&root, file, from, to);
+        let resolved = root.run(&["taxonomy", "resolve"]);
+        assert_eq!(resolved.code, Some(1), "{label}: {resolved:?}");
+        assert!(
+            resolved.err.contains(key) && resolved.err.contains(file),
+            "{label}: the refusal names `{key}` and {file}: {resolved:?}"
+        );
+        assert_eq!(
+            std::fs::read(&lock).expect("the lock is still there"),
+            written,
+            "{label}: no lock is written"
+        );
+        let checked = root.run(&["taxonomy", "resolve", "--check"]);
+        assert_eq!(checked.code, Some(1), "{label}: {checked:?}");
+        if also_check {
+            let strict = root.run(&["check", "--strict"]);
+            assert_eq!(strict.code, Some(1), "{label}: {strict:?}");
+            assert!(strict.err.contains(key), "{label}: {strict:?}");
+        }
+    }
+}
+
+/// Write the digest the `resolved` body of a lock now has, so a hand edit
+/// reads as untampered and only a rule over the body can refuse it.
+fn redigest(text: &str) -> String {
+    let loaded = headwater_yaml::load(text).expect("the lock loads");
+    let top = loaded.value.as_map().expect("a mapping");
+    let resolved = top
+        .get("resolved")
+        .and_then(|node| node.value.as_map())
+        .expect("`resolved` is a mapping");
+    let digest = headwater_lock::digest(&headwater_resolve::render::render(resolved));
+    let old = text
+        .lines()
+        .find(|line| line.starts_with("  digest: sha256:"))
+        .expect("the lock header carries a digest");
+    text.replacen(old, &format!("  digest: {digest}"), 1)
+}
+
+/// A lock edited by hand, with its digest recomputed so the digest check
+/// passes, is still refused when a path in it climbs out of the repository:
+/// the lock reader runs the containment rule `taxonomy resolve` runs, so
+/// neither `generate` nor `new` reaches a write (#1967). The fixture root is a
+/// directory of its own, so a file that escaped would land in its parent or
+/// the one above, and the case looks in both.
+#[test]
+fn a_hand_edited_lock_with_a_climbing_path_is_refused_before_any_write() {
+    for (label, from, to, escaped, verb) in [
+        (
+            "lock-output-climbs",
+            "      output: \"{shelf}/README.md\"\n",
+            "      output: \"{shelf}/../../../pwned-rel.md\"\n",
+            "pwned-rel.md",
+            &["generate"][..],
+        ),
+        (
+            "lock-shelf-climbs",
+            "    path: docs/probes/**\n",
+            "    path: ../pwned-new/**\n",
+            "pwned-new",
+            &["new", "probe", "--title", "Escape", "--apply"][..],
+        ),
+    ] {
+        let root = Root::new(label);
+        let above = root
+            .at
+            .parent()
+            .expect("the root has a parent")
+            .to_path_buf();
+        // Each place outside the root that a climb from a shelf lands, which a
+        // run before this fix wrote to and so may still hold.
+        let landings = [above.join(escaped), above.join("..").join(escaped)];
+        for landing in &landings {
+            let _ = std::fs::remove_file(landing);
+            let _ = std::fs::remove_dir_all(landing);
+        }
+        let first = root.run(&["taxonomy", "resolve"]);
+        assert_eq!(first.code, Some(0), "the fixture resolves: {first:?}");
+        let lock = root.at.join(".headwater/taxonomy.lock");
+        let text = std::fs::read_to_string(&lock).expect("the lock reads");
+        let at = text
+            .find(from)
+            .unwrap_or_else(|| panic!("the lock holds `{from}`"));
+        let edited = format!("{}{to}{}", &text[..at], &text[at + from.len()..]);
+        std::fs::write(&lock, redigest(&edited)).expect("the lock writes");
+
+        let ran = root.run(verb);
+        assert_eq!(ran.code, Some(1), "{label}: {ran:?}");
+        assert!(
+            ran.err.contains("leaves the repository"),
+            "{label}: the lock reader names the refusal: {ran:?}"
+        );
+        for landing in &landings {
+            assert!(
+                !landing.exists(),
+                "{label}: nothing was written at {}",
+                landing.display()
+            );
+        }
+    }
+}
+
 /// A projection that an overlay adds and the generator refuses stops
 /// `taxonomy resolve` before it writes a lock, and the refusal names the
 /// overlay, the value and the generator's reason (#1758). The base package
