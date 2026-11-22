@@ -1588,6 +1588,11 @@ pub enum Verdict {
     /// census does not read at this path's extension, so the census would not
     /// count the file as generated and the orphan rule could never report it.
     MarkerUnread,
+    /// Not written and not compared: the path is absolute or climbs above the
+    /// repository root, so a write would land outside the repository (#1967).
+    /// `taxonomy resolve` and the lock reader refuse such a path first, so this
+    /// verdict is the writer's own guard and not the place an author meets it.
+    Escapes,
     /// The write failed, and this is what the operating system said.
     Failed(String),
     /// A write only: this pass would have written the file, and did not,
@@ -1609,6 +1614,7 @@ impl Verdict {
                 | Verdict::Differs
                 | Verdict::Missing
                 | Verdict::MarkerUnread
+                | Verdict::Escapes
                 | Verdict::Failed(_)
         )
     }
@@ -1634,6 +1640,9 @@ impl Verdict {
                  census does not read at this extension, so a copy left behind would be an \
                  orphan nothing reports. A graph export is JSON, a navigation file is YAML, and \
                  a page is Markdown: name the output with the extension of what the kind writes"
+                .to_string(),
+            Verdict::Escapes => "not written: the path is absolute or climbs above the \
+                 repository root, and this engine writes nothing outside the repository"
                 .to_string(),
             Verdict::Failed(error) => format!("not written: {error}"),
             Verdict::Withheld => {
@@ -1749,10 +1758,12 @@ impl Report {
             || !self.defective_arms.is_empty()
             || self.refused.iter().any(|refused| refused.held)
             || !self.orphaned.is_empty()
-            || self
-                .wrote
-                .iter()
-                .any(|wrote| matches!(wrote.verdict, Verdict::Occupied | Verdict::MarkerUnread))
+            || self.wrote.iter().any(|wrote| {
+                matches!(
+                    wrote.verdict,
+                    Verdict::Occupied | Verdict::MarkerUnread | Verdict::Escapes
+                )
+            })
     }
 
     /// The one sentence a failing run ends with, or `None` where it did not
@@ -2207,6 +2218,17 @@ fn run(root: &Path, plan: &Plan, mode: Mode) -> Report {
                 path: output.path.clone(),
                 kind: output.kind,
                 verdict: Verdict::MarkerUnread,
+            });
+            continue;
+        }
+        // The lock reader refuses a declared path that leaves the repository,
+        // and this is the second guard: whatever the declaration, a join that
+        // lands outside the root is neither read nor written (#1967).
+        if headwater_resolve::containment::escapes(&output.path).is_some() {
+            report.wrote.push(Wrote {
+                path: output.path.clone(),
+                kind: output.kind,
+                verdict: Verdict::Escapes,
             });
             continue;
         }

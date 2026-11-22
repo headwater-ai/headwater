@@ -247,6 +247,17 @@ pub fn consumer(root: &Path) -> Result<Consumer, Vec<ResolveError>> {
         .ok_or_else(|| refusal(name, "no `corpus` block, so nothing says what to walk"))?;
     let corpus_root = text(corpus, "root")
         .ok_or_else(|| refusal(name, "`corpus.root` names the directory the census walks"))?;
+    // `taxonomy resolve` and `check` both read the root here, and the census
+    // joins it to the repository root and walks it. One that is absolute or
+    // climbs out would walk a directory outside the repository (#1967). The
+    // test is lexical, so a root inside the repository that is a symlink still
+    // reads.
+    if let Some(escape) = crate::containment::escapes(&corpus_root) {
+        return Err(refusal(
+            name,
+            &format!("`corpus.root` is `{corpus_root}`, {}", escape.reason()),
+        ));
+    }
 
     let mut exclusions = Vec::new();
     if let Some(items) = corpus.get("exclude").and_then(|node| node.value.as_seq()) {

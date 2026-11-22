@@ -808,10 +808,10 @@ fn a_hand_edited_lock_with_a_climbing_path_is_refused_before_any_write() {
         ),
         (
             "lock-shelf-climbs",
-            "    path: docs/probes/**\n",
-            "    path: ../pwned-new/**\n",
+            "      path: \"docs/probes/**\"\n",
+            "      path: \"../pwned-new/**\"\n",
             "pwned-new",
-            &["new", "probe", "--title", "Escape", "--apply"][..],
+            &["new", "probe", "--title", "Escape"][..],
         ),
     ] {
         let root = Root::new(label);

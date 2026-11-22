@@ -78,7 +78,11 @@ pub enum Ran {
 /// [`crate::resolve`] and [`crate::confluence`]. A rule whose wording changed
 /// with no change to what it accepts or refuses does not need the bump; a rule
 /// whose *verdict* over some taxonomy changed does.
-pub const RULE_SET: u32 = 2;
+///
+/// 3: `projection targets` refuses a shelf path that is absolute or climbs out
+/// of the repository, and a projection output that starts at `\` or a drive
+/// (#1967).
+pub const RULE_SET: u32 = 3;
 
 /// Every rule that [spec 2](../../../../docs/spec/02-taxonomy-model.md#the-meta-schema)
 /// lists for `taxonomy validate`, in spec 2's own order, and where each runs.
@@ -251,8 +255,9 @@ pub const RULES: [(&str, Ran); 23] = [
         "projection targets",
         Ran::Partly {
             decides: "every projection writes a relative path that stays inside the corpus root, \
-                      and every path a language regime lists outside the corpus root stays \
-                      inside the repository and answers to one regime",
+                      every shelf path stays inside the repository, and every path a language \
+                      regime lists outside the corpus root stays inside the repository and \
+                      answers to one regime",
             waits: "the collision with an authored path, which needs the census. `generate \
                     --check` is where that lands",
         },
@@ -2061,15 +2066,44 @@ fn mapping_integrity(view: &View, out: &mut Vec<ResolveError>) {
     }
 }
 
-/// A projection writes a relative path inside the corpus.
-fn projection_targets(view: &View, out: &mut Vec<ResolveError>) {
+/// The refusals of `projection targets` that read a declared path of the
+/// resolved taxonomy alone: a shelf path and a projection output.
+///
+/// `headwater_lock::read` runs this over the `resolved` block of every lock it
+/// reads, after the digest check, so a lock edited by hand and re-digested is
+/// held to the rule that refused the same path at `taxonomy resolve` (#1967).
+pub fn contained(taxonomy: &Mapping) -> Vec<ResolveError> {
+    let mut out = Vec::new();
+    declared_paths(&View::new(taxonomy), &mut out);
+    out
+}
+
+/// A projection writes a relative path inside the corpus, and a shelf claims
+/// paths inside the repository.
+fn declared_paths(view: &View, out: &mut Vec<ResolveError>) {
     const RULE: &str = "projection targets";
+    // A shelf path is read from the repository root, as `docs/decisions/**`
+    // is, and both writers that place a document join it to that root. So one
+    // that is absolute or climbs out names a place outside the repository that
+    // `new` would write into and the census would walk (#1967).
+    for (name, body) in view.members("shelves") {
+        let Some(path) = text(body, "path") else {
+            continue;
+        };
+        if let Some(escape) = crate::containment::escapes(path) {
+            out.push(refusal(
+                RULE,
+                &format!("shelves.{name}.path"),
+                format!("is `{path}`, {}", escape.reason()),
+            ));
+        }
+    }
     for (index, body) in view.items("projections").into_iter().enumerate() {
         let Some(output) = text(body, "output") else {
             continue;
         };
         let at = format!("projections.{index}.output");
-        if output.starts_with('/') {
+        if crate::containment::escapes(output) == Some(crate::containment::Escape::Absolute) {
             out.push(refusal(
                 RULE,
                 &at,
@@ -2084,6 +2118,13 @@ fn projection_targets(view: &View, out: &mut Vec<ResolveError>) {
             ));
         }
     }
+}
+
+/// Every declared path stays where it is read from, and one literal path that
+/// a language regime lists outside the corpus root answers to one regime.
+fn projection_targets(view: &View, out: &mut Vec<ResolveError>) {
+    const RULE: &str = "projection targets";
+    declared_paths(view, out);
 
     // HW-DR-0084 clause 2, the half that needs no tree: a path a language
     // regime lists outside the corpus root still stays inside the repository,

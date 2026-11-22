@@ -71,6 +71,7 @@
 
 pub mod assembly;
 pub mod confluence;
+pub mod containment;
 pub mod core;
 pub mod error;
 pub mod flatten;
@@ -259,7 +260,20 @@ impl Resolution {
     /// downstream reads a source, and a lock is written only when this returns
     /// nothing.
     pub fn validate(&self) -> Vec<ResolveError> {
-        rules::check(&self.taxonomy)
+        let mut refusals = rules::check(&self.taxonomy);
+        // A refused shelf path names the source that wrote it, as a refused
+        // projection does (#1758), because the author has to find the line
+        // (#1967). Every other refusal keeps the source it was raised with.
+        for refusal in &mut refusals {
+            let path: Vec<String> = refusal.at.split('.').map(str::to_string).collect();
+            if path.len() == 3 && path[0] == "shelves" && path[2] == "path" {
+                let owner = value_owner(&self.base, &self.operations, &path);
+                if let Some(name) = owner.and_then(|index| self.sources.get(index)) {
+                    refusal.source = name.clone();
+                }
+            }
+        }
+        refusals
     }
 
     /// Every operation that makes what it addresses, as the text two verbs print.
@@ -553,6 +567,41 @@ pub fn list_owners(
         }
     }
     Some(items.into_iter().map(|(source, _)| source).collect())
+}
+
+/// Which source wrote the value at `path` last, as an index into
+/// [`Resolution::sources`].
+///
+/// The last operation whose address is `path`, or is above it with a value
+/// that holds the rest of `path`, wrote it. Where none did, the base did if it
+/// declares the value. `None` where nothing declares it, or where a `remove`
+/// took it out after the last write, so that a caller names no source rather
+/// than a wrong one.
+pub fn value_owner(start: &Mapping, operations: &[Operation], path: &[String]) -> Option<usize> {
+    let mut owner = merge::lookup(start, path).map(|_| 0);
+    for operation in operations {
+        let at = operation.address.segments();
+        if !path.starts_with(at) {
+            continue;
+        }
+        let rest = &path[at.len()..];
+        match (operation.kind, &operation.value) {
+            (OpKind::Remove, _) => owner = None,
+            (_, Some(_)) if rest.is_empty() => owner = Some(operation.source),
+            (_, Some(value)) => {
+                if value
+                    .value
+                    .as_map()
+                    .and_then(|map| merge::lookup(map, rest))
+                    .is_some()
+                {
+                    owner = Some(operation.source);
+                }
+            }
+            (_, None) => {}
+        }
+    }
+    owner
 }
 
 /// Every source that wrote to the list at `path`, in source order: the base
