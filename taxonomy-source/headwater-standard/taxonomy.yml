@@ -149,6 +149,12 @@ taxonomy: headwater/standard
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
 #
+# 4.18.0 adds one obligation and its control, and removes nothing, so it is a
+# minor. OB-LIFE-8 states that a document which replaces another over a
+# relation that writes a state onto its target does not stay at its initial
+# state while the target stays live, and CT-LIFE-8 binds
+# `lifecycle.state.set_after_initial` to it, permanently advisory (#1973).
+#
 # 4.17.0 adds one obligation and its control, and removes nothing, so it is a
 # minor. OB-WARRANT-5 states that a document at the initial state of its
 # regime does not also say a person accepted it, and CT-WARRANT-5 binds
@@ -317,7 +323,7 @@ taxonomy: headwater/standard
 # each carries a recipe rather than a bare instruction. One package version
 # covers every content file it publishes, this one included, so the number
 # here moves with a change to either.
-version: 4.17.0
+version: 4.18.0
 
 purposes:
   rationale:
@@ -871,6 +877,13 @@ obligations:
     prevents: content.inconsistent
     severity: medium
 
+  OB-LIFE-8:
+    statement: A document that declares a relation which writes a state onto its target does not stay at its initial state while the target stands at another state
+    rationale: A source at its initial state retires nothing yet, so its target stays live and the fix writes nothing. An author who reads the edge as done leaves a replaced document current, and every reader who meets it follows guidance the corpus means to replace, while nothing tells the author that the replacement is still pending
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
+
   OB-LIFE-7:
     statement: A generated document does not receive two different states from the relations that write a state onto it
     rationale: A page can carry one state, so where two edges write two states the generator takes the first in a fixed order, and the page then states one of two answers with nothing that tells its author a second one was dropped
@@ -1364,6 +1377,16 @@ controls:
     promotion:
       permanently_advisory:
         reasoning: The reading CT-LIFE-3 takes. The rule sees two edges that write two states and cannot say which one the page should carry. The remedy is to remove one edge, to change the state one relation declares, or to accept the state the generator chose, and only the author can pick among the three, so a posture that stopped a merge would stop it on a question the engine cannot settle
+
+  CT-LIFE-8:
+    mechanism: check:lifecycle.state.set_after_initial
+    discharges: [OB-LIFE-8]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      permanently_advisory:
+        reasoning: The reading CT-LIFE-3 takes. A draft that replaces another may be a draft on purpose, because the replacement is still argued over, or it may be settled and left at the wrong state. Only its author can say which, so the remedy is either to set the state the rule names or to leave the draft as it is, and a posture that stopped a merge would stop it on a question only an author can settle
 
   CT-REL-8:
     mechanism: check:relation.target.verification.suspect

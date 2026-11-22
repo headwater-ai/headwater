@@ -1,0 +1,75 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# A copy of state-not-set-by-edge.taxonomy.yml for the tree of the same name as
+# this file, which holds sources past their initial state over live targets.
+# Only the shelf paths and the identifier namespace differ. It is a separate
+# tree so that the neighboring rule keeps its count of four over its own tree.
+
+facets:
+  status:
+    role: state
+    values:
+      - {value: draft,      role: initial}
+      - {value: current,    role: live}
+      - {value: superseded, role: terminal-retained}
+      - {value: deprecated, role: terminal-retained}
+  status_since:
+    role: state_entered
+  summary:
+    role: scent
+
+regimes:
+  lifecycle:
+    standard:
+      initial: draft
+      transitions: {draft: [current, deprecated], current: [superseded, deprecated]}
+      retain_terminal: true
+
+identifier_schemes:
+  note_id: {pattern: "NOTE-{namespace}-{slug}", namespace: SRC, allocation: minted-once}
+
+relations:
+  supersedes:
+    family: succession
+    from: [note]
+    to:   [note, page, loose]
+    inverse: superseded_by
+    on_target: {set_state: superseded}
+    created_by: author
+  mentions:
+    family: association
+    from: [note]
+    to:   [note, page, loose]
+    created_by: author
+
+core:
+  requires:
+    - facet_role: state
+    - relation_family: succession
+      lifecycle_sensitive: true
+    - relation_family: association
+
+kinds:
+  note:
+    identifier: {scheme: note_id}
+    lifecycle: standard
+    facets: {require: [status]}
+  page:
+    identifier: {scheme: note_id}
+    lifecycle: standard
+  loose:
+    identifier: {scheme: note_id}
+
+shelves:
+  notes:
+    path: state-set-after-initial-sources/notes/**
+    homogeneous: true
+    kind: note
+  pages:
+    path: state-set-after-initial-sources/pages/**
+    homogeneous: true
+    kind: page
+  loose:
+    path: state-set-after-initial-sources/loose/**
+    homogeneous: true
+    kind: loose
