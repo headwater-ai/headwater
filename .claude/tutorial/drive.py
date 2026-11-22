@@ -682,7 +682,7 @@ def main():
         result = run(used(31).strip())
         cut('step 12: the finding', result.stdout, 32)
         cut('step 12: the head of the register', result.stdout, 33)
-        cut('step 12: every rule reaches one obligation', result.stdout, 34)
+        cut('step 12: the first rule that reaches no obligation', result.stdout, 34)
         # The page's own check names the `31 obligations:` line of the register block,
         # which is the second line of it.
         compare('step 12: grep obligations:',
