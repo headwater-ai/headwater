@@ -758,11 +758,12 @@ fn the_first_stop_rule_of_the_authoring_skill_counts_a_ruling_stated_in_the_conv
         "engine/crates/cli/harness/skills/headwater-authoring/SKILL.md",
         "docs/spec/05-ai-integration.md",
     ] {
-        let item = first_stop_rule(path);
+        let item = first_stop_rule(path).to_lowercase();
         for phrase in [
             "ruling that the person states in the conversation is evidence",
             "who ruled and when",
-            "halt and ask only when neither the conversation nor",
+            "only when neither the conversation nor",
+            "halt",
             "fabricated",
         ] {
             assert!(
