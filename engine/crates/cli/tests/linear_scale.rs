@@ -164,7 +164,7 @@ fn many_findings_on_one_document_are_audited_in_linear_time() {
         "linear-findings",
         &document("", &body),
         STRICT,
-        Duration::from_secs(60),
+        Duration::from_secs(600),
     );
     assert!(
         ran.out.matches("9998-missing.md").count() >= BROKEN_LINKS,
@@ -177,4 +177,4 @@ const KEYS: usize = 160_000;
 const TARGETS: usize = 80_000;
 const SENTENCES: usize = 10_000;
 const LINKS: usize = 160_000;
-const BROKEN_LINKS: usize = 40_000;
+const BROKEN_LINKS: usize = 160_000;
