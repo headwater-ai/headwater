@@ -579,6 +579,28 @@ mod tests {
         }
     }
 
+    /// Keys that differ in case are two keys, and the index of first spans
+    /// keeps them apart: `a` and `A` load, and a repeated `a` names the first
+    /// `a` rather than the `A` between them (#1968).
+    #[test]
+    fn keys_that_differ_in_case_are_two_keys_and_a_repeat_names_its_own_first() {
+        assert!(load("a: 1\nA: 2\n").is_ok(), "`a` and `A` are two keys");
+        let errors = load("A: 0\na: 1\nA: 2\na: 3\n").expect_err("rejected");
+        let seen: Vec<(String, usize, usize)> = errors
+            .iter()
+            .map(|error| match &error.kind {
+                ErrorKind::DuplicateKey { key, first } => {
+                    (key.clone(), first.start.line, error.span.start.line)
+                }
+                other => panic!("wrong error: {other:?}"),
+            })
+            .collect();
+        assert_eq!(
+            seen,
+            vec![("A".to_string(), 1, 3), ("a".to_string(), 2, 4)]
+        );
+    }
+
     #[test]
     fn a_key_repeated_three_times_names_the_first_in_both_errors() {
         let errors = load("a: 1\nb: 2\na: 3\na: 4\n").expect_err("rejected");
