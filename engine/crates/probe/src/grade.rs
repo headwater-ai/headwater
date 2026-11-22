@@ -79,8 +79,11 @@ use headwater_check::paint::{paint, ColorMode, Role};
 /// moved, and the rendered grade grew. It moved to `0.5.2` when a session
 /// whose tree the check refused, an artifact with `check:refused`, started
 /// to satisfy no predicate (#1879). No committed transcript carries that
-/// finding, so no committed verdict moved.
-pub const VERSION: &str = "0.5.2";
+/// finding, so no committed verdict moved. It moved to `0.5.3` when a file
+/// outside the session's workspace stopped counting, and a `patched` session
+/// started to pass only when every file inside the workspace is clean
+/// (#1980): three sessions of phase B of #1881 left the denominator before.
+pub const VERSION: &str = "0.5.3";
 
 /// The confidence coefficient of the reported interval, at 95%.
 const Z: f64 = 1.959_964;
@@ -109,10 +112,13 @@ pub enum Witness {
     },
     /// The final answer, and the closed set it is a member of.
     Answered { event: usize, value: String },
-    /// A produced artifact was checked and the oracle did not report over it.
+    /// Every produced artifact inside the workspace was checked, and the
+    /// oracle reported over none of them (#1980). `artifact` is the first of
+    /// them, and `artifacts` is how many there were.
     Clean {
         event: usize,
         artifact: String,
+        artifacts: usize,
         oracle: String,
     },
 }
@@ -141,10 +147,21 @@ impl std::fmt::Display for Witness {
             Witness::Clean {
                 event,
                 artifact,
+                artifacts: 1,
                 oracle,
             } => write!(
                 f,
                 "event {event}: `{oracle}` reported nothing over `{artifact}`"
+            ),
+            Witness::Clean {
+                event,
+                artifact,
+                artifacts,
+                oracle,
+            } => write!(
+                f,
+                "event {event}: `{oracle}` reported nothing over `{artifact}` or the other {} inside the workspace",
+                crate::plural(artifacts - 1, "produced artifact")
             ),
         }
     }
@@ -176,10 +193,20 @@ pub enum Miss {
         value: String,
         expected: Vec<String>,
     },
-    /// The oracle reported over every produced artifact.
-    OracleReported { artifacts: usize, oracle: String },
-    /// A `patched` session produced no artifact, so the oracle had nothing to
-    /// read. The pilot of #980 printed this as the oracle reporting "over each
+    /// The oracle reported over a produced artifact inside the workspace, and
+    /// one such artifact fails a `patched` session (#1980). `artifact` is the
+    /// first it reported over, `reported` is how many, and `artifacts` is how
+    /// many the workspace holds.
+    OracleReported {
+        event: usize,
+        artifact: String,
+        reported: usize,
+        artifacts: usize,
+        oracle: String,
+    },
+    /// A `patched` session produced no artifact inside its workspace, so the
+    /// oracle had nothing to read. A file outside the workspace is not one
+    /// (#1980). The pilot of #980 printed this as the oracle reporting "over each
     /// of the 0 produced artifacts", which names a finding nobody made.
     NothingProduced,
     /// The session left a tree that `headwater check` refused, so the
@@ -226,9 +253,15 @@ impl std::fmt::Display for Miss {
                     .collect::<Vec<_>>()
                     .join(" or ")
             ),
-            Miss::OracleReported { artifacts, oracle } => write!(
+            Miss::OracleReported {
+                event,
+                artifact,
+                reported,
+                artifacts,
+                oracle,
+            } => write!(
                 f,
-                "`{oracle}` reported over each of the {}",
+                "event {event}: `{oracle}` reported over `{artifact}`, {reported} of the {} inside the workspace",
                 crate::plural(*artifacts, "produced artifact")
             ),
             Miss::NothingProduced => write!(
@@ -1366,6 +1399,35 @@ fn recorded_produced<'a>(session: &[&'a Event]) -> Option<Vec<(usize, &'a Produc
     total
 }
 
+/// Every recorded artifact inside the session's workspace, and `None` where
+/// no event recorded the key (#1980).
+///
+/// The transform writes a path inside the workspace relative to it and keeps
+/// any other path absolute, and nothing checks a file outside the workspace,
+/// so it carries no `findings` key. A scratch file under `/tmp` is not what
+/// the session changed in the corpus, so it neither takes the session out of
+/// the count nor counts toward its verdict.
+fn inside_produced<'a>(session: &[&'a Event]) -> Option<Vec<(usize, &'a Produced)>> {
+    recorded_produced(session).map(|artifacts| {
+        artifacts
+            .into_iter()
+            .filter(|(_, artifact)| !is_outside(&artifact.path))
+            .collect()
+    })
+}
+
+/// Whether a recorded path is outside the workspace: an absolute path, in
+/// either the Unix or the Windows form.
+fn is_outside(path: &str) -> bool {
+    let bytes = path.as_bytes();
+    path.starts_with('/')
+        || path.starts_with('\\')
+        || (bytes.len() > 2
+            && bytes[0].is_ascii_alphabetic()
+            && bytes[1] == b':'
+            && matches!(bytes[2], b'/' | b'\\'))
+}
+
 fn opened(selected: &Selected, session: &[&Event]) -> Verdict {
     let Some(calls) = recorded_calls(session) else {
         return Verdict::Refused(Refusal::Unrecorded { what: "calls" });
@@ -1415,7 +1477,7 @@ fn cited(selected: &Selected, session: &[&Event]) -> Verdict {
             over: selected.examines.len(),
         });
     }
-    let Some(artifacts) = recorded_produced(session) else {
+    let Some(artifacts) = inside_produced(session) else {
         return Verdict::Refused(Refusal::Unrecorded { what: "produced" });
     };
     for (at, artifact) in &artifacts {
@@ -1480,27 +1542,42 @@ fn patched(selected: &Selected, session: &[&Event]) -> Verdict {
     let Some(oracle) = &selected.oracle else {
         return Verdict::Refused(Refusal::OracleUndeclared);
     };
-    let Some(artifacts) = recorded_produced(session) else {
+    let Some(artifacts) = inside_produced(session) else {
         return Verdict::Refused(Refusal::Unrecorded { what: "produced" });
     };
-    if artifacts.is_empty() {
+    let Some(&(first_at, first)) = artifacts.first() else {
         return Verdict::NotSatisfied(Miss::NothingProduced);
+    };
+    // Every file inside the workspace must be clean (#1980). A file the
+    // oracle reported over fails the session whatever an unchecked file
+    // beside it holds, so a report outranks an unchecked file, and an
+    // unchecked file outranks a clean verdict nobody could give.
+    let reported: Vec<&(usize, &Produced)> = artifacts
+        .iter()
+        .filter(|(_, artifact)| {
+            artifact
+                .findings
+                .as_ref()
+                .is_some_and(|findings| findings.contains(oracle))
+        })
+        .collect();
+    if let Some(&&(at, artifact)) = reported.first() {
+        return Verdict::NotSatisfied(Miss::OracleReported {
+            event: at,
+            artifact: artifact.path.clone(),
+            reported: reported.len(),
+            artifacts: artifacts.len(),
+            oracle: oracle.clone(),
+        });
     }
-    for (at, artifact) in &artifacts {
-        let Some(findings) = &artifact.findings else {
-            return Verdict::Refused(Refusal::NotChecked {
-                artifact: artifact.path.clone(),
-            });
-        };
-        if !findings.contains(oracle) {
-            return Verdict::Satisfied(Witness::Clean {
-                event: *at,
-                artifact: artifact.path.clone(),
-                oracle: oracle.clone(),
-            });
-        }
+    if let Some((_, unchecked)) = artifacts.iter().find(|(_, a)| a.findings.is_none()) {
+        return Verdict::Refused(Refusal::NotChecked {
+            artifact: unchecked.path.clone(),
+        });
     }
-    Verdict::NotSatisfied(Miss::OracleReported {
+    Verdict::Satisfied(Witness::Clean {
+        event: first_at,
+        artifact: first.path.clone(),
         artifacts: artifacts.len(),
         oracle: oracle.clone(),
     })
@@ -2093,7 +2170,7 @@ mod tests {
         assert!(
             matches!(
                 verdict(&patched_on_r(), &[&session]),
-                Verdict::NotSatisfied(Miss::OracleReported { .. })
+                Verdict::NotSatisfied(Miss::OracleReported { ref artifact, reported: 1, artifacts: 2, .. }) if artifact == "docs/b.md"
             ),
             "{:?}",
             verdict(&patched_on_r(), &[&session])
@@ -2112,6 +2189,31 @@ mod tests {
                 artifact: "docs/b.md".into()
             })
         );
+    }
+
+    /// A report fails the session whatever an unchecked file beside it holds,
+    /// so the session stays in the count.
+    #[test]
+    fn a_report_outranks_an_unchecked_file_inside_the_workspace() {
+        let session = produced_session(&[("docs/a.md", None), ("docs/b.md", Some(vec!["R"]))]);
+        assert!(
+            matches!(
+                verdict(&patched_on_r(), &[&session]),
+                Verdict::NotSatisfied(Miss::OracleReported { ref artifact, .. }) if artifact == "docs/b.md"
+            ),
+            "{:?}",
+            verdict(&patched_on_r(), &[&session])
+        );
+    }
+
+    #[test]
+    fn an_absolute_path_in_either_form_is_outside_the_workspace() {
+        for outside in ["/tmp/x.rs", "\\\\server\\x.rs", "C:\\Temp\\x.rs", "c:/temp/x.rs"] {
+            assert!(is_outside(outside), "{outside}");
+        }
+        for inside in ["docs/x.md", "x", "a:b.md", ".headwater/overlay.yml"] {
+            assert!(!is_outside(inside), "{inside}");
+        }
     }
 
     /// An identifier that only a file outside the workspace cites was not
