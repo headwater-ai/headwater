@@ -3570,6 +3570,73 @@ fn a_release_nested_past_the_bound_is_refused_and_leaves_nothing() {
     );
 }
 
+/// #1968: an archive whose `release.yml` holds 200,000 keys is refused inside
+/// the ceiling, writes nothing, and leaves no temporary directory behind.
+///
+/// The loader searched every key it had already read for a repeat of each new
+/// one, so a record of many keys took time in proportion to the square of
+/// their number. The ceiling is wall time in the `dev` profile (no
+/// optimization), for the fetch, the unpack and the load together.
+///
+/// 200,000 keys: RED_VENDOR before the fix, 0.63 s after, on the build host. Ceiling 6 s.
+#[cfg(feature = "fetch")]
+#[test]
+fn a_release_of_many_keys_is_refused_in_time_and_leaves_nothing() {
+    let root = Root::scratch("vendor-wide-release");
+    let (artifact, _record) = published_fixture(&root);
+    let release = artifact.join("release.yml");
+    let text = std::fs::read_to_string(&release).expect("the release reads");
+    let keys: String = (0..WIDE_RELEASE_KEYS)
+        .map(|index| format!("zz_k{index}: v\n"))
+        .collect();
+    std::fs::write(&release, format!("{text}{keys}")).expect("the release writes");
+    let base = serve_artifact(zipped(&artifact));
+
+    let adopter = root.path().join("adopter");
+    std::fs::create_dir_all(&adopter).expect("the adopter root is made");
+    let temporary = root.path().join("tmp");
+    std::fs::create_dir_all(&temporary).expect("the temporary directory is made");
+    let location = format!("{base}/x.zip");
+    let wrong = "sha256:0000000000000000000000000000000000000000000000000000000000000000";
+    let started = std::time::Instant::now();
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(["taxonomy", "vendor", &location, "--expect", wrong])
+        .arg("--root")
+        .arg(&adopter)
+        .env("TMPDIR", &temporary)
+        .output()
+        .expect("the binary runs");
+    let took = started.elapsed();
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    eprintln!("vendor-wide-release: took {took:?} (ceiling {WIDE_RELEASE_CEILING:?})");
+    assert_eq!(
+        output.status.code(),
+        Some(1),
+        "a release of many keys did not refuse with a status:\n{stderr}"
+    );
+    assert!(
+        took < WIDE_RELEASE_CEILING,
+        "a release of {WIDE_RELEASE_KEYS} keys took {took:?}, over the ceiling of {WIDE_RELEASE_CEILING:?}"
+    );
+    assert!(
+        !adopter.join(package::PACKAGES).exists(),
+        "a refused vendor wrote into the package area"
+    );
+    let left: Vec<_> = std::fs::read_dir(&temporary)
+        .expect("the temporary directory reads")
+        .map(|entry| entry.expect("the entry reads").file_name())
+        .collect();
+    assert!(
+        left.is_empty(),
+        "the refused vendor left {left:?} in its temporary directory"
+    );
+}
+
+#[cfg(feature = "fetch")]
+const WIDE_RELEASE_KEYS: usize = 200_000;
+#[cfg(feature = "fetch")]
+const WIDE_RELEASE_CEILING: std::time::Duration = std::time::Duration::from_secs(6);
+
 /// #1113: a plain-http location reaches this machine even when the
 /// environment names a proxy.
 ///
