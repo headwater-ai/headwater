@@ -112,13 +112,15 @@ pub fn land(
         None => why,
         Some(claim) => {
             let outcome = withdraw(root, claim);
-            format!(
-                "{}. {}",
-                why.trim_end_matches('.'),
-                withdrawn(claim, &outcome)
-            )
+            joined(&why, &withdrawn(claim, &outcome))
         }
     })
+}
+
+/// A refusal and the claim sentence after it, with one period and one space
+/// between them whether or not the refusal already ends in a period.
+pub fn joined(refusal: &str, sentence: &str) -> String {
+    format!("{}. {sentence}", refusal.trim_end_matches('.'))
 }
 
 /// Remove one claim file that this run made, because its document was not

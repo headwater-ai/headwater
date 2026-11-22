@@ -337,3 +337,22 @@ fn a_withdrawn_claim_goes_and_its_sibling_stays() {
         "{sentence}"
     );
 }
+
+/// The claim sentence joins the refusal with one period and one space, whether
+/// or not the refusal text already ends in a period (#1972). `DocumentUncreated`
+/// ends without one and a `WriteHalted` report can end with one, and the
+/// message reads the same after either.
+#[test]
+fn the_claim_sentence_joins_a_refusal_with_one_period() {
+    let sentence = "The claim .headwater/ids/decision_id/HW-DR-0002 this run wrote was removed.";
+    let expected = format!("No other file was written. {sentence}");
+    assert_eq!(
+        headwater_scaffold::claim::joined("No other file was written", sentence),
+        expected
+    );
+    assert_eq!(
+        headwater_scaffold::claim::joined("No other file was written.", sentence),
+        expected,
+        "a refusal that ends in a period does not get a second one"
+    );
+}
