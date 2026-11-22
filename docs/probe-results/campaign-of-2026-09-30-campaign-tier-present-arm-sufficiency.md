@@ -26,7 +26,7 @@ The selection this transcript names is `sha256:1d93b514529314b74499196391c68b4b3
 
 The `read_set` digest above covers every probe of the selection and every document one of them examines, by path and content. This file names it as provenance and compares it with nothing, and the same holds for the lock and the selection: an edit to a document, a new probe or a moved lock leaves these bytes alone. `headwater generate` names each result whose recorded lock, read set or selection moved, and `headwater probe stale` takes the digest and reports which recorded results a change voided. Neither one fails for it.
 
-Graded by grader 0.5.2.
+Graded by grader 0.5.3.
 A campaign run in the present arm, on claude-sonnet-5 at served version claude-sonnet-5.
 
 ## The verdicts
@@ -134,13 +134,13 @@ A campaign run in the present arm, on claude-sonnet-5 at served version claude-s
     session L1-campaign-present-p4-r16: satisfied — event 97: `section.required.missing` reported nothing over `docs/obligations/0227-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-any-work-starts-is-unmeasured.md`; no call to a tool of an MCP server
     session L1-campaign-present-p4-r17: satisfied — event 98: `section.required.missing` reported nothing over `docs/process/obligations/0227-nothing-sums-what-the-standing-instructions-of-this-repository-cost-a-session-before-any-work-starts.md`; no call to a tool of an MCP server
     session L1-campaign-present-p4-r18: satisfied — event 99: `section.required.missing` reported nothing over `docs/process/obligations/0227-no-reading-states-how-much-of-a-session-s-budget-the-standing-instructions-of-this-repository-consume-before-work-starts.md`; no call to a tool of an MCP server
-    session L1-campaign-present-p4-r19: satisfied — event 100: `section.required.missing` reported nothing over `docs/obligations/0227-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-work-starts.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r19: satisfied — event 100: `section.required.missing` reported nothing over `docs/obligations/0227-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-work-starts.md` or the other 1 produced artifact inside the workspace; no call to a tool of an MCP server
     session L1-campaign-present-p4-r2: satisfied — event 101: `section.required.missing` reported nothing over `docs/obligations/0227-standing-instructions-have-no-measured-cost-against-the-aggregate-context-budget-spec-5-claims.md`; no call to a tool of an MCP server
     session L1-campaign-present-p4-r20: satisfied — event 102: `section.required.missing` reported nothing over `docs/obligations/0227-spec-5-claims-that-claude-md-costs-context-on-every-session-and-no-reading-states-how-much.md`; no call to a tool of an MCP server
     session L1-campaign-present-p4-r21: satisfied — event 103: `section.required.missing` reported nothing over `docs/process/obligations/0227-no-figure-exists-for-what-a-session-s-standing-instructions-add-to-the-context-of-its-first-turn.md`; no call to a tool of an MCP server
     session L1-campaign-present-p4-r22: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
     session L1-campaign-present-p4-r23: satisfied — event 105: `section.required.missing` reported nothing over `docs/process/obligations/0227-nothing-states-what-a-session-s-standing-instructions-cost-before-any-work-starts.md`; no call to a tool of an MCP server
-    session L1-campaign-present-p4-r24: satisfied — event 106: `section.required.missing` reported nothing over `docs/process/obligations/0227-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-of-this-repository-consume-before-any-work-starts.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r24: satisfied — event 106: `section.required.missing` reported nothing over `docs/process/obligations/0227-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-of-this-repository-consume-before-any-work-starts.md` or the other 1 produced artifact inside the workspace; no call to a tool of an MCP server
     session L1-campaign-present-p4-r25: satisfied — event 107: `section.required.missing` reported nothing over `docs/process/obligations/0227-nothing-states-the-session-budget-the-standing-instructions-of-this-repository-consume-before-work-starts.md`; no call to a tool of an MCP server
     session L1-campaign-present-p4-r26: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
     session L1-campaign-present-p4-r27: satisfied — event 109: `section.required.missing` reported nothing over `docs/obligations/0227-no-document-states-the-token-budget-the-standing-instructions-of-this-repository-spend-before-a-session-starts-work.md`; no call to a tool of an MCP server
@@ -176,6 +176,6 @@ The difference is +0.0 points, in a 95% Newcombe interval of -5.8 points to +5.8
 What the documents and the governance change together. The treated arm is a present arm and the control is the `documentation` absent arm.
 
 - treated, `docs/probe-runs/campaign-of-2026-09-30-campaign-tier-present-arm-sufficiency.md`: 114 of 119 graded sessions satisfied their expectation, 95.8%, in a 95% interval of 90.5% to 98.2%. 0 sessions refused by the session itself.
-- control, `docs/probe-runs/campaign-of-2026-09-30-documentation-tier-absent-arm-sufficiency.md`: 46 of 120 graded sessions satisfied their expectation, 38.3%, in a 95% interval of 30.1% to 47.3%. 0 sessions refused by the session itself.
+- control, `docs/probe-runs/campaign-of-2026-09-30-documentation-tier-absent-arm-sufficiency.md`: 45 of 120 graded sessions satisfied their expectation, 37.5%, in a 95% interval of 29.4% to 46.4%. 0 sessions refused by the session itself.
 
-The difference is +57.5 points, in a 95% Newcombe interval of +47.1 points to +66.0 points. The interval is above zero, so the treated arm satisfied more often at the 5% level.
+The difference is +58.3 points, in a 95% Newcombe interval of +47.9 points to +66.8 points. The interval is above zero, so the treated arm satisfied more often at the 5% level.

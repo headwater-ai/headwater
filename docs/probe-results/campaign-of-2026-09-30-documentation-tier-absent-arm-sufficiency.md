@@ -26,7 +26,7 @@ The selection this transcript names is `sha256:1d93b514529314b74499196391c68b4b3
 
 The `read_set` digest above covers every probe of the selection and every document one of them examines, by path and content. This file names it as provenance and compares it with nothing, and the same holds for the lock and the selection: an edit to a document, a new probe or a moved lock leaves these bytes alone. `headwater generate` names each result whose recorded lock, read set or selection moved, and `headwater probe stale` takes the digest and reports which recorded results a change voided. Neither one fails for it.
 
-Graded by grader 0.5.2.
+Graded by grader 0.5.3.
 A documentation run in the absent arm, on claude-sonnet-5 at served version claude-sonnet-5.
 
 ## The verdicts
@@ -144,7 +144,7 @@ A documentation run in the absent arm, on claude-sonnet-5 at served version clau
     session L7-documentation-absent-p4-r24: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
     session L7-documentation-absent-p4-r25: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
     session L7-documentation-absent-p4-r26: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
-    session L7-documentation-absent-p4-r27: satisfied — event 110: `section.required.missing` reported nothing over `docs/spec/13-open-obligations.md`; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r27: not satisfied — event 110: `section.required.missing` reported over `docs/obligations/0223-claude-md-states-no-cost-for-the-standing-instructions-a-session-reads-before-any-work-starts.md`, 1 of the 2 produced artifacts inside the workspace; no call to a tool of an MCP server
     session L7-documentation-absent-p4-r28: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
     session L7-documentation-absent-p4-r29: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
     session L7-documentation-absent-p4-r3: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
@@ -160,7 +160,7 @@ A documentation run in the absent arm, on claude-sonnet-5 at served version clau
 
 ## The rate, and the denominator it is over
 
-46 of 120 graded sessions satisfied their expectation: 38.3%, in a 95% interval of 30.1% to 47.3%.
+45 of 120 graded sessions satisfied their expectation: 37.5%, in a 95% interval of 29.4% to 46.4%.
 The denominator is the graded sessions and never the selected probes. 0 sessions reached no verdict, and a session with no verdict is outside both halves of that fraction.
 
 An interval that overlaps the previous run's is variance and one that does not is drift. This is one arm, so it estimates no effect: an efficacy claim is a comparison of two results, and the arm each one recorded is on it.
@@ -170,13 +170,13 @@ An interval that overlaps the previous run's is variance and one that does not i
 What the documents change. The treated arm is the `campaign` absent arm and the control is the `documentation` absent arm. Both removed the governance, and only the control removed `docs/`, so this is the effect of the documents alone (spec 5).
 
 - treated, `docs/probe-runs/campaign-of-2026-09-30-campaign-tier-absent-arm-sufficiency.md`: 114 of 119 graded sessions satisfied their expectation, 95.8%, in a 95% interval of 90.5% to 98.2%. 0 sessions refused by the session itself.
-- control, `docs/probe-runs/campaign-of-2026-09-30-documentation-tier-absent-arm-sufficiency.md`: 46 of 120 graded sessions satisfied their expectation, 38.3%, in a 95% interval of 30.1% to 47.3%. 0 sessions refused by the session itself.
+- control, `docs/probe-runs/campaign-of-2026-09-30-documentation-tier-absent-arm-sufficiency.md`: 45 of 120 graded sessions satisfied their expectation, 37.5%, in a 95% interval of 29.4% to 46.4%. 0 sessions refused by the session itself.
 
-The difference is +57.5 points, in a 95% Newcombe interval of +47.1 points to +66.0 points. The interval is above zero, so the treated arm satisfied more often at the 5% level.
+The difference is +58.3 points, in a 95% Newcombe interval of +47.9 points to +66.8 points. The interval is above zero, so the treated arm satisfied more often at the 5% level.
 
 What the documents and the governance change together. The treated arm is a present arm and the control is the `documentation` absent arm.
 
 - treated, `docs/probe-runs/campaign-of-2026-09-30-campaign-tier-present-arm-sufficiency.md`: 114 of 119 graded sessions satisfied their expectation, 95.8%, in a 95% interval of 90.5% to 98.2%. 0 sessions refused by the session itself.
-- control, `docs/probe-runs/campaign-of-2026-09-30-documentation-tier-absent-arm-sufficiency.md`: 46 of 120 graded sessions satisfied their expectation, 38.3%, in a 95% interval of 30.1% to 47.3%. 0 sessions refused by the session itself.
+- control, `docs/probe-runs/campaign-of-2026-09-30-documentation-tier-absent-arm-sufficiency.md`: 45 of 120 graded sessions satisfied their expectation, 37.5%, in a 95% interval of 29.4% to 46.4%. 0 sessions refused by the session itself.
 
-The difference is +57.5 points, in a 95% Newcombe interval of +47.1 points to +66.0 points. The interval is above zero, so the treated arm satisfied more often at the 5% level.
+The difference is +58.3 points, in a 95% Newcombe interval of +47.9 points to +66.8 points. The interval is above zero, so the treated arm satisfied more often at the 5% level.
