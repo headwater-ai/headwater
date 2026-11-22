@@ -3578,7 +3578,7 @@ fn a_release_nested_past_the_bound_is_refused_and_leaves_nothing() {
 /// their number. The ceiling is wall time in the `dev` profile (no
 /// optimization), for the fetch, the unpack and the load together.
 ///
-/// 200,000 keys: RED_VENDOR before the fix, 0.63 s after, on the build host. Ceiling 6 s.
+/// 200,000 keys: 179.1 s before the fix, 0.63 s after, on the build host. Ceiling 6 s.
 #[cfg(feature = "fetch")]
 #[test]
 fn a_release_of_many_keys_is_refused_in_time_and_leaves_nothing() {

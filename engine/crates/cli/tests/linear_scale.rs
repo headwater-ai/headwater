@@ -76,7 +76,7 @@ fn assert_in_time(label: &str, text: &str, ceiling: Duration) -> Ran {
 /// Unknown front-matter keys, each one distinct. The loader searched every
 /// key already read for a duplicate of each new one.
 ///
-/// 160,000 keys: RED_KEYS before the fix, 0.72 s after. Ceiling 6 s.
+/// 160,000 keys: 118.8 s before the fix, 0.72 s after. Ceiling 6 s.
 #[test]
 fn many_unknown_front_matter_keys_check_in_linear_time() {
     let extra: String = (0..KEYS).map(|i| format!("k{i}: v\n")).collect();
@@ -92,7 +92,7 @@ fn many_unknown_front_matter_keys_check_in_linear_time() {
 /// its groups for each edge once for each edge-scoped rule, and the audit of
 /// the report searched every record for the record of each finding.
 ///
-/// 80,000 targets: RED_TARGETS before the fix, 9.2 s after. Ceiling 18 s.
+/// 80,000 targets: 246.4 s before the fix, 9.2 s after. Ceiling 18 s.
 #[test]
 fn many_unresolved_relation_targets_check_in_linear_time() {
     let targets: String = (0..TARGETS)
@@ -114,7 +114,7 @@ fn many_unresolved_relation_targets_check_in_linear_time() {
 /// Sentences in one paragraph. The sentence reader walked every run of the
 /// block, and counted the characters of each, for each position it asked.
 ///
-/// 10,000 sentences: RED_SENTENCES before the fix, 0.32 s after. Ceiling 6 s.
+/// 10,000 sentences: 122.5 s before the fix, 0.32 s after. Ceiling 6 s.
 #[test]
 fn many_sentences_in_one_paragraph_check_in_linear_time() {
     let body = "This is a sentence. ".repeat(SENTENCES);
@@ -129,7 +129,7 @@ fn many_sentences_in_one_paragraph_check_in_linear_time() {
 /// of the line for each column, and the sentence reader scanned every link
 /// of the body for each terminator.
 ///
-/// 160,000 links: RED_LINKS before the fix, 1.04 s after. Ceiling 6 s.
+/// 160,000 links: 66.7 s before the fix, 1.04 s after. Ceiling 6 s.
 #[test]
 fn many_links_on_one_line_check_in_linear_time() {
     let body = "[a](0001-the-warrant-a-person-set.md) ".repeat(LINKS);
