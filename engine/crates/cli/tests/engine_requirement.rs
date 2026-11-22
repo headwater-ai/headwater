@@ -609,6 +609,93 @@ fn a_later_refusal_of_the_load_carries_the_unmet_range_and_a_missing_lock_carrie
     }
 }
 
+/// The small corpus `tests/printed.rs` runs over, copied, with its
+/// declaration asking for an engine this is not.
+///
+/// It carries an import and a lock of its own, so a case can reach each
+/// refusal past the consumer declaration with one edit.
+fn base_asking_for_another_engine(label: &str) -> Root {
+    let at = std::env::temp_dir().join(format!(
+        "headwater-cli-engine-requirement-{}-{label}",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_dir_all(&at);
+    copy(
+        &Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures/printed/trees/base"),
+        &at,
+    );
+    let root = Root { at };
+    set_engine(&root.at, Some(">=99"));
+    root
+}
+
+/// Every refusal that comes after the consumer declaration read carries the
+/// unmet range, one case for each variant that can carry it (#1959).
+///
+/// The shell reports the range before it prints the refusal, so a variant that
+/// dropped it would print the refusal alone. The pinned-export variant is held
+/// above, and the three others here. The declaration case writes a lock whose
+/// digest matches a taxonomy that does not read, the way
+/// `a_lock_whose_taxonomy_does_not_read_is_refused_byte_for_byte` in
+/// `tests/printed.rs` does.
+#[test]
+fn every_refusal_past_the_consumer_declaration_carries_the_unmet_range() {
+    let upstream = "  upstream:\n    at: .headwater/imports/upstream\n    digest: \
+                    sha256:422187182abb3e25f9e4ec59b93080b4e436e471dd3fab017cc89e90aac10fcd\n    \
+                    channel: the release page of the publisher\n    resolver: upstream-snapshot\n";
+    let again = upstream.replace("  upstream:", "  again:");
+    for (case, added) in [
+        ("imports", "  broken: 3\n".to_string()),
+        ("ambiguous", again),
+    ] {
+        let root = base_asking_for_another_engine(&format!("carries-{case}"));
+        let path = root.at.join(".headwater/taxonomy.yml");
+        let text = std::fs::read_to_string(&path).expect("the declaration reads");
+        let text = text.replacen(upstream, &format!("{upstream}{added}"), 1);
+        assert!(
+            text.contains(&added),
+            "{case}: the import block takes the edit"
+        );
+        std::fs::write(&path, text).expect("the declaration writes");
+        match (case, opened(&root.at)) {
+            ("imports", Err(error @ headwater_api::LoadError::Imports { .. }))
+            | ("ambiguous", Err(error @ headwater_api::LoadError::AmbiguousResolvers { .. })) => {
+                assert_eq!(error.engine_unmet(), Some(">=99"), "{case}: {error}");
+            }
+            (_, Err(error)) => panic!("{case}: another refusal: {error}"),
+            (_, Ok(_)) => panic!("{case}: the load is refused"),
+        }
+    }
+
+    let root = base_asking_for_another_engine("carries-declaration");
+    let path = root.at.join(".headwater/taxonomy.lock");
+    let text = std::fs::read_to_string(&path).expect("the lock reads");
+    let kept: String = text
+        .split_inclusive('\n')
+        .filter(|kept| !kept.starts_with("      kind: answer"))
+        .collect();
+    let repinned = match headwater_lock::read(&kept) {
+        Err(headwater_lock::LockError::Tampered { declared, actual }) => {
+            kept.replace(&declared, &actual)
+        }
+        Err(other) => panic!("the edited lock is refused as tampered, not as: {other}"),
+        Ok(_) => panic!("the edited lock is refused as tampered"),
+    };
+    std::fs::write(&path, repinned).expect("the lock writes");
+    match opened(&root.at) {
+        Err(
+            error @ headwater_api::LoadError::Declaration {
+                what: "the taxonomy",
+                ..
+            },
+        ) => {
+            assert_eq!(error.engine_unmet(), Some(">=99"), "{error}");
+        }
+        Err(error) => panic!("a refusal of the taxonomy, not: {error}"),
+        Ok(_) => panic!("a taxonomy that does not read is refused"),
+    }
+}
+
 /// This repository asks for the engine it builds. A bump of the workspace
 /// version past the range fails here, and the release guide says to move the
 /// line in the same commit.
