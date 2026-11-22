@@ -2,12 +2,18 @@
 # What holds `tools/run/pre-pr.sh`: the steps run in the order the build
 # definition states, the first failure stops the rest and is named, a
 # conflict with `origin/main` is aborted and named, what the regenerate
-# moved is listed, and the main checkout and `main` are refused.
+# moved is listed, and the main checkout and `main` are refused. It also
+# holds the default fixture list to the suites CI runs: a tree with a crate
+# that has no row in `engine/README.md` fails pre-pr, and every fixture
+# script a workflow runs is in the default list or named in pre-pr.sh as
+# not run there, with a reason (#1995).
 #
 # Run it from anywhere:
 #     sh tools/run/pre-pr-fixtures.sh
 #
-# It needs `git` and nothing else. A bare origin, a main checkout and a
+# It needs `git`, `tar` and `cargo`: the README case runs the real
+# `tools/engine/engine-readme-fixtures.sh`, which calls
+# `cargo metadata --locked` once. A bare origin, a main checkout and a
 # builder's worktree live under a temporary directory. `HW_CARGO` names a
 # stub wrapper that logs what it was asked and fails on request,
 # `HEADWATER_ENGINE` a stub engine that logs, moves a file on `generate`
@@ -173,15 +179,87 @@ out=$(cd "$wt" && env -u HW_PRE_PR_FIXTURES sh "$tool" 7 2>&1); status=$?
 readme_log="$scratch/jobtmp/issue-7/pre-pr/tools-engine-engine-readme-fixtures.sh.log"
 same 'exit 1' 1 "$status"
 same '  and the FIXTURES line names the README suite' 'FIXTURES: failed: tools/engine/engine-readme-fixtures.sh' "$(printf '%s\n' "$out" | grep '^FIXTURES:')"
-same '  and its log fails the row judge' 1 "$(grep -c '^FAIL every crate in the tree has a row' "$readme_log" 2>/dev/null)"
+same '  and its log fails the row judge' 1 "$(grep -c '^ *FAIL  *every crate in the tree has a row$' "$readme_log" 2>/dev/null)"
 same '  and the log names the crate' 1 "$(grep -q 'nonesuch' "$readme_log" 2>/dev/null && echo 1 || echo 0)"
 rm -rf "$wt/engine" "$wt/tools"
 git -C "$wt" checkout -q -- docs/derived.md
 
-printf '\n# the default list holds the probe suites CI runs\n'
-# PR #1894 and #1902 each printed PRE-PR: ok and failed one of these in CI.
+printf '\n# every fixture suite CI runs is in the default list or excluded with a reason\n'
+# The default list is kept by hand, because CI runs suites that need a built
+# site, a browser, a release binary or minutes of run time. So pre-pr.sh names
+# each CI suite it does not run on a line `#   not run here: <path>  <reason>`,
+# and this judge reads both lists against the workflows. A new suite in CI
+# fails here until somebody puts it in one list or the other (#1995).
+#
+# ci_suites DIR: every fixture script a non-comment line of a workflow under
+# DIR runs, sorted and one per line.
+ci_suites() {
+    cat "$1"/*.yml | grep -v '^[[:space:]]*#' |
+        grep -oE '(\.claude|\.githooks|tools)/[A-Za-z0-9_./-]*fixtures\.sh' | LC_ALL=C sort -u
+}
+# default_suites TOOL: the default list of a copy of pre-pr.sh, one per line.
+default_suites() {
+    sed -n 's/^fixtures=\${HW_PRE_PR_FIXTURES:-"\(.*\)"}$/\1/p' "$1" | tr ' ' '\n' | grep . | LC_ALL=C sort
+}
+# exclusions TOOL: `<path><TAB><reason>` for each exclusion line.
+exclusions() {
+    awk '/^#   not run here: / {
+        path = $5; reason = $0
+        sub(/^#   not run here: [^ ]*/, "", reason)
+        gsub(/^[ \t]+|[ \t]+$/, "", reason)
+        printf "%s\t%s\n", path, reason
+    }' "$1"
+}
+# judge WORKFLOWS TOOL: one line per problem, nothing when the lists agree.
+judge() {
+    ci_suites "$1" > "$scratch/j-ci"
+    default_suites "$2" > "$scratch/j-default"
+    exclusions "$2" > "$scratch/j-excl"
+    cut -f1 "$scratch/j-excl" | LC_ALL=C sort > "$scratch/j-excluded"
+    LC_ALL=C sort -u "$scratch/j-default" "$scratch/j-excluded" > "$scratch/j-either"
+    LC_ALL=C comm -23 "$scratch/j-ci" "$scratch/j-either" | sed 's/^/neither: /'
+    LC_ALL=C comm -12 "$scratch/j-default" "$scratch/j-excluded" | sed 's/^/both: /'
+    LC_ALL=C uniq -d "$scratch/j-excluded" | sed 's/^/excluded twice: /'
+    LC_ALL=C comm -13 "$scratch/j-ci" "$scratch/j-excluded" | LC_ALL=C sort -u | sed 's/^/stale: /'
+    awk -F'\t' '$2 == "" { print "no reason: " $1 }' "$scratch/j-excl"
+    grep -E '[][*?]|/$' "$scratch/j-excluded" | sed 's/^/glob: /'
+}
+
+ci_count=$(ci_suites "$root/.github/workflows" | grep -c .)
+excl_count=$(exclusions "$tool" | grep -c .)
+default_count=$(default_suites "$tool" | grep -c .)
+same 'CI runs more than 50 fixture suites, so the workflow reader still matches' yes "$([ "$ci_count" -gt 50 ] && echo yes || echo "no, $ci_count")"
+same '  and pre-pr.sh names more than 40 exclusions, so the exclusion reader still matches' yes "$([ "$excl_count" -gt 40 ] && echo yes || echo "no, $excl_count")"
+same '  and the default list holds more than 5 suites, so its reader still matches' yes "$([ "$default_count" -gt 5 ] && echo yes || echo "no, $default_count")"
+same '  and the judge finds nothing on this tree' '' "$(judge "$root/.github/workflows" "$tool" | paste -sd'|' -)"
+
+# Provoked: each kind of drift is named.
+mkdir -p "$scratch/wf"
+cp "$root"/.github/workflows/*.yml "$scratch/wf/"
+printf '      - run: sh tools/x/nonesuch-fixtures.sh\n' >> "$scratch/wf/ci.yml"
+same 'a suite CI runs that is in neither list is named' 'neither: tools/x/nonesuch-fixtures.sh' "$(judge "$scratch/wf" "$tool" | grep nonesuch)"
+cp "$root"/.github/workflows/ci.yml "$scratch/wf/ci.yml"
+printf '#   not run here: tools/engine/engine-readme-fixtures.sh  in the default list too\n' > "$scratch/both.sh"
+cat "$tool" >> "$scratch/both.sh"
+same 'a suite in both lists is named' 'both: tools/engine/engine-readme-fixtures.sh' "$(judge "$scratch/wf" "$scratch/both.sh" | grep '^both:')"
+printf '#   not run here: tools/x/gone-fixtures.sh  CI stopped running it\n' > "$scratch/stale.sh"
+cat "$tool" >> "$scratch/stale.sh"
+same 'an exclusion CI no longer runs is named stale' 'stale: tools/x/gone-fixtures.sh' "$(judge "$scratch/wf" "$scratch/stale.sh" | grep '^stale:')"
+printf '#   not run here: tools/run/wait-for-fixtures.sh\n' > "$scratch/bare.sh"
+grep -v 'not run here: tools/run/wait-for-fixtures.sh ' "$tool" >> "$scratch/bare.sh"
+same 'an exclusion with no reason is named' 'no reason: tools/run/wait-for-fixtures.sh' "$(judge "$scratch/wf" "$scratch/bare.sh" | grep '^no reason:')"
+printf '#   not run here: tools/site/*-fixtures.sh  needs a built site\n' > "$scratch/glob.sh"
+cat "$tool" >> "$scratch/glob.sh"
+same 'an exclusion by glob is named' 'glob: tools/site/*-fixtures.sh' "$(judge "$scratch/wf" "$scratch/glob.sh" | grep '^glob:')"
+printf '#   not run here: tools/run/wait-for-fixtures.sh  twice\n' > "$scratch/twice.sh"
+cat "$tool" >> "$scratch/twice.sh"
+same 'an exclusion named twice is named' 'excluded twice: tools/run/wait-for-fixtures.sh' "$(judge "$scratch/wf" "$scratch/twice.sh" | grep '^excluded twice:')"
+
+printf '\n# the default list holds the suites CI runs that a green pre-pr once missed\n'
+# PR #1894 and #1902 each printed PRE-PR: ok and failed one of the probe
+# suites in CI, and #1959 (PR #1991) the engine README suite.
 defaults=$(sed -n 's/^fixtures=\${HW_PRE_PR_FIXTURES:-"\(.*\)"}$/\1/p' "$tool")
-for suite in tools/probe/probe-record-fixtures.sh tools/probe/oracle-fixtures.sh tools/probe/probe-oracle-fixtures.sh; do
+for suite in tools/probe/probe-record-fixtures.sh tools/probe/oracle-fixtures.sh tools/probe/probe-oracle-fixtures.sh tools/engine/engine-readme-fixtures.sh; do
     case " $defaults " in
         *" $suite "*) pass "the default fixture list runs $suite" ;;
         *) fail "the default fixture list runs $suite" "it is not in \`$defaults\`" ;;
