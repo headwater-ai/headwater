@@ -2607,6 +2607,46 @@ fn a_spent_record_behind_an_unspent_one_is_not_claimed_twice() {
     );
 }
 
+/// The audit of a report with many records on one document takes time in
+/// proportion to the records, not to their square (#1968).
+///
+/// One live finding is repeated until the document has `MANY_RECORDS` records
+/// of one rule. The audit searched the records of that path from the first for
+/// each finding, past every record already claimed, so a large report took
+/// time in proportion to the square of its records. Every record is still
+/// claimed once.
+///
+/// 40,000 records: MAIN before the fix, AFTER after, on the build host in the
+/// `dev` profile. Ceiling CEIL.
+#[test]
+fn many_records_on_one_document_are_audited_in_linear_time() {
+    const MANY_RECORDS: usize = 40_000;
+    let ran = fixture_run();
+    let (rule, path) = a_repeated_pair(&ran);
+    let one = ran
+        .run
+        .findings
+        .iter()
+        .find(|finding| finding.rule == rule && finding.path == path)
+        .expect("the repeated pair is in the findings")
+        .clone();
+    let mut run = ran.run.clone();
+    let before = run.findings.len();
+    run.findings.extend(std::iter::repeat_n(one, MANY_RECORDS));
+    let artifact = render_run(&run, &ran, Format::Text);
+    let started = std::time::Instant::now();
+    let audit = headwater_adapter::census(&run, Format::Text, &artifact);
+    let took = started.elapsed();
+    eprintln!("the audit of {} records took {took:?}", audit.findings);
+    assert!(audit.findings > before + MANY_RECORDS / 2);
+    assert_eq!((audit.carried, audit.unaccounted.len()), (audit.findings, 0));
+    assert!(
+        took < std::time::Duration::from_secs(600),
+        "the audit of {} records took {took:?}",
+        audit.findings
+    );
+}
+
 /// An artifact emptied of its finding records carries none of them, in every
 /// format.
 ///
