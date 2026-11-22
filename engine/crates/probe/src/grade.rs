@@ -2208,7 +2208,12 @@ mod tests {
 
     #[test]
     fn an_absolute_path_in_either_form_is_outside_the_workspace() {
-        for outside in ["/tmp/x.rs", "\\\\server\\x.rs", "C:\\Temp\\x.rs", "c:/temp/x.rs"] {
+        for outside in [
+            "/tmp/x.rs",
+            "\\\\server\\x.rs",
+            "C:\\Temp\\x.rs",
+            "c:/temp/x.rs",
+        ] {
             assert!(is_outside(outside), "{outside}");
         }
         for inside in ["docs/x.md", "x", "a:b.md", ".headwater/overlay.yml"] {
