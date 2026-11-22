@@ -130,6 +130,52 @@ if dispatches_agent "$scratch/hw-build.md" headwater-maintainer; then
 else
     pass 'and a build stage without the maintainer dispatch is reported'
 fi
+# A builder that the harness gave no Agent tool cannot dispatch the maintainer,
+# so it says so in its block, and the loop agent runs the pass in its place
+# before the verify; `/next` says to start from a top-level session, which keeps
+# the Agent tool in the builder's hands (#1998). Each line is held here.
+if grep -qF 'UPKEEP: not run, no Agent tool' "$agents/hw-build.md"; then
+    pass 'hw-build.md states the no-Agent upkeep line'
+else
+    fail 'hw-build.md states the no-Agent upkeep line' 'no `UPKEEP: not run, no Agent tool` in .claude/agents/hw-build.md'
+fi
+sed 's/UPKEEP: not run, no Agent tool/UPKEEP: skipped/g' "$agents/hw-build.md" > "$scratch/hw-build-upkeep.md"
+if grep -qF 'UPKEEP: not run, no Agent tool' "$scratch/hw-build-upkeep.md"; then
+    fail 'a build stage without the no-Agent upkeep line is reported' 'the scratch copy still states it'
+else
+    pass 'and a build stage without the no-Agent upkeep line is reported'
+fi
+iterate_runs_upkeep() {
+    dispatches_agent "$1" headwater-maintainer && grep -qF 'UPKEEP: not run' "$1"
+}
+if iterate_runs_upkeep "$agents/hw-iterate.md"; then
+    pass 'hw-iterate.md dispatches headwater-maintainer when upkeep did not run'
+else
+    fail 'hw-iterate.md dispatches headwater-maintainer when upkeep did not run' 'no `headwater-maintainer` span or no `UPKEEP: not run` trigger in .claude/agents/hw-iterate.md'
+fi
+sed 's/`headwater-maintainer`/the maintainer/g' "$agents/hw-iterate.md" > "$scratch/hw-iterate-upkeep.md"
+if iterate_runs_upkeep "$scratch/hw-iterate-upkeep.md"; then
+    fail 'a loop agent without the maintainer dispatch is reported' 'the scratch copy still names it'
+else
+    pass 'and a loop agent without the maintainer dispatch is reported'
+fi
+sed 's/UPKEEP: not run/UPKEEP: absent/g' "$agents/hw-iterate.md" > "$scratch/hw-iterate-trigger.md"
+if iterate_runs_upkeep "$scratch/hw-iterate-trigger.md"; then
+    fail 'a loop agent without the upkeep trigger is reported' 'the scratch copy still names it'
+else
+    pass 'and a loop agent without the upkeep trigger is reported'
+fi
+if grep -qF 'top-level session' "$commands/next.md"; then
+    pass 'next.md says to run from a top-level session'
+else
+    fail 'next.md says to run from a top-level session' 'no `top-level session` in .claude/commands/next.md'
+fi
+sed 's/top-level session/session/g' "$commands/next.md" > "$scratch/next.md"
+if grep -qF 'top-level session' "$scratch/next.md"; then
+    fail 'a /next without the top-level rule is reported' 'the scratch copy still states it'
+else
+    pass 'and a /next without the top-level rule is reported'
+fi
 
 # --- 2. every skill an agent invokes is a skill on this tree ------------------
 
