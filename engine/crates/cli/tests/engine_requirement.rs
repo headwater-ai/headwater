@@ -434,6 +434,35 @@ fn an_engine_value_that_is_not_one_range_is_refused() {
     }
 }
 
+/// An engine outside the range is reported before a refusal that comes later
+/// in the same load, and the refusal still prints (#1959).
+///
+/// The report comes as soon as the consumer declaration reads, so a corpus
+/// that asks for another engine and then fails to load says both, in that
+/// order. Standard error is held byte for byte, and it names this engine, so
+/// it is built here and not recorded in `fixtures/printed/`.
+#[test]
+fn an_unmet_engine_is_reported_before_a_later_refusal_of_the_same_load() {
+    let root = Root::new("engine-requirement-then-refused");
+    set_engine(&root.at, Some(">=99"));
+    let path = root.at.join(headwater_resolve::package::CONSUMER);
+    let text = std::fs::read_to_string(&path).expect("the declaration reads");
+    std::fs::write(&path, format!("{text}\nharvests: 3\n")).expect("the declaration writes");
+    let ran = root.run(&["check"]);
+    assert_eq!(ran.code, Some(1), "{ran:?}");
+    assert_eq!(ran.out, "", "{ran:?}");
+    assert_eq!(
+        ran.err,
+        format!(
+            "headwater: this corpus asks for engine \">=99\" in {consumer}, and this is engine \
+             {engine}\nheadwater: the pinned export declarations did not read\n  `harvests` in \
+             `{consumer}` is a scalar, and it is a mapping of pinned exports by name\n\n",
+            consumer = headwater_resolve::package::CONSUMER,
+            engine = release::ENGINE,
+        )
+    );
+}
+
 /// This repository asks for the engine it builds. A bump of the workspace
 /// version past the range fails here, and the release guide says to move the
 /// line in the same commit.
