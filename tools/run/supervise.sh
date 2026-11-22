@@ -78,16 +78,18 @@
 # holds every stop with a stub `claude`, so no fixture calls a model. The
 # loop leaves no process behind: a signal to it ends the session it started.
 #
-# Before each session it fast-forwards the main checkout, the one the
-# worktree's git dir is nested under, to `origin/main`, and prints
-# `FAST-FORWARD: main at <sha>` or `FAST-FORWARD: skipped, <reason>`. The
-# move was the integrator's, after each merge, in a serial slot that cost
-# every run one stage's wait per pull request; here it costs nothing, and
-# the checkout is never touched while a session runs. The move matters
-# because `core.hooksPath` is absolute to that checkout: a stale one runs
-# stale hooks under every worktree. It is skipped, and said, when the
-# checkout is not on `main`, is not clean, or cannot fetch; it never
-# rebases, resets or stashes. HW_SUPERVISE_FF=0 turns it off.
+# Before each session it runs `tools/run/fast-forward-main.sh` on the tree,
+# which fast-forwards the main checkout, the one the worktree's git dir is
+# nested under, to `origin/main`, and prints `FAST-FORWARD: main at <sha>` or
+# `FAST-FORWARD: skipped, <reason>`. `run-dir.sh start` runs the same script
+# for the first session, so the move has one copy (#1997). The move was the
+# integrator's, after each merge, in a serial slot that cost every run one
+# stage's wait per pull request; here it costs nothing, and the checkout is
+# never touched while a session runs. The move matters because
+# `core.hooksPath` is absolute to that checkout: a stale one runs stale hooks
+# under every worktree. It is skipped, and said, when the checkout is not on
+# `main`, is not clean, or cannot fetch; it never rebases, resets or stashes.
+# HW_SUPERVISE_FF=0 turns it off here, and the stale check still runs.
 
 set -u
 
@@ -161,33 +163,13 @@ handovers_open() {
         || [ -n "$(sh "$rundir_tool" integrations "$run" 2>/dev/null)" ]
 }
 
-# The main checkout is the directory whose `.git` is the worktree's common
-# dir. It moves only by a fast-forward, only on `main`, only when clean.
+# The move itself is tools/run/fast-forward-main.sh, which run-dir.sh start
+# calls too, so there is one copy of it. Its line is printed whatever its
+# exit status: a skip here is said, and the stale check below decides.
 fast_forward() {
     [ "${HW_SUPERVISE_FF:-1}" != 0 ] || { echo "FAST-FORWARD: skipped, HW_SUPERVISE_FF=0"; return 0; }
-    main=${gitcommon%/.git}
-    if [ -z "$gitcommon" ] || [ "$main" = "$gitcommon" ] || [ ! -d "$main" ]; then
-        echo "FAST-FORWARD: skipped, $tree is not a worktree of a main checkout"
-        return 0
-    fi
-    branch=$(git -C "$main" symbolic-ref --short -q HEAD)
-    if [ "$branch" != main ]; then
-        echo "FAST-FORWARD: skipped, $main is on \`${branch:-a detached HEAD}\`, not main"
-        return 0
-    fi
-    if [ -n "$(git -C "$main" status --porcelain 2>/dev/null)" ]; then
-        echo "FAST-FORWARD: skipped, $main is not clean"
-        return 0
-    fi
-    if ! git -C "$main" fetch -q origin 2>/dev/null; then
-        echo "FAST-FORWARD: skipped, fetch from origin failed"
-        return 0
-    fi
-    if git -C "$main" merge -q --ff-only origin/main >/dev/null 2>&1; then
-        echo "FAST-FORWARD: main at $(git -C "$main" rev-parse --short HEAD)"
-    else
-        echo "FAST-FORWARD: skipped, $main does not fast-forward to origin/main"
-    fi
+    sh "$root/tools/run/fast-forward-main.sh" "$tree"
+    return 0
 }
 
 start_merges=$(merges)
