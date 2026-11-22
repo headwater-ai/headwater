@@ -60,7 +60,7 @@ A relation that declares `created_by: author` is yours to type into the front ma
 
 These are the behaviors that pressure to be helpful breaks first, so they are stop conditions rather than preferences.
 
-1. **No decision record with no external evidence.** If no work item, commit, discussion or measurement supports it, halt and ask. Where the human confirms that none exists, record the document as unevidenced. A fabricated rationale is worse than an admitted absence, because somebody will cite it.
+1. **No decision record with no evidence.** A ruling that the person states in the conversation is evidence for the record. Record who ruled and when, in the provenance or the rationale as the kind's facets and sections allow, and continue. Halt and ask only when neither the conversation nor a work item, commit, discussion or measurement supports the decision. Where the human confirms that none exists, record the document as unevidenced. A fabricated rationale is worse than an admitted absence, because somebody will cite it.
 2. **No hand edit to a generated file.** Change the source and run `headwater generate`.
 3. **No new shelf, kind or facet invented in place.** That is a taxonomy change, and the `headwater-taxonomy` skill owns it.
 4. **No second copy of a fact that exists elsewhere.** Link to it. Where the target is hard to find, repair its summary.
@@ -81,4 +81,4 @@ Neither is worked around. Hand both to the `headwater-taxonomy` skill, which own
 Errors must reach zero before a commit. `headwater check --fix` writes the corrections the engine derives without judgment — a British spelling, a contraction whose expansion is one word, a retired term that names a replacement, and a missing reciprocal half — and it leaves every finding whose remedy is a rewrite. Read the diff.
 
 **An edit to a document that a probe reads moves no committed result.** A result pins only what its transcript read, so it keeps its bytes and every verdict. The next `headwater generate` names each result whose read set moved, and `headwater probe stale` names the results the edit reached. Neither one fails for it.
-<!-- installed by headwater init --harness, digest sha256:e688def66e493b101ec0427effc0f4fa8bd09efaf49d2f7ce9f88ed6e17485ec -->
+<!-- installed by headwater init --harness, digest sha256:1a1a9d5a6e53bdd3bd7cfa06171b5dc8a6a0777598ed1a7cf7b833c0f5431cee -->

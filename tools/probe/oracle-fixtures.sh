@@ -608,6 +608,31 @@ expect 0 "nothing-else-broken with a summary-not line passes the literal moved o
 expect 0 "nothing-else-broken with a summary-not line passes the literal kept only in a commented summary" "$work/summary-commented" nothing-else-broken.sh "$work/scoped-summary-not"
 { cat "$work/scoped"; printf '# summary-not: %s\n' "$new"; } > "$work/scoped-summary-not-bad"
 expect 2 "nothing-else-broken refuses a summary-not line with no literal" "$base" nothing-else-broken.sh "$work/scoped-summary-not-bad"
+# `# summary-any: <path> <variant>|<variant>|...` names one concept that the
+# repair keeps, in any of the words a sound repair can use. It passes when
+# the parsed summary holds one variant, with case ignored. A task that asks a
+# session to keep the meaning of a sentence is graded on the meaning, and a
+# literal grades the words (#1978). It reads the parsed summary as
+# `# summary:` does, so a comment, a body line or another key keeps nothing.
+{ cat "$work/scoped"; printf '# summary-any: %s %s\n' "$new" 'no summary holds these words|held-out numbers'; } > "$work/scoped-any"
+expect 0 "nothing-else-broken passes the pin when the summary holds one variant of a summary-any line" "$base" nothing-else-broken.sh --check-clean "$work/scoped-any"
+{ cat "$work/scoped"; printf '# summary-any: %s %s\n' "$new" 'no summary holds these words|nor these'; } > "$work/scoped-any-absent"
+expect 1 "nothing-else-broken with a summary-any line fails a summary that holds no variant" "$base" nothing-else-broken.sh "$work/scoped-any-absent"
+{ cat "$work/scoped"; printf '# summary-any: %s %s\n' "$new" 'PHASE B REPORTS HELD-OUT'; } > "$work/scoped-any-case"
+expect 0 "nothing-else-broken with a summary-any line ignores case" "$base" nothing-else-broken.sh "$work/scoped-any-case"
+{ cat "$work/scoped-any"; printf '# summary-any: %s %s\n' "$new" 'no summary holds these words'; } > "$work/scoped-any-two"
+expect 1 "nothing-else-broken with two summary-any lines fails when one of them holds no variant" "$base" nothing-else-broken.sh "$work/scoped-any-two"
+expect 1 "nothing-else-broken with a summary-any line fails the clause moved out of the summary into the body" "$work/summary-body-line" nothing-else-broken.sh "$work/scoped-any"
+expect 1 "nothing-else-broken with a summary-any line fails a summary that only a comment holds, above a shorter one" "$work/summary-commented" nothing-else-broken.sh "$work/scoped-any"
+expect 1 "nothing-else-broken with a summary-any line fails the clause moved into another key" "$work/summary-other-key" nothing-else-broken.sh "$work/scoped-any"
+{ cat "$work/scoped"; printf '# summary-any: %s\n' "$new"; } > "$work/scoped-any-bad"
+expect 2 "nothing-else-broken refuses a summary-any line with no variant" "$base" nothing-else-broken.sh "$work/scoped-any-bad"
+for empty in 'held-out||numbers' '|held-out' 'held-out|'; do
+    { cat "$work/scoped"; printf '# summary-any: %s %s\n' "$new" "$empty"; } > "$work/scoped-any-empty"
+    expect 2 "nothing-else-broken refuses a summary-any line with an empty variant, \`$empty\`" "$base" nothing-else-broken.sh "$work/scoped-any-empty"
+done
+{ cat "$work/scoped"; printf '# summary-any:\n'; } > "$work/scoped-any-nopath"
+expect 2 "nothing-else-broken refuses a summary-any line with no path" "$base" nothing-else-broken.sh "$work/scoped-any-nopath"
 { cat "$work/scoped"; printf '# keep: %s %s\n' "$new" "$summary_clause"; } > "$work/scoped-keep"
 expect 2 "nothing-else-broken refuses the keep line of round 3, which matched lines of a file" "$base" nothing-else-broken.sh "$work/scoped-keep"
 

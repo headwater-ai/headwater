@@ -44,7 +44,9 @@
 # set `more_wrong` to the names of more functions, separated by spaces, and
 # each is one more wrong change that must exit 1, such as a session that
 # writes the answer only in a comment, or deletes what it was asked to
-# repair (#1874.3).
+# repair (#1874.3). A case file may set `more_sound` in the same way, and
+# each is one more sound change that must exit 0, such as a session that
+# keeps the meaning of a sentence in other words (#1978).
 #
 # It prints, as one line, what `headwater check --strict` exits over the
 # grading tree, because every `--check-clean` oracle assumes that a sealed
@@ -257,6 +259,7 @@ while IFS="$(printf '\t')" read -r id oracle; do
     needs_cargo=no
     reference_recorded=""
     more_wrong=""
+    more_sound=""
     # shellcheck disable=SC1090 # the case file of this oracle
     . "$case_file"
     if [ "$needs_cargo" = yes ] && [ "$cargo" = no ]; then
@@ -272,6 +275,10 @@ while IFS="$(printf '\t')" read -r id oracle; do
     run_case 1 "$key: the wrong change fails" "$key" "$command" wrong
     for extra in $more_wrong; do
         run_case 1 "$key: the wrong change \`$extra\` fails" "$key" "$command" "$extra"
+        unset -f "$extra" 2> /dev/null
+    done
+    for extra in $more_sound; do
+        run_case 0 "$key: the sound change \`$extra\` passes" "$key" "$command" "$extra"
         unset -f "$extra" 2> /dev/null
     done
     unset -f reference wrong 2> /dev/null
