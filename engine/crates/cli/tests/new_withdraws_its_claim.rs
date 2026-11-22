@@ -140,15 +140,12 @@ impl Root {
             "the other claimant's record is untouched"
         );
         assert!(
-            refused
-                .err
-                .contains(&format!("The claim {SECOND_CLAIM} this run wrote was removed.")),
+            refused.err.contains(&format!(
+                "The claim {SECOND_CLAIM} this run wrote was removed."
+            )),
             "the message names the claim it removed\n{refused:?}"
         );
-        assert!(
-            !refused.err.contains("could not be removed"),
-            "{refused:?}"
-        );
+        assert!(!refused.err.contains("could not be removed"), "{refused:?}");
     }
 
     fn mints_the_second(&self) {
