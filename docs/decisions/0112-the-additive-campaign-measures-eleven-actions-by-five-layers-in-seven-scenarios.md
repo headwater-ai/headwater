@@ -84,6 +84,8 @@ Each probe has a value on each circumstance axis, and each result notes it. This
 
 Three axes are deferred and recorded as debt: corpus size, tasks outside anything a document governs, and an adopter's own repository.
 
+Added on 2026-11-22 by #1882. Phase B was the last paid session of the campaign, so each axis now has its record. Corpus size is [HW-OBL-0243](../obligations/0243-the-additive-campaign-measured-the-actions-at-one-corpus-size-and-no-run-measures-them-as-a-corpus-grows.md). Tasks outside anything a document governs is [HW-OBL-0244](../obligations/0244-the-additive-campaign-measured-no-action-on-a-target-that-no-document-governs.md). An adopter's own repository is [HW-OBL-0245](../obligations/0245-the-additive-campaign-ran-on-this-repository-alone-and-no-run-measures-the-actions-in-an-adopter-s-own-repository.md).
+
 ### The probe set
 
 The set has 11 actions × (2 tuning + 2 held-out) = 44 probes. Each probe is tagged with its action and the hook moments it passes through. Rows 2–9 and 11 pass or fail by a mechanical oracle. Rows 1 and 10 pass or fail by the grader. A probe for rows 2–9 with no mechanical oracle is refused from the set.
@@ -121,6 +123,14 @@ Row 11 has two conditions. The `oracle:` facet names the oracle over the tree. `
 `tools/probe/oracle-fixtures.sh` runs each script over a tree that it must pass and a tree that it must fail. An oracle that passes both trees, or fails both, fails CI. The pilot of #1835 found probes of each kind.
 
 `tools/probe/probe-oracle-fixtures.sh` runs the oracle of each probe in a sealed grading tree, in three fresh copies. The tree as it stands must fail, the reference change must pass, and the wrong change must fail. The two changes for each oracle are in `tools/probe/oracle-cases/<name>.sh`, which names its probe, so the seal removes it.
+
+Added on 2026-11-22 by #1882. #1875 gave each session an oracle record. `tools/probe/campaign.sh` writes `sessions/<name>/oracles`, with one line for each command oracle of the declaration: the name, the verdict and one line of evidence. `tools/probe/try.sh result` reads that verdict as the pass of a probe that has an oracle.
+
+An evidence line names identifiers and paths, so it can carry an answer out of a sealed session. `tools/probe/seal.sh --evidence` checks each evidence field for an answer key of the probe of the session. It reads the answer keys only, and never `leaks:`. An evidence line that names a ruling is the oracle doing its work, and a check of `leaks:` would refuse the evidence of a probe that passes.
+
+When a field holds an answer key, `campaign.sh` writes `refused` in place of the evidence and keeps the verdict. It writes each hit to `sessions/<name>/oracles.refused`. When the check cannot run, `campaign.sh` writes `unchecked` in every evidence field of the record, because the campaign keeps no evidence that nobody checked.
+
+`try.sh result` prints one line for each probe of the try, in its `result.md`. A probe with an oracle gets the verdict of the oracle, with the count of the grader beside it, and the line ends `disagree` when the two counts differ. Every other probe gets the count of the grader. A try recorded before #1875 has no oracle record, so its lines say so and give the count of the grader.
 
 ### The form of a phrasing
 
@@ -185,6 +195,8 @@ The count that #1882 states is as follows. Each count is of the failures that a 
 The numbered-heading defect stays. The second phrasing of that probe never names the bare form of the heading that its hidden test reads. A repair changes the held-out set, so it waits for a later campaign, and #1979 keeps it open.
 
 The published table carries the held-out number of each row. The skills, hooks and MCP columns carry the pooled layer result from phase A, and a per-cell indication marked unconfirmed. No tuning-probe cell table is bought.
+
+Added on 2026-11-22 by #1882. The table was published on 2026-11-22, in [the evaluation of phase B](../evaluations/what-the-additive-campaign-measured-for-the-eleven-actions-headwater-supports.md). The ten regraded transcripts of phase B are on the probe-run shelf, with `round: final`, and each one has a result page.
 
 ### The keep rule
 
