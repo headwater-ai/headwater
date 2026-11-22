@@ -31,8 +31,11 @@ reported as its own claim and never read as a defect earlier. Nothing after step
 
 **The first block is the one command this script does not run.** It installs the
 engine from a release download, which is not a claim about the engine's output. The
-runner supplies a built binary on `PATH` instead, and the tutorial's own check
-for that block is the one assertion kept.
+runner supplies a binary on `PATH` instead, and the tutorial's own check for
+that block is the one assertion kept. In release mode (`HEADWATER_TUTORIAL_RELEASE=1`,
+which CI sets) `fixtures.sh` supplies the binary from the archive that block
+downloads, and the version it prints must be the version the page installs
+(#1985).
 
 Run it through `.claude/tutorial/fixtures.sh`, which locates the binary.
 """

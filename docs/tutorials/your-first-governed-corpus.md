@@ -483,7 +483,7 @@ docs/decisions/0002-deliver-at-least-once.md
 
 **Check.** The first line of that output is the path of the document whose identifier you named.
 
-Every word this tutorial taught is on that screen at once. There you read the shelf, the kind, the facets, the sections, the relations and both halves of the edge. The line from ACME-DR-0001 names the relation as that document wrote it, `superseded_by`, and the line to it names the relation as this document wrote it, `supersedes`. This is the verb to reach for before you open a file.
+Every word this tutorial taught is on that screen at once. There you read the shelf, the kind, the facets, the sections, the relations and both halves of the edge. The line to ACME-DR-0001 names the relation as this document wrote it, `supersedes`. The line from it names the relation as that document wrote it, `superseded_by`. This is the verb to reach for before you open a file.
 
 ### Step 15 — Ask a question in your own words
 
