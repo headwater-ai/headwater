@@ -760,7 +760,9 @@ fn the_first_stop_rule_of_the_authoring_skill_counts_a_ruling_stated_in_the_conv
     ] {
         let item = first_stop_rule(path).to_lowercase();
         for phrase in [
-            "ruling that the person states in the conversation is evidence",
+            // Through the full stop, so that a condition appended to the
+            // sentence fails the case rather than narrowing the rule unseen.
+            "ruling that the person states in the conversation is evidence for the record.",
             "who ruled and when",
             "only when neither the conversation nor",
             "halt",
