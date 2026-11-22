@@ -126,11 +126,11 @@ Row 11 has two conditions. The `oracle:` facet names the oracle over the tree. `
 
 Added on 2026-11-22 by #1882. #1875 gave each session an oracle record. `tools/probe/campaign.sh` writes `sessions/<name>/oracles`, with one line for each command oracle of the declaration: the name, the verdict and one line of evidence. `tools/probe/try.sh result` reads that verdict as the pass of a probe that has an oracle.
 
-An evidence line names identifiers and paths, so it can carry an answer out of a sealed session. `tools/probe/seal.sh --evidence` checks each evidence field for an answer key of the probe of the session. It reads the answer keys only, and never `leaks:`. An evidence line that names a ruling is the oracle doing its work, and a check of `leaks:` would refuse the evidence of a probe that passes.
+An evidence line names identifiers and paths, so it can carry an answer out of a sealed session. `tools/probe/seal.sh --evidence` checks each evidence field for an answer key of the probe of the session. It reads the answer keys only, and never `leaks:`. An evidence line that names a ruling is the oracle doing its work. A check of `leaks:` would refuse the evidence of a probe that passes.
 
 When a field holds an answer key, `campaign.sh` writes `refused` in place of the evidence and keeps the verdict. It writes each hit to `sessions/<name>/oracles.refused`. When the check cannot run, `campaign.sh` writes `unchecked` in every evidence field of the record, because the campaign keeps no evidence that nobody checked.
 
-`try.sh result` prints one line for each probe of the try, in its `result.md`. A probe with an oracle gets the verdict of the oracle, with the count of the grader beside it, and the line ends `disagree` when the two counts differ. Every other probe gets the count of the grader. A try recorded before #1875 has no oracle record, so its lines say so and give the count of the grader.
+`try.sh result` prints one line for each probe of the try, in its `result.md`. A probe with an oracle gets the verdict of the oracle, with the count of the grader beside it. The line ends `disagree` when the two counts differ. Every other probe gets the count of the grader. A try recorded before #1875 has no oracle record, so its lines say so and give the count of the grader.
 
 ### The form of a phrasing
 

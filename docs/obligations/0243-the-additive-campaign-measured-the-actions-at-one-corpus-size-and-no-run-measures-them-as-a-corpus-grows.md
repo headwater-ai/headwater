@@ -2,7 +2,7 @@
 id: HW-OBL-0243
 status: current
 status_since: 2026-11-22
-summary: "Phase B of the additive campaign ran every probe on this repository at one size, so nothing says whether the pass rate of an action holds in a larger or smaller corpus."
+summary: "Phase B of the additive campaign ran every probe on this repository at one size. Nothing says whether the rate of an action holds in a larger or smaller corpus."
 last_verified: 2026-11-22
 title: "The additive campaign measured the actions at one corpus size and no run measures them as a corpus grows"
 waiting_on: measurement
@@ -25,4 +25,4 @@ The corpus owes a measurement of how the pass rate of an action changes with the
 
 ## Discharge
 
-This record discharges when a run measures at least one row of the evaluation on two corpora of different size, with the same probes and the same layers. The run must state each size and the difference between the rates, with its interval.
+This record discharges when a run measures at least one row of the evaluation on two corpora of different size. The probes and the layers must be the same. The run must state each size and the difference between the rates, with its interval.

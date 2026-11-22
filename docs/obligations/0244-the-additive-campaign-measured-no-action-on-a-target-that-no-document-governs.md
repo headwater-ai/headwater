@@ -2,7 +2,7 @@
 id: HW-OBL-0244
 status: current
 status_since: 2026-11-22
-summary: "Every probe of rows 1 to 10 of the additive campaign points at a target that a document governs, so nothing says how the layers change an action where no document applies."
+summary: "Every probe of rows 1 to 10 of the additive campaign points at a governed target. Nothing says how the layers change an action where no document applies."
 last_verified: 2026-11-22
 title: "The additive campaign measured no action on a target that no document governs"
 waiting_on: measurement
@@ -21,8 +21,8 @@ relations:
 
 ## Obligation
 
-The corpus owes a measurement of how the layers change an action whose target no document governs. Rows 1 to 10 each point at a governed target, so each one measures the layers where a document applies. The ungoverned control row measures only that the layers do no harm, and not whether a session completes a governed action type on an ungoverned target.
+The corpus owes a measurement of how the layers change an action whose target no document governs. Rows 1 to 10 each point at a governed target, so each one measures the layers where a document applies. The ungoverned control row measures only that the layers do no harm. It does not measure one of the other actions on an ungoverned target.
 
 ## Discharge
 
-This record discharges when a run measures at least one of rows 1 to 10 on targets that no document governs, against the same row on governed targets. The run must state both rates and the difference, with its interval.
+This record discharges when a run measures at least one of rows 1 to 10 on targets that no document governs. The run compares it with the same row on governed targets. The run must state both rates and the difference, with its interval.

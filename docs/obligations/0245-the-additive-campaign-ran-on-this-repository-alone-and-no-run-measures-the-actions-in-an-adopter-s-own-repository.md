@@ -2,7 +2,7 @@
 id: HW-OBL-0245
 status: current
 status_since: 2026-11-22
-summary: "Phase B of the additive campaign measured the eleven actions on this repository and its own taxonomy, so no number says what an adopter gets in a repository typed by its own taxonomy."
+summary: "Phase B of the additive campaign measured the eleven actions on this repository alone. No number says what an adopter gets in a repository typed by its own taxonomy."
 last_verified: 2026-11-22
 title: "The additive campaign ran on this repository alone and no run measures the actions in an adopter's own repository"
 waiting_on: adopter
@@ -25,4 +25,4 @@ The corpus owes a measurement of the eleven actions in a repository that an adop
 
 ## Discharge
 
-This record discharges when a run measures at least one row of the evaluation in a repository that is not this one, typed by its owner. The run must state the repository, the rate and the comparison with the same row here.
+This record discharges when a run measures at least one row of the evaluation in another repository. The owner of that repository typed it. The run must state the repository, the rate and the comparison with the same row here.
