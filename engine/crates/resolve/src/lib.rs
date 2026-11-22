@@ -265,8 +265,15 @@ impl Resolution {
         // projection does (#1758), because the author has to find the line
         // (#1967). Every other refusal keeps the source it was raised with.
         for refusal in &mut refusals {
+            let contained = matches!(
+                refusal.kind,
+                error::ResolveErrorKind::Invalid {
+                    rule: "projection targets",
+                    ..
+                }
+            );
             let path: Vec<String> = refusal.at.split('.').map(str::to_string).collect();
-            if path.len() == 3 && path[0] == "shelves" && path[2] == "path" {
+            if contained && path.len() == 3 && path[0] == "shelves" && path[2] == "path" {
                 let owner = value_owner(&self.base, &self.operations, &path);
                 if let Some(name) = owner.and_then(|index| self.sources.get(index)) {
                     refusal.source = name.clone();
