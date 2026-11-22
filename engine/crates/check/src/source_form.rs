@@ -127,6 +127,8 @@ impl OutsideCheck for SourceForm {
 impl DocumentCheck for SourceForm {
     const RULE: &'static str = self::RULE;
     /// The first edition of this rule.
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 1;
     /// The body, because the soft breaks are on the blocks the scan produced.
     /// Nothing here reads a sentence.

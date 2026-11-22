@@ -150,6 +150,8 @@ impl CorpusCheck for StateSetTwice<'_> {
     ///
     /// 2 from #1137: a marked file that no output of the projection plan
     /// claims is no longer read.
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 2;
     const NEEDS_GRAPH: bool = true;
     const NEEDS_ORPHANED: bool = true;

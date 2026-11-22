@@ -8,7 +8,7 @@
 
 *Recorded on 2026-09-30 with engine 0.5.0. This is a frozen recording, so the output of a later engine can differ from it. `.github/assets/headwater-demo.tape` records it again.*
 
-**Start here: [Your first governed corpus](docs/tutorials/your-first-governed-corpus.md).** Sixteen steps from an empty directory to a passing check, and it teaches the model rather than the commands. Every step states what you should now see, and `sh .claude/tutorial/fixtures.sh` runs the page against the engine in CI so that no output block on it can go stale quietly. That page, and the rest of the `docs/` tree, is rendered at <https://headwater.tools/>. The specification itself is indexed at [`docs/spec/README.md`](docs/spec/README.md), which `headwater generate` writes from the documents themselves in the reading order this corpus derives from its own relations.
+**Start here: [Your first governed corpus](https://headwater.tools/tutorials/your-first-governed-corpus/)** ([source in this repository](docs/tutorials/your-first-governed-corpus.md)). Sixteen steps from an empty directory to a passing check, and it teaches the model rather than the commands. Every step states what you should now see. In CI, `HEADWATER_TUTORIAL_RELEASE=1 sh .claude/tutorial/fixtures.sh` runs the page against the release it installs. So no output block on it can go stale quietly. That page, and the rest of the `docs/` tree, is rendered at <https://headwater.tools/>. The specification itself is indexed at [`docs/spec/README.md`](docs/spec/README.md), which `headwater generate` writes from the documents themselves in the reading order this corpus derives from its own relations.
 
 ## Obtaining a named version
 
@@ -62,7 +62,7 @@ The binary alone gets you the rest of the way there, with nothing else required.
 
 **What each engine release carries.** `.github/workflows/release.yml` attaches three archives to every tag whose name starts with `v`, each beside a checksum for `sha256sum -c`, and each archive holds the `headwater` binary and the license. `headwater-<tag>-x86_64-unknown-linux-musl.tar.gz` is a static Linux build that needs no particular C library, beside `headwater-<tag>-x86_64-unknown-linux-musl.tar.gz.sha256`. `headwater-<tag>-aarch64-apple-darwin.tar.gz` is for macOS on Apple silicon, beside `headwater-<tag>-aarch64-apple-darwin.tar.gz.sha256`. `headwater-<tag>-x86_64-unknown-linux-gnu.tar.gz` is `x86_64` Linux built on `ubuntu-24.04`, so it needs glibc 2.39 or later, beside `headwater-<tag>-x86_64-unknown-linux-gnu.tar.gz.sha256`. The workflow runs the musl and the macOS archives on a host that did not build them and has no Rust toolchain, and it creates no release until both run. `v0.2.0` is the first tag that carries all three. `v0.1.2` carries the glibc archive alone, and `v0.1.1` carries none after its release collided with an immutable release object. [The releases page](https://github.com/headwater-ai/headwater/releases) is where you see which tags carry a binary.
 
-The tutorial installs from the same release download as the first block above, and it names `cargo install` only as the alternative. It pins the version it downloads, and CI runs every other block of the tutorial against the engine on the default branch.
+The tutorial installs from the same release download as the first block above, and it names `cargo install` only as the alternative. It pins the version it downloads. CI downloads that same release and runs every other block of the tutorial against it, not against the engine on the default branch.
 
 ## Status
 

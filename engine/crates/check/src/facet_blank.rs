@@ -150,6 +150,8 @@ impl Blank {
 impl DocumentCheck for Blank {
     const RULE: &'static str = self::RULE;
     /// See [`crate::placement::Placement::VERSION`].
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 1;
     /// No emitter target. A JSON Schema `minLength` would carry the empty-text
     /// family and nothing of the other two: a schema reading YAML through a

@@ -544,7 +544,7 @@ TODO write this section.</pre>
     <div class="stepgrid">
       <div>
         <h2><span class="n">09</span>Check again, and read the difference</h2>
-        <p class="prose">The corpus did not grow. The count of checks that ran went from 8 to 23, because a typed document is a document that rules can reach. That is the whole trade this system asks for: type a document, and fifteen more questions become answerable about it.</p>
+        <p class="prose">The corpus did not grow. The count of checks that ran went from 8 to 22, because a typed document is a document that rules can reach. That is the whole trade this system asks for: type a document, and fourteen more questions become answerable about it.</p>
         <p class="check"><span class="checkword">Check</span> <span><code>headwater check 2&gt;/dev/null | grep 'check instances'</code> prints the second block above.</span></p>
       </div>
       <div>
@@ -554,7 +554,7 @@ TODO write this section.</pre>
   1 files under the corpus root
         1 typed
         1 typed decision</pre>
-          <pre class="out verbatim">  1 seen, 1 classified, 1 checked, 23 check instances</pre>
+          <pre class="out verbatim">  1 seen, 1 classified, 1 checked, 22 check instances</pre>
           <p class="trimnote">Output trimmed to the lines that matter — the full run prints more.</p>
       </div>
     </div>
@@ -630,8 +630,8 @@ git commit -m "A first governed corpus"</pre>
         <p class="prose">Open <code>docs/decisions/0002-deliver-at-least-once.md</code>. Change <code>status: draft</code> to <code>status: current</code>. A document states the state it will hold once your change lands, so a decision you propose as settled is <code>current</code>.</p>
         <p class="prose">The new decision is live now, so the far half is owed. One edge has one end.</p>
         <p class="prose">Read the identifier in parentheses. An <strong>obligation</strong> is a claim this system makes about itself, with the rule that verifies it named beside it. <code>OB-REL-1</code> is the obligation that this rule discharges, and every finding names the one it serves.</p>
-        <p class="prose"><strong>One of those readings is about the package and one is about your run.</strong> The obligations and their severities come from <code>headwater/standard</code>. They read the same on your first day and on your thousandth. The last line is derived from the run in front of you. It names every rule that fired at you with no obligation behind it. Most rules carry one, which is what makes the identifier in your finding worth reading.</p>
-        <p class="prose">One rule is named there. <code>facet.value.blank</code> reports a facet a document declares and leaves empty, and no control in <code>headwater/standard</code> names it yet. HW-OBL-0170 records that debt. A finding it raises is a true finding, and the line above is how a report tells you which of its rules answers to nothing.</p>
+        <p class="prose"><strong>One of those readings is about the package and one is about your run.</strong> The obligations and their severities come from <code>headwater/standard</code>. They read the same on your first day and on your thousandth. The lines below the register come from the rules of the run in front of you. Each line names a rule that has no obligation behind it. Most rules carry one, which is what makes the identifier in your finding worth reading.</p>
+        <p class="prose">The block shows the first of those lines, and the run prints more lines after it. The first rule named there is <code>facet.value.blank</code>. It reports a facet a document declares and leaves empty, and no control in <code>headwater/standard</code> names it yet. HW-OBL-0170 records that debt. A finding it raises is a true finding, and these lines are how a report tells you which of its rules answers to nothing.</p>
         <p class="prose"><strong>Your corpus will not show you a gap, and the reason is worth knowing.</strong> A <code>gap</code> is a disposition that a package author writes, with an owner, for an obligation that no mechanism verifies. The base package declares none, so this row reads <code>0 gap</code> on every run of yours and no step here moves it. Headwater's own corpus takes a bundle that declares obligations that no mechanism verifies. The same block there shows <code>gap</code> and <code>unverifiable</code> counts above zero, and it names the owner of each gap. To read the current counts, run <code>headwater check 2&gt;/dev/null | grep 'obligations:'</code> in a clone of Headwater. The number worth watching is the one that is not <code>verified</code>.</p>
         <p class="prose">The word <code>mechanical</code> on the fix line is the second thing to read. A rule is an error when the repair takes no judgment, and advisory when the repair is a rewrite. This one takes no judgment, so the next step is a command rather than an edit.</p>
         <p class="check"><span class="checkword">Check</span> <span><code>headwater check --strict &gt; /dev/null 2&gt;&amp;1; echo $?</code> prints <code>1</code>. <code>headwater check 2&gt;/dev/null | grep 'obligations:'</code> prints the <code>37 obligations:</code> line of the register block above, and nothing else.</span></p>
@@ -697,7 +697,7 @@ git commit -m "A first governed corpus"</pre>
     <div class="stepgrid">
       <div>
         <h2><span class="n">14</span>Ask the engine what it knows about one document</h2>
-        <p class="prose">Every word this tutorial taught is on that screen at once. There you read the shelf, the kind, the facets, the sections, the relations and both halves of the edge. Each edge line reads from this document, so the line from ACME-DR-0001 also says <code>supersedes</code>, although that document wrote <code>superseded_by</code>. This is the verb to reach for before you open a file.</p>
+        <p class="prose">Every word this tutorial taught is on that screen at once. There you read the shelf, the kind, the facets, the sections, the relations and both halves of the edge. The line to ACME-DR-0001 names the relation as this document wrote it, <code>supersedes</code>. The line from it names the relation as that document wrote it, <code>superseded_by</code>. This is the verb to reach for before you open a file.</p>
         <p class="check"><span class="checkword">Check</span> <span>The first line of that output is the path of the document whose identifier you named.</span></p>
       </div>
       <div>
@@ -721,9 +721,9 @@ git commit -m "A first governed corpus"</pre>
   may declare traces_to to governed_document, code_path
   to ACME-DR-0001 supersedes — The queue keeps every delivery attempt in
     Postgres. (the target's own summary) [this document governs the reading]
-  from docs/decisions/0001-store-attempts-in-postgres.md supersedes — The queue
-    keeps every delivery attempt in Postgres. (the target's own summary) [this
-    document governs the reading]</pre>
+  from docs/decisions/0001-store-attempts-in-postgres.md superseded_by — The
+    queue keeps every delivery attempt in Postgres. (the target's own summary)
+    [this document governs the reading]</pre>
       </div>
     </div>
   </div>

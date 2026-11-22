@@ -2382,10 +2382,20 @@ jobs:
       - name: The tutorial says what a reader will see, and this sees it
         # `docs/tutorials/your-first-governed-corpus.md` states, after every one
         # of its sixteen steps, what the reader should now see. Each of those is
-        # a claim about this engine, copied into prose, and prose does not
+        # a claim about an engine, copied into prose, and prose does not
         # re-derive. This step is the verb that produces them: it reads the
         # commands out of the document, runs them against a scratch repository,
         # and diffs each result against the block the document prints.
+        #
+        # The engine is the release the page installs, and not the build of
+        # this branch (#1985). `HEADWATER_TUTORIAL_RELEASE=1` makes the script
+        # read the tag out of the page's own download line, download that
+        # Linux archive and its `.sha256` file from the release, verify it and
+        # drive its binary, and require that `headwater --version` prints the
+        # version the page names. So a change on the default branch to an
+        # output the page shows waits for the next release, and step 9 of
+        # `docs/process/how-to/cut-a-release.md` moves the page then. Step 3
+        # of the page already reaches github.com, so this adds no new host.
         #
         # It blocks. A newcomer who follows a page that no longer matches the
         # engine concludes that the tool is broken rather than the page, and the
@@ -2397,6 +2407,7 @@ jobs:
         # first, for the next step (#977).
         env:
           HEADWATER_TUTORIAL_KEEP: ${{ runner.temp }}/tutorial-corpus
+          HEADWATER_TUTORIAL_RELEASE: '1'
         run: sh .claude/tutorial/fixtures.sh
       - name: The site guide builds the tutorial corpus, its last step holds the site, and a missing page fails it
         # `docs/how-to/publish-your-corpus-as-a-site.md` tells an adopter how

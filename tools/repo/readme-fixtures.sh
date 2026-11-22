@@ -5953,5 +5953,103 @@ apt_planted "  an install page with a second, bare cargo block is refused" "$car
     1 "$(cargo_bare_count "$scratch/cargo-locked/second.html")"
 
 echo
+echo "the tutorial URL the README names is a page of the site"
+
+# Group 15 (#1985). The README's "Start here" line sends a newcomer to the
+# tutorial on the site, at the URL below, and links the file in this
+# repository beside it. A page that moves on the site breaks that link with no
+# change to the README, so three files hold the URL together:
+#
+#   - THE DECISIVE CASE: the "Start here" line carries the URL. A README that
+#     drops it, or names another page, is red.
+#   - the URL is a page of the site: `mkdocs.yml` builds `docs/` with
+#     directory URLs, so the path maps to `docs/<path>.md`, and the step of
+#     `ci.yml` that assembles the site requires `<path>/index.html` in what it
+#     deploys. That step reads a file and never a status code, and its comment
+#     says why.
+#   - the live site answers it: the `tutorial-site` job of
+#     `.github/workflows/install-routes.yml` fetches the URL every day and
+#     fails on anything but 200. No pull request runs that workflow
+#     (HW-PD-0012), so this group reads its text, and group 14 holds that its
+#     report job needs the job.
+#   - the tutorial step of `ci.yml` drives the release the page installs: its
+#     `env:` sets `HEADWATER_TUTORIAL_RELEASE: '1'`, which the README's "Start
+#     here" line and its tutorial-pin sentence state. Without it the step
+#     drives the branch's own engine and the README is false.
+tutorial_url='https://headwater.tools/tutorials/your-first-governed-corpus/'
+
+# tutorial_release_judge CI — nothing when the step that runs
+# `.claude/tutorial/fixtures.sh` sets the switch in its own `env:`.
+tutorial_release_judge() {
+    awk '/^      - name: The tutorial says what a reader will see/ { s = 1; next }
+         s && /^      - name:/ { s = 0 }
+         s && /^[ \t]*#/ { next }
+         s && /^          HEADWATER_TUTORIAL_RELEASE: .1.[ \t]*$/ { env = 1 }
+         s && /^        run: sh \.claude\/tutorial\/fixtures\.sh[ \t]*$/ { run = 1 }
+         END { if (!(env && run)) print "the tutorial step of ci.yml does not run fixtures.sh with HEADWATER_TUTORIAL_RELEASE set to 1" }' "$1"
+}
+
+# tutorial_url_judge README CI ROUTES DOCS — one line for each way the three
+# files fail to hold the URL, and nothing when they hold it.
+tutorial_url_judge() {
+    _path=${tutorial_url#https://headwater.tools/}
+    _path=${_path%/}
+    grep '^\*\*Start here: ' "$1" | grep -qF "($tutorial_url)" ||
+        echo "the Start here line of the README does not link $tutorial_url"
+    [ -f "$4/$_path.md" ] ||
+        echo "the site builds no page at $tutorial_url, because docs/$_path.md is not a file"
+    grep -qE "^[ ]+for path in $_path/index\\.html " "$2" ||
+        echo "the assembled-site step of ci.yml does not require $_path/index.html"
+    _job=$(awk '/^  tutorial-site:[ \t]*$/ { s = 1; next } s && /^  [A-Za-z0-9_-]+:[ \t]*$/ { s = 0 } s && !/^[ \t]*#/' "$3")
+    printf '%s\n' "$_job" | grep -qF "/$_path/" ||
+        echo "no tutorial-site job of install-routes.yml fetches $tutorial_url"
+    printf '%s\n' "$_job" | grep -qF "\"\$code\" != 200" ||
+        echo "the tutorial-site job of install-routes.yml does not fail on a status other than 200"
+}
+
+url_ci="$root/.github/workflows/ci.yml"
+url_routes="$root/.github/workflows/install-routes.yml"
+same "  the README, the site and the daily job hold the tutorial URL" \
+    "" "$(tutorial_url_judge "$readme" "$url_ci" "$url_routes" "$root/docs")"
+mkdir -p "$scratch/tutorial-url/docs"
+sed 's|(https://headwater.tools/tutorials/your-first-governed-corpus/)|(docs/tutorials/your-first-governed-corpus.md)|' "$readme" >"$scratch/tutorial-url/repo-only.md"
+same "  a README whose Start here line links the repository file alone is red" \
+    "the Start here line of the README does not link $tutorial_url" \
+    "$(tutorial_url_judge "$scratch/tutorial-url/repo-only.md" "$url_ci" "$url_routes" "$root/docs")"
+sed 's|https://headwater.tools/tutorials/your-first-governed-corpus/|https://headwater.tools/tutorials/|' "$readme" >"$scratch/tutorial-url/other-page.md"
+same "  a README that links another page of the site is red" \
+    "the Start here line of the README does not link $tutorial_url" \
+    "$(tutorial_url_judge "$scratch/tutorial-url/other-page.md" "$url_ci" "$url_routes" "$root/docs")"
+same "  a docs tree with no tutorial document is red" \
+    "the site builds no page at $tutorial_url, because docs/tutorials/your-first-governed-corpus.md is not a file" \
+    "$(tutorial_url_judge "$readme" "$url_ci" "$url_routes" "$scratch/tutorial-url/docs")"
+sed 's|for path in tutorials/your-first-governed-corpus/index.html |for path in |' "$url_ci" >"$scratch/tutorial-url/ci.yml"
+same "  an assembled-site step that no longer requires the tutorial page is red" \
+    "the assembled-site step of ci.yml does not require tutorials/your-first-governed-corpus/index.html" \
+    "$(tutorial_url_judge "$readme" "$scratch/tutorial-url/ci.yml" "$url_routes" "$root/docs")"
+sed '/^  tutorial-site:/,/^  report:/{/^  report:/!d}' "$url_routes" >"$scratch/tutorial-url/no-job.yml"
+same "  an install-routes.yml with no tutorial-site job is red" \
+    "no tutorial-site job of install-routes.yml fetches $tutorial_url
+the tutorial-site job of install-routes.yml does not fail on a status other than 200" \
+    "$(tutorial_url_judge "$readme" "$url_ci" "$scratch/tutorial-url/no-job.yml" "$root/docs")"
+sed '/^  tutorial-site:/,/^  report:/s/"\$code" != 200/"$code" = 000/' "$url_routes" >"$scratch/tutorial-url/any-code.yml"
+same "  a tutorial-site job that passes on any status but 000 is red" \
+    "the tutorial-site job of install-routes.yml does not fail on a status other than 200" \
+    "$(tutorial_url_judge "$readme" "$url_ci" "$scratch/tutorial-url/any-code.yml" "$root/docs")"
+same "  the tutorial step of ci.yml drives the release the page installs" "" "$(tutorial_release_judge "$url_ci")"
+grep -v "^          HEADWATER_TUTORIAL_RELEASE: '1'$" "$url_ci" >"$scratch/tutorial-url/no-switch.yml"
+same "  a tutorial step without the switch is red" \
+    "the tutorial step of ci.yml does not run fixtures.sh with HEADWATER_TUTORIAL_RELEASE set to 1" \
+    "$(tutorial_release_judge "$scratch/tutorial-url/no-switch.yml")"
+sed "s/^          HEADWATER_TUTORIAL_RELEASE: '1'$/          HEADWATER_TUTORIAL_RELEASE: '0'/" "$url_ci" >"$scratch/tutorial-url/switch-off.yml"
+same "  a tutorial step that sets the switch to 0 is red" \
+    "the tutorial step of ci.yml does not run fixtures.sh with HEADWATER_TUTORIAL_RELEASE set to 1" \
+    "$(tutorial_release_judge "$scratch/tutorial-url/switch-off.yml")"
+sed "s/^          HEADWATER_TUTORIAL_RELEASE: '1'$/          # HEADWATER_TUTORIAL_RELEASE: '1'/" "$url_ci" >"$scratch/tutorial-url/switch-comment.yml"
+same "  a tutorial step whose switch is commented out is red" \
+    "the tutorial step of ci.yml does not run fixtures.sh with HEADWATER_TUTORIAL_RELEASE set to 1" \
+    "$(tutorial_release_judge "$scratch/tutorial-url/switch-comment.yml")"
+
+echo
 echo "$passed passed, $failed failed"
 [ "$failed" -eq 0 ]

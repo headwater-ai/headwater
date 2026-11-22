@@ -180,6 +180,8 @@ impl<'a> Retention<'a> {
 impl CorpusCheck for Retention<'_> {
     const RULE: &'static str = self::RULE;
     /// The first edition of this rule.
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 1;
     /// The paths the change named that this corpus holds no row at, which is
     /// the only reading of a departed document available to a check.
