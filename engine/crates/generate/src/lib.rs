@@ -1168,6 +1168,43 @@ fn count(how_many: usize, noun: &str) -> String {
     }
 }
 
+/// A file the census could not read, carried so that the run names it.
+///
+/// No projection holds a document the census could not read, so every output
+/// is silent about it, and a run that printed nothing about the file left the
+/// author with no word of why it is missing from an index (#1966). The report
+/// names it, as `headwater check` does. It never enters
+/// [`Report::has_errors`]: the gate on an unreadable file is the check's, and
+/// a run that writes nothing for it has written what the corpus derives.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct UnreadableDocument {
+    /// Relative to the repository root, with `/` separators.
+    pub path: String,
+    /// Why the census could not read it, with the line and column where the
+    /// reader gave one.
+    pub detail: String,
+}
+
+impl UnreadableDocument {
+    /// Every unreadable row of the census, in its order.
+    pub fn of(census: &Census) -> Vec<UnreadableDocument> {
+        census
+            .rows
+            .iter()
+            .filter(|row| {
+                matches!(
+                    row.outcome,
+                    headwater_census::census::Outcome::Unreadable(_)
+                )
+            })
+            .map(|row| UnreadableDocument {
+                path: row.path.clone(),
+                detail: row.outcome.detail(),
+            })
+            .collect()
+    }
+}
+
 /// Everything one run would write, and everything it would not.
 #[derive(Clone, Debug, Default)]
 pub struct Plan {
@@ -1189,6 +1226,8 @@ pub struct Plan {
     /// because one of them holds more than one transcript. See
     /// [`AmbiguousArms`].
     pub ambiguous_arms: Vec<AmbiguousArms>,
+    /// Files the census could not read. See [`UnreadableDocument`].
+    pub unreadable: Vec<UnreadableDocument>,
     /// Marked files inside the corpus root that no output claims. Empty for a
     /// plan that covers a subset of the declarations, because a subset cannot
     /// tell a file it does not write from a file nobody writes: see
@@ -1274,7 +1313,10 @@ pub fn plan(
     runs: &Runs,
     verbs: &[headwater_verbs::Verb],
 ) -> Plan {
-    let mut plan = Plan::default();
+    let mut plan = Plan {
+        unreadable: UnreadableDocument::of(census),
+        ..Plan::default()
+    };
     // A `site_nav` reads the outputs of every other declaration, so it runs
     // after all of them rather than in its turn. See the second loop below.
     let mut navs: Vec<&Declaration> = Vec::new();
@@ -1702,6 +1744,9 @@ pub struct Report {
     /// Carried from the plan, for the reason `refused` is. See
     /// [`AmbiguousArms`].
     pub ambiguous_arms: Vec<AmbiguousArms>,
+    /// Carried from the plan, for the reason `refused` is. It never enters
+    /// [`Report::has_errors`]. See [`UnreadableDocument`].
+    pub unreadable: Vec<UnreadableDocument>,
     /// Marked files no declaration writes. An error in both directions of the
     /// verb: `generate` does not delete files, so writing the plan does not
     /// clear one.
@@ -1905,6 +1950,19 @@ impl Report {
         // Before the two sections below. A result whose transcript was refused
         // is not drift and it is not an unwritten projection: the file is
         // exactly what this corpus derives, and what is wrong is the corpus.
+        if !self.unreadable.is_empty() {
+            out.push('\n');
+            out.push_str(&paint(Role::Heading, "unreadable documents", mode));
+            out.push('\n');
+            for unreadable in &self.unreadable {
+                out.push_str(&format!(
+                    "  {}\n",
+                    paint(Role::Path, &unreadable.path, mode)
+                ));
+                out.push_str(&dim(&format!("    {}", unreadable.detail), mode));
+                out.push('\n');
+            }
+        }
         if !self.refused.is_empty() {
             out.push('\n');
             out.push_str(&paint(Role::Heading, "refused transcripts", mode));
@@ -2176,6 +2234,7 @@ fn run(root: &Path, plan: &Plan, mode: Mode) -> Report {
         moved_since_recording: plan.moved_since_recording.clone(),
         defective_arms: plan.defective_arms.clone(),
         ambiguous_arms: plan.ambiguous_arms.clone(),
+        unreadable: plan.unreadable.clone(),
         producer,
         ..Report::default()
     };
@@ -2536,6 +2595,10 @@ mod paint_tests {
                 ],
                 absent: vec!["docs/probe-runs/campaign-absent-a.md".to_string()],
                 components: Vec::new(),
+            }],
+            unreadable: vec![UnreadableDocument {
+                path: "docs/decisions/0002-too-deep.md".to_string(),
+                detail: "front matter: 3:513: collections nest more than 256 deep".to_string(),
             }],
             orphaned: vec![Orphaned {
                 path: "docs/stale-index.md".to_string(),
