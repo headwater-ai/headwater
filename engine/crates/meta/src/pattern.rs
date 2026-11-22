@@ -672,7 +672,9 @@ mod tests {
                     single.source()
                 );
             }
-            // The collapse is not visible to a reader of the pattern.
+            // The collapse leaves one `**` for the search to try, and it is
+            // not visible to a reader of the pattern.
+            assert_eq!(repeated.segments, single.segments);
             assert_eq!(repeated.specificity(), single.specificity());
             assert!(repeated.source().contains("**/**"));
         }
@@ -691,8 +693,13 @@ mod tests {
         let pattern = Pattern::new(&many_any_depth(20, "nomatch"));
         let path = format!("docs/{}file.md", "d/".repeat(39));
         assert_eq!(path.split('/').count(), 41);
+        // The collapse makes the twenty one `**`, so the case that holds the
+        // memo puts a literal that every path segment matches between them.
+        let interleaved = Pattern::new(&format!("docs/{}nomatch", "**/x/".repeat(20)));
+        let all_x = format!("docs/{}file.md", "x/".repeat(39));
         let started = std::time::Instant::now();
         assert!(!pattern.matches(&path));
+        assert!(!interleaved.matches(&all_x));
         assert!(started.elapsed() < std::time::Duration::from_secs(1));
     }
 
