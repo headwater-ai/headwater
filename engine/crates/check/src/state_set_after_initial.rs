@@ -184,9 +184,9 @@ impl EdgeCheck for SetAfterInitial<'_> {
         let state_name = self.facet.name.as_deref().unwrap_or_default();
         let (line, column) = at(source_facets.key_span(state_name));
         let advice = match first_settled(regime, &self.facet) {
-            Some(settled) => format!(
-                "if the replacement is settled, set `{state_name}` to `{settled}`"
-            ),
+            Some(settled) => {
+                format!("if the replacement is settled, set `{state_name}` to `{settled}`")
+            }
             None => format!(
                 "no state that `{source_state}` may move to in regime `{}` is live, so no state \
                  to set is named here",
