@@ -4,7 +4,7 @@
 //! unpacks.
 //!
 //! The first case holds the bound on the whole fetch: before #1971 the client
-//! set no timeout, and a vendor against a silent server waited for ever. The
+//! set no timeout, and a vendor against a silent server waited forever. The
 //! second holds the sweep: a vendor killed while it unpacks leaves its
 //! temporary directory behind, and the next vendor removes it.
 //! Every server here listens on 127.0.0.1, and the suite reaches no other host.
