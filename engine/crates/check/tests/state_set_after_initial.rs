@@ -49,8 +49,13 @@ fn fixtures_dir() -> PathBuf {
 
 /// One run over the fixture tree and the taxonomy of the same name.
 fn run() -> Run {
-    let corpus = Corpus::new(fixtures_dir(), TREE);
-    let source = std::fs::read_to_string(fixtures_dir().join(format!("{TREE}.taxonomy.yml")))
+    run_over(TREE)
+}
+
+/// One run over `tree` and the taxonomy of the same name.
+fn run_over(tree: &str) -> Run {
+    let corpus = Corpus::new(fixtures_dir(), tree);
+    let source = std::fs::read_to_string(fixtures_dir().join(format!("{tree}.taxonomy.yml")))
         .expect("the fixture taxonomy");
     let root = headwater_yaml::load(&source)
         .expect("the fixture taxonomy loads")
@@ -72,8 +77,8 @@ fn run() -> Run {
         &corpus,
         &config,
     );
-    let lock = format!("sha256:{TREE}-fixture");
-    let source = format!("engine/crates/check/fixtures/{TREE}.taxonomy.yml");
+    let lock = format!("sha256:{tree}-fixture");
+    let source = format!("engine/crates/check/fixtures/{tree}.taxonomy.yml");
     headwater_check::run(
         &taken,
         &graph,
@@ -274,4 +279,36 @@ fn the_neighboring_rule_reports_exactly_its_four_targets() {
             "state-not-set-by-edge/notes/unstamped-target.md",
         ]
     );
+}
+
+/// A second tree, with a copy of the same taxonomy, whose sources stand past
+/// their initial state. The neighboring tree has none over a live target, because
+/// there the neighbor would report each one and move its count of four.
+const SOURCES: &str = "state-set-after-initial-sources";
+
+/// A source that left its initial state has nothing pending, whether it is
+/// live or not: a deprecated and a superseded source over a `current` target
+/// stay silent, and the draft control in the same tree is warned. A gate that
+/// passed only live sources would warn the two terminal ones (#1973, round 1).
+#[test]
+fn a_source_past_its_initial_state_is_silent_whatever_its_standing() {
+    let run = run_over(SOURCES);
+    let reported: Vec<&str> = findings(&run, RULE)
+        .iter()
+        .map(|finding| finding.path.as_str())
+        .collect();
+    assert_eq!(
+        reported,
+        vec!["state-set-after-initial-sources/notes/draft-source.md"]
+    );
+    let ours: Vec<_> = run
+        .instances
+        .iter()
+        .filter(|instance| instance.rule == RULE)
+        .collect();
+    let passed = ours
+        .iter()
+        .filter(|instance| matches!(instance.outcome, Outcome::Passed))
+        .count();
+    assert_eq!(passed, 2, "{ours:#?}");
 }
