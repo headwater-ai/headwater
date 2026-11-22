@@ -45,7 +45,7 @@ The subsystem has four parts:
 - `verbs` holds the list of every verb and every second word, with the words that a caller reads about each one.
 - `cli` holds the parser, the help, the color and width of the text, the body of each verb, and the Mermaid renderer of `headwater taxonomy graph`.
 - `paint` holds the palette and the pure functions that apply it.
-- `api` holds one load of a corpus as a value, with no `clap` and no `headwater-fetch`. `cli` is the one crate that calls it, for each verb whose body loads a corpus. It returns a refusal and an unmet engine range as values, and `cli` prints them.
+- `api` holds one load of a corpus as a value, with no `clap` and no `headwater-fetch`. `cli` calls it for each verb whose body loads a corpus. It returns a refusal and an unmet engine range as values, and `cli` prints them.
 
 Other documents state what a caller gets, and this spec does not repeat them:
 
@@ -127,7 +127,7 @@ Two JSON files hold no record line: `.claude/settings.json` and `.mcp.json`. `me
 
 `dispatch` sends each `Verb` to a function in `main.rs`. That function calls the library crates that do the work and writes the result through `emit`.
 
-A verb that reads a corpus loads it through `headwater_api::Session::open`, or through `Session::against` when the verb already holds a taxonomy. Each one returns `Result<Session, LoadError>` and writes nothing to a stream. A refusal and an unmet engine range are values in `LoadError`. The shell prints them: `shown` in `main.rs` turns the result into a session or an exit status, and `print_refusal` writes the refusal.
+A verb that loads a corpus does so through `headwater_api::Session::open`, or through `Session::against` when the verb already holds a taxonomy. Each one returns `Result<Session, LoadError>` and writes nothing to a stream. A refusal is a value of `LoadError`. The unmet engine range is a value too, in the refusal or from `Session::engine_unmet`. The shell prints them: `shown` in `main.rs` turns the result into a session or an exit status, and `print_refusal` writes the refusal.
 
 Put the load and the body of a new verb in a library crate, and not in `main.rs`. The load goes in `headwater-api`. `MAIN_RS_LINES` in `engine/crates/cli/tests/verbs.rs` is the most lines that `main.rs` can hold. No change raises it, and each change that moves code out of `main.rs` lowers it to the new count. [HW-OBL-0138](../obligations/0138-the-rest-of-the-editorial-pass-with-cli-src-main-rs-at-the-head-of-the-distribution.md) records that `main.rs` is the file at the head of the editorial pass that the corpus still owes.
 
