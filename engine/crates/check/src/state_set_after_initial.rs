@@ -292,6 +292,32 @@ mod tests {
         assert_eq!(first_settled(&regime, &facet()), Some("current"));
     }
 
+    /// The account names each deferral and drops the silent line, says the
+    /// silent line only where nothing composed and nothing deferred, and says
+    /// nothing about a finding of another rule.
+    #[test]
+    fn the_fix_account_names_each_deferral_and_otherwise_the_silent_line() {
+        let finding = |rule: &'static str| Finding {
+            rule,
+            severity: Severity::Warn,
+            obligation: None,
+            path: "notes/draft.md".to_string(),
+            line: 3,
+            column: 1,
+            message: "the message".to_string(),
+            remediation: String::new(),
+            patch: None,
+        };
+        let silent = "headwater: no finding of this run carries a patch\n";
+        assert_eq!(fix_account(&[], true), silent);
+        assert_eq!(fix_account(&[], false), "");
+        assert_eq!(fix_account(&[finding("another.rule")], true), silent);
+        let deferred = "headwater: deferred notes/draft.md: the target's state and the far half \
+                        are written once it leaves its initial state. the message\n";
+        assert_eq!(fix_account(&[finding(RULE)], true), deferred);
+        assert_eq!(fix_account(&[finding(RULE)], false), deferred);
+    }
+
     /// An initial state with no live exit names nothing.
     #[test]
     fn no_live_exit_names_nothing() {
