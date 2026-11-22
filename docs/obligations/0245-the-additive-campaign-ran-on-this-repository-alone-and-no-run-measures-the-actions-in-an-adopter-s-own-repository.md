@@ -17,7 +17,7 @@ relations:
 
 ## Context
 
-[HW-DR-0112](../decisions/0112-the-additive-campaign-measures-eleven-actions-by-five-layers-in-seven-scenarios.md#the-circumstance-axes) names three circumstance axes that the additive campaign defers and records as debt. An adopter's own repository is the third. The campaign said to record them after its last paid session, and phase B on #1881 was that session. [the evaluation of phase B](../evaluations/what-the-additive-campaign-measured-for-the-eleven-actions-headwater-supports.md) states each row on this repository, with its own taxonomy and its own documents.
+[HW-DR-0112](../decisions/0112-the-additive-campaign-measures-eleven-actions-by-five-layers-in-seven-scenarios.md#the-circumstance-axes) names three circumstance axes that the additive campaign defers and records as debt. An adopter's own repository is the third. The campaign said to record them after its last paid session, and phase B on #1881 was that session. [The evaluation of phase B](../evaluations/what-the-additive-campaign-measured-for-the-eleven-actions-headwater-supports.md) states each row on this repository, with its own taxonomy and its own documents.
 
 ## Obligation
 
@@ -25,4 +25,4 @@ The corpus owes a measurement of the eleven actions in a repository that an adop
 
 ## Discharge
 
-This record discharges when a run measures at least one row of the evaluation in another repository. The owner of that repository typed it. The run must state the repository, the rate and the comparison with the same row here.
+This record discharges when a run measures at least one row of the evaluation in another repository, which its owner typed. The run must state the repository, the rate and the comparison with the same row here.

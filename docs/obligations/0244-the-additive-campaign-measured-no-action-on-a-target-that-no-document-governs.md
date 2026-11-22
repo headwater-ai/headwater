@@ -21,8 +21,8 @@ relations:
 
 ## Obligation
 
-The corpus owes a measurement of how the layers change an action whose target no document governs. Rows 1 to 10 each point at a governed target, so each one measures the layers where a document applies. The ungoverned control row measures only that the layers do no harm. It does not measure one of the other actions on an ungoverned target.
+The corpus owes a measurement of how the layers change an action whose target no document governs. Rows 1 to 10 each point at a governed target, so each one measures the layers where a document applies. The ungoverned control row measures only that the layers do no harm, and not one of the other actions on an ungoverned target.
 
 ## Discharge
 
-This record discharges when a run measures at least one of rows 1 to 10 on targets that no document governs. The run compares it with the same row on governed targets. The run must state both rates and the difference, with its interval.
+This record discharges when a run measures at least one of rows 1 to 10 on targets that no document governs. The run must compare it with the same row on governed targets, and state both rates and the difference, with its interval.

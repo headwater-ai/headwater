@@ -17,7 +17,7 @@ relations:
 
 ## Context
 
-[HW-DR-0112](../decisions/0112-the-additive-campaign-measures-eleven-actions-by-five-layers-in-seven-scenarios.md#the-circumstance-axes) names three circumstance axes that the additive campaign defers and records as debt. Corpus size is the first. The campaign said to record them after its last paid session, and phase B on #1881 was that session. [the evaluation of phase B](../evaluations/what-the-additive-campaign-measured-for-the-eleven-actions-headwater-supports.md) states each row on this repository alone, at the size it had at the pin of phase B.
+[HW-DR-0112](../decisions/0112-the-additive-campaign-measures-eleven-actions-by-five-layers-in-seven-scenarios.md#the-circumstance-axes) names three circumstance axes that the additive campaign defers and records as debt. Corpus size is the first. The campaign said to record them after its last paid session, and phase B on #1881 was that session. [The evaluation of phase B](../evaluations/what-the-additive-campaign-measured-for-the-eleven-actions-headwater-supports.md) states each row on this repository alone, at the size it had at the pin of phase B.
 
 ## Obligation
 

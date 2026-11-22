@@ -34,11 +34,19 @@ relations:
 
 # What the additive campaign measured for the eleven actions Headwater supports
 
-## What this record is
+## Summary
 
-This is the report of phase B of the additive campaign, which [HW-DR-0112](../decisions/0112-the-additive-campaign-measures-eleven-actions-by-five-layers-in-seven-scenarios.md) designs. [#1882](https://github.com/headwater-ai/headwater/issues/1882) asks for it. It states, for each of the eleven actions that Headwater supports, how often a session completed the action on probes that no tuning change saw. It also states the pooled result of each layer that phase A tuned.
+Phase B of the additive campaign measured how often a session completes each of the eleven actions that Headwater supports. It ran on probes that no tuning change saw, and it compares what `headwater init` ships with the documents alone. [HW-DR-0112](../decisions/0112-the-additive-campaign-measures-eleven-actions-by-five-layers-in-seven-scenarios.md) designs the campaign, and [#1882](https://github.com/headwater-ai/headwater/issues/1882) asks for this report. The record also states the pooled result of each layer that phase A tuned.
 
-The record states what was measured. It does not discharge an open claim of spec 13. HW-OBL-0012, HW-OBL-0013, HW-OBL-0014 and HW-OBL-0016 each ask about a property that none of the eleven actions measures, so all four stay open.
+**What it found.**
+
+- Two actions gained: refactor across files, +33.3 points, and change governed code, +22.9 points.
+- One action lost: supersede or retire, -33.3 points.
+- Seven actions showed no detectable effect.
+- Change taxonomy has no comparison, because a session cannot do it with the documents alone.
+- Of the four tuned layers, only the engine showed a gain, and those figures are tuned.
+
+**What it does not show.** Every session ran one model on this repository, and the code sessions had no compiler. [Limits](#limits) lists each caveat. This record does not discharge an open claim of spec 13. HW-OBL-0012, HW-OBL-0013, HW-OBL-0014 and HW-OBL-0016 each ask about a property that none of the eleven actions measures, so all four stay open.
 
 ## The method
 
@@ -48,15 +56,15 @@ The record states what was measured. It does not discharge an open claim of spec
 
 **The counts.** Each row ran 48 sessions in scenario 1 and 48 in scenario 6. A cell stopped at 12 sessions when all 12 passed or all 12 failed. So a cell at 12/12 can stand for a rate of about 95%, and a cell at 0/12 for about 5%. Scenarios 0 and 2 each ran 66 sessions over all the rows, which is 6 for each row. The owner set these counts on [#1881](https://github.com/headwater-ai/headwater/issues/1881) on 2026-11-09, and HW-DR-0112 records them.
 
-**The revision.** Phase B measured the pin `74d8f1baf721368eebffdd800ec4fbb55595f485`, from 2026-11-09 to 2026-11-12. The subject model is `claude-sonnet-5`, on harness 0.6.1.
+**The revision.** Phase B measured the pinned commit `74d8f1baf721368eebffdd800ec4fbb55595f485`, from 2026-11-09 to 2026-11-12. The subject model is `claude-sonnet-5`, on harness 0.6.1.
 
-**The grade.** The cells below are grader 0.5.3, regraded from the recorded transcripts. No paid session ran again. Three regrades move a cell, each from the one before it: [#1951](https://github.com/headwater-ai/headwater/issues/1951), [#1978](https://github.com/headwater-ai/headwater/issues/1978) and [#1980](https://github.com/headwater-ai/headwater/issues/1980). The ten transcripts are the records that the frontmatter of this record names, and each one has a result page under `docs/probe-results/`. The verdicts on those ten pages, summed by action and scenario, give every cell of the table.
+**The grade.** The cells below come from grader 0.5.3, regraded from the recorded transcripts. No paid session ran again. Three regrades move a cell, each from the one before it: [#1951](https://github.com/headwater-ai/headwater/issues/1951), [#1978](https://github.com/headwater-ai/headwater/issues/1978) and [#1980](https://github.com/headwater-ai/headwater/issues/1980). The frontmatter of this record names the ten transcripts, and each one has a result page under `docs/probe-results/`. The verdicts on those ten pages, summed by action and scenario, give every cell of the table.
 
-**The figures.** A rate is the passes over the graded sessions, with the Wilson 95% interval that a result page prints. A difference is in points, with the Newcombe 95% interval that `headwater probe compare` prints. Each difference below is the output of `headwater probe compare` over the sessions of one row. The verdict rule of HW-DR-0112 gives one word for each difference. It is `gain` when the interval lies above zero, `loss` when it lies below zero, and `no detectable effect` when it holds zero.
+**The figures.** A rate is the passes over the graded sessions, with the Wilson 95% interval that a result page prints. A difference is in points, with its Newcombe 95% interval. Each one is the output of `headwater probe compare` over the sessions of one row. The verdict rule of HW-DR-0112 gives each difference one verdict. It is `gain` when the interval lies above zero, `loss` when it lies below zero, and `no detectable effect` when it holds zero.
 
 ## The held-out table
 
-Every number in this table is held-out. The documents column is scenario 1, and the shipped column is scenario 6. Scenarios 0 and 2 are the anchors, at 6 sessions for each row.
+Every number in this table is held-out. Scenarios 0 and 2 are the anchors, at 6 sessions for each row.
 
 | # | action | scenario 0 | scenario 2 | scenario 1, documents | scenario 6, what `init` ships | scenario 6 − scenario 1, points [95%] | verdict |
 |---|---|---|---|---|---|---|---|
@@ -73,7 +81,7 @@ Every number in this table is held-out. The documents column is scenario 1, and 
 | 11 | ungoverned control | 6/6 | 6/6 | 47/48, 97.9% [89.1, 99.6] | 12/12, 100.0% [75.8, 100.0] | +2.1 [-22.2, +10.9] | no detectable effect |
 | | pooled anchors | 13/65, 20.0% [12.1, 31.3] | 56/66, 84.8% [74.3, 91.6] | | | | |
 
-The pooled anchors give scenario 2 against scenario 0 as +64.8 [+49.4, +75.2], a gain. With no layer, sessions passed 13 of 65. With the documents and the engine, sessions passed 56 of 66. Scenario 0 graded 65 sessions and not 66, because the provider refused one session. A pooled rate for scenarios 1 and 6 is not given, because the cells that stopped at 12 give the rows unequal weight.
+The pooled anchors give scenario 2 against scenario 0 as +64.8 [+49.4, +75.2], a gain. With no layer, sessions passed 13 of 65. With the documents and the engine, sessions passed 56 of 66. Scenario 0 graded 65 sessions and not 66, because the provider refused one session. Scenarios 1 and 6 have no pooled rate, because the cells that stopped at 12 give the rows unequal weight.
 
 **Raw beside regraded.** Three rows moved under a regrade, and the owner asked for both numbers.
 
@@ -90,21 +98,21 @@ The pooled anchors give scenario 2 against scenario 0 as +64.8 [+49.4, +75.2], a
 
 ## What each row means
 
-1. **Ask or locate.** The documents alone answer almost every question, so the shipped layers have no room to add a gain here.
+1. **Ask or locate.** The documents alone answer almost every question, so the shipped layers have no room to gain.
 2. **Change governed code.** The shipped layers help a session change code that a document governs, with a gain of +22.9 points over the documents alone. Two probe defects of [#1979](https://github.com/headwater-ai/headwater/issues/1979) hold both cells down. The workspace had no compiler, as the disclosures state. On the numbered-heading probe, many sessions wrote the right code and did not raise the version of the rule. [#1976](https://github.com/headwater-ai/headwater/issues/1976), merged after phase B, now states that rule beside each rule version.
 3. **Refactor across files.** The shipped layers help a session rename across files and fix the callers, with a gain of +33.3 points. The 2 failures in scenario 6 are a missed caller that a compiler would show.
-4. **Add a document.** The documents alone pass every session, and the shipped layers do not make this worse to a detectable degree. [#1977](https://github.com/headwater-ai/headwater/issues/1977) is the gap the failures show: nothing offers the typed relation to a record that the task names.
+4. **Add a document.** The documents alone pass every session, and the shipped layers show no detectable loss. The failures show the gap of [#1977](https://github.com/headwater-ai/headwater/issues/1977): nothing offers the typed relation to a record that the task names.
 5. **Edit a document others depend on.** The shipped layers pass every session, but the difference from the documents alone is not clear of zero.
 6. **Supersede or retire.** The shipped layers make this action worse, with a loss of -33.3 points. Sessions trust `headwater check --fix`, leave the new record at `draft`, see a clean check and stop. [#1973](https://github.com/headwater-ai/headwater/issues/1973), still open, is that defect. [#1974](https://github.com/headwater-ai/headwater/issues/1974), merged after phase B, removes a stop rule that halted a session the person had already answered. No session ran again after either change, by the owner's ruling, so this row is the pin above as measured.
 7. **Move a document.** The documents alone move a document and repair its links in almost every session.
-8. **Change taxonomy.** With the documents alone, a session cannot do this action. The oracle edits `.headwater/overlay.yml` and needs the lock, and the lock is part of the engine layer. So the row has no scenario 1 number and no comparison. With what `init` ships, sessions passed 39 of 48. [#1975](https://github.com/headwater-ai/headwater/issues/1975) is the gap the scenario 6 failures show: nothing says that the overlay is newer than the lock.
+8. **Change taxonomy.** A session cannot do this action with the documents alone. The oracle edits `.headwater/overlay.yml` and needs the lock, which is part of the engine layer. So the row has no scenario 1 number and no comparison. With what `init` ships, sessions passed 39 of 48. The scenario 6 failures show the gap of [#1975](https://github.com/headwater-ai/headwater/issues/1975): nothing says that the overlay is newer than the lock.
 9. **Repair a check.** Both scenarios repair almost every check, so the shipped layers show no detectable effect. Before #1978, one oracle demanded exact words where the task asked to keep the meaning, and the raw cells show that defect, not the product.
-10. **Review a change.** This row measures whether a session cites the one record that governs a change. It does not measure a review. Both scenarios cite the right record in most sessions.
+10. **Review a change.** This row measures whether a session cites the one record that governs a change, and not a review. Both scenarios cite the right record in most sessions.
 11. **Ungoverned control.** The shipped layers do no detectable harm on a task that no document governs.
 
 ## Phrasing
 
-Each number above is pooled over the phrasings of its probes. One held-out cell has phrasings that differ by more than a third. It is edit a document others depend on, in scenario 1. There, phrasing 1 passed 15 of 16, phrasing 2 passed 14 of 16, and phrasing 3 passed 9 of 15. In every other cell of scenarios 1 and 6, the phrasings of a row differ by a third or less. The nearest is supersede or retire in scenario 6, at 9 of 16, 7 of 16 and 4 of 16. The next is change taxonomy in scenario 6, at 23 of 24 and 16 of 24. The cells of scenarios 0 and 2 have 1 to 4 sessions for each phrasing, which is too few to compare.
+Each number above is pooled over the phrasings of its probes. In one held-out cell, the phrasings differ by more than a third: edit a document others depend on, in scenario 1. There, phrasing 1 passed 15 of 16, phrasing 2 passed 14 of 16, and phrasing 3 passed 9 of 15. In every other cell of scenarios 1 and 6, the phrasings of a row differ by a third or less. The nearest is supersede or retire in scenario 6, at 9 of 16, 7 of 16 and 4 of 16. The next is change taxonomy in scenario 6, at 23 of 24 and 16 of 24. The cells of scenarios 0 and 2 have 1 to 4 sessions for each phrasing, which is too few to compare.
 
 The phrasing of each session comes from the task file that its recorded command line names. The verdicts come from the ten result pages. All 934 graded sessions have a phrasing. The forensics of 2026-11-20 gave a larger spread for the shelf-layout probe, 0 of 12 against 8 of 12. That figure was from before #1978 and #1980, and the regraded probe passes 23 of 24 in each scenario.
 
@@ -142,9 +150,9 @@ On supersede or retire, the hooks passed 13 of 14 and the MCP server 12 of 14, a
 
 ## Disclosures
 
-**Probe defects, from #1979.** Some failures come from a defect in the probe alone. The counts are those that HW-DR-0112 states. In change governed code, scenario 6, the probes alone account for 8 of 16 failures. In 3 more, a probe defect and a real miss coincide. In scenario 1 of that row, the numbered-heading probe alone accounts for 1 of 27 failures. In 11 more, its defect and a real miss coincide. In supersede or retire, scenario 6, the figure-page probe alone accounts for 4 of 28 failures, and in scenario 1 for 1 of 3. The table counts each of these as a failure. The held-out set opens again for these three probes before any rerun.
+**Probe defects, from #1979.** Some failures come from a defect in the probe alone, and HW-DR-0112 states the counts. In change governed code, scenario 6, the probes alone account for 8 of 16 failures. In 3 more, a probe defect and a real miss coincide. In scenario 1 of that row, the numbered-heading probe alone accounts for 1 of 27 failures. In 11 more, its defect and a real miss coincide. In supersede or retire, scenario 6, the figure-page probe alone accounts for 4 of 28 failures, and in scenario 1 for 1 of 3. The table counts each of these as a failure. The held-out set opens again for these three probes before any rerun.
 
-**No compiler, from #1981.** The workspace of a code session could not run `cargo build` or `cargo test`. So the rows change governed code and refactor across files measure a session with no compiler.
+**No compiler, from #1981.** The workspace of a code session could not run `cargo build` or `cargo test`. So change governed code and refactor across files each measure a session with no compiler.
 
 **Oracle scripts in the workspace, from #1892.** The seal left the generic oracle scripts and the oracle entries of `.headwater/probe.yml` in each workspace. In scenario 6, 12 sessions read an oracle script, 2 ran one, and all 12 passed. The held argument files were removed, so no answer leaked, but those sessions saw what the oracle would check.
 
