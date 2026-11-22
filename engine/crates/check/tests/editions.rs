@@ -952,6 +952,70 @@ fn every_ledgered_rule_names_the_file_that_declares_it() {
     }
 }
 
+/// The sentence a session editing a rule meets beside the rule's version
+/// constant, so that the rule of this file reaches it in the file it edits
+/// (#1976).
+const RAISE_SENTENCE: &str = "raise the rule version when a rule's behavior changes";
+
+/// Every `VERSION: u32` constant under `src/`, and each declaration of one in
+/// a check trait, carries [`RAISE_SENTENCE`] in its own doc block. A
+/// cross-reference to another constant does not count, because a session that
+/// edits one rule reads the lines above its constant and follows nothing.
+#[test]
+fn every_version_constant_states_that_a_changed_rule_raises_it() {
+    let source = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let mut files: Vec<PathBuf> = std::fs::read_dir(&source)
+        .expect("the source directory reads")
+        .map(|entry| entry.expect("a directory entry").path())
+        .filter(|path| path.extension().is_some_and(|e| e == "rs"))
+        .collect();
+    files.sort();
+    let mut found = 0;
+    let mut missing = Vec::new();
+    for path in files {
+        let text = std::fs::read_to_string(&path).expect("a source file reads");
+        let lines: Vec<&str> = text.lines().collect();
+        for (index, line) in lines.iter().enumerate() {
+            let code = line.trim_start();
+            let is_constant = !code.starts_with("//")
+                && (code.contains("VERSION: u32 =") || code.contains("VERSION: u32;"));
+            if !is_constant {
+                continue;
+            }
+            found += 1;
+            let mut doc = Vec::new();
+            for above in lines[..index].iter().rev() {
+                let above = above.trim_start();
+                if let Some(rest) = above.strip_prefix("///") {
+                    doc.push(rest.trim());
+                } else if above.starts_with("#[") {
+                    continue;
+                } else {
+                    break;
+                }
+            }
+            doc.reverse();
+            if !doc.join(" ").to_lowercase().contains(RAISE_SENTENCE) {
+                missing.push(format!(
+                    "engine/crates/check/src/{}:{}",
+                    path.file_name().expect("a file name").to_string_lossy(),
+                    index + 1
+                ));
+            }
+        }
+    }
+    assert!(
+        found >= 40,
+        "the walk found {found} version constants, fewer than the 40 it expects"
+    );
+    assert!(
+        missing.is_empty(),
+        "{} of {found} version constants do not say \"{RAISE_SENTENCE}\" in their own doc block:\n{}",
+        missing.len(),
+        missing.join("\n")
+    );
+}
+
 /// A copy of the computed rows with one row changed.
 fn with(rows: &[Row], rule: &str, corpus: &str, change: impl Fn(&mut Row)) -> Vec<Row> {
     let mut found = false;
