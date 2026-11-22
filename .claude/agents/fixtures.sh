@@ -176,6 +176,39 @@ if grep -qF 'top-level session' "$scratch/next.md"; then
 else
     pass 'and a /next without the top-level rule is reported'
 fi
+# The operative words of each part of the rule, one row each: where the line
+# goes, the count it explains, the order of the pass before the verify, and the
+# direction of the /next rule. A row that its file loses is reported, so a
+# mutant that keeps the trigger and drops a part still reddens. `x` matches the
+# whole line, which holds the line in the report block; `F` matches inside one.
+upkeep_rows='agents/hw-build.md@x@    UPKEEP: ran | not run, no Agent tool
+agents/hw-build.md@F@write `UPKEEP: not run, no Agent tool` in your block, and write the same line under the heading `## Upkeep (headwater-maintainer)` in `build.md` and in the pull request body.
+agents/hw-build.md@F@search inline, and the count of dispatches is 0 for that reason
+agents/hw-iterate.md@F@parts verbatim to the builder'"'"'s id by `SendMessage`
+agents/hw-iterate.md@F@dispatch the verify only when the builder returns.
+commands/next.md@F@from a top-level session, never from a subagent.'
+upkeep_lost() {
+    printf '%s\n' "$upkeep_rows" | while IFS='@' read -r path mode phrase; do
+        grep -q"$mode"F -- "$phrase" "$1/$path" || printf '%s: %s\n' "$path" "$phrase"
+    done
+}
+lost=$(upkeep_lost "$root/.claude")
+if [ -z "$lost" ]; then
+    pass "each of the $(printf '%s\n' "$upkeep_rows" | wc -l | tr -d ' ') parts of the no-Agent upkeep rule is stated"
+else
+    fail 'each part of the no-Agent upkeep rule is stated' "lost: $lost"
+fi
+# Its refusal arm: a copy whose loop agent verifies at once is reported.
+mkdir -p "$scratch/upkeep/agents" "$scratch/upkeep/commands"
+cp "$agents/hw-build.md" "$scratch/upkeep/agents/"
+cp "$commands/next.md" "$scratch/upkeep/commands/"
+sed 's/dispatch the verify only when the builder returns\./dispatch the verify at once./' "$agents/hw-iterate.md" > "$scratch/upkeep/agents/hw-iterate.md"
+lost=$(upkeep_lost "$scratch/upkeep")
+if [ "$lost" = 'agents/hw-iterate.md: dispatch the verify only when the builder returns.' ]; then
+    pass 'and a loop agent that verifies before the builder returns is reported'
+else
+    fail 'a loop agent that verifies before the builder returns is reported' "reported: \`$lost\`"
+fi
 
 # --- 2. every skill an agent invokes is a skill on this tree ------------------
 
