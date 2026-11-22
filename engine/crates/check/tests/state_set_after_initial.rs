@@ -115,10 +115,13 @@ fn findings<'a>(run: &'a Run, rule: &str) -> Vec<&'a Finding> {
 #[test]
 fn a_draft_successor_of_a_current_target_is_warned() {
     let run = run();
-    let found = findings(&run, RULE);
+    let wanted = path("notes/draft-successor.md");
+    let found: Vec<&Finding> = findings(&run, RULE)
+        .into_iter()
+        .filter(|finding| finding.path == wanted)
+        .collect();
     assert_eq!(found.len(), 1, "{found:#?}");
     let finding = found[0];
-    assert_eq!(finding.path, path("notes/draft-successor.md"));
     assert_eq!(finding.severity, Severity::Warn);
     assert!(finding.patch.is_none(), "{:?}", finding.patch);
     assert_eq!(finding.line, 3, "the anchor is the state facet's line");
@@ -169,10 +172,51 @@ fn a_relation_that_sets_no_state_is_not_read() {
     assert!(reading.is_empty(), "{reading:#?}");
 }
 
-/// The rule forms an instance for every edge of `supersedes`, and only the
-/// decisive pair fails.
+/// One draft over three targets: a draft target is silent (HW-DR-0085), a
+/// target already at the set state is silent, and a target terminal at another
+/// state is pending, so the draft is warned once, and only for that target.
 #[test]
-fn only_the_decisive_pair_fails() {
+fn a_draft_is_warned_only_for_a_target_the_edge_would_move() {
+    let run = run();
+    let wanted = path("notes/draft-replacer.md");
+    let found: Vec<&Finding> = findings(&run, RULE)
+        .into_iter()
+        .filter(|finding| finding.path == wanted)
+        .collect();
+    assert_eq!(found.len(), 1, "{found:#?}");
+    let message = &found[0].message;
+    assert!(
+        message.contains("`NOTE-FIX-deprecated-early` stays at `deprecated`"),
+        "{message}"
+    );
+    for silent in ["NOTE-FIX-draft-replaced", "NOTE-FIX-already-retired"] {
+        assert!(!message.contains(silent), "{message}");
+    }
+}
+
+/// The whole report of the rule over the tree, so a new finding is a failure
+/// rather than a silence.
+#[test]
+fn the_rule_reports_exactly_the_two_drafts() {
+    let run = run();
+    let mut reported: Vec<&str> = findings(&run, RULE)
+        .iter()
+        .map(|finding| finding.path.as_str())
+        .collect();
+    reported.sort_unstable();
+    assert_eq!(
+        reported,
+        vec![
+            "state-not-set-by-edge/notes/draft-replacer.md",
+            "state-not-set-by-edge/notes/draft-successor.md",
+        ]
+    );
+}
+
+/// The rule forms an instance for every edge of `supersedes`, and only the
+/// two pending pairs fail.
+#[test]
+fn only_the_pending_pairs_fail() {
     let run = run();
     let ours: Vec<_> = run
         .instances
@@ -184,7 +228,7 @@ fn only_the_decisive_pair_fails() {
         .iter()
         .filter(|instance| matches!(instance.outcome, Outcome::Failed(_)))
         .count();
-    assert_eq!(failed, 1, "{ours:#?}");
+    assert_eq!(failed, 2, "{ours:#?}");
 }
 
 /// The neighbor keeps its report: HW-DR-0086's clause still holds, and
