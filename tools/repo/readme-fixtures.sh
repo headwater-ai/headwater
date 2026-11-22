@@ -2851,6 +2851,22 @@ if [ -f "$release_wf" ]; then
                 "the notes name no \`taxonomy/headwater-standard/v$good_version\`, so a reader has no zip to look for" ;;
         esac
 
+        # The version is read from the `release:` block alone. A record that
+        # opens with another top-level block carrying its own two-space
+        # `version:` must still yield the release's version, or an awk that
+        # lost its block anchor would name a version nobody published.
+        { printf 'source:\n  version: 0.0.0-not-the-release\n'
+          cat "$root/.headwater/packages/headwater-standard/release.yml"
+        } >"$scratch/release/tree/.headwater/packages/headwater-standard/release.yml"
+        rm -f "$scratch/release/tree/release-notes.md"
+        (cd "$scratch/release/tree" && GITHUB_REPOSITORY=headwater-ai/headwater sh "$scratch/release/notes-step.sh" >notes.log 2>&1)
+        case $(tr '\n' ' ' <"$scratch/release/tree/release-notes.md" 2>/dev/null) in
+            *"\`headwater/standard\` $good_version as it stands"*)
+                pass "  and a \`version:\` outside the \`release:\` block is not taken for the release's" ;;
+            *) fail "  and a \`version:\` outside the \`release:\` block is not taken for the release's" \
+                "over a record that opens with another block carrying \`version:\`, the notes do not name \`headwater/standard\` $good_version" ;;
+        esac
+
         # The second mutation arm. A record with no `release.version` must stop
         # the release rather than cut one whose notes name no version. Only the
         # two-space `version:` directly under `release:` goes: a member line is
