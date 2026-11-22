@@ -635,10 +635,9 @@ step_leading_answer() {
         }
         if (best > 1) print substr($0, 1, best - 1)
     }')
+    # A lead of two words matches no answer of one word, and
+    # step_resolve_answer refuses it, so the rule needs no check of its own.
     lead=$(step_answer_line "$lead")
-    case $lead in
-        '' | *[[:space:]]*) return 0 ;;
-    esac
     folded=$(words "$lead")
     matched=$(printf '%s\n' "$answers" | tr ',' '\n' | while read -r one; do
         one=$(printf '%s' "$one" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')

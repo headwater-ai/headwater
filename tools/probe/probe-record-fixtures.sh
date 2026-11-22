@@ -1256,6 +1256,8 @@ answer_case "a bulleted identifier followed by a reason is no answer" "" '- HW-D
 answer_case "a hyphen with no space before it is part of the word" "" 'HW-DR-0090-ish - reason'
 answer_case "a dash with no space around it is no separator" "" 'HW-DR-0090—reason'
 answer_case "a leading word outside the closed set is no answer" "" 'HW-DR-0091 — reason'
+answer_case "an answer of two words is not a lead, so it is no answer before a separator" "" 'current HW-DR-0052 — reason' "current HW-DR-0052, draft HW-DR-0052"
+answer_case "one word of a two-word answer before a separator is no answer" "" 'HW-DR-0052 — current' "current HW-DR-0052, draft HW-DR-0052"
 answer_case "a path inside a sentence is no answer" "" 'It breaks docs/decisions/0090-each-release-states-its-digest.md'
 
 # A declared answer of two words is compared as a set of words (#1384). The
