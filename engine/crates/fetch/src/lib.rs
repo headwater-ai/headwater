@@ -970,6 +970,20 @@ mod tests {
         (base, count)
     }
 
+    /// The refusal of `fetch_within(location, connect, total)`, run on a
+    /// thread that the case abandons after ten seconds, so that a fetch with
+    /// no bound fails the case rather than hangs the suite.
+    fn refused_within(location: String, connect: Duration, total: Duration) -> Error {
+        let (send, receive) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let _ = send.send(fetch_within(&location, connect, total).map(|_| ()));
+        });
+        match receive.recv_timeout(Duration::from_secs(10)) {
+            Ok(result) => result.expect_err("the fetch did not refuse"),
+            Err(_) => panic!("the fetch was still running after 10 s"),
+        }
+    }
+
     /// How long `/a` of [`slow_redirect_then_silence`] waits before it
     /// answers: most of a one-second bound, so that a bound reset at each hop
     /// would run well past one bound in all.
@@ -983,12 +997,11 @@ mod tests {
     fn the_bound_holds_across_a_redirect_to_a_server_that_never_answers() {
         let (base, _count) = slow_redirect_then_silence();
         let started = Instant::now();
-        let refused = fetch_within(
-            &format!("{base}/a"),
+        let refused = refused_within(
+            format!("{base}/a"),
             Duration::from_secs(1),
             Duration::from_secs(1),
-        )
-        .unwrap_err();
+        );
         let elapsed = started.elapsed();
         assert!(
             elapsed >= Duration::from_millis(900) && elapsed < Duration::from_millis(1400),
@@ -1008,12 +1021,11 @@ mod tests {
     fn a_body_that_never_arrives_is_held_by_the_bound() {
         let (base, _count) = slow_redirect_then_silence();
         let started = Instant::now();
-        let refused = fetch_within(
-            &format!("{base}/c"),
+        let refused = refused_within(
+            format!("{base}/c"),
             Duration::from_secs(1),
             Duration::from_secs(1),
-        )
-        .unwrap_err();
+        );
         let elapsed = started.elapsed();
         assert!(elapsed < Duration::from_secs(3), "took {elapsed:?}");
         let text = refused.to_string();
@@ -1027,8 +1039,7 @@ mod tests {
     #[test]
     fn a_spent_bound_refuses_before_the_next_request() {
         let (base, count) = slow_redirect_then_silence();
-        let refused =
-            fetch_within(&format!("{base}/a"), Duration::from_secs(1), Duration::ZERO).unwrap_err();
+        let refused = refused_within(format!("{base}/a"), Duration::from_secs(1), Duration::ZERO);
         assert!(refused.to_string().contains("timed out"), "{refused}");
         std::thread::sleep(Duration::from_millis(200));
         assert_eq!(
