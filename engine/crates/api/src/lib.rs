@@ -5,8 +5,18 @@
 //! which the shell and an in-process caller (`lsp`, `hook`, `mcp`) share. It
 //! has no `clap` and no `headwater-fetch`, so a caller that links it parses no
 //! command line and opens no socket.
+//!
+//! # Nothing here writes to a stream
+//!
+//! [`Session::open`] returns a refusal as a [`LoadError`] and the unmet engine
+//! range as [`Session::engine_unmet`]. Neither prints. The binary paints and
+//! prints both, once per process for the range, and a long-lived caller reads
+//! them on each session it opens (#1959). `tests/verbs.rs` in `headwater-cli`
+//! holds that no file under `src/` names a print macro or an exit code.
 
-use headwater_census::shelves::Taxonomy;
+use headwater_census::census;
+use headwater_census::shelves::{DeclarationError, Taxonomy};
+use headwater_census::walk::Corpus;
 use headwater_check::{Cache, Context, Declared, Register, Shape};
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
@@ -23,7 +33,7 @@ use std::path::Path;
 /// has one identity for the length of the comparison.
 pub fn plan_of(
     root: &Path,
-    loaded: &Loaded,
+    loaded: &Session,
     identity: &headwater_generate::Identity,
 ) -> Result<headwater_generate::Plan, String> {
     let projections =
@@ -44,18 +54,6 @@ pub fn plan_of(
     ))
 }
 
-/// Phase A, once, for every verb that reads a corpus.
-///
-/// The taxonomy comes from the lock and the corpus block comes from the
-/// consumer declaration. The two are different questions: the lock says what
-/// the schema is, and `corpus:` says what to walk.
-/// [Spec 4](../../../../docs/spec/04-assurance-model.md#a-verdict-is-about-one-state-of-the-corpus)
-/// keeps them apart too, because a run reports "The corpus tree, the taxonomy
-/// lock hash" as two facts.
-///
-/// One function rather than one per verb. A read that walked a different tree
-/// from the one `check` walks would answer about a corpus no run evaluated, and
-/// nothing in either report would say so.
 /// The taxonomy one load runs against, and where it came from.
 ///
 /// Every verb but one takes this from `.headwater/taxonomy.lock`, which spec 6
@@ -126,7 +124,7 @@ impl Bound {
     }
 }
 
-pub struct Loaded {
+pub struct Session {
     pub bound: Bound,
     /// What this repository takes and what it walks. Held because the corpus
     /// descriptor states the root and the exclusions, and re-reading the
@@ -189,7 +187,264 @@ pub fn engine_unmet(consumer: &headwater_resolve::package::Consumer) -> Option<&
     }
 }
 
-impl Loaded {
+/// The version this library was built at.
+///
+/// `headwater-cli` holds its own version equal to this one in a test, so no
+/// binary links a library of another version (#1959).
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+/// The headline of a refusal of one declaration block, `what` naming it.
+///
+/// One copy of the sentence, because the binary refuses a declaration block
+/// in places that are not a load as well.
+pub fn did_not_read(what: &str) -> String {
+    format!("{what} did not read, so no run is possible")
+}
+
+/// Why one load of a corpus produced no session.
+///
+/// One variant for each refusal the load reaches, so a caller tells them apart
+/// without reading text. The text is plain: [`LoadError::headline`] and
+/// [`LoadError::detail`], with no color and no stream. The binary paints and
+/// prints it, and an in-process caller reports it on its own channel.
+///
+/// A refusal that comes after the consumer declaration read carries the engine
+/// range the corpus asks for, where this engine is outside it. The binary says
+/// so before it prints the refusal, as it did when the load printed both.
+#[derive(Debug)]
+pub enum LoadError {
+    /// `.headwater/taxonomy.lock` did not read.
+    Lock(headwater_lock::LockError),
+    /// `.headwater/taxonomy.yml` did not read.
+    Consumer(Vec<headwater_resolve::ResolveError>),
+    /// A declaration block of the taxonomy in the lock did not read. `what`
+    /// names the block.
+    Declaration {
+        /// The block, as the headline names it.
+        what: &'static str,
+        /// What the block's reader refused, one error per line.
+        errors: Vec<DeclarationError>,
+        /// The range the corpus asks for, where this engine is outside it.
+        engine_unmet: Option<String>,
+    },
+    /// Two resolvers carry one name.
+    AmbiguousResolvers {
+        /// What the resolver set said.
+        why: String,
+        /// The range the corpus asks for, where this engine is outside it.
+        engine_unmet: Option<String>,
+    },
+    /// The `imports` block did not read.
+    Imports {
+        /// What the reader said.
+        why: String,
+        /// The range the corpus asks for, where this engine is outside it.
+        engine_unmet: Option<String>,
+    },
+    /// The `harvests` block of pinned exports did not read.
+    Harvests {
+        /// What the reader said.
+        why: String,
+        /// The range the corpus asks for, where this engine is outside it.
+        engine_unmet: Option<String>,
+    },
+}
+
+impl LoadError {
+    /// One line that says what did not read.
+    pub fn headline(&self) -> String {
+        match self {
+            LoadError::Lock(error) => format!("{error}"),
+            LoadError::Consumer(_) => "the consumer declaration did not read".to_string(),
+            LoadError::Declaration { what, .. } => did_not_read(what),
+            LoadError::AmbiguousResolvers { .. } => "the resolver set is ambiguous".to_string(),
+            LoadError::Imports { .. } => "the import declarations did not read".to_string(),
+            LoadError::Harvests { .. } => "the pinned export declarations did not read".to_string(),
+        }
+    }
+
+    /// What the reader said under the headline, and nothing for a lock,
+    /// whose headline is the whole of it.
+    pub fn detail(&self) -> String {
+        match self {
+            LoadError::Lock(_) => String::new(),
+            LoadError::Consumer(errors) => headwater_resolve::render_errors(errors),
+            LoadError::Declaration { errors, .. } => {
+                errors.iter().map(|error| format!("{error}\n")).collect()
+            }
+            LoadError::AmbiguousResolvers { why, .. }
+            | LoadError::Imports { why, .. }
+            | LoadError::Harvests { why, .. } => why.clone(),
+        }
+    }
+
+    /// The range the corpus asks for, where this engine is outside it. `None`
+    /// for a refusal that came before the consumer declaration read.
+    pub fn engine_unmet(&self) -> Option<&str> {
+        match self {
+            LoadError::Lock(_) | LoadError::Consumer(_) => None,
+            LoadError::Declaration { engine_unmet, .. }
+            | LoadError::AmbiguousResolvers { engine_unmet, .. }
+            | LoadError::Imports { engine_unmet, .. }
+            | LoadError::Harvests { engine_unmet, .. } => engine_unmet.as_deref(),
+        }
+    }
+}
+
+impl std::fmt::Display for LoadError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let detail = self.detail();
+        match detail.is_empty() {
+            true => write!(f, "{}", self.headline()),
+            false => write!(f, "{}\n{}", self.headline(), detail.trim_end()),
+        }
+    }
+}
+
+impl std::error::Error for LoadError {}
+
+impl Session {
+    /// Phase A, once, for every verb that reads a corpus.
+    ///
+    /// The taxonomy comes from the lock and the corpus block comes from the
+    /// consumer declaration. The two are different questions: the lock says what
+    /// the schema is, and `corpus:` says what to walk.
+    /// [Spec 4](../../../../docs/spec/04-assurance-model.md#a-verdict-is-about-one-state-of-the-corpus)
+    /// keeps them apart too, because a run reports "The corpus tree, the taxonomy
+    /// lock hash" as two facts.
+    ///
+    /// One function rather than one per verb. A read that walked a different tree
+    /// from the one `check` walks would answer about a corpus no run evaluated, and
+    /// nothing in either report would say so.
+    pub fn open(root: &Path) -> Result<Session, LoadError> {
+        let lock = headwater_lock::at(root).map_err(LoadError::Lock)?;
+        Session::against(root, Bound::of(lock))
+    }
+
+    /// The same load, against a taxonomy the caller already holds.
+    ///
+    /// One function rather than one per source of a taxonomy. `taxonomy diff` runs
+    /// this twice over one tree, and a second walker built for the candidate would
+    /// answer about a corpus that no run of `headwater check` evaluates.
+    pub fn against(root: &Path, bound: Bound) -> Result<Session, LoadError> {
+        let consumer = headwater_resolve::package::consumer(root).map_err(LoadError::Consumer)?;
+        // Read here, on every open, and carried by every refusal below. The
+        // binary says it once per process, and a caller that opens many
+        // sessions reads it on each (#1959).
+        let unmet = engine_unmet(&consumer).map(str::to_string);
+        let declaration =
+            |what: &'static str, errors: Vec<DeclarationError>| LoadError::Declaration {
+                what,
+                errors,
+                engine_unmet: unmet.clone(),
+            };
+        let ambiguous = |why: String| LoadError::AmbiguousResolvers {
+            why,
+            engine_unmet: unmet.clone(),
+        };
+        let corpus = Corpus::declared(root, &consumer.corpus_root, &consumer.exclusions);
+        let resolved = &bound.taxonomy;
+        let taxonomy =
+            Taxonomy::read(resolved).map_err(|errors| declaration("the taxonomy", errors))?;
+        let relations = Declarations::read(resolved)
+            .map_err(|errors| declaration("the relation declarations", errors))?;
+        let register = Register::read(resolved)
+            .map_err(|errors| declaration("the obligations and controls", errors))?;
+        let shape = Shape::read(resolved)
+            .map_err(|errors| declaration("the facet and kind declarations", errors))?;
+
+        // The resolver set, in the one place every verb that builds a graph reaches
+        // it. `Resolvers::over` builds what a corpus supplies, and `with` adds what
+        // it cannot: `headwater-check` owns the rule list and `headwater-import`
+        // reads a committed snapshot, and both crates depend on `headwater-graph`,
+        // so the graph crate can name neither resolver and this is where they meet.
+        // A repository that declares no import adds nothing beyond the rules and the
+        // set is what it was.
+        let mut resolvers = Resolvers::over(&corpus)
+            .with(Box::new(headwater_check::anchors::Rules::shipped()))
+            .map_err(ambiguous)?;
+        let imports = headwater_import::declared(root).map_err(|why| LoadError::Imports {
+            why,
+            engine_unmet: unmet.clone(),
+        })?;
+        let snapshots = headwater_import::anchors::over(root, &imports);
+        let imported = headwater_import::anchors::readings(root, &imports, &snapshots);
+        for items in snapshots {
+            resolvers = resolvers.with(Box::new(items)).map_err(ambiguous)?;
+        }
+        // One resolver per pinned corpus export (#1233), in the same shape as the
+        // imports above. Each pin names its own resolver, so an anchor into one
+        // repository is looked up in that repository's export and in no other.
+        let harvests =
+            headwater_import::harvest::declared(root).map_err(|why| LoadError::Harvests {
+                why,
+                engine_unmet: unmet.clone(),
+            })?;
+        // What each pin read, kept beside the resolvers so the check layer can
+        // name a pin that did not read whether or not an anchor reaches it.
+        let exports = headwater_import::harvest::over(root, &harvests);
+        let harvested = headwater_import::harvest::readings(root, &harvests, &exports);
+        for export in exports {
+            resolvers = resolvers.with(Box::new(export)).map_err(ambiguous)?;
+        }
+
+        // `comment-scan`: registered only where a declared anchor kind names it and
+        // carries a pattern. HW-DR-0073 ruling 4 puts that pattern in the overlay
+        // rather than in this binary, so a corpus that declares neither ends up
+        // with the same two resolvers it had before this branch existed, and
+        // `headwater_graph::anchors::CommentScan`'s own doc comment states why the
+        // claim store rather than the graph answers what is minted.
+        if let Some(pattern) = relations
+            .anchors
+            .iter()
+            .find(|anchor| anchor.resolver == "comment-scan")
+            .and_then(|anchor| anchor.pattern.clone())
+        {
+            let minted = headwater_graph::anchors::CommentScan::claimed(root);
+            resolvers = resolvers
+                .with(Box::new(headwater_graph::anchors::CommentScan::new(
+                    root, pattern, minted,
+                )))
+                .map_err(ambiguous)?;
+        }
+
+        let mut census = census::take(&corpus, &taxonomy);
+        // HW-DR-0084: the paths a language regime lists outside the corpus root,
+        // read into a list beside the rows and never into them.
+        census.outside = headwater_census::outside::take(&corpus, &shape.outside_root());
+        let config = Config::default();
+        let graph = Graph::build(&census, &relations, &resolvers, &corpus, &config);
+        let pin = headwater_check::pin::Pin::read(root, &consumer);
+        Ok(Session {
+            bound,
+            pin,
+            harvests: harvested,
+            imported,
+            consumer,
+            census,
+            graph,
+            shape,
+            taxonomy,
+            relations,
+            register,
+            observations: headwater_check::Observations::at(root),
+            config,
+            claims: headwater_check::claim::Claims::at(root),
+            resolvers,
+        })
+    }
+
+    /// The engine range this corpus asks for, where this engine is outside it.
+    ///
+    /// Read off the consumer declaration this session holds, on every call.
+    /// Nothing here says it once per process: the binary does, and a caller
+    /// that opens many sessions reads it on each.
+    pub fn engine_unmet(&self) -> Option<&str> {
+        engine_unmet(&self.consumer)
+    }
+}
+
+impl Session {
     /// What a run of the checks is held against. One constructor, because a
     /// second one is where two runs over one tree start to differ, and
     /// `check --fix` runs the checks twice on purpose.
@@ -319,7 +574,7 @@ impl Loaded {
     /// `headwater_check::run` in this binary.
     ///
     /// Every verb that checks goes through here, so every one of them takes
-    /// the orphans [`Loaded::check_context`] adds, and one test of any verb
+    /// the orphans [`Session::check_context`] adds, and one test of any verb
     /// holds the wiring of all of them (#1137). `declared` is a parameter
     /// because `infer` names the lock file as its source where the others
     /// name the declaration.

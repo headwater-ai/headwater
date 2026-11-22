@@ -508,6 +508,7 @@ dependencies = [
  "headwater-check",
  "headwater-generate",
  "headwater-graph",
+ "headwater-import",
  "headwater-lock",
  "headwater-probe",
  "headwater-query",

@@ -19,6 +19,9 @@ headwater-census = { workspace = true }
 headwater-check = { workspace = true }
 headwater-generate = { workspace = true }
 headwater-graph = { workspace = true }
+# The committed snapshots and pinned exports a load reads beside the corpus,
+# each as one more resolver.
+headwater-import = { workspace = true }
 headwater-lock = { workspace = true }
 headwater-probe = { workspace = true }
 headwater-query = { workspace = true }

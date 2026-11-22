@@ -54,15 +54,12 @@
 //! count, which belongs there because it is a fact about a disk.
 
 use headwater_adapter::{Format, Subject};
-use headwater_api::{engine_unmet, plan_of, Bound, Loaded};
-use headwater_census::census;
+use headwater_api::{plan_of, Bound, LoadError, Session};
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
-use headwater_check::{Cache, Context, Date, Declared, Register, Shape};
+use headwater_check::{Cache, Context, Date, Declared, Shape};
 use headwater_cli::{JsonWord, ProbeWord, SweepWord, TaxonomyWord, Verb};
-use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
-use headwater_graph::{Config, Graph};
 use headwater_query::mcp::Written;
 use headwater_query::Budget;
 use headwater_resolve::render_errors;
@@ -1306,7 +1303,7 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
     if !repository.resolution.founded.is_empty() {
         eprint!("{}", repository.resolution.foundings());
     }
-    report_engine(&repository.consumer);
+    report_engine(headwater_api::engine_unmet(&repository.consumer));
     let sources = match headwater_resolve::package::sources(root, &repository.consumer) {
         Ok(sources) => sources,
         Err(errors) => {
@@ -1645,7 +1642,7 @@ fn taxonomy_kinds(root: &Path, json: bool) -> ExitCode {
 /// included, stays on standard error, so a consumer that parses standard output
 /// reads one document or nothing (HW-DR-0043).
 fn audit(root: &Path, now: Option<Date>, record: bool, json: bool) -> ExitCode {
-    let loaded = match load(root) {
+    let loaded = match opened(root) {
         Ok(loaded) => loaded,
         Err(code) => return code,
     };
@@ -1754,7 +1751,7 @@ fn audit(root: &Path, now: Option<Date>, record: bool, json: bool) -> ExitCode {
 /// waiver answers for the rule it covers. The level the report states is
 /// computed from met rules alone and no waiver reaches it.
 fn conformance(root: &Path, level: Option<&str>, now: Option<Date>, json: bool) -> ExitCode {
-    let loaded = match load(root) {
+    let loaded = match opened(root) {
         Ok(loaded) => loaded,
         Err(code) => return code,
     };
@@ -2928,7 +2925,7 @@ fn migrate(
     // The census of the taxonomy this repository takes, which is the taxonomy
     // every `from` of the payload was written against. A census under the
     // candidate would answer no documents for every step.
-    let taking = match load_against(root, Bound::of(lock)) {
+    let taking = match opened_against(root, Bound::of(lock)) {
         Ok(loaded) => loaded,
         Err(code) => return code,
     };
@@ -3509,11 +3506,11 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
     let lock_version = lock.version.clone();
     let to = record.version.clone();
 
-    let taking = match load_against(root, Bound::of(lock)) {
+    let taking = match opened_against(root, Bound::of(lock)) {
         Ok(loaded) => loaded,
         Err(code) => return code,
     };
-    let against = match load_against(
+    let against = match opened_against(
         root,
         Bound::candidate(
             &package,
@@ -3644,7 +3641,7 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
 /// ([#388](https://github.com/headwater-ai/headwater/issues/388)), and a caller
 /// that passed one without the other would be asking half the question.
 struct Sides<'a> {
-    taking: &'a Loaded,
+    taking: &'a Session,
     candidate: &'a headwater_resolve::Resolution,
 }
 
@@ -3837,7 +3834,7 @@ fn unreachable_by_a_step(broken: &std::collections::BTreeSet<String>) -> bool {
 /// `taxonomy audit` reuses it for a second reason that reaches the same answer:
 /// that verb gates nothing and exits 0 whatever it reads, so a report of it
 /// should not leave cache entries behind as a side effect of being run.
-fn run_of(root: &Path, loaded: &Loaded, ctx: &Context) -> headwater_check::Run {
+fn run_of(root: &Path, loaded: &Session, ctx: &Context) -> headwater_check::Run {
     loaded.check(root, &loaded.declared(), ctx, &mut Cache::disabled())
 }
 
@@ -3849,9 +3846,13 @@ fn run_of(root: &Path, loaded: &Loaded, ctx: &Context) -> headwater_check::Run {
 /// standard error is the operator's log there. The exit status is not this
 /// function's to decide. `check --strict` fails on it, and every other verb
 /// exits as it did.
-fn report_engine(consumer: &headwater_resolve::package::Consumer) {
+///
+/// The once-per-process guard is here and not in `headwater-api`, because the
+/// library hands the range back on every session it opens (#1959). An
+/// in-process caller decides for itself how often to say so.
+fn report_engine(range: Option<&str>) {
     static REPORTED: std::sync::Once = std::sync::Once::new();
-    if let Some(range) = engine_unmet(consumer) {
+    if let Some(range) = range {
         REPORTED.call_once(|| {
             eprintln!(
                 "headwater: {}",
@@ -3865,168 +3866,61 @@ fn report_engine(consumer: &headwater_resolve::package::Consumer) {
     }
 }
 
-fn load(root: &Path) -> Result<Loaded, ExitCode> {
-    let lock = match headwater_lock::at(root) {
-        Ok(lock) => lock,
-        Err(error) => {
-            eprintln!("headwater: {}", err(&format!("{error}")));
-            return Err(ExitCode::FAILURE);
+/// One load of the corpus, as every verb of this binary takes it.
+///
+/// `headwater_api` returns a refusal as a value and prints nothing, and this
+/// is the one place the binary prints it. A verb that maps the failure to a
+/// string of its own, as `new` and the `fix` tool do, still comes through here
+/// first, so the refusal prints before that string.
+fn shown(opened: Result<Session, LoadError>) -> Result<Session, ExitCode> {
+    match opened {
+        Ok(session) => {
+            report_engine(session.engine_unmet());
+            Ok(session)
         }
-    };
-    load_against(root, Bound::of(lock))
+        Err(error) => {
+            report_engine(error.engine_unmet());
+            print_refusal(&error);
+            Err(ExitCode::FAILURE)
+        }
+    }
 }
 
-/// The same load, against a taxonomy the caller already holds.
+/// [`Session::open`] through [`shown`].
+fn opened(root: &Path) -> Result<Session, ExitCode> {
+    shown(Session::open(root))
+}
+
+/// [`Session::against`] through [`shown`].
+fn opened_against(root: &Path, bound: Bound) -> Result<Session, ExitCode> {
+    shown(Session::against(root, bound))
+}
+
+/// A refusal of the load, painted and printed with the bytes the load printed
+/// when it lived in this file.
 ///
-/// One function rather than one per source of a taxonomy. `taxonomy diff` runs
-/// this twice over one tree, and a second walker built for the candidate would
-/// answer about a corpus that no run of `headwater check` evaluates.
-fn load_against(root: &Path, bound: Bound) -> Result<Loaded, ExitCode> {
-    let consumer = match headwater_resolve::package::consumer(root) {
-        Ok(consumer) => consumer,
-        Err(errors) => {
-            eprintln!(
-                "headwater: {}",
-                err("the consumer declaration did not read")
-            );
-            eprint!("{}", indent(&err(&render_errors(&errors))));
-            return Err(ExitCode::FAILURE);
+/// The shapes differ and the differences are kept: the consumer detail is
+/// painted as one block and then indented, a declaration goes through
+/// [`refused`], and the last three end in a blank line, because `indent` ends
+/// each line and `eprintln!` adds one more. `fixtures/printed/manifest` holds
+/// each shape a setup reaches.
+fn print_refusal(error: &LoadError) {
+    match error {
+        LoadError::Lock(_) => eprintln!("headwater: {}", err(&error.headline())),
+        LoadError::Consumer(_) => {
+            eprintln!("headwater: {}", err(&error.headline()));
+            eprint!("{}", indent(&err(&error.detail())));
         }
-    };
-    report_engine(&consumer);
-    let corpus = Corpus::declared(root, &consumer.corpus_root, &consumer.exclusions);
-    let resolved = &bound.taxonomy;
-    let taxonomy = match Taxonomy::read(resolved) {
-        Ok(taxonomy) => taxonomy,
-        Err(errors) => return Err(refused("the taxonomy", &errors)),
-    };
-    let relations = match Declarations::read(resolved) {
-        Ok(declarations) => declarations,
-        Err(errors) => return Err(refused("the relation declarations", &errors)),
-    };
-    let register = match Register::read(resolved) {
-        Ok(register) => register,
-        Err(errors) => return Err(refused("the obligations and controls", &errors)),
-    };
-    let shape = match Shape::read(resolved) {
-        Ok(shape) => shape,
-        Err(errors) => return Err(refused("the facet and kind declarations", &errors)),
-    };
-
-    // The resolver set, in the one place every verb that builds a graph reaches
-    // it. `Resolvers::over` builds what a corpus supplies, and `with` adds what
-    // it cannot: `headwater-check` owns the rule list and `headwater-import`
-    // reads a committed snapshot, and both crates depend on `headwater-graph`,
-    // so the graph crate can name neither resolver and this is where they meet.
-    // A repository that declares no import adds nothing beyond the rules and the
-    // set is what it was.
-    let mut resolvers = Resolvers::over(&corpus);
-    resolvers = match resolvers.with(Box::new(headwater_check::anchors::Rules::shipped())) {
-        Ok(resolvers) => resolvers,
-        Err(why) => {
-            eprintln!("headwater: {}", err("the resolver set is ambiguous"));
-            eprintln!("{}", indent(&err(&why)));
-            return Err(ExitCode::FAILURE);
+        LoadError::Declaration { what, errors, .. } => {
+            refused(what, errors);
         }
-    };
-    let imports = match headwater_import::declared(root) {
-        Ok(imports) => imports,
-        Err(why) => {
-            eprintln!("headwater: {}", err("the import declarations did not read"));
-            eprintln!("{}", indent(&err(&why)));
-            return Err(ExitCode::FAILURE);
+        LoadError::AmbiguousResolvers { .. }
+        | LoadError::Imports { .. }
+        | LoadError::Harvests { .. } => {
+            eprintln!("headwater: {}", err(&error.headline()));
+            eprintln!("{}", indent(&err(&error.detail())));
         }
-    };
-    let snapshots = headwater_import::anchors::over(root, &imports);
-    let imported = headwater_import::anchors::readings(root, &imports, &snapshots);
-    for items in snapshots {
-        resolvers = match resolvers.with(Box::new(items)) {
-            Ok(resolvers) => resolvers,
-            Err(why) => {
-                eprintln!("headwater: {}", err("the resolver set is ambiguous"));
-                eprintln!("{}", indent(&err(&why)));
-                return Err(ExitCode::FAILURE);
-            }
-        };
     }
-    // One resolver per pinned corpus export (#1233), in the same shape as the
-    // imports above. Each pin names its own resolver, so an anchor into one
-    // repository is looked up in that repository's export and in no other.
-    let harvests = match headwater_import::harvest::declared(root) {
-        Ok(harvests) => harvests,
-        Err(why) => {
-            eprintln!(
-                "headwater: {}",
-                err("the pinned export declarations did not read")
-            );
-            eprintln!("{}", indent(&err(&why)));
-            return Err(ExitCode::FAILURE);
-        }
-    };
-    // What each pin read, kept beside the resolvers so the check layer can
-    // name a pin that did not read whether or not an anchor reaches it.
-    let exports = headwater_import::harvest::over(root, &harvests);
-    let harvested = headwater_import::harvest::readings(root, &harvests, &exports);
-    for export in exports {
-        resolvers = match resolvers.with(Box::new(export)) {
-            Ok(resolvers) => resolvers,
-            Err(why) => {
-                eprintln!("headwater: {}", err("the resolver set is ambiguous"));
-                eprintln!("{}", indent(&err(&why)));
-                return Err(ExitCode::FAILURE);
-            }
-        };
-    }
-
-    // `comment-scan`: registered only where a declared anchor kind names it and
-    // carries a pattern. HW-DR-0073 ruling 4 puts that pattern in the overlay
-    // rather than in this binary, so a corpus that declares neither ends up
-    // with the same two resolvers it had before this branch existed, and
-    // `headwater_graph::anchors::CommentScan`'s own doc comment states why the
-    // claim store rather than the graph answers what is minted.
-    if let Some(pattern) = relations
-        .anchors
-        .iter()
-        .find(|anchor| anchor.resolver == "comment-scan")
-        .and_then(|anchor| anchor.pattern.clone())
-    {
-        let minted = headwater_graph::anchors::CommentScan::claimed(root);
-        resolvers = match resolvers.with(Box::new(headwater_graph::anchors::CommentScan::new(
-            root, pattern, minted,
-        ))) {
-            Ok(resolvers) => resolvers,
-            Err(why) => {
-                eprintln!("headwater: {}", err("the resolver set is ambiguous"));
-                eprintln!("{}", indent(&err(&why)));
-                return Err(ExitCode::FAILURE);
-            }
-        };
-    }
-
-    let mut census = census::take(&corpus, &taxonomy);
-    // HW-DR-0084: the paths a language regime lists outside the corpus root,
-    // read into a list beside the rows and never into them.
-    census.outside = headwater_census::outside::take(&corpus, &shape.outside_root());
-    let config = Config::default();
-    let graph = Graph::build(&census, &relations, &resolvers, &corpus, &config);
-    let pin = headwater_check::pin::Pin::read(root, &consumer);
-    Ok(Loaded {
-        bound,
-        pin,
-        harvests: harvested,
-        imported,
-        consumer,
-        census,
-        graph,
-        shape,
-        taxonomy,
-        relations,
-        register,
-        observations: headwater_check::Observations::at(root),
-        config,
-        claims: headwater_check::claim::Claims::at(root),
-        resolvers,
-    })
 }
 
 /// `headwater route`.
@@ -4035,7 +3929,7 @@ fn load_against(root: &Path, bound: Bound) -> Result<Loaded, ExitCode> {
 /// result: "below the threshold it says nothing", and a non-zero exit would
 /// make an agent's shell treat a considered silence as a failure.
 fn route(root: &Path, task: &str, budget: Option<usize>, json: bool) -> ExitCode {
-    let loaded = match load(root) {
+    let loaded = match opened(root) {
         Ok(loaded) => loaded,
         Err(code) => return code,
     };
@@ -4092,7 +3986,7 @@ fn neighbors(
     top: Option<usize>,
     json: bool,
 ) -> ExitCode {
-    let loaded = match load(root) {
+    let loaded = match opened(root) {
         Ok(loaded) => loaded,
         Err(code) => return code,
     };
@@ -4202,7 +4096,7 @@ fn neighbors(
 /// to answer it with a matcher of its own rather than waiting on this verb.
 /// [`Corpus::classify`] is the one matcher now, reached here and by
 /// `.claude/hooks/write.sh` alike, over `Corpus::declared` rebuilt from the
-/// same [`headwater_resolve::package::Consumer`] `load` already read — no
+/// same [`headwater_resolve::package::Consumer`] `Session::open` already read — no
 /// second read of the declaration, because nothing in it is re-read from
 /// disk.
 ///
@@ -4347,7 +4241,7 @@ fn symlink_under(root: &Path, relative: &str) -> Option<String> {
 /// leaves the repository is refused as outside it. A refusal prints the target
 /// as it was typed, never the normalized form.
 fn find_document(root: &Path, target: &str) -> Result<headwater_query::Explanation, ExitCode> {
-    let loaded = load(root)?;
+    let loaded = opened(root)?;
     let surface = loaded.surface();
     if let Some(explanation) = surface.explain(target) {
         return Ok(explanation);
@@ -4541,9 +4435,9 @@ fn scaffold(
         EntryPoint::Terminal => headwater_cli::paint::stdout_color(),
         EntryPoint::Protocol => headwater_cli::paint::ColorMode::Plain,
     };
-    // `load` writes its own account to standard error, which is where a
+    // `opened` writes its own account to standard error, which is where a
     // terminal reads it and where the process serving a protocol call keeps it.
-    let loaded = load(root).map_err(|_| "the corpus did not load".to_string())?;
+    let loaded = opened(root).map_err(|_| "the corpus did not load".to_string())?;
     let now = match now {
         Some(now) => now,
         None => match Context::from_system_clock() {
@@ -4910,7 +4804,7 @@ fn capture(root: &Path, format: Option<String>) -> ExitCode {
             ))
         }
     };
-    let loaded = match load(root) {
+    let loaded = match opened(root) {
         Ok(loaded) => loaded,
         Err(code) => return code,
     };
@@ -5153,7 +5047,7 @@ fn capture(root: &Path, format: Option<String>) -> ExitCode {
 /// same bytes. The sweep's unreproducible part is what an agent does between
 /// this verb and the next one, and neither verb performs it.
 fn sweep_plan(root: &Path, under: Option<String>) -> ExitCode {
-    let loaded = match load(root) {
+    let loaded = match opened(root) {
         Ok(loaded) => loaded,
         Err(code) => return code,
     };
@@ -5210,7 +5104,7 @@ fn sweep_report(root: &Path, path: &Path, format: Option<String>) -> ExitCode {
             ))
         }
     };
-    let loaded = match load(root) {
+    let loaded = match opened(root) {
         Ok(loaded) => loaded,
         Err(code) => return code,
     };
@@ -5344,7 +5238,7 @@ fn probe_plan(
     tier: headwater_probe::Tier,
     narrowing: &headwater_probe::plan::Narrowing,
 ) -> ExitCode {
-    let loaded = match load(root) {
+    let loaded = match opened(root) {
         Ok(loaded) => loaded,
         Err(code) => return code,
     };
@@ -5628,7 +5522,7 @@ fn grade_transcripts(root: &Path, paths: &[&Path]) -> Result<Grading, ExitCode> 
             )))
         }
     };
-    let loaded = load(root)?;
+    let loaded = opened(root)?;
     let plan = headwater_probe::Plan::over(
         &loaded.census,
         &loaded.graph,
@@ -5689,7 +5583,7 @@ fn probe_record(root: &Path, path: &Path) -> ExitCode {
             ))
         }
     };
-    let loaded = match load(root) {
+    let loaded = match opened(root) {
         Ok(loaded) => loaded,
         Err(code) => return code,
     };
@@ -5759,7 +5653,7 @@ fn probe_stale(root: &Path) -> ExitCode {
             ))
         }
     };
-    let loaded = match load(root) {
+    let loaded = match opened(root) {
         Ok(loaded) => loaded,
         Err(code) => return code,
     };
@@ -5857,7 +5751,7 @@ fn import(root: &Path, name: Option<&str>, expect: Option<&str>, writing: bool) 
     // `refuse` (#455, the ninth site): `declared` reads
     // `.headwater/taxonomy.yml`, which is a fixed location this engine reads on
     // every run, and every error it returns is a fact about that file. No
-    // spelling of `headwater import` gets past one. The sibling call in `load`
+    // spelling of `headwater import` gets past one. The sibling call in `Session::open`
     // already reports without the pointer, so this was the odd one out.
     let declarations = match headwater_import::declared(root) {
         Ok(declarations) => declarations,
@@ -5901,7 +5795,7 @@ fn import(root: &Path, name: Option<&str>, expect: Option<&str>, writing: bool) 
         };
     };
 
-    let loaded = match load(root) {
+    let loaded = match opened(root) {
         Ok(loaded) => loaded,
         Err(code) => return code,
     };
@@ -5974,7 +5868,7 @@ fn import(root: &Path, name: Option<&str>, expect: Option<&str>, writing: bool) 
 /// could read.
 fn generate(root: &Path, check_only: bool) -> ExitCode {
     let planned = || -> Result<headwater_generate::Plan, ExitCode> {
-        let loaded = load(root)?;
+        let loaded = opened(root)?;
         let projections = headwater_generate::Projections::read(&loaded.bound.taxonomy)
             .map_err(|errors| refused("the projections", &errors))?;
         Ok(headwater_generate::plan(
@@ -6032,7 +5926,7 @@ fn export(
     generated_at: Option<String>,
     check_only: bool,
 ) -> ExitCode {
-    let loaded = match load(root) {
+    let loaded = match opened(root) {
         Ok(loaded) => loaded,
         Err(code) => return code,
     };
@@ -6200,7 +6094,7 @@ fn mcp(root: &Path, now: Option<Date>, writing: bool) -> ExitCode {
         );
         return ExitCode::FAILURE;
     };
-    let loaded = match load(root) {
+    let loaded = match opened(root) {
         Ok(loaded) => loaded,
         Err(code) => return code,
     };
@@ -6425,7 +6319,7 @@ fn derived(root: &Path) -> ExitCode {
 /// `docs/interfaces/headwater-site.md` is the contract. A relative `dir` is
 /// read from the current directory, as every path operand is.
 fn site(root: &Path, dir: &Path) -> ExitCode {
-    let loaded = match load(root) {
+    let loaded = match opened(root) {
         Ok(loaded) => loaded,
         Err(code) => return code,
     };
@@ -6482,7 +6376,7 @@ fn fix(
     change: Option<&headwater_check::change::Unbound>,
     cached: bool,
 ) -> Result<Fixed, ExitCode> {
-    let loaded = load(root)?;
+    let loaded = opened(root)?;
     let mut cache = loaded.cache(root, cached);
     let ctx = match change {
         None => ctx.clone(),
@@ -6617,7 +6511,7 @@ fn fix_over(root: &Path, ctx: &Context, format: Format) -> Result<Written, Strin
          serving this"
             .to_string()
     })?;
-    let loaded = load(root).map_err(|_| "the corpus did not load".to_string())?;
+    let loaded = opened(root).map_err(|_| "the corpus did not load".to_string())?;
     let run = loaded.check(root, &loaded.declared(), ctx, &mut Cache::disabled());
     let subject = Subject {
         package: &loaded.bound.package,
@@ -6762,16 +6656,16 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
         },
     };
 
-    let loaded = match load(root) {
+    let loaded = match opened(root) {
         Ok(loaded) => loaded,
         Err(code) => return Ok(code),
     };
     headwater_check::phase::mark("load");
-    // An engine outside the range the corpus asks for. `load` already said so
+    // An engine outside the range the corpus asks for. `opened` already said so
     // on standard error, and a strict run fails on it below, after the report,
     // so the findings still reach a reader who runs the wrong engine.
-    let engine_unmet = engine_unmet(&loaded.consumer).is_some();
-    let Loaded {
+    let engine_unmet = loaded.engine_unmet().is_some();
+    let Session {
         bound,
         consumer: _,
         census: taken,
@@ -7001,7 +6895,7 @@ fn infer(
     now: Option<Date>,
 ) -> ExitCode {
     let mode = headwater_cli::paint::stdout_color();
-    let loaded = match load(root) {
+    let loaded = match opened(root) {
         Ok(loaded) => loaded,
         Err(code) => return code,
     };
@@ -8666,10 +8560,7 @@ fn indent(text: &str) -> String {
 }
 
 fn refused(what: &str, errors: &[headwater_census::shelves::DeclarationError]) -> ExitCode {
-    eprintln!(
-        "headwater: {}",
-        err(&format!("{what} did not read, so no run is possible"))
-    );
+    eprintln!("headwater: {}", err(&headwater_api::did_not_read(what)));
     for error in errors {
         eprintln!("  {}", err(&error.to_string()));
     }

@@ -50,7 +50,7 @@ fn retire(root: &Root) {
 /// only component of that decision's keys that moves. A warm run whose cache
 /// was keyed on a frozen lock digest serves the first verdict again.
 ///
-/// `check --fix` builds its cache through the same `Loaded::cache`, and
+/// `check --fix` builds its cache through the same `Session::cache`, and
 /// `wiring.rs` holds that the CLI has no other constructor call. No run can
 /// show a fix run with a frozen key alone, because the report run after it
 /// writes the cache file again, so the fix run only misses.
