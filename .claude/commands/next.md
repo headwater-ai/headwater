@@ -15,6 +15,8 @@ The stages are the same agent definitions the run uses, dispatched by `subagent_
 
 **Width is one and the parent is this session.** There is no run directory unless you make one; the scratch directory under `$CLAUDE_JOB_DIR/tmp/issue-<N>/` is enough for one iteration's notes.
 
+**Run `/next` from a top-level session, never from a subagent.** Each stage is one level deeper than the agent that dispatched it, and in run `20261122-next1959`, at session, then a parent subagent, then `hw-iterate`, then the builder, the builder had no `Agent` tool. It could not dispatch `headwater-maintainer`, or the explore agent that searches the code for it. `hw-iterate` now runs the upkeep pass in its place, but nothing gives the builder its explore agent back (#1998).
+
 **The merge is the human's unless they said otherwise.** Report the verdict of `hw-iterate` and your ruling, and dispatch `hw-integrate` only when the person in the session says merge. A run has a standing license to merge; a single iteration by hand does not.
 
 **A refusal stops here.** When `hw-adjudicate` returns `VERDICT: REFUSE`, say what changed and ask, because the second reader is a person rather than a run that can redirect.
