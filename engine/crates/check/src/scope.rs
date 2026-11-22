@@ -203,6 +203,7 @@ use headwater_census::resolve::Step;
 use headwater_doc::Body;
 use headwater_graph::{Direction, Edge, Graph, Target, Trouble};
 use headwater_yaml::{Mapping, Span};
+use std::collections::{HashMap, HashSet};
 
 /// A typed row that carries no document. Unreachable, and recorded rather than
 /// dropped: an instance that vanishes is a document that coverage calls
@@ -1444,7 +1445,7 @@ impl<'a> EdgeView<'a> {
 ///
 /// An author may write either half, so the name in front matter does not say
 /// this. The direction the graph resolved does.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum End {
     Source,
     Target,
@@ -2048,8 +2049,12 @@ pub fn over_edges<C: EdgeCheck>(
     let scope = edge_scope::<C>();
     let clock = clock_for(scope, ctx);
     // The edges arrive in path order, so the groups come out in a stable order
-    // with no sort here.
+    // with no sort here. The index finds a key's group in constant time, and
+    // the groups stay in the vector in the order their first edge arrived: a
+    // search of every group for each edge was quadratic in the edges of a
+    // document, once for each edge-scoped rule (#1968).
     let mut pairs: Vec<(String, Vec<&Edge>)> = Vec::new();
+    let mut group_of: HashMap<String, usize> = HashMap::new();
     for edge in &graph.edges {
         let Some(key) = (match C::UNIT {
             EdgeUnit::Pair => edge
@@ -2075,9 +2080,12 @@ pub fn over_edges<C: EdgeCheck>(
         }) else {
             continue;
         };
-        match pairs.iter_mut().find(|(known, _)| known == &key) {
-            Some((_, halves)) => halves.push(edge),
-            None => pairs.push((key, vec![edge])),
+        match group_of.get(&key) {
+            Some(&group) => pairs[group].1.push(edge),
+            None => {
+                group_of.insert(key.clone(), pairs.len());
+                pairs.push((key, vec![edge]));
+            }
         }
     }
 
@@ -2178,13 +2186,16 @@ pub fn over_neighbourhoods<C: NeighbourhoodCheck>(
 
         let neighbours = adjacency.of_path(&row.path);
         let mut reads = vec![Input::new(&row.path, row.digest.as_deref())];
+        // The paths already read, beside the list that keeps their order, so
+        // that a document of many neighbours is not searched once for each of
+        // them (#1968).
+        let mut read_paths: HashSet<&str> = HashSet::from([row.path.as_str()]);
         for neighbour in &neighbours {
             // A bound-anchor neighbour carries the empty marker at `path`
             // rather than a real one (see `Adjacency::of`): there is no file
             // to hash, so it costs the read set nothing and its binding goes
             // into the resolution below instead.
-            if !neighbour.path.is_empty() && !reads.iter().any(|input| input.path == neighbour.path)
-            {
+            if !neighbour.path.is_empty() && read_paths.insert(neighbour.path) {
                 reads.push(digests.input(neighbour.path));
             }
         }
@@ -2433,8 +2444,14 @@ pub fn over_corpus<C: CorpusCheck>(
 /// the same two documents by the same relation. So the entries are deduplicated
 /// on the identity that a check reads — the relation, the end, and the far
 /// document — and never on the edge, which would count one neighbour twice.
+///
+/// Each table is a map on the path, because a search of every document for
+/// each edge was linear in the documents, and the dedup of a neighbour is a set
+/// beside its list, because a search of every neighbour already pushed was
+/// quadratic in the edges of one document (#1968). The list keeps the order
+/// the edges arrived in, which is the order a rule reads.
 struct Adjacency<'a> {
-    by_path: Vec<(&'a str, Vec<Neighbour<'a>>)>,
+    by_path: HashMap<&'a str, Neighbours<'a>>,
     /// One folded string per document that declares at least one bound-anchor
     /// edge: every such anchor's own binding, in edge order, joined by `\n`.
     ///
@@ -2446,14 +2463,23 @@ struct Adjacency<'a> {
     /// already gives an edge-scoped key one: the identity of a bound anchor is
     /// what it resolved to, not the string an author wrote, so a change to the
     /// binding with no change to any read-set byte still has to move the key.
-    anchor_resolutions_by_path: Vec<(&'a str, String)>,
+    anchor_resolutions_by_path: HashMap<&'a str, String>,
+}
+
+/// The neighbours of one document in the order the edges arrived, and the
+/// identity of each, so that a second edge to the same neighbour is found in
+/// constant time.
+#[derive(Default)]
+struct Neighbours<'a> {
+    list: Vec<Neighbour<'a>>,
+    seen: HashSet<(&'a str, End, &'a str, &'a str)>,
 }
 
 impl<'a> Adjacency<'a> {
     fn of(graph: &'a Graph) -> Self {
         let mut adjacency = Adjacency {
-            by_path: Vec::new(),
-            anchor_resolutions_by_path: Vec::new(),
+            by_path: HashMap::new(),
+            anchor_resolutions_by_path: HashMap::new(),
         };
         for edge in &graph.edges {
             match &edge.target {
@@ -2533,42 +2559,34 @@ impl<'a> Adjacency<'a> {
     }
 
     fn push(&mut self, path: &'a str, neighbour: Neighbour<'a>) {
-        let entry = match self.by_path.iter_mut().find(|(known, _)| *known == path) {
-            Some(entry) => entry,
-            None => {
-                self.by_path.push((path, Vec::new()));
-                self.by_path.last_mut().expect("just pushed")
-            }
-        };
-        if !entry.1.iter().any(|known| {
-            known.relation == neighbour.relation
-                && known.end == neighbour.end
-                && known.path == neighbour.path
-                && known.id == neighbour.id
-        }) {
-            entry.1.push(neighbour);
+        let entry = self.by_path.entry(path).or_default();
+        let identity = (
+            neighbour.relation,
+            neighbour.end,
+            neighbour.path,
+            neighbour.id,
+        );
+        if entry.seen.insert(identity) {
+            entry.list.push(neighbour);
         }
     }
 
     fn push_resolution(&mut self, path: &'a str, resolution: String) {
-        match self
-            .anchor_resolutions_by_path
-            .iter_mut()
-            .find(|(known, _)| *known == path)
-        {
-            Some((_, existing)) => {
+        match self.anchor_resolutions_by_path.get_mut(path) {
+            Some(existing) => {
                 existing.push('\n');
                 existing.push_str(&resolution);
             }
-            None => self.anchor_resolutions_by_path.push((path, resolution)),
+            None => {
+                self.anchor_resolutions_by_path.insert(path, resolution);
+            }
         }
     }
 
     fn of_path(&self, path: &str) -> Vec<Neighbour<'a>> {
         self.by_path
-            .iter()
-            .find(|(known, _)| *known == path)
-            .map(|(_, neighbours)| neighbours.clone())
+            .get(path)
+            .map(|neighbours| neighbours.list.clone())
             .unwrap_or_default()
     }
 
@@ -2578,8 +2596,7 @@ impl<'a> Adjacency<'a> {
     /// costs the key nothing new.
     fn anchor_resolution_of_path(&self, path: &str) -> Option<&str> {
         self.anchor_resolutions_by_path
-            .iter()
-            .find(|(known, _)| *known == path)
-            .map(|(_, resolution)| resolution.as_str())
+            .get(path)
+            .map(String::as_str)
     }
 }

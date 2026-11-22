@@ -2546,6 +2546,114 @@ fn one_dropped_record_is_one_unaccounted_finding() {
     }
 }
 
+/// A record spent by one finding is not claimed by a second, even where an
+/// unspent record of the same path stands before it.
+///
+/// The census indexes the records of each path and skips the spent ones at the
+/// front of that list (#1968). A spent record behind an unspent one is the
+/// case the skip does not reach, so the test of each record for being spent is
+/// what holds it. The text report is cut so that a record of another rule on
+/// the same path stands first, and the second record of the repeated pair is
+/// gone: the second finding of the pair then meets the unspent record of the
+/// other rule, and behind it the record the first finding of the pair spent.
+#[test]
+fn a_spent_record_behind_an_unspent_one_is_not_claimed_twice() {
+    let ran = fixture_run();
+    let (rule, path) = a_repeated_pair(&ran);
+    let format = Format::Text;
+    let artifact = render(&ran, format);
+    let lines: Vec<&str> = artifact.lines().collect();
+    let records = spans(format, &lines);
+    let text = |(from, to): (usize, usize)| lines[from..to].join("\n");
+    let pair: Vec<(usize, usize)> = records
+        .iter()
+        .copied()
+        .filter(|&span| text(span).contains(rule) && text(span).contains(path.as_str()))
+        .collect();
+    assert!(pair.len() >= 2, "the repeated pair has two records");
+    let (first, second) = (pair[0], pair[1]);
+    let other = records
+        .iter()
+        .copied()
+        .find(|&span| {
+            span.0 >= second.1
+                && !text(span).contains(rule)
+                && text(span)
+                    .lines()
+                    .next()
+                    .is_some_and(|head| head.contains(&format!(" {path}")))
+        })
+        .expect("a record of another rule on the same path after the pair");
+
+    let mut reordered: Vec<&str> = Vec::new();
+    for (at, line) in lines.iter().enumerate() {
+        if at == first.0 {
+            reordered.extend(&lines[other.0..other.1]);
+        }
+        let inside = |(from, to): (usize, usize)| at >= from && at < to;
+        if !inside(second) && !inside(other) {
+            reordered.push(line);
+        }
+    }
+    let reordered = reordered.join("\n") + "\n";
+
+    let full = headwater_adapter::census(&ran.run, format, &artifact);
+    assert_eq!((full.carried, full.unaccounted.len()), (full.findings, 0));
+    let after = headwater_adapter::census(&ran.run, format, &reordered);
+    assert_eq!(
+        (after.carried, after.unaccounted.len()),
+        (after.findings - 1, 1),
+        "a record spent once was claimed a second time"
+    );
+}
+
+/// The audit of a report with many records on one document takes time in
+/// proportion to the records, not to their square (#1968).
+///
+/// One live finding is repeated until the document has `MANY_RECORDS` records
+/// of one rule. The audit searched the records of that path from the first for
+/// each finding, past every record already claimed, so a large report took
+/// time in proportion to the square of its records. Every record is still
+/// claimed once.
+///
+/// 320,000 records: 412.8 s for the audit with a cursor that starts from the
+/// first record of the path each time, which is less work than the search
+/// before the fix, and 8.7 s after the fix, on the build host in the `dev`
+/// profile. The CI runner took 1.94 times as long as the build host on the one
+/// case it reported, so the ceiling of 60 s is more than three times the time
+/// after the fix times 1.94 and less than a fifth of the time before it.
+#[test]
+fn many_records_on_one_document_are_audited_in_linear_time() {
+    const MANY_RECORDS: usize = 320_000;
+    let ran = fixture_run();
+    let (rule, path) = a_repeated_pair(&ran);
+    let one = ran
+        .run
+        .findings
+        .iter()
+        .find(|finding| finding.rule == rule && finding.path == path)
+        .expect("the repeated pair is in the findings")
+        .clone();
+    let mut run = ran.run.clone();
+    let before = run.findings.len();
+    run.findings.extend(std::iter::repeat_n(one, MANY_RECORDS));
+    let artifact = render_run(&run, &ran, Format::Text);
+    let started = std::time::Instant::now();
+    let audit = headwater_adapter::census(&run, Format::Text, &artifact);
+    let took = started.elapsed();
+    eprintln!("the audit of {} records took {took:?}", audit.findings);
+    assert!(audit.findings > before + MANY_RECORDS / 2);
+    assert_eq!(
+        (audit.carried, audit.unaccounted.len()),
+        (audit.findings, 0)
+    );
+    assert!(
+        took < std::time::Duration::from_secs(60),
+        "the audit of {} records took {took:?}",
+        audit.findings
+    );
+}
+
 /// An artifact emptied of its finding records carries none of them, in every
 /// format.
 ///
