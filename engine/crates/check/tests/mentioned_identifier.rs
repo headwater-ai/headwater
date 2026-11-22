@@ -120,7 +120,9 @@ fn an_obligation_naming_a_decision_in_prose_is_offered_the_relation() {
     assert!(finding.message.contains("`DEC-MEN-0001`"), "{finding:#?}");
     assert!(finding.message.contains("`traces_to`"), "{finding:#?}");
     assert!(
-        finding.remediation.contains("headwater explain DEC-MEN-0001"),
+        finding
+            .remediation
+            .contains("headwater explain DEC-MEN-0001"),
         "{finding:#?}"
     );
     assert!(finding.patch.is_none(), "{:?}", finding.patch);
