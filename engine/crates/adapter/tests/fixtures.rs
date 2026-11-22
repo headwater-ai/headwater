@@ -2616,8 +2616,12 @@ fn a_spent_record_behind_an_unspent_one_is_not_claimed_twice() {
 /// time in proportion to the square of its records. Every record is still
 /// claimed once.
 ///
-/// 40,000 records: MAIN before the fix, AFTER after, on the build host in the
-/// `dev` profile. Ceiling CEIL.
+/// 320,000 records: 412.8 s for the audit with a cursor that starts from the
+/// first record of the path each time, which is less work than the search
+/// before the fix, and 8.7 s after the fix, on the build host in the `dev`
+/// profile. The CI runner took 1.94 times as long as the build host on the one
+/// case it reported, so the ceiling of 60 s is more than three times the time
+/// after the fix times 1.94 and less than a fifth of the time before it.
 #[test]
 fn many_records_on_one_document_are_audited_in_linear_time() {
     const MANY_RECORDS: usize = 320_000;
@@ -2639,9 +2643,12 @@ fn many_records_on_one_document_are_audited_in_linear_time() {
     let took = started.elapsed();
     eprintln!("the audit of {} records took {took:?}", audit.findings);
     assert!(audit.findings > before + MANY_RECORDS / 2);
-    assert_eq!((audit.carried, audit.unaccounted.len()), (audit.findings, 0));
+    assert_eq!(
+        (audit.carried, audit.unaccounted.len()),
+        (audit.findings, 0)
+    );
     assert!(
-        took < std::time::Duration::from_secs(600),
+        took < std::time::Duration::from_secs(60),
         "the audit of {} records took {took:?}",
         audit.findings
     );
