@@ -100,7 +100,7 @@
 # also read: a declared answer of one word that opens the line, followed by a
 # reason after ` — `, ` – `, ` - `, `:`, `,`, `;` or ` (` (#1980,
 # step_leading_answer says how). Phase B of #1881 recorded two sessions that
-# answered `HW-DR-0090 — <reason>` as no answer. The prefix is a stated form,
+# answered `HW-DR-0034 — <reason>` and `0090 — <reason>` as no answer. The prefix is a stated form,
 # so the rule still searches no sentence: a lead of two words gives nothing.
 #
 # Until #980 the rule read the whole final message. The pilot of 2026-09-28
