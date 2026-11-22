@@ -1039,7 +1039,15 @@ pub fn bind(
 /// The `to` of a mapping entry, with the span a finding anchors to.
 fn target_of(map: &Mapping, anchor_only: bool) -> Option<(Vec<String>, Span)> {
     let to = map.get("to")?;
+    // A plain null `to:` (`to:`, `to: ~`, `to: null`) names no target, so the
+    // caller reports the entry as having none rather than binding the text
+    // `~` ([#1912](https://github.com/headwater-ai/headwater/issues/1912)). A
+    // quoted `"~"` is text the author wrote and stays a target, the same split
+    // the relation value makes for #1902.
     if let Some(scalar) = to.value.as_scalar() {
+        if as_null(scalar) {
+            return None;
+        }
         return Some((vec![scalar.text.clone()], to.span));
     }
     // A list in the place of the string, admitted only where the endpoint is
