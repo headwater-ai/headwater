@@ -82,6 +82,10 @@ behind_clone dirty
 : > "$repos/dirty/untracked"
 behind_clone diverged
 gitc -C "$repos/diverged" commit -q --allow-empty -m local-only
+# An identity of its own, so that a move other than `--ff-only` could write a
+# merge commit here and the case would see HEAD move.
+git -C "$repos/diverged" config user.name t
+git -C "$repos/diverged" config user.email t@t
 behind_clone detached
 gitc -C "$repos/detached" checkout -q --detach HEAD
 behind_clone nofetch
@@ -195,6 +199,15 @@ refused diverged diverged1 'a main checkout that has diverged from origin/main i
     "$repos/diverged has commits that origin/main does not have, so it does not fast-forward" "git -C $repos/diverged branch local-main && git -C $repos/diverged reset --keep origin/main"
 refused nofetch nofetch1 'a main checkout that cannot fetch from origin is refused' \
     "the fetch from origin failed in $repos/nofetch" "git -C $repos/nofetch fetch origin && git -C $repos/nofetch merge --ff-only origin/main"
+# The shared script on its own: a directory with no main checkout above it is
+# skipped with status 3 and touched nowhere, whether it is in no repository or
+# in a worktree of a bare one.
+gitc -C "$repos/origin.git" worktree add -q "$repos/bare-wt" main 2>/dev/null
+for nomain in "$scratch" "$repos/bare-wt"; do
+    out=$(sh "$root/tools/run/fast-forward-main.sh" "$nomain" 2>/dev/null); status=$?
+    same "fast-forward-main.sh skips $nomain, which has no main checkout, with status 3" \
+        "3|FAST-FORWARD: skipped, $nomain is not a worktree of a main checkout, nor a main checkout" "$status|$out"
+done
 out=$(HW_RUN_ALLOW_STALE=yes HW_RUN_CHECKOUT="$repos/dirty" HEADWATER_RUN_ROOT="$scratch/stale-runs" sh "$tool" start staleyes 2>/dev/null); status=$?
 same 'HW_RUN_ALLOW_STALE=yes is not the override: start still refuses' "1|absent" "$status|$([ -e "$scratch/stale-runs/staleyes" ] && echo present || echo absent)"
 out=$(HW_RUN_ALLOW_STALE=1 HW_RUN_CHECKOUT="$repos/dirty" HEADWATER_RUN_ROOT="$scratch/stale-runs" sh "$tool" start stale3 2>/dev/null); status=$?
