@@ -44,6 +44,6 @@ pub mod span;
 pub mod value;
 
 pub use error::{ErrorKind, LoadError};
-pub use loader::{load, load_with, Options};
+pub use loader::{load, load_with, Options, MAX_DEPTH};
 pub use span::{Origin, Position, Span, Spanned};
 pub use value::{Entry, Mapping, Scalar, Style, Value};
