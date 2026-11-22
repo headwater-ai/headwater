@@ -764,8 +764,14 @@ fn the_first_stop_rule_of_the_authoring_skill_counts_a_ruling_stated_in_the_conv
             // sentence fails the case rather than narrowing the rule unseen.
             "ruling that the person states in the conversation is evidence for the record.",
             "who ruled and when",
+            // The session goes on after a stated ruling. Without this pin, a
+            // rule that records the ruling and then stops passes the case.
+            "and continue",
             "only when neither the conversation nor",
             "halt",
+            // The fallback when nothing supports the decision.
+            "confirms that none exists, record the document as",
+            "unevidenced",
             "fabricated",
         ] {
             assert!(
@@ -773,5 +779,24 @@ fn the_first_stop_rule_of_the_authoring_skill_counts_a_ruling_stated_in_the_conv
                 "stop rule 1 of {path} does not say {phrase:?}: {item}"
             );
         }
+    }
+    // A text pin of phrases passes a contrary sentence added beside them, such
+    // as "It counts only after the person signs it in a work item." So each
+    // item is pinned whole as well. Change this table with the rule.
+    for (path, ruled) in [
+        (
+            "engine/crates/cli/harness/skills/headwater-authoring/SKILL.md",
+            "1. **No decision record with no evidence.** A ruling that the person states in the conversation is evidence for the record. Record who ruled and when, in the provenance or the rationale as the kind's facets and sections allow, and continue. Halt and ask only when neither the conversation nor a work item, commit, discussion or measurement supports the decision. Where the human confirms that none exists, record the document as unevidenced. A fabricated rationale is worse than an admitted absence, because somebody will cite it.",
+        ),
+        (
+            "docs/spec/05-ai-integration.md",
+            "1. **No decision record without evidence.** A ruling that the person states in the conversation is evidence for the record. The assistant records who ruled and when, in the provenance or the rationale as the kind's facets and sections allow, and continues. It halts and asks only when neither the conversation nor any work item, commit, discussion, or measurement supports the decision. If the human confirms that none exists, record the document as `unevidenced` ([spec 3](03-authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two)). Never invent rationale — a fabricated *why* is worse than an admitted absence, because someone will cite it.",
+        ),
+    ] {
+        assert_eq!(
+            first_stop_rule(path),
+            ruled,
+            "stop rule 1 of {path} is not the text the owner ruled on 2026-11-22"
+        );
     }
 }
