@@ -12,10 +12,12 @@
 //! ceiling that the code before the fix exceeded by more than ten times in the
 //! same test profile.
 //!
-//! The ceilings are wall time in the `dev` profile (no optimization), so each
-//! leaves the fixed code a margin on a loaded runner. The doc comment on each
-//! case records the time measured before and after the fix, on the build host
-//! (18 cores, shared with other builds) on 2026-11-23.
+//! The ceilings are wall time in the `dev` profile (no optimization). The doc
+//! comment on each case records the time measured before and after the fix,
+//! on the build host (18 cores, shared with other builds) on 2026-11-23. The
+//! CI runner took 1.94 times as long as the build host on the one case it
+//! reported, so each ceiling is at least three times the time after the fix
+//! times 1.94, and at most a fifth of the time before the fix.
 
 mod common;
 use common::{Ran, Root};
@@ -76,7 +78,7 @@ fn assert_in_time(label: &str, text: &str, args: &[&str], ceiling: Duration) -> 
 /// Unknown front-matter keys, each one distinct. The loader searched every
 /// key already read for a duplicate of each new one.
 ///
-/// 160,000 keys: 118.8 s before the fix, 0.72 s after. Ceiling 6 s.
+/// 160,000 keys: 135.6 s before the fix, 0.89 s after. Ceiling 8 s.
 #[test]
 fn many_unknown_front_matter_keys_check_in_linear_time() {
     let extra: String = (0..KEYS).map(|i| format!("k{i}: v\n")).collect();
@@ -93,7 +95,12 @@ fn many_unknown_front_matter_keys_check_in_linear_time() {
 /// its groups for each edge once for each edge-scoped rule, and the audit of
 /// the report searched every record for the record of each finding.
 ///
-/// 80,000 targets: 246.4 s before the fix, 9.2 s after. Ceiling 18 s.
+/// 80,000 targets: 257.0 s before the fix, 5.1 s after, both with
+/// `--no-cache`. Ceiling 40 s. The cache is off because with it on, the time
+/// after the fix is mostly one cache key for each of 240,000 instances, which
+/// is linear and slow in this profile, and on the CI runner it took 19.7 s
+/// against the first ceiling of 18 s. The loops this case holds run the same
+/// with the cache off.
 #[test]
 fn many_unresolved_relation_targets_check_in_linear_time() {
     let targets: String = (0..TARGETS)
@@ -104,7 +111,7 @@ fn many_unresolved_relation_targets_check_in_linear_time() {
         "linear-targets",
         &document(&extra, "One paragraph."),
         &["check", "--strict", "--no-cache"],
-        Duration::from_secs(30),
+        Duration::from_secs(40),
     );
     assert!(
         ran.out
@@ -116,7 +123,7 @@ fn many_unresolved_relation_targets_check_in_linear_time() {
 /// Sentences in one paragraph. The sentence reader walked every run of the
 /// block, and counted the characters of each, for each position it asked.
 ///
-/// 10,000 sentences: 122.5 s before the fix, 0.32 s after. Ceiling 6 s.
+/// 10,000 sentences: 130.2 s before the fix, 0.40 s after. Ceiling 6 s.
 #[test]
 fn many_sentences_in_one_paragraph_check_in_linear_time() {
     let body = "This is a sentence. ".repeat(SENTENCES);
@@ -132,7 +139,7 @@ fn many_sentences_in_one_paragraph_check_in_linear_time() {
 /// of the line for each column, and the sentence reader scanned every link
 /// of the body for each terminator.
 ///
-/// 160,000 links: 66.7 s before the fix, 1.04 s after. Ceiling 6 s.
+/// 160,000 links: 75.2 s before the fix, 1.05 s after. Ceiling 10 s.
 #[test]
 fn many_links_on_one_line_check_in_linear_time() {
     let body = "[a](0001-the-warrant-a-person-set.md) ".repeat(LINKS);
