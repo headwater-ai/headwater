@@ -1353,6 +1353,105 @@ fn a_null_item_before_a_real_target_keeps_the_real_edge() {
     );
 }
 
+/// A null `to:` in a mapping entry names no target, and a quoted `"~"` still does.
+///
+/// [#1912](https://github.com/headwater-ai/headwater/issues/1912). #1902 made a
+/// null relation value declare no edge and left the mapping form, so `- to: ~`
+/// bound the text `~` and `check` reported an unresolved `~`. A blank `to:` is
+/// an entry with no target, so `explain` prints no edge for it and `check`
+/// reports the missing target. The quoted case is the boundary: the author
+/// wrote `~`, so the edge stays and resolves to nothing.
+#[test]
+fn a_null_to_in_a_mapping_entry_names_no_target() {
+    let cases = [
+        ("bare", "    - to:\n", false),
+        ("tilde", "    - to: ~\n", false),
+        ("word", "    - to: null\n", false),
+        ("quoted", "    - to: \"~\"\n", true),
+    ];
+    for (label, entry, stays) in cases {
+        let at = scratch().join(format!("null-to-{label}"));
+        let _ = std::fs::remove_dir_all(&at);
+        std::fs::create_dir_all(at.join(".headwater")).expect("the declaration directory is there");
+        std::fs::create_dir_all(at.join("docs/interfaces")).expect("the shelf is there");
+        std::fs::create_dir_all(at.join("src")).expect("the source directory is there");
+        std::fs::write(at.join("src/a.rs"), "fn main() {}\n")
+            .expect("the governed file is written");
+        for name in ["taxonomy.lock", "taxonomy.yml", "overlay.yml"] {
+            std::fs::copy(
+                repository().join(".headwater").join(name),
+                at.join(".headwater").join(name),
+            )
+            .expect("the declaration copies");
+        }
+        std::fs::write(
+            at.join("docs/interfaces/headwater-null-to.md"),
+            format!("---\nid: HW-IFACE-headwater-null-to\nstatus: current\nstatus_since: 2026-11-22\nsummary: \"A document with a null `to` in a relation entry.\"\nlast_verified: 2026-11-22\ntitle: \"headwater null to\"\nrelations:\n  governs: [src/a.rs]\n  traces_to:\n{entry}---\n\n# headwater null to\n\n## Synopsis\n\n    headwater null to\n"),
+        )
+        .expect("the document is written");
+
+        let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+            .args([
+                "explain",
+                "--json",
+                "docs/interfaces/headwater-null-to.md",
+                "--root",
+            ])
+            .arg(&at)
+            .output()
+            .expect("the binary runs");
+        let text = String::from_utf8_lossy(&output.stdout).into_owned();
+        assert_eq!(
+            output.status.code(),
+            Some(0),
+            "{label}: {text}\n{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let related = related(&text);
+        assert!(
+            related
+                .iter()
+                .any(|element| element.direction == "outbound" && element.relation == "governs"),
+            "{label}: the governs edge is still there\n{text}"
+        );
+        let tilde_edge = related.iter().any(|element| {
+            element.direction == "outbound"
+                && element.relation == "traces_to"
+                && element.target == "~"
+        });
+        assert_eq!(
+            tilde_edge, stays,
+            "{label}: a null `to` prints no edge, and a quoted `~` prints one\n{text}"
+        );
+        if !stays {
+            assert!(
+                !related
+                    .iter()
+                    .any(|element| element.relation == "traces_to"),
+                "{label}: a null `to` prints no `traces_to` edge at all\n{text}"
+            );
+        }
+
+        let check = Command::new(env!("CARGO_BIN_EXE_headwater"))
+            .args(["check", "--root"])
+            .arg(&at)
+            .output()
+            .expect("the binary runs");
+        let findings = String::from_utf8_lossy(&check.stdout).into_owned();
+        let missing = findings
+            .lines()
+            .any(|line| line.contains("an entry of `traces_to` declares no `to`"));
+        let unresolved = findings
+            .lines()
+            .any(|line| line.contains("edge: `traces_to` -> ~ resolves to nothing"));
+        assert_eq!(
+            (missing, unresolved),
+            (!stays, stays),
+            "{label}: a null `to` is a missing target, and a quoted `~` is an unresolved one\n{findings}"
+        );
+    }
+}
+
 /// Each member of `reach` carries the entries its one pattern matched.
 ///
 /// [#1093](https://github.com/headwater-ai/headwater/issues/1093). The edit-time
