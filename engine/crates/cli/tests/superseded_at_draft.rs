@@ -373,3 +373,34 @@ fn explain_says_a_draft_will_govern_and_not_that_it_governs() {
     );
     assert!(!line.contains("will govern"), "{line}");
 }
+
+/// Only a relation that writes a state onto its target waits on its source.
+/// A draft that `constrains` another decision governs that reading now, so
+/// `explain` still says it governs.
+#[test]
+fn explain_says_a_draft_governs_an_edge_that_sets_no_state() {
+    let root = Root::new("constrains");
+    let (target, target_id) = root.decision("A ruling that another one narrows");
+    let (draft, _) = root.decision("The ruling that narrows it");
+    set_facet(&target, "status", "current");
+    set_facet(&draft, "status", "draft");
+    into_front_matter(
+        &draft,
+        &format!("relations:\n  constrains:\n    - {target_id}\n"),
+    );
+    let relative = draft
+        .strip_prefix(&root.at)
+        .expect("under the root")
+        .to_str()
+        .expect("a path")
+        .to_string();
+    let explained = root.run(&["explain", &relative]);
+    let line = supersession_line(&explained.out);
+    assert!(
+        line.contains("constrains") && line.contains("[this document governs the reading]"),
+        "{}{}",
+        explained.out,
+        explained.err
+    );
+    assert!(!line.contains("will govern"), "{line}");
+}
