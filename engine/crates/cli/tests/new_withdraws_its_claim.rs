@@ -156,6 +156,10 @@ impl Root {
             "docs/decisions/0002-second.md\n",
             "the number the failed run claimed was not spent\n{made:?}"
         );
+        assert!(
+            made.out.contains(&format!("claimed {SECOND_CLAIM}")),
+            "a run that lands reports the claim it made\n{made:?}"
+        );
     }
 }
 
