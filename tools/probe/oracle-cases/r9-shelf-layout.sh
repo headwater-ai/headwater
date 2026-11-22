@@ -51,3 +51,11 @@ other_key() {
     deleted && sed -i 's/^title: "A shelf layout names a file at birth and no rule reads it"$/title: "A shelf layout names a file at birth, and a rule that read it would report every document that a person renamed"/' docs/obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md && grep -q '^title: .*would report every document' docs/obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md
 }
 more_wrong="deleted commented body_line summary_commented other_key"
+
+# A paraphrase that keeps both clauses in other words, the form most phase B
+# sessions wrote (#1978). The task asks the session to keep the meaning and
+# not the words, so it must pass.
+paraphrase() {
+    sed -i 's/^summary: "A shelf layout is read by the scaffolder and by nothing else, and a rule that read it would report every document that a person renamed or typed by hand."$/summary: "A shelf layout is read only by the scaffolder, and a rule reading it would report every renamed or hand-typed document."/' docs/obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md && grep -q 'read only by the scaffolder' docs/obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md
+}
+more_sound="paraphrase"

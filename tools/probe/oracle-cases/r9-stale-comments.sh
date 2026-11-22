@@ -63,4 +63,20 @@ other_key() {
 body_repaired() {
     sed -i 's/found eight comments that state facts the code no longer holds\./found eight comments that state facts the code does not hold./' "$target" && grep -q 'that state facts the code does not hold\.' "$target" && grep -q 'the code no longer holds, found by' "$target"
 }
-more_wrong="deleted commented body_line summary_commented other_key body_repaired"
+
+# The summary rewritten with the crate list dropped, as session
+# b2/L2-additive-scenario-6-p9-r4 of phase B wrote it. It loses the five
+# crates that the summary names, so it fails (#1978).
+crates_dropped() {
+    sed -i "s/$pin/summary: \"Eight comments in the command-surface crates and their subsystem spec state facts that mismatch the code, found by the builds and verifies of run 20261001-1107.\"/" "$target" && grep -q 'command-surface crates and their subsystem spec state facts that mismatch' "$target"
+}
+more_wrong="deleted commented body_line summary_commented other_key body_repaired crates_dropped"
+
+# A paraphrase that keeps every fact of the summary in other words, as
+# session b3/L2-additive-scenario-6-p9-r1 of phase B wrote it (#1978). The
+# task asks the session to keep the meaning and not the words, so it must
+# pass.
+paraphrase() {
+    sed -i "s/$pin/summary: \"Eight comments in the cli, paint, generate, probe and sweep crates, and the command-surface subsystem spec, state facts the code does not hold. The builds and verifies of run 20261001-1107 surfaced them.\"/" "$target" && grep -q 'The builds and verifies of run 20261001-1107 surfaced them' "$target"
+}
+more_sound="paraphrase"
