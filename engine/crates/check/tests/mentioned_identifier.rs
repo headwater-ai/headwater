@@ -12,7 +12,14 @@
 //! whose edge the decision wrote.
 //!
 //! **A rule that offered every relation** reports `decisions/names-obligation.md`,
-//! for which the taxonomy declares no relation at all (HW-OBL-0055).
+//! for which the taxonomy declares no relation at all (HW-OBL-0055). A rule
+//! that read only the target kind reports it too, because `refines` reaches
+//! an obligation from another obligation. A rule that read only the source
+//! kind reports `obligations/names-note.md`, because `traces_to` leaves an
+//! obligation and no relation reaches a note.
+//!
+//! **A rule that read a document's own identifier** reports
+//! `obligations/self-and-ghost.md`, which `refines` would join to itself.
 //!
 //! **A rule that read every run of text** reports the code span, the fenced and
 //! indented blocks and the block quote of `obligations/not-prose.md`.
@@ -147,6 +154,13 @@ fn an_inverse_half_written_by_the_named_document_is_silent() {
 #[test]
 fn a_pair_no_relation_admits_is_silent() {
     assert!(on(&run(), "decisions/names-obligation.md").is_empty());
+}
+
+/// A note is the end of no relation, so an obligation that names one has
+/// nothing to be offered, though `traces_to` leaves obligations.
+#[test]
+fn a_named_kind_no_relation_reaches_is_silent() {
+    assert!(on(&run(), "obligations/names-note.md").is_empty());
 }
 
 /// A code span, a fenced block, an indented block and a block quote are not
