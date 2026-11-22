@@ -148,6 +148,8 @@ impl<'a> Dependency<'a> {
 impl EdgeCheck for Dependency<'_> {
     const RULE: &'static str = self::RULE;
     /// See [`crate::placement::Placement::VERSION`].
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 1;
     /// The Q4 pair. See the module comment: both ends have to be documents,
     /// because the rule reads a facet at each of them.

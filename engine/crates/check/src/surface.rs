@@ -142,6 +142,8 @@ impl DocumentCheck for LocalPath {
     /// configuration, as `site` is in `site_dir: site`. The verdict on such a
     /// page moves from failed to passed, so a warm cache would otherwise
     /// serve edition four's failure.
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 5;
     const NEEDS_BODY: bool = true;
 

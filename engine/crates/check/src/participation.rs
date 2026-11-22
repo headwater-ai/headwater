@@ -153,6 +153,8 @@ impl<'a> Participation<'a> {
 impl NeighbourhoodCheck for Participation<'_> {
     const RULE: &'static str = self::RULE;
     /// See [`crate::placement::Placement::VERSION`].
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 1;
     /// The declaration that admits `ctx.now` to the view, and the same one that
     /// puts the date in the cache key. See [`crate::scope`] and [`crate::cache`]

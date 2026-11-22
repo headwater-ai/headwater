@@ -100,6 +100,8 @@ pub const SCOPE: Scope = Scope::corpus(false, false, false);
 /// [`SCOPE`] is: no trait carries it. It is published in the read set beside
 /// every other rule's, because a reader of that artifact is asking which
 /// engine produced the result and this rule produces some of it.
+///
+/// Raise the rule version when a rule's behavior changes.
 pub const VERSION: u32 = 1;
 
 /// The emitter targets this rule exports to, stated here for the reason

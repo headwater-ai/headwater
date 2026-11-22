@@ -106,6 +106,8 @@ impl Identifier {
 impl DocumentCheck for Identifier {
     const RULE: &'static str = self::RULE;
     /// The first edition of this rule.
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 1;
 
     /// A kind that mints under no scheme generates no instance, on the terms
