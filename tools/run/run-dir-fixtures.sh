@@ -1079,6 +1079,25 @@ same 'integrate: exit 0, the issue line names the queue, and one pull request li
     '0|issue:        none (the integrator queue)|2' \
     "$status|$(grep '^issue:' "$f")|$(grep -c '^pull request:' "$f")"
 same '  and each pull request line is what integrations prints' "$(sh "$tool" integrations "$dp" | paste -sd'|')" "$(sed -n 's/^pull request: *//p' "$f" | paste -sd'|')"
+# A log line records a merge only when `merge` holds a commit (#1996). The
+# integrator writes `ejected` or `null` there when the queue ejects a pull
+# request, and the parent's next ruling at the new head must reach it again,
+# as PR #1991 of run 20261122-next1959 did not.
+sh "$tool" integrate "$dp" 802 issue=82 branch=issue-82 ruling=MERGE footprint=f82 sha=aaa8020 >/dev/null 2>&1
+sh "$tool" log "$dp" '{"iter":1,"issue":82,"pr":802,"merge":"ejected","verdict":"MERGE","proved":"p","opened":[],"closed":[]}' >/dev/null 2>&1
+sh "$tool" integrate "$dp" 802 issue=82 branch=issue-82 ruling='MERGE again' footprint=f82 sha=bbb8020 >/dev/null 2>&1
+same 'integrations lists a pull request whose log line records an ejection, at its new ruling' \
+    'PR #802 sha=bbb8020' "$(sh "$tool" integrations "$dp" | grep '^PR #802 ' | cut -d' ' -f1,2,5)"
+out=$(sh "$tool" dispatch "$dp" none integrate 2>&1); status=$?
+f=${out#DISPATCH: }
+same '  and the integrate dispatch hands it to the integrator' \
+    '0|1' "$status|$(grep -c '^pull request: *PR #802 .*sha=bbb8020' "$f")"
+sh "$tool" log "$dp" '{"iter":1,"issue":83,"pr":803,"merge":null,"verdict":"MERGE","proved":"p","opened":[],"closed":[]}' >/dev/null 2>&1
+sh "$tool" integrate "$dp" 803 issue=83 branch=issue-83 ruling=MERGE footprint=f83 sha=ccc8030 >/dev/null 2>&1
+same '  and so does one whose log line holds no commit in merge' \
+    'PR #803 sha=ccc8030' "$(sh "$tool" integrations "$dp" | grep '^PR #803 ' | cut -d' ' -f1,2,5)"
+sh "$tool" log "$dp" '{"iter":1,"issue":82,"pr":802,"merge":"0123abcd","verdict":"MERGE","proved":"p","opened":[],"closed":[]}' >/dev/null 2>&1
+same '  until a log line records it merged, a commit in merge' 0 "$(sh "$tool" integrations "$dp" | grep -c '^PR #802 ')"
 sh "$tool" dispatch "$dp" 80 integrate >/dev/null 2>"$scratch/err"; status=$?
 same 'integrate with an issue is refused with exit 2' 2 "$status"
 sh "$tool" dispatch "$dp" 80 adjudicate colour=red >/dev/null 2>"$scratch/err"; status=$?
