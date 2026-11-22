@@ -816,25 +816,29 @@ fn redigest(text: &str) -> String {
 /// A lock edited by hand, with its digest recomputed so the digest check
 /// passes, is still refused when a path in it climbs out of the repository:
 /// the lock reader runs the containment rule `taxonomy resolve` runs, so
-/// neither `generate` nor `new` reaches a write (#1967). The fixture root is a
+/// neither `generate` nor `new` reaches a write (#1967). A climbing shelf
+/// path is run under both verbs, and a climbing output under `generate`. The fixture root is a
 /// directory of its own, so a file that escaped would land in its parent or
 /// the one above, and the case looks in both.
 #[test]
 fn a_hand_edited_lock_with_a_climbing_path_is_refused_before_any_write() {
-    for (label, from, to, escaped, verb) in [
+    for (label, from, to, escaped, verbs) in [
         (
             "lock-output-climbs",
             "      output: \"{shelf}/README.md\"\n",
             "      output: \"{shelf}/../../../pwned-rel.md\"\n",
             "pwned-rel.md",
-            &["generate"][..],
+            &[&["generate"][..]][..],
         ),
         (
             "lock-shelf-climbs",
             "      path: \"docs/probes/**\"\n",
             "      path: \"../pwned-new/**\"\n",
             "pwned-new",
-            &["new", "probe", "--title", "Escape"][..],
+            &[
+                &["generate"][..],
+                &["new", "probe", "--title", "Escape"][..],
+            ][..],
         ),
     ] {
         let root = Root::new(label);
@@ -860,18 +864,20 @@ fn a_hand_edited_lock_with_a_climbing_path_is_refused_before_any_write() {
         let edited = format!("{}{to}{}", &text[..at], &text[at + from.len()..]);
         std::fs::write(&lock, redigest(&edited)).expect("the lock writes");
 
-        let ran = root.run(verb);
-        assert_eq!(ran.code, Some(1), "{label}: {ran:?}");
-        assert!(
-            ran.err.contains("leaves the repository"),
-            "{label}: the lock reader names the refusal: {ran:?}"
-        );
-        for landing in &landings {
+        for verb in verbs {
+            let ran = root.run(verb);
+            assert_eq!(ran.code, Some(1), "{label} {verb:?}: {ran:?}");
             assert!(
-                !landing.exists(),
-                "{label}: nothing was written at {}",
-                landing.display()
+                ran.err.contains("leaves the repository"),
+                "{label} {verb:?}: the lock reader names the refusal: {ran:?}"
             );
+            for landing in &landings {
+                assert!(
+                    !landing.exists(),
+                    "{label} {verb:?}: nothing was written at {}",
+                    landing.display()
+                );
+            }
         }
         // The remedy the refusal names repairs the lock: `taxonomy resolve`
         // rewrites it from the sources, which never held the climbing path.
