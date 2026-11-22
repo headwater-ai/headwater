@@ -6447,7 +6447,26 @@ fn fix(
             headwater_check::claim::STORE
         );
     }
-    if composed.is_empty() {
+    // A source at its initial state retires nothing yet (HW-DR-0086), so no
+    // patch writes the target's state or the far half. Say so, one line for
+    // each, rather than a silence a caller reads as a fix that landed (#1973).
+    // The text is the finding's own, so a terminal and the MCP write tool read
+    // the same bytes.
+    let deferred: Vec<&headwater_check::Finding> = run
+        .findings
+        .iter()
+        .filter(|finding| finding.rule == headwater_check::state_set_after_initial::RULE)
+        .collect();
+    for finding in &deferred {
+        use std::fmt::Write;
+        let _ = writeln!(
+            account,
+            "headwater: deferred {}: the target's state and the far half are written once it \
+             leaves its initial state. {}",
+            finding.path, finding.message
+        );
+    }
+    if composed.is_empty() && deferred.is_empty() {
         account.push_str("headwater: no finding of this run carries a patch\n");
     }
     Ok(Fixed {
