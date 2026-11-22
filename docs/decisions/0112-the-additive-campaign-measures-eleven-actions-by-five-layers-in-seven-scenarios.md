@@ -114,6 +114,8 @@ Changed on 2026-10-30 by slice 3b of #1874. `typed-at.sh` and `reciprocal-link.s
 
 Added on 2026-10-30 by slice 4b of #1874. `test-passes.sh` also counts only the errors on the documents that it names after `--`. Before it builds, it marks each file under `engine/crates` newer than any build. A grading copy holds no history, so a build that trusts the times of its files can serve the build of the case before it.
 
+Changed on 2026-11-22 by #1978. A baseline of row 9 can name a concept that the repair keeps in a `# summary-any:` line, with the words that can express it. The line passes when the parsed summary holds one of those words, with case ignored. A baseline writes one line for each concept. The tasks of row 9 ask a session to keep the meaning of a sentence, and a `# summary:` line grades the words. In phase B, most sessions of the shelf-layout probe kept both clauses in other words and failed that line. So the shelf-layout and stale-comments baselines name their concepts in `# summary-any:` lines. #1978 regraded the phase B sessions of the two probes under these lines, from the recorded transcripts.
+
 Row 11 has two conditions. The `oracle:` facet names the oracle over the tree. `no-hook-warning.sh` reads the harness log of the session from `HEADWATER_ORACLE_HARNESS_LOG`, because the stream holds no hook attachment. #1875 exports that variable and runs the script on each session of row 11.
 
 `tools/probe/oracle-fixtures.sh` runs each script over a tree that it must pass and a tree that it must fail. An oracle that passes both trees, or fails both, fails CI. The pilot of #1835 found probes of each kind.
