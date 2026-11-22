@@ -217,6 +217,34 @@ impl EdgeCheck for SetAfterInitial<'_> {
     }
 }
 
+/// What the account of `check --fix` says about the findings of this rule,
+/// one line for each, and the line that no finding carries a patch where this
+/// run composed nothing and this rule found nothing.
+///
+/// A source at its initial state retires nothing yet (HW-DR-0086), so no patch
+/// writes the target's state or the far half. Before #1973 the account said
+/// only that no finding carried a patch, and a caller read that silence as a
+/// fix that had nothing left to do. The text is the finding's own, so a
+/// terminal and the write tool of the MCP server read the same bytes. It lives
+/// here and not in the binary, because `src/main.rs` holds a line ratchet
+/// (#1959).
+pub fn fix_account(findings: &[Finding], composed_nothing: bool) -> String {
+    use std::fmt::Write;
+    let mut account = String::new();
+    for finding in findings.iter().filter(|finding| finding.rule == RULE) {
+        let _ = writeln!(
+            account,
+            "headwater: deferred {}: the target's state and the far half are written once it \
+             leaves its initial state. {}",
+            finding.path, finding.message
+        );
+    }
+    if composed_nothing && account.is_empty() {
+        account.push_str("headwater: no finding of this run carries a patch\n");
+    }
+    account
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
