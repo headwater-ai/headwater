@@ -2850,6 +2850,12 @@ if [ -f "$release_wf" ]; then
             *) fail "  and the notes name the taxonomy release \`taxonomy/headwater-standard/v$good_version\` that would carry it" \
                 "the notes name no \`taxonomy/headwater-standard/v$good_version\`, so a reader has no zip to look for" ;;
         esac
+        case $notes_body in
+            *"https://github.com/headwater-ai/headwater/releases/tag/taxonomy/headwater-standard/v$good_version"*"https://github.com/headwater-ai/headwater/releases?q=taxonomy"*)
+                pass "  and the notes link that release and the list of taxonomy releases in the repository the run names" ;;
+            *) fail "  and the notes link that release and the list of taxonomy releases in the repository the run names" \
+                "the notes do not carry both links under \`https://github.com/\$GITHUB_REPOSITORY/releases\`, so a reader has no place to look" ;;
+        esac
 
         # The version is read from the `release:` block alone. A record that
         # opens with another top-level block carrying its own two-space
