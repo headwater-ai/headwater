@@ -239,7 +239,10 @@ fn a_vendor_killed_mid_unpack_leaves_nothing_once_the_next_vendor_starts() {
         }
     }
     let left = left.expect("no kill landed inside the unpack in three tries");
-    assert!(left.exists(), "the killed vendor left no directory to sweep");
+    assert!(
+        left.exists(),
+        "the killed vendor left no directory to sweep"
+    );
 
     // A directory that a live vendor holds: its lock is taken by this process.
     let live = tmpdir.join("headwater-fetch-live-0-0");
@@ -255,7 +258,10 @@ fn a_vendor_killed_mid_unpack_leaves_nothing_once_the_next_vendor_starts() {
         "the next vendor left the killed vendor's directory {} in place",
         left.display()
     );
-    assert!(live.exists(), "the next vendor removed a directory a live vendor holds");
+    assert!(
+        live.exists(),
+        "the next vendor removed a directory a live vendor holds"
+    );
 
     drop(lock);
     let _ = std::fs::remove_dir_all(&tmpdir);
