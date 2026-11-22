@@ -33,6 +33,8 @@ pub const RULE: &str = "import.pin.unread";
 pub const SCOPE: Scope = Scope::taxonomy();
 
 /// Which edition of [`findings`] reached a verdict.
+///
+/// Raise the rule version when a rule's behavior changes.
 pub const VERSION: u32 = 1;
 
 /// Empty: a front-matter schema has no instance to hold this against.

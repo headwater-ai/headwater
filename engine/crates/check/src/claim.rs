@@ -434,6 +434,8 @@ impl CorpusCheck for Missing<'_> {
     /// binary, so none of them could report that difference. `tests/editions.rs`
     /// now does, for this rule and every rule it ledgers: a verdict that moves
     /// at an unchanged edition fails there.
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 2;
     /// The duplicate guard reads the build's own report, on
     /// [`crate::duplicate`]'s terms, rather than comparing identifiers a second
@@ -546,6 +548,8 @@ impl CorpusCheck for Stale<'_> {
     /// reported as what it is, and its remediation says to delete it. The
     /// second reported it as a claim that names nobody and told the reader to
     /// write into it, and a write to a named pipe blocks (#1366).
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 3;
     const NEEDS_CLAIMS: bool = true;
 

@@ -193,6 +193,8 @@ impl DocumentCheck for Retired {
     /// cache from the previous engine would serve the merged verdict. The
     /// `Sentence boundaries` paragraph of `fixtures/check/spec/07-prose-defects.md`
     /// ends a sentence on the code spans `no` and `--no`. The pair after `no` is past the length limit only while merged, and the sentence after `--no` writes a retired term and a future, so `tests/editions.rs` holds this change for all three rules.
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 6;
     const NEEDS_BODY: bool = true;
 

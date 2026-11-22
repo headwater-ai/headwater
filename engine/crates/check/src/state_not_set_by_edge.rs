@@ -160,6 +160,8 @@ impl EdgeCheck for NotSetByEdge<'_> {
     /// draft target became silent. Version 1 never reached `main`, and a
     /// cache that a branch build wrote at 1 served the error verdict to the
     /// next binary until the number moved (#1198).
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 2;
     /// The Q4 pair: the rule reads a facet at each end.
     const UNIT: EdgeUnit = EdgeUnit::Pair;

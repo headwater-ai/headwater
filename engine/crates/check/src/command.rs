@@ -95,6 +95,8 @@ impl DocumentCheck for Undeclared {
     /// a here-document end word, `$(( ))`, a `\` before a CR and a closer of
     /// the other kind as the shell does, and names the first program inside
     /// `$( )`, backticks, `<( )` and `>( )` (#1135).
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 3;
     const NEEDS_BODY: bool = true;
 

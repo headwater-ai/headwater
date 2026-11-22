@@ -100,6 +100,8 @@ impl DocumentCheck for Transition<'_> {
     /// 2 with the fourth reading below: a movement whose end the regime does
     /// not name now skips and names `lifecycle.state.not_admitted`, where it
     /// used to be refused here as a movement out of a state with no exits.
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 2;
     const NEEDS_PRIOR: bool = true;
 

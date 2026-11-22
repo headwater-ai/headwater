@@ -85,6 +85,8 @@ impl<'a> AtInitial<'a> {
 impl DocumentCheck for AtInitial<'_> {
     const RULE: &'static str = self::RULE;
     /// The first edition. See [`crate::placement::Placement::VERSION`].
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 1;
 
     /// A kind that binds a lifecycle regime, in a taxonomy with a state facet.

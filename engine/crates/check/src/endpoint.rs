@@ -106,6 +106,8 @@ impl<'a> Endpoints<'a> {
 impl EdgeCheck for Endpoints<'_> {
     const RULE: &'static str = self::RULE;
     /// See [`crate::placement::Placement::VERSION`].
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 1;
 
     fn instantiates(&self, relation: &str) -> bool {
