@@ -26,43 +26,43 @@ The selection this transcript names is `sha256:d99530b2b639bb6bdd279be2a9356a64c
 
 The `read_set` digest above covers every probe of the selection and every document one of them examines, by path and content. This file names it as provenance and compares it with nothing, and the same holds for the lock and the selection: an edit to a document, a new probe or a moved lock leaves these bytes alone. `headwater generate` names each result whose recorded lock, read set or selection moved, and `headwater probe stale` takes the digest and reports which recorded results a change voided. Neither one fails for it.
 
-Graded by grader 0.5.2.
+Graded by grader 0.5.3.
 A additive run in the scenario-2 arm, on claude-sonnet-5 at served version claude-sonnet-5.
 
 ## The verdicts
 
 - HW-PROBE-a-session-adds-a-british-spelling-to-the-language-rule-and-declines-the-paragraph-limit-a-current-decision-retired (sufficiency, expects patched)
-    session L1-additive-scenario-2-p1-r1: not satisfied — `command:r2-paragraph-limit` reported over each of the 4 produced artifacts; no call to a tool of an MCP server
+    session L1-additive-scenario-2-p1-r1: not satisfied — event 1: `command:r2-paragraph-limit` reported over `engine/crates/check/fixtures/check/spec/07-prose-defects.md`, 4 of the 4 produced artifacts inside the workspace; no call to a tool of an MCP server
 - HW-PROBE-a-session-adds-a-count-of-findings-by-severity-to-the-json-report-of-the-check (sufficiency, expects patched)
-    session L1-additive-scenario-2-p2-r1: satisfied — event 12: `command:r2-check-counts` reported nothing over `docs/interfaces/headwater-check.md`; no call to a tool of an MCP server
+    session L1-additive-scenario-2-p2-r1: satisfied — event 12: `command:r2-check-counts` reported nothing over `docs/interfaces/headwater-check.md` or the other 6 produced artifacts inside the workspace; no call to a tool of an MCP server
 - HW-PROBE-a-session-adds-a-retired-term-to-the-overlay-that-the-task-names-and-leaves-the-lock-matching-it (sufficiency, expects patched)
-    session L1-additive-scenario-2-p3-r1: not satisfied — `command:r8-cutting-edge` reported over each of the 1 produced artifact; no call to a tool of an MCP server
+    session L1-additive-scenario-2-p3-r1: not satisfied — event 16: `command:r8-cutting-edge` reported over `.headwater/overlay.yml`, 1 of the 1 produced artifact inside the workspace; no call to a tool of an MCP server
 - HW-PROBE-a-session-lets-the-disk-free-script-take-its-floor-in-the-equals-form (sufficiency, expects patched)
     session L1-additive-scenario-2-p4-r1: satisfied — event 17: `command:r11-disk-free` reported nothing over `tools/run/disk-free.sh`; no call to a tool of an MCP server
 - HW-PROBE-a-session-links-the-obligation-on-published-read-sets-to-the-evaluation-whose-measurement-discharged-it (sufficiency, expects patched)
-    session L1-additive-scenario-2-p5-r1: not satisfied — `command:r5-read-set` reported over each of the 1 produced artifact; no call to a tool of an MCP server
+    session L1-additive-scenario-2-p5-r1: not satisfied — event 18: `command:r5-read-set` reported over `docs/obligations/0017-publishing-the-read-set-skips-a-re-run-on-two-of-the-eighteen.md`, 1 of the 1 produced artifact inside the workspace; no call to a tool of an MCP server
 - HW-PROBE-a-session-makes-the-footer-check-of-the-site-refuse-the-stock-theme-credit-as-well (sufficiency, expects patched)
     session L1-additive-scenario-2-p6-r1: satisfied — event 19: `command:r11-site-footer` reported nothing over `tools/site/check-site-footer.sh`; no call to a tool of an MCP server
 - HW-PROBE-a-session-moves-an-obligation-record-to-the-process-shelf-and-repairs-the-links-inside-it-as-well-as-the-links-to-it (sufficiency, expects patched)
-    session L1-additive-scenario-2-p7-r1: not satisfied — `command:r7-small-gaps` reported over each of the 5 produced artifacts; no call to a tool of an MCP server
+    session L1-additive-scenario-2-p7-r1: not satisfied — event 20: `command:r7-small-gaps` reported over `docs/process/obligations/0208-four-small-test-and-wording-gaps-from-run-20260923-0733-filed-together.md`, 5 of the 5 produced artifacts inside the workspace; no call to a tool of an MCP server
 - HW-PROBE-a-session-moves-the-guide-to-the-merge-driver-for-derived-files-to-the-adopter-shelf-under-the-identifier-that-shelf-mints (sufficiency, expects patched)
-    session L1-additive-scenario-2-p8-r1: not satisfied — `command:r7-merge-driver` reported over each of the 3 produced artifacts; no call to a tool of an MCP server
+    session L1-additive-scenario-2-p8-r1: not satisfied — event 21: `command:r7-merge-driver` reported over `docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`, 3 of the 3 produced artifacts inside the workspace; no call to a tool of an MCP server
 - HW-PROBE-a-session-records-a-ruling-that-drops-the-help-screen-banner-as-the-settled-successor-of-the-record-the-task-names (sufficiency, expects patched)
-    session L1-additive-scenario-2-p9-r1: not satisfied — `command:r6-banner` reported over each of the 2 produced artifacts; no call to a tool of an MCP server
+    session L1-additive-scenario-2-p9-r1: not satisfied — event 22: `command:r6-banner` reported over `docs/decisions/0045-coloring-the-cli-and-where-the-banner-goes.md`, 2 of the 2 produced artifacts inside the workspace; no call to a tool of an MCP server
 - HW-PROBE-a-session-records-as-owed-that-no-ruling-says-whether-a-hook-s-text-on-a-prompt-is-a-warning (sufficiency, expects patched)
-    session L1-additive-scenario-2-p10-r1: not satisfied — `command:r4-hook-warning` reported over each of the 1 produced artifact; no call to a tool of an MCP server
+    session L1-additive-scenario-2-p10-r1: not satisfied — event 2: `command:r4-hook-warning` reported over `docs/obligations/0243-whether-a-hooks-printed-pointer-counts-as-a-warning.md`, 1 of the 1 produced artifact inside the workspace; no call to a tool of an MCP server
 - HW-PROBE-a-session-records-as-owed-the-corpus-size-axis-that-the-additive-campaign-defers (sufficiency, expects patched)
-    session L1-additive-scenario-2-p11-r1: not satisfied — `command:r4-corpus-size` reported over each of the 2 produced artifacts; no call to a tool of an MCP server
+    session L1-additive-scenario-2-p11-r1: not satisfied — event 3: `command:r4-corpus-size` reported over `docs/obligations/0243-the-additive-campaign-defers-corpus-size-as-a-circumstance-axis-and-the-debt-had-no-record-of-its-own.md`, 2 of the 2 produced artifacts inside the workspace; no call to a tool of an MCP server
 - HW-PROBE-a-session-records-the-owl-worked-example-as-evidence-of-the-check-layer-part-that-the-task-names (sufficiency, expects patched)
-    session L1-additive-scenario-2-p12-r1: satisfied — event 4: `command:r5-check-layer-owl` reported nothing over `docs/evaluations/owl-skos-worked-example.md`; no call to a tool of an MCP server
+    session L1-additive-scenario-2-p12-r1: satisfied — event 4: `command:r5-check-layer-owl` reported nothing over `docs/evaluations/owl-skos-worked-example.md` or the other 1 produced artifact inside the workspace; no call to a tool of an MCP server
 - HW-PROBE-a-session-renames-the-module-of-the-language-rule-and-moves-the-records-that-govern-it (sufficiency, expects patched)
-    session L1-additive-scenario-2-p13-r1: not satisfied — `command:r3-language-module` reported over each of the 10 produced artifacts; no call to a tool of an MCP server
+    session L1-additive-scenario-2-p13-r1: not satisfied — event 5: `command:r3-language-module` reported over `docs/decisions/0069-a-paragraph-limit-counts-sentences-under-the-language-rule-and-never-words.md`, 10 of the 10 produced artifacts inside the workspace; no call to a tool of an MCP server
 - HW-PROBE-a-session-renames-the-pattern-module-of-the-meta-crate-and-its-callers (sufficiency, expects patched)
-    session L1-additive-scenario-2-p14-r1: not satisfied — `command:r3-pattern-module` reported over each of the 11 produced artifacts; no call to a tool of an MCP server
+    session L1-additive-scenario-2-p14-r1: not satisfied — event 6: `command:r3-pattern-module` reported over `engine/crates/census/src/lib.rs`, 11 of the 11 produced artifacts inside the workspace; no call to a tool of an MCP server
 - HW-PROBE-a-session-repairs-a-suspect-governs-edge-on-the-record-that-the-task-names-and-raises-no-other-finding (sufficiency, expects patched)
     session L1-additive-scenario-2-p15-r1: satisfied — event 7: `command:r9-gitattributes` reported nothing over `docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md`; no call to a tool of an MCP server
 - HW-PROBE-a-session-retires-a-stock-phrase-in-the-list-that-the-check-reads-and-resolves-the-lock (sufficiency, expects patched)
-    session L1-additive-scenario-2-p16-r1: not satisfied — `command:r8-game-changer` reported over each of the 1 produced artifact; no call to a tool of an MCP server
+    session L1-additive-scenario-2-p16-r1: not satisfied — event 8: `command:r8-game-changer` reported over `.headwater/overlay.yml`, 1 of the 1 produced artifact inside the workspace; no call to a tool of an MCP server
 - HW-PROBE-a-session-rewrites-the-change-narration-in-the-summary-of-the-obligation-on-the-site-review-marker-and-raises-no-other-finding (sufficiency, expects patched)
     session L1-additive-scenario-2-p17-r1: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
 - HW-PROBE-a-session-says-whether-a-front-page-recording-may-show-a-number-a-live-run-does-not-produce-when-the-task-names-the-record-that-was-superseded (sufficiency, expects answered)
