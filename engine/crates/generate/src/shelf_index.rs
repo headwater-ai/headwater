@@ -223,6 +223,55 @@ pub(crate) fn emit(
     }
 }
 
+/// One line for each shelf of the taxonomy that no `shelf_index` declaration
+/// covers, in the taxonomy's shelf order (#1988).
+///
+/// [`emit`] visits only the shelves a declaration names, so a shelf that an
+/// overlay adds and that no declaration names got no index and no line. The
+/// adopter could not tell a shelf the engine skipped from one it forgot. A
+/// declaration with an empty `for` covers every shelf, so it leaves nothing
+/// here. A shelf that a `shelf_sections` or `site_nav` covers still gets the
+/// line, because the line is about the index.
+///
+/// `at` names the shelf and is no corpus path: [`crate::orphaned`] matches
+/// `at` against the path of a marked file, and a path here would excuse one.
+pub(crate) fn uncovered(surface: &Surface<'_>, declared: &[Declaration]) -> Vec<Unwritten> {
+    let indexes: Vec<&Declaration> = declared
+        .iter()
+        .filter(|declaration| declaration.kind == Kind::ShelfIndex)
+        .collect();
+    if indexes
+        .iter()
+        .any(|declaration| declaration.shelves.is_empty())
+    {
+        return Vec::new();
+    }
+    surface
+        .taxonomy()
+        .shelves
+        .iter()
+        .filter(|shelf| {
+            !indexes
+                .iter()
+                .any(|declaration| declaration.shelves.contains(&shelf.name))
+        })
+        .map(|shelf| {
+            let name = &shelf.name;
+            Unwritten {
+                at: format!("shelf `{name}`"),
+                kind: Kind::ShelfIndex,
+                reason: format!(
+                    "no `shelf_index` declaration names the shelf `{name}`, so no index is \
+                     written for it. To add one, name `{name}` in the `for` of a `shelf_index` \
+                     declaration, or declare `{{kind: shelf_index, for: [{name}], output: \
+                     \"{{shelf}}/README.md\"}}` under `add_to: projections:` in \
+                     `.headwater/overlay.yml`"
+                ),
+            }
+        })
+        .collect()
+}
+
 /// The directory a shelf's glob claims: everything before the first glob
 /// construct, with no trailing separator.
 pub(crate) fn directory_of(pattern: &str) -> String {
