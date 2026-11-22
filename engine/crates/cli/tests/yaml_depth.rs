@@ -84,6 +84,45 @@ fn check_strict_reports_front_matter_nested_past_the_bound() {
     assert_reported("check --strict", &ran);
 }
 
+/// A key nested past the bound, appended to a YAML file the engine reads.
+fn append_deep(path: &std::path::Path) {
+    let text = std::fs::read_to_string(path).expect("the file reads");
+    let deep = format!("{text}zz_deep:\n  {}1\n", "- ".repeat(LEVELS));
+    std::fs::write(path, deep).expect("the file writes");
+}
+
+/// The process ended with a refusal that gives the depth bound.
+fn assert_refused(verb: &str, ran: &Ran) {
+    assert_eq!(
+        ran.code,
+        Some(1),
+        "`{verb}` did not refuse with a status (a signal reads as None):\nstderr:\n{}",
+        tail(&ran.err)
+    );
+    assert!(
+        ran.err.contains(REFUSAL) || ran.out.contains(REFUSAL),
+        "`{verb}` refused without the depth bound:\nstdout:\n{}\nstderr:\n{}",
+        tail(&ran.out),
+        tail(&ran.err)
+    );
+}
+
+#[test]
+fn resolve_refuses_an_overlay_nested_past_the_bound() {
+    let root = Root::new("yaml-depth-overlay");
+    append_deep(&root.at.join(".headwater/overlay.yml"));
+    let ran = root.run(&["taxonomy", "resolve"]);
+    assert_refused("taxonomy resolve", &ran);
+}
+
+#[test]
+fn check_refuses_a_lock_nested_past_the_bound() {
+    let root = Root::new("yaml-depth-lock");
+    append_deep(&root.at.join(".headwater/taxonomy.lock"));
+    let ran = root.run(&["check", "--strict"]);
+    assert_refused("check --strict", &ran);
+}
+
 #[test]
 fn generate_reports_front_matter_nested_past_the_bound() {
     let root = root("yaml-depth-generate");
