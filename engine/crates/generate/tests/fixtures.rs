@@ -596,14 +596,14 @@ fn every_output_carries_its_own_marker() {
     }
 }
 
-/// This repository generates its one hundred and thirty-five artifacts, and it says
+/// This repository generates its one hundred and forty-five artifacts, and it says
 /// why for everything else.
 ///
 /// A property and not a recording, for the reason the query crate states about
 /// its own repository run: the corpus is prose somebody edits. What is asserted
 /// is what a prose edit must not change.
 ///
-/// **Twenty-one of the one hundred and thirty-five are shelf indexes, one per shelf that holds a
+/// **Twenty-one of the one hundred and forty-five are shelf indexes, one per shelf that holds a
 /// document.** The first is the decisions shelf, which the package has declared
 /// since the first-run walkthrough and which produced a reason rather than a
 /// file until #124 filled that shelf. The other twenty are the overlay's own
@@ -625,7 +625,7 @@ fn every_output_carries_its_own_marker() {
 /// documents onto each of them. The nineteenth, `subsystems`, gave a reason
 /// rather than a file until #1288 put the graph build subsystem spec on it.
 ///
-/// **Five of the other one hundred and fourteen are one each, and one hundred and nine are one per
+/// **Five of the other one hundred and twenty-four are one each, and one hundred and nineteen are one per
 /// committed transcript.** The count in the name of this test therefore moves when a
 /// transcript lands on `docs/probe-runs/`, and this paragraph is the only
 /// thing that says so. The redirect map that the open-questions
@@ -636,7 +636,7 @@ fn every_output_carries_its_own_marker() {
 /// HW-DR-0036 and #418 name: MkDocs's `nav:` over the reading order
 /// `by_precedence` derives. The descriptor, at the path Q14 fixes. And one
 /// probe result for each transcript the corpus holds, which is the
-/// one hundred and nine: five regression recordings of 2026-09-09 to 2026-09-17, the
+/// one hundred and nineteen: five regression recordings of 2026-09-09 to 2026-09-17, the
 /// seven transcripts of each of the two #980 pilots of 2026-09-28, the five
 /// of the #980 campaign of the same day, the two of the #1294 pilot of
 /// 2026-09-29, the two of the #1384 pilot of the same day, and the seven of
@@ -648,7 +648,9 @@ fn every_output_carries_its_own_marker() {
 /// two of the #1877 tuning round of 2026-10-31, and the three of 2026-11-02,
 /// and the one of the #1878 tuning round of 2026-11-03, and the one of the
 /// #1879 tuning round of 2026-11-05, and the six of the #1880 tuning round
-/// of 2026-11-06, and the three of 2026-11-07, and the one of 2026-11-08.
+/// of 2026-11-06, and the three of 2026-11-07, and the one of 2026-11-08,
+/// and the ten of the #1881 final round of 2026-11-09 to 2026-11-12, which
+/// #1882 recorded.
 ///
 /// Two declarations produce a reason rather than a file. The package declares
 /// an index for one shelf this tree holds no document on, and the register is a
@@ -663,7 +665,7 @@ fn every_output_carries_its_own_marker() {
 /// compares bytes, so a contributor who edits a `summary` and does not
 /// regenerate fails this test before CI runs.
 #[test]
-fn this_repository_generates_its_one_hundred_and_thirty_five_artifacts_and_accounts_for_the_rest() {
+fn this_repository_generates_its_one_hundred_and_forty_five_artifacts_and_accounts_for_the_rest() {
     let root = repository_root();
     let resolved = headwater_resolve::repository(&root)
         .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)));
@@ -747,6 +749,16 @@ fn this_repository_generates_its_one_hundred_and_thirty_five_artifacts_and_accou
             "docs/process/how-to/README.md",
             "docs/subsystems/README.md",
             "docs/spec/09-open-questions.md",
+            "docs/probe-results/additive-final-round-of-2026-11-09-batch-a-scenario-0.md",
+            "docs/probe-results/additive-final-round-of-2026-11-09-batch-a-scenario-1.md",
+            "docs/probe-results/additive-final-round-of-2026-11-09-batch-a-scenario-2.md",
+            "docs/probe-results/additive-final-round-of-2026-11-09-batch-a-scenario-6.md",
+            "docs/probe-results/additive-final-round-of-2026-11-09-batch-b-scenario-1.md",
+            "docs/probe-results/additive-final-round-of-2026-11-09-batch-b-scenario-6.md",
+            "docs/probe-results/additive-final-round-of-2026-11-10-batch-b2-scenario-1.md",
+            "docs/probe-results/additive-final-round-of-2026-11-10-batch-b2-scenario-6.md",
+            "docs/probe-results/additive-final-round-of-2026-11-12-batch-b3-scenario-1.md",
+            "docs/probe-results/additive-final-round-of-2026-11-12-batch-b3-scenario-6.md",
             "docs/probe-results/additive-screening-of-2026-10-18-scenario-0.md",
             "docs/probe-results/additive-screening-of-2026-10-18-scenario-1.md",
             "docs/probe-results/additive-screening-of-2026-10-18-scenario-10.md",
