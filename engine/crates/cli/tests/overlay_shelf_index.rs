@@ -55,6 +55,10 @@ const DECLARED: &str = "
 /// The projection that the second case adds, under `add_to: projections:`.
 const INDEXED: &str = "    - {kind: shelf_index, for: [guides], output: \"{shelf}/README.md\"}\n";
 
+/// The projection that the third case adds: a `shelf_index` with no `for`,
+/// which covers every shelf.
+const EVERY: &str = "    - {kind: shelf_index, output: \"{shelf}/README.md\"}\n";
+
 /// Where `add_to: projections:` opens in this repository's overlay.
 const PROJECTIONS: &str = "\nadd_to:\n\n  projections:\n";
 
@@ -67,7 +71,7 @@ struct Root {
 }
 
 impl Root {
-    fn new(label: &str, indexed: bool) -> Root {
+    fn new(label: &str, projection: Option<&str>) -> Root {
         let at = std::env::temp_dir().join(format!(
             "headwater-cli-overlay-shelf-index-{}-{label}",
             std::process::id()
@@ -101,8 +105,8 @@ impl Root {
             "the overlay opens its projections once, under `add_to:`"
         );
         let mut overlay = overlay.replacen("\nadd:\n", &format!("\nadd:\n{DECLARED}\n"), 1);
-        if indexed {
-            overlay = overlay.replacen(PROJECTIONS, &format!("{PROJECTIONS}{INDEXED}"), 1);
+        if let Some(projection) = projection {
+            overlay = overlay.replacen(PROJECTIONS, &format!("{PROJECTIONS}{projection}"), 1);
         }
         std::fs::write(at.join(".headwater/overlay.yml"), overlay).expect("the overlay writes");
 
@@ -167,6 +171,19 @@ fn copy(from: &Path, to: &Path) {
     }
 }
 
+/// The shelves the unwritten block names as covered by no `shelf_index`.
+fn uncovered(out: &str) -> Vec<String> {
+    let Some((_, block)) = out.split_once(UNWRITTEN) else {
+        return Vec::new();
+    };
+    block
+        .lines()
+        .filter_map(|line| line.strip_prefix("  shelf_index shelf `"))
+        .filter_map(|rest| rest.strip_suffix('`'))
+        .map(str::to_string)
+        .collect()
+}
+
 /// The lines of the unwritten block that are about the `guides` shelf, each
 /// with the reason line that follows it.
 fn about_guides(out: &str) -> Vec<String> {
@@ -186,7 +203,7 @@ fn about_guides(out: &str) -> Vec<String> {
 /// printed line that names it and names the declaration that would add one.
 #[test]
 fn an_overlay_shelf_with_no_shelf_index_gets_one_line_naming_the_declaration() {
-    let root = Root::new("uncovered", false);
+    let root = Root::new("uncovered", None);
     assert!(root.has("docs/guides"), "the guide is on its shelf");
     let ran = root.run(&["generate"]);
     assert_eq!(ran.code, Some(0), "{ran:?}");
@@ -202,13 +219,24 @@ fn an_overlay_shelf_with_no_shelf_index_gets_one_line_naming_the_declaration() {
         "{line}"
     );
     assert!(!root.has("docs/guides/README.md"), "no index is written");
+    // Every other shelf this repository's taxonomy declares is named by a
+    // `shelf_index` except two: `interfaces`, which has a `verb_index`, and
+    // `library_doctrine`. A covered shelf gets no such line, empty or not.
+    let mut named = uncovered(&ran.out);
+    named.sort();
+    assert_eq!(
+        named,
+        ["guides", "interfaces", "library_doctrine"],
+        "{}",
+        ran.out
+    );
 }
 
 /// Adding the declaration that line names writes the index and removes the
 /// line.
 #[test]
 fn the_declaration_the_line_names_writes_the_index_and_removes_the_line() {
-    let root = Root::new("covered", true);
+    let root = Root::new("covered", Some(INDEXED));
     let ran = root.run(&["generate"]);
     assert_eq!(ran.code, Some(0), "{ran:?}");
     assert!(
@@ -217,4 +245,16 @@ fn the_declaration_the_line_names_writes_the_index_and_removes_the_line() {
         ran.out
     );
     assert_eq!(about_guides(&ran.out), Vec::<String>::new(), "{}", ran.out);
+}
+
+/// A `shelf_index` with no `for` covers every shelf, so no shelf gets the line.
+#[test]
+fn a_shelf_index_with_no_for_covers_every_shelf_and_leaves_no_line() {
+    let root = Root::new("every", Some(EVERY));
+    // The run refuses, because the copied `docs/taxonomies/README.md` carries
+    // no generated-file marker and this declaration now covers that shelf too.
+    // The report is what this case reads, and a refused run prints it whole.
+    let ran = root.run(&["generate"]);
+    assert!(ran.out.contains("shelf_index docs/guides/README.md"), "{ran:?}");
+    assert_eq!(uncovered(&ran.out), Vec::<String>::new(), "{}", ran.out);
 }
