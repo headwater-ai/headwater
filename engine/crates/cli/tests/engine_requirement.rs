@@ -434,6 +434,268 @@ fn an_engine_value_that_is_not_one_range_is_refused() {
     }
 }
 
+/// An engine outside the range is reported before a refusal that comes later
+/// in the same load, and the refusal still prints (#1959).
+///
+/// The report comes as soon as the consumer declaration reads, so a corpus
+/// that asks for another engine and then fails to load says both, in that
+/// order. Standard error is held byte for byte, and it names this engine, so
+/// it is built here and not recorded in `fixtures/printed/`.
+#[test]
+fn an_unmet_engine_is_reported_before_a_later_refusal_of_the_same_load() {
+    let root = Root::new("engine-requirement-then-refused");
+    set_engine(&root.at, Some(">=99"));
+    let path = root.at.join(headwater_resolve::package::CONSUMER);
+    let text = std::fs::read_to_string(&path).expect("the declaration reads");
+    std::fs::write(&path, format!("{text}\nharvests: 3\n")).expect("the declaration writes");
+    let ran = root.run(&["check"]);
+    assert_eq!(ran.code, Some(1), "{ran:?}");
+    assert_eq!(ran.out, "", "{ran:?}");
+    assert_eq!(
+        ran.err,
+        format!(
+            "headwater: this corpus asks for engine \">=99\" in {consumer}, and this is engine \
+             {engine}\nheadwater: the pinned export declarations did not read\n  `harvests` in \
+             `{consumer}` is a scalar, and it is a mapping of pinned exports by name\n\n",
+            consumer = headwater_resolve::package::CONSUMER,
+            engine = release::ENGINE,
+        )
+    );
+}
+
+// ---------------------------------------------------------------- in process
+//
+// The cases below call `headwater_api::Session::open` in this process, as
+// `lsp`, `hook` and `mcp` do, rather than start the binary (#1959). The shell
+// prints a refusal and the requirement, and the library prints neither: it
+// hands back a value, and these cases read the value.
+
+/// One load in this process, the way an in-process verb takes it.
+fn opened(at: &Path) -> Result<headwater_api::Session, headwater_api::LoadError> {
+    headwater_api::Session::open(at)
+}
+
+/// The decisive case of #1959. An engine outside the range is a value on
+/// every session, however many a process opens.
+///
+/// A library that said so once per process, or that printed the range and
+/// dropped it, answers `None` on the second open, and a long-lived caller
+/// then runs on an engine the corpus did not ask for and never knows.
+#[test]
+fn an_engine_outside_the_corpus_range_is_a_value_on_every_session_opened_in_one_process() {
+    let root = Root::new("engine-requirement-session-value");
+    set_engine(&root.at, Some(">=99"));
+    for open in ["first", "second"] {
+        match opened(&root.at) {
+            Ok(session) => assert_eq!(session.engine_unmet(), Some(">=99"), "{open} open"),
+            Err(error) => panic!("the {open} open loads: {error}"),
+        }
+    }
+    set_engine(&root.at, Some(&caret()));
+    match opened(&root.at) {
+        Ok(session) => assert_eq!(session.engine_unmet(), None),
+        Err(error) => panic!("an admitting range loads: {error}"),
+    }
+}
+
+/// The in-process twin of `an_unreadable_corpus_range_is_refused`.
+#[test]
+fn an_unreadable_corpus_range_is_a_consumer_refusal_in_process() {
+    let root = Root::new("engine-requirement-unreadable-in-process");
+    set_engine(&root.at, Some("~0.5"));
+    match opened(&root.at) {
+        Err(error @ headwater_api::LoadError::Consumer(_)) => {
+            assert!(error.detail().contains("engine: \"~0.5\""), "{error}");
+        }
+        Err(error) => panic!("a consumer refusal, not: {error}"),
+        Ok(_) => panic!("an unreadable range is refused"),
+    }
+}
+
+/// The in-process twin of the unquoted `>` case.
+#[test]
+fn an_unquoted_range_is_a_consumer_refusal_that_says_to_quote_it_in_process() {
+    let root = Root::new("engine-requirement-bare-in-process");
+    set_engine(&root.at, None);
+    let path = root.at.join(".headwater/taxonomy.yml");
+    let text = std::fs::read_to_string(&path).expect("the declaration reads");
+    let text = text.replacen("\ncorpus:", "\nengine: >=0.6\n\ncorpus:", 1);
+    std::fs::write(&path, text).expect("the declaration writes");
+    match opened(&root.at) {
+        Err(error @ headwater_api::LoadError::Consumer(_)) => {
+            let detail = error.detail();
+            assert!(
+                detail.contains("`engine`") && detail.contains("in quotes"),
+                "{detail}"
+            );
+            assert!(detail.contains("engine: \">=0.6\"`"), "{detail}");
+        }
+        Err(error) => panic!("a consumer refusal, not: {error}"),
+        Ok(_) => panic!("an unquoted range is refused"),
+    }
+}
+
+/// The in-process twin of
+/// `a_declaration_that_fails_to_load_for_another_reason_is_not_told_to_quote_its_range`.
+#[test]
+fn a_declaration_that_fails_for_another_reason_is_a_consumer_refusal_in_process() {
+    let root = Root::new("engine-requirement-other-load-failure-in-process");
+    set_engine(&root.at, None);
+    let path = root.at.join(".headwater/taxonomy.yml");
+    let text = std::fs::read_to_string(&path).expect("the declaration reads");
+    let text = text.replacen(
+        "\ncorpus:",
+        "\nengine: \"<0.6\"\nbroken: [unclosed\n\ncorpus:",
+        1,
+    );
+    std::fs::write(&path, text).expect("the declaration writes");
+    match opened(&root.at) {
+        Err(error @ headwater_api::LoadError::Consumer(_)) => {
+            assert!(!error.detail().contains("quote"), "{error}");
+        }
+        Err(error) => panic!("a consumer refusal, not: {error}"),
+        Ok(_) => panic!("a declaration that does not load is refused"),
+    }
+}
+
+/// The in-process twin of `an_engine_value_that_is_not_one_range_is_refused`.
+#[test]
+fn an_engine_value_that_is_not_one_range_is_a_consumer_refusal_in_process() {
+    for (case, value) in [("list", "[\">=0.6\"]"), ("mapping", "{range: \">=0.6\"}")] {
+        let root = Root::new(&format!("engine-requirement-{case}-in-process"));
+        set_engine(&root.at, None);
+        let path = root.at.join(".headwater/taxonomy.yml");
+        let text = std::fs::read_to_string(&path).expect("the declaration reads");
+        let text = text.replacen("\ncorpus:", &format!("\nengine: {value}\n\ncorpus:"), 1);
+        std::fs::write(&path, text).expect("the declaration writes");
+        match opened(&root.at) {
+            Err(error @ headwater_api::LoadError::Consumer(_)) => assert!(
+                error.detail().contains("`engine` is one range on one line"),
+                "{case}: {error}"
+            ),
+            Err(error) => panic!("{case}: a consumer refusal, not: {error}"),
+            Ok(_) => panic!("{case}: a value that is not one range is refused"),
+        }
+    }
+}
+
+/// A refusal later in the load still carries the unmet range, so the shell
+/// can say both, in the order
+/// `an_unmet_engine_is_reported_before_a_later_refusal_of_the_same_load` holds.
+/// A missing lock is refused before the declaration is read, so it carries
+/// none.
+#[test]
+fn a_later_refusal_of_the_load_carries_the_unmet_range_and_a_missing_lock_carries_none() {
+    let root = Root::new("engine-requirement-then-refused-in-process");
+    set_engine(&root.at, Some(">=99"));
+    let path = root.at.join(headwater_resolve::package::CONSUMER);
+    let text = std::fs::read_to_string(&path).expect("the declaration reads");
+    std::fs::write(&path, format!("{text}\nharvests: 3\n")).expect("the declaration writes");
+    match opened(&root.at) {
+        Err(error @ headwater_api::LoadError::Harvests { .. }) => {
+            assert_eq!(error.engine_unmet(), Some(">=99"), "{error}");
+        }
+        Err(error) => panic!("a pinned-export refusal, not: {error}"),
+        Ok(_) => panic!("a scalar `harvests` is refused"),
+    }
+
+    std::fs::remove_file(root.at.join(".headwater/taxonomy.lock")).expect("the lock is removed");
+    match opened(&root.at) {
+        Err(error @ headwater_api::LoadError::Lock(_)) => {
+            assert_eq!(error.engine_unmet(), None, "{error}");
+        }
+        Err(error) => panic!("a lock refusal, not: {error}"),
+        Ok(_) => panic!("a corpus with no lock is refused"),
+    }
+}
+
+/// The small corpus `tests/printed.rs` runs over, copied, with its
+/// declaration asking for an engine this is not.
+///
+/// It carries an import and a lock of its own, so a case can reach each
+/// refusal past the consumer declaration with one edit.
+fn base_asking_for_another_engine(label: &str) -> Root {
+    let at = std::env::temp_dir().join(format!(
+        "headwater-cli-engine-requirement-{}-{label}",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_dir_all(&at);
+    copy(
+        &Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures/printed/trees/base"),
+        &at,
+    );
+    let root = Root { at };
+    set_engine(&root.at, Some(">=99"));
+    root
+}
+
+/// Every refusal that comes after the consumer declaration read carries the
+/// unmet range, one case for each variant that can carry it (#1959).
+///
+/// The shell reports the range before it prints the refusal, so a variant that
+/// dropped it would print the refusal alone. The pinned-export variant is held
+/// above, and the three others here. The declaration case writes a lock whose
+/// digest matches a taxonomy that does not read, the way
+/// `a_lock_whose_taxonomy_does_not_read_is_refused_byte_for_byte` in
+/// `tests/printed.rs` does.
+#[test]
+fn every_refusal_past_the_consumer_declaration_carries_the_unmet_range() {
+    let upstream = "  upstream:\n    at: .headwater/imports/upstream\n    digest: \
+                    sha256:422187182abb3e25f9e4ec59b93080b4e436e471dd3fab017cc89e90aac10fcd\n    \
+                    channel: the release page of the publisher\n    resolver: upstream-snapshot\n";
+    let again = upstream.replace("  upstream:", "  again:");
+    for (case, added) in [
+        ("imports", "  broken: 3\n".to_string()),
+        ("ambiguous", again),
+    ] {
+        let root = base_asking_for_another_engine(&format!("carries-{case}"));
+        let path = root.at.join(".headwater/taxonomy.yml");
+        let text = std::fs::read_to_string(&path).expect("the declaration reads");
+        let text = text.replacen(upstream, &format!("{upstream}{added}"), 1);
+        assert!(
+            text.contains(&added),
+            "{case}: the import block takes the edit"
+        );
+        std::fs::write(&path, text).expect("the declaration writes");
+        match (case, opened(&root.at)) {
+            ("imports", Err(error @ headwater_api::LoadError::Imports { .. }))
+            | ("ambiguous", Err(error @ headwater_api::LoadError::AmbiguousResolvers { .. })) => {
+                assert_eq!(error.engine_unmet(), Some(">=99"), "{case}: {error}");
+            }
+            (_, Err(error)) => panic!("{case}: another refusal: {error}"),
+            (_, Ok(_)) => panic!("{case}: the load is refused"),
+        }
+    }
+
+    let root = base_asking_for_another_engine("carries-declaration");
+    let path = root.at.join(".headwater/taxonomy.lock");
+    let text = std::fs::read_to_string(&path).expect("the lock reads");
+    let kept: String = text
+        .split_inclusive('\n')
+        .filter(|kept| !kept.starts_with("      kind: answer"))
+        .collect();
+    let repinned = match headwater_lock::read(&kept) {
+        Err(headwater_lock::LockError::Tampered { declared, actual }) => {
+            kept.replace(&declared, &actual)
+        }
+        Err(other) => panic!("the edited lock is refused as tampered, not as: {other}"),
+        Ok(_) => panic!("the edited lock is refused as tampered"),
+    };
+    std::fs::write(&path, repinned).expect("the lock writes");
+    match opened(&root.at) {
+        Err(
+            error @ headwater_api::LoadError::Declaration {
+                what: "the taxonomy",
+                ..
+            },
+        ) => {
+            assert_eq!(error.engine_unmet(), Some(">=99"), "{error}");
+        }
+        Err(error) => panic!("a refusal of the taxonomy, not: {error}"),
+        Ok(_) => panic!("a taxonomy that does not read is refused"),
+    }
+}
+
 /// This repository asks for the engine it builds. A bump of the workspace
 /// version past the range fails here, and the release guide says to move the
 /// line in the same commit.

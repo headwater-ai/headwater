@@ -1482,3 +1482,49 @@ fn a_setup_step_that_does_not_exit_0_stops_the_line_and_names_itself() {
         "a step that exits 0 lets the line run"
     );
 }
+
+/// A lock whose taxonomy does not read prints the refusal of the declaration
+/// that failed, byte for byte (#1959).
+///
+/// No setup step of the manifest can reach this. The lock holds a digest of
+/// its own taxonomy, so a taxonomy edited by hand is refused as tampered
+/// before it is read, and no step writes the digest back. This case takes the
+/// digest the refusal names and writes it into the header, so the lock reads
+/// and the taxonomy in it is refused. The expected text is what the binary
+/// printed before the load moved into `headwater-api`.
+#[test]
+fn a_lock_whose_taxonomy_does_not_read_is_refused_byte_for_byte() {
+    let mut line = stated(
+        "lock-taxonomy-refused",
+        "headwater check",
+        Outcome::Refuse,
+        None,
+        "check --root . --now 2026-01-15",
+    );
+    line.trees = vec!["base".to_string()];
+    let (scratch, root) = rooted(&line);
+    let path = root.join(".headwater/taxonomy.lock");
+    let text = std::fs::read_to_string(&path).expect("the lock reads");
+    let kept: String = text
+        .split_inclusive('\n')
+        .filter(|kept| !kept.starts_with("      kind: answer"))
+        .collect();
+    assert_ne!(kept, text, "the shelf names its kind in the lock");
+    let repinned = match headwater_lock::read(&kept) {
+        Err(headwater_lock::LockError::Tampered { declared, actual }) => {
+            kept.replace(&declared, &actual)
+        }
+        Err(other) => panic!("the edited lock is refused as tampered, not as: {other}"),
+        Ok(_) => panic!("the edited lock is refused as tampered"),
+    };
+    std::fs::write(&path, repinned).expect("the lock writes");
+
+    let printed = ran(&line, &scratch.0, &root);
+    assert_eq!(printed.status, "1\n");
+    assert_eq!(String::from_utf8_lossy(&printed.out), "");
+    assert_eq!(
+        String::from_utf8_lossy(&printed.err),
+        "headwater: the taxonomy did not read, so no run is possible\n  98:5: shelf `answers` is \
+         homogeneous and names no `kind`, so placement states nothing\n"
+    );
+}

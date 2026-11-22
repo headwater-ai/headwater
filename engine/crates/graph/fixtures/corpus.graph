@@ -245,6 +245,8 @@ anchors
     cited by HW-IFACE-headwater-check
   code_path `engine/crates/adapter/src/lib.rs` via source-tree
     cited by HW-OBL-0172
+  code_path `engine/crates/api/src/**` via source-tree
+    cited by HW-SPEC-command-surface
   code_path `engine/crates/audit/src/**` via source-tree
     cited by HW-SPEC-taxonomy-distribution-and-audit
   code_path `engine/crates/audit/src/lib.rs` via source-tree

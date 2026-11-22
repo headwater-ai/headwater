@@ -29,9 +29,9 @@
 # the comment lines of a baseline that is already there, its scope included,
 # and records the findings of the scoped files alone.
 #
-# Two comment lines name the structure the repair keeps, because a session
+# Three comment lines name the structure the repair keeps, because a session
 # that deletes the edge or the clause a finding is on clears the finding and
-# raises nothing (#1874.3), and a third names text the repair removes. Each
+# raises nothing (#1874.3), and a fourth names text the repair removes. Each
 # is read through `headwater explain --json`,
 # as `hw_oracle_explain` in `lib.sh` reads it, and never as lines of the
 # file, so a comment, a quoted value, a body line or an edge under another
@@ -43,6 +43,14 @@
 # - `# summary: <path> <literal>` fails unless the summary the engine parsed
 #   for <path> holds <literal>. That is a match inside a value the engine
 #   parsed, and not inside a line of the file.
+# - `# summary-any: <path> <variant>|<variant>|...` fails unless that
+#   summary holds one of the variants, with case ignored. Each line names
+#   one concept the repair keeps, and a baseline writes one line for each
+#   concept. A task that asks a session to keep the meaning of a sentence
+#   is graded on the meaning, and a literal grades the words: in phase B
+#   of #1881, most sessions that kept both clauses in other words failed a
+#   literal `# summary:` line (#1978). A line with no path, no variant or
+#   an empty variant is a usage error.
 # - `# summary-not: <path> <literal>` fails when that summary holds
 #   <literal>. A file can carry the target finding in its summary and a
 #   second finding of the same rule in its body. The findings are compared
@@ -102,6 +110,19 @@ if [ "$record" = no ]; then
         hw_oracle_explain "$hw_summary_path" "$hw_oracle_scratch/summary.json" || hw_oracle_fail "the engine reads no document $hw_summary_path, which the repair keeps"
         jq -e --arg literal "$hw_summary_literal" '(.summary // "") | contains($literal)' "$hw_oracle_scratch/summary.json" > /dev/null 2>&1 || hw_oracle_fail "the summary the engine parses for $hw_summary_path does not hold \`$hw_summary_literal\`, so the session removed what the task asked it to repair"
     done < "$hw_oracle_scratch/summaries"
+    # Each `# summary-any:` line names one concept the parsed summary keeps,
+    # in any of the words a sound repair can use (#1978).
+    sed -n 's/^# summary-any: *//p' "$hw_oracle_scratch/comments" > "$hw_oracle_scratch/summaries-any"
+    while IFS= read -r hw_summary; do
+        hw_summary_path=${hw_summary%% *}
+        hw_summary_variants=${hw_summary#* }
+        [ -n "$hw_summary_path" ] && [ "$hw_summary_variants" != "$hw_summary" ] && [ -n "$hw_summary_variants" ] || hw_oracle_usage "a summary-any line is \`# summary-any: <path> <variant>|<variant>|...\`, and $baseline has \`# summary-any: $hw_summary\`"
+        case "|$hw_summary_variants|" in
+            *'||'*) hw_oracle_usage "a summary-any line names no empty variant, and $baseline has \`# summary-any: $hw_summary\`" ;;
+        esac
+        hw_oracle_explain "$hw_summary_path" "$hw_oracle_scratch/summary.json" || hw_oracle_fail "the engine reads no document $hw_summary_path, which the repair keeps"
+        jq -e --arg variants "$hw_summary_variants" '((.summary // "") | ascii_downcase) as $summary | any($variants | ascii_downcase | split("|")[]; . as $variant | $summary | contains($variant))' "$hw_oracle_scratch/summary.json" > /dev/null 2>&1 || hw_oracle_fail "the summary the engine parses for $hw_summary_path holds none of \`$hw_summary_variants\`, so the session removed what the task asked it to repair"
+    done < "$hw_oracle_scratch/summaries-any"
     # Each `# summary-not:` line names text the parsed summary must lose
     # (#1874.3b).
     sed -n 's/^# summary-not: *//p' "$hw_oracle_scratch/comments" > "$hw_oracle_scratch/summaries-not"
