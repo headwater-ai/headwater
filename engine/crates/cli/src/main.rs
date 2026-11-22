@@ -4480,10 +4480,25 @@ fn scaffold(
     let composed =
         headwater_scaffold::write::compose(root, &plan).map_err(|why| why.to_string())?;
     // The claim, then the document. Nothing above this line has written a byte,
-    // so a claim that cannot be made refuses with the tree untouched. See
-    // `headwater_scaffold::claim` for why this order and not the other one.
+    // so a claim that cannot be made refuses with the tree untouched. A document
+    // that cannot be made withdraws the claim this run just made, so the failed
+    // run spends no number (#1972). See `headwater_scaffold::claim` for why this
+    // order and not the other one, and why the withdrawal is permitted.
     let claimed = headwater_scaffold::claim::write(root, &plan).map_err(|why| why.to_string())?;
-    headwater_scaffold::write::apply(root, &composed).map_err(|why| why.to_string())?;
+    if let Err(why) = headwater_scaffold::write::apply(root, &composed) {
+        let why = why.to_string();
+        return Err(match &claimed {
+            None => why,
+            Some(claim) => {
+                let outcome = headwater_scaffold::claim::withdraw(root, claim);
+                format!(
+                    "{}. {}",
+                    why.trim_end_matches('.'),
+                    headwater_scaffold::claim::withdrawn(claim, &outcome)
+                )
+            }
+        });
+    }
 
     let reading =
         headwater_scaffold::reading::Reading::of(&plan, &loaded.bound.digest, now, surface);

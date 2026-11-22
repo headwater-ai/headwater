@@ -297,3 +297,43 @@ fn a_claim_that_is_already_there_refuses_and_the_first_claimant_stands() {
         "and the claimant that was there is the claimant that is there"
     );
 }
+
+/// The undo of a claim whose document was not created (#1972). It removes the
+/// one path it is given and leaves every sibling claim as it was, and the
+/// sentence it hands the caller names the path it removed.
+#[test]
+fn a_withdrawn_claim_goes_and_its_sibling_stays() {
+    let dir = Dir::with("withdraw", &[]);
+    let first = ".headwater/ids/decision_id/HW-DR-0049";
+    let second = ".headwater/ids/decision_id/HW-DR-0050";
+    headwater_scaffold::claim::make(dir.path(), first, "docs/decisions/0049-first.md")
+        .expect("the first claim lands");
+    headwater_scaffold::claim::make(dir.path(), second, "docs/decisions/0050-second.md")
+        .expect("the second claim lands");
+
+    let outcome = headwater_scaffold::claim::withdraw(dir.path(), second);
+    assert!(outcome.is_ok(), "{outcome:?}");
+    assert!(!dir.holds(second), "the withdrawn claim is gone");
+    assert_eq!(
+        dir.read(first),
+        "docs/decisions/0049-first.md\n",
+        "and the sibling claim is untouched"
+    );
+    assert_eq!(
+        headwater_scaffold::claim::withdrawn(second, &outcome),
+        format!("The claim {second} this run wrote was removed.")
+    );
+
+    let again = headwater_scaffold::claim::withdraw(dir.path(), second);
+    assert!(
+        again.is_err(),
+        "a claim that is not there is not removed twice"
+    );
+    let sentence = headwater_scaffold::claim::withdrawn(second, &again);
+    assert!(
+        sentence.starts_with(&format!(
+            "The claim {second} this run wrote could not be removed: "
+        )) && sentence.ends_with(". Delete it by hand."),
+        "{sentence}"
+    );
+}
