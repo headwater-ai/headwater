@@ -1,9 +1,9 @@
 ---
 id: HW-OBL-0221
-status: current
-status_since: 2026-09-27
+status: discharged
+status_since: 2026-11-23
 summary: "Every agent of a run reads its skill text from the shared checkout. The integrator is told to fast-forward that checkout after each merge, but under worktree isolation nothing does, so later agents read stale skills."
-last_verified: 2026-09-30
+last_verified: 2026-11-23
 title: "Subagents read skills from the shared checkout, and a worktree-isolated integrator cannot fast-forward it after a merge"
 waiting_on: build
 ---
@@ -27,3 +27,5 @@ So an agent can act on a rule that `main` has already changed. Nothing tells the
 This record discharges in one of two ways. A stage that can reach the shared checkout fast-forwards it after each merge, and the integrator or `tools/run/run-dir.sh` reports the commit it moved to. Or a run refuses to start when no stage can fast-forward the shared checkout, and a case shows the refusal.
 
 **#1419, which merged as `16eecca0`, meets part of the first way and not the whole of it.** A worktree-isolated integrator now names the fast-forward of the shared checkout in its `LEFT` line for the owner. It does the rebuild, regenerate, check and bless in a detached tree under `.claude/worktrees/`. So the parent learns that the shared checkout did not move. No stage moves it, so later agents still read skill text from an old commit, and this record stays open.
+
+[#1997](https://github.com/headwater-ai/headwater/issues/1997) discharged this record on 2026-11-23, in the second way. `tools/run/fast-forward-main.sh` is now the one copy of the fast-forward. `tools/run/run-dir.sh start` runs it for the first session of a run, and `tools/run/supervise.sh` runs it before each later session. Each caller prints `FAST-FORWARD: main at <sha>` when the checkout moves. When the move is not safe, `start` refuses the run in one `STALE:` line that names the state and the command the owner runs. The start cases in `tools/run/run-dir-fixtures.sh` show the move and the four refusals. The refused states are another branch or a detached HEAD, local changes, a diverged checkout, and a failed fetch. A narrow gap stays inside one session, between two merges. There, `stage`, `claim` and `next` print the `STALE:` line and do not move the checkout.

@@ -705,7 +705,7 @@ printf '\n# every file under .claude is in the shipped set or named as internal\
 # directory. This list is the internal list of the case.
 is_internal() {
     case $1 in
-        hw-* | headwater-engine | headwater-product-owner | repo-cleanup | ste-editor | next | next-run | next-experiment | product-owner) return 0 ;;
+        hw-* | headwater-engine | headwater-product-owner | repo-cleanup | site-preview | ste-editor | next | next-run | next-experiment | product-owner) return 0 ;;
     esac
     return 1
 }
