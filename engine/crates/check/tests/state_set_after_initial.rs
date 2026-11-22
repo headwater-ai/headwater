@@ -189,9 +189,33 @@ fn a_draft_is_warned_only_for_a_target_the_edge_would_move() {
         message.contains("`NOTE-FIX-deprecated-early` stays at `deprecated`"),
         "{message}"
     );
-    for silent in ["NOTE-FIX-draft-replaced", "NOTE-FIX-already-retired"] {
+    for silent in [
+        "NOTE-FIX-draft-replaced",
+        "NOTE-FIX-already-retired",
+        "NOTE-FIX-drafted-page",
+    ] {
         assert!(!message.contains(silent), "{message}");
     }
+}
+
+/// A generated target is skipped with a reason: its state is this engine's
+/// to write, and `lifecycle.state.set_twice` and `generate --check` read it.
+#[test]
+fn a_generated_target_is_skipped() {
+    let run = run();
+    let wanted = path("pages/drafted-page.md");
+    let outcomes: Vec<&Outcome> = run
+        .instances
+        .iter()
+        .filter(|instance| instance.rule == RULE)
+        .filter(|instance| instance.reads.iter().any(|input| input.path == wanted))
+        .map(|instance| &instance.outcome)
+        .collect();
+    assert_eq!(outcomes.len(), 1, "{outcomes:?}");
+    assert!(
+        matches!(outcomes[0], Outcome::Skipped(reason) if reason.contains("generated")),
+        "{outcomes:?}"
+    );
 }
 
 /// The whole report of the rule over the tree, so a new finding is a failure
