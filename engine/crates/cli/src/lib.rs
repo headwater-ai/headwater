@@ -1411,7 +1411,9 @@ pub enum TaxonomyWord {
             value_name = "dir-or-location",
             help = "the directory of an artifact somebody already fetched, or the https:// \
                     location of a published artifact zip, which this verb fetches through \
-                    `headwater-fetch`, a crate nothing in the checking loop links (HW-DR-0075)"
+                    `headwater-fetch`, a crate nothing in the checking loop links (HW-DR-0075). \
+                    A fetch waits at most 10 s for a connection to open and at most 30 s for the \
+                    whole download, redirects included, and exits 1 past either bound"
         )]
         path: Option<String>,
         #[arg(

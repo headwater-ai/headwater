@@ -546,13 +546,23 @@ jobs:
       - name: The digest the package in this tree publishes
         # The notes state the `release.digest` (HW-DR-0090). This step reaches
         # no network, and `tools/repo/readme-fixtures.sh` runs it by the name
-        # above (HW-PD-0012), so do not rename it.
+        # above (HW-PD-0012), so do not rename it. The notes name the version
+        # the digest is of and say that it is the copy in this tag's source
+        # tree: the v0.6.1 notes named no version, and no published zip
+        # carried their digest (#1986). The step cannot ask GitHub whether the
+        # taxonomy release exists, so the notes say where to look instead.
         run: |
-          digest=$(awk '/^release:/{b=1;next} /^[^ \t#]/{b=0} b && /^  digest:/{print $2; exit}' .headwater/packages/headwater-standard/release.yml)
+          record=.headwater/packages/headwater-standard/release.yml
+          digest=$(awk '/^release:/{b=1;next} /^[^ \t#]/{b=0} b && /^  digest:/{print $2; exit}' "$record")
           if [ -z "$digest" ]; then
-              echo "::error::.headwater/packages/headwater-standard/release.yml states no release.digest, so this release would carry none" && exit 1
+              echo "::error::$record states no release.digest, so this release would carry none" && exit 1
           fi
-          printf 'release.digest: %s\n\nThis tag carries `headwater/standard` with that `release.digest`. Pass the value to `headwater taxonomy vendor <dir> --expect %s`. It is what `headwater taxonomy publish` printed for the package in this tree, and it is not a checksum of any one file.\n' "$digest" "$digest" >release-notes.md
+          version=$(awk '/^release:/{b=1;next} /^[^ \t#]/{b=0} b && /^  version:/{print $2; exit}' "$record")
+          if [ -z "$version" ]; then
+              echo "::error::$record states no release.version, so the notes could not say which package the digest is of" && exit 1
+          fi
+          printf 'release.digest: %s\n\nThis value is the `release.digest` of `headwater/standard` %s as it stands in the source tree of this tag. It is what `headwater taxonomy publish` prints for that package, and it is not a checksum of any one file. Pass it to `headwater taxonomy vendor <dir> --expect %s` when you vendor that copy of the package from this tree.\n\nA downloadable zip carries this digest only if the taxonomy release `taxonomy/headwater-standard/v%s` exists. Look for it at https://github.com/%s/releases/tag/taxonomy/headwater-standard/v%s. If that release does not exist, vendor the zip of the newest taxonomy release in https://github.com/%s/releases?q=taxonomy%%2Fheadwater-standard instead, and pin the digest that its own notes state.\n' \
+              "$digest" "$version" "$digest" "$version" "$GITHUB_REPOSITORY" "$version" "$GITHUB_REPOSITORY" >release-notes.md
       - name: Sign the APT metadata
         # Only where the owner's signing subkey is a secret (HW-DR-0094). The
         # key is imported into a directory this step makes and removes, and it
