@@ -186,3 +186,48 @@ fn every_row_names_a_file_on_disk() {
         assert!(root.join(path).is_file(), "{path} is not a file");
     }
 }
+
+/// A session that edits one rule of the check crate reads, in the route output
+/// alone, the sentence that a changed rule raises its version, because the
+/// summary of the governing subsystem page carries it (#1976). The text output
+/// wraps the summary, so the entry is compared with its whitespace collapsed.
+#[test]
+fn route_over_a_check_rule_prints_that_a_changed_rule_raises_its_version() {
+    let file = "engine/crates/check/src/sections.rs";
+    let governor = "docs/subsystems/checks-and-cache.md";
+    let ran = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(["route", "edit", file, "--root"])
+        .arg(root())
+        .output()
+        .expect("the binary runs");
+    let out = String::from_utf8_lossy(&ran.stdout);
+    assert_eq!(
+        ran.status.code(),
+        Some(0),
+        "route over {file} exited {:?}: {}",
+        ran.status.code(),
+        String::from_utf8_lossy(&ran.stderr)
+    );
+    let named = out
+        .find(&format!("{governor} ("))
+        .unwrap_or_else(|| panic!("route over {file} does not name {governor}:\n{out}"));
+    // The governor's own entry: its first line and the lines indented under
+    // it, so the summary of a later entry cannot answer for it.
+    let entry: Vec<&str> = out[named..]
+        .lines()
+        .enumerate()
+        .take_while(|(at, line)| *at == 0 || line.starts_with("    "))
+        .map(|(_, line)| line)
+        .collect();
+    let entry = entry
+        .join(" ")
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ");
+    assert!(
+        entry
+            .to_lowercase()
+            .contains("raise the rule version when a rule's behavior changes"),
+        "route over {file} does not tell a session to raise the rule version:\n{entry}"
+    );
+}

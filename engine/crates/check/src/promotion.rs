@@ -90,6 +90,7 @@ pub struct Promoted;
 
 impl DocumentCheck for Promoted {
     const RULE: &'static str = RULE;
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 1;
     const NEEDS_PRIOR: bool = true;
 

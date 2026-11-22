@@ -111,6 +111,8 @@ pub const SCOPE: Scope = Scope::taxonomy();
 
 /// Which edition of [`expired`] reached a verdict. Stated here for the reason
 /// [`crate::coverage::VERSION`] is: no trait carries it.
+///
+/// Raise the rule version when a rule's behavior changes.
 pub const VERSION: u32 = 1;
 
 /// The emitter targets [`RULE`] exports to, stated here for the reason

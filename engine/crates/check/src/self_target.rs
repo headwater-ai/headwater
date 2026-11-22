@@ -126,6 +126,8 @@ impl<'a> SelfTarget<'a> {
 impl EdgeCheck for SelfTarget<'_> {
     const RULE: &'static str = self::RULE;
     /// See [`crate::placement::Placement::VERSION`].
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 3;
     /// See the module comment.
     const UNIT: EdgeUnit = EdgeUnit::Entry;

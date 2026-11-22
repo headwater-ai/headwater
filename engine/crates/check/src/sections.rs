@@ -75,6 +75,8 @@ impl Sections {
 impl DocumentCheck for Sections {
     const RULE: &'static str = self::RULE;
     /// The first edition of this rule.
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 1;
     /// The headings are in the body, so the body is declared.
     const NEEDS_BODY: bool = true;

@@ -595,6 +595,9 @@ pub trait DocumentCheck {
     /// it keys the cache, and raising it is what invalidates every entry an
     /// earlier edition wrote. Raise it whenever `tests/editions.rs` reports
     /// that this rule's verdicts moved, then re-record with `HEADWATER_BLESS=1`.
+    /// Raise the rule version when a rule's behavior changes, in the file that
+    /// implements the rule, because a constant left at its old value serves the
+    /// old verdicts from a warm cache.
     const VERSION: u32;
     /// The emitter targets this check exports to. See [`ExportTargets`]. The
     /// default is the empty set, because most checks reach nothing a schema
@@ -680,6 +683,8 @@ pub enum EdgeUnit {
 pub trait EdgeCheck {
     const RULE: &'static str;
     /// As [`DocumentCheck::VERSION`].
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32;
     /// As [`DocumentCheck::EXPORTABLE_AS`].
     const EXPORTABLE_AS: ExportTargets = &[];
@@ -735,6 +740,8 @@ pub trait EdgeCheck {
 pub trait CorpusCheck {
     const RULE: &'static str;
     /// As [`DocumentCheck::VERSION`].
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32;
     /// As [`DocumentCheck::EXPORTABLE_AS`].
     const EXPORTABLE_AS: ExportTargets = &[];
@@ -848,6 +855,8 @@ pub trait CorpusCheck {
 pub trait NeighbourhoodCheck {
     const RULE: &'static str;
     /// As [`DocumentCheck::VERSION`].
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32;
     /// As [`DocumentCheck::EXPORTABLE_AS`].
     const EXPORTABLE_AS: ExportTargets = &[];
