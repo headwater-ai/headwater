@@ -141,9 +141,12 @@
 #   `proof/` and `compare/`), the one place this suite reads beyond the README:
 #   5d refuses a sentence that calls EVERY claim unmeasured while a result page
 #   stands under `docs/probe-results/`, and 5e refuses a retired `M<n>` or
-#   `M<n>b` milestone label, which HW-PD-0008 replaced with versions. Neither
-#   holds the names of the open version milestones, or whether a figure the
-#   pages quote still matches its evaluation.
+#   `M<n>b` milestone label, which HW-PD-0008 replaced with versions. 5f
+#   refuses a figure in the README's Status blockquote that no evaluation the
+#   blockquote links carries. It reads the README alone, because the three
+#   pages quote no figure. None of the three holds the names of the open
+#   version milestones, or whether a figure stands in the same row of its
+#   evaluation as the README places it.
 #
 #   An absolute URL is not fetched. A dead external link stays dead and green.
 #   Case group 3 judges only the ORG AND REPOSITORY a GitHub URL names, which
