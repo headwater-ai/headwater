@@ -527,6 +527,12 @@ def main():
         if os.environ.get('HEADWATER_TUTORIAL_RELEASE') == '1':
             ok, detail = version_matches_page(body, printed)
             assert_true('before you start: the engine is the release the page installs', ok, detail)
+            if not ok:
+                # A walk against another engine tests nothing the page
+                # claims, and `fixtures.sh` holds this stop with a binary
+                # that prints another version.
+                raise SystemExit('tutorial: release mode stops before step 1, because the engine '
+                                 'under test is not the release the page installs')
 
         def cut(label, actual, index):
             """A block the page presents as a cut of the real output."""

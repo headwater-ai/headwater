@@ -5972,7 +5972,22 @@ echo "the tutorial URL the README names is a page of the site"
 #     fails on anything but 200. No pull request runs that workflow
 #     (HW-PD-0012), so this group reads its text, and group 14 holds that its
 #     report job needs the job.
+#   - the tutorial step of `ci.yml` drives the release the page installs: its
+#     `env:` sets `HEADWATER_TUTORIAL_RELEASE: '1'`, which the README's "Start
+#     here" line and its tutorial-pin sentence state. Without it the step
+#     drives the branch's own engine and the README is false.
 tutorial_url='https://headwater.tools/tutorials/your-first-governed-corpus/'
+
+# tutorial_release_judge CI — nothing when the step that runs
+# `.claude/tutorial/fixtures.sh` sets the switch in its own `env:`.
+tutorial_release_judge() {
+    awk '/^      - name: The tutorial says what a reader will see/ { s = 1; next }
+         s && /^      - name:/ { s = 0 }
+         s && /^[ \t]*#/ { next }
+         s && /^          HEADWATER_TUTORIAL_RELEASE: .1.[ \t]*$/ { env = 1 }
+         s && /^        run: sh \.claude\/tutorial\/fixtures\.sh[ \t]*$/ { run = 1 }
+         END { if (!(env && run)) print "the tutorial step of ci.yml does not run fixtures.sh with HEADWATER_TUTORIAL_RELEASE set to 1" }' "$1"
+}
 
 # tutorial_url_judge README CI ROUTES DOCS — one line for each way the three
 # files fail to hold the URL, and nothing when they hold it.
@@ -6021,6 +6036,19 @@ sed '/^  tutorial-site:/,/^  report:/s/"\$code" != 200/"$code" = 000/' "$url_rou
 same "  a tutorial-site job that passes on any status but 000 is red" \
     "the tutorial-site job of install-routes.yml does not fail on a status other than 200" \
     "$(tutorial_url_judge "$readme" "$url_ci" "$scratch/tutorial-url/any-code.yml" "$root/docs")"
+same "  the tutorial step of ci.yml drives the release the page installs" "" "$(tutorial_release_judge "$url_ci")"
+grep -v "^          HEADWATER_TUTORIAL_RELEASE: '1'$" "$url_ci" >"$scratch/tutorial-url/no-switch.yml"
+same "  a tutorial step without the switch is red" \
+    "the tutorial step of ci.yml does not run fixtures.sh with HEADWATER_TUTORIAL_RELEASE set to 1" \
+    "$(tutorial_release_judge "$scratch/tutorial-url/no-switch.yml")"
+sed "s/^          HEADWATER_TUTORIAL_RELEASE: '1'$/          HEADWATER_TUTORIAL_RELEASE: '0'/" "$url_ci" >"$scratch/tutorial-url/switch-off.yml"
+same "  a tutorial step that sets the switch to 0 is red" \
+    "the tutorial step of ci.yml does not run fixtures.sh with HEADWATER_TUTORIAL_RELEASE set to 1" \
+    "$(tutorial_release_judge "$scratch/tutorial-url/switch-off.yml")"
+sed "s/^          HEADWATER_TUTORIAL_RELEASE: '1'$/          # HEADWATER_TUTORIAL_RELEASE: '1'/" "$url_ci" >"$scratch/tutorial-url/switch-comment.yml"
+same "  a tutorial step whose switch is commented out is red" \
+    "the tutorial step of ci.yml does not run fixtures.sh with HEADWATER_TUTORIAL_RELEASE set to 1" \
+    "$(tutorial_release_judge "$scratch/tutorial-url/switch-comment.yml")"
 
 echo
 echo "$passed passed, $failed failed"

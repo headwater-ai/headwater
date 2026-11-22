@@ -49,6 +49,29 @@ root=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 . "$root/tools/repo/resolve-engine.sh"
 python3 "$root/.claude/tutorial/adopter_interface.py" "$root"
 
+# Release mode holds its own version claim first: a binary that prints a
+# version the page does not install must stop the walk with the claim named.
+# The stand-in answers every command with `0.0.0`, and the walk runs no
+# command before `headwater --version`, so this case reaches no network. The
+# walk must stop there and not reach step 1.
+if [ "${HEADWATER_TUTORIAL_RELEASE:-}" = 1 ]; then
+  wrong=$(mktemp -d "${TMPDIR:-/tmp}/headwater-tutorial-wrong.XXXXXX")
+  printf '#!/bin/sh\necho 0.0.0\n' > "$wrong/headwater"
+  chmod +x "$wrong/headwater"
+  refused=0
+  env -u HEADWATER_TUTORIAL_KEEP HEADWATER_BIN="$wrong/headwater" python3 "$root/.claude/tutorial/drive.py" "$root" > "$wrong/out" 2>&1 || refused=1
+  if [ "$refused" = 1 ] && grep -qF 'FAIL before you start: the engine is the release the page installs' "$wrong/out" &&
+    ! grep -q '^[a-zA-Z ]*step 1:' "$wrong/out"; then
+    echo "ok   release mode: a binary that prints 0.0.0 stops the walk at the version claim"
+    rm -rf "$wrong"
+  else
+    echo "FAIL release mode: a binary that prints 0.0.0 did not stop the walk at the version claim" >&2
+    sed 's/^/  /' "$wrong/out" >&2
+    rm -rf "$wrong"
+    exit 1
+  fi
+fi
+
 bin=${HEADWATER_BIN:-}
 fetched=
 if [ -z "$bin" ] && [ "${HEADWATER_TUTORIAL_RELEASE:-}" = 1 ]; then
