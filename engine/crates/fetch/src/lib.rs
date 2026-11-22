@@ -289,6 +289,24 @@ fn transport(at: &str, error: &ureq::Error, connect: Duration, total: Duration) 
     }
 }
 
+/// The two clients of a fetch: one that honors the proxy the environment
+/// names, for https, and one that never uses a proxy, for plain http. Each
+/// follows no redirect itself and bounds a connection by `connect`.
+fn agents(connect: Duration) -> (ureq::Agent, ureq::Agent) {
+    let proxied: ureq::Agent = ureq::Agent::config_builder()
+        .max_redirects(0)
+        .timeout_connect(Some(connect))
+        .build()
+        .into();
+    let direct: ureq::Agent = ureq::Agent::config_builder()
+        .max_redirects(0)
+        .timeout_connect(Some(connect))
+        .proxy(None)
+        .build()
+        .into();
+    (proxied, direct)
+}
+
 /// [`fetch`] with the two bounds as arguments, so that a test can hold them
 /// with a bound of a second rather than the shipped one.
 fn fetch_within(location: &str, connect: Duration, total: Duration) -> Result<Fetched, Error> {
@@ -301,36 +319,20 @@ fn fetch_within(location: &str, connect: Duration, total: Duration) -> Result<Fe
     // goes through a proxy: `allowed` admits it only for a loopback host, and
     // a proxy would decide for itself what that host means (#1113).
     //
-    // Each agent bounds a connection by `connect`. Each request gets the time
-    // left before `deadline` as its own global bound, which in ureq 3 runs
-    // from the request to the last byte of its body, so the last hop's bound
-    // also holds the body read below.
-    let proxied: ureq::Agent = ureq::Agent::config_builder()
-        .max_redirects(0)
-        .timeout_connect(Some(connect))
-        .build()
-        .into();
-    let direct: ureq::Agent = ureq::Agent::config_builder()
-        .max_redirects(0)
-        .timeout_connect(Some(connect))
-        .proxy(None)
-        .build()
-        .into();
+    // Each request gets the time left before `deadline` as its own global
+    // bound, which in ureq 3 runs from the request to the last byte of its
+    // body, so the last hop's bound also holds the body read below.
+    let (proxied, direct) = agents(connect);
     let mut response = follow(location, |at| {
         let agent = if scheme(at) == Some("http") {
             &direct
         } else {
             &proxied
         };
+        // A spent bound is zero, and ureq refuses a zero bound before it sends
+        // the request, which `a_spent_bound_refuses_before_the_next_request`
+        // holds.
         let remaining = deadline.saturating_duration_since(Instant::now());
-        if remaining.is_zero() {
-            return Err(transport(
-                at,
-                &ureq::Error::Timeout(ureq::Timeout::Global),
-                connect,
-                total,
-            ));
-        }
         let response = agent
             .get(at)
             .config()
@@ -1047,6 +1049,19 @@ mod tests {
             0,
             "a request went out on a spent bound"
         );
+    }
+
+    /// #1971: both clients bound a connection. A loopback listener accepts a
+    /// connection at once, so no case here can make one wait, and this case
+    /// reads the bound off each client instead.
+    #[test]
+    fn both_clients_bound_a_connection_and_follow_no_redirect() {
+        let (proxied, direct) = agents(CONNECT_TIMEOUT);
+        for agent in [&proxied, &direct] {
+            assert_eq!(agent.config().timeouts().connect, Some(CONNECT_TIMEOUT));
+            assert_eq!(agent.config().max_redirects(), 0);
+        }
+        assert!(direct.config().proxy().is_none());
     }
 
     /// #1971: a connection that does not open names the connect bound, not
