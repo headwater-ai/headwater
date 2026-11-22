@@ -732,9 +732,11 @@ status_evaluations() {
 # status_figures FILE — each figure the Status blockquote of FILE quotes, as
 # `<line number><TAB><figure>`. A figure is `<n> of <m>`, a bracketed interval
 # `[a, b]`, `<n>%`, or a signed point difference such as `+40.0` that stands
-# after a space or an opening parenthesis. A link target, an issue number
-# `#<n>` and a date are removed before any figure is read, and a version
-# matches none of the four shapes. An interval is read first and then removed,
+# after a space or an opening parenthesis. A link target, with its title, and
+# an issue number `#<n>` are removed before any figure is read, because
+# `#2 of 3` and a title can hold the shape of a figure. A date and a version
+# match none of the four shapes: the hyphen of a date follows a digit, and a
+# version has no `of`, `%` or sign. An interval is read first and then removed,
 # so its two bounds are not read again as differences.
 status_figures() {
     status_lines "$1" | awk -F '\t' '
@@ -750,7 +752,6 @@ status_figures() {
             s = substr($0, length($1) + 2)
             gsub(/\]\([^)]*\)/, "]", s)
             gsub(/#[0-9]+/, "", s)
-            gsub(/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/, "", s)
             interval = "\\[(\\+|-|−)?[0-9]+(\\.[0-9]+)?, (\\+|-|−)?[0-9]+(\\.[0-9]+)?\\]"
             each(s, interval, 0)
             gsub(interval, "", s)
@@ -2317,9 +2318,12 @@ same "every figure in the Status blockquote is in an evaluation it links" "" \
 # 5f, provoked. A planted page links a scratch evaluation. A figure that the
 #     evaluation does not carry is refused with its line, in each of the four
 #     shapes a figure takes; the same page with every figure present passes.
-#     A link target, an issue number, a date and a version are not figures, and
-#     a figure in an evaluation the blockquote does not link does not count.
-mkdir -p "$scratch/sf/docs/evaluations"
+#     A link target or title, an issue number, a date and a version are not
+#     figures. A figure in an evaluation the blockquote does not link does not
+#     count, and neither does one in a linked file that is not an evaluation.
+#     A figure is matched whole, so `34 of 145` is not found in `134 of 145`.
+#     A line outside the blockquote, or under a later heading, is not judged.
+mkdir -p "$scratch/sf/docs/evaluations" "$scratch/sf/docs/probe-runs"
 printf '%s\n' \
     '# An evaluation' \
     '' \
@@ -2329,20 +2333,26 @@ printf '%s\n' \
     '' \
     'It measured 99 of 145.' >"$scratch/sf/docs/evaluations/unlinked.md"
 printf '%s\n' \
+    '# A transcript' \
+    '' \
+    'It passed 34 of 145, -2.0 points.' >"$scratch/sf/docs/probe-runs/run.md"
+printf '%s\n' \
     '# Project' \
     '' \
     '## Status' \
     '' \
-    '> [The evaluation](docs/evaluations/linked.md) of 2026-11-22 (#1882, v0.6.1) measured 99 of 145.' \
+    '> [The evaluation](docs/evaluations/linked.md "the 3 of 4 table") of 2026-11-22 (#1882, slice #2 of 3, v0.6.1) measured 99 of 145.' \
     '>' \
-    '> It found +41.0 points [+30.3, +48.8], or 93%, and the rest is open.' \
+    '> It found +41.0 points [+30.3, +48.8], or 93%, and 34 of 145 (-2.0 points) in [a run](docs/probe-runs/run.md).' \
+    '' \
+    'Outside the blockquote, 5 of 6 is not judged.' \
     '' \
     '## Next' \
     '' \
-    'Below the Status section, 7 of 9 is not judged.' >"$scratch/sf/README.md"
+    '> Below the Status section, 7 of 9 is not judged.' >"$scratch/sf/README.md"
 sf_hit=" is in no evaluation the Status blockquote links|"
 same "  the figure judge names each figure the linked evaluation does not carry, by line" \
-    "5: 99 of 145$sf_hit""7: [+30.3, +48.8]$sf_hit""7: 93%$sf_hit""7: +41.0$sf_hit" \
+    "5: 99 of 145$sf_hit""7: [+30.3, +48.8]$sf_hit""7: 34 of 145$sf_hit""7: 93%$sf_hit""7: +41.0$sf_hit""7: -2.0$sf_hit" \
     "$(status_figure_judge "$scratch/sf/README.md" | tr '\n' '|')"
 printf '%s\n' \
     '# Project' \
