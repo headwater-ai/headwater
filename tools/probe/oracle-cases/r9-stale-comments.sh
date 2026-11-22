@@ -80,3 +80,13 @@ paraphrase() {
     sed -i "s/$pin/summary: \"Eight comments in the cli, paint, generate, probe and sweep crates, and the command-surface subsystem spec, state facts the code does not hold. The builds and verifies of run 20261001-1107 surfaced them.\"/" "$target" && grep -q 'The builds and verifies of run 20261001-1107 surfaced them' "$target"
 }
 more_sound="paraphrase"
+
+# The reference change less one crate name, or less the count, so that only
+# the `# summary-any:` line of that fact fails each one (#1978).
+sweep_dropped() {
+    sed -i "s/$pin/summary: \"Eight comments in cli, paint, generate, probe and the command-surface subsystem spec state facts the code does not hold, found by the builds and verifies of run 20261001-1107.\"/" "$target" && grep -q 'Eight comments in cli, paint, generate, probe and the' "$target"
+}
+count_dropped() {
+    sed -i "s/$pin/summary: \"Comments in cli, paint, generate, probe, sweep and the command-surface subsystem spec state facts the code does not hold, found by the builds and verifies of run 20261001-1107.\"/" "$target" && grep -q 'summary: "Comments in cli, paint' "$target"
+}
+more_wrong="$more_wrong sweep_dropped count_dropped"
