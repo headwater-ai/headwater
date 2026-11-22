@@ -156,6 +156,28 @@ same '  and nothing ran' 0 "$(grep -c . "$LOG")"
 out=$(cd "$wt" && sh "$tool" none 2>&1); status=$?
 same 'none is the run-lessons build, with its own scratch' "0 LOGS: $scratch/jobtmp/run-lessons/pre-pr" "$status $(printf '%s\n' "$out" | grep '^LOGS:')"
 
+printf '\n# a crate with no README row fails pre-pr\n'
+# #1959 (PR #1991) printed PRE-PR: ok and failed
+# tools/engine/engine-readme-fixtures.sh in CI, on a new crate with no row in
+# the "What is here" table of engine/README.md. This case runs the default
+# list, not a stubbed one, over a tree that holds the real engine files and
+# that suite, plus one crate directory with no row. The loop skips each
+# default suite whose file is absent, so only the README suite runs. The
+# suite calls `cargo metadata --locked` once, so this case needs `cargo`.
+git -C "$root" ls-files -z -- engine tools/engine/engine-readme-fixtures.sh > "$scratch/engine-files"
+(cd "$root" && tar --null -T "$scratch/engine-files" -cf -) | (cd "$wt" && tar -xf -)
+mkdir -p "$wt/engine/crates/nonesuch"
+printf 'a crate directory with no row in engine/README.md\n' > "$wt/engine/crates/nonesuch/README"
+: > "$LOG"
+out=$(cd "$wt" && env -u HW_PRE_PR_FIXTURES sh "$tool" 7 2>&1); status=$?
+readme_log="$scratch/jobtmp/issue-7/pre-pr/tools-engine-engine-readme-fixtures.sh.log"
+same 'exit 1' 1 "$status"
+same '  and the FIXTURES line names the README suite' 'FIXTURES: failed: tools/engine/engine-readme-fixtures.sh' "$(printf '%s\n' "$out" | grep '^FIXTURES:')"
+same '  and its log fails the row judge' 1 "$(grep -c '^FAIL every crate in the tree has a row' "$readme_log" 2>/dev/null)"
+same '  and the log names the crate' 1 "$(grep -q 'nonesuch' "$readme_log" 2>/dev/null && echo 1 || echo 0)"
+rm -rf "$wt/engine" "$wt/tools"
+git -C "$wt" checkout -q -- docs/derived.md
+
 printf '\n# the default list holds the probe suites CI runs\n'
 # PR #1894 and #1902 each printed PRE-PR: ok and failed one of these in CI.
 defaults=$(sed -n 's/^fixtures=\${HW_PRE_PR_FIXTURES:-"\(.*\)"}$/\1/p' "$tool")
