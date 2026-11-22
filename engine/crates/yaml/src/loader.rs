@@ -591,10 +591,7 @@ mod tests {
                 other => panic!("wrong error: {other:?}"),
             })
             .collect();
-        assert_eq!(
-            seen,
-            vec![("a".to_string(), 1, 3), ("a".to_string(), 1, 4)]
-        );
+        assert_eq!(seen, vec![("a".to_string(), 1, 3), ("a".to_string(), 1, 4)]);
     }
 
     #[test]

@@ -70,11 +70,7 @@ fn assert_in_time(label: &str, text: &str, ceiling: Duration) {
 #[test]
 fn many_unknown_front_matter_keys_check_in_linear_time() {
     let extra: String = (0..KEYS).map(|i| format!("k{i}: v\n")).collect();
-    assert_in_time(
-        "linear-keys",
-        &document(&extra, "One paragraph."),
-        CEILING,
-    );
+    assert_in_time("linear-keys", &document(&extra, "One paragraph."), CEILING);
 }
 
 /// Distinct relation targets that resolve to nothing. The graph searched the

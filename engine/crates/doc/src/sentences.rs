@@ -481,7 +481,10 @@ fn position(layout: &Layout, index: usize) -> Position {
     let block = layout.block;
     match layout.run_at(index) {
         Some(run) => advanced(layout, run, index),
-        None => block.runs.last().map_or(block.span.start, |run| run.span.end),
+        None => block
+            .runs
+            .last()
+            .map_or(block.span.start, |run| run.span.end),
     }
 }
 
