@@ -35,7 +35,7 @@ You need four things.
 Three facts about the blocks below.
 
 - **A block is a command or it is output, and the two look the same.** Every step gives the command first and what it printed after. Nothing marks the difference, so read the sentence above a block before you paste it.
-- **Your dates differ.** The engine reads a clock, and it puts the date of your run into what it writes. Where a block below shows `2026-09-09`, yours shows the day you read this.
+- **Your dates differ.** The engine reads a clock, and it puts the date of your run into what it writes. Where a block below shows `2026-09-09`, yours shows the date of your run in UTC. East of UTC early in the day, or west of UTC late in the day, that date is one day off your local date.
 - **Long output is trimmed.** A block that is shorter than the real output says so on the line above it.
 
 Install the engine once. The block below downloads the release archive for Linux on x86_64 and puts the `headwater` binary in `~/.local/bin`. The archive holds a static build, so it needs no particular C library.

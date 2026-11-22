@@ -764,7 +764,8 @@ pub enum Verb {
             long,
             value_name = "date",
             value_parser = a_date,
-            help = "the date the document is stamped with, as `YYYY-MM-DD`. Defaults to today"
+            help = "the date the document is stamped with, as `YYYY-MM-DD`. Defaults to today's date in UTC, \
+                    which can be one day off your local date"
         )]
         now: Option<Date>,
     },
