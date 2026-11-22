@@ -1381,6 +1381,8 @@ pub fn plan(
         );
     }
     descriptor::emit(surface, identity, projections, &mut plan);
+    plan.unwritten
+        .extend(shelf_index::uncovered(surface, &projections.declared));
     plan.unwritten.extend(undeclared(projections));
     plan.unwritten.extend(engine_defined());
     // Every declaration has had its turn, so the output set is complete and a

@@ -880,11 +880,25 @@ fn this_repository_generates_its_one_hundred_and_thirty_five_artifacts_and_accou
     // engine does not emit and this corpus does not declare —
     // `relation_view`, `agent_rules`, `template` and `transcription` — which
     // a run states whether or not a declaration named them, because the
-    // reason is a property of this engine rather than of the corpus.
+    // reason is a property of this engine rather than of the corpus. The last
+    // two are the shelves no `shelf_index` declaration names (#1988), which
+    // moved this literal from 6 to 8: `interfaces`, which a `verb_index`
+    // indexes instead, and `library_doctrine`.
     assert_eq!(
         plan.unwritten.len(),
-        6,
+        8,
         "a projection produced neither a file nor a reason"
+    );
+    let uncovered: Vec<&str> = plan
+        .unwritten
+        .iter()
+        .filter(|unwritten| unwritten.at.starts_with("shelf `"))
+        .map(|unwritten| unwritten.at.as_str())
+        .collect();
+    assert_eq!(
+        uncovered,
+        ["shelf `interfaces`", "shelf `library_doctrine`"],
+        "the shelves no `shelf_index` declaration names, in the taxonomy's shelf order"
     );
     for unwritten in &plan.unwritten {
         assert!(
