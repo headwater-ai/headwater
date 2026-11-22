@@ -34,7 +34,10 @@
 #
 # `run-dir.sh` (start, claim, stage, next) and `supervise.sh` call it, and
 # `tools/run/run-dir-fixtures.sh` and `tools/run/supervise-fixtures.sh` hold
-# it.
+# it. `start` calls it to decide whether to run `tools/run/fast-forward-main.sh`,
+# which fetches, and again after a refused move, and it writes its own line
+# from this one with the state the move was refused for (#1997). The line
+# below is unchanged for every other caller.
 
 set -u
 

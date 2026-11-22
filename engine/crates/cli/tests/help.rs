@@ -478,3 +478,28 @@ fn every_command_line_answers_both_help_flags_through_the_binary() {
         .sum();
     assert_eq!(asked, forms * 2, "every form is asked with both spellings");
 }
+
+/// The date `headwater new` stamps is named as a UTC date in its help.
+///
+/// # Why this case holds the words of one flag
+///
+/// The other cases here hold that a flag says *something*. This one holds what
+/// `--now` says, because the engine stamps the UTC date of the run
+/// (`Context::from_system_clock` applies no zone), and an adoption trial
+/// ([#1987](https://github.com/headwater-ai/headwater/issues/1987)) read that
+/// stamp as its local date, which is a day off east of UTC early in the day.
+/// The owner ruled that the engine keeps UTC and says so. The block is cut from
+/// `--now` to the next flag, so a `UTC` elsewhere on the page cannot satisfy it.
+#[test]
+fn the_date_new_stamps_says_it_is_utc() {
+    let page = flat(&help_of(&["new"]));
+    let start = page
+        .find("--now <date>")
+        .unwrap_or_else(|| panic!("`headwater help new` names `--now`:\n{page}"));
+    let rest = &page[start + "--now <date>".len()..];
+    let block = rest.find(" -").map_or(rest, |end| &rest[..end]);
+    assert!(
+        block.contains("UTC"),
+        "the `--now` help of `headwater new` says the stamped date is in UTC: {block:?}"
+    );
+}
