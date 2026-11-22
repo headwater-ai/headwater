@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .github/workflows/release.yml
-      verified_revision: sha256:66aeccf8d5dd9a9a73f5a2e93de8062823828f404e2f46253368cbcc296cb15f
+      verified_revision: sha256:06d0a89ab26bb40be1b8531213b9ace8e4a243981f78c2585cc8efcd16860fe4
     - to: .github/workflows/release-taxonomy.yml
       verified_revision: sha256:cc62f8db1425466922c618475983155ec51572a77c846a4634a730e18a804ae4
 ---

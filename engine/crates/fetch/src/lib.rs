@@ -21,11 +21,24 @@
 //! `HTTPS_PROXY` and `HTTP_PROXY` names, in either case, unless `NO_PROXY`
 //! excludes the host. A plain-http request goes to a loopback host alone and
 //! never through a proxy.
+//!
+//! A fetch is bounded in time. Each connection must open within
+//! [`CONNECT_TIMEOUT`] (10 s), and the whole fetch, every redirect and the
+//! body included, must finish within [`TOTAL_TIMEOUT`] (30 s). A server that
+//! accepts the connection and never answers is refused with a sentence that
+//! names the location and the bound, and the verb exits 1.
+//!
+//! The temporary directory holds a `.lock` file that the fetch locks for as
+//! long as the directory lives. A process that a signal stops never removes
+//! its directory, but the operating system releases its lock. So each fetch
+//! first removes every `headwater-fetch-*` directory under the system
+//! temporary directory whose lock it can take, and leaves the rest.
 
 use std::fmt;
 use std::io::Cursor;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{Duration, Instant};
 
 /// The largest body this reads. A published taxonomy artifact is well under a
 /// megabyte; the cap is there so that a wrong URL cannot fill the disk.
@@ -41,6 +54,30 @@ const UNPACKED_LIMIT: u64 = 64 * 1024 * 1024;
 
 /// The most redirects one fetch follows. A release asset takes one.
 const MAX_REDIRECTS: u32 = 10;
+
+/// The longest one connection may take to open, the TLS handshake and any
+/// proxy included. A host that does not answer the connection fails here.
+const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
+
+/// The longest one whole fetch may take, from the first request through every
+/// redirect to the last byte of the body. The bound is on the fetch and not
+/// on one request, so that eleven slow hops cannot take eleven times as long.
+/// The published artifact is under a megabyte, so an honest server meets it
+/// with a wide margin.
+const TOTAL_TIMEOUT: Duration = Duration::from_secs(30);
+
+/// The prefix of every temporary directory a fetch makes, which the sweep
+/// reads to find the directories a dead fetch left.
+const SCRATCH_PREFIX: &str = "headwater-fetch-";
+
+/// The file inside a temporary directory that the fetch locks while the
+/// directory lives.
+const LOCK: &str = ".lock";
+
+/// The directory inside a temporary directory that holds the artifact, kept
+/// apart from [`LOCK`] so that the artifact `vendor` reads holds no file the
+/// fetch added.
+const ARTIFACT: &str = "artifact";
 
 /// Whether a command-line argument names a location rather than a directory.
 /// A directory whose name begins `http://` or `https://` is not a case this
@@ -124,21 +161,28 @@ impl fmt::Display for Error {
 impl std::error::Error for Error {}
 
 /// An unpacked artifact in a temporary directory, removed when this drops.
+/// The directory holds the artifact under [`ARTIFACT`] and a [`LOCK`] file
+/// that `lock` holds locked, so that a sweep leaves the directory alone.
 #[derive(Debug)]
 pub struct Fetched {
     dir: PathBuf,
+    artifact: PathBuf,
+    lock: Option<std::fs::File>,
 }
 
 impl Fetched {
     /// The directory that holds the artifact, as `vendor` reads it.
     #[must_use]
     pub fn path(&self) -> &Path {
-        &self.dir
+        &self.artifact
     }
 }
 
 impl Drop for Fetched {
     fn drop(&mut self) {
+        // Close the lock first: Windows refuses to remove a directory while
+        // a handle inside it is open.
+        drop(self.lock.take());
         let _ = std::fs::remove_dir_all(&self.dir);
     }
 }
@@ -222,6 +266,51 @@ fn follow<T>(
 /// status, [`Error::Archive`] for a body that is not a readable zip, and
 /// [`Error::Io`] when the directory cannot be written.
 pub fn fetch(location: &str) -> Result<Fetched, Error> {
+    sweep(&std::env::temp_dir());
+    fetch_within(location, CONNECT_TIMEOUT, TOTAL_TIMEOUT)
+}
+
+/// The sentence for a request that `ureq` gave up on. A timeout names the
+/// bound it met, so that a person can tell a slow server from a refusal.
+fn transport(at: &str, error: &ureq::Error, connect: Duration, total: Duration) -> Error {
+    match error {
+        ureq::Error::Timeout(ureq::Timeout::Connect | ureq::Timeout::Resolve) => {
+            Error::Transport(format!(
+                "fetching {at} timed out: the connection did not open within {} s",
+                connect.as_secs_f64()
+            ))
+        }
+        ureq::Error::Timeout(_) => Error::Transport(format!(
+            "fetching {at} timed out after {} s, the most one fetch takes with its redirects \
+             and its body",
+            total.as_secs_f64()
+        )),
+        other => Error::Transport(format!("fetching {at} failed: {other}")),
+    }
+}
+
+/// The two clients of a fetch: one that honors the proxy the environment
+/// names, for https, and one that never uses a proxy, for plain http. Each
+/// follows no redirect itself and bounds a connection by `connect`.
+fn agents(connect: Duration) -> (ureq::Agent, ureq::Agent) {
+    let proxied: ureq::Agent = ureq::Agent::config_builder()
+        .max_redirects(0)
+        .timeout_connect(Some(connect))
+        .build()
+        .into();
+    let direct: ureq::Agent = ureq::Agent::config_builder()
+        .max_redirects(0)
+        .timeout_connect(Some(connect))
+        .proxy(None)
+        .build()
+        .into();
+    (proxied, direct)
+}
+
+/// [`fetch`] with the two bounds as arguments, so that a test can hold them
+/// with a bound of a second rather than the shipped one.
+fn fetch_within(location: &str, connect: Duration, total: Duration) -> Result<Fetched, Error> {
+    let deadline = Instant::now() + total;
     // The client follows no redirect itself. `follow` reads each hop and puts
     // it through the same gate as the first request.
     //
@@ -229,25 +318,28 @@ pub fn fetch(location: &str) -> Result<Fetched, Error> {
     // authenticates the named host through the tunnel. A plain-http hop never
     // goes through a proxy: `allowed` admits it only for a loopback host, and
     // a proxy would decide for itself what that host means (#1113).
-    let proxied: ureq::Agent = ureq::Agent::config_builder()
-        .max_redirects(0)
-        .build()
-        .into();
-    let direct: ureq::Agent = ureq::Agent::config_builder()
-        .max_redirects(0)
-        .proxy(None)
-        .build()
-        .into();
+    //
+    // Each request gets the time left before `deadline` as its own global
+    // bound, which in ureq 3 runs from the request to the last byte of its
+    // body, so the last hop's bound also holds the body read below.
+    let (proxied, direct) = agents(connect);
     let mut response = follow(location, |at| {
         let agent = if scheme(at) == Some("http") {
             &direct
         } else {
             &proxied
         };
+        // A spent bound is zero, and ureq refuses a zero bound before it sends
+        // the request, which `a_spent_bound_refuses_before_the_next_request`
+        // holds.
+        let remaining = deadline.saturating_duration_since(Instant::now());
         let response = agent
             .get(at)
+            .config()
+            .timeout_global(Some(remaining))
+            .build()
             .call()
-            .map_err(|error| Error::Transport(format!("fetching {at} failed: {error}")))?;
+            .map_err(|error| transport(at, &error, connect, total))?;
         if !response.status().is_redirection() {
             return Ok(Hop::Done(response));
         }
@@ -265,15 +357,18 @@ pub fn fetch(location: &str) -> Result<Fetched, Error> {
         .with_config()
         .limit(LIMIT)
         .read_to_vec()
-        .map_err(|error| Error::Transport(format!("reading {location} failed: {error}")))?;
+        .map_err(|error| match error {
+            ureq::Error::Timeout(_) => transport(location, &error, connect, total),
+            other => Error::Transport(format!("reading {location} failed: {other}")),
+        })?;
 
     let mut archive = zip::ZipArchive::new(Cursor::new(body)).map_err(|error| {
         Error::Archive(format!(
             "{location} did not answer with a zip archive: {error}"
         ))
     })?;
-    let fetched = Fetched { dir: scratch()? };
-    unpack(&mut archive, &fetched.dir, UNPACKED_LIMIT, location)?;
+    let fetched = scratch()?;
+    unpack(&mut archive, &fetched.artifact, UNPACKED_LIMIT, location)?;
     Ok(fetched)
 }
 
@@ -370,22 +465,66 @@ fn unpack<R: std::io::Read + std::io::Seek>(
     Ok(())
 }
 
-/// A new, empty directory under the system temporary directory. The name
+/// A new temporary directory under the system temporary directory, holding
+/// a locked [`LOCK`] file and an empty [`ARTIFACT`] directory. The name
 /// carries the process id, the time and a counter, because `cargo test` runs
 /// cases as threads of one process and a name keyed on the process alone races.
-fn scratch() -> Result<PathBuf, Error> {
+fn scratch() -> Result<Fetched, Error> {
     static COUNTER: AtomicU64 = AtomicU64::new(0);
     let nanos = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_or(0, |elapsed| elapsed.as_nanos());
     let dir = std::env::temp_dir().join(format!(
-        "headwater-fetch-{}-{nanos}-{}",
+        "{SCRATCH_PREFIX}{}-{nanos}-{}",
         std::process::id(),
         COUNTER.fetch_add(1, Ordering::Relaxed)
     ));
-    std::fs::create_dir(&dir)
-        .map_err(|error| Error::Io(format!("{} could not be made: {error}", dir.display())))?;
-    Ok(dir)
+    let made = |path: &Path, error: std::io::Error| {
+        Error::Io(format!("{} could not be made: {error}", path.display()))
+    };
+    std::fs::create_dir(&dir).map_err(|error| made(&dir, error))?;
+    // From here on the directory is removed by the drop of `Fetched`.
+    let mut fetched = Fetched {
+        artifact: dir.join(ARTIFACT),
+        dir,
+        lock: None,
+    };
+    let path = fetched.dir.join(LOCK);
+    let lock = std::fs::File::create(&path).map_err(|error| made(&path, error))?;
+    lock.lock().map_err(|error| made(&path, error))?;
+    fetched.lock = Some(lock);
+    std::fs::create_dir(&fetched.artifact).map_err(|error| made(&fetched.artifact, error))?;
+    Ok(fetched)
+}
+
+/// Remove every temporary directory under `temp` that a fetch made and that
+/// no live process holds. A directory is removed only when its [`LOCK`] file
+/// opens and its lock can be taken, which means the process that made it is
+/// gone. A directory with no lock file is left: a fetch that has made the
+/// directory and not yet locked it looks the same, and so does one an older
+/// release made. A sweep reports nothing and refuses nothing, because a
+/// cleanup must never stop a vendor.
+fn sweep(temp: &Path) {
+    let Ok(entries) = std::fs::read_dir(temp) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        if !name
+            .to_str()
+            .is_some_and(|name| name.starts_with(SCRATCH_PREFIX))
+        {
+            continue;
+        }
+        let dir = entry.path();
+        let Ok(lock) = std::fs::File::open(dir.join(LOCK)) else {
+            continue;
+        };
+        if lock.try_lock().is_ok() {
+            drop(lock);
+            let _ = std::fs::remove_dir_all(&dir);
+        }
+    }
 }
 
 #[cfg(test)]
@@ -552,10 +691,8 @@ mod tests {
 
     fn unpacked(bytes: Vec<u8>, bound: u64) -> (Result<(), Error>, Fetched) {
         let mut archive = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
-        let fetched = Fetched {
-            dir: scratch().unwrap(),
-        };
-        let result = unpack(&mut archive, &fetched.dir, bound, "test.zip");
+        let fetched = scratch().unwrap();
+        let result = unpack(&mut archive, fetched.path(), bound, "test.zip");
         (result, fetched)
     }
 
@@ -732,6 +869,216 @@ mod tests {
         assert!(
             written.is_empty(),
             "written before the refusal: {written:?}"
+        );
+    }
+
+    /// A new, empty directory for one case, keyed on the case and a counter.
+    fn temp(label: &str) -> PathBuf {
+        static COUNTER: AtomicU64 = AtomicU64::new(0);
+        let dir = std::env::temp_dir().join(format!(
+            "hw-fetch-test-{label}-{}-{}",
+            std::process::id(),
+            COUNTER.fetch_add(1, Ordering::Relaxed)
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    /// #1971: a sweep removes the directory a dead fetch left and keeps the
+    /// two it cannot prove dead.
+    #[test]
+    fn a_sweep_removes_an_unlocked_directory_and_keeps_a_locked_one_and_one_with_no_lock() {
+        let temp = temp("sweep");
+        let dead = temp.join(format!("{SCRATCH_PREFIX}dead"));
+        std::fs::create_dir_all(dead.join(ARTIFACT)).unwrap();
+        std::fs::write(dead.join(LOCK), b"").unwrap();
+        let live = temp.join(format!("{SCRATCH_PREFIX}live"));
+        std::fs::create_dir_all(&live).unwrap();
+        let held = std::fs::File::create(live.join(LOCK)).unwrap();
+        held.lock().unwrap();
+        let old = temp.join(format!("{SCRATCH_PREFIX}old"));
+        std::fs::create_dir_all(&old).unwrap();
+        let other = temp.join("somebody-else");
+        std::fs::create_dir_all(&other).unwrap();
+        std::fs::write(other.join(LOCK), b"").unwrap();
+
+        sweep(&temp);
+
+        assert!(!dead.exists(), "the directory of a dead fetch was kept");
+        assert!(live.exists(), "the directory of a live fetch was removed");
+        assert!(old.exists(), "a directory with no lock file was removed");
+        assert!(
+            other.exists(),
+            "a directory the fetch never made was removed"
+        );
+        drop(held);
+        let _ = std::fs::remove_dir_all(&temp);
+    }
+
+    /// #1971: the directory a fetch hands back holds the lock, so a sweep in
+    /// another fetch leaves it, and the artifact directory holds no lock file.
+    #[test]
+    fn a_live_fetch_holds_its_lock_and_its_artifact_holds_no_lock_file() {
+        let fetched = scratch().unwrap();
+        let held = fetched.dir.join(LOCK);
+        let other = std::fs::File::open(&held).unwrap();
+        assert!(
+            other.try_lock().is_err(),
+            "the lock of a live fetch could be taken"
+        );
+        drop(other);
+        assert!(!fetched.path().join(LOCK).exists());
+        let dir = fetched.dir.clone();
+        drop(fetched);
+        assert!(!dir.exists(), "the drop left the directory");
+    }
+
+    /// A listener on 127.0.0.1. `/a` waits `SLOW_HOP` and then redirects to
+    /// `/b`. `/c` sends its headers and never its body. Every other request
+    /// is held open without a byte. The count is of requests received.
+    fn slow_redirect_then_silence() -> (String, std::sync::Arc<AtomicU64>) {
+        use std::io::{Read, Write};
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let base = format!("http://{}", listener.local_addr().unwrap());
+        let count = std::sync::Arc::new(AtomicU64::new(0));
+        let seen = std::sync::Arc::clone(&count);
+        std::thread::spawn(move || {
+            let mut held = Vec::new();
+            for stream in listener.incoming() {
+                let Ok(mut stream) = stream else { continue };
+                let mut request = [0_u8; 4096];
+                let read = stream.read(&mut request).unwrap_or(0);
+                if read == 0 {
+                    continue;
+                }
+                seen.fetch_add(1, Ordering::SeqCst);
+                let line = String::from_utf8_lossy(&request[..read]).to_string();
+                match line.split_whitespace().nth(1) {
+                    Some("/a") => {
+                        std::thread::sleep(SLOW_HOP);
+                        let _ = stream.write_all(
+                            b"HTTP/1.1 302 Found\r\nLocation: /b\r\nContent-Length: 0\r\n\r\n",
+                        );
+                    }
+                    Some("/c") => {
+                        let _ = stream.write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\n");
+                    }
+                    _ => {}
+                }
+                held.push(stream);
+            }
+        });
+        (base, count)
+    }
+
+    /// The refusal of `fetch_within(location, connect, total)`, run on a
+    /// thread that the case abandons after ten seconds, so that a fetch with
+    /// no bound fails the case rather than hangs the suite.
+    fn refused_within(location: String, connect: Duration, total: Duration) -> Error {
+        let (send, receive) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let _ = send.send(fetch_within(&location, connect, total).map(|_| ()));
+        });
+        match receive.recv_timeout(Duration::from_secs(10)) {
+            Ok(result) => result.expect_err("the fetch did not refuse"),
+            Err(_) => panic!("the fetch was still running after 10 s"),
+        }
+    }
+
+    /// How long `/a` of [`slow_redirect_then_silence`] waits before it
+    /// answers: most of a one-second bound, so that a bound reset at each hop
+    /// would run well past one bound in all.
+    const SLOW_HOP: Duration = Duration::from_millis(700);
+
+    /// #1971: the bound is on the whole fetch and not on one hop. The first
+    /// hop spends 0.7 s of a 1 s bound, and the silent second hop gets the
+    /// 0.3 s left, so the fetch ends near 1 s. A bound reset at each hop ends
+    /// near 1.7 s. The sentence names the location and the bound.
+    #[test]
+    fn the_bound_holds_across_a_redirect_to_a_server_that_never_answers() {
+        let (base, _count) = slow_redirect_then_silence();
+        let started = Instant::now();
+        let refused = refused_within(
+            format!("{base}/a"),
+            Duration::from_secs(1),
+            Duration::from_secs(1),
+        );
+        let elapsed = started.elapsed();
+        assert!(
+            elapsed >= Duration::from_millis(900) && elapsed < Duration::from_millis(1400),
+            "the fetch took {elapsed:?} against a bound of 1 s over the whole fetch"
+        );
+        let text = refused.to_string();
+        assert!(matches!(refused, Error::Transport(_)), "{text}");
+        assert!(
+            text.contains(&format!("{base}/b")) && text.contains("timed out after 1 s"),
+            "{text}"
+        );
+    }
+
+    /// #1971: a body that never arrives is held by the same bound, and names
+    /// it, rather than failing as an ordinary read error.
+    #[test]
+    fn a_body_that_never_arrives_is_held_by_the_bound() {
+        let (base, _count) = slow_redirect_then_silence();
+        let started = Instant::now();
+        let refused = refused_within(
+            format!("{base}/c"),
+            Duration::from_secs(1),
+            Duration::from_secs(1),
+        );
+        let elapsed = started.elapsed();
+        assert!(elapsed < Duration::from_secs(3), "took {elapsed:?}");
+        let text = refused.to_string();
+        assert!(
+            text.contains(&format!("{base}/c")) && text.contains("timed out after 1 s"),
+            "{text}"
+        );
+    }
+
+    /// #1971: a fetch whose bound is spent before a hop sends no request.
+    #[test]
+    fn a_spent_bound_refuses_before_the_next_request() {
+        let (base, count) = slow_redirect_then_silence();
+        let refused = refused_within(format!("{base}/a"), Duration::from_secs(1), Duration::ZERO);
+        assert!(refused.to_string().contains("timed out"), "{refused}");
+        std::thread::sleep(Duration::from_millis(200));
+        assert_eq!(
+            count.load(Ordering::SeqCst),
+            0,
+            "a request went out on a spent bound"
+        );
+    }
+
+    /// #1971: both clients bound a connection. A loopback listener accepts a
+    /// connection at once, so no case here can make one wait, and this case
+    /// reads the bound off each client instead.
+    #[test]
+    fn both_clients_bound_a_connection_and_follow_no_redirect() {
+        let (proxied, direct) = agents(CONNECT_TIMEOUT);
+        for agent in [&proxied, &direct] {
+            assert_eq!(agent.config().timeouts().connect, Some(CONNECT_TIMEOUT));
+            assert_eq!(agent.config().max_redirects(), 0);
+        }
+        assert!(direct.config().proxy().is_none());
+    }
+
+    /// #1971: a connection that does not open names the connect bound, not
+    /// the total one. The case reads the sentence alone, because a loopback
+    /// address refuses a connection at once rather than letting it wait, and
+    /// this suite reaches no other host.
+    #[test]
+    fn a_connect_timeout_names_the_connect_bound() {
+        let refused = transport(
+            "https://192.0.2.1/x.zip",
+            &ureq::Error::Timeout(ureq::Timeout::Connect),
+            Duration::from_secs(10),
+            Duration::from_secs(30),
+        );
+        assert_eq!(
+            refused.to_string(),
+            "fetching https://192.0.2.1/x.zip timed out: the connection did not open within 10 s"
         );
     }
 }

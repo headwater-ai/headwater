@@ -1584,6 +1584,20 @@ release_digest_of() {
     ' "$1"
 }
 
+# release_version_of FILE — the `release.version` field of a release record,
+# read with the same anchor as `release_digest_of` so that a member's own
+# `version:` is never taken for the package's. The engine notes name this
+# version beside the digest, because a digest that names no version sent a
+# reader of the v0.6.1 notes looking for a zip that was never published
+# (#1986).
+release_version_of() {
+    awk '
+        /^release:/ { block = 1; next }
+        /^[^ \t#]/ { block = 0 }
+        block && /^  version:/ { print $2; exit }
+    ' "$1"
+}
+
 # digest_paragraph_of FILE — the paragraph that tells a reader where the digest
 # they pass to `--expect` comes from: the first paragraph outside a fence that
 # names `release.digest`. It is read out of the page rather than named by line
@@ -2803,11 +2817,82 @@ if [ -f "$release_wf" ]; then
         mkdir -p "$scratch/release/tree/.headwater/packages/headwater-standard"
         cp "$root/.headwater/packages/headwater-standard/release.yml" \
             "$scratch/release/tree/.headwater/packages/headwater-standard/release.yml"
-        notes_status=$(cd "$scratch/release/tree" && sh "$scratch/release/notes-step.sh" >notes.log 2>&1; echo $?)
+        notes_status=$(cd "$scratch/release/tree" && GITHUB_REPOSITORY=headwater-ai/headwater sh "$scratch/release/notes-step.sh" >notes.log 2>&1; echo $?)
         same "  and running it against this checkout exits 0" 0 "$notes_status"
         same "  and it writes the \`release.digest\` of the record in the tree it ran in" \
             "release.digest: $good_digest" \
             "$(head -1 "$scratch/release/tree/release-notes.md" 2>/dev/null)"
+
+        # What the digest is the digest of (#1986). The v0.6.1 notes gave the
+        # digest of `headwater/standard` 4.16.1 as it stood in the tagged
+        # source tree, named no version, and no published zip carried that
+        # digest. The notes now name the version, say that the digest is of
+        # the copy in this tag's source tree, and name the taxonomy release
+        # that would carry it. The step reaches no network (HW-DR-0090), so it
+        # cannot say whether that release exists, and the notes say so.
+        good_version=$(release_version_of "$root/.headwater/packages/headwater-standard/release.yml")
+        notes_body=$(tr '\n' ' ' <"$scratch/release/tree/release-notes.md" 2>/dev/null)
+        case $notes_body in
+            *"\`headwater/standard\` $good_version"*)
+                pass "  and the notes name \`headwater/standard\` $good_version, the version of that digest" ;;
+            *) fail "  and the notes name \`headwater/standard\` $good_version, the version of that digest" \
+                "the notes do not name \`headwater/standard\` $good_version, so a reader cannot tell which package the digest is of" ;;
+        esac
+        case $notes_body in
+            *"--expect $good_digest\`"*)
+                pass "  and the vendor command in the notes passes that digest to \`--expect\`" ;;
+            *) fail "  and the vendor command in the notes passes that digest to \`--expect\`" \
+                "the notes do not carry \`--expect $good_digest\`, so the command a reader copies pins something other than the digest" ;;
+        esac
+        case $notes_body in
+            *"as it stands in the source tree of this tag"*)
+                pass "  and the notes say the digest is of the copy in this tag's source tree" ;;
+            *) fail "  and the notes say the digest is of the copy in this tag's source tree" \
+                "the notes do not say that the digest is of the package in the tagged source tree, so a reader takes it for the digest of a downloadable zip" ;;
+        esac
+        case $notes_body in
+            *"taxonomy/headwater-standard/v$good_version"*)
+                pass "  and the notes name the taxonomy release \`taxonomy/headwater-standard/v$good_version\` that would carry it" ;;
+            *) fail "  and the notes name the taxonomy release \`taxonomy/headwater-standard/v$good_version\` that would carry it" \
+                "the notes name no \`taxonomy/headwater-standard/v$good_version\`, so a reader has no zip to look for" ;;
+        esac
+        case $notes_body in
+            *"https://github.com/headwater-ai/headwater/releases/tag/taxonomy/headwater-standard/v$good_version"*"https://github.com/headwater-ai/headwater/releases?q=taxonomy"*)
+                pass "  and the notes link that release and the list of taxonomy releases in the repository the run names" ;;
+            *) fail "  and the notes link that release and the list of taxonomy releases in the repository the run names" \
+                "the notes do not carry both links under \`https://github.com/\$GITHUB_REPOSITORY/releases\`, so a reader has no place to look" ;;
+        esac
+
+        # The version is read from the `release:` block alone. A record that
+        # opens with another top-level block carrying its own two-space
+        # `version:` must still yield the release's version, or an awk that
+        # lost its block anchor would name a version nobody published.
+        { printf 'source:\n  version: 0.0.0-not-the-release\n'
+          cat "$root/.headwater/packages/headwater-standard/release.yml"
+        } >"$scratch/release/tree/.headwater/packages/headwater-standard/release.yml"
+        rm -f "$scratch/release/tree/release-notes.md"
+        (cd "$scratch/release/tree" && GITHUB_REPOSITORY=headwater-ai/headwater sh "$scratch/release/notes-step.sh" >notes.log 2>&1)
+        case $(tr '\n' ' ' <"$scratch/release/tree/release-notes.md" 2>/dev/null) in
+            *"\`headwater/standard\` $good_version as it stands"*)
+                pass "  and a \`version:\` outside the \`release:\` block is not taken for the release's" ;;
+            *) fail "  and a \`version:\` outside the \`release:\` block is not taken for the release's" \
+                "over a record that opens with another block carrying \`version:\`, the notes do not name \`headwater/standard\` $good_version" ;;
+        esac
+
+        # The second mutation arm. A record with no `release.version` must stop
+        # the release rather than cut one whose notes name no version. Only the
+        # two-space `version:` directly under `release:` goes: a member line is
+        # indented further, so the anchor leaves members alone.
+        grep -v '^  version:' "$root/.headwater/packages/headwater-standard/release.yml" \
+            >"$scratch/release/tree/.headwater/packages/headwater-standard/release.yml"
+        rm -f "$scratch/release/tree/release-notes.md"
+        unversioned_status=$(cd "$scratch/release/tree" && sh "$scratch/release/notes-step.sh" >notes.log 2>&1; echo $?)
+        if [ "$unversioned_status" = 0 ]; then
+            fail "  and a record stating no version stops the release" \
+                "the step exited 0 over a record with no \`release.version\`, so the release would name no version beside its digest"
+        else
+            pass "  and a record stating no version stops the release"
+        fi
 
         # The mutation arm. A record with no `release.digest` must stop the
         # release rather than cut one whose notes open with an empty value.
