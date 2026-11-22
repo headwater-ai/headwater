@@ -773,6 +773,29 @@ fn resolve_refuses_a_shelf_path_or_corpus_root_that_leaves_the_repository() {
     }
 }
 
+/// The other direction of the same gate: a corpus root that stays inside the
+/// repository still resolves and checks, when it walks back with `..` to a
+/// place inside the root and when it is a symlink inside the repository to a
+/// directory inside it. The test is lexical, so the link is not followed to
+/// decide (#1967).
+#[cfg(unix)]
+#[test]
+fn a_corpus_root_inside_the_repository_still_resolves() {
+    for (label, to) in [
+        ("corpus-root-walks-back", "  root: docs/../docs\n"),
+        ("corpus-root-linked", "  root: linked\n"),
+    ] {
+        let root = Root::new(label);
+        std::os::unix::fs::symlink("docs", root.at.join("linked")).expect("the link is made");
+        rewrite_line(&root, ".headwater/taxonomy.yml", "  root: docs\n", to);
+        let resolved = root.run(&["taxonomy", "resolve"]);
+        assert_eq!(resolved.code, Some(0), "{label}: {resolved:?}");
+        let checked = root.run(&["check"]);
+        assert_eq!(checked.code, Some(0), "{label}: {checked:?}");
+        assert!(!checked.err.contains("corpus.root"), "{label}: {checked:?}");
+    }
+}
+
 /// Write the digest the `resolved` body of a lock now has, so a hand edit
 /// reads as untampered and only a rule over the body can refuse it.
 fn redigest(text: &str) -> String {
@@ -850,6 +873,15 @@ fn a_hand_edited_lock_with_a_climbing_path_is_refused_before_any_write() {
                 landing.display()
             );
         }
+        // The remedy the refusal names repairs the lock: `taxonomy resolve`
+        // rewrites it from the sources, which never held the climbing path.
+        let repaired = root.run(&["taxonomy", "resolve"]);
+        assert_eq!(repaired.code, Some(0), "{label}: {repaired:?}");
+        assert_eq!(
+            std::fs::read_to_string(&lock).expect("the lock reads"),
+            text,
+            "{label}: the lock is the one the sources resolve to"
+        );
     }
 }
 
