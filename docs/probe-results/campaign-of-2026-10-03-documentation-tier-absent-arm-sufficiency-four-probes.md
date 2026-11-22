@@ -26,7 +26,7 @@ The selection this transcript names is `sha256:e259547ce18ab03325c4ba1efa9d0db2c
 
 The `read_set` digest above covers every probe of the selection and every document one of them examines, by path and content. This file names it as provenance and compares it with nothing, and the same holds for the lock and the selection: an edit to a document, a new probe or a moved lock leaves these bytes alone. `headwater generate` names each result whose recorded lock, read set or selection moved, and `headwater probe stale` takes the digest and reports which recorded results a change voided. Neither one fails for it.
 
-Graded by grader 0.5.2.
+Graded by grader 0.5.3.
 A documentation run in the absent arm, on claude-sonnet-5 at served version claude-sonnet-5.
 
 ## The verdicts
@@ -96,7 +96,7 @@ A documentation run in the absent arm, on claude-sonnet-5 at served version clau
 - HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks (sufficiency, expects patched)
     session L7-documentation-absent-p3-r1: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
     session L7-documentation-absent-p3-r10: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
-    session L7-documentation-absent-p3-r11: satisfied — event 63: `section.required.missing` reported nothing over `docs/spec/13-open-obligations.md`; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r11: not satisfied — event 63: `section.required.missing` reported over `docs/obligations/0223-nothing-states-what-loading-the-standing-instructions-costs-a-session-before-it-does-any-work.md`, 1 of the 2 produced artifacts inside the workspace; no call to a tool of an MCP server
     session L7-documentation-absent-p3-r12: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
     session L7-documentation-absent-p3-r13: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
     session L7-documentation-absent-p3-r14: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
@@ -106,7 +106,7 @@ A documentation run in the absent arm, on claude-sonnet-5 at served version clau
     session L7-documentation-absent-p3-r18: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
     session L7-documentation-absent-p3-r19: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
     session L7-documentation-absent-p3-r2: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
-    session L7-documentation-absent-p3-r20: satisfied — event 73: `section.required.missing` reported nothing over `docs/spec/13-open-obligations.md`; no call to a tool of an MCP server
+    session L7-documentation-absent-p3-r20: not satisfied — event 73: `section.required.missing` reported over `docs/obligations/0302-nothing-states-the-session-budget-the-standing-instructions-consume-before-work-starts.md`, 1 of the 2 produced artifacts inside the workspace; no call to a tool of an MCP server
     session L7-documentation-absent-p3-r21: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
     session L7-documentation-absent-p3-r22: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
     session L7-documentation-absent-p3-r23: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
@@ -127,28 +127,28 @@ A documentation run in the absent arm, on claude-sonnet-5 at served version clau
 - HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged (sufficiency, expects patched)
     session L7-documentation-absent-p4-r1: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
     session L7-documentation-absent-p4-r10: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
-    session L7-documentation-absent-p4-r11: not satisfied — `relation.reciprocity.missing` reported over each of the 1 produced artifact; no call to a tool of an MCP server
-    session L7-documentation-absent-p4-r12: not satisfied — `relation.reciprocity.missing` reported over each of the 1 produced artifact; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r11: not satisfied — event 93: `relation.reciprocity.missing` reported over `docs/evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md`, 1 of the 1 produced artifact inside the workspace; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r12: not satisfied — event 94: `relation.reciprocity.missing` reported over `docs/evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md`, 1 of the 1 produced artifact inside the workspace; no call to a tool of an MCP server
     session L7-documentation-absent-p4-r13: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
-    session L7-documentation-absent-p4-r14: not satisfied — `relation.reciprocity.missing` reported over each of the 1 produced artifact; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r14: not satisfied — event 96: `relation.reciprocity.missing` reported over `docs/evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md`, 1 of the 1 produced artifact inside the workspace; no call to a tool of an MCP server
     session L7-documentation-absent-p4-r15: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
     session L7-documentation-absent-p4-r16: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
-    session L7-documentation-absent-p4-r17: not satisfied — `relation.reciprocity.missing` reported over each of the 1 produced artifact; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r17: not satisfied — event 99: `relation.reciprocity.missing` reported over `docs/evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md`, 1 of the 1 produced artifact inside the workspace; no call to a tool of an MCP server
     session L7-documentation-absent-p4-r18: satisfied — event 100: `relation.reciprocity.missing` reported nothing over `docs/evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md`; no call to a tool of an MCP server
-    session L7-documentation-absent-p4-r19: not satisfied — `relation.reciprocity.missing` reported over each of the 1 produced artifact; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r19: not satisfied — event 101: `relation.reciprocity.missing` reported over `docs/evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md`, 1 of the 1 produced artifact inside the workspace; no call to a tool of an MCP server
     session L7-documentation-absent-p4-r2: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
     session L7-documentation-absent-p4-r20: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
-    session L7-documentation-absent-p4-r21: not satisfied — `relation.reciprocity.missing` reported over each of the 1 produced artifact; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r21: not satisfied — event 104: `relation.reciprocity.missing` reported over `docs/evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md`, 1 of the 1 produced artifact inside the workspace; no call to a tool of an MCP server
     session L7-documentation-absent-p4-r22: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
     session L7-documentation-absent-p4-r23: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
-    session L7-documentation-absent-p4-r24: not satisfied — `relation.reciprocity.missing` reported over each of the 1 produced artifact; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r24: not satisfied — event 107: `relation.reciprocity.missing` reported over `docs/evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md`, 1 of the 1 produced artifact inside the workspace; no call to a tool of an MCP server
     session L7-documentation-absent-p4-r25: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
     session L7-documentation-absent-p4-r26: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
-    session L7-documentation-absent-p4-r27: not satisfied — `relation.reciprocity.missing` reported over each of the 1 produced artifact; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r27: not satisfied — event 110: `relation.reciprocity.missing` reported over `docs/evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md`, 1 of the 1 produced artifact inside the workspace; no call to a tool of an MCP server
     session L7-documentation-absent-p4-r28: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
     session L7-documentation-absent-p4-r29: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
-    session L7-documentation-absent-p4-r3: not satisfied — `relation.reciprocity.missing` reported over each of the 1 produced artifact; no call to a tool of an MCP server
-    session L7-documentation-absent-p4-r30: not satisfied — `relation.reciprocity.missing` reported over each of the 1 produced artifact; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r3: not satisfied — event 113: `relation.reciprocity.missing` reported over `docs/evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md`, 1 of the 1 produced artifact inside the workspace; no call to a tool of an MCP server
+    session L7-documentation-absent-p4-r30: not satisfied — event 114: `relation.reciprocity.missing` reported over `docs/evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md`, 1 of the 1 produced artifact inside the workspace; no call to a tool of an MCP server
     session L7-documentation-absent-p4-r4: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
     session L7-documentation-absent-p4-r5: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
     session L7-documentation-absent-p4-r6: not satisfied — the session produced no artifact, so the oracle had nothing to read; no call to a tool of an MCP server
@@ -160,7 +160,7 @@ A documentation run in the absent arm, on claude-sonnet-5 at served version clau
 
 ## The rate, and the denominator it is over
 
-43 of 120 graded sessions satisfied their expectation: 35.8%, in a 95% interval of 27.8% to 44.7%.
+41 of 120 graded sessions satisfied their expectation: 34.2%, in a 95% interval of 26.3% to 43.0%.
 The denominator is the graded sessions and never the selected probes. 0 sessions reached no verdict, and a session with no verdict is outside both halves of that fraction.
 
 An interval that overlaps the previous run's is variance and one that does not is drift. This is one arm, so it estimates no effect: an efficacy claim is a comparison of two results, and the arm each one recorded is on it.
@@ -170,13 +170,13 @@ An interval that overlaps the previous run's is variance and one that does not i
 What the documents change. The treated arm is the `campaign` absent arm and the control is the `documentation` absent arm. Both removed the governance, and only the control removed `docs/`, so this is the effect of the documents alone (spec 5).
 
 - treated, `docs/probe-runs/campaign-of-2026-10-03-campaign-tier-absent-arm-sufficiency-four-probes.md`: 96 of 120 graded sessions satisfied their expectation, 80.0%, in a 95% interval of 72.0% to 86.2%. 0 sessions refused by the session itself.
-- control, `docs/probe-runs/campaign-of-2026-10-03-documentation-tier-absent-arm-sufficiency-four-probes.md`: 43 of 120 graded sessions satisfied their expectation, 35.8%, in a 95% interval of 27.8% to 44.7%. 0 sessions refused by the session itself.
+- control, `docs/probe-runs/campaign-of-2026-10-03-documentation-tier-absent-arm-sufficiency-four-probes.md`: 41 of 120 graded sessions satisfied their expectation, 34.2%, in a 95% interval of 26.3% to 43.0%. 0 sessions refused by the session itself.
 
-The difference is +44.2 points, in a 95% Newcombe interval of +32.2 points to +54.3 points. The interval is above zero, so the treated arm satisfied more often at the 5% level.
+The difference is +45.8 points, in a 95% Newcombe interval of +33.9 points to +55.8 points. The interval is above zero, so the treated arm satisfied more often at the 5% level.
 
 What the documents and the governance change together. The treated arm is a present arm and the control is the `documentation` absent arm.
 
 - treated, `docs/probe-runs/campaign-of-2026-10-03-campaign-tier-present-arm-sufficiency-four-probes.md`: 114 of 120 graded sessions satisfied their expectation, 95.0%, in a 95% interval of 89.5% to 97.7%. 0 sessions refused by the session itself.
-- control, `docs/probe-runs/campaign-of-2026-10-03-documentation-tier-absent-arm-sufficiency-four-probes.md`: 43 of 120 graded sessions satisfied their expectation, 35.8%, in a 95% interval of 27.8% to 44.7%. 0 sessions refused by the session itself.
+- control, `docs/probe-runs/campaign-of-2026-10-03-documentation-tier-absent-arm-sufficiency-four-probes.md`: 41 of 120 graded sessions satisfied their expectation, 34.2%, in a 95% interval of 26.3% to 43.0%. 0 sessions refused by the session itself.
 
-The difference is +59.2 points, in a 95% Newcombe interval of +48.7 points to +67.6 points. The interval is above zero, so the treated arm satisfied more often at the 5% level.
+The difference is +60.8 points, in a 95% Newcombe interval of +50.4 points to +69.2 points. The interval is above zero, so the treated arm satisfied more often at the 5% level.

@@ -1229,8 +1229,35 @@ answer_case "a number with a digit short is no answer" "" '090'
 answer_case "a declared answer no document holds is not resolved by a body line" "" '0022'
 answer_case "a number two declared answers carry names neither" "" '0090' "HW-DR-0090, HW-OBL-0090, HW-DR-0022"
 answer_case "a quoted identifier in front matter is still found, and its slug names it" "HW-OBL-0090" '0090-one-rule-carries-four-parts' "HW-DR-0090, HW-OBL-0090, HW-DR-0022"
-answer_case "an identifier followed by prose is still no answer" "" 'HW-DR-0090 — it governs the workflow'
 answer_case "a list bullet is not emphasis, so a bulleted number is no answer" "" '- 0090'
+# An identifier that opens the final line and is followed by a reason is the
+# answer (#1980). Phase B of #1881 graded `b/L2-additive-scenario-6-p14-r4`
+# and `b2/L1-additive-scenario-1-p15-r2` as no answer on this form. The lead
+# is one word, a separator follows it, and it is compared with the one-word
+# declared answers and then resolved as a spelling. A lead of more than one
+# word is a sentence, and a sentence is still no answer.
+answer_case "an identifier followed by a reason is the identifier (#1980)" "HW-DR-0090" 'HW-DR-0090 — it governs the workflow'
+answer_case "the identifier the Done-when of #1980 names, followed by a reason" "HW-DR-0034" 'HW-DR-0034 — reason' "HW-DR-0090, HW-DR-0034, HW-DR-0022"
+answer_case "a leading file number followed by a reason names its identifier" "HW-DR-0090" '0090 — reason'
+answer_case "a leading identifier in bold followed by a reason is the identifier" "HW-DR-0090" '**HW-DR-0090** — reason'
+answer_case "the final line of b2/L1-additive-scenario-1-p15-r2 names HW-DR-0090" "HW-DR-0090" '0090 — "each-release-states-its-digest" (docs/decisions/0090-each-release-states-its-digest.md)'
+answer_case "a leading path followed by a reason in parentheses names its identifier" "HW-DR-0090" 'docs/decisions/0090-each-release-states-its-digest.md (the digest rule)'
+answer_case "an en dash is a separator" "HW-DR-0090" 'HW-DR-0090 – reason'
+answer_case "a spaced hyphen is a separator" "HW-DR-0090" 'HW-DR-0090 - reason'
+answer_case "a colon is a separator" "HW-DR-0090" 'HW-DR-0090: it governs the workflow'
+answer_case "a comma is a separator" "HW-DR-0090" 'HW-DR-0090, because it governs the workflow'
+answer_case "a semicolon is a separator" "HW-DR-0090" 'HW-DR-0090; it governs the workflow'
+answer_case "a word of a closed set followed by a reason is the word" "merge" 'Merge — the branch is green' "merge, stamp"
+answer_case "a wrong leading identifier is that wrong identifier, which the grader fails" "HW-DR-0089" 'HW-DR-0089 — reason'
+answer_case "a leading identifier with no separator after it is no answer" "" 'HW-DR-0090 is the record'
+answer_case "an identifier after the opening words is no answer" "" 'The answer is HW-DR-0090 — it governs the workflow'
+answer_case "the final line of b3/L1-additive-scenario-1-p15-r5 opens with prose and is no answer" "" 'Decision record `0090` (`docs/decisions/0090-each-release-states-its-digest.md`'
+answer_case "a bulleted identifier followed by a reason is no answer" "" '- HW-DR-0090 — reason'
+answer_case "a hyphen with no space before it is part of the word" "" 'HW-DR-0090-ish - reason'
+answer_case "a dash with no space around it is no separator" "" 'HW-DR-0090—reason'
+answer_case "a leading word outside the closed set is no answer" "" 'HW-DR-0091 — reason'
+answer_case "an answer of two words is not a lead, so it is no answer before a separator" "" 'current HW-DR-0052 — reason' "current HW-DR-0052, draft HW-DR-0052"
+answer_case "one word of a two-word answer before a separator is no answer" "" 'HW-DR-0052 — current' "current HW-DR-0052, draft HW-DR-0052"
 answer_case "a path inside a sentence is no answer" "" 'It breaks docs/decisions/0090-each-release-states-its-digest.md'
 
 # A declared answer of two words is compared as a set of words (#1384). The

@@ -26,17 +26,17 @@ The selection this transcript names is `sha256:8d4747a05d1213146c97d37a574a457ce
 
 The `read_set` digest above covers every probe of the selection and every document one of them examines, by path and content. This file names it as provenance and compares it with nothing, and the same holds for the lock and the selection: an edit to a document, a new probe or a moved lock leaves these bytes alone. `headwater generate` names each result whose recorded lock, read set or selection moved, and `headwater probe stale` takes the digest and reports which recorded results a change voided. Neither one fails for it.
 
-Graded by grader 0.5.2.
+Graded by grader 0.5.3.
 A additive run in the scenario-4 arm, on claude-sonnet-5 at served version claude-sonnet-5.
 
 ## The verdicts
 
 - HW-PROBE-a-session-records-which-obligation-an-evaluation-discharged (sufficiency, expects patched)
-    session L1-additive-scenario-4-p2-r1: satisfied — event 6: `relation.reciprocity.missing` reported nothing over `docs/evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md`; no call to a tool of an MCP server
-    session L1-additive-scenario-4-p2-r2: satisfied — event 7: `relation.reciprocity.missing` reported nothing over `docs/evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md`; no call to a tool of an MCP server
-    session L1-additive-scenario-4-p2-r3: satisfied — event 8: `relation.reciprocity.missing` reported nothing over `docs/evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md`; no call to a tool of an MCP server
-    session L1-additive-scenario-4-p2-r4: satisfied — event 9: `relation.reciprocity.missing` reported nothing over `docs/evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md`; no call to a tool of an MCP server
-    session L1-additive-scenario-4-p2-r5: satisfied — event 10: `relation.reciprocity.missing` reported nothing over `docs/evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md`; no call to a tool of an MCP server
+    session L1-additive-scenario-4-p2-r1: satisfied — event 6: `relation.reciprocity.missing` reported nothing over `docs/evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md` or the other 1 produced artifact inside the workspace; no call to a tool of an MCP server
+    session L1-additive-scenario-4-p2-r2: satisfied — event 7: `relation.reciprocity.missing` reported nothing over `docs/evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md` or the other 1 produced artifact inside the workspace; no call to a tool of an MCP server
+    session L1-additive-scenario-4-p2-r3: satisfied — event 8: `relation.reciprocity.missing` reported nothing over `docs/evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md` or the other 1 produced artifact inside the workspace; no call to a tool of an MCP server
+    session L1-additive-scenario-4-p2-r4: satisfied — event 9: `relation.reciprocity.missing` reported nothing over `docs/evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md` or the other 1 produced artifact inside the workspace; no call to a tool of an MCP server
+    session L1-additive-scenario-4-p2-r5: satisfied — event 10: `relation.reciprocity.missing` reported nothing over `docs/evaluations/governs-edges-what-an-anchor-reaches-what-covers-it-when-it-ages-and-where-a-session-meets-it.md` or the other 1 produced artifact inside the workspace; no call to a tool of an MCP server
 - HW-PROBE-a-session-that-changes-a-verb-s-default-reaches-the-verb-s-interface-contract (navigability, expects opened)
     session L1-additive-scenario-4-p3-r1: satisfied — event 11, call 4: `Read /mnt/build/hw-1777/skills-r1-v1/a/ws/L1-additive-scenario-4-p3-r1/docs/interfaces/headwater-route.md`; no call to a tool of an MCP server
     session L1-additive-scenario-4-p3-r2: satisfied — event 12, call 4: `Bash {"command":"./engine/target/dev-release/headwater explain docs/interfaces/headwater-route.md --root .","description":"Explain the headwater-route interface document"}`; no call to a tool of an MCP server
