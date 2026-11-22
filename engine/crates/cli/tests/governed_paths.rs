@@ -219,7 +219,11 @@ fn route_over_a_check_rule_prints_that_a_changed_rule_raises_its_version() {
         .take_while(|(at, line)| *at == 0 || line.starts_with("    "))
         .map(|(_, line)| line)
         .collect();
-    let entry = entry.join(" ").split_whitespace().collect::<Vec<_>>().join(" ");
+    let entry = entry
+        .join(" ")
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ");
     assert!(
         entry
             .to_lowercase()
