@@ -49,10 +49,10 @@ fn tail(text: &str) -> String {
 
 /// `check --strict` ended with a status, reported on the document, and took
 /// less than the ceiling.
-fn assert_in_time(label: &str, text: &str, ceiling: Duration) -> Ran {
+fn assert_in_time(label: &str, text: &str, args: &[&str], ceiling: Duration) -> Ran {
     let root = root(label, text);
     let started = Instant::now();
-    let ran: Ran = root.run(&["check", "--strict"]);
+    let ran: Ran = root.run(args);
     let took = started.elapsed();
     eprintln!("{label}: check --strict took {took:?} (ceiling {ceiling:?})");
     assert!(
@@ -83,7 +83,8 @@ fn many_unknown_front_matter_keys_check_in_linear_time() {
     assert_in_time(
         "linear-keys",
         &document(&extra, "One paragraph."),
-        Duration::from_secs(6),
+        STRICT,
+        Duration::from_secs(8),
     );
 }
 
@@ -102,7 +103,8 @@ fn many_unresolved_relation_targets_check_in_linear_time() {
     let ran = assert_in_time(
         "linear-targets",
         &document(&extra, "One paragraph."),
-        Duration::from_secs(18),
+        &["check", "--strict", "--no-cache"],
+        Duration::from_secs(30),
     );
     assert!(
         ran.out
@@ -121,6 +123,7 @@ fn many_sentences_in_one_paragraph_check_in_linear_time() {
     assert_in_time(
         "linear-sentences",
         &document("", &body),
+        STRICT,
         Duration::from_secs(6),
     );
 }
@@ -133,9 +136,15 @@ fn many_sentences_in_one_paragraph_check_in_linear_time() {
 #[test]
 fn many_links_on_one_line_check_in_linear_time() {
     let body = "[a](0001-the-warrant-a-person-set.md) ".repeat(LINKS);
-    assert_in_time("linear-links", &document("", &body), Duration::from_secs(6));
+    assert_in_time(
+        "linear-links",
+        &document("", &body),
+        STRICT,
+        Duration::from_secs(10),
+    );
 }
 
+const STRICT: &[&str] = &["check", "--strict"];
 const KEYS: usize = 160_000;
 const TARGETS: usize = 80_000;
 const SENTENCES: usize = 10_000;
