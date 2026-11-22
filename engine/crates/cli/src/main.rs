@@ -6447,9 +6447,9 @@ fn fix(
             headwater_check::claim::STORE
         );
     }
-    if composed.is_empty() {
-        account.push_str("headwater: no finding of this run carries a patch\n");
-    }
+    // See [`headwater_check::state_set_after_initial::fix_account`] (#1973).
+    let fix_account = headwater_check::state_set_after_initial::fix_account;
+    account.push_str(&fix_account(&run.findings, composed.is_empty()));
     Ok(Fixed {
         account,
         // The seal of a writing MCP server reads this, and so does nothing

@@ -166,6 +166,8 @@ checks
       edge scope, one relation instance and both endpoints
     lifecycle.state.not_set_by_edge
       edge scope, one relation instance and both endpoints
+    lifecycle.state.set_after_initial
+      edge scope, one relation instance and both endpoints
     relation.pair.invalid
       edge scope, one relation instance and both endpoints
     warrant.evidence.unsupported
@@ -294,6 +296,7 @@ checks
     lifecycle.dependency.on_terminal reaches no obligation, so it names none
     lifecycle.dependency.on_initial reaches no obligation, so it names none
     lifecycle.state.not_set_by_edge reaches no obligation, so it names none
+    lifecycle.state.set_after_initial reaches no obligation, so it names none
     relation.pair.invalid reaches no obligation, so it names none
     warrant.evidence.unsupported reaches no obligation, so it names none
     lifecycle.state.set_twice reaches no obligation, so it names none
@@ -733,6 +736,7 @@ read set
   version lifecycle.dependency.on_terminal 1
   version lifecycle.dependency.on_initial 1
   version lifecycle.state.not_set_by_edge 2
+  version lifecycle.state.set_after_initial 1
   version relation.pair.invalid 2
   version warrant.evidence.unsupported 4
   version relation.participation.overdue 1

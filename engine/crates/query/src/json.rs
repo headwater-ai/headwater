@@ -449,6 +449,9 @@ fn of_neighbour(neighbour: &Neighbour, paths_at_most: Option<usize>) -> Json {
         cue_is_declared,
         governs,
         reach,
+        // Not a member of the JSON shape: `governs` still names the end, and
+        // the text rendering is where the pending reading is said (#1973).
+        pending: _,
     } = neighbour;
     let mut members: Vec<(&'static str, Json)> = vec![
         ("relation", Json::string(relation.clone())),
