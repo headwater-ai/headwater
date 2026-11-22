@@ -2163,13 +2163,16 @@ pub fn over_neighbourhoods<C: NeighbourhoodCheck>(
 
         let neighbours = adjacency.of_path(&row.path);
         let mut reads = vec![Input::new(&row.path, row.digest.as_deref())];
+        // The paths already read, beside the list that keeps their order, so
+        // that a document of many neighbours is not searched once for each of
+        // them (#1968).
+        let mut read_paths: HashSet<&str> = HashSet::from([row.path.as_str()]);
         for neighbour in &neighbours {
             // A bound-anchor neighbour carries the empty marker at `path`
             // rather than a real one (see `Adjacency::of`): there is no file
             // to hash, so it costs the read set nothing and its binding goes
             // into the resolution below instead.
-            if !neighbour.path.is_empty() && !reads.iter().any(|input| input.path == neighbour.path)
-            {
+            if !neighbour.path.is_empty() && read_paths.insert(neighbour.path) {
                 reads.push(digests.input(neighbour.path));
             }
         }
