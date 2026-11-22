@@ -64,6 +64,30 @@ gitc clone -q -b main "$repos/origin.git" "$repos/DRAIN-behind" 2>/dev/null
 gitc -C "$repos/DRAIN-behind" reset -q --hard HEAD~1
 gitc init -q "$repos/no-origin"
 gitc -C "$repos/no-origin" commit -q --allow-empty -m first
+# The clones `start` reads (#1997). Each is one commit behind origin/main and
+# knows it, as `behind` does, because `start` fast-forwards only a checkout
+# that stale-main.sh calls behind, and stale-main.sh never fetches. `start`
+# moves `ffbehind`, which is on main and clean, and `ffwt-main` through its
+# worktree `ffwt`. It refuses the other five, each for its own state, and
+# none of them moves. `$repos/behind` is never given to `start`, because the
+# mid-run cases below need it behind.
+behind_clone() {
+    gitc clone -q -b main "$repos/origin.git" "$repos/$1" 2>/dev/null
+    gitc -C "$repos/$1" reset -q --hard HEAD~1
+}
+behind_clone ffbehind
+behind_clone ffwt-main
+gitc -C "$repos/ffwt-main" worktree add -q -b wt "$repos/ffwt" origin/main 2>/dev/null
+behind_clone dirty
+: > "$repos/dirty/untracked"
+behind_clone diverged
+gitc -C "$repos/diverged" commit -q --allow-empty -m local-only
+behind_clone detached
+gitc -C "$repos/detached" checkout -q --detach HEAD
+behind_clone nofetch
+gitc -C "$repos/nofetch" remote set-url origin "$repos/missing.git"
+origin_short=$(git -C "$repos/other" rev-parse --short HEAD)
+origin_full=$(git -C "$repos/other" rev-parse HEAD)
 stale_line="STALE: main checkout at $(git -C "$repos/behind" rev-parse --short HEAD), origin/main at $(git -C "$repos/behind" rev-parse --short origin/main), 1 commits behind. Run: git -C $repos/behind merge --ff-only origin/main"
 export HW_RUN_CHECKOUT="$repos/level"
 unset HW_RUN_ALLOW_STALE
@@ -130,29 +154,52 @@ case $(cat "$scratch/err") in
     *) fail '  and the refusal says a run directory is never reused' "$(cat "$scratch/err")" ;;
 esac
 
-printf '\n# start: a main checkout behind origin/main is refused (#1811)\n'
+printf '\n# start: a main checkout behind origin/main is fast-forwarded when that is safe, and refused in one line when it is not (#1811, #1997)\n'
 # Under a root of their own, because `start` seeds a run from the newest run
 # beside it, and a later case reads what it seeded.
-out=$(HW_RUN_CHECKOUT="$repos/behind" HEADWATER_RUN_ROOT="$scratch/stale-runs" sh "$tool" start stale1 2>"$scratch/err"); status=$?
-same 'start on a checkout one commit behind origin/main exits 1' 1 "$status"
-same '  and prints the one STALE line' "$stale_line" "$out"
-same '  and writes no run directory' absent "$([ -e "$scratch/stale-runs/stale1" ] && echo present || echo absent)"
-out=$(HW_RUN_CHECKOUT="$repos/behind-wt" HEADWATER_RUN_ROOT="$scratch/stale-runs" sh "$tool" start stale2 2>/dev/null); status=$?
-same 'a worktree of that checkout judges the main checkout, not itself' "1 $stale_line" "$status $out"
+out=$(HW_RUN_CHECKOUT="$repos/ffbehind" HEADWATER_RUN_ROOT="$scratch/stale-runs" sh "$tool" start ff1 2>"$scratch/err"); status=$?
+same 'start on a clean main checkout one commit behind origin/main exits 0' 0 "$status"
+same '  and prints the fast-forward first' "FAST-FORWARD: main at $origin_short" "$(printf '%s\n' "$out" | head -n 1)"
+same '  and the run directory last, and nothing between' "$scratch/stale-runs/ff1|2" "$(printf '%s\n' "$out" | tail -n 1)|$(printf '%s\n' "$out" | wc -l | tr -d ' ')"
+same '  and the checkout is at origin/main' "$origin_full" "$(git -C "$repos/ffbehind" rev-parse HEAD)"
+same '  and still on main' main "$(git -C "$repos/ffbehind" symbolic-ref --short -q HEAD)"
+same '  and the run directory is made' present "$([ -f "$scratch/stale-runs/ff1/log.jsonl" ] && echo present || echo absent)"
+out=$(HW_RUN_CHECKOUT="$repos/ffwt" HEADWATER_RUN_ROOT="$scratch/stale-runs" sh "$tool" start ffwt1 2>/dev/null); status=$?
+same 'a worktree of a behind checkout fast-forwards the main checkout, not itself' "0|FAST-FORWARD: main at $origin_short|$origin_full|wt" \
+    "$status|$(printf '%s\n' "$out" | head -n 1)|$(git -C "$repos/ffwt-main" rev-parse HEAD)|$(git -C "$repos/ffwt" symbolic-ref --short -q HEAD)"
 out=$(HW_RUN_CHECKOUT="$repos/level" HEADWATER_RUN_ROOT="$scratch/stale-runs" sh "$tool" start level1 2>/dev/null); status=$?
-same 'start on a checkout level with origin/main exits 0, with no STALE line' "0 $scratch/stale-runs/level1" "$status $out"
+same 'start on a checkout level with origin/main exits 0, with no STALE or FAST-FORWARD line' "0 $scratch/stale-runs/level1" "$status $out"
 out=$(HW_RUN_CHECKOUT="$repos/ahead" HEADWATER_RUN_ROOT="$scratch/stale-runs" sh "$tool" start ahead1 2>/dev/null); status=$?
 same 'start on a checkout ahead of origin/main and behind it by none exits 0, with no STALE line' "0 $scratch/stale-runs/ahead1" "$status $out"
 out=$(HW_RUN_CHECKOUT="$repos/no-origin" HEADWATER_RUN_ROOT="$scratch/stale-runs" sh "$tool" start noorigin1 2>/dev/null); status=$?
 same 'start on a checkout with no origin/main exits 0, silent' "0 $scratch/stale-runs/noorigin1" "$status $out"
-out=$(HW_RUN_CHECKOUT="$repos/feature" HEADWATER_RUN_ROOT="$scratch/stale-runs" sh "$tool" start feature1 2>/dev/null); status=$?
-same 'a checkout on a feature branch behind origin/main is refused, though its local main is level' 1 "$status"
-same '  and the line names the checkout' 1 "$(printf '%s\n' "$out" | grep -c "^STALE: main checkout at .*, 1 commits behind\. Run: git -C $repos/feature merge --ff-only origin/main$")"
-out=$(HW_RUN_ALLOW_STALE=yes HW_RUN_CHECKOUT="$repos/behind" HEADWATER_RUN_ROOT="$scratch/stale-runs" sh "$tool" start staleyes 2>/dev/null); status=$?
+# refused <clone> <run> <name> <state pattern> <command pattern>: start exits
+# 1, prints one line, which is a STALE line naming the state and the command,
+# makes no run directory, and leaves HEAD and the branch where they were.
+refused() {
+    before="$(git -C "$repos/$1" rev-parse HEAD)|$(git -C "$repos/$1" symbolic-ref --short -q HEAD)"
+    out=$(HW_RUN_CHECKOUT="$repos/$1" HEADWATER_RUN_ROOT="$scratch/stale-runs" sh "$tool" start "$2" 2>/dev/null); status=$?
+    same "$3" "1|1|absent" "$status|$(printf '%s\n' "$out" | wc -l | tr -d ' ')|$([ -e "$scratch/stale-runs/$2" ] && echo present || echo absent)"
+    same '  and the one line is a STALE line that names the state' 1 "$(printf '%s\n' "$out" | grep -c "^STALE: main checkout at .*, 1 commits behind, and $4\. Run: ")"
+    same '  and the command the owner runs' 1 "$(printf '%s\n' "$out" | grep -cF ". Run: $5")"
+    same '  and HEAD and the branch did not move' "$before" "$(git -C "$repos/$1" rev-parse HEAD)|$(git -C "$repos/$1" symbolic-ref --short -q HEAD)"
+}
+refused feature feature1 'a checkout on a feature branch behind origin/main is refused, though its local main is level' \
+    "$repos/feature is on \`feature\`, not main" "git -C $repos/feature switch main && git -C $repos/feature merge --ff-only origin/main"
+refused detached detached1 'a checkout on a detached HEAD behind origin/main is refused' \
+    "$repos/detached is on a detached HEAD, not main" "git -C $repos/detached switch main && git -C $repos/detached merge --ff-only origin/main"
+refused dirty dirty1 'a main checkout with local changes behind origin/main is refused' \
+    "$repos/dirty has local changes" "git -C $repos/dirty status, then commit or remove each change, then git -C $repos/dirty merge --ff-only origin/main"
+same '  and the local change is still there' present "$([ -e "$repos/dirty/untracked" ] && echo present || echo absent)"
+refused diverged diverged1 'a main checkout that has diverged from origin/main is refused' \
+    "$repos/diverged has commits that origin/main does not have, so it does not fast-forward" "git -C $repos/diverged branch local-main && git -C $repos/diverged reset --keep origin/main"
+refused nofetch nofetch1 'a main checkout that cannot fetch from origin is refused' \
+    "the fetch from origin failed in $repos/nofetch" "git -C $repos/nofetch fetch origin && git -C $repos/nofetch merge --ff-only origin/main"
+out=$(HW_RUN_ALLOW_STALE=yes HW_RUN_CHECKOUT="$repos/dirty" HEADWATER_RUN_ROOT="$scratch/stale-runs" sh "$tool" start staleyes 2>/dev/null); status=$?
 same 'HW_RUN_ALLOW_STALE=yes is not the override: start still refuses' "1|absent" "$status|$([ -e "$scratch/stale-runs/staleyes" ] && echo present || echo absent)"
-out=$(HW_RUN_ALLOW_STALE=1 HW_RUN_CHECKOUT="$repos/behind" HEADWATER_RUN_ROOT="$scratch/stale-runs" sh "$tool" start stale3 2>/dev/null); status=$?
+out=$(HW_RUN_ALLOW_STALE=1 HW_RUN_CHECKOUT="$repos/dirty" HEADWATER_RUN_ROOT="$scratch/stale-runs" sh "$tool" start stale3 2>/dev/null); status=$?
 same 'HW_RUN_ALLOW_STALE=1 turns the refusal into a warning with exit 0' 0 "$status"
-same '  and the STALE line comes first' "$stale_line" "$(printf '%s\n' "$out" | head -n 1)"
+same '  and the STALE line comes first' 1 "$(printf '%s\n' "$out" | head -n 1 | grep -c "^STALE: .*, and $repos/dirty has local changes\. Run: ")"
 same '  and the run directory is the last line' "$scratch/stale-runs/stale3" "$(printf '%s\n' "$out" | tail -n 1)"
 same '  and the run directory is made' present "$([ -f "$scratch/stale-runs/stale3/log.jsonl" ] && echo present || echo absent)"
 
