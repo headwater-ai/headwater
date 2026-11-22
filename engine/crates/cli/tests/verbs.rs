@@ -593,8 +593,11 @@ fn the_library_under_the_shell_prints_nothing_and_decides_no_exit_status() {
                 "print!",
                 "println!",
                 "ExitCode",
-                "std::io::stdout",
-                "std::io::stderr",
+                "io::stdout",
+                "io::stderr",
+                "dbg!",
+                "process::exit",
+                "process::abort",
             ] {
                 if line.contains(word) {
                     found.push(format!("{}:{} {word}", path.display(), index + 1));
