@@ -9,11 +9,23 @@
 # document. `constrains` is a second relation between the same kind, so one
 # document can reach one other document by two relations, which is two
 # neighbours that share one path.
+#
+# `governs` reaches a `code_path` anchor. An anchor neighbour carries the empty
+# path, so two anchors that one document governs differ only in their
+# identifier, and the dedup must keep both.
 
 identifier_schemes:
   note_id: {pattern: "NOTE-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
 
+anchors:
+  code_path: {resolver: source-tree}
+
 relations:
+  governs:
+    family: governance
+    from: [note]
+    to:   [code_path]
+    created_by: author
   depends_on:
     family: association
     from: [note]
