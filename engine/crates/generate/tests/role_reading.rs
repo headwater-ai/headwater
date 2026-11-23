@@ -600,7 +600,7 @@ enum Readers {
 /// shape of it is the whole of #539 one layer down: a role can be reached by a
 /// lookup whose argument came from the taxonomy, so grepping the engine for the
 /// role's name answers the wrong question.
-const CONSUMERS: [(&str, Readers, &str); 6] = [
+const CONSUMERS: [(&str, Readers, &str); 7] = [
     (
         "name",
         Readers::Named,
@@ -647,12 +647,20 @@ const CONSUMERS: [(&str, Readers, &str); 6] = [
          No facet of this repository's own taxonomy declares the role, which is why nothing \
          here exercised the path and why the first form of this row read `nothing`",
     ),
+    (
+        "former_identifier",
+        Readers::Named,
+        "`api::Session::open` finds the facet in this role and hands its name to \
+         `graph::Config`, and `graph::index::Index::build` reads each value onto its node, so \
+         `Index::node`, every edge binder and `explain` resolve a former identifier (#2025). \
+         `former_ids` in the base package declares it",
+    ),
 ];
 
 /// The record covers the closed registry exactly, and every row's
 /// has-a-reader bit is what the engine's source says.
 ///
-/// A seventh role added to the registry and not to [`CONSUMERS`] fails here,
+/// A role added to the registry and not to [`CONSUMERS`] fails here,
 /// which is what makes the record answer the question for every role rather
 /// than for the five somebody happened to look at. A row that claims `Unread`
 /// while a reader exists, and a row that claims a reader after the last one is
