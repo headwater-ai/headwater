@@ -279,7 +279,9 @@ fn a_target_deprecated_before_its_successor_is_a_warning_that_a_blocking_control
         checked.err
     );
     assert!(
-        checked.out.contains(&format!("{RULE} blocked by CT-LIFE-6")),
+        checked
+            .out
+            .contains(&format!("{RULE} blocked by CT-LIFE-6")),
         "the report names the control that blocks it\n{}",
         checked.out
     );

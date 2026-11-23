@@ -182,6 +182,62 @@ fn the_adoption_block_holds_a_blocking_finding_and_a_new_one_fails() {
         !block.contains("0002-the-decision"),
         "the parked finding is not among what blocks:\n{block}"
     );
+
+    // The JSON report carries both findings, and only the live one names the
+    // control: a parked finding blocks nothing.
+    let json = root.run(&["check", "--format", "json"]);
+    assert_eq!(json.code, Some(0), "{json:?}");
+    assert!(
+        json.out
+            .contains("0002-the-decision-whose-edge-went-stale.md"),
+        "the parked finding is in the report: {}",
+        json.out
+    );
+    assert_eq!(
+        json.out.matches("\"blocked_by\": \"CT-REL-6\"").count(),
+        1,
+        "the parked finding carries no `blocked_by`:\n{}",
+        json.out
+    );
+}
+
+/// Arm E, the cache: a promotion after a warm run moves the exit status, and
+/// the warm report and a `--no-cache` report are the same bytes. Posture is
+/// read from the register after the checks run, so no cached finding holds it
+/// and no cache key has to move for the gate to see a promotion.
+#[test]
+fn a_promotion_after_a_warm_run_moves_the_gate_and_the_cache_agrees() {
+    let root = root("posture-cache", "");
+    let cold = root.run(&["check", "--strict"]);
+    assert_eq!(cold.code, Some(0), "{cold:?}");
+
+    let file = root.at.join(".headwater/overlay.yml");
+    let mut source = std::fs::read_to_string(&file).expect("the overlay reads");
+    source.push_str(PROMOTE);
+    std::fs::write(&file, source).expect("the overlay writes");
+    let resolved = root.run(&["taxonomy", "resolve"]);
+    assert_eq!(resolved.code, Some(0), "{resolved:?}");
+
+    let warm = root.run(&["check", "--strict"]);
+    let again = root.run(&["check", "--strict"]);
+    let uncached = root.run(&["check", "--strict", "--no-cache"]);
+    for ran in [&warm, &again, &uncached] {
+        assert_eq!(ran.code, Some(1), "{ran:?}");
+        assert!(ran.out.contains("blocked by CT-REL-6"), "{}", ran.out);
+    }
+    assert_eq!(
+        warm.out, uncached.out,
+        "the cache moves no byte of the report"
+    );
+    assert_eq!(
+        again.out, uncached.out,
+        "the cache moves no byte of the report"
+    );
+    assert!(
+        !again.err.starts_with("0 served from cache"),
+        "the second run after the promotion is served from the cache: {}",
+        again.err
+    );
 }
 
 /// Arm D: a posture outside the two admitted values is refused and names the
