@@ -431,3 +431,44 @@ fn infer_proposes_nothing_where_every_file_is_shelved() {
     );
     assert!(!report.contains("under the `add:` key"), "{report}");
 }
+
+/// A document a declared shelf reaches but cannot type is left over with the
+/// reason resolution stopped on, and no fragment claims it, although each one
+/// carries front matter and the three share a directory. Each of the three
+/// discriminator stops is here: no value, a value the shelf does not admit,
+/// and a sequence. The other two stops on a shelf, a tie and an abstract kind,
+/// are refused by `taxonomy resolve`, so `propose.rs` holds them in-process.
+#[test]
+fn a_shelved_file_the_census_cannot_type_is_left_with_its_own_reason() {
+    const DOC: &str = "---\ntitle: A page\nowner: ops\n---\n\n# A page\n";
+    let root = Root::over(
+        "shelved-untyped",
+        &[
+            ("docs/mixed/none.md", DOC),
+            (
+                "docs/mixed/other.md",
+                "---\ntitle: A page\ntier: nonsense\n---\n\n# A page\n",
+            ),
+            (
+                "docs/mixed/seq.md",
+                "---\ntitle: A page\ntier: [decision]\n---\n\n# A page\n",
+            ),
+        ],
+    );
+    root.overlay(concat!(
+        "  facets.tier: {volatility: mutable}\n",
+        "  shelves.mixed: {path: \"docs/mixed/*.md\", homogeneous: false, discriminator: tier, kinds: [decision]}\n",
+    ));
+    root.resolve();
+    let report = root.infer();
+    assert!(!report.contains("under the `add:` key"), "{report}");
+    assert_eq!(
+        leftovers(&report),
+        [
+            "docs/mixed/none.md  discriminator",
+            "docs/mixed/other.md  discriminator",
+            "docs/mixed/seq.md  discriminator",
+        ],
+        "{report}"
+    );
+}

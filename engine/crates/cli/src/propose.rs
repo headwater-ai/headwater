@@ -95,13 +95,25 @@ fn reason(row: &Row) -> Option<&'static str> {
                 Some(document) if !document.facets.is_empty() => None,
                 _ => Some("no front matter"),
             },
-            Unresolved::AmbiguousShelf { .. } => Some("ambiguous shelf"),
-            Unresolved::MissingDiscriminator { .. }
-            | Unresolved::UnknownDiscriminator { .. }
-            | Unresolved::DiscriminatorNotAScalar { .. } => Some("discriminator"),
-            Unresolved::AbstractKind { .. } => Some("abstract kind"),
+            stopped => Some(stopped_on_a_shelf(stopped)),
         },
         _ => Some("unexplained"),
+    }
+}
+
+/// The reason for a document that a declared shelf reached and resolution
+/// stopped on. A validated lock refuses a tie between two shelves and a shelf
+/// of an abstract kind, so only the discriminator reasons reach `infer` from a
+/// resolved taxonomy; the other two are named for a lock that predates the
+/// validation.
+fn stopped_on_a_shelf(reason: &Unresolved) -> &'static str {
+    match reason {
+        Unresolved::NoShelf => "no shelf",
+        Unresolved::AmbiguousShelf { .. } => "ambiguous shelf",
+        Unresolved::MissingDiscriminator { .. }
+        | Unresolved::UnknownDiscriminator { .. }
+        | Unresolved::DiscriminatorNotAScalar { .. } => "discriminator",
+        Unresolved::AbstractKind { .. } => "abstract kind",
     }
 }
 
@@ -396,4 +408,52 @@ pub fn report(proposal: &Proposal) -> Vec<String> {
         }
     }
     lines
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Each reason the contract names for a document a shelf reached, pinned
+    /// to its variant. A validated lock refuses a shelf tie and a shelf of an
+    /// abstract kind, so those two reasons cannot reach the verb, and they are
+    /// held here. `tests/infer_proposal.rs` holds the discriminator reason
+    /// through the verb.
+    #[test]
+    fn each_stop_on_a_shelf_has_its_own_reason() {
+        let facet = || "tier".to_owned();
+        let cases = [
+            (
+                Unresolved::AmbiguousShelf {
+                    shelves: vec!["a".into(), "b".into()],
+                },
+                "ambiguous shelf",
+            ),
+            (
+                Unresolved::MissingDiscriminator { facet: facet() },
+                "discriminator",
+            ),
+            (
+                Unresolved::UnknownDiscriminator {
+                    facet: facet(),
+                    value: "x".into(),
+                    permitted: vec!["decision".into()],
+                },
+                "discriminator",
+            ),
+            (
+                Unresolved::DiscriminatorNotAScalar { facet: facet() },
+                "discriminator",
+            ),
+            (
+                Unresolved::AbstractKind {
+                    kind: "governed_document".into(),
+                },
+                "abstract kind",
+            ),
+        ];
+        for (stop, reason) in cases {
+            assert_eq!(stopped_on_a_shelf(&stop), reason, "{stop:?}");
+        }
+    }
 }
