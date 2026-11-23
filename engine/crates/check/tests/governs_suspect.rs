@@ -1538,6 +1538,26 @@ fn a_list_target_is_told_that_fix_will_stamp_it() {
             single.remediation
         );
     }
+    // A warm cache replays the list patch with its members, so `--fix` on a
+    // warm run writes what a cold run would (#2016).
+    let line = || at(TODAY).scoped_to(edges(&[], &[], &[(DOCUMENT, MEMBER)]));
+    let list_patch = |ran: &Run| {
+        suspect(ran)
+            .into_iter()
+            .find(|finding| finding.message.contains(".githooks/pre-commit"))
+            .and_then(|finding| finding.patch.clone())
+    };
+    let cold = list_patch(&run_in(&root, &line(), &mut Cache::disabled(), &taxonomy()));
+    assert!(cold.is_some(), "the line states the list edge");
+    for pass in ["filling", "warm"] {
+        let mut cache = Cache::at(&root, LOCK, "sha256:rules");
+        let ran = run_in(&root, &line(), &mut cache, &taxonomy());
+        cache.write(&root).expect("the cache writes");
+        if pass == "warm" {
+            assert!(cache.report().hits > 0, "{pass}: {:?}", cache.report());
+        }
+        assert_eq!(list_patch(&ran), cold, "{pass}");
+    }
 }
 
 /// [`edges`] with no other line, bound by `holds` rather than by a corpus

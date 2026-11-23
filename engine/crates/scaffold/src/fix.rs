@@ -1160,6 +1160,26 @@ mod tests {
         assert_eq!(composed.files[0].text.matches("- D-1").count(), 1);
     }
 
+    /// Two halves are one only where they name one target member for member.
+    /// A list `[a, b]` and a scalar target whose text is `a, b` share their
+    /// joined `id`, and they are two targets, so neither is dropped as the
+    /// other's repeat (#2016).
+    #[test]
+    fn a_list_half_and_a_scalar_with_its_joined_text_are_two_halves() {
+        let half = |members: Option<Vec<String>>| Patch::Half {
+            path: "b.md".to_string(),
+            relation: "governs".to_string(),
+            id: "a, b".to_string(),
+            members,
+            attributes: Vec::new(),
+        };
+        let list = half(Some(vec!["a".to_string(), "b".to_string()]));
+        let scalar = half(None);
+        let halves = halves_of("b.md", &[&list, &scalar, &list]);
+        let identities: Vec<Vec<&str>> = halves.iter().map(Half::identity).collect();
+        assert_eq!(identities, vec![vec!["a", "b"], vec!["a, b"]]);
+    }
+
     #[test]
     fn a_patch_that_changes_nothing_writes_no_file() {
         let dir = tree(&[("a.md", DOC)]);
