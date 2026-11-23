@@ -568,6 +568,25 @@ fn a_control_character_from_a_document_reaches_no_format_intact() {
             digest,
         });
     }
+    // An obligation identifier and an adoption task's id and owner come from
+    // the taxonomy and the lock, which an adopter writes, and the text report
+    // prints all three.
+    ran.run.findings[0].obligation = Some(format!("OB-\n::error ::x{HOSTILE_ID}"));
+    assert!(
+        ran.run
+            .adoption
+            .tasks
+            .iter()
+            .any(|task| ran.run.adoption.pending.iter().any(|finding| task
+                .pairs
+                .iter()
+                .any(|pair| pair.rule == finding.rule && pair.path == finding.path))),
+        "the fixture run holds a pending finding under a task"
+    );
+    for task in &mut ran.run.adoption.tasks {
+        task.id = format!("task\n::error ::id{HOSTILE_ID}");
+        task.owner = format!("owner\n::error ::owner{HOSTILE_ID}");
+    }
     // A blocking control over the hostile finding's rule, so the text report
     // lists that finding by its path in the block of what `--strict` fails on.
     let rule = ran.run.findings[0].rule;

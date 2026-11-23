@@ -538,7 +538,7 @@ impl Ledger {
     /// identifier". See that module's comment for why this function reads no
     /// stream itself.
     pub fn render(&self, mode: crate::paint::ColorMode) -> String {
-        use crate::paint::{paint, Role};
+        use crate::paint::{paint, visible, Role};
         use std::fmt::Write;
         let mut out = String::new();
         // No early return when the ledger is empty: a run with no `adoption`
@@ -565,6 +565,10 @@ impl Ledger {
             verb(self.tasks.len(), "task", "tasks")
         );
         for task in &self.tasks {
+            // The id, the owner and the statement are text an adopter wrote in
+            // the lock, so each is written as visible text (#1970).
+            let id = visible(&task.id);
+            let owner = visible(&task.owner);
             match task.state {
                 State::Open => {
                     // Format the line with the plain identifier, then substitute the painted
@@ -572,17 +576,17 @@ impl Ledger {
                     // apart from the escape sequences around the identifier.
                     let plain = format!(
                         "  {} {} open, {} closed, holding {} {}, owner {}, until {}\n",
-                        task.id,
+                        id,
                         task.pairs.len() - task.closed.len(),
                         task.closed.len(),
                         task.held,
                         verb(task.held, "finding", "findings"),
-                        task.owner,
+                        owner,
                         task.until
                     );
                     out.push_str(&plain.replacen(
-                        &task.id,
-                        &paint(Role::Obligation, &task.id, mode),
+                        id.as_ref(),
+                        &paint(Role::Obligation, &id, mode),
                         1,
                     ));
                 }
@@ -590,30 +594,45 @@ impl Ledger {
                     // The plain identifier first, then the painted one in its place.
                     let plain = format!(
                         "  {} lapsed on {}, and the {} pairs it named are reported, owner {}\n",
-                        task.id,
+                        id,
                         task.until,
                         task.pairs.len(),
-                        task.owner
+                        owner
                     );
                     out.push_str(&plain.replacen(
-                        &task.id,
-                        &paint(Role::Obligation, &task.id, mode),
+                        id.as_ref(),
+                        &paint(Role::Obligation, &id, mode),
                         1,
                     ));
                 }
             }
             // A hand-written block scalar (`statement: |`) arrives with its own
             // trailing newline, and the line owes exactly one.
-            let _ = writeln!(out, "    {}", task.statement.trim_end());
+            let statement: Vec<std::borrow::Cow<'_, str>> =
+                task.statement.trim_end().lines().map(visible).collect();
+            let _ = writeln!(
+                out,
+                "    {}",
+                statement.join(
+                    "
+    "
+                )
+            );
         }
         for refused in &self.refused {
-            let _ = writeln!(out, "  {} holds nothing: {}", refused.task, refused.why);
+            let _ = writeln!(
+                out,
+                "  {} holds nothing: {}",
+                visible(&refused.task),
+                visible(&refused.why)
+            );
         }
         for unread in &self.unread {
             let _ = writeln!(
                 out,
                 "  the block declares `{}`, which nothing here reads: {}",
-                unread.key, unread.why
+                visible(&unread.key),
+                visible(&unread.why)
             );
         }
         out
