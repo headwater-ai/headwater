@@ -156,6 +156,10 @@ On supersede or retire, the hooks passed 13 of 14 and the MCP server 12 of 14, a
 
 **Oracle scripts in the workspace, from #1892.** The seal left the generic oracle scripts and the oracle entries of `.headwater/probe.yml` in each workspace. In scenario 6, 12 sessions read an oracle script, 2 ran one, and all 12 passed. The held argument files were removed, so no answer leaked, but those sessions saw what the oracle would check.
 
+**A wording guard still in repair a check, from #1978.** The third probe of repair a check, `r9-review-marker`, still grades exact wording. Its oracle demands the literal words of its `# summary:` line, where the task asks the session to keep the meaning. [#1994](https://github.com/headwater-ai/headwater/pull/1994) replaced that guard on the shelf-layout and stale-comments probes and left this one as it was. The probe is in the tuning set, so it graded no phase B session. The held-out cells of repair a check and the table of raw beside regraded do not include it. The tuned cells of repair a check include it, at 7/14, 10/14, 9/14 and 6/14, and so do the pooled totals of phase A. Nobody regraded those tuned cells, so this evaluation does not say how much the guard holds them down.
+
+**Three replays that were not faithful, from #1978.** The regrade of #1994 replayed 108 sessions from their pins. Of these, 105 replays reproduced the recorded event and the oracle file byte for byte. Three did not, and those sessions keep their recorded verdicts: `a/L2-additive-scenario-2-p18-r3` (shelf-layout), `a/L2-additive-scenario-2-p17-r2` (stale-comments) and `b2/L2-additive-scenario-6-p10-r6` (shelf-layout). The two scenario 2 sessions also fail under the new oracle, so the scenario 2 cell does not move. The scenario 6 session passes under the new oracle, but it counts as its recorded failure. So the regraded cell of repair a check in scenario 6 reads 46/48 and not 47/48.
+
 ## The spend
 
 Each paid issue had its own ceiling. The figures come from each issue's ledger under its run root, and for #1881 from the owner's comment at the end of the run.
