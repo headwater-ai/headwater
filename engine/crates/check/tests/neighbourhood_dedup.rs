@@ -154,7 +154,10 @@ fn a_pair_that_both_ends_declare_is_one_neighbour_at_each_end() {
 
     // The guard against a vacuous pass: the graph keeps both halves.
     assert_eq!(
-        (edges_between(&run.graph, A, B), edges_between(&run.graph, B, A)),
+        (
+            edges_between(&run.graph, A, B),
+            edges_between(&run.graph, B, A)
+        ),
         (1, 1),
         "a.md writes depends_on and b.md writes required_by, so the graph holds two edges"
     );
