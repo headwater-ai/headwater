@@ -57,6 +57,8 @@ After the fragment, the section names each file that stays untyped with the frag
 - `discriminator`: a heterogeneous shelf claims the path and its discriminator does not name a kind.
 - `abstract kind`: the shelf or the discriminator names an abstract kind.
 
+`headwater taxonomy resolve` refuses two shelves of equal specificity. It also refuses a shelf that names an abstract kind as its kind or in its list of kinds. So a lock that it wrote never gives `ambiguous shelf` or `abstract kind`. The verb keeps both reasons for a lock that it did not write.
+
 Where every file classified, the section prints one line that says that there is nothing to propose. Where no directory holds two documents with front matter, the section also says that there is nothing to propose. It then names each unexplained file with its reason.
 
 ## Preconditions

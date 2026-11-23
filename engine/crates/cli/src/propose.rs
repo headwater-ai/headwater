@@ -104,8 +104,8 @@ fn reason(row: &Row) -> Option<&'static str> {
 /// The reason for a document that a declared shelf reached and resolution
 /// stopped on. A validated lock refuses a tie between two shelves and a shelf
 /// of an abstract kind, so only the discriminator reasons reach `infer` from a
-/// resolved taxonomy; the other two are named for a lock that predates the
-/// validation.
+/// resolved taxonomy; the other two are kept for a lock that `taxonomy
+/// resolve` did not write.
 fn stopped_on_a_shelf(reason: &Unresolved) -> &'static str {
     match reason {
         Unresolved::NoShelf => "no shelf",
