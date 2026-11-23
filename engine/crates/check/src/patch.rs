@@ -93,10 +93,18 @@ pub enum Patch {
     /// records an attribute on an edge that exists, which is what
     /// [`crate::suspect`] offers for `verified_revision`, is this shape and
     /// needs no writer of its own. An empty list is the bare reference form.
+    ///
+    /// `members` is `Some` where the target is a list of patterns: the members
+    /// as the author wrote them, in the author's order, and `id` is then only
+    /// their join by `, ` for a reader, which nothing can split again. The
+    /// splice matches and writes the list member for member and never reads
+    /// `id` for it (#2016). `None` is a scalar target, which every half but a
+    /// stamp on a list is.
     Half {
         path: String,
         relation: String,
         id: String,
+        members: Option<Vec<String>>,
         attributes: Vec<(String, String)>,
     },
     /// Make `path`, holding `contents`, where no file stands.

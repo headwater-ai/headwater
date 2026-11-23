@@ -511,8 +511,10 @@ fn an_unrecorded_entry_the_change_re_verified_offers_the_digest() {
                 path,
                 relation,
                 id,
+                members,
                 attributes,
             }) => {
+                assert_eq!(members, &None, "a scalar target carries no members");
                 assert_eq!(path, DOCUMENT);
                 assert_eq!(relation, "governs");
                 assert_eq!(id, ".githooks/pre-commit");
@@ -1329,6 +1331,11 @@ fn a_stated_edge_gets_no_patch_where_the_relation_does_not_declare_the_attribute
             reported[0].patch.is_some(),
             "{label}: the row states the edge"
         );
+        assert!(
+            !reported[0].remediation.contains(UNDECLARED),
+            "{label}: {}",
+            reported[0].remediation
+        );
         let ran = run_in(&root, &ctx, &mut Cache::disabled(), &undeclared);
         let reported = suspect(&ran);
         assert_eq!(reported.len(), 1, "{label}: {reported:?}");
@@ -1337,19 +1344,82 @@ fn a_stated_edge_gets_no_patch_where_the_relation_does_not_declare_the_attribute
             "{label}: {:?}",
             reported[0].patch
         );
+        // #1674: the verb said only that no finding carried a patch, so the
+        // remedy says why, and names no `--fix` that would write nothing.
+        assert!(
+            reported[0]
+                .remediation
+                .contains(&format!("`governs`{UNDECLARED}")),
+            "{label}: {}",
+            reported[0].remediation
+        );
+        assert!(
+            !reported[0]
+                .remediation
+                .contains("run `headwater check --fix`"),
+            "{label}: {}",
+            reported[0].remediation
+        );
     }
     let _ = std::fs::remove_dir_all(&root);
 }
 
-/// The decisive fixture for #1631. `headwater check --fix` writes a stamp
-/// through a splice that matches an entry by one scalar `to`, so an entry
-/// whose target is a list gets no patch, whatever the change states. Before
-/// the fix its remedy still told the reader to run `--fix`, which then wrote
-/// nothing. The remedy now names the hand edit, with the digest to copy. The
-/// single entry onto [`LIB`] is the control: it keeps the `--fix` remedy on
-/// every row, stamped or not.
+/// The clause of a remedy that says why `--fix` writes no stamp onto an edge
+/// whose relation declares no `verified_revision` (#1674).
+const UNDECLARED: &str =
+    " declares no `verified_revision`, so `headwater check --fix` cannot write it here";
+
+/// An unrecorded edge that a `verified` line names, under a relation that
+/// declares no `verified_revision`. The line asks for a stamp, and `--fix`
+/// cannot write one, so the edge gets an `Info` finding that says why and
+/// carries no patch (#1674). The same edge under the declared relation is the
+/// control: it carries the patch. A re-verified document alone asks for no
+/// stamp on this edge, so it stays silent under the undeclared relation.
 #[test]
-fn a_list_target_is_never_told_that_fix_will_stamp_it() {
+fn an_unrecorded_edge_a_verified_line_names_says_why_no_stamp_is_written() {
+    let root = scratch("undeclared-unrecorded");
+    document(&root, TODAY, &[format!("    - {LIB}")]);
+    let undeclared = taxonomy().replace(
+        "    attributes:\n      verified_revision: {type: string, owner: edge}\n",
+        "",
+    );
+    assert_ne!(undeclared, taxonomy(), "the declaration was removed");
+    let line = at(TODAY).scoped_to(edges(&[], &[], &[(DOCUMENT, LIB)]));
+    let declared = run_in(&root, &line, &mut Cache::disabled(), &taxonomy());
+    let reported = suspect(&declared);
+    assert_eq!(reported.len(), 1, "declared: {reported:?}");
+    assert!(reported[0].patch.is_some(), "declared: the line states it");
+    let ran = run_in(&root, &line, &mut Cache::disabled(), &undeclared);
+    let reported = suspect(&ran);
+    assert_eq!(reported.len(), 1, "{reported:?}");
+    assert_eq!(
+        reported[0].severity,
+        headwater_check::finding::Severity::Info
+    );
+    assert!(reported[0].patch.is_none(), "{:?}", reported[0].patch);
+    assert!(
+        reported[0]
+            .remediation
+            .contains(&format!("`governs`{UNDECLARED}")),
+        "{}",
+        reported[0].remediation
+    );
+    let document_only = at(TODAY).scoped_to(stated(&[], &[DOCUMENT]));
+    let ran = run_in(&root, &document_only, &mut Cache::disabled(), &undeclared);
+    assert!(suspect(&ran).is_empty(), "{:?}", suspect(&ran));
+}
+
+/// The decisive fixture for #1631, inverted by #2016. `headwater check --fix`
+/// wrote a stamp through a splice that matched an entry by one scalar `to`,
+/// so an entry whose target is a list got no patch, and #1631 made its remedy
+/// name the hand edit. The splice now matches an entry by its member
+/// sequence. So the list entry carries a patch on the two rows whose change
+/// states the edge, and none on the row with no change. Its remedy names
+/// `--fix` on every row, because the remedy follows whether `--fix` can write
+/// the entry and not whether this run stamped it. The single entry onto
+/// [`LIB`] is the control: it keeps the `--fix` remedy on every row.
+#[test]
+fn a_list_target_is_told_that_fix_will_stamp_it() {
     const MEMBER: &str = ".githooks/merge-regenerate";
     const LIST: &str = "[.githooks/pre-commit, .githooks/merge-regenerate]";
     let root = scratch("list-remedy");
@@ -1371,20 +1441,24 @@ fn a_list_target_is_never_told_that_fix_will_stamp_it() {
     assert_ne!(now, digest, "the member moved");
     let lib_now = expected(&root, &[LIB]);
     let moved = || (DOCUMENT, Some(yesterday("hooks", &entries)));
-    // A row with no change runs over the whole corpus, unscoped.
-    type Scoped<'a> = (&'a str, Option<&'a dyn Fn() -> Change>);
+    // A row with no change runs over the whole corpus, unscoped. The flag
+    // says whether the row states the list edge, and so whether the list
+    // entry carries a patch.
+    type Scoped<'a> = (&'a str, Option<&'a dyn Fn() -> Change>, bool);
     let rows: [Scoped<'_>; 3] = [
         (
             "a verified line names the list by a member path",
             Some(&|| edges(&[], &[], &[(DOCUMENT, MEMBER), (DOCUMENT, LIB)])),
+            true,
         ),
         (
             "the facet moved and the change carries the moved member",
             Some(&|| change(&[moved(), (MEMBER, Some(member_before.clone()))])),
+            true,
         ),
-        ("no change at all", None),
+        ("no change at all", None, false),
     ];
-    for (label, change) in rows {
+    for (label, change, stamps) in rows {
         let ctx = match change {
             Some(change) => at(TODAY).scoped_to(change()),
             None => at(TODAY),
@@ -1406,9 +1480,38 @@ fn a_list_target_is_never_told_that_fix_will_stamp_it() {
             headwater_check::finding::Severity::Warn,
             "{label}"
         );
-        assert!(list.patch.is_none(), "{label}: {:?}", list.patch);
+        match (&list.patch, stamps) {
+            (
+                Some(Patch::Half {
+                    members,
+                    attributes,
+                    ..
+                }),
+                true,
+            ) => {
+                // The members as the author wrote them, in the author's
+                // order, which the splice matches the entry by.
+                assert_eq!(
+                    members.as_deref(),
+                    Some(&[".githooks/pre-commit".to_string(), MEMBER.to_string()][..]),
+                    "{label}"
+                );
+                assert_eq!(
+                    attributes,
+                    &vec![("verified_revision".to_string(), now.clone())],
+                    "{label}"
+                );
+            }
+            (None, false) => {}
+            (patch, _) => panic!("{label}: {patch:?}"),
+        }
         assert!(
-            !list.remediation.contains("--fix"),
+            list.remediation.contains("headwater check --fix"),
+            "{label}: {}",
+            list.remediation
+        );
+        assert!(
+            !list.remediation.contains("by hand"),
             "{label}: {}",
             list.remediation
         );
@@ -1434,6 +1537,26 @@ fn a_list_target_is_never_told_that_fix_will_stamp_it() {
             "{label}: {}",
             single.remediation
         );
+    }
+    // A warm cache replays the list patch with its members, so `--fix` on a
+    // warm run writes what a cold run would (#2016).
+    let line = || at(TODAY).scoped_to(edges(&[], &[], &[(DOCUMENT, MEMBER)]));
+    let list_patch = |ran: &Run| {
+        suspect(ran)
+            .into_iter()
+            .find(|finding| finding.message.contains(".githooks/pre-commit"))
+            .and_then(|finding| finding.patch.clone())
+    };
+    let cold = list_patch(&run_in(&root, &line(), &mut Cache::disabled(), &taxonomy()));
+    assert!(cold.is_some(), "the line states the list edge");
+    for pass in ["filling", "warm"] {
+        let mut cache = Cache::at(&root, LOCK, "sha256:rules");
+        let ran = run_in(&root, &line(), &mut cache, &taxonomy());
+        cache.write(&root).expect("the cache writes");
+        if pass == "warm" {
+            assert!(cache.report().hits > 0, "{pass}: {:?}", cache.report());
+        }
+        assert_eq!(list_patch(&ran), cold, "{pass}");
     }
 }
 
@@ -1470,11 +1593,17 @@ fn a_verified_pair_that_names_no_edge_is_listed_as_the_pair() {
     let owned = |pair: (&str, &str)| (pair.0.to_string(), pair.1.to_string());
     // In the order the change holds its pairs, which sorts them.
     let listed = vec![owned(reversed), owned(typo)];
+    // The last column is the count of documents that a `verified` line names
+    // and a row holds (#1674). A pair that names no edge still counts its
+    // document, so the line that states the count says it counts the
+    // documents a line names, whether or not the line names an edge, and the
+    // list below it names each pair that stamped nothing.
     type Expect<'a> = (
         &'a str,
         &'a dyn Fn() -> Change,
         Vec<(String, String)>,
         Vec<&'a str>,
+        usize,
     );
     let rows: [Expect<'_>; 5] = [
         (
@@ -1482,39 +1611,52 @@ fn a_verified_pair_that_names_no_edge_is_listed_as_the_pair() {
             &|| edges(&[], &[], &[(OTHER, LIB)]),
             vec![owned((OTHER, LIB))],
             vec![],
+            1,
         ),
         (
             "both pairs, every path held",
             &|| edges(&[], &[], &[typo, reversed]),
             listed.clone(),
             vec![],
+            2,
         ),
         (
             "both pairs, the reversed document held by no row",
             &|| pairs(&[typo, reversed], |path| path != LIB),
             listed.clone(),
             vec![LIB],
+            1,
         ),
         (
             "a pair that names a real edge",
             &|| edges(&[], &[], &[(DOCUMENT, LIB)]),
             vec![],
             vec![],
+            1,
         ),
         (
             "a real edge beside a typo",
             &|| edges(&[], &[], &[(DOCUMENT, LIB), typo]),
             vec![owned(typo)],
             vec![],
+            1,
         ),
     ];
-    for (label, change, unstated, unmatched) in rows {
+    for (label, change, unstated, unmatched, verified) in rows {
         let ctx = at(TODAY).scoped_to(change());
         let ran = run_in(&root, &ctx, &mut Cache::disabled(), &taxonomy());
         let scoped = ran.change.as_ref().expect("the run is scoped");
         assert_eq!(scoped.unstated, unstated, "{label}");
         assert_eq!(scoped.unmatched, unmatched, "{label}");
+        assert_eq!(scoped.named.verified, verified, "{label}");
         let text = scoped.render();
+        assert!(
+            text.contains(&format!(
+                "{verified:5} named by a `verified` line, whether or not the line names an edge"
+            )),
+            "{label}: {text}"
+        );
+        assert!(!text.contains("stated as re-read"), "{label}: {text}");
         for (document, target) in &unstated {
             assert!(
                 text.contains(&format!("{document} -> {target}")),

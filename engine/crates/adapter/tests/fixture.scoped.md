@@ -4,7 +4,7 @@
 
 **Scoped to a change.** This run was told what one change carries, so the checks that read the version a document stood at before it could run at all. 15 documents were named: 2 that the change adds, 1 with a prior version this run read, and 3 whose prior version did not read, so every check that needed one was skipped over it. The findings above are over the whole corpus, as they are in a run that names no change.
 
-6 stated as re-read by a `verified` line, 5 of them named by that line alone.
+6 named by a `verified` line, whether or not the line names an edge, 5 of them by that line alone.
 
 0 promoted from `asserted` to `accepted` in this change. Nothing declares how many promotions in one change is too many.
 

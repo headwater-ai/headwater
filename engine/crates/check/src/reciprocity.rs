@@ -191,6 +191,7 @@ impl EdgeCheck for Reciprocity<'_> {
             path: owed_by.clone(),
             relation: name.clone(),
             id: target.clone(),
+            members: None,
             attributes: Vec::new(),
         });
 

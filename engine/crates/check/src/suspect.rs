@@ -132,6 +132,16 @@
 //! because `headwater check --fix` would then record a verification nobody
 //! performed.
 //!
+//! A list target takes the patch under the same two gates as a single one.
+//! The patch carries the list's members, and the splice finds the entry
+//! member for member and writes it back in the mapping form, so a bare
+//! `- [a, b]` becomes `- to: [a, b]` with the stamp beside it (#2016). Where
+//! the relation declares no `verified_revision`, no patch is offered, and the
+//! remedy of a moved digest says so rather than naming a `--fix` that writes
+//! nothing. An unrecorded edge that a `verified` line names under such a
+//! relation is reported at `Info` with the same reason, because that line
+//! asked for a stamp (#1674).
+//!
 //! Before #1259 the clock decided: a document whose freshness facet was at or
 //! after the run's date was stamped. That stamped every document that any
 //! merge of the day had re-verified, whatever the change in hand had read, and
@@ -437,6 +447,24 @@ impl EdgeCheck for Suspect<'_> {
         };
 
         if edge.verified_revision().is_none() {
+            // A `verified` line that names this edge asks for a stamp, and a
+            // relation that declares no `verified_revision` cannot take one.
+            // The line's author is told why nothing was written, where before
+            // the run said only that no finding carried a patch (#1674). A
+            // re-verified document alone asks for no stamp on each of its
+            // edges, so it keeps its silence here.
+            if !declares && view.edge_verified() && resolver == SOURCE_TREE {
+                return Outcome::failed_with(finding(
+                    Severity::Info,
+                    unstampable(&edge.source.id, &edge.name, &edge.raw_target, current),
+                    format!(
+                        "`{}`{UNDECLARED}; declare `{VERIFIED_REVISION}` on that relation in the \
+                         taxonomy to record a stamp on its edges, or leave this edge unstamped",
+                        view.relation()
+                    ),
+                    None,
+                ));
+            }
             // The one report an unrecorded edge gets. See the module comment.
             if !restated || resolver != SOURCE_TREE {
                 return Outcome::Passed;
@@ -509,9 +537,14 @@ impl EdgeCheck for Suspect<'_> {
                     },
                     under,
                 ),
-                match recorded {
-                    Some(_) => reread(current, under),
-                    None => by_hand(current, unwritable(edge)),
+                match (declares, &recorded) {
+                    // `--fix` cannot write an attribute the relation does
+                    // not declare, so this remedy names the reason and not
+                    // `--fix`, where before it named a command that wrote
+                    // nothing (#1674).
+                    (false, _) => undeclared(current, view.relation()),
+                    (true, Some(_)) => reread(current, under),
+                    (true, None) => by_hand(current, unwritable(edge)),
                 },
             ),
             _ => (
@@ -607,18 +640,22 @@ fn spoken(items: impl Iterator<Item = String>) -> String {
 }
 
 /// The patch that records `current` on the entry that declared `edge`, and
-/// nothing where the splice could not find that entry by one scalar `to` or
-/// could not carry an attribute the entry already has.
+/// nothing where the splice could not find that entry in the document that
+/// holds it or could not carry an attribute the entry already has.
+///
+/// A list target carries its members, as the author wrote them and in the
+/// author's order, so the splice finds the entry member for member. The
+/// joined `raw_target` cannot be the identity, because a member may hold a
+/// comma itself (#1092). Before #2016 a list got no patch here, so no route
+/// ever stamped one.
 fn recording(edge: &Edge, current: &str) -> Option<Patch> {
     if edge.direction != Direction::AsDeclared {
         return None;
     }
-    let Target::Anchor { patterns, .. } = &edge.target else {
+    let Target::Anchor { .. } = &edge.target else {
         return None;
     };
-    if patterns.len() != 1 {
-        return None;
-    }
+    let members = (edge.raw_targets.len() > 1).then(|| edge.raw_targets.clone());
     let mut attributes = Vec::with_capacity(edge.attributes.len() + 1);
     for entry in &edge.attributes {
         if entry.key.value == VERIFIED_REVISION {
@@ -632,6 +669,7 @@ fn recording(edge: &Edge, current: &str) -> Option<Patch> {
         path: edge.source.path.clone(),
         relation: edge.name.clone(),
         id: edge.raw_target.clone(),
+        members,
         attributes,
     })
 }
@@ -730,10 +768,11 @@ fn reread(current: &str, under: Under) -> String {
     }
 }
 
-/// What to do about a moved digest on an entry that `--fix` cannot write: a
-/// list target, an inverse half, or an entry with an attribute that is not a
-/// scalar. [`reread`] would name a command that writes nothing there, so this
-/// remedy names the hand edit and the digest to copy (#1631).
+/// What to do about a moved digest on an entry that `--fix` cannot write: an
+/// inverse half, or an entry with an attribute that is not a scalar.
+/// [`reread`] would name a command that writes nothing there, so this remedy
+/// names the hand edit and the digest to copy (#1631). A list target was the
+/// common case here until #2016 gave it a patch.
 fn by_hand(current: &str, why: &str) -> String {
     format!(
         "re-read what the entry reaches and correct this document where it no longer holds; then \
@@ -743,14 +782,40 @@ fn by_hand(current: &str, why: &str) -> String {
 }
 
 /// Why [`recording`] has no patch for `edge`, as the end of the clause
-/// [`by_hand`] writes. The list is the common case, and the one an adopter
-/// meets: the other two are an entry this rule rarely reaches.
+/// [`by_hand`] writes.
 fn unwritable(edge: &Edge) -> &'static str {
-    match &edge.target {
-        Target::Anchor { patterns, .. } if patterns.len() != 1 => "whose target is a list",
-        _ if edge.direction != Direction::AsDeclared => "that another document declares",
-        _ => "with an attribute that is not a scalar",
+    match edge.direction != Direction::AsDeclared {
+        true => "that another document declares",
+        false => "with an attribute that is not a scalar",
     }
+}
+
+/// The clause that says why `--fix` writes no stamp onto an edge whose
+/// relation declares no `verified_revision`, after the relation's name. Spec
+/// 2 makes an attribute the relation does not declare a finding, so a fix
+/// must not write one (#1674).
+const UNDECLARED: &str =
+    " declares no `verified_revision`, so `headwater check --fix` cannot write it here";
+
+/// What to do about a moved digest on an edge whose relation declares no
+/// `verified_revision`. Before #1674 this remedy named `--fix`, and the run
+/// then said only that no finding carried a patch.
+fn undeclared(current: &str, relation: &str) -> String {
+    format!(
+        "re-read what the entry reaches and correct this document where it no longer holds; \
+         `{relation}`{UNDECLARED}, so set `{VERIFIED_REVISION}: {current}` on this entry by hand, \
+         or declare `{VERIFIED_REVISION}` on `{relation}` in the taxonomy"
+    )
+}
+
+/// An unrecorded edge that a `verified` line names, under a relation that
+/// declares no `verified_revision`.
+fn unstampable(id: &str, name: &str, raw: &str, current: &str) -> String {
+    format!(
+        "`{id}` declares `{name}: {raw}` with no `{VERIFIED_REVISION}`, and a `verified` line \
+         names this edge, so the change states it was re-read, but the content it reaches now, \
+         `{current}`, cannot be recorded on it"
+    )
 }
 
 /// An unrecorded edge on a document the change re-verified.
