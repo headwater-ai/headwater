@@ -381,7 +381,7 @@ A write-time hook. An edit to code that a document governs raises an advisory pr
 
 ### Interview
 
-The first-run surface. `headwater init` composes a [bundle](#bundle) selection from answers about the corpus, and emits an overlay. It is declared as package data, and it is `headwater infer` with a second evidence source. See [spec 7](07-distribution-and-federation.md#the-interview).
+The first-run surface. `headwater init` composes a [bundle](#bundle) selection from answers about the corpus, and emits an overlay. It is declared as package data. `headwater infer` is a separate verb that reads the tree and prints an overlay fragment of the same shape. See [spec 7](07-distribution-and-federation.md#the-interview).
 
 ### Kind
 

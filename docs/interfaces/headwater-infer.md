@@ -2,12 +2,12 @@
 id: HW-IFACE-headwater-infer
 status: current
 status_since: 2026-09-06
-summary: "How to report uncovered findings as adoption tasks and optionally append them to the taxonomy lock."
+summary: "How to report uncovered findings as adoption tasks, propose an overlay fragment for unshelved directories, and name the files it leaves untyped."
 last_verified: 2026-08-25
 title: "headwater infer"
 relations:
   governs:
-    - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
+    - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs, engine/crates/cli/src/propose.rs]
     - .headwater/taxonomy.lock
 ---
 
@@ -95,7 +95,7 @@ The command reads the system date when `--now` is absent. It reads no other envi
 
 | Path | How this verb treats it |
 |---|---|
-| `.headwater/taxonomy.lock` and corpus | Read to run checks and inspect existing adoption tasks. |
+| `.headwater/taxonomy.lock` and corpus | Read to run checks and inspect existing adoption tasks. The fragment reads the front-matter keys and the headings of each file that no shelf claims. |
 | `.headwater/imports/` | Read where `.headwater/taxonomy.yml` declares an import, for the anchors that an imported snapshot supplies. An `imports` entry that does not read stops the verb with exit 1, and so does an `at` path outside the repository root. |
 | the path each `harvests.<name>.at` names | Read where `.headwater/taxonomy.yml` declares a pinned corpus export, for the anchors that export supplies. A `harvests` entry that does not read stops the verb with exit 1, and so does an `at` path outside the repository root. A pin with no digest binds no anchor. An absent file binds no anchor, and neither does a file that fails the pinned digest or is not an export. |
 | `.headwater/taxonomy.lock` | Written only with `--write`, by appending proposed tasks. |
