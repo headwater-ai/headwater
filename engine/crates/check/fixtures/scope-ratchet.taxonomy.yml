@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The smallest shape that exercises `relation.scope.ungoverned` (#1573). One
+# anchor kind declares one scope pattern, `scope-ratchet-src/**`, and one kind
+# governs it. The corpus under `scope-ratchet/` holds one document, which
+# governs `a.rs` and `new_governed.rs`. Beside it, `new_ungoverned.rs` and
+# `old_ungoverned.rs` sit in the scope and no edge reaches them.
+# `scope-ratchet-before/` holds the version of `old_ungoverned.rs` that stood
+# before the change. `tests/scope_ratchet.rs` reads this file.
+
+identifier_schemes:
+  fixture_id: {pattern: "SR-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+anchors:
+  code_path: {resolver: source-tree, scope: [scope-ratchet-src/**]}
+
+kinds:
+  governing_fixture:
+    identifier: {scheme: fixture_id}
+
+relations:
+  governs:
+    family: governance
+    from: [governing_fixture]
+    to:   [code_path]
+    cardinality: many
+
+shelves:
+  governing_fixtures:
+    path: scope-ratchet/**
+    homogeneous: true
+    kind: governing_fixture
