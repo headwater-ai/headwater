@@ -8,7 +8,7 @@ on one host, `/home/james/.local/share/headwater/hw-1659/a` or `.../b`. The
 recordings are not committed, and nothing in the repository can re-derive
 them. The owner ruled on 2026-10-19 that they stay on that host with no end
 date (#1776). They are read-only: this reader opens every file for reading,
-writes nothing beside them, and a fixture in `probe-record-fixtures.sh` holds
+writes nothing beside them, and a fixture in `campaign-fixtures.sh` holds
 that by a checksum of a synthetic batch taken before and after a run.
 
 Each <session> is a session id or a shell glob over the ids, such as

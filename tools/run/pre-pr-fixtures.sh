@@ -271,7 +271,7 @@ printf '\n# the default list holds the suites CI runs that a green pre-pr once m
 # PR #1894 and #1902 each printed PRE-PR: ok and failed one of the probe
 # suites in CI, and #1959 (PR #1991) the engine README suite.
 defaults=$(sed -n 's/^fixtures=\${HW_PRE_PR_FIXTURES:-"\(.*\)"}$/\1/p' "$tool")
-for suite in tools/probe/probe-record-fixtures.sh tools/probe/oracle-fixtures.sh tools/probe/probe-oracle-fixtures.sh tools/engine/engine-readme-fixtures.sh; do
+for suite in tools/probe/probe-record-fixtures.sh tools/probe/campaign-fixtures.sh tools/probe/oracle-fixtures.sh tools/probe/probe-oracle-fixtures.sh tools/engine/engine-readme-fixtures.sh; do
     case " $defaults " in
         *" $suite "*) pass "the default fixture list runs $suite" ;;
         *) fail "the default fixture list runs $suite" "it is not in \`$defaults\`" ;;

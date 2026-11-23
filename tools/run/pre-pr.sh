@@ -17,9 +17,10 @@
 # It stops at the first failed step, prints the block with that step named
 # and the log it wrote, and exits 1; the builder repairs and runs it again.
 # The fixture suites run as a set, and the block names every one that failed.
-# Most take seconds; `tools/probe/probe-record-fixtures.sh` takes minutes and
-# needs `bwrap`, and it is here because PR #1894 printed `PRE-PR: ok` and
-# failed 9 of its cases in CI. The two oracle suites are here because #1902
+# Most take seconds; `tools/probe/probe-record-fixtures.sh` and
+# `tools/probe/campaign-fixtures.sh` take minutes and need `bwrap`, and they
+# are here because PR #1894 printed `PRE-PR: ok` and failed in CI 9 cases
+# of the one suite they then were. The two oracle suites are here because #1902
 # printed `PRE-PR: ok` and went red in CI on two `oracle-fixtures.sh` cases.
 # `tools/engine/engine-readme-fixtures.sh` is here because #1959 (PR #1991)
 # printed `PRE-PR: ok` and failed it in CI, on a new crate with no row in
@@ -116,7 +117,7 @@ set -u
 
 root=$(cd "$(dirname "$0")/../.." && pwd)
 cargo=${HW_CARGO:-$root/tools/hw-cargo}
-fixtures=${HW_PRE_PR_FIXTURES:-".claude/agents/fixtures.sh .claude/skills/fixtures.sh .claude/hooks/fixtures.sh tools/repo/developing-fixtures.sh tools/repo/engine-resolver-fixtures.sh tools/repo/collation-fixtures.sh tools/engine/build-declaration-fixtures.sh tools/probe/probe-record-fixtures.sh tools/probe/oracle-fixtures.sh tools/probe/probe-oracle-fixtures.sh tools/engine/engine-readme-fixtures.sh"}
+fixtures=${HW_PRE_PR_FIXTURES:-".claude/agents/fixtures.sh .claude/skills/fixtures.sh .claude/hooks/fixtures.sh tools/repo/developing-fixtures.sh tools/repo/engine-resolver-fixtures.sh tools/repo/collation-fixtures.sh tools/engine/build-declaration-fixtures.sh tools/probe/probe-record-fixtures.sh tools/probe/campaign-fixtures.sh tools/probe/oracle-fixtures.sh tools/probe/probe-oracle-fixtures.sh tools/engine/engine-readme-fixtures.sh"}
 
 usage() {
     sed -n '/^#     sh tools\/run\/pre-pr.sh/p' "$0" | sed 's/^# *//' >&2

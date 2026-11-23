@@ -166,7 +166,7 @@
 #     same trees, and a prompt that either route refuses is refused for both.
 #     A budget is `--variant '<engine> route --budget <n>'`.
 #
-# The seal. A probe is sealed: outside `docs/`, only a fold and the three
+# The seal. A probe is sealed: outside `docs/`, only a fold and the four
 # files that state an answer may name one (#1384), and
 # `tools/probe/probe-record-fixtures.sh` holds that set. The routing paths
 # offer documents of the instrument shelves like any other, so the record

@@ -474,9 +474,10 @@ echo "seal: removed $removed of $declared instrument paths from $here"
 # workspace that names it, from the files that hold such a line. Most files
 # that cite a record are shelf indexes, registers and paragraphs, each one
 # line per item, so each file keeps every other line and stays a file. The
-# removal also reaches scripts and fixtures, such as the census fixture and
-# `probe-record-fixtures.sh`, so the workspace copy of such a file can no
-# longer run. A session answers from the corpus and does not run them.
+# removal also reaches scripts and fixtures, such as the census fixture,
+# `probe-record-fixtures.sh` and `campaign-fixtures.sh`, so the workspace
+# copy of such a file can no longer run. A session answers from the corpus
+# and does not run them.
 #
 #     strip_document <identifier> <slug>
 #

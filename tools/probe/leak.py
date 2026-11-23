@@ -101,6 +101,16 @@
 # the empty sequence prints nothing, because its key is an act, such as an
 # `opened` key, and no string states it. A probe with no entry, or an entry
 # with no value, still prints `undeclared`.
+#
+# **`HW_LEAK_HOOK_CACHE` keeps the hook's text, for the fixtures alone.** The
+# hook's text for one probe depends on the tree and the probe's task, and on
+# no leak string. Where the variable names a directory, the text of each
+# (tree, probe, task) is kept there, and a later check of the same tree reads
+# it in place of running the hook again. `tools/probe/dry-run-trees.sh` sets
+# it beside the trees it keeps, so it is removed with them, and unsets it
+# where it keeps none. Each probe's hook ran for about a second, 22 times in
+# each of two scenarios of every additive dry run.
+import hashlib
 import json
 import os
 import re
@@ -316,6 +326,13 @@ def hook_text(workspace, task, probe):
     # The text `.claude/hooks/intent.sh` injects for one prompt, run as the
     # harness runs a `UserPromptSubmit` hook. `None` is a hook that did not run.
     hook = os.path.join(workspace, ".claude/hooks/intent.sh")
+    cache = os.environ.get("HW_LEAK_HOOK_CACHE")
+    kept = None
+    if cache:
+        name = hashlib.sha256("\0".join([os.path.realpath(workspace), probe, task]).encode("utf-8")).hexdigest()
+        kept = os.path.join(cache, name)
+        if os.path.isfile(kept):
+            return read_text(kept)
     env = dict(os.environ)
     env["CLAUDE_PROJECT_DIR"] = workspace
     engine_dirs = [
@@ -342,6 +359,11 @@ def hook_text(workspace, task, probe):
         )
     except (OSError, subprocess.TimeoutExpired):
         return None
+    if kept:
+        os.makedirs(cache, exist_ok=True)
+        with open(kept + ".part", "w", encoding="utf-8") as handle:
+            handle.write(ran.stdout)
+        os.replace(kept + ".part", kept)
     return ran.stdout
 
 

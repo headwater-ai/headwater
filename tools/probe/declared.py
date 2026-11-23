@@ -12,6 +12,7 @@
 #     python3 tools/probe/declared.py <declaration> open
 #     python3 tools/probe/declared.py <declaration> base_invalidators
 #     python3 tools/probe/declared.py <declaration> tuning
+#     python3 tools/probe/declared.py <declaration> trees
 #
 # `power` prints `present <rate>`, `absent <rate>`, `alpha <level>`,
 # `power <power>` and `pooled <category>...`, one per line. Each of the four
@@ -117,9 +118,16 @@
 # refuses a malformed block when it reads the declaration, so this reads the
 # block for the dry run's per-scenario trees and nothing more.
 #
+# `trees` prints the whole declaration as one line of JSON with sorted keys,
+# less `leaks:` and `leaks_kept:`. `tools/probe/dry-run-trees.sh` hashes it
+# into the key of the trees a dry run builds, because nothing that builds a
+# tree reads either block, and the fixtures' dry runs differ in those two
+# blocks and in nothing else a tree reads.
+#
 # It reads with PyYAML and never with a hand-written reader, as the parent
 # ruled after verify round 3. It exits 0 when it printed the key, 2 when the
 # declaration or the key does not read, and 3 when python3 has no PyYAML.
+import json
 import sys
 
 try:
@@ -390,7 +398,7 @@ def base_invalidators(declared):
 
 
 def main(argv):
-    modes = ("power", "leaks_kept", "rounds", "rows", "scenarios", "approved", "open", "base_invalidators", "tuning", "tuning_set")
+    modes = ("power", "leaks_kept", "rounds", "rows", "scenarios", "approved", "open", "base_invalidators", "tuning", "tuning_set", "trees")
     if len(argv) != 2 or argv[1] not in modes:
         refuse(f"usage: python3 tools/probe/declared.py <declaration> {'|'.join(modes)}")
     path, key = argv
@@ -401,6 +409,11 @@ def main(argv):
         refuse(f"{path} did not read: {error}")
     if not isinstance(declared, dict):
         refuse(f"{path} is not a mapping")
+
+    if key == "trees":
+        kept_out = {name: value for name, value in declared.items() if name not in ("leaks", "leaks_kept")}
+        print(json.dumps(kept_out, sort_keys=True, default=str))
+        return 0
 
     if key == "leaks_kept":
         kept = declared.get("leaks_kept") or []

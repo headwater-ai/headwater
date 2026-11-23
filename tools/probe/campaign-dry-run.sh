@@ -369,25 +369,23 @@ fi
 
 # ---------------------------------------------------------------------------
 # The trees: the present tree once, and the delta of every arm against it.
+# `tools/probe/dry-run-trees.sh` builds them and says when they outlive the
+# run.
 # ---------------------------------------------------------------------------
-mkdir -p "$work/present"
-git -C "$root" archive "$head" | tar -x -C "$work/present" || finish 3
-mkdir -p "$work/present/engine/target/dev-release"
-cp "$engine" "$work/present/engine/target/dev-release/headwater" || finish 3
-sh "$root/tools/probe/ablate.sh" --present "$work/present" > /dev/null || finish 3
 all_probes=$(awk '{ print $3 }' "$work/probes" | sort -u)
 if [ -z "$all_probes" ]; then
     printf 'campaign: no line of the spec selected a probe, so no tree was built.\n'
     [ "$status" != 0 ] && finish "$status"
     finish 5
 fi
-# shellcheck disable=SC2086
-sh "$root/tools/probe/seal.sh" "$work/present" $all_probes > /dev/null || finish 3
+. "$root/tools/probe/dry-run-trees.sh"
+trees_open || finish 3
+trees_present || finish 3
 tree_status=0
 awk '{ print $2, $3 }' "$work/lines" | sort -u > "$work/arms"
 while read -r tier arm; do
     [ "$arm" = present ] && continue
-    if sh "$root/tools/probe/ablate.sh" --diff "$tier" "$arm" "$work/present" > "$work/diff" 2>&1; then
+    if trees_memo "diff-$tier-$arm" sh "$root/tools/probe/ablate.sh" --diff "$tier" "$arm" "$trees/present" > "$work/diff"; then
         printf 'tree %s %s: %s\n' "$tier" "$arm" "$(tr '\n' ' ' < "$work/diff" | sed 's/ $//')"
     else
         printf 'tree %s %s is not its delta:\n' "$tier" "$arm"
@@ -397,24 +395,33 @@ while read -r tier arm; do
 done < "$work/arms"
 
 # The MCP arm: the server starts in the arm's tree and lists its tools.
-leak_trees="$work/present"
+leak_trees="$trees/present"
+mcp_tree=
 if grep -q ' mcp$' "$work/arms"; then
     mcp_tier=$(awk '$2 == "mcp" { print $1; exit }' "$work/arms")
-    cp -a "$work/present" "$work/mcp" || finish 3
-    sh "$root/tools/probe/ablate.sh" "$mcp_tier" "$work/mcp" mcp > /dev/null || finish 3
-    tools=$(printf '%s\n' \
-        '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05"}}' \
-        '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
-        '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
-        | "$server" mcp --root "$work/mcp" 2>/dev/null \
-        | jq -r 'select(.id == 2) | .result.tools[].name' 2>/dev/null | tr '\n' ' ' | sed 's/ $//')
+    mcp_tree=$trees/mcp-$mcp_tier
+    build_mcp_tree() {
+        rm -rf "$mcp_tree"
+        cp -a "$trees/present" "$mcp_tree" &&
+            sh "$root/tools/probe/ablate.sh" "$mcp_tier" "$mcp_tree" mcp > /dev/null
+    }
+    list_mcp_tools() {
+        printf '%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05"}}' \
+            '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+            | "$server" mcp --root "$mcp_tree" 2>/dev/null \
+            | jq -r 'select(.id == 2) | .result.tools[].name' 2>/dev/null | tr '\n' ' ' | sed 's/ $//'
+    }
+    trees_memo "mcp-$mcp_tier.build" build_mcp_tree > /dev/null || finish 3
+    tools=$(trees_memo "mcp-$mcp_tier.tools" list_mcp_tools)
     if [ -n "$tools" ]; then
         printf 'mcp: `headwater mcp --root <the mcp tree>` lists %s\n' "$tools"
     else
         printf 'mcp: `headwater mcp` listed no tool in the mcp tree, so the arm would measure no server.\n'
         tree_status=8
     fi
-    leak_trees="$leak_trees $work/mcp"
+    leak_trees="$leak_trees $mcp_tree"
 fi
 
 # The leak check, over the present tree and the mcp arm's tree. Each session
@@ -428,7 +435,7 @@ for tree in $leak_trees; do
     sh "$root/tools/probe/seal.sh" --leak --config "$work/config" "$tree" $all_probes > "$work/leak" 2>&1
     leak_status=$?
     label=present
-    [ "$tree" = "$work/mcp" ] && label=mcp
+    [ "$tree" = "$mcp_tree" ] && label=mcp
     sed "s/^/leak check, $label tree: /" "$work/leak"
     [ "$leak_status" = 0 ] || tree_status=8
 done

@@ -2,7 +2,12 @@
 # Decides whether this CI runner can run the recorder's fixtures, and runs them
 # when it can (#1467).
 #
-#     RUNNER_KIND=<runner.environment> sh tools/probe/ci-confine.sh
+#     RUNNER_KIND=<runner.environment> sh tools/probe/ci-confine.sh [<suite>]
+#
+# `<suite>` is the suite to run, a path under this checkout or an absolute
+# one, and `tools/probe/probe-record-fixtures.sh` when none is named. CI also
+# names `tools/probe/campaign-fixtures.sh`, whose batch cases start sessions
+# through the same confinement.
 #
 # `tools/probe/probe-record.sh` confines every session to its workspace under
 # `bwrap` and refuses a session it cannot confine, so the cases of
@@ -27,13 +32,18 @@
 # no `sudo`, and `unshare --user true` exits 1 with "Operation not
 # permitted", because Docker's default seccomp profile refuses the namespace.
 #
-# `HW_RECORDER_SUITE` names the suite to run, for
+# `HW_RECORDER_SUITE` names the suite to run in place of either, for
 # `tools/probe/ci-confine-fixtures.sh`, which holds every branch above.
 # Exit status: 0 ran green or skipped, 1 cannot confine where it must, or the
 # suite's own status.
 
 root=$(cd "$(dirname "$0")/../.." && pwd)
-suite=${HW_RECORDER_SUITE:-$root/tools/probe/probe-record-fixtures.sh}
+named=${1:-tools/probe/probe-record-fixtures.sh}
+case $named in
+    /*) ;;
+    *) named=$root/$named ;;
+esac
+suite=${HW_RECORDER_SUITE:-$named}
 runner="${RUNNER_KIND:-unknown} runner ${RUNNER_NAME:-unnamed}"
 
 has() { command -v "$1" >/dev/null 2>&1; }

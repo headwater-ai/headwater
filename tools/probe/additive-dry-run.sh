@@ -361,39 +361,53 @@ fi
 # ---------------------------------------------------------------------------
 # The trees: the present tree once, then each scenario's tree in turn, its
 # delta against its base, its MCP tools and its leak check. A scenario tree is
-# deleted once checked, so the run holds at most one beside the present tree.
+# deleted once checked, so the run holds at most one beside the present tree,
+# unless `HW_CAMPAIGN_TREE_CACHE` keeps them (`tools/probe/dry-run-trees.sh`).
 # ---------------------------------------------------------------------------
-mkdir -p "$work/present"
-git -C "$root" archive "$head" | tar -x -C "$work/present" || finish 3
-mkdir -p "$work/present/engine/target/dev-release"
-cp "$engine" "$work/present/engine/target/dev-release/headwater" || finish 3
-sh "$root/tools/probe/ablate.sh" --present "$work/present" > /dev/null || finish 3
 all_probes=$(awk '{ print $3 }' "$work/probes" | sort -u)
 if [ -z "$all_probes" ]; then
     printf 'campaign: no line of the spec selected a probe, so no tree was built.\n'
     [ "$status" != 0 ] && finish "$status"
     finish 5
 fi
-# shellcheck disable=SC2086
-sh "$root/tools/probe/seal.sh" "$work/present" $all_probes > /dev/null || finish 3
+. "$root/tools/probe/dry-run-trees.sh"
+trees_open || finish 3
+trees_present || finish 3
 mkdir -p "$work/config"
 tree_status=0
 awk '{ print $2 }' "$work/probes" | sort -u | sed 's/^scenario-//' | sort -n > "$work/scenario-list"
+# A copy that fails exits 125, which the build of a scenario never does, so
+# the run stops with 3 as it did before the trees were kept.
+build_scenario_tree() {
+    rm -rf "$trees/scenario-$1"
+    cp -a "$trees/present" "$trees/scenario-$1" || return 125
+    sh "$root/tools/probe/ablate.sh" --scenario "$1" "$trees/scenario-$1" > /dev/null
+}
+list_scenario_tools() {
+    printf '%s\n' \
+        '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05"}}' \
+        '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+        '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+        | "$server" mcp --root "$1" 2>/dev/null \
+        | jq -r 'select(.id == 2) | .result.tools[].name' 2>/dev/null | tr '\n' ' ' | sed 's/ $//'
+}
 while read -r number; do
     arm=scenario-$number
     layers=$(awk -v n="$number" '$1 == n { for (i = 3; i <= NF; i++) printf "%s ", $i }' "$work/scenarios")
     base=$(awk -v n="$number" '$1 == n { print $2 }' "$work/scenarios")
-    rm -rf "$work/scenario"
-    cp -a "$work/present" "$work/scenario" || finish 3
-    if ! sh "$root/tools/probe/ablate.sh" --scenario "$number" "$work/scenario" > /dev/null 2> "$work/build.err"; then
+    trees_memo "$arm.build" build_scenario_tree "$number" > "$work/build.err"
+    built=$?
+    [ "$built" = 125 ] && finish 3
+    if [ "$built" != 0 ]; then
         printf 'tree additive %s did not build:\n' "$arm"
         sed 's/^/    /' "$work/build.err"
         tree_status=8
+        trees_drop "$arm"
         continue
     fi
     if [ -z "$base" ] || [ "$base" = - ]; then
         printf 'tree additive %s: plain code, the floor that the scenario of the docs layer is compared with\n' "$arm"
-    elif sh "$root/tools/probe/ablate.sh" --diff --scenario "$number" "$work/present" "$base" > "$work/diff" 2>&1; then
+    elif trees_memo "$arm.diff" sh "$root/tools/probe/ablate.sh" --diff --scenario "$number" "$trees/present" "$base" > "$work/diff"; then
         printf 'tree additive %s against scenario-%s: %s\n' "$arm" "$base" "$(tr '\n' ' ' < "$work/diff" | sed 's/ $//')"
     else
         printf 'tree additive %s is not its delta against scenario-%s:\n' "$arm" "$base"
@@ -402,12 +416,7 @@ while read -r number; do
     fi
     case " $layers " in
         *" mcp "*)
-            tools=$(printf '%s\n' \
-                '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05"}}' \
-                '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
-                '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
-                | "$server" mcp --root "$work/scenario" 2>/dev/null \
-                | jq -r 'select(.id == 2) | .result.tools[].name' 2>/dev/null | tr '\n' ' ' | sed 's/ $//')
+            tools=$(trees_memo "$arm.tools" list_scenario_tools "$trees/$arm")
             if [ -n "$tools" ]; then
                 printf 'mcp, %s: `headwater mcp --root <the scenario tree>` lists %s\n' "$arm" "$tools"
             else
@@ -418,7 +427,7 @@ while read -r number; do
     esac
     scenario_probes=$(awk -v a="$arm" '$2 == a { print $3 }' "$work/probes" | sort -u)
     # shellcheck disable=SC2086
-    sh "$root/tools/probe/seal.sh" --leak --config "$work/config" --scenario "$work/scenario" $scenario_probes > "$work/leak" 2>&1
+    sh "$root/tools/probe/seal.sh" --leak --config "$work/config" --scenario "$trees/$arm" $scenario_probes > "$work/leak" 2>&1
     leak_status=$?
     sed "s/^/leak check, $arm tree: /" "$work/leak"
     [ "$leak_status" = 0 ] || tree_status=8
@@ -434,7 +443,7 @@ while read -r number; do
             fi
         done
     done
-    rm -rf "$work/scenario"
+    trees_drop "$arm"
 done < "$work/scenario-list"
 
 [ "$status" != 0 ] && finish "$status"
