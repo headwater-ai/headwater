@@ -538,7 +538,6 @@ fn scalars(value: &Value, into: &mut Vec<String>) {
         Value::Map(map) => map
             .iter()
             .for_each(|entry| scalars(&entry.value.value, into)),
-        _ => {}
     }
 }
 
