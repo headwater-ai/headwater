@@ -1138,6 +1138,267 @@ mod tests {
         }
     }
 
+    /// The text a key is the digest of, written out in full for every
+    /// instance, as [`Cache::key`] wrote it before it hashed the first lines
+    /// once for each rule (#1968). It is the reference the memoized key is
+    /// held against, so it never shares code with the key it checks.
+    #[allow(clippy::too_many_arguments)]
+    fn reference_text(
+        lock: &str,
+        rules: &str,
+        rule: &str,
+        version: u32,
+        scope: Scope,
+        target: &str,
+        reads: &[Input],
+        clock: Option<Date>,
+        prior: Option<Prior<'_>>,
+        stated: Stated,
+        resolution: Option<&str>,
+    ) -> Option<String> {
+        let mut text = String::from("headwater check key 1\n");
+        text.push_str(&format!("lock {lock}\n"));
+        text.push_str(&format!("rules {rules}\n"));
+        text.push_str(&format!("rule {rule}\n"));
+        text.push_str(&format!("version {version}\n"));
+        text.push_str(&format!(
+            "scope {} body={} phase_a={} clock={} prior={} claims={} observations={}\n",
+            scope.grain().name(),
+            scope.needs_body(),
+            scope.needs_phase_a(),
+            scope.needs_clock(),
+            scope.needs_prior(),
+            scope.needs_claims(),
+            scope.needs_observations()
+        ));
+        if scope.needs_clock() {
+            text.push_str(&format!("clock {}\n", clock?.render()));
+        }
+        if scope.needs_prior() && scope.grain() != Grain::Corpus {
+            text.push_str(&format!("prior {}\n", prior?.key()));
+        }
+        if scope.needs_declarer_prior() {
+            let prior = prior.map_or_else(|| "none".to_string(), |prior| prior.key());
+            text.push_str(&format!("declarer-prior {prior}\n"));
+            text.push_str(&format!("declarer-verified {}\n", stated.document));
+            text.push_str(&format!(
+                "target-stated change={} verified={}\n",
+                stated.target, stated.edge
+            ));
+        }
+        text.push_str(&format!("target {}\n", escape(target)));
+        if let Some(resolution) = resolution {
+            text.push_str(&format!("resolution {}\n", escape(resolution)));
+        }
+        for input in reads {
+            let digest = input.digest.as_ref()?;
+            text.push_str(&format!("input {} {digest}\n", escape(&input.path)));
+        }
+        Some(text)
+    }
+
+    /// One row of the grid below: every argument [`Cache::key`] takes.
+    struct Row<'a> {
+        rule: &'static str,
+        version: u32,
+        scope: Scope,
+        target: &'a str,
+        reads: Vec<Input>,
+        clock: Option<Date>,
+        prior: Option<Prior<'a>>,
+        stated: Stated,
+        resolution: Option<&'a str>,
+    }
+
+    /// The key of every instance is the digest of its full text, when one
+    /// cache keys them all in one run.
+    ///
+    /// [`Cache::key`] hashes the lines that name the rule, its version and its
+    /// scope once and keeps the state for every later instance with the same
+    /// three (#1968). A memo keyed on less than all three would hand one
+    /// instance the first lines of another, which is the key that omits an
+    /// input spec 12 calls a correctness bug. The case above builds a fresh
+    /// cache for every key, so it can never see a memo. This one uses one
+    /// cache for the whole grid, so every row after the first meets a warm
+    /// memo, and it holds each key against [`reference_text`] rather than
+    /// against another key.
+    #[test]
+    fn a_memoized_prefix_gives_the_key_of_the_full_text_for_every_component() {
+        let document = Scope::document(false, false, false, false);
+        let edge = Scope::edge(false, false, true);
+        let facets = Mapping::default();
+        let one = |path: &str, digest: &str| Input::new(path, Some(digest));
+        let row = |rule, version, scope| Row {
+            rule,
+            version,
+            scope,
+            target: "a.md",
+            reads: vec![one("a.md", "sha256:one")],
+            clock: None,
+            prior: None,
+            stated: Stated::NONE,
+            resolution: None,
+        };
+        let rows = vec![
+            row("r", 1, document),
+            row("other", 1, document),
+            row("r", 2, document),
+            row("r", 1, Scope::document(true, false, false, false)),
+            row("r", 1, Scope::document(false, true, false, false)),
+            row("r", 1, Scope::neighbourhood(false)),
+            Row {
+                clock: day("2026-08-12"),
+                ..row("r", 1, Scope::document(false, false, true, false))
+            },
+            Row {
+                clock: day("2026-08-13"),
+                ..row("r", 1, Scope::document(false, false, true, false))
+            },
+            Row {
+                prior: Some(Prior::Added),
+                ..row("r", 1, Scope::document(false, false, false, true))
+            },
+            Row {
+                prior: Some(Prior::Committed {
+                    digest: "sha256:before",
+                    facets: &facets,
+                }),
+                ..row("r", 1, Scope::document(false, false, false, true))
+            },
+            row("e", 1, edge),
+            Row {
+                prior: Some(Prior::Unchanged),
+                ..row("e", 1, edge)
+            },
+            Row {
+                stated: Stated {
+                    document: true,
+                    ..Stated::NONE
+                },
+                ..row("e", 1, edge)
+            },
+            Row {
+                stated: Stated {
+                    target: true,
+                    ..Stated::NONE
+                },
+                ..row("e", 1, edge)
+            },
+            Row {
+                stated: Stated {
+                    edge: true,
+                    ..Stated::NONE
+                },
+                ..row("e", 1, edge)
+            },
+            Row {
+                resolution: Some("anchor #x resolved"),
+                ..row("e", 1, edge)
+            },
+            Row {
+                reads: vec![],
+                ..row("r", 1, document)
+            },
+            Row {
+                reads: vec![one("a.md", "sha256:one"), one("b.md", "sha256:two")],
+                ..row("r", 1, document)
+            },
+            Row {
+                target: "a.md\ninput b.md sha256:forged\\",
+                ..row("r", 1, document)
+            },
+        ];
+
+        let mut cache = cache();
+        let mut keys = Vec::new();
+        for (index, row) in rows.iter().enumerate() {
+            let key = |cache: &mut Cache| {
+                cache.key(
+                    row.rule,
+                    row.version,
+                    row.scope,
+                    row.target,
+                    &row.reads,
+                    row.clock,
+                    row.prior,
+                    row.stated,
+                    row.resolution,
+                )
+            };
+            let expected = reference_text(
+                "sha256:lock",
+                "sha256:rules",
+                row.rule,
+                row.version,
+                row.scope,
+                row.target,
+                &row.reads,
+                row.clock,
+                row.prior,
+                row.stated,
+                row.resolution,
+            )
+            .map(|text| headwater_hash::hex(text.as_bytes()));
+            assert!(expected.is_some(), "row {index} has no reference key");
+            let first = key(&mut cache);
+            assert_eq!(first, expected, "row {index} is not the key of its text");
+            // The memo is not used up by the call that read it.
+            assert_eq!(key(&mut cache), first, "row {index} keyed twice moved");
+            keys.push(first);
+        }
+        for (index, key) in keys.iter().enumerate() {
+            for (other, later) in keys.iter().enumerate().skip(index + 1) {
+                assert_ne!(key, later, "rows {index} and {other} share a key");
+            }
+        }
+        // Each row again, in reverse, against a memo that every rule, version
+        // and scope of the grid has written.
+        for (index, row) in rows.iter().enumerate().rev() {
+            let again = cache.key(
+                row.rule,
+                row.version,
+                row.scope,
+                row.target,
+                &row.reads,
+                row.clock,
+                row.prior,
+                row.stated,
+                row.resolution,
+            );
+            assert_eq!(again, keys[index], "row {index} moved on a warm memo");
+        }
+        // An unkeyable instance after a keyed one on the same prefix is still
+        // unkeyable, and leaves the memo good for the next.
+        let unkeyable = cache.key(
+            "r",
+            1,
+            Scope::document(false, false, true, false),
+            "a.md",
+            &inputs(Some("sha256:one")),
+            None,
+            None,
+            Stated::NONE,
+            None,
+        );
+        assert_eq!(unkeyable, None);
+        let missing_digest = cache.key(
+            "r",
+            1,
+            document,
+            "a.md",
+            &inputs(None),
+            None,
+            None,
+            Stated::NONE,
+            None,
+        );
+        assert_eq!(missing_digest, None);
+        assert_eq!(
+            cache.plain_key("r", 1, document, "a.md", &inputs(Some("sha256:one")), None),
+            keys[0]
+        );
+    }
+
     /// The constructor a binary calls keys on the rule set it compiles.
     ///
     /// `Cache::compiled` is `Cache::at` with `rules_digest()` read inside it,
