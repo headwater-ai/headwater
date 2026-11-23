@@ -71,6 +71,7 @@
 
 pub mod harness;
 pub mod paint;
+pub mod propose;
 pub mod taxonomy_graph;
 
 /// What every output-target help says about a run that refuses.

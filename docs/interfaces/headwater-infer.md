@@ -17,7 +17,7 @@ relations:
 
     headwater infer [--owner <name>] [--until <date>] [--write] [--now <date>] [--root <path>]
 
-The command reports findings that no existing adoption task accounts for, grouped into document and rule pairs.
+The command reports findings that no existing adoption task accounts for, grouped into document and rule pairs. It also proposes a shelf and a kind for each directory that the tree already writes and that no shelf claims, and it names each file that the proposal leaves untyped.
 
 ## Description
 
@@ -25,9 +25,43 @@ Without `--write`, the command prints the proposed payload and changes nothing. 
 
 It mints identifiers above every declared one, deduplicates pairs by document and rule, and prints what it carried through. A second run with the same inputs proposes no new task.
 
+### The overlay fragment
+
+The section `what this taxonomy does not explain` prints a candidate overlay fragment from the same read of the tree. Each line of the fragment goes under the `add:` key of `.headwater/overlay.yml` without an edit, and `headwater taxonomy resolve` then accepts it. The verb never writes the fragment. An author reads it, edits it if necessary, and puts it in the overlay.
+
+The grouping rule:
+
+- The fragment reads only the files that no declared shelf claims.
+- It groups those files by their parent directory.
+- It proposes one shelf and one kind for each directory that holds two or more documents with front matter.
+
+For each such directory, the fragment declares four things:
+
+- A shelf whose path is `<directory>/*.md`, that is homogeneous and that names the kind. The path claims the Markdown files of that directory and no subdirectory.
+- A kind that is a `governed_document`. It requires each front-matter key that every document of the group writes, and it permits each key that only some documents write. It requires each heading that every document of the group writes, at any level.
+- A purpose for the kind. Its intent and its phrase are a first draft, because a tree does not state what a document is for.
+- A facet for each front-matter key that the bound taxonomy does not already declare, at `volatility: mutable`.
+
+Each block opens with a `#` comment that names its evidence: the directory, the number of documents, the keys and the headings that it read.
+
+The slug rule: the shelf, the kind and the purpose of one directory take one name. The name is the last segment of the directory path, in lowercase, with each character that is not a letter or a digit changed to `_`. Where that name is already declared, or another directory gives the same name, the name is the whole directory path, changed in the same way. Where that name is also taken, the verb adds `_2`, `_3` and so on.
+
+### What the proposal does not explain
+
+After the fragment, the section names each file that stays untyped with the fragment in the overlay, and one reason for each file:
+
+- `no front matter`: the file opens with no front-matter block.
+- `alone in its directory`: the file is the only document with front matter in its directory, so it is no evidence of a kind.
+- `unreadable`: the engine could not read the file.
+- `ambiguous shelf`: two shelves of equal specificity claim the path.
+- `discriminator`: a heterogeneous shelf claims the path and its discriminator does not name a kind.
+- `abstract kind`: the shelf or the discriminator names an abstract kind.
+
+Where no file is outside every shelf and every file classified, the section prints one line that says that there is nothing to propose.
+
 ## Preconditions
 
-The repository must load through its committed taxonomy lock and corpus. The host date must exist unless `--now` supplies one. `--until` cannot be before the evaluation date.
+The repository must load through its committed taxonomy lock and corpus. On a tree with no `.headwater/` directory, run `headwater init` and `headwater taxonomy resolve` first. The host date must exist unless `--now` supplies one. `--until` cannot be before the evaluation date.
 
 `--write` requires `--owner`. The lock's adoption block must be readable if it exists.
 

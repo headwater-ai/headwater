@@ -1,0 +1,230 @@
+// SPDX-License-Identifier: Apache-2.0
+//! The overlay fragment `headwater infer` proposes from a tree, held to the
+//! one test that matters: put in the overlay unchanged, it resolves and it
+//! types the documents it read.
+//!
+//! # The defect this target exists for
+//!
+//! Spec 7 and HW-DR-0012 say one read of a tree gives three artifacts: an
+//! overlay, a report of what no proposed shelf or kind explains, and the
+//! adoption payload. Until #2019 the verb gave the payload alone, and an
+//! outside trial typed 0 of 76 documents on its first run. A fragment that
+//! prints and does not resolve, or resolves and types nothing, is that same 0
+//! with more text in front of it, so the decisive case below resolves the
+//! fragment and asks the engine what each document became.
+//!
+//! The setup copies the shape of `tests/init.rs` rather than importing it,
+//! because one test target cannot name another's helpers.
+
+use std::path::{Path, PathBuf};
+use std::process::{Command, Output};
+
+fn repository() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../..")
+        .canonicalize()
+        .expect("the repository root resolves")
+}
+
+/// A scratch repository, removed when the case ends.
+///
+/// `label` names the case rather than the process, because cargo runs the
+/// cases of one target as threads of one process.
+struct Root {
+    at: PathBuf,
+}
+
+impl Drop for Root {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.at);
+    }
+}
+
+fn copy_tree(from: &Path, to: &Path) {
+    std::fs::create_dir_all(to).expect("the directory is there");
+    for entry in std::fs::read_dir(from).expect("the package reads") {
+        let entry = entry.expect("the entry reads");
+        let target = to.join(entry.file_name());
+        match entry.path().is_dir() {
+            true => copy_tree(&entry.path(), &target),
+            false => {
+                std::fs::copy(entry.path(), &target).expect("the file copies");
+            }
+        }
+    }
+}
+
+impl Root {
+    /// A tree with the shipped package vendored, so that `init` pins a version
+    /// that `taxonomy resolve` can read, and the files `files` names.
+    fn over(label: &str, files: &[(&str, &str)]) -> Root {
+        let at = std::env::temp_dir().join(format!(
+            "headwater-cli-infer-proposal-{}-{label}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&at);
+        for (path, text) in files {
+            let path = at.join(path);
+            std::fs::create_dir_all(path.parent().expect("a file has a parent"))
+                .expect("the directory is there");
+            std::fs::write(path, text).expect("the document writes");
+        }
+        copy_tree(
+            &repository().join(".headwater/packages/headwater-standard"),
+            &at.join(".headwater/packages/headwater-standard"),
+        );
+        let root = Root { at };
+        let init = root.run(&["init"]);
+        assert_eq!(init.status.code(), Some(0), "init: {}", text(&init.stderr));
+        root
+    }
+
+    fn run(&self, args: &[&str]) -> Output {
+        Command::new(env!("CARGO_BIN_EXE_headwater"))
+            .args(args)
+            .arg("--root")
+            .arg(&self.at)
+            .output()
+            .expect("the binary runs")
+    }
+
+    /// Replace the `add: {}` that `init` writes with `add:` and `lines`. The
+    /// package leaves the namespace of `decision_id` to the corpus, so a
+    /// resolvable overlay states one before anything else.
+    fn overlay(&self, lines: &str) {
+        let path = self.at.join(".headwater/overlay.yml");
+        let written = std::fs::read_to_string(&path).expect("init wrote the overlay");
+        let head = written.strip_suffix("add: {}\n").expect("init ends the overlay with `add: {}`");
+        let body = format!("{head}add:\n  identifier_schemes.decision_id.namespace: ACME\n{lines}");
+        std::fs::write(&path, body).expect("the overlay writes");
+    }
+
+    fn resolve(&self) {
+        let resolve = self.run(&["taxonomy", "resolve"]);
+        assert_eq!(
+            resolve.status.code(),
+            Some(0),
+            "`headwater taxonomy resolve` accepts the overlay:\n{}\n{}",
+            text(&resolve.stdout),
+            text(&resolve.stderr)
+        );
+    }
+
+    fn infer(&self) -> String {
+        let infer = self.run(&["infer", "--now", "2026-01-15"]);
+        assert_eq!(infer.status.code(), Some(0), "infer: {}", text(&infer.stderr));
+        text(&infer.stdout)
+    }
+}
+
+fn text(bytes: &[u8]) -> String {
+    String::from_utf8_lossy(bytes).into_owned()
+}
+
+/// The fragment, cut out of the report as a reader would cut it: the lines
+/// between the line that introduces it and the first blank line after it.
+fn fragment(report: &str) -> String {
+    let mut lines = report.lines().skip_while(|line| !line.contains("under the `add:` key"));
+    lines.next().expect("the report introduces a fragment");
+    lines.take_while(|line| !line.trim().is_empty()).map(|line| format!("{line}\n")).collect()
+}
+
+/// The report section that names what no proposed shelf or kind explains.
+fn leftovers(report: &str) -> Vec<String> {
+    report
+        .lines()
+        .skip_while(|line| !line.contains("no proposed shelf or kind explains"))
+        .skip(1)
+        .take_while(|line| line.starts_with("    "))
+        .map(|line| line.trim().to_owned())
+        .collect()
+}
+
+const RUNBOOK: &str = "---\ntitle: Restart the API\nowner: ops\nservice: api\n---\n\n# Restart the API\n\n## Steps\n\nRestart it.\n\n## Rollback\n\nStart the old build.\n";
+const RUNBOOK_NO_SERVICE: &str = "---\ntitle: Rotate a key\nowner: ops\n---\n\n# Rotate a key\n\n## Steps\n\nRotate it.\n\n## Rollback\n\nRestore the old key.\n";
+
+#[test]
+fn the_fragment_infer_proposes_types_the_documents_it_read() {
+    let root = Root::over(
+        "types",
+        &[
+            ("docs/runbooks/a.md", RUNBOOK),
+            ("docs/runbooks/b.md", RUNBOOK),
+            ("docs/runbooks/c.md", RUNBOOK_NO_SERVICE),
+            ("docs/notes/lone.md", "---\ntitle: A lone note\n---\n\n# A lone note\n"),
+            ("docs/plain/x.md", "# X\n"),
+            ("docs/plain/y.md", "# Y\n"),
+        ],
+    );
+    root.overlay("");
+    root.resolve();
+
+    // Before: the bound taxonomy types none of the three runbooks.
+    let before = root.infer();
+    for runbook in ["a", "b", "c"] {
+        let explained = text(&root.run(&["explain", &format!("docs/runbooks/{runbook}.md")]).stdout);
+        assert!(!explained.contains("\n  kind "), "the base types no runbook:\n{explained}");
+    }
+
+    let proposed = fragment(&before);
+    assert!(proposed.contains("  shelves.runbooks:\n"), "a shelf for the runbooks:\n{before}");
+    assert!(proposed.contains("  kinds.runbooks:\n"), "a kind for the runbooks:\n{before}");
+    assert!(!proposed.contains("notes"), "a lone file is no evidence of a kind:\n{proposed}");
+    assert!(!proposed.contains("plain"), "a file with no front matter is none:\n{proposed}");
+    assert!(proposed.contains("  # docs/runbooks: 3 documents"), "the evidence:\n{proposed}");
+
+    // The fragment goes in unchanged, and resolves.
+    root.overlay(&proposed);
+    root.resolve();
+
+    for runbook in ["a", "b", "c"] {
+        let explained = text(&root.run(&["explain", &format!("docs/runbooks/{runbook}.md")]).stdout);
+        assert!(explained.contains("\n  kind runbooks\n"), "{runbook} is a runbook:\n{explained}");
+        let required = explained
+            .lines()
+            .find(|line| line.contains("requires the facets"))
+            .expect("the kind requires facets");
+        assert!(required.contains("owner"), "every runbook writes `owner`: {required}");
+        assert!(!required.contains("service"), "`c` writes no `service`: {required}");
+        assert!(
+            explained.contains("requires the sections Steps, Rollback"),
+            "the headings every runbook writes:\n{explained}"
+        );
+    }
+
+    let check = text(&root.run(&["check", "--format", "json"]).stdout);
+    assert!(!check.contains("section.required"), "every runbook has its sections:\n{check}");
+    assert!(!check.contains("\"facet.undeclared"), "every key is declared:\n{check}");
+
+    let after = root.infer();
+    let left = leftovers(&after);
+    assert_eq!(
+        left,
+        [
+            "docs/notes/lone.md  alone in its directory",
+            "docs/plain/x.md  no front matter",
+            "docs/plain/y.md  no front matter",
+        ],
+        "{after}"
+    );
+    assert_eq!(left, leftovers(&before), "the report before the fragment names the same files");
+}
+
+#[test]
+fn infer_proposes_nothing_where_every_file_is_shelved() {
+    let root = Root::over(
+        "shelved",
+        &[(
+            "docs/decisions/0001-one.md",
+            "---\nstatus: current\nstatus_since: 2026-01-01\nlast_verified: 2026-01-01\nsummary: One choice.\n---\n\n# One\n\n## Context\n\nA.\n\n## Decision\n\nB.\n\n## Consequences\n\nC.\n",
+        )],
+    );
+    root.overlay("");
+    root.resolve();
+    let report = root.infer();
+    assert!(
+        report.contains("every file the census walked classified, so there is nothing to propose"),
+        "{report}"
+    );
+    assert!(!report.contains("under the `add:` key"), "{report}");
+}
