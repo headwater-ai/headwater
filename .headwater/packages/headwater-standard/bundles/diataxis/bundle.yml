@@ -68,7 +68,7 @@ add:
   # that path dying at an edit. `mutable` would forbid the mode-partitioned site
   # that is the most common reason to adopt the method at all.
   #
-  # No `role`. The role registry is closed at six, none of them is this, and a
+  # No `role`. The role registry is closed at seven, none of them is this, and a
   # role is the only thing about a facet that an emitter may read by name.
   #
   # An adopter who wants the corpus laid out by mode writes this facet into
