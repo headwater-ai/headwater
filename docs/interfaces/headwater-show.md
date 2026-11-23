@@ -3,7 +3,7 @@ id: HW-IFACE-headwater-show
 status: current
 status_since: 2026-09-27
 summary: "headwater show prints the bytes of one document as they are on disk, found by path or identifier through the resolver that explain uses."
-last_verified: 2026-10-13
+last_verified: 2026-11-23
 title: "headwater show"
 relations:
   governs:
@@ -27,7 +27,7 @@ The target is a path under the corpus root or an identifier declared by a docume
 
 `headwater show` prints the content of one document. It writes the bytes of the file exactly as they are on disk, and it writes nothing else. It does not decode the text, render the Markdown or add a newline at the end. A reader who redirects standard output to a file gets a copy of the document.
 
-The verb finds the document with the same function that [`headwater explain`](headwater-explain.md) uses. A target that `explain` resolves, `show` resolves to the same file. A target that `explain` refuses, `show` refuses with the same sentence on standard error.
+The verb finds the document with the same function that [`headwater explain`](headwater-explain.md) uses. A document that `explain` resolves, `show` resolves to the same file. A target that `explain` refuses, `show` refuses with the same sentence on standard error. `explain` also answers for a code file that a document governs ([#1968](https://github.com/headwater-ai/headwater/issues/1968)). `show` refuses that file with the sentence of its state, because the file is not a document.
 
 Use `explain` to learn what a document is. Use `show` to read what it says, by its identifier, when you do not know its path.
 
@@ -54,7 +54,7 @@ An identifier resolves only to a typed document. An untyped document resolves on
 
 **1** means that the target was missing or is a row that the walk could not read, or that the file could not be read. It also means that the command line was invalid or the repository could not load. A missing target writes its refusal to standard error and no byte to standard output. A bare `headwater show` writes "`show` takes a path or an identifier".
 
-**A missing target states one of five things.** The five states and their sentences are the table in the Exit status section of [`headwater explain`](headwater-explain.md#exit-status). `show` writes the same sentence as `explain` for each target, because one function writes the refusal for both verbs.
+**A missing target states one of five things.** The five states and their sentences are the table in the Exit status section of [`headwater explain`](headwater-explain.md#exit-status). `show` writes the same sentence as `explain` for each target that both refuse, because one function writes the refusal for both verbs.
 
 **A row that the walk could not read is refused in the sentence of `explain`.** `explain` refuses such a row, and `show` writes the same sentence with its own name as the verb. The sentence names the path and the reason, and it ends "so `show` prints nothing". For a symlink, the reason names the target of the link. `show` writes no byte to standard output ([#1366](https://github.com/headwater-ai/headwater/issues/1366)).
 

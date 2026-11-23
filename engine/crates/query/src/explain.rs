@@ -24,9 +24,10 @@
 //! and so no requirements. A verb that answered only for documents that already
 //! worked would be a verb nobody needs.
 
-use crate::{Neighbour, Surface};
+use crate::{Neighbour, Pointer, Surface};
 use headwater_census::census::Outcome;
 use headwater_check::paint::{dim, paint, ColorMode, Role};
+use std::path::Path;
 
 /// One document, explained.
 #[derive(Clone, Debug)]
@@ -271,6 +272,129 @@ impl Explanation {
             ));
         }
         out
+    }
+}
+
+/// What `headwater explain` found for a target: a document, or a code file and
+/// the documents that govern it (#1968). The explanation is boxed because it
+/// is six times the size of the other variant.
+#[derive(Clone, Debug)]
+pub enum Answer {
+    Document(Box<Explanation>),
+    Governed(Governed),
+}
+
+/// A code file, and the documents whose governing edges reach it.
+///
+/// `docs/interfaces/headwater-explain.md` states when `explain` answers with
+/// this: the file is on the tree, it is not a census row, and at least one
+/// governing edge reaches it. A path with no file keeps its refusal, because
+/// `.claude/hooks/write.sh` reads that refusal for a document not yet written.
+#[derive(Clone, Debug)]
+pub struct Governed {
+    pub path: String,
+    pub pointers: Vec<Pointer>,
+}
+
+impl Surface<'_> {
+    /// The documents that govern `relative`, a path that
+    /// [`headwater_census::walk::within`] read inside `root`. A path that
+    /// reaches its file through a link inside the root also gets the
+    /// documents that govern the file at the end of the link (#1433). The MCP
+    /// `governing_docs_for_path` tool and `explain` both read this, so the two
+    /// answer one list.
+    pub fn governing_docs_reached(&self, root: &Path, relative: &str) -> Vec<Pointer> {
+        let mut governing = self.governing_docs_for_path(relative);
+        let resolved =
+            headwater_census::walk::real_within(root, relative).filter(|path| path != relative);
+        if let Some(path) = resolved {
+            for pointer in self.governing_docs_for_path(&path) {
+                if !governing.iter().any(|seen| seen.path == pointer.path) {
+                    governing.push(pointer);
+                }
+            }
+        }
+        governing
+    }
+
+    /// The code-file answer of `explain` for `relative`, and `None` where
+    /// there is no regular file there or no governing edge reaches it.
+    pub fn explain_code(&self, root: &Path, relative: &str) -> Option<Governed> {
+        if !root.join(relative).is_file() {
+            return None;
+        }
+        let pointers = self.governing_docs_reached(root, relative);
+        match pointers.is_empty() {
+            true => None,
+            false => Some(Governed {
+                path: relative.to_string(),
+                pointers,
+            }),
+        }
+    }
+}
+
+impl Governed {
+    /// The answer as text: the path, then one `governed by` line for each
+    /// document, with the pointer `route` writes and the identifier below it.
+    pub fn render(&self, mode: ColorMode) -> String {
+        let mut out = format!("{}\n", paint(Role::Path, &self.path, mode));
+        for pointer in &self.pointers {
+            out.push_str(&format!(
+                "  {} {}\n",
+                dim("governed by", mode),
+                pointer.render()
+            ));
+            if let Some(id) = &pointer.id {
+                out.push_str(&format!("    {id}\n"));
+            }
+        }
+        out
+    }
+}
+
+/// The sentence a refusal prints for a target shaped like an identifier of
+/// this corpus that no document declares.
+///
+/// [#845](https://github.com/headwater-ai/headwater/issues/845): the four
+/// states of [`classification_text`] are a reading of a path, and printing
+/// one of them for an identifier told a reader something true and irrelevant
+/// — "outside every corpus root" reads as evidence the identifier is
+/// somewhere else, when the honest answer is that this corpus does not carry
+/// it. This sentence does not say whether the identifier is a typo or an
+/// invention, or whether an untyped document carries it: that finer read is
+/// `resolve_identifier`'s, over `headwater mcp`.
+pub fn identifier_text(target: &str) -> String {
+    format!("`{target}` is shaped like an identifier of this corpus, and no document declares it")
+}
+
+/// The sentence a refusal prints for a target with no document, one per state
+/// of [`headwater_census::walk::Classification`].
+///
+/// A closed match rather than a `Display` on the type itself: the type lives
+/// in `headwater_census`, which states facts about a corpus to every crate
+/// that reads it, and the words a caller reads belong beside the other
+/// sentences `explain` and `show` print, such as [`crate::outside_text`].
+pub fn classification_text(
+    target: &str,
+    classification: &headwater_census::walk::Classification,
+) -> String {
+    use headwater_census::walk::Classification;
+    match classification {
+        Classification::Corpus => {
+            format!("`{target}` is a path of this corpus, with no document written there yet")
+        }
+        Classification::Excluded(pattern) => {
+            format!("`{target}` is excluded by `{pattern}`, so it is not corpus content")
+        }
+        Classification::Outside => {
+            format!("`{target}` is outside every corpus root this repository declares")
+        }
+        // #1227: this state is reached by a path that leaves the repository,
+        // absolute, by `..` or through a symlink (#1249), and by a segment
+        // that is not UTF-8, so the sentence names both. It is the one
+        // sentence every path route prints, so it is not written here.
+        Classification::Unclassifiable => crate::outside_text(target),
     }
 }
 

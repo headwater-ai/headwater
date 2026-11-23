@@ -946,19 +946,7 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
             // answered for that file as well, as the verb answers it (#1433).
             // `within` stays lexical, so the refusal of #1249 is unchanged.
             let governing = match &reached {
-                Some(relative) => {
-                    let mut governing = surface.governing_docs_for_path(relative);
-                    let resolved = headwater_census::walk::real_within(server.root, relative)
-                        .filter(|path| path != relative);
-                    if let Some(path) = resolved {
-                        for pointer in surface.governing_docs_for_path(&path) {
-                            if !governing.iter().any(|seen| seen.path == pointer.path) {
-                                governing.push(pointer);
-                            }
-                        }
-                    }
-                    governing
-                }
+                Some(relative) => surface.governing_docs_reached(server.root, relative),
                 None => Vec::new(),
             };
             structured = Some(crate::json::pointers_value(&governing));

@@ -93,6 +93,12 @@ pub fn pointers_value(pointers: &[Pointer]) -> Json {
     )])
 }
 
+/// The code-file answer of `explain` as JSON: [`pointers_value`], so it is
+/// the `structuredContent` of the MCP `governing_docs_for_path` tool (#1968).
+pub fn governed(governed: &crate::explain::Governed) -> String {
+    pointers_value(&governed.pointers).render_pretty()
+}
+
 /// One explanation as JSON.
 pub fn explain(explanation: &Explanation) -> String {
     explain_bounded(explanation, None)
