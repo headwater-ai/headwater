@@ -136,6 +136,55 @@ fn a_blocking_control_fails_a_strict_run_on_a_warning() {
     );
 }
 
+/// Arm F: severity does not decide it. A `governs` edge whose target is a
+/// directory has no digest, so `relation.target.suspect` reports it at `info`.
+/// Under the advisory base the strict run passes, and with CT-REL-6 promoted
+/// the same `info` finding fails it.
+#[test]
+fn a_blocking_control_fails_a_strict_run_on_an_info_finding() {
+    let directory = |label: &str, overlay: &'static str| {
+        Root::shaped(label, move |at| {
+            std::fs::create_dir_all(at.join("tools/dir")).expect("the directory is made");
+            std::fs::write(at.join("tools/dir/a.sh"), "echo a\n").expect("the file writes");
+            let (path, text) = decision(
+                "HW-DR-0002",
+                "0002-the-decision-whose-edge-went-stale.md",
+                "tools/dir",
+            );
+            std::fs::write(at.join(path), text).expect("the decision writes");
+            claim(at);
+            let file = at.join(".headwater/overlay.yml");
+            let mut source = std::fs::read_to_string(&file).expect("the overlay reads");
+            source.push_str(overlay);
+            std::fs::write(&file, source).expect("the overlay writes");
+        })
+    };
+    let info = "info\n    relation.target.suspect (";
+
+    let advisory = directory("posture-info-advisory", "");
+    let passed = advisory.run(&["check", "--strict"]);
+    assert_eq!(passed.code, Some(0), "{passed:?}");
+    assert_eq!(passed.out.matches(info).count(), 1, "{}", passed.out);
+
+    let blocking = directory("posture-info-blocking", PROMOTE);
+    let failed = blocking.run(&["check", "--strict"]);
+    assert_eq!(
+        failed.code,
+        Some(1),
+        "an info finding that a blocking control discharges fails --strict\n{}{}",
+        failed.out,
+        failed.err
+    );
+    assert_eq!(failed.out.matches(info).count(), 1, "{}", failed.out);
+    assert!(
+        failed
+            .out
+            .contains("relation.target.suspect blocked by CT-REL-6"),
+        "{}",
+        failed.out
+    );
+}
+
 /// Arm C, the ratchet: the adoption block holds a finding that a blocking
 /// control discharges, and a new finding of the same rule still fails.
 #[test]
