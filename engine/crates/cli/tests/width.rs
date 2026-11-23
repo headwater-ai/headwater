@@ -950,6 +950,8 @@ fn the_default_report_leaves_out_the_read_set_and_verbose_writes_it() {
 
     for machine in [
         &["--verbose", "--format", "json"][..],
+        &["--verbose", "--format", "sarif"],
+        &["--verbose", "--format", "markdown"],
         &["--verbose", "--json"],
     ] {
         let refused = report(machine, None);
