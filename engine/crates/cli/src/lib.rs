@@ -372,8 +372,9 @@ pub enum Verb {
     Check {
         #[arg(
             long,
-            help = "exit non-zero when a finding is an error. Without it the run is advisory and \
-                    always exits 0, which is the default spec 6 fixes"
+            help = "exit non-zero when a finding is an error, or when a control declared \
+                    `posture: blocking` discharges a finding of any severity. Without it the run \
+                    is advisory and always exits 0, which is the default spec 6 fixes"
         )]
         strict: bool,
         #[arg(

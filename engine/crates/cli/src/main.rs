@@ -6785,9 +6785,11 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
         return Ok(ExitCode::FAILURE);
     }
 
-    // The thirteenth reason under *Exit status*: a strict run by an engine the
-    // corpus did not ask for is not a gate the corpus passed.
-    if strict && (run.has_errors() || engine_unmet) {
+    // Two reasons under *Exit status*. A live finding is an error, or one a
+    // `posture: blocking` control discharges, at any severity (#2015). And a
+    // strict run by an engine the corpus did not ask for is not a gate the
+    // corpus passed.
+    if strict && (run.fails_strict() || engine_unmet) {
         return Ok(ExitCode::FAILURE);
     }
     Ok(ExitCode::SUCCESS)

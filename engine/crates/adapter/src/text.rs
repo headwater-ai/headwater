@@ -143,6 +143,20 @@ pub fn render_at(
         &indent(&run.render(headwater_check::Detail::Findings, mode)),
         width,
     ));
+    // What stops a strict run below `error`: each live finding that a
+    // `posture: blocking` control discharges, with that control (#2015).
+    // Written whether or not `--strict` was passed, because this report does
+    // not depend on the flag, and left out when empty. A record carries no
+    // severity word, so the census audit does not read it as a second record
+    // of the finding it names.
+    let blocking = blocks_strict(run);
+    if !blocking.is_empty() {
+        out.push_str(&format!(
+            "\n{}\n",
+            paint(Role::Heading, "blocks a strict run", mode)
+        ));
+        out.push_str(&fill::filled(&indent(&blocking), width));
+    }
     // The escaped findings, each marked with what holds it. Checks and cache:
     // "A suppressed finding is in the output, and it is marked. A live finding,
     // a `migration-pending` finding and a suppressed one are three different
@@ -193,6 +207,20 @@ fn not_reported(run: &Run, mode: ColorMode) -> String {
         ));
     }
     out
+}
+
+/// One record for each live finding a blocking control discharges: its place on
+/// the first line, and its rule and the control on the second. Empty when no control blocks a live finding.
+fn blocks_strict(run: &Run) -> String {
+    run.blocking()
+        .into_iter()
+        .map(|(finding, control)| {
+            format!(
+                "{}:{}:{}\n  {} blocked by {control}\n",
+                finding.path, finding.line, finding.column, finding.rule
+            )
+        })
+        .collect()
 }
 
 /// Every line moved two spaces right, and a blank line left blank.

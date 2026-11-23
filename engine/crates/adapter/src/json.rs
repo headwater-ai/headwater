@@ -99,6 +99,13 @@ use std::collections::HashSet;
 /// a pair whose document no row holds only by that document's path in
 /// `unmatched` (#1631).
 ///
+/// `1.7` added `blocked_by` to a live finding that a `posture: blocking`
+/// control discharges: the identifier of that control. Such a finding stops a
+/// strict run whatever its severity. A `1.7` finding without the member is not
+/// blocked by any control. A `1.6` document said nothing of posture, so a
+/// consumer could not tell from it why a strict run over a corpus with no
+/// error failed (#2015).
+///
 /// Two of the shapes here have a second reader: [`change`] and [`coverage`] are
 /// what the SARIF property bag carries, so this constant versions them for that
 /// artifact too and [`crate::sarif`] writes it there.
@@ -106,7 +113,7 @@ use std::collections::HashSet;
 /// `docs/interfaces/headwater-check.md` states this history for a reader who
 /// holds no clone, and `tests/interface_page.rs` fails when this constant
 /// names a version the page does not (#1451). Raise both together.
-pub const VERSION: &str = "1.6";
+pub const VERSION: &str = "1.7";
 
 /// What a run carries that these bytes do not write.
 ///
@@ -478,6 +485,12 @@ fn finding(entry: &Reported<'_>) -> Json {
             None => Json::string("none"),
         },
     ));
+    // Why a live finding below `error` stops a strict run: the control that
+    // blocks it (#2015). Written whether or not `--strict` was passed, because
+    // these bytes do not depend on the flag.
+    if let Some(control) = entry.blocked_by {
+        members.push(("blocked_by", Json::string(control)));
+    }
     if let Some(task) = entry.task {
         members.push((
             "held_by",
