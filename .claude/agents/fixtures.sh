@@ -184,6 +184,9 @@ fi
 upkeep_rows='agents/hw-build.md@x@    UPKEEP: ran | not run, no Agent tool
 agents/hw-build.md@F@write `UPKEEP: not run, no Agent tool` in your block, and write the same line under the heading `## Upkeep (headwater-maintainer)` in `build.md` and in the pull request body.
 agents/hw-build.md@F@search inline, and the count of dispatches is 0 for that reason
+agents/hw-build.md@F@fix a Stale sentence your change made false, push, and return
+agents/hw-iterate.md@F@Before the verify, dispatch `headwater-maintainer` yourself with `isolation: "worktree"`
+agents/hw-iterate.md@F@and to diff `origin/main...HEAD`
 agents/hw-iterate.md@F@parts verbatim to the builder'"'"'s id by `SendMessage`
 agents/hw-iterate.md@F@dispatch the verify only when the builder returns.
 commands/next.md@F@from a top-level session, never from a subagent.'
