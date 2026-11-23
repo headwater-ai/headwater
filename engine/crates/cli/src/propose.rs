@@ -215,7 +215,7 @@ fn block(at: &str, name: &str, members: &[&Row], facets: &mut BTreeSet<String>) 
     // both in the order the documents write them.
     let mut seen: Vec<String> = Vec::new();
     for document in &documents {
-        for entry in document.facets.iter() {
+        for entry in &document.facets {
             let key = &entry.key.value;
             if !seen.contains(key) {
                 seen.push(key.clone());
