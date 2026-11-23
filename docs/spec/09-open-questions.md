@@ -115,7 +115,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 ## 37 — Which parts of the site are hand-built and which are a projection of this corpus
 
-[HW-DR-0037](../decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md) — Everything under `site/` is hand-built and the corpus is the generated projection. A hand-built page states no figure a person typed, and nothing checks that.
+[HW-DR-0037](../decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md) — Everything under `site/` is hand-built and the corpus is the generated projection. A hand-built page states no figure a person typed, except that the home page may quote a figure from a committed evaluation that it links. Nothing checks either rule.
 
 ## 16 — Public presence
 

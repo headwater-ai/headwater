@@ -2,7 +2,7 @@
 id: HW-DR-0037
 status: current
 status_since: 2026-08-30
-summary: "Everything under `site/` is hand-built and the corpus is the generated projection. A hand-built page states no figure a person typed, and nothing checks that."
+summary: "Everything under `site/` is hand-built and the corpus is the generated projection. A hand-built page states no figure a person typed, except that the home page may quote a figure from a committed evaluation that it links. Nothing checks either rule."
 last_verified: 2026-08-30
 title: "37 — Which parts of the site are hand-built and which are a projection of this corpus"
 provenance:
@@ -57,6 +57,16 @@ relations:
 **Nothing checks any of this, and the record states that rather than imply a gate.** `.headwater/corpus.json` declares one corpus root, `docs`, so `headwater check` reads no file under `site/`. A wider root would not reach these pages either. `census.rs` returns "not a document" for a path that does not end in `.md`, and every page under `site/` is HTML. What holds the rule is the reader of a pull request. This repository already carries a rule of that shape and states the same absence. `CLAUDE.md` requires an `## ELI5` section on every issue. It then states that no hook, no rule and no CI job reads an issue body.
 
 **Three conditions would have to hold before a check could reach this rule, and none holds today.** A corpus root that admits `site/`, which [Q29](0029-q29-whether-a-corpus-root-may-contain-code-and-what-an-interface-contract-may-reach.md) already admits for code. A census that classifies an HTML file rather than reporting it as not a document. A rule that reads a digit in body text and asks for the link beside it. Each is an engine change or a taxonomy change, and this record proposes neither.
+
+**Amended 2026-11-23: the home page may quote a figure as typed text when a committed evaluation carries the figure and the page links that evaluation.** The first text admitted two forms, and a typed figure was neither. The owner ruled on 2026-11-23: "amend HW-DR-0037 so the homepage can quote figures". [#2031](https://github.com/headwater-ai/headwater/pull/2031) carries the amendment and the first page that uses it. This third form has three conditions, and each one is narrow:
+
+- The page is `site/index.html`, and no other page under `site/` gets the form.
+- Each figure is copied without change from an evaluation under `docs/evaluations/` that is committed to this repository, with the scope that the evaluation gives it.
+- The page links that evaluation, so a reader can follow the link to the measurement.
+
+A figure about a third party stays refused under every form. A figure that a run of the engine produces stays a `data-figure` element that the page commits empty, as [HW-DR-0097](0097-a-figure-on-a-hand-built-page-is-measured-when-the-site-is-published-and-the-committed-page-carries-none.md) rules. This record is not superseded, and the other clauses do not change.
+
+**No check holds a typed figure on the home page against its evaluation.** Case 5f of `tools/repo/readme-fixtures.sh` holds each figure in the Status blockquote of the README against the evaluations that the blockquote links. That case does not read `site/index.html`. So an edit to a figure in the evaluation leaves the home page wrong and every check green. The reader of a pull request holds this form, as that reader holds the rest of this record.
 
 ## Consequences
 

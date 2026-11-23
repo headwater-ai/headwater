@@ -143,8 +143,11 @@
 #   stands under `docs/probe-results/`, and 5e refuses a retired `M<n>` or
 #   `M<n>b` milestone label, which HW-PD-0008 replaced with versions. 5f
 #   refuses a figure in the README's Status blockquote that no evaluation the
-#   blockquote links carries. It reads the README alone, because the three
-#   pages quote no figure. None of the three holds the names of the open
+#   blockquote links carries. It reads the README alone. `proof/` and
+#   `compare/` quote no figure. Since the amendment of 2026-11-23 to
+#   HW-DR-0037 the home page quotes figures from an evaluation that it links,
+#   and no case here holds those figures against that evaluation. None of the
+#   three pages holds the names of the open
 #   version milestones, or whether a figure stands in the same row of its
 #   evaluation as the README places it.
 #
