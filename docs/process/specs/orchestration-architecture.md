@@ -3,7 +3,7 @@ id: HW-SPEC-orchestration-architecture
 status: current
 status_since: 2026-09-22
 summary: "The six stages of a build-order run, what each one owns and never does, where the veto sits, and how claims order the merges."
-last_verified: 2026-10-24
+last_verified: 2026-11-23
 title: "Orchestration architecture"
 provenance:
   warrant: asserted
@@ -27,29 +27,29 @@ relations:
     - HW-PD-0025
   governs:
     - to: .claude/commands/next-run.md
-      verified_revision: sha256:3df8b71b341db52c236143673c32f6129ed8b36a61439b0e8dc2854af4870fa0
+      verified_revision: sha256:ff3bf7ab2aa540db97e647fd5d912d6b374c7cc86e974c06776a628196a81918
     - to: .claude/commands/next.md
-      verified_revision: sha256:69dd88bcbea169b0f42438d67e4627716f847128982ea38072a6857e4188d530
+      verified_revision: sha256:65438398940081eb75033a65eeb674007624aea69b885aaded52eeb0e0d93f4c
     - to: .claude/commands/next-experiment.md
-      verified_revision: sha256:089798682f64b9be0d5797a27450a75cc498ac50cd8cc496de7d845cb0f658e5
+      verified_revision: sha256:270efc411caed5a020fb846c7a09eac2f54e5d90554af816a098a5523435f7b5
     - to: .claude/agents/hw-queue.md
-      verified_revision: sha256:068867244132e4afb411b7c743cddf156eb58b957a13f902e23ce0bb2a83d664
+      verified_revision: sha256:9de674029827069d8f6fbda962e1d70929fed914ddc6c13c5288f28cff233e37
     - to: .claude/agents/hw-adjudicate.md
-      verified_revision: sha256:d33ccaa7b073f82caccf0a48b66fb933a96d518b9e4ab78a5c63c85190dd3045
+      verified_revision: sha256:f592617ef3457700823611f9bcecfb5fc2c898bd580150b9cd6abdb90f18f0e0
     - to: .claude/agents/hw-iterate.md
-      verified_revision: sha256:d611defd41b37a8039c0ffb5270626e09f71454e7c32ead30d5b53aa5286f7a2
+      verified_revision: sha256:d313e7a24da8b6e751c7afa1465262f0f8bf4e5a463d9c97a29c34b3f85abeae
     - to: .claude/agents/hw-build.md
-      verified_revision: sha256:d5de6de1a60172f6f0a3496cae347dfb9cdfd9c364d856927ad82932928d977a
+      verified_revision: sha256:514d9bd8928adead987b1a24cc5ad55bb2aa46b8bd8c42346610acf2d7434c77
     - to: .claude/agents/hw-verify.md
-      verified_revision: sha256:45ed3ef085a7f964e882d7658c2103dea6c1a3f5d2375c4703966f133672921c
+      verified_revision: sha256:1608411f1139430ff5dbc7cf4f3743162a54831d6d553f4e7f9cefdaed8ba165
     - to: .claude/agents/hw-integrate.md
-      verified_revision: sha256:2b9a3b297f09fd03d49fe57e280653dc610bd8cc85e091d504ec03909af295dc
+      verified_revision: sha256:6b3591141c22065cf43157c6da45fc1a9e588ce574c9d284b4defeb3f627e112
     - to: .claude/skills/hw-run-policy/SKILL.md
-      verified_revision: sha256:d480435d17740e1626d729bae8b2181dccd8e986786bcb0f659f9892fcf1a129
+      verified_revision: sha256:90e6375ab97876c5fd9d19e0898f7ddfb769a885d1ca2aab240942c821af2472
     - to: .claude/agents/fixtures.sh
-      verified_revision: sha256:b0f901dc2619103476341f3c6aa616f4ca215b68fcf3b668b7d2698b7a377cd6
+      verified_revision: sha256:185333ea04efeea26addf2257a14883a7f834927f0b084e7819de99c1525302f
     - to: .claude/skills/hw-verification-bar/SKILL.md
-      verified_revision: sha256:a68ce6b14b5a8d7068aeafd8c7443e0497a55b4e444e2b971daa1da738c2153b
+      verified_revision: sha256:369e10d5bb2d2c41ff9c3e5e377412e364320128368c8e4fa1e8a37a7f2976c7
 ---
 
 # Orchestration architecture
