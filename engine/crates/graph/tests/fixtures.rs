@@ -626,3 +626,142 @@ fn an_imported_edge_and_an_authored_edge_differ_in_the_graph() {
         }
     }
 }
+
+/// A small corpus written into a scratch directory beside the fixture
+/// taxonomy, removed when it drops. The test name keys it, because cargo runs
+/// the cases of one target as threads of one process and a pid alone races.
+struct Scratch(PathBuf);
+
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+fn scratch_corpus(name: &str, files: &[(&str, &str)]) -> (Scratch, Graph) {
+    let dir = Scratch(std::env::temp_dir().join(format!(
+        "headwater-graph-{name}-{}",
+        std::process::id()
+    )));
+    let _ = std::fs::remove_dir_all(&dir.0);
+    for (path, text) in files {
+        let at = dir.0.join(path);
+        std::fs::create_dir_all(at.parent().expect("a parent")).expect("mkdir");
+        std::fs::write(&at, text).expect("write");
+    }
+    let corpus = Corpus::new(dir.0.clone(), "graph");
+    let root = load_map(&fixtures_dir().join("graph.taxonomy.yml"));
+    let taxonomy = Taxonomy::read(&root).expect("the fixture taxonomy reads");
+    let declarations = Declarations::read(&root).expect("the fixture declarations read");
+    let taken = census::take(&corpus, &taxonomy);
+    let config = Config {
+        former_identifier_facet: Some("former_ids".to_string()),
+        ..Config::default()
+    };
+    let graph = Graph::build(
+        &taken,
+        &declarations,
+        &Resolvers::over(&corpus),
+        &corpus,
+        &config,
+    );
+    (dir, graph)
+}
+
+/// A former identifier names the document that carried it (#2025).
+///
+/// [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#identifiers)
+/// says that given an identifier and nothing else, the engine resolves it to a
+/// path. A document that changed its identifier lists the old one, and an edge
+/// written to the old one binds to the document under its live identifier.
+#[test]
+fn a_former_identifier_resolves_to_the_document_that_carried_it() {
+    let (_dir, graph) = scratch_corpus(
+        "former",
+        &[
+            (
+                "graph/evaluations/renamed.md",
+                "---\nid: EVAL-FIX-new\nformer_ids:\n  - EVAL-OLD-7\n---\n\n# Renamed\n",
+            ),
+            (
+                "graph/spec/citer.md",
+                "---\nid: SPEC-FIX-citer\ndoc_type: design_spec\nrelations:\n  traces_to:\n    - EVAL-OLD-7\n---\n\n# Citer\n",
+            ),
+        ],
+    );
+
+    let edge = graph
+        .edges
+        .iter()
+        .find(|edge| edge.raw_target == "EVAL-OLD-7")
+        .expect("the edge written to the former identifier");
+    assert!(
+        matches!(&edge.target, Target::Document { id, path, .. }
+            if id == "EVAL-FIX-new" && path == "graph/evaluations/renamed.md"),
+        "{:?}",
+        edge.target
+    );
+
+    let node = graph
+        .index
+        .node("EVAL-OLD-7")
+        .expect("a former identifier names a node");
+    assert_eq!(node.id, "EVAL-FIX-new", "the node answers its live identifier");
+    assert!(
+        graph.index.defects.is_empty(),
+        "one former identifier on one document is no defect: {:?}",
+        graph.index.defects
+    );
+}
+
+/// A former identifier is never reused either, so one that equals a live
+/// identifier, or that two documents list, is an identifier claimed twice.
+#[test]
+fn a_former_identifier_claimed_twice_is_a_duplicate() {
+    let (_dir, graph) = scratch_corpus(
+        "former-twice",
+        &[
+            (
+                "graph/evaluations/a.md",
+                "---\nid: EVAL-FIX-a\nformer_ids: [EVAL-OLD-9]\n---\n\n# A\n",
+            ),
+            (
+                "graph/evaluations/b.md",
+                "---\nid: EVAL-FIX-b\nformer_ids: [EVAL-OLD-9]\n---\n\n# B\n",
+            ),
+            (
+                "graph/evaluations/c.md",
+                "---\nid: EVAL-FIX-c\nformer_ids: [EVAL-FIX-a]\n---\n\n# C\n",
+            ),
+        ],
+    );
+
+    let duplicates: Vec<(&str, &str, &str)> = graph
+        .index
+        .defects
+        .iter()
+        .filter_map(|reported| match &reported.defect {
+            headwater_graph::index::Defect::Duplicate { id, other, .. } => {
+                Some((reported.path.as_str(), id.as_str(), other.as_str()))
+            }
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        duplicates,
+        vec![
+            (
+                "graph/evaluations/b.md",
+                "EVAL-OLD-9",
+                "graph/evaluations/a.md"
+            ),
+            (
+                "graph/evaluations/c.md",
+                "EVAL-FIX-a",
+                "graph/evaluations/a.md"
+            ),
+        ],
+        "{:?}",
+        graph.index.defects
+    );
+}
