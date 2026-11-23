@@ -32,6 +32,8 @@ fn repository() -> PathBuf {
 /// cases of one target as threads of one process.
 struct Root {
     at: PathBuf,
+    /// The overlay `init` wrote, which every `overlay` call starts from.
+    written: String,
 }
 
 impl Drop for Root {
@@ -73,9 +75,11 @@ impl Root {
             &repository().join(".headwater/packages/headwater-standard"),
             &at.join(".headwater/packages/headwater-standard"),
         );
-        let root = Root { at };
+        let mut root = Root { at, written: String::new() };
         let init = root.run(&["init"]);
         assert_eq!(init.status.code(), Some(0), "init: {}", text(&init.stderr));
+        root.written = std::fs::read_to_string(root.at.join(".headwater/overlay.yml"))
+            .expect("init wrote the overlay");
         root
     }
 
@@ -93,8 +97,7 @@ impl Root {
     /// resolvable overlay states one before anything else.
     fn overlay(&self, lines: &str) {
         let path = self.at.join(".headwater/overlay.yml");
-        let written = std::fs::read_to_string(&path).expect("init wrote the overlay");
-        let head = written.strip_suffix("add: {}\n").expect("init ends the overlay with `add: {}`");
+        let head = self.written.strip_suffix("add: {}\n").expect("init ends the overlay with `add: {}`");
         let body = format!("{head}add:\n  identifier_schemes.decision_id.namespace: ACME\n{lines}");
         std::fs::write(&path, body).expect("the overlay writes");
     }
@@ -192,9 +195,21 @@ fn the_fragment_infer_proposes_types_the_documents_it_read() {
         );
     }
 
+    // What the check still finds is the debt of the base kind and nothing the
+    // fragment caused: each runbook lacks the four facets `governed_document`
+    // requires and the identifier the base kind has no scheme for. A missing
+    // section, or a required key the fragment named wrong, is a finding more.
     let check = text(&root.run(&["check", "--format", "json"]).stdout);
-    assert!(!check.contains("section.required"), "every runbook has its sections:\n{check}");
-    assert!(!check.contains("\"facet.undeclared"), "every key is declared:\n{check}");
+    let findings = check.split("\"findings\": [").nth(1).expect("the report lists findings");
+    let mut rules: Vec<&str> = findings
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix("\"rule\": \""))
+        .map(|rule| rule.trim_end_matches(['"', ',']))
+        .collect();
+    rules.sort_unstable();
+    rules.dedup_by(|a, b| a == b);
+    assert_eq!(rules, ["facet.required.missing", "identifier.unusable"], "{findings}");
+    assert_eq!(findings.matches("\"facet.required.missing\"").count(), 12, "{findings}");
 
     let after = root.infer();
     let left = leftovers(&after);
@@ -208,6 +223,71 @@ fn the_fragment_infer_proposes_types_the_documents_it_read() {
         "{after}"
     );
     assert_eq!(left, leftovers(&before), "the report before the fragment names the same files");
+}
+
+/// The rules of the findings a check reports, each once, sorted.
+fn rules_found(check: &str) -> Vec<String> {
+    let findings = check.split("\"findings\": [").nth(1).expect("the report lists findings");
+    let mut rules: Vec<String> = findings
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix("\"rule\": \""))
+        .map(|rule| rule.trim_end_matches(['"', ',']).to_owned())
+        .collect();
+    rules.sort_unstable();
+    rules.dedup();
+    rules
+}
+
+/// The slug rule's three steps, and the keys a fragment must not name, on one
+/// tree. Two directories end in `notes`, so each takes its whole path. The
+/// base package declares `decisions`, so a `decisions` directory outside its
+/// shelf takes its whole path too. Every document writes `relations`, which
+/// holds edges, and a key with a dot, which no dotted overlay path can name,
+/// and a heading that YAML would read as a mapping if it went unquoted.
+#[test]
+fn the_fragment_names_each_directory_once_and_resolves_where_names_collide() {
+    const NOTE: &str = "---\ntitle: A note\nrelations:\n  traces_to: [ACME-1]\n\"odd.key\": 1\ntags: [x, y]\n---\n\n## Why: \"this\" heading\n\nBecause.\n";
+    const OLD: &str = "---\ntitle: An old decision\n---\n\n## Context\n\nThen.\n";
+    let root = Root::over(
+        "collide",
+        &[
+            ("docs/a/notes/1.md", NOTE),
+            ("docs/a/notes/2.md", NOTE),
+            ("docs/b/notes/1.md", NOTE),
+            ("docs/b/notes/2.md", NOTE),
+            ("docs/old/decisions/1.md", OLD),
+            ("docs/old/decisions/2.md", OLD),
+            ("docs/My-Guides/1.md", OLD),
+            ("docs/My-Guides/2.md", OLD),
+        ],
+    );
+    root.overlay("");
+    root.resolve();
+    let proposed = fragment(&root.infer());
+    for name in ["docs_a_notes", "docs_b_notes", "docs_old_decisions", "my_guides"] {
+        assert!(proposed.contains(&format!("  kinds.{name}:\n")), "{name}:\n{proposed}");
+        assert!(proposed.contains(&format!("  shelves.{name}:\n")), "{name}:\n{proposed}");
+    }
+    assert_eq!(proposed.matches("  facets.tags:").count(), 1, "one declaration:\n{proposed}");
+    assert!(!proposed.contains("facets.relations"), "{proposed}");
+    assert!(!proposed.contains("require: [title, relations"), "{proposed}");
+    assert!(!proposed.contains("facets.odd"), "{proposed}");
+    assert!(proposed.contains("It leaves out relations, odd.key"), "{proposed}");
+
+    root.overlay(&proposed);
+    root.resolve();
+    for (path, kind) in [
+        ("docs/a/notes/1.md", "docs_a_notes"),
+        ("docs/b/notes/2.md", "docs_b_notes"),
+        ("docs/old/decisions/1.md", "docs_old_decisions"),
+        ("docs/My-Guides/2.md", "my_guides"),
+    ] {
+        let explained = text(&root.run(&["explain", path]).stdout);
+        assert!(explained.contains(&format!("\n  kind {kind}\n")), "{path}:\n{explained}");
+    }
+    let check = text(&root.run(&["check", "--format", "json"]).stdout);
+    assert_eq!(rules_found(&check), ["facet.required.missing", "identifier.unusable"], "{check}");
+    assert!(root.infer().contains("every file the census walked classified"));
 }
 
 #[test]

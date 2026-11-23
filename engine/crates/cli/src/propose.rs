@@ -211,6 +211,7 @@ fn block(at: &str, name: &str, members: &[&Row], facets: &mut BTreeSet<String>) 
     let every = |key: &str| documents.iter().all(|document| document.facets.get(key).is_some());
     let require: Vec<&String> = seen.iter().filter(|key| nameable(key) && every(key)).collect();
     let optional: Vec<&String> = seen.iter().filter(|key| nameable(key) && !every(key)).collect();
+    let skipped: Vec<&String> = seen.iter().filter(|key| !nameable(key)).collect();
 
     // Headings: those of the first document that every other document also
     // writes, under the one comparison the section rule makes.
@@ -234,7 +235,7 @@ fn block(at: &str, name: &str, members: &[&Row], facets: &mut BTreeSet<String>) 
     };
     let words = at.rsplit('/').next().unwrap_or(at).replace(['-', '_'], " ");
     let mut lines = vec![format!(
-        "  # {at}: {} documents. Every one writes the keys {}{}{}.",
+        "  # {at}: {} documents. Every one writes the keys {}{}{}{}.",
         documents.len(),
         match require.is_empty() {
             true => "(none)".to_owned(),
@@ -248,7 +249,17 @@ fn block(at: &str, name: &str, members: &[&Row], facets: &mut BTreeSet<String>) 
             true => String::new(),
             false => format!(". Some write {}", list(&optional)),
         },
-    )];
+        match skipped.is_empty() {
+            true => String::new(),
+            false => format!(
+                ". It leaves out {}, which the engine reads as no facet or a dotted path cannot name",
+                list(&skipped)
+            ),
+        },
+    )
+    // One comment line whatever a heading or a key holds: a line break in
+    // the evidence would end the comment and start a line that is not YAML.
+    .replace(|c: char| c.is_control(), " ")];
     for key in require.iter().chain(optional.iter()) {
         if facets.insert((*key).clone()) {
             lines.push(format!("  facets.{key}: {{volatility: mutable}}"));
@@ -308,8 +319,12 @@ pub fn report(proposal: &Proposal) -> Vec<String> {
         lines.push("  every file the census walked classified, so there is nothing to propose".to_owned());
         return lines;
     }
+    let (files, them) = match proposal.unexplained {
+        1 => ("file", "it"),
+        _ => ("files", "them"),
+    };
     lines.push(format!(
-        "  {} files classified as nothing, and no payload can hold them",
+        "  {} {files} classified as nothing, and no payload can hold {them}",
         proposal.unexplained
     ));
     match proposal.fragment.is_empty() {
