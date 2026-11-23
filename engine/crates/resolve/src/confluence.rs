@@ -27,12 +27,22 @@
 //! the result to the order of application. That is the conflict spec 2 names,
 //! and it is decided with [`headwater_ref::Address::is_disjoint_from`].
 //!
-//! One pair is ordered rather than tested. [HW-DR-0095] (Q67) lets a library
+//! Two pairs are ordered rather than tested. [HW-DR-0095] (Q67) lets a library
 //! entry write into an entry it names directly in `requires`, with `add` or
 //! `add_to`. The declared dependency applies first, so the pair has one order
 //! and nothing is left for the order of application to decide. The resolver
-//! puts the dependency first before it merges ([`crate::order`]). Every other
-//! pair, a transitive dependency included, keeps the predicate above.
+//! puts the dependency first before it merges ([`crate::order`]).
+//!
+//! The second pair is the adopter's overlay and a selected bundle. The owner
+//! ruled on 2026-11-22 (#2022) that an adopter's overlay is ordered after every
+//! bundle it selects, so it may `override` and `remove` what those bundles add.
+//! The bundle applies first, so every operation of the adopter's overlay has
+//! one order against it, except an `add` against an `add`: two values for one
+//! leaf have no answer in any order.
+//!
+//! Every other pair keeps the predicate above: a transitive dependency, two
+//! bundles beside an adopter's overlay, and an assembly's glue overlay, which
+//! is not an adopter's overlay.
 //!
 //! [HW-DR-0095]: ../../../../docs/decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md
 //!
@@ -49,10 +59,15 @@ use crate::error::{ResolveError, ResolveErrorKind};
 use crate::operation::{OpKind, Operation};
 
 /// Every pair that does not commute, each reported against the later operation.
+///
+/// `requires[s]` holds the sources that source `s` names in `requires`, and
+/// `after[s]` holds the selected bundles that source `s` applies after because
+/// it is the adopter's overlay. Both are indexed by source.
 pub fn check(
     operations: &[Operation],
     sources: &[String],
     requires: &[Vec<usize>],
+    after: &[Vec<usize>],
 ) -> Vec<ResolveError> {
     let mut out = Vec::new();
     for (index, later) in operations.iter().enumerate() {
@@ -62,6 +77,8 @@ pub fn check(
             }
             if ordered_by_requires(earlier, later, requires)
                 || ordered_by_requires(later, earlier, requires)
+                || ordered_as_adopter(earlier, later, after)
+                || ordered_as_adopter(later, earlier, after)
             {
                 continue;
             }
@@ -108,6 +125,18 @@ fn ordered_by_requires(
         && requires
             .get(dependent.source)
             .is_some_and(|named| named.contains(&dependency.source))
+}
+
+/// Whether `adopter` comes from the adopter's overlay and `bundle` from a
+/// selected bundle that it applies after (#2022). Every operation is ordered
+/// that way except an `add` against an `add`, which keeps the leaf predicate
+/// for the reason [`ordered_by_requires`] gives.
+fn ordered_as_adopter(bundle: &Operation, adopter: &Operation, after: &[Vec<usize>]) -> bool {
+    let both_add = adopter.kind == OpKind::Add && bundle.kind == OpKind::Add;
+    !both_add
+        && after
+            .get(adopter.source)
+            .is_some_and(|bundles| bundles.contains(&bundle.source))
 }
 
 /// The contested path and the reason, or `None` when the two commute.
@@ -199,7 +228,29 @@ mod tests {
         for (dependent, dependency) in pairs {
             requires[*dependent].push(*dependency);
         }
-        check(&operations(sources), &names(sources.len()), &requires)
+        let after = vec![Vec::new(); sources.len()];
+        check(
+            &operations(sources),
+            &names(sources.len()),
+            &requires,
+            &after,
+        )
+    }
+
+    /// The same, where each `(adopter, bundle)` pair is the adopter's overlay
+    /// and a selected bundle it applies after (#2022).
+    fn errors_after(sources: &[&str], pairs: &[(usize, usize)]) -> Vec<ResolveError> {
+        let requires = vec![Vec::new(); sources.len()];
+        let mut after = vec![Vec::new(); sources.len()];
+        for (adopter, bundle) in pairs {
+            after[*adopter].push(*bundle);
+        }
+        check(
+            &operations(sources),
+            &names(sources.len()),
+            &requires,
+            &after,
+        )
     }
 
     #[test]
@@ -313,6 +364,89 @@ mod tests {
                 "override:\n  kinds.design_spec.facets: {require: [mode]}\n",
             ],
             &[(1, 0)],
+        );
+        assert_eq!(found.len(), 1, "{found:?}");
+    }
+
+    const BUNDLE: &str = "add:\n  kinds.report: {purpose: behavior, facets: {require: [status]}}\n";
+
+    /// #2022: the adopter's overlay applies after every selected bundle, so its
+    /// `override` of what a bundle adds has one order.
+    #[test]
+    fn an_adopter_override_into_a_bundle_is_ordered() {
+        let sources = [BUNDLE, "override:\n  kinds.report.purpose: rationale\n"];
+        assert!(errors_after(&sources, &[(1, 0)]).is_empty());
+        assert_eq!(
+            errors(&sources).len(),
+            1,
+            "without the order it is a conflict"
+        );
+    }
+
+    #[test]
+    fn an_adopter_remove_of_what_a_bundle_adds_is_ordered() {
+        let sources = [BUNDLE, "remove:\n  - kinds.report\n"];
+        assert!(errors_after(&sources, &[(1, 0)]).is_empty());
+        assert_eq!(
+            errors(&sources).len(),
+            1,
+            "without the order it is a conflict"
+        );
+    }
+
+    #[test]
+    fn an_adopter_list_operation_on_a_bundle_list_is_ordered() {
+        let sources = [
+            BUNDLE,
+            "add_to:\n  kinds.report.facets.require: [mode]\nremove_from:\n  kinds.report.facets.require: [status]\n",
+        ];
+        assert!(errors_after(&sources, &[(1, 0)]).is_empty());
+    }
+
+    /// The permission is read from `after`, so it holds whichever of the two
+    /// operations the check meets first.
+    #[test]
+    fn the_adopter_order_holds_whichever_source_is_first() {
+        let sources = ["override:\n  kinds.report.purpose: rationale\n", BUNDLE];
+        assert!(errors_after(&sources, &[(0, 1)]).is_empty());
+    }
+
+    /// Two values for one leaf have no answer in any order, so an adopter `add`
+    /// over a leaf a bundle adds keeps the leaf predicate.
+    #[test]
+    fn an_adopter_add_over_a_bundle_leaf_is_refused() {
+        let found = errors_after(
+            &[BUNDLE, "add:\n  kinds.report.purpose: rationale\n"],
+            &[(1, 0)],
+        );
+        assert_eq!(found.len(), 1, "{found:?}");
+    }
+
+    /// The order runs one way: a bundle that the adopter applies after gets no
+    /// permission over the adopter's own writes, and two bundles beside it keep
+    /// the predicate.
+    #[test]
+    fn the_adopter_order_grants_nothing_to_a_bundle() {
+        let found = errors_after(
+            &[
+                "override:\n  kinds.report.purpose: rationale\n",
+                "add:\n  kinds.report.purpose: behavior\n",
+                BUNDLE,
+            ],
+            &[(0, 2)],
+        );
+        // Source 0 against source 1 is not ordered; source 1 against source 2
+        // is two bundles writing one leaf.
+        assert_eq!(found.len(), 2, "{found:?}");
+    }
+
+    /// A source with no `after`, such as an assembly's glue overlay, gets no
+    /// permission over a bundle.
+    #[test]
+    fn a_source_that_is_not_the_adopter_overlay_gets_no_order() {
+        let found = errors_after(
+            &[BUNDLE, "override:\n  kinds.report.purpose: rationale\n"],
+            &[],
         );
         assert_eq!(found.len(), 1, "{found:?}");
     }
