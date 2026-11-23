@@ -2,7 +2,7 @@
 id: HW-DR-0095
 status: current
 status_since: 2026-09-27
-summary: "An entry that names another in requires may add into its keys, and every other pair of entries still commutes only over disjoint leaves."
+summary: "An entry that names another in requires may add into its keys, and the adopter's overlay may override or remove what a bundle adds. Every other pair still commutes only over disjoint leaves."
 last_verified: 2026-09-27
 title: "95 — One library entry may address the keys of an entry it names in requires, and confluence holds over the dependency order"
 provenance:
@@ -54,4 +54,4 @@ The issue holds the ruling, and this record points to it. This record adds nothi
 
 **The resolver reads the form.** `engine/crates/resolve/src/order.rs` applies each selected bundle after the bundles that it names in `requires`, and `engine/crates/resolve/src/confluence.rs` does not test the pair that this order makes. The engine change discharged HW-OBL-0040.
 
-**This record does not do three things.** It does not change the resolver. It does not fold the `brd-prd` finding that cites HW-OBL-0040 into that entry. It does not decide the kind set of the Diátaxis site entry ([#349](https://github.com/headwater-ai/headwater/issues/349)). Each of these can now build against the form above.
+**This record does not do three things.** It does not change the resolver, and the engine change that HW-OBL-0040 held did that later. It does not fold the `brd-prd` finding that cites HW-OBL-0040 into that entry. It does not decide the kind set of the Diátaxis site entry ([#349](https://github.com/headwater-ai/headwater/issues/349)).
