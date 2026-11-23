@@ -1530,6 +1530,14 @@ pub enum Detail {
     EveryInstance,
     /// The totals, and every finding.
     Findings,
+    /// The totals and every finding, without the scope of each rule.
+    ///
+    /// The report a person reads by default (#1990). The scope block is one
+    /// line pair per rule, 114 lines over a corpus of a few documents, and it
+    /// says what a rule could read rather than what it found. A reader who
+    /// wants it asks for it with `headwater check --verbose`, which renders
+    /// [`Detail::Findings`].
+    Brief,
     /// The totals alone: coverage, the instances each rule created, and what
     /// each rule serves. No finding, and no count of findings.
     ///
@@ -1674,43 +1682,48 @@ impl Run {
         // with the disposition and the control beside it. Two printings of one
         // binding is what spec 4 rules against in the declarations, and a
         // report is no different.
-        let _ = writeln!(
-            out,
-            "{}",
-            crate::paint::paint(
-                crate::paint::Role::Heading,
-                "rules, and for each the scope that binds it",
-                mode
-            )
-        );
-        for served in &self.served {
-            let _ = writeln!(out, "  {}\n    {}", served.rule, served.scope.render());
-            // The denominator of a rule that is silent over a clean corpus, so
-            // a reader can tell "compared 1019 and all agree" from "compared
-            // nothing". The finding count is the rule's share of the run's
-            // own total below, and the totals print no count of findings, so
-            // they print the denominator alone (#1347).
-            //
-            // The line never ends in `<n> findings`. Scripts read the run's
-            // total as the first line of that shape, and a per-rule line that
-            // matched it came before the total and turned their tallies to 0.
-            // Each of the two rules reports at most one finding per link, so
-            // "of them with a finding" counts findings and links alike.
-            if let Some(compared) = served.compared {
-                match detail {
-                    Detail::Totals => {
-                        let _ = writeln!(out, "    {compared} links compared");
-                    }
-                    _ => {
-                        let reported = self
-                            .findings
-                            .iter()
-                            .filter(|finding| finding.rule == served.rule)
-                            .count();
-                        let _ = writeln!(
-                            out,
-                            "    {compared} links compared, {reported} of them with a finding"
-                        );
+        //
+        // `Detail::Brief` leaves the whole block out, the per-rule count of
+        // links compared with it (#1990).
+        if detail != Detail::Brief {
+            let _ = writeln!(
+                out,
+                "{}",
+                crate::paint::paint(
+                    crate::paint::Role::Heading,
+                    "rules, and for each the scope that binds it",
+                    mode
+                )
+            );
+            for served in &self.served {
+                let _ = writeln!(out, "  {}\n    {}", served.rule, served.scope.render());
+                // The denominator of a rule that is silent over a clean corpus, so
+                // a reader can tell "compared 1019 and all agree" from "compared
+                // nothing". The finding count is the rule's share of the run's
+                // own total below, and the totals print no count of findings, so
+                // they print the denominator alone (#1347).
+                //
+                // The line never ends in `<n> findings`. Scripts read the run's
+                // total as the first line of that shape, and a per-rule line that
+                // matched it came before the total and turned their tallies to 0.
+                // Each of the two rules reports at most one finding per link, so
+                // "of them with a finding" counts findings and links alike.
+                if let Some(compared) = served.compared {
+                    match detail {
+                        Detail::Totals => {
+                            let _ = writeln!(out, "    {compared} links compared");
+                        }
+                        _ => {
+                            let reported = self
+                                .findings
+                                .iter()
+                                .filter(|finding| finding.rule == served.rule)
+                                .count();
+                            let _ = writeln!(
+                                out,
+                                "    {compared} links compared, {reported} of them with a finding"
+                            );
+                        }
                     }
                 }
             }

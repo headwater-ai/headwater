@@ -219,7 +219,7 @@ The lock is the one file every later command reads. An edit to the package or to
 headwater check
 ```
 
-Trimmed. The run prints the census, the graph, the rules, the register and the findings, and these are the lines that matter here:
+Trimmed. The run prints the census, the graph, the counts, the register and the findings, and these are the lines that matter here. `headwater check --verbose` also prints the scope of each rule and the read set:
 
 ```
 census
