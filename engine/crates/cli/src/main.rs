@@ -4258,7 +4258,7 @@ fn find_document(root: &Path, target: &str, code: bool) -> Result<Answer, ExitCo
     let loaded = opened(root)?;
     let surface = loaded.surface();
     if let Some(explanation) = surface.explain(target) {
-        return Ok(Answer::Document(explanation));
+        return Ok(Answer::Document(Box::new(explanation)));
     }
     // An identifier is asked about first, and a path second: the two
     // grammars can overlap in principle, and this repository's own
@@ -4282,7 +4282,7 @@ fn find_document(root: &Path, target: &str, code: bool) -> Result<Answer, ExitCo
                         .explain(&relative)
                         .filter(|explanation| explanation.path == relative)
                     {
-                        return Ok(Answer::Document(explanation));
+                        return Ok(Answer::Document(Box::new(explanation)));
                     }
                 }
                 // A path that passes through a symlink out of the root is

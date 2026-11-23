@@ -276,10 +276,11 @@ impl Explanation {
 }
 
 /// What `headwater explain` found for a target: a document, or a code file and
-/// the documents that govern it (#1968).
+/// the documents that govern it (#1968). The explanation is boxed because it
+/// is six times the size of the other variant.
 #[derive(Clone, Debug)]
 pub enum Answer {
-    Document(Explanation),
+    Document(Box<Explanation>),
     Governed(Governed),
 }
 
