@@ -379,7 +379,8 @@ mod tests {
     fn a_hasher_written_through_fmt_hashes_the_formatted_text() {
         use std::fmt::Write;
         let mut hasher = Hasher::new();
-        write!(hasher, "rule {} version {}\n", "r", 2).expect("never fails");
+        let version = 2;
+        writeln!(hasher, "rule r version {version}").expect("never fails");
         assert_eq!(hasher.finish_hex(), hex(b"rule r version 2\n"));
     }
 }
