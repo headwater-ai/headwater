@@ -530,6 +530,42 @@ mod tests {
         }
     }
 
+    /// The read-back compares a list target member for member and in order,
+    /// so an entry whose list reads back reordered, split at a comma, or
+    /// joined into one scalar is not the half that was written (#2016).
+    #[test]
+    fn the_read_back_compares_a_list_target_member_for_member() {
+        let listed = Half {
+            members: Some(vec!["a.sh".to_string(), "x, y.sh".to_string()]),
+            ..half("a.sh, x, y.sh", &[("verified_revision", "sha256:ab")])
+        };
+        let read = |target: &str| {
+            let source = format!(
+                "---\nid: D-1\nrelations:\n  audited_by:\n    - to: {target}\n      \
+                 verified_revision: sha256:ab\n---\n\n# D\n"
+            );
+            let parsed = headwater_doc::parse(&source).expect("the entry parses");
+            let entries = parsed
+                .facets
+                .get("relations")
+                .and_then(|block| block.value.as_map())
+                .and_then(|block| block.get("audited_by"))
+                .and_then(|targets| targets.value.as_seq())
+                .expect("a list")
+                .to_vec();
+            holds(&entries[0].value, &listed)
+        };
+        assert!(read("[a.sh, \"x, y.sh\"]"));
+        for wrong in [
+            "[\"x, y.sh\", a.sh]",
+            "[a.sh, x, y.sh]",
+            "\"a.sh, x, y.sh\"",
+            "[a.sh]",
+        ] {
+            assert!(!read(wrong), "`{wrong}` is not the half");
+        }
+    }
+
     /// A target the YAML 1.2 core schema would type is quoted, and every other
     /// plain-safe target stays plain (#1629).
     #[test]
