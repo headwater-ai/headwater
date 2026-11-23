@@ -68,7 +68,7 @@ graph
     identifier: the identifier is not a scalar, and an identifier is a word
 
 checks
-  31 seen, 29 classified, 28 checked, 454 check instances
+  31 seen, 29 classified, 28 checked, 455 check instances
         1 generated, held to regeneration by `headwater generate --check`
        58 skipped: this document declares no warrant, and an absent warrant is
          not a value outside the closed set
@@ -83,7 +83,7 @@ checks
           prose to read: no body and no `summary` facet with a value
         2 skipped: `ste_strict` declares ASD-STE100, profile strict, and this
           engine has no rules for it
-       30 skipped: change-scoped-only: the prior version is available only in
+       31 skipped: change-scoped-only: the prior version is available only in
          change-scoped evaluation, and this run carries no change
         1 skipped: the document at the target end, `FIX-REG-open-questions`,
           declares no value for the state facet, so there is no state to read
@@ -93,7 +93,7 @@ checks
     AD-1 1 open, 0 closed, holding 1 finding, owner the fixture tree, until
       2027-01-01
       one pair, so that a run carries a migration-pending finding
-  31 documents in the read set, and 9 barriers that no gate carries across a
+  31 documents in the read set, and 10 barriers that no gate carries across a
     merge
        28 instances of facet.required.missing
        28 instances of facet.value.not_permitted
@@ -128,6 +128,7 @@ checks
        29 instances of warrant.value.not_permitted
        29 instances of warrant.acceptance.unpaired
         1 instances of lifecycle.deletion.not_permitted
+        1 instances of relation.scope.ungoverned
   suppressions
     2 findings hidden by 2 directives
         1 false_positive
@@ -240,6 +241,9 @@ checks
     lifecycle.deletion.not_permitted
       corpus scope, every row of the census, and the version of each path the
         change named that no row of this corpus holds, and it is a barrier
+    relation.scope.ungoverned
+      corpus scope, every row of the census, and the version of each path the
+        change named that no row of this corpus holds, and it is a barrier
     coverage.document_unchecked
       corpus scope, every row of the census, and it is a barrier
     obligation.disposition.not_one
@@ -322,6 +326,7 @@ checks
     warrant.acceptance.unpaired reaches no obligation, so it names none
     warrant.acceptance.at_initial reaches no obligation, so it names none
     lifecycle.deletion.not_permitted reaches no obligation, so it names none
+    relation.scope.ungoverned reaches no obligation, so it names none
     coverage.document_unchecked reaches no obligation, so it names none
     control.observation.invalid reaches no obligation, so it names none
     adoption.task.expired reaches no obligation, so it names none
@@ -750,6 +755,7 @@ read set
   barrier link.identifier.mismatch
   barrier relation.mention.undeclared
   barrier lifecycle.deletion.not_permitted
+  barrier relation.scope.ungoverned
   windowed relation.participation.overdue
   version facet.required.missing 1
   version facet.value.not_permitted 3
@@ -794,6 +800,7 @@ read set
   version warrant.acceptance.unpaired 1
   version warrant.acceptance.at_initial 1
   version lifecycle.deletion.not_permitted 1
+  version relation.scope.ungoverned 1
   version coverage.document_unchecked 1
   version obligation.disposition.not_one 1
   version control.mechanism.unimplemented 1

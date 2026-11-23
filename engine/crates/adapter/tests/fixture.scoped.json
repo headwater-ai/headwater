@@ -28,7 +28,7 @@
     "classified": 29,
     "checked": 29,
     "generated": 1,
-    "instances": 454,
+    "instances": 455,
     "skipped": 91,
     "skips": [
       {
@@ -567,7 +567,9 @@
     ],
     "unaccounted": [
       "./check/evaluations/delta.md",
-      "check/spec/00-both-halves.markdown"
+      "check/spec/00-both-halves.markdown",
+      "README.md",
+      "engine/crates/check/src/change.rs"
     ]
   },
   "rules": [
@@ -866,6 +868,12 @@
     },
     {
       "rule": "lifecycle.deletion.not_permitted",
+      "scope": "corpus",
+      "version": 1,
+      "obligations": []
+    },
+    {
+      "rule": "relation.scope.ungoverned",
       "scope": "corpus",
       "version": 1,
       "obligations": []
@@ -1815,6 +1823,10 @@
       "digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
+      "path": "README.md",
+      "digest": "sha256:bd22011a69d33e134c76e95b1c829b184beda73d474948cdefbb632859a8910e"
+    },
+    {
       "path": "check/evaluations/alpha.md",
       "digest": "sha256:e651a58ed6489f388954343391d6321a708a2b7492bb4dc1386699a8bf65cc7b"
     },
@@ -1937,6 +1949,10 @@
     {
       "path": "check/spec/24-voice-context-section.md",
       "digest": "sha256:fd29ca33cfa7fb0582f0131f5eddd05b3c032efd3cf63e45bf51dc87f963ffd5"
+    },
+    {
+      "path": "engine/crates/check/src/change.rs",
+      "digest": "sha256:5da8ad672eba19040f8abfb4bc1526fc419dad5e0715db3c19d74ae177b0b917"
     }
   ]
 }

@@ -654,6 +654,20 @@
               }
             },
             {
+              "id": "relation.scope.ungoverned",
+              "shortDescription": {
+                "text": "corpus scope, every row of the census, and the version of each path the change named that no row of this corpus holds, and it is a barrier"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "corpus",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
               "id": "coverage.document_unchecked",
               "shortDescription": {
                 "text": "corpus scope, every row of the census, and it is a barrier"
@@ -1424,7 +1438,7 @@
         },
         {
           "ruleId": "coverage.document_unchecked",
-          "ruleIndex": 43,
+          "ruleIndex": 44,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3322,7 +3336,7 @@
         },
         {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 45,
+          "ruleIndex": 46,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3351,7 +3365,7 @@
         },
         {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 45,
+          "ruleIndex": 46,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3380,7 +3394,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 44,
+          "ruleIndex": 45,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3409,7 +3423,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 44,
+          "ruleIndex": 45,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3438,7 +3452,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 44,
+          "ruleIndex": 45,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3467,7 +3481,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 44,
+          "ruleIndex": 45,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3496,7 +3510,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 44,
+          "ruleIndex": 45,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3538,8 +3552,8 @@
             "classified": 29,
             "checked": 28,
             "generated": 1,
-            "instances": 454,
-            "skipped": 118,
+            "instances": 455,
+            "skipped": 119,
             "skips": [
               {
                 "reason": "this document declares no warrant, and an absent warrant is not a value outside the closed set",
@@ -4027,7 +4041,7 @@
               },
               {
                 "reason": "change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change",
-                "instances": 30,
+                "instances": 31,
                 "documents": [
                   {
                     "path": "check/evaluations/alpha.md",
@@ -4233,7 +4247,7 @@
                     "routings": 1
                   }
                 ],
-                "unrouted": 1
+                "unrouted": 2
               },
               {
                 "reason": "the document at the target end, `FIX-REG-open-questions`, declares no value for the state facet, so there is no state to read there",

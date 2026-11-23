@@ -12,8 +12,8 @@
     "classified": 29,
     "checked": 28,
     "generated": 1,
-    "instances": 454,
-    "skipped": 118,
+    "instances": 455,
+    "skipped": 119,
     "skips": [
       {
         "reason": "this document declares no warrant, and an absent warrant is not a value outside the closed set",
@@ -501,7 +501,7 @@
       },
       {
         "reason": "change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change",
-        "instances": 30,
+        "instances": 31,
         "documents": [
           {
             "path": "check/evaluations/alpha.md",
@@ -707,7 +707,7 @@
             "routings": 1
           }
         ],
-        "unrouted": 1
+        "unrouted": 2
       },
       {
         "reason": "the document at the target end, `FIX-REG-open-questions`, declares no value for the state facet, so there is no state to read there",
@@ -1029,6 +1029,12 @@
     },
     {
       "rule": "lifecycle.deletion.not_permitted",
+      "scope": "corpus",
+      "version": 1,
+      "obligations": []
+    },
+    {
+      "rule": "relation.scope.ungoverned",
       "scope": "corpus",
       "version": 1,
       "obligations": []

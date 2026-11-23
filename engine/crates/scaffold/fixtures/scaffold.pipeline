@@ -2,14 +2,14 @@ touched corpus/spec/04-a-scaffolded-fourth-part.md
 touched corpus/decisions/a-scaffolded-successor.md
 touched corpus/decisions/a-second-successor.md
 
-14 seen, 9 classified, 9 checked, 170 check instances
+14 seen, 9 classified, 9 checked, 171 check instances
      12 skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
       6 skipped: this document declares no warrant, so there is no acceptance to read beside the state
       4 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
-     19 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+     20 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
 adoption
   0 pairs open, 0 closed, holding 0 findings, in 0 tasks
-10 documents in the read set, and 9 barriers that no gate carries across a merge
+10 documents in the read set, and 10 barriers that no gate carries across a merge
       9 instances of facet.required.missing
       9 instances of facet.value.not_permitted
       9 instances of facet.value.blank
@@ -41,6 +41,7 @@ adoption
       9 instances of warrant.acceptance.unpaired
       9 instances of warrant.acceptance.at_initial
       1 instances of lifecycle.deletion.not_permitted
+      1 instances of relation.scope.ungoverned
 suppressions
   0 findings hidden by 0 directives
 rules, and for each the scope that binds it
@@ -132,6 +133,8 @@ rules, and for each the scope that binds it
     document scope, one document and its front matter
   lifecycle.deletion.not_permitted
     corpus scope, every row of the census, and the version of each path the change named that no row of this corpus holds, and it is a barrier
+  relation.scope.ungoverned
+    corpus scope, every row of the census, and the version of each path the change named that no row of this corpus holds, and it is a barrier
   coverage.document_unchecked
     corpus scope, every row of the census, and it is a barrier
   obligation.disposition.not_one
@@ -203,6 +206,7 @@ register
   warrant.acceptance.unpaired reaches no obligation, so it names none
   warrant.acceptance.at_initial reaches no obligation, so it names none
   lifecycle.deletion.not_permitted reaches no obligation, so it names none
+  relation.scope.ungoverned reaches no obligation, so it names none
   coverage.document_unchecked reaches no obligation, so it names none
   obligation.disposition.not_one reaches no obligation, so it names none
   control.mechanism.unimplemented reaches no obligation, so it names none
@@ -556,6 +560,8 @@ instances
   lifecycle.state.not_admitted corpus/standards/a-standard.md
     passed
   lifecycle.deletion.not_permitted corpus/decisions/a-scaffolded-successor.md + corpus/decisions/a-second-successor.md + corpus/decisions/an-earlier-decision.md + corpus/exhausted/the-last-one.md + corpus/spec/01-the-first-part.md + corpus/spec/02-the-second-part.md + corpus/spec/03-the-third-part.md + corpus/spec/04-a-scaffolded-fourth-part.md + corpus/standards/a-standard.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  relation.scope.ungoverned corpus/decisions/a-scaffolded-successor.md + corpus/decisions/a-second-successor.md + corpus/decisions/an-earlier-decision.md + corpus/exhausted/the-last-one.md + corpus/spec/01-the-first-part.md + corpus/spec/02-the-second-part.md + corpus/spec/03-the-third-part.md + corpus/spec/04-a-scaffolded-fourth-part.md + corpus/standards/a-standard.md
     skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
 
 corpus/standards/a-standard.md:1:1 ✗ error
