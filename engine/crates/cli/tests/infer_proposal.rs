@@ -200,6 +200,13 @@ fn the_fragment_infer_proposes_types_the_documents_it_read() {
     }
 
     let proposed = fragment(&before);
+    // The covered count is the documents the fragment's shelves claim: the
+    // three runbooks with front matter, and not the draft without it, the
+    // lone note or the plain files.
+    assert!(
+        before.contains("this fragment proposes a shelf and a kind for 3 of them."),
+        "the fragment covers the 3 runbooks:\n{before}"
+    );
     assert!(
         proposed.contains("  shelves.runbooks:\n"),
         "a shelf for the runbooks:\n{before}"
@@ -347,7 +354,13 @@ fn the_fragment_names_each_directory_once_and_resolves_where_names_collide() {
     );
     root.overlay("");
     root.resolve();
-    let proposed = fragment(&root.infer());
+    let report = root.infer();
+    // Six directories of two documents each, and the lone file is not one.
+    assert!(
+        report.contains("this fragment proposes a shelf and a kind for 12 of them."),
+        "the fragment covers 12 documents in 6 directories:\n{report}"
+    );
+    let proposed = fragment(&report);
     for name in [
         "docs_a_notes",
         "docs_b_notes",
