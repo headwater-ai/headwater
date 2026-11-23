@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 4.19.0
+version: 4.19.1
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -1930,7 +1930,7 @@ controls:
     acts: detective
     promotion:
       final_posture:
-        reasoning: "The reading CT-LIFE-2 takes, over one declared edge instead of one declared state set. The rule reads the state the relation declares and the state the target stands at, and the corpus itself resolved both, so an advisory period would measure a false-positive rate that the construction fixes at zero. Where the target is live the remedy is mechanical and total, because the fix writes the declared state and the source's own state-entry date together, so there is no judgment for an author to make. The one case that needs a judgment is a target already terminal at another state, because which terminal state it ends at is the author's call. The rule reports that case as a warning with no patch, so it does not stop a strict run, and the posture blocks only what the fix can repair"
+        reasoning: "The reading CT-LIFE-2 takes, over one declared edge instead of one declared state set. The rule reads the state the relation declares and the state the target stands at, and the corpus itself resolved both, so an advisory period would measure a false-positive rate that the construction fixes at zero. Where the target is live the remedy is mechanical and total, because the fix writes the declared state and the source's own state-entry date together, so there is no judgment for an author to make. The one case that needs a judgment is a target already terminal at another state, because which terminal state it ends at is the author's call. The rule reports that case as a warning with no patch. A blocking posture stops a strict run on a live finding at any severity, so that warning stops one too. An adopter who wants the terminal case to pass parks it in the adoption block, or overrides this control to advisory in its overlay"
   CT-LANG-1:
     mechanism: "check:language.controlled.not_met"
     discharges:

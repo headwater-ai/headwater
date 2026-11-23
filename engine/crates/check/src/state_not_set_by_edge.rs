@@ -76,11 +76,12 @@
 //! - the target is not live. A `deprecated` target is terminal already, and
 //!   which terminal state it ends at is the author's call.
 //!
-//! **The last case is advisory, not an error.** Which of two terminal states
+//! **The last case is a warning, not an error.** Which of two terminal states
 //! the target ends at is a judgment, so the remedy is neither mechanical nor
-//! total, and a finding that stopped a strict run would stop it on a question
-//! only an author can settle. The rule still reports it, at `warn`, with no
-//! patch. The first two cases stay errors: the target is live, the state the
+//! total. The rule reports it at `warn`, with no patch. Whether it stops a
+//! strict run is the posture of the control, and not this rule's: CT-LIFE-6
+//! is `blocking` in the standard package, so it does, and an adopter can park
+//! it or override the control to advisory (#2015). The first two cases stay errors: the target is live, the state the
 //! edge sets is the one correct outcome, and only the date is missing for the
 //! engine to write it.
 //!
