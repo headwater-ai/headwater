@@ -683,10 +683,44 @@ fn a_former_identifier_resolves_to_the_document_that_carried_it() {
                 "---\nid: EVAL-FIX-new\nformer_ids:\n  - EVAL-OLD-7\n---\n\n# Renamed\n",
             ),
             (
+                "graph/evaluations/scalar.md",
+                "---\nid: EVAL-FIX-scalar\nformer_ids: EVAL-OLD-8\n---\n\n# Scalar\n",
+            ),
+            (
+                "graph/notes/untyped.md",
+                "---\nid: SPEC-FIX-untyped\nformer_ids: [SPEC-OLD-u]\n---\n\n# Untyped\n",
+            ),
+            (
                 "graph/spec/citer.md",
-                "---\nid: SPEC-FIX-citer\ndoc_type: design_spec\nrelations:\n  traces_to:\n    - EVAL-OLD-7\n---\n\n# Citer\n",
+                "---\nid: SPEC-FIX-citer\ndoc_type: design_spec\nrelations:\n  traces_to:\n    - EVAL-OLD-7\n    - EVAL-OLD-8\n    - SPEC-OLD-u\n---\n\n# Citer\n",
             ),
         ],
+    );
+
+    // The facet takes one word as well as a list of them.
+    let scalar = graph
+        .edges
+        .iter()
+        .find(|edge| edge.raw_target == "EVAL-OLD-8")
+        .expect("the edge written to the scalar former identifier");
+    assert!(
+        matches!(&scalar.target, Target::Document { id, .. } if id == "EVAL-FIX-scalar"),
+        "{:?}",
+        scalar.target
+    );
+
+    // A former identifier of a document with no kind is the near miss its live
+    // identifier would be: fix that document, not this link.
+    let untyped = graph
+        .edges
+        .iter()
+        .find(|edge| edge.raw_target == "SPEC-OLD-u")
+        .expect("the edge written to the untyped document's former identifier");
+    assert!(
+        matches!(&untyped.target, Target::Unbound(Unbound::NotTyped { path, .. })
+            if path == "graph/notes/untyped.md"),
+        "{:?}",
+        untyped.target
     );
 
     let edge = graph
@@ -718,11 +752,19 @@ fn a_former_identifier_resolves_to_the_document_that_carried_it() {
 
 /// A former identifier is never reused either, so one that equals a live
 /// identifier, or that two documents list, is an identifier claimed twice.
+/// The collision says it involves a former identifier when either claim is
+/// one, including when the earlier claim in path order is the former one. A
+/// document that lists one value twice, or its own identifier, claims nothing
+/// twice against anybody.
 #[test]
 fn a_former_identifier_claimed_twice_is_a_duplicate() {
     let (_dir, graph) = scratch_corpus(
         "former-twice",
         &[
+            (
+                "graph/evaluations/0.md",
+                "---\nid: EVAL-FIX-0\nformer_ids: [EVAL-FIX-z]\n---\n\n# Zero\n",
+            ),
             (
                 "graph/evaluations/a.md",
                 "---\nid: EVAL-FIX-a\nformer_ids: [EVAL-OLD-9]\n---\n\n# A\n",
@@ -735,17 +777,25 @@ fn a_former_identifier_claimed_twice_is_a_duplicate() {
                 "graph/evaluations/c.md",
                 "---\nid: EVAL-FIX-c\nformer_ids: [EVAL-FIX-a]\n---\n\n# C\n",
             ),
+            (
+                "graph/evaluations/self.md",
+                "---\nid: EVAL-FIX-self\nformer_ids: [EVAL-FIX-self, EVAL-OLD-s, EVAL-OLD-s]\n---\n\n# Self\n",
+            ),
+            (
+                "graph/evaluations/z.md",
+                "---\nid: EVAL-FIX-z\n---\n\n# Z\n",
+            ),
         ],
     );
 
-    let duplicates: Vec<(&str, &str, &str)> = graph
+    let duplicates: Vec<(&str, &str, &str, bool)> = graph
         .index
         .defects
         .iter()
         .filter_map(|reported| match &reported.defect {
-            headwater_graph::index::Defect::Duplicate { id, other, .. } => {
-                Some((reported.path.as_str(), id.as_str(), other.as_str()))
-            }
+            headwater_graph::index::Defect::Duplicate {
+                id, other, former, ..
+            } => Some((reported.path.as_str(), id.as_str(), other.as_str(), *former)),
             _ => None,
         })
         .collect();
@@ -755,12 +805,20 @@ fn a_former_identifier_claimed_twice_is_a_duplicate() {
             (
                 "graph/evaluations/b.md",
                 "EVAL-OLD-9",
-                "graph/evaluations/a.md"
+                "graph/evaluations/a.md",
+                true
             ),
             (
                 "graph/evaluations/c.md",
                 "EVAL-FIX-a",
-                "graph/evaluations/a.md"
+                "graph/evaluations/a.md",
+                true
+            ),
+            (
+                "graph/evaluations/z.md",
+                "EVAL-FIX-z",
+                "graph/evaluations/0.md",
+                true
             ),
         ],
         "{:?}",
