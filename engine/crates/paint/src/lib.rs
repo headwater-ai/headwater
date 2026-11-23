@@ -178,8 +178,14 @@ pub fn dim(text: &str, mode: ColorMode) -> String {
 /// terminals, the same reason `headwater infer` quotes by category rather than
 /// by character. A line feed and a tab are in the set: a value never carries a
 /// legitimate line break, and a tab moves a column. `\n`, `\r` and `\t` keep
-/// their usual names, and every other character is written `\xHH` below U+0100
-/// and `\u{HHHH}` above it.
+/// their usual names, and every other one is written `\xHH`. Every control
+/// character is below U+00A0, so two hex digits always suffice.
+///
+/// A value that opens with `::` has its first colon written `\x3a`. A renderer
+/// prints a path at the start of a line, and a line that opens `::` is a
+/// workflow command whether or not it holds a control character. The fill in
+/// `headwater-check` keeps a word that opens `::` off the start of a wrapped
+/// line, which covers the same command in the middle of a value.
 ///
 /// A backslash is not escaped, so a clean path is written back unchanged and
 /// borrowed. The cost is one ambiguity: a name that holds the two characters
@@ -188,20 +194,25 @@ pub fn dim(text: &str, mode: ColorMode) -> String {
 /// string syntax and give it back exactly when parsed.
 #[must_use]
 pub fn visible(text: &str) -> std::borrow::Cow<'_, str> {
-    if !text.chars().any(char::is_control) {
+    let command = text.starts_with("::");
+    if !command && !text.chars().any(char::is_control) {
         return std::borrow::Cow::Borrowed(text);
     }
     let mut out = String::with_capacity(text.len() + 8);
-    for char in text.chars() {
+    let rest = match command {
+        true => {
+            out.push_str("\\x3a");
+            &text[1..]
+        }
+        false => text,
+    };
+    for char in rest.chars() {
         match char {
             '\n' => out.push_str("\\n"),
             '\r' => out.push_str("\\r"),
             '\t' => out.push_str("\\t"),
-            control if control.is_control() && (control as u32) < 0x100 => {
-                out.push_str(&format!("\\x{:02x}", control as u32));
-            }
             control if control.is_control() => {
-                out.push_str(&format!("\\u{{{:04x}}}", control as u32));
+                out.push_str(&format!("\\x{:02x}", control as u32));
             }
             other => out.push(other),
         }
@@ -229,6 +240,9 @@ mod tests {
             ("\u{9b}", "\\x9b"),
             ("caf\u{e9}", "caf\u{e9}"),
             ("x\u{1b}[2J\u{1b}[31my", "x\\x1b[2J\\x1b[31my"),
+            ("::error ::x.md", "\\x3a:error ::x.md"),
+            (":a::b", ":a::b"),
+            ("::\n", "\\x3a:\\n"),
         ];
         for (given, written) in cases {
             assert_eq!(visible(given), written, "{given:?}");

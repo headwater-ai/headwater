@@ -569,6 +569,15 @@ fn a_control_character_from_a_document_reaches_no_format_intact() {
             digest,
         });
     }
+    // A suppression directive's note is prose an author wrote, and the reason
+    // an escaped finding is not reported quotes it.
+    assert!(
+        !ran.run.suppressions.suppressions.is_empty(),
+        "the fixture run carries a suppression"
+    );
+    for suppression in &mut ran.run.suppressions.suppressions {
+        suppression.note = format!("a note\n::error ::forged{HOSTILE_ID}");
+    }
     // The census lists the rows it did not type in the text report, so one of
     // them takes the hostile name as well, and an exclusion pattern and reason
     // that the overlay supplies carry the hostile identifier.
