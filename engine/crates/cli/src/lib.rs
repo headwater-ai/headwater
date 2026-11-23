@@ -470,9 +470,10 @@ pub enum Verb {
             long,
             help = "add the scope of each rule, and the read set with a digest for each input, to \
                     the report. Without it the report is the census, the counts and the findings, \
-                    and the checks block gives the size of the read set alone. A machine format \
-                    already carries what this adds, so the flag is refused beside `--format \
-                    json`, `--format sarif`, `--format markdown` and `--json`"
+                    and the checks block gives the size of the read set alone. The flag changes the \
+                    text report and nothing else, so it is refused beside `--format json`, \
+                    `--format sarif`, `--format markdown` and `--json`, where it would do \
+                    nothing"
         )]
         verbose: bool,
     },

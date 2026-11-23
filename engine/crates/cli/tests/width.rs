@@ -968,9 +968,11 @@ fn the_default_report_leaves_out_the_read_set_and_verbose_writes_it() {
     let help = ran(&["check", "--help"], None);
     assert_eq!(help.code, Some(0));
     let help = String::from_utf8(help.out).expect("the help is text");
+    // The option row itself, and not a mention in the help of another flag:
+    // `--read-set` and `--format` both name `--verbose` in their own text.
     assert!(
-        help.contains("--verbose"),
-        "`check --help` does not name `--verbose`"
+        help.lines().any(|line| line.trim() == "--verbose"),
+        "`check --help` lists no `--verbose` option"
     );
 }
 

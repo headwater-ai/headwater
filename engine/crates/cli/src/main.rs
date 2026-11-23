@@ -6582,13 +6582,13 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
             )));
         }
     };
-    // `--verbose` adds two blocks to the text report, and a machine format
-    // already carries both, so beside one the flag would do nothing. It is
-    // refused for the reason `--wide` is (#1990).
+    // `--verbose` adds two blocks to the text report and changes nothing else,
+    // so beside a machine format the flag would do nothing. It is refused for
+    // the reason `--wide` is (#1990).
     if verbose && !matches!(format, Format::Text) {
         return Ok(fail(&format!(
             "`check --verbose` adds the scope of each rule and the read set to the text report, \
-             and `--format {}` already carries what it adds. Drop one of the two",
+             and it changes nothing in `--format {}`. Drop one of the two",
             format.name()
         )));
     }
