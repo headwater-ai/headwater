@@ -149,6 +149,14 @@ taxonomy: headwater/standard
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
 #
+# 4.22.0 adds one obligation and its control, and removes nothing, so it is a
+# minor. OB-REL-12 states that a change which adds a file inside the governed
+# scope also adds an edge that governs it. CT-REL-12 binds
+# `relation.scope.ungoverned` to it, advisory with promotion criteria. The
+# rule's baseline is the change, so the package stores no figure, and a corpus
+# that wants the ratchet to stop a merge promotes the control to `blocking`
+# with an overlay `override` (#1573).
+#
 # 4.21.0 adds one facet, `former_ids`, in the seventh facet role,
 # `former_identifier`, and removes nothing, so it is a minor. A document whose
 # identifier changed lists the old values there, and the identifier index
@@ -348,7 +356,7 @@ taxonomy: headwater/standard
 # each carries a recipe rather than a bare instruction. One package version
 # covers every content file it publishes, this one included, so the number
 # here moves with a change to either.
-version: 4.21.0
+version: 4.22.0
 
 purposes:
   rationale:
@@ -962,6 +970,13 @@ obligations:
     prevents: process.traceability
     severity: medium
 
+  OB-REL-12:
+    statement: A change that adds a file inside the governed scope adds a governance edge that reaches it
+    rationale: The governed scope is the part of the tree a corpus says its documents explain. A file added there with no edge is code that no document states the purpose of, and the share of governed files goes down one file at a time with no finding to say so. A figure that only a reader of the audit sees stops nothing
+    class: cohesion
+    prevents: process.traceability
+    severity: medium
+
   OB-PIN-1:
     statement: A pin that the corpus commits reads as the bytes it pins, or a finding names the pin
     rationale: A digest pin, an imports snapshot and a harvested export each tell a reader what the corpus rests on. A pin that no longer reads as what it names, and that no anchor happens to cite, reaches nobody, so a corpus that rests on a moved or edited artifact reads the same as one that rests on the artifact it pinned
@@ -1494,6 +1509,18 @@ controls:
       criteria:
         window: one release of the taxonomy over an adopting corpus
         threshold: no false positive, because the rule reads the declared relation and inverse names and passes a name that a facet shares, so a finding is a key the graph read no edge from
+        sample: every finding of one run over the adopting corpus, adjudicated once
+
+  CT-REL-12:
+    mechanism: check:relation.scope.ungoverned
+    discharges: [OB-REL-12]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      criteria:
+        window: one release of the taxonomy over an adopting corpus
+        threshold: no false positive, because the rule reads only the paths a change adds and asks the reach test that taxonomy audit counts with, so a finding is a new file that the audit would count as ungoverned
         sample: every finding of one run over the adopting corpus, adjudicated once
 
   CT-PIN-1:

@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # This repository's overlay over headwater/standard 2.0.0 plus the design-spec
-# bundle. An adopter overlay may add, override and remove. This one only adds.
+# bundle. An adopter overlay may add, override and remove. This one adds, and
+# overrides one control posture at the end of the file.
 #
 # It exists because of one ordering constraint. Q4 rules that a relation target
 # is an identifier and never a path, and no document in this corpus had an
@@ -1989,3 +1990,14 @@ add_to:
         - title: Project process
           noindex: true
           for: [process_specs, process_decisions, process_evaluations, process_obligations, process_how_to, process_explanations]
+
+# The one override. `relation.scope.ungoverned` reports a file a change adds
+# inside the governed scope that no governance edge reaches. The package ships
+# its control advisory, because a tool that blocks on first contact is removed.
+# This repository has measured its scope and backfilled it, so the ratchet
+# stops a strict run here: a pull request, and the commit gate, that add an
+# ungoverned file to `anchors.code_path.scope` fail. Posture decides what
+# blocks, by the owner's ruling of 2026-11-22 (#2015), and the baseline is the
+# change, so no figure is stored (#1573).
+override:
+  controls.CT-REL-12.posture: blocking
