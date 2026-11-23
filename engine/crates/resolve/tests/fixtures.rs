@@ -9,6 +9,9 @@
 //! Each case under `fixtures/cases/` is a directory: `base.yml` is the package,
 //! every `overlay-*.yml` beside it is an overlay in name order, and
 //! `expected.record` is the resolved taxonomy or the refusal an author reads.
+//! `overlay-<n>-<name>.yml` is a bundle selected as `<name>`, and an unnumbered
+//! `overlay-adopter.yml` is the adopter's overlay, which applies after every
+//! bundle.
 //!
 //! - **`expected.record`** — what the case resolves to, or why it does not.
 //! - **`confluence.record`** — every permutation of every case's overlay set,
@@ -96,6 +99,7 @@ fn sources(case: &Path) -> Vec<Source> {
         let source = Source::read(&overlay, &shown, Role::Overlay).expect("an overlay loads");
         out.push(match selected_as(&shown) {
             Some(bundle) => source.selected_as(&bundle),
+            None if shown == "overlay-adopter.yml" => source.adopter(),
             None => source,
         });
     }
@@ -104,8 +108,9 @@ fn sources(case: &Path) -> Vec<Source> {
 
 /// The bundle name an overlay file stands for: `overlay-<n>-<name>.yml` is the
 /// bundle `<name>`, the way a consumer's `bundles:` list would name it. An
-/// overlay with no number, such as `overlay-adopter.yml`, is not a bundle and
-/// its `requires` is not read.
+/// overlay with no number is not a bundle and its `requires` is not read.
+/// `overlay-adopter.yml` is the adopter's overlay of a consumer, which applies
+/// after every bundle (#2022).
 fn selected_as(file: &str) -> Option<String> {
     let rest = file.strip_prefix("overlay-")?.strip_suffix(".yml")?;
     let (number, name) = rest.split_once('-')?;

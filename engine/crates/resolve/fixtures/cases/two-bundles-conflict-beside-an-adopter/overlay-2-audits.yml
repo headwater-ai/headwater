@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The second bundle. It names nothing in `requires`, so the two bundles state
+# two values for one leaf and no order resolves them.
+
+bundle: audits
+extends: headwater/standard@1.0.0
+
+add:
+  kinds.report.purpose: rationale

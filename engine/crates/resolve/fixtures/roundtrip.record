@@ -1,6 +1,8 @@
 add-collides: refused, so nothing to write out
 add-collides-behind-remove: refused, so nothing to write out
 address-into-a-list: refused, so nothing to write out
+adopter-overrides-a-bundle: 15 lines, identical after a round trip
+adopter-removes-from-a-bundle: 13 lines, identical after a round trip
 an-add-that-founds-what-it-addresses: 16 lines, identical after a round trip
 core-last-satisfier: refused, so nothing to write out
 dependent-add-to: 22 lines, identical after a round trip
@@ -15,4 +17,5 @@ remove-breaks-a-reference: refused, so nothing to write out
 requires-cycle: refused, so nothing to write out
 transitive-requires-grants-no-write: refused, so nothing to write out
 two-adds-into-one-kind: 23 lines, identical after a round trip
+two-bundles-conflict-beside-an-adopter: refused, so nothing to write out
 worked-overlay: 63 lines, identical after a round trip

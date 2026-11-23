@@ -9,8 +9,14 @@
 //! is where that order is made. Bundles apply in `bundles:` order, except that
 //! a bundle waits until every bundle its `requires` names has applied; bundles
 //! later in the list that are ready apply ahead of it. A source that was not
-//! selected as a bundle names nothing, so it is ready at once. The adopter
-//! overlay is last in every selection and stays last.
+//! selected as a bundle names nothing, so it is ready at once.
+//!
+//! The adopter's overlay ([`Source::adopter`]) waits on every other overlay in
+//! the set, so it applies last whatever its position in the input. The owner
+//! ruled on 2026-11-22 (#2022): "An adopter's overlay is ordered after every
+//! bundle it selects, so it may `override` and `remove` what those bundles
+//! add." [`Ordered::after`] carries that order to [`crate::confluence`], which
+//! does not test a pair it orders.
 //!
 //! So `bundles: [a, b]` and `bundles: [b, a]` where `b` requires `a` both apply
 //! `a` first and write one lock. The rule says nothing stronger than that about
@@ -60,6 +66,13 @@ pub struct Ordered {
     /// `missing[i]` holds each name the overlay at position `i` requires and
     /// the selection lacks.
     pub missing: Vec<Vec<String>>,
+    /// `after[i]` holds the positions, in `order`, of the selected bundles that
+    /// the overlay at position `i` applies after because it is the adopter's
+    /// overlay (#2022). It is empty for every other overlay. It is kept apart
+    /// from `requires` because it grants more: HW-DR-0095 lets a dependent
+    /// bundle add, and the ruling of #2022 lets the adopter also override and
+    /// remove.
+    pub after: Vec<Vec<usize>>,
 }
 
 /// The names a source requires, when it was selected as a bundle.
@@ -118,15 +131,34 @@ pub fn order(overlays: &[Source]) -> Result<Ordered, Vec<ResolveError>> {
         missing_by_input.push(missing);
     }
 
+    // The adopter's overlay waits on every other overlay, so it applies last
+    // (#2022). `waits` is what the order reads, and `depends` stays what
+    // `requires` names.
+    let waits: Vec<Vec<usize>> = overlays
+        .iter()
+        .zip(&depends)
+        .map(|(overlay, named)| {
+            if overlay.adopter {
+                (0..overlays.len())
+                    .filter(|other| !overlays[*other].adopter)
+                    .collect()
+            } else {
+                named.clone()
+            }
+        })
+        .collect();
+
     // Kahn's algorithm, taking the lowest input index that is ready: the first
     // bundle in `bundles:` order whose named bundles have all applied.
     let mut placed = vec![false; overlays.len()];
     let mut order = Vec::with_capacity(overlays.len());
     while order.len() < overlays.len() {
         let ready = (0..overlays.len())
-            .find(|index| !placed[*index] && depends[*index].iter().all(|dep| placed[*dep]));
+            .find(|index| !placed[*index] && waits[*index].iter().all(|dep| placed[*dep]));
         let Some(next) = ready else {
-            return Err(vec![cycle(overlays, &depends, &placed)]);
+            // The walk reads `waits`: an adopter's overlay can be the first
+            // unplaced overlay, and it names nothing in `requires`.
+            return Err(vec![cycle(overlays, &waits, &placed)]);
         };
         placed[next] = true;
         order.push(next);
@@ -144,10 +176,25 @@ pub fn order(overlays: &[Source]) -> Result<Ordered, Vec<ResolveError>> {
         .iter()
         .map(|index| missing_by_input[*index].clone())
         .collect();
+    let after = order
+        .iter()
+        .map(|index| {
+            if overlays[*index].adopter {
+                waits[*index]
+                    .iter()
+                    .filter(|other| overlays[**other].selected_as.is_some())
+                    .map(|other| position[*other])
+                    .collect()
+            } else {
+                Vec::new()
+            }
+        })
+        .collect();
     Ok(Ordered {
         order,
         requires,
         missing,
+        after,
     })
 }
 

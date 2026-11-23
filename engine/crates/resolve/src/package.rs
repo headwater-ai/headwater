@@ -653,7 +653,7 @@ fn selected(
 
     if let Some(overlay) = &consumer.overlay {
         let path = root.join(overlay);
-        out.push(Source::read(&path, overlay, Role::Overlay)?);
+        out.push(Source::read(&path, overlay, Role::Overlay)?.adopter());
     }
 
     Ok(out)

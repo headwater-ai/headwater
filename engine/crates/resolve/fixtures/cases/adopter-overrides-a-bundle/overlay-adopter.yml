@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The adopter's overlay overrides a value the bundle added. The owner ruled on
+# 2026-11-22 (#2022) that an adopter's overlay is ordered after every bundle it
+# selects, so the pair has one order and the adopter's value is the result in
+# every permutation of the input, this file first included.
+
+taxonomy: acme
+extends: headwater/standard@1.0.0
+
+override:
+  kinds.report.purpose: rationale
