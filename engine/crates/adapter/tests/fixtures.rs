@@ -419,7 +419,13 @@ fn render(ran: &Ran, format: Format) -> String {
     headwater_adapter::render(&ran.run, &ran.census, &ran.graph, &subject(&lock), format)
 }
 
+/// The report at a width, under `--verbose`: the whole account, which is what
+/// `fixture.text` records and what every reader of the read-set block cuts.
 fn render_at(ran: &Ran, format: Format, width: usize) -> String {
+    render_as(ran, format, width, true)
+}
+
+fn render_as(ran: &Ran, format: Format, width: usize, verbose: bool) -> String {
     let lock = lock_digest();
     headwater_adapter::render_at(
         &ran.run,
@@ -429,6 +435,7 @@ fn render_at(ran: &Ran, format: Format, width: usize) -> String {
         format,
         width,
         headwater_check::paint::ColorMode::Plain,
+        verbose,
     )
 }
 
@@ -556,13 +563,13 @@ fn every_entry_of_every_loss_set_is_accounted_for() {
 /// that audited nothing and over one that audited everything, so a suite that
 /// asserted the verdict alone could not tell the two apart. Five of SARIF's
 /// seven entries name a member of the document and two name nowhere. All five of
-/// Markdown's name nowhere in it, because that artifact is prose, and so does the
-/// one entry `text` declares and the one `json` declares.
+/// Markdown's name nowhere in it, because that artifact is prose, and so do the
+/// two entries `text` declares and the one `json` declares.
 #[test]
 fn the_audited_and_the_unaudited_are_counted_apart() {
     for ran in [fixture_run(), scoped_run()] {
         for (format, entries, held, unaudited) in [
-            (Format::Text, 1, 0, 1),
+            (Format::Text, 2, 0, 2),
             (Format::Json, 1, 0, 1),
             (Format::Sarif, 7, 5, 2),
             (Format::Markdown, 5, 0, 5),
@@ -2014,19 +2021,88 @@ fn the_fixture_tree_renders_the_recorded_markdown() {
 /// stable enough to diff. [#340](https://github.com/headwater-ai/headwater/issues/340)
 /// laid it out, so this is the reviewable record of what the fill produces and
 /// the file a later change to the fill has to re-bless.
+///
+/// It records the report under `--verbose`, which is the whole account. The
+/// default leaves two of its blocks out, and the next case holds what it keeps.
 #[test]
 fn the_fixture_tree_renders_the_recorded_text() {
-    compare(&tests_dir().join("fixture.text"), &rendered(Format::Text));
+    compare(
+        &tests_dir().join("fixture.text"),
+        &render_at(&fixture_run(), Format::Text, headwater_check::fill::WIDTH),
+    );
+}
+
+/// The report a person reads by default is the census, the counts and the
+/// findings, and it leaves out the scope of each rule and the read set (#1990).
+///
+/// A report shortened by dropping a finding, or the register, is shorter too,
+/// so length is not the test. The test is that the short report is the
+/// recorded verbose one with exactly those two blocks taken out, and that the
+/// census audit still accounts for every finding in it.
+#[test]
+fn the_default_text_report_carries_no_rule_scopes_and_no_read_set_and_loses_no_finding() {
+    let ran = fixture_run();
+    let short = render(&ran, Format::Text);
+    // (a) Neither block is there.
+    assert!(
+        !short.contains("rules, and for each the scope that binds it"),
+        "the default report still carries the scope of each rule"
+    );
+    assert!(
+        !short.lines().any(|line| line == "read set"),
+        "the default report still carries the read-set block"
+    );
+    // (b) What a reader needs is still there.
+    for kept in ["\nchecks\n", "\n  register\n", "\nnot reported\n"] {
+        assert!(short.contains(kept), "the default report lost {kept:?}");
+    }
+    assert!(
+        short.contains(&format!("\n  {} findings\n", ran.run.findings.len())),
+        "the default report lost the count of findings"
+    );
+    for finding in &ran.run.findings {
+        assert!(
+            flowed(&short).contains(&flowed(&finding.message)),
+            "the default report lost the finding {} on {}",
+            finding.rule,
+            finding.path
+        );
+    }
+    // (c) The audit accounts for every finding in the short report.
+    let audited = headwater_adapter::census(&ran.run, Format::Text, &short);
+    assert!(
+        !audited.is_defective(),
+        "the default report lost a finding the audit cannot account for: {audited:?}"
+    );
+    // (d) The short report is the verbose one less the two blocks, byte for
+    // byte, so nothing else moved.
+    let verbose = std::fs::read_to_string(tests_dir().join("fixture.text")).unwrap();
+    let (before_rules, rules_on) = verbose
+        .split_once("  rules, and for each the scope that binds it\n")
+        .expect("the verbose report carries the scope of each rule");
+    let (_, register_on) = rules_on
+        .split_once("  register\n")
+        .expect("the register follows the rule scopes");
+    let (expected, _) = format!("{before_rules}  register\n{register_on}")
+        .split_once("\nread set\n")
+        .map(|(head, tail)| (head.to_string(), tail.to_string()))
+        .expect("the verbose report carries the read-set block");
+    assert_eq!(short, format!("{expected}\n"));
+    assert_eq!(
+        short,
+        render_as(&ran, Format::Text, headwater_check::fill::WIDTH, false),
+        "`render` is the default form of `render_at`"
+    );
 }
 
 /// The default width is the width, and a wider one is a different report.
 #[test]
 fn the_width_a_caller_states_is_the_width_the_report_is_laid_out_at() {
     let ran = fixture_run();
-    let ordinary = render(&ran, Format::Text);
+    let ordinary = render_at(&ran, Format::Text, headwater_check::fill::WIDTH);
     assert_eq!(
-        render_at(&ran, Format::Text, headwater_check::fill::WIDTH),
-        ordinary,
+        render_as(&ran, Format::Text, headwater_check::fill::WIDTH, false),
+        render(&ran, Format::Text),
         "`render` is `render_at` at the standard width"
     );
     let wide = render_at(&ran, Format::Text, headwater_check::fill::WIDEST);
@@ -2381,6 +2457,7 @@ fn painted(ran: &Ran, width: usize) -> String {
         Format::Text,
         width,
         headwater_check::paint::ColorMode::Ansi,
+        false,
     )
 }
 
