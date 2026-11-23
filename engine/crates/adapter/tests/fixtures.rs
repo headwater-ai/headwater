@@ -566,6 +566,15 @@ fn a_control_character_from_a_document_reaches_no_format_intact() {
         path: HOSTILE_PATH.to_string(),
         digest: None,
     });
+    // The census lists the rows it did not type in the text report, so one of
+    // them takes the hostile name as well.
+    let untyped = ran
+        .census
+        .rows
+        .iter_mut()
+        .find(|row| !matches!(row.outcome, census::Outcome::Typed { .. }))
+        .expect("the fixture tree holds a row the census does not type");
+    untyped.path = HOSTILE_PATH.to_string();
     let escaped_path = "docs/decisions/0003-x\\n::error ::forged-name\\x1b[31m.md";
     for format in Format::ALL {
         let artifact = render(&ran, format);
@@ -586,6 +595,23 @@ fn a_control_character_from_a_document_reaches_no_format_intact() {
             audited.unaccounted
         );
         assert_eq!(audited.carried, audited.findings, "{name}");
+        // The complaint a caller prints on standard error names each dropped
+        // finding by its path, so an artifact that carries nothing makes it
+        // name the hostile one too.
+        let complaint = headwater_adapter::census(&ran.run, format, "").complaint(format);
+        assert!(complaint.contains("forged-name"), "{name}: {complaint}");
+        assert!(
+            !complaint
+                .bytes()
+                .any(|byte| (byte < 0x20 && byte != b'\n') || byte == 0x7f),
+            "{name} complains with a raw control byte: {complaint:?}"
+        );
+        assert!(
+            !complaint
+                .lines()
+                .any(|line| line.trim_start().starts_with("::")),
+            "{name} complains with a forged line: {complaint}"
+        );
         match format {
             Format::Text | Format::Markdown => assert!(
                 artifact.contains(escaped_path),
