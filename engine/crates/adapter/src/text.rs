@@ -55,7 +55,7 @@
 
 use crate::{held_by, reported, Carrier, Loss, Subject};
 use headwater_census::census::{Census, Detail as CensusDetail};
-use headwater_check::paint::{paint, ColorMode, Role};
+use headwater_check::paint::{paint, visible, ColorMode, Role};
 use headwater_check::{fill, Run};
 use headwater_graph::{Detail as GraphDetail, Graph};
 
@@ -217,7 +217,10 @@ fn blocks_strict(run: &Run) -> String {
         .map(|(finding, control)| {
             format!(
                 "{}:{}:{}\n  {} blocked by {control}\n",
-                finding.path, finding.line, finding.column, finding.rule
+                visible(&finding.path),
+                finding.line,
+                finding.column,
+                finding.rule
             )
         })
         .collect()

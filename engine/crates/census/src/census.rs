@@ -143,6 +143,7 @@ use crate::resolve::{self, Resolution};
 use crate::shelves::Taxonomy;
 use crate::walk::{self, Corpus, EntryKind};
 use headwater_doc::{ParseError, Reason};
+use headwater_paint::visible;
 
 /// Every file under the corpus root, in path order.
 #[derive(Clone, Debug)]
@@ -758,7 +759,11 @@ impl Census {
         if !exclusions.is_empty() {
             out.push_str("\nexclusions\n");
             for (pattern, reason, count) in exclusions {
-                out.push_str(&format!("  {count:5} `{pattern}`\n        {reason}\n"));
+                out.push_str(&format!(
+                    "  {count:5} `{}`\n        {}\n",
+                    visible(&pattern),
+                    visible(&reason)
+                ));
             }
         }
 
@@ -813,11 +818,14 @@ impl Census {
         };
         let mut out = String::new();
         for row in rows {
+            // The path and the detail come from the tree and from a document,
+            // so a control character in either is written as visible text and
+            // never reaches the terminal as an instruction (#1970).
             out.push_str(&format!(
                 "{}\n  {}: {}\n",
-                row.path,
+                visible(&row.path),
                 row.outcome.class(),
-                row.outcome.detail()
+                visible(&row.outcome.detail())
             ));
         }
         out

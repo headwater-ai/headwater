@@ -157,6 +157,10 @@ fn indent(depth: usize, out: &mut String) {
 /// an author wrote and a tab in it would otherwise produce a message no client
 /// can parse. The two-character forms are used where JSON has one, and `\u00XX`
 /// otherwise.
+///
+/// DEL and the C1 range are escaped as well, which JSON permits and a parser
+/// reads back to the same character. A raw one reaches a terminal that shows
+/// the document, and U+009B opens a control sequence on some terminals (#1970).
 fn escape(text: &str, out: &mut String) {
     use std::fmt::Write;
     out.push('"');
@@ -169,7 +173,7 @@ fn escape(text: &str, out: &mut String) {
             '\t' => out.push_str("\\t"),
             '\u{8}' => out.push_str("\\b"),
             '\u{c}' => out.push_str("\\f"),
-            control if (control as u32) < 0x20 => {
+            control if control.is_control() => {
                 let _ = write!(out, "\\u{:04x}", control as u32);
             }
             other => out.push(other),
@@ -260,6 +264,11 @@ mod tests {
             "\"a \\\"quoted\\\" line\\nand a tab\\there\""
         );
         assert_eq!(Json::string("\u{1}").render(), "\"\\u0001\"");
+        // DEL and C1 are control characters a terminal acts on, and JSON
+        // escapes them without loss (#1970).
+        assert_eq!(Json::string("\u{7f}").render(), "\"\\u007f\"");
+        assert_eq!(Json::string("\u{9b}").render(), "\"\\u009b\"");
+        assert_eq!(Json::string("\u{a0}").render(), "\"\u{a0}\"");
         // An em dash is a character a rendered pointer holds, and it needs no
         // escape: JSON is Unicode, and a writer that escaped it would produce a
         // longer message that says the same thing.

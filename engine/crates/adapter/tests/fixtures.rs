@@ -560,6 +560,12 @@ fn a_control_character_from_a_document_reaches_no_format_intact() {
     for finding in ran.run.findings.iter_mut().take(2) {
         finding.message.push_str(HOSTILE_ID);
     }
+    // The read set lists every file a run read, so the hostile file is in it
+    // too, and the text report prints it.
+    ran.run.read_set.inputs.push(Input {
+        path: HOSTILE_PATH.to_string(),
+        digest: None,
+    });
     let escaped_path = "docs/decisions/0003-x\\n::error ::forged-name\\x1b[31m.md";
     for format in Format::ALL {
         let artifact = render(&ran, format);

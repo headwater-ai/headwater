@@ -51,7 +51,7 @@
 //! reading — that the defect has a mechanical remedy — is what the severity
 //! already says, on the bar `CLAUDE.md` states.
 
-use crate::paint::{ColorMode, Role};
+use crate::paint::{visible, ColorMode, Role};
 
 /// What a check says about a finding. Whether it blocks is the control's
 /// business ([spec 12](../../../../docs/spec/12-check-layer.md#severity-is-the-checks-posture-is-the-controls)).
@@ -119,6 +119,12 @@ impl Finding {
     /// [`ColorMode::Plain`] for a machine format or a recorded fixture. This
     /// function reads no stream itself, on the rule
     /// `crate::paint`'s module comment states.
+    ///
+    /// The path, the message, the remediation and the obligation come from a
+    /// document or a taxonomy, so each is written through [`visible`]: a
+    /// control character in one of them reaches the reader as text and never
+    /// as an instruction to the terminal (#1970). The finding itself keeps the
+    /// raw value, which the cache stores and JSON writes exactly.
     pub fn render(&self, mode: ColorMode) -> String {
         use std::fmt::Write;
         let mut out = String::new();
@@ -136,25 +142,29 @@ impl Finding {
                 out,
                 "  {} ({}): {}",
                 self.rule,
-                crate::paint::paint(Role::Obligation, obligation, mode),
-                self.message
+                crate::paint::paint(Role::Obligation, &visible(obligation), mode),
+                visible(&self.message)
             ),
-            None => writeln!(out, "  {}: {}", self.rule, self.message),
+            None => writeln!(out, "  {}: {}", self.rule, visible(&self.message)),
         };
         let _ = writeln!(
             out,
             "  {}{}: {}",
             crate::paint::paint(Role::Verb, "fix", mode),
             if self.fixable() { " (mechanical)" } else { "" },
-            self.remediation
+            visible(&self.remediation)
         );
         out
     }
 
+    /// Where the finding is, as a reader sees it, with every control character
+    /// of the path made visible by [`visible`] (#1970). The prose formats
+    /// write this, and the census of each one compares the same form.
     fn location(&self) -> String {
+        let path = visible(&self.path);
         match self.line {
-            0 => self.path.clone(),
-            line => format!("{}:{line}:{}", self.path, self.column),
+            0 => path.into_owned(),
+            line => format!("{path}:{line}:{}", self.column),
         }
     }
 }

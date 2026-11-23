@@ -163,9 +163,81 @@ pub fn dim(text: &str, mode: ColorMode) -> String {
     }
 }
 
+/// `text` with every control character written as a visible backslash form.
+///
+/// A file name, an identifier and every other value a document supplies reach
+/// a terminal, a CI log and a Markdown table through the prose formats, and a
+/// control character in one of them is an instruction to the reader's tool
+/// rather than text (#1970). An escape sequence recolors or clears a terminal,
+/// and a line feed opens a new line, which GitHub Actions reads as a workflow
+/// command when it starts `::`. So every renderer that prints such a value as
+/// prose passes it through here first.
+///
+/// The set is the whole category [`char::is_control`] names: C0, DEL and C1.
+/// C1 is included because U+009B is a control sequence introducer on some
+/// terminals, the same reason `headwater infer` quotes by category rather than
+/// by character. A line feed and a tab are in the set: a value never carries a
+/// legitimate line break, and a tab moves a column. `\n`, `\r` and `\t` keep
+/// their usual names, and every other character is written `\xHH` below U+0100
+/// and `\u{HHHH}` above it.
+///
+/// A backslash is not escaped, so a clean path is written back unchanged and
+/// borrowed. The cost is one ambiguity: a name that holds the two characters
+/// `\` and `n` reads the same as a name that holds a line feed. A reader who
+/// needs the exact value reads JSON or SARIF, which escape with their own
+/// string syntax and give it back exactly when parsed.
+#[must_use]
+pub fn visible(text: &str) -> std::borrow::Cow<'_, str> {
+    if !text.chars().any(char::is_control) {
+        return std::borrow::Cow::Borrowed(text);
+    }
+    let mut out = String::with_capacity(text.len() + 8);
+    for char in text.chars() {
+        match char {
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            control if control.is_control() && (control as u32) < 0x100 => {
+                out.push_str(&format!("\\x{:02x}", control as u32));
+            }
+            control if control.is_control() => {
+                out.push_str(&format!("\\u{{{:04x}}}", control as u32));
+            }
+            other => out.push(other),
+        }
+    }
+    std::borrow::Cow::Owned(out)
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{color_of, dim, paint, ColorMode, Role, ROLES};
+    use super::{color_of, dim, paint, visible, ColorMode, Role, ROLES};
+
+    /// Each control character is written in its visible form, and a value
+    /// with none comes back borrowed and unchanged (#1970).
+    #[test]
+    fn visible_writes_every_control_character_as_backslash_text() {
+        let cases = [
+            ("docs/a.md", "docs/a.md"),
+            ("a\\nb", "a\\nb"),
+            ("a\nb", "a\\nb"),
+            ("a\rb", "a\\rb"),
+            ("a\tb", "a\\tb"),
+            ("\u{1b}[31m", "\\x1b[31m"),
+            ("\u{0}", "\\x00"),
+            ("\u{7f}", "\\x7f"),
+            ("\u{9b}", "\\x9b"),
+            ("caf\u{e9}", "caf\u{e9}"),
+            ("x\u{1b}[2J\u{1b}[31my", "x\\x1b[2J\\x1b[31my"),
+        ];
+        for (given, written) in cases {
+            assert_eq!(visible(given), written, "{given:?}");
+        }
+        assert!(matches!(
+            visible("docs/a.md"),
+            std::borrow::Cow::Borrowed(_)
+        ));
+    }
 
     #[test]
     fn color_is_plain_off_a_terminal_and_ansi_on_one_unless_overridden() {

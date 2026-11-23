@@ -42,7 +42,7 @@
 
 use crate::Severity;
 
-pub use headwater_paint::{color_of, dim, paint, ColorMode, Role, ROLES};
+pub use headwater_paint::{color_of, dim, paint, visible, ColorMode, Role, ROLES};
 
 /// The role a severity renders under, so a caller never hand-maps the three
 /// [`Severity`] variants onto [`Role`] a second time.
