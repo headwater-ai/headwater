@@ -2,7 +2,7 @@
 id: HW-SPEC-engine-architecture
 status: current
 status_since: 2026-08-01
-last_verified: 2026-09-30
+last_verified: 2026-11-23
 summary: One parse, one typed graph, and many consumers, with the pipeline, the library boundary, and the performance targets.
 doc_type: design_spec
 sequence: 6
@@ -233,7 +233,7 @@ The separation matters. `validate` must stay fast and total because it gates, wh
 
 ### Library
 
-The CLI is a thin shell over a library API — load, graph, check, query, generate. The MCP server consumes the library in the same process. An editor integration is a client of the MCP server: it starts `headwater mcp` for each query and reads the structured answer ([HW-DR-0102](../decisions/0102-an-editor-integration-starts-headwater-mcp-for-each-query-and-does-not-embed-the-library.md)). The CI adapter under `integrations/headwater-check/` runs the released `headwater` binary.
+The CLI is a thin shell over a library API — load, graph, check, query, generate. `headwater-api` holds the load. The MCP server consumes the library in the same process. An editor integration is a client of the MCP server: it starts `headwater mcp` for each query and reads the structured answer ([HW-DR-0102](../decisions/0102-an-editor-integration-starts-headwater-mcp-for-each-query-and-does-not-embed-the-library.md)). The CI adapter under `integrations/headwater-check/` runs the released `headwater` binary.
 
 ### MCP server
 
