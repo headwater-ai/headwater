@@ -65,86 +65,176 @@ pub fn digest(bytes: &[u8]) -> String {
 }
 
 /// The digest of a byte string, as sixty-four lower-case hexadecimal digits.
+///
+/// This is [`Hasher`] fed the whole string in one call, so a digest computed
+/// in pieces and a digest computed at once go through one compression
+/// function and cannot disagree.
 pub fn hex(bytes: &[u8]) -> String {
-    let mut state: [u32; 8] = [
-        0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab,
-        0x5be0cd19,
-    ];
+    let mut hasher = Hasher::new();
+    hasher.update(bytes);
+    hasher.finish_hex()
+}
 
-    // The padded message: the bytes, a one bit, zeroes, and the bit length as a
-    // 64-bit big-endian integer.
-    let mut padded = bytes.to_vec();
-    padded.push(0x80);
-    while padded.len() % 64 != 56 {
-        padded.push(0);
+/// The initial hash value of FIPS 180-4, section 5.3.3.
+const INITIAL: [u32; 8] = [
+    0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
+];
+
+/// SHA-256 over a byte string that arrives in pieces.
+///
+/// The digest of the pieces is the digest of their concatenation, wherever
+/// the splits fall. It exists for a caller that hashes many strings with a
+/// common beginning: the check cache keys every instance over a text whose
+/// first lines name only the rule and its scope, so it hashes those lines
+/// once, keeps the state, and clones it for each instance (#1968). A clone
+/// is a copy of 112 bytes, so the common lines cost nothing after the first.
+///
+/// It also writes through [`std::fmt::Write`], so a caller can `write!` a
+/// line into it without building the line as a `String` first.
+#[derive(Clone, Debug)]
+pub struct Hasher {
+    state: [u32; 8],
+    /// The bytes of a block that is not yet full. The first `filled` are
+    /// meaningful.
+    block: [u8; 64],
+    filled: usize,
+    /// Every byte fed so far, across every call, which the padding writes as
+    /// the message length.
+    length: u64,
+}
+
+impl Default for Hasher {
+    fn default() -> Self {
+        Self::new()
     }
-    padded.extend_from_slice(&((bytes.len() as u64) * 8).to_be_bytes());
+}
 
-    // `as_chunks` rather than `chunks_exact`: the chunk size is a constant here,
-    // so the compiler carries the length in the type and no bounds check reaches
-    // the inner loop. It is stable from 1.88 and the workspace floor is 1.91, so
-    // clippy's `chunks_exact_to_as_chunks` fires on the older form and `-D
-    // warnings` in continuous integration turns that into a build failure.
-    let (blocks, _) = padded.as_chunks::<64>();
-    for chunk in blocks {
-        let mut w = [0u32; 64];
-        let (words, _) = chunk.as_chunks::<4>();
-        for (index, word) in words.iter().enumerate() {
-            w[index] = u32::from_be_bytes(*word);
-        }
-        for index in 16..64 {
-            let s0 = w[index - 15].rotate_right(7)
-                ^ w[index - 15].rotate_right(18)
-                ^ (w[index - 15] >> 3);
-            let s1 = w[index - 2].rotate_right(17)
-                ^ w[index - 2].rotate_right(19)
-                ^ (w[index - 2] >> 10);
-            w[index] = w[index - 16]
-                .wrapping_add(s0)
-                .wrapping_add(w[index - 7])
-                .wrapping_add(s1);
-        }
-
-        let [mut a, mut b, mut c, mut d, mut e, mut f, mut g, mut h] = state;
-        for index in 0..64 {
-            let s1 = e.rotate_right(6) ^ e.rotate_right(11) ^ e.rotate_right(25);
-            let choose = (e & f) ^ ((!e) & g);
-            let temp1 = h
-                .wrapping_add(s1)
-                .wrapping_add(choose)
-                .wrapping_add(K[index])
-                .wrapping_add(w[index]);
-            let s0 = a.rotate_right(2) ^ a.rotate_right(13) ^ a.rotate_right(22);
-            let majority = (a & b) ^ (a & c) ^ (b & c);
-            let temp2 = s0.wrapping_add(majority);
-
-            h = g;
-            g = f;
-            f = e;
-            e = d.wrapping_add(temp1);
-            d = c;
-            c = b;
-            b = a;
-            a = temp1.wrapping_add(temp2);
-        }
-
-        for (slot, value) in state.iter_mut().zip([a, b, c, d, e, f, g, h]) {
-            *slot = slot.wrapping_add(value);
+impl Hasher {
+    pub const fn new() -> Self {
+        Hasher {
+            state: INITIAL,
+            block: [0; 64],
+            filled: 0,
+            length: 0,
         }
     }
 
-    use std::fmt::Write;
-    state
-        .iter()
-        .fold(String::with_capacity(64), |mut out, word| {
-            let _ = write!(out, "{word:08x}");
-            out
-        })
+    /// Feed the next bytes of the message.
+    pub fn update(&mut self, bytes: &[u8]) {
+        self.length = self.length.wrapping_add(bytes.len() as u64);
+        let mut bytes = bytes;
+        // Fill the partial block first. It is compressed only when it is full,
+        // and a block that one call leaves full is compressed in that call, so
+        // `filled` is always below 64 between calls.
+        if self.filled > 0 {
+            let take = (64 - self.filled).min(bytes.len());
+            self.block[self.filled..self.filled + take].copy_from_slice(&bytes[..take]);
+            self.filled += take;
+            bytes = &bytes[take..];
+            if self.filled < 64 {
+                return;
+            }
+            compress(&mut self.state, &self.block);
+            self.filled = 0;
+        }
+        // `as_chunks` rather than `chunks_exact`: the chunk size is a constant
+        // here, so the compiler carries the length in the type and no bounds
+        // check reaches the inner loop. It is stable from 1.88 and the
+        // workspace floor is 1.91, so clippy's `chunks_exact_to_as_chunks`
+        // fires on the older form and `-D warnings` in continuous integration
+        // turns that into a build failure.
+        let (blocks, rest) = bytes.as_chunks::<64>();
+        for block in blocks {
+            compress(&mut self.state, block);
+        }
+        self.block[..rest.len()].copy_from_slice(rest);
+        self.filled = rest.len();
+    }
+
+    /// The digest of everything fed, as sixty-four lower-case hexadecimal
+    /// digits.
+    pub fn finish_hex(mut self) -> String {
+        // The padding: a one bit, zeroes up to 56 bytes into a block, and the
+        // bit length of the message as a 64-bit big-endian integer.
+        let bits = self.length.wrapping_mul(8);
+        let zeroes = if self.filled < 56 {
+            55 - self.filled
+        } else {
+            119 - self.filled
+        };
+        let mut padding = [0u8; 64];
+        padding[0] = 0x80;
+        self.update(&padding[..1 + zeroes]);
+        self.update(&bits.to_be_bytes());
+        debug_assert_eq!(self.filled, 0, "the padding ends on a block boundary");
+
+        use std::fmt::Write;
+        self.state
+            .iter()
+            .fold(String::with_capacity(64), |mut out, word| {
+                let _ = write!(out, "{word:08x}");
+                out
+            })
+    }
+}
+
+impl std::fmt::Write for Hasher {
+    fn write_str(&mut self, text: &str) -> std::fmt::Result {
+        self.update(text.as_bytes());
+        Ok(())
+    }
+}
+
+/// One block of the compression function, FIPS 180-4 section 6.2.2. This is
+/// the only copy of it.
+fn compress(state: &mut [u32; 8], block: &[u8; 64]) {
+    let mut w = [0u32; 64];
+    let (words, _) = block.as_chunks::<4>();
+    for (index, word) in words.iter().enumerate() {
+        w[index] = u32::from_be_bytes(*word);
+    }
+    for index in 16..64 {
+        let s0 =
+            w[index - 15].rotate_right(7) ^ w[index - 15].rotate_right(18) ^ (w[index - 15] >> 3);
+        let s1 =
+            w[index - 2].rotate_right(17) ^ w[index - 2].rotate_right(19) ^ (w[index - 2] >> 10);
+        w[index] = w[index - 16]
+            .wrapping_add(s0)
+            .wrapping_add(w[index - 7])
+            .wrapping_add(s1);
+    }
+
+    let [mut a, mut b, mut c, mut d, mut e, mut f, mut g, mut h] = *state;
+    for index in 0..64 {
+        let s1 = e.rotate_right(6) ^ e.rotate_right(11) ^ e.rotate_right(25);
+        let choose = (e & f) ^ ((!e) & g);
+        let temp1 = h
+            .wrapping_add(s1)
+            .wrapping_add(choose)
+            .wrapping_add(K[index])
+            .wrapping_add(w[index]);
+        let s0 = a.rotate_right(2) ^ a.rotate_right(13) ^ a.rotate_right(22);
+        let majority = (a & b) ^ (a & c) ^ (b & c);
+        let temp2 = s0.wrapping_add(majority);
+
+        h = g;
+        g = f;
+        f = e;
+        e = d.wrapping_add(temp1);
+        d = c;
+        c = b;
+        b = a;
+        a = temp1.wrapping_add(temp2);
+    }
+
+    for (slot, value) in state.iter_mut().zip([a, b, c, d, e, f, g, h]) {
+        *slot = slot.wrapping_add(value);
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{digest, hex};
+    use super::{digest, hex, Hasher};
 
     /// The named form is the hexadecimal one with the function in front of it.
     #[test]
@@ -204,5 +294,93 @@ mod tests {
         for (length, expected) in cases {
             assert_eq!(hex(&b"a".repeat(length)), expected, "at length {length}");
         }
+    }
+
+    fn pieces(parts: &[&[u8]]) -> String {
+        let mut hasher = Hasher::new();
+        for part in parts {
+            hasher.update(part);
+        }
+        hasher.finish_hex()
+    }
+
+    /// A digest fed in pieces is the digest of the whole, wherever the pieces
+    /// split: at 0 and at the full length, at each byte in between, and in
+    /// three pieces whose middle one crosses a block boundary. The subjects
+    /// are the published vectors and every length the case above brackets,
+    /// with bytes that differ from one position to the next so that a piece
+    /// fed out of place changes the digest.
+    #[test]
+    fn an_incremental_digest_agrees_with_one_call_at_every_split() {
+        let mut subjects: Vec<Vec<u8>> = vec![
+            b"".to_vec(),
+            b"abc".to_vec(),
+            b"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq".to_vec(),
+        ];
+        for length in 0..=130usize {
+            subjects.push((0..length).map(|index| (index * 31 + 7) as u8).collect());
+        }
+        for bytes in &subjects {
+            let whole = hex(bytes);
+            let length = bytes.len();
+            for split in 0..=length {
+                let (left, right) = bytes.split_at(split);
+                assert_eq!(
+                    pieces(&[left, right]),
+                    whole,
+                    "length {length} split at {split}"
+                );
+            }
+            for first in 0..=length.min(64) {
+                for second in [63usize, 64, 65, 127, 128, 129] {
+                    if second < first || second > length {
+                        continue;
+                    }
+                    assert_eq!(
+                        pieces(&[&bytes[..first], &bytes[first..second], &bytes[second..]]),
+                        whole,
+                        "length {length} split at {first} and {second}"
+                    );
+                }
+            }
+        }
+        // The million-byte vector, in pieces of 1000, which is no multiple of
+        // a block.
+        let million = b"a".repeat(1_000_000);
+        let mut hasher = Hasher::new();
+        for chunk in million.chunks(1000) {
+            hasher.update(chunk);
+        }
+        assert_eq!(
+            hasher.finish_hex(),
+            "cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0"
+        );
+    }
+
+    /// A clone carries the state of its original, and finishing the clone
+    /// leaves the original able to go on: the property the check cache's
+    /// memo of a key's first lines rests on.
+    #[test]
+    fn a_cloned_hasher_goes_on_from_where_its_original_stood() {
+        let mut prefix = Hasher::new();
+        prefix.update(&[b'p'; 70]);
+        for suffix in [&b""[..], b"x", &[b'y'; 64], &[b'z'; 200]] {
+            let mut clone = prefix.clone();
+            clone.update(suffix);
+            let mut whole = vec![b'p'; 70];
+            whole.extend_from_slice(suffix);
+            assert_eq!(clone.finish_hex(), hex(&whole));
+        }
+        assert_eq!(prefix.finish_hex(), hex(&[b'p'; 70]));
+    }
+
+    /// `write!` into a hasher is `update` with the formatted bytes.
+    #[test]
+    fn a_hasher_written_through_fmt_hashes_the_formatted_text() {
+        use std::fmt::Write;
+        let mut hasher = Hasher::new();
+        let version = 2;
+        writeln!(hasher, "rule r version {version}").expect("never fails");
+        assert_eq!(hasher.finish_hex(), hex(b"rule r version 2\n"));
     }
 }

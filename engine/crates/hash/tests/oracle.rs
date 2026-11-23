@@ -157,5 +157,21 @@ fn agree(subjects: &[(String, Vec<u8>)]) {
             format!("sha256:{theirs}"),
             "the named form is not the hexadecimal one for {name}"
         );
+        // The incremental path, fed in uneven pieces that cross block
+        // boundaries at every offset, against the same second implementation.
+        let mut hasher = headwater_hash::Hasher::new();
+        let mut rest = bytes.as_slice();
+        let mut piece = 1;
+        while !rest.is_empty() {
+            let take = piece.min(rest.len());
+            hasher.update(&rest[..take]);
+            rest = &rest[take..];
+            piece = piece % 97 + 13;
+        }
+        assert_eq!(
+            hasher.finish_hex(),
+            theirs,
+            "the incremental path disagrees with sha256sum on {name}"
+        );
     }
 }
