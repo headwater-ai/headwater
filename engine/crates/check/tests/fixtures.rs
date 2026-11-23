@@ -1897,6 +1897,9 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             Grain::Document,
             Grain::Document,
             Grain::Document,
+            // `relation.key.outside_block`: a top-level key is a fact about
+            // the one file that wrote it.
+            Grain::Document,
             Grain::Edge,
             // An entry that names the document that declares it (#1232).
             Grain::Edge,
@@ -2073,7 +2076,6 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
     // that bound to nothing has neither an identity nor a revision.
     assert_eq!(
         [
-            run.served[5].rule,
             run.served[6].rule,
             run.served[7].rule,
             run.served[8].rule,
@@ -2083,7 +2085,8 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             run.served[12].rule,
             run.served[13].rule,
             run.served[14].rule,
-            run.served[15].rule
+            run.served[15].rule,
+            run.served[16].rule
         ],
         [
             target::RULE,
@@ -2152,15 +2155,15 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
         )
     );
     assert_eq!(
-        run.served[18].scope.render(),
+        run.served[19].scope.render(),
         "document scope, one document and its front matter, and what phase A could not make of it"
     );
     // The same declaration at the other grain, and the sentence says what the
     // difference is: one document's news against the identity of every
     // document. A reader counting the barriers finds the word here.
-    assert_eq!(run.served[20].rule, duplicate::RULE);
+    assert_eq!(run.served[21].rule, duplicate::RULE);
     assert_eq!(
-        run.served[20].scope.render(),
+        run.served[21].scope.render(),
         "corpus scope, every row of the census, and what phase A could not make of each \
          document's identity, and it is a barrier"
     );
@@ -2184,9 +2187,9 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
         .map(|served| served.rule)
         .collect();
     assert_eq!(restated, [headwater_check::suspect::RULE]);
-    assert_eq!(run.served[16].rule, participation::RULE);
+    assert_eq!(run.served[17].rule, participation::RULE);
     assert_eq!(
-        run.served[16].scope.render(),
+        run.served[17].scope.render(),
         "neighbourhood scope, one document and the documents one relation away from it, \
          and the injected clock"
     );

@@ -249,9 +249,9 @@ pub const RULES: [&str; 53] = [
     facet_blank::RULE,
     identifier::RULE,
     placement::RULE,
+    outside_block::RULE,
     target::RULE,
     self_target::RULE,
-    outside_block::RULE,
     suspect::RULE,
     reciprocity::RULE,
     endpoint::RULE,
@@ -483,6 +483,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::document_exports::<placement::Placement>(),
         ),
         (
+            outside_block::RULE,
+            scope::document_scope::<outside_block::OutsideBlock>(),
+            scope::document_version::<outside_block::OutsideBlock>(),
+            scope::document_exports::<outside_block::OutsideBlock>(),
+        ),
+        (
             target::RULE,
             scope::edge_scope::<target::Targets<'_>>(),
             scope::edge_version::<target::Targets<'_>>(),
@@ -493,12 +499,6 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::edge_scope::<self_target::SelfTarget<'_>>(),
             scope::edge_version::<self_target::SelfTarget<'_>>(),
             scope::edge_exports::<self_target::SelfTarget<'_>>(),
-        ),
-        (
-            outside_block::RULE,
-            scope::document_scope::<outside_block::OutsideBlock>(),
-            scope::document_version::<outside_block::OutsideBlock>(),
-            scope::document_exports::<outside_block::OutsideBlock>(),
         ),
         (
             suspect::RULE,
