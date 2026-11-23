@@ -930,30 +930,48 @@ fn the_default_report_leaves_out_the_read_set_and_verbose_writes_it() {
         !short.contains("rules, and for each the scope that binds it"),
         "the default report carries the scope of each rule"
     );
-    assert!(short.contains(" findings\n"), "the default report lost its count of findings");
+    assert!(
+        short.contains(" findings\n"),
+        "the default report lost its count of findings"
+    );
 
     let verbose = report(&["--verbose"], None);
     assert_eq!(verbose.code, Some(0), "the verbose report ran");
     let verbose = text(&verbose);
-    assert!(verbose.contains("\nread set\n"), "`--verbose` wrote no read-set block");
+    assert!(
+        verbose.contains("\nread set\n"),
+        "`--verbose` wrote no read-set block"
+    );
     assert!(
         verbose.contains("rules, and for each the scope that binds it"),
         "`--verbose` wrote no scope of each rule"
     );
     assert!(short.lines().count() < verbose.lines().count());
 
-    for machine in [&["--verbose", "--format", "json"][..], &["--verbose", "--json"]] {
+    for machine in [
+        &["--verbose", "--format", "json"][..],
+        &["--verbose", "--json"],
+    ] {
         let refused = report(machine, None);
         assert_eq!(refused.code, Some(1), "{machine:?} was not refused");
-        assert!(refused.out.is_empty(), "{machine:?} wrote to standard output");
+        assert!(
+            refused.out.is_empty(),
+            "{machine:?} wrote to standard output"
+        );
         let said = String::from_utf8(refused.err).expect("the refusal is text");
-        assert!(said.contains("--verbose"), "{machine:?} refused without naming the flag: {said}");
+        assert!(
+            said.contains("--verbose"),
+            "{machine:?} refused without naming the flag: {said}"
+        );
     }
 
     let help = ran(&["check", "--help"], None);
     assert_eq!(help.code, Some(0));
     let help = String::from_utf8(help.out).expect("the help is text");
-    assert!(help.contains("--verbose"), "`check --help` does not name `--verbose`");
+    assert!(
+        help.contains("--verbose"),
+        "`check --help` does not name `--verbose`"
+    );
 }
 
 /// A report split into the part that is laid out and the read set that is not.
