@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the neighbourhood-dedup tree is checked against
+# (`tests/neighbourhood_dedup.rs`). It declares the two shapes in which one
+# document reaches another more than once, and nothing else.
+#
+# `depends_on` declares an inverse, `required_by`, so a pair that both ends
+# write is two edges with one identity: the relation, the end and the far
+# document. `constrains` is a second relation between the same kind, so one
+# document can reach one other document by two relations, which is two
+# neighbours that share one path.
+
+identifier_schemes:
+  note_id: {pattern: "NOTE-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+relations:
+  depends_on:
+    family: association
+    from: [note]
+    to:   [note]
+    inverse: required_by
+    created_by: author
+  constrains:
+    family: governance
+    from: [note]
+    to:   [note]
+    created_by: author
+
+kinds:
+  note:
+    identifier: {scheme: note_id}
+
+shelves:
+  notes:
+    path: neighbourhood-dedup/notes/**
+    homogeneous: true
+    kind: note
