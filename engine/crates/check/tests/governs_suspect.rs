@@ -1352,7 +1352,9 @@ fn a_stated_edge_gets_no_patch_where_the_relation_does_not_declare_the_attribute
             reported[0].remediation
         );
         assert!(
-            !reported[0].remediation.contains("run `headwater check --fix`"),
+            !reported[0]
+                .remediation
+                .contains("run `headwater check --fix`"),
             "{label}: {}",
             reported[0].remediation
         );

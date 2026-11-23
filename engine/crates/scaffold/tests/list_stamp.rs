@@ -213,7 +213,10 @@ fn fix_stamps_a_list_entry_once_and_re_stamps_the_same_entry() {
         let after = std::fs::read_to_string(root.join(DOCUMENT)).expect("the document reads");
         let stamped = format!("{written}\n      verified_revision: {now}\n");
         assert!(after.contains(&stamped), "{label}:\n{after}");
-        assert!(!after.contains(entry.trim_end()) || entry == written, "{label}:\n{after}");
+        assert!(
+            !after.contains(entry.trim_end()) || entry == written,
+            "{label}:\n{after}"
+        );
 
         // A second run over the same change offers nothing and writes nothing.
         let again = offered(&run(root, re_verified()));
@@ -229,10 +232,7 @@ fn fix_stamps_a_list_entry_once_and_re_stamps_the_same_entry() {
         write(root, members[1], "#!/bin/sh\necho moved\n");
         let moved = digest(root, members);
         assert_ne!(moved, now, "{label}: the member moved");
-        let line = change(
-            &[format!("verified\t{DOCUMENT}\t{}", members[1])],
-            &[],
-        );
+        let line = change(&[format!("verified\t{DOCUMENT}\t{}", members[1])], &[]);
         let restamp = offered(&run(root, line));
         assert_eq!(restamp.len(), 1, "{label}: {restamp:?}");
         fix(root, &restamp);
@@ -241,7 +241,11 @@ fn fix_stamps_a_list_entry_once_and_re_stamps_the_same_entry() {
             last.contains(&format!("{written}\n      verified_revision: {moved}\n")),
             "{label}:\n{last}"
         );
-        assert_eq!(last.matches("verified_revision").count(), 1, "{label}:\n{last}");
+        assert_eq!(
+            last.matches("verified_revision").count(),
+            1,
+            "{label}:\n{last}"
+        );
         assert!(!last.contains(&now), "{label}:\n{last}");
     }
 }
