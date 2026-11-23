@@ -211,7 +211,7 @@ use std::collections::{HashMap, HashSet};
 const NO_DOCUMENT: &str = "the row carries no document to read";
 
 /// The unit one instance is created over.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Grain {
     /// One document: its front matter, and its body when the check asks.
     Document,
@@ -292,7 +292,7 @@ impl Grain {
 /// The fields are private and no public constructor exists, so no check
 /// outside this crate can build one. That is the point: a `Scope` is derived
 /// from the trait a check implements, and it is never a second fact beside it.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Scope {
     grain: Grain,
     needs_body: bool,
