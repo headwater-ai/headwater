@@ -198,5 +198,42 @@ mod tests {
         );
         assert_eq!(OutsideBlock::identifiers(&seq(&[])), None);
         assert_eq!(OutsideBlock::identifiers(&seq(&["{to: A}"])), None);
+        assert_eq!(OutsideBlock::identifiers(&seq(&["~"])), None);
+        assert_eq!(
+            OutsideBlock::identifiers(&Value::Scalar(headwater_yaml::Scalar {
+                text: "A".to_string(),
+                style: headwater_yaml::Style::Plain,
+            })),
+            Some(vec!["A".to_string()])
+        );
+    }
+
+    /// The population is every relation name and inverse name, minus a name a
+    /// facet shares and minus the block's own key, each once.
+    #[test]
+    fn a_name_that_a_facet_shares_is_not_in_the_population() {
+        let source = "\
+facets:
+  conflicts_with: {type: string}
+  status: {type: string}
+relations:
+  conflicts_with: {from: [note], to: [note]}
+  supersedes: {from: [note], to: [note], inverse: superseded_by}
+  edges: {from: [note], to: [note]}
+  cites: {from: [note], to: [note], inverse: supersedes}
+";
+        let root = headwater_yaml::load(source)
+            .expect("the taxonomy loads")
+            .value
+            .as_map()
+            .expect("a mapping")
+            .clone();
+        let declarations = Declarations::read(&root).expect("the declarations read");
+        let shape = Shape::read(&root).expect("the shape reads");
+        let check = OutsideBlock::over(&declarations, &shape, "edges");
+        assert_eq!(check.names, vec!["supersedes", "superseded_by", "cites"]);
+        assert!(check.instantiates("note"));
+        let none = OutsideBlock::over(&Declarations::default(), &shape, "relations");
+        assert!(!none.instantiates("note"));
     }
 }

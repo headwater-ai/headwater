@@ -1289,6 +1289,85 @@ mod tests {
             .contains("status_since: 2026-08-05\n"));
     }
 
+    fn relocate_patch(key: &str, ids: &[&str]) -> Patch {
+        Patch::Relocate {
+            path: "r.md".to_string(),
+            key: key.to_string(),
+            ids: ids.iter().map(|id| id.to_string()).collect(),
+        }
+    }
+
+    /// A block sequence at the key's own indentation is the key's value, and
+    /// the deletion takes every item of it and the key after it stays (#1639).
+    #[test]
+    fn a_relocation_takes_a_block_sequence_and_leaves_the_next_key() {
+        let source = "---\nid: D-4\nconflicts_with:\n- D-1\n- D-2\nsummary: four\n---\n\n# Four\n";
+        let dir = tree(&[("r.md", source)]);
+        let composed = compose(
+            dir.path(),
+            &[relocate_patch("conflicts_with", &["D-1", "D-2"])],
+        );
+        assert!(composed.refused.is_empty(), "{:?}", composed.refused);
+        assert_eq!(
+            composed.files[0].text,
+            "---\nid: D-4\nsummary: four\nrelations:\n  conflicts_with:\n    - D-1\n    - D-2\n---\n\n# Four\n"
+        );
+        assert_eq!(composed.files[0].applied, 3);
+    }
+
+    /// The guard: a key that no longer reads as the identifiers the check read
+    /// is refused, and nothing in the file is written.
+    #[test]
+    fn a_relocation_whose_key_moved_is_refused_with_nothing_written() {
+        let source = "---\nid: D-4\nconflicts_with: [D-1, D-3]\n---\n\n# Four\n";
+        let dir = tree(&[("r.md", source)]);
+        let composed = compose(
+            dir.path(),
+            &[relocate_patch("conflicts_with", &["D-1", "D-2"])],
+        );
+        assert!(composed.files.is_empty(), "{:?}", composed.files);
+        assert!(
+            matches!(&composed.refused[0], Refused::KeyUnmovable { why, .. } if why.contains("does not read as")),
+            "{:?}",
+            composed.refused
+        );
+    }
+
+    /// A key name that is the prefix of another key is not that key: the
+    /// deletion finds the line that opens with the whole name and a colon.
+    #[test]
+    fn a_relocation_does_not_take_a_key_whose_name_it_prefixes() {
+        let source =
+            "---\nid: D-4\nconflicts_with_note: kept\nconflicts_with: D-1\n---\n\n# Four\n";
+        let dir = tree(&[("r.md", source)]);
+        let composed = compose(dir.path(), &[relocate_patch("conflicts_with", &["D-1"])]);
+        assert!(composed.refused.is_empty(), "{:?}", composed.refused);
+        assert!(
+            composed.files[0]
+                .text
+                .contains("conflicts_with_note: kept\n")
+                && !composed.files[0].text.contains("\nconflicts_with: D-1"),
+            "{}",
+            composed.files[0].text
+        );
+    }
+
+    /// A comment line after the value is not part of it, so the deletion
+    /// stops there, and the read-back holds every scalar but the key's.
+    #[test]
+    fn a_relocation_keeps_a_comment_after_the_value() {
+        let source =
+            "---\nid: D-4\nconflicts_with:\n  - D-1\n# a note\nsummary: four\n---\n\n# Four\n";
+        let dir = tree(&[("r.md", source)]);
+        let composed = compose(dir.path(), &[relocate_patch("conflicts_with", &["D-1"])]);
+        assert!(composed.refused.is_empty(), "{:?}", composed.refused);
+        assert!(
+            composed.files[0].text.contains("# a note\nsummary: four\n"),
+            "{}",
+            composed.files[0].text
+        );
+    }
+
     /// A directory that cleans itself up, so no fixture leaves a tree behind.
     mod tempdir {
         use std::path::{Path, PathBuf};
