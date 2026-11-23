@@ -327,6 +327,8 @@ anchors
     cited by HW-SPEC-command-surface
   code_path `engine/crates/cli/src/harness.rs` via source-tree
     cited by HW-IFACE-headwater-init
+  code_path `engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs, engine/crates/cli/src/propose.rs` via source-tree
+    cited by HW-IFACE-headwater-infer
   code_path `engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs` via source-tree
     cited by HW-IFACE-headwater-capture
   code_path `engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs` via source-tree
@@ -351,8 +353,6 @@ anchors
     cited by HW-IFACE-headwater-help
   code_path `engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs` via source-tree
     cited by HW-IFACE-headwater-import
-  code_path `engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs` via source-tree
-    cited by HW-IFACE-headwater-infer
   code_path `engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs` via source-tree
     cited by HW-IFACE-headwater-init
   code_path `engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs` via source-tree
