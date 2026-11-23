@@ -894,7 +894,8 @@ pub fn run(
         declared.shape,
         &declared.config.identifier_facet,
     );
-    let duplicates = duplicate::Duplicate::over(&declared.config.identifier_facet);
+    let duplicates = duplicate::Duplicate::over(&declared.config.identifier_facet)
+        .listing_former(declared.config.former_identifier_facet.as_deref());
     // The two rules that hold the identifier claim store. They read the index
     // the build already made rather than the corpus a second time, and the
     // store reaches them through the view, which is what puts it in the key.

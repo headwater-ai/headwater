@@ -272,6 +272,7 @@ mod tests {
                 id: "SPEC-FIX-first".to_string(),
                 other: "docs/spec/00-first.md".to_string(),
                 other_span: None,
+                former: false,
             }),
             false,
             "id"

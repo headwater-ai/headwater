@@ -102,22 +102,36 @@ pub struct Duplicate {
     /// [`headwater_graph::Config`], so that a repair names the key this engine
     /// actually read rather than the one it assumed.
     facet: String,
+    /// The facet a former identifier is listed in, when the taxonomy declares
+    /// one (#2025). A collision that involves a former identifier names it in
+    /// its repair, because removing the value from that list is one of the
+    /// two ways out.
+    former_facet: Option<String>,
 }
 
 impl Duplicate {
     pub fn over(facet: &str) -> Self {
         Duplicate {
             facet: facet.to_string(),
+            former_facet: None,
         }
+    }
+
+    /// The same check, told the facet that lists former identifiers.
+    pub fn listing_former(mut self, facet: Option<&str>) -> Self {
+        self.former_facet = facet.map(str::to_string);
+        self
     }
 }
 
 impl CorpusCheck for Duplicate {
     const RULE: &'static str = self::RULE;
-    /// The first edition of this rule.
+    /// The second edition of this rule: a former identifier is a claim too
+    /// (#2025), so a verdict that the first edition cached over a corpus that
+    /// lists one is not this edition's verdict.
     ///
     /// Raise the rule version when a rule's behavior changes.
-    const VERSION: u32 = 1;
+    const VERSION: u32 = 2;
     /// The build's own report over every document, which is the only thing this
     /// rule reads. A second reading of the corpus would be a second definition
     /// of the defect, and the build's is the one every edge was bound against.
@@ -146,6 +160,7 @@ impl Duplicate {
             id,
             other,
             other_span,
+            former,
         } = &reported.defect
         else {
             return Vec::new();
@@ -159,11 +174,19 @@ impl Duplicate {
              target that names it resolves to two, so neither document is reachable by it",
             reported.path
         );
-        let remediation = format!(
-            "change the `{}` of one of the two documents, and repoint every relation that names \
-             `{id}` at the document it meant",
-            self.facet
-        );
+        let remediation = match (former, self.former_facet.as_deref()) {
+            (true, Some(list)) => format!(
+                "change the `{}` of one of the two documents or remove `{id}` from the `{list}` \
+                 that lists it, and repoint every relation that names `{id}` at the document it \
+                 meant",
+                self.facet
+            ),
+            _ => format!(
+                "change the `{}` of one of the two documents, and repoint every relation that \
+                 names `{id}` at the document it meant",
+                self.facet
+            ),
+        };
 
         [(&reported.path, reported.span), (other, *other_span)]
             .into_iter()
@@ -213,6 +236,7 @@ mod tests {
                 id: "SPEC-FIX-first".to_string(),
                 other: "docs/spec/00-first.md".to_string(),
                 other_span: span(3),
+                former: false,
             },
         }
     }
@@ -250,6 +274,31 @@ mod tests {
             found[0].remediation.contains("change the `identifier` of"),
             "{:#?}",
             found[0]
+        );
+    }
+
+    /// A collision that involves a former identifier names the list the value
+    /// can leave, and a collision of two live identifiers does not (#2025).
+    #[test]
+    fn a_former_collision_names_the_former_list_in_its_repair() {
+        let mut reported = collision();
+        if let Defect::Duplicate { former, .. } = &mut reported.defect {
+            *former = true;
+        }
+        let check = Duplicate::over("id").listing_former(Some("former_ids"));
+        let found = check.findings(&reported);
+        assert!(
+            found[0]
+                .remediation
+                .contains("remove `SPEC-FIX-first` from the `former_ids`"),
+            "{:#?}",
+            found[0]
+        );
+        let live = check.findings(&collision());
+        assert!(
+            !live[0].remediation.contains("former_ids"),
+            "{:#?}",
+            live[0]
         );
     }
 
