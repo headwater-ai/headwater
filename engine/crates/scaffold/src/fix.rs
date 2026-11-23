@@ -1353,6 +1353,22 @@ mod tests {
         );
     }
 
+    /// A file with CRLF line ends would come back from the line rewrite with
+    /// LF ends in its body, which is a body that moved. The read-back of the
+    /// body refuses it, and nothing is written.
+    #[test]
+    fn a_relocation_that_would_move_the_body_is_refused() {
+        let source = "---\r\nid: D-4\r\nconflicts_with: D-1\r\n---\r\n\r\n# Four\r\n";
+        let dir = tree(&[("r.md", source)]);
+        let composed = compose(dir.path(), &[relocate_patch("conflicts_with", &["D-1"])]);
+        assert!(composed.files.is_empty(), "{:?}", composed.files);
+        assert!(
+            matches!(&composed.refused[0], Refused::KeyUnmovable { why, .. } if why.contains("after the front matter")),
+            "{:?}",
+            composed.refused
+        );
+    }
+
     /// A comment line after the value is not part of it, so the deletion
     /// stops there, and the read-back holds every scalar but the key's.
     #[test]
