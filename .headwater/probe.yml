@@ -97,8 +97,15 @@ folds:
 # probe, which is what the seal reads. Each probe maps to a sequence of paths
 # relative to the root, in the block form or the flow form. An entry that
 # leaves the tree refuses the whole file.
+#
+# The two held-out records of #1882 are the same case on purpose. The final
+# round of #1881 ran before they existed, and #1882 wrote them after the last
+# paid session, as HW-DR-0112 "The circumstance axes" asks. A later run of
+# either probe meets its task already done unless the seal removes them.
 answer_keys:
   HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks: [docs/obligations/0198-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-consume-before-work-starts.md]
+  HW-PROBE-a-session-records-as-owed-the-corpus-size-axis-that-the-additive-campaign-defers: [docs/obligations/0243-the-additive-campaign-measured-the-actions-at-one-corpus-size-and-no-run-measures-them-as-a-corpus-grows.md]
+  HW-PROBE-a-session-records-as-owed-the-axis-of-an-adopter-s-own-repository-that-the-named-decision-defers: [docs/obligations/0245-the-additive-campaign-ran-on-this-repository-alone-and-no-run-measures-the-actions-in-an-adopter-s-own-repository.md]
 
 # Command oracles (#1834): the commands this repository declares as the oracle
 # of a code artifact, beside the rules of the taxonomy. A `patched` probe over

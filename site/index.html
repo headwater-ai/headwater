@@ -397,10 +397,11 @@
     <div class="herogrid">
       <div>
         <p class="eyebrow">Open-source checks for documentation</p>
-        <h1>Documentation <em>rots</em> because nothing fails when it does.</h1>
-        <p class="lede">Headwater is a command-line tool that checks your documentation on every commit, as tests check code. You declare the kinds of document you keep and how they link. It reports each missing field, broken link and unclassified file. <em>No language model is involved.</em></p>
+        <h1>Check documentation on every commit. AI agents get <em>more tasks right</em>.</h1>
+        <p class="lede">Headwater is a command-line tool that checks your documentation on every commit, as tests check code. It reports each missing field, broken link and unclassified file, with the repair. On held-out tasks in Headwater's own repository, an AI agent with the documents and the engine passed 85% of sessions (56 of 66). With neither, it passed 20% (13 of 65). That is about 4 times as many tasks right. <em>The check itself uses no language model.</em></p>
         <div class="ctarow">
           <a class="cta" href="/tutorial/">Run the tutorial →</a>
+          <a class="sans" href="#measured">The measured results</a>
           <a class="sans" href="/how-it-works/">How it works</a>
         </div>
         <div class="install">
@@ -468,10 +469,24 @@ census
   <div class="bar pad">
     <div class="sechead">
       <span class="secnum">01</span>
-      <h2>Headwater run on its own repository, <span data-figure="run.date"></span></h2>
+      <h2>What the measurements show</h2>
       <span class="secline"></span>
     </div>
-    <p style="font-size: 1.35rem; max-width: 46rem; margin: 0 0 3rem; line-height: 1.45;">Headwater checks its own documentation on every commit. These are the numbers, unfixed findings included.</p>
+    <p style="font-size: 1.35rem; max-width: 46rem; margin: 0 0 3rem; line-height: 1.45;">A campaign measured how often an AI agent completes a task in a governed repository, on tasks that no tuning change saw. Three results are gains clear of chance.</p>
+    <!-- The figures in this grid are not `data-figure` elements, because no
+         run of the engine produces them. Each pass rate is computed from the
+         session counts beside it and rounded to a whole percent, and those
+         counts are quoted from the held-out table of the evaluation that the
+         link under the grid names. Each row has the verdict `gain` there. The
+         amendment of 2026-11-23 to HW-DR-0037 admits this form on this page
+         alone. A change to that table owes a change here. -->
+    <div class="statgrid" style="grid-template-columns: repeat(auto-fit, minmax(min(17rem, 100%), 1fr));">
+      <div><div class="statnum" style="white-space: nowrap;">20% → 85%</div><div class="statlab">of sessions passed, over all eleven actions: 13 of 65 in a repository with neither the documents nor the engine, and 56 of 66 with both</div></div>
+      <div><div class="statnum" style="white-space: nowrap;">63% → 96%</div><div class="statlab">of sessions passed on a refactor across files: 30 of 48 with the documents alone, and 46 of 48 with what <span class="mono">headwater init</span> ships</div></div>
+      <div><div class="statnum" style="white-space: nowrap;">44% → 67%</div><div class="statlab">of sessions passed on a change to code that a document governs: 21 of 48 with the documents alone, and 32 of 48 with what <span class="mono">headwater init</span> ships</div></div>
+    </div>
+    <p style="font-size: 0.95rem; max-width: 52rem; margin: 0 0 3.5rem; opacity: 0.85;">Each rate is rounded to a whole percent from the counts beside it. The differences are 64.8, 33.3 and 22.9 percentage points, and the 95% interval of each lies above zero. The two gains over the documents alone are on the code actions, two of the eleven actions measured. Every session ran one model, <span class="mono">claude-sonnet-5</span>, on Headwater's own repository, and the code sessions had no compiler. <a href="https://github.com/headwater-ai/headwater/blob/main/docs/evaluations/what-the-additive-campaign-measured-for-the-eleven-actions-headwater-supports.md" style="color: var(--accent-on-ink);">The evaluation has every action, interval and limit →</a></p>
+    <p style="font-size: 1.35rem; max-width: 46rem; margin: 0 0 3rem; line-height: 1.45;">Headwater checks its own documentation on every commit. These are the numbers from the run of <span data-figure="run.date"></span>.</p>
     <!-- Every figure in this band is written by tools/refresh-figures.sh.
          Denominators, stated in the label under each one, because a bare count
          is a trap: the first three tiles are out of the file count on the
@@ -485,12 +500,7 @@ census
       <div><div class="statnum" data-figure="findings.suppressed"></div><div class="statlab">suppressed by a dated exception</div></div>
       <div><div class="statnum" data-figure="findings.errors"></div><div class="statlab">of those <span data-figure="findings.reported"></span> are errors</div></div>
     </div>
-    <p style="font-size: 0.95rem; max-width: 52rem; margin: 0 0 2.5rem; opacity: 0.85;"><span data-figure="rules.wired"></span> rules ran, and <span data-figure="rules.fired"></span> found something. <a href="/proof/" style="color: var(--accent-on-ink);">The whole run →</a></p>
-    <div class="emptyrow">
-      <span style="font-size: 1rem;">Benchmark against other tools</span>
-      <span class="tag">unmeasured</span>
-    </div>
-    <p class="sans" style="font-size: 0.82rem; opacity: 0.6; margin: 0.9rem 0 0; max-width: 48rem;">Nobody has measured Headwater against other tools, so this row has no number.</p>
+    <p style="font-size: 0.95rem; max-width: 52rem; margin: 0; opacity: 0.85;"><span data-figure="rules.wired"></span> rules ran, and <span data-figure="rules.fired"></span> found something. <a href="/proof/" style="color: var(--accent-on-ink);">The whole run →</a></p>
   </div>
 </section>
 
@@ -570,15 +580,13 @@ kinds:
   <div class="bar pad">
     <div class="sechead">
       <span class="secnum">04</span>
-      <h2>What works, and what is unproven</h2>
+      <h2>What ships today</h2>
       <span class="secline"></span>
     </div>
-    <p style="font-size: 0.98rem; max-width: 46rem; margin: 0 0 1.1rem;">The engine runs, and this repository checks its own documentation with it on every commit. Experiments on this repository found that the documents have a large effect on whether an AI agent gives a sufficient answer. The skills helped only after tuning that no fresh test has confirmed, and the hook has shown no gain. Nothing has measured the MCP server, or whether Headwater improves the documentation itself.</p>
-    <!-- Both figures below come from the refresh script: the emitter split is
-         read off the `Emitter` enum and `is_built` in
-         engine/crates/generate/src/profile.rs, and the verb figures come from
-         docs/interfaces/README.md, which is a generated projection. -->
-    <p style="font-size: 0.98rem; max-width: 46rem; margin: 0;"><span data-figure="verbs.count"></span> commands, <span data-figure="verbs.contracts"></span> with a written contract. <span data-figure="emitters.total"></span> export formats, <span data-figure="emitters.built"></span> built and <span data-figure="emitters.waiting"></span> waiting. <a href="/proof/">The self-assessment has the detail.</a></p>
+    <p style="font-size: 0.98rem; max-width: 46rem; margin: 0 0 1.1rem;">The engine runs, and this repository checks its own documentation with it on every commit. <span class="mono">headwater init</span> sets up a repository with the engine and with the skills, the hooks and the MCP server that an AI agent works through. That is the configuration behind the two code gains above. <a href="https://github.com/headwater-ai/headwater/blob/main/docs/evaluations/what-the-additive-campaign-measured-for-the-eleven-actions-headwater-supports.md">The evaluation</a> states the result for each of the eleven actions, with its interval and the tasks it rests on.</p>
+    <!-- Both figures below come from the refresh script: the verb figures come
+         from docs/interfaces/README.md, which is a generated projection. -->
+    <p style="font-size: 0.98rem; max-width: 46rem; margin: 0;"><span data-figure="verbs.count"></span> commands, <span data-figure="verbs.contracts"></span> with a written contract. <a href="/proof/">The self-assessment has the whole run, and what nobody has measured yet.</a></p>
   </div>
 </section>
 
