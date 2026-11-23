@@ -626,3 +626,225 @@ fn an_imported_edge_and_an_authored_edge_differ_in_the_graph() {
         }
     }
 }
+
+/// A small corpus written into a scratch directory beside the fixture
+/// taxonomy, removed when it drops. The test name keys it, because cargo runs
+/// the cases of one target as threads of one process and a pid alone races.
+struct Scratch(PathBuf);
+
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+fn scratch_corpus(name: &str, files: &[(&str, &str)]) -> (Scratch, Graph) {
+    let dir = Scratch(
+        std::env::temp_dir().join(format!("headwater-graph-{name}-{}", std::process::id())),
+    );
+    let _ = std::fs::remove_dir_all(&dir.0);
+    for (path, text) in files {
+        let at = dir.0.join(path);
+        std::fs::create_dir_all(at.parent().expect("a parent")).expect("mkdir");
+        std::fs::write(&at, text).expect("write");
+    }
+    let corpus = Corpus::new(dir.0.clone(), "graph");
+    let root = load_map(&fixtures_dir().join("graph.taxonomy.yml"));
+    let taxonomy = Taxonomy::read(&root).expect("the fixture taxonomy reads");
+    let declarations = Declarations::read(&root).expect("the fixture declarations read");
+    let taken = census::take(&corpus, &taxonomy);
+    let config = Config {
+        former_identifier_facet: Some("former_ids".to_string()),
+        ..Config::default()
+    };
+    let graph = Graph::build(
+        &taken,
+        &declarations,
+        &Resolvers::over(&corpus),
+        &corpus,
+        &config,
+    );
+    (dir, graph)
+}
+
+/// A former identifier names the document that carried it (#2025).
+///
+/// [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#identifiers)
+/// says that given an identifier and nothing else, the engine resolves it to a
+/// path. A document that changed its identifier lists the old one, and an edge
+/// written to the old one binds to the document under its live identifier.
+#[test]
+fn a_former_identifier_resolves_to_the_document_that_carried_it() {
+    let (_dir, graph) = scratch_corpus(
+        "former",
+        &[
+            (
+                "graph/evaluations/renamed.md",
+                "---\nid: EVAL-FIX-new\nformer_ids:\n  - EVAL-OLD-7\n---\n\n# Renamed\n",
+            ),
+            (
+                "graph/evaluations/scalar.md",
+                "---\nid: EVAL-FIX-scalar\nformer_ids: EVAL-OLD-8\n---\n\n# Scalar\n",
+            ),
+            (
+                "graph/notes/untyped.md",
+                "---\nid: SPEC-FIX-untyped\nformer_ids: [SPEC-OLD-u]\n---\n\n# Untyped\n",
+            ),
+            (
+                "graph/spec/citer.md",
+                "---\nid: SPEC-FIX-citer\ndoc_type: design_spec\nrelations:\n  traces_to:\n    - EVAL-OLD-7\n    - EVAL-OLD-8\n    - SPEC-OLD-u\n---\n\n# Citer\n",
+            ),
+        ],
+    );
+
+    // The facet takes one word as well as a list of them.
+    let scalar = graph
+        .edges
+        .iter()
+        .find(|edge| edge.raw_target == "EVAL-OLD-8")
+        .expect("the edge written to the scalar former identifier");
+    assert!(
+        matches!(&scalar.target, Target::Document { id, .. } if id == "EVAL-FIX-scalar"),
+        "{:?}",
+        scalar.target
+    );
+
+    // A former identifier of a document with no kind is the near miss its live
+    // identifier would be: fix that document, not this link.
+    let untyped = graph
+        .edges
+        .iter()
+        .find(|edge| edge.raw_target == "SPEC-OLD-u")
+        .expect("the edge written to the untyped document's former identifier");
+    assert!(
+        matches!(&untyped.target, Target::Unbound(Unbound::NotTyped { path, .. })
+            if path == "graph/notes/untyped.md"),
+        "{:?}",
+        untyped.target
+    );
+
+    let edge = graph
+        .edges
+        .iter()
+        .find(|edge| edge.raw_target == "EVAL-OLD-7")
+        .expect("the edge written to the former identifier");
+    assert!(
+        matches!(&edge.target, Target::Document { id, path, .. }
+            if id == "EVAL-FIX-new" && path == "graph/evaluations/renamed.md"),
+        "{:?}",
+        edge.target
+    );
+
+    let node = graph
+        .index
+        .node("EVAL-OLD-7")
+        .expect("a former identifier names a node");
+    assert_eq!(
+        node.id, "EVAL-FIX-new",
+        "the node answers its live identifier"
+    );
+    assert!(
+        graph.index.defects.is_empty(),
+        "one former identifier on one document is no defect: {:?}",
+        graph.index.defects
+    );
+}
+
+/// A former identifier is never reused either, so one that equals a live
+/// identifier, or that two documents list, is an identifier claimed twice.
+/// The collision says it involves a former identifier when either claim is
+/// one, including when the earlier claim in path order is the former one. A
+/// document that lists one value twice, or its own identifier, claims nothing
+/// twice against anybody.
+#[test]
+fn a_former_identifier_claimed_twice_is_a_duplicate() {
+    let (_dir, graph) = scratch_corpus(
+        "former-twice",
+        &[
+            (
+                "graph/evaluations/0.md",
+                "---\nid: EVAL-FIX-0\nformer_ids: [EVAL-FIX-z]\n---\n\n# Zero\n",
+            ),
+            (
+                "graph/evaluations/a.md",
+                "---\nid: EVAL-FIX-a\nformer_ids: [EVAL-OLD-9]\n---\n\n# A\n",
+            ),
+            (
+                "graph/evaluations/b.md",
+                "---\nid: EVAL-FIX-b\nformer_ids: [EVAL-OLD-9]\n---\n\n# B\n",
+            ),
+            (
+                "graph/evaluations/c.md",
+                "---\nid: EVAL-FIX-c\nformer_ids: [EVAL-FIX-a]\n---\n\n# C\n",
+            ),
+            (
+                "graph/evaluations/self.md",
+                "---\nid: EVAL-FIX-self\nformer_ids: [EVAL-FIX-self, EVAL-OLD-s, EVAL-OLD-s]\n---\n\n# Self\n",
+            ),
+            (
+                "graph/evaluations/z.md",
+                "---\nid: EVAL-FIX-z\n---\n\n# Z\n",
+            ),
+            (
+                "graph/spec/citer.md",
+                "---\nid: SPEC-FIX-citer\ndoc_type: design_spec\nrelations:\n  traces_to:\n    - EVAL-FIX-a\n---\n\n# Citer\n",
+            ),
+        ],
+    );
+
+    // A live identifier wins over the same value listed as former, so an edge
+    // to `EVAL-FIX-a` still reaches the document that holds it live, whatever
+    // order the two documents sort in.
+    let live = graph
+        .index
+        .node("EVAL-FIX-a")
+        .expect("the live identifier names a node");
+    assert_eq!(live.path, "graph/evaluations/a.md");
+    let edge = graph
+        .edges
+        .iter()
+        .find(|edge| edge.raw_target == "EVAL-FIX-a")
+        .expect("the edge written to the contested identifier");
+    assert!(
+        matches!(&edge.target, Target::Document { path, .. } if path == "graph/evaluations/a.md"),
+        "{:?}",
+        edge.target
+    );
+
+    let duplicates: Vec<(&str, &str, &str, bool)> = graph
+        .index
+        .defects
+        .iter()
+        .filter_map(|reported| match &reported.defect {
+            headwater_graph::index::Defect::Duplicate {
+                id, other, former, ..
+            } => Some((reported.path.as_str(), id.as_str(), other.as_str(), *former)),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        duplicates,
+        vec![
+            (
+                "graph/evaluations/b.md",
+                "EVAL-OLD-9",
+                "graph/evaluations/a.md",
+                true
+            ),
+            (
+                "graph/evaluations/c.md",
+                "EVAL-FIX-a",
+                "graph/evaluations/a.md",
+                true
+            ),
+            (
+                "graph/evaluations/z.md",
+                "EVAL-FIX-z",
+                "graph/evaluations/0.md",
+                true
+            ),
+        ],
+        "{:?}",
+        graph.index.defects
+    );
+}

@@ -325,7 +325,7 @@ Five acceptance tests for a facet: relevance, ascertainability, permanence, diff
 
 ### Facet role
 
-One of the engine-significant roles that a facet may carry: `state`, `state_entered`, `created`, `freshness`, `scent`, and `name`. The registry is closed, and a role outside it is a validation error. See [spec 2](02-taxonomy-model.md#the-meta-schema).
+One of the engine-significant roles that a facet may carry: `state`, `state_entered`, `created`, `freshness`, `scent`, `name`, and `former_identifier`. The registry is closed, and a role outside it is a validation error. See [spec 2](02-taxonomy-model.md#the-meta-schema).
 
 ### Family
 

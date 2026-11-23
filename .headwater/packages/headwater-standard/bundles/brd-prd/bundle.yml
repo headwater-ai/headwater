@@ -91,7 +91,7 @@ add:
   # `kinds` list by identity (`census::resolve`, step 3), so a value of `business`
   # against a kind named `brd` leaves the document untyped and every rule silent.
   #
-  # No `role`. The role registry is closed at six, none of them is this, and the
+  # No `role`. The role registry is closed at seven, none of them is this, and the
   # diataxis entry took the same reading for `reader_mode`. The relevance canon
   # is satisfied twice over, because two kinds require the facet and a shelf
   # discriminates on it.

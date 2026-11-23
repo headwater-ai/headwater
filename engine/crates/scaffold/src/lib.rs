@@ -309,6 +309,14 @@ pub struct Half {
     pub relation: String,
     pub path: String,
     pub id: String,
+    /// The members of a list target, as the author wrote them and in the
+    /// author's order, and `None` for a scalar target.
+    ///
+    /// Where it is `Some`, `id` is only the members joined by `, ` for a
+    /// reader. [`crate::write::splice`] matches the entry by this sequence and
+    /// writes it as a flow list, because the joined text cannot be split again
+    /// when a member holds a comma (#2016).
+    pub members: Option<Vec<String>>,
     /// Instance attributes the half carries, in the order they are written.
     ///
     /// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#instance-attributes-and-which-end-owns-each-one)
@@ -318,6 +326,18 @@ pub struct Half {
     /// this crate proposes for itself takes. `headwater_import` is the caller
     /// that fills it, with the upstream revision an edge was checked against.
     pub attributes: Vec<(String, String)>,
+}
+
+impl Half {
+    /// The target this half names, member for member: the list's members, or
+    /// the one scalar `id`. A list of one member and the scalar it holds are
+    /// one target, as the graph reads them.
+    pub fn identity(&self) -> Vec<&str> {
+        match &self.members {
+            Some(members) => members.iter().map(String::as_str).collect(),
+            None => vec![self.id.as_str()],
+        }
+    }
 }
 
 /// An identifier, and what its scheme said about issuing one.
@@ -1899,6 +1919,7 @@ fn propose_edges(
                     relation: name,
                     path: target_path.clone(),
                     id: minting.id.clone(),
+                    members: None,
                     attributes: Vec::new(),
                 })
             }

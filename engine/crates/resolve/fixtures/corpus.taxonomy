@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 4.20.0
+version: 4.21.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -88,6 +88,10 @@ facets:
   title:
     role: name
     type: string
+    required: false
+    volatility: stable
+  former_ids:
+    role: former_identifier
     required: false
     volatility: stable
   action:

@@ -152,7 +152,7 @@ A connection is a relation. An opaque external identifier (a ticket number, a fr
 
 Facets are how a taxonomy expresses everything that the directory cannot: lifecycle state, freshness, ownership, scope, audience, provenance, confidentiality, kind discriminators on heterogeneous shelves. The vocabulary of an enum facet is part of the schema, so an extension to it is a deliberate, reviewable, versioned change.
 
-Six facet roles are engine-significant, and the registry is closed ([spec 2](02-taxonomy-model.md#the-meta-schema) owns it):
+Seven facet roles are engine-significant, and the registry is closed ([spec 2](02-taxonomy-model.md#the-meta-schema) owns it):
 
 - **`state`** — the lifecycle regime interprets it.
 - **`state_entered`** — each transition stamps it. It is the origin for state-conditional participation windows.
@@ -160,6 +160,7 @@ Six facet roles are engine-significant, and the registry is closed ([spec 2](02-
 - **`freshness`** — staleness detection interprets it.
 - **`scent`** — what routing, indexes, and agent-facing pointers show (the `summary` facet in the default taxonomy).
 - **`name`** — the text that a projection writes as a heading or as a row (the `title` facet in the default taxonomy). A projection may not read a facet by the name of the facet ([the `headwater generate` contract](../interfaces/headwater-generate.md#what-a-projection-writes-and-why)).
+- **`former_identifier`** — the identifiers that a document held before its current one (the `former_ids` facet in the default taxonomy). The identifier index resolves each one to that document ([spec 3](03-authoring-and-lifecycle.md#identifiers)).
 
 The facet that plays each role is declared, not assumed. A corpus may call its state facet `status`, `stage`, or `état`. But the roles themselves come only from the registry.
 

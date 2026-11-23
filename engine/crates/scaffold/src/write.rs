@@ -284,7 +284,8 @@ pub fn apply(root: &Path, composed: &[Composed]) -> Result<(), Refusal> {
 /// `RepeatedLink` refusal holds it at plan time, so two entries for one
 /// target is not a shape this system produces on purpose. When `half.relation`
 /// already carries an entry whose identity (the mapping form's `to`, or the
-/// bare form's own scalar) matches `half.id`, this function replaces that
+/// bare form's own value) matches the half's, member for member where the
+/// target is a list (#2016), this function replaces that
 /// entry's lines in place rather than appending a second one beside it. Every
 /// attribute value, `half`'s own included, is ignored for the match — that is
 /// exactly the field an update is for, most visibly `verified_revision` when
@@ -312,10 +313,23 @@ pub fn splice(source: &str, half: &Half) -> Result<String, Refusal> {
     // attributes is the mapping form that spec 2 declares: `to`, and the
     // declared attributes beside it. The two forms are one list, so a relation
     // that already holds one takes the other.
+    // A list target is written as a flow list of its members, in the order
+    // the half holds them, which is the author's (#2016).
+    let target = match &half.members {
+        Some(members) => format!(
+            "[{}]",
+            members
+                .iter()
+                .map(|member| flow(member))
+                .collect::<Vec<_>>()
+                .join(", ")
+        ),
+        None => half.id.clone(),
+    };
     let entry: Vec<String> = match half.attributes.is_empty() {
-        true => vec![format!("    - {}", half.id)],
+        true => vec![format!("    - {target}")],
         false => {
-            let mut lines = vec![format!("    - to: {}", half.id)];
+            let mut lines = vec![format!("    - to: {target}")];
             for (name, value) in &half.attributes {
                 lines.push(format!("      {name}: {value}"));
             }
@@ -378,26 +392,39 @@ pub fn splice(source: &str, half: &Half) -> Result<String, Refusal> {
 /// Both forms, and every attribute. An entry that reads back with the right
 /// target and a lost attribute is a different edge from the one composed, and
 /// the caller of the splice is the one that recorded what the attribute is for.
+///
+/// The target is compared member for member, so a list that reads back with
+/// a member split at a comma, or with its members in another order, is not
+/// the half that was written (#2016).
 fn holds(value: &headwater_yaml::Value, half: &Half) -> bool {
-    if half.attributes.is_empty() {
-        return value
-            .as_scalar()
-            .map(|scalar| scalar.text == half.id)
-            .unwrap_or(false);
+    if identity(value) != Some(half.identity()) {
+        return false;
     }
     let Some(map) = value.as_map() else {
-        return false;
+        return half.attributes.is_empty();
     };
     let text = |key: &str| {
         map.get(key)
             .and_then(|node| node.value.as_scalar())
             .map(|scalar| scalar.text.as_str())
     };
-    text("to") == Some(half.id.as_str())
+    !half.attributes.is_empty()
         && half
             .attributes
             .iter()
             .all(|(name, expected)| text(name) == Some(expected.as_str()))
+}
+
+/// A member of a flow list as YAML text that reads back as `member`:
+/// [`scalar`]'s choice, and quoted wherever a flow indicator inside it would
+/// end the member or open another node, which a plain scalar outside a flow
+/// list may hold. The read-back in [`splice`] holds the choice, so a member
+/// this misjudges is a refusal and not a wrong entry (#2016).
+fn flow(member: &str) -> String {
+    match member.contains([',', '[', ']', '{', '}']) {
+        true => quoted(member),
+        false => scalar(member),
+    }
 }
 
 /// The 0-indexed, half-open line range of the entry already in `half.relation`'s
@@ -432,9 +459,10 @@ fn existing_entry(source: &str, half: &Half) -> Option<(usize, usize)> {
         .get(&half.relation)?
         .value
         .as_seq()?;
+    let wanted = half.identity();
     let item = items
         .iter()
-        .find(|item| identity(&item.value) == Some(half.id.as_str()))?;
+        .find(|item| identity(&item.value).as_ref() == Some(&wanted))?;
     let start = item.span.start.line - 1;
     let end = (item.span.end.line - 1).max(start + 1);
     Some((start, end))
@@ -446,13 +474,23 @@ fn existing_entry(source: &str, half: &Half) -> Option<(usize, usize)> {
 /// legitimately varies between two proposals for the same target, and
 /// `verified_revision` is exactly the attribute a re-import at a moved
 /// revision means to overwrite rather than match on.
-fn identity(value: &headwater_yaml::Value) -> Option<&str> {
-    match value.as_map() {
-        Some(map) => map
-            .get("to")
-            .and_then(|node| node.value.as_scalar())
-            .map(|scalar| scalar.text.as_str()),
-        None => value.as_scalar().map(|scalar| scalar.text.as_str()),
+///
+/// The identity is a sequence of members, so a list target, bare `- [a, b]`
+/// or `- to: [a, b]`, is matched member for member and in order, and a scalar
+/// is a list of one (#2016). The joined text the check names a list by is
+/// never compared, because a member may hold a comma itself. `None` where a
+/// member is not a scalar, which the graph refuses as a target too.
+fn identity(value: &headwater_yaml::Value) -> Option<Vec<&str>> {
+    let target = match value.as_map() {
+        Some(map) => &map.get("to")?.value,
+        None => value,
+    };
+    match target.as_seq() {
+        Some(members) => members
+            .iter()
+            .map(|member| member.value.as_scalar().map(|scalar| scalar.text.as_str()))
+            .collect(),
+        None => target.as_scalar().map(|scalar| vec![scalar.text.as_str()]),
     }
 }
 
@@ -484,10 +522,47 @@ mod tests {
             relation: "audited_by".to_string(),
             path: "corpus/spec/02-the-second-part.md".to_string(),
             id: id.to_string(),
+            members: None,
             attributes: attributes
                 .iter()
                 .map(|(name, value)| (name.to_string(), value.to_string()))
                 .collect(),
+        }
+    }
+
+    /// The read-back compares a list target member for member and in order,
+    /// so an entry whose list reads back reordered, split at a comma, or
+    /// joined into one scalar is not the half that was written (#2016).
+    #[test]
+    fn the_read_back_compares_a_list_target_member_for_member() {
+        let listed = Half {
+            members: Some(vec!["a.sh".to_string(), "x, y.sh".to_string()]),
+            ..half("a.sh, x, y.sh", &[("verified_revision", "sha256:ab")])
+        };
+        let read = |target: &str| {
+            let source = format!(
+                "---\nid: D-1\nrelations:\n  audited_by:\n    - to: {target}\n      \
+                 verified_revision: sha256:ab\n---\n\n# D\n"
+            );
+            let parsed = headwater_doc::parse(&source).expect("the entry parses");
+            let entries = parsed
+                .facets
+                .get("relations")
+                .and_then(|block| block.value.as_map())
+                .and_then(|block| block.get("audited_by"))
+                .and_then(|targets| targets.value.as_seq())
+                .expect("a list")
+                .to_vec();
+            holds(&entries[0].value, &listed)
+        };
+        assert!(read("[a.sh, \"x, y.sh\"]"));
+        for wrong in [
+            "[\"x, y.sh\", a.sh]",
+            "[a.sh, x, y.sh]",
+            "\"a.sh, x, y.sh\"",
+            "[a.sh]",
+        ] {
+            assert!(!read(wrong), "`{wrong}` is not the half");
         }
     }
 

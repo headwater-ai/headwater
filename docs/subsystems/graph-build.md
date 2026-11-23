@@ -55,7 +55,9 @@ The census decides the node set. A row is a node when `Outcome::node` of the cen
 
 The identifier index has two parts. `Index::typed` is the node set. `Index::untyped` holds each other document that declares an identifier, and nothing in it is a node. It lets a report tell a target that is a document with no kind from a target that is nothing. The first is a defect of the target document, and the second is a defect of the link. So each report goes to the author who can repair it.
 
-`Index::near_miss` answers the second question: it finds the document with no kind that carries the identifier an edge names. The path index holds every row of the census. So a link to a file that the corpus excludes says so, and it is not reported as broken. `Defect` records what the index could not make of a document: no identifier, an identifier that is not a scalar, or a duplicate.
+Each node also carries the former identifiers that its document lists in the facet in the `former_identifier` role, and `Config::former_identifier_facet` names that facet. `Index::node` and `Index::near_miss` try the live identifier first and then the former ones. The node that they return carries its live identifier, so an edge to a former identifier binds to the live one ([spec 3](../spec/03-authoring-and-lifecycle.md#identifiers)).
+
+`Index::near_miss` answers the second question: it finds the document with no kind that carries the identifier an edge names. The path index holds every row of the census. So a link to a file that the corpus excludes says so, and it is not reported as broken. `Defect` records what the index could not make of a document: no identifier, an identifier that is not a scalar, or a duplicate. A duplicate compares every live and every former identifier.
 
 ### Declarations
 

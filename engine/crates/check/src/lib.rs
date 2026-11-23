@@ -894,7 +894,8 @@ pub fn run(
         declared.shape,
         &declared.config.identifier_facet,
     );
-    let duplicates = duplicate::Duplicate::over(&declared.config.identifier_facet);
+    let duplicates = duplicate::Duplicate::over(&declared.config.identifier_facet)
+        .listing_former(declared.config.former_identifier_facet.as_deref());
     // The two rules that hold the identifier claim store. They read the index
     // the build already made rather than the corpus a second time, and the
     // store reaches them through the view, which is what puts it in the key.
@@ -1469,12 +1470,16 @@ impl Scoped {
             );
         }
         // The second number is the class the three above do not hold, so a
-        // reader can add the classes to the documents named (#1398).
+        // reader can add the classes to the documents named (#1398). The line
+        // counts the documents a `verified` line names, and a pair that names
+        // no edge counts its document as well, so the line says that and the
+        // list below names each such pair. Before #1674 it read "stated as
+        // re-read", which such a pair does not state of anything.
         if self.named.verified > 0 {
             let _ = writeln!(
                 out,
-                "  {:5} stated as re-read by a `verified` line, {} of them named by that line \
-                 alone",
+                "  {:5} named by a `verified` line, whether or not the line names an edge, {} of \
+                 them by that line alone",
                 self.named.verified, self.named.verified_alone
             );
         }
