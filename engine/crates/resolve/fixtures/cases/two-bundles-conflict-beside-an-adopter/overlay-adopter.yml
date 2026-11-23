@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The adopter overrides the leaf both bundles add. The adopter may override
+# what a bundle adds (#2022), but that permission does not hide the conflict
+# between the two bundles: the refusal still names the bundle pair.
+
+taxonomy: acme
+extends: headwater/standard@1.0.0
+
+override:
+  kinds.report.purpose: behavior

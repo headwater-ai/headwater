@@ -351,8 +351,9 @@ pub fn repository(root: &Path) -> Result<Repository, Vec<ResolveError>> {
 ///
 /// The first source is the taxonomy, and every source after it is an overlay,
 /// in the order the consumer selected them. The resolver applies them in that
-/// order with one change: a bundle applies after every bundle it names in
-/// `requires` ([`order`]). The order is fixed so that one resolution produces
+/// order with two changes: a bundle applies after every bundle it names in
+/// `requires`, and the adopter's overlay applies after every other overlay
+/// (#2022, [`order`]). The order is fixed so that one resolution produces
 /// one lock, and [`Resolution::sources`] records it. The confluence check is
 /// what makes the rest of the choice a formality rather than a decision.
 pub fn resolve(sources: &[Source]) -> Result<Resolution, Vec<ResolveError>> {
@@ -396,7 +397,8 @@ pub fn resolve(sources: &[Source]) -> Result<Resolution, Vec<ResolveError>> {
     }
 
     // The application order: `bundles:` order, except that a bundle waits until
-    // every bundle it names in `requires` has applied (HW-DR-0095, `order`).
+    // every bundle it names in `requires` has applied (HW-DR-0095), and the
+    // adopter's overlay waits on every other overlay (#2022, `order`).
     let ordered = order::order(overlays)?;
     let sources: Vec<Source> = std::iter::once(base.clone())
         .chain(ordered.order.iter().map(|index| overlays[*index].clone()))
@@ -439,7 +441,15 @@ pub fn resolve(sources: &[Source]) -> Result<Resolution, Vec<ResolveError>> {
                 .map(|named| named.iter().map(|at| at + 1).collect()),
         )
         .collect();
-    let errors = confluence::check(&operations, &names, &requires);
+    let after: Vec<Vec<usize>> = std::iter::once(Vec::new())
+        .chain(
+            ordered
+                .after
+                .iter()
+                .map(|bundles| bundles.iter().map(|at| at + 1).collect()),
+        )
+        .collect();
+    let errors = confluence::check(&operations, &names, &requires, &after);
     if !errors.is_empty() {
         return Err(errors);
     }
@@ -492,6 +502,7 @@ pub fn resolve(sources: &[Source]) -> Result<Resolution, Vec<ResolveError>> {
         root: headwater_yaml::Spanned::new(Value::Map(taxonomy.clone()), Span::default()),
         text: String::new(),
         selected_as: None,
+        adopter: false,
     };
     let errors = after.validate(&schema);
     if !errors.is_empty() {

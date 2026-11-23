@@ -46,6 +46,13 @@ pub struct Source {
     ///
     /// [HW-DR-0095]: ../../../../docs/decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md
     pub selected_as: Option<String>,
+    /// Whether this is the adopter's overlay: the one a consumer declares in
+    /// its `overlay:` key. The owner ruled on 2026-11-22 (#2022) that an
+    /// adopter's overlay is ordered after every bundle it selects, so it may
+    /// `override` and `remove` what those bundles add ([`crate::order`],
+    /// [`crate::confluence`]). An assembly's glue overlay is not one: it is
+    /// deliberately narrower and cannot redefine package content.
+    pub adopter: bool,
 }
 
 impl Source {
@@ -53,6 +60,13 @@ impl Source {
     #[must_use]
     pub fn selected_as(mut self, bundle: &str) -> Self {
         self.selected_as = Some(bundle.to_string());
+        self
+    }
+
+    /// This source, marked as the adopter's overlay of a consumer.
+    #[must_use]
+    pub fn adopter(mut self) -> Self {
+        self.adopter = true;
         self
     }
 
@@ -82,6 +96,7 @@ impl Source {
             root,
             text: source.to_string(),
             selected_as: None,
+            adopter: false,
         })
     }
 

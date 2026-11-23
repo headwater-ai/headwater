@@ -423,7 +423,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 ## 95 — One library entry may address the keys of an entry it names in requires, and confluence holds over the dependency order
 
-[HW-DR-0095](../decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md) — An entry that names another in requires may add into its keys, and every other pair of entries still commutes only over disjoint leaves. (asserted, and no human has accepted it)
+[HW-DR-0095](../decisions/0095-q67-one-library-entry-may-address-the-keys-of-an-entry-it-names-in-requires-and-confluence-holds-over-the-dependency-order.md) — An entry that names another in requires may add into its keys, and the adopter's overlay may override or remove what a bundle adds. Every other pair still commutes only over disjoint leaves. (asserted, and no human has accepted it)
 
 ## 96 — Harper does not become part of the engine now, and Q41 stands
 

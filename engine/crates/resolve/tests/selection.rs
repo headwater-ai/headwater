@@ -522,3 +522,46 @@ fn a_recipe_that_does_not_read_is_told_nothing() {
         None
     );
 }
+
+/// Overrides a value `alpha` adds and removes the purpose `beta` adds. The
+/// override is what leaves `stewardship` unread, so the remove leaves no name
+/// dangling.
+const CHANGES_BUNDLES: &str = "\
+taxonomy: acme/adopter
+extends: acme/fixture@1.0.0
+
+override:
+  kinds.alpha.purpose: record
+remove:
+  - purposes.stewardship
+";
+
+/// The owner ruled on 2026-11-22 (#2022) that an adopter's overlay is ordered
+/// after every bundle it selects, so it may `override` and `remove` what those
+/// bundles add. `package::sources` is where a consumer's overlay is marked as
+/// the adopter's, so this case reads the selection the way `headwater` does
+/// and not through a fixture that marks the source itself.
+#[test]
+fn a_consumers_overlay_overrides_and_removes_what_its_selected_bundles_add() {
+    let scratch = Scratch::new("adopter-changes-bundles");
+    library(&scratch);
+    scratch.write("adopter.yml", CHANGES_BUNDLES);
+    let consumer = consumer(&["alpha", "beta"], Some("adopter.yml"));
+
+    let taxonomy = resolved(&scratch, &consumer).taxonomy;
+    let section = |name: &str| {
+        taxonomy
+            .get(name)
+            .and_then(|node| node.value.as_map())
+            .unwrap_or_else(|| panic!("the taxonomy declares {name}"))
+            .clone()
+    };
+    let purpose = section("kinds")
+        .get("alpha")
+        .and_then(|node| node.value.as_map())
+        .and_then(|kind| kind.get("purpose"))
+        .and_then(|node| node.value.as_scalar())
+        .map(|scalar| scalar.text.clone());
+    assert_eq!(purpose.as_deref(), Some("record"));
+    assert!(section("purposes").get("stewardship").is_none());
+}

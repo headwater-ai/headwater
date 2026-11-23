@@ -81,6 +81,7 @@ fn sources(case: &Path) -> Vec<Source> {
         let source = Source::read(&overlay, &shown, Role::Overlay).expect("an overlay loads");
         out.push(match selected_as(&shown) {
             Some(bundle) => source.selected_as(&bundle),
+            None if shown == "overlay-adopter.yml" => source.adopter(),
             None => source,
         });
     }
@@ -89,7 +90,9 @@ fn sources(case: &Path) -> Vec<Source> {
 
 /// `overlay-<n>-<name>.yml` is the bundle `<name>`, as the resolver's own
 /// harness reads it, so a case whose bundles name each other in `requires`
-/// resolves here as it does there.
+/// resolves here as it does there. An unnumbered `overlay-adopter.yml` is the
+/// adopter's overlay, which applies after every bundle (#2022), for the same
+/// reason.
 fn selected_as(file: &str) -> Option<String> {
     let rest = file.strip_prefix("overlay-")?.strip_suffix(".yml")?;
     let (number, name) = rest.split_once('-')?;

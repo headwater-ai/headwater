@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: Apache-2.0
+
+taxonomy: headwater/standard
+version: 1.0.0
+
+purposes:
+  behavior: {intent: "state what the system does, as it is now"}
+  rationale: {intent: explain why a choice was made and what it forecloses}
+
+kinds:
+  specification: {purpose: behavior}
+
+core:
+  requires:
+    - purpose: behavior
