@@ -1,8 +1,8 @@
 ## `headwater check`
 
-68 findings, 40 of them errors across 28 of 31 documents, against `headwater/fixture` 1.0.0 at `105e82f4b4435094f6bfd8ba5b3c3f3380341b35aeebc9aca2c3d508726d1601`, evaluated at 2026-08-12.
+70 findings, 40 of them errors across 28 of 31 documents, against `headwater/fixture` 1.0.0 at `105e82f4b4435094f6bfd8ba5b3c3f3380341b35aeebc9aca2c3d508726d1601`, evaluated at 2026-08-12.
 
-**Coverage.** This run saw 31 files and classified 29 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 427 check instances, and 118 of them reached no verdict.
+**Coverage.** This run saw 31 files and classified 29 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 428 check instances, and 118 of them reached no verdict.
 
 - 58 — this document declares no warrant, and an absent warrant is not a value outside the closed set
 - 1 — no `id` facet, which is the key this engine reads an identifier from and which no declaration states
@@ -20,6 +20,7 @@
 | error | `check/evaluations/eta.md:8` | `relation.endpoint.not_permitted` | `assesses` declares `from: [design_spec]`, and `EVAL-FIX-eta` at that end has the kind `evaluation` |
 | error | `check/evaluations/gamma.md:3` | `shelf.placement_is_primary` | `evaluations` is homogeneous and carries the kind `evaluation`, and this document restates it as `doc_type: evaluation` |
 | error | `check/evaluations/gamma.md:9` | `relation.reciprocity.missing` | `EVAL-FIX-gamma` declares `cited_by: SPEC-FIX-both-halves`, and `cites_evidence` requires both ends, so check/spec/00-both-halves.md owes `cites_evidence` |
+| info | `check/spec/00-both-halves.md:30` | `relation.mention.undeclared` | the prose names `SPEC-FIX-fragment-target` and the front matter declares no relation to it; the taxonomy offers the relation `assesses` from `design_spec` to `design_spec` |
 | error | `check/spec/01-one-half.md:9` | `relation.reciprocity.missing` | `SPEC-FIX-one-half` declares `cites_evidence: EVAL-FIX-beta`, and `cites_evidence` requires both ends, so check/evaluations/beta.md owes `cited_by` |
 | warn | `check/spec/01-one-half.md:18` | `language.controlled.not_met` | `ste_house` holds prose to 25 words a sentence, and this one has 34 |
 | warn | `check/spec/03-no-instance.md` | `coverage.document_unchecked` | this document is classified and all 4 of its check instances were skipped |
@@ -52,6 +53,7 @@
 | error | `check/spec/07-prose-defects.md:77` | `link.path.unresolved` | `19-renamed.md?v=2` names no file of this repository: nothing stands at `check/spec/19-renamed.md` |
 | error | `check/spec/07-prose-defects.md:79` | `link.path.unresolved` | `/spec/00-both-halves.md` names no file of this repository: nothing stands at `/spec/00-both-halves.md` |
 | error | `check/spec/07-prose-defects.md:81` | `link.identifier.mismatch` | the link text names `SPEC-FIX-cited-only`, but `20-fragment-target.md` reaches `check/spec/20-fragment-target.md`, which is `SPEC-FIX-fragment-target` |
+| info | `check/spec/07-prose-defects.md:81` | `relation.mention.undeclared` | the prose names `SPEC-FIX-cited-only` and the front matter declares no relation to it; the taxonomy offers the relation `assesses` from `design_spec` to `design_spec` |
 | error | `check/spec/08-contract-met.md:2` | `identifier.claim.missing` | `DR-FIX-0008` is spent by check/spec/08-contract-met.md and no file of `.headwater/ids` claims it, so this identifier is invisible to the allocator of every other branch and a second document can be minted onto it |
 | error | `check/spec/09-contract-missing.md` | `section.required.missing` | `decision_record` requires the section `Decision`, and no heading of this document says so |
 | error | `check/spec/09-contract-missing.md:2` | `identifier.claim.missing` | `DR-FIX-0009` is spent by check/spec/09-contract-missing.md and no file of `.headwater/ids` claims it, so this identifier is invisible to the allocator of every other branch and a second document can be minted onto it |
@@ -95,4 +97,4 @@
 
 </details>
 
-31 documents in the read set, and 8 barriers that no gate carries across a merge. 29 obligations, 23 verified.
+31 documents in the read set, and 9 barriers that no gate carries across a merge. 29 obligations, 23 verified.

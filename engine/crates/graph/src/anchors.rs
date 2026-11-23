@@ -795,32 +795,15 @@ impl CommentScan {
     /// The identifier-shaped tokens of `text` that open with `prefix`: a
     /// maximal run of ASCII letters, digits and hyphens, with a trailing
     /// hyphen trimmed off so that a sentence's punctuation is not read as
-    /// part of the token that precedes it.
+    /// part of the token that precedes it. The reading is
+    /// [`crate::mentions::tokens`], which a prose mention shares, so a token
+    /// is one thing in a comment and in a sentence.
     fn candidates<'a>(text: &'a str, prefix: &str) -> Vec<&'a str> {
-        let bytes = text.as_bytes();
-        let mut out = Vec::new();
-        let mut i = 0;
-        while i < bytes.len() {
-            if (bytes[i] as char).is_ascii_alphanumeric() {
-                let start = i;
-                while i < bytes.len()
-                    && ((bytes[i] as char).is_ascii_alphanumeric() || bytes[i] == b'-')
-                {
-                    i += 1;
-                }
-                let mut end = i;
-                while end > start && bytes[end - 1] == b'-' {
-                    end -= 1;
-                }
-                let token = &text[start..end];
-                if token.starts_with(prefix) {
-                    out.push(token);
-                }
-            } else {
-                i += 1;
-            }
-        }
-        out
+        crate::mentions::tokens(text)
+            .into_iter()
+            .map(|(_, token)| token)
+            .filter(|token| token.starts_with(prefix))
+            .collect()
     }
 }
 

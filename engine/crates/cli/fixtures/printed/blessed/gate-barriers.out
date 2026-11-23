@@ -6,5 +6,6 @@ gate the verdicts this run reached do not carry to this tree
   link.fragment.unresolved is a barrier: its verdict is a predicate over the extent of the census, and a list of members states no extent
   link.path.unresolved is a barrier: its verdict is a predicate over the extent of the census, and a list of members states no extent
   link.identifier.mismatch is a barrier: its verdict is a predicate over the extent of the census, and a list of members states no extent
+  relation.mention.undeclared is a barrier: its verdict is a predicate over the extent of the census, and a list of members states no extent
   lifecycle.deletion.not_permitted is a barrier: its verdict is a predicate over the extent of the census, and a list of members states no extent
 this states nothing about a document this tree gained. A read set lists what a run read, and never that those were all there was

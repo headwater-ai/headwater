@@ -8,4 +8,5 @@
 # scope: docs/process/obligations/0217-the-site-review-marker-lives-in-the-common-directory-of-a-clone-so-one-worktree-s-unreviewed-merge-blocks-the-push-of-every-worktree.md
 # summary: docs/process/obligations/0217-the-site-review-marker-lives-in-the-common-directory-of-a-clone-so-one-worktree-s-unreviewed-merge-blocks-the-push-of-every-worktree.md removed the marker, its writer and its reader
 # summary-not: docs/process/obligations/0217-the-site-review-marker-lives-in-the-common-directory-of-a-clone-so-one-worktree-s-unreviewed-merge-blocks-the-push-of-every-worktree.md no longer
+relation.mention.undeclared	docs/process/obligations/0217-the-site-review-marker-lives-in-the-common-directory-of-a-clone-so-one-worktree-s-unreviewed-merge-blocks-the-push-of-every-worktree.md
 voice.forbidden_construction	docs/process/obligations/0217-the-site-review-marker-lives-in-the-common-directory-of-a-clone-so-one-worktree-s-unreviewed-merge-blocks-the-push-of-every-worktree.md

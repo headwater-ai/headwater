@@ -28,7 +28,7 @@
     "classified": 29,
     "checked": 29,
     "generated": 1,
-    "instances": 427,
+    "instances": 428,
     "skipped": 91,
     "skips": [
       {
@@ -817,6 +817,12 @@
       "compared": 2
     },
     {
+      "rule": "relation.mention.undeclared",
+      "scope": "corpus",
+      "version": 1,
+      "obligations": []
+    },
+    {
       "rule": "warrant.promoted",
       "scope": "document",
       "version": 1,
@@ -986,6 +992,17 @@
       "message": "`EVAL-FIX-gamma` declares `cited_by: SPEC-FIX-both-halves`, and `cites_evidence` requires both ends, so check/spec/00-both-halves.md owes `cites_evidence`",
       "remediation": "add `cites_evidence: EVAL-FIX-gamma` under `relations:` in check/spec/00-both-halves.md",
       "fixable": true,
+      "escape": "none"
+    },
+    {
+      "rule": "relation.mention.undeclared",
+      "severity": "info",
+      "path": "check/spec/00-both-halves.md",
+      "line": 30,
+      "column": 14,
+      "message": "the prose names `SPEC-FIX-fragment-target` and the front matter declares no relation to it; the taxonomy offers the relation `assesses` from `design_spec` to `design_spec`",
+      "remediation": "if this document rests on `SPEC-FIX-fragment-target`, declare it under `relations:`, for example `assesses: [SPEC-FIX-fragment-target]`; if the mention is an aside, leave it. `headwater explain SPEC-FIX-fragment-target` names the document, and `headwater explain` on a relation says what it means",
+      "fixable": false,
       "escape": "none"
     },
     {
@@ -1351,6 +1368,17 @@
       "column": 70,
       "message": "the link text names `SPEC-FIX-cited-only`, but `20-fragment-target.md` reaches `check/spec/20-fragment-target.md`, which is `SPEC-FIX-fragment-target`",
       "remediation": "point the link at the document that carries `SPEC-FIX-cited-only`, or change the text to `SPEC-FIX-fragment-target`. `headwater explain SPEC-FIX-cited-only` names where `SPEC-FIX-cited-only` lives",
+      "fixable": false,
+      "escape": "none"
+    },
+    {
+      "rule": "relation.mention.undeclared",
+      "severity": "info",
+      "path": "check/spec/07-prose-defects.md",
+      "line": 81,
+      "column": 71,
+      "message": "the prose names `SPEC-FIX-cited-only` and the front matter declares no relation to it; the taxonomy offers the relation `assesses` from `design_spec` to `design_spec`",
+      "remediation": "if this document rests on `SPEC-FIX-cited-only`, declare it under `relations:`, for example `assesses: [SPEC-FIX-cited-only]`; if the mention is an aside, leave it. `headwater explain SPEC-FIX-cited-only` names the document, and `headwater explain` on a relation says what it means",
       "fixable": false,
       "escape": "none"
     },

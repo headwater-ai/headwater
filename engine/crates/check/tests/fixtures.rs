@@ -1964,6 +1964,10 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             // that carries it. A renumbering of the target changes no byte of
             // the citing document, so the corpus again (#1213).
             Grain::Corpus,
+            // Whether a document that names another in prose declares a
+            // relation to it. An edge the named document writes silences it,
+            // and that is not a byte of the citing document (#1977).
+            Grain::Corpus,
             // The two rules that declare the prior version. Both are document
             // grained like every rule above them, and what separates them is
             // the input rather than the unit: a change names documents.

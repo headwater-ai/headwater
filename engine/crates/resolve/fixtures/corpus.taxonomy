@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 4.18.0
+version: 4.19.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -1589,6 +1589,12 @@ obligations:
     class: cohesion
     prevents: content.inconsistent
     severity: medium
+  OB-REL-10:
+    statement: "A document whose prose names the identifier of another document declares a relation to it where the taxonomy offers one, unless the mention is an aside"
+    rationale: "A citation in prose is not an edge. When an obligation says it follows from a decision and declares no relation, the graph never learns that the obligation rests on the decision, so nothing that reads the graph sees the dependency, and nothing tells the author that the edge they meant was not written"
+    class: cohesion
+    prevents: process.traceability
+    severity: low
   OB-PIN-1:
     statement: "A pin that the corpus commits reads as the bytes it pins, or a finding names the pin"
     rationale: "A digest pin, an imports snapshot and a harvested export each tell a reader what the corpus rests on. A pin that no longer reads as what it names, and that no anchor happens to cite, reaches nobody, so a corpus that rests on a moved or edited artifact reads the same as one that rests on the artifact it pinned"
@@ -2085,6 +2091,16 @@ controls:
     promotion:
       permanently_advisory:
         reasoning: "Q18 rules that a person settles a live disagreement with a decision that overrides or supersedes one side, and which side loses is a judgment the engine cannot derive. The finding carries no patch, so a posture that stopped a merge would stop it on a question only the authors can settle"
+  CT-REL-10:
+    mechanism: "check:relation.mention.undeclared"
+    discharges:
+      - OB-REL-10
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      permanently_advisory:
+        reasoning: "Whether a mention in prose is a dependency, and which of the offered relations it is, is a judgment only the author can make. A mention can be a plain aside, and the finding carries no patch, so a posture that stopped a merge would stop it on a question only the author can settle"
   CT-PIN-1:
     mechanism: "check:taxonomy.pin.diverged"
     discharges:

@@ -60,6 +60,7 @@ pub mod declarations;
 pub mod edges;
 pub mod index;
 pub mod links;
+pub mod mentions;
 pub mod scope;
 
 pub use declarations::{Declarations, Direction, Reciprocal};
@@ -109,6 +110,9 @@ pub struct Graph {
     pub edges: Vec<Edge>,
     pub links: Vec<links::Link>,
     pub skipped: links::Skipped,
+    /// The first prose mention of each document by each other document, in
+    /// the author's own text. None of them is an edge (#1977).
+    pub mentions: Vec<mentions::Mention>,
     /// What a `relations:` block declared that produced no edge.
     pub problems: Vec<edges::Reported>,
     /// What each declared governed-scope pattern admits from the tree, walked
@@ -172,12 +176,14 @@ impl Graph {
         let index = Index::build(census, config);
         let (edges, problems) = edges::build(census, &index, declarations, resolvers, config);
         let (links, skipped) = links::bind(census, &index, &corpus.base);
+        let mentions = mentions::bind(census, &index);
         let scope = scope::Scope::declared(declarations).reach(resolvers);
         Graph {
             index,
             edges,
             links,
             skipped,
+            mentions,
             problems,
             scope,
         }
