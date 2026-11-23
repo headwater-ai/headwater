@@ -1334,18 +1334,19 @@ mod tests {
     }
 
     /// A key name that is the prefix of another key is not that key: the
-    /// deletion finds the line that opens with the whole name and a colon.
+    /// deletion finds the line that opens with the whole name, a colon and a
+    /// space or the end of the line. `conflicts_with:x` is one plain key.
     #[test]
     fn a_relocation_does_not_take_a_key_whose_name_it_prefixes() {
         let source =
-            "---\nid: D-4\nconflicts_with_note: kept\nconflicts_with: D-1\n---\n\n# Four\n";
+            "---\nid: D-4\nconflicts_with_note: kept\nconflicts_with:x: kept\nconflicts_with: D-1\n---\n\n# Four\n";
         let dir = tree(&[("r.md", source)]);
         let composed = compose(dir.path(), &[relocate_patch("conflicts_with", &["D-1"])]);
         assert!(composed.refused.is_empty(), "{:?}", composed.refused);
         assert!(
             composed.files[0]
                 .text
-                .contains("conflicts_with_note: kept\n")
+                .contains("conflicts_with_note: kept\nconflicts_with:x: kept\n")
                 && !composed.files[0].text.contains("\nconflicts_with: D-1"),
             "{}",
             composed.files[0].text

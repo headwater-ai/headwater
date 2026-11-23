@@ -68,7 +68,7 @@ graph
     identifier: the identifier is not a scalar, and an identifier is a word
 
 checks
-  31 seen, 29 classified, 28 checked, 428 check instances
+  31 seen, 29 classified, 28 checked, 454 check instances
         1 generated, held to regeneration by `headwater generate --check`
        58 skipped: this document declares no warrant, and an absent warrant is
          not a value outside the closed set
@@ -100,6 +100,7 @@ checks
        28 instances of facet.value.blank
        28 instances of identifier.pattern.not_met
        29 instances of shelf.placement_is_primary
+       26 instances of relation.key.outside_block
        10 instances of relation.target.unresolved
        10 instances of relation.target.is_source
         4 instances of relation.reciprocity.missing
@@ -148,6 +149,8 @@ checks
     identifier.pattern.not_met
       document scope, one document and its front matter
     shelf.placement_is_primary
+      document scope, one document and its front matter
+    relation.key.outside_block
       document scope, one document and its front matter
     relation.target.unresolved
       edge scope, one relation instance and both endpoints
@@ -294,6 +297,7 @@ checks
     escaped findings, in the precedence spec 4 fixes: no waiver reaches a check
       finding, 1 migration-pending, 2 suppressed
     facet.value.blank reaches no obligation, so it names none
+    relation.key.outside_block reaches no obligation, so it names none
     relation.endpoint.not_permitted reaches OB-FIX-5, OB-FIX-17, and a finding
       names one obligation, so it names none
     lifecycle.dependency.on_terminal reaches no obligation, so it names none
@@ -752,6 +756,7 @@ read set
   version facet.value.blank 1
   version identifier.pattern.not_met 1
   version shelf.placement_is_primary 2
+  version relation.key.outside_block 1
   version relation.target.unresolved 3
   version relation.target.is_source 3
   version relation.target.suspect 11

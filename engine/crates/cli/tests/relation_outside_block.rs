@@ -38,6 +38,7 @@ struct Ran {
 /// One finding of [`RULE`], as the JSON report states it.
 #[derive(Debug)]
 struct Seen {
+    severity: String,
     path: String,
     line: usize,
     message: String,
@@ -205,6 +206,7 @@ fn findings_of(json: &str) -> Vec<Seen> {
                 return None;
             }
             Some(Seen {
+                severity: string_member(object, "severity"),
                 path: string_member(object, "path"),
                 line: bare_member(object, "line").parse().expect("a line number"),
                 message: string_member(object, "message"),
@@ -250,6 +252,10 @@ fn a_top_level_relation_key_is_reported_and_moved_under_relations() {
         "the remediation names the block a relation is written in\n{finding:?}"
     );
     assert!(finding.fixable, "the finding carries a patch\n{finding:?}");
+    assert_eq!(
+        finding.severity, "error",
+        "a mechanical and total remedy is an error\n{finding:?}"
+    );
 
     let fixed = root.fix();
     assert_eq!(fixed.code, Some(0), "the fix runs\n{fixed:?}");

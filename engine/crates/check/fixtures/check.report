@@ -1,4 +1,4 @@
-31 seen, 29 classified, 28 checked, 427 check instances
+31 seen, 29 classified, 28 checked, 453 check instances
       1 generated, held to regeneration by `headwater generate --check`
      58 skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
       1 skipped: no `id` facet, which is the key this engine reads an identifier from and which no declaration states
@@ -16,6 +16,7 @@ adoption
      28 instances of facet.value.blank
      28 instances of identifier.pattern.not_met
      29 instances of shelf.placement_is_primary
+     26 instances of relation.key.outside_block
      10 instances of relation.target.unresolved
      10 instances of relation.target.is_source
       4 instances of relation.reciprocity.missing
@@ -62,6 +63,8 @@ rules, and for each the scope that binds it
   identifier.pattern.not_met
     document scope, one document and its front matter
   shelf.placement_is_primary
+    document scope, one document and its front matter
+  relation.key.outside_block
     document scope, one document and its front matter
   relation.target.unresolved
     edge scope, one relation instance and both endpoints
@@ -187,6 +190,7 @@ register
       1 producing facts rather than findings
   escaped findings, in the precedence spec 4 fixes: no waiver reaches a check finding, 0 migration-pending, 2 suppressed
   facet.value.blank reaches no obligation, so it names none
+  relation.key.outside_block reaches no obligation, so it names none
   relation.endpoint.not_permitted reaches OB-FIX-5, OB-FIX-17, and a finding names one obligation, so it names none
   lifecycle.dependency.on_terminal reaches no obligation, so it names none
   lifecycle.dependency.on_initial reaches no obligation, so it names none
@@ -622,6 +626,58 @@ instances
     skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
   shelf.placement_is_primary check/spec/24-voice-context-section.md
     skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+  relation.key.outside_block check/evaluations/alpha.md
+    passed
+  relation.key.outside_block check/evaluations/beta.md
+    passed
+  relation.key.outside_block check/evaluations/delta.md
+    passed
+  relation.key.outside_block check/evaluations/epsilon.md
+    passed
+  relation.key.outside_block check/evaluations/eta.md
+    passed
+  relation.key.outside_block check/evaluations/gamma.md
+    passed
+  relation.key.outside_block check/evaluations/zeta.md
+    passed
+  relation.key.outside_block check/spec/00-both-halves.md
+    passed
+  relation.key.outside_block check/spec/01-one-half.md
+    passed
+  relation.key.outside_block check/spec/02-cited-only.md
+    passed
+  relation.key.outside_block check/spec/05-no-summary.md
+    passed
+  relation.key.outside_block check/spec/06-retired.md
+    passed
+  relation.key.outside_block check/spec/07-prose-defects.md
+    passed
+  relation.key.outside_block check/spec/10-suppressed.md
+    passed
+  relation.key.outside_block check/spec/11-identifier-mismatch.md
+    passed
+  relation.key.outside_block check/spec/13-dangling.md
+    passed
+  relation.key.outside_block check/spec/14-relations-not-a-mapping.md
+    passed
+  relation.key.outside_block check/spec/15-unusable-entries.md
+    passed
+  relation.key.outside_block check/spec/16-no-identifier.md
+    passed
+  relation.key.outside_block check/spec/17-identifier-not-a-word.md
+    passed
+  relation.key.outside_block check/spec/18-blank-facets.md
+    passed
+  relation.key.outside_block check/spec/20-fragment-target.md
+    passed
+  relation.key.outside_block check/spec/21-summary-facet-prose.md
+    passed
+  relation.key.outside_block check/spec/22-voice-facet-prose.md
+    passed
+  relation.key.outside_block check/spec/23-voice-empty-population.md
+    passed
+  relation.key.outside_block check/spec/24-voice-context-section.md
+    passed
   relation.target.unresolved check/evaluations/alpha.md + check/spec/00-both-halves.md
     passed
   relation.target.unresolved check/evaluations/delta.md + check/spec/02-cited-only.md

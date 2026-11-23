@@ -2,7 +2,7 @@ touched corpus/spec/04-a-scaffolded-fourth-part.md
 touched corpus/decisions/a-scaffolded-successor.md
 touched corpus/decisions/a-second-successor.md
 
-14 seen, 9 classified, 9 checked, 161 check instances
+14 seen, 9 classified, 9 checked, 170 check instances
      12 skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
       6 skipped: this document declares no warrant, so there is no acceptance to read beside the state
       4 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
@@ -15,6 +15,7 @@ adoption
       9 instances of facet.value.blank
       8 instances of identifier.pattern.not_met
       9 instances of shelf.placement_is_primary
+      9 instances of relation.key.outside_block
       5 instances of relation.target.unresolved
       5 instances of relation.target.is_source
       3 instances of relation.reciprocity.missing
@@ -52,6 +53,8 @@ rules, and for each the scope that binds it
   identifier.pattern.not_met
     document scope, one document and its front matter
   shelf.placement_is_primary
+    document scope, one document and its front matter
+  relation.key.outside_block
     document scope, one document and its front matter
   relation.target.unresolved
     edge scope, one relation instance and both endpoints
@@ -163,6 +166,7 @@ register
   facet.value.blank reaches no obligation, so it names none
   identifier.pattern.not_met reaches no obligation, so it names none
   shelf.placement_is_primary reaches no obligation, so it names none
+  relation.key.outside_block reaches no obligation, so it names none
   relation.target.unresolved reaches no obligation, so it names none
   relation.target.is_source reaches no obligation, so it names none
   relation.target.suspect reaches no obligation, so it names none
@@ -354,6 +358,24 @@ instances
   shelf.placement_is_primary corpus/spec/04-a-scaffolded-fourth-part.md
     skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
   shelf.placement_is_primary corpus/standards/a-standard.md
+    passed
+  relation.key.outside_block corpus/decisions/a-scaffolded-successor.md
+    passed
+  relation.key.outside_block corpus/decisions/a-second-successor.md
+    passed
+  relation.key.outside_block corpus/decisions/an-earlier-decision.md
+    passed
+  relation.key.outside_block corpus/exhausted/the-last-one.md
+    passed
+  relation.key.outside_block corpus/spec/01-the-first-part.md
+    passed
+  relation.key.outside_block corpus/spec/02-the-second-part.md
+    passed
+  relation.key.outside_block corpus/spec/03-the-third-part.md
+    passed
+  relation.key.outside_block corpus/spec/04-a-scaffolded-fourth-part.md
+    passed
+  relation.key.outside_block corpus/standards/a-standard.md
     passed
   relation.target.unresolved corpus/decisions/a-scaffolded-successor.md + corpus/spec/02-the-second-part.md
     passed
