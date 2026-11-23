@@ -300,6 +300,30 @@ fn a_path_with_no_file_keeps_its_refusal_even_where_a_pattern_reaches_it() {
     );
 }
 
+/// The path forms a shell or an editor writes find the code file that
+/// `src/lib.rs` finds (#1227), and a link inside the root answers for the file
+/// at its end as the MCP tool does (#1433). A directory that a pattern reaches
+/// is not a file, and keeps its refusal.
+#[cfg(unix)]
+#[test]
+fn a_code_file_is_found_by_each_spelling_of_its_path_and_through_a_link() {
+    let root = Root::new("spellings", "src/lib.rs");
+    std::os::unix::fs::symlink("lib.rs", root.at.join("src/link.rs")).expect("the link is made");
+    let absolute = root.at.join("src/lib.rs").display().to_string();
+    for target in ["./src/lib.rs", "src/../src/lib.rs", absolute.as_str(), "src/link.rs"] {
+        let explained = root.run(&["explain", target]);
+        assert_eq!(explained.code, Some(0), "{target}: {explained:?}");
+        assert!(
+            explained.out.contains("governed by docs/interfaces/thing.md"),
+            "{target} names the governing document: {explained:?}"
+        );
+    }
+    let pattern = Root::new("directory", "src/**");
+    let explained = pattern.run(&["explain", "src"]);
+    assert_eq!(explained.code, Some(1), "a directory: {explained:?}");
+    assert_eq!(explained.out, "", "nothing on standard output: {explained:?}");
+}
+
 /// `show` prints the bytes of a document, and a governed code file is not
 /// one, so `show` refuses it in the sentence it always wrote.
 #[test]
