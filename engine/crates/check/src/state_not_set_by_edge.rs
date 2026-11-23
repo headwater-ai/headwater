@@ -33,7 +33,10 @@
 //! [HW-DR-0086](../../../../docs/decisions/0086-a-reciprocal-half-is-owed-once-its-writer-leaves-its-initial-state.md)
 //! rules the same for a reciprocal half: a draft is still being argued over.
 //! A terminal source still counts, because a successor that was itself
-//! superseded later still superseded its own target.
+//! superseded later still superseded its own target. This rule passes the
+//! pair, and [`crate::state_set_after_initial`] reports it as pending, at
+//! `warn` and against the source, so an author hears that the draft retires
+//! nothing until it leaves its initial state (#1973).
 //!
 //! A target at its initial state is silent too. The base regimes give a
 //! `draft` no movement to `superseded`, so the fix would write a transition
@@ -160,6 +163,8 @@ impl EdgeCheck for NotSetByEdge<'_> {
     /// draft target became silent. Version 1 never reached `main`, and a
     /// cache that a branch build wrote at 1 served the error verdict to the
     /// next binary until the number moved (#1198).
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 2;
     /// The Q4 pair: the rule reads a facet at each end.
     const UNIT: EdgeUnit = EdgeUnit::Pair;

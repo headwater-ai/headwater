@@ -185,6 +185,8 @@ fn condition(relation: &Relation) -> String {
 impl EdgeCheck for InvalidPair<'_> {
     const RULE: &'static str = self::RULE;
     /// See [`crate::placement::Placement::VERSION`].
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 2;
     /// The Q4 pair. See the module comment: both ends have to be documents,
     /// because the rule reads a facet at each of them.

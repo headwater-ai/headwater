@@ -83,6 +83,8 @@ impl DocumentCheck for Required {
     /// The first edition of this rule. Raise it when what the rule decides
     /// changes, because that is what invalidates the cached verdicts of the
     /// edition before it ([`crate::cache`]).
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 1;
     /// A required facet becomes a member of the `required` array of the kind
     /// that owes it, and a validator reports one error for each member that a

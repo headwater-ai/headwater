@@ -153,6 +153,7 @@ pub mod dependency;
 pub mod discriminator;
 pub mod duplicate;
 pub mod endpoint;
+pub mod enumerated;
 pub mod facet_blank;
 pub mod facet_required;
 pub mod facet_value;
@@ -172,6 +173,7 @@ pub mod language;
 pub mod lifecycle_state;
 pub mod link_identifier;
 pub mod link_path;
+pub mod mention;
 pub mod observation;
 pub mod outside_root;
 pub mod paint;
@@ -192,6 +194,7 @@ pub mod self_target;
 pub mod shape;
 pub mod source_form;
 pub mod state_not_set_by_edge;
+pub mod state_set_after_initial;
 pub mod state_set_twice;
 pub mod suppression;
 pub mod surface;
@@ -239,7 +242,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 50] = [
+pub const RULES: [&str; 52] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
@@ -253,6 +256,7 @@ pub const RULES: [&str; 50] = [
     dependency::RULE,
     initial_dependency::RULE,
     state_not_set_by_edge::RULE,
+    state_set_after_initial::RULE,
     invalid_pair::RULE,
     basis::RULE,
     participation::RULE,
@@ -273,6 +277,7 @@ pub const RULES: [&str; 50] = [
     fragment::RULE,
     link_path::RULE,
     link_identifier::RULE,
+    mention::RULE,
     promotion::RULE,
     transition::RULE,
     lifecycle_state::RULE,
@@ -524,6 +529,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::edge_exports::<state_not_set_by_edge::NotSetByEdge<'_>>(),
         ),
         (
+            state_set_after_initial::RULE,
+            scope::edge_scope::<state_set_after_initial::SetAfterInitial<'_>>(),
+            scope::edge_version::<state_set_after_initial::SetAfterInitial<'_>>(),
+            scope::edge_exports::<state_set_after_initial::SetAfterInitial<'_>>(),
+        ),
+        (
             invalid_pair::RULE,
             scope::edge_scope::<invalid_pair::InvalidPair<'_>>(),
             scope::edge_version::<invalid_pair::InvalidPair<'_>>(),
@@ -642,6 +653,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::corpus_scope::<link_identifier::Identifiers>(),
             scope::corpus_version::<link_identifier::Identifiers>(),
             scope::corpus_exports::<link_identifier::Identifiers>(),
+        ),
+        (
+            mention::RULE,
+            scope::corpus_scope::<mention::Mentioned<'_>>(),
+            scope::corpus_version::<mention::Mentioned<'_>>(),
+            scope::corpus_exports::<mention::Mentioned<'_>>(),
         ),
         (
             promotion::RULE,
@@ -831,6 +848,11 @@ pub fn run(
     // Edge-scoped for [`dependency`]'s reason. See [`state_not_set_by_edge`].
     let not_set_by_edge =
         state_not_set_by_edge::NotSetByEdge::over(declared.relations, declared.shape);
+    // A source at its initial state over the same relations, whose edge has
+    // not landed yet. It reports what HW-DR-0086 leaves pending, against the
+    // source. See [`state_set_after_initial`].
+    let set_after_initial =
+        state_set_after_initial::SetAfterInitial::over(declared.relations, declared.shape);
     // Two documents joined by a relation whose declared `invalid_when`
     // condition holds at both ends, over the relations that declare one.
     // Edge-scoped for [`dependency`]'s reason. See [`invalid_pair`].
@@ -891,6 +913,11 @@ pub fn run(
     // and it is corpus-scoped for `link_path`'s reason: a renumbering of the
     // target changes no byte of the citing file. See [`link_identifier`].
     let link_identifiers = link_identifier::Identifiers;
+    // A document whose prose names another document's identifier and that
+    // declares no relation to it, over the relations the taxonomy declares for
+    // the pair. Corpus-scoped for `link_identifier`'s reason, and because an
+    // edge the named document writes silences it. See [`mention`].
+    let mentioned = mention::Mentioned::over(declared.relations, declared.shape);
     // The one rule that declares `NEEDS_PRIOR`, and it carries no declaration:
     // the transition it reads is spec 3's act rather than a member of any
     // taxonomy. See [`promotion`].
@@ -1001,6 +1028,15 @@ pub fn run(
     ));
     instances.extend(scope::over_edges(
         &not_set_by_edge,
+        census,
+        graph,
+        &digests,
+        declared.observations,
+        ctx,
+        cache,
+    ));
+    instances.extend(scope::over_edges(
+        &set_after_initial,
         census,
         graph,
         &digests,
@@ -1138,6 +1174,9 @@ pub fn run(
         claims,
         ctx,
         cache,
+    ));
+    instances.extend(scope::over_corpus(
+        &mentioned, census, graph, claims, ctx, cache,
     ));
     instances.extend(scope::over_documents(&promoted, census, graph, ctx, cache));
     instances.extend(scope::over_documents(

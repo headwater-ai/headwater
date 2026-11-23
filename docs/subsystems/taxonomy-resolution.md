@@ -51,7 +51,7 @@ The public Rust API of the crates is not in this spec ([HW-DR-0098](../decisions
 
 ### A loader on the Q2 dialect
 
-`yaml` is the only crate that knows YAML. `loader.rs` reads an event stream and gives a tree with a span on every node. A syntax error stops the load, because no tree exists to say more about. The loader collects every other refusal, so an author who wrote three anchors reads three lines in one run.
+`yaml` is the only crate that knows YAML. `loader.rs` reads an event stream and gives a tree with a span on every node. A syntax error stops the load, because no tree exists to say more about. A source that nests its collections more than 256 deep also stops the load, before the loader builds a tree. `MAX_DEPTH` states that bound, and it counts block and flow collections together. The tree builder calls itself once for each level, so a source nested 20,000 deep used all of the stack and stopped the process with a signal and no message. The loader collects every other refusal, so an author who wrote three anchors reads three lines in one run.
 
 The loader refuses a duplicate key, an anchor, an alias, a merge key and an explicit tag. A `$`-reference is the one reuse mechanism, and an overlay cannot address an alias. `value.rs` has no `Null`, `Bool` or `Int` variant. A scalar keeps its text and its style, because the meta-schema and not the YAML resolver decides a type. `core_schema.rs` gives that type only where a declared type asks for it. So `no` stays the string `no`.
 
@@ -117,7 +117,7 @@ Two `add` operations commute when no leaf that one writes is a prefix of a leaf 
 
 ### Selection, assembly and templates
 
-`package.rs` reads the consumer declaration and the package manifest, and it gives the resolver an ordered list of sources. The manifest and the taxonomy source are two files, because `package` is a reserved reference root. `selection.rs` finds the bundle that a consumer left out. It derives the answer from the same traversal as the refusal, and it does not read `requires` ([HW-DR-0040](../decisions/0040-q40-whether-extends-bundle-requires-and-an-overlay-s-taxonomy-key-are-a-mechanism-or-a-label.md)). `assembly.rs` resolves a named selection of the bundles of one package.
+`package.rs` reads the consumer declaration and the package manifest, and it gives the resolver an ordered list of sources. It refuses a `corpus.root` that is absolute or that climbs above the repository root. `containment.rs` holds that test, and each reader and writer of a declared path calls it (#1967). The manifest and the taxonomy source are two files, because `package` is a reserved reference root. `selection.rs` finds the bundle that a consumer left out. It derives the answer from the same traversal as the refusal, and it does not read `requires` ([HW-DR-0040](../decisions/0040-q40-whether-extends-bundle-requires-and-an-overlay-s-taxonomy-key-are-a-mechanism-or-a-label.md)). `assembly.rs` resolves a named selection of the bundles of one package.
 
 `template.rs` holds each template of a package against the taxonomy of that package. `publish` calls it, because only that verb sees every bundle a package ships. A placeholder is skipped and not typed. A template with a kind name and no readable front matter is refused, so that no publisher has a bypass.
 
@@ -137,7 +137,7 @@ A corpus states the engines it asks for in the `engine` line of `.headwater/taxo
 
 `lock` writes one resolution with a digest over it. The identity of a resolution is its canonical text, and `render` makes that text the same for every legal order of an overlay set. A reader can compute that identity from the file in front of them, which a tree identity does not allow.
 
-`write` runs every rule of `taxonomy validate`, and it returns the findings instead of a lock when a rule fires. So a lock is always a validated taxonomy. `read` checks the format, the digest and the `rules` field against the rule set of the engine, and it runs no rule. A lock that another rule set validated is refused.
+`write` runs every rule of `taxonomy validate`, and it returns the findings instead of a lock when a rule fires. So a lock is always a validated taxonomy. `read` checks the format, the digest and the `rules` field against the rule set of the engine. A lock that another rule set validated is refused. After the digest check, `read` runs one rule again (`rules::contained`). It is the half of `projection targets` that holds each shelf path and each projection output inside the repository. So a lock that somebody edited and digested again cannot send a writer outside the repository (#1967).
 
 The `adoption` block is the one authored part of the lock. `taxonomy resolve` carries it through unchanged, and the digest does not cover it. `rewrite_adoption` replaces the block and does not resolve again. `authored_at` reads the block when the rest of the lock does not read. `diverged` names the block only when every line outside it is identical. No document states which lines are authored and which are generated ([HW-OBL-0082](../obligations/0082-the-lock-is-half-generated-and-half-authored-and-nothing.md)), so this paragraph describes the code and does not make the rule.
 
@@ -159,6 +159,7 @@ A change to these crates must keep each of these. Each item names the test that 
 - **A declared dependency applies first** (`every_order_of_a_selection_writes_one_lock_and_lists_each_dependency_first`, `the_shipped_set_applies_each_dependency_before_its_dependents`), and a cycle names each bundle in it (`a_cycle_of_three_names_each_bundle_in_it_and_no_other`).
 - **The digest is over the canonical text and not the file** (`the_digest_is_over_the_canonical_text_and_not_the_file`), and the committed lock is what the sources resolve to (`the_committed_lock_is_what_the_sources_resolve_to`).
 - **A lock from another rule set or format is refused** (`a_lock_whose_rules_field_is_stale_is_refused_and_names_the_remedy`, `an_old_format_lock_is_refused_without_saying_which_engine_is_newer`).
+- **A lock whose shelf path or projection output leaves the repository is refused, even with a digest that matches** (`a_re_digested_lock_with_a_climbing_path_is_refused`, `a_hand_edited_lock_with_a_climbing_path_is_refused_before_any_write`).
 - **A corpus range and a package range must have a version in common.** Two ranges overlap only when one version satisfies both (`two_ranges_overlap_when_one_version_is_in_both`). Each row of the range table is what `release::satisfies` answers (`every_row_of_the_range_table_is_what_the_engine_answers`).
 - **The SHA-256 is correct.** It matches the published vectors (`the_published_vectors`) and each length around a block boundary (`every_length_around_a_block_boundary`), and a second implementation agrees on every subject (`a_second_implementation_agrees_on_every_subject`).
 

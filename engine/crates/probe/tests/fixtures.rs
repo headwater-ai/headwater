@@ -1199,11 +1199,12 @@ fn a_patched_session_that_produced_nothing_says_so() {
 
 /// A `patched` session graded against a command oracle (#1834), over the two
 /// shapes of event the transform can write for a session that produced code
-/// and a README. The grader is unchanged: it is satisfied by any artifact whose
-/// findings lack the oracle. So the whole-oracle finding has to be on every
-/// artifact, or a session whose code did not compile passes on its README.
+/// and a README. Until #1980 the grader was satisfied by any artifact whose
+/// findings lacked the oracle, so the recorder puts the whole-oracle finding
+/// on every artifact, or a session whose code did not compile passed on its
+/// README. Since #1980 one artifact that carries the oracle fails the session.
 #[test]
-fn a_command_oracle_fails_a_session_only_when_every_artifact_carries_it() {
+fn a_command_oracle_fails_a_session_when_any_artifact_carries_it() {
     let mut selected = regression().selected;
     let patched = selected
         .iter_mut()
@@ -1242,10 +1243,14 @@ fn a_command_oracle_fails_a_session_only_when_every_artifact_carries_it() {
         "{:?}",
         row_verdict(&source)
     );
-    // The shape the Done-when as written gives: the finding on the matched
-    // `.rs` alone, and the README clean. The grader passes it.
+    // The finding on the matched `.rs` alone, and the README clean. Before
+    // #1980 the grader passed it on the README; now the `.rs` fails it.
     assert!(
-        matches!(row_verdict(&event(on_both, "[]")), Verdict::Satisfied(_)),
+        matches!(
+            row_verdict(&event(on_both, "[]")),
+            Verdict::NotSatisfied(Miss::OracleReported { ref artifact, reported: 1, artifacts: 2, .. })
+                if artifact == "src/lib.rs"
+        ),
         "{:?}",
         row_verdict(&event(on_both, "[]"))
     );

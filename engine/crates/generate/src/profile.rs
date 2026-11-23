@@ -44,24 +44,28 @@ use headwater_yaml::Span;
 /// The profile name an entry that declares none belongs to.
 pub const DEFAULT: &str = "default";
 
-/// An emitter target: the vocabulary an export speaks.
-///
-/// Seven, from [Q13](../../../../docs/spec/09-decisions.md#q13--linkml-and-shacl-as-substrate)'s
-/// staging order. Two are built. The other five parse, because a taxonomy that
-/// names one has declared something legal and the engine owes it a reason
-/// rather than "not a format". Q13 puts each of the five behind a named
-/// external consumer, and none exists.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Emitter {
-    /// The native property graph, with no loss.
-    Json,
-    /// JSON Schema for front matter.
-    JsonSchema,
-    Shacl,
-    Rdf,
-    Skos,
-    Okf,
-    LinkMl,
+headwater_check::enumerated! {
+    /// An emitter target: the vocabulary an export speaks.
+    ///
+    /// Seven, from [Q13](../../../../docs/spec/09-decisions.md#q13--linkml-and-shacl-as-substrate)'s
+    /// staging order. Two are built. The other five parse, because a taxonomy that
+    /// names one has declared something legal and the engine owes it a reason
+    /// rather than "not a format". Q13 puts each of the five behind a named
+    /// external consumer, and none exists.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub enum Emitter {
+        /// The native property graph, with no loss.
+        Json,
+        /// JSON Schema for front matter.
+        JsonSchema,
+        Shacl,
+        Rdf,
+        Skos,
+        Okf,
+        LinkMl,
+    }
+    /// Every target, in the order spec 6 writes them on the verb.
+    const ALL;
 }
 
 impl Emitter {
@@ -77,17 +81,6 @@ impl Emitter {
             Emitter::LinkMl => "linkml",
         }
     }
-
-    /// Every target, in the order spec 6 writes them on the verb.
-    pub const ALL: [Emitter; 7] = [
-        Emitter::Json,
-        Emitter::JsonSchema,
-        Emitter::Shacl,
-        Emitter::Rdf,
-        Emitter::Skos,
-        Emitter::Okf,
-        Emitter::LinkMl,
-    ];
 
     pub fn parse(text: &str) -> Option<Emitter> {
         Emitter::ALL.into_iter().find(|one| one.name() == text)

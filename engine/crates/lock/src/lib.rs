@@ -267,6 +267,18 @@ pub enum LockError {
         found: Option<String>,
         current: u32,
     },
+    /// A path the `resolved` block declares leaves the repository: a shelf
+    /// path or a projection output that is absolute or climbs above the root.
+    /// The digest matched, so the lock was edited by hand and re-digested, or
+    /// written by an engine that did not run this rule. `taxonomy resolve`
+    /// refuses the same path, so no lock this engine writes reaches here
+    /// (#1967).
+    Escapes {
+        /// The key that declares the path, as `shelves.probes.path`.
+        key: String,
+        /// What the rule said of the value.
+        why: String,
+    },
 }
 
 impl std::fmt::Display for LockError {
@@ -297,6 +309,12 @@ impl std::fmt::Display for LockError {
                  run now, so nothing here says the lock still holds. Run `headwater taxonomy \
                  resolve`",
                 found.as_deref().unwrap_or("none")
+            ),
+            LockError::Escapes { key, why } => write!(
+                f,
+                "the lock declares a path that leaves the repository: `{key}` {why}. Nothing \
+                 that reads this lock writes or walks a path outside the repository, so fix the \
+                 declaration and run `headwater taxonomy resolve`"
             ),
         }
     }
@@ -434,6 +452,23 @@ pub fn read(text: &str) -> Result<Lock, LockError> {
         return Err(LockError::Tampered {
             declared: declared.to_string(),
             actual,
+        });
+    }
+    // The digest says the body is what somebody hashed, not that a rule ran
+    // over it. Every verb that writes or walks a declared path reads it from
+    // here, so the containment half of `projection targets` runs again before
+    // any of them sees the body (#1967).
+    if let Some(escape) = headwater_resolve::rules::contained(&taxonomy)
+        .into_iter()
+        .next()
+    {
+        let why = match &escape.kind {
+            headwater_resolve::error::ResolveErrorKind::Invalid { message, .. } => message.clone(),
+            _ => escape.to_string(),
+        };
+        return Err(LockError::Escapes {
+            key: escape.at,
+            why,
         });
     }
 
@@ -1024,6 +1059,42 @@ core:
         let tampered = text.replace("homogeneous: true", "homogeneous: false");
         assert_ne!(tampered, text);
         assert!(matches!(read(&tampered), Err(LockError::Tampered { .. })));
+    }
+
+    /// A shelf path edited to climb out, with the digest recomputed so the
+    /// digest check passes, is refused by the rule and not by the hash (#1967).
+    #[test]
+    fn a_re_digested_lock_with_a_climbing_path_is_refused() {
+        let (sources, resolution) = resolved(VALID);
+        let text =
+            write("acme/fixture", "1.0.0", &sources, &resolution, None).expect("it validates");
+        let from = "path: \"docs/decisions/**\"";
+        for (to, key) in [
+            ("path: \"../sibling/**\"", "shelves.decisions.path"),
+            ("path: \"/abs/**\"", "shelves.decisions.path"),
+        ] {
+            let edited = text.replace(from, to);
+            assert_ne!(edited, text, "the lock holds `{from}`");
+            let loaded = headwater_yaml::load(&edited).expect("the edited lock loads");
+            let body = loaded
+                .value
+                .as_map()
+                .and_then(|top| top.get("resolved"))
+                .and_then(|node| node.value.as_map())
+                .expect("a `resolved` block")
+                .clone();
+            let old = digest(&resolution.render());
+            let new = digest(&headwater_resolve::render::render(&body));
+            let redigested = edited.replace(&old, &new);
+            match read(&redigested) {
+                Err(LockError::Escapes { key: found, why }) => {
+                    assert_eq!(found, key);
+                    let value = to.trim_start_matches("path: ").trim_matches('"');
+                    assert!(why.contains(value), "{why}");
+                }
+                other => panic!("{to}: {other:?}"),
+            }
+        }
     }
 
     #[test]

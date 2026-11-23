@@ -888,6 +888,7 @@ tooling:
   - .claude/skills/hw-run-policy
   - .claude/skills/hw-verification-bar
   - .claude/skills/repo-cleanup
+  - .claude/skills/site-preview
   - .claude/skills/ste-editor
   - .claude/skills/fixtures.sh
   - .claude/agents/headwater-product-owner.md

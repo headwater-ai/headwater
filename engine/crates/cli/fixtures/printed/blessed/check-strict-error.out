@@ -25,7 +25,7 @@ graph
       name it
 
 checks
-  3 seen, 3 classified, 3 checked, 35 check instances
+  3 seen, 3 classified, 3 checked, 36 check instances
         6 skipped: this document declares no warrant, and an absent warrant is
           not a value outside the closed set
         1 skipped: this document stands at `nosuch`, which `status` does not
@@ -38,7 +38,7 @@ checks
           not admit, and `facet.value.not_permitted` reports that
   adoption
     0 pairs open, 0 closed, holding 0 findings, in 0 tasks
-  7 documents in the read set, and 8 barriers that no gate carries across a
+  7 documents in the read set, and 9 barriers that no gate carries across a
     merge
         3 instances of facet.required.missing
         3 instances of facet.value.not_permitted
@@ -50,6 +50,7 @@ checks
         1 instances of link.fragment.unresolved
         1 instances of link.path.unresolved
         1 instances of link.identifier.mismatch
+        1 instances of relation.mention.undeclared
         3 instances of warrant.promoted
         3 instances of lifecycle.transition.not_permitted
         3 instances of lifecycle.state.not_admitted
@@ -87,6 +88,8 @@ checks
     lifecycle.dependency.on_initial
       edge scope, one relation instance and both endpoints
     lifecycle.state.not_set_by_edge
+      edge scope, one relation instance and both endpoints
+    lifecycle.state.set_after_initial
       edge scope, one relation instance and both endpoints
     relation.pair.invalid
       edge scope, one relation instance and both endpoints
@@ -137,6 +140,8 @@ checks
     link.identifier.mismatch
       corpus scope, every row of the census, and it is a barrier
       0 links compared, 0 of them with a finding
+    relation.mention.undeclared
+      corpus scope, every row of the census, and it is a barrier
     warrant.promoted
       document scope, one document and its front matter, and the version of it
         that stood before the change
@@ -199,6 +204,7 @@ read set
   barrier link.fragment.unresolved
   barrier link.path.unresolved
   barrier link.identifier.mismatch
+  barrier relation.mention.undeclared
   barrier lifecycle.deletion.not_permitted
   version facet.required.missing 1
   version facet.value.not_permitted 3
@@ -213,6 +219,7 @@ read set
   version lifecycle.dependency.on_terminal 1
   version lifecycle.dependency.on_initial 1
   version lifecycle.state.not_set_by_edge 2
+  version lifecycle.state.set_after_initial 1
   version relation.pair.invalid 2
   version warrant.evidence.unsupported 4
   version relation.participation.overdue 1
@@ -233,6 +240,7 @@ read set
   version link.fragment.unresolved 4
   version link.path.unresolved 1
   version link.identifier.mismatch 1
+  version relation.mention.undeclared 1
   version warrant.promoted 1
   version lifecycle.transition.not_permitted 2
   version lifecycle.state.not_admitted 1

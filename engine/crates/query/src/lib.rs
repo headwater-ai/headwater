@@ -101,6 +101,10 @@ pub struct Surface<'a> {
     /// that declares none names no document, and a projection that needs a
     /// heading declines rather than inventing one.
     name: Option<String>,
+    /// The facet in the `state` role and the role of each value, so that a
+    /// neighbour can say a governing end at its initial state governs nothing
+    /// yet (#1973).
+    state: headwater_check::lifecycle_state::StateFacet,
 }
 
 /// One classified document, as a read sees it.
@@ -197,6 +201,12 @@ pub struct Neighbour {
     pub cue: Option<String>,
     /// Whether the cue came from the edge rather than from the target.
     pub cue_is_declared: bool,
+    /// The initial state the governing end stands at, where the relation
+    /// writes a state onto its target, and `None` otherwise. Such an edge has
+    /// not landed: HW-DR-0086 rules that a source at its initial state retires
+    /// nothing yet, so the end that will govern does not govern now, and
+    /// [`Neighbour::render`] says so (#1973). JSON does not carry it.
+    pub pending: Option<String>,
     /// Which end governs the reading of the pair, derived and never declared.
     pub governs: Governs,
     /// How many tree entries the far end reaches, in total and per pattern,
@@ -225,6 +235,7 @@ impl<'a> Surface<'a> {
             config,
             scent: shape.facet_in_role(SCENT).map(|facet| facet.name.clone()),
             name: shape.facet_in_role(NAME).map(|facet| facet.name.clone()),
+            state: headwater_check::lifecycle_state::StateFacet::of(shape),
         }
     }
 
@@ -457,9 +468,11 @@ impl<'a> Surface<'a> {
                 .and_then(|entry| entry.value.value.as_scalar())
                 .map(|scalar| scalar.text.clone()),
         };
+        let pending = self.pending_of(edge);
         Neighbour {
             relation,
             inbound,
+            pending,
             cue_is_declared: declared_cue.is_some(),
             cue: declared_cue
                 .or_else(|| pointer.as_ref().and_then(|pointer| pointer.summary.clone())),
@@ -512,6 +525,33 @@ impl<'a> Surface<'a> {
     /// is the canonical relation, resolved when the edge was built, so asking
     /// the declarations for it again always answers `AsDeclared` and the flip
     /// never fires. That is the defect this comment is here to keep fixed.
+    /// The initial state the governing end of an edge stands at, where the
+    /// relation declares `on_target.set_state`. Every other edge, and a
+    /// governing end that stands anywhere else, gives `None`.
+    ///
+    /// The state is read through its role, as `lifecycle.state.not_set_by_edge`
+    /// and `lifecycle.state.set_after_initial` read it, so `explain` and the
+    /// check agree on which edges have landed.
+    fn pending_of(&self, edge: &Edge) -> Option<String> {
+        use headwater_check::lifecycle_state::{Standing, Stood};
+        let named = self.relations.named(&edge.declared)?;
+        named.relation.sets_target_state.as_ref()?;
+        let governing = match self.governs_of(edge) {
+            Governs::Source => self.find(&edge.source.path)?,
+            Governs::Target => match &edge.target {
+                Target::Document { path, .. } => self.find(path)?,
+                _ => return None,
+            },
+            Governs::Neither => return None,
+        };
+        match self.state.stood(governing.facets) {
+            Stood::At(state) if self.state.standing(state) == Standing::Initial => {
+                Some(state.to_string())
+            }
+            _ => None,
+        }
+    }
+
     fn governs_of(&self, edge: &Edge) -> Governs {
         let Some(named) = self.relations.named(&edge.declared) else {
             return Governs::Neither;
@@ -626,11 +666,26 @@ impl Neighbour {
                 }
             );
         }
-        line.push_str(match self.governs {
-            Governs::Source => " [this document governs the reading]",
-            Governs::Target => " [that document governs the reading]",
-            Governs::Neither => "",
-        });
+        // An edge whose governing end is still at its initial state has not
+        // landed, so neither end governs yet. Saying "governs" there is what
+        // an author read as a supersession that took effect (#1973).
+        match (&self.governs, &self.pending) {
+            (Governs::Source, Some(state)) => {
+                let _ = write!(
+                    line,
+                    " [this document will govern the reading once it leaves `{state}`]"
+                );
+            }
+            (Governs::Target, Some(state)) => {
+                let _ = write!(
+                    line,
+                    " [that document will govern the reading once it leaves `{state}`]"
+                );
+            }
+            (Governs::Source, None) => line.push_str(" [this document governs the reading]"),
+            (Governs::Target, None) => line.push_str(" [that document governs the reading]"),
+            (Governs::Neither, _) => {}
+        }
         // HW-DR-0074: the denominator HW-OBL-0104 recorded as absent — how
         // many entries an anchor reaches, in total and per pattern it holds.
         if let Some(reach) = &self.reach {

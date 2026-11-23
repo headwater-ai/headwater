@@ -127,6 +127,8 @@ impl CorpusCheck for Fragments {
     /// fragments; the second renumbered a repeated heading; the first counted
     /// every earlier anchor that began with its slug and a hyphen, which is not
     /// what a renderer does.
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 4;
     const NEEDS_LINKS: bool = true;
     const NEEDS_ANCHORS: bool = true;

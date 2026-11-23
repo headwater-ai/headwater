@@ -35,7 +35,7 @@ You need four things.
 Three facts about the blocks below.
 
 - **A block is a command or it is output, and the two look the same.** Every step gives the command first and what it printed after. Nothing marks the difference, so read the sentence above a block before you paste it.
-- **Your dates differ.** The engine reads a clock, and it puts the date of your run into what it writes. Where a block below shows `2026-09-09`, yours shows the day you read this.
+- **Your dates differ.** The engine reads a clock, and it puts the date of your run into what it writes. Where a block below shows `2026-09-09`, yours shows the date of your run in UTC. East of UTC early in the day, or west of UTC late in the day, that date is one day off your local date.
 - **Long output is trimmed.** A block that is shorter than the real output says so on the line above it.
 
 Install the engine once. The block below downloads the release archive for Linux on x86_64 and puts the `headwater` binary in `~/.local/bin`. The archive holds a static build, so it needs no particular C library.
@@ -324,12 +324,12 @@ census
 ```
 
 ```
-  1 seen, 1 classified, 1 checked, 23 check instances
+  1 seen, 1 classified, 1 checked, 22 check instances
 ```
 
 **Check.** `headwater check 2>/dev/null | grep 'check instances'` prints the second block above.
 
-The corpus did not grow. The count of checks that ran went from 8 to 23, because a typed document is a document that rules can reach. That is the whole trade this system asks for: type a document, and fifteen more questions become answerable about it.
+The corpus did not grow. The count of checks that ran went from 8 to 22, because a typed document is a document that rules can reach. That is the whole trade this system asks for: type a document, and fourteen more questions become answerable about it.
 
 ### Step 10 — Commit the first governed corpus
 
@@ -405,7 +405,7 @@ The new decision is live now, so the far half is owed. One edge has one end.
 
 Read the identifier in parentheses. An **obligation** is a claim this system makes about itself, with the rule that verifies it named beside it. `OB-REL-1` is the obligation that this rule discharges, and every finding names the one it serves.
 
-Trimmed to the head of the register and to its last line. The same run printed both, above the findings:
+Trimmed to the head of the register and to the first line below it. The same run printed both, above the findings:
 
 ```
   register
@@ -421,9 +421,9 @@ Trimmed to the head of the register and to its last line. The same run printed b
 
 **Check.** `headwater check 2>/dev/null | grep 'obligations:'` prints the `37 obligations:` line of the register block above, and nothing else.
 
-**One of those readings is about the package and one is about your run.** The obligations and their severities come from `headwater/standard`. They read the same on your first day and on your thousandth. The last line is derived from the run in front of you. It names every rule that fired at you with no obligation behind it. Most rules carry one, which is what makes the identifier in your finding worth reading.
+**One of those readings is about the package and one is about your run.** The obligations and their severities come from `headwater/standard`. They read the same on your first day and on your thousandth. The lines below the register come from the rules of the run in front of you. Each line names a rule that has no obligation behind it. Most rules carry one, which is what makes the identifier in your finding worth reading.
 
-One rule is named there. `facet.value.blank` reports a facet a document declares and leaves empty, and no control in `headwater/standard` names it yet. [HW-OBL-0170](https://github.com/headwater-ai/headwater/blob/main/docs/obligations/0170-the-blank-facet-value-rule-reaches-no-obligation-so-the-report-names-none.md) records that debt. A finding it raises is a true finding, and the line above is how a report tells you which of its rules answers to nothing.
+The block shows the first of those lines, and the run prints more lines after it. The first rule named there is `facet.value.blank`. It reports a facet a document declares and leaves empty, and no control in `headwater/standard` names it yet. [HW-OBL-0170](https://github.com/headwater-ai/headwater/blob/main/docs/obligations/0170-the-blank-facet-value-rule-reaches-no-obligation-so-the-report-names-none.md) records that debt. A finding it raises is a true finding, and these lines are how a report tells you which of its rules answers to nothing.
 
 **Your corpus will not show you a gap, and the reason is worth knowing.** A `gap` is a disposition that a package author writes, with an owner, for an obligation that no mechanism verifies. The base package declares none, so this row reads `0 gap` on every run of yours and no step here moves it. Headwater's own corpus takes a bundle that declares obligations that no mechanism verifies. The same block there shows `gap` and `unverifiable` counts above zero, and it names the owner of each gap. To read the current counts, run `headwater check 2>/dev/null | grep 'obligations:'` in a clone of Headwater. The number worth watching is the one that is not `verified`.
 
@@ -476,14 +476,14 @@ docs/decisions/0002-deliver-at-least-once.md
   may declare traces_to to governed_document, code_path
   to ACME-DR-0001 supersedes — The queue keeps every delivery attempt in
     Postgres. (the target's own summary) [this document governs the reading]
-  from docs/decisions/0001-store-attempts-in-postgres.md supersedes — The queue
-    keeps every delivery attempt in Postgres. (the target's own summary) [this
-    document governs the reading]
+  from docs/decisions/0001-store-attempts-in-postgres.md superseded_by — The
+    queue keeps every delivery attempt in Postgres. (the target's own summary)
+    [this document governs the reading]
 ```
 
 **Check.** The first line of that output is the path of the document whose identifier you named.
 
-Every word this tutorial taught is on that screen at once. There you read the shelf, the kind, the facets, the sections, the relations and both halves of the edge. Each edge line reads from this document, so the line from ACME-DR-0001 also says `supersedes`, although that document wrote `superseded_by`. This is the verb to reach for before you open a file.
+Every word this tutorial taught is on that screen at once. There you read the shelf, the kind, the facets, the sections, the relations and both halves of the edge. The line to ACME-DR-0001 names the relation as this document wrote it, `supersedes`. The line from it names the relation as that document wrote it, `superseded_by`. This is the verb to reach for before you open a file.
 
 ### Step 15 — Ask a question in your own words
 

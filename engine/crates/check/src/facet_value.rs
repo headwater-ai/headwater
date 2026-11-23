@@ -151,6 +151,8 @@ impl DocumentCheck for Values {
     /// rule that admitted the whole declared set on every kind. 3 reads each
     /// scalar item of a list (#1873), so a warm cache written by 2 holds a pass
     /// for a list with an item outside the set.
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 3;
     /// A declared value set becomes an `enum` over the same members, under a
     /// guard that lets a mapping through and enumerates each scalar item of a

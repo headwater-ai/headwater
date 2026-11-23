@@ -115,6 +115,8 @@ impl Duplicate {
 impl CorpusCheck for Duplicate {
     const RULE: &'static str = self::RULE;
     /// The first edition of this rule.
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 1;
     /// The build's own report over every document, which is the only thing this
     /// rule reads. A second reading of the corpus would be a second definition

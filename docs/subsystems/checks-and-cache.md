@@ -2,8 +2,8 @@
 id: HW-SPEC-checks-and-cache
 status: current
 status_since: 2026-10-01
-summary: "How two crates instantiate each rule through one scope trait, key a content-addressed cache, publish the read set, and render one run in four formats."
-last_verified: 2026-10-01
+summary: "How each rule runs through one scope trait, keys a content-addressed cache, publishes its read set and renders in four formats. Raise the rule version when a rule's behavior changes."
+last_verified: 2026-11-22
 title: "Checks and cache"
 provenance:
   warrant: asserted
@@ -77,7 +77,7 @@ The Document-origin rules `voice` and `language` read a regime that names catego
 
 A trait can also carry the inputs that a check declares: `NEEDS_BODY`, `NEEDS_PHASE_A`, `NEEDS_CLOCK`, `NEEDS_PRIOR`, `NEEDS_DECLARER_PRIOR`, `NEEDS_CLAIMS` and `NEEDS_OBSERVATIONS`. Each trait carries only the constants that its grain can use. A view gives nothing to a check that did not declare the input. The value of `Scope` that carries a declaration goes to the view and to the cache key from one binding, so the two cannot drift.
 
-`VERSION` is the edition of a rule, and an author raises it by hand when a rule decides differently. `tests/editions.rs` and `fixtures/editions.ledger` catch an author who forgets, on the corpora that the ledger records.
+`VERSION` is the edition of a rule. Raise the rule version when a rule's behavior changes, by hand, in the file that implements the rule. The doc comment beside each `VERSION` constant carries that sentence, because a session that edits one rule reads that file and no other. `tests/editions.rs` and `fixtures/editions.ledger` catch an author who forgets, on the corpora that the ledger records.
 
 #### The four corpus-view constants that are not `Scope` flags
 
@@ -232,7 +232,7 @@ A change to these crates must keep each of these. Each item names the test that 
 - **A cache changes no verdict.** A cached run, a cold run and a run with no cache write the same report (`a_cached_run_and_a_run_with_no_cache_write_the_same_report`, and over this repository `this_repository_reports_the_same_run_from_a_cache_as_from_none`). The second test reads the live tree ([HW-OBL-0144](../obligations/0144-the-cache-identity-test-reads-the-live-working-tree-so-an-edit-during-the-run-reports-the-correctness-root-as-violated.md)).
 - **Each key component invalidates an entry.** An edited document runs again (`an_edited_document_is_evaluated_again`). A moved anchor target, a moved clock, a moved lock and a dropped rule serve nothing stale (`a_moved_anchor_target_is_not_served_from_the_entry_before_it`, `a_clock_that_moved_is_not_served_from_the_entry_before_it`, `a_lock_that_moved_serves_nothing`, `an_engine_upgrade_that_drops_a_rule_serves_nothing`). So does a duplicate that the other file settled (`a_duplicate_settled_in_the_other_file_is_not_served_stale`).
 - **A damaged cache file costs one run** (`a_damaged_cache_file_costs_one_run_and_nothing_else`).
-- **A rule that changes its decisions raises its edition** (`every_ledgered_rule_decides_what_its_version_recorded`, `a_moved_digest_at_an_unchanged_version_fails_and_bless_keeps_the_row`).
+- **A rule that changes its decisions raises its edition** (`every_ledgered_rule_decides_what_its_version_recorded`, `a_moved_digest_at_an_unchanged_version_fails_and_bless_keeps_the_row`), and each `VERSION` constant says so in its own doc comment (`every_version_constant_states_that_a_changed_rule_raises_it`).
 - **The scope comes from the trait, and the read set comes from the view** (`the_scope_of_every_rule_comes_from_the_trait_that_binds_it`, `the_read_set_of_an_instance_comes_from_the_view_and_not_from_the_check`, `a_document_check_receives_the_body_only_when_it_declares_it`). Spec 12 names every `Scope` flag (`the_scope_block_of_spec_12_names_every_flag_scope_declares`) and every grain of `Grain` (`the_scope_block_of_spec_12_names_every_grain_the_engine_has`).
 - **The observation snapshot is in the read set** (`a_present_snapshot_joins_the_read_set`), and a gate does not carry a verdict over a deleted entry (`deleting_the_snapshot_entry_between_check_and_gate_does_not_carry`).
 - **The denominator is the census** (`the_denominator_is_the_census_and_not_the_classified_set`), and a classified document with no instance is a finding (`a_classified_document_with_no_instance_is_a_finding_and_an_untyped_one_is_not`).

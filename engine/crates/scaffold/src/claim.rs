@@ -29,13 +29,18 @@
 //! meets an occupied path. Where it does — two processes minting at once — the
 //! create fails, nothing is written at all, and the refusal is atomic.
 //!
-//! If the document write then fails, the residue is a spent number with no
-//! document.
+//! If the document write then fails, the run withdraws the claim it wrote with
+//! [`withdraw`], so a failed run spends no number (#1972). The permission to
+//! remove that file is the `Ok` that `create_new` returned for it in this run:
+//! no other claimant's record can be at that path, so the removal is not an
+//! overwrite of anybody's fact. It is the rule [`crate::write::apply`] follows
+//! for the document it created. Only a run that dies between the two writes
+//! still leaves a claim with no document, and
 //! [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#identifiers)
-//! already declares that state legitimate: "**Never reused.** … A deleted
-//! document does not free its number." The other order can leave a document
-//! with no claim, which is exactly the defect
-//! `identifier.claim.missing` exists to report.
+//! declares that state legitimate: "**Never reused.** … A deleted document
+//! does not free its number." The other order can leave a document with no
+//! claim, which is exactly the defect `identifier.claim.missing` exists to
+//! report.
 
 use crate::{Plan, Refusal};
 use headwater_check::claim::contents_for;
@@ -83,6 +88,66 @@ pub fn make(root: &Path, claim: &str, claimant: &str) -> Result<(), Refusal> {
     std::io::Write::write_all(&mut file, contents_for(claimant).as_bytes())
         .map_err(|error| refuse(error.to_string()))?;
     Ok(())
+}
+
+/// Write the claim this plan mints, then the composed files, and withdraw the
+/// claim when the files cannot be written.
+///
+/// The one caller of [`write`], so the order and its undo live in one place. A
+/// claim that cannot be made refuses with nothing written. A refusal of
+/// [`crate::write::apply`] removes the claim this call made, with [`withdraw`],
+/// and the message ends with the sentence [`withdrawn`] writes, so it names
+/// the claim it removed or the claim it could not remove (#1972).
+pub fn land(
+    root: &Path,
+    plan: &Plan,
+    composed: &[crate::write::Composed],
+) -> Result<Option<String>, String> {
+    let claimed = write(root, plan).map_err(|why| why.to_string())?;
+    let Err(why) = crate::write::apply(root, composed) else {
+        return Ok(claimed);
+    };
+    let why = why.to_string();
+    Err(match &claimed {
+        None => why,
+        Some(claim) => {
+            let outcome = withdraw(root, claim);
+            joined(&why, &withdrawn(claim, &outcome))
+        }
+    })
+}
+
+/// A refusal and the claim sentence after it, with one period and one space
+/// between them whether or not the refusal already ends in a period.
+pub fn joined(refusal: &str, sentence: &str) -> String {
+    format!("{}. {sentence}", refusal.trim_end_matches('.'))
+}
+
+/// Remove one claim file that this run made, because its document was not
+/// created.
+///
+/// Call it only with a path that [`write`] or [`make`] returned `Ok` for in
+/// this run. That `Ok` is the permission: `create_new` made the file, so the
+/// path held no other claimant's record, and removing it destroys no fact. A
+/// claim this run did not make is never passed here, and this function touches
+/// no other path, the shelf directory of the scheme included.
+pub fn withdraw(root: &Path, claim: &str) -> Result<(), String> {
+    std::fs::remove_file(root.join(claim)).map_err(|error| error.to_string())
+}
+
+/// The sentence a failed run adds to its refusal, after it has tried to
+/// withdraw the claim it made.
+///
+/// The refusals of [`crate::write::apply`] speak of documents only, so a run
+/// that made a claim says what became of it, and the whole message never says
+/// that nothing was written while a claim is on disk.
+pub fn withdrawn(claim: &str, outcome: &Result<(), String>) -> String {
+    match outcome {
+        Ok(()) => format!("The claim {claim} this run wrote was removed."),
+        Err(why) => format!(
+            "The claim {claim} this run wrote could not be removed: {why}. Delete it by hand."
+        ),
+    }
 }
 
 /// The claim path this plan owes, and nothing where it owes none.

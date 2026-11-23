@@ -75,56 +75,51 @@ pub mod plan;
 pub use intake::{Refusal, Rejected, Report, Tree, Verified};
 pub use plan::Plan;
 
-/// What a sweep finding claims, from the closed set spec 4 declares.
-///
-/// Closed for the reason every value set in this engine is closed: a class
-/// nobody declared is a class no reader can act on and no report can total. A
-/// return file that names one outside this set is refused with the set printed
-/// beside it.
-///
-/// # What a sixth class has to be, and why readability is not one
-///
-/// Every class below names **two things and says they do not fit**. Two
-/// documents. A newer claim against an older one. A term against the place its
-/// definition is owed. A document against its declared audience. A heading
-/// against the prose beneath it. A reader holds one against the other and
-/// adjudicates in seconds, which is the standard spec 4 sets, and
-/// [`Class::remediation`] reads the same way: every remedy declares an edge,
-/// defines a term, narrows an audience or writes a section.
-///
-/// A finding that names one thing fails that test whatever the intake can
-/// confirm about it. [Q24](../../../../docs/decisions/0024-q24-readability-and-what-a-sweep-can-be-asked-about.md)
-/// refused readability on exactly this ground, and it refused the easier
-/// argument with it: three of the five below already return `None` from
-/// [`Class::implies`], so a vacuous novelty leg disqualifies nothing. With no
-/// second term the quotation is the finding rather than evidence for it, and
-/// [`crate::intake`] then confirms what `grep` confirms.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Class {
-    /// Two documents that contradict each other while both remain current, and
-    /// neither declares it.
-    UndeclaredConflict,
-    /// A claim that a newer source quietly superseded.
-    QuietSupersession,
-    /// A concept referenced across the corpus and defined nowhere.
-    UndefinedConcept,
-    /// A document whose declared audience cannot use it.
-    AudienceMismatch,
-    /// A heading a kind requires, over prose that says nothing about it. See
-    /// [HW-OBL-0113](../../../../docs/obligations/0113-every-check-passes-a-document-that-is-still-the-scaffolder-s-placeholder.md).
-    UnwrittenSection,
+headwater_check::enumerated! {
+    /// What a sweep finding claims, from the closed set spec 4 declares.
+    ///
+    /// Closed for the reason every value set in this engine is closed: a class
+    /// nobody declared is a class no reader can act on and no report can total. A
+    /// return file that names one outside this set is refused with the set printed
+    /// beside it.
+    ///
+    /// # What a sixth class has to be, and why readability is not one
+    ///
+    /// Every class below names **two things and says they do not fit**. Two
+    /// documents. A newer claim against an older one. A term against the place its
+    /// definition is owed. A document against its declared audience. A heading
+    /// against the prose beneath it. A reader holds one against the other and
+    /// adjudicates in seconds, which is the standard spec 4 sets, and
+    /// [`Class::remediation`] reads the same way: every remedy declares an edge,
+    /// defines a term, narrows an audience or writes a section.
+    ///
+    /// A finding that names one thing fails that test whatever the intake can
+    /// confirm about it. [Q24](../../../../docs/decisions/0024-q24-readability-and-what-a-sweep-can-be-asked-about.md)
+    /// refused readability on exactly this ground, and it refused the easier
+    /// argument with it: three of the five below already return `None` from
+    /// [`Class::implies`], so a vacuous novelty leg disqualifies nothing. With no
+    /// second term the quotation is the finding rather than evidence for it, and
+    /// [`crate::intake`] then confirms what `grep` confirms.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub enum Class {
+        /// Two documents that contradict each other while both remain current, and
+        /// neither declares it.
+        UndeclaredConflict,
+        /// A claim that a newer source quietly superseded.
+        QuietSupersession,
+        /// A concept referenced across the corpus and defined nowhere.
+        UndefinedConcept,
+        /// A document whose declared audience cannot use it.
+        AudienceMismatch,
+        /// A heading a kind requires, over prose that says nothing about it. See
+        /// [HW-OBL-0113](../../../../docs/obligations/0113-every-check-passes-a-document-that-is-still-the-scaffolder-s-placeholder.md).
+        UnwrittenSection,
+    }
+    /// Every class, in the order spec 4 lists them.
+    const ALL;
 }
 
 impl Class {
-    /// Every class, in the order spec 4 lists them.
-    pub const ALL: [Class; 5] = [
-        Class::UndeclaredConflict,
-        Class::QuietSupersession,
-        Class::UndefinedConcept,
-        Class::AudienceMismatch,
-        Class::UnwrittenSection,
-    ];
-
     /// The name an agent writes in a return file.
     pub fn name(self) -> &'static str {
         match self {

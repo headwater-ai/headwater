@@ -211,6 +211,8 @@ impl EdgeCheck for Basis<'_> {
     /// Version 4 reads a relation that declares `evidence_at: from` the other
     /// way round, so the verdict over a `discharges` pair moves in both
     /// directions, and a warm cache would serve version 3's reading (#1511).
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 4;
     /// The Q4 pair. See the module comment: both ends have to be documents,
     /// because the rule reads a provenance member at each of them.

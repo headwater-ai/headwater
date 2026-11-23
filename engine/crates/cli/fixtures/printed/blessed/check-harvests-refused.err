@@ -1,0 +1,3 @@
+headwater: the pinned export declarations did not read
+  `harvests` in `.headwater/taxonomy.yml` is a scalar, and it is a mapping of pinned exports by name
+

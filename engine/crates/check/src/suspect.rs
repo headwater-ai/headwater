@@ -318,6 +318,8 @@ impl EdgeCheck for Suspect<'_> {
     /// and the remedy names `--verified-edge` in the second case. The key
     /// already holds the statement and the prior, so a verdict cached at 10
     /// differs only in its text.
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 11;
     /// The change decides the fix, and the clock decides nothing (#1259).
     const NEEDS_CLOCK: bool = false;

@@ -63,4 +63,45 @@ other_key() {
 body_repaired() {
     sed -i 's/found eight comments that state facts the code no longer holds\./found eight comments that state facts the code does not hold./' "$target" && grep -q 'that state facts the code does not hold\.' "$target" && grep -q 'the code no longer holds, found by' "$target"
 }
-more_wrong="deleted commented body_line summary_commented other_key body_repaired"
+
+# The summary rewritten with the crate list dropped, as session
+# b2/L2-additive-scenario-6-p9-r4 of phase B wrote it. It loses the five
+# crates that the summary names, so it fails (#1978).
+crates_dropped() {
+    sed -i "s/$pin/summary: \"Eight comments in the command-surface crates and their subsystem spec state facts that mismatch the code, found by the builds and verifies of run 20261001-1107.\"/" "$target" && grep -q 'command-surface crates and their subsystem spec state facts that mismatch' "$target"
+}
+more_wrong="deleted commented body_line summary_commented other_key body_repaired crates_dropped"
+
+# A paraphrase that keeps every fact of the summary in other words, as
+# session b3/L2-additive-scenario-6-p9-r1 of phase B wrote it (#1978). The
+# task asks the session to keep the meaning and not the words, so it must
+# pass.
+paraphrase() {
+    sed -i "s/$pin/summary: \"Eight comments in the cli, paint, generate, probe and sweep crates, and the command-surface subsystem spec, state facts the code does not hold. The builds and verifies of run 20261001-1107 surfaced them.\"/" "$target" && grep -q 'The builds and verifies of run 20261001-1107 surfaced them' "$target"
+}
+more_sound="paraphrase"
+
+# The reference change less one crate name, or less the count, so that only
+# the `# summary-any:` line of that fact fails each one (#1978).
+sweep_dropped() {
+    sed -i "s/$pin/summary: \"Eight comments in cli, paint, generate, probe and the command-surface subsystem spec state facts the code does not hold, found by the builds and verifies of run 20261001-1107.\"/" "$target" && grep -q 'Eight comments in cli, paint, generate, probe and the' "$target"
+}
+count_dropped() {
+    sed -i "s/$pin/summary: \"Comments in cli, paint, generate, probe, sweep and the command-surface subsystem spec state facts the code does not hold, found by the builds and verifies of run 20261001-1107.\"/" "$target" && grep -q 'summary: "Comments in cli, paint' "$target"
+}
+crates_less() {
+    sed -i "s/$pin/summary: \"Eight comments in $1 and the command-surface subsystem spec state facts the code does not hold, found by the builds and verifies of run 20261001-1107.\"/" "$target" && grep -q -F "summary: \"Eight comments in $1 and the" "$target"
+}
+cli_dropped() {
+    crates_less "paint, generate, probe, sweep"
+}
+paint_dropped() {
+    crates_less "cli, generate, probe, sweep"
+}
+generate_dropped() {
+    crates_less "cli, paint, probe, sweep"
+}
+probe_dropped() {
+    crates_less "cli, paint, generate, sweep"
+}
+more_wrong="$more_wrong sweep_dropped count_dropped cli_dropped paint_dropped generate_dropped probe_dropped"

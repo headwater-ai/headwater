@@ -3,7 +3,7 @@ id: HW-DR-0112
 status: current
 status_since: 2026-10-29
 summary: "The 0.07 campaign grades 11 canonical actions against 5 layers in 7 scenarios over 44 probes. Phase A tunes each layer pooled over the tuning probes, with a 22-session screen and a 145-session confirmation. Phase B reports held-out numbers per action. This record also keeps the probe shape, the verdict rule and the fixed model."
-last_verified: 2026-10-29
+last_verified: 2026-11-22
 title: "112 — The additive campaign measures eleven actions by five layers in seven scenarios"
 provenance:
   warrant: asserted
@@ -114,6 +114,8 @@ Changed on 2026-10-30 by slice 3b of #1874. `typed-at.sh` and `reciprocal-link.s
 
 Added on 2026-10-30 by slice 4b of #1874. `test-passes.sh` also counts only the errors on the documents that it names after `--`. Before it builds, it marks each file under `engine/crates` newer than any build. A grading copy holds no history, so a build that trusts the times of its files can serve the build of the case before it.
 
+Changed on 2026-11-22 by #1978. A baseline of row 9 can name a concept that the repair keeps in a `# summary-any:` line, with the words that can express it. The line passes when the parsed summary holds one of those words, with case ignored. A baseline writes one line for each concept. The tasks of row 9 ask a session to keep the meaning of a sentence, and a `# summary:` line grades the words. In phase B, most sessions of the shelf-layout probe kept both clauses in other words and failed that line. So the shelf-layout and stale-comments baselines name their concepts in `# summary-any:` lines. #1978 regraded the phase B sessions of the two probes under these lines, from the recorded transcripts.
+
 Row 11 has two conditions. The `oracle:` facet names the oracle over the tree. `no-hook-warning.sh` reads the harness log of the session from `HEADWATER_ORACLE_HARNESS_LOG`, because the stream holds no hook attachment. #1875 exports that variable and runs the script on each session of row 11.
 
 `tools/probe/oracle-fixtures.sh` runs each script over a tree that it must pass and a tree that it must fail. An oracle that passes both trees, or fails both, fails CI. The pilot of #1835 found probes of each kind.
@@ -176,6 +178,12 @@ A cell that saturates stops at 24 sessions. A cell saturates when all its sessio
 
 Amended on 2026-11-09 by the owner on #1881, to fit phase B under one week of the plan. Each row runs 48 sessions in scenario 1 and in scenario 6, not 72. Scenarios 0 and 2 each run 66 sessions, pooled, on the held-out set. A cell also stops after 12 sessions that all pass or all fail. The ceiling for phase B is $1,050. The owner accepts a margin of about 14 points for each row. The owner also accepts that a row that passes about 95% or 5% of the time can stop early and read as 100% or 0%. `rounds.final` in `.headwater/probe.yml` declares these counts.
 
+Added on 2026-11-22 by #1979. The owner ruled on 2026-11-22, on #1979, about a session that stops to ask and names a conflict with a current document. Such a session gets its own verdict and does not fail. A direct instruction from the person who gave the task goes ahead once the session states the conflict. The shipped orientation skill now says so. The grader does not carry that verdict yet, and the next slice of #1979 adds it. So the phase B table as recorded counts each such session as a failure.
+
+The count that #1882 states is as follows. Each count is of the failures that a probe defect alone accounts for. A failure where a probe defect and a real miss coincide is in a separate count. In `change_governed_code`, scenario 6 passes 32 of 48 sessions, so 16 fail. The probes alone account for 8 of the 16: 6 on the numbered-heading probe and 2 on the export-patterns probe. The 2 declined because a current requirement says the opposite of the task. In 3 more, the numbered-heading defect and a real miss coincide. One of the 6 is the session that a scratch file under `/tmp` removed from the graded denominator. In scenario 1, the same cell passes 21 of 48, so 27 fail. The numbered-heading probe alone accounts for 1 of the 27, and in 11 more its defect and a real miss coincide. In `supersede_or_retire`, scenario 6 passes 20 of 48, so 28 fail. The figure-page probe alone accounts for 4 of the 28, and each of the 4 asked which record to replace. The task names a record that a later record already supersedes. In scenario 1, the same cell passes 9 of 12, so 3 fail, and the figure-page probe alone accounts for 1 of the 3.
+
+The numbered-heading defect stays. The second phrasing of that probe never names the bare form of the heading that its hidden test reads. A repair changes the held-out set, so it waits for a later campaign, and #1979 keeps it open.
+
 The published table carries the held-out number of each row. The skills, hooks and MCP columns carry the pooled layer result from phase A, and a per-cell indication marked unconfirmed. No tuning-probe cell table is bought.
 
 ### The keep rule
@@ -194,6 +202,8 @@ A call to the server is a `tool_use` event whose tool name starts with `mcp__`. 
 
 The subject model is `claude-sonnet-5`, on one version of one harness, and each record names that version. The engine is built from a recorded commit, and the transcript of each session names its digest. A table on another model is #1700's business, and another harness is #503's.
 
+Added on 2026-11-22 by #1981. The workspace of a session holds no vendored crates, and it reaches no registry. `tools/probe/egress-proxy.py` lets a session reach the API host and refuses every other host. So `cargo build` and `cargo test` cannot run in the workspace. The two code rows, `change_governed_code` and `refactor_across_files`, therefore measure a session that has no compiler for the workspace. A session can compile one file with `rustc`, but a missed caller in another crate stays invisible to it. In phase B, `refactor_across_files` failed 2 of its 48 sessions in scenario 6, and the transcripts of both show a missed caller. The owner ruled on 2026-11-22, on #1981, that this campaign keeps the workspace without a compiler. The evaluation of phase B, #1882, states this in one sentence beside the code rows.
+
 ### A base that a change makes stale
 
 A base that a later change can alter is measured again before a confirmation compares with it. `.headwater/probe.yml` declares `base_invalidators`, the paths whose change can make a measured base stale. A base is accepted again only by an owner acceptance that records the digest of each changed path. A confirmation waits for a base measured at its own commit. `tools/probe/try.sh` holds this mechanism, and this record keeps it.
@@ -210,4 +220,4 @@ Each paid issue gets its own ceiling when its dry-run plan is posted on it. No r
 
 **The open claims of spec 13 stay open.** This record reads HW-OBL-0012, HW-OBL-0013, HW-OBL-0014 and HW-OBL-0016, and it closes none of them. The evaluation that phase B publishes is the record that can discharge them.
 
-**These rulings open again** if the owner changes the grid, the scenarios or the keep rule. They also open again if the owner approves a ceiling for a paid issue, or if a phase A layer cannot be kept or closed. The grid opens again if a held-out row saturates in the base of every scenario.
+**These rulings open again** if the owner changes the grid, the scenarios or the keep rule. They also open again if the owner approves a ceiling for a paid issue, or if a phase A layer cannot be kept or closed. The grid opens again if a held-out row saturates in the base of every scenario. The workspace without a compiler opens again before any rerun of the code rows. The remedy then is vendored crates or a local registry sealed into the workspace, with no host added to the proxy. The held-out set opens again for the three probes of #1979 before any rerun.

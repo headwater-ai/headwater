@@ -57,6 +57,7 @@ use headwater_census::census::Census;
 use headwater_meta::pattern::Pattern;
 use headwater_yaml::core_schema::as_null;
 use headwater_yaml::{Entry, Mapping, Span, Value};
+use std::collections::HashSet;
 
 /// A declared edge, resolved.
 #[derive(Clone, Debug)]
@@ -576,7 +577,7 @@ pub fn build(
             kind_span: derivation.and_then(|derivation| derivation.span),
         };
 
-        let mut declared_here: Vec<(String, String)> = Vec::new();
+        let mut declared_here: HashSet<(String, String)> = HashSet::new();
         for entry in relations {
             read_relation_entry(
                 &source,
@@ -601,7 +602,7 @@ fn read_relation_entry(
     index: &Index,
     declarations: &Declarations,
     resolvers: &Resolvers,
-    declared_here: &mut Vec<(String, String)>,
+    declared_here: &mut HashSet<(String, String)>,
     edges: &mut Vec<Edge>,
     problems: &mut Vec<Reported>,
 ) {
@@ -720,7 +721,9 @@ fn read_relation_entry(
             span,
         };
 
-        // Q4's identity, checked inside the one document that can repeat it.
+        // Q4's identity, checked inside the one document that can repeat it,
+        // through a set, because a search of every edge before it made a
+        // document of many distinct targets quadratic (#1968).
         let key = (edge.name.clone(), edge.normalized_target());
         if declared_here.contains(&key) {
             problems.push(Reported {
@@ -733,7 +736,7 @@ fn read_relation_entry(
             });
             continue;
         }
-        declared_here.push(key);
+        declared_here.insert(key);
         edges.push(edge);
     }
 }
@@ -1039,7 +1042,15 @@ pub fn bind(
 /// The `to` of a mapping entry, with the span a finding anchors to.
 fn target_of(map: &Mapping, anchor_only: bool) -> Option<(Vec<String>, Span)> {
     let to = map.get("to")?;
+    // A plain null `to:` (`to:`, `to: ~`, `to: null`) names no target, so the
+    // caller reports the entry as having none rather than binding the text
+    // `~` ([#1912](https://github.com/headwater-ai/headwater/issues/1912)). A
+    // quoted `"~"` is text the author wrote and stays a target, the same split
+    // the relation value makes for #1902.
     if let Some(scalar) = to.value.as_scalar() {
+        if as_null(scalar) {
+            return None;
+        }
         return Some((vec![scalar.text.clone()], to.span));
     }
     // A list in the place of the string, admitted only where the endpoint is

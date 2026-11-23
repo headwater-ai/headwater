@@ -34,6 +34,10 @@
 //! prefix followed by `**`, and a language that admits more than the corpus uses
 //! is a language with untested cases in it.
 //!
+//! A match costs at most one test of each pattern segment against each path
+//! segment, and an overlap at most one comparison of each pair of segments,
+//! because both searches remember their answer at each pair of positions.
+//!
 //! # Specificity
 //!
 //! Two shelves can match one path, and one of them has to win without a coin
@@ -72,7 +76,7 @@ enum Segment {
 
 impl Pattern {
     pub fn new(source: &str) -> Self {
-        let segments = source
+        let mut segments: Vec<Segment> = source
             .split('/')
             .filter(|segment| !segment.is_empty())
             .map(|segment| match segment {
@@ -81,6 +85,11 @@ impl Pattern {
                 _ => Segment::Literal(segment.to_string()),
             })
             .collect();
+        // `**/**` matches the same set as `**`, so adjacent ones are one
+        // segment. `source` keeps the pattern as declared.
+        segments.dedup_by(|next, kept| {
+            matches!(next, Segment::AnyDepth) && matches!(kept, Segment::AnyDepth)
+        });
         Self {
             source: source.to_string(),
             segments,
@@ -165,23 +174,38 @@ impl Pattern {
 
 /// Segment-wise intersection. `**` on either side searches over how many
 /// segments of the other side it swallows, exactly as matching does.
+///
+/// The search is a table over the two positions `(i, j)`, filled from the ends
+/// back, so each pair of segments is compared at most once. `down` holds
+/// whether any row at or below `i` overlaps column `j`, and `across` whether
+/// any column at or after `j` overlaps row `i`: those are the two disjunctions
+/// a `**` on the right and on the left reads, kept so that neither is a loop.
 fn overlaps_from(left: &[Segment], right: &[Segment]) -> bool {
-    match (left.split_first(), right.split_first()) {
-        (None, None) => true,
-        // A trailing `**` matches zero segments, so it can meet the end.
-        (None, Some((Segment::AnyDepth, rest))) => overlaps_from(&[], rest),
-        (Some((Segment::AnyDepth, rest)), None) => overlaps_from(rest, &[]),
-        (None, Some(_)) | (Some(_), None) => false,
-        (Some((Segment::AnyDepth, rest)), _) => {
-            (0..=right.len()).any(|taken| overlaps_from(rest, &right[taken..]))
-        }
-        (_, Some((Segment::AnyDepth, rest))) => {
-            (0..=left.len()).any(|taken| overlaps_from(&left[taken..], rest))
-        }
-        (Some((head, left_rest)), Some((other, right_rest))) => {
-            segments_overlap(head, other) && overlaps_from(left_rest, right_rest)
+    let (rows, columns) = (left.len(), right.len());
+    let width = columns + 1;
+    let mut both = vec![false; (rows + 1) * width];
+    let mut down = vec![false; (rows + 2) * width];
+    let mut across = vec![false; (rows + 1) * (width + 1)];
+    for i in (0..=rows).rev() {
+        for j in (0..=columns).rev() {
+            let answer = match (left.get(i), right.get(j)) {
+                (None, None) => true,
+                // A trailing `**` matches zero segments, so it can meet the end.
+                (None, Some(Segment::AnyDepth)) => both[i * width + j + 1],
+                (Some(Segment::AnyDepth), None) => both[(i + 1) * width + j],
+                (None, Some(_)) | (Some(_), None) => false,
+                (Some(Segment::AnyDepth), _) => across[(i + 1) * (width + 1) + j],
+                (_, Some(Segment::AnyDepth)) => down[i * width + j + 1],
+                (Some(head), Some(other)) => {
+                    both[(i + 1) * width + j + 1] && segments_overlap(head, other)
+                }
+            };
+            both[i * width + j] = answer;
+            down[i * width + j] = answer || down[(i + 1) * width + j];
+            across[i * (width + 1) + j] = answer || across[i * (width + 1) + j + 1];
         }
     }
+    both[0]
 }
 
 /// Two single-segment patterns, and whether one text satisfies both.
@@ -201,47 +225,91 @@ fn segments_overlap(left: &Segment, right: &Segment) -> bool {
 /// A literal is the glob with no wildcard in it, so this one function covers
 /// every pair. `*` consumes nothing or one character of the other side and
 /// stays, which is the same search that [`glob_matches`] runs against a text.
+/// The search is a table over the two character positions, filled from the
+/// ends back, so it is quadratic where the plain recursion was exponential in
+/// the stars.
 fn glob_overlaps(left: &[char], right: &[char]) -> bool {
-    match (left.split_first(), right.split_first()) {
-        (None, None) => true,
-        (None, Some(('*', rest))) => glob_overlaps(&[], rest),
-        (Some(('*', rest)), None) => glob_overlaps(rest, &[]),
-        (None, Some(_)) | (Some(_), None) => false,
-        (Some(('*', rest)), _) => glob_overlaps(rest, right) || glob_overlaps(left, &right[1..]),
-        (_, Some(('*', rest))) => glob_overlaps(left, rest) || glob_overlaps(&left[1..], right),
-        // `?` is one character of anything, so it meets whatever stands there.
-        (Some(('?', left_rest)), Some((_, right_rest)))
-        | (Some((_, left_rest)), Some(('?', right_rest))) => glob_overlaps(left_rest, right_rest),
-        (Some((one, left_rest)), Some((two, right_rest))) => {
-            one == two && glob_overlaps(left_rest, right_rest)
+    let (rows, columns) = (left.len(), right.len());
+    let width = columns + 1;
+    let mut table = vec![false; (rows + 1) * width];
+    for i in (0..=rows).rev() {
+        for j in (0..=columns).rev() {
+            let at = |row: usize, column: usize| table[row * width + column];
+            let answer = match (left.get(i), right.get(j)) {
+                (None, None) => true,
+                (None, Some('*')) => at(i, j + 1),
+                (Some('*'), None) => at(i + 1, j),
+                (None, Some(_)) | (Some(_), None) => false,
+                (Some('*'), _) => at(i + 1, j) || at(i, j + 1),
+                (_, Some('*')) => at(i, j + 1) || at(i + 1, j),
+                // `?` is one character of anything, so it meets whatever stands there.
+                (Some('?'), Some(_)) | (Some(_), Some('?')) => at(i + 1, j + 1),
+                (Some(one), Some(two)) => one == two && at(i + 1, j + 1),
+            };
+            table[i * width + j] = answer;
         }
     }
+    table[0]
 }
 
 /// Segment matching, written out rather than compiled to a regular expression.
 ///
 /// `**` is the only construct that needs a search, and it needs one because it
-/// can consume any number of segments. The recursion is over the pattern rather
-/// than over the path, so its depth is the length of a declared pattern.
+/// can consume any number of segments. A pattern with no `**` is a walk in step
+/// with the path. A pattern with one is a search over the two positions
+/// `(i, j)`, remembered in a table, so each pattern segment is tested against
+/// each path segment at most once.
 fn matches_from(pattern: &[Segment], path: &[&str]) -> bool {
-    match pattern.split_first() {
-        None => path.is_empty(),
-        Some((Segment::AnyDepth, rest)) => {
-            // Zero segments consumed, then one, then two. A trailing `**`
-            // matches everything below it, including nothing.
-            (0..=path.len()).any(|taken| matches_from(rest, &path[taken..]))
+    if !pattern
+        .iter()
+        .any(|segment| matches!(segment, Segment::AnyDepth))
+    {
+        return pattern.len() == path.len()
+            && pattern
+                .iter()
+                .zip(path)
+                .all(|(head, segment)| segment_matches(head, segment));
+    }
+    let mut memo = vec![None; (pattern.len() + 1) * (path.len() + 1)];
+    matches_at(pattern, path, 0, 0, &mut memo)
+}
+
+/// Whether `pattern[i..]` matches `path[j..]`, through the table `memo`.
+fn matches_at(
+    pattern: &[Segment],
+    path: &[&str],
+    i: usize,
+    j: usize,
+    memo: &mut [Option<bool>],
+) -> bool {
+    let cell = i * (path.len() + 1) + j;
+    if let Some(known) = memo[cell] {
+        return known;
+    }
+    let answer = match pattern.get(i) {
+        None => j == path.len(),
+        // Zero segments consumed, or one and then the same `**` again. A
+        // trailing `**` matches everything below it, including nothing.
+        Some(Segment::AnyDepth) => {
+            matches_at(pattern, path, i + 1, j, memo)
+                || (j < path.len() && matches_at(pattern, path, i, j + 1, memo))
         }
-        Some((head, rest)) => match path.split_first() {
-            None => false,
-            Some((segment, tail)) => {
-                let matched = match head {
-                    Segment::Literal(text) => text == segment,
-                    Segment::Glob(glob) => glob_matches(glob, segment),
-                    Segment::AnyDepth => unreachable!("handled above"),
-                };
-                matched && matches_from(rest, tail)
-            }
-        },
+        Some(head) => {
+            j < path.len()
+                && segment_matches(head, path[j])
+                && matches_at(pattern, path, i + 1, j + 1, memo)
+        }
+    };
+    memo[cell] = Some(answer);
+    answer
+}
+
+/// One pattern segment that is not `**`, against one path segment.
+fn segment_matches(head: &Segment, segment: &str) -> bool {
+    match head {
+        Segment::Literal(text) => text == segment,
+        Segment::Glob(glob) => glob_matches(glob, segment),
+        Segment::AnyDepth => unreachable!("handled by the caller"),
     }
 }
 
@@ -393,5 +461,268 @@ mod tests {
             Pattern::new("docs/spec/**").specificity(),
             Pattern::new("docs/spec/**").specificity()
         );
+    }
+
+    // The matcher before the memo, copied verbatim with its own parse, so that
+    // the tables below compare the rewrite with the answers it replaced and not
+    // with itself. The parse keeps every `**` segment, so a collapse in
+    // `Pattern::new` is compared with the uncollapsed language.
+    fn reference_segments(source: &str) -> Vec<Segment> {
+        source
+            .split('/')
+            .filter(|segment| !segment.is_empty())
+            .map(|segment| match segment {
+                "**" => Segment::AnyDepth,
+                _ if segment.contains(['*', '?']) => Segment::Glob(segment.to_string()),
+                _ => Segment::Literal(segment.to_string()),
+            })
+            .collect()
+    }
+
+    fn reference_matches(pattern: &[Segment], path: &[&str]) -> bool {
+        match pattern.split_first() {
+            None => path.is_empty(),
+            Some((Segment::AnyDepth, rest)) => {
+                (0..=path.len()).any(|taken| reference_matches(rest, &path[taken..]))
+            }
+            Some((head, rest)) => match path.split_first() {
+                None => false,
+                Some((segment, tail)) => {
+                    let matched = match head {
+                        Segment::Literal(text) => text == segment,
+                        Segment::Glob(glob) => glob_matches(glob, segment),
+                        Segment::AnyDepth => unreachable!("handled above"),
+                    };
+                    matched && reference_matches(rest, tail)
+                }
+            },
+        }
+    }
+
+    fn reference_overlaps(left: &[Segment], right: &[Segment]) -> bool {
+        match (left.split_first(), right.split_first()) {
+            (None, None) => true,
+            (None, Some((Segment::AnyDepth, rest))) => reference_overlaps(&[], rest),
+            (Some((Segment::AnyDepth, rest)), None) => reference_overlaps(rest, &[]),
+            (None, Some(_)) | (Some(_), None) => false,
+            (Some((Segment::AnyDepth, rest)), _) => {
+                (0..=right.len()).any(|taken| reference_overlaps(rest, &right[taken..]))
+            }
+            (_, Some((Segment::AnyDepth, rest))) => {
+                (0..=left.len()).any(|taken| reference_overlaps(&left[taken..], rest))
+            }
+            (Some((head, left_rest)), Some((other, right_rest))) => {
+                let text = |segment: &Segment| match segment {
+                    Segment::Literal(text) | Segment::Glob(text) => {
+                        text.chars().collect::<Vec<char>>()
+                    }
+                    Segment::AnyDepth => unreachable!("handled above"),
+                };
+                reference_glob_overlaps(&text(head), &text(other))
+                    && reference_overlaps(left_rest, right_rest)
+            }
+        }
+    }
+
+    fn reference_glob_overlaps(left: &[char], right: &[char]) -> bool {
+        match (left.split_first(), right.split_first()) {
+            (None, None) => true,
+            (None, Some(('*', rest))) => reference_glob_overlaps(&[], rest),
+            (Some(('*', rest)), None) => reference_glob_overlaps(rest, &[]),
+            (None, Some(_)) | (Some(_), None) => false,
+            (Some(('*', rest)), _) => {
+                reference_glob_overlaps(rest, right) || reference_glob_overlaps(left, &right[1..])
+            }
+            (_, Some(('*', rest))) => {
+                reference_glob_overlaps(left, rest) || reference_glob_overlaps(&left[1..], right)
+            }
+            (Some(('?', left_rest)), Some((_, right_rest)))
+            | (Some((_, left_rest)), Some(('?', right_rest))) => {
+                reference_glob_overlaps(left_rest, right_rest)
+            }
+            (Some((one, left_rest)), Some((two, right_rest))) => {
+                one == two && reference_glob_overlaps(left_rest, right_rest)
+            }
+        }
+    }
+
+    const TABLE_PATTERNS: &[&str] = &[
+        "docs/spec/**",
+        "docs/*.md",
+        "docs/??-*.md",
+        "docs/**/README.md",
+        "docs/**",
+        "docs/*/README.md",
+        "docs/*-spec.md",
+        "docs/evaluations/**",
+        "docs/special-cases/**",
+        "docs/spec/*.md",
+        "docs/a?.md",
+        "docs/abc.md",
+        "docs/**/a.md",
+        ".claude/hooks",
+        ".claude/hooks/**",
+        "a/**/**/b",
+        "a/**/b",
+        "a/**/**/**/b",
+        "**",
+        "**/**",
+        "**/x/**",
+        "**/**/x/**/**",
+        "a/*/**",
+        "a/**/*",
+        "a/**/*/**/b",
+        "?",
+        "*.md",
+        "*",
+        "",
+        "a",
+        "a/b",
+    ];
+
+    const TABLE_PATHS: &[&str] = &[
+        "",
+        "a",
+        "b",
+        "x",
+        "a/b",
+        "a/x/b",
+        "a/x/y/b",
+        "a/b/b",
+        "a/b/c",
+        "x/a/b",
+        "a/x",
+        "x/y/x/z",
+        "docs",
+        "docs/README.md",
+        "docs/spec",
+        "docs/spec/02.md",
+        "docs/spec/deep/a.md",
+        "docs/spec/12-check-layer.md",
+        "docs/12-check-layer.md",
+        "docs/1-check-layer.md",
+        "docs/evaluations/a.md",
+        "docs/special-cases/a.md",
+        "docs/taxonomies/design-spec/README.md",
+        "docs/taxonomies/README.txt",
+        "docs/ab.md",
+        "docs/abc.md",
+        "docs/a.md",
+        "docs/x/a.md",
+        ".claude/hooks",
+        ".claude/hooks/write.sh",
+        "README.md",
+        "q",
+    ];
+
+    #[test]
+    fn matching_keeps_the_answers_of_the_matcher_it_replaced() {
+        for source in TABLE_PATTERNS {
+            let pattern = Pattern::new(source);
+            let reference = reference_segments(source);
+            for path in TABLE_PATHS {
+                let split: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();
+                assert_eq!(
+                    pattern.matches(path),
+                    reference_matches(&reference, &split),
+                    "{source} against {path}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn overlap_keeps_the_answers_of_the_search_it_replaced() {
+        for left in TABLE_PATTERNS {
+            for right in TABLE_PATTERNS {
+                assert_eq!(
+                    Pattern::new(left).overlaps(&Pattern::new(right)),
+                    reference_overlaps(&reference_segments(left), &reference_segments(right)),
+                    "{left} and {right}"
+                );
+            }
+        }
+        for left in ["*", "a*", "*a", "*a*", "?*", "*?", "a?c", "**", "*b*", "ab"] {
+            for right in ["*", "b*", "*b", "*a*b*", "??", "abc", "a", "", "*c", "a*?"] {
+                let chars = |text: &str| text.chars().collect::<Vec<char>>();
+                assert_eq!(
+                    glob_overlaps(&chars(left), &chars(right)),
+                    reference_glob_overlaps(&chars(left), &chars(right)),
+                    "{left} and {right}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn adjacent_any_depth_segments_match_the_same_set_as_one() {
+        for (repeated, single) in [
+            ("a/**/**/b", "a/**/b"),
+            ("a/**/**/**/b", "a/**/b"),
+            ("**/**", "**"),
+            ("**/**/x/**/**", "**/x/**"),
+        ] {
+            let (repeated, single) = (Pattern::new(repeated), Pattern::new(single));
+            for path in TABLE_PATHS {
+                assert_eq!(
+                    repeated.matches(path),
+                    single.matches(path),
+                    "{} and {} against {path}",
+                    repeated.source(),
+                    single.source()
+                );
+            }
+            // The collapse leaves one `**` for the search to try, and it is
+            // not visible to a reader of the pattern.
+            assert_eq!(repeated.segments, single.segments);
+            assert_eq!(repeated.specificity(), single.specificity());
+            assert!(repeated.source().contains("**/**"));
+        }
+    }
+
+    // The three timing tests below are the hostile input of #1969. Before the
+    // memo, eight `**` segments took 5.2 s on one path and twenty did not finish.
+    // The bound is one second in a debug build, which the memoized walk misses
+    // by three orders of magnitude.
+    fn many_any_depth(count: usize, last: &str) -> String {
+        format!("docs/{}{last}", "**/".repeat(count))
+    }
+
+    #[test]
+    fn twenty_any_depth_segments_match_a_deep_path_in_bounded_time() {
+        let pattern = Pattern::new(&many_any_depth(20, "nomatch"));
+        let path = format!("docs/{}file.md", "d/".repeat(39));
+        assert_eq!(path.split('/').count(), 41);
+        // The collapse makes the twenty one `**`, so the case that holds the
+        // memo puts a literal that every path segment matches between them.
+        let interleaved = Pattern::new(&format!("docs/{}nomatch", "**/x/".repeat(20)));
+        let all_x = format!("docs/{}file.md", "x/".repeat(39));
+        let started = std::time::Instant::now();
+        assert!(!pattern.matches(&path));
+        assert!(!interleaved.matches(&all_x));
+        assert!(started.elapsed() < std::time::Duration::from_secs(1));
+    }
+
+    #[test]
+    fn twenty_any_depth_segments_on_both_sides_overlap_in_bounded_time() {
+        // `**/x` between the stars keeps the collapse from making this trivial.
+        let interleaved = |last: &str| format!("docs/{}{last}", "**/x/".repeat(20));
+        let left = Pattern::new(&interleaved("left"));
+        let right = Pattern::new(&interleaved("right"));
+        let started = std::time::Instant::now();
+        assert!(!left.overlaps(&right));
+        assert!(!Pattern::new(&many_any_depth(20, "left"))
+            .overlaps(&Pattern::new(&many_any_depth(20, "right"))));
+        assert!(started.elapsed() < std::time::Duration::from_secs(1));
+    }
+
+    #[test]
+    fn thirty_stars_in_one_segment_overlap_in_bounded_time() {
+        // Every text both globs admit would end in `a` and in `b` at once.
+        let left = Pattern::new(&format!("docs/{}a", "*a".repeat(30)));
+        let right = Pattern::new(&format!("docs/{}b", "*b".repeat(30)));
+        let started = std::time::Instant::now();
+        assert!(!left.overlaps(&right));
+        assert!(started.elapsed() < std::time::Duration::from_secs(1));
     }
 }

@@ -2,8 +2,8 @@
 id: HW-SPEC-command-surface
 status: current
 status_since: 2026-10-01
-summary: "A verb list that the help and the verb index read, a parser that dispatches, help folded at a fixed width, and one palette."
-last_verified: 2026-10-01
+summary: "A verb list that the help and the verb index read, a parser that dispatches, a load that prints nothing, folded help and one palette."
+last_verified: 2026-11-23
 title: "Command surface"
 provenance:
   warrant: asserted
@@ -14,6 +14,7 @@ provenance:
 relations:
   governs:
     - engine/crates/cli/src/**
+    - engine/crates/api/src/**
     - engine/crates/verbs/src/**
     - engine/crates/paint/src/**
   traces_to:
@@ -37,13 +38,14 @@ relations:
 
 ## Scope
 
-This spec describes the inside of the command surface of [spec 6](../spec/06-engine-architecture.md#subsystems). Three crates under `engine/crates/` build it: `cli`, `verbs` and `paint`. The subsystem runs no stage of the pipeline. It reads a command line, selects one verb, calls the crates that do the work, and writes the result on the two standard streams.
+This spec describes the inside of the command surface of [spec 6](../spec/06-engine-architecture.md#subsystems). Four crates under `engine/crates/` build it: `cli`, `api`, `verbs` and `paint`. The subsystem runs no stage of the pipeline. It reads a command line, selects one verb, calls the crates that do the work, and writes the result on the two standard streams.
 
-The subsystem has three parts:
+The subsystem has four parts:
 
 - `verbs` holds the list of every verb and every second word, with the words that a caller reads about each one.
 - `cli` holds the parser, the help, the color and width of the text, the body of each verb, and the Mermaid renderer of `headwater taxonomy graph`.
 - `paint` holds the palette and the pure functions that apply it.
+- `api` holds one load of a corpus as a value, with no `clap` and no `headwater-fetch`. `cli` calls it for each verb whose body loads a corpus. It returns a refusal and an unmet engine range as values, and `cli` prints them.
 
 Other documents state what a caller gets, and this spec does not repeat them:
 
@@ -63,7 +65,7 @@ The help, the refusals and the verb index read the list from this array. `comman
 
 The array does not decide which verb runs. The `clap` derive in `cli/src/lib.rs` declares `Cli`, the `Verb` enum and four enums of second words: `JsonWord`, `SweepWord`, `ProbeWord` and `TaxonomyWord`. `clap` builds the command tree from that derive, and `dispatch` in `main.rs` matches the parsed `Verb` exhaustively. A variant with no arm does not compile. `engine/crates/cli/tests/verbs.rs` walks the tree to its leaves and holds it against the array in both directions. Thus the list and the parser are two declarations, and a test, not a lookup, keeps them equal.
 
-The list is a crate of its own because two crates read it. `headwater-generate` writes the verb index, and `headwater-cli` depends on `headwater-generate`. So the list cannot be in the binary, and a crate below both is the one position that serves both. The `Cargo.toml` of `verbs` declares no dependency. The module comment of `verbs/src/lib.rs` records the four copies of the list that disagreed before this crate existed.
+The list is a crate of its own because three crates read it. `headwater-generate` writes the verb index, `headwater-api` gives the list to the plan of `headwater generate`, and `headwater-cli` depends on both. So the list cannot be in the binary, and a crate below all three is the one position that serves them. The `Cargo.toml` of `verbs` declares no dependency. The module comment of `verbs/src/lib.rs` records the four copies of the list that disagreed before this crate existed.
 
 ### The parse, and the words a caller reads
 
@@ -123,7 +125,11 @@ Two JSON files hold no record line: `.claude/settings.json` and `.mcp.json`. `me
 
 ### The body of each verb
 
-`dispatch` sends each `Verb` to a function in `main.rs`. That function reads what its verb needs, calls the library crates that do the work, and writes the result through `emit`. [HW-OBL-0138](../obligations/0138-the-rest-of-the-editorial-pass-with-cli-src-main-rs-at-the-head-of-the-distribution.md) records that `main.rs` is the file at the head of the editorial pass that the corpus still owes.
+`dispatch` sends each `Verb` to a function in `main.rs`. That function calls the library crates that do the work and writes the result through `emit`.
+
+A verb that loads a corpus does so through `headwater_api::Session::open`, or through `Session::against` when the verb already holds a taxonomy. Each one returns `Result<Session, LoadError>` and writes nothing to a stream. A refusal is a value of `LoadError`. The unmet engine range is a value too, in the refusal or from `Session::engine_unmet`. The shell prints them: `shown` in `main.rs` turns the result into a session or an exit status, and `print_refusal` writes the refusal.
+
+Put the load and the body of a new verb in a library crate, and not in `main.rs`. The load goes in `headwater-api`. `MAIN_RS_LINES` in `engine/crates/cli/tests/verbs.rs` is the most lines that `main.rs` can hold. No change raises it, and each change that moves code out of `main.rs` lowers it to the new count. [HW-OBL-0138](../obligations/0138-the-rest-of-the-editorial-pass-with-cli-src-main-rs-at-the-head-of-the-distribution.md) records that `main.rs` is the file at the head of the editorial pass that the corpus still owes.
 
 ## Invariants
 
@@ -142,4 +148,7 @@ A change to these crates must keep each of these. A test holds each one that nam
 - **A completion script does not move with the terminal of the caller** (`the_script_does_not_move_with_the_terminal_of_whoever_asked_for_it` in `engine/crates/cli/tests/completions.rs`).
 - **Two runs of `taxonomy graph` over one lock write the same bytes** (`two_runs_over_one_lock_write_the_same_bytes` in `engine/crates/cli/tests/taxonomy_graph.rs`).
 - **`init --harness --check` passes on this repository and fails on one changed byte** (`the_harness_check_passes_on_this_repository_and_fails_on_one_changed_byte` in `engine/crates/cli/tests/init_harness.rs`).
+- **`main.rs` holds no more lines than `MAIN_RS_LINES`** (`main_rs_does_not_grow_past_its_recorded_line_count` in `engine/crates/cli/tests/verbs.rs`).
+- **No file of `headwater-api` writes to a stream or decides an exit status** (`the_library_under_the_shell_prints_nothing_and_decides_no_exit_status` in `engine/crates/cli/tests/verbs.rs`).
+- **The binary and the `headwater-api` that it links have one version** (`the_binary_and_the_library_it_links_are_built_at_one_version` in `engine/crates/cli/tests/wiring.rs`).
 - **A copy of the harness set with `\r\n` line endings is the step's own, and one changed byte in it is not** (`a_copy_git_checked_out_with_crlf_line_endings_is_the_steps_own` in `engine/crates/cli/src/harness.rs`, and `a_set_git_checked_out_with_crlf_line_endings_passes_the_check_and_a_rerun_writes_nothing` in `engine/crates/cli/tests/init_harness.rs`).

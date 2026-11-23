@@ -100,6 +100,8 @@ impl EdgeCheck for Targets<'_> {
     /// that admits a document, binds to nothing (#1410).
     /// 3: so does a symlink onto that document, or a path through a symlinked
     /// directory that reaches it (#1417).
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 3;
     /// See the module comment: a pair cannot carry an edge that bound to
     /// nothing, and those are the edges this rule exists for.

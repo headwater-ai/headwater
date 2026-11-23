@@ -1,0 +1,102 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy of tests/mentioned_identifier.rs (#1977). Two kinds and one
+# relation between them, forward from an obligation to a decision. No relation
+# goes from a decision to an obligation, so a decision that names an obligation
+# in prose has no relation to be offered: the case HW-OBL-0055 records for the
+# spec-to-spec pairs of this repository's own corpus. `refines` joins one
+# obligation to another, so a document that names itself would be offered it,
+# and a decision naming an obligation would be offered it by a rule that read
+# only the target kind. The `note` kind is the end of no relation, so an
+# obligation that names a note is offered nothing. `guide` and `rationale`
+# are each `is_a: record`, and `cites` names only `record` at both ends, so a
+# guide that names a rationale is offered `cites` only by a rule that reads
+# kind inheritance: the case of this repository's own corpus, where
+# `governed_document` is the end of `supersedes` and `traces_to`.
+
+facets:
+  status:
+    role: state
+    values:
+      - {value: draft,   role: initial}
+      - {value: current, role: live}
+  summary:
+    role: scent
+
+regimes:
+  lifecycle:
+    standard:
+      initial: draft
+      transitions: {draft: [current]}
+
+identifier_schemes:
+  obligation_id: {pattern: "OBL-{namespace}-{seq:04d}", namespace: MEN, allocation: minted-once}
+  decision_id:   {pattern: "DEC-{namespace}-{seq:04d}", namespace: MEN, allocation: minted-once}
+  note_id:       {pattern: "NOTE-{namespace}-{seq:04d}", namespace: MEN, allocation: minted-once}
+  guide_id:      {pattern: "GDE-{namespace}-{seq:04d}", namespace: MEN, allocation: minted-once}
+  rationale_id:  {pattern: "RAT-{namespace}-{seq:04d}", namespace: MEN, allocation: minted-once}
+
+relations:
+  traces_to:
+    family: association
+    from: [obligation]
+    to:   [decision]
+    inverse: traced_by
+    created_by: author
+  refines:
+    family: association
+    from: [obligation]
+    to:   [obligation]
+    inverse: refined_by
+    created_by: author
+  cites:
+    family: association
+    from: [record]
+    to:   [record]
+    inverse: cited_by
+    created_by: author
+
+core:
+  requires:
+    - facet_role: state
+    - relation_family: association
+
+kinds:
+  obligation:
+    identifier: {scheme: obligation_id}
+    lifecycle: standard
+  decision:
+    identifier: {scheme: decision_id}
+    lifecycle: standard
+  note:
+    identifier: {scheme: note_id}
+  record:
+    abstract: true
+  guide:
+    is_a: record
+    identifier: {scheme: guide_id}
+  rationale:
+    is_a: record
+    identifier: {scheme: rationale_id}
+
+shelves:
+  obligations:
+    path: mentioned-identifier/obligations/**
+    homogeneous: true
+    kind: obligation
+  decisions:
+    path: mentioned-identifier/decisions/**
+    homogeneous: true
+    kind: decision
+  notes:
+    path: mentioned-identifier/notes/**
+    homogeneous: true
+    kind: note
+  guides:
+    path: mentioned-identifier/guides/**
+    homogeneous: true
+    kind: guide
+  rationales:
+    path: mentioned-identifier/rationales/**
+    homogeneous: true
+    kind: rationale

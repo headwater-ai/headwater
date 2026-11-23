@@ -15,7 +15,9 @@ This skill is the first thing in a task, and it is finished as soon as the right
 
 ## Before you change a file
 
-Run `headwater route "<the task, with every path it names>" --root .` before the first edit. Open each document whose line says `governs <path>` or names the thing you are changing. If that document rules the change out, say so instead of making it.
+Run `headwater route "<the task, with every path it names>" --root .` before the first edit. Open each document whose line says `governs <path>` or names the thing you are changing. If that document rules the change out and the task does not ask for that change directly, say so instead of making it.
+
+If the task asks for that change directly, the person who gave you the task has made the decision. Name the document and what it rules, then make the change. In your final answer, say that the change departs from that document.
 
 After the last edit, run `headwater check --fix --root .` and then `headwater check --root .`, and fix each finding on a file you changed. `--fix` writes the missing inverse half of a relation that you declared on one side only.
 
@@ -29,7 +31,7 @@ For a move, a rename, a publish or a release, list the how-to shelf that `.headw
 
 ## Before your final answer
 
-If you have not run `route` on the paths you changed or read, run it now, and open each document whose line says `governs <path>`. If that document rules out what you did or what you are about to say, say that instead. A comment in a file that cites a document is not the document.
+If you have not run `route` on the paths you changed or read, run it now, and open each document whose line says `governs <path>`. If that document rules out what you did or what you are about to say, name the document and what it rules. Keep a change that the task asked for directly, and say that it departs from that document. In every other case, say that in place of what you were about to say. A comment in a file that cites a document is not the document.
 
 ## Start with what a hook already handed you
 
@@ -67,4 +69,4 @@ The test is whether you could name the file the answer is in. If yes, `explain` 
 ## What orientation does not settle
 
 `explain` reports the warrant of a document and never whether it is right. Contradictions between documents that each pass every rule are what a coherence sweep is for, and the `headwater-sweep` skill carries it. Whether the corpus owes something that nobody has written is a question for the same sweep, and for `headwater check` when a rule already reads it.
-<!-- installed by headwater init --harness, digest sha256:2e178209f1bda050448ebf80bdfd44dc33704d8de26adf24c3be8af33c3f2160 -->
+<!-- installed by headwater init --harness, digest sha256:e7fc45b122714ec0db0baa4eb703c202bbc62c0629f9ac44da1e2cdd44e098b5 -->

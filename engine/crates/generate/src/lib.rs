@@ -229,35 +229,44 @@ pub struct Transcript {
     pub source: String,
 }
 
-/// A projection kind.
-///
-/// Twelve of them. Ten a taxonomy declares, and two the engine defines. See
-/// the module header for why that split exists.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Kind {
-    ShelfIndex,
-    /// One heading, and therefore one anchor, for each document on a shelf.
-    ShelfSections,
-    RelationView,
-    AgentRules,
-    SiteNav,
-    GraphExport,
-    Template,
-    Transcription,
-    /// Spec 5: the verdicts the grader returned over one committed transcript,
-    /// written as a document of the corpus.
-    ProbeResult,
-    /// #257: every verb the binary dispatches, and the contract that describes
-    /// it where one exists. The rows come from the engine rather than from the
-    /// graph, and the empty cell is the point of the artifact.
-    VerbIndex,
-    /// #1051: the consumer surface of HW-DR-0077, as a page an adopter reads.
-    /// The rows are the `surface` block of the taxonomy and nothing else.
-    ConsumerSurface,
-    /// Spec 4: the register, engine-defined and non-optional.
-    CoverageReport,
-    /// Q14: `.headwater/corpus.json`, engine-defined and non-optional.
-    CorpusDescriptor,
+headwater_check::enumerated! {
+    /// A projection kind.
+    ///
+    /// Twelve of them. Ten a taxonomy declares, and two the engine defines. See
+    /// the module header for why that split exists.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub enum Kind {
+        ShelfIndex,
+        /// One heading, and therefore one anchor, for each document on a shelf.
+        ShelfSections,
+        RelationView,
+        AgentRules,
+        SiteNav,
+        GraphExport,
+        Template,
+        Transcription,
+        /// Spec 5: the verdicts the grader returned over one committed transcript,
+        /// written as a document of the corpus.
+        ProbeResult,
+        /// #257: every verb the binary dispatches, and the contract that describes
+        /// it where one exists. The rows come from the engine rather than from the
+        /// graph, and the empty cell is the point of the artifact.
+        VerbIndex,
+        /// #1051: the consumer surface of HW-DR-0077, as a page an adopter reads.
+        /// The rows are the `surface` block of the taxonomy and nothing else.
+        ConsumerSurface,
+        /// Spec 4: the register, engine-defined and non-optional.
+        CoverageReport,
+        /// Q14: `.headwater/corpus.json`, engine-defined and non-optional.
+        CorpusDescriptor,
+    }
+    /// Every kind, declarable or engine-defined, in declaration order.
+    ///
+    /// [`headwater_check::enumerated!`] writes it from the variants above, so a
+    /// fourteenth variant is in it (HW-OBL-0172). `DECLARABLE` in the `impl`
+    /// below is still a hand-kept list. [`unbuilt`] and [`Kind::name`] hold it
+    /// only as far as their exhaustive `match` forces an author into this file.
+    const ALL;
 }
 
 impl Kind {
@@ -300,29 +309,6 @@ impl Kind {
     pub fn declarable(self) -> bool {
         !matches!(self, Kind::CoverageReport | Kind::CorpusDescriptor)
     }
-
-    /// Every kind, declarable or engine-defined.
-    ///
-    /// A hand-kept list, and the compiler does not hold it complete: a
-    /// fourteenth variant added without a line here compiles. What forces an
-    /// author into this file is [`unbuilt`], whose `match` is exhaustive, and
-    /// [`Kind::name`], whose `match` is too. `DECLARABLE` below carries the
-    /// identical exposure and has since #257 added the tenth entry.
-    pub const ALL: [Kind; 13] = [
-        Kind::ShelfIndex,
-        Kind::ShelfSections,
-        Kind::RelationView,
-        Kind::AgentRules,
-        Kind::SiteNav,
-        Kind::GraphExport,
-        Kind::Template,
-        Kind::Transcription,
-        Kind::ProbeResult,
-        Kind::VerbIndex,
-        Kind::ConsumerSurface,
-        Kind::CoverageReport,
-        Kind::CorpusDescriptor,
-    ];
 
     /// The declarable kinds, in the order the meta-schema lists them.
     pub const DECLARABLE: [Kind; 11] = [
@@ -1182,6 +1168,43 @@ fn count(how_many: usize, noun: &str) -> String {
     }
 }
 
+/// A file the census could not read, carried so that the run names it.
+///
+/// No projection holds a document the census could not read, so every output
+/// is silent about it, and a run that printed nothing about the file left the
+/// author with no word of why it is missing from an index (#1966). The report
+/// names it, as `headwater check` does. It never enters
+/// [`Report::has_errors`]: the gate on an unreadable file is the check's, and
+/// a run that writes nothing for it has written what the corpus derives.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct UnreadableDocument {
+    /// Relative to the repository root, with `/` separators.
+    pub path: String,
+    /// Why the census could not read it, with the line and column where the
+    /// reader gave one.
+    pub detail: String,
+}
+
+impl UnreadableDocument {
+    /// Every unreadable row of the census, in its order.
+    pub fn of(census: &Census) -> Vec<UnreadableDocument> {
+        census
+            .rows
+            .iter()
+            .filter(|row| {
+                matches!(
+                    row.outcome,
+                    headwater_census::census::Outcome::Unreadable(_)
+                )
+            })
+            .map(|row| UnreadableDocument {
+                path: row.path.clone(),
+                detail: row.outcome.detail(),
+            })
+            .collect()
+    }
+}
+
 /// Everything one run would write, and everything it would not.
 #[derive(Clone, Debug, Default)]
 pub struct Plan {
@@ -1203,6 +1226,8 @@ pub struct Plan {
     /// because one of them holds more than one transcript. See
     /// [`AmbiguousArms`].
     pub ambiguous_arms: Vec<AmbiguousArms>,
+    /// Files the census could not read. See [`UnreadableDocument`].
+    pub unreadable: Vec<UnreadableDocument>,
     /// Marked files inside the corpus root that no output claims. Empty for a
     /// plan that covers a subset of the declarations, because a subset cannot
     /// tell a file it does not write from a file nobody writes: see
@@ -1288,7 +1313,10 @@ pub fn plan(
     runs: &Runs,
     verbs: &[headwater_verbs::Verb],
 ) -> Plan {
-    let mut plan = Plan::default();
+    let mut plan = Plan {
+        unreadable: UnreadableDocument::of(census),
+        ..Plan::default()
+    };
     // A `site_nav` reads the outputs of every other declaration, so it runs
     // after all of them rather than in its turn. See the second loop below.
     let mut navs: Vec<&Declaration> = Vec::new();
@@ -1353,6 +1381,8 @@ pub fn plan(
         );
     }
     descriptor::emit(surface, identity, projections, &mut plan);
+    plan.unwritten
+        .extend(shelf_index::uncovered(surface, &projections.declared));
     plan.unwritten.extend(undeclared(projections));
     plan.unwritten.extend(engine_defined());
     // Every declaration has had its turn, so the output set is complete and a
@@ -1602,6 +1632,11 @@ pub enum Verdict {
     /// census does not read at this path's extension, so the census would not
     /// count the file as generated and the orphan rule could never report it.
     MarkerUnread,
+    /// Not written and not compared: the path is absolute or climbs above the
+    /// repository root, so a write would land outside the repository (#1967).
+    /// `taxonomy resolve` and the lock reader refuse such a path first, so this
+    /// verdict is the writer's own guard and not the place an author meets it.
+    Escapes,
     /// The write failed, and this is what the operating system said.
     Failed(String),
     /// A write only: this pass would have written the file, and did not,
@@ -1623,6 +1658,7 @@ impl Verdict {
                 | Verdict::Differs
                 | Verdict::Missing
                 | Verdict::MarkerUnread
+                | Verdict::Escapes
                 | Verdict::Failed(_)
         )
     }
@@ -1648,6 +1684,9 @@ impl Verdict {
                  census does not read at this extension, so a copy left behind would be an \
                  orphan nothing reports. A graph export is JSON, a navigation file is YAML, and \
                  a page is Markdown: name the output with the extension of what the kind writes"
+                .to_string(),
+            Verdict::Escapes => "not written: the path is absolute or climbs above the \
+                 repository root, and this engine writes nothing outside the repository"
                 .to_string(),
             Verdict::Failed(error) => format!("not written: {error}"),
             Verdict::Withheld => {
@@ -1716,6 +1755,9 @@ pub struct Report {
     /// Carried from the plan, for the reason `refused` is. See
     /// [`AmbiguousArms`].
     pub ambiguous_arms: Vec<AmbiguousArms>,
+    /// Carried from the plan, for the reason `refused` is. It never enters
+    /// [`Report::has_errors`]. See [`UnreadableDocument`].
+    pub unreadable: Vec<UnreadableDocument>,
     /// Marked files no declaration writes. An error in both directions of the
     /// verb: `generate` does not delete files, so writing the plan does not
     /// clear one.
@@ -1763,10 +1805,12 @@ impl Report {
             || !self.defective_arms.is_empty()
             || self.refused.iter().any(|refused| refused.held)
             || !self.orphaned.is_empty()
-            || self
-                .wrote
-                .iter()
-                .any(|wrote| matches!(wrote.verdict, Verdict::Occupied | Verdict::MarkerUnread))
+            || self.wrote.iter().any(|wrote| {
+                matches!(
+                    wrote.verdict,
+                    Verdict::Occupied | Verdict::MarkerUnread | Verdict::Escapes
+                )
+            })
     }
 
     /// The one sentence a failing run ends with, or `None` where it did not
@@ -1919,6 +1963,19 @@ impl Report {
         // Before the two sections below. A result whose transcript was refused
         // is not drift and it is not an unwritten projection: the file is
         // exactly what this corpus derives, and what is wrong is the corpus.
+        if !self.unreadable.is_empty() {
+            out.push('\n');
+            out.push_str(&paint(Role::Heading, "unreadable documents", mode));
+            out.push('\n');
+            for unreadable in &self.unreadable {
+                out.push_str(&format!(
+                    "  {}\n",
+                    paint(Role::Path, &unreadable.path, mode)
+                ));
+                out.push_str(&dim(&format!("    {}", unreadable.detail), mode));
+                out.push('\n');
+            }
+        }
         if !self.refused.is_empty() {
             out.push('\n');
             out.push_str(&paint(Role::Heading, "refused transcripts", mode));
@@ -2190,6 +2247,7 @@ fn run(root: &Path, plan: &Plan, mode: Mode) -> Report {
         moved_since_recording: plan.moved_since_recording.clone(),
         defective_arms: plan.defective_arms.clone(),
         ambiguous_arms: plan.ambiguous_arms.clone(),
+        unreadable: plan.unreadable.clone(),
         producer,
         ..Report::default()
     };
@@ -2221,6 +2279,17 @@ fn run(root: &Path, plan: &Plan, mode: Mode) -> Report {
                 path: output.path.clone(),
                 kind: output.kind,
                 verdict: Verdict::MarkerUnread,
+            });
+            continue;
+        }
+        // The lock reader refuses a declared path that leaves the repository,
+        // and this is the second guard: whatever the declaration, a join that
+        // lands outside the root is neither read nor written (#1967).
+        if headwater_resolve::containment::escapes(&output.path).is_some() {
+            report.wrote.push(Wrote {
+                path: output.path.clone(),
+                kind: output.kind,
+                verdict: Verdict::Escapes,
             });
             continue;
         }
@@ -2550,6 +2619,10 @@ mod paint_tests {
                 ],
                 absent: vec!["docs/probe-runs/campaign-absent-a.md".to_string()],
                 components: Vec::new(),
+            }],
+            unreadable: vec![UnreadableDocument {
+                path: "docs/decisions/0002-too-deep.md".to_string(),
+                detail: "front matter: 3:513: collections nest more than 256 deep".to_string(),
             }],
             orphaned: vec![Orphaned {
                 path: "docs/stale-index.md".to_string(),

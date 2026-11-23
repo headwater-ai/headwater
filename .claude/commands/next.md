@@ -9,11 +9,13 @@ Work one iteration of the Headwater build order (org project "Headwater build or
 
 ## What is the same
 
-The stages are the same agent definitions the run uses, dispatched by `subagent_type` and in the same order: `hw-adjudicate`, then `hw-iterate`, which dispatches the builder and the verifier and reports once, and `hw-integrate` once the merge is ruled. A veto of its PASS goes back to it by `SendMessage`. Each carries its own procedure, its own write boundary and its own fixed report block, and the `hw-run-policy` and `hw-verification-bar` skills carry the rest. Render each dispatch with `run-dir.sh dispatch`, as `.claude/commands/next-run.md` says, and pass paths, never pasted prose.
+The stages are the same agent definitions the run uses, dispatched by `subagent_type` and in the same order: `hw-adjudicate`, then `hw-iterate`, which dispatches the builder and the verifier, and the maintainer when the builder could not, and reports once, and `hw-integrate` once the merge is ruled. A veto of its PASS goes back to it by `SendMessage`. Each carries its own procedure, its own write boundary and its own fixed report block, and the `hw-run-policy` and `hw-verification-bar` skills carry the rest. Render each dispatch with `run-dir.sh dispatch`, as `.claude/commands/next-run.md` says, and pass paths, never pasted prose.
 
 ## What differs
 
 **Width is one and the parent is this session.** There is no run directory unless you make one; the scratch directory under `$CLAUDE_JOB_DIR/tmp/issue-<N>/` is enough for one iteration's notes.
+
+**Run `/next` from a top-level session, never from a subagent.** Each stage is one level deeper than the agent that dispatched it, and in run `20261122-next1959`, at session, then a parent subagent, then `hw-iterate`, then the builder, the builder had no `Agent` tool. It could not dispatch `headwater-maintainer`, or the explore agent that searches the code for it. `hw-iterate` now runs the upkeep pass in its place, but nothing gives the builder its explore agent back (#1998).
 
 **The merge is the human's unless they said otherwise.** Report the verdict of `hw-iterate` and your ruling, and dispatch `hw-integrate` only when the person in the session says merge. A run has a standing license to merge; a single iteration by hand does not.
 

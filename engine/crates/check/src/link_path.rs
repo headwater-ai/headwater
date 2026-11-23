@@ -110,6 +110,8 @@ pub struct Paths;
 impl CorpusCheck for Paths {
     const RULE: &'static str = self::RULE;
     /// The first edition of this rule.
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 1;
     const NEEDS_LINKS: bool = true;
 

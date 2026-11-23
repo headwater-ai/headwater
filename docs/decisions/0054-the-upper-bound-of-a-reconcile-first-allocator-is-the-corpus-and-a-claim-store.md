@@ -3,7 +3,7 @@ id: HW-DR-0054
 status: current
 status_since: 2026-09-06
 summary: "A tree holds no concurrency, so two branches mint one number in silence. A claim store of one file for each identifier makes the two branches meet, and the rule that already reports a duplicate then fires on the branch."
-last_verified: 2026-09-06
+last_verified: 2026-11-23
 title: "54 — The upper bound of a reconcile-first allocator is the corpus and a claim store"
 provenance:
   warrant: asserted
@@ -61,3 +61,5 @@ A single claimant-bearing line **cannot express what a resolver needs**. One lin
 **The bootstrap of this corpus is 216 files and it is not contiguous.** `docs/decisions/0049` is absent from the mainline and an open change claims it. So the decision store bootstraps to 52 files, covering 0001 to 0048 and 0050 to 0053.
 
 **The store is the extreme decomposition of a rule that another change is landing.** An open change rules that a fold over a corpus is derived and never stored. It rules that a recorded artifact holds one record for each entity, in a fixed order, and holds no count of those records. This store is that rule taken as far as it goes: one record for each entity, one file for each record, and no count anywhere. This record states the relationship in prose rather than as an edge. The record that carries the general rule is not on the mainline today.
+
+**Amended on 2026-11-23 by [#1972](https://github.com/headwater-ai/headwater/issues/1972): a run that cannot create its document removes its own claim.** The Decision above says that a failed document write leaves a spent number with no document. That state is legitimate, but since #1972 `headwater new` does not leave it. When the document write fails, the run removes the claim that it made. The permission is the result of the create-new call. That call made the file in this run, so the path held no record of another claimant. A removal of that file is not an overwrite, and the never-overwrite rule above still holds. The run names the removed claim in its refusal. A claim stays only when the run stops between the two writes, or when the removal fails. When the removal fails, the refusal tells the author to delete the claim by hand. `engine/crates/cli/tests/new_withdraws_its_claim.rs` holds two failed writes: a title too long for a file name, and a shelf that refuses a new file.

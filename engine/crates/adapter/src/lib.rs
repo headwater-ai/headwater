@@ -80,6 +80,7 @@ use headwater_check::suppression::Suppression;
 use headwater_check::{Finding, Run, Severity};
 use headwater_graph::Graph;
 use headwater_yaml::{Spanned, Value};
+use std::collections::HashMap;
 
 /// The name this tool reports under, in every format that names it.
 pub const TOOL: &str = "headwater";
@@ -87,33 +88,34 @@ pub const TOOL: &str = "headwater";
 /// Where a reader finds out what the tool is.
 pub const TOOL_URI: &str = "https://github.com/headwater-ai/headwater";
 
-/// One output format of `headwater check`.
-///
-/// The set is closed by [spec 6](../../../../docs/spec/06-engine-architecture.md#cli)
-/// and this enum is that list. It is deliberately not
-/// `headwater_generate::Emitter`: `export --format` names a vocabulary for the
-/// *graph* and `check --format` names one for the *findings*, the two lists
-/// share the word `json` and mean different artifacts by it, and one enum over
-/// both would let `check --format shacl` parse.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Format {
-    /// The report a person reads in a terminal, in the engine's own words. See
-    /// [`text`].
-    Text,
-    /// The finding shape spec 4 declares. Not an adapter.
-    Json,
-    /// Static Analysis Results Interchange Format 2.1.0 (OASIS), which is what
-    /// a forge ingests as a check run.
-    Sarif,
-    /// A job summary or a review comment, which is the other vocabulary spec 6
-    /// names.
-    Markdown,
+headwater_check::enumerated! {
+    /// One output format of `headwater check`.
+    ///
+    /// The set is closed by [spec 6](../../../../docs/spec/06-engine-architecture.md#cli)
+    /// and this enum is that list. It is deliberately not
+    /// `headwater_generate::Emitter`: `export --format` names a vocabulary for the
+    /// *graph* and `check --format` names one for the *findings*, the two lists
+    /// share the word `json` and mean different artifacts by it, and one enum over
+    /// both would let `check --format shacl` parse.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub enum Format {
+        /// The report a person reads in a terminal, in the engine's own words. See
+        /// [`text`].
+        Text,
+        /// The finding shape spec 4 declares. Not an adapter.
+        Json,
+        /// Static Analysis Results Interchange Format 2.1.0 (OASIS), which is what
+        /// a forge ingests as a check run.
+        Sarif,
+        /// A job summary or a review comment, which is the other vocabulary spec 6
+        /// names.
+        Markdown,
+    }
+    /// Every format, in the order spec 6 lists them.
+    const ALL;
 }
 
 impl Format {
-    /// Every format, in the order spec 6 lists them.
-    pub const ALL: [Format; 4] = [Format::Text, Format::Json, Format::Sarif, Format::Markdown];
-
     pub fn name(self) -> &'static str {
         match self {
             Format::Text => "text",
@@ -943,13 +945,32 @@ pub fn census_with(run: &Run, format: Format, artifact: &str, loss: &[Loss]) -> 
     let held_to = recorded(&all);
     let written = records(format, artifact);
     let mut spent = vec![false; written.len()];
+    // The records of each path in written order, and for each path and rule the
+    // first of them that may still be claimed. A search of every record for
+    // each finding passed over every spent record before it, so a run of many
+    // findings took time in proportion to their square (#1968), and so did a
+    // cursor kept for the path alone, which stops at the first record of
+    // another rule that is claimed later. A record behind a cursor is spent or
+    // does not hold the cursor's rule, and both stay true, so the record found
+    // is the same one: the first unspent record, in written order, of the
+    // finding's path whose rule text holds the finding's rule.
+    let mut by_path: HashMap<&str, Vec<usize>> = HashMap::new();
+    for (at, record) in written.iter().enumerate() {
+        by_path.entry(record.path.as_str()).or_default().push(at);
+    }
+    let mut cursors: HashMap<(&str, &str), usize> = HashMap::new();
     let mut unaccounted = Vec::new();
     let mut carried = 0;
     for entry in &held_to {
-        let found = written.iter().enumerate().position(|(at, record)| {
-            !spent[at]
-                && record.path == entry.finding.path
-                && record.rule.contains(entry.finding.rule)
+        let (path, rule) = (entry.finding.path.as_str(), entry.finding.rule);
+        let found = by_path.get(path).and_then(|ats| {
+            let next = cursors.entry((path, rule)).or_insert(0);
+            while *next < ats.len()
+                && (spent[ats[*next]] || !written[ats[*next]].rule.contains(rule))
+            {
+                *next += 1;
+            }
+            ats.get(*next).copied()
         });
         match found {
             Some(at) => {

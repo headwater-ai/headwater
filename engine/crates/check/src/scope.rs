@@ -32,6 +32,83 @@
 //!    digest of the file. A key over a path alone would survive every edit to
 //!    the document it names.
 //!
+//! # The failing fixture is a program that must not compile
+//!
+//! Spec 12 asks each correctness root for a fixture that fails. Where the
+//! enforcement is a type, that fixture is a program the compiler refuses: a
+//! `compile_fail` doctest. Stable rustdoc does not check the error code, so a
+//! block that fails for another reason, such as a missing import, also passes.
+//! So each block below has a compiling twin, and the two differ only in the
+//! forbidden line (HW-OBL-0079).
+//!
+//! A document-scoped check that reads the corpus does not compile, because
+//! [`DocumentView`] has no corpus accessor. [`CorpusView::edges`] is one that
+//! a wider view has:
+//!
+//! ```compile_fail
+//! use headwater_check::{DocumentCheck, DocumentView, Outcome};
+//! struct Sibling;
+//! impl DocumentCheck for Sibling {
+//!     const RULE: &'static str = "example.sibling.read";
+//!     const VERSION: u32 = 1;
+//!     fn evaluate(&self, view: &DocumentView<'_>) -> Outcome {
+//!         let _ = view.edges();
+//!         Outcome::Passed
+//!     }
+//! }
+//! ```
+//!
+//! Its twin reads the document's own path, and compiles:
+//!
+//! ```
+//! use headwater_check::{DocumentCheck, DocumentView, Outcome};
+//! struct Sibling;
+//! impl DocumentCheck for Sibling {
+//!     const RULE: &'static str = "example.sibling.read";
+//!     const VERSION: u32 = 1;
+//!     fn evaluate(&self, view: &DocumentView<'_>) -> Outcome {
+//!         let _ = view.path();
+//!         Outcome::Passed
+//!     }
+//! }
+//! ```
+//!
+//! Code outside this crate that mints a wider [`Scope`] does not compile,
+//! because its fields are private:
+//!
+//! ```compile_fail
+//! use headwater_check::scope::document_scope;
+//! use headwater_check::{DocumentCheck, DocumentView, Grain, Outcome, Scope};
+//! struct Own;
+//! impl DocumentCheck for Own {
+//!     const RULE: &'static str = "example.scope.minted";
+//!     const VERSION: u32 = 1;
+//!     fn evaluate(&self, _: &DocumentView<'_>) -> Outcome {
+//!         Outcome::Passed
+//!     }
+//! }
+//! let scope: Scope = Scope { grain: Grain::Corpus, ..document_scope::<Own>() };
+//! assert_eq!(scope, document_scope::<Own>());
+//! ```
+//!
+//! Its twin takes the scope that the engine derives from the trait, and
+//! compiles:
+//!
+//! ```
+//! use headwater_check::scope::document_scope;
+//! use headwater_check::{DocumentCheck, DocumentView, Grain, Outcome, Scope};
+//! struct Own;
+//! impl DocumentCheck for Own {
+//!     const RULE: &'static str = "example.scope.minted";
+//!     const VERSION: u32 = 1;
+//!     fn evaluate(&self, _: &DocumentView<'_>) -> Outcome {
+//!         Outcome::Passed
+//!     }
+//! }
+//! let scope: Scope = document_scope::<Own>();
+//! assert_eq!(scope, document_scope::<Own>());
+//! ```
+//!
 //! # What a check still declares, and what it cannot
 //!
 //! The grain comes from the trait. `NEEDS_BODY`, `NEEDS_PHASE_A` and
@@ -60,11 +137,12 @@
 //! a digest of what the cache would store for every verdict it reaches there.
 //! A digest that moves while `VERSION` and the corpus stay fails, and
 //! `HEADWATER_BLESS` does not re-record it. An edit to a corpus is re-recorded
-//! by bless. The ledger cannot see four things: a change that no recorded
-//! corpus exercises, a rule with no instance on any of them (the test lists
-//! each one with the reason), a rule change in the same commit as an edit to
-//! its corpus, and a change visible only against a warm cache that an older
-//! binary wrote. The last is the digest over the compiled rule that
+//! by bless only when this binary over the corpus as the ledger recorded it,
+//! rebuilt from git, still reaches the recorded verdicts. So a rule change in
+//! the same commit as an edit to its corpus fails too. The ledger cannot see
+//! three things: a change that no recorded corpus exercises, a rule with no
+//! instance on any of them (the test lists each one with the reason), and a
+//! change visible only against a warm cache that an older binary wrote. The last is the digest over the compiled rule that
 //! [13 — Open obligations](../../../../docs/spec/13-open-obligations.md)
 //! still carries.
 //!
@@ -125,6 +203,7 @@ use headwater_census::resolve::Step;
 use headwater_doc::Body;
 use headwater_graph::{Direction, Edge, Graph, Target, Trouble};
 use headwater_yaml::{Mapping, Span};
+use std::collections::{HashMap, HashSet};
 
 /// A typed row that carries no document. Unreachable, and recorded rather than
 /// dropped: an instance that vanishes is a document that coverage calls
@@ -517,6 +596,9 @@ pub trait DocumentCheck {
     /// it keys the cache, and raising it is what invalidates every entry an
     /// earlier edition wrote. Raise it whenever `tests/editions.rs` reports
     /// that this rule's verdicts moved, then re-record with `HEADWATER_BLESS=1`.
+    /// Raise the rule version when a rule's behavior changes, in the file that
+    /// implements the rule, because a constant left at its old value serves the
+    /// old verdicts from a warm cache.
     const VERSION: u32;
     /// The emitter targets this check exports to. See [`ExportTargets`]. The
     /// default is the empty set, because most checks reach nothing a schema
@@ -602,6 +684,8 @@ pub enum EdgeUnit {
 pub trait EdgeCheck {
     const RULE: &'static str;
     /// As [`DocumentCheck::VERSION`].
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32;
     /// As [`DocumentCheck::EXPORTABLE_AS`].
     const EXPORTABLE_AS: ExportTargets = &[];
@@ -657,6 +741,8 @@ pub trait EdgeCheck {
 pub trait CorpusCheck {
     const RULE: &'static str;
     /// As [`DocumentCheck::VERSION`].
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32;
     /// As [`DocumentCheck::EXPORTABLE_AS`].
     const EXPORTABLE_AS: ExportTargets = &[];
@@ -733,10 +819,19 @@ pub trait CorpusCheck {
     /// It joins no cache key, on [`CorpusCheck::NEEDS_LINKS`]'s terms. The
     /// edges are a reading of the documents this instance already reads, and
     /// a generated document is a row that carries a document, so it is in the
-    /// read set already. The one rule that declares this reads the edges
-    /// `headwater generate` reads, onto the documents it writes. See
-    /// [`crate::state_set_twice`].
+    /// read set already. [`crate::state_set_twice`] reads the edges
+    /// `headwater generate` reads, onto the documents it writes, and
+    /// [`crate::mention`] reads them to find whether a pair is joined.
     const NEEDS_GRAPH: bool = false;
+
+    /// Whether the view carries the first prose mention of each document by
+    /// each other document, as [`headwater_graph::mentions`] bound them.
+    ///
+    /// It joins no cache key, on [`CorpusCheck::NEEDS_LINKS`]'s terms: a
+    /// mention is a reading of the bodies this instance already reads, and
+    /// the identifier and kind of the named document are readings of the
+    /// rows of the same read set. See [`crate::mention`].
+    const NEEDS_MENTIONS: bool = false;
 
     /// Whether the view carries the marked files the projection plan claims no
     /// output for, as [`Context::orphaned`] holds them.
@@ -770,6 +865,8 @@ pub trait CorpusCheck {
 pub trait NeighbourhoodCheck {
     const RULE: &'static str;
     /// As [`DocumentCheck::VERSION`].
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32;
     /// As [`DocumentCheck::EXPORTABLE_AS`].
     const EXPORTABLE_AS: ExportTargets = &[];
@@ -1348,7 +1445,7 @@ impl<'a> EdgeView<'a> {
 ///
 /// An author may write either half, so the name in front matter does not say
 /// this. The direction the graph resolved does.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum End {
     Source,
     Target,
@@ -1438,6 +1535,7 @@ pub struct CorpusView<'a> {
     departed: &'a [Departed<'a>],
     claims: Option<&'a crate::claim::Claims>,
     links: Option<&'a [headwater_graph::links::Link]>,
+    mentions: Option<&'a [headwater_graph::mentions::Mention]>,
     anchors: Option<&'a crate::fragment::Anchors>,
     edges: Option<&'a [Edge]>,
     generated: Option<Vec<Generated<'a>>>,
@@ -1548,6 +1646,15 @@ impl<'a> CorpusView<'a> {
         self.links
     }
 
+    /// The first prose mention of each document by each other document, and
+    /// only for a check that declared `NEEDS_MENTIONS`.
+    ///
+    /// `None` is a run whose scope did not admit them, and an empty slice is a
+    /// corpus whose prose names no identifier of another document.
+    pub fn mentions(&self) -> Option<&'a [headwater_graph::mentions::Mention]> {
+        self.mentions
+    }
+
     /// The heading anchors of every document of this corpus, and only for a
     /// check that declared `NEEDS_ANCHORS`.
     ///
@@ -1574,6 +1681,7 @@ impl<'a> CorpusView<'a> {
             departed: &[],
             claims: None,
             links,
+            mentions: None,
             anchors: None,
             edges: None,
             generated: None,
@@ -1592,6 +1700,7 @@ impl<'a> CorpusView<'a> {
             departed: &[],
             claims,
             links: None,
+            mentions: None,
             anchors: None,
             edges: None,
             generated: None,
@@ -1611,6 +1720,7 @@ impl<'a> CorpusView<'a> {
             departed: &[],
             claims: None,
             links: None,
+            mentions: None,
             anchors: None,
             edges: None,
             generated: None,
@@ -1632,6 +1742,7 @@ impl<'a> CorpusView<'a> {
             departed: &[],
             claims: None,
             links,
+            mentions: None,
             anchors,
             edges: None,
             generated: None,
@@ -1938,8 +2049,12 @@ pub fn over_edges<C: EdgeCheck>(
     let scope = edge_scope::<C>();
     let clock = clock_for(scope, ctx);
     // The edges arrive in path order, so the groups come out in a stable order
-    // with no sort here.
+    // with no sort here. The index finds a key's group in constant time, and
+    // the groups stay in the vector in the order their first edge arrived: a
+    // search of every group for each edge was quadratic in the edges of a
+    // document, once for each edge-scoped rule (#1968).
     let mut pairs: Vec<(String, Vec<&Edge>)> = Vec::new();
+    let mut group_of: HashMap<String, usize> = HashMap::new();
     for edge in &graph.edges {
         let Some(key) = (match C::UNIT {
             EdgeUnit::Pair => edge
@@ -1965,9 +2080,12 @@ pub fn over_edges<C: EdgeCheck>(
         }) else {
             continue;
         };
-        match pairs.iter_mut().find(|(known, _)| known == &key) {
-            Some((_, halves)) => halves.push(edge),
-            None => pairs.push((key, vec![edge])),
+        match group_of.get(&key) {
+            Some(&group) => pairs[group].1.push(edge),
+            None => {
+                group_of.insert(key.clone(), pairs.len());
+                pairs.push((key, vec![edge]));
+            }
         }
     }
 
@@ -2068,13 +2186,16 @@ pub fn over_neighbourhoods<C: NeighbourhoodCheck>(
 
         let neighbours = adjacency.of_path(&row.path);
         let mut reads = vec![Input::new(&row.path, row.digest.as_deref())];
+        // The paths already read, beside the list that keeps their order, so
+        // that a document of many neighbours is not searched once for each of
+        // them (#1968).
+        let mut read_paths: HashSet<&str> = HashSet::from([row.path.as_str()]);
         for neighbour in &neighbours {
             // A bound-anchor neighbour carries the empty marker at `path`
             // rather than a real one (see `Adjacency::of`): there is no file
             // to hash, so it costs the read set nothing and its binding goes
             // into the resolution below instead.
-            if !neighbour.path.is_empty() && !reads.iter().any(|input| input.path == neighbour.path)
-            {
+            if !neighbour.path.is_empty() && read_paths.insert(neighbour.path) {
                 reads.push(digests.input(neighbour.path));
             }
         }
@@ -2210,6 +2331,12 @@ pub fn over_corpus<C: CorpusCheck>(
             true => Some(&graph.links),
             false => None,
         },
+        // No input joins the read set with them, on the same argument. See
+        // `NEEDS_MENTIONS`.
+        mentions: match C::NEEDS_MENTIONS {
+            true => Some(&graph.mentions),
+            false => None,
+        },
         anchors: anchors.as_ref(),
         // No input joins the read set with them either. See `NEEDS_GRAPH`.
         edges: match C::NEEDS_GRAPH {
@@ -2317,8 +2444,14 @@ pub fn over_corpus<C: CorpusCheck>(
 /// the same two documents by the same relation. So the entries are deduplicated
 /// on the identity that a check reads — the relation, the end, and the far
 /// document — and never on the edge, which would count one neighbour twice.
+///
+/// Each table is a map on the path, because a search of every document for
+/// each edge was linear in the documents, and the dedup of a neighbour is a set
+/// beside its list, because a search of every neighbour already pushed was
+/// quadratic in the edges of one document (#1968). The list keeps the order
+/// the edges arrived in, which is the order a rule reads.
 struct Adjacency<'a> {
-    by_path: Vec<(&'a str, Vec<Neighbour<'a>>)>,
+    by_path: HashMap<&'a str, Neighbours<'a>>,
     /// One folded string per document that declares at least one bound-anchor
     /// edge: every such anchor's own binding, in edge order, joined by `\n`.
     ///
@@ -2330,14 +2463,23 @@ struct Adjacency<'a> {
     /// already gives an edge-scoped key one: the identity of a bound anchor is
     /// what it resolved to, not the string an author wrote, so a change to the
     /// binding with no change to any read-set byte still has to move the key.
-    anchor_resolutions_by_path: Vec<(&'a str, String)>,
+    anchor_resolutions_by_path: HashMap<&'a str, String>,
+}
+
+/// The neighbours of one document in the order the edges arrived, and the
+/// identity of each, so that a second edge to the same neighbour is found in
+/// constant time.
+#[derive(Default)]
+struct Neighbours<'a> {
+    list: Vec<Neighbour<'a>>,
+    seen: HashSet<(&'a str, End, &'a str, &'a str)>,
 }
 
 impl<'a> Adjacency<'a> {
     fn of(graph: &'a Graph) -> Self {
         let mut adjacency = Adjacency {
-            by_path: Vec::new(),
-            anchor_resolutions_by_path: Vec::new(),
+            by_path: HashMap::new(),
+            anchor_resolutions_by_path: HashMap::new(),
         };
         for edge in &graph.edges {
             match &edge.target {
@@ -2417,42 +2559,34 @@ impl<'a> Adjacency<'a> {
     }
 
     fn push(&mut self, path: &'a str, neighbour: Neighbour<'a>) {
-        let entry = match self.by_path.iter_mut().find(|(known, _)| *known == path) {
-            Some(entry) => entry,
-            None => {
-                self.by_path.push((path, Vec::new()));
-                self.by_path.last_mut().expect("just pushed")
-            }
-        };
-        if !entry.1.iter().any(|known| {
-            known.relation == neighbour.relation
-                && known.end == neighbour.end
-                && known.path == neighbour.path
-                && known.id == neighbour.id
-        }) {
-            entry.1.push(neighbour);
+        let entry = self.by_path.entry(path).or_default();
+        let identity = (
+            neighbour.relation,
+            neighbour.end,
+            neighbour.path,
+            neighbour.id,
+        );
+        if entry.seen.insert(identity) {
+            entry.list.push(neighbour);
         }
     }
 
     fn push_resolution(&mut self, path: &'a str, resolution: String) {
-        match self
-            .anchor_resolutions_by_path
-            .iter_mut()
-            .find(|(known, _)| *known == path)
-        {
-            Some((_, existing)) => {
+        match self.anchor_resolutions_by_path.get_mut(path) {
+            Some(existing) => {
                 existing.push('\n');
                 existing.push_str(&resolution);
             }
-            None => self.anchor_resolutions_by_path.push((path, resolution)),
+            None => {
+                self.anchor_resolutions_by_path.insert(path, resolution);
+            }
         }
     }
 
     fn of_path(&self, path: &str) -> Vec<Neighbour<'a>> {
         self.by_path
-            .iter()
-            .find(|(known, _)| *known == path)
-            .map(|(_, neighbours)| neighbours.clone())
+            .get(path)
+            .map(|neighbours| neighbours.list.clone())
             .unwrap_or_default()
     }
 
@@ -2462,8 +2596,7 @@ impl<'a> Adjacency<'a> {
     /// costs the key nothing new.
     fn anchor_resolution_of_path(&self, path: &str) -> Option<&str> {
         self.anchor_resolutions_by_path
-            .iter()
-            .find(|(known, _)| *known == path)
-            .map(|(_, resolution)| resolution.as_str())
+            .get(path)
+            .map(String::as_str)
     }
 }

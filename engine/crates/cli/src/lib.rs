@@ -764,7 +764,8 @@ pub enum Verb {
             long,
             value_name = "date",
             value_parser = a_date,
-            help = "the date the document is stamped with, as `YYYY-MM-DD`. Defaults to today"
+            help = "the date the document is stamped with, as `YYYY-MM-DD`. Defaults to today's date in UTC, \
+                    which can be one day off your local date"
         )]
         now: Option<Date>,
     },
@@ -1027,8 +1028,12 @@ impl Shell {
         }
     }
 
-    /// The four, in the order a caller meets them in the help.
-    pub const ALL: &'static [Shell] = &[Shell::Bash, Shell::Zsh, Shell::Fish, Shell::Powershell];
+    /// The four, in the order a caller meets them in the help. The
+    /// `clap::ValueEnum` derive writes this list from the variants, so a fifth
+    /// variant is in it (HW-OBL-0172).
+    pub fn all() -> &'static [Shell] {
+        <Shell as clap::ValueEnum>::value_variants()
+    }
 }
 
 // The second word of `json`.
@@ -1407,7 +1412,9 @@ pub enum TaxonomyWord {
             value_name = "dir-or-location",
             help = "the directory of an artifact somebody already fetched, or the https:// \
                     location of a published artifact zip, which this verb fetches through \
-                    `headwater-fetch`, a crate nothing in the checking loop links (HW-DR-0075)"
+                    `headwater-fetch`, a crate nothing in the checking loop links (HW-DR-0075). \
+                    A fetch waits at most 10 s for a connection to open and at most 30 s for the \
+                    whole download, redirects included, and exits 1 past either bound"
         )]
         path: Option<String>,
         #[arg(

@@ -68,7 +68,7 @@ graph
     identifier: the identifier is not a scalar, and an identifier is a word
 
 checks
-  31 seen, 29 classified, 28 checked, 427 check instances
+  31 seen, 29 classified, 28 checked, 428 check instances
         1 generated, held to regeneration by `headwater generate --check`
        58 skipped: this document declares no warrant, and an absent warrant is
          not a value outside the closed set
@@ -93,7 +93,7 @@ checks
     AD-1 1 open, 0 closed, holding 1 finding, owner the fixture tree, until
       2027-01-01
       one pair, so that a run carries a migration-pending finding
-  31 documents in the read set, and 8 barriers that no gate carries across a
+  31 documents in the read set, and 9 barriers that no gate carries across a
     merge
        28 instances of facet.required.missing
        28 instances of facet.value.not_permitted
@@ -122,6 +122,7 @@ checks
         1 instances of link.fragment.unresolved
         1 instances of link.path.unresolved
         1 instances of link.identifier.mismatch
+        1 instances of relation.mention.undeclared
        29 instances of warrant.promoted
        29 instances of warrant.value.not_permitted
        29 instances of warrant.acceptance.unpaired
@@ -165,6 +166,8 @@ checks
     lifecycle.dependency.on_initial
       edge scope, one relation instance and both endpoints
     lifecycle.state.not_set_by_edge
+      edge scope, one relation instance and both endpoints
+    lifecycle.state.set_after_initial
       edge scope, one relation instance and both endpoints
     relation.pair.invalid
       edge scope, one relation instance and both endpoints
@@ -215,6 +218,8 @@ checks
     link.identifier.mismatch
       corpus scope, every row of the census, and it is a barrier
       2 links compared, 1 of them with a finding
+    relation.mention.undeclared
+      corpus scope, every row of the census, and it is a barrier
     warrant.promoted
       document scope, one document and its front matter, and the version of it
         that stood before the change
@@ -294,6 +299,7 @@ checks
     lifecycle.dependency.on_terminal reaches no obligation, so it names none
     lifecycle.dependency.on_initial reaches no obligation, so it names none
     lifecycle.state.not_set_by_edge reaches no obligation, so it names none
+    lifecycle.state.set_after_initial reaches no obligation, so it names none
     relation.pair.invalid reaches no obligation, so it names none
     warrant.evidence.unsupported reaches no obligation, so it names none
     lifecycle.state.set_twice reaches no obligation, so it names none
@@ -304,6 +310,7 @@ checks
     surface.local_path.instructed reaches no obligation, so it names none
     surface.command.undeclared reaches no obligation, so it names none
     link.path.unresolved reaches no obligation, so it names none
+    relation.mention.undeclared reaches no obligation, so it names none
     warrant.promoted reaches no obligation, so it names none
     lifecycle.transition.not_permitted reaches no obligation, so it names none
     lifecycle.state.not_admitted reaches no obligation, so it names none
@@ -319,9 +326,10 @@ checks
     harvest.pin.unread reaches no obligation, so it names none
     import.pin.unread reaches no obligation, so it names none
     relation.target.verification.suspect reaches no obligation, so it names none
-  68 findings
+  70 findings
        40 ✗ error
        28 ▲ warn
+        2 · info
 
   check/evaluations/epsilon.md:4:1 ▲ warn
     relation.participation.overdue (OB-FIX-6): `evidence-cited`: 219 days since
@@ -347,6 +355,15 @@ checks
       so check/spec/00-both-halves.md owes `cites_evidence`
     fix (mechanical): add `cites_evidence: EVAL-FIX-gamma` under `relations:` in
       check/spec/00-both-halves.md
+  check/spec/00-both-halves.md:30:14 · info
+    relation.mention.undeclared: the prose names `SPEC-FIX-fragment-target` and
+      the front matter declares no relation to it; the taxonomy offers the
+      relation `assesses` from `design_spec` to `design_spec`
+    fix: if this document rests on `SPEC-FIX-fragment-target`, declare it under
+      `relations:`, for example `assesses: [SPEC-FIX-fragment-target]`; if the
+      mention is an aside, leave it. `headwater explain
+      SPEC-FIX-fragment-target` names the document, and `headwater explain` on a
+      relation says what it means
   check/spec/01-one-half.md:9:7 ✗ error
     relation.reciprocity.missing (OB-FIX-1): `SPEC-FIX-one-half` declares
       `cites_evidence: EVAL-FIX-beta`, and `cites_evidence` requires both ends,
@@ -500,6 +517,15 @@ checks
     fix: point the link at the document that carries `SPEC-FIX-cited-only`, or
       change the text to `SPEC-FIX-fragment-target`. `headwater explain
       SPEC-FIX-cited-only` names where `SPEC-FIX-cited-only` lives
+  check/spec/07-prose-defects.md:81:71 · info
+    relation.mention.undeclared: the prose names `SPEC-FIX-cited-only` and the
+      front matter declares no relation to it; the taxonomy offers the relation
+      `assesses` from `design_spec` to `design_spec`
+    fix: if this document rests on `SPEC-FIX-cited-only`, declare it under
+      `relations:`, for example `assesses: [SPEC-FIX-cited-only]`; if the
+      mention is an aside, leave it. `headwater explain SPEC-FIX-cited-only`
+      names the document, and `headwater explain` on a relation says what it
+      means
   check/spec/08-contract-met.md:2:1 ✗ error
     identifier.claim.missing: `DR-FIX-0008` is spent by
       check/spec/08-contract-met.md and no file of `.headwater/ids` claims it,
@@ -718,6 +744,7 @@ read set
   barrier link.fragment.unresolved
   barrier link.path.unresolved
   barrier link.identifier.mismatch
+  barrier relation.mention.undeclared
   barrier lifecycle.deletion.not_permitted
   windowed relation.participation.overdue
   version facet.required.missing 1
@@ -733,6 +760,7 @@ read set
   version lifecycle.dependency.on_terminal 1
   version lifecycle.dependency.on_initial 1
   version lifecycle.state.not_set_by_edge 2
+  version lifecycle.state.set_after_initial 1
   version relation.pair.invalid 2
   version warrant.evidence.unsupported 4
   version relation.participation.overdue 1
@@ -753,6 +781,7 @@ read set
   version link.fragment.unresolved 4
   version link.path.unresolved 1
   version link.identifier.mismatch 1
+  version relation.mention.undeclared 1
   version warrant.promoted 1
   version lifecycle.transition.not_permitted 2
   version lifecycle.state.not_admitted 1

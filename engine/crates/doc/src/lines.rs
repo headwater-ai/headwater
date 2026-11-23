@@ -10,10 +10,30 @@
 
 use headwater_yaml::{Position, Span};
 
+/// How far apart, in bytes, two checkpoints of a line that is not ASCII stand.
+///
+/// A column on such a line is counted from the last checkpoint at or before
+/// the offset, so one position costs at most this many bytes of counting, and
+/// the checkpoints cost one pair of numbers for each this many bytes.
+const CHECKPOINT: usize = 256;
+
 /// The start offset of every line in a source.
+///
+/// A column used to be counted from the start of its line for every position,
+/// so one line of many spans took time in proportion to its square (#1968).
+/// Now a line of ASCII counts its column as a byte difference, and any other
+/// line counts from the nearest checkpoint before the offset. The tables are a
+/// small part of the source: one number and one flag for each line, and one
+/// checkpoint for each [`CHECKPOINT`] bytes of a line that is not ASCII.
 pub struct Lines {
     /// Byte offset of the first byte of each line. Always starts with 0.
     starts: Vec<usize>,
+    /// Whether each line, its newline included, is ASCII only.
+    ascii: Vec<bool>,
+    /// A byte offset on a character boundary and the characters from the start
+    /// of its line to it, in source order. Each line that is not ASCII has one
+    /// at its start and one for each [`CHECKPOINT`] bytes after that.
+    checkpoints: Vec<(usize, usize)>,
     len: usize,
 }
 
@@ -24,8 +44,30 @@ impl Lines {
         // length. That line is empty, and it is the line a span that ends at
         // the end of the file reports.
         starts.extend(source.match_indices('\n').map(|(offset, _)| offset + 1));
+        let mut ascii = Vec::with_capacity(starts.len());
+        let mut checkpoints = Vec::new();
+        for (index, &start) in starts.iter().enumerate() {
+            let end = starts.get(index + 1).copied().unwrap_or(source.len());
+            let line = &source[start..end];
+            let plain = line.is_ascii();
+            ascii.push(plain);
+            if plain {
+                continue;
+            }
+            checkpoints.push((start, 0));
+            let mut last = start;
+            for (count, (at, _)) in line.char_indices().enumerate() {
+                let at = start + at;
+                if at - last >= CHECKPOINT {
+                    checkpoints.push((at, count));
+                    last = at;
+                }
+            }
+        }
         Self {
             starts,
+            ascii,
+            checkpoints,
             len: source.len(),
         }
     }
@@ -41,10 +83,19 @@ impl Lines {
             Err(index) => index - 1,
         };
         let start = self.starts[line_index];
-        let col = source
-            .get(start..offset)
-            .map(|text| text.chars().count())
-            .unwrap_or(0);
+        let col = if self.ascii[line_index] {
+            offset - start
+        } else if !source.is_char_boundary(offset) {
+            // An offset inside a character names no column, and the count
+            // from the start of the line read it as the start.
+            0
+        } else {
+            // The line's own first checkpoint is at its start and at or before
+            // the offset, so the last checkpoint at or before it is on this line.
+            let found = self.checkpoints.partition_point(|&(at, _)| at <= offset);
+            let (at, count) = self.checkpoints[found - 1];
+            count + source[at..offset].chars().count()
+        };
         Position::new(line_index + 1, col + 1, offset)
     }
 
@@ -84,5 +135,28 @@ mod tests {
         let source = "one\n";
         let lines = Lines::new(source);
         assert_eq!(lines.position(source, 99).offset, 4);
+    }
+
+    /// A line of many characters that are not ASCII, longer than several
+    /// checkpoints, with a column read at each character and at offsets inside
+    /// one, against the count from the start of the line (#1968).
+    #[test]
+    fn a_column_past_many_checkpoints_counts_from_the_line_start() {
+        let line: String = (0..2_000)
+            .map(|index| if index % 3 == 0 { '\u{2014}' } else { 'a' })
+            .collect();
+        let source = format!("first\n{line}\nlast\n");
+        let lines = Lines::new(&source);
+        let start = source.find('\n').unwrap() + 1;
+        for offset in start..start + line.len() + 1 {
+            let at = lines.position(&source, offset);
+            let col = source
+                .get(start..offset)
+                .map(|text| text.chars().count())
+                .unwrap_or(0);
+            assert_eq!((at.line, at.col, at.offset), (2, col + 1, offset));
+        }
+        let last = lines.position(&source, source.len() - 2);
+        assert_eq!((last.line, last.col), (3, 4));
     }
 }

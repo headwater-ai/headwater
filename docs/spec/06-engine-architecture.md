@@ -2,7 +2,7 @@
 id: HW-SPEC-engine-architecture
 status: current
 status_since: 2026-08-01
-last_verified: 2026-09-30
+last_verified: 2026-11-23
 summary: One parse, one typed graph, and many consumers, with the pipeline, the library boundary, and the performance targets.
 doc_type: design_spec
 sequence: 6
@@ -79,7 +79,7 @@ Each stage is built by one subsystem, and each subsystem is a group of crates un
 | projections, export | [Projections and export](../subsystems/projections-and-export.md) | `generate`, `mark` | `generate` writes the marker, and the census reads it. |
 | authoring | [Authoring](../subsystems/authoring.md) | `scaffold`, `import` | Each writer of an authored document puts its files on the tree through `scaffold`, so `scaffold` also holds the writers of `check --fix` and `taxonomy migrate --apply`. `import` uses the reciprocal splice of `scaffold` and keeps no second one. |
 | measurement | [Measurement](../subsystems/measurement.md) | `probe`, `conformance`, `sweep` | No code in these crates reaches a model, so no build waits on one. Each crate names `headwater-check`, so `headwater-check` can name none of them. The projections stage runs the intake and the grader of `probe`, because a probe result is a projection. |
-| every stage | [Command surface](../subsystems/command-surface.md) | `cli`, `verbs`, `paint` | These crates run no stage. `verbs` is the list of verbs that the help, the refusals and the verb index read, and the parser in `cli` dispatches. `paint` is the terminal palette ([HW-DR-0045](../decisions/0045-coloring-the-cli-and-where-the-banner-goes.md)). |
+| every stage | [Command surface](../subsystems/command-surface.md) | `cli`, `api`, `verbs`, `paint` | These crates run no stage. `api` loads a corpus and prints nothing. `verbs` is the list of verbs that the help, the refusals and the verb index read, and the parser in `cli` dispatches. `paint` is the terminal palette ([HW-DR-0045](../decisions/0045-coloring-the-cli-and-where-the-banner-goes.md)). |
 
 The diagram above does not draw two subsystems. Authoring (`new`, `capture`, `import`) writes documents, and measurement (`probe`, `conformance`, `sweep`) measures a corpus or a consumer.
 
@@ -233,7 +233,7 @@ The separation matters. `validate` must stay fast and total because it gates, wh
 
 ### Library
 
-The CLI is a thin shell over a library API — load, graph, check, query, generate. The MCP server consumes the library in the same process. An editor integration is a client of the MCP server: it starts `headwater mcp` for each query and reads the structured answer ([HW-DR-0102](../decisions/0102-an-editor-integration-starts-headwater-mcp-for-each-query-and-does-not-embed-the-library.md)). The CI adapter under `integrations/headwater-check/` runs the released `headwater` binary.
+The CLI is a thin shell over a library API — load, graph, check, query, generate. `headwater-api` holds the load. The MCP server consumes the library in the same process. An editor integration is a client of the MCP server: it starts `headwater mcp` for each query and reads the structured answer ([HW-DR-0102](../decisions/0102-an-editor-integration-starts-headwater-mcp-for-each-query-and-does-not-embed-the-library.md)). The CI adapter under `integrations/headwater-check/` runs the released `headwater` binary.
 
 ### MCP server
 

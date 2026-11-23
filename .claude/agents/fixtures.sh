@@ -130,6 +130,88 @@ if dispatches_agent "$scratch/hw-build.md" headwater-maintainer; then
 else
     pass 'and a build stage without the maintainer dispatch is reported'
 fi
+# A builder that the harness gave no Agent tool cannot dispatch the maintainer,
+# so it says so in its block, and the loop agent runs the pass in its place
+# before the verify; `/next` says to start from a top-level session, which keeps
+# the Agent tool in the builder's hands (#1998). Each line is held here.
+if grep -qF 'UPKEEP: not run, no Agent tool' "$agents/hw-build.md"; then
+    pass 'hw-build.md states the no-Agent upkeep line'
+else
+    fail 'hw-build.md states the no-Agent upkeep line' 'no `UPKEEP: not run, no Agent tool` in .claude/agents/hw-build.md'
+fi
+sed 's/UPKEEP: not run, no Agent tool/UPKEEP: skipped/g' "$agents/hw-build.md" > "$scratch/hw-build-upkeep.md"
+if grep -qF 'UPKEEP: not run, no Agent tool' "$scratch/hw-build-upkeep.md"; then
+    fail 'a build stage without the no-Agent upkeep line is reported' 'the scratch copy still states it'
+else
+    pass 'and a build stage without the no-Agent upkeep line is reported'
+fi
+iterate_runs_upkeep() {
+    dispatches_agent "$1" headwater-maintainer && grep -qF 'UPKEEP: not run' "$1"
+}
+if iterate_runs_upkeep "$agents/hw-iterate.md"; then
+    pass 'hw-iterate.md dispatches headwater-maintainer when upkeep did not run'
+else
+    fail 'hw-iterate.md dispatches headwater-maintainer when upkeep did not run' 'no `headwater-maintainer` span or no `UPKEEP: not run` trigger in .claude/agents/hw-iterate.md'
+fi
+sed 's/`headwater-maintainer`/the maintainer/g' "$agents/hw-iterate.md" > "$scratch/hw-iterate-upkeep.md"
+if iterate_runs_upkeep "$scratch/hw-iterate-upkeep.md"; then
+    fail 'a loop agent without the maintainer dispatch is reported' 'the scratch copy still names it'
+else
+    pass 'and a loop agent without the maintainer dispatch is reported'
+fi
+sed 's/UPKEEP: not run/UPKEEP: absent/g' "$agents/hw-iterate.md" > "$scratch/hw-iterate-trigger.md"
+if iterate_runs_upkeep "$scratch/hw-iterate-trigger.md"; then
+    fail 'a loop agent without the upkeep trigger is reported' 'the scratch copy still names it'
+else
+    pass 'and a loop agent without the upkeep trigger is reported'
+fi
+if grep -qF 'top-level session' "$commands/next.md"; then
+    pass 'next.md says to run from a top-level session'
+else
+    fail 'next.md says to run from a top-level session' 'no `top-level session` in .claude/commands/next.md'
+fi
+sed 's/top-level session/session/g' "$commands/next.md" > "$scratch/next.md"
+if grep -qF 'top-level session' "$scratch/next.md"; then
+    fail 'a /next without the top-level rule is reported' 'the scratch copy still states it'
+else
+    pass 'and a /next without the top-level rule is reported'
+fi
+# The operative words of each part of the rule, one row each: where the line
+# goes, the count it explains, the order of the pass before the verify, and the
+# direction of the /next rule. A row that its file loses is reported, so a
+# mutant that keeps the trigger and drops a part still reddens. `x` matches the
+# whole line, which holds the line in the report block; `F` matches inside one.
+upkeep_rows='agents/hw-build.md@x@    UPKEEP: ran | not run, no Agent tool
+agents/hw-build.md@F@write `UPKEEP: not run, no Agent tool` in your block, and write the same line under the heading `## Upkeep (headwater-maintainer)` in `build.md` and in the pull request body.
+agents/hw-build.md@F@search inline, and the count of dispatches is 0 for that reason
+agents/hw-build.md@F@fix a Stale sentence your change made false, push, and return
+agents/hw-iterate.md@F@Before the verify, dispatch `headwater-maintainer` yourself with `isolation: "worktree"`
+agents/hw-iterate.md@F@and to diff `origin/main...HEAD`
+agents/hw-iterate.md@F@parts verbatim to the builder'"'"'s id by `SendMessage`
+agents/hw-iterate.md@F@dispatch the verify only when the builder returns.
+commands/next.md@F@from a top-level session, never from a subagent.'
+upkeep_lost() {
+    printf '%s\n' "$upkeep_rows" | while IFS='@' read -r path mode phrase; do
+        grep -q"$mode"F -- "$phrase" "$1/$path" || printf '%s: %s\n' "$path" "$phrase"
+    done
+}
+lost=$(upkeep_lost "$root/.claude")
+if [ -z "$lost" ]; then
+    pass "each of the $(printf '%s\n' "$upkeep_rows" | wc -l | tr -d ' ') parts of the no-Agent upkeep rule is stated"
+else
+    fail 'each part of the no-Agent upkeep rule is stated' "lost: $lost"
+fi
+# Its refusal arm: a copy whose loop agent verifies at once is reported.
+mkdir -p "$scratch/upkeep/agents" "$scratch/upkeep/commands"
+cp "$agents/hw-build.md" "$scratch/upkeep/agents/"
+cp "$commands/next.md" "$scratch/upkeep/commands/"
+sed 's/dispatch the verify only when the builder returns\./dispatch the verify at once./' "$agents/hw-iterate.md" > "$scratch/upkeep/agents/hw-iterate.md"
+lost=$(upkeep_lost "$scratch/upkeep")
+if [ "$lost" = 'agents/hw-iterate.md: dispatch the verify only when the builder returns.' ]; then
+    pass 'and a loop agent that verifies before the builder returns is reported'
+else
+    fail 'a loop agent that verifies before the builder returns is reported' "reported: \`$lost\`"
+fi
 
 # --- 2. every skill an agent invokes is a skill on this tree ------------------
 
@@ -705,7 +787,7 @@ printf '\n# every file under .claude is in the shipped set or named as internal\
 # directory. This list is the internal list of the case.
 is_internal() {
     case $1 in
-        hw-* | headwater-engine | headwater-product-owner | repo-cleanup | ste-editor | next | next-run | next-experiment | product-owner) return 0 ;;
+        hw-* | headwater-engine | headwater-product-owner | repo-cleanup | site-preview | ste-editor | next | next-run | next-experiment | product-owner) return 0 ;;
     esac
     return 1
 }

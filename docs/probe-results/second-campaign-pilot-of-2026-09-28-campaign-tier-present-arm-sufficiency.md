@@ -28,7 +28,7 @@ The selection this transcript names is `sha256:1d93b514529314b74499196391c68b4b3
 
 The `read_set` digest above covers every probe of the selection and every document one of them examines, by path and content. This file names it as provenance and compares it with nothing, and the same holds for the lock and the selection: an edit to a document, a new probe or a moved lock leaves these bytes alone. `headwater generate` names each result whose recorded lock, read set or selection moved, and `headwater probe stale` takes the digest and reports which recorded results a change voided. Neither one fails for it.
 
-Graded by grader 0.5.2.
+Graded by grader 0.5.3.
 A campaign run in the present arm, on claude-sonnet-5 at served version claude-sonnet-5.
 
 ## The verdicts
@@ -40,7 +40,7 @@ A campaign run in the present arm, on claude-sonnet-5 at served version claude-s
 - HW-PROBE-a-session-names-the-status-a-settled-decision-carries-in-its-pull-request (sufficiency, expects answered)
     session L1-campaign-present-p3-r1: not satisfied — event 3 answered `current`, which the probe does not declare; no call to a tool of an MCP server
 - HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks (sufficiency, expects patched)
-    session L1-campaign-present-p4-r1: satisfied — event 4: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-of-this-repository-consume-before-any-work-starts.md`; no call to a tool of an MCP server
+    session L1-campaign-present-p4-r1: satisfied — event 4: `section.required.missing` reported nothing over `docs/obligations/0224-nothing-states-how-much-of-a-session-s-budget-the-standing-instructions-of-this-repository-consume-before-any-work-starts.md` or the other 1 produced artifact inside the workspace; no call to a tool of an MCP server
 
 4 of 4 sessions that recorded their calls made no call to a tool of an MCP server. 0 sessions recorded no calls.
 

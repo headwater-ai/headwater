@@ -113,6 +113,8 @@ impl EdgeCheck for Reciprocity<'_> {
     /// See [`crate::placement::Placement::VERSION`].
     /// 2: a lone half written by a document at an initial state passes.
     /// 3: a half that names its own document carries no patch.
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 3;
 
     fn instantiates(&self, relation: &str) -> bool {

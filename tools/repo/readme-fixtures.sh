@@ -1584,6 +1584,20 @@ release_digest_of() {
     ' "$1"
 }
 
+# release_version_of FILE — the `release.version` field of a release record,
+# read with the same anchor as `release_digest_of` so that a member's own
+# `version:` is never taken for the package's. The engine notes name this
+# version beside the digest, because a digest that names no version sent a
+# reader of the v0.6.1 notes looking for a zip that was never published
+# (#1986).
+release_version_of() {
+    awk '
+        /^release:/ { block = 1; next }
+        /^[^ \t#]/ { block = 0 }
+        block && /^  version:/ { print $2; exit }
+    ' "$1"
+}
+
 # digest_paragraph_of FILE — the paragraph that tells a reader where the digest
 # they pass to `--expect` comes from: the first paragraph outside a fence that
 # names `release.digest`. It is read out of the page rather than named by line
@@ -2803,11 +2817,82 @@ if [ -f "$release_wf" ]; then
         mkdir -p "$scratch/release/tree/.headwater/packages/headwater-standard"
         cp "$root/.headwater/packages/headwater-standard/release.yml" \
             "$scratch/release/tree/.headwater/packages/headwater-standard/release.yml"
-        notes_status=$(cd "$scratch/release/tree" && sh "$scratch/release/notes-step.sh" >notes.log 2>&1; echo $?)
+        notes_status=$(cd "$scratch/release/tree" && GITHUB_REPOSITORY=headwater-ai/headwater sh "$scratch/release/notes-step.sh" >notes.log 2>&1; echo $?)
         same "  and running it against this checkout exits 0" 0 "$notes_status"
         same "  and it writes the \`release.digest\` of the record in the tree it ran in" \
             "release.digest: $good_digest" \
             "$(head -1 "$scratch/release/tree/release-notes.md" 2>/dev/null)"
+
+        # What the digest is the digest of (#1986). The v0.6.1 notes gave the
+        # digest of `headwater/standard` 4.16.1 as it stood in the tagged
+        # source tree, named no version, and no published zip carried that
+        # digest. The notes now name the version, say that the digest is of
+        # the copy in this tag's source tree, and name the taxonomy release
+        # that would carry it. The step reaches no network (HW-DR-0090), so it
+        # cannot say whether that release exists, and the notes say so.
+        good_version=$(release_version_of "$root/.headwater/packages/headwater-standard/release.yml")
+        notes_body=$(tr '\n' ' ' <"$scratch/release/tree/release-notes.md" 2>/dev/null)
+        case $notes_body in
+            *"\`headwater/standard\` $good_version"*)
+                pass "  and the notes name \`headwater/standard\` $good_version, the version of that digest" ;;
+            *) fail "  and the notes name \`headwater/standard\` $good_version, the version of that digest" \
+                "the notes do not name \`headwater/standard\` $good_version, so a reader cannot tell which package the digest is of" ;;
+        esac
+        case $notes_body in
+            *"--expect $good_digest\`"*)
+                pass "  and the vendor command in the notes passes that digest to \`--expect\`" ;;
+            *) fail "  and the vendor command in the notes passes that digest to \`--expect\`" \
+                "the notes do not carry \`--expect $good_digest\`, so the command a reader copies pins something other than the digest" ;;
+        esac
+        case $notes_body in
+            *"as it stands in the source tree of this tag"*)
+                pass "  and the notes say the digest is of the copy in this tag's source tree" ;;
+            *) fail "  and the notes say the digest is of the copy in this tag's source tree" \
+                "the notes do not say that the digest is of the package in the tagged source tree, so a reader takes it for the digest of a downloadable zip" ;;
+        esac
+        case $notes_body in
+            *"taxonomy/headwater-standard/v$good_version"*)
+                pass "  and the notes name the taxonomy release \`taxonomy/headwater-standard/v$good_version\` that would carry it" ;;
+            *) fail "  and the notes name the taxonomy release \`taxonomy/headwater-standard/v$good_version\` that would carry it" \
+                "the notes name no \`taxonomy/headwater-standard/v$good_version\`, so a reader has no zip to look for" ;;
+        esac
+        case $notes_body in
+            *"https://github.com/headwater-ai/headwater/releases/tag/taxonomy/headwater-standard/v$good_version"*"https://github.com/headwater-ai/headwater/releases?q=taxonomy"*)
+                pass "  and the notes link that release and the list of taxonomy releases in the repository the run names" ;;
+            *) fail "  and the notes link that release and the list of taxonomy releases in the repository the run names" \
+                "the notes do not carry both links under \`https://github.com/\$GITHUB_REPOSITORY/releases\`, so a reader has no place to look" ;;
+        esac
+
+        # The version is read from the `release:` block alone. A record that
+        # opens with another top-level block carrying its own two-space
+        # `version:` must still yield the release's version, or an awk that
+        # lost its block anchor would name a version nobody published.
+        { printf 'source:\n  version: 0.0.0-not-the-release\n'
+          cat "$root/.headwater/packages/headwater-standard/release.yml"
+        } >"$scratch/release/tree/.headwater/packages/headwater-standard/release.yml"
+        rm -f "$scratch/release/tree/release-notes.md"
+        (cd "$scratch/release/tree" && GITHUB_REPOSITORY=headwater-ai/headwater sh "$scratch/release/notes-step.sh" >notes.log 2>&1)
+        case $(tr '\n' ' ' <"$scratch/release/tree/release-notes.md" 2>/dev/null) in
+            *"\`headwater/standard\` $good_version as it stands"*)
+                pass "  and a \`version:\` outside the \`release:\` block is not taken for the release's" ;;
+            *) fail "  and a \`version:\` outside the \`release:\` block is not taken for the release's" \
+                "over a record that opens with another block carrying \`version:\`, the notes do not name \`headwater/standard\` $good_version" ;;
+        esac
+
+        # The second mutation arm. A record with no `release.version` must stop
+        # the release rather than cut one whose notes name no version. Only the
+        # two-space `version:` directly under `release:` goes: a member line is
+        # indented further, so the anchor leaves members alone.
+        grep -v '^  version:' "$root/.headwater/packages/headwater-standard/release.yml" \
+            >"$scratch/release/tree/.headwater/packages/headwater-standard/release.yml"
+        rm -f "$scratch/release/tree/release-notes.md"
+        unversioned_status=$(cd "$scratch/release/tree" && sh "$scratch/release/notes-step.sh" >notes.log 2>&1; echo $?)
+        if [ "$unversioned_status" = 0 ]; then
+            fail "  and a record stating no version stops the release" \
+                "the step exited 0 over a record with no \`release.version\`, so the release would name no version beside its digest"
+        else
+            pass "  and a record stating no version stops the release"
+        fi
 
         # The mutation arm. A record with no `release.digest` must stop the
         # release rather than cut one whose notes open with an empty value.
@@ -5951,6 +6036,104 @@ apt_planted "  a README that also prints a bare cargo command in prose is refuse
 sed 's|cargo install headwater-cli --locked</pre>|&\n  <pre class="block"><span class="dim">$</span> cargo install headwater-cli</pre>|' "$cargo_install_page" >"$scratch/cargo-locked/second.html"
 apt_planted "  an install page with a second, bare cargo block is refused" "$cargo_install_page" "$scratch/cargo-locked/second.html" \
     1 "$(cargo_bare_count "$scratch/cargo-locked/second.html")"
+
+echo
+echo "the tutorial URL the README names is a page of the site"
+
+# Group 15 (#1985). The README's "Start here" line sends a newcomer to the
+# tutorial on the site, at the URL below, and links the file in this
+# repository beside it. A page that moves on the site breaks that link with no
+# change to the README, so three files hold the URL together:
+#
+#   - THE DECISIVE CASE: the "Start here" line carries the URL. A README that
+#     drops it, or names another page, is red.
+#   - the URL is a page of the site: `mkdocs.yml` builds `docs/` with
+#     directory URLs, so the path maps to `docs/<path>.md`, and the step of
+#     `ci.yml` that assembles the site requires `<path>/index.html` in what it
+#     deploys. That step reads a file and never a status code, and its comment
+#     says why.
+#   - the live site answers it: the `tutorial-site` job of
+#     `.github/workflows/install-routes.yml` fetches the URL every day and
+#     fails on anything but 200. No pull request runs that workflow
+#     (HW-PD-0012), so this group reads its text, and group 14 holds that its
+#     report job needs the job.
+#   - the tutorial step of `ci.yml` drives the release the page installs: its
+#     `env:` sets `HEADWATER_TUTORIAL_RELEASE: '1'`, which the README's "Start
+#     here" line and its tutorial-pin sentence state. Without it the step
+#     drives the branch's own engine and the README is false.
+tutorial_url='https://headwater.tools/tutorials/your-first-governed-corpus/'
+
+# tutorial_release_judge CI — nothing when the step that runs
+# `.claude/tutorial/fixtures.sh` sets the switch in its own `env:`.
+tutorial_release_judge() {
+    awk '/^      - name: The tutorial says what a reader will see/ { s = 1; next }
+         s && /^      - name:/ { s = 0 }
+         s && /^[ \t]*#/ { next }
+         s && /^          HEADWATER_TUTORIAL_RELEASE: .1.[ \t]*$/ { env = 1 }
+         s && /^        run: sh \.claude\/tutorial\/fixtures\.sh[ \t]*$/ { run = 1 }
+         END { if (!(env && run)) print "the tutorial step of ci.yml does not run fixtures.sh with HEADWATER_TUTORIAL_RELEASE set to 1" }' "$1"
+}
+
+# tutorial_url_judge README CI ROUTES DOCS — one line for each way the three
+# files fail to hold the URL, and nothing when they hold it.
+tutorial_url_judge() {
+    _path=${tutorial_url#https://headwater.tools/}
+    _path=${_path%/}
+    grep '^\*\*Start here: ' "$1" | grep -qF "($tutorial_url)" ||
+        echo "the Start here line of the README does not link $tutorial_url"
+    [ -f "$4/$_path.md" ] ||
+        echo "the site builds no page at $tutorial_url, because docs/$_path.md is not a file"
+    grep -qE "^[ ]+for path in $_path/index\\.html " "$2" ||
+        echo "the assembled-site step of ci.yml does not require $_path/index.html"
+    _job=$(awk '/^  tutorial-site:[ \t]*$/ { s = 1; next } s && /^  [A-Za-z0-9_-]+:[ \t]*$/ { s = 0 } s && !/^[ \t]*#/' "$3")
+    printf '%s\n' "$_job" | grep -qF "/$_path/" ||
+        echo "no tutorial-site job of install-routes.yml fetches $tutorial_url"
+    printf '%s\n' "$_job" | grep -qF "\"\$code\" != 200" ||
+        echo "the tutorial-site job of install-routes.yml does not fail on a status other than 200"
+}
+
+url_ci="$root/.github/workflows/ci.yml"
+url_routes="$root/.github/workflows/install-routes.yml"
+same "  the README, the site and the daily job hold the tutorial URL" \
+    "" "$(tutorial_url_judge "$readme" "$url_ci" "$url_routes" "$root/docs")"
+mkdir -p "$scratch/tutorial-url/docs"
+sed 's|(https://headwater.tools/tutorials/your-first-governed-corpus/)|(docs/tutorials/your-first-governed-corpus.md)|' "$readme" >"$scratch/tutorial-url/repo-only.md"
+same "  a README whose Start here line links the repository file alone is red" \
+    "the Start here line of the README does not link $tutorial_url" \
+    "$(tutorial_url_judge "$scratch/tutorial-url/repo-only.md" "$url_ci" "$url_routes" "$root/docs")"
+sed 's|https://headwater.tools/tutorials/your-first-governed-corpus/|https://headwater.tools/tutorials/|' "$readme" >"$scratch/tutorial-url/other-page.md"
+same "  a README that links another page of the site is red" \
+    "the Start here line of the README does not link $tutorial_url" \
+    "$(tutorial_url_judge "$scratch/tutorial-url/other-page.md" "$url_ci" "$url_routes" "$root/docs")"
+same "  a docs tree with no tutorial document is red" \
+    "the site builds no page at $tutorial_url, because docs/tutorials/your-first-governed-corpus.md is not a file" \
+    "$(tutorial_url_judge "$readme" "$url_ci" "$url_routes" "$scratch/tutorial-url/docs")"
+sed 's|for path in tutorials/your-first-governed-corpus/index.html |for path in |' "$url_ci" >"$scratch/tutorial-url/ci.yml"
+same "  an assembled-site step that no longer requires the tutorial page is red" \
+    "the assembled-site step of ci.yml does not require tutorials/your-first-governed-corpus/index.html" \
+    "$(tutorial_url_judge "$readme" "$scratch/tutorial-url/ci.yml" "$url_routes" "$root/docs")"
+sed '/^  tutorial-site:/,/^  report:/{/^  report:/!d}' "$url_routes" >"$scratch/tutorial-url/no-job.yml"
+same "  an install-routes.yml with no tutorial-site job is red" \
+    "no tutorial-site job of install-routes.yml fetches $tutorial_url
+the tutorial-site job of install-routes.yml does not fail on a status other than 200" \
+    "$(tutorial_url_judge "$readme" "$url_ci" "$scratch/tutorial-url/no-job.yml" "$root/docs")"
+sed '/^  tutorial-site:/,/^  report:/s/"\$code" != 200/"$code" = 000/' "$url_routes" >"$scratch/tutorial-url/any-code.yml"
+same "  a tutorial-site job that passes on any status but 000 is red" \
+    "the tutorial-site job of install-routes.yml does not fail on a status other than 200" \
+    "$(tutorial_url_judge "$readme" "$url_ci" "$scratch/tutorial-url/any-code.yml" "$root/docs")"
+same "  the tutorial step of ci.yml drives the release the page installs" "" "$(tutorial_release_judge "$url_ci")"
+grep -v "^          HEADWATER_TUTORIAL_RELEASE: '1'$" "$url_ci" >"$scratch/tutorial-url/no-switch.yml"
+same "  a tutorial step without the switch is red" \
+    "the tutorial step of ci.yml does not run fixtures.sh with HEADWATER_TUTORIAL_RELEASE set to 1" \
+    "$(tutorial_release_judge "$scratch/tutorial-url/no-switch.yml")"
+sed "s/^          HEADWATER_TUTORIAL_RELEASE: '1'$/          HEADWATER_TUTORIAL_RELEASE: '0'/" "$url_ci" >"$scratch/tutorial-url/switch-off.yml"
+same "  a tutorial step that sets the switch to 0 is red" \
+    "the tutorial step of ci.yml does not run fixtures.sh with HEADWATER_TUTORIAL_RELEASE set to 1" \
+    "$(tutorial_release_judge "$scratch/tutorial-url/switch-off.yml")"
+sed "s/^          HEADWATER_TUTORIAL_RELEASE: '1'$/          # HEADWATER_TUTORIAL_RELEASE: '1'/" "$url_ci" >"$scratch/tutorial-url/switch-comment.yml"
+same "  a tutorial step whose switch is commented out is red" \
+    "the tutorial step of ci.yml does not run fixtures.sh with HEADWATER_TUTORIAL_RELEASE set to 1" \
+    "$(tutorial_release_judge "$scratch/tutorial-url/switch-comment.yml")"
 
 echo
 echo "$passed passed, $failed failed"

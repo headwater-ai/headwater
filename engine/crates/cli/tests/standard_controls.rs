@@ -12,7 +12,7 @@
 //! reaches no single obligation and names each one, so a new rule that ships
 //! without its control fails here.
 //!
-//! The lifecycle table holds all seven lifecycle rules the engine carries, and
+//! The lifecycle table holds all eight lifecycle rules the engine carries, and
 //! the second case reads the obligation, posture and promotion each control of
 //! that family declares, which the register counts without naming.
 
@@ -22,7 +22,7 @@ use common::Root;
 /// The lifecycle rules that a control of the package names, one row each:
 /// the rule, the one obligation its control discharges, the posture, and the
 /// promotion record that states why the posture stands.
-const LIFECYCLE: [(&str, &str, &str, &str); 7] = [
+const LIFECYCLE: [(&str, &str, &str, &str); 8] = [
     (
         "lifecycle.transition.not_permitted",
         "OB-LIFE-1",
@@ -62,6 +62,12 @@ const LIFECYCLE: [(&str, &str, &str, &str); 7] = [
     (
         "lifecycle.state.set_twice",
         "OB-LIFE-7",
+        "advisory",
+        "permanently_advisory",
+    ),
+    (
+        "lifecycle.state.set_after_initial",
+        "OB-LIFE-8",
         "advisory",
         "permanently_advisory",
     ),
@@ -312,6 +318,16 @@ const BOUND_IN_4_17: [(&str, &str, &str, &str); 1] = [(
     "permanently_advisory",
 )];
 
+/// The rule that 4.19.0 bound, in the same shape (#1977). It is permanently
+/// advisory because whether a prose mention is a dependency, and which
+/// relation it is, only the author knows.
+const BOUND_IN_4_19: [(&str, &str, &str, &str); 1] = [(
+    "relation.mention.undeclared",
+    "OB-REL-10",
+    "advisory",
+    "permanently_advisory",
+)];
+
 /// The declaration of the one control of the maintained package whose
 /// mechanism is `check:<rule>`. Controls sit one to a block, a blank line
 /// separates two blocks, and each block opens with its identifier.
@@ -332,7 +348,7 @@ fn control_of<'a>(taxonomy: &'a str, rule: &str) -> &'a str {
 /// register counts postures without naming the control, so a control moved
 /// from `blocking` to `advisory` changed no line the case above reads (the
 /// verifier's finding on #1212). This case reads each lifecycle control, and
-/// each control that 4.14.0 and 4.17.0 added, where the maintained package
+/// each control that 4.14.0, 4.17.0 and 4.19.0 added, where the maintained package
 /// declares it.
 #[test]
 fn each_lifecycle_control_declares_its_obligation_posture_and_promotion() {
@@ -342,6 +358,7 @@ fn each_lifecycle_control_declares_its_obligation_posture_and_promotion() {
         .into_iter()
         .chain(BOUND_IN_4_14)
         .chain(BOUND_IN_4_17)
+        .chain(BOUND_IN_4_19)
     {
         let control = control_of(&taxonomy, rule);
         for line in [
