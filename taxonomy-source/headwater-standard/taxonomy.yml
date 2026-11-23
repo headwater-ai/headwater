@@ -149,6 +149,11 @@ taxonomy: headwater/standard
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
 #
+# 4.19.1 changes the meaning of no declaration. The engine now reads
+# `posture` at the strict gate (#2015), so the comment at the head of
+# `controls` says what `blocking` does, and the final-posture reasoning of
+# CT-LIFE-6 no longer says that its warning passes a strict run.
+#
 # 4.19.0 adds one obligation and its control, and removes nothing, so it is a
 # minor. OB-REL-10 states that a document whose prose names another document's
 # identifier declares the relation the taxonomy offers for the pair, or means
@@ -329,7 +334,7 @@ taxonomy: headwater/standard
 # each carries a recipe rather than a bare instruction. One package version
 # covers every content file it publishes, this one included, so the number
 # here moves with a change to either.
-version: 4.19.0
+version: 4.19.1
 
 purposes:
   rationale:
@@ -983,6 +988,15 @@ obligations:
 # this boundary on 2026-09-25, on #937: "The content digest already catches a
 # changed criterion, and a widening adds a new input to every check run."
 
+# A control's `posture` is `advisory` or `blocking`, and the resolver refuses
+# any other value. `headwater check --strict` fails on a live finding that is
+# an error, and on a live finding of any severity whose rule a `blocking`
+# control discharges. Severity stays the check's and posture the control's
+# (spec 12), so an adopter promotes a rule with one overlay line, such as
+# `override: {controls.CT-REL-6.posture: blocking}`, and changes no check. The
+# adoption block and a suppression still hold such a finding, because the gate
+# reads live findings only. The owner ruled on 2026-11-22, on #2015, that the
+# posture is the adopter's to configure.
 controls:
 
   CT-COV-1:
@@ -1259,7 +1273,7 @@ controls:
     acts: detective
     promotion:
       final_posture:
-        reasoning: The reading CT-LIFE-2 takes, over one declared edge instead of one declared state set. The rule reads the state the relation declares and the state the target stands at, and the corpus itself resolved both, so an advisory period would measure a false-positive rate that the construction fixes at zero. Where the target is live the remedy is mechanical and total, because the fix writes the declared state and the source's own state-entry date together, so there is no judgment for an author to make. The one case that needs a judgment is a target already terminal at another state, because which terminal state it ends at is the author's call. The rule reports that case as a warning with no patch, so it does not stop a strict run, and the posture blocks only what the fix can repair
+        reasoning: The reading CT-LIFE-2 takes, over one declared edge instead of one declared state set. The rule reads the state the relation declares and the state the target stands at, and the corpus itself resolved both, so an advisory period would measure a false-positive rate that the construction fixes at zero. Where the target is live the remedy is mechanical and total, because the fix writes the declared state and the source's own state-entry date together, so there is no judgment for an author to make. The one case that needs a judgment is a target already terminal at another state, because which terminal state it ends at is the author's call. The rule reports that case as a warning with no patch. A blocking posture stops a strict run on a live finding at any severity, so that warning stops one too. An adopter who wants the terminal case to pass parks it in the adoption block, or overrides this control to advisory in its overlay
 
   CT-LANG-1:
     mechanism: check:language.controlled.not_met

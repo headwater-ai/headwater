@@ -225,15 +225,17 @@ fn check_fix_writes_the_state_and_the_successor_s_date_onto_the_target() {
 }
 
 /// A live successor over a target that stands at a terminal state other than
-/// the one the edge sets is reported and does not fail a strict run.
+/// the one the edge sets is reported as a warning, and it fails a strict run.
 ///
 /// Which terminal state the target ends at is a judgment between two, so the
-/// remedy is not mechanical and total, and the finding is advisory with no
-/// patch. The scratch root carries the four files the overlay's language
+/// remedy is not mechanical and total, and the finding is a warning with no
+/// patch. CT-LIFE-6 declares `posture: blocking`, and since #2015 a blocking
+/// control stops a strict run on a live finding at any severity, so the
+/// warning fails the run and the report names the control. The scratch root carries the four files the overlay's language
 /// regime lists outside the corpus root, so that nothing else fails the run
 /// and the exit status is this rule's to decide.
 #[test]
-fn a_target_deprecated_before_its_successor_is_advisory_and_strict_passes() {
+fn a_target_deprecated_before_its_successor_is_a_warning_that_a_blocking_control_fails() {
     let root = Root::new("deprecated");
     let repository = repository();
     for file in [
@@ -271,10 +273,17 @@ fn a_target_deprecated_before_its_successor_is_advisory_and_strict_passes() {
     );
     assert_eq!(
         checked.code,
-        Some(0),
-        "an advisory finding does not fail a strict run\n{}{}",
+        Some(1),
+        "a warning that a blocking control discharges fails a strict run\n{}{}",
         checked.out,
         checked.err
+    );
+    assert!(
+        checked
+            .out
+            .contains(&format!("{RULE} blocked by CT-LIFE-6")),
+        "the report names the control that blocks it\n{}",
+        checked.out
     );
 
     let fixed = root.run(&["check", "--fix", "--no-cache", "--now", NOW]);

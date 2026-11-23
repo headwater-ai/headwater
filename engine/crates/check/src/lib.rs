@@ -1516,11 +1516,51 @@ pub enum Detail {
 }
 
 impl Run {
-    /// Whether a `--strict` invocation would fail on this run.
+    /// Whether any live finding is an error. One of the two reasons
+    /// [`Run::fails_strict`] reads, and not the whole of it.
     pub fn has_errors(&self) -> bool {
         self.findings
             .iter()
             .any(|finding| finding.severity == Severity::Error)
+    }
+
+    /// The `posture: blocking` control that discharges `finding`'s rule, and
+    /// `None` where every control that names the rule is advisory or none does.
+    ///
+    /// Spec 12: severity is the check's, and posture is the control's. The
+    /// posture is read from the register this run carries, which the lock
+    /// decides, so a promotion is a change to configuration alone and no check
+    /// or cache key moves with it (owner ruling on #2015, 2026-11-22). Where
+    /// more than one blocking control names the rule, the first in declaration
+    /// order is the one a report names.
+    pub fn blocked_by(&self, finding: &Finding) -> Option<&str> {
+        self.register
+            .controls
+            .iter()
+            .find(|control| {
+                control.posture == Some(register::Posture::Blocking)
+                    && matches!(&control.mechanism, register::Mechanism::Rule(rule) if rule == finding.rule)
+            })
+            .map(|control| control.id.as_str())
+    }
+
+    /// Every live finding a blocking control discharges, with that control.
+    ///
+    /// Live alone: a finding the adoption block holds or a directive hides is
+    /// not in [`Run::findings`], so the ratchet holds a blocking finding the
+    /// same way it holds an error.
+    pub fn blocking(&self) -> Vec<(&Finding, &str)> {
+        self.findings
+            .iter()
+            .filter_map(|finding| self.blocked_by(finding).map(|control| (finding, control)))
+            .collect()
+    }
+
+    /// Whether a `--strict` invocation fails on this run: a live finding is an
+    /// error, or a live finding of any severity is one a blocking control
+    /// discharges.
+    pub fn fails_strict(&self) -> bool {
+        self.has_errors() || !self.blocking().is_empty()
     }
 
     /// Findings per severity, in severity order, so that two reports line up.

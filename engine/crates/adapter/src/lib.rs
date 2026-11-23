@@ -342,6 +342,10 @@ pub struct Reported<'a> {
     pub task: Option<&'a Task>,
     /// The directive that hides it, for [`Escape::Suppression`].
     pub directive: Option<&'a Suppression>,
+    /// The `posture: blocking` control that makes this live finding stop a
+    /// strict run, from [`Run::blocked_by`]. `None` for an escaped finding,
+    /// which blocks nothing (#2015).
+    pub blocked_by: Option<&'a str>,
 }
 
 impl Reported<'_> {
@@ -366,6 +370,7 @@ pub fn reported(run: &Run) -> Vec<Reported<'_>> {
             escape: None,
             task: None,
             directive: None,
+            blocked_by: run.blocked_by(finding),
         });
     }
     for finding in &run.adoption.pending {
@@ -378,6 +383,7 @@ pub fn reported(run: &Run) -> Vec<Reported<'_>> {
                     .any(|pair| pair.rule == finding.rule && pair.path == finding.path)
             }),
             directive: None,
+            blocked_by: None,
         });
     }
     for (finding, directive) in run.suppressions.hidden_findings() {
@@ -386,6 +392,7 @@ pub fn reported(run: &Run) -> Vec<Reported<'_>> {
             escape: Some(Escape::Suppression),
             task: None,
             directive: Some(directive),
+            blocked_by: None,
         });
     }
     all.sort_by(|left, right| left.finding.order().cmp(&right.finding.order()));

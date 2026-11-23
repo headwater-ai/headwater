@@ -6,8 +6,10 @@ Options:
       --root <path>
           the repository to read. Defaults to the working directory
       --strict
-          exit non-zero when a finding is an error. Without it the run is
-          advisory and always exits 0, which is the default spec 6 fixes
+          exit non-zero when a finding is an error, or when a control declared
+          `posture: blocking` discharges a finding of any severity. Without it
+          the run is advisory and always exits 0, which is the default spec 6
+          fixes
       --fix
           write the patch that rides with a finding, in this working tree. A
           finding carries one only when the fix is mechanical and total, and a

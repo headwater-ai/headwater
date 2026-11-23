@@ -236,14 +236,48 @@ pub struct Control {
     /// Whether a finding of this control blocks a gate, which is spec 12's
     /// sense of the word. Spec 4 wrote one member holding this and the class
     /// below, and control health cannot be read off a member holding two
-    /// vocabularies.
-    pub posture: Option<String>,
+    /// vocabularies. `None` where the control declares none, which blocks
+    /// nothing.
+    pub posture: Option<Posture>,
     /// When this control acts: one of spec 4's four control classes.
     pub acts: Option<String>,
     /// What spec 4 asks to be "recorded with the control", and `None` where a
     /// control records nothing.
     pub promotion: Option<Promotion>,
     pub span: Span,
+}
+
+/// Whether a finding of a control blocks a gate: spec 12's sense of the word,
+/// and a closed set of two (spec 13).
+///
+/// The adopter sets it, with an overlay `override` (owner ruling on #2015,
+/// 2026-11-22), and [`crate::Run::fails_strict`] is what reads it. A value
+/// outside the set is refused rather than read as advisory, because a typo in
+/// a promotion would otherwise leave the gate open and say nothing.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Posture {
+    /// A finding is reported, and it stops a strict run only at `error`.
+    Advisory,
+    /// A live finding stops a strict run, whatever its severity.
+    Blocking,
+}
+
+impl Posture {
+    /// The value as the taxonomy writes it.
+    pub fn name(self) -> &'static str {
+        match self {
+            Posture::Advisory => "advisory",
+            Posture::Blocking => "blocking",
+        }
+    }
+
+    fn read(text: &str) -> Option<Posture> {
+        match text {
+            "advisory" => Some(Posture::Advisory),
+            "blocking" => Some(Posture::Blocking),
+            _ => None,
+        }
+    }
 }
 
 /// The promotion record: one key per subsection of spec 4's promotion section.
@@ -588,7 +622,7 @@ impl Disposed {
 pub struct Health {
     pub id: String,
     pub mechanism: Mechanism,
-    pub posture: Option<String>,
+    pub posture: Option<Posture>,
     pub acts: Option<String>,
     pub discharges: Vec<String>,
     pub promotion: Option<Promotion>,
@@ -677,7 +711,7 @@ impl Projection {
             .map(|control| Health {
                 id: control.id.clone(),
                 mechanism: register.mechanism(control),
-                posture: control.posture.clone(),
+                posture: control.posture,
                 acts: control.acts.clone(),
                 discharges: control.discharges.clone(),
                 promotion: control.promotion.clone(),
@@ -1082,7 +1116,7 @@ impl Projection {
         for (label, mut values) in [
             (
                 "posture",
-                self.tally(self.controls.iter().map(|c| c.posture.as_deref())),
+                self.tally(self.controls.iter().map(|c| c.posture.map(Posture::name))),
             ),
             (
                 "acts",
@@ -1396,11 +1430,21 @@ fn read_control(id: &str, value: &Value, span: Span) -> Result<Control, Declarat
                 .collect()
         })
         .unwrap_or_default();
+    let posture = match scalar(map, "posture") {
+        None => None,
+        Some(text) => Some(Posture::read(&text).ok_or_else(|| DeclarationError {
+            message: format!(
+                "control `{id}` declares posture `{text}`, and a posture is `advisory` or \
+                 `blocking`"
+            ),
+            span,
+        })?),
+    };
     Ok(Control {
         id: id.to_string(),
         mechanism,
         discharges,
-        posture: scalar(map, "posture"),
+        posture,
         acts: scalar(map, "acts"),
         promotion: read_promotion(id, map)?,
         span,
@@ -1919,6 +1963,30 @@ controls:
             "controls:\n  CT-1:\n    mechanism: check:r\n    promotion: {criteria: {window: w}}\n"
         )
         .contains("state no threshold"));
+    }
+
+    /// A posture is one of two values, an absent one blocks nothing, and any
+    /// other value is refused with the control and both admitted values named,
+    /// because a misspelled promotion would otherwise leave the gate open
+    /// (#2015).
+    #[test]
+    fn a_posture_is_advisory_or_blocking_and_anything_else_is_refused() {
+        let register = register(
+            "controls:\n  CT-1:\n    mechanism: check:r\n    posture: blocking\n  \
+             CT-2:\n    mechanism: check:r\n    posture: advisory\n  \
+             CT-3:\n    mechanism: check:r\n",
+        );
+        assert_eq!(register.controls[0].posture, Some(Posture::Blocking));
+        assert_eq!(register.controls[1].posture, Some(Posture::Advisory));
+        assert_eq!(register.controls[2].posture, None);
+        let refused = refusal("controls:\n  CT-1:\n    mechanism: check:r\n    posture: blockng\n");
+        assert!(
+            refused.contains("`CT-1`")
+                && refused.contains("`blockng`")
+                && refused.contains("`advisory`")
+                && refused.contains("`blocking`"),
+            "{refused}"
+        );
     }
 
     /// A suppression does not undo a control, so it does not move a

@@ -77,7 +77,7 @@ The program exclusion applies only to a whole bare token, so `mkdocs/build.sh` c
 
 | Option | What it does |
 |---|---|
-| `--strict` | Exit non-zero when a finding is an error. Without it the run is advisory. |
+| `--strict` | Exit non-zero when a live finding is an error, or when a live finding of any severity is one that a `posture: blocking` control discharges. Without it the run is advisory. |
 | `--fix` | Write the patch that rides with a finding, in this working tree, before the report is composed. A finding carries a patch only where the remedy is mechanical and total, and a suppressed finding carries none. A `verified_revision` stamp also needs `--change`, as the Description states. The report is the state after the write, so a patch that produced a document the checks reject is reported on the same run. |
 | `--no-cache` | Read and write no cache, and evaluate every instance. Standard output is the same either way, and a difference is a defect in the cache rather than a result. |
 | `--now <date>` | The date to evaluate against, as `YYYY-MM-DD`. It defaults to the system clock. |
@@ -112,7 +112,7 @@ The program exclusion applies only to a whole bare token, so `mkdocs/build.sh` c
 | `--read-set` names a file that could not be written | after the report is written |
 | `--register` names a file that could not be written | after the report is written |
 | `--fix` was passed and a file refused its patch | after the report is written |
-| `--strict` was passed and at least one finding is an error | the last reading of the verb |
+| `--strict` was passed and at least one live finding is an error. Or a control that declares `posture: blocking` discharges at least one live finding, at any severity | the last reading of the verb |
 | `--strict` was passed and this engine is outside the `engine` range that `.headwater/taxonomy.yml` declares | the last reading of the verb |
 
 Two of those are worth separating. **A refused patch is not a finding**, so no absence of `--strict` softens it. The verb was asked to write and did not, and a caller who read a 0 would believe a corpus was fixed. And **the report is written before the last six rows are decided**. A run that exits 1 for one of those six still put a complete report on standard output. That holds in `text`, `json`, `sarif` and `markdown` alike.
@@ -182,12 +182,12 @@ Without `--fix`, this verb writes no byte of the corpus. The cache is outside th
 | `rules[].version` | Always | The version of the check, as a number. |
 | `rules[].obligations` | Always | The identifiers of the obligations that the rule serves. The array is empty when the rule names none. |
 | `rules[].compared` | Only on the entries for `link.identifier.mismatch` and `link.fragment.unresolved` | The number of links that the rule compared, whether they pass or not. `"compared": 0` says that the rule examined nothing. It is not written on the entry of any other rule. |
-| `findings` | Always | One entry for each finding of the report, in the shape that spec 4 declares. |
+| `findings` | Always | One entry for each finding of the report, in the shape that spec 4 declares. A live finding that a `posture: blocking` control discharges also carries `blocked_by`, the identifier of that control. Such a finding fails `--strict` at any severity, and the member is written with or without the flag. |
 | `read_set` | Always | Each input that the run read, with the digest of its content. An input with no digest carries an empty array in place of the digest. |
 
 ### Raising the version
 
-The current version is `1.6`. The version is a constant of the shape, and it is not the version of the engine. Two engines that write one shape write one version, so a reader does not read the shape again. The SARIF report carries `change` and `coverage` in its property bag, so this version also applies to those two members of that report.
+The current version is `1.7`. The version is a constant of the shape, and it is not the version of the engine. Two engines that write one shape write one version, so a reader does not read the shape again. The SARIF report carries `change` and `coverage` in its property bag, so this version also applies to those two members of that report.
 
 Each version added a member, and each addition moved the minor. So an absent member says a different thing at each version. At `1.1` a report with no `change` says that the run read the whole corpus. At `1.0` it says only that the engine had no such member to write.
 
@@ -198,6 +198,7 @@ Each version added a member, and each addition moved the minor. So an absent mem
 - `1.4` added `verified` and `verified_alone` to `change`. Before `1.4`, a document that only a `verified` line named was in `documents` and in no other count, so the counts did not sum ([#1398](https://github.com/headwater-ai/headwater/issues/1398)).
 - `1.5` added `compared` to the entries of `rules` for `link.identifier.mismatch` and `link.fragment.unresolved`. A rule that reports nothing is silent over links that all pass. It is also silent over a corpus with none of its links, and `compared` tells the two apart ([#1347](https://github.com/headwater-ai/headwater/issues/1347)).
 - `1.6` added `unstated` to `change`. Before `1.6`, a `verified` line whose target its document does not govern was in no member. A line whose document no row holds was in `unmatched` only as its document path ([#1631](https://github.com/headwater-ai/headwater/issues/1631)).
+- `1.7` added `blocked_by` to a live finding that a `posture: blocking` control discharges. Before `1.7`, a report did not say why a strict run over a corpus with no error failed ([#2015](https://github.com/headwater-ai/headwater/issues/2015)).
 
 ## See also
 
