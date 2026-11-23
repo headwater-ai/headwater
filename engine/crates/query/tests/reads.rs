@@ -608,9 +608,7 @@ fn identified_by_the_task(route: &headwater_query::Route) -> Vec<&str> {
         .pointers
         .iter()
         .zip(&route.evidence)
-        .filter(|(_, evidence)| {
-            matches!(evidence, headwater_query::Evidence::Identified { .. })
-        })
+        .filter(|(_, evidence)| matches!(evidence, headwater_query::Evidence::Identified { .. }))
         .map(|(pointer, _)| pointer.path.as_str())
         .collect()
 }
@@ -644,7 +642,9 @@ fn a_task_that_writes_an_identifier_is_offered_its_document_by_that_identifier()
         }
     );
     assert!(
-        route.render(PLAIN).contains("names its identifier, HW-DR-0068"),
+        route
+            .render(PLAIN)
+            .contains("names its identifier, HW-DR-0068"),
         "{}",
         route.render(PLAIN)
     );
@@ -652,7 +652,11 @@ fn a_task_that_writes_an_identifier_is_offered_its_document_by_that_identifier()
     // Case is kept, as the index keeps it, so a lower-case word is no
     // identifier.
     let lower = surface.route("what does hw-dr-0068 rule?", Budget::default());
-    assert!(identified_by_the_task(&lower).is_empty(), "{}", lower.render(PLAIN));
+    assert!(
+        identified_by_the_task(&lower).is_empty(),
+        "{}",
+        lower.render(PLAIN)
+    );
 }
 
 /// The paths of a route whose pointer the name step offered.
