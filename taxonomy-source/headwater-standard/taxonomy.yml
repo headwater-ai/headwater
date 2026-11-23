@@ -149,6 +149,13 @@ taxonomy: headwater/standard
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
 #
+# 4.21.0 adds one facet, `former_ids`, in the seventh facet role,
+# `former_identifier`, and removes nothing, so it is a minor. A document whose
+# identifier changed lists the old values there, and the identifier index
+# resolves each one to the document, so an edge, `explain` and `route` written
+# to the old value still reach it. A former identifier is never reused, so one
+# that equals another identifier is `identifier.claimed_twice` (#2025).
+#
 # 4.20.0 adds one obligation and its control, and removes nothing, so it is a
 # minor. OB-REL-11 states that no top-level front-matter key names a declared
 # relation, because the graph reads edges from the relations block alone and
@@ -341,7 +348,7 @@ taxonomy: headwater/standard
 # each carries a recipe rather than a bare instruction. One package version
 # covers every content file it publishes, this one included, so the number
 # here moves with a change to either.
-version: 4.20.0
+version: 4.21.0
 
 purposes:
   rationale:
@@ -439,6 +446,24 @@ facets:
   title:
     role: name
     type: string
+    required: false
+    volatility: stable
+  # The identifiers a document carried before its current one (#2025). Spec 3
+  # says an identifier resolves without its document and is never reused, and a
+  # document whose identifier changed would otherwise break every edge, link
+  # and prompt that still names the old value. The index finds this facet by
+  # its role, `former_identifier`, and resolves each value to the document.
+  #
+  # `stable`: a value is added when the identifier changes and is then never
+  # taken back, because taking it back would orphan what still names it.
+  # `required: false` and no kind requires it, because most documents never
+  # change their identifier.
+  #
+  # No `type`. A facet type names the type of one scalar, and this facet takes
+  # a list: `type: string` makes `facet.value.blank` refuse every list as not
+  # one word. The index reads each item and skips one that is not a word.
+  former_ids:
+    role: former_identifier
     required: false
     volatility: stable
 

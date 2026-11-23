@@ -413,7 +413,14 @@ impl Session {
         // HW-DR-0084: the paths a language regime lists outside the corpus root,
         // read into a list beside the rows and never into them.
         census.outside = headwater_census::outside::take(&corpus, &shape.outside_root());
-        let config = Config::default();
+        // The facet that lists former identifiers is found by its role and never
+        // by a name written here (#2025), as an emitter finds a heading.
+        let config = Config {
+            former_identifier_facet: shape
+                .facet_in_role("former_identifier")
+                .map(|facet| facet.name.clone()),
+            ..Config::default()
+        };
         let graph = Graph::build(&census, &relations, &resolvers, &corpus, &config);
         let pin = headwater_check::pin::Pin::read(root, &consumer);
         Ok(Session {

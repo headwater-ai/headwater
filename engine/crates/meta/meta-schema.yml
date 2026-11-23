@@ -239,7 +239,12 @@ definitions:
       # the name would work in one corpus. A role is the taxonomy's own
       # statement of what a value is for, and it is the only thing an emitter
       # may read. `scent` is that same rule, already applied to a summary.
-      role: {enum: [state, state_entered, created, freshness, scent, name]}
+      #
+      # `former_identifier` is the seventh (#2025). A document whose identifier
+      # changed lists the old values in the facet in this role, and the
+      # identifier index resolves each one to that document. The index finds the
+      # facet by this role and never by its name, for the reason `name` gives.
+      role: {enum: [state, state_entered, created, freshness, scent, name, former_identifier]}
       # The one position in a taxonomy source where a reference is written.
       values: {seq: {one_of: [{scalar: string}, {block: vocabulary_value}]}, reference: allowed}
       # guess: the types the base package and the first bundle write.
@@ -532,7 +537,7 @@ definitions:
 
   core_requirement:
     one_of:
-      - {members: {facet_role: {enum: [state, state_entered, created, freshness, scent, name], required: true}}}
+      - {members: {facet_role: {enum: [state, state_entered, created, freshness, scent, name, former_identifier], required: true}}}
       - {members: {purpose: {scalar: string, required: true}}}
       - {members: {relation_family: {enum: [succession, derivation, governance, evidence, composition, association], required: true}, lifecycle_sensitive: {scalar: boolean}}}
       - {members: {identifier_scheme: {scalar: string, required: true}}}
