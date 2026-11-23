@@ -112,7 +112,9 @@ The unit of a fix is one file. All the patches of one file land or none of them 
 
 A fix edits files, and it can also create a file. `compose` puts each `Patch::Create` into a separate list. `fix::apply` puts the edits through `Reserved::over`, with no create step. Then `fix::make` creates each new file with `create_new`, outside `Reserved`. The create runs last because it is the step that can meet a path that another process took. If it fails, the edits are already on the tree, and `make` removes only the files that it created.
 
-A fix applies a third shape, `Patch::Facets`. It replaces the value of a top-level scalar facet that the front matter already declares, and it adds no key. It runs after the text patches, because the offsets of a text patch are into the file as it stood. The module comment states its guards.
+A fix also writes front matter with two shapes. `Patch::Facets` replaces the value of a top-level scalar facet that the front matter already declares, and it adds no key. It runs after the text patches, because the offsets of a text patch are into the file as it stood. The module comment states its guards.
+
+`Patch::Relocate` deletes a top-level key whose name is a relation, and the splice writes each identifier of that key as a half under `relations:`. It runs after `Patch::Facets` and before the splice. Its read-back is the source minus the deleted key, and the module comment states it ([HW-OBL-0103](../obligations/0103-the-front-matter-half-of-a-patch-has-no-writer.md)).
 
 ### The two writing halves of a migration
 

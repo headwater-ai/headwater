@@ -175,6 +175,7 @@ pub mod link_identifier;
 pub mod link_path;
 pub mod mention;
 pub mod observation;
+pub mod outside_block;
 pub mod outside_root;
 pub mod paint;
 pub mod participation;
@@ -242,12 +243,13 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 52] = [
+pub const RULES: [&str; 53] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
     identifier::RULE,
     placement::RULE,
+    outside_block::RULE,
     target::RULE,
     self_target::RULE,
     suspect::RULE,
@@ -479,6 +481,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::document_scope::<placement::Placement>(),
             scope::document_version::<placement::Placement>(),
             scope::document_exports::<placement::Placement>(),
+        ),
+        (
+            outside_block::RULE,
+            scope::document_scope::<outside_block::OutsideBlock>(),
+            scope::document_version::<outside_block::OutsideBlock>(),
+            scope::document_exports::<outside_block::OutsideBlock>(),
         ),
         (
             target::RULE,
@@ -827,6 +835,14 @@ pub fn run(
     let targets = target::Targets::over(declared.relations);
     // An entry that names the document that declares it. See [`self_target`].
     let self_targets = self_target::SelfTarget::over(declared.relations);
+    // A relation written as a top-level key, outside the block the graph reads
+    // edges from. Document-scoped, because the key is a fact about the one
+    // file that wrote it. See [`outside_block`].
+    let outside_block = outside_block::OutsideBlock::over(
+        declared.relations,
+        declared.shape,
+        &declared.config.relations_facet,
+    );
     // The drift rule, over the relations that can carry a revision: the ones
     // an importer may write, and the ones onto an anchor kind. See [`suspect`].
     let suspect = suspect::Suspect::over(declared.relations, declared.shape);
@@ -960,6 +976,13 @@ pub fn run(
         cache,
     ));
     instances.extend(scope::over_documents(&placement, census, graph, ctx, cache));
+    instances.extend(scope::over_documents(
+        &outside_block,
+        census,
+        graph,
+        ctx,
+        cache,
+    ));
     phase::mark("run.documents");
     // The first edge-scoped rule reads the revision of every `governs` target
     // for its cache key, so the bytes of every governed file are read here.
