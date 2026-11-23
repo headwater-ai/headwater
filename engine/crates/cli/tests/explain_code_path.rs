@@ -354,6 +354,26 @@ fn a_governed_link_is_matched_on_its_normalized_path() {
     }
 }
 
+/// A pattern can reach both a link and the file at its end. The document that
+/// governs both is named once, because the union of #1433 drops a document it
+/// already holds.
+#[cfg(unix)]
+#[test]
+fn a_document_that_governs_a_link_and_its_target_is_named_once() {
+    let root = Root::new("link-and-target", "src/*.rs");
+    std::os::unix::fs::symlink("other.rs", root.at.join("src/link.rs")).expect("the link is made");
+    let explained = root.run(&["explain", "src/link.rs"]);
+    assert_eq!(explained.code, Some(0), "a governed link: {explained:?}");
+    assert_eq!(
+        explained
+            .out
+            .matches("governed by docs/interfaces/thing.md")
+            .count(),
+        1,
+        "one line for the one document: {explained:?}"
+    );
+}
+
 /// A document is a census row, and a pattern that governs it does not turn it
 /// into a code file: `explain` still prints its derivation.
 #[test]
