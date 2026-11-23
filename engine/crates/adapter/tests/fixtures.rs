@@ -569,6 +569,17 @@ fn a_control_character_from_a_document_reaches_no_format_intact() {
             digest,
         });
     }
+    // A blocking control over the hostile finding's rule, so the text report
+    // lists that finding by its path in the block of what `--strict` fails on.
+    let rule = ran.run.findings[0].rule;
+    let control = ran
+        .run
+        .register
+        .controls
+        .first_mut()
+        .expect("the fixture register declares a control");
+    control.posture = Some(headwater_check::register::Posture::Blocking);
+    control.mechanism = headwater_check::register::Mechanism::Rule(rule.to_string());
     // A suppression directive's note is prose an author wrote, and the reason
     // an escaped finding is not reported quotes it.
     assert!(
