@@ -3,7 +3,7 @@ id: HW-SPEC-parse-and-census
 status: current
 status_since: 2026-10-01
 summary: "How three crates parse each document, walk the corpus root, resolve each kind with its derivation, give each file one census outcome, and run git."
-last_verified: 2026-10-01
+last_verified: 2026-11-23
 title: "Parse and census"
 provenance:
   warrant: asserted
@@ -16,6 +16,7 @@ relations:
     - engine/crates/doc/src/**
     - engine/crates/census/src/**
     - engine/crates/vcs/src/**
+    - engine/crates/cli/tests/linear_scale.rs
   traces_to:
     - HW-SPEC-engine-architecture
     - HW-SPEC-taxonomy-model
@@ -145,7 +146,7 @@ A change to these crates must keep each of these. A test holds each one that nam
 - **The derived population is computed and never listed.** The producer cases of `engine/crates/census/tests/fixtures.rs`, from `every_producer_output_is_declared_and_every_declared_path_has_a_producer` on, hold it.
 - **A declared derived file refuses a text merge** (the eight cases of `engine/crates/census/tests/merge_driver.rs`).
 - **The manifest is the one the shell script wrote** (`a_known_add_and_modify_produces_the_hand_written_manifest` and the other unit tests of `engine/crates/vcs/src/lib.rs`). **A probe that did not match is an error** (`a_probe_that_did_not_match_is_an_error_and_never_an_answer`).
-- **The front matter reader, the sentence reader and the line reader stay linear in their input** (`many_unknown_front_matter_keys_check_in_linear_time`, `many_sentences_in_one_paragraph_check_in_linear_time` and `many_links_on_one_line_check_in_linear_time` in `engine/crates/cli/tests/linear_scale.rs`). A column far into a long line counts from the start of that line (`a_column_past_many_checkpoints_counts_from_the_line_start` in `engine/crates/doc/src/lines.rs`). The YAML loader keeps the first span of each key in a map, so the error for a repeated key names its first occurrence (`keys_that_differ_in_case_are_two_keys_and_a_repeat_names_its_own_first` and `a_key_repeated_three_times_names_the_first_in_both_errors` in `engine/crates/yaml/src/loader.rs`). At release scale, a release record of 200,000 keys is refused inside a time ceiling (`a_release_of_many_keys_is_refused_in_time_and_leaves_nothing` in `engine/crates/cli/tests/publish.rs`).
+- **Five readers stay linear in their input** ([#1968](https://github.com/headwater-ai/headwater/issues/1968)). They are the YAML loader, the sentence reader, the line reader, the edge scope and the audit of a rendered report. This document governs `engine/crates/cli/tests/linear_scale.rs`, which holds the first four. The YAML loader reads many front matter keys in linear time (`many_unknown_front_matter_keys_check_in_linear_time`). The sentence reader and the line reader do the same for many sentences in one paragraph and many links on one line (`many_sentences_in_one_paragraph_check_in_linear_time` and `many_links_on_one_line_check_in_linear_time`). The edge scope belongs to [graph build](graph-build.md#invariants) and [checks and cache](checks-and-cache.md#invariants). It finds a repeated triple in constant time (`many_unresolved_relation_targets_check_in_linear_time`). The audit of a rendered report reads many records on one document in linear time (`many_records_on_one_document_are_audited_in_linear_time` in `engine/crates/adapter/tests/fixtures.rs`). A column far into a long line counts from the start of that line (`a_column_past_many_checkpoints_counts_from_the_line_start` in `engine/crates/doc/src/lines.rs`). The YAML loader keeps the first span of each key in a map, so the error for a repeated key names its first occurrence (`keys_that_differ_in_case_are_two_keys_and_a_repeat_names_its_own_first` and `a_key_repeated_three_times_names_the_first_in_both_errors` in `engine/crates/yaml/src/loader.rs`). At release scale, a release record of 200,000 keys is refused inside a time ceiling (`a_release_of_many_keys_is_refused_in_time_and_leaves_nothing` in `engine/crates/cli/tests/publish.rs`).
 - **The recorded census of the fixture tree and of this repository is the assertion.** Record it again with `HEADWATER_BLESS=1` and read the diff.
 
 The parser, the sentence splitter, the census walker and kind resolution are correctness roots ([spec 12](../spec/12-check-layer.md#the-correctness-roots)). A wrong answer from any one of them causes no error, and spec 12 states what each one owes.
