@@ -63,6 +63,10 @@ pub struct OutsideBlock {
     /// Every declared relation name and inverse name that no facet shares, in
     /// declaration order and each once.
     names: Vec<String>,
+    /// Every kind that may write a half of some declared relation: a kind
+    /// under a relation's `from`, or under its `to` where the relation names
+    /// an inverse. See [`OutsideBlock::instantiates`].
+    writers: Vec<String>,
     /// The key the graph reads edges from.
     block: String,
 }
@@ -80,8 +84,26 @@ impl OutsideBlock {
                 names.push(name.clone());
             }
         }
+        let under = |kind: &str, permitted: &[String]| {
+            permitted
+                .iter()
+                .any(|allowed| shape.descends_from(kind, allowed))
+        };
+        let writers = shape
+            .kinds
+            .iter()
+            .map(|kind| kind.name.as_str())
+            .filter(|kind| {
+                declarations.relations.iter().any(|relation| {
+                    under(kind, &relation.from)
+                        || (relation.inverse.is_some() && under(kind, &relation.to))
+                })
+            })
+            .map(str::to_string)
+            .collect();
         OutsideBlock {
             names,
+            writers,
             block: block.to_string(),
         }
     }
@@ -117,13 +139,19 @@ impl DocumentCheck for OutsideBlock {
     /// them, and the finding's patch is half of what the rule is.
     const EXPORTABLE_AS: ExportTargets = &[];
 
-    /// Every kind, when the taxonomy declares a relation name at all. A key is
-    /// a relation name whatever kind writes it, and a kind that may sit at no
-    /// end of the relation still dropped the edge it meant: that the edge is
-    /// then also an endpoint defect is `relation.endpoint` reading the moved
-    /// half.
-    fn instantiates(&self, _kind: &str) -> bool {
-        !self.names.is_empty()
+    /// A kind that may write a half of some declared relation, when any name
+    /// is left to read. A kind that may write none declares no edge in any
+    /// block, so this rule has nothing to say about its keys, and an instance
+    /// over it would count a document as checked by a rule that had nothing to
+    /// check. That is the accounting of [`crate::facet_value`], and it keeps
+    /// `coverage.document_unchecked` reachable.
+    ///
+    /// Once a kind is in, every name is read, not only the names that kind
+    /// may write. A key is a relation name whatever kind writes it, and the
+    /// edge it meant is dropped either way. That the moved half is then also
+    /// an endpoint defect is `relation.endpoint`'s finding.
+    fn instantiates(&self, kind: &str) -> bool {
+        !self.names.is_empty() && self.writers.iter().any(|writer| writer == kind)
     }
 
     fn evaluate(&self, view: &DocumentView<'_>) -> Outcome {
@@ -209,18 +237,24 @@ mod tests {
     }
 
     /// The population is every relation name and inverse name, minus a name a
-    /// facet shares and minus the block's own key, each once.
+    /// facet shares and minus the block's own key, each once, and the kinds
+    /// it instantiates over are the kinds that may write a half.
     #[test]
     fn a_name_that_a_facet_shares_is_not_in_the_population() {
         let source = "\
 facets:
   conflicts_with: {type: string}
   status: {type: string}
+kinds:
+  note: {}
+  record: {}
+  page: {}
 relations:
   conflicts_with: {from: [note], to: [note]}
   supersedes: {from: [note], to: [note], inverse: superseded_by}
   edges: {from: [note], to: [note]}
-  cites: {from: [note], to: [note], inverse: supersedes}
+  cites: {from: [note], to: [record], inverse: supersedes}
+  points: {from: [note], to: [page]}
 ";
         let root = headwater_yaml::load(source)
             .expect("the taxonomy loads")
@@ -231,8 +265,16 @@ relations:
         let declarations = Declarations::read(&root).expect("the declarations read");
         let shape = Shape::read(&root).expect("the shape reads");
         let check = OutsideBlock::over(&declarations, &shape, "edges");
-        assert_eq!(check.names, vec!["supersedes", "superseded_by", "cites"]);
+        assert_eq!(
+            check.names,
+            vec!["supersedes", "superseded_by", "cites", "points"]
+        );
+        // A source kind writes, a target kind writes where an inverse is
+        // declared, and a kind that is only a target of a relation with no
+        // inverse writes no half anywhere.
         assert!(check.instantiates("note"));
+        assert!(check.instantiates("record"));
+        assert!(!check.instantiates("page"));
         let none = OutsideBlock::over(&Declarations::default(), &shape, "relations");
         assert!(!none.instantiates("note"));
     }
