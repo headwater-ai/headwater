@@ -81,10 +81,6 @@ impl Root {
         .expect("the declaration copies");
         let overlay = std::fs::read_to_string(repository.join(".headwater/overlay.yml"))
             .expect("the overlay reads");
-        assert!(
-            !overlay.lines().any(|line| line == "override:"),
-            "the overlay grew an `override` block, so this case must merge into it"
-        );
         let root = Root { at, overlay };
         root.override_with(adopter, "");
         root
@@ -92,11 +88,13 @@ impl Root {
 
     /// Write the overlay again with this `override` block, and resolve.
     fn override_with(&self, adopter: &[&str], more: &str) {
-        let mut overlay = self.overlay.clone();
-        overlay.push_str(&format!(
-            "\noverride:\n  surface.adopter_documents: [{}]\n{more}",
-            adopter.join(", ")
-        ));
+        let overlay = with_override(
+            &self.overlay,
+            &format!(
+                "  surface.adopter_documents: [{}]\n{more}",
+                adopter.join(", ")
+            ),
+        );
         std::fs::write(self.at.join(".headwater/overlay.yml"), overlay)
             .expect("the overlay writes");
         let resolved = self.run(&["taxonomy", "resolve"]);
@@ -558,4 +556,25 @@ fn a_console_block_reads_its_prompted_lines_by_the_last_segment_of_the_path() {
         e[0].contains("runs `cargo`"),
         "the program is named by the last segment of its path\n{e:#?}"
     );
+}
+
+/// The overlay with `entries`, each a line indented two spaces, in its
+/// `override` block. The repository's overlay closes on that block since
+/// #1573, so the entries join it, and an overlay with none gains one. Two
+/// `override` keys would be a duplicate key the loader refuses.
+fn with_override(overlay: &str, entries: &str) -> String {
+    match overlay.lines().position(|line| line == "override:") {
+        Some(at) => {
+            assert!(
+                overlay
+                    .lines()
+                    .skip(at + 1)
+                    .all(|line| line.is_empty() || line.starts_with(' ') || line.starts_with('#')),
+                "the overlay's `override` block is not its last block, so this case cannot \
+                 append to it"
+            );
+            format!("{}\n{entries}", overlay.trim_end())
+        }
+        None => format!("{overlay}\noverride:\n{entries}"),
+    }
 }
