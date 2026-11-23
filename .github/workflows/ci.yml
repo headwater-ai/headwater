@@ -2275,6 +2275,19 @@ jobs:
             echo
             echo '</details>'
           } >> "$GITHUB_STEP_SUMMARY"
+          # The same change, held to the strict gate, last so the summary above
+          # is written whatever it decides. The run above is advisory and exits
+          # 0 on every finding. This one fails on an error and on a finding a
+          # `posture: blocking` control discharges (#2015). The overlay
+          # promotes CT-REL-12, so a pull request that adds a file inside the
+          # governed scope with no governance edge onto it is red here, with
+          # one `relation.scope.ungoverned` line for each such file (#1573).
+          # It reads the manifest written before `change.md`, so that report
+          # is not named as a file this pull request adds. The exit status is
+          # the engine's and no shell here decides it. The findings that
+          # failed it are in the summary above, which holds the same run.
+          ./engine/target/release/headwater check --no-cache --now "$HEADWATER_NOW" \
+            --strict --change "$manifest" > change-strict.txt
       - name: Check this corpus
         # No `--strict`. Advisory, on purpose: a tool that blocks on first
         # contact is removed, and a removed tool catches nothing.
