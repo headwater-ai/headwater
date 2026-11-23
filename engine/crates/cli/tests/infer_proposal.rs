@@ -176,6 +176,10 @@ fn the_fragment_infer_proposes_types_the_documents_it_read() {
             ),
             ("docs/plain/x.md", "# X\n"),
             ("docs/plain/y.md", "# Y\n"),
+            // An empty block is no front matter either, and a runbook that
+            // has none stays left over when the runbooks shelf claims it.
+            ("docs/plain/z.md", "---\n---\n\n# Z\n"),
+            ("docs/runbooks/draft.md", "# A draft\n"),
         ],
     );
     root.overlay("");
@@ -284,6 +288,8 @@ fn the_fragment_infer_proposes_types_the_documents_it_read() {
             "docs/notes/lone.md  alone in its directory",
             "docs/plain/x.md  no front matter",
             "docs/plain/y.md  no front matter",
+            "docs/plain/z.md  no front matter",
+            "docs/runbooks/draft.md  no front matter",
         ],
         "{after}"
     );
@@ -318,7 +324,7 @@ fn rules_found(check: &str) -> Vec<String> {
 /// and a heading that YAML would read as a mapping if it went unquoted.
 #[test]
 fn the_fragment_names_each_directory_once_and_resolves_where_names_collide() {
-    const NOTE: &str = "---\ntitle: A note\nrelations:\n  traces_to: [ACME-1]\n\"odd.key\": 1\ntags: [x, y]\n---\n\n## Why: \"this\" heading\n\nBecause.\n";
+    const NOTE: &str = "---\ntitle: A note\nrelations:\n  traces_to: [ACME-1]\n\"odd.key\": 1\n\"bad\\nkey\": 1\ntags: [x, y]\n---\n\n## Why: \"this\" heading\n\nBecause.\n";
     const OLD: &str = "---\ntitle: An old decision\n---\n\n## Context\n\nThen.\n";
     const SETEXT: &str = "---\ntitle: Two lines\n---\n\nWhy this\nheading\n===\n\nText.\n";
     let root = Root::over(
