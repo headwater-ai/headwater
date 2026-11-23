@@ -11,8 +11,15 @@
 identifier_schemes:
   fixture_id: {pattern: "SR-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
 
+#
+# Two edges reach `new_ungoverned.rs` and neither governs it in scope, so the
+# reach test is held on both of its filters. `cites` is onto the scoped anchor
+# kind and is no `governance` relation. `governs_elsewhere` is a `governance`
+# relation onto another anchor kind, which declares no scope.
+
 anchors:
   code_path: {resolver: source-tree, scope: [scope-ratchet-src/**]}
+  other_path: {resolver: source-tree}
 
 kinds:
   governing_fixture:
@@ -23,6 +30,16 @@ relations:
     family: governance
     from: [governing_fixture]
     to:   [code_path]
+    cardinality: many
+  cites:
+    family: association
+    from: [governing_fixture]
+    to:   [code_path]
+    cardinality: many
+  governs_elsewhere:
+    family: governance
+    from: [governing_fixture]
+    to:   [other_path]
     cardinality: many
 
 shelves:

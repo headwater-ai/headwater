@@ -263,3 +263,20 @@ fn a_cached_pass_does_not_survive_an_ungoverned_add() {
     );
     let _ = std::fs::remove_dir_all(&root);
 }
+
+/// An added path that a row carrying a document already lists joins the read
+/// set once, and an added source file joins it with a digest. A path listed
+/// twice would be one input with two digests, and a source file listed with
+/// none would leave the instance unkeyed.
+#[test]
+fn an_added_path_joins_the_read_set_once_and_with_a_digest() {
+    let lines = format!("added\t{}\nadded\t{NEW_UNGOVERNED}\n", HELD[0]);
+    let change = unbound(&lines).bind(|_| true);
+    let run = run_with(&context(change), &mut Cache::disabled());
+    let reads = &instance(&run).reads;
+    for path in [HELD[0], NEW_UNGOVERNED] {
+        let listed: Vec<_> = reads.iter().filter(|input| input.path == path).collect();
+        assert_eq!(listed.len(), 1, "{path} is listed once: {reads:?}");
+        assert!(listed[0].digest.is_some(), "{path} carries a digest");
+    }
+}
