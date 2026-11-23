@@ -60,6 +60,19 @@
 //! moved and nothing else, which is the read-back [`crate::migrate`] states
 //! for a replaced value. It runs after the text patches, whose offsets are into the file as it stood.
 //!
+//! # A relocation deletes a key, and the splice writes what it held
+//!
+//! [`Patch::Relocate`] is the first writer that removes a key from front
+//! matter. It deletes a top-level key whose name is a relation, and each
+//! identifier the key held becomes a half the splice writes under
+//! `relations:`. The deletion's guard is that the key reads as the
+//! identifiers the check read, and its read-back is the one
+//! [HW-OBL-0103](../../../../docs/obligations/0103-the-front-matter-half-of-a-patch-has-no-writer.md)
+//! states: the scalars of the source by key path, in source order, minus each
+//! one under the removed key, and the body byte for byte. It runs after the
+//! facet writes and before the splice, so its halves join the halves other
+//! rules owe and each one is written once.
+//!
 //! # One file at a time, and all of a file or none of it
 //!
 //! [`crate::write::apply`] puts every file of a scaffold on the tree or none of
@@ -131,6 +144,10 @@ pub enum Refused {
     /// own line, or holding a value other than the one the check read, or
     /// the result did not read back as the values it wrote.
     FacetUnwritable { path: String, why: String },
+    /// A [`Patch::Relocate`] found the key absent, not at the top level on
+    /// lines of its own, or holding other identifiers than the check read, or
+    /// the deletion did not read back as the source minus that key.
+    KeyUnmovable { path: String, why: String },
 }
 
 impl Refused {
@@ -145,7 +162,8 @@ impl Refused {
             | Refused::Unrecognizable { path, .. }
             | Refused::HalfUnwritable { path, .. }
             | Refused::Uncreatable { path, .. }
-            | Refused::FacetUnwritable { path, .. } => path,
+            | Refused::FacetUnwritable { path, .. }
+            | Refused::KeyUnmovable { path, .. } => path,
         }
     }
 }
@@ -195,6 +213,9 @@ impl std::fmt::Display for Refused {
                  identifier and nothing repairs one that was written over"
             ),
             Refused::FacetUnwritable { path, why } => {
+                write!(f, "{path}: {why}. Nothing is written")
+            }
+            Refused::KeyUnmovable { path, why } => {
                 write!(f, "{path}: {why}. Nothing is written")
             }
         }
@@ -351,7 +372,7 @@ fn one_file(root: &Path, path: &str, patches: &[&Patch]) -> Result<Option<Fixed>
         .copied()
         .filter(|patch| matches!(patch, Patch::Text { .. }))
         .collect();
-    let halves = halves_of(path, patches);
+    let mut halves = halves_of(path, patches);
 
     let mut patched = match text.is_empty() {
         true => source.clone(),
@@ -361,6 +382,18 @@ fn one_file(root: &Path, path: &str, patches: &[&Patch]) -> Result<Option<Fixed>
     // and before a splice, which reads the front matter this writes.
     let (with_facets, facets) = set_facets(path, &patched, patches)?;
     patched = with_facets;
+    // The deletion before the splice, so the halves it owes go into the block
+    // with the halves other rules owe, each once.
+    let (without_keys, moved, owed) = relocate(path, &patched, patches)?;
+    patched = without_keys;
+    for half in owed {
+        if !halves
+            .iter()
+            .any(|have| have.relation == half.relation && have.id == half.id)
+        {
+            halves.push(half);
+        }
+    }
     for half in &halves {
         patched = splice(&patched, half).map_err(|refusal| match refusal {
             Refusal::ReciprocalUnwritable { path, why } => Refused::HalfUnwritable { path, why },
@@ -376,7 +409,7 @@ fn one_file(root: &Path, path: &str, patches: &[&Patch]) -> Result<Option<Fixed>
     Ok(Some(Fixed {
         path: path.to_string(),
         text: patched,
-        applied: text.len() + facets + halves.len(),
+        applied: text.len() + facets + moved + halves.len(),
     }))
 }
 
@@ -508,6 +541,134 @@ fn set_facets(path: &str, source: &str, patches: &[&Patch]) -> Result<(String, u
         landed += 1;
     }
     Ok((current, landed))
+}
+
+/// Every [`Patch::Relocate`] over one file: the keys deleted, how many, and
+/// the halves the deletions owe the block.
+///
+/// The guard is the value the check read: the key, at the top level, reads as
+/// exactly the identifiers the patch names, in their order. The key's lines
+/// are its own line and every line after it that is indented or opens a block
+/// sequence item, so the value is whatever the key held and nothing after it.
+/// The result is parsed again and has to read as the source minus that key:
+/// the body byte for byte, and the scalars of the front matter by key path,
+/// in source order, minus each one under the removed key, which is the
+/// read-back
+/// [HW-OBL-0103](../../../../docs/obligations/0103-the-front-matter-half-of-a-patch-has-no-writer.md)
+/// states for a deletion. The halves are written after this by the splice,
+/// which reads its own result back.
+fn relocate(
+    path: &str,
+    source: &str,
+    patches: &[&Patch],
+) -> Result<(String, usize, Vec<Half>), Refused> {
+    let refuse = |why: String| Refused::KeyUnmovable {
+        path: path.to_string(),
+        why,
+    };
+    let mut current = source.to_string();
+    let mut owed: Vec<Half> = Vec::new();
+    let mut landed = 0;
+    for patch in patches {
+        let Patch::Relocate { key, ids, .. } = patch else {
+            continue;
+        };
+        let parsed = headwater_doc::parse(&current)
+            .map_err(|errors| refuse(format!("{} parse errors before the move", errors.len())))?;
+        let read: Option<Vec<String>> =
+            parsed.facets.get(key).and_then(|value| match &value.value {
+                headwater_yaml::Value::Scalar(scalar) => Some(vec![scalar.text.clone()]),
+                headwater_yaml::Value::Seq(items) => items
+                    .iter()
+                    .map(|item| item.value.as_scalar().map(|scalar| scalar.text.clone()))
+                    .collect(),
+                headwater_yaml::Value::Map(_) => None,
+            });
+        if read.as_ref() != Some(ids) {
+            return Err(refuse(format!(
+                "`{key}` does not read as `{}`, which the check read",
+                ids.join(", ")
+            )));
+        }
+        let mut lines: Vec<String> = current.lines().map(str::to_string).collect();
+        if lines.first().map(String::as_str) != Some("---") {
+            return Err(refuse(
+                "the file opens with no front-matter block".to_string(),
+            ));
+        }
+        let close = lines
+            .iter()
+            .enumerate()
+            .skip(1)
+            .find(|(_, line)| line.as_str() == "---")
+            .map(|(position, _)| position)
+            .ok_or_else(|| refuse("the front-matter block is never closed".to_string()))?;
+        let opened = format!("{key}:");
+        let first = (1..close)
+            .find(|&position| {
+                lines[position]
+                    .strip_prefix(&opened)
+                    .is_some_and(|rest| rest.is_empty() || rest.starts_with([' ', '\t']))
+            })
+            .ok_or_else(|| refuse(format!("no line of the front matter opens with `{opened}`")))?;
+        let last = (first + 1..close)
+            .take_while(|&position| {
+                let line = &lines[position];
+                line.starts_with([' ', '\t']) || line == "-" || line.starts_with("- ")
+            })
+            .last()
+            .unwrap_or(first);
+        lines.drain(first..=last);
+        let mut next = lines.join("\n");
+        if current.ends_with('\n') {
+            next.push('\n');
+        }
+        let reread = headwater_doc::parse(&next)
+            .map_err(|errors| refuse(format!("{} parse errors after the move", errors.len())))?;
+        let was = current.get(parsed.block.end.offset..).unwrap_or_default();
+        let now = next.get(reread.block.end.offset..).unwrap_or_default();
+        if was != now {
+            return Err(refuse(
+                "the bytes after the front matter are not the bytes they were".to_string(),
+            ));
+        }
+        let under = |at: &str| {
+            at == key.as_str()
+                || at
+                    .strip_prefix(key.as_str())
+                    .is_some_and(|rest| rest.starts_with(['.', '[']))
+        };
+        let expected: Vec<(String, String)> = crate::migrate::scalars(&parsed.facets, "")
+            .into_iter()
+            .filter(|(at, _, _)| !under(at))
+            .map(|(at, text, _)| (at, text))
+            .collect();
+        let read: Vec<(String, String)> = crate::migrate::scalars(&reread.facets, "")
+            .into_iter()
+            .map(|(at, text, _)| (at, text))
+            .collect();
+        if expected != read {
+            return Err(refuse(format!(
+                "the front matter does not read back as the source minus `{key}`"
+            )));
+        }
+        for id in ids {
+            if !owed
+                .iter()
+                .any(|half| &half.relation == key && &half.id == id)
+            {
+                owed.push(Half {
+                    path: path.to_string(),
+                    relation: key.clone(),
+                    id: id.clone(),
+                    attributes: Vec::new(),
+                });
+            }
+        }
+        current = next;
+        landed += 1;
+    }
+    Ok((current, landed, owed))
 }
 
 /// The halves this file owes, each one once.

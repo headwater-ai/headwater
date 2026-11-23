@@ -23,7 +23,7 @@
 //! **error** by severity and carries remediation prose, which is where
 //! `CLAUDE.md` already puts the first reading.
 //!
-//! # Four shapes, and only the first one edits prose
+//! # Five shapes, and only the first one edits prose
 //!
 //! [`Patch::Text`] replaces a byte range of one file. [`Patch::Half`] declares
 //! one edge half in a document's front matter, and the writer for it is
@@ -49,6 +49,12 @@
 //! state-entry date written together. Neither of the first two shapes can
 //! carry that: a text patch is refused inside the front-matter block, and a
 //! half writes only under `relations:`.
+//!
+//! [`Patch::Relocate`] deletes a top-level key and writes its entries as
+//! halves under `relations:`, for a relation that an author wrote outside the
+//! block. It is the first writer that removes a key from front matter, which
+//! is the first step of
+//! [HW-OBL-0103](../../../../docs/obligations/0103-the-front-matter-half-of-a-patch-has-no-writer.md).
 //!
 //! # Nothing here writes, and nothing here reads a file
 //!
@@ -114,6 +120,20 @@ pub enum Patch {
         path: String,
         set: Vec<(String, String, String)>,
     },
+    /// Delete the top-level front-matter key `key` of `path`, and declare
+    /// each of `ids` as a bare half of the relation `key` under `relations:`.
+    ///
+    /// No offset, for [`Patch::Half`]'s reason. `ids` is also the belief: the
+    /// applier refuses where the key no longer reads as exactly these
+    /// identifiers in this order. The deletion and the halves land together or
+    /// none of them do, because a key deleted with no half written loses the
+    /// edge the author meant, and a half written with the key left is the
+    /// same edge stated twice. `crate::outside_block` offers it.
+    Relocate {
+        path: String,
+        key: String,
+        ids: Vec<String>,
+    },
 }
 
 impl Patch {
@@ -126,6 +146,7 @@ impl Patch {
             Patch::Half { path, .. } => path,
             Patch::Create { path, .. } => path,
             Patch::Facets { path, .. } => path,
+            Patch::Relocate { path, .. } => path,
         }
     }
 }

@@ -260,7 +260,9 @@ fn a_top_level_relation_key_is_reported_and_moved_under_relations() {
         fixed.err
     );
     assert!(
-        text.contains(&format!("relations:\n  conflicts_with:\n    - {target_id}\n")),
+        text.contains(&format!(
+            "relations:\n  conflicts_with:\n    - {target_id}\n"
+        )),
         "`relations:` holds `conflicts_with` with the target\n{text}\n{}",
         fixed.err
     );
@@ -359,7 +361,10 @@ fn a_key_that_names_no_relation_draws_no_finding() {
     let root = Root::new("unrelated");
     let (source, _) = root.decision("A decision with an unknown key");
     into_front_matter(&source, "conflicts_with_nothing: [x]\n");
-    assert!(root.findings().is_empty(), "no finding for a non-relation key");
+    assert!(
+        root.findings().is_empty(),
+        "no finding for a non-relation key"
+    );
 }
 
 /// A value the move cannot express as halves is reported with no patch, and
