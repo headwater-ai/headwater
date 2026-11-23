@@ -2087,7 +2087,7 @@ fn the_default_text_report_carries_no_rule_scopes_and_no_read_set_and_loses_no_f
         .split_once("\nread set\n")
         .map(|(head, tail)| (head.to_string(), tail.to_string()))
         .expect("the verbose report carries the read-set block");
-    assert_eq!(short, format!("{expected}\n"));
+    assert_eq!(short, expected);
     assert_eq!(
         short,
         render_as(&ran, Format::Text, headwater_check::fill::WIDTH, false),
@@ -2528,10 +2528,12 @@ fn spans(format: Format, lines: &[&str]) -> Vec<(usize, usize)> {
                     )
                 })
                 .expect("the findings tally");
+            // The read set closes the region under `--verbose`, and the end of
+            // the report closes it in the default, which writes none (#1990).
             let end = bare
                 .iter()
                 .position(|line| line.trim() == READ_SET)
-                .expect("the read-set heading");
+                .unwrap_or(bare.len());
             let opens: Vec<usize> = (tally + 1..end)
                 .filter(|line| lines[*line].starts_with("  ") && !lines[*line].starts_with("   "))
                 .collect();

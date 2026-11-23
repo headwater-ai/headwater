@@ -161,8 +161,6 @@ pub fn render_at(
     mode: ColorMode,
     verbose: bool,
 ) -> String {
-    let _ = verbose;
-    let verbose = true; // RED: issue 1990 not built yet
     let mut out = String::new();
     out.push_str(&paint(Role::Heading, "taxonomy", mode));
     out.push('\n');
