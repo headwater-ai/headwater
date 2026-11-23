@@ -320,6 +320,7 @@ fn rules_found(check: &str) -> Vec<String> {
 fn the_fragment_names_each_directory_once_and_resolves_where_names_collide() {
     const NOTE: &str = "---\ntitle: A note\nrelations:\n  traces_to: [ACME-1]\n\"odd.key\": 1\ntags: [x, y]\n---\n\n## Why: \"this\" heading\n\nBecause.\n";
     const OLD: &str = "---\ntitle: An old decision\n---\n\n## Context\n\nThen.\n";
+    const SETEXT: &str = "---\ntitle: Two lines\n---\n\nWhy this\nheading\n===\n\nText.\n";
     let root = Root::over(
         "collide",
         &[
@@ -331,6 +332,11 @@ fn the_fragment_names_each_directory_once_and_resolves_where_names_collide() {
             ("docs/old/decisions/2.md", OLD),
             ("docs/My-Guides/1.md", OLD),
             ("docs/My-Guides/2.md", OLD),
+            ("docs/r1.md", OLD),
+            ("docs/r2.md", OLD),
+            ("docs/lone/x.md", "---\ntitle: Lone\n---\n\n# Lone\n"),
+            ("docs/setext/1.md", SETEXT),
+            ("docs/setext/2.md", SETEXT),
         ],
     );
     root.overlay("");
@@ -341,6 +347,8 @@ fn the_fragment_names_each_directory_once_and_resolves_where_names_collide() {
         "docs_b_notes",
         "docs_old_decisions",
         "my_guides",
+        "setext",
+        "docs",
     ] {
         assert!(
             proposed.contains(&format!("  kinds.{name}:\n")),
@@ -387,9 +395,16 @@ fn the_fragment_names_each_directory_once_and_resolves_where_names_collide() {
         ["facet.required.missing", "identifier.unusable"],
         "{check}"
     );
-    assert!(root
-        .infer()
-        .contains("every file the census walked classified"));
+    // The corpus root's own shelf claims its own files and no subdirectory, so
+    // the lone file below it stays left over rather than typed and failing
+    // the root kind's section contract.
+    assert!(proposed.contains("    path: \"docs/*.md\"\n"), "{proposed}");
+    let after = root.infer();
+    assert_eq!(
+        leftovers(&after),
+        ["docs/lone/x.md  alone in its directory"],
+        "{after}"
+    );
 }
 
 #[test]
