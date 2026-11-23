@@ -2,7 +2,7 @@
 
 70 findings, 40 of them errors across 28 of 31 documents, against `headwater/fixture` 1.0.0 at `105e82f4b4435094f6bfd8ba5b3c3f3380341b35aeebc9aca2c3d508726d1601`, evaluated at 2026-08-12.
 
-**Coverage.** This run saw 31 files and classified 29 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 428 check instances, and 118 of them reached no verdict.
+**Coverage.** This run saw 31 files and classified 29 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 454 check instances, and 118 of them reached no verdict.
 
 - 58 — this document declares no warrant, and an absent warrant is not a value outside the closed set
 - 1 — no `id` facet, which is the key this engine reads an identifier from and which no declaration states

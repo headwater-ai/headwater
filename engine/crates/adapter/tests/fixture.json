@@ -12,7 +12,7 @@
     "classified": 29,
     "checked": 28,
     "generated": 1,
-    "instances": 428,
+    "instances": 454,
     "skipped": 118,
     "skips": [
       {
@@ -771,6 +771,12 @@
       "obligations": [
         "OB-FIX-2"
       ]
+    },
+    {
+      "rule": "relation.key.outside_block",
+      "scope": "document",
+      "version": 1,
+      "obligations": []
     },
     {
       "rule": "relation.target.unresolved",

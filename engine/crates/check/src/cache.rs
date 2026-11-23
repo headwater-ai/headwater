@@ -700,6 +700,14 @@ fn encode_patch(patch: Option<&Patch>) -> String {
             }
             record
         }
+        // The count first, for the reason `attributed` gives.
+        Some(Patch::Relocate { path, key, ids }) => {
+            let mut record = format!("relocate\t{}\t{}\t{}", escape(path), escape(key), ids.len());
+            for id in ids {
+                record.push_str(&format!("\t{}", escape(id)));
+            }
+            record
+        }
     }
 }
 
@@ -757,6 +765,16 @@ fn decode_patch<'a>(fields: &mut impl Iterator<Item = &'a str>) -> Option<Option
                 ));
             }
             Some(Some(Patch::Facets { path, set }))
+        }
+        "relocate" => {
+            let path = unescape(fields.next()?);
+            let key = unescape(fields.next()?);
+            let count: usize = fields.next()?.parse().ok()?;
+            let mut ids = Vec::with_capacity(count);
+            for _ in 0..count {
+                ids.push(unescape(fields.next()?));
+            }
+            Some(Some(Patch::Relocate { path, key, ids }))
         }
         _ => None,
     }
@@ -934,6 +952,22 @@ mod tests {
         let record = format!("{}\tnone", encode_patch(Some(&facets)));
         let mut fields = record.split('\t');
         assert_eq!(decode_patch(&mut fields), Some(Some(facets)));
+        assert_eq!(decode_patch(&mut fields), Some(None));
+        assert_eq!(fields.next(), None);
+    }
+
+    /// A relocation survives a round trip with its identifiers in order, and a
+    /// patch after it still reads, so a cached finding keeps its move (#1639).
+    #[test]
+    fn a_relocate_patch_round_trips() {
+        let relocate = Patch::Relocate {
+            path: "docs/a.md".to_string(),
+            key: "conflicts_with".to_string(),
+            ids: vec!["D-2".to_string(), "D-1".to_string()],
+        };
+        let record = format!("{}\tnone", encode_patch(Some(&relocate)));
+        let mut fields = record.split('\t');
+        assert_eq!(decode_patch(&mut fields), Some(Some(relocate)));
         assert_eq!(decode_patch(&mut fields), Some(None));
         assert_eq!(fields.next(), None);
     }

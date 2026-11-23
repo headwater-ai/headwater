@@ -149,6 +149,13 @@ taxonomy: headwater/standard
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
 #
+# 4.20.0 adds one obligation and its control, and removes nothing, so it is a
+# minor. OB-REL-11 states that no top-level front-matter key names a declared
+# relation, because the graph reads edges from the relations block alone and
+# a relation written beside it declares no edge. CT-REL-11 binds
+# `relation.key.outside_block` to it, advisory with promotion criteria, and the
+# rule's finding is an error that `check --fix` moves under the block (#1639).
+#
 # 4.19.1 changes the meaning of no declaration. The engine now reads
 # `posture` at the strict gate (#2015), so the comment at the head of
 # `controls` says what `blocking` does, and the final-posture reasoning of
@@ -334,7 +341,7 @@ taxonomy: headwater/standard
 # each carries a recipe rather than a bare instruction. One package version
 # covers every content file it publishes, this one included, so the number
 # here moves with a change to either.
-version: 4.19.1
+version: 4.20.0
 
 purposes:
   rationale:
@@ -923,6 +930,13 @@ obligations:
     prevents: process.traceability
     severity: low
 
+  OB-REL-11:
+    statement: No top-level front-matter key names a declared relation or inverse
+    rationale: The graph reads edges from the relations block alone. A relation written as a top-level key beside it declares no edge, and until a rule says so the author believes the edge is there while every reader of the graph sees none
+    class: cohesion
+    prevents: process.traceability
+    severity: medium
+
   OB-PIN-1:
     statement: A pin that the corpus commits reads as the bytes it pins, or a finding names the pin
     rationale: A digest pin, an imports snapshot and a harvested export each tell a reader what the corpus rests on. A pin that no longer reads as what it names, and that no anchor happens to cite, reaches nobody, so a corpus that rests on a moved or edited artifact reads the same as one that rests on the artifact it pinned
@@ -1444,6 +1458,18 @@ controls:
     promotion:
       permanently_advisory:
         reasoning: Whether a mention in prose is a dependency, and which of the offered relations it is, is a judgment only the author can make. A mention can be a plain aside, and the finding carries no patch, so a posture that stopped a merge would stop it on a question only the author can settle
+
+  CT-REL-11:
+    mechanism: check:relation.key.outside_block
+    discharges: [OB-REL-11]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      criteria:
+        window: one release of the taxonomy over an adopting corpus
+        threshold: no false positive, because the rule reads the declared relation and inverse names and passes a name that a facet shares, so a finding is a key the graph read no edge from
+        sample: every finding of one run over the adopting corpus, adjudicated once
 
   CT-PIN-1:
     mechanism: check:taxonomy.pin.diverged

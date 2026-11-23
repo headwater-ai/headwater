@@ -328,6 +328,16 @@ const BOUND_IN_4_19: [(&str, &str, &str, &str); 1] = [(
     "permanently_advisory",
 )];
 
+/// The rule that 4.20.0 bound, in the same shape (#1639). It is advisory with
+/// promotion criteria rather than permanently advisory, because its remedy is
+/// mechanical and total and its finding is already an error.
+const BOUND_IN_4_20: [(&str, &str, &str, &str); 1] = [(
+    "relation.key.outside_block",
+    "OB-REL-11",
+    "advisory",
+    "criteria",
+)];
+
 /// The declaration of the one control of the maintained package whose
 /// mechanism is `check:<rule>`. Controls sit one to a block, a blank line
 /// separates two blocks, and each block opens with its identifier.
@@ -359,6 +369,7 @@ fn each_lifecycle_control_declares_its_obligation_posture_and_promotion() {
         .chain(BOUND_IN_4_14)
         .chain(BOUND_IN_4_17)
         .chain(BOUND_IN_4_19)
+        .chain(BOUND_IN_4_20)
     {
         let control = control_of(&taxonomy, rule);
         for line in [

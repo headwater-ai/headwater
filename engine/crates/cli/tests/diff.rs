@@ -903,12 +903,12 @@ fn a_shelf_that_moves_reaches_classification_identifier_and_projection() {
         ran.out.contains("HW-DR-0001"),
         "and the identifier that stopped resolving: {ran:?}"
     );
-    // Every one of the eighteen breaks reads `now  no instance`: the document
+    // Every one of the nineteen breaks reads `now  no instance`: the document
     // resolved to no kind, so every document-grained rule stopped
     // instantiating over it and not one of them failed. Against the tree
     // before this assertion, the word was `BROKEN, N failed / 0 skipped`,
-    // which is not an ambiguity about eighteen documents but a false statement
-    // about them. Eighteen rather than the whole list because the two
+    // which is not an ambiguity about nineteen documents but a false statement
+    // about them. Nineteen rather than the whole list because the two
     // corpus-grained ones, `identifier.claim.missing` and
     // `link.fragment.unresolved`, instantiate over the corpus and not over a
     // document, so neither leaves this dimension when a document leaves. And
@@ -916,7 +916,7 @@ fn a_shelf_that_moves_reaches_classification_identifier_and_projection() {
     // on either side, because it selects the adopter pages alone (#1051).
     assert_eq!(
         ran.dimension("instance_validity"),
-        "BROKEN, 18 no longer measured",
+        "BROKEN, 19 no longer measured",
         "no document failed here, so no count of failures may be printed: {ran:?}"
     );
     // The same eighteen, plus the corpus-grained claim rule, which went from
@@ -926,7 +926,7 @@ fn a_shelf_that_moves_reaches_classification_identifier_and_projection() {
     // nineteenth failure.
     assert_eq!(
         ran.dimension("consequence"),
-        "BROKEN, 18 no longer measured / 1 now passing",
+        "BROKEN, 19 no longer measured / 1 now passing",
         "a check that started passing is not a failure: {ran:?}"
     );
     assert!(
