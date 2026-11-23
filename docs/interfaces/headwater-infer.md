@@ -17,7 +17,7 @@ relations:
 
     headwater infer [--owner <name>] [--until <date>] [--write] [--now <date>] [--root <path>]
 
-The command reports findings that no existing adoption task accounts for, grouped into document and rule pairs. It also proposes a shelf and a kind for each directory that the tree already writes and that no shelf claims, and it names each file that the proposal leaves untyped.
+The command reports findings that no existing adoption task accounts for, grouped into document and rule pairs. It also proposes a shelf and a kind for each directory of documents that no shelf claims. It names each file that the proposal leaves untyped.
 
 ## Description
 
@@ -44,7 +44,7 @@ For each such directory, the fragment declares four things:
 
 Each block opens with a `#` comment that names its evidence: the directory, the number of documents, the keys and the headings that it read.
 
-The slug rule: the shelf, the kind and the purpose of one directory take one name. The name is the last segment of the directory path, in lowercase, with each character that is not a letter or a digit changed to `_`. Where that name is already declared, or another directory gives the same name, the name is the whole directory path, changed in the same way. Where that name is also taken, the verb adds `_2`, `_3` and so on.
+The slug rule: the shelf, the kind and the purpose of one directory take one name. The name is the last segment of the directory path, in lowercase. Each character that is not a letter or a digit changes to `_`. Where that name is already declared, or another directory gives the same name, the name is the whole directory path, changed in the same way. Where that name is also taken, the verb adds `_2`, `_3` and so on.
 
 ### What the proposal does not explain
 
@@ -57,7 +57,7 @@ After the fragment, the section names each file that stays untyped with the frag
 - `discriminator`: a heterogeneous shelf claims the path and its discriminator does not name a kind.
 - `abstract kind`: the shelf or the discriminator names an abstract kind.
 
-Where no file is outside every shelf and every file classified, the section prints one line that says that there is nothing to propose.
+Where every file classified, the section prints one line that says that there is nothing to propose. Where no directory holds two documents with front matter, the section also says that there is nothing to propose. It then names each unexplained file with its reason.
 
 ## Preconditions
 
