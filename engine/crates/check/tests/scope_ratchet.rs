@@ -31,7 +31,7 @@ use std::path::{Path, PathBuf};
 
 const PINNED: &str = "2026-08-12";
 
-const RULE: &str = "relation.scope.ungoverned";
+const RULE: &str = headwater_check::scope_ratchet::RULE;
 
 const LOCK: &str = "sha256:scope-ratchet-fixture";
 
@@ -60,7 +60,10 @@ fn edited() -> String {
 
 /// The three lines of the decisive case.
 fn three_lines() -> String {
-    format!("added\t{NEW_UNGOVERNED}\nadded\t{NEW_GOVERNED}\n{}", edited())
+    format!(
+        "added\t{NEW_UNGOVERNED}\nadded\t{NEW_GOVERNED}\n{}",
+        edited()
+    )
 }
 
 fn unbound(lines: &str) -> Unbound {

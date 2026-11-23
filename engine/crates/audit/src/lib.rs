@@ -723,34 +723,15 @@ pub fn take(
 /// The tree side of `governs`, per scope pattern.
 ///
 /// An entry is governed when a `governance` edge onto the pattern's anchor
-/// kind matched it. The family is the test rather than a relation name,
-/// because spec 2 closes the family set and a taxonomy names its relations.
+/// kind matched it. [`headwater_graph::scope::governed`] is that test, and
+/// `relation.scope.ungoverned` asks the same one (#1573).
 fn scope(graph: &Graph, relations: &Declarations) -> Vec<ScopeReading> {
     graph
         .scope
         .iter()
         .map(|reach| {
-            let governing: BTreeSet<&str> = relations
-                .relations
-                .iter()
-                .filter(|relation| relation.family.as_deref() == Some("governance"))
-                .map(|relation| relation.name.as_str())
-                .collect();
-            let reached: BTreeSet<&str> = graph
-                .edges
-                .iter()
-                .filter(|edge| governing.contains(edge.declared.as_str()))
-                .filter_map(|edge| match &edge.target {
-                    headwater_graph::Target::Anchor {
-                        anchor_kind,
-                        patterns,
-                        ..
-                    } if *anchor_kind == reach.anchor_kind => Some(patterns),
-                    _ => None,
-                })
-                .flatten()
-                .flat_map(|member| member.matched.iter().map(String::as_str))
-                .collect();
+            let reached =
+                headwater_graph::scope::governed(&graph.edges, relations, &reach.anchor_kind);
             let entries: Vec<(String, bool)> = reach
                 .entries
                 .iter()
