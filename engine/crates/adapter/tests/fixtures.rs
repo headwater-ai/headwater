@@ -559,15 +559,19 @@ fn a_control_character_from_a_document_reaches_no_format_intact() {
     ran.run.findings[0].path = HOSTILE_PATH.to_string();
     for finding in ran.run.findings.iter_mut().take(2) {
         finding.message.push_str(HOSTILE_ID);
+        finding.remediation.push_str(HOSTILE_ID);
     }
     // The read set lists every file a run read, so the hostile file is in it
     // too, and the text report prints it.
-    ran.run.read_set.inputs.push(Input {
-        path: HOSTILE_PATH.to_string(),
-        digest: None,
-    });
+    for digest in [None, Some("sha256:0".to_string())] {
+        ran.run.read_set.inputs.push(Input {
+            path: HOSTILE_PATH.to_string(),
+            digest,
+        });
+    }
     // The census lists the rows it did not type in the text report, so one of
-    // them takes the hostile name as well.
+    // them takes the hostile name as well, and an exclusion pattern and reason
+    // that the overlay supplies carry the hostile identifier.
     let untyped = ran
         .census
         .rows
@@ -575,6 +579,10 @@ fn a_control_character_from_a_document_reaches_no_format_intact() {
         .find(|row| !matches!(row.outcome, census::Outcome::Typed { .. }))
         .expect("the fixture tree holds a row the census does not type");
     untyped.path = HOSTILE_PATH.to_string();
+    untyped.outcome = census::Outcome::Excluded {
+        pattern: format!("docs/**{HOSTILE_ID}"),
+        reason: format!("excluded\n::error ::forged{HOSTILE_ID}"),
+    };
     let escaped_path = "docs/decisions/0003-x\\n::error ::forged-name\\x1b[31m.md";
     for format in Format::ALL {
         let artifact = render(&ran, format);
@@ -630,6 +638,41 @@ fn a_control_character_from_a_document_reaches_no_format_intact() {
                 );
             }
         }
+    }
+}
+
+/// A path that a change manifest names reaches no format with a control
+/// character intact either (#1970).
+///
+/// A manifest is a file an author or a hook writes, so the paths it names that
+/// bind to no row, and the `verified` lines that name no edge, are as hostile
+/// as a file name.
+#[test]
+fn a_control_character_from_a_change_manifest_reaches_no_format_intact() {
+    let mut ran = scoped_run();
+    let change = ran
+        .run
+        .change
+        .as_mut()
+        .expect("the scoped run reads a change");
+    change.unmatched.push(HOSTILE_PATH.to_string());
+    change
+        .unstated
+        .push((HOSTILE_PATH.to_string(), format!("HW-DR-{HOSTILE_ID}")));
+    for format in Format::ALL {
+        let artifact = render(&ran, format);
+        let name = format.name();
+        let raw = artifact
+            .bytes()
+            .find(|byte| (*byte < 0x20 && *byte != b'\n') || *byte == 0x7f);
+        assert_eq!(raw, None, "{name} writes a raw control byte");
+        assert!(
+            !artifact
+                .lines()
+                .any(|line| line.trim_start().starts_with("::")),
+            "{name} writes a forged line"
+        );
+        assert!(artifact.contains("forged-name"), "{name} names the path");
     }
 }
 

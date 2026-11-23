@@ -1493,8 +1493,10 @@ impl Scoped {
                 "  {:5} named no row of this corpus, so nothing was checked over them:",
                 self.unmatched.len()
             );
+            // A manifest is a file somebody wrote, so each path it names is
+            // written as visible text (#1970).
             for path in &self.unmatched {
-                let _ = writeln!(out, "        {path}");
+                let _ = writeln!(out, "        {}", paint::visible(path));
             }
         }
         // A `verified` pair that names no edge stamps nothing, and nothing
@@ -1507,7 +1509,12 @@ impl Scoped {
                 self.unstated.len()
             );
             for (document, target) in &self.unstated {
-                let _ = writeln!(out, "        {document} -> {target}");
+                let _ = writeln!(
+                    out,
+                    "        {} -> {}",
+                    paint::visible(document),
+                    paint::visible(target)
+                );
             }
         }
         let _ = writeln!(
