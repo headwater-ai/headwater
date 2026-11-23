@@ -123,15 +123,18 @@ fn the_shipped_set_applies_each_dependency_before_its_dependents() {
 /// The owner ruled on 2026-11-22 (#2022) that an adopter's overlay is ordered
 /// after every bundle it selects. Given first, it is still placed last, and
 /// `after` names every selected bundle at its position while `requires` stays
-/// empty, because the adopter names nothing.
+/// empty, because the adopter names nothing. An overlay that is neither a
+/// bundle nor the adopter's, the shape of an assembly's glue, still applies
+/// before it and is not in `after`, so the adopter gets no permission over it.
 #[test]
 fn an_adopter_overlay_given_first_applies_after_every_bundle() {
     let bundle = |name: &str| overlay(&format!("add:\n  kinds.{name}: {{}}\n")).selected_as(name);
     let adopter = overlay("override:\n  kinds.a: {}\n").adopter();
-    let ordered = order::order(&[adopter, bundle("a"), bundle("b")]).expect("it orders");
-    assert_eq!(ordered.order, vec![1, 2, 0]);
-    assert_eq!(ordered.after, vec![vec![], vec![], vec![0, 1]]);
-    assert_eq!(ordered.requires[2], Vec::<usize>::new());
+    let plain = overlay("add:\n  kinds.plain: {}\n");
+    let ordered = order::order(&[adopter, bundle("a"), plain, bundle("b")]).expect("it orders");
+    assert_eq!(ordered.order, vec![1, 2, 3, 0]);
+    assert_eq!(ordered.after, vec![vec![], vec![], vec![], vec![0, 2]]);
+    assert_eq!(ordered.requires[3], Vec::<usize>::new());
 }
 
 /// A cycle among the bundles is still refused and named when the adopter's
