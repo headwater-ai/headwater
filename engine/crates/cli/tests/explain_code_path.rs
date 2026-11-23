@@ -196,7 +196,11 @@ const REFUSED: &str = "is outside every corpus root this repository declares";
 fn a_code_file_that_a_document_governs_is_explained_by_naming_that_document() {
     let root = Root::new("decisive", "src/lib.rs");
     let explained = root.run(&["explain", "src/lib.rs"]);
-    assert_eq!(explained.code, Some(0), "a governed code file: {explained:?}");
+    assert_eq!(
+        explained.code,
+        Some(0),
+        "a governed code file: {explained:?}"
+    );
     assert!(
         explained.out.starts_with("src/lib.rs\n"),
         "the answer opens on the path: {explained:?}"
@@ -211,7 +215,10 @@ fn a_code_file_that_a_document_governs_is_explained_by_naming_that_document() {
         explained.out.contains("    HW-IFACE-thing\n"),
         "the answer names the identifier: {explained:?}"
     );
-    assert_eq!(explained.err, "", "nothing on standard error: {explained:?}");
+    assert_eq!(
+        explained.err, "",
+        "nothing on standard error: {explained:?}"
+    );
 }
 
 /// `--json` writes the object the MCP `governing_docs_for_path` tool carries
@@ -221,7 +228,11 @@ fn a_code_file_that_a_document_governs_is_explained_by_naming_that_document() {
 fn the_json_answer_for_a_code_file_is_the_structured_content_of_the_mcp_tool() {
     let root = Root::new("json", "src/lib.rs");
     let explained = root.run(&["explain", "src/lib.rs", "--json"]);
-    assert_eq!(explained.code, Some(0), "a governed code file: {explained:?}");
+    assert_eq!(
+        explained.code,
+        Some(0),
+        "a governed code file: {explained:?}"
+    );
     assert!(
         explained.out.starts_with("{\n  \"pointers\": [\n"),
         "the answer is the pointers object: {explained:?}"
@@ -252,7 +263,10 @@ fn a_code_file_that_nothing_governs_keeps_its_refusal() {
     let root = Root::new("ungoverned", "src/lib.rs");
     let explained = root.run(&["explain", "src/other.rs"]);
     assert_eq!(explained.code, Some(1), "an ungoverned file: {explained:?}");
-    assert_eq!(explained.out, "", "nothing on standard output: {explained:?}");
+    assert_eq!(
+        explained.out, "",
+        "nothing on standard output: {explained:?}"
+    );
     assert_eq!(
         explained.err.trim_end(),
         format!("headwater: `src/other.rs` {REFUSED}"),
@@ -269,10 +283,19 @@ fn a_path_with_no_file_keeps_its_refusal_even_where_a_pattern_reaches_it() {
     let governed = root.run(&["explain", "src/lib.rs"]);
     assert_eq!(governed.code, Some(0), "the pattern binds: {governed:?}");
     let explained = root.run(&["explain", "src/missing.rs"]);
-    assert_eq!(explained.code, Some(1), "a path with no file: {explained:?}");
-    assert_eq!(explained.out, "", "nothing on standard output: {explained:?}");
+    assert_eq!(
+        explained.code,
+        Some(1),
+        "a path with no file: {explained:?}"
+    );
+    assert_eq!(
+        explained.out, "",
+        "nothing on standard output: {explained:?}"
+    );
     assert!(
-        explained.err.contains(&format!("`src/missing.rs` {REFUSED}")),
+        explained
+            .err
+            .contains(&format!("`src/missing.rs` {REFUSED}")),
         "the refusal is unchanged: {explained:?}"
     );
 }

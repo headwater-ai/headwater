@@ -60,6 +60,7 @@ use headwater_census::walk::Corpus;
 use headwater_check::{Cache, Context, Date, Declared, Shape};
 use headwater_cli::{JsonWord, ProbeWord, SweepWord, TaxonomyWord, Verb};
 use headwater_graph::declarations::Declarations;
+use headwater_query::explain::{classification_text, identifier_text, Answer};
 use headwater_query::mcp::Written;
 use headwater_query::Budget;
 use headwater_resolve::render_errors;
@@ -4105,8 +4106,20 @@ fn neighbors(
 /// this remains a refusal, and what changes is only the English sentence a
 /// caller, or a hook, reads on standard error.
 fn explain(root: &Path, target: &str, json: bool, paths_at_most: Option<usize>) -> ExitCode {
-    let explanation = match find_document(root, target) {
-        Ok(explanation) => explanation,
+    // A code file that a document governs is answered with those documents,
+    // never with a census derivation it does not have (#1968).
+    let explanation = match find_document(root, target, true) {
+        Ok(Answer::Document(explanation)) => explanation,
+        Ok(Answer::Governed(governed)) => {
+            print!(
+                "{}",
+                match json {
+                    true => headwater_query::json::governed(&governed),
+                    false => governed.render(headwater_cli::paint::stdout_color()),
+                }
+            );
+            return ExitCode::SUCCESS;
+        }
         Err(code) => return code,
     };
     // A row the walk could not read is not a document: the census never
@@ -4144,9 +4157,8 @@ fn explain(root: &Path, target: &str, json: bool, paths_at_most: Option<usize>) 
 /// The write goes through [`emit_bytes`], so a full standard output ends the
 /// run with status 1 and never 101.
 fn show(root: &Path, target: &str) -> ExitCode {
-    let explanation = match find_document(root, target) {
-        Ok(explanation) => explanation,
-        Err(code) => return code,
+    let Ok(Answer::Document(explanation)) = find_document(root, target, false) else {
+        return ExitCode::FAILURE;
     };
     // A row the walk could not read is refused in `explain`'s sentence, with
     // the verb changed: a symlink, a named pipe, a socket or a device, a
@@ -4239,12 +4251,14 @@ fn symlink_under(root: &Path, relative: &str) -> Option<String> {
 /// the repository root, which is `--root`, and not to the working directory of
 /// the process: with `--root elsewhere`, `./x` is `elsewhere/x`. A target that
 /// leaves the repository is refused as outside it. A refusal prints the target
-/// as it was typed, never the normalized form.
-fn find_document(root: &Path, target: &str) -> Result<headwater_query::Explanation, ExitCode> {
+/// as it was typed, never the normalized form. With `code`, a file that a
+/// governing edge reaches is answered before it is refused (#1968), and
+/// `show` passes `false`, because a code file has no document bytes.
+fn find_document(root: &Path, target: &str, code: bool) -> Result<Answer, ExitCode> {
     let loaded = opened(root)?;
     let surface = loaded.surface();
     if let Some(explanation) = surface.explain(target) {
-        return Ok(explanation);
+        return Ok(Answer::Document(explanation));
     }
     // An identifier is asked about first, and a path second: the two
     // grammars can overlap in principle, and this repository's own
@@ -4268,7 +4282,7 @@ fn find_document(root: &Path, target: &str) -> Result<headwater_query::Explanati
                         .explain(&relative)
                         .filter(|explanation| explanation.path == relative)
                     {
-                        return Ok(explanation);
+                        return Ok(Answer::Document(explanation));
                     }
                 }
                 // A path that passes through a symlink out of the root is
@@ -4282,12 +4296,18 @@ fn find_document(root: &Path, target: &str) -> Result<headwater_query::Explanati
                     target,
                 ) {
                     None => headwater_census::walk::Classification::Unclassifiable,
-                    Some(_) => Corpus::declared(
-                        root,
-                        &loaded.consumer.corpus_root,
-                        &loaded.consumer.exclusions,
-                    )
-                    .classify(Path::new(&relative)),
+                    Some(inside) => {
+                        let governed = code.then(|| surface.explain_code(root, &inside));
+                        if let Some(governed) = governed.flatten() {
+                            return Ok(Answer::Governed(governed));
+                        }
+                        Corpus::declared(
+                            root,
+                            &loaded.consumer.corpus_root,
+                            &loaded.consumer.exclusions,
+                        )
+                        .classify(Path::new(&relative))
+                    }
                 };
                 classification_text(target, &classification)
             }
@@ -4295,52 +4315,6 @@ fn find_document(root: &Path, target: &str) -> Result<headwater_query::Explanati
     };
     eprintln!("headwater: {}", err(&text));
     Err(ExitCode::FAILURE)
-}
-
-/// The sentence [`explain`]'s refusal prints for a target shaped like an
-/// identifier of this corpus that no document declares.
-///
-/// [#845](https://github.com/headwater-ai/headwater/issues/845): the four
-/// states of [`classification_text`] are a reading of a path, and printing
-/// one of them for an identifier told a reader something true and irrelevant
-/// — "outside every corpus root" reads as evidence the identifier is
-/// somewhere else, when the honest answer is that this corpus does not carry
-/// it. This sentence does not say whether the identifier is a typo or an
-/// invention, or whether an untyped document carries it: that finer read is
-/// `resolve_identifier`'s, over `headwater mcp`, and this refusal only stops
-/// claiming the wrong thing rather than starting to claim the fuller one.
-fn identifier_text(target: &str) -> String {
-    format!("`{target}` is shaped like an identifier of this corpus, and no document declares it")
-}
-
-/// The sentence [`explain`]'s refusal prints for a target with no document,
-/// one per state of [`headwater_census::walk::Classification`].
-///
-/// A closed match rather than a `Display` on the type itself: the type lives
-/// in `headwater_census`, which states facts about a corpus and states them
-/// to every crate that reads it, and the words a caller reads belong to the
-/// one binary that owns a caller.
-fn classification_text(
-    target: &str,
-    classification: &headwater_census::walk::Classification,
-) -> String {
-    use headwater_census::walk::Classification;
-    match classification {
-        Classification::Corpus => {
-            format!("`{target}` is a path of this corpus, with no document written there yet")
-        }
-        Classification::Excluded(pattern) => {
-            format!("`{target}` is excluded by `{pattern}`, so it is not corpus content")
-        }
-        Classification::Outside => {
-            format!("`{target}` is outside every corpus root this repository declares")
-        }
-        // #1227: this state is reached by a path that leaves the repository,
-        // absolute, by `..` or through a symlink (#1249), and by a segment
-        // that is not UTF-8, so the sentence names both. It is the one
-        // sentence every path route prints, so it is not written here.
-        Classification::Unclassifiable => headwater_query::outside_text(target),
-    }
 }
 
 /// `headwater new <kind>`: the scaffolder.
