@@ -1129,8 +1129,8 @@ fn states_the_verified_counts(
             .collect::<Vec<_>>()
             .join(" ")
             .contains(&format!(
-                "{verified} stated as re-read by a `verified` line, {alone} of them named by that \
-             line alone"
+                "{verified} named by a `verified` line, whether or not the line names an edge, \
+             {alone} of them by that line alone"
             )),
         Format::Json | Format::Sarif => {
             let compact: String = artifact.chars().filter(|c| !c.is_whitespace()).collect();

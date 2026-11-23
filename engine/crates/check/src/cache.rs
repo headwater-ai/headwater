@@ -651,10 +651,38 @@ fn encode_patch(patch: Option<&Patch>) -> String {
             escape(expect),
             escape(replacement)
         ),
+        // A half over a list target is its own shape word too, for the reason
+        // `attributed` gives, so a record of a scalar half reads as it did
+        // before #2016, and an engine before it drops a `listed` record as a
+        // shape it does not know. Each count comes before what it counts.
         Some(Patch::Half {
             path,
             relation,
             id,
+            members: Some(members),
+            attributes,
+        }) => {
+            let mut record = format!(
+                "listed\t{}\t{}\t{}\t{}",
+                escape(path),
+                escape(relation),
+                escape(id),
+                members.len()
+            );
+            for member in members {
+                record.push_str(&format!("\t{}", escape(member)));
+            }
+            record.push_str(&format!("\t{}", attributes.len()));
+            for (name, value) in attributes {
+                record.push_str(&format!("\t{}\t{}", escape(name), escape(value)));
+            }
+            record
+        }
+        Some(Patch::Half {
+            path,
+            relation,
+            id,
+            members: None,
             attributes,
         }) if attributes.is_empty() => format!(
             "half\t{}\t{}\t{}",
@@ -670,6 +698,7 @@ fn encode_patch(patch: Option<&Patch>) -> String {
             path,
             relation,
             id,
+            members: None,
             attributes,
         }) => {
             let mut record = format!(
@@ -731,6 +760,7 @@ fn decode_patch<'a>(fields: &mut impl Iterator<Item = &'a str>) -> Option<Option
             path: unescape(fields.next()?),
             relation: unescape(fields.next()?),
             id: unescape(fields.next()?),
+            members: None,
             attributes: Vec::new(),
         })),
         "attributed" => {
@@ -746,6 +776,29 @@ fn decode_patch<'a>(fields: &mut impl Iterator<Item = &'a str>) -> Option<Option
                 path,
                 relation,
                 id,
+                members: None,
+                attributes,
+            }))
+        }
+        "listed" => {
+            let path = unescape(fields.next()?);
+            let relation = unescape(fields.next()?);
+            let id = unescape(fields.next()?);
+            let count: usize = fields.next()?.parse().ok()?;
+            let mut members = Vec::with_capacity(count);
+            for _ in 0..count {
+                members.push(unescape(fields.next()?));
+            }
+            let count: usize = fields.next()?.parse().ok()?;
+            let mut attributes = Vec::with_capacity(count);
+            for _ in 0..count {
+                attributes.push((unescape(fields.next()?), unescape(fields.next()?)));
+            }
+            Some(Some(Patch::Half {
+                path,
+                relation,
+                id,
+                members: Some(members),
                 attributes,
             }))
         }
@@ -907,6 +960,7 @@ mod tests {
             path: "docs/a.md".to_string(),
             relation: "governs".to_string(),
             id: ".githooks/pre-commit".to_string(),
+            members: None,
             attributes: vec![
                 ("cue".to_string(), "the gate".to_string()),
                 ("verified_revision".to_string(), "sha256:ab".to_string()),
@@ -916,6 +970,7 @@ mod tests {
             path: "docs/a.md".to_string(),
             relation: "cited_by".to_string(),
             id: "D-1".to_string(),
+            members: None,
             attributes: Vec::new(),
         };
         let record = format!(
@@ -927,6 +982,39 @@ mod tests {
         let mut fields = record.split('\t');
         assert_eq!(decode_patch(&mut fields), Some(Some(attributed)));
         assert_eq!(decode_patch(&mut fields), Some(Some(bare)));
+        assert_eq!(fields.next(), None);
+    }
+
+    /// A half over a list target keeps its members, in their order and with
+    /// a comma inside one, through a record, so a warm cache replays the
+    /// patch a cold run offers. A record of a scalar half written before
+    /// #2016 still reads, as a half with no members, and a record that
+    /// follows a list half in one row still starts where it should (#2016).
+    #[test]
+    fn a_list_half_round_trips_and_an_old_record_still_reads() {
+        let listed = Patch::Half {
+            path: "docs/a.md".to_string(),
+            relation: "governs".to_string(),
+            id: "b.sh, x, y.sh".to_string(),
+            members: Some(vec!["b.sh".to_string(), "x, y.sh".to_string()]),
+            attributes: vec![("verified_revision".to_string(), "sha256:ab".to_string())],
+        };
+        let encoded = encode_patch(Some(&listed));
+        assert!(encoded.starts_with("listed\t"), "{encoded}");
+        let old = "attributed\tdocs/a.md\tgoverns\ta.sh\t1\tverified_revision\tsha256:cd";
+        let record = format!("{encoded}\t{old}");
+        let mut fields = record.split('\t');
+        assert_eq!(decode_patch(&mut fields), Some(Some(listed)));
+        assert_eq!(
+            decode_patch(&mut fields),
+            Some(Some(Patch::Half {
+                path: "docs/a.md".to_string(),
+                relation: "governs".to_string(),
+                id: "a.sh".to_string(),
+                members: None,
+                attributes: vec![("verified_revision".to_string(), "sha256:cd".to_string())],
+            }))
+        );
         assert_eq!(fields.next(), None);
     }
 

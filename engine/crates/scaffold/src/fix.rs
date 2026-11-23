@@ -655,12 +655,13 @@ fn relocate(
         for id in ids {
             if !owed
                 .iter()
-                .any(|half| &half.relation == key && &half.id == id)
+                .any(|half| &half.relation == key && half.identity() == [id.as_str()])
             {
                 owed.push(Half {
                     path: path.to_string(),
                     relation: key.clone(),
                     id: id.clone(),
+                    members: None,
                     attributes: Vec::new(),
                 });
             }
@@ -674,31 +675,36 @@ fn relocate(
 /// The halves this file owes, each one once.
 ///
 /// Two documents can each declare the same missing half of one pair, and the
-/// splice would then write it twice.
+/// splice would then write it twice. Two halves are one where they name one
+/// target member for member, and never by the joined `id` of a list, which a
+/// scalar target with a comma in it would equal (#2016).
 fn halves_of(path: &str, patches: &[&Patch]) -> Vec<Half> {
     let mut out: Vec<Half> = Vec::new();
     for patch in patches {
         let Patch::Half {
             relation,
             id,
+            members,
             attributes,
             ..
         } = patch
         else {
             continue;
         };
-        if out
-            .iter()
-            .any(|half| &half.relation == relation && &half.id == id)
-        {
-            continue;
-        }
-        out.push(Half {
+        let half = Half {
             path: path.to_string(),
             relation: relation.clone(),
             id: id.clone(),
+            members: members.clone(),
             attributes: attributes.clone(),
-        });
+        };
+        if out
+            .iter()
+            .any(|known| known.relation == half.relation && known.identity() == half.identity())
+        {
+            continue;
+        }
+        out.push(half);
     }
     out
 }
@@ -1074,6 +1080,7 @@ mod tests {
                 path: "b.md".to_string(),
                 relation: "cited_by".to_string(),
                 id: "D-1".to_string(),
+                members: None,
                 attributes: Vec::new(),
             }],
         );
@@ -1094,6 +1101,7 @@ mod tests {
                 path: "b.md".to_string(),
                 relation: "governs".to_string(),
                 id: ".githooks/pre-commit".to_string(),
+                members: None,
                 attributes: vec![("verified_revision".to_string(), "sha256:ab".to_string())],
             }],
         );
@@ -1116,6 +1124,7 @@ mod tests {
                 path: "b.md".to_string(),
                 relation: "governs".to_string(),
                 id: ".githooks/pre-commit".to_string(),
+                members: None,
                 attributes: vec![
                     ("cue".to_string(), "the gate".to_string()),
                     ("verified_revision".to_string(), "sha256:new".to_string()),
@@ -1143,6 +1152,7 @@ mod tests {
             path: "b.md".to_string(),
             relation: "cited_by".to_string(),
             id: "D-1".to_string(),
+            members: None,
             attributes: Vec::new(),
         };
         let composed = compose(dir.path(), &[half.clone(), half]);

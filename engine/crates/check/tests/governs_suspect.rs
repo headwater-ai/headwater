@@ -511,8 +511,10 @@ fn an_unrecorded_entry_the_change_re_verified_offers_the_digest() {
                 path,
                 relation,
                 id,
+                members,
                 attributes,
             }) => {
+                assert_eq!(members, &None, "a scalar target carries no members");
                 assert_eq!(path, DOCUMENT);
                 assert_eq!(relation, "governs");
                 assert_eq!(id, ".githooks/pre-commit");
@@ -1479,11 +1481,27 @@ fn a_list_target_is_told_that_fix_will_stamp_it() {
             "{label}"
         );
         match (&list.patch, stamps) {
-            (Some(Patch::Half { attributes, .. }), true) => assert_eq!(
-                attributes,
-                &vec![("verified_revision".to_string(), now.clone())],
-                "{label}"
-            ),
+            (
+                Some(Patch::Half {
+                    members,
+                    attributes,
+                    ..
+                }),
+                true,
+            ) => {
+                // The members as the author wrote them, in the author's
+                // order, which the splice matches the entry by.
+                assert_eq!(
+                    members.as_deref(),
+                    Some(&[".githooks/pre-commit".to_string(), MEMBER.to_string()][..]),
+                    "{label}"
+                );
+                assert_eq!(
+                    attributes,
+                    &vec![("verified_revision".to_string(), now.clone())],
+                    "{label}"
+                );
+            }
             (None, false) => {}
             (patch, _) => panic!("{label}: {patch:?}"),
         }

@@ -196,11 +196,14 @@ fn scoped_to(scoped: &Scoped) -> String {
         named.documents, named.added, named.carried, unreadable
     );
     // The class the sentence above does not hold, so a reader can add the
-    // classes to the documents named (#1398).
+    // classes to the documents named (#1398). The count is of documents a
+    // `verified` line names, as the text report says, whether or not the line
+    // names an edge (#1674).
     if named.verified > 0 {
         let _ = writeln!(
             out,
-            "{} stated as re-read by a `verified` line, {} of them named by that line alone.\n",
+            "{} named by a `verified` line, whether or not the line names an edge, {} of them by \
+             that line alone.\n",
             named.verified, named.verified_alone
         );
     }

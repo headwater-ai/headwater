@@ -112,6 +112,7 @@ pub fn compose(root: &Path, edges: &[&crate::Proposed]) -> Result<Vec<Composed>,
             relation: edge.relation.clone(),
             path: edge.path.clone(),
             id: edge.to.clone(),
+            members: None,
             attributes: vec![(
                 VERIFIED_REVISION.to_string(),
                 edge.verified_revision.clone(),
