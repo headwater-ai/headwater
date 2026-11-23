@@ -116,7 +116,7 @@ This is a full entry rather than a partial one. It declares kinds, a shelf, a pu
 
 `facets.status_since` is not a clause of the core, and the one participation expectation reads it, so it is listed here for a reader who checks. The base requires it on `governed_document`, which is what makes the expectation well-formed.
 
-**This entry declares no facet that carries an engine role.** `requirement_tier` takes no `role`, for the reason the diataxis entry's `reader_mode` and the standards-spec entry's `spec_layer` take none. The role registry is closed at six and none of them is this.
+**This entry declares no facet that carries an engine role.** `requirement_tier` takes no `role`, for the reason the diataxis entry's `reader_mode` and the standards-spec entry's `spec_layer` take none. The role registry is closed at seven and none of them is this.
 
 **The purpose map, stated rather than implied.**
 

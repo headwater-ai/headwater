@@ -772,7 +772,7 @@ read set
   version lifecycle.state.set_twice 2
   version relation.declaration.unusable 1
   version identifier.unusable 1
-  version identifier.claimed_twice 1
+  version identifier.claimed_twice 2
   version shelf.discriminator.unresolved 1
   version identifier.claim.missing 2
   version identifier.claim.stale 3

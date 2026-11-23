@@ -82,6 +82,11 @@ use headwater_census::walk::Corpus;
 pub struct Config {
     pub identifier_facet: String,
     pub relations_facet: String,
+    /// The facet that lists the identifiers a document carried before its
+    /// current one, and `None` when the taxonomy declares no facet in the
+    /// `former_identifier` role (#2025). It is found by role and never by name,
+    /// so a taxonomy that names it differently still reaches the index.
+    pub former_identifier_facet: Option<String>,
 }
 
 impl Default for Config {
@@ -89,6 +94,7 @@ impl Default for Config {
         Self {
             identifier_facet: "id".to_string(),
             relations_facet: "relations".to_string(),
+            former_identifier_facet: None,
         }
     }
 }

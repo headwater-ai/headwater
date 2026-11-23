@@ -1,11 +1,11 @@
-headwater/standard 4.20.0
-sha256:d323235f0967f6681ab84897efb60f504569daeebcfaa429e64f783ce0477862
+headwater/standard 4.21.0
+sha256:e84822672ab77490dd06b51813221df39c3a9d6a6416abda0ee59fecf7f9ccb5
 
 sources
-  sha256:29dc781409bcfbc75ee787e98dbf04c38ac623a4f85219cf701a5bc291d54147 .headwater/packages/headwater-standard/taxonomy.yml
+  sha256:d198782b4b3700f90c318b66597a6db6a06dc811f19e421590fd9b856fa4f908 .headwater/packages/headwater-standard/taxonomy.yml
   sha256:fd65c2f4a94d4f0a6d38ea74d4700f9439c36a6bcc407a30061ff4002d2b81f8 .headwater/packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml
   sha256:8e8b03d0d2e6bf2044c68d86e327887e851cb0736a9b642a89205358062669ff .headwater/packages/headwater-standard/bundles/design-spec/bundle.yml
   sha256:84e2d9770dfd50107a46f099af4d51666455a161eacf803cf05cfd303dd8f88d .headwater/packages/headwater-standard/bundles/decision-record/bundle.yml
   sha256:5847438440fdb6e3f2ffbac91692a9815e7a7524c0a272bdb029e5768c02fff1 .headwater/overlay.yml
 
-2264 lines of canonical taxonomy
+2268 lines of canonical taxonomy

@@ -59,7 +59,7 @@ add:
   # untyped. The design-spec entry's `doc_type` takes the same form for the same
   # reason.
   #
-  # No `role`. The role registry is closed at six, none of them is this, and the
+  # No `role`. The role registry is closed at seven, none of them is this, and the
   # diataxis entry took the same reading for `reader_mode`. The relevance canon
   # is satisfied twice over here, because two kinds require the facet and a
   # shelf discriminates on it.
