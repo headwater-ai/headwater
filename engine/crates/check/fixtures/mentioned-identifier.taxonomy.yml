@@ -8,7 +8,11 @@
 # obligation to another, so a document that names itself would be offered it,
 # and a decision naming an obligation would be offered it by a rule that read
 # only the target kind. The `note` kind is the end of no relation, so an
-# obligation that names a note is offered nothing.
+# obligation that names a note is offered nothing. `guide` and `rationale`
+# are each `is_a: record`, and `cites` names only `record` at both ends, so a
+# guide that names a rationale is offered `cites` only by a rule that reads
+# kind inheritance: the case of this repository's own corpus, where
+# `governed_document` is the end of `supersedes` and `traces_to`.
 
 facets:
   status:
@@ -29,6 +33,8 @@ identifier_schemes:
   obligation_id: {pattern: "OBL-{namespace}-{seq:04d}", namespace: MEN, allocation: minted-once}
   decision_id:   {pattern: "DEC-{namespace}-{seq:04d}", namespace: MEN, allocation: minted-once}
   note_id:       {pattern: "NOTE-{namespace}-{seq:04d}", namespace: MEN, allocation: minted-once}
+  guide_id:      {pattern: "GDE-{namespace}-{seq:04d}", namespace: MEN, allocation: minted-once}
+  rationale_id:  {pattern: "RAT-{namespace}-{seq:04d}", namespace: MEN, allocation: minted-once}
 
 relations:
   traces_to:
@@ -42,6 +48,12 @@ relations:
     from: [obligation]
     to:   [obligation]
     inverse: refined_by
+    created_by: author
+  cites:
+    family: association
+    from: [record]
+    to:   [record]
+    inverse: cited_by
     created_by: author
 
 core:
@@ -58,6 +70,14 @@ kinds:
     lifecycle: standard
   note:
     identifier: {scheme: note_id}
+  record:
+    abstract: true
+  guide:
+    is_a: record
+    identifier: {scheme: guide_id}
+  rationale:
+    is_a: record
+    identifier: {scheme: rationale_id}
 
 shelves:
   obligations:
@@ -72,3 +92,11 @@ shelves:
     path: mentioned-identifier/notes/**
     homogeneous: true
     kind: note
+  guides:
+    path: mentioned-identifier/guides/**
+    homogeneous: true
+    kind: guide
+  rationales:
+    path: mentioned-identifier/rationales/**
+    homogeneous: true
+    kind: rationale

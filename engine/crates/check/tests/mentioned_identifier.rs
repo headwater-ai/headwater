@@ -200,9 +200,24 @@ fn three_mentions_of_one_document_are_one_finding_at_the_first() {
     assert_eq!((found[0].line, found[0].column), (9, 8), "{:#?}", found[0]);
 }
 
-/// The whole population of the tree: the two cases above and nothing else.
+/// A relation that names an abstract ancestor at both ends admits every pair
+/// of its descendants. `cites` names `record`, and the guide and the rationale
+/// are each `is_a: record`, so the guide is offered `cites` by inheritance and
+/// by nothing else.
 #[test]
-fn the_tree_reports_exactly_two_findings() {
+fn a_relation_between_ancestors_is_offered_to_their_descendants() {
+    let run = run();
+    let found = on(&run, "guides/names-rationale.md");
+    assert_eq!(found.len(), 1, "{:#?}", run.findings);
+    let finding = found[0];
+    assert_eq!((finding.line, finding.column), (8, 15), "{finding:#?}");
+    assert!(finding.message.contains("`RAT-MEN-0001`"), "{finding:#?}");
+    assert!(finding.message.contains("`cites`"), "{finding:#?}");
+}
+
+/// The whole population of the tree: the three cases above and nothing else.
+#[test]
+fn the_tree_reports_exactly_three_findings() {
     let run = run();
     let all: Vec<&str> = run
         .findings
@@ -213,6 +228,7 @@ fn the_tree_reports_exactly_two_findings() {
     assert_eq!(
         all,
         [
+            path("guides/names-rationale.md"),
             path("obligations/names-in-prose.md"),
             path("obligations/thrice.md")
         ],
