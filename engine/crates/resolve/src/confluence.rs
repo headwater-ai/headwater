@@ -422,6 +422,30 @@ mod tests {
         assert_eq!(found.len(), 1, "{found:?}");
     }
 
+    /// Only `add` against `add` keeps the predicate. An adopter `add` against a
+    /// bundle `override`, `remove` or `add_to` that reaches the same subtree is
+    /// ordered like the adopter's other operations.
+    #[test]
+    fn an_adopter_add_against_a_bundle_operation_that_is_not_an_add_is_ordered() {
+        let adopter = "add:\n  kinds.report.identifier: {scheme: report_id}\n";
+        for bundle in [
+            "override:\n  kinds.report: {purpose: rationale}\n",
+            "remove:\n  - kinds.report\n",
+            "add_to:\n  kinds.report.identifier.aliases: [rpt]\n",
+        ] {
+            let sources = [bundle, adopter];
+            assert!(
+                errors_after(&sources, &[(1, 0)]).is_empty(),
+                "{bundle} then the adopter's add is ordered"
+            );
+            assert_eq!(
+                errors(&sources).len(),
+                1,
+                "without the order, {bundle} and the add are a conflict"
+            );
+        }
+    }
+
     /// The order runs one way: a bundle that the adopter applies after gets no
     /// permission over the adopter's own writes, and two bundles beside it keep
     /// the predicate.
