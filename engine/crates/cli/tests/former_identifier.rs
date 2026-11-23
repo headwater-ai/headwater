@@ -381,3 +381,48 @@ fn a_live_claimant_keeps_its_claim_check_when_a_former_identifier_collides() {
         "the live claimant's claim is owed\n{stdout}"
     );
 }
+
+/// The other direction of clause B. A value live on two documents is still
+/// contended when a third, earlier in path order, lists it as former. The
+/// index compares each claim with the first one only, so both live pairs are
+/// reported as former pairs, and a claim check that read the report alone
+/// would owe one claim file to two claimants.
+#[test]
+fn two_live_claimants_stay_contended_when_a_former_identifier_comes_first() {
+    let root = Root::new(
+        "contended",
+        &[
+            (
+                RENAMED,
+                decision(
+                    "HW-DR-0001",
+                    "A renamed decision",
+                    "former_ids: [HW-DR-0005]\n",
+                ),
+            ),
+            (
+                "docs/decisions/0002-a-second-decision.md",
+                decision("HW-DR-0005", "A second decision", ""),
+            ),
+            (
+                "docs/decisions/0003-a-third-decision.md",
+                decision("HW-DR-0005", "A third decision", ""),
+            ),
+            (
+                ".headwater/ids/decision_id/HW-DR-0001",
+                format!("{RENAMED}\n"),
+            ),
+        ],
+    );
+    let checked = root.run(&["check"]);
+    let stdout = String::from_utf8_lossy(&checked.stdout);
+    let words = stdout.split_whitespace().collect::<Vec<_>>().join(" ");
+    assert!(
+        words.contains("identifier.claimed_twice ("),
+        "the collision is reported\n{stdout}"
+    );
+    assert!(
+        !words.contains(".headwater/ids/decision_id/HW-DR-0005"),
+        "no claim is owed for a value two documents hold live\n{stdout}"
+    );
+}
