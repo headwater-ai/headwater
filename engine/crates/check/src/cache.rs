@@ -1284,7 +1284,10 @@ mod tests {
         }
         for input in reads {
             let digest = input.digest.as_ref()?;
-            text.push_str(&format!("input {} {digest}\n", reference_escape(&input.path)));
+            text.push_str(&format!(
+                "input {} {digest}\n",
+                reference_escape(&input.path)
+            ));
         }
         Some(text)
     }
