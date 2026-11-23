@@ -1,6 +1,6 @@
 ![Headwater. Documentation you can validate.](.github/assets/headwater-social-preview.png)
 
-**Documentation rots because nothing holds it accountable.** Headwater types your corpus, checks it as a graph, and accounts for every file it saw. Nothing else can answer *"is this corpus still true?"*
+**Check documentation on every commit, and AI agents get more tasks right.** Headwater is a command-line tool that checks your documentation as tests check code. It reports each missing field, broken link and unclassified file, with the repair. On held-out tasks in this repository, an AI agent with the documents and the engine passed 85% of sessions (56 of 66), against 20% (13 of 65) with neither. The check itself uses no language model.
 
 [![CI](https://github.com/headwater-ai/headwater/actions/workflows/ci.yml/badge.svg)](https://github.com/headwater-ai/headwater/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/headwater-ai/headwater)](https://github.com/headwater-ai/headwater/releases/latest) [![License](https://img.shields.io/github/license/headwater-ai/headwater)](LICENSE)
 

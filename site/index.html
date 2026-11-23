@@ -398,7 +398,7 @@
       <div>
         <p class="eyebrow">Open-source checks for documentation</p>
         <h1>Check documentation on every commit. AI agents get <em>more tasks right</em>.</h1>
-        <p class="lede">Headwater is a command-line tool that checks your documentation on every commit, as tests check code. It reports each missing field, broken link and unclassified file, with the repair. On held-out tasks in Headwater's own repository, an AI agent with the documents and the engine passed 56 of 66 sessions. With neither, it passed 13 of 65. <em>The check itself uses no language model.</em></p>
+        <p class="lede">Headwater is a command-line tool that checks your documentation on every commit, as tests check code. It reports each missing field, broken link and unclassified file, with the repair. On held-out tasks in Headwater's own repository, an AI agent with the documents and the engine passed 85% of sessions (56 of 66). With neither, it passed 20% (13 of 65). That is about 4 times as many tasks right. <em>The check itself uses no language model.</em></p>
         <div class="ctarow">
           <a class="cta" href="/tutorial/">Run the tutorial →</a>
           <a class="sans" href="#measured">The measured results</a>
@@ -473,17 +473,19 @@ census
       <span class="secline"></span>
     </div>
     <p style="font-size: 1.35rem; max-width: 46rem; margin: 0 0 3rem; line-height: 1.45;">A campaign measured how often an AI agent completes a task in a governed repository, on tasks that no tuning change saw. Three results are gains clear of chance.</p>
-    <!-- The three figures in this grid are not `data-figure` elements, because
-         no run of the engine produces them. Each is quoted from the held-out
-         table of the evaluation that the link under the grid names, with the
-         session counts that table gives, and each has the verdict `gain`
-         there. A change to that table owes a change here. -->
-    <div class="statgrid" style="grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));">
-      <div><div class="statnum">+64.8</div><div class="statlab">points with the documents and the engine, against a repository with neither: 56 of 66 sessions passed, against 13 of 65, over all eleven actions</div></div>
-      <div><div class="statnum">+33.3</div><div class="statlab">points on a refactor across files: 46 of 48 sessions passed with what <span class="mono">headwater init</span> ships, against 30 of 48 with the documents alone</div></div>
-      <div><div class="statnum">+22.9</div><div class="statlab">points on a change to code that a document governs: 32 of 48 sessions passed with what <span class="mono">headwater init</span> ships, against 21 of 48 with the documents alone</div></div>
+    <!-- The figures in this grid are not `data-figure` elements, because no
+         run of the engine produces them. Each pass rate is computed from the
+         session counts beside it and rounded to a whole percent, and those
+         counts are quoted from the held-out table of the evaluation that the
+         link under the grid names. Each row has the verdict `gain` there. The
+         amendment of 2026-11-23 to HW-DR-0037 admits this form on this page
+         alone. A change to that table owes a change here. -->
+    <div class="statgrid" style="grid-template-columns: repeat(auto-fit, minmax(min(17rem, 100%), 1fr));">
+      <div><div class="statnum" style="white-space: nowrap;">20% → 85%</div><div class="statlab">of sessions passed, over all eleven actions: 13 of 65 in a repository with neither the documents nor the engine, and 56 of 66 with both</div></div>
+      <div><div class="statnum" style="white-space: nowrap;">63% → 96%</div><div class="statlab">of sessions passed on a refactor across files: 30 of 48 with the documents alone, and 46 of 48 with what <span class="mono">headwater init</span> ships</div></div>
+      <div><div class="statnum" style="white-space: nowrap;">44% → 67%</div><div class="statlab">of sessions passed on a change to code that a document governs: 21 of 48 with the documents alone, and 32 of 48 with what <span class="mono">headwater init</span> ships</div></div>
     </div>
-    <p style="font-size: 0.95rem; max-width: 52rem; margin: 0 0 3.5rem; opacity: 0.85;">Each difference is in percentage points, and its 95% interval lies above zero. The two gains over the documents alone are on the code actions, two of the eleven actions measured. Every session ran one model, <span class="mono">claude-sonnet-5</span>, on Headwater's own repository, and the code sessions had no compiler. <a href="https://github.com/headwater-ai/headwater/blob/main/docs/evaluations/what-the-additive-campaign-measured-for-the-eleven-actions-headwater-supports.md" style="color: var(--accent-on-ink);">The evaluation has every action, interval and limit →</a></p>
+    <p style="font-size: 0.95rem; max-width: 52rem; margin: 0 0 3.5rem; opacity: 0.85;">Each rate is rounded to a whole percent from the counts beside it. The differences are 64.8, 33.3 and 22.9 percentage points, and the 95% interval of each lies above zero. The two gains over the documents alone are on the code actions, two of the eleven actions measured. Every session ran one model, <span class="mono">claude-sonnet-5</span>, on Headwater's own repository, and the code sessions had no compiler. <a href="https://github.com/headwater-ai/headwater/blob/main/docs/evaluations/what-the-additive-campaign-measured-for-the-eleven-actions-headwater-supports.md" style="color: var(--accent-on-ink);">The evaluation has every action, interval and limit →</a></p>
     <p style="font-size: 1.35rem; max-width: 46rem; margin: 0 0 3rem; line-height: 1.45;">Headwater checks its own documentation on every commit. These are the numbers from the run of <span data-figure="run.date"></span>.</p>
     <!-- Every figure in this band is written by tools/refresh-figures.sh.
          Denominators, stated in the label under each one, because a bare count
