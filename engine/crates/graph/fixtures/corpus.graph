@@ -401,6 +401,8 @@ anchors
     cited by HW-DR-0082
   code_path `engine/crates/cli/src/taxonomy_graph.rs` via source-tree
     cited by HW-IFACE-headwater-taxonomy
+  code_path `engine/crates/cli/tests/explain_code_path.rs` via source-tree
+    cited by HW-IFACE-headwater-explain
   code_path `engine/crates/cli/tests/export.rs` via source-tree
     cited by HW-IFACE-headwater-export
   code_path `engine/crates/cli/tests/help.rs` via source-tree
@@ -413,6 +415,8 @@ anchors
     cited by HW-IFACE-headwater-init
   code_path `engine/crates/cli/tests/json.rs` via source-tree
     cited by HW-DR-0043
+  code_path `engine/crates/cli/tests/linear_scale.rs` via source-tree
+    cited by HW-IFACE-headwater-check
   code_path `engine/crates/cli/tests/merge_driver.rs` via source-tree
     cited by HW-PHOW-keep-derived-files-from-conflicting-in-parallel-pull-requests
   code_path `engine/crates/cli/tests/network_boundary.rs` via source-tree

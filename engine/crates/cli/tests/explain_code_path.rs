@@ -310,18 +310,28 @@ fn a_code_file_is_found_by_each_spelling_of_its_path_and_through_a_link() {
     let root = Root::new("spellings", "src/lib.rs");
     std::os::unix::fs::symlink("lib.rs", root.at.join("src/link.rs")).expect("the link is made");
     let absolute = root.at.join("src/lib.rs").display().to_string();
-    for target in ["./src/lib.rs", "src/../src/lib.rs", absolute.as_str(), "src/link.rs"] {
+    for target in [
+        "./src/lib.rs",
+        "src/../src/lib.rs",
+        absolute.as_str(),
+        "src/link.rs",
+    ] {
         let explained = root.run(&["explain", target]);
         assert_eq!(explained.code, Some(0), "{target}: {explained:?}");
         assert!(
-            explained.out.contains("governed by docs/interfaces/thing.md"),
+            explained
+                .out
+                .contains("governed by docs/interfaces/thing.md"),
             "{target} names the governing document: {explained:?}"
         );
     }
     let pattern = Root::new("directory", "src/**");
     let explained = pattern.run(&["explain", "src"]);
     assert_eq!(explained.code, Some(1), "a directory: {explained:?}");
-    assert_eq!(explained.out, "", "nothing on standard output: {explained:?}");
+    assert_eq!(
+        explained.out, "",
+        "nothing on standard output: {explained:?}"
+    );
 }
 
 /// A link that a document governs by its own path is found by each spelling
@@ -336,7 +346,9 @@ fn a_governed_link_is_matched_on_its_normalized_path() {
         let explained = root.run(&["explain", target]);
         assert_eq!(explained.code, Some(0), "{target}: {explained:?}");
         assert!(
-            explained.out.contains("governed by docs/interfaces/thing.md"),
+            explained
+                .out
+                .contains("governed by docs/interfaces/thing.md"),
             "{target} names the governing document: {explained:?}"
         );
     }
