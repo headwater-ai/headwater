@@ -103,6 +103,7 @@ A change to this crate must keep each of these. A test holds each one that names
 - **Every node is a census row that resolved a kind and declares an identifier.** The stage does no second walk of the corpus (`every_node_of_the_graph_is_a_row_of_the_census_that_resolved_a_kind`).
 - **Two spellings of one anchor are one node** (`two_spellings_of_one_anchor_are_one_node`). `normalize` stays lexical.
 - **Both halves of a reciprocal pair give one triple** (`both_halves_of_a_reciprocal_pair_normalize_to_one_triple`), and each edge half falls in exactly one class (`every_edge_half_falls_in_exactly_one_class`).
+- **A repeated triple is found in constant time, so many relation targets on one document stay linear** (`many_unresolved_relation_targets_check_in_linear_time` in `engine/crates/cli/tests/linear_scale.rs`).
 - **A target with no kind and a target that is nothing are two reports** (`an_untyped_target_and_a_target_that_is_nothing_are_two_reports`).
 - **A quoted link is counted and never bound** (`a_quoted_link_is_counted_and_never_bound`).
 - **An edge onto a list anchor binds when each of its patterns matches at least one entry** ([HW-DR-0074](../decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)). A literal path to an excluded file still binds (`an_anchor_inside_an_exclusion_resolves_and_names_the_rule`).
