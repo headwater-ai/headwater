@@ -7048,37 +7048,17 @@ fn infer(
         ),
     }
 
-    // What the tree holds that the proposal does not explain. Spec 7 makes this
-    // one of the three artifacts of one read, and it is the half a payload
-    // cannot carry: an unclassified file raises no finding to declare.
-    let unexplained: Vec<&headwater_census::census::Row> = loaded
-        .census
-        .rows
-        .iter()
-        .filter(|row| matches!(row.outcome.class(), "untyped" | "unreadable"))
-        .collect();
-    println!(
-        "\n{}",
-        headwater_cli::paint::paint(
-            headwater_cli::paint::Role::Heading,
-            "what this taxonomy does not explain",
-            mode
-        )
-    );
-    match unexplained.is_empty() {
-        true => println!("  every file the census walked classified"),
-        false => {
-            println!(
-                "  {} files classified as nothing, and no payload can hold them",
-                unexplained.len()
-            );
-            for row in unexplained.iter().take(10) {
-                println!("    {} {}", row.path, row.outcome.class());
-            }
-            if unexplained.len() > 10 {
-                println!("    and {} more", unexplained.len() - 10);
-            }
-        }
+    // What the tree holds that the taxonomy does not explain, and the overlay
+    // fragment that would type it. Spec 7 makes both artifacts of one read,
+    // and they are the half a payload cannot carry: an unclassified file
+    // raises no finding to declare. `propose` holds the rules.
+    let names = headwater_cli::propose::Declared::of(&loaded.shape, &loaded.taxonomy);
+    let proposal = headwater_cli::propose::propose(&loaded.census.rows, &names);
+    let heading = "what this taxonomy does not explain";
+    let role = headwater_cli::paint::Role::Heading;
+    println!("\n{}", headwater_cli::paint::paint(role, heading, mode));
+    for line in headwater_cli::propose::report(&proposal) {
+        println!("{line}");
     }
 
     // The debt that is not a rule violation. Spec 5 ranks a route on the scent
@@ -7188,11 +7168,11 @@ fn infer(
                 println!(
                     "\nthis corpus raises no finding against this taxonomy, so it declares no debt"
                 );
-                if !unexplained.is_empty() {
+                if proposal.unexplained > 0 {
                     println!(
                         "  read that with the {} unclassified files above. A taxonomy that \
                          classifies nothing raises nothing",
-                        unexplained.len()
+                        proposal.unexplained
                     );
                 }
             }
