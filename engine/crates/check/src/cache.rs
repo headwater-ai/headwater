@@ -1199,6 +1199,37 @@ mod tests {
         }
     }
 
+    /// A field escaped as `escape` wrote it before it became one pass over
+    /// the bytes (#1968): three `replace` calls, the backslash first. The
+    /// reference below uses this, so a defect in [`Escaped`] cannot hide by
+    /// being on both sides of a comparison.
+    fn reference_escape(text: &str) -> String {
+        text.replace('\\', "\\\\")
+            .replace('\t', "\\t")
+            .replace('\n', "\\n")
+    }
+
+    /// One pass over the bytes escapes as the three `replace` calls did,
+    /// for the record and for the key alike.
+    #[test]
+    fn a_field_escapes_as_three_replacements_did() {
+        for text in [
+            "",
+            "plain",
+            "\\",
+            "\t",
+            "\n",
+            "\\t",
+            "a\\b\tc\nd",
+            "\\\\\n\n\t\t",
+            "ends with \\",
+            "naïve \u{2028} line\n",
+        ] {
+            assert_eq!(escape(text), reference_escape(text), "{text:?}");
+            assert_eq!(unescape(&escape(text)), text, "{text:?}");
+        }
+    }
+
     /// The text a key is the digest of, written out in full for every
     /// instance, as [`Cache::key`] wrote it before it hashed the first lines
     /// once for each rule (#1968). It is the reference the memoized key is
@@ -1247,13 +1278,13 @@ mod tests {
                 stated.target, stated.edge
             ));
         }
-        text.push_str(&format!("target {}\n", escape(target)));
+        text.push_str(&format!("target {}\n", reference_escape(target)));
         if let Some(resolution) = resolution {
-            text.push_str(&format!("resolution {}\n", escape(resolution)));
+            text.push_str(&format!("resolution {}\n", reference_escape(resolution)));
         }
         for input in reads {
             let digest = input.digest.as_ref()?;
-            text.push_str(&format!("input {} {digest}\n", escape(&input.path)));
+            text.push_str(&format!("input {} {digest}\n", reference_escape(&input.path)));
         }
         Some(text)
     }
