@@ -52,7 +52,11 @@ impl Declared {
         taxonomy: &headwater_census::shelves::Taxonomy,
     ) -> Declared {
         Declared {
-            facets: shape.facets.iter().map(|facet| facet.name.clone()).collect(),
+            facets: shape
+                .facets
+                .iter()
+                .map(|facet| facet.name.clone())
+                .collect(),
             names: shape
                 .kinds
                 .iter()
@@ -128,7 +132,9 @@ fn slug(text: &str) -> String {
 /// A key the fragment can name in a dotted overlay path and a facet list.
 fn nameable(key: &str) -> bool {
     !key.is_empty()
-        && key.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+        && key
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
         && !RESERVED.contains(&key)
 }
 
@@ -141,7 +147,10 @@ pub fn propose(rows: &[Row], declared: &Declared) -> Proposal {
 
     // The candidates, grouped by directory in census order.
     let mut groups: Vec<(&str, Vec<&Row>)> = Vec::new();
-    for row in rows.iter().filter(|row| unexplained(row) && reason(row).is_none()) {
+    for row in rows
+        .iter()
+        .filter(|row| unexplained(row) && reason(row).is_none())
+    {
         let at = directory(&row.path);
         match groups.iter_mut().find(|(held, _)| *held == at) {
             Some((_, members)) => members.push(row),
@@ -156,7 +165,10 @@ pub fn propose(rows: &[Row], declared: &Declared) -> Proposal {
     let mut taken = declared.names.clone();
     let mut facets = declared.facets.clone();
     for (at, members) in &groups {
-        let shared = groups.iter().filter(|(other, _)| last(other) == last(at)).count();
+        let shared = groups
+            .iter()
+            .filter(|(other, _)| last(other) == last(at))
+            .count();
         let mut name = match shared {
             1 => last(at),
             _ => slug(at),
@@ -172,7 +184,9 @@ pub fn propose(rows: &[Row], declared: &Declared) -> Proposal {
         }
         taken.insert(name.clone());
         proposal.covered += members.len();
-        proposal.fragment.extend(block(at, &name, members, &mut facets));
+        proposal
+            .fragment
+            .extend(block(at, &name, members, &mut facets));
     }
 
     let proposed: BTreeSet<&str> = groups.iter().map(|(at, _)| *at).collect();
@@ -208,22 +222,38 @@ fn block(at: &str, name: &str, members: &[&Row], facets: &mut BTreeSet<String>) 
             }
         }
     }
-    let every = |key: &str| documents.iter().all(|document| document.facets.get(key).is_some());
-    let require: Vec<&String> = seen.iter().filter(|key| nameable(key) && every(key)).collect();
-    let optional: Vec<&String> = seen.iter().filter(|key| nameable(key) && !every(key)).collect();
+    let every = |key: &str| {
+        documents
+            .iter()
+            .all(|document| document.facets.get(key).is_some())
+    };
+    let require: Vec<&String> = seen
+        .iter()
+        .filter(|key| nameable(key) && every(key))
+        .collect();
+    let optional: Vec<&String> = seen
+        .iter()
+        .filter(|key| nameable(key) && !every(key))
+        .collect();
     let skipped: Vec<&String> = seen.iter().filter(|key| !nameable(key)).collect();
 
     // Headings: those of the first document that every other document also
     // writes, under the one comparison the section rule makes.
     let mut sections: Vec<String> = Vec::new();
     if let Some((first, rest)) = documents.split_first() {
-        for heading in first.body.headings().filter(|heading| heading.quote_depth == 0) {
+        for heading in first
+            .body
+            .headings()
+            .filter(|heading| heading.quote_depth == 0)
+        {
             let text = heading.text().trim().to_owned();
             let wanted = [text.clone()];
             let everywhere = rest.iter().all(|document| {
                 headwater_check::sections::absent_from_body(&document.body, &wanted).is_empty()
             });
-            let again = sections.iter().any(|held| held.to_lowercase() == text.to_lowercase());
+            let again = sections
+                .iter()
+                .any(|held| held.to_lowercase() == text.to_lowercase());
             if !text.is_empty() && everywhere && !again {
                 sections.push(text);
             }
@@ -231,7 +261,11 @@ fn block(at: &str, name: &str, members: &[&Row], facets: &mut BTreeSet<String>) 
     }
 
     let list = |items: &[&String]| {
-        items.iter().map(|item| item.as_str()).collect::<Vec<_>>().join(", ")
+        items
+            .iter()
+            .map(|item| item.as_str())
+            .collect::<Vec<_>>()
+            .join(", ")
     };
     let words = at.rsplit('/').next().unwrap_or(at).replace(['-', '_'], " ");
     let mut lines = vec![format!(
@@ -265,13 +299,14 @@ fn block(at: &str, name: &str, members: &[&Row], facets: &mut BTreeSet<String>) 
             lines.push(format!("  facets.{key}: {{volatility: mutable}}"));
         }
     }
-    let quoted_list = |items: Vec<&str>| {
-        items.into_iter().map(quoted).collect::<Vec<_>>().join(", ")
-    };
+    let quoted_list =
+        |items: Vec<&str>| items.into_iter().map(quoted).collect::<Vec<_>>().join(", ");
     lines.push(format!("  purposes.{name}:"));
     lines.push(format!(
         "    intent: {}",
-        quoted(&format!("state what a document under {at} is for (a first draft: rewrite it)"))
+        quoted(&format!(
+            "state what a document under {at} is for (a first draft: rewrite it)"
+        ))
     ));
     lines.push(format!("    answers: [{}]", quoted(&words)));
     lines.push(format!("  kinds.{name}:"));
@@ -295,7 +330,9 @@ fn block(at: &str, name: &str, members: &[&Row], facets: &mut BTreeSet<String>) 
     }
     let title = {
         let mut chars = words.chars();
-        chars.next().map_or_else(String::new, |c| c.to_uppercase().collect::<String>() + chars.as_str())
+        chars.next().map_or_else(String::new, |c| {
+            c.to_uppercase().collect::<String>() + chars.as_str()
+        })
     };
     lines.push(format!("  shelves.{name}:"));
     lines.push(format!("    title: {}", quoted(&title)));
@@ -316,7 +353,9 @@ fn block(at: &str, name: &str, members: &[&Row], facets: &mut BTreeSet<String>) 
 pub fn report(proposal: &Proposal) -> Vec<String> {
     let mut lines = Vec::new();
     if proposal.unexplained == 0 {
-        lines.push("  every file the census walked classified, so there is nothing to propose".to_owned());
+        lines.push(
+            "  every file the census walked classified, so there is nothing to propose".to_owned(),
+        );
         return lines;
     }
     let (files, them) = match proposal.unexplained {
