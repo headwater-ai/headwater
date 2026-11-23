@@ -3,7 +3,7 @@ id: HW-IFACE-headwater-check
 status: current
 status_since: 2026-09-06
 summary: "What headwater check reads, what goes to each of its two streams, and the thirteen causes behind its one non-zero exit."
-last_verified: 2026-10-01
+last_verified: 2026-11-23
 title: "headwater check"
 provenance:
   warrant: asserted
@@ -19,6 +19,7 @@ relations:
     - engine/crates/check/src/harvest.rs
     - engine/crates/check/src/pin.rs
     - engine/crates/check/src/claim.rs
+    - engine/crates/cli/tests/linear_scale.rs
 ---
 
 # headwater check
@@ -58,6 +59,8 @@ The program exclusion applies only to a whole bare token, so `mkdocs/build.sh` c
 **`--fix` records a verification only where the change states one.** A `verified_revision` stamp on a `source-tree` edge says that a person read the document against the file it governs. Each edge carries its own `verified_revision`, so a stamp states that a person re-read one edge, and not the whole document. So `--fix` offers the stamp on a suspect edge when three conditions hold. The run carries `--change`. The relation declares `verified_revision`. The change states the re-reading of that edge. A change states it in one of two ways. In the first way, the change re-verifies the document that declares the edge and also names the target of the edge. The change re-verifies the document when it adds the document, moves the document's `last_verified`, or names the document in a `verified` line. The change names the target when an `added` or a `prior` line names it. That line can name the target as the entry writes it, or a path that a pattern of the target matches. That path can be a file that the change deletes. In the second way, a `verified` line names the edge: `verified`, the document and the target. A moved `last_verified` does not by itself certify every edge of the document. `--fix` leaves every other suspect edge for a person, and it stamps no edge in a run without `--change`. The date does not decide, so one tree gets the same answer on every day. The target alone does not decide either. A change that edits a governed file makes every edge onto it suspect, and nobody re-read those documents. To record a stamp, re-read the document against the governed file. Then set its `last_verified` in the change that edits that file. Then run `headwater change <base> <dir>` and `headwater check --fix --change <dir>/manifest`. A second change on one day cannot move `last_verified`, because it already shows that day. In that change, pass `--verified <document>` to `headwater change`, which writes the `verified` line. When the governed file changed in an earlier change, the change in hand does not carry it. In that change, pass `--verified-edge <document> <target>` to `headwater change` for each edge that you re-read. An edit to the document does not state a re-reading by itself. Otherwise a small correction a month later would stamp edges that nobody re-read. `--fix` cannot stamp an entry whose target is a list. The remedy of such an entry tells you to set `verified_revision` by hand, and it gives the digest to copy. A `verified` line that names no edge of its document stamps nothing. So a run with `--change` lists each such line, with its document and its target. In a run with `--change`, the finding on a moved `source-tree` digest also says which change moved it. Either this change names what the entry reaches, or it names nothing the entry reaches and the digest moved in an earlier change. The remedy names the route that fits that case, which is the `last_verified` route in the first and `--verified-edge` in the second. A run without `--change` says neither, because it has no change to compare against.
 
 **Nothing here reaches a network.** No crate that this verb reaches depends on an HTTP client, and the checks read the tree in front of them. The one crate with a client is `headwater-fetch`. It serves `taxonomy vendor`, and only the binary links it ([HW-DR-0075](../decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md)).
+
+**A run stays linear in the size of its input** ([#1968](https://github.com/headwater-ai/headwater/issues/1968)). Five readers hold this: the YAML loader, the sentence reader, the line reader, the edge scope and the audit of a rendered report. Each case of `engine/crates/cli/tests/linear_scale.rs` runs this verb over one document that is large in one way, and holds the run inside a time ceiling. The cases are many front matter keys, many sentences in one paragraph, many links on one line, and many unresolved relation targets. The audit has its own case in `engine/crates/adapter/tests/fixtures.rs`. The [parse and census invariants](../subsystems/parse-and-census.md#invariants) name each case and the reader that it holds.
 
 ## Preconditions
 
