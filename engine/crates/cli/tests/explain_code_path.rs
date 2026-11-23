@@ -324,6 +324,41 @@ fn a_code_file_is_found_by_each_spelling_of_its_path_and_through_a_link() {
     assert_eq!(explained.out, "", "nothing on standard output: {explained:?}");
 }
 
+/// A link that a document governs by its own path is found by each spelling
+/// of that path, and not only by the file at its end: the normalized path is
+/// what the edges are matched against.
+#[cfg(unix)]
+#[test]
+fn a_governed_link_is_matched_on_its_normalized_path() {
+    let root = Root::new("governed-link", "src/link.rs");
+    std::os::unix::fs::symlink("other.rs", root.at.join("src/link.rs")).expect("the link is made");
+    for target in ["src/link.rs", "./src/link.rs"] {
+        let explained = root.run(&["explain", target]);
+        assert_eq!(explained.code, Some(0), "{target}: {explained:?}");
+        assert!(
+            explained.out.contains("governed by docs/interfaces/thing.md"),
+            "{target} names the governing document: {explained:?}"
+        );
+    }
+}
+
+/// A document is a census row, and a pattern that governs it does not turn it
+/// into a code file: `explain` still prints its derivation.
+#[test]
+fn a_document_that_a_pattern_governs_is_still_explained_as_a_document() {
+    let root = Root::new("governed-document", "docs/**");
+    let explained = root.run(&["explain", "docs/interfaces/thing.md"]);
+    assert_eq!(explained.code, Some(0), "a document: {explained:?}");
+    assert!(
+        explained.out.contains("  kind interface_contract\n"),
+        "the derivation, not the governing list: {explained:?}"
+    );
+    assert!(
+        !explained.out.contains("governed by"),
+        "no governing list: {explained:?}"
+    );
+}
+
 /// `show` prints the bytes of a document, and a governed code file is not
 /// one, so `show` refuses it in the sentence it always wrote.
 #[test]
