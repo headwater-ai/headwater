@@ -3,7 +3,7 @@ id: HW-IFACE-headwater-explain
 status: current
 status_since: 2026-09-06
 summary: "How a path or identifier yields the taxonomy derivation, requirements, relations, and graph edges."
-last_verified: 2026-09-29
+last_verified: 2026-11-23
 title: "headwater explain"
 relations:
   governs:
@@ -14,6 +14,7 @@ relations:
     - engine/crates/graph/src/edges.rs
     - engine/crates/census/src/walk.rs
     - engine/crates/cli/tests/show.rs
+    - engine/crates/cli/tests/explain_code_path.rs
 ---
 
 # headwater explain
@@ -22,17 +23,21 @@ relations:
 
     headwater explain <path|identifier> [--json] [--root <path>]
 
-The target is a path under the corpus root or an identifier declared by a document.
+The target is a path under the corpus root, an identifier declared by a document, or a code file that a document governs.
 
 A path can have the form that a shell or an editor writes ([#1227](https://github.com/headwater-ai/headwater/issues/1227)). `./x`, `a/../x` and an absolute path under the repository root find the same document as `x`. A relative path is relative to the repository root, which is `--root`. It is not relative to the working directory of the process. With `--root elsewhere`, `./x` is `elsewhere/x`. `headwater_census::walk::typed` reads the path for this verb, for [`headwater show`](headwater-show.md) and for the `explain`, `related` and `governing_docs_for_path` tools of [`headwater mcp`](headwater-mcp.md).
 
 ## Description
 
-`headwater explain` prints the census derivation for one document. It states the path, identifier, kind, derivation steps, purpose, summary, warrant, required facets, required sections, permitted relations and related graph edges.
+`headwater explain` prints the census derivation for one document, or the documents that govern one code file. For a document, it states the path, identifier, kind, derivation steps, purpose, summary, warrant, required facets, required sections, permitted relations and related graph edges.
 
 An untyped document can still be explained. Its derivation states the step that stopped classification, and its kind-dependent fields are empty because no kind requires them.
 
 The text report follows the order above. JSON carries the same fields in a document with its own shape version. A related edge states its direction, target, cue, governing end and the far document pointer where one exists. The relation name tells how the explained document stands to the far end, from both ends of the edge ([#1901](https://github.com/headwater-ai/headwater/issues/1901)). An outbound edge carries the key that the explained document wrote, the relation or its declared inverse. An inbound edge carries the other name of the pair. Where the far document wrote the inverse, that name is the relation. Otherwise it is the declared inverse, or `<relation> of` where the relation declares no inverse. Thus a successor always reads `supersedes` and the document it replaced always reads `superseded_by`, whichever of the two documents wrote the edge. In JSON, `inbound` tells which end wrote the key. Version `1.2` of the shape is the first to name a relation this way. A `1.1` document named every outbound edge by the relation, also where the author wrote the inverse. A `governs` edge onto a `code_path` anchor also states how many tree entries the anchor reaches, in total and for each pattern it holds ([HW-DR-0074](../decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)). JSON carries this as a `reach` member with `total` and `members`. Each element of `members` holds `pattern`, `matched` and `paths`. `paths` is the list of tree entries that one pattern matched, sorted and with no duplicate. `matched` is the number of entries that the pattern matched. By default no bound applies to `paths`: it holds every entry that the pattern matched, and `matched` is its length ([#1260](https://github.com/headwater-ai/headwater/issues/1260)). At 5,000 files under one glob, the JSON document is 176,502 bytes and costs 10 ms of CPU time. At 50,000 files it is 1,751,505 bytes and costs 73 ms. [Spec 5](../spec/05-ai-integration.md#review-time-checks) names the command that measured these values on 2026-09-29. `--paths-at-most <n>` is the one exception. With it, `paths` holds only the first `n` entries in the same sorted order, and `matched`, `total` and `governed_entries` still count every entry ([#1346](https://github.com/headwater-ai/headwater/issues/1346)). So a caller that reads only the counts reads a document that does not grow with the tree. With a bound of 20 over the same 5,000 files, the document is 2,202 bytes (2026-09-30). The edit hook passes the bound for this reason. A pattern with no wildcard has one path, the pattern itself. Two `governs` edges of one document can reach one entry. So JSON also writes `governed_entries` at the top level: the number of distinct entries that all the outbound `governs` edges of the document reach. JSON writes it only where at least one such edge carries `reach`. The text report writes it in parentheses after the edge. JSON also writes a `targets` array on every related edge. For an anchor that binds, it holds each pattern as the resolver normalized it, sorted, because the sorted patterns are the identity of the anchor. For an anchor that binds nothing, it holds each member as the author wrote it, in the order the author wrote them. For a document target it holds the identifier, and for an inbound edge it holds the path of the far document. `target` is the members of `targets` joined by `, `, for a reader. A pattern that holds a comma is one member of `targets`, and nothing can split it out of `target`. `headwater json field related 0 targets 1` prints the second member of the first edge.
+
+**A code file is answered with the documents that govern it** ([#1968](https://github.com/headwater-ai/headwater/issues/1968)). A code file is a regular file inside the repository that is not a census row. A governing edge must reach it, through the reach that `Surface::governing_docs_for_path` reads. The text report states the path of the file on its first line. Then each governing document gets one line, `governed by` and the pointer that [`headwater route`](headwater-route.md) writes, with the bracket for an unaccepted warrant. The identifier of the document is on the line below its pointer. The documents are sorted by path. A path that reaches its file through a symlink inside the root also gets the documents that govern the file at the end of the link. JSON is the object `{"pointers": [...]}`, and each element is the pointer that `route` writes. It is the `structuredContent` of the `governing_docs_for_path` tool of [`headwater mcp`](headwater-mcp.md) for the same path. It has no `related` member. `--paths-at-most` is accepted and changes nothing in this answer.
+
+This answer has three limits. A path with no file behind it is refused, also where a pattern of a `governs` edge reaches it. A file that no governing edge reaches is refused. [`headwater show`](headwater-show.md) refuses a code file, because it prints the bytes of a document. The `explain` tool of `headwater mcp` does not answer for a code file, and its `governing_docs_for_path` tool answers the same question.
 
 The `warrant` line prints the declared value as written, and that includes a value outside the four values of [spec 3](../spec/03-authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires). A document that declares no warrant, or a `warrant` key with no value, gets no `warrant` line. A related edge does not state the warrant of its far document. The bracket that marks a pointer to a document nobody accepted belongs to a pointer, and [`headwater route`](headwater-route.md) states its two wordings.
 
@@ -40,17 +45,17 @@ The `warrant` line prints the declared value as written, and that includes a val
 
 ## Preconditions
 
-The repository must carry a readable `.headwater/taxonomy.lock`, consumer declaration and corpus. The target must resolve to a typed or untyped census row.
+The repository must carry a readable `.headwater/taxonomy.lock`, consumer declaration and corpus. The target must resolve to a typed or untyped census row, or to a code file that a governing edge reaches.
 
 A census row that the walk could not read is not a document, and `explain` refuses it ([#1366](https://github.com/headwater-ai/headwater/issues/1366)). Such a row is a symlink, an unreadable directory, a name that is not UTF-8, or a named pipe, a socket or a device. The census never opened the entry, so it knows no kind and no requirement. The refusal names the path and the reason on standard error, in the shape "`<path>` is <reason>, so `explain` prints nothing". Standard output stays empty, with or without `--json`. The `explain` tool of [`headwater mcp`](headwater-mcp.md) answers such a row with the same sentence.
 
-An identifier resolves through the graph index. A target that matches neither a corpus path nor an identifier is refused. Exit status states which of five things it named instead.
+An identifier resolves through the graph index. A target that matches no corpus path, no identifier and no governed code file is refused. Exit status states which of five things it named instead.
 
 ## Options
 
 | Option | What it does |
 |---|---|
-| `<path|identifier>` | Select the document to explain. |
+| `<path|identifier>` | Select the document or the code file to explain. |
 | `--json` | Write the explanation as machine-readable JSON. |
 | `--paths-at-most <n>` | Write at most the first `n` entries of each `paths` list, sorted. `n` is a whole number above zero. The counts do not change. The option requires `--json`. Without it, the verb refuses the option with exit status 1 and prints nothing on standard output, because the text report lists no path. |
 | `--root <path>` | Select the repository to read. |
@@ -61,11 +66,11 @@ An identifier resolves through the graph index. A target that matches neither a 
 
 ## Exit status
 
-**0** means that the target resolved and its explanation was printed.
+**0** means that the target resolved and its explanation was printed. For a code file, the list of the documents that govern it was printed.
 
 **1** means that the target was missing or was a census row that the walk could not read. It also means that the command line was invalid or the repository could not load. A missing target writes its refusal to standard error and no explanation to standard output.
 
-**A missing target still classifies.** The refusal names one of five states.
+**A missing target still classifies.** The refusal names one of five states. An existing file that no governing edge reaches gets the refusal of its state, and so does a path with no file.
 
 | The state | What the refusal says |
 |---|---|
