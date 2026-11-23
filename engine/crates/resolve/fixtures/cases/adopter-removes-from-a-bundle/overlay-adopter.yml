@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The adopter's overlay removes the kind the bundle added. It applies after
+# every selected bundle (#2022), so the kind is absent from the result in every
+# permutation of the input, this file first included.
+
+taxonomy: acme
+extends: headwater/standard@1.0.0
+
+remove:
+  - kinds.report

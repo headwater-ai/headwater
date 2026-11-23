@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# A selected bundle that adds a kind. A bundle holds no `override` and no
+# `remove`, so what it adds is the adopter's to change.
+
+bundle: reports
+extends: headwater/standard@1.0.0
+
+add:
+  kinds.report: {purpose: behavior}

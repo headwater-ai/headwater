@@ -492,6 +492,7 @@ pub fn resolve(sources: &[Source]) -> Result<Resolution, Vec<ResolveError>> {
         root: headwater_yaml::Spanned::new(Value::Map(taxonomy.clone()), Span::default()),
         text: String::new(),
         selected_as: None,
+        adopter: false,
     };
     let errors = after.validate(&schema);
     if !errors.is_empty() {
