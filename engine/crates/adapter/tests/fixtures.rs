@@ -523,6 +523,84 @@ fn every_finding_reaches_every_format() {
     }
 }
 
+/// The file name of #1970: a line feed that opens a forged workflow command,
+/// and an escape sequence that turns a terminal red.
+const HOSTILE_PATH: &str = "docs/decisions/0003-x\n::error ::forged-name\u{1b}[31m.md";
+
+/// The identifier of #1970, which clears a terminal and turns it red.
+const HOSTILE_ID: &str = "\u{1b}[2J\u{1b}[31m";
+
+/// Every scalar of a parsed artifact, at any depth.
+fn scalars(value: &Value, into: &mut Vec<String>) {
+    match value {
+        Value::Scalar(found) => into.push(headwater_yaml::core_schema::as_str(found).to_string()),
+        Value::Seq(items) => items.iter().for_each(|item| scalars(&item.value, into)),
+        Value::Map(map) => map
+            .iter()
+            .for_each(|entry| scalars(&entry.value.value, into)),
+        _ => {}
+    }
+}
+
+/// A file name or an identifier that a document supplies reaches no format
+/// with a control character intact, forges no line, and costs no finding
+/// (#1970).
+///
+/// Text and Markdown write each control character as a visible backslash form,
+/// and JSON and SARIF write it with their own string escape, so a parser gives
+/// back the exact value. The census of each artifact still carries every
+/// finding, which is the third clause of the issue: before the fix, the line
+/// feed split the text record and the Markdown row, and the audit read the
+/// path as `docs/decisions/0003-x`.
+#[test]
+fn a_control_character_from_a_document_reaches_no_format_intact() {
+    let mut ran = fixture_run();
+    assert!(ran.run.findings.len() > 1, "two findings to make hostile");
+    ran.run.findings[0].path = HOSTILE_PATH.to_string();
+    for finding in ran.run.findings.iter_mut().take(2) {
+        finding.message.push_str(HOSTILE_ID);
+    }
+    let escaped_path = "docs/decisions/0003-x\\n::error ::forged-name\\x1b[31m.md";
+    for format in Format::ALL {
+        let artifact = render(&ran, format);
+        let name = format.name();
+        let raw = artifact
+            .bytes()
+            .find(|byte| (*byte < 0x20 && *byte != b'\n') || *byte == 0x7f);
+        assert_eq!(raw, None, "{name} writes a raw control byte");
+        let forged: Vec<&str> = artifact
+            .lines()
+            .filter(|line| line.trim_start().starts_with("::"))
+            .collect();
+        assert!(forged.is_empty(), "{name} writes a forged line: {forged:?}");
+        let audited = headwater_adapter::census(&ran.run, format, &artifact);
+        assert!(
+            !audited.is_defective(),
+            "the {name} adapter dropped {:?}",
+            audited.unaccounted
+        );
+        assert_eq!(audited.carried, audited.findings, "{name}");
+        match format {
+            Format::Text | Format::Markdown => assert!(
+                artifact.contains(escaped_path),
+                "{name} does not write the escaped path"
+            ),
+            Format::Json | Format::Sarif => {
+                let mut found = Vec::new();
+                scalars(&parse(&artifact), &mut found);
+                assert!(
+                    found.iter().any(|one| one == HOSTILE_PATH),
+                    "{name} does not give back the exact path"
+                );
+                assert!(
+                    found.iter().any(|one| one.ends_with(HOSTILE_ID)),
+                    "{name} does not give back the exact message"
+                );
+            }
+        }
+    }
+}
+
 /// Every entry of every loss set reaches one of the three outcomes, and the
 /// three sum to the entries declared.
 ///
