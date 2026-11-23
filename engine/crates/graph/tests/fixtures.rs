@@ -785,7 +785,30 @@ fn a_former_identifier_claimed_twice_is_a_duplicate() {
                 "graph/evaluations/z.md",
                 "---\nid: EVAL-FIX-z\n---\n\n# Z\n",
             ),
+            (
+                "graph/spec/citer.md",
+                "---\nid: SPEC-FIX-citer\ndoc_type: design_spec\nrelations:\n  traces_to:\n    - EVAL-FIX-a\n---\n\n# Citer\n",
+            ),
         ],
+    );
+
+    // A live identifier wins over the same value listed as former, so an edge
+    // to `EVAL-FIX-a` still reaches the document that holds it live, whatever
+    // order the two documents sort in.
+    let live = graph
+        .index
+        .node("EVAL-FIX-a")
+        .expect("the live identifier names a node");
+    assert_eq!(live.path, "graph/evaluations/a.md");
+    let edge = graph
+        .edges
+        .iter()
+        .find(|edge| edge.raw_target == "EVAL-FIX-a")
+        .expect("the edge written to the contested identifier");
+    assert!(
+        matches!(&edge.target, Target::Document { path, .. } if path == "graph/evaluations/a.md"),
+        "{:?}",
+        edge.target
     );
 
     let duplicates: Vec<(&str, &str, &str, bool)> = graph
