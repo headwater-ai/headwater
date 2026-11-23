@@ -639,10 +639,9 @@ impl Drop for Scratch {
 }
 
 fn scratch_corpus(name: &str, files: &[(&str, &str)]) -> (Scratch, Graph) {
-    let dir = Scratch(std::env::temp_dir().join(format!(
-        "headwater-graph-{name}-{}",
-        std::process::id()
-    )));
+    let dir = Scratch(
+        std::env::temp_dir().join(format!("headwater-graph-{name}-{}", std::process::id())),
+    );
     let _ = std::fs::remove_dir_all(&dir.0);
     for (path, text) in files {
         let at = dir.0.join(path);
@@ -706,7 +705,10 @@ fn a_former_identifier_resolves_to_the_document_that_carried_it() {
         .index
         .node("EVAL-OLD-7")
         .expect("a former identifier names a node");
-    assert_eq!(node.id, "EVAL-FIX-new", "the node answers its live identifier");
+    assert_eq!(
+        node.id, "EVAL-FIX-new",
+        "the node answers its live identifier"
+    );
     assert!(
         graph.index.defects.is_empty(),
         "one former identifier on one document is no defect: {:?}",
