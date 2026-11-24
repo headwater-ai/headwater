@@ -134,15 +134,22 @@ fn two_steps_that_do_not_join_are_refused() {
     );
 }
 
-/// An abstract endpoint joins every kind below it: `traces_to` runs from
-/// `governed_document`, and a verification is one.
+/// An abstract endpoint joins every kind below it, in both directions:
+/// `traces_to` runs from `governed_document`, and a verification is one, and
+/// `traces_to` reaches `governed_document`, which may be the criterion that
+/// `proven_by` runs from.
 #[test]
 fn a_step_joins_through_the_kind_a_target_inherits_from() {
-    assert!(
-        read(&view("verified_by, proven_by, traces_to", "")).is_ok(),
-        "{:?}",
-        read(&view("verified_by, proven_by, traces_to", "")).err()
-    );
+    for chain in [
+        "verified_by, proven_by, traces_to",
+        "verified_by, traces_to, proven_by",
+    ] {
+        assert!(
+            read(&view(chain, "")).is_ok(),
+            "{chain}: {:?}",
+            read(&view(chain, "")).err()
+        );
+    }
 }
 
 /// A step that reaches only code ends every path, so it is the last step.

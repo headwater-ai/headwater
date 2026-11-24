@@ -307,8 +307,9 @@ fn every_requirement_is_a_row_and_an_observed_verification_turns_suspect_when_it
     let text = read(&matrix);
     let clean = table_row(&text, "SCR-AC-0001");
     assert!(
-        clean[2].contains("observed") && clean[2].contains("abc1234"),
-        "the snapshot names SCR-VER-0001 at abc1234 and the criterion has not moved: {clean:?}"
+        clean[2].contains(" · observed · ") && clean[2].contains("observed at `abc1234`"),
+        "the snapshot names SCR-VER-0001 at abc1234 and the criterion has not moved, so the \
+         state is `observed` and the observation is the commit: {clean:?}"
     );
     assert!(!clean[2].contains("suspect"), "{clean:?}");
 
@@ -333,6 +334,44 @@ fn every_requirement_is_a_row_and_an_observed_verification_turns_suspect_when_it
     assert!(
         clean[2].contains("suspect"),
         "SCR-AC-0001 changed after the snapshot, so SCR-VER-0001 is suspect: {clean:?}"
+    );
+}
+
+/// A link that only the far end writes is still a link, and the rows sort by
+/// path whatever order the front matter writes. The requirement drops
+/// `SCR-AC-0002` from its own `verified_by` and lists the other two in reverse,
+/// while `SCR-AC-0002` still `verifies` it.
+#[test]
+fn a_link_written_only_at_the_far_end_is_a_row_and_rows_sort_by_path() {
+    let root = Root::scratch("far-end");
+    let consumer = worked(&root, &chain("docs/matrix.md", None));
+    let requirement = consumer
+        .join("docs/verified-requirements/0001-an-operator-can-replay-a-failed-delivery.md");
+    let text = read(&requirement);
+    let edited = text.replacen(
+        "    - SCR-AC-0001\n    - SCR-AC-0002\n    - SCR-AC-0003\n",
+        "    - SCR-AC-0003\n    - SCR-AC-0001\n",
+        1,
+    );
+    assert_ne!(
+        edited, text,
+        "the fixture requirement lists its three criteria"
+    );
+    write(&requirement, &edited);
+
+    let generated = run(&consumer, &["generate"]);
+    assert_eq!(generated.code, Some(0), "{generated:?}");
+    let text = read(&consumer.join("docs/matrix.md"));
+    let criteria: Vec<String> = rows(&text)
+        .iter()
+        .map(|row| named(&cells(row)))
+        .filter(|row| row[0] == "SCR-REQ-0001")
+        .map(|row| row[1].clone())
+        .collect();
+    assert_eq!(
+        criteria,
+        ["SCR-AC-0001", "SCR-AC-0002", "SCR-AC-0003"],
+        "SCR-AC-0002 verifies SCR-REQ-0001 from its own end, and the rows are in path order\n{text}"
     );
 }
 
