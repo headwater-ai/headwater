@@ -24,10 +24,14 @@ Options:
           `requires_engine` range is read against, and it is the number to quote
           in a bug report. One line on standard output, and no repository is
           needed to ask
-      --no-cache
-          read and write no cache, and evaluate every instance. This run and a
-          cached one write the same bytes to standard output, and a difference
-          between them is a defect in the cache rather than a result
+      --baseline
+          offer a baseline stamp on each `governs`-like edge that records no
+          `verified_revision`: the digest the edge reaches now, with
+          `verified_as: baseline` beside it, which says that nobody read the
+          target against the document. It needs no `--change`. With `--fix` it
+          writes each stamp, and without it each is reported at `info`. An edge
+          the change states was re-read takes a reading stamp instead, with no
+          marker
       --wide
           lay the help, and the report of `headwater check`, out at the width
           `COLUMNS` states, held to the range 80 to 120. A reading that is
@@ -38,12 +42,23 @@ Options:
           headwater --wide --help`. A run that lays nothing out, a machine
           format included, refuses it rather than accepting a flag that does
           nothing
+      --no-cache
+          read and write no cache, and evaluate every instance. This run and a
+          cached one write the same bytes to standard output, and a difference
+          between them is a defect in the cache rather than a result
       --no-color
           force plain text on both streams: bold and dim weight and glyphs, no
           escape sequence. Without it, this binary senses whether each stream is
           a terminal and renders color there, plain text otherwise. `NO_COLOR`,
           set to any value, has the same effect. It is declared so that a caller
           who writes it out of habit is answered rather than refused
+      --no-banner
+          suppress the masthead: the line naming this binary and its version,
+          and the rule beneath it, that the root help screen alone prints above
+          `Usage:`. `HEADWATER_NO_BANNER`, set to any value, has the same
+          effect. It is accepted, and inert, on every verb's own page, the same
+          posture `--no-color` already takes for a flag that changes nothing
+          there
       --now <date>
           the date to evaluate against, as `YYYY-MM-DD`. Defaults to today. Spec
           12 makes the clock an injected value rather than a syscall inside a
@@ -70,13 +85,6 @@ Options:
           `added` for a document that already stood, and a document the change
           carried and the manifest omits, are both invisible without the history
           that spec 12 rules out as an input
-      --no-banner
-          suppress the masthead: the line naming this binary and its version,
-          and the rule beneath it, that the root help screen alone prints above
-          `Usage:`. `HEADWATER_NO_BANNER`, set to any value, has the same
-          effect. It is accepted, and inert, on every verb's own page, the same
-          posture `--no-color` already takes for a flag that changes nothing
-          there
       --read-set <path>
           write the read set of this run to a file. The report carries it too,
           under `--verbose`. The artifact is what decides whether a verdict

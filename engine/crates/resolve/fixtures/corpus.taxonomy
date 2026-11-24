@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 4.23.0
+version: 4.24.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -875,6 +875,9 @@ relations:
     created_by: agent
     attributes:
       verified_revision:
+        type: string
+        owner: edge
+      verified_as:
         type: string
         owner: edge
   constrains:
