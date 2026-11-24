@@ -1036,7 +1036,7 @@
     {
       "rule": "relation.scope.ungoverned",
       "scope": "corpus",
-      "version": 1,
+      "version": 2,
       "obligations": []
     },
     {

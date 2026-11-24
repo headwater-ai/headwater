@@ -654,6 +654,31 @@ impl Change {
             .collect()
     }
 
+    /// Every document this change carries that a row of this corpus holds and
+    /// whose prior version the engine read, in path order (#1573).
+    ///
+    /// It is the corpus-grained reading of [`Prior::Committed`]: a
+    /// document-scoped check is handed one of these for its own row, and a
+    /// corpus-scoped one that declared `NEEDS_PRIOR` is handed all of them.
+    /// [`crate::scope_ratchet`] reads the governance entries each one wrote,
+    /// to find a file that the change left with no edge. An added document,
+    /// an unreadable prior and a path that no row holds are not here:
+    /// [`Change::added`] and [`Change::departed`] carry the last two shapes a
+    /// rule reads.
+    pub fn committed(&self) -> Vec<Committed<'_>> {
+        self.entries
+            .iter()
+            .filter_map(|(path, held)| match held {
+                Held::Committed { digest, document } => Some(Committed {
+                    path: path.as_str(),
+                    digest: digest.as_str(),
+                    facets: &document.facets,
+                }),
+                _ => None,
+            })
+            .collect()
+    }
+
     /// Every path an `added` line names, whether or not a row of this corpus
     /// holds it, in path order (#1573).
     ///
@@ -715,6 +740,20 @@ pub struct Departed<'a> {
     /// The front matter of the version that stood there. A file that is no
     /// document carries an empty mapping rather than nothing, which is what
     /// makes the reading of it a judgment the caller states.
+    pub facets: &'a Mapping,
+}
+
+/// One document a change carries that a row of this corpus holds, and the
+/// version of it that stood before the change. Borrowed from the [`Change`],
+/// on the terms [`Departed`] states.
+#[derive(Clone, Copy, Debug)]
+pub struct Committed<'a> {
+    /// As the manifest wrote it, which the bind matched to a row.
+    pub path: &'a str,
+    /// Over the prior bytes, by the function the census hashes a document
+    /// with.
+    pub digest: &'a str,
+    /// The front matter of the version that stood before the change.
     pub facets: &'a Mapping,
 }
 

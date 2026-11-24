@@ -195,7 +195,7 @@
 //! it.
 
 use crate::cache::Cache;
-use crate::change::{Departed, Prior, Stated};
+use crate::change::{Committed, Departed, Prior, Stated};
 use crate::context::{Context, Date};
 use crate::instance::{Input, Instance, Outcome};
 use headwater_census::census::{Census, Outcome as Classification};
@@ -1533,6 +1533,7 @@ impl<'a> NeighbourhoodView<'a> {
 pub struct CorpusView<'a> {
     identity: Option<&'a [headwater_graph::index::Reported]>,
     departed: &'a [Departed<'a>],
+    committed: &'a [Committed<'a>],
     added: &'a [&'a str],
     scope: Option<&'a [headwater_graph::scope::Reach]>,
     claims: Option<&'a crate::claim::Claims>,
@@ -1621,6 +1622,21 @@ impl<'a> CorpusView<'a> {
         self.departed
     }
 
+    /// Every document the change carries that a row holds, with the version
+    /// that stood before the change, and only for a check that declared
+    /// `NEEDS_PRIOR` (#1573).
+    ///
+    /// The current version of each is in the read set as a census row, and
+    /// the prior digests are in the key: the runner writes them into it
+    /// itself, because the read set names a path once and that path already
+    /// carries its current digest. Without them a cached verdict over one
+    /// tree would survive a change that names a different prior version (the
+    /// corpus-grain form of HW-OBL-0117). See
+    /// [`crate::change::Change::committed`].
+    pub fn committed(&self) -> &[Committed<'a>] {
+        self.committed
+    }
+
     /// Every path an `added` line of the change names, in path order, and
     /// only for a check that declared `NEEDS_PRIOR` (#1573).
     ///
@@ -1699,6 +1715,7 @@ impl<'a> CorpusView<'a> {
         CorpusView {
             identity: None,
             departed: &[],
+            committed: &[],
             added: &[],
             scope: None,
             claims: None,
@@ -1720,6 +1737,7 @@ impl<'a> CorpusView<'a> {
         CorpusView {
             identity: None,
             departed: &[],
+            committed: &[],
             added: &[],
             scope: None,
             claims,
@@ -1742,6 +1760,7 @@ impl<'a> CorpusView<'a> {
         CorpusView {
             identity: None,
             departed: &[],
+            committed: &[],
             added: &[],
             scope: None,
             claims: None,
@@ -1766,6 +1785,7 @@ impl<'a> CorpusView<'a> {
         CorpusView {
             identity: None,
             departed: &[],
+            committed: &[],
             added: &[],
             scope: None,
             claims: None,
@@ -2298,9 +2318,9 @@ pub fn over_corpus<C: CorpusCheck>(
     // rule that declared it and met a run with no change reports the skip
     // rather than an empty set, because "the change named no departed path" and
     // "there is no change" are the two readings that must not become one.
-    let (departed, added) = match (C::NEEDS_PRIOR, ctx.change()) {
-        (false, _) => (Vec::new(), Vec::new()),
-        (true, Some(change)) => (change.departed(), change.added()),
+    let (departed, committed, added) = match (C::NEEDS_PRIOR, ctx.change()) {
+        (false, _) => (Vec::new(), Vec::new(), Vec::new()),
+        (true, Some(change)) => (change.departed(), change.committed(), change.added()),
         (true, None) => {
             cache.undecided();
             return vec![Instance::skipped(
@@ -2369,6 +2389,7 @@ pub fn over_corpus<C: CorpusCheck>(
             false => None,
         },
         departed: &departed,
+        committed: &committed,
         added: &added,
         // Walked by the graph build from the tree, on the terms of `edges`
         // below: the patterns are in the lock, and the lock is in every key.
@@ -2476,9 +2497,28 @@ pub fn over_corpus<C: CorpusCheck>(
     //
     // No `prior` argument either, and this is the one place the two grains key
     // differently. A document-scoped instance is held against one version and
-    // writes that one hash. A corpus-scoped one is held against a set, and the
-    // set is in the read set above, where every input of this engine already
-    // keys. A second component here would hash the same bytes twice.
+    // writes that one hash. A corpus-scoped one is held against a set. The
+    // departed priors are in the read set above, because no row lists their
+    // paths. The committed priors are not: a row already lists each of those
+    // paths at its current digest, and the read set names a path once. So
+    // their digests join the key here, on the `resolution` line, as one digest
+    // over the sorted `committed <path> <digest>` lines. Without it two runs
+    // over one tree whose manifests name different prior versions share a
+    // key, and a cached pass survives the change that drops a `governs` entry
+    // (#1573; HW-OBL-0117 is the edge-grain record of the same defect). A
+    // rule that did not declare `NEEDS_PRIOR` writes no such line.
+    let committed_key = C::NEEDS_PRIOR.then(|| {
+        let listing: String = committed
+            .iter()
+            .map(|entry| format!("committed {} {}\n", entry.path, entry.digest))
+            .collect();
+        format!("committed {}", headwater_hash::digest(listing.as_bytes()))
+    });
+    let resolution = match (orphaned, committed_key) {
+        (None, None) => None,
+        (Some(one), None) | (None, Some(one)) => Some(one),
+        (Some(orphaned), Some(committed)) => Some(format!("{orphaned}\n{committed}")),
+    };
     let outcome = cache.outcome(
         C::RULE,
         C::VERSION,
@@ -2488,7 +2528,7 @@ pub fn over_corpus<C: CorpusCheck>(
         None,
         None,
         Stated::NONE,
-        orphaned.as_deref(),
+        resolution.as_deref(),
         || check.evaluate(&view),
     );
     vec![Instance::of(C::RULE, Grain::Corpus, reads, outcome)]

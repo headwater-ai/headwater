@@ -496,9 +496,10 @@ impl Cache {
         //
         // The corpus grain declares the same input and is held against a set
         // rather than against one version, so there is no single `Prior` to
-        // name here. That set is in the read set below, where every input of
-        // this engine already keys, and a component here would hash the same
-        // bytes a second time. The grain is read rather than the argument,
+        // name here. A departed prior is in the read set below, and the
+        // corpus runner writes the committed priors on the `resolution` line
+        // (`scope::over_corpus` says why), so a component here would hash the
+        // same bytes a second time. The grain is read rather than the argument,
         // because a `None` argument is also what an unkeyable document-scoped
         // instance looks like, and folding the two would leave that one keyed
         // on nothing.

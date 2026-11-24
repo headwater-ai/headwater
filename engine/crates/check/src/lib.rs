@@ -960,10 +960,12 @@ pub fn run(
     // instantiate over, and it declares the corpus-grained half of the prior
     // input. See [`retention`].
     let retention = retention::Retention::over(declared.taxonomy, declared.shape);
-    // A file the change adds inside the governed scope that no governance
-    // edge reaches. Corpus-scoped for the reason retention is: an added source
-    // file has no census row to instantiate over. See [`scope_ratchet`].
-    let ungoverned = scope_ratchet::Ungoverned::over(declared.relations);
+    // A file inside the governed scope that a change adds, or that a change
+    // leaves with no governance edge. Corpus-scoped for the reason retention
+    // is: a source file has no census row to instantiate over. See
+    // [`scope_ratchet`].
+    let ungoverned =
+        scope_ratchet::Ungoverned::over(declared.relations, &declared.config.relations_facet);
 
     let digests = scope::Digests::of(census);
     // The stages of this function for `tools/measure/check-phases.sh`, which
