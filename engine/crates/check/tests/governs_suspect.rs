@@ -1801,12 +1801,18 @@ fn a_baseline_run_names_an_undeclared_marker() {
 }
 
 /// A moved digest on an edge stamped as a baseline says the recorded digest
-/// was a baseline. One stamped as a reading does not (#2016).
+/// was a baseline. One stamped as a reading does not, and neither does one
+/// whose `verified_as` holds another value, because only `baseline` is the
+/// marker (#2016).
 #[test]
 fn a_moved_digest_on_a_baseline_stamp_names_the_baseline() {
     let root = scratch("baseline-moved");
     let digest = expected(&root, &[LIB]);
-    for (marker, says) in [("\n      verified_as: baseline", true), ("", false)] {
+    for (marker, says) in [
+        ("\n      verified_as: baseline", true),
+        ("", false),
+        ("\n      verified_as: reading", false),
+    ] {
         let entry = format!("    - to: {LIB}\n      verified_revision: \"{digest}\"{marker}");
         document(&root, TODAY, &[entry]);
         write(&root, LIB, "refuse() { :; }\n");
