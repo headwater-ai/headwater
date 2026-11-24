@@ -67,6 +67,7 @@ nav:
               - "headwater taxonomy": "interfaces/headwater-taxonomy.md"
           - "Requirements":
               - "Requirements": "requirements/README.md"
+              - "The traceability matrix": "requirements/traceability.md"
               - "The engine reaches no network at check time": "requirements/0001-the-engine-reaches-no-network-at-check-time.md"
               - "Every document of a kind that requires sections carries all of them": "requirements/0002-every-document-of-a-kind-that-requires-sections-carries-all-of-them.md"
               - "A relation target written as the path of a document is reported, and never bound as an anchor onto that file": "requirements/0003-a-relation-target-written-as-the-path-of-a-document-is-reported-and-never-bound-as-an-anchor-onto-that-file.md"

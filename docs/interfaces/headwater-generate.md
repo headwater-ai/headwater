@@ -127,6 +127,8 @@ A `relation_view` is a traceability matrix ([HW-DR-0114](../decisions/0114-a-rel
 
 **The command refuses a chain that cannot be walked.** It refuses `relations` on another kind, and a view with no `relations` or with a `for` that does not name one shelf. It refuses a step that names no declared relation. It refuses a step that reaches only code before the last step, and two steps that do not join. Two steps join when a `to` kind of the first is, or inherits from, a `from` kind of the second, or the reverse.
 
+**A Markdown view is a page of the site.** A `site_nav` lists a Markdown view that sits in the directory of a shelf it covers, under the label "The traceability matrix". It lists no CSV or JSON view, because MkDocs serves neither as a page.
+
 ## Preconditions
 
 The repository must have a readable consumer declaration, taxonomy lock, corpus and generated projection declarations. Existing generated targets must satisfy their write preconditions.
