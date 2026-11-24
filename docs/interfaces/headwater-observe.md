@@ -67,7 +67,7 @@ The verb takes one or more verification identifiers as operands, and the commit 
 - The commit is not 4 to 40 hexadecimal digits. The verb writes nothing.
 - The corpus did not load. The verb writes nothing.
 - The snapshot is present and does not read, or a key it would replace does not start its line. The verb writes nothing.
-- An identifier names no verification of the corpus, or no criterion reaches it, or two or more criteria reach it, or the census read no bytes of its criterion. The verb writes the entries of the other identifiers, and it names each refused identifier with the reason on standard error.
+- An identifier has no entry. It names no verification of the corpus, or no criterion reaches it, or two or more do. Or the census read no bytes of its criterion. The verb writes the entries of the other identifiers, and it names each refused identifier with the reason on standard error.
 
 ## Environment
 
@@ -77,7 +77,7 @@ No environment variable reaches this verb. The identifiers, the commit and the r
 
 | Path | How this verb treats it |
 |---|---|
-| `.headwater/observations.yml` | Read, then written. The verb writes the new bytes to a temporary file beside it, reads them back through the same parser as `check`, and renames the file over the old one. A failed write leaves the old file as it was. |
+| `.headwater/observations.yml` | Read, then written. The verb writes the new bytes to a temporary file beside it, and reads them back through the parser of `check`. Then it renames the file over the old one. A failed write leaves the old file as it was. |
 | The corpus under `--root` | Read, through the census and the graph. Never written. |
 | `.headwater/taxonomy.lock` | Read. Never written. |
 | `.headwater/imports/` | Read where `.headwater/taxonomy.yml` declares an import, for the anchors that an imported snapshot supplies. An `imports` entry that does not read stops the verb with exit 1, and so does an `at` path outside the repository root. |

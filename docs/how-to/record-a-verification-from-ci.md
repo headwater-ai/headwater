@@ -2,7 +2,7 @@
 id: HW-HOW-record-a-verification-from-ci
 status: current
 status_since: 2026-11-24
-summary: "After the pytest or JUnit step passes, one headwater observe call with only the verification identifiers and --commit records them, and the job calculates no digest."
+summary: "After the pytest or JUnit step passes, one headwater observe call with the verification identifiers and --commit records them. The job calculates no digest."
 last_verified: 2026-11-24
 title: "Record a verification from CI"
 provenance:
@@ -54,7 +54,7 @@ You do not calculate a digest in the job. The verb takes the digest of each crit
 
    GitHub Actions skips a step after a step that failed, so the verb runs only when the tests passed. On another CI system, give the step the same condition.
 
-3. Commit `.headwater/observations.yml` back to the repository in the way that your repository commits a file that a job writes, for example in a pull request that the job opens. `headwater check` reads the committed file.
+3. Commit `.headwater/observations.yml` back to the repository. Use the way that your repository commits a file that a job writes, for example a pull request that the job opens. `headwater check` reads the committed file.
 
 ## How to know it worked
 
