@@ -78,9 +78,10 @@ Options:
           posture `--no-color` already takes for a flag that changes nothing
           there
       --read-set <path>
-          write the read set of this run to a file as well as to the report. The
-          artifact is what decides whether a verdict survives a merge without
-          running the checks again, and `headwater gate` is what reads it
+          write the read set of this run to a file. The report carries it too,
+          under `--verbose`. The artifact is what decides whether a verdict
+          survives a merge without running the checks again, and `headwater
+          gate` is what reads it
       --register <path>
           write the register of this run to a file as well as to the report.
           Spec 4 makes it a projection of the `obligations` and `controls`
@@ -94,17 +95,25 @@ Options:
           finding shape spec 4 declares, for an adapter nobody here wrote.
           `sarif` writes its own loss set into the artifact. `markdown` declares
           one in the source and not in the artifact, because nothing it writes
-          is machine-readable. `text` declares one drop there too, the routing
-          of each skip, and carries the census and the graph that no other
-          format holds. `json` declares one there as well, the per-document
-          account of coverage, and writes no loss set of its own. A run that
-          refuses writes nothing here: the account is one English sentence on
-          standard error and the status is 1
+          is machine-readable. `text` declares two drops there too, the routing
+          of each skip and, without `--verbose`, the scope of each rule and the
+          read set, and carries the census and the graph that no other format
+          holds. `json` declares one there as well, the per-document account of
+          coverage, and writes no loss set of its own. A run that refuses writes
+          nothing here: the account is one English sentence on standard error
+          and the status is 1
       --json
           write this run as one JSON document on standard output. It is the
           artifact `--format json` writes, byte for byte. A run that states both
           is refused rather than resolved, because two names for one target is a
           question answered twice. A run that refuses writes nothing here: the
           account is one English sentence on standard error and the status is 1
+      --verbose
+          add the scope of each rule, and the read set with a digest for each
+          input, to the report. Without it the report is the census, the counts
+          and the findings, and the checks block gives the size of the read set
+          alone. The flag changes the text report and nothing else, so it is
+          refused beside `--format json`, `--format sarif`, `--format markdown`
+          and `--json`, where it would do nothing
   -h, --help
           Print help

@@ -901,7 +901,8 @@ fn no_color_s_own_text_states_the_new_behavior_and_no_banner_has_an_entry() {
 // `check --read-set` writes and `headwater gate` parses, so the fill does not
 // touch it, and a case that measured it would be asking the wrong question of
 // the wrong bytes. `the_read_set_block_is_the_artifact_the_flag_writes` is
-// where the exemption is held to its side of the bargain.
+// where the exemption is held to its side of the bargain. The block is written
+// under `--verbose` alone (#1990), so each case that reads it passes the flag.
 
 /// The report over this repository, as bytes, with the streams apart.
 fn report(extra: &[&str], columns: Option<&str>) -> Ran {
@@ -910,6 +911,71 @@ fn report(extra: &[&str], columns: Option<&str>) -> Ran {
     let mut line: Vec<&str> = vec!["check", "--root", &root];
     line.extend_from_slice(extra);
     ran(&line, columns)
+}
+
+/// The default report leaves out the read set and the scope of each rule, and
+/// `--verbose` writes both (#1990). The flag is refused beside a machine format,
+/// with nothing on standard output, and the help of the verb names it.
+#[test]
+fn the_default_report_leaves_out_the_read_set_and_verbose_writes_it() {
+    let text = |ran: &Ran| String::from_utf8(ran.out.clone()).expect("the report is text");
+    let short = report(&[], None);
+    assert_eq!(short.code, Some(0), "the default report ran");
+    let short = text(&short);
+    assert!(
+        !short.contains("\nread set\n"),
+        "the default report carries the read-set block"
+    );
+    assert!(
+        !short.contains("rules, and for each the scope that binds it"),
+        "the default report carries the scope of each rule"
+    );
+    assert!(
+        short.contains(" findings\n"),
+        "the default report lost its count of findings"
+    );
+
+    let verbose = report(&["--verbose"], None);
+    assert_eq!(verbose.code, Some(0), "the verbose report ran");
+    let verbose = text(&verbose);
+    assert!(
+        verbose.contains("\nread set\n"),
+        "`--verbose` wrote no read-set block"
+    );
+    assert!(
+        verbose.contains("rules, and for each the scope that binds it"),
+        "`--verbose` wrote no scope of each rule"
+    );
+    assert!(short.lines().count() < verbose.lines().count());
+
+    for machine in [
+        &["--verbose", "--format", "json"][..],
+        &["--verbose", "--format", "sarif"],
+        &["--verbose", "--format", "markdown"],
+        &["--verbose", "--json"],
+    ] {
+        let refused = report(machine, None);
+        assert_eq!(refused.code, Some(1), "{machine:?} was not refused");
+        assert!(
+            refused.out.is_empty(),
+            "{machine:?} wrote to standard output"
+        );
+        let said = String::from_utf8(refused.err).expect("the refusal is text");
+        assert!(
+            said.contains("--verbose"),
+            "{machine:?} refused without naming the flag: {said}"
+        );
+    }
+
+    let help = ran(&["check", "--help"], None);
+    assert_eq!(help.code, Some(0));
+    let help = String::from_utf8(help.out).expect("the help is text");
+    // The option row itself, and not a mention in the help of another flag:
+    // `--read-set` and `--format` both name `--verbose` in their own text.
+    assert!(
+        help.lines().any(|line| line.trim() == "--verbose"),
+        "`check --help` lists no `--verbose` option"
+    );
 }
 
 /// A report split into the part that is laid out and the read set that is not.
@@ -938,7 +1004,8 @@ fn laid_out(report: &str) -> &str {
 /// six screen widths, and a census exclusion reason rather than a finding.
 #[test]
 fn no_line_of_the_check_report_is_wider_than_eighty_columns() {
-    let ran = report(&[], None);
+    // `--verbose`, so the case reads every block a report can carry.
+    let ran = report(&["--verbose"], None);
     assert_eq!(ran.code, Some(0), "the report ran");
     let out = String::from_utf8(ran.out).expect("the report is text");
     let body = laid_out(&out);
@@ -1095,7 +1162,7 @@ fn the_read_set_block_of_the_report_is_the_artifact_the_flag_writes() {
     let path = at.join("read-set");
     let written = path.to_str().expect("the path is text").to_string();
 
-    let ran = report(&["--read-set", &written], None);
+    let ran = report(&["--verbose", "--read-set", &written], None);
     assert_eq!(ran.code, Some(0), "the report ran");
     let out = String::from_utf8(ran.out).expect("the report is text");
     let file = std::fs::read_to_string(&path).expect("the flag wrote the file");
@@ -1147,8 +1214,8 @@ fn a_report_that_states_columns_and_one_that_does_not_write_the_same_bytes() {
 #[test]
 fn the_width_a_caller_asks_for_lays_the_report_out_and_is_held_to_the_band() {
     let text = |ran: Ran| String::from_utf8(ran.out).expect("the report is text");
-    let ordinary = text(report(&[], None));
-    let wide = |columns: &str| text(report(&["--wide"], Some(columns)));
+    let ordinary = text(report(&["--verbose"], None));
+    let wide = |columns: &str| text(report(&["--verbose", "--wide"], Some(columns)));
 
     let narrow = wide("40");
     assert_eq!(narrow, ordinary, "a width under {WIDTH} is {WIDTH}");
