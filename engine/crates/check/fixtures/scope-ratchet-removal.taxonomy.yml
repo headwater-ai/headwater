@@ -24,6 +24,16 @@ identifier_schemes:
 # against the scope of the anchor kind its relation reaches: `stray.rs` is in
 # the `code_path` scope and not in the `other_path` scope, and it is no
 # finding.
+#
+# `governs` declares the inverse name `governed_by`. A document that writes
+# the inverse name is the target of the edge, so its targets name documents
+# and never a governed file. The prior `narrowing.md` wrote
+# `governed_by: scope-ratchet-removal-src/old_debt.rs`, a value spelled like
+# a path, and the removal half does not read it as a governance target.
+#
+# The prior `dropped.rs` entry is spelled `./scope-ratchet-removal-src/...`,
+# so the removal half matches a prior target only after it normalizes it, as
+# the resolver does.
 
 anchors:
   code_path: {resolver: source-tree, scope: [scope-ratchet-removal-src/**]}
@@ -39,6 +49,7 @@ relations:
     from: [governing_fixture]
     to:   [code_path]
     cardinality: many
+    inverse: governed_by
   cites:
     family: association
     from: [governing_fixture]
