@@ -146,7 +146,16 @@ enum Held {
     /// [`crate::retention`] is the rule that reads it. A source file reaches
     /// this arm holding nothing, because bytes that are no document do not
     /// parse as one and [`read_prior`] has already said so.
-    Unmatched { prior: Option<(String, Document)> },
+    ///
+    /// `added` keeps what the line said: `added` rather than `prior`. Without
+    /// it an added source file and an edited one bind to one shape, because
+    /// neither holds a prior version here, and [`crate::scope_ratchet`] would
+    /// read every edit to a file that already stood ungoverned as new debt
+    /// (#1573). See [`Change::added`].
+    Unmatched {
+        prior: Option<(String, Document)>,
+        added: bool,
+    },
 }
 
 /// What a change states about one edge beside the prior version of the
@@ -477,9 +486,18 @@ impl Unbound {
                         path,
                         Held::Unmatched {
                             prior: Some((digest, document)),
+                            added: false,
                         },
                     ),
-                    (false, _) => (path, Held::Unmatched { prior: None }),
+                    // The line's verb survives the bind, so an addition and
+                    // an edit stay two facts. See `Held::Unmatched`.
+                    (false, held) => (
+                        path,
+                        Held::Unmatched {
+                            prior: None,
+                            added: matches!(held, Held::Added),
+                        },
+                    ),
                 })
                 .collect(),
         }
@@ -625,6 +643,7 @@ impl Change {
             .filter_map(|(path, held)| match held {
                 Held::Unmatched {
                     prior: Some((digest, document)),
+                    ..
                 } => Some(Departed {
                     path: path.as_str(),
                     digest: digest.as_str(),
@@ -632,6 +651,22 @@ impl Change {
                 }),
                 _ => None,
             })
+            .collect()
+    }
+
+    /// Every path an `added` line names, whether or not a row of this corpus
+    /// holds it, in path order (#1573).
+    ///
+    /// A source file of a corpus whose census holds no row for it binds to
+    /// nothing, and one whose census does holds a row that carries no
+    /// document. The line said `added` in both, and that is the one fact
+    /// [`crate::scope_ratchet`] reads. A `prior` line is never here, so an edit
+    /// to a file that already stood is not an addition.
+    pub fn added(&self) -> Vec<&str> {
+        self.entries
+            .iter()
+            .filter(|(_, held)| matches!(held, Held::Added | Held::Unmatched { added: true, .. }))
+            .map(|(path, _)| path.as_str())
             .collect()
     }
 

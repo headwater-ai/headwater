@@ -654,6 +654,20 @@
               }
             },
             {
+              "id": "relation.scope.ungoverned",
+              "shortDescription": {
+                "text": "corpus scope, every row of the census, and the version of each path the change named that no row of this corpus holds, and it is a barrier"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "corpus",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
               "id": "coverage.document_unchecked",
               "shortDescription": {
                 "text": "corpus scope, every row of the census, and it is a barrier"
@@ -827,6 +841,17 @@
           ],
           "hashes": {
             "sha-256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "location": {
+            "uri": "README.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "bd22011a69d33e134c76e95b1c829b184beda73d474948cdefbb632859a8910e"
           }
         },
         {
@@ -1168,6 +1193,17 @@
           ],
           "hashes": {
             "sha-256": "fd29ca33cfa7fb0582f0131f5eddd05b3c032efd3cf63e45bf51dc87f963ffd5"
+          }
+        },
+        {
+          "location": {
+            "uri": "engine/crates/check/src/change.rs"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "5da8ad672eba19040f8abfb4bc1526fc419dad5e0715db3c19d74ae177b0b917"
           }
         }
       ],
@@ -3317,7 +3353,7 @@
         },
         {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 45,
+          "ruleIndex": 46,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3346,7 +3382,7 @@
         },
         {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 45,
+          "ruleIndex": 46,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3375,7 +3411,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 44,
+          "ruleIndex": 45,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3404,7 +3440,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 44,
+          "ruleIndex": 45,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3433,7 +3469,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 44,
+          "ruleIndex": 45,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3462,7 +3498,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 44,
+          "ruleIndex": 45,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3491,7 +3527,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 44,
+          "ruleIndex": 45,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3549,7 +3585,7 @@
             "classified": 29,
             "checked": 29,
             "generated": 1,
-            "instances": 454,
+            "instances": 455,
             "skipped": 91,
             "skips": [
               {
@@ -4088,7 +4124,9 @@
             ],
             "unaccounted": [
               "./check/evaluations/delta.md",
-              "check/spec/00-both-halves.markdown"
+              "check/spec/00-both-halves.markdown",
+              "README.md",
+              "engine/crates/check/src/change.rs"
             ]
           },
           "escaped": {
@@ -4097,7 +4135,7 @@
             "suppressed": 2
           },
           "read_set": {
-            "inputs": 33,
+            "inputs": 35,
             "unhashed": 0
           },
           "loss_set": [

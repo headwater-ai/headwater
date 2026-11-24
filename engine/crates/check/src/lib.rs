@@ -190,6 +190,7 @@ pub mod register;
 pub mod retention;
 pub mod retired;
 pub mod scope;
+pub mod scope_ratchet;
 pub mod sections;
 pub mod self_target;
 pub mod shape;
@@ -243,7 +244,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 53] = [
+pub const RULES: [&str; 54] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
@@ -287,6 +288,7 @@ pub const RULES: [&str; 53] = [
     warrant::UNPAIRED,
     acceptance_state::RULE,
     retention::RULE,
+    scope_ratchet::RULE,
     coverage::RULE,
     register::DISPOSITION,
     register::MECHANISM,
@@ -711,6 +713,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::corpus_exports::<retention::Retention<'_>>(),
         ),
         (
+            scope_ratchet::RULE,
+            scope::corpus_scope::<scope_ratchet::Ungoverned<'_>>(),
+            scope::corpus_version::<scope_ratchet::Ungoverned<'_>>(),
+            scope::corpus_exports::<scope_ratchet::Ungoverned<'_>>(),
+        ),
+        (
             coverage::RULE,
             coverage::SCOPE,
             coverage::VERSION,
@@ -952,6 +960,10 @@ pub fn run(
     // instantiate over, and it declares the corpus-grained half of the prior
     // input. See [`retention`].
     let retention = retention::Retention::over(declared.taxonomy, declared.shape);
+    // A file the change adds inside the governed scope that no governance
+    // edge reaches. Corpus-scoped for the reason retention is: an added source
+    // file has no census row to instantiate over. See [`scope_ratchet`].
+    let ungoverned = scope_ratchet::Ungoverned::over(declared.relations);
 
     let digests = scope::Digests::of(census);
     // The stages of this function for `tools/measure/check-phases.sh`, which
@@ -1213,6 +1225,14 @@ pub fn run(
     instances.extend(scope::over_documents(&standing, census, graph, ctx, cache));
     instances.extend(scope::over_corpus(
         &retention, census, graph, claims, ctx, cache,
+    ));
+    instances.extend(scope::over_corpus(
+        &ungoverned,
+        census,
+        graph,
+        claims,
+        ctx,
+        cache,
     ));
 
     phase::mark("run.others");

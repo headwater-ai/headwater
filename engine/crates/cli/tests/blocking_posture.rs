@@ -50,7 +50,7 @@ fn claim(at: &std::path::Path) {
 }
 
 /// The override that promotes CT-REL-6, as an adopter writes it.
-const PROMOTE: &str = "\noverride:\n  controls.CT-REL-6.posture: blocking\n";
+const PROMOTE: &str = "  controls.CT-REL-6.posture: blocking\n";
 
 /// The stub root with one stale `governs` edge, and `overlay` appended to the
 /// copied overlay before the root resolves.
@@ -65,9 +65,8 @@ fn root(label: &str, overlay: &'static str) -> Root {
         std::fs::write(at.join(path), text).expect("the decision writes");
         claim(at);
         let file = at.join(".headwater/overlay.yml");
-        let mut source = std::fs::read_to_string(&file).expect("the overlay reads");
-        source.push_str(overlay);
-        std::fs::write(&file, source).expect("the overlay writes");
+        let source = std::fs::read_to_string(&file).expect("the overlay reads");
+        std::fs::write(&file, with_override(&source, overlay)).expect("the overlay writes");
     })
 }
 
@@ -154,9 +153,8 @@ fn a_blocking_control_fails_a_strict_run_on_an_info_finding() {
             std::fs::write(at.join(path), text).expect("the decision writes");
             claim(at);
             let file = at.join(".headwater/overlay.yml");
-            let mut source = std::fs::read_to_string(&file).expect("the overlay reads");
-            source.push_str(overlay);
-            std::fs::write(&file, source).expect("the overlay writes");
+            let source = std::fs::read_to_string(&file).expect("the overlay reads");
+            std::fs::write(&file, with_override(&source, overlay)).expect("the overlay writes");
         })
     };
     let info = "info\n    relation.target.suspect (";
@@ -261,9 +259,8 @@ fn a_promotion_after_a_warm_run_moves_the_gate_and_the_cache_agrees() {
     assert_eq!(cold.code, Some(0), "{cold:?}");
 
     let file = root.at.join(".headwater/overlay.yml");
-    let mut source = std::fs::read_to_string(&file).expect("the overlay reads");
-    source.push_str(PROMOTE);
-    std::fs::write(&file, source).expect("the overlay writes");
+    let source = std::fs::read_to_string(&file).expect("the overlay reads");
+    std::fs::write(&file, with_override(&source, PROMOTE)).expect("the overlay writes");
     let resolved = root.run(&["taxonomy", "resolve"]);
     assert_eq!(resolved.code, Some(0), "{resolved:?}");
 
@@ -298,9 +295,12 @@ fn a_promotion_after_a_warm_run_moves_the_gate_and_the_cache_agrees() {
 fn a_posture_outside_the_two_values_is_refused() {
     let root = root("posture-typo", "");
     let file = root.at.join(".headwater/overlay.yml");
-    let mut source = std::fs::read_to_string(&file).expect("the overlay reads");
-    source.push_str("\noverride:\n  controls.CT-REL-6.posture: blockng\n");
-    std::fs::write(&file, source).expect("the overlay writes");
+    let source = std::fs::read_to_string(&file).expect("the overlay reads");
+    std::fs::write(
+        &file,
+        with_override(&source, "  controls.CT-REL-6.posture: blockng\n"),
+    )
+    .expect("the overlay writes");
     let checked = root.run(&["taxonomy", "resolve"]);
     assert_ne!(checked.code, Some(0), "{checked:?}");
     let said = format!("{}{}", checked.out, checked.err);
@@ -308,4 +308,25 @@ fn a_posture_outside_the_two_values_is_refused() {
         said.contains("CT-REL-6") && said.contains("blockng") && said.contains("`blocking`"),
         "the refusal names the control, the value and the admitted values:\n{said}"
     );
+}
+
+/// The overlay with `entries`, each a line indented two spaces, in its
+/// `override` block. The repository's overlay closes on that block since
+/// #1573, so the entries join it, and an overlay with none gains one. Two
+/// `override` keys would be a duplicate key the loader refuses.
+fn with_override(overlay: &str, entries: &str) -> String {
+    match overlay.lines().position(|line| line == "override:") {
+        Some(at) => {
+            assert!(
+                overlay
+                    .lines()
+                    .skip(at + 1)
+                    .all(|line| line.is_empty() || line.starts_with(' ') || line.starts_with('#')),
+                "the overlay's `override` block is not its last block, so this case cannot \
+                 append to it"
+            );
+            format!("{}\n{entries}", overlay.trim_end())
+        }
+        None => format!("{overlay}\noverride:\n{entries}"),
+    }
 }

@@ -1533,6 +1533,8 @@ impl<'a> NeighbourhoodView<'a> {
 pub struct CorpusView<'a> {
     identity: Option<&'a [headwater_graph::index::Reported]>,
     departed: &'a [Departed<'a>],
+    added: &'a [&'a str],
+    scope: Option<&'a [headwater_graph::scope::Reach]>,
     claims: Option<&'a crate::claim::Claims>,
     links: Option<&'a [headwater_graph::links::Link]>,
     mentions: Option<&'a [headwater_graph::mentions::Mention]>,
@@ -1619,6 +1621,24 @@ impl<'a> CorpusView<'a> {
         self.departed
     }
 
+    /// Every path an `added` line of the change names, in path order, and
+    /// only for a check that declared `NEEDS_PRIOR` (#1573).
+    ///
+    /// A path here may have no census row, so the runner puts each one in the
+    /// read set itself, with a digest over the line that names it. Without
+    /// that a cached verdict would survive a later change that adds a file.
+    /// See [`crate::change::Change::added`].
+    pub fn added(&self) -> &[&'a str] {
+        self.added
+    }
+
+    /// What each declared governed-scope pattern admits from the tree, as the
+    /// graph build walked it, and only for a check that declared
+    /// `NEEDS_GRAPH`.
+    pub fn scope(&self) -> Option<&'a [headwater_graph::scope::Reach]> {
+        self.scope
+    }
+
     /// The identifier claim store, and only for a check that declared
     /// `NEEDS_CLAIMS`.
     ///
@@ -1679,6 +1699,8 @@ impl<'a> CorpusView<'a> {
         CorpusView {
             identity: None,
             departed: &[],
+            added: &[],
+            scope: None,
             claims: None,
             links,
             mentions: None,
@@ -1698,6 +1720,8 @@ impl<'a> CorpusView<'a> {
         CorpusView {
             identity: None,
             departed: &[],
+            added: &[],
+            scope: None,
             claims,
             links: None,
             mentions: None,
@@ -1718,6 +1742,8 @@ impl<'a> CorpusView<'a> {
         CorpusView {
             identity: None,
             departed: &[],
+            added: &[],
+            scope: None,
             claims: None,
             links: None,
             mentions: None,
@@ -1740,6 +1766,8 @@ impl<'a> CorpusView<'a> {
         CorpusView {
             identity: None,
             departed: &[],
+            added: &[],
+            scope: None,
             claims: None,
             links,
             mentions: None,
@@ -2270,9 +2298,9 @@ pub fn over_corpus<C: CorpusCheck>(
     // rule that declared it and met a run with no change reports the skip
     // rather than an empty set, because "the change named no departed path" and
     // "there is no change" are the two readings that must not become one.
-    let departed = match (C::NEEDS_PRIOR, ctx.change()) {
-        (false, _) => Vec::new(),
-        (true, Some(change)) => change.departed(),
+    let (departed, added) = match (C::NEEDS_PRIOR, ctx.change()) {
+        (false, _) => (Vec::new(), Vec::new()),
+        (true, Some(change)) => (change.departed(), change.added()),
         (true, None) => {
             cache.undecided();
             return vec![Instance::skipped(
@@ -2296,6 +2324,27 @@ pub fn over_corpus<C: CorpusCheck>(
             .iter()
             .map(|entry| Input::new(entry.path, Some(entry.digest))),
     );
+    // Each added path that no row carrying a document already lists, which is
+    // every source file a change adds. The input is the manifest's statement
+    // that the path was added, so its digest is over that line: the bytes of
+    // the file decide nothing a rule here reads, and the line is what moves
+    // when a later change adds a file. Without it a cached verdict would
+    // survive the change that adds an ungoverned one (#1573). The gate never
+    // trusts a change-scoped verdict, so it never compares this digest with
+    // the bytes on disk.
+    // One set of the listed paths, built only when the change adds something,
+    // so the test is a lookup and never a scan of the corpus per added path.
+    if !added.is_empty() {
+        let listed: std::collections::BTreeSet<String> =
+            reads.iter().map(|input| input.path.clone()).collect();
+        for path in &added {
+            if listed.contains(*path) {
+                continue;
+            }
+            let digest = headwater_hash::digest(format!("added\t{path}").as_bytes());
+            reads.push(Input::new(*path, Some(digest.as_str())));
+        }
+    }
     // The store, named in the read set with a digest. `readset.rs` says an
     // input a run read has to appear or the union is not a union, and
     // `cache.rs` refuses to key an instance carrying an input with no digest,
@@ -2320,6 +2369,13 @@ pub fn over_corpus<C: CorpusCheck>(
             false => None,
         },
         departed: &departed,
+        added: &added,
+        // Walked by the graph build from the tree, on the terms of `edges`
+        // below: the patterns are in the lock, and the lock is in every key.
+        scope: match C::NEEDS_GRAPH {
+            true => Some(&graph.scope),
+            false => None,
+        },
         claims: match C::NEEDS_CLAIMS {
             true => Some(claims),
             false => None,

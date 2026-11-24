@@ -255,6 +255,42 @@ pub fn tree_directories(
     found
 }
 
+/// The entries a `governance` edge onto `anchor_kind` matched, over every edge
+/// of a graph.
+///
+/// This is the one reach test of the governed scope. `taxonomy audit` counts a
+/// scope entry governed by it, and `relation.scope.ungoverned` refuses an
+/// added entry that it does not hold, so the figure and the rule cannot
+/// disagree about one path (#1573). The family is the test rather than a
+/// relation name, because spec 2 closes the family set and a taxonomy names
+/// its relations.
+pub fn governed<'a>(
+    edges: &'a [crate::Edge],
+    declarations: &Declarations,
+    anchor_kind: &str,
+) -> std::collections::BTreeSet<&'a str> {
+    let governing: std::collections::BTreeSet<&str> = declarations
+        .relations
+        .iter()
+        .filter(|relation| relation.family.as_deref() == Some("governance"))
+        .map(|relation| relation.name.as_str())
+        .collect();
+    edges
+        .iter()
+        .filter(|edge| governing.contains(edge.declared.as_str()))
+        .filter_map(|edge| match &edge.target {
+            crate::Target::Anchor {
+                anchor_kind: kind,
+                patterns,
+                ..
+            } if kind == anchor_kind => Some(patterns),
+            _ => None,
+        })
+        .flatten()
+        .flat_map(|member| member.matched.iter().map(String::as_str))
+        .collect()
+}
+
 impl Reach {
     /// Drop every entry git ignores, for a reach taken with nothing ignored.
     pub fn retain_unignored(&mut self, ignored: &Ignored) {

@@ -1,7 +1,11 @@
 #!/bin/sh
 # The caller: a git range, handed to `headwater change`.
 #
-#     .githooks/change-manifest <base-rev> <out-dir>
+#     .githooks/change-manifest <base-rev> <out-dir> [option...]
+#
+# Every argument after the two is handed to `headwater change` as given. The
+# commit gate passes `--tracked-only`, because the commit it gates does not
+# carry an untracked file (#1573).
 #
 # It prints the path of the manifest `headwater change` wrote on standard
 # output, and it exits with that verb's own status.
@@ -38,12 +42,13 @@
 
 set -u
 
-if [ $# -ne 2 ]; then
-    echo "usage: change-manifest <base-rev> <out-dir>" >&2
+if [ $# -lt 2 ]; then
+    echo "usage: change-manifest <base-rev> <out-dir> [option...]" >&2
     exit 2
 fi
 base=$1
 out=$2
+shift 2
 
 root=$(git rev-parse --show-toplevel 2>/dev/null) || {
     echo "change-manifest: not inside a git repository." >&2
@@ -67,4 +72,4 @@ if [ -z "$engine" ]; then
     exit 1
 fi
 
-exec "$engine" change "$base" "$out" --root "$root"
+exec "$engine" change "$base" "$out" --root "$root" "$@"

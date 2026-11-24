@@ -67,6 +67,58 @@ pub fn produce(
     verified: &[String],
     edges: &[(String, String)],
 ) -> Result<PathBuf, String> {
+    produce_with(root, base, out, verified, edges, Untracked::Named)
+}
+
+/// Whether a file the working tree holds and the index does not is named.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Untracked {
+    /// Named as `added`, because `git diff` never reports one. This is what a
+    /// manifest of the working tree holds.
+    Named,
+    /// Left out, because the commit the caller is about to write does not
+    /// carry it. A commit gate passes this (#1573): an untracked scratch file
+    /// is no addition of the commit, and a rule that reads additions must not
+    /// refuse the commit for it. A staged new file is in the index, so
+    /// `git diff` still names it.
+    Left,
+}
+
+/// [`produce_with`], over the arguments as `headwater change` parses them.
+///
+/// The parser takes two values per `--verified-edge`, so `verified_edge` is
+/// pairs, flat, in the order given. `tracked_only` is `--tracked-only`. This
+/// lives here and not in the binary, because `main.rs` holds a line-count
+/// ratchet (`crates/cli/tests/verbs.rs`).
+pub fn produce_flat(
+    root: &Path,
+    base: &str,
+    out: &Path,
+    verified: &[String],
+    verified_edge: &[String],
+    tracked_only: bool,
+) -> Result<PathBuf, String> {
+    let (pairs, _) = verified_edge.as_chunks::<2>();
+    let edges: Vec<(String, String)> = pairs
+        .iter()
+        .map(|[document, target]| (document.clone(), target.clone()))
+        .collect();
+    let untracked = match tracked_only {
+        true => Untracked::Left,
+        false => Untracked::Named,
+    };
+    produce_with(root, base, out, verified, &edges, untracked)
+}
+
+/// [`produce`], with the choice of whether an untracked file is named.
+pub fn produce_with(
+    root: &Path,
+    base: &str,
+    out: &Path,
+    verified: &[String],
+    edges: &[(String, String)],
+    untracked_files: Untracked,
+) -> Result<PathBuf, String> {
     let toplevel = show_toplevel(root)?;
 
     for (index, path) in verified.iter().enumerate() {
@@ -133,8 +185,10 @@ pub fn produce(
             Changed::Other { path } => emit(Status::Modified, "", &path)?,
         }
     }
-    for path in untracked(&toplevel) {
-        emit(Status::Added, "", &path)?;
+    if untracked_files == Untracked::Named {
+        for path in untracked(&toplevel) {
+            emit(Status::Added, "", &path)?;
+        }
     }
     for path in verified {
         manifest.push_str(&format!("verified\t{path}\n"));
@@ -1278,6 +1332,26 @@ mod tests {
         );
         let file = prior_line.rsplit('\t').next().expect("a file field");
         assert_eq!(read(Path::new(file)), "text that survives the move\n");
+        let _ = fs::remove_dir_all(&out);
+        let _ = fs::remove_dir_all(&repo.at);
+    }
+
+    /// A commit gate leaves an untracked file out, because the commit does
+    /// not carry it, and still names a new file that is staged (#1573).
+    #[test]
+    fn a_gate_that_leaves_untracked_files_out_still_names_a_staged_add() {
+        let repo = Repo::new("untracked-left");
+        repo.write("a.md", "x\n");
+        let base = repo.commit("base");
+        repo.write("scratch.sh", "y\n");
+        repo.write("staged.sh", "z\n");
+        repo.git(&["add", "staged.sh"]);
+        let out = repo.out("untracked-left");
+        let manifest_path = produce_with(&repo.at, &base, &out, &[], &[], Untracked::Left)
+            .expect("the manifest writes");
+        let manifest = read(&manifest_path);
+        assert!(manifest.contains("added\tstaged.sh\n"), "{manifest}");
+        assert!(!manifest.contains("scratch.sh"), "{manifest}");
         let _ = fs::remove_dir_all(&out);
         let _ = fs::remove_dir_all(&repo.at);
     }

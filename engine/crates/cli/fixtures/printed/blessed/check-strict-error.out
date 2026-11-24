@@ -25,20 +25,20 @@ graph
       name it
 
 checks
-  3 seen, 3 classified, 3 checked, 36 check instances
+  3 seen, 3 classified, 3 checked, 37 check instances
         6 skipped: this document declares no warrant, and an absent warrant is
           not a value outside the closed set
         1 skipped: this document stands at `nosuch`, which `status` does not
           admit, and `facet.value.not_permitted` reports that
         2 skipped: this document declares no warrant, so there is no acceptance
           to read beside the state
-        7 skipped: change-scoped-only: the prior version is available only in
+        8 skipped: change-scoped-only: the prior version is available only in
           change-scoped evaluation, and this run carries no change
         1 skipped: this document stands at `nosuch`, which the state facet does
           not admit, and `facet.value.not_permitted` reports that
   adoption
     0 pairs open, 0 closed, holding 0 findings, in 0 tasks
-  7 documents in the read set, and 9 barriers that no gate carries across a
+  7 documents in the read set, and 10 barriers that no gate carries across a
     merge
         3 instances of facet.required.missing
         3 instances of facet.value.not_permitted
@@ -58,6 +58,7 @@ checks
         3 instances of warrant.acceptance.unpaired
         3 instances of warrant.acceptance.at_initial
         1 instances of lifecycle.deletion.not_permitted
+        1 instances of relation.scope.ungoverned
   suppressions
     0 findings hidden by 0 directives
   2 findings

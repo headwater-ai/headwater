@@ -525,6 +525,14 @@ pub enum Verb {
                     stamps nothing"
         )]
         verified_edge: Vec<String>,
+        #[arg(
+            long = "tracked-only",
+            help = "leave out every file the working tree holds and the index does not. A \
+                    commit gate passes this, because the commit does not carry an untracked \
+                    file, and a rule that reads what a change adds must not refuse the commit \
+                    for one. A staged new file is in the index, so it is still named"
+        )]
+        tracked_only: bool,
     },
     Observe {
         #[arg(

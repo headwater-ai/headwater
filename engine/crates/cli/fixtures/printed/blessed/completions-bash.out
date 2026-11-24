@@ -201,7 +201,7 @@ _headwater() {
             return 0
             ;;
         headwater__subcmd__change)
-            opts="-V -h --verified --verified-edge --root --version --wide --no-color --no-banner --help"
+            opts="-V -h --verified --verified-edge --tracked-only --root --version --wide --no-color --no-banner --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0

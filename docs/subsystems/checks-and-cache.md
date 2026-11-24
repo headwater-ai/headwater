@@ -85,6 +85,8 @@ The corpus-scoped view carries four more `NEEDS_` constants: `NEEDS_LINKS`, `NEE
 
 The first three join no cache key. Each one is a reading of documents that the instance already reads, and the read set names those documents already. A key component would hash the same bytes twice. It would also make every cache of every adopter cold for a fact that changes no verdict. `link_path` carries the one case where this argument does not apply: a link whose target is not a document of this corpus.
 
+`NEEDS_GRAPH` also gives the view `scope()`, the entries that each governed-scope pattern admits. The graph build walks those entries from the tree, and no document holds them. The patterns are in the lock, and the lock is in every key. A check that reads `scope()` reads it only for a path that the read set already names, so the key holds that path too. `relation.scope.ungoverned` is that check (#1573). It also declares `NEEDS_PRIOR`, which gives it `added()`: each path that an `added` line of the change names. The runner puts each such path in the read set, with a digest over its manifest line, because a source file has no census digest.
+
 `NEEDS_ORPHANED` joins the key as a value that the caller injects, and not as a file of the read set. `headwater generate` computes the set of orphaned marked files from the lock and the tree, and the `check` crate cannot repeat that computation. The value goes into the key as a `resolution` line, on the terms of an anchor target. The doc comment of each constant in `engine/crates/check/src/scope.rs` gives the full reason.
 
 ### The cache key, and why a damaged file costs one run

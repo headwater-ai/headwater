@@ -327,8 +327,9 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             out,
             verified,
             verified_edge,
+            tracked_only,
         } => match (base, out) {
-            (Some(base), Some(out)) => change(root, &base, &out, &verified, &verified_edge),
+            (Some(base), Some(out)) => change(root, &base, &out, &verified, &verified_edge, tracked_only),
             _ => fail(
                 "`change` takes a base revision and a directory to write into. Try `headwater \
                  change HEAD .headwater/change` before `headwater check --change \
@@ -6170,15 +6171,9 @@ fn change(
     out: &Path,
     verified: &[String],
     verified_edge: &[String],
+    tracked_only: bool,
 ) -> ExitCode {
-    // The parser takes two values per `--verified-edge`, so the list is
-    // pairs, in the order given.
-    let (pairs, _) = verified_edge.as_chunks::<2>();
-    let edges: Vec<(String, String)> = pairs
-        .iter()
-        .map(|[document, target]| (document.clone(), target.clone()))
-        .collect();
-    match headwater_vcs::produce(root, base, out, verified, &edges) {
+    match headwater_vcs::produce_flat(root, base, out, verified, verified_edge, tracked_only) {
         Ok(manifest) => {
             println!("{}", manifest.display());
             ExitCode::SUCCESS

@@ -1991,8 +1991,13 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             // The third rule that reads a lifecycle regime, and the only one
             // whose subject is a document this corpus no longer holds. A
             // deleted document has no census row, so there is nothing smaller
-            // than the corpus to instantiate over. It is also the one rule
+            // than the corpus to instantiate over. It is also the first rule
             // that declares the prior version at this grain.
+            Grain::Corpus,
+            // A file a change adds inside the governed scope with no
+            // governance edge onto it. A source file has no census row either,
+            // so the corpus again, and the second rule at this grain that
+            // declares the prior version (#1573).
             Grain::Corpus,
             Grain::Corpus,
             // The three register rules, which read the taxonomy and no

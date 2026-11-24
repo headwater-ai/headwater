@@ -82,6 +82,8 @@ The program exclusion applies only to a whole bare token, so `mkdocs/build.sh` c
 
 **With `--change`, the manifest reads.** A manifest this engine cannot open ends the run, because a line that was dropped reads as a document that did not move. A path inside the manifest that reaches no row of the census is counted and named in the report. So a mistyped path is visible rather than absorbed.
 
+**With `--change`, a file that the change adds inside the governed scope needs an edge.** `relation.scope.ungoverned` reads each path that an `added` line names. It reports the path when a pattern of `anchors.<kind>.scope` admits it and no `governance` edge onto that anchor kind reaches it. The finding names the path and the pattern. The rule uses the reach test that `headwater taxonomy audit` counts with, so the rule and the governed-scope figure agree about each path. The baseline is the change itself. The engine stores no figure and compares none across branches, because a corpus-wide fold is derived and never stored ([HW-DR-0049](../decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md)). A file that already stood ungoverned is not reported when a change edits it, so existing debt is no finding of this rule and a corpus that adopts it records nothing. The finding is a warning, because the remedy is a rewrite: a `governs` entry, or a narrower scope. The standard package ships its control, `CT-REL-12`, at `posture: advisory`. A corpus that promotes the control to `blocking` with an overlay `override` makes `--strict` fail on the finding. This repository does that. A run without `--change` skips the rule with the reason `change-scoped-only`.
+
 ## Options
 
 | Option | What it does |

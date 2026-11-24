@@ -2,7 +2,7 @@
 
 70 findings, 40 of them errors across 28 of 31 documents, against `headwater/fixture` 1.0.0 at `105e82f4b4435094f6bfd8ba5b3c3f3380341b35aeebc9aca2c3d508726d1601`, evaluated at 2026-08-12.
 
-**Coverage.** This run saw 31 files and classified 29 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 454 check instances, and 118 of them reached no verdict.
+**Coverage.** This run saw 31 files and classified 29 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 455 check instances, and 119 of them reached no verdict.
 
 - 58 — this document declares no warrant, and an absent warrant is not a value outside the closed set
 - 1 — no `id` facet, which is the key this engine reads an identifier from and which no declaration states
@@ -11,7 +11,7 @@
 - 2 — `guarded` forbids hedging, and this engine has no pattern set for it
 - 1 — `declarative` binds this kind and this document carries no prose to read: no body and no `summary` facet with a value
 - 2 — `ste_strict` declares ASD-STE100, profile strict, and this engine has no rules for it
-- 30 — change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+- 31 — change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
 - 1 — the document at the target end, `FIX-REG-open-questions`, declares no value for the state facet, so there is no state to read there
 
 | Severity | Where | Rule | Finding |
@@ -97,4 +97,4 @@
 
 </details>
 
-31 documents in the read set, and 9 barriers that no gate carries across a merge. 29 obligations, 23 verified.
+31 documents in the read set, and 10 barriers that no gate carries across a merge. 29 obligations, 23 verified.

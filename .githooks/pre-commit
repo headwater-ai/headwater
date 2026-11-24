@@ -221,7 +221,10 @@ manifest=
 work=$(mktemp -d 2>/dev/null)
 if [ -n "$work" ]; then
     trap 'rm -rf "$work"' EXIT HUP INT TERM
-    manifest=$(sh "$root/.githooks/change-manifest" HEAD "$work" 2>"$work/why")
+    # `--tracked-only`: an untracked file is no addition of this commit, and
+    # `relation.scope.ungoverned` refuses an addition in scope that no edge
+    # reaches, so a scratch file beside a staged edit would refuse it (#1573).
+    manifest=$(sh "$root/.githooks/change-manifest" HEAD "$work" --tracked-only 2>"$work/why")
 fi
 if [ -z "$manifest" ]; then
     echo "headwater: this commit carries no described change, so a state movement is"
@@ -387,7 +390,17 @@ fi
 # the indent says. The fill will not emit one — `headwater_check::fill` leaves a
 # location line whole rather than wrapping its severity away — and this line is
 # what keeps a future change to the fill from silently emptying this hook.
+#
+# The `blocks a strict run` section is printed whole too. A finding whose
+# control is `posture: blocking` fails a strict run at any severity, so a
+# commit can be refused with no error at all, and that section is then the one
+# place the reason is written. `.headwater/overlay.yml` promotes `CT-REL-12`,
+# so a staged file in the governed scope that no edge reaches is refused that
+# way (#1573).
 printf '%s\n' "$report" | awk '
+    /^blocks a strict run$/ { print; blocks = 1; next }
+    blocks && /^ / { print; next }
+    { blocks = 0 }
     { at = match($0, /[^ ]/); indent = at - 1 }
     show && at > 0 && indent > base { print; next }
     / error$/ && NF > 1 { print; show = 1; base = indent; next }
@@ -395,7 +408,8 @@ printf '%s\n' "$report" | awk '
 '
 cat <<'EOF'
 
-`headwater check --strict` reports an error over this corpus. Your options:
+`headwater check --strict` reports an error, or a finding a blocking control
+discharges, over this corpus. Your options:
   - read them all: headwater check
   - fix them, which for every error-severity rule is a mechanical edit
   - mark a deliberate exception on the offending block:
