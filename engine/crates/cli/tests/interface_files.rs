@@ -70,6 +70,7 @@ const fn stops(argv: &'static [&'static str], why: &'static str) -> Case {
 const CASES: &[Case] = &[
     loads(&["check"]),
     stops(&["change"], "it reads git and no graph"),
+    loads(&["observe", "x", "--commit", "abcd"]),
     stops(&["gate"], "it reads a read set and no graph"),
     loads(&["conformance"]),
     stops(&["derived"], "it reads the declared producers and no graph"),

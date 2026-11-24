@@ -4,7 +4,7 @@ status: current
 status_since: 2026-09-06
 last_verified: 2026-11-20
 title: "Survey the wiring decisions of main.rs, verb by verb, and cover the quiet ones"
-summary: "The survey of main.rs covers 50 command lines. One quiet wiring decision is still uncovered: the default of neighbors --top, which no fixture can reach."
+summary: "The survey of main.rs covers 51 command lines. One quiet wiring decision is still uncovered: the default of neighbors --top, which no fixture can reach."
 provenance:
   warrant: accepted
   agency: agent
@@ -27,7 +27,7 @@ Two further sites are already named. `probe stale` is the third caller of `Plan:
 
 ## Survey
 
-The second slice of [#1494](https://github.com/headwater-ai/headwater/issues/1494) made this survey on 2026-11-20. `main.rs` was then 9,227 lines. Its `dispatch` matches 27 arms of `Verb`, and four of them take a second word from `JsonWord`, `SweepWord`, `ProbeWord` or `TaxonomyWord` in `engine/crates/cli/src/lib.rs`. So the table has 50 rows. 23 rows are the arms that take no second word, and 23 rows are the second words. The other 4 rows are the four verbs given no second word. The Discharge section below says thirty verbs, which was the count when this record was filed. The 50 command lines are the unit that the table uses now.
+The second slice of [#1494](https://github.com/headwater-ai/headwater/issues/1494) made this survey on 2026-11-20. `main.rs` was then 9,227 lines. Its `dispatch` matches 27 arms of `Verb`, and four of them take a second word from `JsonWord`, `SweepWord`, `ProbeWord` or `TaxonomyWord` in `engine/crates/cli/src/lib.rs`. So the table has 50 rows. 23 rows are the arms that take no second word, and 23 rows are the second words. The other 4 rows are the four verbs given no second word. [#2024](https://github.com/headwater-ai/headwater/issues/2024) added the verb `observe` on 2026-11-24, which is a 28th arm and a 51st row. The Discharge section below says thirty verbs, which was the count when this record was filed. The 50 command lines are the unit that the table uses now.
 
 Two passes found the decisions. The first read each arm of `dispatch` and the function it calls. The second listed every site in `main.rs` that can turn a failure into a default: `.ok()`, `unwrap_or`, `unwrap_or_default`, `unwrap_or_else`, `filter_map` and `let _ =`. Such a site is a quiet failure when it is wrong. It found 81 sites. 37 of them are `let _ = writeln!` into a `String`, which cannot fail. The other 44 were read one at a time, and each decision they make is in a row below.
 
@@ -35,6 +35,7 @@ Two passes found the decisions. The first read each arm of `dispatch` and the fu
 |---|---|---|---|
 | `check` | It builds `Asked` from the flags: the format, the cache, the change manifest and the read set | covered | `wiring.rs` `a_change_the_flag_named_reaches_the_verdict_and_not_only_the_parser`, and `cache_key.rs` `a_warm_check_gives_the_cold_verdict_after_the_lock_moves` |
 | `change` | It refuses unless a base and a directory are both given | covered | `wiring.rs` `a_change_the_flag_named_reaches_the_verdict_and_not_only_the_parser` |
+| `observe` | It refuses unless an identifier and a commit are both given. It gives the loaded relations, census and graph to `headwater_check::verification::observe`, which plans and writes | covered | `observe.rs`, which drives a written entry through `check` |
 | `gate` | It reads each input of a published read set, and digests the claim store as a listing because it is a directory | covered | `import_pin.rs` `each_snapshot_file_joins_the_read_set_and_a_gate_sees_it_move`, and the three gate runs in `harvest.rs` |
 | `derived` | none | decides nothing | It prints what the loaded producers derive |
 | `site` | It refuses with no directory | covered | `site.rs` |

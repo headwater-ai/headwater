@@ -335,6 +335,16 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                  .headwater/change/manifest`",
             ),
         },
+        Verb::Observe {
+            verifications,
+            commit,
+        } => match (verifications.is_empty(), commit) {
+            (false, Some(commit)) => observe(root, &verifications, &commit),
+            _ => fail(
+                "`observe` takes one or more verification identifiers and `--commit <sha>`, as \
+                 in `headwater observe HW-VER-0001 --commit \"$GITHUB_SHA\"`",
+            ),
+        },
         Verb::Gate {
             read_set,
             now,
@@ -6174,6 +6184,25 @@ fn change(
             ExitCode::SUCCESS
         }
         Err(message) => fail(&message),
+    }
+}
+
+/// `headwater observe` (#2024), over the one load `check` reads its digests from.
+fn observe(root: &Path, ids: &[String], commit: &str) -> ExitCode {
+    let Ok(loaded) = opened(root) else {
+        return ExitCode::FAILURE;
+    };
+    let (relations, census, graph) = (&loaded.relations, &loaded.census, &loaded.graph);
+    match headwater_check::verification::observe(root, relations, census, graph, ids, commit) {
+        Err(message) => fail(&message),
+        Ok(observed) => {
+            for line in &observed.refused {
+                eprintln!("headwater: {}", err(line));
+            }
+            eprint!("{}", observed.note);
+            print!("{}", observed.out);
+            ExitCode::from(u8::from(!observed.refused.is_empty()))
+        }
     }
 }
 

@@ -9,6 +9,7 @@ nav:
           - "How-to guides":
               - "How-to guides": "how-to/README.md"
               - "Publish your corpus as a site": "how-to/publish-your-corpus-as-a-site.md"
+              - "Record a verification from CI": "how-to/record-a-verification-from-ci.md"
               - "Relocate a shelf": "how-to/relocate-a-shelf.md"
               - "Wire headwater check into your own workflow": "how-to/wire-headwater-check-into-your-own-workflow.md"
           - "Explanations":
@@ -55,6 +56,7 @@ nav:
               - "headwater merge-driver": "interfaces/headwater-merge-driver.md"
               - "headwater neighbors": "interfaces/headwater-neighbors.md"
               - "headwater new": "interfaces/headwater-new.md"
+              - "headwater observe": "interfaces/headwater-observe.md"
               - "headwater probe": "interfaces/headwater-probe.md"
               - "headwater query": "interfaces/headwater-query.md"
               - "headwater route": "interfaces/headwater-route.md"

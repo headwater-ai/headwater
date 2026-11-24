@@ -299,6 +299,8 @@ anchors
     cited by HW-DR-0026
   code_path `engine/crates/check/src/link_identifier.rs` via source-tree
     cited by HW-SPEC-check-layer
+  code_path `engine/crates/check/src/observation.rs` via source-tree
+    cited by HW-IFACE-headwater-observe
   code_path `engine/crates/check/src/pin.rs` via source-tree
     cited by HW-IFACE-headwater-check
   code_path `engine/crates/check/src/reciprocity.rs` via source-tree
@@ -365,6 +367,8 @@ anchors
     cited by HW-IFACE-headwater-neighbors
   code_path `engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs` via source-tree
     cited by HW-IFACE-headwater-new
+  code_path `engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs` via source-tree
+    cited by HW-IFACE-headwater-observe
   code_path `engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs` via source-tree
     cited by HW-IFACE-headwater-probe
   code_path `engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs` via source-tree

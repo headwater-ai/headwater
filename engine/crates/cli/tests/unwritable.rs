@@ -67,6 +67,7 @@ const fn row(verb: &'static str, at: At, args: &'static [&'static str]) -> Row {
 const ROWS: &[Row] = &[
     row("check", At::Scratch, &["check"]),
     row("change", At::Repository, &["change"]),
+    row("observe", At::Repository, &["observe"]),
     row("gate", At::Repository, &["gate"]),
     row("conformance", At::Scratch, &["conformance"]),
     row("derived", At::Scratch, &["derived"]),
