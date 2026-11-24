@@ -309,6 +309,26 @@ git -C "$scratch" rm -q "engine/crates/check/src/change.rs"
 out=$(gate); status=$?
 judge 'deleting a file that is no document of this corpus is not refused' 0 "$status" '' "$out"
 
+# The scope ratchet reads what the commit adds (#1573). An untracked file is no
+# addition of the commit, so a scratch file under `tools/**` beside a staged
+# edit does not refuse it. The gate passes `--tracked-only` to the producer for
+# this, and without it the untracked file is named `added` and refused.
+reset
+printf '# an edit\n' >> "$scratch/tools/hw-cargo"
+git -C "$scratch" add tools/hw-cargo
+printf '#!/bin/sh\n' > "$scratch/tools/zz-untracked.sh"
+out=$(gate); status=$?
+judge 'an untracked ungoverned file beside a staged edit does not refuse the commit' 0 "$status" '' "$out"
+refute 'and the scope ratchet names no untracked file' 'relation.scope.ungoverned' "$out"
+
+# The same file staged is an addition of the commit, and no edge reaches it.
+reset
+printf '#!/bin/sh\n' > "$scratch/tools/zz-staged.sh"
+git -C "$scratch" add tools/zz-staged.sh
+out=$(gate); status=$?
+judge 'a staged ungoverned file in the governed scope refuses the commit' 1 "$status" \
+    'tools/zz-staged.sh:0:0 relation.scope.ungoverned blocked by CT-REL-12' "$out"
+
 reset
 produce "0000000000000000000000000000000000000000"
 status=$?
