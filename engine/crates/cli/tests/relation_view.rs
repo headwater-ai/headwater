@@ -343,3 +343,201 @@ fn table_row(text: &str, criterion: &str) -> Vec<String> {
         .find(|row| row[1].contains(criterion))
         .unwrap_or_else(|| panic!("{criterion} is dropped from the view\n{text}"))
 }
+
+/// The identifiers a Markdown row names, one per cell, empty where the cell is.
+fn named(cells: &[String]) -> Vec<String> {
+    cells
+        .iter()
+        .map(|cell| {
+            cell.split(" · ")
+                .next()
+                .unwrap_or_default()
+                .trim_start_matches('[')
+                .split(']')
+                .next()
+                .unwrap_or_default()
+                .trim_matches('`')
+                .to_string()
+        })
+        .collect()
+}
+
+/// The paths of the Markdown view, as the identifier in each cell, so that a
+/// CSV or JSON view of the same chain can be compared with it row for row.
+fn markdown_paths(label: &str) -> Vec<Vec<String>> {
+    let root = Root::scratch(label);
+    let consumer = worked(&root, &chain("docs/matrix.md", None));
+    let generated = run(&consumer, &["generate"]);
+    assert_eq!(generated.code, Some(0), "{generated:?}");
+    rows(&read(&consumer.join("docs/matrix.md")))
+        .iter()
+        .map(|row| named(&cells(row)))
+        .collect()
+}
+
+/// `format: csv` writes the rows of the Markdown view, four fields to a cell,
+/// under a `#` marker line, and `generate --check` holds it.
+#[test]
+fn a_csv_view_writes_the_rows_of_the_markdown_view() {
+    let expected = markdown_paths("csv-markdown");
+    let root = Root::scratch("csv");
+    let consumer = worked(&root, &chain("docs/matrix.csv", Some("csv")));
+    let generated = run(&consumer, &["generate"]);
+    assert_eq!(generated.code, Some(0), "{generated:?}");
+    let text = read(&consumer.join("docs/matrix.csv"));
+    let mut lines = text.lines();
+    assert!(
+        lines
+            .next()
+            .is_some_and(|line| line.starts_with("# headwater:generated relation_view.")),
+        "the first line is the marker\n{text}"
+    );
+    let header = lines.next().expect("a header record");
+    assert!(
+        header.starts_with("verified_requirements,verified_requirements status,"),
+        "{header}"
+    );
+    assert_eq!(
+        header.split(',').count(),
+        16,
+        "four fields for each of four columns"
+    );
+    let records: Vec<Vec<String>> = lines
+        .map(|line| line.split(',').map(str::to_string).collect::<Vec<String>>())
+        .collect();
+    let paths: Vec<Vec<String>> = records
+        .iter()
+        .map(|record| record.iter().step_by(4).cloned().collect())
+        .collect();
+    assert_eq!(
+        paths, expected,
+        "the CSV view writes the Markdown view's rows\n{text}"
+    );
+    let unverified = records
+        .iter()
+        .find(|record| record[0] == "SCR-REQ-0002")
+        .expect("SCR-REQ-0002 is a record");
+    assert!(
+        unverified[4..].iter().all(String::is_empty),
+        "{unverified:?}"
+    );
+    let clean = records
+        .iter()
+        .find(|record| record[4] == "SCR-AC-0001")
+        .expect("SCR-AC-0001 is a record");
+    assert_eq!(
+        &clean[8..12],
+        &["SCR-VER-0001", "current", "declared", ""],
+        "{clean:?}"
+    );
+    let held = run(&consumer, &["generate", "--check"]);
+    assert_eq!(held.code, Some(0), "{held:?}");
+}
+
+/// `format: json` writes the rows of the Markdown view as arrays of cells, a
+/// missing link as `null`, with the marker as a member.
+#[test]
+fn a_json_view_writes_the_rows_of_the_markdown_view() {
+    let expected = markdown_paths("json-markdown");
+    let root = Root::scratch("json");
+    let consumer = worked(&root, &chain("docs/matrix.json", Some("json")));
+    let generated = run(&consumer, &["generate"]);
+    assert_eq!(generated.code, Some(0), "{generated:?}");
+    let text = read(&consumer.join("docs/matrix.json"));
+    let value = headwater_yaml::load(&text).expect("the view is JSON").value;
+    let object = value.as_map().expect("an object");
+    assert!(
+        object
+            .get("headwater:generated")
+            .and_then(|node| node.value.as_scalar())
+            .is_some_and(|scalar| scalar.text.starts_with("relation_view.")),
+        "the marker is a member\n{text}"
+    );
+    let rows = object
+        .get("rows")
+        .and_then(|node| node.value.as_seq())
+        .expect("rows");
+    let paths: Vec<Vec<String>> = rows
+        .iter()
+        .map(|row| {
+            row.value
+                .as_seq()
+                .expect("a row is an array")
+                .iter()
+                .map(|cell| match cell.value.as_map() {
+                    None => String::new(),
+                    Some(cell) => cell
+                        .get("document")
+                        .and_then(|node| node.value.as_scalar())
+                        .map(|scalar| scalar.text.clone())
+                        .or_else(|| {
+                            cell.get("code")
+                                .and_then(|node| node.value.as_seq())
+                                .and_then(|paths| paths.first())
+                                .and_then(|path| path.value.as_scalar())
+                                .map(|scalar| scalar.text.clone())
+                        })
+                        .unwrap_or_default(),
+                })
+                .collect()
+        })
+        .collect();
+    assert_eq!(
+        paths, expected,
+        "the JSON view writes the Markdown view's rows\n{text}"
+    );
+    let held = run(&consumer, &["generate", "--check"]);
+    assert_eq!(held.code, Some(0), "{held:?}");
+}
+
+/// Point 4: a chain may end at code. `governs` reaches a `source-tree`
+/// anchor, which states a digest, so the last column names the path and the
+/// stamp of the edge: unstamped, then a baseline, then suspect once the file
+/// moves.
+#[test]
+fn a_chain_that_ends_with_governs_writes_the_code_path_and_its_stamp_in_the_last_column() {
+    let root = Root::scratch("governs");
+    let consumer = worked(
+        &root,
+        "    - kind: relation_view\n      for: [verified_requirements]\n      relations: [verified_by, proven_by, governs]\n      output: docs/matrix.md\n",
+    );
+    let verification =
+        consumer.join("docs/verifications/0001-the-replay-latency-test-measures-twenty-replays.md");
+    let text = read(&verification).replacen(
+        "  cited_in:\n",
+        "  governs:\n    - src/replay_latency_test.rs\n  cited_in:\n",
+        1,
+    );
+    std::fs::write(&verification, text).expect("the verification governs the test");
+
+    let generated = run(&consumer, &["generate"]);
+    assert_eq!(generated.code, Some(0), "{generated:?}");
+    let matrix = consumer.join("docs/matrix.md");
+    let clean = table_row(&read(&matrix), "SCR-AC-0001");
+    assert!(
+        clean[3].contains("`src/replay_latency_test.rs`") && clean[3].contains("unstamped"),
+        "the last column names the code path, and no digest is recorded on the edge: {clean:?}"
+    );
+    let empty = table_row(&read(&matrix), "SCR-AC-0002");
+    assert!(empty[3].is_empty(), "{empty:?}");
+
+    let stamped = run(&consumer, &["check", "--fix", "--baseline"]);
+    assert_eq!(stamped.code, Some(0), "{stamped:?}");
+    let stale = run(&consumer, &["generate", "--check"]);
+    assert_ne!(stale.code, Some(0), "a stamp moves the view: {stale:?}");
+    let generated = run(&consumer, &["generate"]);
+    assert_eq!(generated.code, Some(0), "{generated:?}");
+    let clean = table_row(&read(&matrix), "SCR-AC-0001");
+    assert!(clean[3].contains("baseline"), "{clean:?}");
+
+    let code = consumer.join("src/replay_latency_test.rs");
+    let moved = format!("{}\n// one more line\n", read(&code));
+    std::fs::write(&code, moved).expect("the test file moves");
+    let generated = run(&consumer, &["generate"]);
+    assert_eq!(generated.code, Some(0), "{generated:?}");
+    let clean = table_row(&read(&matrix), "SCR-AC-0001");
+    assert!(
+        clean[3].contains("suspect"),
+        "the code moved after the stamp: {clean:?}"
+    );
+}

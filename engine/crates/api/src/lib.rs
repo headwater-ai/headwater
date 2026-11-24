@@ -517,6 +517,7 @@ impl Session {
     /// regression run, and the fixed tier here states no fact about either.
     pub fn runs(&self, root: &Path) -> headwater_generate::Runs {
         let mut runs = headwater_generate::Runs::default();
+        runs.observations = self.observations.clone();
         for row in &self.census.rows {
             let headwater_census::census::Outcome::Typed { kind, .. } = &row.outcome else {
                 continue;

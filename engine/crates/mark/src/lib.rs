@@ -67,7 +67,10 @@ enum Comment {
 fn comment_for(path: &str) -> Comment {
     match path.rsplit('.').next() {
         Some("md") | Some("markdown") => Comment::Html,
-        Some("yml") | Some("yaml") | Some("toml") => Comment::Hash,
+        // CSV has no comment syntax of its own. A `relation_view` writes its
+        // marker as a first line that opens with `#`, which the readers that
+        // take a comment character read as one, and HW-DR-0114 records why.
+        Some("yml") | Some("yaml") | Some("toml") | Some("csv") => Comment::Hash,
         Some("json") => Comment::None,
         _ => Comment::Hash,
     }
@@ -207,7 +210,10 @@ pub fn marks_format(path: &str) -> bool {
 /// The extensions [`marks_format`] admits. The generator refuses a projection
 /// declared at any other extension, so no projection writes a file that the
 /// census does not open (#1344).
-pub const MARKED_FORMATS: &[&str] = &["md", "markdown", "json", "yml", "yaml", "toml"];
+///
+/// `csv` is here for a `relation_view` alone, and the generator refuses it on
+/// every other kind (HW-DR-0114).
+pub const MARKED_FORMATS: &[&str] = &["md", "markdown", "json", "yml", "yaml", "toml", "csv"];
 
 /// Whether the marker at a path says that `headwater export` builds the file at
 /// publish time, which is what [`published_marker_text`] writes.
@@ -503,6 +509,7 @@ mod tests {
             "docs/rules.yml",
             "docs/rules.yaml",
             "docs/nav.toml",
+            "docs/requirements/traceability.csv",
         ] {
             assert!(marks_format(path), "{path} is a format a projection writes");
         }

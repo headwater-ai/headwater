@@ -110,6 +110,7 @@ pub mod export;
 pub mod identity;
 mod probe_result;
 pub mod profile;
+pub mod relation_view;
 mod shelf_index;
 mod shelf_sections;
 pub mod site;
@@ -189,6 +190,12 @@ pub struct Runs {
     /// and the intake reads fenced blocks out of the source. So the caller that
     /// walked the tree supplies them.
     pub transcripts: Vec<Transcript>,
+    /// The committed observation snapshot, `.headwater/observations.yml`, as
+    /// the caller read it. A `relation_view` cell states the entry that names
+    /// its document and the freshness of a verification against it
+    /// (HW-DR-0114). Empty for a caller that read none, which every cell then
+    /// states as not observed.
+    pub observations: headwater_check::Observations,
 }
 
 impl Runs {
@@ -379,6 +386,9 @@ pub struct Declaration {
     /// for every other kind, and for a `site_nav` that states none, which then
     /// writes the flat list it wrote before the member existed (#1681).
     pub sections: Vec<NavSection>,
+    /// The chain and the format of a `relation_view` (HW-DR-0114). `None` for
+    /// every other kind, which [`relation_view::read`] refuses `relations` on.
+    pub view: Option<relation_view::View>,
 }
 
 /// One labeled top-level entry of a `site_nav` (#1681).
@@ -547,6 +557,16 @@ impl Projections {
                 continue;
             }
             let shelves = scalars(body, "for");
+            let view = match relation_view::read(root, body, kind, index, &shelves, &output.text) {
+                Ok(view) => view,
+                Err(message) => {
+                    errors.push(DeclarationError {
+                        message,
+                        span: item.span,
+                    });
+                    continue;
+                }
+            };
             let sections = match sections(body, kind, index, &shelves) {
                 Ok(sections) => sections,
                 Err(message) => {
@@ -557,7 +577,22 @@ impl Projections {
                     continue;
                 }
             };
-            let membership = profile::Membership::read(body, index, item.span, &mut errors);
+            // A view's `format` is its own, `markdown`, `csv` or `json`, and
+            // never an export emitter: `json` there would enroll the entry in
+            // the emitter set of its profile, and `csv` would be refused as no
+            // emitter at all. So the profile reader does not see it.
+            let membership = match view.is_some() {
+                true => {
+                    let without = Mapping::new(
+                        body.iter()
+                            .filter(|entry| entry.key.value != "format")
+                            .cloned()
+                            .collect(),
+                    );
+                    profile::Membership::read(&without, index, item.span, &mut errors)
+                }
+                false => profile::Membership::read(body, index, item.span, &mut errors),
+            };
             let identity = identity::read(body, kind, index, item.span, &mut errors);
             let committed = match committed(body, kind, index) {
                 Ok(committed) => committed,
@@ -577,6 +612,7 @@ impl Projections {
                 identity,
                 committed,
                 sections,
+                view,
             });
         }
         // The grouping runs over what read, so a taxonomy with one bad entry
@@ -1329,6 +1365,9 @@ pub fn plan(
                 probe_result::emit(surface, census, declaration, runs, identity, &mut plan);
             }
             Kind::VerbIndex => verb_index::emit(surface, declaration, verbs, &mut plan),
+            Kind::RelationView => {
+                relation_view::emit(surface, census, declaration, &runs.observations, &mut plan)
+            }
             Kind::ConsumerSurface => {
                 consumer_surface::emit(projections.surface.as_ref(), declaration, &mut plan);
             }
@@ -1576,10 +1615,6 @@ fn graph_export(
 /// fourteenth variant is `E0004` here before it is anything else.
 pub fn unbuilt(kind: Kind) -> Option<&'static str> {
     match kind {
-        Kind::RelationView => Some(
-            "a relation view needs the traceability grain that the obligation and control \
-             register holds, and no document states which relations a view covers",
-        ),
         Kind::AgentRules => Some(
             "the glossary names the artifact and no document states its form, so an emitter here \
              would be this engine inventing a schema for somebody else's consumer",
@@ -1599,6 +1634,7 @@ pub fn unbuilt(kind: Kind) -> Option<&'static str> {
         ),
         Kind::ShelfIndex
         | Kind::ShelfSections
+        | Kind::RelationView
         | Kind::GraphExport
         | Kind::ProbeResult
         | Kind::VerbIndex
