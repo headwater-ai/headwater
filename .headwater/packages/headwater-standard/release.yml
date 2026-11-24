@@ -24,12 +24,12 @@
 release:
   format: 1
   package: headwater/standard
-  version: 4.24.0
+  version: 4.25.0
   requires_engine: ">=0.1 <2"
-  digest: sha256:ac9b22fdb7bb994a04f0cd3d7535bdd420cb57aaa2bc9e431794484ea6fc8be4
+  digest: sha256:faafce51476b0073013f481d61ad70a0ec1f2f5cb3d3c1da43fd02d594a0f42e
   members:
     - path: assemblies/starter/assembly.yml
-      digest: sha256:1279840b7ecf3b09fd900783e274360c940e6b352e1c9d65c3fe0a623464b8aa
+      digest: sha256:81254391a6c8ef31e3a410e0b3637f76d95eb27e3bdc431cd10a5c8f060d7638
     - path: bundles/README.md
       digest: sha256:1cbca903b09d6ab9c6317405669210559adbfd780ec4e0d1889bd8788012f3ce
     - path: bundles/brd-prd/bundle.yml
@@ -85,7 +85,7 @@ release:
     - path: bundles/evidence-and-obligation/templates/evaluation.md
       digest: sha256:289405aa083ad7a708827118520bd9951bc82c560d4cf07a17c4a10acee9b0dd
     - path: bundles/requirement-verification/bundle.yml
-      digest: sha256:6aba97de033dee81ae4323dbc2acadc9c268508df5d303e853492b2f577b6709
+      digest: sha256:086af0b99a6358ad31b4590802e11202912115dea565a41d2d9a29089b685135
     - path: bundles/requirement-verification/doctrine.md
       digest: sha256:1369b8fa37274d00f566df32b780e8e729c2caa65c2c05577fbf16296436e97e
     - path: bundles/requirement-verification/templates/acceptance_criterion.md
@@ -109,6 +109,6 @@ release:
     - path: doctrine/starter.md
       digest: sha256:0fa70c1338a7e24ec5a3e0f8202cceffb1ea53182ce2ba91341a8ecf8d1e104a
     - path: package.yml
-      digest: sha256:28e8131a266265fde146efaec5453fdc8544299c03dba0f1d5bb1b3b865c75ad
+      digest: sha256:695614adb7ebd8f8241898e4a528a02f9bbad4d9b3b59a1738b5d69ab466fea5
     - path: taxonomy.yml
-      digest: sha256:543962f9c0a102f15ed2f980811b3a4377e63f5fbfc9541873b4b3c93c51447b
+      digest: sha256:8b3f0f51c0abae6c9542f39cfaac5e55d4b222c5f046dd8951eaea3ebdb85429

@@ -10,7 +10,7 @@ Every number below came from the run this file quotes. Nothing here is predicted
 
 - **Source:** the files under `corpus/`, written for this entry on 2026-11-24 (#2017). `corpus/docs/` is the corpus root, `corpus/src/` holds the one test file that a verification cites, and `corpus/.headwater/ids/` holds the claim of each identifier.
 - **Revision:** the commit that carries this file.
-- **Taxonomy:** `headwater/standard` 4.24.0, with `bundles: [evidence-and-obligation, decision-record, requirement-verification]`.
+- **Taxonomy:** `headwater/standard` 4.25.0, with `bundles: [evidence-and-obligation, decision-record, requirement-verification]`.
 - **Run:** `headwater check --no-cache --now 2026-11-24` over the assembled root, then the same with `--strict`.
 
 ## How to run this corpus

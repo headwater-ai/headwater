@@ -34,7 +34,7 @@
 # with. doctrine.md shows those five lines.
 
 bundle: requirement-verification
-extends: headwater/standard@4.24.0
+extends: headwater/standard@4.25.0
 requires: [evidence-and-obligation]
 
 add:

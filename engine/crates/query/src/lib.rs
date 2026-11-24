@@ -215,6 +215,26 @@ pub struct Neighbour {
     /// this as the denominator [HW-OBL-0104](../../../../docs/obligations/0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md)
     /// records as absent ([HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)).
     pub reach: Option<headwater_graph::Reach>,
+    /// The digest a `source-tree` anchor reaches now, beside the one the edge
+    /// recorded, on an outbound edge whose resolver states a digest (#2016).
+    /// `None` for an inbound edge, a document target, another resolver and an
+    /// anchor with no digest, such as a literal that names a directory.
+    pub digest: Option<Digest>,
+}
+
+/// What [`Neighbour::digest`] carries: the value `headwater check --fix` and
+/// `--fix --baseline` write as `verified_revision` on the edge now, and what
+/// the edge records (#2016).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Digest {
+    /// The digest the anchor reaches now. It is the value a stamp writes, read
+    /// from the one resolver that `relation.target.suspect` reads.
+    pub current: String,
+    /// The edge's `verified_revision`, where it records one.
+    pub recorded: Option<String>,
+    /// Whether the recorded digest is a baseline, which records no reading:
+    /// the edge carries `verified_as: baseline`.
+    pub baseline: bool,
 }
 
 impl<'a> Surface<'a> {
@@ -508,6 +528,19 @@ impl<'a> Surface<'a> {
                 true => None,
                 false => edge.target.reach(),
             },
+            digest: match (inbound, &edge.target) {
+                (
+                    false,
+                    Target::Anchor {
+                        resolver, revision, ..
+                    },
+                ) if resolver == "source-tree" => revision.get().map(|current| Digest {
+                    current: current.to_string(),
+                    recorded: edge.verified_revision().map(str::to_string),
+                    baseline: edge.verified_as_baseline(),
+                }),
+                _ => None,
+            },
             pointer,
         }
     }
@@ -708,6 +741,23 @@ impl Neighbour {
                         .collect::<Vec<String>>()
                         .join(", ");
                     let _ = write!(line, " (reaches {} entries — {breakdown})", reach.total);
+                }
+            }
+        }
+        // The digest a stamp writes now, beside the one the edge records, so
+        // an author can compare the two without a shell recipe (#2016).
+        if let Some(digest) = &self.digest {
+            let _ = write!(line, " (content now {}, ", digest.current);
+            match (&digest.recorded, digest.baseline) {
+                (None, _) => line.push_str("none recorded)"),
+                (Some(recorded), false) => {
+                    let _ = write!(line, "recorded {recorded})");
+                }
+                (Some(recorded), true) => {
+                    let _ = write!(
+                        line,
+                        "recorded {recorded} as a baseline, which records no reading)"
+                    );
                 }
             }
         }

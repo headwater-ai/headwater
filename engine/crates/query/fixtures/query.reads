@@ -132,7 +132,9 @@ explain
       (the target's own summary) [this document governs the reading]
     to src/ingest/mod.rs, src/ingest/rate_limit.rs governs [this document governs
       the reading] (reaches 2 entries — src/ingest/mod.rs: 1,
-      src/ingest/rate_limit.rs: 1)
+      src/ingest/rate_limit.rs: 1) (content now
+      sha256:0600a6bf3594ff1e055b4e65793b69c61ccac57bad22058332fa39b592c23b0b,
+      none recorded)
     from query/decisions/per-service-limits.md supersedes — why a per service
       throttling design was rejected (the target's own summary) [this document
       governs the reading]

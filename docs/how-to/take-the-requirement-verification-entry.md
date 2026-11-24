@@ -21,7 +21,7 @@ provenance:
 
 You need three things.
 
-- A corpus that takes `headwater/standard` at 4.24.0 or later, vendored under `.headwater/packages/`. The entry ships inside that package, so no second download is necessary.
+- A corpus that takes `headwater/standard` at 4.25.0 or later, vendored under `.headwater/packages/`. The entry ships inside that package, so no second download is necessary.
 - A `.headwater/taxonomy.yml` and an overlay that you can edit.
 - A namespace for your identifiers. This guide uses `ACME`. Replace it with your own.
 

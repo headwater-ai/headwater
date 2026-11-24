@@ -528,6 +528,11 @@ impl Cache {
                 "target-stated change={} verified={}",
                 stated.target, stated.edge
             );
+            // Whether the run asked for a baseline stamp. A run that asks is
+            // offered a patch on an edge that recorded no digest, and a run
+            // that does not is offered none, over the same tree. Without this
+            // line a warm cache serves the second verdict to the first (#2016).
+            let _ = writeln!(text, "baseline {}", stated.baseline);
         }
         // Escaped for the reason a record is: a target or a path is corpus
         // content, and a newline inside one would otherwise let a document
@@ -1400,6 +1405,7 @@ mod tests {
                 "target-stated change={} verified={}\n",
                 stated.target, stated.edge
             ));
+            text.push_str(&format!("baseline {}\n", stated.baseline));
         }
         text.push_str(&format!("target {}\n", reference_escape(target)));
         if let Some(resolution) = resolution {
@@ -1505,6 +1511,13 @@ mod tests {
             Row {
                 stated: Stated {
                     edge: true,
+                    ..Stated::NONE
+                },
+                ..row("e", 1, edge)
+            },
+            Row {
+                stated: Stated {
+                    baseline: true,
                     ..Stated::NONE
                 },
                 ..row("e", 1, edge)
@@ -1836,9 +1849,11 @@ mod tests {
                 Some("resolved"),
             )
         };
-        // Each of the three statements alone, and none, are four keys: a run
+        // Each of the four statements alone, and none, are five keys: a run
         // that names the edge's target, or names the edge, is not served the
-        // verdict of one that only re-verified the document (#1520).
+        // verdict of one that only re-verified the document (#1520), and a
+        // run that asks for a baseline is not served the verdict of one that
+        // does not (#2016).
         let states = [
             Stated::NONE,
             Stated {
@@ -1851,6 +1866,10 @@ mod tests {
             },
             Stated {
                 edge: true,
+                ..Stated::NONE
+            },
+            Stated {
+                baseline: true,
                 ..Stated::NONE
             },
         ];

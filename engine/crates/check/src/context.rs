@@ -55,6 +55,7 @@ pub struct Context {
     now: Date,
     change: Option<Change>,
     orphaned: std::collections::BTreeSet<String>,
+    baseline: bool,
 }
 
 impl Context {
@@ -66,6 +67,7 @@ impl Context {
             now,
             change: None,
             orphaned: std::collections::BTreeSet::new(),
+            baseline: false,
         }
     }
 
@@ -79,6 +81,7 @@ impl Context {
             now,
             change: Some(change),
             orphaned: std::collections::BTreeSet::new(),
+            baseline: false,
         }
     }
 
@@ -105,6 +108,7 @@ impl Context {
             now: Date::from_days(i64::try_from(elapsed.as_secs() / 86_400).ok()?),
             change: None,
             orphaned: std::collections::BTreeSet::new(),
+            baseline: false,
         })
     }
 
@@ -116,6 +120,22 @@ impl Context {
             change: Some(change),
             ..self
         }
+    }
+
+    /// The same run, told to offer a baseline stamp (#2016).
+    ///
+    /// `headwater check --baseline` sets it. `relation.target.suspect` then
+    /// offers `verified_revision` and `verified_as: baseline` on each edge
+    /// that recorded no digest, with no change that states a reading. The
+    /// rule reads it as a statement beside the change, so it is a line of the
+    /// cache key like each of those.
+    pub fn with_baseline(self, baseline: bool) -> Self {
+        Context { baseline, ..self }
+    }
+
+    /// Whether this run offers a baseline stamp. See [`Context::with_baseline`].
+    pub fn baseline(&self) -> bool {
+        self.baseline
     }
 
     /// The same run, told which marked files the projection plan claims no

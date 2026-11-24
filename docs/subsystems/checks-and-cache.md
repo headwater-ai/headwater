@@ -96,7 +96,7 @@ The first three join no cache key. Each one is a reading of documents that the i
 1. The census digest of each input that the view recorded.
 2. The digest of the lock.
 3. The `VERSION` of the rule.
-4. The injected values that the scope declares: the clock and the prior version. The key carries the clock only when the scope declares it, so a rule that no date can move stays warm.
+4. The injected values that the scope declares: the clock and the prior version. The key carries the clock only when the scope declares it, so a rule that no date can move stays warm. A scope that reads the prior version of the declaring document also writes what the change states about the edge. It also writes whether the run asked for a baseline stamp with `--baseline` (#2016).
 5. The rule and the target, because two instances can read the same documents and give different results.
 6. The answer of a resolver about an external anchor, for an instance whose subject is a resolved target ([HW-OBL-0117](../obligations/0117-a-cached-verdict-about-an-anchor-survives-the-change-that-falsifies-it.md)).
 7. `rules_digest`, the digest of the sorted list of compiled rules. An engine that drops or adds a rule therefore serves nothing from the previous engine.
