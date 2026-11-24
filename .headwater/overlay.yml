@@ -1299,6 +1299,7 @@ add:
       - docs/how-to/relocate-a-shelf.md
       - docs/how-to/wire-headwater-check-into-your-own-workflow.md
       - docs/how-to/publish-your-corpus-as-a-site.md
+      - docs/how-to/take-the-requirement-verification-entry.md
     local_roots: [tools/, .githooks/, .claude/, .github/, site/, mkdocs/]
     # The names after `tar` are declared because the tutorial and the
     # relocation how-to tell an adopter to run them, and

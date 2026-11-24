@@ -22,6 +22,8 @@ The canonical taxonomy library admits an entry when all seven of its [admission 
 
 Two admitted entries declare `requires: [evidence-and-obligation]`. `design-spec` declares it for the `evaluation` kind that left it, and `decision-record` declares it for the `obligation` purpose. The `headwater/starter` recipe also selects it. So a composer who takes either admitted entry takes a refused bundle with it, and no criterion of the seven asks about that direction.
 
+A third admitted entry joined them on 2026-11-24. [`requirement-verification`](../taxonomies/requirement-verification/doctrine.md#findings) declares `requires: [evidence-and-obligation]` for the `evidence` purpose that its `verification` kind serves. Its second finding records it as a case of this question (#2017). Its third finding adds one fact. The refused bundle and that entry do not resolve as a pair, because the bundle declares `purposes.obligation` and ships no kind for it.
+
 This question was raised as part of [#510](https://github.com/headwater-ai/headwater/issues/510) and the library index recorded it against that issue number. A reader who followed the citation arrived back at the open issue that asked it. This record is the answer to that: the question has a home, and the home is not the issue.
 
 ## Obligation
