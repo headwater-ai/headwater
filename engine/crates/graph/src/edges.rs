@@ -616,84 +616,27 @@ fn read_relation_entry(
         return;
     };
 
-    // Which end of the relation the *target* sits at. A document that writes
-    // the inverse name is the target of the relation it names, so its own
-    // targets are sources of that relation, and the permitted set is `from`.
-    let permitted = match named.direction {
-        Direction::AsDeclared => &named.relation.to,
-        Direction::Inverse => &named.relation.from,
-    };
-
-    // One entry, or a sequence of them. Both mean the same thing, and list
-    // order carries no meaning either way.
-    let items: Vec<&headwater_yaml::Spanned<Value>> = match &entry.value.value {
-        Value::Seq(items) => items.iter().collect(),
-        _ => vec![&entry.value],
-    };
-
-    // Whether every kind this entry may reach is an anchor kind. A list is the
-    // pattern language's own "or a list of them"
-    // ([HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)),
-    // and a document target is one identifier, never a set, so a list is
-    // admitted only where nothing here could resolve to a document.
-    let anchor_only = permitted
-        .iter()
-        .all(|kind| declarations.anchor(kind).is_some());
+    let (permitted, items, anchor_only) = shape(entry, &named, declarations);
 
     for item in items {
-        let (raws, attributes, span): (Vec<String>, Vec<Entry>, Span) = match &item.value {
-            // A plain null (`key:`, `~`, `null`) declares no edge, the same as
-            // `[]`, whether it is the whole value or one item of a sequence
-            // ([#1902](https://github.com/headwater-ai/headwater/issues/1902)).
-            // A quoted `""` or `"~"` is text that the author wrote and stays a
-            // target, which is the split `facet_blank` makes for a facet. The
-            // relation name was already looked up, so an unknown name with a
-            // null value is still reported.
-            Value::Scalar(scalar) if as_null(scalar) => continue,
-            Value::Scalar(scalar) => (vec![scalar.text.clone()], Vec::new(), item.span),
-            Value::Map(map) => match target_of(map, anchor_only) {
-                Some((raws, span)) => (raws, instance_attributes(map), span),
-                None => {
-                    problems.push(Reported {
-                        path: source.path.clone(),
-                        span: Some(item.span),
-                        problem: Problem::NoTarget {
-                            relation: name.clone(),
-                        },
-                    });
-                    continue;
-                }
-            },
-            // A list in the place of the string: one anchor over several
-            // patterns, admitted only where the endpoint is an anchor kind. A
-            // document target stays one identifier, so a nested list there is
-            // refused exactly as it always was.
-            Value::Seq(members) if anchor_only => {
-                let mut raws = Vec::new();
-                let mut every_member_a_scalar = true;
-                for member in members {
-                    match member.value.as_scalar() {
-                        Some(scalar) => raws.push(scalar.text.clone()),
-                        None => {
-                            every_member_a_scalar = false;
-                            break;
-                        }
-                    }
-                }
-                if !every_member_a_scalar || raws.is_empty() {
-                    problems.push(Reported {
-                        path: source.path.clone(),
-                        span: Some(item.span),
-                        problem: Problem::EntryNotUsable {
-                            relation: name.clone(),
-                            found: item.value.kind_name(),
-                        },
-                    });
-                    continue;
-                }
-                (raws, Vec::new(), item.span)
+        let (raws, attributes, span) = match item_targets(item, anchor_only) {
+            Item::Null => continue,
+            Item::Targets { raws, map, span } => (
+                raws,
+                map.map(instance_attributes).unwrap_or_default(),
+                span,
+            ),
+            Item::NoTarget => {
+                problems.push(Reported {
+                    path: source.path.clone(),
+                    span: Some(item.span),
+                    problem: Problem::NoTarget {
+                        relation: name.clone(),
+                    },
+                });
+                continue;
             }
-            Value::Seq(_) => {
+            Item::NotUsable => {
                 problems.push(Reported {
                     path: source.path.clone(),
                     span: Some(item.span),
@@ -739,6 +682,165 @@ fn read_relation_entry(
         declared_here.insert(key);
         edges.push(edge);
     }
+}
+
+/// The items of one relations-block entry, and whether every kind the entry
+/// may reach is an anchor kind. [`read_relation_entry`] and
+/// [`declared_targets`] both call it, so the two read one shape.
+/// The permitted set of the end the targets sit at comes first, which `build`
+/// binds against.
+fn shape<'v, 'd>(
+    entry: &'v Entry,
+    named: &crate::declarations::Named<'d>,
+    declarations: &Declarations,
+) -> (&'d [String], Vec<&'v headwater_yaml::Spanned<Value>>, bool) {
+    // Which end of the relation the *target* sits at. A document that writes
+    // the inverse name is the target of the relation it names, so its own
+    // targets are sources of that relation, and the permitted set is `from`.
+    let permitted = match named.direction {
+        Direction::AsDeclared => &named.relation.to,
+        Direction::Inverse => &named.relation.from,
+    };
+
+    // One entry, or a sequence of them. Both mean the same thing, and list
+    // order carries no meaning either way.
+    let items: Vec<&headwater_yaml::Spanned<Value>> = match &entry.value.value {
+        Value::Seq(items) => items.iter().collect(),
+        _ => vec![&entry.value],
+    };
+
+    // Whether every kind this entry may reach is an anchor kind. A list is the
+    // pattern language's own "or a list of them"
+    // ([HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)),
+    // and a document target is one identifier, never a set, so a list is
+    // admitted only where nothing here could resolve to a document.
+    let anchor_only = permitted
+        .iter()
+        .all(|kind| declarations.anchor(kind).is_some());
+    (permitted, items, anchor_only)
+}
+
+/// What one item of a relation entry names, read and not bound.
+///
+/// [`item_targets`] makes it. `build` binds each [`Item::Targets`] into an
+/// edge and reports the other two shapes. `relation.scope.ungoverned` reads the
+/// prior version of a document through [`declared_targets`], which calls the
+/// same function, so a prior entry and a current one cannot be read two ways
+/// (#1573).
+#[derive(Debug)]
+pub enum Item<'a> {
+    /// A plain null (`key:`, `~`, `null`). It declares no edge.
+    Null,
+    /// The raw targets, the mapping the item was written as where it was one
+    /// (its other keys are the instance attributes), and the span a finding
+    /// anchors to.
+    Targets {
+        raws: Vec<String>,
+        map: Option<&'a Mapping>,
+        span: Span,
+    },
+    /// A mapping with no usable `to`.
+    NoTarget,
+    /// A nested list where the endpoint can be a document, or a list with a
+    /// member that is no scalar.
+    NotUsable,
+}
+
+/// Read one item of a relation entry into its raw targets.
+///
+/// `anchor_only` is whether every kind the entry may reach is an anchor kind,
+/// which is where a list in the place of one target is admitted.
+pub fn item_targets(item: &headwater_yaml::Spanned<Value>, anchor_only: bool) -> Item<'_> {
+    match &item.value {
+        // A plain null (`key:`, `~`, `null`) declares no edge, the same as
+        // `[]`, whether it is the whole value or one item of a sequence
+        // ([#1902](https://github.com/headwater-ai/headwater/issues/1902)).
+        // A quoted `""` or `"~"` is text that the author wrote and stays a
+        // target, which is the split `facet_blank` makes for a facet. The
+        // relation name was already looked up, so an unknown name with a null
+        // value is still reported.
+        Value::Scalar(scalar) if as_null(scalar) => Item::Null,
+        Value::Scalar(scalar) => Item::Targets {
+            raws: vec![scalar.text.clone()],
+            map: None,
+            span: item.span,
+        },
+        Value::Map(map) => match target_of(map, anchor_only) {
+            Some((raws, span)) => Item::Targets {
+                raws,
+                map: Some(map),
+                span,
+            },
+            None => Item::NoTarget,
+        },
+        // A list in the place of the string: one anchor over several patterns,
+        // admitted only where the endpoint is an anchor kind. A document target
+        // stays one identifier, so a nested list there is refused exactly as
+        // it always was.
+        Value::Seq(members) if anchor_only => {
+            let raws: Option<Vec<String>> = members
+                .iter()
+                .map(|member| member.value.as_scalar().map(|scalar| scalar.text.clone()))
+                .collect();
+            match raws {
+                Some(raws) if !raws.is_empty() => Item::Targets {
+                    raws,
+                    map: None,
+                    span: item.span,
+                },
+                _ => Item::NotUsable,
+            }
+        }
+        Value::Seq(_) => Item::NotUsable,
+    }
+}
+
+/// One entry of a relations block, read and not bound: the relation it names,
+/// the direction the name was written in, and the raw targets of one item.
+#[derive(Debug)]
+pub struct Declared<'d> {
+    pub relation: &'d crate::declarations::Relation,
+    pub direction: Direction,
+    pub raws: Vec<String>,
+}
+
+/// Every target the relations block of `facets` writes, item by item, read the
+/// way [`build`] reads it and bound to nothing.
+///
+/// It is for a document that no census row holds in this state, which is the
+/// prior version of a document a change carries. A relation name the taxonomy
+/// does not declare, a block that is no mapping, and an item that
+/// [`item_targets`] does not read into targets all yield nothing here: each of
+/// them was a finding of the run that committed it, and this reading reports
+/// nothing.
+pub fn declared_targets<'d>(
+    facets: &Mapping,
+    relations_facet: &str,
+    declarations: &'d Declarations,
+) -> Vec<Declared<'d>> {
+    let Some(relations) = facets
+        .get(relations_facet)
+        .and_then(|block| block.value.as_map())
+    else {
+        return Vec::new();
+    };
+    let mut declared = Vec::new();
+    for entry in relations {
+        let Some(named) = declarations.named(&entry.key.value) else {
+            continue;
+        };
+        let (_, items, anchor_only) = shape(entry, &named, declarations);
+        for item in items {
+            if let Item::Targets { raws, .. } = item_targets(item, anchor_only) {
+                declared.push(Declared {
+                    relation: named.relation,
+                    direction: named.direction,
+                    raws,
+                });
+            }
+        }
+    }
+    declared
 }
 
 /// One member of a claimed anchor's [`Binding::Resolved`], carried as a named
