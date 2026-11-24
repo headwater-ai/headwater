@@ -178,7 +178,11 @@ fn an_adopter_selects_the_entry_and_links_a_requirement_a_criterion_and_a_verifi
         OVERLAY.lines().count() < 10,
         "the adopter overlay is meant to hold leaves and nothing else"
     );
-    let consumer = consumer(&root, "evidence-and-obligation, decision-record, requirement-verification", OVERLAY);
+    let consumer = consumer(
+        &root,
+        "evidence-and-obligation, decision-record, requirement-verification",
+        OVERLAY,
+    );
 
     let made = run(
         &consumer,
@@ -220,7 +224,10 @@ fn an_adopter_selects_the_entry_and_links_a_requirement_a_criterion_and_a_verifi
 
     let criterion = read(&criterion_path);
     assert!(criterion.contains("id: ACME-AC-0001"), "{criterion}");
-    assert!(criterion.contains("verification_method: test"), "{criterion}");
+    assert!(
+        criterion.contains("verification_method: test"),
+        "{criterion}"
+    );
     assert!(criterion.contains("verifies:"), "{criterion}");
     let verification = read(&verification_path);
     assert!(verification.contains("id: ACME-VER-0001"), "{verification}");
