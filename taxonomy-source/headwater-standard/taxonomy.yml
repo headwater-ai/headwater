@@ -149,6 +149,11 @@ taxonomy: headwater/standard
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
 #
+# 4.26.0 adds one obligation, `OB-LOCK-1`, and one control, `CT-LOCK-1`, which
+# names the rule `taxonomy.lock.stale`: a lock that its sources no longer
+# resolve to is an error on the source that moved. The control is blocking at a
+# final posture. Nothing is removed, so it is a minor (#1975).
+#
 # 4.25.0 adds one library entry, `requirement-verification`, and removes
 # nothing, so it is a minor. The base taxonomy is unchanged. The entry carries
 # the requirement, the acceptance criterion and the verification of ISO/IEC/IEEE
@@ -379,7 +384,7 @@ taxonomy: headwater/standard
 # each carries a recipe rather than a bare instruction. One package version
 # covers every content file it publishes, this one included, so the number
 # here moves with a change to either.
-version: 4.25.0
+version: 4.26.0
 
 purposes:
   rationale:
@@ -1011,6 +1016,13 @@ obligations:
     prevents: process.traceability
     severity: high
 
+  OB-LOCK-1:
+    statement: A lock that the corpus commits is what its sources resolve to, or a finding names the source that moved
+    rationale: Every check reads its declarations from the lock and never from the sources. An edit to an overlay, a vendored package file or the consumer declaration that nobody resolved changes no declaration a check sees, so the author reads a passing run over a taxonomy they have already changed, and the change they made reaches no document
+    class: cohesion
+    prevents: process.traceability
+    severity: high
+
   OB-LANG-4:
     statement: A path that a language regime lists outside the corpus root reads one file that no other regime lists
     rationale: A listed path that reads nothing is a regime that governs nothing and reports nothing, so a mistyped or deleted entry turns off a language rule on front-door prose without a line that says so
@@ -1579,6 +1591,16 @@ controls:
     promotion:
       final_posture:
         reasoning: The reading CT-PIN-2 takes, over a pinned corpus export. The rule reports what the harvest reader already failed to read, so an advisory period would measure a false-positive rate that the construction fixes at zero. The remedy is mechanical and total, because committing the export at the path and digest the declaration names restores the pin, and the finding already stops a strict run
+
+  CT-LOCK-1:
+    mechanism: check:taxonomy.lock.stale
+    discharges: [OB-LOCK-1]
+    trigger: pull_request
+    posture: blocking
+    acts: detective
+    promotion:
+      final_posture:
+        reasoning: The rule makes the comparison that `headwater taxonomy resolve --check` makes on its cheap half, over the digests the lock already records and the source order the resolver already computes, so an advisory period would measure a false-positive rate that the construction fixes at zero. The remedy is mechanical and total, because running `headwater taxonomy resolve` writes the lock from the sources as they are, and the finding already stops a strict run
 
   CT-LANG-4:
     mechanism: check:language.outside_root.refused

@@ -165,6 +165,7 @@ impl Built {
             register: &self.register,
             observations: &self.observations,
             pin: None,
+            lock_stale: None,
             harvests: &[],
             imports: &[],
             adoption: None,

@@ -1086,6 +1086,12 @@
       "obligations": []
     },
     {
+      "rule": "taxonomy.lock.stale",
+      "scope": "taxonomy",
+      "version": 1,
+      "obligations": []
+    },
+    {
       "rule": "harvest.pin.unread",
       "scope": "taxonomy",
       "version": 1,

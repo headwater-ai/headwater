@@ -592,6 +592,61 @@ fn the_shipped_write_hook_refuses_a_raw_document_and_names_what_an_edit_affects(
     assert!(silent.stdout.is_empty(), "{}", text(&silent.stdout));
 }
 
+/// An edit to a source of the lock names the resolve and the skill, and
+/// counts the documents that govern the file rather than listing them, so the
+/// author reads what the edit needs and not a list of decisions (#1975).
+#[test]
+fn the_shipped_write_hook_names_the_resolve_on_a_source_of_the_lock() {
+    let scratch = an_adopter("write-lock-source");
+    let root = &scratch.0;
+    assert!(
+        root.join(".headwater/overlay.yml").is_file(),
+        "init writes an overlay"
+    );
+    answer(
+        root,
+        "overlay.md",
+        "AC-A-0002",
+        Some("the overlay states what this repository adds"),
+        "relations:\n  governs:\n    - .headwater/overlay.yml\n",
+    );
+    let pre = |path: &str| {
+        hook(
+            root,
+            "write",
+            &tool_payload(root, "PreToolUse", "Edit", "w2", path),
+        )
+    };
+
+    for source in [".headwater/overlay.yml", ".headwater/taxonomy.yml"] {
+        let ran = pre(source);
+        succeeded(&ran, "the write hook on a source of the lock");
+        let out = text(&ran.stdout);
+        for needle in [
+            "headwater taxonomy resolve",
+            "headwater-taxonomy",
+            "taxonomy.lock.stale",
+        ] {
+            assert!(out.contains(needle), "{source}: {needle}: {out}");
+        }
+        assert!(!out.contains("permissionDecision"), "{source}: {out}");
+        assert!(!out.contains("docs/answers/overlay.md"), "{source}: {out}");
+    }
+    let overlay = text(&pre(".headwater/overlay.yml").stdout);
+    assert!(
+        overlay.contains("1 document(s)")
+            && overlay.contains("headwater explain .headwater/overlay.yml"),
+        "{overlay}"
+    );
+
+    // A governed code path is not a source, and still lists its document.
+    let governed = text(&pre("src/main.rs").stdout);
+    assert!(
+        governed.contains("docs/answers/main.md") && !governed.contains("taxonomy resolve"),
+        "{governed}"
+    );
+}
+
 #[test]
 fn the_shipped_intent_hook_routes_a_task_and_is_silent_on_a_notification() {
     let scratch = an_adopter("intent");

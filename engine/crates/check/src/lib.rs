@@ -173,6 +173,7 @@ pub mod language;
 pub mod lifecycle_state;
 pub mod link_identifier;
 pub mod link_path;
+pub mod lock_stale;
 pub mod mention;
 pub mod observation;
 pub mod outside_block;
@@ -244,7 +245,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 54] = [
+pub const RULES: [&str; 55] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
@@ -296,6 +297,7 @@ pub const RULES: [&str; 54] = [
     adoption::RULE,
     outside_root::RULE,
     pin::RULE,
+    lock_stale::RULE,
     harvest::RULE,
     import_pin::RULE,
     verification::RULE,
@@ -352,6 +354,12 @@ pub struct Declared<'a> {
     /// is, and never out of the lock: the vendored bytes are hashed and no
     /// declaration is taken from them. See [`pin`].
     pub pin: Option<&'a pin::Pin>,
+    /// The lock held against the sources it was resolved from, and `None`
+    /// where the caller read no lock or took no reading.
+    ///
+    /// Read off the tree on the terms [`Self::pin`] is: the sources are
+    /// hashed and no declaration is taken from them. See [`lock_stale`].
+    pub lock_stale: Option<&'a lock_stale::Stale>,
     /// Every pinned corpus export `.headwater/taxonomy.yml` declares under
     /// `harvests`, as the caller read it, and empty where it took no reading.
     ///
@@ -755,6 +763,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             outside_root::EXPORTABLE_AS,
         ),
         (pin::RULE, pin::SCOPE, pin::VERSION, pin::EXPORTABLE_AS),
+        (
+            lock_stale::RULE,
+            lock_stale::SCOPE,
+            lock_stale::VERSION,
+            lock_stale::EXPORTABLE_AS,
+        ),
         (
             harvest::RULE,
             harvest::SCOPE,
@@ -1274,6 +1288,9 @@ pub fn run(
     // A digest pin the vendored bytes no longer hash to, as an error, for the
     // same reason: it is about the taxonomy's pin read against the tree.
     findings.extend(pin::findings(declared.pin));
+    // A lock its sources no longer resolve to, as an error, for the same
+    // reason: it is about the lock read against the tree (#1975).
+    findings.extend(lock_stale::findings(declared.lock_stale));
     // A pinned corpus export that did not read, as an error that names the
     // pin, for the same reason: spec 7 owes the finding whether or not an
     // anchor reaches the export.
@@ -1379,6 +1396,12 @@ pub fn run(
         .map(pin::Pin::inputs)
         .unwrap_or_default()
         .into_iter()
+        .chain(
+            declared
+                .lock_stale
+                .map(lock_stale::Stale::inputs)
+                .unwrap_or_default(),
+        )
         .chain(harvested)
         .chain(imported)
     {

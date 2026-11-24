@@ -133,6 +133,7 @@ fn run(root: &Path, change: Change) -> Run {
             adoption: None,
             observations: &Observations::empty(),
             pin: None,
+            lock_stale: None,
             harvests: &[],
             imports: &[],
             source: "engine/crates/check/fixtures/governs-suspect.taxonomy.yml",

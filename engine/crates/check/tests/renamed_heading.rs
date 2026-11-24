@@ -168,6 +168,7 @@ fn run_over(base: &Path, adoption: Option<&Mapping>) -> Run {
             register: &register,
             observations: &headwater_check::Observations::empty(),
             pin: None,
+            lock_stale: None,
             harvests: &[],
             imports: &[],
             adoption,
