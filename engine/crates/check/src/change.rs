@@ -160,7 +160,7 @@ enum Held {
 
 /// What a change states about one edge beside the prior version of the
 /// document that declared it, and only for a check that declared
-/// `NEEDS_DECLARER_PRIOR`. None of the three is a version of a document, so
+/// `NEEDS_DECLARER_PRIOR`. None of the four is a version of a document, so
 /// each is held apart from [`Prior`], and each is a line of the cache key.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(crate) struct Stated {
@@ -171,6 +171,9 @@ pub(crate) struct Stated {
     pub(crate) target: bool,
     /// A `verified\t<document>\t<target>` line names this edge (#1520).
     pub(crate) edge: bool,
+    /// The run asked for a baseline stamp, with `--baseline` (#2016). It is
+    /// no statement of the change, and a run with no change can make it.
+    pub(crate) baseline: bool,
 }
 
 impl Stated {
@@ -180,6 +183,7 @@ impl Stated {
         document: false,
         target: false,
         edge: false,
+        baseline: false,
     };
 
     /// What `change` states about the edge that the document at `document`
@@ -202,6 +206,7 @@ impl Stated {
                 .edges
                 .iter()
                 .any(|(known, target)| known == document && reaches(target)),
+            baseline: false,
         }
     }
 }

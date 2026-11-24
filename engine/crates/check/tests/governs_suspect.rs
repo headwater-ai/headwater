@@ -1284,7 +1284,7 @@ fn no_fix_is_offered_where_the_relation_does_not_declare_the_attribute() {
     let root = scratch("undeclared");
     document(&root, TODAY, &["    - .githooks/pre-commit".to_string()]);
     let undeclared = taxonomy().replace(
-        "    attributes:\n      verified_revision: {type: string, owner: edge}\n",
+        "    attributes:\n      verified_revision: {type: string, owner: edge}\n      verified_as: {type: string, owner: edge}\n",
         "",
     );
     assert_ne!(undeclared, taxonomy(), "the declaration was removed");
@@ -1309,7 +1309,7 @@ fn a_stated_edge_gets_no_patch_where_the_relation_does_not_declare_the_attribute
     let lib_before = std::fs::read_to_string(root.join(LIB)).expect("the hook reads");
     write(&root, LIB, "refuse() { :; }\n");
     let undeclared = taxonomy().replace(
-        "    attributes:\n      verified_revision: {type: string, owner: edge}\n",
+        "    attributes:\n      verified_revision: {type: string, owner: edge}\n      verified_as: {type: string, owner: edge}\n",
         "",
     );
     assert_ne!(undeclared, taxonomy(), "the declaration was removed");
@@ -1380,7 +1380,7 @@ fn an_unrecorded_edge_a_verified_line_names_says_why_no_stamp_is_written() {
     let root = scratch("undeclared-unrecorded");
     document(&root, TODAY, &[format!("    - {LIB}")]);
     let undeclared = taxonomy().replace(
-        "    attributes:\n      verified_revision: {type: string, owner: edge}\n",
+        "    attributes:\n      verified_revision: {type: string, owner: edge}\n      verified_as: {type: string, owner: edge}\n",
         "",
     );
     assert_ne!(undeclared, taxonomy(), "the declaration was removed");
@@ -1667,6 +1667,218 @@ fn a_verified_pair_that_names_no_edge_is_listed_as_the_pair() {
             text.contains("named no edge of their document"),
             !unstated.is_empty(),
             "{label}: {text}"
+        );
+    }
+}
+
+/// The two entries the baseline cases declare: a scalar and a bare list.
+fn baseline_entries() -> Vec<String> {
+    vec![
+        "    - .githooks/pre-commit".to_string(),
+        "    - [.claude/hooks/write.sh, .claude/hooks/lib.sh]".to_string(),
+    ]
+}
+
+/// The attributes a patch writes, or a panic that names the case.
+fn written<'f>(
+    label: &str,
+    finding: &'f headwater_check::finding::Finding,
+) -> &'f [(String, String)] {
+    match &finding.patch {
+        Some(Patch::Half { attributes, .. }) => attributes,
+        other => panic!("{label}: a patch: {other:?}"),
+    }
+}
+
+/// `--baseline` with no change offers each unrecorded edge, a list included,
+/// a stamp marked `verified_as: baseline`, at `Info`. The same tree with no
+/// baseline statement stays silent, as
+/// [`an_unrecorded_entry_the_change_did_not_re_verify_is_silent`] holds
+/// (#2016).
+#[test]
+fn a_baseline_run_offers_a_marked_stamp_on_each_unrecorded_entry() {
+    let root = scratch("baseline-offers");
+    document(&root, TODAY, &baseline_entries());
+    let plain = run_in(&root, &at(TODAY), &mut Cache::disabled(), &taxonomy());
+    assert!(suspect(&plain).is_empty(), "{:?}", suspect(&plain));
+
+    let ran = run_in(
+        &root,
+        &at(TODAY).with_baseline(true),
+        &mut Cache::disabled(),
+        &taxonomy(),
+    );
+    let mut reported = suspect(&ran);
+    reported.sort_by_key(|finding| finding.line);
+    assert_eq!(reported.len(), 2, "{reported:?}");
+    let scalar = expected(&root, &[".githooks/pre-commit"]);
+    let list = expected(&root, &[".claude/hooks/write.sh", ".claude/hooks/lib.sh"]);
+    for (finding, digest) in reported.iter().zip([&scalar, &list]) {
+        assert_eq!(finding.severity, headwater_check::finding::Severity::Info);
+        assert!(finding.message.contains("baseline"), "{}", finding.message);
+        assert!(
+            finding.remediation.contains("--baseline"),
+            "{}",
+            finding.remediation
+        );
+        assert_eq!(
+            written("baseline", finding),
+            &[
+                ("verified_revision".to_string(), digest.clone()),
+                ("verified_as".to_string(), "baseline".to_string()),
+            ]
+        );
+    }
+    match &reported[1].patch {
+        Some(Patch::Half { members, .. }) => assert_eq!(
+            members.as_deref(),
+            Some(
+                &[
+                    ".claude/hooks/write.sh".to_string(),
+                    ".claude/hooks/lib.sh".to_string()
+                ][..]
+            )
+        ),
+        other => panic!("a list patch: {other:?}"),
+    }
+}
+
+/// With `--baseline` and a change together, the edge the change states was
+/// re-read takes the reading stamp, with no marker, and only the other
+/// unrecorded edge takes the baseline (#2016).
+#[test]
+fn a_baseline_run_stamps_a_stated_edge_as_a_reading() {
+    let root = scratch("baseline-stated");
+    document(&root, TODAY, &baseline_entries());
+    let ctx = at(TODAY)
+        .scoped_to(edges(&[], &[], &[(DOCUMENT, ".githooks/pre-commit")]))
+        .with_baseline(true);
+    let ran = run_in(&root, &ctx, &mut Cache::disabled(), &taxonomy());
+    let mut reported = suspect(&ran);
+    reported.sort_by_key(|finding| finding.line);
+    assert_eq!(reported.len(), 2, "{reported:?}");
+    assert_eq!(
+        written("stated", reported[0]),
+        &[(
+            "verified_revision".to_string(),
+            expected(&root, &[".githooks/pre-commit"])
+        )]
+    );
+    assert_eq!(
+        written("unstated", reported[1]).last(),
+        Some(&("verified_as".to_string(), "baseline".to_string()))
+    );
+}
+
+/// Where the relation declares `verified_revision` and not `verified_as`,
+/// `--baseline` offers no patch, and the finding says the marker is not
+/// declared. Where it declares neither, the edge keeps its silence (#2016).
+#[test]
+fn a_baseline_run_names_an_undeclared_marker() {
+    let root = scratch("baseline-unmarked");
+    document(&root, TODAY, &["    - .githooks/pre-commit".to_string()]);
+    let unmarked = taxonomy().replace("      verified_as: {type: string, owner: edge}\n", "");
+    assert_ne!(unmarked, taxonomy(), "the marker was removed");
+    let ctx = at(TODAY).with_baseline(true);
+    let ran = run_in(&root, &ctx, &mut Cache::disabled(), &unmarked);
+    let reported = suspect(&ran);
+    assert_eq!(reported.len(), 1, "{reported:?}");
+    assert_eq!(reported[0].patch, None);
+    assert!(
+        reported[0]
+            .remediation
+            .contains("`governs` declares no `verified_as`"),
+        "{}",
+        reported[0].remediation
+    );
+    let neither = unmarked.replace(
+        "    attributes:\n      verified_revision: {type: string, owner: edge}\n",
+        "",
+    );
+    assert_ne!(neither, unmarked, "the digest was removed");
+    let ran = run_in(&root, &ctx, &mut Cache::disabled(), &neither);
+    assert!(suspect(&ran).is_empty(), "{:?}", suspect(&ran));
+}
+
+/// A moved digest on an edge stamped as a baseline says the recorded digest
+/// was a baseline. One stamped as a reading does not, and neither does one
+/// whose `verified_as` holds another value, because only `baseline` is the
+/// marker (#2016).
+#[test]
+fn a_moved_digest_on_a_baseline_stamp_names_the_baseline() {
+    let root = scratch("baseline-moved");
+    let digest = expected(&root, &[LIB]);
+    for (marker, says) in [
+        ("\n      verified_as: baseline", true),
+        ("", false),
+        ("\n      verified_as: reading", false),
+    ] {
+        let entry = format!("    - to: {LIB}\n      verified_revision: \"{digest}\"{marker}");
+        document(&root, TODAY, &[entry]);
+        write(&root, LIB, "refuse() { :; }\n");
+        let ran = cold(&root, TODAY);
+        let reported = suspect(&ran);
+        assert_eq!(reported.len(), 1, "{reported:?}");
+        assert_eq!(
+            reported[0].severity,
+            headwater_check::finding::Severity::Warn
+        );
+        assert_eq!(
+            reported[0].message.contains("is a baseline"),
+            says,
+            "{}",
+            reported[0].message
+        );
+        write(&root, LIB, HOOKS[3].1);
+    }
+}
+
+/// A reading stamp over an edge stamped as a baseline leaves `verified_as`
+/// out of the patch, so the edge loses the marker (#2016).
+#[test]
+fn a_reading_stamp_over_a_baseline_drops_the_marker() {
+    let root = scratch("baseline-reread");
+    let digest = expected(&root, &[LIB]);
+    let entry = format!(
+        "    - to: {LIB}\n      verified_revision: \"{digest}\"\n      verified_as: baseline"
+    );
+    document(&root, TODAY, &[entry]);
+    write(&root, LIB, "refuse() { :; }\n");
+    let ctx = at(TODAY).scoped_to(edges(&[], &[], &[(DOCUMENT, LIB)]));
+    let ran = run_in(&root, &ctx, &mut Cache::disabled(), &taxonomy());
+    let reported = suspect(&ran);
+    assert_eq!(reported.len(), 1, "{reported:?}");
+    assert_eq!(
+        written("reread", reported[0]),
+        &[("verified_revision".to_string(), expected(&root, &[LIB]))]
+    );
+}
+
+/// A warm cache does not serve a run with `--baseline` the verdict of a run
+/// without it over the same tree, nor the other way round (#2016).
+#[test]
+fn a_warm_cache_keys_the_patch_on_the_baseline() {
+    let root = scratch("baseline-warm");
+    document(&root, TODAY, &["    - .githooks/pre-commit".to_string()]);
+    for (label, baseline, reported) in [
+        ("plain, cold", false, 0),
+        ("baseline, after a plain run", true, 1),
+        ("plain, after a baseline run", false, 0),
+        ("baseline, warm", true, 1),
+    ] {
+        let mut cache = Cache::at(&root, LOCK, "sha256:rules");
+        let ran = run_in(
+            &root,
+            &at(TODAY).with_baseline(baseline),
+            &mut cache,
+            &taxonomy(),
+        );
+        cache.write(&root).expect("the cache writes");
+        let found = suspect(&ran);
+        assert_eq!(found.len(), reported, "{label}: {found:?}");
+        assert!(
+            found.iter().all(|finding| finding.patch.is_some()),
+            "{label}"
         );
     }
 }

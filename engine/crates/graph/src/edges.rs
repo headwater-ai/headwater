@@ -121,6 +121,19 @@ pub const CUE: &str = "cue";
 /// sit under both of them.
 pub const VERIFIED_REVISION: &str = "verified_revision";
 
+/// The instance attribute that says how a [`VERIFIED_REVISION`] was recorded.
+///
+/// `headwater check --fix --baseline` writes the value [`BASELINE`] here when it
+/// stamps a digest that nobody read against the target (#2016), so a baseline
+/// stays distinguishable from a stamp that records a reading. A stamp that
+/// records a reading writes no value here and drops one that stands. The name
+/// is here beside [`VERIFIED_REVISION`] for the reason that one is here: the
+/// check crate writes and reads it, and `headwater explain` reads it.
+pub const VERIFIED_AS: &str = "verified_as";
+
+/// The value of [`VERIFIED_AS`] on a baseline stamp.
+pub const BASELINE: &str = "baseline";
+
 /// The declaring end of an edge.
 #[derive(Clone, Debug)]
 pub struct Source {
@@ -383,6 +396,17 @@ impl Edge {
             .find(|entry| entry.key.value == VERIFIED_REVISION)
             .and_then(|entry| entry.value.value.as_scalar())
             .map(|scalar| scalar.text.as_str())
+    }
+
+    /// Whether the recorded [`VERIFIED_REVISION`] is a baseline, which
+    /// records no reading: the edge carries [`VERIFIED_AS`] with the value
+    /// [`BASELINE`].
+    pub fn verified_as_baseline(&self) -> bool {
+        self.attributes
+            .iter()
+            .find(|entry| entry.key.value == VERIFIED_AS)
+            .and_then(|entry| entry.value.value.as_scalar())
+            .is_some_and(|scalar| scalar.text == BASELINE)
     }
 
     /// The recorded and the current revision, when the edge is suspect.
