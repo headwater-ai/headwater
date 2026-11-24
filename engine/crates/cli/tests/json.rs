@@ -881,6 +881,11 @@ fn no_control_character_from_a_document_reaches_check_output() {
             body("HW-DR-\u{1b}[2J\u{1b}[31m4"),
         )
         .expect("the hostile identifier writes");
+        // A second claim of the hostile file's identifier, so the graph
+        // section of the text report names the hostile path twice: as the
+        // file at fault and as the other claimant (#1970).
+        std::fs::write(decisions.join("0005-z.md"), body("HW-DR-0003"))
+            .expect("the duplicate claim writes");
     });
     for format in ["text", "json", "markdown", "sarif"] {
         let run = root.run(&["check", "--no-color", "--format", format]);
