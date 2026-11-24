@@ -648,6 +648,7 @@ fn a_control_character_from_a_document_reaches_no_format_intact() {
         pattern: format!("docs/**{HOSTILE_ID}"),
         reason: format!("excluded\n::error ::forged{HOSTILE_ID}"),
     };
+    hostile_graph(&mut ran.graph);
     let escaped_path = "docs/decisions/0003-x\\n::error ::forged-name\\x1b[31m.md";
     // Both layouts, because `--verbose` adds the rule scopes and the read set
     // to the text report (#1990), and the read set names every file.
@@ -708,7 +709,148 @@ fn a_control_character_from_a_document_reaches_no_format_intact() {
                 );
             }
         }
+        // Text is the one format that writes the graph section, and it writes
+        // each value a document or the taxonomy supplies there escaped, not
+        // left out.
+        if matches!(format, Format::Text) {
+            let flowed = flowed(&artifact);
+            for label in GRAPH_LABELS {
+                assert!(
+                    flowed.contains(&escaped(label)),
+                    "{name} does not write the graph's {label} escaped"
+                );
+            }
+        }
     }
+}
+
+/// One label for each value the graph section prints that a document or the
+/// taxonomy supplies. Each one is made hostile by [`hostile`], and the text
+/// report must write each one as [`escaped`] text.
+const GRAPH_LABELS: [&str; 22] = [
+    "dup-path",
+    "dup-other",
+    "dup-id",
+    "no-id-kind",
+    "problem-path",
+    "relation-name",
+    "triple-relation",
+    "triple-target",
+    "edge-path",
+    "edge-name",
+    "edge-target",
+    "not-typed-path",
+    "not-typed-detail",
+    "unresolved-kind",
+    "unresolved-why",
+    "link-path",
+    "link-destination",
+    "link-missing",
+    "anchor-kind",
+    "anchor-resolver",
+    "anchor-pattern",
+    "anchor-excluded",
+];
+
+/// A value that forges a workflow command on a line of its own and turns a
+/// terminal red, named by its label so that a test can find it.
+fn hostile(label: &str) -> String {
+    format!("{label}\n::error ::{label}\u{1b}[31m")
+}
+
+/// The form a text report writes [`hostile`] in.
+fn escaped(label: &str) -> String {
+    format!("{label}\\n::error ::{label}\\x1b[31m")
+}
+
+/// Puts a hostile value into each fact of the graph section of the text report
+/// (#1970): the identifier defects, the relation problems, the unbound edges,
+/// the broken links and the anchors. The graph builds none of these from a
+/// clean fixture tree, so each is written here, with an edge and a link cloned
+/// from the fixture graph for the fields this test does not name.
+fn hostile_graph(graph: &mut Graph) {
+    use headwater_graph::anchors::Revision;
+    use headwater_graph::edges::{PatternMember, Problem, Reported as Problemed};
+    use headwater_graph::index::{Defect, Reported as Defective};
+    use headwater_graph::links::Binding;
+    use headwater_graph::{Target, Unbound};
+    graph.index.defects.push(Defective {
+        path: hostile("dup-path"),
+        span: None,
+        defect: Defect::Duplicate {
+            id: format!("{}{HOSTILE_ID}", hostile("dup-id")),
+            other: hostile("dup-other"),
+            other_span: None,
+            former: false,
+        },
+    });
+    graph.index.defects.push(Defective {
+        path: HOSTILE_PATH.to_string(),
+        span: None,
+        defect: Defect::NoIdentifier {
+            kind: hostile("no-id-kind"),
+        },
+    });
+    graph.problems.push(Problemed {
+        path: hostile("problem-path"),
+        span: None,
+        problem: Problem::UnknownRelation {
+            name: hostile("relation-name"),
+        },
+    });
+    graph.problems.push(Problemed {
+        path: HOSTILE_PATH.to_string(),
+        span: None,
+        problem: Problem::RepeatedTriple {
+            relation: hostile("triple-relation"),
+            target: hostile("triple-target"),
+        },
+    });
+    let edge = graph
+        .edges
+        .first()
+        .cloned()
+        .expect("the fixture graph holds an edge");
+    let mut not_typed = edge.clone();
+    not_typed.source.path = hostile("edge-path");
+    not_typed.name = hostile("edge-name");
+    not_typed.raw_target = hostile("edge-target");
+    not_typed.target = Target::Unbound(Unbound::NotTyped {
+        path: hostile("not-typed-path"),
+        class: "untyped",
+        detail: hostile("not-typed-detail"),
+    });
+    let mut unresolved = edge.clone();
+    unresolved.source.path = HOSTILE_PATH.to_string();
+    unresolved.target = Target::Unbound(Unbound::AnchorUnresolved {
+        anchor_kind: hostile("unresolved-kind"),
+        why: hostile("unresolved-why"),
+    });
+    let mut anchor = edge;
+    anchor.target = Target::Anchor {
+        anchor_kind: hostile("anchor-kind"),
+        resolver: hostile("anchor-resolver"),
+        normalized: hostile("anchor-pattern"),
+        excluded_by: Some(hostile("anchor-excluded")),
+        revision: Revision::known(None),
+        patterns: vec![PatternMember {
+            pattern: hostile("anchor-pattern"),
+            matched: Vec::new(),
+            revision: Revision::known(None),
+        }],
+    };
+    graph.edges.extend([not_typed, unresolved, anchor]);
+    let mut link = graph
+        .links
+        .first()
+        .cloned()
+        .expect("the fixture graph holds a prose link");
+    link.source_path = hostile("link-path");
+    link.destination = hostile("link-destination");
+    link.binding = Binding::Missing {
+        path: hostile("link-missing"),
+    };
+    graph.links.push(link);
 }
 
 /// A path that a change manifest names reaches no format with a control
