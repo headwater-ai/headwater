@@ -629,9 +629,14 @@ fn a_control_character_from_a_document_reaches_no_format_intact() {
         reason: format!("excluded\n::error ::forged{HOSTILE_ID}"),
     };
     let escaped_path = "docs/decisions/0003-x\\n::error ::forged-name\\x1b[31m.md";
-    for format in Format::ALL {
-        let artifact = render(&ran, format);
-        let name = format.name();
+    // Both layouts, because `--verbose` adds the rule scopes and the read set
+    // to the text report (#1990), and the read set names every file.
+    let layouts = Format::ALL
+        .into_iter()
+        .flat_map(|format| [(format, false), (format, true)]);
+    for (format, verbose) in layouts {
+        let artifact = render_as(&ran, format, headwater_check::fill::WIDTH, verbose);
+        let name = format!("{} (verbose {verbose})", format.name());
         let raw = artifact
             .bytes()
             .find(|byte| (*byte < 0x20 && *byte != b'\n') || *byte == 0x7f);
@@ -704,9 +709,14 @@ fn a_control_character_from_a_change_manifest_reaches_no_format_intact() {
     change
         .unstated
         .push((HOSTILE_PATH.to_string(), format!("HW-DR-{HOSTILE_ID}")));
-    for format in Format::ALL {
-        let artifact = render(&ran, format);
-        let name = format.name();
+    // Both layouts, because `--verbose` adds the rule scopes and the read set
+    // to the text report (#1990), and the read set names every file.
+    let layouts = Format::ALL
+        .into_iter()
+        .flat_map(|format| [(format, false), (format, true)]);
+    for (format, verbose) in layouts {
+        let artifact = render_as(&ran, format, headwater_check::fill::WIDTH, verbose);
+        let name = format!("{} (verbose {verbose})", format.name());
         let raw = artifact
             .bytes()
             .find(|byte| (*byte < 0x20 && *byte != b'\n') || *byte == 0x7f);
