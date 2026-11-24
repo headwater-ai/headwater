@@ -47,5 +47,13 @@ headwater-meta = { workspace = true }
 # the check, gate and probe loop.
 headwater-vcs = { workspace = true }
 
+# A path, an identifier or a pattern that a document or the taxonomy supplies
+# can hold a control character, and the text report prints this crate's
+# exceptions to a terminal. `visible` writes each one as backslash text where
+# `render` prints it, never in a fact, so a finding keeps the exact value
+# (#1970). `headwater-census` takes the same dependency for its own report, and
+# `paint` depends on nothing in the workspace.
+headwater-paint = { workspace = true }
+
 [lints]
 workspace = true
