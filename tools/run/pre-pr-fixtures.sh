@@ -269,9 +269,16 @@ same 'an exclusion named twice is named' 'excluded twice: tools/run/wait-for-fix
 
 printf '\n# the default list holds the suites CI runs that a green pre-pr once missed\n'
 # PR #1894 and #1902 each printed PRE-PR: ok and failed one of the probe
-# suites in CI, and #1959 (PR #1991) the engine README suite.
+# suites in CI, and #1959 (PR #1991) the engine README suite. The eleven
+# corpus suites after it read the corpus, run offline and take seconds, and the
+# product owner ruled them in during run 20261122-0114, because #1959 also broke
+# the README one in CI after PRE-PR: ok.
 defaults=$(sed -n 's/^fixtures=\${HW_PRE_PR_FIXTURES:-"\(.*\)"}$/\1/p' "$tool")
-for suite in tools/probe/probe-record-fixtures.sh tools/probe/campaign-fixtures.sh tools/probe/oracle-fixtures.sh tools/probe/probe-oracle-fixtures.sh tools/engine/engine-readme-fixtures.sh; do
+for suite in tools/probe/probe-record-fixtures.sh tools/probe/campaign-fixtures.sh tools/probe/oracle-fixtures.sh tools/probe/probe-oracle-fixtures.sh tools/engine/engine-readme-fixtures.sh \
+    tools/cite/check-citations-fixtures.sh tools/repo/decision-record-fixtures.sh tools/repo/decision-register-fixtures.sh \
+    tools/repo/diataxis-facet-fixtures.sh tools/repo/diataxis-fixtures.sh tools/repo/integrations-fixtures.sh \
+    tools/repo/library-index-fixtures.sh tools/repo/obligation-register-fixtures.sh tools/repo/readme-fixtures.sh \
+    tools/repo/release-guide-fixtures.sh tools/taxonomy/n8n-fixtures.sh; do
     case " $defaults " in
         *" $suite "*) pass "the default fixture list runs $suite" ;;
         *) fail "the default fixture list runs $suite" "it is not in \`$defaults\`" ;;

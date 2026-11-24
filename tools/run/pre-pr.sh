@@ -24,7 +24,11 @@
 # printed `PRE-PR: ok` and went red in CI on two `oracle-fixtures.sh` cases.
 # `tools/engine/engine-readme-fixtures.sh` is here because #1959 (PR #1991)
 # printed `PRE-PR: ok` and failed it in CI, on a new crate with no row in
-# `engine/README.md`. Exit 0 when every step passed. Exit 2 on a refused
+# `engine/README.md`. The eleven suites from `tools/cite/check-citations-fixtures.sh`
+# to `tools/taxonomy/n8n-fixtures.sh` read the corpus, run offline and took
+# 0-19 s each on 2026-11-22, and #1959 broke the README one in CI after
+# `PRE-PR: ok`, so the product owner ruled them in (run 20261122-0114).
+# Exit 0 when every step passed. Exit 2 on a refused
 # argument, on the main checkout, and on `main` itself.
 #
 # The default list is kept by hand, and it is not every suite CI runs: some
@@ -40,25 +44,15 @@
 #   not run here: .githooks/fixtures.sh  tests the commit gate's refusals on planted commits; this script runs that gate itself
 #   not run here: tools/ci/beside-fixtures.sh  tests a CI helper on planted suites; reads no corpus content a build edits
 #   not run here: tools/ci/governed-scope-fixtures.sh  tests a jq filter of the CI job summary on planted JSON; reads no corpus content a build edits
-#   not run here: tools/cite/check-citations-fixtures.sh  reads the corpus, fast and offline; not added by #1995, and an intake line asks whether it belongs here
 #   not run here: tools/engine/color-fixtures.sh  takes about three minutes on the host (measured 2026-11-22)
 #   not run here: tools/hw-cargo-fixtures.sh  tests the cargo slot wrapper against a stub cargo; reads no corpus content a build edits
 #   not run here: tools/hw-cargo-link-fixtures.sh  tests the cargo slot wrapper's ownership of a pooled target; reads no corpus content a build edits
 #   not run here: tools/probe/campaign-drive-fixtures.sh  tests the campaign driver on planted batches; reads no corpus content a build edits
 #   not run here: tools/probe/ci-confine-fixtures.sh  tests the recorder's confinement gate with bwrap and sudo taken off the path; reads no corpus content a build edits
 #   not run here: tools/probe/try-fixtures.sh  tests the tuning round's verbs on planted trees; reads no corpus content a build edits
-#   not run here: tools/repo/decision-record-fixtures.sh  reads the corpus, fast and offline; not added by #1995, and an intake line asks whether it belongs here
-#   not run here: tools/repo/decision-register-fixtures.sh  reads the corpus, fast and offline; not added by #1995, and an intake line asks whether it belongs here
-#   not run here: tools/repo/diataxis-facet-fixtures.sh  reads the corpus, fast and offline; not added by #1995, and an intake line asks whether it belongs here
-#   not run here: tools/repo/diataxis-fixtures.sh  reads the corpus, fast and offline; not added by #1995, and an intake line asks whether it belongs here
 #   not run here: tools/repo/fix-fixed-point-fixtures.sh  tests the fixed-point step against a stub engine; this script runs the commit gate itself
 #   not run here: tools/repo/id-store-fixtures.sh  tests the identifier claim store's merges in scratch repositories; reads no corpus content a build edits
-#   not run here: tools/repo/integrations-fixtures.sh  reads the corpus, fast and offline; not added by #1995, and an intake line asks whether it belongs here
-#   not run here: tools/repo/library-index-fixtures.sh  reads the corpus, fast and offline; not added by #1995, and an intake line asks whether it belongs here
 #   not run here: tools/repo/new-worktree-fixtures.sh  tests the worktree script on scratch repositories; reads no corpus content a build edits
-#   not run here: tools/repo/obligation-register-fixtures.sh  reads the corpus, fast and offline; not added by #1995, and an intake line asks whether it belongs here
-#   not run here: tools/repo/readme-fixtures.sh  reads the corpus, fast and offline; not added by #1995, and an intake line asks whether it belongs here
-#   not run here: tools/repo/release-guide-fixtures.sh  reads the corpus, fast and offline; not added by #1995, and an intake line asks whether it belongs here
 #   not run here: tools/repo/retire-worktree-fixtures.sh  tests the retirement sweep on scratch repositories; reads no corpus content a build edits
 #   not run here: tools/run/board-move-fixtures.sh  fakes gh and tests a run tool; reads no corpus content a build edits
 #   not run here: tools/run/ci-done-fixtures.sh  fakes gh and tests a run tool; reads no corpus content a build edits
@@ -91,7 +85,6 @@
 #   not run here: tools/site/site-noindex-fixtures.sh  tests a site checker on planted pages; a step of the site jobs
 #   not run here: tools/site/site-redirects-fixtures.sh  tests a site checker on planted pages; a step of the site jobs
 #   not run here: tools/site/site-review-fixtures.sh  tests a site review tool that needs a browser; a step of the site jobs
-#   not run here: tools/taxonomy/n8n-fixtures.sh  reads the corpus, fast and offline; not added by #1995, and an intake line asks whether it belongs here
 #
 #     PRE-PR: ok | failed at <step>
 #     MERGED: origin/main at <sha>, <n> commits brought in | conflict on <files>
@@ -117,7 +110,7 @@ set -u
 
 root=$(cd "$(dirname "$0")/../.." && pwd)
 cargo=${HW_CARGO:-$root/tools/hw-cargo}
-fixtures=${HW_PRE_PR_FIXTURES:-".claude/agents/fixtures.sh .claude/skills/fixtures.sh .claude/hooks/fixtures.sh tools/repo/developing-fixtures.sh tools/repo/engine-resolver-fixtures.sh tools/repo/collation-fixtures.sh tools/engine/build-declaration-fixtures.sh tools/probe/probe-record-fixtures.sh tools/probe/campaign-fixtures.sh tools/probe/oracle-fixtures.sh tools/probe/probe-oracle-fixtures.sh tools/engine/engine-readme-fixtures.sh"}
+fixtures=${HW_PRE_PR_FIXTURES:-".claude/agents/fixtures.sh .claude/skills/fixtures.sh .claude/hooks/fixtures.sh tools/repo/developing-fixtures.sh tools/repo/engine-resolver-fixtures.sh tools/repo/collation-fixtures.sh tools/engine/build-declaration-fixtures.sh tools/probe/probe-record-fixtures.sh tools/probe/campaign-fixtures.sh tools/probe/oracle-fixtures.sh tools/probe/probe-oracle-fixtures.sh tools/engine/engine-readme-fixtures.sh tools/cite/check-citations-fixtures.sh tools/repo/decision-record-fixtures.sh tools/repo/decision-register-fixtures.sh tools/repo/diataxis-facet-fixtures.sh tools/repo/diataxis-fixtures.sh tools/repo/integrations-fixtures.sh tools/repo/library-index-fixtures.sh tools/repo/obligation-register-fixtures.sh tools/repo/readme-fixtures.sh tools/repo/release-guide-fixtures.sh tools/taxonomy/n8n-fixtures.sh"}
 
 usage() {
     sed -n '/^#     sh tools\/run\/pre-pr.sh/p' "$0" | sed 's/^# *//' >&2
