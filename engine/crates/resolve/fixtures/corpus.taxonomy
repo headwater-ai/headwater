@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 4.24.0
+version: 4.25.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -30,7 +30,7 @@ purposes:
       - "how do I set this up"
       - "what are the steps"
     intent: "state the steps a reader follows, and the state each step reaches"
-  requirement:
+  verifiable_requirement:
     answers:
       - "what must this do"
       - "what does done mean here"
@@ -323,7 +323,7 @@ regimes:
         - change_narration
         - phased_rollout
     narrative: {}
-    prospective:
+    requirement_prospective:
       forbid:
         - change_narration
         - phased_rollout
@@ -441,7 +441,7 @@ kinds:
     is_a: governed_document
     language: ste_house
     lifecycle: standard
-    purpose: requirement
+    purpose: verifiable_requirement
     relations:
       expect:
         - id: acceptance-criterion-proven
@@ -458,7 +458,7 @@ kinds:
       require:
         - "Fit criterion"
         - Method
-    voice: prospective
+    voice: requirement_prospective
     write_when: "a Done-when clause or a requirement needs a statement that a test can pass or fail"
   decision_register:
     facets:
@@ -748,7 +748,7 @@ kinds:
     is_a: governed_document
     language: ste_house
     lifecycle: standard
-    purpose: requirement
+    purpose: verifiable_requirement
     relations:
       expect:
         - id: requirement-verified
@@ -764,7 +764,7 @@ kinds:
         - Context
         - Requirement
         - Verification
-    voice: prospective
+    voice: requirement_prospective
     write_when: "an issue or a decision asks for something that the system must do, and nothing states it as a need"
   review_prompt:
     facets:
@@ -1007,8 +1007,8 @@ relations:
     reciprocal: required
     to:
       - acceptance_criterion
-      - probe
       - check_rule
+      - probe
 shelves:
   decisions:
     path: "docs/decisions/**"
@@ -1105,12 +1105,6 @@ shelves:
     kind: process_spec
     path: "docs/process/specs/**"
     title: "Process specifications"
-  requirements:
-    homogeneous: true
-    kind: requirement
-    layout: "{seq:04d}-{slug}.md"
-    path: "docs/requirements/**"
-    title: Requirements
   reviews:
     discriminator: doc_type
     homogeneous: false
@@ -1145,6 +1139,12 @@ shelves:
     layout: "{seq:04d}-{slug}.md"
     path: "docs/verifications/**"
     title: Verifications
+  verified_requirements:
+    homogeneous: true
+    kind: requirement
+    layout: "{seq:04d}-{slug}.md"
+    path: "docs/requirements/**"
+    title: Requirements
 identifier_schemes:
   decision_id:
     pattern: "{namespace}-DR-{seq:04d}"
@@ -1246,7 +1246,7 @@ projections:
       - spec_series
       - obligations
       - evaluations
-      - requirements
+      - verified_requirements
       - acceptance_criteria
       - verifications
       - probes
@@ -1298,7 +1298,7 @@ projections:
             for:
               - spec_series
               - interfaces
-              - requirements
+              - verified_requirements
               - acceptance_criteria
               - verifications
               - subsystems
@@ -2225,6 +2225,7 @@ surface:
     - docs/how-to/relocate-a-shelf.md
     - docs/how-to/wire-headwater-check-into-your-own-workflow.md
     - docs/how-to/publish-your-corpus-as-a-site.md
+    - docs/how-to/take-the-requirement-verification-entry.md
   archive:
     - headwater
     - LICENSE

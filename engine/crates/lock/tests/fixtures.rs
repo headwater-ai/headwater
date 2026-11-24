@@ -100,10 +100,11 @@ fn selected_as(file: &str) -> Option<String> {
         .then(|| name.to_string())
 }
 
-/// This repository's own selection: `design-spec` and `decision-record` both
-/// require `evidence-and-obligation`. The order between those two is held
-/// fixed, `design-spec` first. The three orders that place
-/// `evidence-and-obligation` first, between, and last are written out.
+/// This repository's own selection: `design-spec`, `decision-record` and
+/// `requirement-verification` each require `evidence-and-obligation`. The
+/// order among those three is held fixed, in the order the declaration names
+/// them. The four orders that place `evidence-and-obligation` first, second,
+/// third and last are written out (#2017).
 #[test]
 fn every_order_of_a_selection_writes_one_lock_and_lists_each_dependency_first() {
     let root = repository_root();
@@ -117,7 +118,9 @@ fn every_order_of_a_selection_writes_one_lock_and_lists_each_dependency_first() 
     };
     let mut locks: Vec<String> = Vec::new();
     for order in permutations(consumer.bundles.len()) {
-        if position(&order, "design-spec") > position(&order, "decision-record") {
+        if position(&order, "design-spec") > position(&order, "decision-record")
+            || position(&order, "decision-record") > position(&order, "requirement-verification")
+        {
             continue;
         }
         let mut trial = consumer.clone();
@@ -138,7 +141,7 @@ fn every_order_of_a_selection_writes_one_lock_and_lists_each_dependency_first() 
             .expect("it validates"),
         );
     }
-    assert_eq!(locks.len(), 3, "three places for the dependency");
+    assert_eq!(locks.len(), 4, "four places for the dependency");
     assert!(
         locks.iter().all(|lock| *lock == locks[0]),
         "two orders wrote two locks"

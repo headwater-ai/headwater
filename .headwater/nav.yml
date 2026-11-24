@@ -11,6 +11,7 @@ nav:
               - "Publish your corpus as a site": "how-to/publish-your-corpus-as-a-site.md"
               - "Record a verification from CI": "how-to/record-a-verification-from-ci.md"
               - "Relocate a shelf": "how-to/relocate-a-shelf.md"
+              - "Take the requirement-verification entry": "how-to/take-the-requirement-verification-entry.md"
               - "Wire headwater check into your own workflow": "how-to/wire-headwater-check-into-your-own-workflow.md"
           - "Explanations":
               - "Explanations": "explanations/README.md"
@@ -105,6 +106,7 @@ nav:
               - "Diátaxis as a documentation-site kind set": "taxonomies/diataxis-site/doctrine.md"
               - "The Diátaxis taxonomy": "taxonomies/diataxis/doctrine.md"
               - "The evidence-and-obligation taxonomy": "taxonomies/evidence-and-obligation/doctrine.md"
+              - "The requirement-verification taxonomy": "taxonomies/requirement-verification/doctrine.md"
               - "The standards-spec taxonomy": "taxonomies/standards-spec/doctrine.md"
       - "Decisions and evidence":
           - "Decision records":

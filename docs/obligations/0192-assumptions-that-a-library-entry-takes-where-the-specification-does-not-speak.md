@@ -24,6 +24,8 @@ Tier 3 of the [library index's finding rule](../taxonomies/README.md#a-finding-h
 
 **`brd-prd`, at [line 175](https://github.com/headwater-ai/headwater/blob/5fb9518/docs/taxonomies/brd-prd/doctrine.md#L175) of its doctrine.** The shelf declares no `layout`, because a layout has no form for a subdirectory per initiative and the tradition's files are `<initiative>/brd.md`. `volatility: stable` on `requirement_tier` is the same assumption again. Both kinds are named by acronym, which no other kind in this library is. `brd` carries two traditions' names for one slot, and no facet distinguishes them, because a facet that no check reads fails the relevance canon. The 90-day window is a judgment rather than a measurement. The identifier schemes carry no namespace, which is the same open pattern.
 
+**`requirement-verification`, under [What this entry assumed](../taxonomies/requirement-verification/doctrine.md#what-this-entry-assumed) in its doctrine.** Both expectation windows are 90 days, and the number comes from no source. No identifier scheme carries a namespace, as the base declares none for `decision_id`. `volatility: mutable` on `verification_method` is the claim that a criterion changes its method more often than its identity. One requirement is one document, because identity in this language is per document (#2017).
+
 ## Obligation
 
 Six questions stand behind the two groups, and each one is a place where the meta-schema has to speak eventually.

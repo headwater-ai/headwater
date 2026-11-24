@@ -1,10 +1,11 @@
-headwater/standard 4.24.0
+headwater/standard 4.25.0
 
 sources, in application order
   .headwater/packages/headwater-standard/taxonomy.yml
   .headwater/packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml
   .headwater/packages/headwater-standard/bundles/design-spec/bundle.yml
   .headwater/packages/headwater-standard/bundles/decision-record/bundle.yml
+  .headwater/packages/headwater-standard/bundles/requirement-verification/bundle.yml
   .headwater/overlay.yml
 
 operations
@@ -34,6 +35,23 @@ operations
   add.obligations.OB-DR-1 (.headwater/packages/headwater-standard/bundles/decision-record/bundle.yml)
   add.obligations.OB-DR-2 (.headwater/packages/headwater-standard/bundles/decision-record/bundle.yml)
   add.obligations.OB-DR-3 (.headwater/packages/headwater-standard/bundles/decision-record/bundle.yml)
+  add.purposes.verifiable_requirement (.headwater/packages/headwater-standard/bundles/requirement-verification/bundle.yml)
+  add.regimes.voice.requirement_prospective (.headwater/packages/headwater-standard/bundles/requirement-verification/bundle.yml)
+  add.facets.verification_method (.headwater/packages/headwater-standard/bundles/requirement-verification/bundle.yml)
+  add.identifier_schemes.requirement_id (.headwater/packages/headwater-standard/bundles/requirement-verification/bundle.yml)
+  add.identifier_schemes.acceptance_criterion_id (.headwater/packages/headwater-standard/bundles/requirement-verification/bundle.yml)
+  add.identifier_schemes.verification_id (.headwater/packages/headwater-standard/bundles/requirement-verification/bundle.yml)
+  add.kinds.requirement (.headwater/packages/headwater-standard/bundles/requirement-verification/bundle.yml)
+  add.kinds.acceptance_criterion (.headwater/packages/headwater-standard/bundles/requirement-verification/bundle.yml)
+  add.kinds.verification (.headwater/packages/headwater-standard/bundles/requirement-verification/bundle.yml)
+  add.anchors.check_rule (.headwater/packages/headwater-standard/bundles/requirement-verification/bundle.yml)
+  add.anchors.test_site (.headwater/packages/headwater-standard/bundles/requirement-verification/bundle.yml)
+  add.relations.verified_by (.headwater/packages/headwater-standard/bundles/requirement-verification/bundle.yml)
+  add.relations.proven_by (.headwater/packages/headwater-standard/bundles/requirement-verification/bundle.yml)
+  add.relations.cited_in (.headwater/packages/headwater-standard/bundles/requirement-verification/bundle.yml)
+  add.shelves.verified_requirements (.headwater/packages/headwater-standard/bundles/requirement-verification/bundle.yml)
+  add.shelves.acceptance_criteria (.headwater/packages/headwater-standard/bundles/requirement-verification/bundle.yml)
+  add.shelves.verifications (.headwater/packages/headwater-standard/bundles/requirement-verification/bundle.yml)
   add.identifier_schemes.decision_id.namespace (.headwater/overlay.yml)
   add.identifier_schemes.obligation_record_id.namespace (.headwater/overlay.yml)
   add.identifier_schemes.spec_id (.headwater/overlay.yml)
@@ -88,24 +106,13 @@ operations
   add.identifier_schemes.process_how_to_id (.headwater/overlay.yml)
   add.kinds.process_how_to (.headwater/overlay.yml)
   add.shelves.process_how_to (.headwater/overlay.yml)
-  add.purposes.requirement (.headwater/overlay.yml)
-  add.regimes.voice.prospective (.headwater/overlay.yml)
-  add.facets.verification_method (.headwater/overlay.yml)
-  add.identifier_schemes.requirement_id (.headwater/overlay.yml)
-  add.identifier_schemes.acceptance_criterion_id (.headwater/overlay.yml)
-  add.identifier_schemes.verification_id (.headwater/overlay.yml)
-  add.kinds.requirement (.headwater/overlay.yml)
-  add.kinds.acceptance_criterion (.headwater/overlay.yml)
-  add.kinds.verification (.headwater/overlay.yml)
-  add.anchors.check_rule (.headwater/overlay.yml)
+  add.identifier_schemes.requirement_id.namespace (.headwater/overlay.yml)
+  add.identifier_schemes.acceptance_criterion_id.namespace (.headwater/overlay.yml)
+  add.identifier_schemes.verification_id.namespace (.headwater/overlay.yml)
+  add.anchors.test_site.pattern (.headwater/overlay.yml)
+  add.kinds.requirement.language (.headwater/overlay.yml)
+  add.kinds.acceptance_criterion.language (.headwater/overlay.yml)
   add.anchors.code_path.scope (.headwater/overlay.yml)
-  add.anchors.test_site (.headwater/overlay.yml)
-  add.relations.verified_by (.headwater/overlay.yml)
-  add.relations.proven_by (.headwater/overlay.yml)
-  add.relations.cited_in (.headwater/overlay.yml)
-  add.shelves.requirements (.headwater/overlay.yml)
-  add.shelves.acceptance_criteria (.headwater/overlay.yml)
-  add.shelves.verifications (.headwater/overlay.yml)
   add.identifier_schemes.process_decision_id (.headwater/overlay.yml)
   add.kinds.process_decision (.headwater/overlay.yml)
   add.shelves.process_decisions (.headwater/overlay.yml)
@@ -127,11 +134,13 @@ operations
   add.shelves.library_doctrine (.headwater/overlay.yml)
   add.surface (.headwater/overlay.yml)
   override.controls.CT-REL-12.posture (.headwater/overlay.yml)
+  override.shelves.verified_requirements.path (.headwater/overlay.yml)
   add_to.projections (.headwater/overlay.yml)
+  add_to.relations.verified_by.to (.headwater/overlay.yml)
 
 declarations, by member count
   taxonomy: headwater/standard
-  version: 4.24.0
+  version: 4.25.0
   purposes: 6 members
   vocabularies: 1 member
   facets: 19 members

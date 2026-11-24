@@ -326,6 +326,8 @@ docs/how-to/record-a-verification-from-ci.md
   typed: how_to
 docs/how-to/relocate-a-shelf.md
   typed: how_to
+docs/how-to/take-the-requirement-verification-entry.md
+  typed: how_to
 docs/how-to/wire-headwater-check-into-your-own-workflow.md
   typed: how_to
 docs/interfaces/README.md
@@ -1941,6 +1943,46 @@ docs/taxonomies/evidence-and-obligation/doctrine.md
 docs/taxonomies/evidence-and-obligation/fixtures/README.md
   excluded: docs/taxonomies/*/fixtures/**
 docs/taxonomies/evidence-and-obligation/templates/evaluation.md
+  excluded: docs/taxonomies/*/templates/**
+docs/taxonomies/requirement-verification/bundle.yml
+  excluded: docs/taxonomies/*/bundle.yml
+docs/taxonomies/requirement-verification/doctrine.md
+  typed: library_doctrine
+docs/taxonomies/requirement-verification/fixtures/README.md
+  excluded: docs/taxonomies/*/fixtures/**
+docs/taxonomies/requirement-verification/fixtures/corpus/.headwater/ids/acceptance_criterion_id/SCR-AC-0001
+  excluded: docs/taxonomies/*/fixtures/**
+docs/taxonomies/requirement-verification/fixtures/corpus/.headwater/ids/acceptance_criterion_id/SCR-AC-0002
+  excluded: docs/taxonomies/*/fixtures/**
+docs/taxonomies/requirement-verification/fixtures/corpus/.headwater/ids/acceptance_criterion_id/SCR-AC-0003
+  excluded: docs/taxonomies/*/fixtures/**
+docs/taxonomies/requirement-verification/fixtures/corpus/.headwater/ids/requirement_id/SCR-REQ-0001
+  excluded: docs/taxonomies/*/fixtures/**
+docs/taxonomies/requirement-verification/fixtures/corpus/.headwater/ids/requirement_id/SCR-REQ-0002
+  excluded: docs/taxonomies/*/fixtures/**
+docs/taxonomies/requirement-verification/fixtures/corpus/.headwater/ids/verification_id/SCR-VER-0001
+  excluded: docs/taxonomies/*/fixtures/**
+docs/taxonomies/requirement-verification/fixtures/corpus/docs/acceptance-criteria/0001-a-replay-reaches-the-endpoint-within-one-minute.md
+  excluded: docs/taxonomies/*/fixtures/**
+docs/taxonomies/requirement-verification/fixtures/corpus/docs/acceptance-criteria/0002-the-replay-log-names-the-operator-and-the-reason.md
+  excluded: docs/taxonomies/*/fixtures/**
+docs/taxonomies/requirement-verification/fixtures/corpus/docs/acceptance-criteria/0003-a-replay-keeps-the-original-event-identifier.md
+  excluded: docs/taxonomies/*/fixtures/**
+docs/taxonomies/requirement-verification/fixtures/corpus/docs/verifications/0001-the-replay-latency-test-measures-twenty-replays.md
+  excluded: docs/taxonomies/*/fixtures/**
+docs/taxonomies/requirement-verification/fixtures/corpus/docs/verified-requirements/0001-an-operator-can-replay-a-failed-delivery.md
+  excluded: docs/taxonomies/*/fixtures/**
+docs/taxonomies/requirement-verification/fixtures/corpus/docs/verified-requirements/0002-a-delivery-reaches-its-endpoint-within-five-seconds.md
+  excluded: docs/taxonomies/*/fixtures/**
+docs/taxonomies/requirement-verification/fixtures/corpus/src/replay_latency_test.rs
+  excluded: docs/taxonomies/*/fixtures/**
+docs/taxonomies/requirement-verification/fixtures/overlay.yml
+  excluded: docs/taxonomies/*/fixtures/**
+docs/taxonomies/requirement-verification/templates/acceptance_criterion.md
+  excluded: docs/taxonomies/*/templates/**
+docs/taxonomies/requirement-verification/templates/requirement.md
+  excluded: docs/taxonomies/*/templates/**
+docs/taxonomies/requirement-verification/templates/verification.md
   excluded: docs/taxonomies/*/templates/**
 docs/taxonomies/standards-spec/bundle.yml
   excluded: docs/taxonomies/*/bundle.yml

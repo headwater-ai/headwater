@@ -22,6 +22,8 @@ A requirement is descoped, deferred, out of scope, or not met at release. Each o
 
 The [`brd-prd` entry](../taxonomies/brd-prd/doctrine.md#findings) records this as its fifth finding, at [line 171](https://github.com/headwater-ai/headwater/blob/5fb9518/docs/taxonomies/brd-prd/doctrine.md#L171). `OB-BP-3` of that entry is unverifiable for the same reason. The descoping that the tradition does every week is invisible to the corpus.
 
+The [`requirement-verification` entry](../taxonomies/requirement-verification/doctrine.md#findings) answers part of this for its own tradition, and its fourth finding says so (#2017). There a requirement is a document, so it has an identifier and a state, and a descoped requirement is a document at `deprecated`. The `brd-prd` form is unchanged, so this record stays open.
+
 ## Obligation
 
 This is the sub-document identity gap of [HW-OBL-0036](0036-identity-below-the-grain-of-a-document.md) seen from the state side rather than the citation side. A requirement has no identity, so it has no state, and no lifecycle regime can reach it.

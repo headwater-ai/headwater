@@ -3097,7 +3097,7 @@ fn the_shipped_maintenance_loop_runs_as_written_over_a_source_that_changed() {
     write(
         &consumer.join(".headwater/taxonomy.yml"),
         &format!(
-            "taxonomy:\n  package: headwater/standard\n  version: {}\n  digest: {}\n  bundles: [design-spec, evidence-and-obligation, decision-record]\n  overlay: .headwater/overlay.yml\ncorpus:\n  root: docs\n",
+            "taxonomy:\n  package: headwater/standard\n  version: {}\n  digest: {}\n  bundles: [design-spec, evidence-and-obligation, decision-record, requirement-verification]\n  overlay: .headwater/overlay.yml\ncorpus:\n  root: docs\n",
             declared_version(&manifest),
             printed_digest(&stdout)
         ),

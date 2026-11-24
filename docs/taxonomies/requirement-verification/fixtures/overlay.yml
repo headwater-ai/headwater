@@ -1,0 +1,10 @@
+# The whole consumer overlay of the fixture corpus. A namespace for each scheme
+# that the three selected entries leave without one, and the prefix that a test
+# comment opens with. fixtures/README.md says how a run reaches it.
+add:
+  identifier_schemes.decision_id.namespace: SCR
+  identifier_schemes.obligation_record_id.namespace: SCR
+  identifier_schemes.requirement_id.namespace: SCR
+  identifier_schemes.acceptance_criterion_id.namespace: SCR
+  identifier_schemes.verification_id.namespace: SCR
+  anchors.test_site.pattern: "SCR-VER-"

@@ -21,8 +21,8 @@
       ],
       "taxonomy": {
         "package": "headwater/standard",
-        "version": "4.24.0",
-        "lock": "sha256:0fcbb4d3eec587bcf30a06e873e9691acf3d416ccda1e4729fef54314ae6099e"
+        "version": "4.25.0",
+        "lock": "sha256:90cdbbb94dd6c8409e12d0558f1a60fb130d1c4f544ccf9915572aa34195e62f"
       },
       "entry_points": [
         {
@@ -111,11 +111,6 @@
           "id": "HW-SPEC-orchestration-architecture"
         },
         {
-          "shelf": "requirements",
-          "path": "docs/requirements/0001-the-engine-reaches-no-network-at-check-time.md",
-          "id": "HW-REQ-0001"
-        },
-        {
           "shelf": "reviews",
           "path": "docs/reviews/core-concepts-findings-assessment.md",
           "id": "HW-REV-core-concepts-assessment"
@@ -139,6 +134,11 @@
           "shelf": "verifications",
           "path": "docs/verifications/0001-the-section-heading-rule-has-no-case-table-and-a-golden-fixture-report-is-what-proves-it-runs.md",
           "id": "HW-VER-0001"
+        },
+        {
+          "shelf": "verified_requirements",
+          "path": "docs/requirements/0001-the-engine-reaches-no-network-at-check-time.md",
+          "id": "HW-REQ-0001"
         }
       ],
       "exports": []
