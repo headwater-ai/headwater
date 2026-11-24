@@ -80,7 +80,11 @@ fn what_observe_writes_check_reads_as_observed_and_an_edited_criterion_reads_sus
     let root = pair("round-trip");
 
     let before = root.run(&["check"]);
-    assert_eq!(state(&before.out, VERIFICATION), format!("{VERIFICATION} declared"), "{before:?}");
+    assert_eq!(
+        state(&before.out, VERIFICATION),
+        format!("{VERIFICATION} declared"),
+        "{before:?}"
+    );
 
     let wrote = root.run(&["observe", VERIFICATION, "--commit", COMMIT]);
     assert_eq!(wrote.code, Some(0), "{wrote:?}");
@@ -92,7 +96,9 @@ fn what_observe_writes_check_reads_as_observed_and_an_edited_criterion_reads_sus
         "{observed:?}"
     );
     assert!(
-        !observed.out.contains("relation.target.verification.suspect"),
+        !observed
+            .out
+            .contains("relation.target.verification.suspect"),
         "an observed verification is no finding: {}",
         observed.out
     );
@@ -100,8 +106,11 @@ fn what_observe_writes_check_reads_as_observed_and_an_edited_criterion_reads_sus
     // One byte of the criterion moves.
     let criterion = root.at.join(source(CRITERION));
     let text = std::fs::read_to_string(&criterion).expect("the criterion reads");
-    std::fs::write(&criterion, text.replacen("# Check reports", "# Check  reports", 1))
-        .expect("the criterion writes");
+    std::fs::write(
+        &criterion,
+        text.replacen("# Check reports", "# Check  reports", 1),
+    )
+    .expect("the criterion writes");
 
     let suspect = root.run(&["check"]);
     assert_eq!(
@@ -109,7 +118,11 @@ fn what_observe_writes_check_reads_as_observed_and_an_edited_criterion_reads_sus
         format!("{VERIFICATION} suspect since {COMMIT}, {CRITERION} changed"),
         "{suspect:?}"
     );
-    assert!(suspect.out.contains("relation.target.verification.suspect"), "{}", suspect.out);
+    assert!(
+        suspect.out.contains("relation.target.verification.suspect"),
+        "{}",
+        suspect.out
+    );
 
     let again = root.run(&["observe", VERIFICATION, "--commit", COMMIT]);
     assert_eq!(again.code, Some(0), "{again:?}");
@@ -152,7 +165,10 @@ fn every_other_entry_keeps_its_bytes_and_the_named_entry_is_replaced() {
     assert!(after.starts_with(head), "{after}");
     assert!(after.ends_with(tail), "{after}");
     assert!(!after.contains("sha256:old"), "{after}");
-    assert!(after.contains(&format!("  commit: \"{COMMIT}\"\n")), "{after}");
+    assert!(
+        after.contains(&format!("  commit: \"{COMMIT}\"\n")),
+        "{after}"
+    );
 
     let observed = root.run(&["check"]);
     assert_eq!(
@@ -171,8 +187,14 @@ fn a_new_entry_is_appended_after_the_entries_already_there() {
     let wrote = root.run(&["observe", VERIFICATION, "--commit", COMMIT]);
     assert_eq!(wrote.code, Some(0), "{wrote:?}");
     let after = snapshot(&root.at);
-    assert!(after.starts_with("CTL-ONE:\n  commit: abc1234\n"), "{after}");
-    assert!(after.contains(&format!("\n{VERIFICATION}:\n  kind: verification\n")), "{after}");
+    assert!(
+        after.starts_with("CTL-ONE:\n  commit: abc1234\n"),
+        "{after}"
+    );
+    assert!(
+        after.contains(&format!("\n{VERIFICATION}:\n  kind: verification\n")),
+        "{after}"
+    );
 }
 
 /// The four refusals that write nothing: a commit the reader would report
@@ -201,7 +223,14 @@ fn a_snapshot_that_does_not_read_is_not_written_over() {
 #[test]
 fn an_identifier_that_names_no_verification_is_refused_and_the_others_are_written() {
     let root = pair("unknown-id");
-    let ran = root.run(&["observe", "HW-VER-9999", CRITERION, VERIFICATION, "--commit", COMMIT]);
+    let ran = root.run(&[
+        "observe",
+        "HW-VER-9999",
+        CRITERION,
+        VERIFICATION,
+        "--commit",
+        COMMIT,
+    ]);
     assert_eq!(ran.code, Some(1), "{ran:?}");
     assert!(ran.err.contains("HW-VER-9999"), "{ran:?}");
     assert!(ran.err.contains(CRITERION), "{ran:?}");
@@ -218,13 +247,21 @@ fn an_identifier_that_names_no_verification_is_refused_and_the_others_are_writte
 fn a_verification_two_criteria_reach_or_none_reaches_is_refused_with_the_criteria() {
     let root = pair("not-one");
     // HW-AC-0004 is made to name HW-VER-0002 as well, so two criteria reach it.
-    place(&root, "HW-AC-0004", |text| text.replace("HW-VER-0003", VERIFICATION));
+    place(&root, "HW-AC-0004", |text| {
+        text.replace("HW-VER-0003", VERIFICATION)
+    });
     // HW-VER-0003 is copied without the criterion it proves.
     place(&root, "HW-VER-0003", |text| text);
 
     let ran = root.run(&["observe", VERIFICATION, "HW-VER-0003", "--commit", COMMIT]);
     assert_eq!(ran.code, Some(1), "{ran:?}");
-    assert!(ran.err.contains("HW-AC-0003") && ran.err.contains("HW-AC-0004"), "{ran:?}");
+    assert!(
+        ran.err.contains("HW-AC-0003") && ran.err.contains("HW-AC-0004"),
+        "{ran:?}"
+    );
     assert!(ran.err.contains("HW-VER-0003"), "{ran:?}");
-    assert!(!root.at.join(SNAPSHOT).exists(), "nothing is written: {ran:?}");
+    assert!(
+        !root.at.join(SNAPSHOT).exists(),
+        "nothing is written: {ran:?}"
+    );
 }
