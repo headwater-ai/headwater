@@ -149,6 +149,12 @@ taxonomy: headwater/standard
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
 #
+# 4.27.0 adds one projection to one library entry and removes nothing, so it
+# is a minor. The base taxonomy is unchanged. `requirement-verification`
+# declares a `relation_view` from its requirement shelf through `verified_by`,
+# `proven_by` and `cited_in`, the traceability matrix of HW-DR-0114 (#2018).
+# The bundle uses the `relations` member that this engine reads first.
+#
 # 4.26.0 adds one obligation, `OB-LOCK-1`, and one control, `CT-LOCK-1`, which
 # names the rule `taxonomy.lock.stale`: a lock that its sources no longer
 # resolve to is an error on the source that moved. The control is blocking at a
@@ -384,7 +390,7 @@ taxonomy: headwater/standard
 # each carries a recipe rather than a bare instruction. One package version
 # covers every content file it publishes, this one included, so the number
 # here moves with a change to either.
-version: 4.26.0
+version: 4.27.0
 
 purposes:
   rationale:

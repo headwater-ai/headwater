@@ -1,4 +1,4 @@
-headwater/standard 4.26.0
+headwater/standard 4.27.0
 
 sources, in application order
   .headwater/packages/headwater-standard/taxonomy.yml
@@ -52,6 +52,7 @@ operations
   add.shelves.verified_requirements (.headwater/packages/headwater-standard/bundles/requirement-verification/bundle.yml)
   add.shelves.acceptance_criteria (.headwater/packages/headwater-standard/bundles/requirement-verification/bundle.yml)
   add.shelves.verifications (.headwater/packages/headwater-standard/bundles/requirement-verification/bundle.yml)
+  add_to.projections (.headwater/packages/headwater-standard/bundles/requirement-verification/bundle.yml)
   add.identifier_schemes.decision_id.namespace (.headwater/overlay.yml)
   add.identifier_schemes.obligation_record_id.namespace (.headwater/overlay.yml)
   add.identifier_schemes.spec_id (.headwater/overlay.yml)
@@ -140,7 +141,7 @@ operations
 
 declarations, by member count
   taxonomy: headwater/standard
-  version: 4.26.0
+  version: 4.27.0
   purposes: 6 members
   vocabularies: 1 member
   facets: 19 members
@@ -151,7 +152,7 @@ declarations, by member count
   shelves: 24 members
   identifier_schemes: 20 members
   core: 1 member
-  projections: 7 items
+  projections: 8 items
   obligations: 57 members
   controls: 56 members
   surface: 8 members

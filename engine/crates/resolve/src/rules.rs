@@ -864,6 +864,12 @@ fn dangling_names(view: &View) -> Vec<Dangling> {
         for shelf in strings(body, "for") {
             reads(at("for"), "shelf", &shelf, &shelves);
         }
+        // The chain of a `relation_view` names relations by their canonical
+        // names (HW-DR-0114). A misspelled step is a resolve error rather than
+        // a column that silently stays empty.
+        for relation in strings(body, "relations") {
+            reads(at("relations"), "relation", &relation, &relations);
+        }
         // A `site_nav` section names shelves directly or through its groups,
         // and a misspelled one is a resolve error rather than a shelf that
         // silently leaves the navigation (#1681).

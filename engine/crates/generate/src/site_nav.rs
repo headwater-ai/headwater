@@ -106,7 +106,8 @@ struct Group {
     index: Option<String>,
     /// Generated pages in the shelf's own directory that are neither its index
     /// nor a document of the graph, each with its label. The consumer surface
-    /// page is the one kind today (#1051). Without an entry here such a page is
+    /// page (#1051) and a Markdown relation view (#2018) are the two kinds
+    /// today. Without an entry here such a page is
     /// served and named by no sidebar, which is #528 again.
     pages: Vec<(String, String)>,
     ordered: Vec<Pointer>,

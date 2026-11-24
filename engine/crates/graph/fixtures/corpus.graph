@@ -487,6 +487,8 @@ anchors
     cited by HW-OBL-0172
   code_path `engine/crates/generate/src/probe_result.rs` via source-tree
     cited by HW-SPEC-the-recorder-contract
+  code_path `engine/crates/generate/src/relation_view.rs` via source-tree
+    cited by HW-DR-0114
   code_path `engine/crates/generate/src/site.rs` via source-tree
     cited by HW-IFACE-headwater-site
   code_path `engine/crates/generate/src/site_nav.rs` via source-tree

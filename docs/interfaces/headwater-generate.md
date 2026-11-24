@@ -75,7 +75,7 @@ A `consumer_surface` declaration writes one page from the `surface` block of the
 
 **The marker is a claim, and `--check` tests it.** Anything can write the line, and the census excuses a marked file from every document check. So a run reads the census beside its own plan, and a marked file that no declaration writes is an error. The cause is a removed or repointed declaration, or a marker that somebody wrote by hand. The remedy is to delete the file or to restore the declaration.
 
-**The census reads a marker in each format that a projection writes, and in no other format.** A projection writes Markdown, JSON, YAML and TOML. A `graph_export` can land under the corpus root, and its file stays there when its declaration moves, so the census must read its marker. The census opens no image, archive or other format. The extension is not the whole test, because each kind writes its own content. A `graph_export` at a `.yml` path is JSON, and the census reads a YAML file for a marker on its first line only. So the command refuses an output in another format, and an output that the census would not read back as generated.
+**The census reads a marker in each format that a projection writes, and in no other format.** A projection writes Markdown, JSON, YAML and TOML, and a `relation_view` also writes CSV. A `graph_export` can land under the corpus root, and its file stays there when its declaration moves, so the census must read its marker. The census opens no image, archive or other format. The extension is not the whole test, because each kind writes its own content. A `graph_export` at a `.yml` path is JSON, and the census reads a YAML file for a marker on its first line only. So the command refuses an output in another format, and an output that the census would not read back as generated.
 
 **No generated file states when it was generated.** `--check` compares bytes, and a timestamp makes every run differ from the last. [Q17](../spec/09-decisions.md#q17--governed-access-and-the-solution-layer) asks a filtered export to state when it ran. The two rules cannot both hold for an artifact this gate covers, and [spec 13](../spec/13-open-obligations.md) carries that conflict.
 
@@ -112,6 +112,22 @@ A `verb_index` carries one row for each verb that the binary dispatches. Each ro
 **An empty shelf is not a decline.** An index of verbs that nobody described is this artifact at its most useful. A shelf index of no documents differs, because it only asserts that a shelf exists.
 
 **No projection holds a crate.** [HW-OBL-0128](../obligations/0128-nothing-holds-a-crate-to-having-a-contract-under-a-root-that-excludes-it.md) records that gap. A verb index answers the half that the command surface carries, and leaves the crate tree as that record found it.
+
+### A relation view
+
+A `relation_view` is a traceability matrix ([HW-DR-0114](../decisions/0114-a-relation-view-follows-an-ordered-chain-of-relations-from-every-document-of-one-shelf.md)). It starts from each document of the one shelf that `for` names, and it follows the relations that `relations` names, in order. The first column is the start document, and each later column is one step of the chain.
+
+**A row is one path, and a missing link is an empty cell.** A document that reaches three documents at a step has three rows, and its own cell repeats on each of them. A document that reaches nothing at a step has one row, with an empty cell at that step and at each later step. So no document of the start shelf drops from the matrix. The rows sort by the path in each cell, from the first cell to the last.
+
+**A cell states four things.** It names the document, its lifecycle status, a state and the snapshot entry of `.headwater/observations.yml` that names the document. A verification states `declared`, `observed`, `suspect` or `unknown` against the document before it, as `headwater check` reads it. Any other edge between two documents holds `no stamp`. No cell reads the clock, so a change to a document, a stamp or the snapshot makes the committed view stale, and `--check` reports it.
+
+**A step may reach code, and then it is the last step.** A step whose `to` names only anchor kinds, such as `governs`, writes the code paths it reaches in the last column. A `source-tree` anchor states `stamped`, `baseline`, `suspect` or `unstamped`, from the edge's `verified_revision` and the digest the anchor reaches now.
+
+**`format` is the view's own, and the output's extension follows it.** `markdown` is the default and writes a table under a marker line. `csv` writes four fields for each cell under a first line that opens with `#`. `json` writes the rows as arrays of cells, with `null` for an empty cell and the marker as a member. A view is not an export emitter, so `format: json` does not enroll it in the emitter set of its profile. The output may hold `{shelf}`, which is the directory of the start shelf.
+
+**The command refuses a chain that cannot be walked.** It refuses `relations` on another kind, and a view with no `relations` or with a `for` that does not name one shelf. It refuses a step that names no declared relation. It refuses a step that reaches only code before the last step, and two steps that do not join. Two steps join when a `to` kind of the first is, or inherits from, a `from` kind of the second, or the reverse.
+
+**A Markdown view is a page of the site.** A `site_nav` lists a Markdown view that sits in the directory of a shelf it covers, under the label "The traceability matrix". It lists no CSV or JSON view, because MkDocs serves neither as a page.
 
 ## Preconditions
 

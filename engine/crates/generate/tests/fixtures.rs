@@ -596,14 +596,14 @@ fn every_output_carries_its_own_marker() {
     }
 }
 
-/// This repository generates its one hundred and forty-five artifacts, and it says
+/// This repository generates its one hundred and forty-six artifacts, and it says
 /// why for everything else.
 ///
 /// A property and not a recording, for the reason the query crate states about
 /// its own repository run: the corpus is prose somebody edits. What is asserted
 /// is what a prose edit must not change.
 ///
-/// **Twenty-one of the one hundred and forty-five are shelf indexes, one per shelf that holds a
+/// **Twenty-one of the one hundred and forty-six are shelf indexes, one per shelf that holds a
 /// document.** The first is the decisions shelf, which the package has declared
 /// since the first-run walkthrough and which produced a reason rather than a
 /// file until #124 filled that shelf. The other twenty are the overlay's own
@@ -625,10 +625,12 @@ fn every_output_carries_its_own_marker() {
 /// documents onto each of them. The nineteenth, `subsystems`, gave a reason
 /// rather than a file until #1288 put the graph build subsystem spec on it.
 ///
-/// **Five of the other one hundred and twenty-four are one each, and one hundred and nineteen are one per
+/// **Six of the other one hundred and twenty-five are one each, and one hundred and nineteen are one per
 /// committed transcript.** The count in the name of this test therefore moves when a
 /// transcript lands on `docs/probe-runs/`, and this paragraph is the only
-/// thing that says so. The redirect map that the open-questions
+/// thing that says so. The traceability matrix of #2018 (HW-DR-0114), which
+/// the `requirement-verification` entry appends to the projections after the
+/// package's own decisions index, so it is planned second. The redirect map that the open-questions
 /// tombstone carries. The verb index #257 asked for, which reads the binary
 /// rather than the `interfaces` shelf and is why that shelf is absent from the
 /// index list above. The consumer surface page #1051 asked for, which reads
@@ -665,7 +667,7 @@ fn every_output_carries_its_own_marker() {
 /// compares bytes, so a contributor who edits a `summary` and does not
 /// regenerate fails this test before CI runs.
 #[test]
-fn this_repository_generates_its_one_hundred_and_forty_five_artifacts_and_accounts_for_the_rest() {
+fn this_repository_generates_its_one_hundred_and_forty_six_artifacts_and_accounts_for_the_rest() {
     let root = repository_root();
     let resolved = headwater_resolve::repository(&root)
         .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)));
@@ -728,6 +730,7 @@ fn this_repository_generates_its_one_hundred_and_forty_five_artifacts_and_accoun
         paths,
         vec![
             "docs/decisions/README.md",
+            "docs/requirements/traceability.md",
             "docs/spec/README.md",
             "docs/obligations/README.md",
             "docs/evaluations/README.md",
@@ -873,8 +876,8 @@ fn this_repository_generates_its_one_hundred_and_forty_five_artifacts_and_accoun
             ".headwater/nav.yml",
             descriptor::PATH
         ],
-        "this repository writes an index for each of its twenty-one shelves that hold a \
-         document, then the redirect map, the verb index, the consumer surface page, the \
+        "this repository writes the decisions index, the traceability matrix, an index for \
+         each of its other twenty shelves that hold a document, then the redirect map, the verb index, the consumer surface page, the \
          site navigation and the descriptor, in that order"
     );
     // One declared shelf holds no document: `specifications`. `subsystems`
@@ -888,17 +891,19 @@ fn this_repository_generates_its_one_hundred_and_forty_five_artifacts_and_accoun
     // until #885 put a document on it, which held this literal at 7 for one
     // commit. The register is the third declaration that produces a reason
     // rather than a file. Nothing is passed over: a projection that produced
-    // no file states a reason. The other four are the declarable kinds this
-    // engine does not emit and this corpus does not declare —
-    // `relation_view`, `agent_rules`, `template` and `transcription` — which
-    // a run states whether or not a declaration named them, because the
-    // reason is a property of this engine rather than of the corpus. The last
-    // two are the shelves no `shelf_index` declaration names (#1988), which
-    // moved this literal from 6 to 8: `interfaces`, which a `verb_index`
-    // indexes instead, and `library_doctrine`.
+    // no file states a reason. The other three are the declarable kinds this
+    // engine does not emit and this corpus does not declare — `agent_rules`,
+    // `template` and `transcription` — which a run states whether or not a
+    // declaration named them, because the reason is a property of this engine
+    // rather than of the corpus. `relation_view` was the fourth until #2018
+    // gave it an emitter and this corpus a declaration, which moved this
+    // literal from 8 to 7. The last two are the shelves no `shelf_index`
+    // declaration names (#1988), which moved this literal from 6 to 8:
+    // `interfaces`, which a `verb_index` indexes instead, and
+    // `library_doctrine`.
     assert_eq!(
         plan.unwritten.len(),
-        8,
+        7,
         "a projection produced neither a file nor a reason"
     );
     let uncovered: Vec<&str> = plan

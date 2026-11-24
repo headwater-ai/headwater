@@ -604,6 +604,12 @@ definitions:
           - consumer_surface
         required: true
       for: {seq: {scalar: string}}
+      # The chain of a `relation_view`, in order: one relation for each column
+      # after the first (HW-DR-0114). The engine takes `relations` on a
+      # `relation_view` alone, requires it there, and refuses a chain whose
+      # steps do not join. `format` on a `relation_view` names the view's own
+      # format, `markdown`, `csv` or `json`, and not an export emitter.
+      relations: {seq: {scalar: string}}
       output: {scalar: string, required: true}
       profile: {scalar: string}
       format: {scalar: string}

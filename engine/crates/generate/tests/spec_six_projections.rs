@@ -191,8 +191,8 @@ fn the_projection_kinds_block_of_spec_6_names_the_thirteen_kinds_this_engine_dec
 ///
 /// # Watched failing in three directions
 ///
-/// Moving `relation_view` into the `runs` group reddens the first assertion,
-/// naming `relation_view` — the exact defect #576 reports. Deleting
+/// Moving `agent_rules` into the `runs` group reddens the first assertion,
+/// naming `agent_rules` — the exact defect #576 reports. Deleting
 /// `shelf_index` from the `runs` group reddens the second, naming
 /// `shelf_index`. Moving `Kind::CoverageReport` back into `unbuilt`'s `None`
 /// arm reddens the second too, naming `coverage_report` — which is what proves
@@ -502,13 +502,13 @@ fn every_unbuilt_reason_reaches_a_reader_of_a_corpus_that_declares_none() {
 /// # Watched failing
 ///
 /// Deleting the `!declared.contains(kind)` filter from `undeclared` reddens
-/// this, naming `relation_view` and the count 2. The case before this one
+/// this, naming `agent_rules` and the count 2. The case before this one
 /// stays green over that regression, because a doubled reason still appears.
 #[test]
 fn a_kind_a_declaration_named_is_reported_once_and_not_twice() {
     let declared = projections_from(
         "projections:\n  \
-         - {kind: relation_view, output: generate/relations.md}\n  \
+         - {kind: agent_rules, output: generate/rules.md}\n  \
          - {kind: template, output: generate/templates.md}\n",
     );
     assert_eq!(

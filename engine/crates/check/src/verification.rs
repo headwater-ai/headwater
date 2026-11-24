@@ -101,7 +101,7 @@ use std::collections::{BTreeMap, BTreeSet};
 pub const RULE: &str = "relation.target.verification.suspect";
 
 /// The kind a relation must reach for this rule to instantiate over it.
-const TARGET_KIND: &str = "verification";
+pub const TARGET_KIND: &str = "verification";
 
 /// A group with no half at all, which the instantiation never produces. As
 /// [`crate::basis`]: recorded rather than panicked on.
