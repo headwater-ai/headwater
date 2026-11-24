@@ -287,3 +287,96 @@ fn the_entry_resolves_beside_brd_prd_because_it_renames_the_three_addresses_brd_
     let checked = run(&consumer, &["check", "--strict"]);
     assert_eq!(checked.code, Some(0), "{checked:?}");
 }
+
+/// The two participation expectations the entry ships, read past their
+/// 90-day windows. A requirement that a criterion verifies is settled, and one
+/// that nothing verifies is reported. A criterion with the method `test` that
+/// no verification proves is reported, and one with the method `inspection` is
+/// not read at all, because HW-DR-0073 leaves the cadence of an inspection
+/// open.
+#[test]
+fn past_the_window_the_entry_reports_an_unverified_requirement_and_an_unproved_test_criterion_and_nothing_else(
+) {
+    let root = Root::scratch("expectations");
+    let consumer = consumer(
+        &root,
+        "evidence-and-obligation, decision-record, requirement-verification",
+        OVERLAY,
+    );
+    for arguments in [
+        vec!["new", "requirement", "--title", "Verified"],
+        vec!["new", "requirement", "--title", "Unverified"],
+        vec![
+            "new",
+            "acceptance_criterion",
+            "--title",
+            "Tested",
+            "--facet",
+            "verification_method=test",
+            "--relates",
+            "verifies=ACME-REQ-0001",
+        ],
+        vec![
+            "new",
+            "acceptance_criterion",
+            "--title",
+            "Inspected",
+            "--facet",
+            "verification_method=inspection",
+            "--relates",
+            "verifies=ACME-REQ-0001",
+        ],
+    ] {
+        let made = run(&consumer, &arguments);
+        assert_eq!(made.code, Some(0), "{made:?}");
+    }
+    for path in [
+        "docs/verified-requirements/0001-verified.md",
+        "docs/verified-requirements/0002-unverified.md",
+        "docs/acceptance-criteria/0001-tested.md",
+        "docs/acceptance-criteria/0002-inspected.md",
+    ] {
+        let path = consumer.join(path);
+        let text = read(&path).replacen("status: draft\n", "status: current\n", 1);
+        std::fs::write(&path, text).expect("the state is set");
+    }
+    let fixed = run(&consumer, &["check", "--fix"]);
+    assert_eq!(fixed.code, Some(0), "{fixed:?}");
+
+    let checked = run(&consumer, &["check", "--now", "2099-01-01"]);
+    assert_eq!(checked.code, Some(0), "{checked:?}");
+    let overdue: Vec<&str> = checked
+        .out
+        .lines()
+        .filter(|line| line.contains("relation.participation.overdue (OB-REL-3)"))
+        .collect();
+    assert_eq!(overdue.len(), 2, "{}", checked.out);
+    assert!(
+        checked
+            .out
+            .contains("docs/verified-requirements/0002-unverified.md:"),
+        "the requirement nothing verifies is not reported\n{}",
+        checked.out
+    );
+    assert!(
+        checked
+            .out
+            .contains("docs/acceptance-criteria/0001-tested.md:"),
+        "the test criterion no verification proves is not reported\n{}",
+        checked.out
+    );
+    assert!(
+        !checked
+            .out
+            .contains("docs/acceptance-criteria/0002-inspected.md:"),
+        "an inspection criterion is reported, and HW-DR-0073 gives it no remedy\n{}",
+        checked.out
+    );
+    assert!(
+        !checked
+            .out
+            .contains("docs/verified-requirements/0001-verified.md:"),
+        "a requirement that a criterion verifies is reported\n{}",
+        checked.out
+    );
+}
