@@ -112,6 +112,7 @@ operations
   add.anchors.test_site.pattern (.headwater/overlay.yml)
   add.kinds.requirement.language (.headwater/overlay.yml)
   add.kinds.acceptance_criterion.language (.headwater/overlay.yml)
+  add.anchors.code_path.scope (.headwater/overlay.yml)
   add.identifier_schemes.process_decision_id (.headwater/overlay.yml)
   add.kinds.process_decision (.headwater/overlay.yml)
   add.shelves.process_decisions (.headwater/overlay.yml)
@@ -134,8 +135,8 @@ operations
   add.surface (.headwater/overlay.yml)
   override.controls.CT-REL-12.posture (.headwater/overlay.yml)
   override.shelves.verified_requirements.path (.headwater/overlay.yml)
-  add_to.relations.verified_by.to (.headwater/overlay.yml)
   add_to.projections (.headwater/overlay.yml)
+  add_to.relations.verified_by.to (.headwater/overlay.yml)
 
 declarations, by member count
   taxonomy: headwater/standard

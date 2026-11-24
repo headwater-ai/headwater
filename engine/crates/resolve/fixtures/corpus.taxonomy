@@ -381,6 +381,15 @@ regimes:
 anchors:
   code_path:
     resolver: source-tree
+    scope:
+      - "engine/crates/**/src/**/*.rs"
+      - "engine/crates/cli/harness/**"
+      - ".githooks/**"
+      - ".claude/hooks/**"
+      - ".claude/agents/**"
+      - ".claude/skills/**"
+      - "tools/**"
+      - "site/**"
   check_rule:
     resolver: check-rule
   test_site:
