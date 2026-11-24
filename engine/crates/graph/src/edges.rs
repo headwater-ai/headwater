@@ -621,11 +621,9 @@ fn read_relation_entry(
     for item in items {
         let (raws, attributes, span) = match item_targets(item, anchor_only) {
             Item::Null => continue,
-            Item::Targets { raws, map, span } => (
-                raws,
-                map.map(instance_attributes).unwrap_or_default(),
-                span,
-            ),
+            Item::Targets { raws, map, span } => {
+                (raws, map.map(instance_attributes).unwrap_or_default(), span)
+            }
             Item::NoTarget => {
                 problems.push(Reported {
                     path: source.path.clone(),
