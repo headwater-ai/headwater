@@ -84,6 +84,32 @@ pub enum Untracked {
     Left,
 }
 
+/// [`produce_with`], over the arguments as `headwater change` parses them.
+///
+/// The parser takes two values per `--verified-edge`, so `verified_edge` is
+/// pairs, flat, in the order given. `tracked_only` is `--tracked-only`. This
+/// lives here and not in the binary, because `main.rs` holds a line-count
+/// ratchet (`crates/cli/tests/verbs.rs`).
+pub fn produce_flat(
+    root: &Path,
+    base: &str,
+    out: &Path,
+    verified: &[String],
+    verified_edge: &[String],
+    tracked_only: bool,
+) -> Result<PathBuf, String> {
+    let (pairs, _) = verified_edge.as_chunks::<2>();
+    let edges: Vec<(String, String)> = pairs
+        .iter()
+        .map(|[document, target]| (document.clone(), target.clone()))
+        .collect();
+    let untracked = match tracked_only {
+        true => Untracked::Left,
+        false => Untracked::Named,
+    };
+    produce_with(root, base, out, verified, &edges, untracked)
+}
+
 /// [`produce`], with the choice of whether an untracked file is named.
 pub fn produce_with(
     root: &Path,
