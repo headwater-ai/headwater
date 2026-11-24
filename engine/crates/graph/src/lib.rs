@@ -69,6 +69,7 @@ pub use index::{Index, Node};
 
 use headwater_census::census::Census;
 use headwater_census::walk::Corpus;
+use headwater_paint::visible;
 
 /// The two front-matter keys this phase reads by name.
 ///
@@ -433,6 +434,10 @@ impl Graph {
             let _ = writeln!(out, "{broken} prose links that did not resolve");
         }
 
+        // Every value this section and `exceptions` print came from a document
+        // or the taxonomy, so each goes through `visible` here and never in the
+        // fact itself: a finding made from the same fact keeps the exact value
+        // (#1970).
         let anchors = self.anchor_nodes();
         if !anchors.is_empty() {
             out.push_str("\nanchors\n");
@@ -440,12 +445,16 @@ impl Graph {
                 let _ = writeln!(
                     out,
                     "  {:5} {} `{}` via {}",
-                    node.edges, node.anchor_kind, node.display, node.resolver
+                    node.edges,
+                    visible(&node.anchor_kind),
+                    visible(&node.display),
+                    visible(&node.resolver)
                 );
                 if let Some(pattern) = node.excluded_by {
                     let _ = writeln!(
                         out,
-                        "        inside `{pattern}`, which this corpus declares is not corpus content"
+                        "        inside `{}`, which this corpus declares is not corpus content",
+                        visible(&pattern)
                     );
                 }
             }
@@ -592,7 +601,7 @@ impl Graph {
                 format!(
                     "{}\n  identifier: {}\n",
                     location(&defect.path, defect.span),
-                    defect.defect
+                    visible(&defect.defect.to_string())
                 ),
             ));
         }
@@ -603,7 +612,7 @@ impl Graph {
                 format!(
                     "{}\n  relations: {}\n",
                     location(&problem.path, problem.span),
-                    problem.problem
+                    visible(&problem.problem.to_string())
                 ),
             ));
         }
@@ -617,9 +626,9 @@ impl Graph {
                 format!(
                     "{}\n  edge: `{}` -> {} {}\n",
                     location(&edge.source.path, Some(edge.span)),
-                    edge.name,
-                    edge.raw_target,
-                    unbound
+                    visible(&edge.name),
+                    visible(&edge.raw_target),
+                    visible(&unbound.to_string())
                 ),
             ));
         }
@@ -633,8 +642,8 @@ impl Graph {
                 format!(
                     "{}\n  link: `{}` {}\n",
                     location(&link.source_path, Some(link.span)),
-                    link.destination,
-                    link.binding
+                    visible(&link.destination),
+                    visible(&link.binding.to_string())
                 ),
             ));
         }
@@ -644,7 +653,11 @@ impl Graph {
     }
 }
 
+/// Where a fact is, as `path:line:col`, with the path written by `visible`,
+/// because a document's file name can hold a control character (#1970). The
+/// sort key of `exceptions` stays the raw path.
 fn location(path: &str, span: Option<headwater_yaml::Span>) -> String {
+    let path = visible(path);
     match span {
         Some(span) => format!("{path}:{}:{}", span.start.line, span.start.col),
         None => path.to_string(),
