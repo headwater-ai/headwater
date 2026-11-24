@@ -337,6 +337,7 @@ fn scoped_at(adoption: Option<&Mapping>, scoping: Scoping) -> Ran {
             register: &register,
             observations: &headwater_check::Observations::empty(),
             pin: None,
+            lock_stale: None,
             harvests: &[],
             imports: &[],
             adoption,

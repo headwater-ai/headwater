@@ -152,6 +152,7 @@ fn run_scanning(
             register: &register,
             observations: &headwater_check::Observations::empty(),
             pin: None,
+            lock_stale: None,
             harvests: &[],
             imports: &[],
             adoption,
@@ -2016,6 +2017,9 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             Grain::Taxonomy,
             // `taxonomy.pin.diverged`, the same grain: the digest pin the
             // consumer declares, read against the vendored bytes.
+            Grain::Taxonomy,
+            // `taxonomy.lock.stale`, the same grain: the lock, read against
+            // the sources it was resolved from.
             Grain::Taxonomy,
             // `harvest.pin.unread`, the same grain: a pinned corpus export
             // the consumer declares, read against the tree.

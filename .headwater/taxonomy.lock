@@ -22,13 +22,13 @@
 
 lock:
   format: 3
-  digest: sha256:a0aa429f57974769bc6cabca52c3c2392bf58bf08288276486ef1897f41135ac
+  digest: sha256:5ec2104425e42b9969372d8d4becc6341ed63a791e358a41e900d1893353a9c6
   rules: 3
   package: headwater/standard
   version: 4.27.0
   sources:
     - path: .headwater/packages/headwater-standard/taxonomy.yml
-      digest: sha256:2b81dae96147e1aeee8d57edcd18795eaabd2f6fd4c4781f684e7bebff03a6f1
+      digest: sha256:204b0c86fd16032f01747afb51394c7de37a4886a834fb530e266a339540b9d2
     - path: .headwater/packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml
       digest: sha256:fd65c2f4a94d4f0a6d38ea74d4700f9439c36a6bcc407a30061ff4002d2b81f8
     - path: .headwater/packages/headwater-standard/bundles/design-spec/bundle.yml
@@ -1716,6 +1716,12 @@ resolved:
       class: cohesion
       prevents: process.traceability
       severity: high
+    OB-LOCK-1:
+      statement: "A lock that the corpus commits is what its sources resolve to, or a finding names the source that moved"
+      rationale: "Every check reads its declarations from the lock and never from the sources. An edit to an overlay, a vendored package file or the consumer declaration that nobody resolved changes no declaration a check sees, so the author reads a passing run over a taxonomy they have already changed, and the change they made reaches no document"
+      class: cohesion
+      prevents: process.traceability
+      severity: high
     OB-LANG-4:
       statement: "A path that a language regime lists outside the corpus root reads one file that no other regime lists"
       rationale: "A listed path that reads nothing is a regime that governs nothing and reports nothing, so a mistyped or deleted entry turns off a language rule on front-door prose without a line that says so"
@@ -2270,6 +2276,16 @@ resolved:
       promotion:
         final_posture:
           reasoning: "The reading CT-PIN-2 takes, over a pinned corpus export. The rule reports what the harvest reader already failed to read, so an advisory period would measure a false-positive rate that the construction fixes at zero. The remedy is mechanical and total, because committing the export at the path and digest the declaration names restores the pin, and the finding already stops a strict run"
+    CT-LOCK-1:
+      mechanism: "check:taxonomy.lock.stale"
+      discharges:
+        - OB-LOCK-1
+      trigger: pull_request
+      posture: blocking
+      acts: detective
+      promotion:
+        final_posture:
+          reasoning: "The rule makes the comparison that `headwater taxonomy resolve --check` makes on its cheap half, over the digests the lock already records and the source order the resolver already computes, so an advisory period would measure a false-positive rate that the construction fixes at zero. The remedy is mechanical and total, because running `headwater taxonomy resolve` writes the lock from the sources as they are, and the finding already stops a strict run"
     CT-LANG-4:
       mechanism: "check:language.outside_root.refused"
       discharges:

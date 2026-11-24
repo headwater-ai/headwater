@@ -83,6 +83,7 @@ fn run_over(root: &Path) -> Run {
             register: &register,
             observations: &observations,
             pin: None,
+            lock_stale: None,
             harvests: &[],
             imports: &[],
             adoption: None,

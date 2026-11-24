@@ -163,6 +163,18 @@ hw_governing_pointers() {
     hw_route_pointers "$_route" anchor
 }
 
+# Whether one path is a source of the lock: the consumer declaration, or a
+# `path` that `.headwater/taxonomy.lock` lists under `sources:`. An edit to
+# one changes no declaration a check reads until `headwater taxonomy resolve`
+# runs (#1975). The lock is the one file a hook reads that no verb prints, and
+# it reads only the list, so it decides nothing the engine does not.
+hw_lock_source() {
+    [ "$1" = ".headwater/taxonomy.yml" ] && return 0
+    _lock="$hw_root/.headwater/taxonomy.lock"
+    [ -f "$_lock" ] || return 1
+    sed -n '/^  sources:$/,/^[^ ]/s/^    - path: *//p' "$_lock" | grep -Fqx -- "$1"
+}
+
 # One line naming every governing edge of one path that went suspect, or
 # nothing and a non-zero status when none did. An edge is suspect when it
 # records a `verified_revision` and its target has another revision now. The
@@ -382,4 +394,4 @@ hw_touched_file() {
 if [ -r "$hw_hooks/lib.local.sh" ]; then
     . "$hw_hooks/lib.local.sh"
 fi
-# installed by headwater init --harness, digest sha256:ec40adeb7bb8303e3180ffecba36580ee099092a73f2f9700563413d7ec10c6a
+# installed by headwater init --harness, digest sha256:2d182e88370a618e9f15fddbb09a9a4b2335352a59dd21e4b0f2cca755bbb78c

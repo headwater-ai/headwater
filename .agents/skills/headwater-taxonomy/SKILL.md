@@ -1,6 +1,6 @@
 ---
 name: headwater-taxonomy
-description: Change what this repository's taxonomy declares — a kind, a facet, a shelf, a relation, an identifier scheme, a language regime, an obligation or a control. Use when `headwater new` refuses because a declaration is missing, when a document has nowhere to live or nothing to be, when a check must start or stop reading something, and whenever a change to `.headwater/taxonomy.yml`, `.headwater/overlay.yml` or a package source is asked for.
+description: Change what this repository's taxonomy declares — a kind, a facet, a shelf, a relation, an identifier scheme, a language regime, an obligation or a control. Use when `headwater new` refuses because a declaration is missing, when a document has nowhere to live or nothing to be, when a check must start or stop reading something, whenever a change to `.headwater/taxonomy.yml`, `.headwater/overlay.yml` or a package source is asked for, and before any edit to `.headwater/overlay.yml` or `.headwater/taxonomy.yml`, including a change to which files a language rule covers.
 ---
 
 # Headwater taxonomy
@@ -30,7 +30,7 @@ Put a declaration at the widest source where it is true, and no wider. A reposit
     headwater taxonomy validate     # reads the sources, and reports every rule of the taxonomy model
     headwater taxonomy resolve      # writes .headwater/taxonomy.lock
 
-**`headwater check` takes its declarations from the lock and never from the sources.** An edit that is not resolved changes no declaration that any check sees, and `taxonomy resolve --check` reports the stale lock, so run it in CI. Resolve after every edit, and commit the lock in the same change as the source that produced it.
+**`headwater check` takes its declarations from the lock and never from the sources.** An edit that is not resolved changes no declaration that any check sees. `headwater check` reports the stale lock as the error `taxonomy.lock.stale` on the source that moved, and `taxonomy resolve --check` reports it too, so run it in CI. Resolve after every edit, and commit the lock in the same change as the source that produced it.
 
 `taxonomy validate` writes nothing. It reports what each rule decided and, for a rule that decides only part of its question, what it did not decide. Read the `not decided` lines: they are the honest edge of the validator, not a passing grade.
 
@@ -84,4 +84,4 @@ It gates nothing and it exits 0 whatever it finds, because nothing declares what
     headwater generate
 
 A taxonomy change moves the lock digest, which moves every generated file that states it. Run `headwater generate` and read the diff.
-<!-- installed by headwater init --harness, digest sha256:409b1fc9c1ab11f104458030e00da8ceeabddc3ef2c95c15336c8e81c2a3f62c -->
+<!-- installed by headwater init --harness, digest sha256:8d7c974a5c5ebae944373805f6c3f28d5e152df54f16e447ae7fe2a5853ee105 -->

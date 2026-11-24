@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 4.27.0
+version: 4.26.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -1241,14 +1241,6 @@ projections:
       - decisions
       - specifications
     output: "{shelf}/README.md"
-  - kind: relation_view
-    for:
-      - verified_requirements
-    relations:
-      - verified_by
-      - proven_by
-      - cited_in
-    output: "{shelf}/traceability.md"
   - kind: shelf_index
     for:
       - spec_series
@@ -1625,6 +1617,12 @@ obligations:
   OB-PIN-1:
     statement: "A pin that the corpus commits reads as the bytes it pins, or a finding names the pin"
     rationale: "A digest pin, an imports snapshot and a harvested export each tell a reader what the corpus rests on. A pin that no longer reads as what it names, and that no anchor happens to cite, reaches nobody, so a corpus that rests on a moved or edited artifact reads the same as one that rests on the artifact it pinned"
+    class: cohesion
+    prevents: process.traceability
+    severity: high
+  OB-LOCK-1:
+    statement: "A lock that the corpus commits is what its sources resolve to, or a finding names the source that moved"
+    rationale: "Every check reads its declarations from the lock and never from the sources. An edit to an overlay, a vendored package file or the consumer declaration that nobody resolved changes no declaration a check sees, so the author reads a passing run over a taxonomy they have already changed, and the change they made reaches no document"
     class: cohesion
     prevents: process.traceability
     severity: high
@@ -2182,6 +2180,16 @@ controls:
     promotion:
       final_posture:
         reasoning: "The reading CT-PIN-2 takes, over a pinned corpus export. The rule reports what the harvest reader already failed to read, so an advisory period would measure a false-positive rate that the construction fixes at zero. The remedy is mechanical and total, because committing the export at the path and digest the declaration names restores the pin, and the finding already stops a strict run"
+  CT-LOCK-1:
+    mechanism: "check:taxonomy.lock.stale"
+    discharges:
+      - OB-LOCK-1
+    trigger: pull_request
+    posture: blocking
+    acts: detective
+    promotion:
+      final_posture:
+        reasoning: "The rule makes the comparison that `headwater taxonomy resolve --check` makes on its cheap half, over the digests the lock already records and the source order the resolver already computes, so an advisory period would measure a false-positive rate that the construction fixes at zero. The remedy is mechanical and total, because running `headwater taxonomy resolve` writes the lock from the sources as they are, and the finding already stops a strict run"
   CT-LANG-4:
     mechanism: "check:language.outside_root.refused"
     discharges:

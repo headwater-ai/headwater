@@ -147,6 +147,11 @@ pub struct Session {
     /// per load and never cached, for the reason `observations` is read here:
     /// a fact about the tree beside the corpus. See [`headwater_check::pin`].
     pub pin: headwater_check::pin::Pin,
+    /// The lock held against the sources it was resolved from, taken once per
+    /// load and never cached, for the reason `pin` is. `None` for a candidate,
+    /// which carries no lock, and where the package is not on disk. See
+    /// [`headwater_check::lock_stale`].
+    pub lock_stale: Option<headwater_check::lock_stale::Stale>,
     /// Each pinned corpus export, as the resolver built for it read it: whether
     /// it binds, and why not. Read once per load beside the resolver set and
     /// never cached, for the reason `pin` is. See
@@ -423,9 +428,24 @@ impl Session {
         };
         let graph = Graph::build(&census, &relations, &resolvers, &corpus, &config);
         let pin = headwater_check::pin::Pin::read(root, &consumer);
+        let lock_stale = bound.lock.as_ref().and_then(|lock| {
+            let recorded: Vec<(String, String)> = lock
+                .sources
+                .iter()
+                .map(|source| (source.path.clone(), source.digest.clone()))
+                .collect();
+            headwater_check::lock_stale::Stale::read(
+                root,
+                &consumer,
+                &lock.package,
+                &lock.version,
+                &recorded,
+            )
+        });
         Ok(Session {
             bound,
             pin,
+            lock_stale,
             harvests: harvested,
             imported,
             consumer,
@@ -466,6 +486,7 @@ impl Session {
             register: &self.register,
             observations: &self.observations,
             pin: Some(&self.pin),
+            lock_stale: self.lock_stale.as_ref(),
             harvests: &self.harvests,
             imports: &self.imported,
             adoption: self.bound.adoption.as_ref(),

@@ -2182,6 +2182,21 @@ if [ -x "$engine" ]; then
         write.sh 0 'A fold' "$lock_payload"
     refute 'the derived-artifact advisory never denies the edit' \
         write.sh 'permissionDecision' "$lock_payload"
+    # A source of the lock (#1975). An edit to the overlay reaches no check
+    # until a resolve, so the advisory names the resolve and the skill, and it
+    # counts the documents that govern the overlay rather than listing them.
+    overlay_payload='{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":".headwater/overlay.yml"}}'
+    expect 'an edit to the overlay names `headwater taxonomy resolve`' \
+        write.sh 0 'headwater taxonomy resolve' "$overlay_payload"
+    expect 'an edit to the overlay names the headwater-taxonomy skill' \
+        write.sh 0 'headwater-taxonomy' "$overlay_payload"
+    refute 'an edit to the overlay does not list the decisions that govern it' \
+        write.sh 'docs/decisions/0027-' "$overlay_payload"
+    refute 'the lock-source advisory never denies the edit' \
+        write.sh 'permissionDecision' "$overlay_payload"
+    expect 'an edit to the consumer declaration names `headwater taxonomy resolve`' \
+        write.sh 0 'headwater taxonomy resolve' \
+        '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":".headwater/taxonomy.yml"}}'
     # A member of another shape. The heading is taken per path, and a reader
     # that took the first heading of the section would name the wrong row here.
     readme_payload='{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"docs/decisions/README.md"}}'

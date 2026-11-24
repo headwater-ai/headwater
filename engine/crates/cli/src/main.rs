@@ -57,7 +57,7 @@ use headwater_adapter::{Format, Subject};
 use headwater_api::{plan_of, Bound, LoadError, Session};
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
-use headwater_check::{Cache, Context, Date, Declared, Shape};
+use headwater_check::{Cache, Context, Date, Shape};
 use headwater_cli::{JsonWord, ProbeWord, SweepWord, TaxonomyWord, Verb};
 use headwater_graph::declarations::Declarations;
 use headwater_query::explain::{classification_text, identifier_text, Answer};
@@ -3522,8 +3522,13 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
     let lock_version = lock.version.clone();
     let to = record.version.clone();
 
+    // Whether the lock is current is a fact of neither taxonomy, so the side
+    // that a lock carries reads it no more than the candidate does (#1975).
     let taking = match opened_against(root, Bound::of(lock)) {
-        Ok(loaded) => loaded,
+        Ok(loaded) => Session {
+            lock_stale: None,
+            ..loaded
+        },
         Err(code) => return code,
     };
     let against = match opened_against(
@@ -6934,25 +6939,7 @@ fn infer(
     // which identifiers are taken, and what the write adds to.
     let declared = loaded.bound.adoption.clone();
 
-    let run = loaded.check(
-        root,
-        &Declared {
-            lock: &loaded.bound.digest,
-            taxonomy: &loaded.taxonomy,
-            shape: &loaded.shape,
-            relations: &loaded.relations,
-            config: &loaded.config,
-            register: &loaded.register,
-            observations: &loaded.observations,
-            pin: Some(&loaded.pin),
-            harvests: &loaded.harvests,
-            imports: &loaded.imported,
-            adoption: declared.as_ref(),
-            source: headwater_lock::LOCK,
-        },
-        &ctx,
-        &mut Cache::disabled(),
-    );
+    let run = loaded.check(root, &loaded.declared(), &ctx, &mut Cache::disabled());
 
     // One task per rule. A rule is the unit an adopter works down, because the
     // fix for every pair under it is the same fix, and it is the unit the
