@@ -41,6 +41,16 @@
 //! stood ungoverned and that no prior entry reached is old debt still. A path
 //! the change adds is the added half's finding, and it is reported once.
 //!
+//! This half reads [`CorpusView::scope`] for a path that the read set does
+//! not name. The key still moves with every input it decides on: the prior
+//! digests are in it (`scope::over_corpus` writes them), and in CI a file
+//! added or deleted under a pattern is a manifest line. The commit gate
+//! builds its manifest with `--tracked-only`, and the scope walk still reads
+//! an untracked file that git does not ignore. So at the commit gate an
+//! untracked file that a narrowed prior entry reached can be reported. That
+//! is stated rather than excluded: the file stands in the scope with no edge,
+//! which is the finding.
+//!
 //! # A change to the scope itself is not read
 //!
 //! A new or wider pattern under `anchors.<kind>.scope` admits files that

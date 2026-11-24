@@ -149,6 +149,14 @@ taxonomy: headwater/standard
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
 #
+# 4.23.0 widens one statement and one promotion threshold, and adds and
+# removes no declaration, so it is a minor. OB-REL-12 now also covers a change
+# that removes the last governance edge onto a file inside the governed scope:
+# it drops or narrows a `governs` entry, or deletes the document that held one.
+# `relation.scope.ungoverned` reads the prior version of each document the
+# change carries to find such a file, so CT-REL-12's threshold names both
+# readings. A change to the scope itself is still not read (#1573).
+#
 # 4.22.0 adds one obligation and its control, and removes nothing, so it is a
 # minor. OB-REL-12 states that a change which adds a file inside the governed
 # scope also adds an edge that governs it. CT-REL-12 binds
@@ -356,7 +364,7 @@ taxonomy: headwater/standard
 # each carries a recipe rather than a bare instruction. One package version
 # covers every content file it publishes, this one included, so the number
 # here moves with a change to either.
-version: 4.22.0
+version: 4.23.0
 
 purposes:
   rationale:
@@ -971,8 +979,8 @@ obligations:
     severity: medium
 
   OB-REL-12:
-    statement: A change that adds a file inside the governed scope adds a governance edge that reaches it
-    rationale: The governed scope is the part of the tree a corpus says its documents explain. A file added there with no edge is code that no document states the purpose of, and the share of governed files goes down one file at a time with no finding to say so. A figure that only a reader of the audit sees stops nothing
+    statement: A change that adds a file inside the governed scope adds a governance edge that reaches it, and a change that removes the last governance edge onto a file inside the governed scope adds another
+    rationale: The governed scope is the part of the tree a corpus says its documents explain. A file added there with no edge is code that no document states the purpose of, and so is a file whose last edge a change drops. The share of governed files goes down one file at a time with no finding to say so. A figure that only a reader of the audit sees stops nothing
     class: cohesion
     prevents: process.traceability
     severity: medium
@@ -1520,7 +1528,7 @@ controls:
     promotion:
       criteria:
         window: one release of the taxonomy over an adopting corpus
-        threshold: no false positive, because the rule reads only the paths a change adds and asks the reach test that taxonomy audit counts with, so a finding is a new file that the audit would count as ungoverned
+        threshold: no false positive, because the rule reads only the paths a change adds and the in-scope files that a governance entry of a prior version the change carries reached, and asks the reach test that taxonomy audit counts with, so a finding is a file that the change made ungoverned by the audit's count
         sample: every finding of one run over the adopting corpus, adjudicated once
 
   CT-PIN-1:
