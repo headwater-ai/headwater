@@ -51,6 +51,11 @@ same() {
     if [ "$2" = "$3" ]; then pass "$1"; else fail "$1" "expected \`$2\`, got \`$3\`"; fi
 }
 
+# The unset above holds only while it names every variable the loop exports.
+# Run inside a loop session, a name it drops is still set here (#1997).
+same 'none of the loop thresholds reaches the cases' '' \
+    "$(env | grep -E '^HW_SUPERVISE_(THRESHOLD|K|FIVE_HOUR|ARGS|FF)=' | cut -d= -f1 | tr '\n' ' ')"
+
 cat > "$HW_SUPERVISE_CLAUDE" <<'EOF'
 #!/bin/sh
 n=$(( $(cat "$STUB/count" 2>/dev/null || echo 0) + 1 ))

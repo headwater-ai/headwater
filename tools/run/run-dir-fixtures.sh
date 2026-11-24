@@ -538,6 +538,11 @@ printf '{"iter":1,"issue":11,"pr":913,"merge":"ejected","verdict":"merge","prove
 same 'resume still prints an issue whose logged pull request was ejected' 'verified-fail iterate' \
     "$(sh "$tool" resume "$resume" 2>&1 | awk '$1 == 11 { print $2, $3 }')"
 : > "$resume/log.jsonl"
+# The predicate is "and closed nothing": a line with no commit that still
+# records the issue closed ends it.
+printf '{"iter":1,"issue":11,"pr":914,"merge":null,"verdict":"merge","proved":"p","opened":[],"closed":[11]}\n' >> "$resume/log.jsonl"
+same '  and drops one whose line with no commit records it closed' '' "$(sh "$tool" resume "$resume" 2>&1 | awk '$1 == 11')"
+: > "$resume/log.jsonl"
 printf -- '- 2026-10-29 — RULED #11 gated (run %s): remainder ruled a separate issue\n' "${resume##*/}" >> "$resume/decisions.md"
 same 'resume drops a handover whose issue this run ruled gated' '' "$(sh "$tool" resume "$resume" 2>&1 | awk '$1 == 11')"
 printf -- '- 2026-10-29 — RULED #11 open (run %s): back in\n' "${resume##*/}" >> "$resume/decisions.md"
