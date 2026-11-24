@@ -649,6 +649,29 @@ fn a_task_that_writes_an_identifier_is_offered_its_document_by_that_identifier()
         route.render(PLAIN)
     );
 
+    // A document both anchored and identified is offered once, as anchored.
+    // HW-DR-0109 governs the route's own source.
+    let both = surface.route(
+        "edit engine/crates/query/src/route.rs as HW-DR-0109 rules",
+        Budget::default(),
+    );
+    let at: Vec<usize> = both
+        .pointers
+        .iter()
+        .enumerate()
+        .filter(|(_, pointer)| pointer.path.starts_with("docs/decisions/0109-"))
+        .map(|(at, _)| at)
+        .collect();
+    assert_eq!(at.len(), 1, "{}", both.render(PLAIN));
+    assert!(
+        matches!(
+            both.evidence[at[0]],
+            headwater_query::Evidence::Named { .. }
+        ),
+        "{}",
+        both.render(PLAIN)
+    );
+
     // Case is kept, as the index keeps it, so a lower-case word is no
     // identifier.
     let lower = surface.route("what does hw-dr-0068 rule?", Budget::default());

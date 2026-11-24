@@ -302,6 +302,17 @@ fn route_names_a_document_by_its_live_or_former_identifier() {
         .unwrap_or_else(|| panic!("the former identifier is named\n{stdout}"));
     assert!(!line.contains('\u{2014}'), "{line}");
 
+    // A document both identified and named is offered once, as identified.
+    let both = root.run(&["route", "HW-DR-0900 is a renamed decision", "--json"]);
+    let stdout = String::from_utf8_lossy(&both.stdout);
+    assert_eq!(
+        stdout.matches(&format!("\"path\": \"{RENAMED}\"")).count(),
+        1,
+        "{stdout}"
+    );
+    let pointer = pointer_at(&stdout, RENAMED).expect("the renamed decision is offered");
+    assert!(pointer.contains("\"by\": \"identifier\""), "{pointer}");
+
     // A value no document lists is offered by no identifier.
     let missed = root.run(&["route", "what did HW-DR-0901 rule", "--json"]);
     let stdout = String::from_utf8_lossy(&missed.stdout);
