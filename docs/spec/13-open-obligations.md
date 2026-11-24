@@ -348,6 +348,18 @@ This class dates from 2026-08-26. Before that date, such a finding was filed as 
 - [HW-OBL-0238](../obligations/0238-four-findings-that-the-spec-6-trim-of-1572-left-in-two-decisions-and-their-test.md) — Four findings that the spec 6 trim of #1572 left in two decisions and their test
 - [HW-OBL-0241](../obligations/0241-three-questions-from-run-20261012-2342-about-an-engine-range-a-tree-outside-every-root-and-a-decision-nobody-accepted.md) — Three questions from run 20261012-2342 about an engine range, a tree outside every root and a decision nobody accepted
 - [HW-OBL-0242](../obligations/0242-three-edges-and-a-comment-that-trail-a-change-of-run-20261012-2342.md) — Three edges and a comment that trail a change of run 20261012-2342
+- [HW-OBL-0260](../obligations/0260-three-documents-of-run-20261122-0114-claim-evidence-that-rests-on-records-nobody-accepted.md) — Three documents of run 20261122-0114 claim evidence that rests on records nobody accepted
+- [HW-OBL-0261](../obligations/0261-four-sentences-about-what-a-check-reads-that-run-20261122-0114-made-stale.md) — Four sentences about what a check reads that run 20261122-0114 made stale
+- [HW-OBL-0262](../obligations/0262-five-names-and-counts-in-records-and-fixtures-that-the-code-of-run-20261122-0114-moved-past.md) — Five names and counts in records and fixtures that the code of run 20261122-0114 moved past
+- [HW-OBL-0263](../obligations/0263-four-premises-in-probes-and-records-that-a-later-change-of-run-20261122-0114-made-doubtful.md) — Four premises in probes and records that a later change of run 20261122-0114 made doubtful
+- [HW-OBL-0264](../obligations/0264-four-documents-that-run-20261122-0114-edited-and-whose-last-verified-a-person-still-owes.md) — Four documents that run 20261122-0114 edited and whose last_verified a person still owes
+- [HW-OBL-0265](../obligations/0265-five-behaviors-of-the-probe-tools-and-a-skill-that-no-case-of-run-20261122-0114-holds.md) — Five behaviors of the probe tools and a skill that no case of run 20261122-0114 holds
+- [HW-OBL-0266](../obligations/0266-four-engine-and-hook-behaviors-that-no-case-of-run-20261122-0114-holds.md) — Four engine and hook behaviors that no case of run 20261122-0114 holds
+- [HW-OBL-0267](../obligations/0267-three-lexical-containment-tests-give-three-verdicts-and-folding-them-is-unrecorded.md) — Three lexical containment tests give three verdicts, and folding them is unrecorded
+- [HW-OBL-0268](../obligations/0268-four-rulings-of-run-20261122-0114-that-no-decision-record-carries.md) — Four rulings of run 20261122-0114 that no decision record carries
+- [HW-OBL-0269](../obligations/0269-four-reasons-that-run-20261122-0114-stated-only-in-code-or-in-a-taxonomy-comment.md) — Four reasons that run 20261122-0114 stated only in code or in a taxonomy comment
+- [HW-OBL-0270](../obligations/0270-four-governs-edges-that-the-engine-changes-of-run-20261122-0114-left-out.md) — Four governs edges that the engine changes of run 20261122-0114 left out
+- [HW-OBL-0271](../obligations/0271-four-invariants-mentions-and-copies-that-the-engine-changes-of-run-20261122-0114-left-out.md) — Four Invariants, mentions and copies that the engine changes of run 20261122-0114 left out
 
 ## What the first typing of this corpus found
 
