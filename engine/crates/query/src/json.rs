@@ -65,6 +65,10 @@ use headwater_yaml::json::Json;
 /// `1.1` did: the contract page closed the set at `anchor`, `name` and `terms`,
 /// so a `1.2` reader may read this pointer as ranked. A `1.2` document never
 /// writes `identifier`.
+///
+/// The `digest` member of a related edge, with `current`, `recorded` and
+/// `baseline` (#2016), is a member added to an element, as `reach` was, so it
+/// moved nothing.
 pub const VERSION: &str = "1.3";
 
 /// One route as JSON.
@@ -466,6 +470,7 @@ fn of_neighbour(neighbour: &Neighbour, paths_at_most: Option<usize>) -> Json {
         cue_is_declared,
         governs,
         reach,
+        digest,
         // Not a member of the JSON shape: `governs` still names the end, and
         // the text rendering is where the pending reading is said (#1973).
         pending: _,
@@ -496,6 +501,16 @@ fn of_neighbour(neighbour: &Neighbour, paths_at_most: Option<usize>) -> Json {
     ));
     if let Some(reach) = reach {
         members.push(("reach", of_reach(reach, paths_at_most)));
+    }
+    // The digest a stamp writes now and the one the edge records (#2016). An
+    // edge with no recorded digest writes neither `recorded` nor `baseline`.
+    if let Some(digest) = digest {
+        let mut of = vec![("current", Json::string(digest.current.clone()))];
+        if let Some(recorded) = &digest.recorded {
+            of.push(("recorded", Json::string(recorded.clone())));
+            of.push(("baseline", Json::Bool(digest.baseline)));
+        }
+        members.push(("digest", Json::object(of)));
     }
     Json::object(members)
 }
