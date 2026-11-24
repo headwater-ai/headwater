@@ -76,8 +76,14 @@ fn change_of(lines: &str) -> Change {
 }
 
 fn run_with(ctx: &Context, cache: &mut Cache) -> Run {
-    let corpus = Corpus::new(fixtures_dir(), "scope-ratchet");
-    let source = std::fs::read_to_string(fixtures_dir().join("scope-ratchet.taxonomy.yml"))
+    run_in("scope-ratchet", ctx, cache)
+}
+
+/// A run over one fixture corpus: `fixtures/<name>/` with the taxonomy
+/// `fixtures/<name>.taxonomy.yml`.
+fn run_in(name: &str, ctx: &Context, cache: &mut Cache) -> Run {
+    let corpus = Corpus::new(fixtures_dir(), name);
+    let source = std::fs::read_to_string(fixtures_dir().join(format!("{name}.taxonomy.yml")))
         .expect("the fixture taxonomy");
     let root = headwater_yaml::load(&source)
         .expect("the fixture taxonomy loads")
@@ -279,4 +285,172 @@ fn an_added_path_joins_the_read_set_once_and_with_a_digest() {
         assert_eq!(listed.len(), 1, "{path} is listed once: {reads:?}");
         assert!(listed[0].digest.is_some(), "{path} carries a digest");
     }
+}
+
+// The removal half (#1573, clause 4's first disjunct).
+//
+// A change that drops or narrows a `governs` entry, or deletes the document
+// that held one, can leave a file that stands in the scope reached by no
+// governance edge. The rule reads the prior version of each document the
+// change carries, takes every governance target that version wrote onto a
+// scoped anchor kind, and reports each in-scope file such a target matched
+// that no edge reaches now.
+//
+// The corpus is `fixtures/scope-ratchet-removal/`, and its taxonomy and
+// tree are described in `fixtures/scope-ratchet-removal.taxonomy.yml`.
+
+const REMOVAL: &str = "scope-ratchet-removal";
+
+/// The two documents of the removal corpus. `departing.md` is not here: the
+/// change deletes it, so no census row holds it.
+const REMOVAL_HELD: [&str; 2] = [
+    "scope-ratchet-removal/narrowing.md",
+    "scope-ratchet-removal/other.md",
+];
+
+const NARROWING: &str = "scope-ratchet-removal/narrowing.md";
+const DEPARTING: &str = "scope-ratchet-removal/departing.md";
+const DROPPED: &str = "scope-ratchet-removal-src/dropped.rs";
+const NARROWED2: &str = "scope-ratchet-removal-src/narrowed2.rs";
+const DEPARTED: &str = "scope-ratchet-removal-src/departed.rs";
+const BEFORE: &str = "scope-ratchet-removal-before";
+
+/// A `prior` line for a document of the removal corpus, read from `dir`.
+fn prior_line(path: &str, dir: &str) -> String {
+    let file = Path::new(path).file_name().expect("a file name");
+    format!(
+        "prior\t{path}\t{}\n",
+        fixtures_dir().join(dir).join(file).display()
+    )
+}
+
+/// The decisive manifest: `narrowing.md` narrowed, `departing.md` deleted.
+fn removal_lines() -> String {
+    format!(
+        "{}{}",
+        prior_line(NARROWING, BEFORE),
+        prior_line(DEPARTING, BEFORE)
+    )
+}
+
+fn removal_run(lines: &str, cache: &mut Cache) -> Run {
+    let change = unbound(lines).bind(|path| REMOVAL_HELD.contains(&path));
+    run_in(REMOVAL, &context(change), cache)
+}
+
+fn sorted_paths(run: &Run) -> Vec<&str> {
+    let mut got = paths(run);
+    got.sort_unstable();
+    got
+}
+
+/// The decisive case. Three files lose their last governance edge, and each
+/// finding names the document whose prior entry reached the file. No finding
+/// on `kept.rs` (still governed), `shared.rs` (another document governs it),
+/// `gone.rs` (the change deletes it, so it is in no scope now), `stray.rs`
+/// (only a `cites` reached it) or `old_debt.rs` (it stood ungoverned and no
+/// prior entry reached it).
+#[test]
+fn a_change_that_removes_the_last_governance_edge_onto_a_scoped_file_is_reported() {
+    let run = removal_run(&removal_lines(), &mut Cache::disabled());
+    let found = findings(&run);
+    assert_eq!(
+        sorted_paths(&run),
+        [DEPARTED, DROPPED, NARROWED2],
+        "the three files the change leaves ungoverned: {found:?}"
+    );
+    for (path, message) in &found {
+        let document = if *path == DEPARTED {
+            DEPARTING
+        } else {
+            NARROWING
+        };
+        assert!(
+            message.contains(document),
+            "the finding on {path} names {document}: {message}"
+        );
+        assert!(
+            message.contains("scope-ratchet-removal-src/**"),
+            "the finding names the admitting pattern: {message}"
+        );
+    }
+    for finding in run.findings.iter().filter(|finding| finding.rule == RULE) {
+        assert_eq!(finding.severity, headwater_check::Severity::Warn);
+        assert!(finding.patch.is_none(), "the remedy is a rewrite");
+    }
+}
+
+/// The control. The same tree, and a manifest whose prior for `narrowing.md`
+/// is its current version, gives no finding. So the rule reads the prior
+/// version and not the tree.
+#[test]
+fn a_change_whose_prior_governs_what_the_tree_governs_is_not_reported() {
+    let run = removal_run(&prior_line(NARROWING, REMOVAL), &mut Cache::disabled());
+    assert!(paths(&run).is_empty(), "{:?}", findings(&run));
+    assert!(matches!(instance(&run).outcome, Outcome::Passed));
+}
+
+/// Each half of the decisive manifest alone gives its own findings: the
+/// committed prior of a document the census still holds, and the prior of a
+/// document the change deleted.
+#[test]
+fn a_narrowed_document_and_a_deleted_one_are_each_read() {
+    let narrowed = removal_run(&prior_line(NARROWING, BEFORE), &mut Cache::disabled());
+    assert_eq!(
+        sorted_paths(&narrowed),
+        [DROPPED, NARROWED2],
+        "{:?}",
+        findings(&narrowed)
+    );
+
+    let deleted = removal_run(&prior_line(DEPARTING, BEFORE), &mut Cache::disabled());
+    assert_eq!(paths(&deleted), [DEPARTED], "{:?}", findings(&deleted));
+}
+
+/// A file the change adds and that a prior entry reached is the added half's
+/// finding, and it is reported once, with the added half's message.
+#[test]
+fn a_path_the_change_adds_is_reported_once_by_the_added_half() {
+    let lines = format!("added\t{DROPPED}\n{}", removal_lines());
+    let run = removal_run(&lines, &mut Cache::disabled());
+    let found = findings(&run);
+    let on_dropped: Vec<_> = found.iter().filter(|(path, _)| *path == DROPPED).collect();
+    assert_eq!(on_dropped.len(), 1, "one finding on {DROPPED}: {found:?}");
+    assert!(
+        on_dropped[0].1.contains("This change adds"),
+        "the added half reports it: {}",
+        on_dropped[0].1
+    );
+}
+
+/// A cached pass does not survive a change that names a prior that governed
+/// more. The tree is the same in both runs, and so is every document's
+/// current digest, so only the prior digest in the key tells them apart.
+/// HW-OBL-0117 is the edge-grain record of the same defect.
+#[test]
+fn a_cached_pass_does_not_survive_a_prior_that_governed_more() {
+    let root = scratch("removal-cache");
+    let control = prior_line(NARROWING, REMOVAL);
+    let mut cold = Cache::at(&root, LOCK, "rules");
+    let first = removal_run(&control, &mut cold);
+    assert!(paths(&first).is_empty(), "the control is clean");
+    cold.write(&root).expect("the cache writes");
+
+    let mut warm = Cache::at(&root, LOCK, "rules");
+    let again = removal_run(&control, &mut warm);
+    assert!(paths(&again).is_empty());
+    assert!(
+        warm.report().hits > 0,
+        "the second run of one change is served from the cache: {:?}",
+        warm.report()
+    );
+
+    let mut warm = Cache::at(&root, LOCK, "rules");
+    let second = removal_run(&prior_line(NARROWING, BEFORE), &mut warm);
+    assert_eq!(
+        sorted_paths(&second),
+        [DROPPED, NARROWED2],
+        "the prior moved the key, so the rule ran again and found them"
+    );
+    let _ = std::fs::remove_dir_all(&root);
 }
