@@ -67,7 +67,7 @@ use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::{
     adoption, basis, command, coverage, dependency, endpoint, harvest, import_pin,
-    initial_dependency, outside_root, pin, reciprocity, register, surface, suspect, target,
+    initial_dependency, lock_stale, outside_root, pin, reciprocity, register, surface, suspect, target,
     verification, Cache, Context, Date, Declared, Observation, Observations, Outcome, Register,
     Run, Shape, RULES,
 };
@@ -120,6 +120,12 @@ const UNCOVERED: &[(&str, &str)] = &[
         "the runner reaches it from the vendored package outside any instance, so no cache \
          entry holds its verdict; its cases are unit tests in src/pin.rs and the CLI case in \
          cli/tests/publish.rs",
+    ),
+    (
+        lock_stale::RULE,
+        "the runner reaches it from the lock and its sources outside any instance, so no cache \
+         entry holds its verdict; its cases are unit tests in src/lock_stale.rs and the CLI \
+         cases in cli/tests/lock_stale.rs",
     ),
     (
         harvest::RULE,

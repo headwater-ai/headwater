@@ -14,10 +14,15 @@
 #
 #                            The advisory, for every call the refusal does not
 #                            deny, in one JSON object of up to three parts:
-#                            - the documents that declare they govern the path,
-#                              or, for a path the governed scope admits and no
-#                              document governs, the account `headwater route`
-#                              gives of it;
+#                            - for a source of the lock, the line that names
+#                              `headwater taxonomy resolve` and the
+#                              `headwater-taxonomy` skill, and a count of the
+#                              documents that govern it in place of their
+#                              list;
+#                            - otherwise the documents that declare they
+#                              govern the path, or, for a path the governed
+#                              scope admits and no document governs, the
+#                              account `headwater route` gives of it;
 #                            - for a path that is itself a document, the code
 #                              paths it governs and the documents that declare
 #                              an edge onto it;
@@ -34,7 +39,9 @@
 #                            suspect.
 #
 # Every fact comes from an existing verb: `explain`, `route` and `derived`.
-# The hook adds no verb and holds no rule of its own.
+# One file is read directly: the `sources:` list of `.headwater/taxonomy.lock`,
+# which names the files an edit to which reaches no check until a resolve. The
+# hook adds no verb and holds no rule of its own.
 #
 # A refusal stops the tool call, and the agent reads the reason. A write
 # through a shell command reaches no hook, so the commit and the pull request
@@ -72,7 +79,18 @@ advise() {
     advisory=
     named=
     unrouted=
-    if pointers=$(hw_governing_pointers "$rel"); then
+    if hw_lock_source "$rel"; then
+        # A source of the lock. The documents that govern it are counted and
+        # not listed: what the edit needs is the resolve, and a list of
+        # decisions read as the work to do (#1975).
+        advisory="Headwater: \`$rel\`, which you are about to change, is a source of \`.headwater/taxonomy.lock\`. No check reads this edit until \`headwater taxonomy resolve\` writes the lock again, and until then \`headwater check\` reports the stale lock as \`taxonomy.lock.stale\`. Load the \`headwater-taxonomy\` skill before you edit this file, and run \`headwater taxonomy resolve\` after it."
+        if pointers=$(hw_governing_pointers "$rel"); then
+            count=$(printf '%s\n' "$pointers" | grep -c .)
+            advisory="$advisory
+
+$count document(s) in this corpus declare that they govern \`$rel\`. Run \`headwater explain $rel\` to list them."
+        fi
+    elif pointers=$(hw_governing_pointers "$rel"); then
         advisory="Headwater impact detection: a document in this corpus declares that it governs \`$rel\`, which you are about to change.
 
 $pointers"

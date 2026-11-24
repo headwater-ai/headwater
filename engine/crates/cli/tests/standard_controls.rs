@@ -338,6 +338,16 @@ const BOUND_IN_4_20: [(&str, &str, &str, &str); 1] = [(
     "criteria",
 )];
 
+/// The rule that 4.26.0 bound, in the same shape (#1975). It is blocking at a
+/// final posture, because it makes the comparison `taxonomy resolve --check`
+/// makes on its cheap half, and its remedy, a resolve, is mechanical and total.
+const BOUND_IN_4_26: [(&str, &str, &str, &str); 1] = [(
+    "taxonomy.lock.stale",
+    "OB-LOCK-1",
+    "blocking",
+    "final_posture",
+)];
+
 /// The declaration of the one control of the maintained package whose
 /// mechanism is `check:<rule>`. Controls sit one to a block, a blank line
 /// separates two blocks, and each block opens with its identifier.
@@ -370,6 +380,7 @@ fn each_lifecycle_control_declares_its_obligation_posture_and_promotion() {
         .chain(BOUND_IN_4_17)
         .chain(BOUND_IN_4_19)
         .chain(BOUND_IN_4_20)
+        .chain(BOUND_IN_4_26)
     {
         let control = control_of(&taxonomy, rule);
         for line in [
