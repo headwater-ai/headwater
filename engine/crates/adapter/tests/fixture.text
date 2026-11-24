@@ -800,7 +800,7 @@ read set
   version warrant.acceptance.unpaired 1
   version warrant.acceptance.at_initial 1
   version lifecycle.deletion.not_permitted 1
-  version relation.scope.ungoverned 1
+  version relation.scope.ungoverned 2
   version coverage.document_unchecked 1
   version obligation.disposition.not_one 1
   version control.mechanism.unimplemented 1

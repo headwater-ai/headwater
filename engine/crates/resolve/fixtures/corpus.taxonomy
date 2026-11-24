@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 4.22.0
+version: 4.23.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -1606,8 +1606,8 @@ obligations:
     prevents: process.traceability
     severity: medium
   OB-REL-12:
-    statement: "A change that adds a file inside the governed scope adds a governance edge that reaches it"
-    rationale: "The governed scope is the part of the tree a corpus says its documents explain. A file added there with no edge is code that no document states the purpose of, and the share of governed files goes down one file at a time with no finding to say so. A figure that only a reader of the audit sees stops nothing"
+    statement: "A change that adds a file inside the governed scope adds a governance edge that reaches it, and a change that removes the last governance edge onto a file inside the governed scope adds another"
+    rationale: "The governed scope is the part of the tree a corpus says its documents explain. A file added there with no edge is code that no document states the purpose of, and so is a file whose last edge a change drops. The share of governed files goes down one file at a time with no finding to say so. A figure that only a reader of the audit sees stops nothing"
     class: cohesion
     prevents: process.traceability
     severity: medium
@@ -2139,7 +2139,7 @@ controls:
     promotion:
       criteria:
         window: "one release of the taxonomy over an adopting corpus"
-        threshold: "no false positive, because the rule reads only the paths a change adds and asks the reach test that taxonomy audit counts with, so a finding is a new file that the audit would count as ungoverned"
+        threshold: "no false positive, because the rule reads only the paths a change adds and the in-scope files that a governance entry of a prior version the change carries reached, and asks the reach test that taxonomy audit counts with, so a finding is a file that the change made ungoverned by the audit's count"
         sample: "every finding of one run over the adopting corpus, adjudicated once"
   CT-PIN-1:
     mechanism: "check:taxonomy.pin.diverged"
