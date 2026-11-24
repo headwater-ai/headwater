@@ -291,7 +291,10 @@ fn every_requirement_is_a_row_and_an_observed_verification_turns_suspect_when_it
 
     // An observation of the verification moves the cell, and the committed copy
     // is stale until it is written again.
-    let observed = run(&consumer, &["observe", "SCR-VER-0001", "--commit", "abc1234"]);
+    let observed = run(
+        &consumer,
+        &["observe", "SCR-VER-0001", "--commit", "abc1234"],
+    );
     assert_eq!(observed.code, Some(0), "{observed:?}");
     let stale = run(&consumer, &["generate", "--check"]);
     assert_ne!(
