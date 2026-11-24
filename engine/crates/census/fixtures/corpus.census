@@ -830,6 +830,30 @@ docs/obligations/0244-the-additive-campaign-measured-no-action-on-a-target-that-
   typed: obligation_record
 docs/obligations/0245-the-additive-campaign-ran-on-this-repository-alone-and-no-run-measures-the-actions-in-an-adopter-s-own-repository.md
   typed: obligation_record
+docs/obligations/0260-three-documents-of-run-20261122-0114-claim-evidence-that-rests-on-records-nobody-accepted.md
+  typed: obligation_record
+docs/obligations/0261-four-sentences-about-what-a-check-reads-that-run-20261122-0114-made-stale.md
+  typed: obligation_record
+docs/obligations/0262-five-names-and-counts-in-records-and-fixtures-that-the-code-of-run-20261122-0114-moved-past.md
+  typed: obligation_record
+docs/obligations/0263-four-premises-in-probes-and-records-that-a-later-change-of-run-20261122-0114-made-doubtful.md
+  typed: obligation_record
+docs/obligations/0264-four-documents-that-run-20261122-0114-edited-and-whose-last-verified-a-person-still-owes.md
+  typed: obligation_record
+docs/obligations/0265-five-behaviors-of-the-probe-tools-and-a-skill-that-no-case-of-run-20261122-0114-holds.md
+  typed: obligation_record
+docs/obligations/0266-four-engine-and-hook-behaviors-that-no-case-of-run-20261122-0114-holds.md
+  typed: obligation_record
+docs/obligations/0267-three-lexical-containment-tests-give-three-verdicts-and-folding-them-is-unrecorded.md
+  typed: obligation_record
+docs/obligations/0268-four-rulings-of-run-20261122-0114-that-no-decision-record-carries.md
+  typed: obligation_record
+docs/obligations/0269-four-reasons-that-run-20261122-0114-stated-only-in-code-or-in-a-taxonomy-comment.md
+  typed: obligation_record
+docs/obligations/0270-four-governs-edges-that-the-engine-changes-of-run-20261122-0114-left-out.md
+  typed: obligation_record
+docs/obligations/0271-four-invariants-mentions-and-copies-that-the-engine-changes-of-run-20261122-0114-left-out.md
+  typed: obligation_record
 docs/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/probe-results/README.md
@@ -1583,6 +1607,34 @@ docs/process/obligations/0233-thirteen-run-tooling-gaps-from-run-20261002-1233-f
 docs/process/obligations/0239-three-run-tooling-gaps-from-run-20261003-1026-filed-together.md
   typed: process_obligation
 docs/process/obligations/0240-five-run-tooling-gaps-from-run-20261012-2342-filed-together.md
+  typed: process_obligation
+docs/process/obligations/0246-no-one-tmpdir-holds-both-probe-suites-on-a-busy-host-and-the-oracle-suite-leaves-a-copy-of-the-tree-in-tmp.md
+  typed: process_obligation
+docs/process/obligations/0247-the-cargo-wrapper-copies-a-cli-binary-into-the-tree-after-a-command-that-did-not-build-the-cli.md
+  typed: process_obligation
+docs/process/obligations/0248-nothing-retires-a-merged-agent-worktree-and-the-disk-floor-reads-only-the-cargo-pool.md
+  typed: process_obligation
+docs/process/obligations/0249-pre-pr-sh-reports-a-merge-conflict-with-no-path-when-only-the-commit-gate-refused-the-merge-commit.md
+  typed: process_obligation
+docs/process/obligations/0250-four-gaps-in-what-holds-the-tutorial-driver-and-what-the-records-say-about-it.md
+  typed: process_obligation
+docs/process/obligations/0251-a-child-that-a-resumed-hw-iterate-dispatches-notifies-the-parent-and-not-the-hw-iterate.md
+  typed: process_obligation
+docs/process/obligations/0252-edges-that-the-tooling-changes-of-run-20261122-0114-left-suspect-or-never-declared.md
+  typed: process_obligation
+docs/process/obligations/0253-a-claim-on-a-directory-does-not-hold-a-claim-on-a-file-under-it-in-either-direction.md
+  typed: process_obligation
+docs/process/obligations/0254-the-orchestration-spec-and-hw-pd-0022-do-not-name-the-maintainer-that-hw-iterate-now-dispatches.md
+  typed: process_obligation
+docs/process/obligations/0255-a-ruling-block-reads-as-answered-when-any-owner-line-of-any-date-names-its-issue.md
+  typed: process_obligation
+docs/process/obligations/0256-pre-pr-sh-can-outrun-the-ceiling-that-hw-build-gives-it-on-a-busy-host.md
+  typed: process_obligation
+docs/process/obligations/0257-one-clippy-target-directory-serves-every-worktree-so-a-fingerprint-can-take-another-tree-s-artifact-as-fresh.md
+  typed: process_obligation
+docs/process/obligations/0258-the-cargo-pool-grows-with-nothing-pruning-it-between-builds.md
+  typed: process_obligation
+docs/process/obligations/0259-resume-reads-the-claim-file-of-an-issue-and-not-who-holds-its-footprint.md
   typed: process_obligation
 docs/process/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
