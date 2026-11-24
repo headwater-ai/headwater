@@ -1743,7 +1743,9 @@ fn mint(
 
     // Reconcile first: the highest value the corpus already spent, over every
     // identifier this template admits. It reads the tree, so it is a lower
-    // bound on every value ever allocated.
+    // bound on every value ever allocated. A former identifier is spent too: a
+    // document still answers to it, so a value minted over it would be refused
+    // below as taken (#2025).
     let needs_sequence = template
         .needs()
         .iter()
@@ -1762,7 +1764,10 @@ fn mint(
             .typed
             .iter()
             .chain(sources.index.untyped.iter())
-            .map(|node| node.id.as_str())
+            .flat_map(|node| {
+                std::iter::once(node.id.as_str())
+                    .chain(node.former.iter().map(|(former, _)| former.as_str()))
+            })
             .chain(sources.claims.ids_of(&scheme.name))
             .filter_map(|id| template.sequence_of(id))
             .max(),
