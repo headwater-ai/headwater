@@ -1247,6 +1247,45 @@ mod tests {
         assert_eq!(Observations::parse(&out).entries(), &[one, two]);
     }
 
+    /// `write` writes the file once, leaves no temporary file, and a second
+    /// call with the same entries writes nothing.
+    #[test]
+    fn write_writes_once_and_a_second_call_is_unchanged() {
+        let dir = Scratch(std::env::temp_dir().join(format!(
+            "headwater-observation-test-{}-write-once",
+            std::process::id()
+        )));
+        let _ = std::fs::create_dir_all(dir.join(".headwater"));
+        let entry = verification("VER-1", "beef", "sha256:y");
+        let first = write(&dir, std::slice::from_ref(&entry));
+        assert_eq!(first, Ok(Wrote::Written));
+        assert_eq!(
+            Observations::at(&dir).entries(),
+            std::slice::from_ref(&entry)
+        );
+        assert_eq!(write(&dir, &[entry]), Ok(Wrote::Unchanged));
+        let left: Vec<_> = std::fs::read_dir(dir.join(".headwater"))
+            .expect("the directory reads")
+            .map(|entry| entry.expect("an entry").file_name())
+            .collect();
+        assert_eq!(left, vec![std::ffi::OsString::from(FILE)]);
+    }
+
+    /// An identifier whose rendered key does not read back as itself is
+    /// refused by the read-back, and the snapshot is not written.
+    #[test]
+    fn write_refuses_an_entry_that_does_not_read_back_as_written() {
+        let dir = Scratch(std::env::temp_dir().join(format!(
+            "headwater-observation-test-{}-read-back",
+            std::process::id()
+        )));
+        let _ = std::fs::create_dir_all(dir.join(".headwater"));
+        let refused = write(&dir, &[verification("VER\n1", "beef", "sha256:y")])
+            .expect_err("a key with a newline does not read back");
+        assert!(refused.contains("nothing was written"), "{refused}");
+        assert!(!dir.join(PATH).exists(), "nothing is written");
+    }
+
     /// A present file that does not read is refused, and is not treated as the
     /// empty snapshot an absent file is.
     #[test]

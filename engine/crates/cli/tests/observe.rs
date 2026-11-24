@@ -269,7 +269,11 @@ fn a_verification_two_criteria_reach_or_none_reaches_is_refused_with_the_criteri
         ran.err.contains("HW-AC-0003") && ran.err.contains("HW-AC-0004"),
         "{ran:?}"
     );
-    assert!(ran.err.contains("HW-VER-0003"), "{ran:?}");
+    assert!(
+        ran.err
+            .contains("`HW-VER-0003` has no entry: no document reaches it"),
+        "{ran:?}"
+    );
     assert!(
         !root.at.join(SNAPSHOT).exists(),
         "nothing is written: {ran:?}"

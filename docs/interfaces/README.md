@@ -14,7 +14,7 @@ The headings and the second column are the groups and the summaries that `headwa
 |---|---|---|---|
 | `check` | run the pipeline over the corpus, against the committed lock | `headwater check` | [headwater check](headwater-check.md) |
 | `change` | write the manifest that `check --change` reads | `headwater change` | [headwater change](headwater-change.md) |
-| `observe` | record that verifications passed at a commit, in the observation snapshot | `headwater observe` | [headwater observe](headwater-observe.md) |
+| `observe` | record that verifications passed at a commit | `headwater observe` | [headwater observe](headwater-observe.md) |
 | `gate` | hold an earlier run's read set against the tree in front of it | `headwater gate` | [headwater gate](headwater-gate.md) |
 | `conformance` | evaluate this repository against a package's conformance rules | `headwater conformance` | [headwater conformance](headwater-conformance.md) |
 | `derived` | which files a producer writes, computed rather than listed | `headwater derived` | [headwater derived](headwater-derived.md) |
