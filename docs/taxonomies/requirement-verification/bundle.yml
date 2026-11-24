@@ -256,3 +256,23 @@ add:
     homogeneous: true
     kind: verification
     layout: "{seq:04d}-{slug}.md"
+
+# --- projections ----------------------------------------------------------
+# The traceability matrix that this corpus exists to produce (HW-DR-0114). One
+# row for each path from each requirement through the criteria that verify it,
+# the verifications that prove each criterion and the test each verification
+# cites. A requirement that nothing verifies is a row with empty cells, which
+# is the row a reader acts on.
+#
+# `projections` is a list in the base, so this is an `add_to`. No other entry
+# of this package appends to it, so no order between two bundles is at stake.
+# `{shelf}` is the directory of the requirement shelf, so a consumer that moves
+# the shelf with an `override` moves the matrix with it.
+
+add_to:
+
+  projections:
+    - kind: relation_view
+      for: [verified_requirements]
+      relations: [verified_by, proven_by, cited_in]
+      output: "{shelf}/traceability.md"

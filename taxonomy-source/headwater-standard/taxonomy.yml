@@ -149,6 +149,13 @@ taxonomy: headwater/standard
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
 #
+# 4.27.0 adds one projection to one library entry and removes nothing, so it
+# is a minor. The base taxonomy is unchanged. `requirement-verification`
+# declares a `relation_view` from its requirement shelf through `verified_by`,
+# `proven_by` and `cited_in`, the traceability matrix of HW-DR-0114 (#2018).
+# The bundle uses the `relations` member that this engine reads first. It takes
+# 4.27.0 because #1975 holds 4.26.0.
+#
 # 4.25.0 adds one library entry, `requirement-verification`, and removes
 # nothing, so it is a minor. The base taxonomy is unchanged. The entry carries
 # the requirement, the acceptance criterion and the verification of ISO/IEC/IEEE
@@ -379,7 +386,7 @@ taxonomy: headwater/standard
 # each carries a recipe rather than a bare instruction. One package version
 # covers every content file it publishes, this one included, so the number
 # here moves with a change to either.
-version: 4.25.0
+version: 4.27.0
 
 purposes:
   rationale:

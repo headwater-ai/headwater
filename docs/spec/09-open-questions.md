@@ -468,3 +468,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 ## 113 — Whether an agent may write the acceptance stamp while the default branch requires no approving review
 
 [HW-DR-0113](../decisions/0113-whether-an-agent-may-write-the-acceptance-stamp-while-the-default-branch-requires-no-approving-review.md) — Proposed, not ruled: while main requires no approving review, an agent writes no acceptance stamp, against HW-DR-0034. It is also the draft fixture of the superseded-target axis of HW-DR-0112. (asserted, and no human has accepted it)
+
+## 114 — A relation view follows an ordered chain of relations from every document of one shelf
+
+[HW-DR-0114](../decisions/0114-a-relation-view-follows-an-ordered-chain-of-relations-from-every-document-of-one-shelf.md) — A relation view is a matrix with one row per path from each document of one shelf through an ordered chain of relations. A missing link is an empty cell, and a cell states the status, the stamp or freshness, and the observation of its document (asserted, and no human has accepted it)

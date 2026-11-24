@@ -224,6 +224,7 @@ nav:
               - "111 — The additive campaign adds six layers to plain code in fourteen scenarios and registers one comparison each": "decisions/0111-the-additive-campaign-adds-six-layers-to-plain-code-in-fourteen-scenarios-and-registers-one-comparison-each.md"
               - "112 — The additive campaign measures eleven actions by five layers in seven scenarios": "decisions/0112-the-additive-campaign-measures-eleven-actions-by-five-layers-in-seven-scenarios.md"
               - "113 — Whether an agent may write the acceptance stamp while the default branch requires no approving review": "decisions/0113-whether-an-agent-may-write-the-acceptance-stamp-while-the-default-branch-requires-no-approving-review.md"
+              - "114 — A relation view follows an ordered chain of relations from every document of one shelf": "decisions/0114-a-relation-view-follows-an-ordered-chain-of-relations-from-every-document-of-one-shelf.md"
           - "Evaluations":
               - "Evaluations": "evaluations/README.md"
               - "A probe task section is the prompt, so commentary under that heading is prompt": "evaluations/a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt.md"

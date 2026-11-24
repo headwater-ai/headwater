@@ -85,6 +85,12 @@ No kind of this entry binds a language regime. A language regime is a house rule
 
 **No scheme carries a namespace.** A bundle ships to adopters, and a constant written here would be minted by all of them at once. `taxonomy validate` refuses a resolved scheme with no namespace, so the consumer declares one.
 
+## The traceability matrix
+
+The entry declares one `relation_view` ([HW-DR-0114](https://github.com/headwater-ai/headwater/blob/main/docs/decisions/0114-a-relation-view-follows-an-ordered-chain-of-relations-from-every-document-of-one-shelf.md)). It starts from each requirement and follows `verified_by`, then `proven_by`, then `cited_in`. `headwater generate` writes it to `traceability.md` in the directory of the requirement shelf, and `generate --check` holds it.
+
+A row is one path through the chain. A requirement that nothing verifies is one row with empty cells, and so is a criterion that no verification proves. A verification cell states whether a snapshot in `.headwater/observations.yml` observed it, and whether its criterion changed after that snapshot. `projections` is a list in the base, so the entry appends to it with `add_to`.
+
 ## What a consumer writes
 
 The whole overlay that an adopter writes to take the three kinds, with `ACME` as its namespace:
@@ -129,8 +135,6 @@ The other route merges this entry with `brd-prd` and rules the tier question fir
 **29148's owner, priority, source and status attributes, and its nine well-formedness characteristics.** Nothing reads them. A kind for each characteristic would repeat the mistake that the design-spec doctrine names.
 
 **A transcribed requirement kind.** Q35 leaves that kind to an adopter who has an upstream.
-
-**A `traceability_matrix` projection.** The evaluation names it as the natural output of this corpus, and no emitter writes one.
 
 **A language regime on any kind**, for the reason [above](#the-language-regime-is-the-consumers).
 
