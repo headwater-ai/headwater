@@ -364,9 +364,11 @@ fn the_whole_of_every_global_flag_is_on_a_verb_page() {
 /// `docs/decisions/0042-q42-what-one-screen-means-for-the-first-help-screen.md`
 /// and this case is the consequence of it, not the argument for it. It retires
 /// "one screen" as a claim about a terminal, states the bar as one line per
-/// entry, and names 64 as the ceiling that follows, revised from 60 when
+/// entry, and names 68 as the ceiling that follows, revised from 60 when
 /// [#929](https://github.com/headwater-ai/headwater/issues/929) spent the
-/// headroom the ruling had priced. Read it there rather than here: an argument
+/// headroom the ruling had priced, and from 64 when
+/// [#2024](https://github.com/headwater-ai/headwater/issues/2024) spent it
+/// again. Read it there rather than here: an argument
 /// restated at the case is an argument that goes stale where nobody is
 /// looking.
 ///
@@ -380,8 +382,8 @@ fn the_first_screen_holds_the_height_the_ruling_names() {
     let screen = help_of(&[]);
     let lines = screen.lines().count();
     assert!(
-        lines <= 64,
-        "`headwater --help` is {lines} lines, and HW-DR-0042 holds the first screen to 64:\n{screen}"
+        lines <= 68,
+        "`headwater --help` is {lines} lines, and HW-DR-0042 holds the first screen to 68:\n{screen}"
     );
     assert!(
         lines > 20,

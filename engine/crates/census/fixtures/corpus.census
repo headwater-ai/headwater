@@ -322,6 +322,8 @@ docs/how-to/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/how-to/publish-your-corpus-as-a-site.md
   typed: how_to
+docs/how-to/record-a-verification-from-ci.md
+  typed: how_to
 docs/how-to/relocate-a-shelf.md
   typed: how_to
 docs/how-to/wire-headwater-check-into-your-own-workflow.md
@@ -367,6 +369,8 @@ docs/interfaces/headwater-merge-driver.md
 docs/interfaces/headwater-neighbors.md
   typed: interface_contract
 docs/interfaces/headwater-new.md
+  typed: interface_contract
+docs/interfaces/headwater-observe.md
   typed: interface_contract
 docs/interfaces/headwater-probe.md
   typed: interface_contract

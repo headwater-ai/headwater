@@ -1,0 +1,2 @@
+headwater: `HEAD` does not read as a commit: a commit is 4 to 40 hexadecimal digits, and `headwater check` reads an entry with any other commit as `unknown`
+headwater: run `headwater --help` for the grammar

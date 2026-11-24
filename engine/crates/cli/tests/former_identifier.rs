@@ -231,3 +231,243 @@ fn check_reports_a_former_identifier_claimed_twice() {
         );
     }
 }
+
+/// The pointer object of a route's JSON whose path is `path`: the text from its
+/// `path` member to the next pointer's, or to the end of the pointers.
+fn pointer_at<'a>(json: &'a str, path: &str) -> Option<&'a str> {
+    let start = json.find(&format!("\"path\": \"{path}\""))?;
+    let rest = &json[start..];
+    let end = rest[1..]
+        .find("\"path\": \"")
+        .map(|at| at + 1)
+        .or_else(|| rest.find("\"withheld\""))
+        .unwrap_or(rest.len());
+    Some(&rest[..end])
+}
+
+/// The decisive case for `headwater route`. A task that writes a document's
+/// former identifier, or its live one at the end of a sentence, is offered that
+/// document by its identifier, and not through a ranked hit on the terms `hw`
+/// and `dr`. A value no document lists offers nothing by identifier.
+#[test]
+fn route_names_a_document_by_its_live_or_former_identifier() {
+    let root = Root::new(
+        "route",
+        &[(
+            RENAMED,
+            decision(
+                "HW-DR-0001",
+                "A renamed decision",
+                "former_ids:\n  - HW-DR-0900\n",
+            ),
+        )],
+    );
+
+    for (task, written) in [
+        ("what did HW-DR-0900 rule", "HW-DR-0900"),
+        ("what did we rule in HW-DR-0001.", "HW-DR-0001"),
+    ] {
+        let routed = root.run(&["route", task, "--json"]);
+        let stdout = String::from_utf8_lossy(&routed.stdout);
+        assert_eq!(
+            routed.status.code(),
+            Some(0),
+            "{task}\n{stdout}\n{}",
+            String::from_utf8_lossy(&routed.stderr)
+        );
+        assert!(stdout.contains("\"version\": \"1.3\""), "{task}\n{stdout}");
+        let pointer = pointer_at(&stdout, RENAMED)
+            .unwrap_or_else(|| panic!("{task}: the renamed decision is offered\n{stdout}"));
+        assert!(
+            pointer.contains("\"by\": \"identifier\""),
+            "{task}: offered by its identifier\n{pointer}"
+        );
+        let identifiers = pointer
+            .split("\"identifiers\":")
+            .nth(1)
+            .unwrap_or_else(|| panic!("{task}: the evidence lists identifiers\n{pointer}"));
+        assert!(
+            identifiers.contains(&format!("\"{written}\"")),
+            "{task}: the identifier as the task wrote it\n{pointer}"
+        );
+    }
+
+    // The text report tells a former identifier from a live one, on a line
+    // with no em dash, which marks a pointer in this report (HW-OBL-0149).
+    let text = root.run(&["route", "what did HW-DR-0900 rule"]);
+    let stdout = String::from_utf8_lossy(&text.stdout);
+    let line = stdout
+        .lines()
+        .find(|line| line.contains("names its former identifier, HW-DR-0900 (now HW-DR-0001)"))
+        .unwrap_or_else(|| panic!("the former identifier is named\n{stdout}"));
+    assert!(!line.contains('\u{2014}'), "{line}");
+
+    // A document both identified and named is offered once, as identified.
+    let both = root.run(&["route", "HW-DR-0900 is a renamed decision", "--json"]);
+    let stdout = String::from_utf8_lossy(&both.stdout);
+    assert_eq!(
+        stdout.matches(&format!("\"path\": \"{RENAMED}\"")).count(),
+        1,
+        "{stdout}"
+    );
+    let pointer = pointer_at(&stdout, RENAMED).expect("the renamed decision is offered");
+    assert!(pointer.contains("\"by\": \"identifier\""), "{pointer}");
+
+    // A value no document lists is offered by no identifier.
+    let missed = root.run(&["route", "what did HW-DR-0901 rule", "--json"]);
+    let stdout = String::from_utf8_lossy(&missed.stdout);
+    assert_eq!(missed.status.code(), Some(0), "{stdout}");
+    assert!(!stdout.contains("\"by\": \"identifier\""), "{stdout}");
+}
+
+/// Folded clause A of #2025. A former identifier is spent, so `headwater new`
+/// mints past it, and never mints a value that the index then resolves to the
+/// renamed document and refuses as taken.
+#[test]
+fn new_mints_past_a_former_identifier() {
+    let root = Root::new(
+        "mint",
+        &[(
+            RENAMED,
+            decision(
+                "HW-DR-0001",
+                "A renamed decision",
+                "former_ids: [HW-DR-0002]\n",
+            ),
+        )],
+    );
+    let made = root.run(&["new", "decision", "--title", "A scratch ruling"]);
+    let stderr = String::from_utf8_lossy(&made.stderr);
+    assert_eq!(
+        made.status.code(),
+        Some(0),
+        "{}\n{stderr}",
+        String::from_utf8_lossy(&made.stdout)
+    );
+    let renamed = root.at.join(RENAMED);
+    let minted = std::fs::read_dir(root.at.join("docs/decisions"))
+        .expect("the decisions shelf is there")
+        .map(|entry| entry.expect("the entry reads").path())
+        .find(|path| *path != renamed)
+        .expect("the scaffolder wrote a document");
+    let text = std::fs::read_to_string(&minted).expect("the minted document reads");
+    assert!(
+        text.contains("id: HW-DR-0003\n"),
+        "{}\n{text}",
+        minted.display()
+    );
+}
+
+/// Folded clause B of #2025. A former identifier that equals a live one is
+/// reported as claimed twice, and the claim file of the value still has one
+/// claimant: the document that holds it as its live identifier. So the claim
+/// check still runs for that document.
+#[test]
+fn a_live_claimant_keeps_its_claim_check_when_a_former_identifier_collides() {
+    const SECOND: &str = "docs/decisions/0002-a-second-decision.md";
+    let root = Root::new(
+        "claimant",
+        &[
+            (RENAMED, decision("HW-DR-0001", "A renamed decision", "")),
+            (
+                SECOND,
+                decision(
+                    "HW-DR-0002",
+                    "A second decision",
+                    "former_ids: [HW-DR-0001]\n",
+                ),
+            ),
+            (
+                ".headwater/ids/decision_id/HW-DR-0002",
+                format!("{SECOND}\n"),
+            ),
+        ],
+    );
+    let checked = root.run(&["check"]);
+    let stdout = String::from_utf8_lossy(&checked.stdout);
+    let words = stdout.split_whitespace().collect::<Vec<_>>().join(" ");
+    assert!(
+        words.contains("identifier.claim.missing (")
+            && words.contains(".headwater/ids/decision_id/HW-DR-0001"),
+        "the live claimant's claim is owed\n{stdout}"
+    );
+}
+
+/// The other direction of clause B. A value live on two documents is still
+/// contended when a third, earlier in path order, lists it as former. The
+/// index compares each claim with the first one only, so both live pairs are
+/// reported as former pairs, and a claim check that read the report alone
+/// would owe one claim file to two claimants.
+#[test]
+fn two_live_claimants_stay_contended_when_a_former_identifier_comes_first() {
+    let root = Root::new(
+        "contended",
+        &[
+            (
+                RENAMED,
+                decision(
+                    "HW-DR-0001",
+                    "A renamed decision",
+                    "former_ids: [HW-DR-0005]\n",
+                ),
+            ),
+            (
+                "docs/decisions/0002-a-second-decision.md",
+                decision("HW-DR-0005", "A second decision", ""),
+            ),
+            (
+                "docs/decisions/0003-a-third-decision.md",
+                decision("HW-DR-0005", "A third decision", ""),
+            ),
+            (
+                ".headwater/ids/decision_id/HW-DR-0001",
+                format!("{RENAMED}\n"),
+            ),
+        ],
+    );
+    let checked = root.run(&["check"]);
+    let stdout = String::from_utf8_lossy(&checked.stdout);
+    let words = stdout.split_whitespace().collect::<Vec<_>>().join(" ");
+    assert!(
+        words.contains("identifier.claimed_twice ("),
+        "the collision is reported\n{stdout}"
+    );
+    assert!(
+        !words.contains(".headwater/ids/decision_id/HW-DR-0005"),
+        "no claim is owed for a value two documents hold live\n{stdout}"
+    );
+}
+
+/// A live holder on the untyped shelf counts as well. The duplicate report
+/// compares both shelves, and one claim file cannot name two claimants, so a
+/// value that a typed and an untyped document both hold live is contended and
+/// owes no claim.
+#[test]
+fn a_typed_and_an_untyped_live_holder_stay_contended() {
+    const UNTYPED: &str = "docs/notes/an-untyped-note.md";
+    let root = Root::new(
+        "untyped",
+        &[
+            (
+                "docs/decisions/0005-a-typed-decision.md",
+                decision("HW-DR-0005", "A typed decision", ""),
+            ),
+            (
+                UNTYPED,
+                "---\nid: HW-DR-0005\ntitle: An untyped note\n---\n\n# An untyped note\n\nA fixture.\n"
+                    .to_string(),
+            ),
+        ],
+    );
+    let checked = root.run(&["check"]);
+    let stdout = String::from_utf8_lossy(&checked.stdout);
+    let words = stdout.split_whitespace().collect::<Vec<_>>().join(" ");
+    assert!(
+        words.contains("identifier.claimed_twice (") && words.contains(UNTYPED),
+        "the untyped holder is indexed and the collision is reported\n{stdout}"
+    );
+    assert!(
+        !words.contains(".headwater/ids/decision_id/HW-DR-0005"),
+        "no claim is owed for a value a typed and an untyped document hold live\n{stdout}"
+    );
+}

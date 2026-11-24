@@ -304,37 +304,7 @@ impl Block {
         graph: &Graph,
         observations: &Observations,
     ) -> Self {
-        let reaching: BTreeSet<&str> = declarations
-            .relations
-            .iter()
-            .filter(|relation| relation.to.iter().any(|kind| kind == TARGET_KIND))
-            .map(|relation| relation.name.as_str())
-            .collect();
-
-        // Each verification with the criteria that reach it. Both halves of
-        // one edge may be written, so a set holds each pair once.
-        let mut reached: BTreeMap<&str, BTreeSet<(&str, &str)>> = graph
-            .index
-            .typed
-            .iter()
-            .filter(|node| node.kind.as_deref() == Some(TARGET_KIND))
-            .map(|node| (node.id.as_str(), BTreeSet::new()))
-            .collect();
-        for edge in &graph.edges {
-            if !reaching.contains(edge.declared.as_str()) {
-                continue;
-            }
-            let Target::Document { id, path, .. } = &edge.target else {
-                continue;
-            };
-            let (criterion, verification) = match edge.direction {
-                Direction::AsDeclared => ((edge.source.id.as_str(), edge.source.path.as_str()), id),
-                Direction::Inverse => ((id.as_str(), path.as_str()), &edge.source.id),
-            };
-            if let Some(criteria) = reached.get_mut(verification.as_str()) {
-                criteria.insert(criterion);
-            }
-        }
+        let reached = reached(declarations, graph);
 
         let unread = observations.unread().is_some();
         let lines: Vec<Line> = reached
@@ -513,6 +483,216 @@ impl Block {
         }
         out
     }
+}
+
+/// Each verification of the graph with the documents that reach it, each as
+/// its identifier and its path, over the relations whose `to` names
+/// `verification`.
+///
+/// [`Block::of`] reads the state of a line from this, and [`plan`] reads the
+/// criterion whose digest `headwater observe` records from it, so the writer
+/// and the reader of a snapshot walk one set of edges (#2024). Both halves of
+/// one edge may be written, so a set holds each pair once.
+pub fn reached<'a>(
+    declarations: &Declarations,
+    graph: &'a Graph,
+) -> BTreeMap<&'a str, BTreeSet<(&'a str, &'a str)>> {
+    let reaching: BTreeSet<&str> = declarations
+        .relations
+        .iter()
+        .filter(|relation| relation.to.iter().any(|kind| kind == TARGET_KIND))
+        .map(|relation| relation.name.as_str())
+        .collect();
+    let mut reached: BTreeMap<&str, BTreeSet<(&str, &str)>> = graph
+        .index
+        .typed
+        .iter()
+        .filter(|node| node.kind.as_deref() == Some(TARGET_KIND))
+        .map(|node| (node.id.as_str(), BTreeSet::new()))
+        .collect();
+    for edge in &graph.edges {
+        if !reaching.contains(edge.declared.as_str()) {
+            continue;
+        }
+        let Target::Document { id, path, .. } = &edge.target else {
+            continue;
+        };
+        let (criterion, verification) = match edge.direction {
+            Direction::AsDeclared => ((edge.source.id.as_str(), edge.source.path.as_str()), id),
+            Direction::Inverse => ((id.as_str(), path.as_str()), &edge.source.id),
+        };
+        if let Some(criteria) = reached.get_mut(verification.as_str()) {
+            criteria.insert(criterion);
+        }
+    }
+    reached
+}
+
+/// What [`plan`] makes of the identifiers it was given.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Plan {
+    /// One entry for each identifier that names a verification one criterion
+    /// reaches, in the order given, each with the identifier of that
+    /// criterion.
+    pub entries: Vec<(Observation, String)>,
+    /// Each identifier that has no entry, with the reason.
+    pub refused: Vec<(String, String)>,
+}
+
+/// The snapshot entries that record `ids` as observed at `commit`, each with
+/// the census digest of the one criterion that reaches it: the digest
+/// [`compare`] holds an entry against (#2024).
+///
+/// It refuses the whole call, with nothing planned, where `commit` is not one
+/// [`crate::observation::Observations::parse`] reads as a commit, because an
+/// entry written with it would read `unknown`. It refuses one identifier, and
+/// plans the others, where the identifier names no verification, where no
+/// criterion or more than one reaches it, and where the census read no bytes
+/// of its criterion. A snapshot entry carries one `criterion_digest`, so a
+/// verification that two criteria reach has no entry that states it. An
+/// identifier given twice is planned once.
+pub fn plan(
+    declarations: &Declarations,
+    census: &Census,
+    graph: &Graph,
+    ids: &[String],
+    commit: &str,
+) -> Result<Plan, String> {
+    if !crate::observation::plausible_commit(commit) {
+        return Err(format!(
+            "`{commit}` does not read as a commit: a commit is 4 to 40 hexadecimal digits, and \
+             `headwater check` reads an entry with any other commit as `unknown`"
+        ));
+    }
+    let reached = reached(declarations, graph);
+    let mut plan = Plan::default();
+    let mut seen = BTreeSet::new();
+    for id in ids {
+        if !seen.insert(id.as_str()) {
+            continue;
+        }
+        let Some(criteria) = reached.get(id.as_str()) else {
+            let reason = match graph.index.typed.iter().find(|node| node.id == *id) {
+                Some(node) => format!(
+                    "it names a document of kind `{}`, and only a `{TARGET_KIND}` has an entry",
+                    node.kind.as_deref().unwrap_or("none")
+                ),
+                None => format!("it names no `{TARGET_KIND}` of this corpus"),
+            };
+            plan.refused.push((id.clone(), reason));
+            continue;
+        };
+        let (criterion, path) = match criteria.iter().collect::<Vec<_>>().as_slice() {
+            [] => {
+                plan.refused.push((
+                    id.clone(),
+                    format!(
+                        "no document reaches it through a relation to `{TARGET_KIND}`, so it \
+                         proves no criterion whose digest an entry could record"
+                    ),
+                ));
+                continue;
+            }
+            [(criterion, path)] => (*criterion, *path),
+            many => {
+                let names: Vec<&str> = many.iter().map(|(criterion, _)| *criterion).collect();
+                plan.refused.push((
+                    id.clone(),
+                    format!(
+                        "{} criteria reach it ({}), and an entry records one \
+                         `criterion_digest`, so no entry can state it",
+                        names.len(),
+                        names.join(", ")
+                    ),
+                ));
+                continue;
+            }
+        };
+        let Some(digest) = digest_at(census, path) else {
+            plan.refused.push((
+                id.clone(),
+                format!("the census read no bytes of {criterion}, so there is no digest to record"),
+            ));
+            continue;
+        };
+        plan.entries.push((
+            Observation::Verification {
+                verification: id.clone(),
+                commit: commit.to_string(),
+                criterion_digest: digest.to_string(),
+            },
+            criterion.to_string(),
+        ));
+    }
+    Ok(plan)
+}
+
+/// What `headwater observe` prints, and whether it refused anything.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Observed {
+    /// One line for each entry the snapshot now holds as asked, each ended
+    /// by a newline, for standard output.
+    pub out: String,
+    /// One sentence for each identifier that has no entry, for standard
+    /// error. Not empty means the verb exits 1.
+    pub refused: Vec<String>,
+    /// One line for standard error, ended by a newline, where the snapshot
+    /// already held every entry as asked and nothing was written. Empty
+    /// otherwise.
+    pub note: String,
+}
+
+/// `headwater observe` (#2024): [`plan`] the entries, then
+/// [`crate::observation::write`] them into the snapshot under `root`.
+///
+/// `Err` is a refusal of the whole call, and nothing is written: a commit
+/// [`plan`] refuses, or a snapshot that [`crate::observation::write`] refuses.
+/// An identifier that [`plan`] refuses is one line of [`Observed::refused`],
+/// and the entries of the others are still written.
+pub fn observe(
+    root: &std::path::Path,
+    declarations: &Declarations,
+    census: &Census,
+    graph: &Graph,
+    ids: &[String],
+    commit: &str,
+) -> Result<Observed, String> {
+    let plan = plan(declarations, census, graph, ids, commit)?;
+    let mut observed = Observed {
+        refused: plan
+            .refused
+            .iter()
+            .map(|(id, reason)| format!("`{id}` has no entry: {reason}"))
+            .collect(),
+        ..Observed::default()
+    };
+    if plan.entries.is_empty() {
+        return Ok(observed);
+    }
+    let entries: Vec<Observation> = plan
+        .entries
+        .iter()
+        .map(|(entry, _)| entry.clone())
+        .collect();
+    if crate::observation::write(root, &entries)? == crate::observation::Wrote::Unchanged {
+        observed.note = format!(
+            "headwater: {} already held every entry as asked, and nothing was written\n",
+            crate::observation::PATH
+        );
+    }
+    for (entry, criterion) in &plan.entries {
+        if let Observation::Verification {
+            verification,
+            criterion_digest,
+            ..
+        } = entry
+        {
+            observed.out.push_str(&format!(
+                "{verification} observed at {commit}, {criterion} at {criterion_digest}\n"
+            ));
+        }
+    }
+    Ok(observed)
 }
 
 /// The census's digest of the bytes at one path, which is the same digest

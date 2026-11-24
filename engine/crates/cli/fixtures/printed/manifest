@@ -130,6 +130,21 @@ outcome = refuse
 tree = base
 run = change --root . HEAD out
 
+# ---------------------------------------------------------------- observe
+
+[observe-no-verification]
+row = headwater observe
+outcome = refuse
+only = a passing line needs a verification and a criterion that reaches it, and the taxonomy of `trees/base` declares neither kind. `tests/observe.rs` drives the passing line over the taxonomy of this repository
+tree = base
+run = observe --root . DOC-NONE --commit abcd1234
+
+[observe-not-a-commit]
+row = headwater observe
+outcome = refuse
+tree = base
+run = observe --root . DOC-NONE --commit HEAD
+
 # ---------------------------------------------------------------- gate
 
 # A read set that `check` writes always lists the eight rules whose verdict is

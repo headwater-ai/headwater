@@ -326,7 +326,8 @@ fn manifest() -> Vec<Line> {
 /// Every form of `headwater_verbs::VERBS`, then for each verb that takes a
 /// second word the bare verb and the verb with a word it does not carry, then
 /// a first word that is no verb. On the tree this was written against that is
-/// 41 forms, four of each second kind, and one: 50.
+/// 41 forms, four of each second kind, and one: 50. `observe` (#2024) made it
+/// 51.
 fn rows() -> Vec<String> {
     let mut rows = Vec::new();
     for verb in headwater_verbs::VERBS {
@@ -928,7 +929,7 @@ fn complaints(extra: Vec<Line>) -> Vec<String> {
 }
 
 #[test]
-fn the_rows_are_the_fifty_command_lines_of_the_survey() {
+fn the_rows_are_the_fifty_one_command_lines_of_the_survey() {
     let rows = rows();
     let forms: usize = headwater_verbs::VERBS
         .iter()
@@ -941,7 +942,7 @@ fn the_rows_are_the_fifty_command_lines_of_the_survey() {
     assert_eq!(rows.len(), forms + 2 * worded + 1);
     // The count HW-OBL-0132 states. A verb that joins `VERBS` moves it, and
     // the survey table gains a row in the same change.
-    assert_eq!(rows.len(), 50, "{rows:?}");
+    assert_eq!(rows.len(), 51, "{rows:?}");
     let distinct: BTreeSet<&String> = rows.iter().collect();
     assert_eq!(distinct.len(), rows.len(), "no row is listed twice");
 }

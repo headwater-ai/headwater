@@ -151,7 +151,7 @@ A `verified` line states that the author read a document again in this change. A
 
 `claim.rs` reads the identifier claim store at `.headwater/ids` ([HW-DR-0054](../decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md)). The store forces two branches that claim one identifier to meet as a merge conflict. The two claim rules then hold the store against the corpus. An absent store is an empty store.
 
-`observation.rs` reads `.headwater/observations.yml`, the committed record of which external control ran and which verification a build settled. An absent or unreadable file reads as empty, so every external control reports as not observed. One reader serves both populations, so a caller does not keep two parsers in step.
+`observation.rs` reads `.headwater/observations.yml`, the committed record of which external control ran and which verification a build settled. An absent or unreadable file reads as empty, so every external control reports as not observed. One reader serves both populations, so a caller does not keep two parsers in step. The same file holds the one writer, which [`headwater observe`](../interfaces/headwater-observe.md) calls. It writes a verification entry and reads its own bytes back through that reader before it renames them into place.
 
 ### The register
 
