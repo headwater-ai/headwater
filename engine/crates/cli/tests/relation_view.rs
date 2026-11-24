@@ -340,7 +340,9 @@ fn every_requirement_is_a_row_and_an_observed_verification_turns_suspect_when_it
 /// A link that only the far end writes is still a link, and the rows sort by
 /// path whatever order the front matter writes. The requirement drops
 /// `SCR-AC-0002` from its own `verified_by` and lists the other two in reverse,
-/// while `SCR-AC-0002` still `verifies` it.
+/// while `SCR-AC-0002` still `verifies` it. It also names a check rule first,
+/// which the walk reaches before any document, and whose cell sorts after the
+/// criteria because its key is the rule name and not a `docs/` path.
 #[test]
 fn a_link_written_only_at_the_far_end_is_a_row_and_rows_sort_by_path() {
     let root = Root::scratch("far-end");
@@ -350,7 +352,7 @@ fn a_link_written_only_at_the_far_end_is_a_row_and_rows_sort_by_path() {
     let text = read(&requirement);
     let edited = text.replacen(
         "    - SCR-AC-0001\n    - SCR-AC-0002\n    - SCR-AC-0003\n",
-        "    - SCR-AC-0003\n    - SCR-AC-0001\n",
+        "    - section.required.missing\n    - SCR-AC-0003\n    - SCR-AC-0001\n",
         1,
     );
     assert_ne!(
@@ -370,7 +372,12 @@ fn a_link_written_only_at_the_far_end_is_a_row_and_rows_sort_by_path() {
         .collect();
     assert_eq!(
         criteria,
-        ["SCR-AC-0001", "SCR-AC-0002", "SCR-AC-0003"],
+        [
+            "SCR-AC-0001",
+            "SCR-AC-0002",
+            "SCR-AC-0003",
+            "section.required.missing"
+        ],
         "SCR-AC-0002 verifies SCR-REQ-0001 from its own end, and the rows are in path order\n{text}"
     );
 }
