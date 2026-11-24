@@ -1427,6 +1427,13 @@ impl<'a> EdgeView<'a> {
         self.stated.edge
     }
 
+    /// Whether the run asked for a baseline stamp with `--baseline`, and only
+    /// for a check that declared `NEEDS_DECLARER_PRIOR` (#2016). It states no
+    /// reading of this edge.
+    pub fn baseline(&self) -> bool {
+        self.stated.baseline
+    }
+
     /// Everything the change states beside the prior version, for the cache
     /// key and for nothing else.
     pub(crate) fn stated(&self) -> Stated {
@@ -2146,7 +2153,14 @@ pub fn over_edges<C: EdgeCheck>(
             _ => None,
         };
         let stated = |edge: &Edge| match (scope.needs_declarer_prior(), ctx.change()) {
-            (true, Some(change)) => stated(change, edge),
+            (true, Some(change)) => Stated {
+                baseline: ctx.baseline(),
+                ..stated(change, edge)
+            },
+            (true, None) => Stated {
+                baseline: ctx.baseline(),
+                ..Stated::NONE
+            },
             _ => Stated::NONE,
         };
         let Some(view) = EdgeView::over(halves, census, digests, clock, declarer_prior, stated)

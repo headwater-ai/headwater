@@ -59,6 +59,7 @@ relations:
     created_by: hook
     attributes:
       verified_revision: {type: string, owner: edge}
+      verified_as: {type: string, owner: edge}
 
 shelves:
   governing_fixtures:
