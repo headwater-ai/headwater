@@ -1405,6 +1405,7 @@ mod tests {
                 "target-stated change={} verified={}\n",
                 stated.target, stated.edge
             ));
+            text.push_str(&format!("baseline {}\n", stated.baseline));
         }
         text.push_str(&format!("target {}\n", reference_escape(target)));
         if let Some(resolution) = resolution {
@@ -1510,6 +1511,13 @@ mod tests {
             Row {
                 stated: Stated {
                     edge: true,
+                    ..Stated::NONE
+                },
+                ..row("e", 1, edge)
+            },
+            Row {
+                stated: Stated {
+                    baseline: true,
                     ..Stated::NONE
                 },
                 ..row("e", 1, edge)

@@ -142,6 +142,26 @@
 //! relation is reported at `Info` with the same reason, because that line
 //! asked for a stamp (#1674).
 //!
+//! # The baseline stamp, which records no reading
+//!
+//! `headwater check --baseline` is the one route to a stamp with no stated
+//! reading (#2016). The owner ruled on 2026-11-22 that a corpus may take a
+//! first digest on every edge at once, if that stamp stays distinguishable
+//! from one that records a reading. So in a run that asks for it, each edge
+//! that recorded no digest, that is declared in place, whose resolver is
+//! `source-tree` and states a digest, and whose relation declares both
+//! `verified_revision` and `verified_as`, is reported at `Info` with a patch
+//! that writes the digest and `verified_as: baseline`. An edge that the
+//! change states was re-read takes the reading stamp under the gates above
+//! instead, with no marker. Where the relation declares `verified_revision`
+//! and not `verified_as`, the finding has no patch and says why. The request
+//! is a line of the cache key beside the change's statements.
+//!
+//! The marker stays on the edge until a reading replaces the stamp. A reading
+//! stamp leaves out `verified_as`, so a re-read edge loses it, and a moved
+//! digest on an edge that still carries it says that the recorded digest was
+//! a baseline that records no reading.
+//!
 //! Before #1259 the clock decided: a document whose freshness facet was at or
 //! after the run's date was stamped. That stamped every document that any
 //! merge of the day had re-verified, whatever the change in hand had read, and
@@ -174,8 +194,8 @@
 //! the edge's attributes, which [`headwater_scaffold::write::splice`] writes
 //! over the entry that names the target and reads back. It turns a bare entry
 //! into the mapping form, and keeps every other attribute the entry had. An
-//! entry with a list target, or an attribute that is not a scalar, gets no
-//! patch, because the splice matches an entry by one scalar `to`.
+//! entry with an attribute that is not a scalar gets no patch, because the
+//! splice writes scalar attributes only.
 //!
 //! The remedy follows the patch. Where the splice can write the entry, the
 //! remedy names `headwater check --fix --change`, whether or not this run's
@@ -207,7 +227,7 @@ use crate::scope::{EdgeCheck, EdgeUnit, EdgeView};
 use crate::shape::Shape;
 use crate::Patch;
 use headwater_graph::declarations::Relation;
-use headwater_graph::edges::VERIFIED_REVISION;
+use headwater_graph::edges::{BASELINE, VERIFIED_AS, VERIFIED_REVISION};
 use headwater_graph::{Declarations, Direction, Edge, Target};
 
 pub const RULE: &str = "relation.target.suspect";
@@ -329,8 +349,13 @@ impl EdgeCheck for Suspect<'_> {
     /// already holds the statement and the prior, so a verdict cached at 10
     /// differs only in its text.
     ///
+    /// 12: a run with `--baseline` offers a stamp marked `verified_as:
+    /// baseline` on an unrecorded edge, a reading stamp drops that marker, and
+    /// a moved digest on a baseline stamp says so. The key holds the request,
+    /// and a verdict cached at 11 was keyed without it (#2016).
+    ///
     /// Raise the rule version when a rule's behavior changes.
-    const VERSION: u32 = 11;
+    const VERSION: u32 = 12;
     /// The change decides the fix, and the clock decides nothing (#1259).
     const NEEDS_CLOCK: bool = false;
     /// The fix is offered only on a document the change re-verified, so the
@@ -369,11 +394,16 @@ impl EdgeCheck for Suspect<'_> {
         // A fix writes `verified_revision`, so it is offered only where the
         // relation declares that attribute: spec 2 makes an undeclared one a
         // finding, and a fix must not write what a later rule refuses.
-        let declares = self
-            .declared
-            .iter()
-            .find(|known| known.name == view.relation())
-            .is_some_and(|known| known.attributes.iter().any(|a| a == VERIFIED_REVISION));
+        let declares_attribute = |name: &str| {
+            self.declared
+                .iter()
+                .find(|known| known.name == view.relation())
+                .is_some_and(|known| known.attributes.iter().any(|a| a == name))
+        };
+        let declares = declares_attribute(VERIFIED_REVISION);
+        // A baseline stamp writes the marker beside the digest, so it is
+        // offered only where the relation declares both (#2016).
+        let marks = declares && declares_attribute(VERIFIED_AS);
         // A `verified` line that names this edge states its re-reading on its
         // own, whatever the change says about the rest of the document.
         let re_verified = self.re_verified(view);
@@ -465,8 +495,39 @@ impl EdgeCheck for Suspect<'_> {
                     None,
                 ));
             }
+            if resolver != SOURCE_TREE {
+                return Outcome::Passed;
+            }
+            // A run that asked for a baseline stamps each unrecorded edge that
+            // no statement of the change says was re-read, and marks the stamp
+            // so it is never read as a reading (#2016). An edge the change
+            // states was re-read takes the reading stamp below instead.
+            if !restated && view.baseline() && declares {
+                if !marks {
+                    return Outcome::failed_with(finding(
+                        Severity::Info,
+                        unbaselined(&edge.source.id, &edge.name, &edge.raw_target, current),
+                        format!(
+                            "`{}` declares no `{VERIFIED_AS}`, so `headwater check --fix                              --baseline` cannot mark a stamp here as a baseline; declare                              `{VERIFIED_AS}` on that relation in the taxonomy, or record a                              reading with `--change`",
+                            view.relation()
+                        ),
+                        None,
+                    ));
+                }
+                let Some(patch) = baselining(edge, current) else {
+                    return Outcome::Passed;
+                };
+                return Outcome::failed_with(finding(
+                    Severity::Info,
+                    unbaselined(&edge.source.id, &edge.name, &edge.raw_target, current),
+                    format!(
+                        "run `headwater check --fix --baseline` to record `{VERIFIED_REVISION}:                          {current}` and `{VERIFIED_AS}: {BASELINE}` on this entry, so that a                          later change to what it reaches is reported; the stamp records no                          reading"
+                    ),
+                    Some(patch),
+                ));
+            }
             // The one report an unrecorded edge gets. See the module comment.
-            if !restated || resolver != SOURCE_TREE {
+            if !restated {
                 return Outcome::Passed;
             }
             let Some(patch) = recording(edge, current) else {
@@ -536,6 +597,7 @@ impl EdgeCheck for Suspect<'_> {
                         false => Reach::Set(revision.covered().unwrap_or(reached)),
                     },
                     under,
+                    edge.verified_as_baseline(),
                 ),
                 match (declares, &recorded) {
                     // `--fix` cannot write an attribute the relation does
@@ -648,7 +710,25 @@ fn spoken(items: impl Iterator<Item = String>) -> String {
 /// joined `raw_target` cannot be the identity, because a member may hold a
 /// comma itself (#1092). Before #2016 a list got no patch here, so no route
 /// ever stamped one.
+///
+/// The stamp records a reading, so it leaves out a `verified_as` the entry
+/// carries: an edge that a change re-reads after a baseline stamp loses the
+/// marker (#2016).
 fn recording(edge: &Edge, current: &str) -> Option<Patch> {
+    stamping(edge, &[(VERIFIED_REVISION, current)])
+}
+
+/// The patch that records `current` on the entry that declared `edge` as a
+/// baseline, with `verified_as: baseline` beside it, and nothing where
+/// [`recording`] would have nothing (#2016).
+fn baselining(edge: &Edge, current: &str) -> Option<Patch> {
+    stamping(edge, &[(VERIFIED_REVISION, current), (VERIFIED_AS, BASELINE)])
+}
+
+/// The patch both stamps share: every other scalar attribute of the entry,
+/// then `stamp`. A `verified_revision` or a `verified_as` the entry carries is
+/// replaced by what `stamp` names, or dropped where `stamp` names none.
+fn stamping(edge: &Edge, stamp: &[(&str, &str)]) -> Option<Patch> {
     if edge.direction != Direction::AsDeclared {
         return None;
     }
@@ -656,15 +736,17 @@ fn recording(edge: &Edge, current: &str) -> Option<Patch> {
         return None;
     };
     let members = (edge.raw_targets.len() > 1).then(|| edge.raw_targets.clone());
-    let mut attributes = Vec::with_capacity(edge.attributes.len() + 1);
+    let mut attributes = Vec::with_capacity(edge.attributes.len() + stamp.len());
     for entry in &edge.attributes {
-        if entry.key.value == VERIFIED_REVISION {
+        if entry.key.value == VERIFIED_REVISION || entry.key.value == VERIFIED_AS {
             continue;
         }
         let scalar = entry.value.value.as_scalar()?;
         attributes.push((entry.key.value.clone(), scalar.text.clone()));
     }
-    attributes.push((VERIFIED_REVISION.to_string(), current.to_string()));
+    for (key, value) in stamp {
+        attributes.push(((*key).to_string(), (*value).to_string()));
+    }
     Some(Patch::Half {
         path: edge.source.path.clone(),
         relation: edge.name.clone(),
@@ -710,6 +792,7 @@ fn moved(
     current: &str,
     reach: Reach,
     under: Under,
+    baseline: bool,
 ) -> String {
     let mut text = match reach {
         Reach::One => format!(
@@ -726,6 +809,14 @@ fn moved(
             }
         ),
     };
+    // A baseline stamp recorded no reading, so the reader is told the digest
+    // it moved from was never read against (#2016).
+    if baseline {
+        text.push_str(
+            ". The recorded digest is a baseline, written by `headwater check --fix --baseline`, \
+             and it records no reading of what the entry reaches",
+        );
+    }
     let what = match reach {
         Reach::One => "the entry",
         Reach::Set(_) => "a file it covers",
@@ -815,6 +906,15 @@ fn unstampable(id: &str, name: &str, raw: &str, current: &str) -> String {
         "`{id}` declares `{name}: {raw}` with no `{VERIFIED_REVISION}`, and a `verified` line \
          names this edge, so the change states it was re-read, but the content it reaches now, \
          `{current}`, cannot be recorded on it"
+    )
+}
+
+/// An unrecorded edge in a run that asked for a baseline stamp (#2016).
+fn unbaselined(id: &str, name: &str, raw: &str, current: &str) -> String {
+    format!(
+        "`{id}` declares `{name}: {raw}` with no `{VERIFIED_REVISION}`, and the run asked for a \
+         baseline, so the content it reaches now, `{current}`, can be recorded as a baseline that \
+         records no reading"
     )
 }
 
@@ -925,7 +1025,7 @@ mod tests {
     /// reader in a commit hook learns which act the finding asks for.
     #[test]
     fn a_moved_digest_says_whether_this_change_names_what_it_reaches() {
-        let text = |under| moved("GS-FIX", "governs", "lib.sh", "a", "b", Reach::One, under);
+        let text = |under| moved("GS-FIX", "governs", "lib.sh", "a", "b", Reach::One, under, false);
         let plain = text(Under::NoChange);
         assert!(!plain.contains("This change"), "{plain}");
         let named = text(Under::Named);
@@ -946,6 +1046,7 @@ mod tests {
             "b",
             Reach::Set(3),
             Under::Unnamed,
+            false,
         );
         assert!(set.contains("3 regular files"), "{set}");
         assert!(
