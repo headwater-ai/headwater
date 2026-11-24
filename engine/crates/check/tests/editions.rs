@@ -67,9 +67,9 @@ use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::{
     adoption, basis, command, coverage, dependency, endpoint, harvest, import_pin,
-    initial_dependency, lock_stale, outside_root, pin, reciprocity, register, surface, suspect, target,
-    verification, Cache, Context, Date, Declared, Observation, Observations, Outcome, Register,
-    Run, Shape, RULES,
+    initial_dependency, lock_stale, outside_root, pin, reciprocity, register, surface, suspect,
+    target, verification, Cache, Context, Date, Declared, Observation, Observations, Outcome,
+    Register, Run, Shape, RULES,
 };
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;

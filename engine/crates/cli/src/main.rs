@@ -6934,12 +6934,7 @@ fn infer(
     // which identifiers are taken, and what the write adds to.
     let declared = loaded.bound.adoption.clone();
 
-    let run = loaded.check(
-        root,
-        &loaded.declared(),
-        &ctx,
-        &mut Cache::disabled(),
-    );
+    let run = loaded.check(root, &loaded.declared(), &ctx, &mut Cache::disabled());
 
     // One task per rule. A rule is the unit an adopter works down, because the
     // fix for every pair under it is the same fix, and it is the unit the

@@ -622,7 +622,11 @@ fn the_shipped_write_hook_names_the_resolve_on_a_source_of_the_lock() {
         let ran = pre(source);
         succeeded(&ran, "the write hook on a source of the lock");
         let out = text(&ran.stdout);
-        for needle in ["headwater taxonomy resolve", "headwater-taxonomy", "taxonomy.lock.stale"] {
+        for needle in [
+            "headwater taxonomy resolve",
+            "headwater-taxonomy",
+            "taxonomy.lock.stale",
+        ] {
             assert!(out.contains(needle), "{source}: {needle}: {out}");
         }
         assert!(!out.contains("permissionDecision"), "{source}: {out}");
@@ -630,7 +634,8 @@ fn the_shipped_write_hook_names_the_resolve_on_a_source_of_the_lock() {
     }
     let overlay = text(&pre(".headwater/overlay.yml").stdout);
     assert!(
-        overlay.contains("1 document(s)") && overlay.contains("headwater explain .headwater/overlay.yml"),
+        overlay.contains("1 document(s)")
+            && overlay.contains("headwater explain .headwater/overlay.yml"),
         "{overlay}"
     );
 

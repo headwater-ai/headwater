@@ -218,7 +218,9 @@ fn listed(paths: &[&str]) -> String {
 /// One error on each source whose bytes moved or that is gone, and one on the
 /// consumer declaration where the selection moved.
 pub fn findings(stale: Option<&Stale>) -> Vec<Finding> {
-    let Some(stale) = stale else { return Vec::new() };
+    let Some(stale) = stale else {
+        return Vec::new();
+    };
     let mut out = Vec::new();
     for source in &stale.sources {
         if source.computed.as_deref() == Some(source.recorded.as_str()) {
@@ -297,7 +299,11 @@ mod tests {
     #[test]
     fn a_lock_its_sources_hash_to_is_silent() {
         let reading = stale(
-            vec![source(".headwater/overlay.yml", "sha256:a", Some("sha256:a"))],
+            vec![source(
+                ".headwater/overlay.yml",
+                "sha256:a",
+                Some("sha256:a"),
+            )],
             None,
             false,
         );
@@ -309,7 +315,11 @@ mod tests {
     fn a_moved_source_is_an_error_on_it_that_names_both_digests_and_the_verb() {
         let reading = stale(
             vec![
-                source(".headwater/packages/p/taxonomy.yml", "sha256:p", Some("sha256:p")),
+                source(
+                    ".headwater/packages/p/taxonomy.yml",
+                    "sha256:p",
+                    Some("sha256:p"),
+                ),
                 source(".headwater/overlay.yml", "sha256:then", Some("sha256:now")),
             ],
             None,
@@ -336,7 +346,11 @@ mod tests {
         );
         let found = findings(Some(&reading));
         assert_eq!(found.len(), 1);
-        assert!(found[0].message.contains("no digest"), "{}", found[0].message);
+        assert!(
+            found[0].message.contains("no digest"),
+            "{}",
+            found[0].message
+        );
     }
 
     #[test]
@@ -354,7 +368,11 @@ mod tests {
             found[0].message
         );
         let overlay = stale(
-            vec![source(".headwater/overlay.yml", "sha256:then", Some("sha256:now"))],
+            vec![source(
+                ".headwater/overlay.yml",
+                "sha256:then",
+                Some("sha256:now"),
+            )],
             None,
             true,
         );
