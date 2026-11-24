@@ -15,11 +15,16 @@ identifier_schemes:
 # Two edges reach `new_ungoverned.rs` and neither governs it in scope, so the
 # reach test is held on both of its filters. `cites` is onto the scoped anchor
 # kind and is no `governance` relation. `governs_elsewhere` is a `governance`
-# relation onto another anchor kind, which declares no scope.
+# relation onto another anchor kind.
+#
+# `other_path` declares a scope of its own, which admits `new_governed.rs` and
+# no other file. So two patterns of two anchor kinds admit that path, and an
+# edge onto one of them governs it. One governing edge is enough, as the audit
+# counts it, so the path is no finding.
 
 anchors:
   code_path: {resolver: source-tree, scope: [scope-ratchet-src/**]}
-  other_path: {resolver: source-tree}
+  other_path: {resolver: source-tree, scope: [scope-ratchet-src/new_governed.rs]}
 
 kinds:
   governing_fixture:
