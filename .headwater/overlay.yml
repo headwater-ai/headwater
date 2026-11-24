@@ -1992,11 +1992,13 @@ add_to:
           for: [process_specs, process_decisions, process_evaluations, process_obligations, process_how_to, process_explanations]
 
 # The one override. `relation.scope.ungoverned` reports a file a change adds
-# inside the governed scope that no governance edge reaches. The package ships
+# inside the governed scope that no governance edge reaches, and a file in the
+# scope whose last governance edge a change removes. The package ships
 # its control advisory, because a tool that blocks on first contact is removed.
 # This repository has measured its scope and backfilled it, so the ratchet
 # stops a strict run here: a pull request, and the commit gate, that add an
-# ungoverned file to `anchors.code_path.scope` fail. Posture decides what
+# ungoverned file to `anchors.code_path.scope`, or remove the last edge onto a
+# file there, fail. Posture decides what
 # blocks, by the owner's ruling of 2026-11-22 (#2015), and the baseline is the
 # change, so no figure is stored (#1573).
 override:
