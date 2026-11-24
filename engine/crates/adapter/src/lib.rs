@@ -1127,6 +1127,7 @@ pub fn render(
         format,
         headwater_check::fill::WIDTH,
         headwater_check::paint::ColorMode::Plain,
+        false,
     )
 }
 
@@ -1139,6 +1140,13 @@ pub fn render(
 /// --wide` is the one caller in the tree that states a number here, which is why
 /// this is a second entry point rather than a sixth parameter on every call
 /// site.
+///
+/// `verbose` is `headwater check --verbose`, and it too reaches the text format
+/// alone: it adds the scope of each rule and the read set to the report a
+/// person reads (#1990). The CLI refuses the flag beside a machine format, so
+/// no caller in the tree passes `true` with one, and a machine format would
+/// ignore it the way it ignores the width.
+#[allow(clippy::too_many_arguments)]
 pub fn render_at(
     run: &Run,
     census: &Taken,
@@ -1147,9 +1155,10 @@ pub fn render_at(
     format: Format,
     width: usize,
     mode: headwater_check::paint::ColorMode,
+    verbose: bool,
 ) -> String {
     match format {
-        Format::Text => text::render_at(run, census, graph, subject, width, mode),
+        Format::Text => text::render_at(run, census, graph, subject, width, mode, verbose),
         Format::Json => json::render(run, subject),
         Format::Sarif => sarif::render(run, subject),
         Format::Markdown => markdown::render(run, subject),

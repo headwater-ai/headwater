@@ -26,6 +26,15 @@
 //! because it is the artifact a later `headwater gate` reads, and it is the
 //! longest block by a wide margin.
 //!
+//! # What the default leaves out
+//!
+//! The read set, and the scope of each rule inside the checks block, are
+//! written under `headwater check --verbose` alone (#1990). The default is the
+//! census, the counts and the findings, in that order, and the checks block
+//! keeps the size of the read set where the union was. Both blocks say what the
+//! run could read rather than what it found, and over the tutorial corpus they
+//! were 215 of the report's 288 lines. [`LOSS`] declares the drop.
+//!
 //! # The layout, and the one block that is exempt from it
 //!
 //! Three of the four blocks below arrive as the finished text of a renderer in
@@ -37,7 +46,8 @@
 //! where they are: the composers still
 //! write what they wrote, and this function lays it out.
 //!
-//! **The read set is not laid out, and that is the sharpest edge in this file.**
+//! **The read set is not laid out where `--verbose` writes it, and that is the
+//! sharpest edge in this file.**
 //! It is the same bytes `check --read-set` writes to a file, and
 //! `headwater_check::Recorded::parse` reads that file back in `headwater gate`.
 //! It is a grammar rather than prose — `lock`, `clock`, `barrier`, `windowed`,
@@ -61,26 +71,44 @@ use headwater_graph::{Detail as GraphDetail, Graph};
 
 /// What the terminal cannot carry, and where the value went instead.
 ///
-/// One entry, and it took until #235 for this format to have one. The argument
+/// The first entry took until #235. The argument
 /// for the empty set was that a loss is a member of a *target* vocabulary that a
 /// run has no value for, and the terminal is the engine's own words rather than
 /// a target. That argument still holds for every other value: this report
 /// carries the census and the graph, which no other format does. It does not
 /// hold for a value the engine computes, JSON writes, and this report drops.
 ///
-/// The entry names nowhere inside these bytes, so [`crate::census`] reports it
-/// as unaudited and a person is the only thing holding the declaration. That is
-/// the same posture all four of [`crate::markdown::LOSS`] stand in.
-pub const LOSS: &[Loss] = &[Loss {
-    field: "the routing of each skip",
-    reason: "the classes and their counts are four lines and the routing is one line per \
-             document, and a report that prints two hundred and ninety of them is a report \
-             nobody finishes",
-    carrier: Carrier::Elsewhere(
-        "the classes and their counts alone, and `--format json` for \
-                                 the documents each class fell on",
-    ),
-}];
+/// The second is the owner's ruling on #1990: the default report is the
+/// census, the counts and the findings, and the scope of each rule and the
+/// digest of each input move behind `--verbose`. Over the tutorial corpus the
+/// two blocks were 215 of 288 lines.
+///
+/// Neither entry names a place inside these bytes, so [`crate::census`]
+/// reports each as unaudited and a person is the only thing holding the
+/// declaration. That is the same posture all four of [`crate::markdown::LOSS`]
+/// stand in.
+pub const LOSS: &[Loss] = &[
+    Loss {
+        field: "the routing of each skip",
+        reason: "the classes and their counts are four lines and the routing is one line per \
+                 document, and a report that prints two hundred and ninety of them is a report \
+                 nobody finishes",
+        carrier: Carrier::Elsewhere(
+            "the classes and their counts alone, and `--format json` for \
+             the documents each class fell on",
+        ),
+    },
+    Loss {
+        field: "the scope of each rule, and the read set with a digest for each input",
+        reason: "the two blocks say what the run could read rather than what it found, and \
+                 over a corpus of a few documents they were three lines of every four in the \
+                 report",
+        carrier: Carrier::Elsewhere(
+            "the size of the read set alone, and `--verbose` for both blocks, and \
+             `--read-set` or `--format json` for the read set",
+        ),
+    },
+];
 
 /// One run of the check layer, as a terminal reads it, at the standard width,
 /// with no color.
@@ -89,7 +117,15 @@ pub const LOSS: &[Loss] = &[Loss {
 /// of this shorthand is a machine format's cousin or a fixture, neither of
 /// which a color decision was ever asked of.
 pub fn render(run: &Run, census: &Census, graph: &Graph, subject: &Subject<'_>) -> String {
-    render_at(run, census, graph, subject, fill::WIDTH, ColorMode::Plain)
+    render_at(
+        run,
+        census,
+        graph,
+        subject,
+        fill::WIDTH,
+        ColorMode::Plain,
+        false,
+    )
 }
 
 /// The same report, laid out at a width the caller states and colored under
@@ -110,6 +146,12 @@ pub fn render(run: &Run, census: &Census, graph: &Graph, subject: &Subject<'_>) 
 /// so [`fill::filled`]'s word-boundary fold never splits one — see
 /// `headwater_check::paint`'s module comment for why counting an escape
 /// sequence as columns costs at most an early wrap, never a broken one.
+///
+/// `verbose` is `headwater check --verbose` (#1990). Without it the checks
+/// block leaves out the scope of each rule, and the report leaves out the
+/// read-set block: the two longest blocks of the report, and the two that say
+/// what the run could read rather than what it found. With it the report is
+/// the whole account, byte for byte what the default was before #1990.
 pub fn render_at(
     run: &Run,
     census: &Census,
@@ -117,6 +159,7 @@ pub fn render_at(
     subject: &Subject<'_>,
     width: usize,
     mode: ColorMode,
+    verbose: bool,
 ) -> String {
     let mut out = String::new();
     out.push_str(&paint(Role::Heading, "taxonomy", mode));
@@ -140,7 +183,14 @@ pub fn render_at(
     ));
     out.push_str(&format!("\n{}\n", paint(Role::Heading, "checks", mode)));
     out.push_str(&fill::filled(
-        &indent(&run.render(headwater_check::Detail::Findings, mode)),
+        &indent(&run.render(
+            if verbose {
+                headwater_check::Detail::Findings
+            } else {
+                headwater_check::Detail::Brief
+            },
+            mode,
+        )),
         width,
     ));
     // What stops a strict run below `error`: each live finding that a
@@ -174,9 +224,12 @@ pub fn render_at(
     }
     // The same bytes `check --read-set` writes to a file, so a gate reading the
     // file and a reader of this report are looking at one artifact. Not laid
-    // out, for that reason — see the module comment.
-    out.push_str(&format!("\n{}\n", paint(Role::Heading, "read set", mode)));
-    out.push_str(&indent(&run.read_set.render()));
+    // out, for that reason — see the module comment. Written under `--verbose`
+    // alone, and the count in the checks block stands for it otherwise (#1990).
+    if verbose {
+        out.push_str(&format!("\n{}\n", paint(Role::Heading, "read set", mode)));
+        out.push_str(&indent(&run.read_set.render()));
+    }
     out
 }
 
