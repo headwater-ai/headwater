@@ -593,7 +593,24 @@ fn a_control_character_from_a_document_reaches_no_format_intact() {
     for task in &mut ran.run.adoption.tasks {
         task.id = format!("task\n::error ::id{HOSTILE_ID}");
         task.owner = format!("owner\n::error ::owner{HOSTILE_ID}");
+        task.statement = format!("a statement\n::error ::statement{HOSTILE_ID}");
     }
+    // A task the engine refuses and a key it does not read are named in the
+    // ledger with the reason, and the adopter wrote both names in the lock.
+    ran.run
+        .adoption
+        .refused
+        .push(headwater_check::adoption::Refused {
+            task: format!("refused\n::error ::task{HOSTILE_ID}"),
+            why: format!("a reason\n::error ::why{HOSTILE_ID}"),
+        });
+    ran.run
+        .adoption
+        .unread
+        .push(headwater_check::adoption::Unread {
+            key: format!("key\n::error ::key{HOSTILE_ID}"),
+            why: format!("a reason\n::error ::unread{HOSTILE_ID}"),
+        });
     // A blocking control over the hostile finding's rule, so the text report
     // lists that finding by its path in the block of what `--strict` fails on.
     let rule = ran.run.findings[0].rule;
@@ -613,6 +630,9 @@ fn a_control_character_from_a_document_reaches_no_format_intact() {
     );
     for suppression in &mut ran.run.suppressions.suppressions {
         suppression.note = format!("a note\n::error ::forged{HOSTILE_ID}");
+        // The directive's own path is a file name too, and the reason an
+        // escaped finding is not reported names it.
+        suppression.path = format!("{}{HOSTILE_ID}", suppression.path);
     }
     // The census lists the rows it did not type in the text report, so one of
     // them takes the hostile name as well, and an exclusion pattern and reason
