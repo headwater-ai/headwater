@@ -166,6 +166,7 @@ fn run_over_with(root: &Path, observations: &Observations, cache: &mut Cache) ->
             adoption: None,
             observations,
             pin: None,
+            lock_stale: None,
             harvests: &[],
             imports: &[],
             source: "engine/crates/check/fixtures/acceptance-criterion-proven.taxonomy.yml",

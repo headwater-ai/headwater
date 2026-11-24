@@ -361,6 +361,7 @@ fn run(recorded: &Recorded, root: &Path) -> Run {
             register: &register,
             observations: &recorded.observations,
             pin: None,
+            lock_stale: None,
             harvests: &[],
             imports: &[],
             adoption: None,

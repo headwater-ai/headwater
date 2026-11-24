@@ -57,7 +57,7 @@ use headwater_adapter::{Format, Subject};
 use headwater_api::{plan_of, Bound, LoadError, Session};
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
-use headwater_check::{Cache, Context, Date, Declared, Shape};
+use headwater_check::{Cache, Context, Date, Shape};
 use headwater_cli::{JsonWord, ProbeWord, SweepWord, TaxonomyWord, Verb};
 use headwater_graph::declarations::Declarations;
 use headwater_query::explain::{classification_text, identifier_text, Answer};
@@ -6936,20 +6936,7 @@ fn infer(
 
     let run = loaded.check(
         root,
-        &Declared {
-            lock: &loaded.bound.digest,
-            taxonomy: &loaded.taxonomy,
-            shape: &loaded.shape,
-            relations: &loaded.relations,
-            config: &loaded.config,
-            register: &loaded.register,
-            observations: &loaded.observations,
-            pin: Some(&loaded.pin),
-            harvests: &loaded.harvests,
-            imports: &loaded.imported,
-            adoption: declared.as_ref(),
-            source: headwater_lock::LOCK,
-        },
+        &loaded.declared(),
         &ctx,
         &mut Cache::disabled(),
     );

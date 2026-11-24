@@ -206,6 +206,7 @@ fn engine_run(built: &Built) -> Run {
             register: &register,
             observations: &headwater_check::Observations::empty(),
             pin: None,
+            lock_stale: None,
             harvests: &[],
             imports: &[],
             adoption: None,
