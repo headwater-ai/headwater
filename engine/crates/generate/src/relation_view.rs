@@ -543,10 +543,10 @@ impl Walker<'_, '_> {
                     // and nothing here is filtered.
                     Target::Withheld { .. } => {}
                 },
-                (Direction::Inverse, Target::Document { path, .. }) if path == at => {
-                    if !documents.contains(&edge.source.path) {
-                        documents.push(edge.source.path.clone());
-                    }
+                (Direction::Inverse, Target::Document { path, .. })
+                    if path == at && !documents.contains(&edge.source.path) =>
+                {
+                    documents.push(edge.source.path.clone());
                 }
                 _ => {}
             }

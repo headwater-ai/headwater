@@ -1366,7 +1366,7 @@ pub fn plan(
             }
             Kind::VerbIndex => verb_index::emit(surface, declaration, verbs, &mut plan),
             Kind::RelationView => {
-                relation_view::emit(surface, census, declaration, &runs.observations, &mut plan)
+                relation_view::emit(surface, census, declaration, &runs.observations, &mut plan);
             }
             Kind::ConsumerSurface => {
                 consumer_surface::emit(projections.surface.as_ref(), declaration, &mut plan);

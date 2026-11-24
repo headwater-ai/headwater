@@ -174,10 +174,9 @@ fn labelling(kind: Kind) -> Labelling {
              matches a cell to a relation target and to a snapshot entry. A document with no \
              identifier prints its path, and a title in every cell would not fit a table row",
         ),
-        Kind::AgentRules
-        | Kind::Template
-        | Kind::Transcription
-        | Kind::CoverageReport => Labelling::Unbuilt,
+        Kind::AgentRules | Kind::Template | Kind::Transcription | Kind::CoverageReport => {
+            Labelling::Unbuilt
+        }
     }
 }
 
