@@ -437,3 +437,37 @@ fn two_live_claimants_stay_contended_when_a_former_identifier_comes_first() {
         "no claim is owed for a value two documents hold live\n{stdout}"
     );
 }
+
+/// A live holder on the untyped shelf counts as well. The duplicate report
+/// compares both shelves, and one claim file cannot name two claimants, so a
+/// value that a typed and an untyped document both hold live is contended and
+/// owes no claim.
+#[test]
+fn a_typed_and_an_untyped_live_holder_stay_contended() {
+    const UNTYPED: &str = "docs/notes/an-untyped-note.md";
+    let root = Root::new(
+        "untyped",
+        &[
+            (
+                "docs/decisions/0005-a-typed-decision.md",
+                decision("HW-DR-0005", "A typed decision", ""),
+            ),
+            (
+                UNTYPED,
+                "---\nid: HW-DR-0005\ntitle: An untyped note\n---\n\n# An untyped note\n\nA fixture.\n"
+                    .to_string(),
+            ),
+        ],
+    );
+    let checked = root.run(&["check"]);
+    let stdout = String::from_utf8_lossy(&checked.stdout);
+    let words = stdout.split_whitespace().collect::<Vec<_>>().join(" ");
+    assert!(
+        words.contains("identifier.claimed_twice (") && words.contains(UNTYPED),
+        "the untyped holder is indexed and the collision is reported\n{stdout}"
+    );
+    assert!(
+        !words.contains(".headwater/ids/decision_id/HW-DR-0005"),
+        "no claim is owed for a value a typed and an untyped document hold live\n{stdout}"
+    );
+}
