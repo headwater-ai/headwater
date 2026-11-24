@@ -923,6 +923,24 @@ add:
   kinds.requirement.language:            ste_house
   kinds.acceptance_criterion.language:   ste_house
 
+  # The governed scope of this repository (#951): the part of the tree this
+  # corpus expects a `governs` edge to reach. `taxonomy validate` refuses a
+  # pattern here that matches no entry, and `taxonomy audit` prints the share
+  # of in-scope entries an edge reaches, per pattern and in total. The seven
+  # patterns are the ones the governs-edges evaluation names under "Coverage:
+  # two numbers with two denominators". The eighth is the source of the agent
+  # set `headwater init --harness` writes, which moved there from
+  # `.claude/skills/` and `.claude/agents/` (#1578).
+  anchors.code_path.scope:
+    - engine/crates/**/src/**/*.rs
+    - engine/crates/cli/harness/**
+    - .githooks/**
+    - .claude/hooks/**
+    - .claude/agents/**
+    - .claude/skills/**
+    - tools/**
+    - site/**
+
   # --- the development process ---------------------------------------------
   # Two subjects shared the decisions shelf until this block. A ruling about
   # the product, such as "the engine reaches no network at check time", and a
@@ -1342,13 +1360,6 @@ add:
 
 add_to:
 
-  # `probe` is a kind of this repository, so the library entry cannot name it.
-  # A probe settles a requirement the way an acceptance criterion does, and
-  # `requirement-verified` names no `to_kind`, so a probe-verified requirement
-  # satisfies it. The adopter's overlay applies after every bundle, so it may
-  # append to a list a bundle declares (#2022).
-  relations.verified_by.to: [probe]
-
   projections:
     # An index at the root of each shelf this corpus holds that no other
     # declaration covers. `{shelf}` is the shelf's directory, so one entry
@@ -1537,6 +1548,13 @@ add_to:
         - title: Project process
           noindex: true
           for: [process_specs, process_decisions, process_evaluations, process_obligations, process_how_to, process_explanations]
+
+  # `probe` is a kind of this repository, so the library entry cannot name it.
+  # A probe settles a requirement the way an acceptance criterion does, and
+  # `requirement-verified` names no `to_kind`, so a probe-verified requirement
+  # satisfies it. The adopter's overlay applies after every bundle, so it may
+  # append to a list a bundle declares (#2022).
+  relations.verified_by.to: [probe]
 
 # Two overrides. The first: `relation.scope.ungoverned` reports a file a change adds
 # inside the governed scope that no governance edge reaches, and a file in the

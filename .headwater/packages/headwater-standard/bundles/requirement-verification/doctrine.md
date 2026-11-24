@@ -5,17 +5,6 @@ status_since: 2026-11-24
 summary: "Why the requirement-verification entry types a requirement, the acceptance criterion that settles it and the verification that applies it, and why each declaration is there."
 last_verified: 2026-11-24
 title: "The requirement-verification taxonomy"
-provenance:
-  warrant: asserted
-relations:
-  traces_to:
-    - HW-DR-0073
-    - HW-DR-0079
-    - HW-OBL-0039
-    - HW-OBL-0185
-    - HW-OBL-0189
-    - HW-OBL-0192
-    - HW-OBL-0195
 ---
 
 # The requirement-verification taxonomy

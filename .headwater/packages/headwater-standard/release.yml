@@ -26,7 +26,7 @@ release:
   package: headwater/standard
   version: 4.25.0
   requires_engine: ">=0.1 <2"
-  digest: sha256:faafce51476b0073013f481d61ad70a0ec1f2f5cb3d3c1da43fd02d594a0f42e
+  digest: sha256:a714338fbdc7c85444992d7ad083f8343670845d7cbe0a1d74012f0acea31676
   members:
     - path: assemblies/starter/assembly.yml
       digest: sha256:81254391a6c8ef31e3a410e0b3637f76d95eb27e3bdc431cd10a5c8f060d7638
@@ -87,7 +87,7 @@ release:
     - path: bundles/requirement-verification/bundle.yml
       digest: sha256:086af0b99a6358ad31b4590802e11202912115dea565a41d2d9a29089b685135
     - path: bundles/requirement-verification/doctrine.md
-      digest: sha256:1369b8fa37274d00f566df32b780e8e729c2caa65c2c05577fbf16296436e97e
+      digest: sha256:f3b3a4f34ef88a8bd83cae499197c08cfe5edabd347f41ce18b2fc82a1bfc463
     - path: bundles/requirement-verification/templates/acceptance_criterion.md
       digest: sha256:8881a3b6f8a89a17415ad5f461d219e0abf26e8b0b5a7bb78e6f58934153c313
     - path: bundles/requirement-verification/templates/requirement.md

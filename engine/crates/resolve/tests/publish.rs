@@ -2946,7 +2946,7 @@ fn a_package_whose_widest_selection_declares_what_it_reads_still_publishes() {
 /// in `founded.rs` pins — and the payload check reads `.taxonomy` and discards
 /// it, so the order-dependent output never reaches a verdict.
 ///
-/// The seven bundles of this repository are the set, because a pair cut down to
+/// The eight bundles of this repository are the set, because a pair cut down to
 /// what one case needs would commute for reasons that say nothing about a real
 /// bundle tree.
 #[test]
@@ -2972,7 +2972,7 @@ fn the_order_the_shipped_bundles_are_read_in_decides_nothing() {
     names.sort();
     assert_eq!(
         names.len(),
-        7,
+        8,
         "the bundle set this case runs over: {names:?}"
     );
 
