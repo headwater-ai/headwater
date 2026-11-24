@@ -774,7 +774,7 @@ read set
   version identifier.unusable 1
   version identifier.claimed_twice 2
   version shelf.discriminator.unresolved 1
-  version identifier.claim.missing 2
+  version identifier.claim.missing 3
   version identifier.claim.stale 3
   version voice.forbidden_construction 7
   version language.controlled.not_met 6
