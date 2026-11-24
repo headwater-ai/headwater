@@ -132,6 +132,14 @@ fn publish(root: &Root) -> (PathBuf, String, String) {
 /// A consumer of the published package that selects `bundles`, with `overlay`
 /// as its whole overlay, vendored and resolved.
 fn consumer(root: &Root, bundles: &str, overlay: &str) -> PathBuf {
+    let consumer = vendored(root, bundles, overlay);
+    let resolved = run(&consumer, &["taxonomy", "resolve"]);
+    assert_eq!(resolved.code, Some(0), "{resolved:?}");
+    consumer
+}
+
+/// The same consumer, vendored and not yet resolved.
+fn vendored(root: &Root, bundles: &str, overlay: &str) -> PathBuf {
     let (artifact, version, digest) = publish(root);
     let consumer = root.path().join("consumer");
     write(
@@ -151,8 +159,6 @@ fn consumer(root: &Root, bundles: &str, overlay: &str) -> PathBuf {
         ],
     );
     assert_eq!(vendored.code, Some(0), "{vendored:?}");
-    let resolved = run(&consumer, &["taxonomy", "resolve"]);
-    assert_eq!(resolved.code, Some(0), "{resolved:?}");
     consumer
 }
 
@@ -378,5 +384,33 @@ fn past_the_window_the_entry_reports_an_unverified_requirement_and_an_unproved_t
             .contains("docs/verified-requirements/0001-verified.md:"),
         "a requirement that a criterion verifies is reported\n{}",
         checked.out
+    );
+}
+
+/// A selection that leaves out the bundle the entry requires is refused, and
+/// the refusal names the bundle to add. This is what an adopter meets when the
+/// how-to's first step is skipped.
+///
+/// It does not hold the entry's `requires` line. The resolver reads `requires`
+/// only for a write into the dependency's keys, and this entry writes none: it
+/// reads `purposes.evidence` by reference. The refusal below comes from
+/// referential integrity and the selection lookup, and it reads the same with
+/// `requires: []`. The build note of #2017 records that survivor.
+#[test]
+fn a_selection_without_evidence_and_obligation_is_refused_and_the_refusal_names_it() {
+    let root = Root::scratch("without-dependency");
+    let overlay = OVERLAY.replace(
+        "  identifier_schemes.obligation_record_id.namespace: ACME\n",
+        "",
+    );
+    let consumer = vendored(&root, "requirement-verification", &overlay);
+    let resolved = run(&consumer, &["taxonomy", "resolve"]);
+    assert_eq!(resolved.code, Some(1), "{resolved:?}");
+    assert!(
+        resolved
+            .err
+            .contains("`evidence-and-obligation` declares 1 of the 1: `evidence`"),
+        "the refusal does not name the bundle to add\n{}",
+        resolved.err
     );
 }
