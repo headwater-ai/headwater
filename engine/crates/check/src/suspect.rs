@@ -722,7 +722,10 @@ fn recording(edge: &Edge, current: &str) -> Option<Patch> {
 /// baseline, with `verified_as: baseline` beside it, and nothing where
 /// [`recording`] would have nothing (#2016).
 fn baselining(edge: &Edge, current: &str) -> Option<Patch> {
-    stamping(edge, &[(VERIFIED_REVISION, current), (VERIFIED_AS, BASELINE)])
+    stamping(
+        edge,
+        &[(VERIFIED_REVISION, current), (VERIFIED_AS, BASELINE)],
+    )
 }
 
 /// The patch both stamps share: every other scalar attribute of the entry,
@@ -1025,7 +1028,18 @@ mod tests {
     /// reader in a commit hook learns which act the finding asks for.
     #[test]
     fn a_moved_digest_says_whether_this_change_names_what_it_reaches() {
-        let text = |under| moved("GS-FIX", "governs", "lib.sh", "a", "b", Reach::One, under, false);
+        let text = |under| {
+            moved(
+                "GS-FIX",
+                "governs",
+                "lib.sh",
+                "a",
+                "b",
+                Reach::One,
+                under,
+                false,
+            )
+        };
         let plain = text(Under::NoChange);
         assert!(!plain.contains("This change"), "{plain}");
         let named = text(Under::Named);
