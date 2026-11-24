@@ -306,6 +306,10 @@ impl Kind {
     pub fn page_label(self) -> Option<&'static str> {
         match self {
             Kind::ConsumerSurface => Some("The consumer surface"),
+            // A view in the Markdown format is a served page, and the label is
+            // the matrix HW-DR-0114 names. A CSV or JSON view is no page, and
+            // the plan offers the navigation only its Markdown outputs.
+            Kind::RelationView => Some("The traceability matrix"),
             _ => None,
         }
     }
@@ -1402,6 +1406,7 @@ pub fn plan(
         let pages: Vec<(String, &str)> = plan
             .outputs
             .iter()
+            .filter(|output| output.path.ends_with(".md"))
             .filter_map(|output| {
                 output
                     .kind

@@ -382,6 +382,74 @@ fn a_link_written_only_at_the_far_end_is_a_row_and_rows_sort_by_path() {
     );
 }
 
+/// A target is written into a cell as the author wrote it, so a cell can hold
+/// `|`, `,` and `"`. The Markdown row escapes the pipe and keeps four columns,
+/// and the CSV field is quoted with its quotes doubled (RFC 4180).
+#[test]
+fn a_cell_that_holds_a_pipe_a_comma_and_a_quote_keeps_its_column_in_both_formats() {
+    let root = Root::scratch("escapes");
+    let projections = format!(
+        "{}{}",
+        chain("docs/matrix.md", None),
+        chain("docs/matrix.csv", Some("csv"))
+    );
+    let consumer = worked(&root, &projections);
+    let requirement = consumer
+        .join("docs/verified-requirements/0001-an-operator-can-replay-a-failed-delivery.md");
+    let text = read(&requirement);
+    let edited = text.replacen(
+        "    - SCR-AC-0003\n",
+        "    - SCR-AC-0003\n    - 'no | such, \"rule\"'\n",
+        1,
+    );
+    assert_ne!(edited, text, "the fixture requirement lists SCR-AC-0003");
+    write(&requirement, &edited);
+
+    let generated = run(&consumer, &["generate"]);
+    assert_eq!(generated.code, Some(0), "{generated:?}");
+
+    let markdown = read(&consumer.join("docs/matrix.md"));
+    let row = rows(&markdown)
+        .into_iter()
+        .find(|row| row.contains("no \\| such"))
+        .unwrap_or_else(|| panic!("the escaped target is a row of the view\n{markdown}"));
+    assert_eq!(
+        cells(&row).len(),
+        4,
+        "an escaped pipe splits no cell: {row}\n{markdown}"
+    );
+
+    let csv = read(&consumer.join("docs/matrix.csv"));
+    assert!(
+        csv.contains("\"no | such, \"\"rule\"\"\""),
+        "the field is quoted and its quotes are doubled\n{csv}"
+    );
+}
+
+/// A Markdown view in its shelf's directory is a served page, so the site
+/// navigation names it. A CSV view beside it is no page and is not named.
+#[test]
+fn the_site_navigation_names_a_markdown_view_and_never_a_csv_view() {
+    let root = Root::scratch("nav");
+    let projections = format!(
+        "{}{}    - kind: site_nav\n      output: .headwater/nav.yml\n",
+        chain("\"{shelf}/traceability.md\"", None),
+        chain("\"{shelf}/traceability.csv\"", Some("csv"))
+    );
+    let consumer = worked(&root, &projections);
+    let generated = run(&consumer, &["generate"]);
+    assert_eq!(generated.code, Some(0), "{generated:?}");
+    let nav = read(&consumer.join(".headwater/nav.yml"));
+    assert!(
+        nav.contains("\"The traceability matrix\": \"verified-requirements/traceability.md\""),
+        "the navigation names the Markdown view under its label\n{nav}"
+    );
+    assert!(
+        !nav.contains("traceability.csv"),
+        "a CSV view is no page of the site\n{nav}"
+    );
+}
+
 fn table_row(text: &str, criterion: &str) -> Vec<String> {
     rows(text)
         .iter()
@@ -534,6 +602,36 @@ fn a_json_view_writes_the_rows_of_the_markdown_view() {
     );
     let held = run(&consumer, &["generate", "--check"]);
     assert_eq!(held.code, Some(0), "{held:?}");
+}
+
+/// Point 4 names `traces_to` beside `governs`. A chain that ends with
+/// `traces_to` writes the code path in its last column in the same way.
+#[test]
+fn a_chain_that_ends_with_traces_to_writes_the_code_path_in_the_last_column() {
+    let root = Root::scratch("traces-to");
+    let consumer = worked(
+        &root,
+        "    - kind: relation_view\n      for: [verified_requirements]\n      relations: [verified_by, proven_by, traces_to]\n      output: docs/matrix.md\n",
+    );
+    let verification =
+        consumer.join("docs/verifications/0001-the-replay-latency-test-measures-twenty-replays.md");
+    let text = read(&verification).replacen(
+        "  cited_in:\n",
+        "  traces_to:\n    - src/replay_latency_test.rs\n  cited_in:\n",
+        1,
+    );
+    std::fs::write(&verification, text).expect("the verification traces to the test");
+
+    let generated = run(&consumer, &["generate"]);
+    assert_eq!(generated.code, Some(0), "{generated:?}");
+    let matrix = read(&consumer.join("docs/matrix.md"));
+    let clean = table_row(&matrix, "SCR-AC-0001");
+    assert!(
+        clean[3].contains("`src/replay_latency_test.rs`"),
+        "the last column names the code path `traces_to` reaches: {clean:?}"
+    );
+    let empty = table_row(&matrix, "SCR-AC-0002");
+    assert!(empty[3].is_empty(), "{empty:?}");
 }
 
 /// Point 4: a chain may end at code. `governs` reaches a `source-tree`
