@@ -307,6 +307,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             register,
             format,
             json,
+            verbose,
         } => check(
             root,
             Asked {
@@ -318,6 +319,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 register_out: register,
                 format: chosen(json, format),
                 change,
+                verbose,
             },
         ),
         Verb::Change {
@@ -6540,6 +6542,9 @@ struct Asked {
     /// a transition use it, and it does not narrow the documents the run
     /// checks. See `headwater_check::change`.
     change: Option<PathBuf>,
+    /// `--verbose`: the scope of each rule and the read set in the text
+    /// report (#1990).
+    verbose: bool,
 }
 
 fn check(root: &Path, asked: Asked) -> ExitCode {
@@ -6558,7 +6563,7 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
 /// `print!` and `eprint!` panic on a full disk, and the panic message goes to
 /// standard error, so a stream that failed there read as exit 101 with nothing
 /// said ([#1095](https://github.com/headwater-ai/headwater/issues/1095)).
-/// `docs/interfaces/headwater-check.md` states the exit as 1, the seventh
+/// `docs/interfaces/headwater-check.md` states the exit as 1, the eighth
 /// reason under *Exit status*.
 fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
     let Asked {
@@ -6570,6 +6575,7 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
         register_out,
         format,
         change,
+        verbose,
     } = asked;
     // The vocabulary is decided before anything is read, so a run that would
     // refuse the flag refuses it before it walks a corpus. `export --format`
@@ -6588,6 +6594,16 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
             )));
         }
     };
+    // `--verbose` adds two blocks to the text report and changes nothing else,
+    // so beside a machine format the flag would do nothing. It is refused for
+    // the reason `--wide` is (#1990).
+    if verbose && !matches!(format, Format::Text) {
+        return Ok(fail(&format!(
+            "`check --verbose` adds the scope of each rule and the read set to the text report, \
+             and it changes nothing in `--format {}`. Drop one of the two",
+            format.name()
+        )));
+    }
     // The one clock read of the whole engine, and it is here rather than in a
     // check. Spec 12: "`ctx.now` is a bound value, never a syscall." A run
     // whose host cannot say what day it is refuses rather than guesses, because
@@ -6708,7 +6724,8 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
         Format::Text => headwater_cli::paint::stdout_color(),
         _ => headwater_cli::paint::ColorMode::Plain,
     };
-    let artifact = headwater_adapter::render_at(&run, taken, graph, &subject, format, width, mode);
+    let artifact =
+        headwater_adapter::render_at(&run, taken, graph, &subject, format, width, mode, verbose);
     report(&artifact)?;
     headwater_check::phase::mark("render");
     // The census over what was written, in the shape spec 7 fixes for the

@@ -432,8 +432,8 @@ pub enum Verb {
         #[arg(
             long = "read-set",
             value_name = "path",
-            help = "write the read set of this run to a file as well as to the report. The \
-                    artifact is what decides whether a verdict survives a merge without running \
+            help = "write the read set of this run to a file. The report carries it too, under \
+                    `--verbose`. The artifact is what decides whether a verdict survives a merge without running \
                     the checks again, and `headwater gate` is what reads it"
         )]
         read_set: Option<PathBuf>,
@@ -455,9 +455,10 @@ pub enum Verb {
                  job summary or a review comment, and `json` is the finding shape spec 4 \
                  declares, for an adapter nobody here wrote. `sarif` writes its own loss set \
                  into the artifact. `markdown` declares one in the source and not in the \
-                 artifact, because nothing it writes is machine-readable. `text` declares one \
-                 drop there too, the routing of each skip, and carries the census and the graph \
-                 that no other format holds. `json` declares one there as well, the \
+                 artifact, because nothing it writes is machine-readable. `text` declares two \
+                 drops there too, the routing of each skip and, without `--verbose`, the scope \
+                 of each rule and the read set, and carries the census and the graph that no \
+                 other format holds. `json` declares one there as well, the \
                  per-document account of coverage, and writes no loss set of its own. ",
                 a_refusal_is_not_an_artifact!()
             )
@@ -465,6 +466,16 @@ pub enum Verb {
         format: Option<String>,
         #[arg(long, conflicts_with = "format", help = JSON_BESIDE_FORMAT)]
         json: bool,
+        #[arg(
+            long,
+            help = "add the scope of each rule, and the read set with a digest for each input, to \
+                    the report. Without it the report is the census, the counts and the findings, \
+                    and the checks block gives the size of the read set alone. The flag changes the \
+                    text report and nothing else, so it is refused beside `--format json`, \
+                    `--format sarif`, `--format markdown` and `--json`, where it would do \
+                    nothing"
+        )]
+        verbose: bool,
     },
     Change {
         // Optional here and required by the verb, on the terms `gate` already
