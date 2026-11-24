@@ -3522,8 +3522,13 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
     let lock_version = lock.version.clone();
     let to = record.version.clone();
 
+    // Whether the lock is current is a fact of neither taxonomy, so the side
+    // that a lock carries reads it no more than the candidate does (#1975).
     let taking = match opened_against(root, Bound::of(lock)) {
-        Ok(loaded) => loaded,
+        Ok(loaded) => Session {
+            lock_stale: None,
+            ..loaded
+        },
         Err(code) => return code,
     };
     let against = match opened_against(

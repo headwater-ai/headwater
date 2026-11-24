@@ -120,20 +120,28 @@ impl Stale {
         recorded: &[(String, String)],
     ) -> Option<Stale> {
         headwater_resolve::package::located(root, &consumer.package)?;
-        let declaration = std::fs::read(root.join(CONSUMER))
-            .ok()
-            .map(|bytes| headwater_hash::digest(&bytes));
-        let sources = recorded
+        let declaration = hashed(&root.join(CONSUMER));
+        let sources: Vec<Source> = recorded
             .iter()
             .map(|(path, digest)| Source {
                 path: path.clone(),
                 recorded: digest.clone(),
-                computed: std::fs::read(root.join(path))
-                    .ok()
-                    .map(|bytes| headwater_hash::digest(&bytes)),
+                computed: hashed(&root.join(path)),
             })
             .collect();
-        let selection = if consumer.package != package || consumer.version != version {
+        // The engine range is held by its own report, and a range this engine
+        // is outside is no fact about the lock, so the selection is read
+        // without it.
+        let consumer = &Consumer {
+            engine: None,
+            ..consumer.clone()
+        };
+        let selection = if sources.iter().any(|source| source.computed.is_none()) {
+            // A source that does not read is already one finding, and the
+            // resolver would read the same file again, so the selection waits
+            // for the next run.
+            None
+        } else if consumer.package != package || consumer.version != version {
             Some(format!(
                 "it takes {} {}, and the lock was resolved from {package} {version}",
                 consumer.package, consumer.version
@@ -186,6 +194,18 @@ impl Stale {
         out.dedup_by(|a, b| a.path == b.path);
         out
     }
+}
+
+/// The digest of one file, where it is a regular file that reads. A named
+/// pipe or a device is refused before it is opened, as the lock reader
+/// refuses one, so a run never waits on it (#1366).
+fn hashed(path: &Path) -> Option<String> {
+    if !std::fs::metadata(path).ok()?.is_file() {
+        return None;
+    }
+    std::fs::read(path)
+        .ok()
+        .map(|bytes| headwater_hash::digest(&bytes))
 }
 
 /// The selected sources in the order a resolve applies them, which is the

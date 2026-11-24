@@ -246,3 +246,32 @@ fn the_mcp_check_tool_names_the_stale_lock_on_an_overlay_edited_after_start() {
         "the answer names the verb that repairs it: {answer}"
     );
 }
+
+/// The rule is never cached, so what keeps `headwater gate` honest is the read
+/// set: the overlay joins it with its digest, and a gate over a later tree
+/// names the overlay as moved.
+#[test]
+fn the_read_set_carries_the_overlay_and_a_gate_sees_it_move() {
+    let root = Root::new("lock-stale-read-set");
+    let read_set = root.at.join("clean.readset");
+    let path = read_set.to_str().expect("the read set path is UTF-8");
+    let ran = root.run(&["check", "--read-set", path]);
+    assert!(ran.code.is_some(), "{ran:?}");
+    let recorded = std::fs::read_to_string(&read_set).expect("the read set reads");
+    for needle in [OVERLAY, CONSUMER] {
+        assert!(
+            recorded.contains(needle),
+            "the read set lists `{needle}`: {recorded}"
+        );
+    }
+    let unmoved = root.run(&["gate", "--read-set", path]);
+    assert!(!unmoved.out.contains(OVERLAY), "{}", unmoved.out);
+
+    retire_a_term(&root.at);
+    let moved = root.run(&["gate", "--read-set", path]);
+    assert!(
+        moved.out.contains(OVERLAY),
+        "a gate over the edited tree names the overlay: {}",
+        moved.out
+    );
+}

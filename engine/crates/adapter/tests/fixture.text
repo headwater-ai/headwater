@@ -258,6 +258,8 @@ checks
       taxonomy scope, the resolved taxonomy, and no document
     taxonomy.pin.diverged
       taxonomy scope, the resolved taxonomy, and no document
+    taxonomy.lock.stale
+      taxonomy scope, the resolved taxonomy, and no document
     harvest.pin.unread
       taxonomy scope, the resolved taxonomy, and no document
     import.pin.unread
@@ -332,6 +334,7 @@ checks
     adoption.task.expired reaches no obligation, so it names none
     language.outside_root.refused reaches no obligation, so it names none
     taxonomy.pin.diverged reaches no obligation, so it names none
+    taxonomy.lock.stale reaches no obligation, so it names none
     harvest.pin.unread reaches no obligation, so it names none
     import.pin.unread reaches no obligation, so it names none
     relation.target.verification.suspect reaches no obligation, so it names none
@@ -808,6 +811,7 @@ read set
   version adoption.task.expired 1
   version language.outside_root.refused 1
   version taxonomy.pin.diverged 1
+  version taxonomy.lock.stale 1
   version harvest.pin.unread 1
   version import.pin.unread 1
   version relation.target.verification.suspect 2
