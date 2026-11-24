@@ -265,7 +265,7 @@ const READ_AS_CONTROL: &str = "it names no `kind: verification`, so it read as a
 /// thing this module checks, and
 /// [HW-OBL-0199](../../../../docs/obligations/0199-an-observation-snapshot-records-a-commit-and-nothing-reads-it-back.md)
 /// records the discharge.
-fn plausible_commit(commit: &str) -> bool {
+pub fn plausible_commit(commit: &str) -> bool {
     !commit.is_empty()
         && commit.len() <= 40
         && commit.chars().all(|c| c.is_ascii_hexdigit())
@@ -321,11 +321,18 @@ impl Observations {
                 };
             }
         };
+        Observations::parse(&text)
+    }
+
+    /// The snapshot these bytes hold, read on [`Observations::at`]'s terms.
+    /// [`write`] reads what it is about to write through this, so the writer
+    /// writes nothing the reader then reads otherwise.
+    pub fn parse(text: &str) -> Self {
         // Hashed once, here, over exactly the bytes this run read — whether or
         // not they go on to parse. A read set records this either way: see
         // the module comment on why a rejected file still needs a digest.
         let presence = Presence::Read(headwater_hash::digest(text.as_bytes()));
-        let parsed = match headwater_yaml::load(&text) {
+        let parsed = match headwater_yaml::load(text) {
             Ok(parsed) => parsed,
             Err(errors) => {
                 let message = headwater_yaml::error::render(&errors);
@@ -582,6 +589,203 @@ pub(crate) fn duplicate_ids(entries: &[Observation]) -> Vec<String> {
         }
     }
     duplicate
+}
+
+/// What [`write`] did to the snapshot.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Wrote {
+    /// Every entry already read as asked, so no byte moved and the file was
+    /// not written. A second run with the same input lands here (#2024).
+    Unchanged,
+    /// The file was written, whole, by a rename over the old one.
+    Written,
+}
+
+/// Write `entries` into the snapshot at [`PATH`] under `root`, the writer that
+/// `headwater observe` is (#2024).
+///
+/// Each entry replaces the entry of the same identifier, or is appended after
+/// the last entry when none names it. Every other byte of the file stays as it
+/// was: a control entry, a comment and a blank line are not re-rendered,
+/// because an adopter's own process may write them by hand. An entry that
+/// already reads as the one asked for is left alone, so a second run with the
+/// same input changes nothing.
+///
+/// It refuses, and writes nothing, where the file is present and does not read
+/// ([`Observations::unread`], which a key written twice is), where a key it
+/// would replace is not at the start of its line, and where what it would write does not read back through
+/// [`Observations::parse`] as the entries asked for. The new bytes go to a
+/// temporary file beside the snapshot and are renamed over it, so a failed
+/// write never leaves half a file.
+pub fn write(root: &Path, entries: &[Observation]) -> Result<Wrote, String> {
+    let path = root.join(PATH);
+    let text = match std::fs::read_to_string(&path) {
+        Ok(text) => text,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => String::new(),
+        Err(error) => return Err(format!("`{PATH}` exists and could not be read: {error}")),
+    };
+    let next = splice(&text, entries)?;
+    if next == text {
+        return Ok(Wrote::Unchanged);
+    }
+    let reread = Observations::parse(&next);
+    if let Some(reason) = reread.unread() {
+        return Err(format!(
+            "what this verb would write to `{PATH}` does not read back, so nothing was \
+             written: {reason}"
+        ));
+    }
+    for entry in entries {
+        if !reread.entries.contains(entry) {
+            return Err(format!(
+                "the entry for `{}` that this verb would write to `{PATH}` does not read back \
+                 as written, so nothing was written",
+                entry.id()
+            ));
+        }
+    }
+    let directory = path.parent().expect("the snapshot path has a parent");
+    std::fs::create_dir_all(directory)
+        .map_err(|error| format!("`{}` could not be made: {error}", directory.display()))?;
+    let temporary = directory.join(format!(".{FILE}.{}.tmp", std::process::id()));
+    if let Err(error) = std::fs::write(&temporary, &next) {
+        let _ = std::fs::remove_file(&temporary);
+        return Err(format!("`{PATH}` was not written: {error}"));
+    }
+    if let Err(error) = std::fs::rename(&temporary, &path) {
+        let _ = std::fs::remove_file(&temporary);
+        return Err(format!("`{PATH}` was not written: {error}"));
+    }
+    Ok(Wrote::Written)
+}
+
+/// The text of a snapshot with `entries` written into `text`, on [`write`]'s
+/// terms, and nothing written to disk.
+pub fn splice(text: &str, entries: &[Observation]) -> Result<String, String> {
+    let current = Observations::parse(text);
+    let empty = text.trim().is_empty();
+    if !empty {
+        if let Some(reason) = current.unread() {
+            return Err(format!(
+                "`{PATH}` does not read, and this verb does not write over a snapshot it cannot \
+                 read: {reason}"
+            ));
+        }
+    }
+    let keys: Vec<headwater_yaml::Entry> = match empty {
+        true => Vec::new(),
+        false => match headwater_yaml::load(text).map(|parsed| parsed.value) {
+            Ok(Value::Map(map)) => map.iter().cloned().collect(),
+            // `unread` above already refused every other shape.
+            _ => Vec::new(),
+        },
+    };
+    let mut replaced: Vec<(usize, usize, String)> = Vec::new();
+    let mut appended = String::new();
+    for entry in entries {
+        let id = entry.id();
+        // The loader refuses a key written twice, so `unread` above already
+        // refused a file where one identifier names two entries.
+        let Some(key) = keys.iter().find(|key| key.key.value == id) else {
+            appended.push_str(&render(entry));
+            continue;
+        };
+        if current.entries.contains(entry) {
+            continue;
+        }
+        if key.key.span.start.col != 1 {
+            return Err(format!(
+                "`{id}` is a key of `{PATH}` that does not start its line, so this verb cannot \
+                 replace its entry without re-rendering the file"
+            ));
+        }
+        let start = key.key.span.start.offset;
+        let end = entry_end(
+            text,
+            start,
+            key.value.span.end.offset.max(key.key.span.end.offset),
+        );
+        replaced.push((start, end, render(entry)));
+    }
+    let mut out = text.to_string();
+    replaced.sort_by_key(|(start, ..)| std::cmp::Reverse(*start));
+    for (start, end, rendered) in replaced {
+        out.replace_range(start..end, &rendered);
+    }
+    if !appended.is_empty() {
+        if !out.is_empty() && !out.ends_with('\n') {
+            out.push('\n');
+        }
+        out.push_str(&appended);
+    }
+    Ok(out)
+}
+
+/// The offset just past the last line of the entry whose key starts at
+/// `start` and whose value the loader ends at `end`.
+///
+/// The loader's span of a block value can run on over the blank lines and the
+/// comment lines before the next key, and those belong to whatever follows, so
+/// they are not the entry's: the entry ends after its last line that holds
+/// anything other than a comment.
+fn entry_end(text: &str, start: usize, end: usize) -> usize {
+    // The whole of the line `end` falls on, unless it already starts one.
+    let end = match end == 0 || text.as_bytes().get(end - 1) == Some(&b'\n') {
+        true => end,
+        false => match text[end..].find('\n') {
+            Some(at) => end + at + 1,
+            None => text.len(),
+        },
+    };
+    let mut last = start;
+    let mut at = start;
+    for line in text[start..end].split_inclusive('\n') {
+        at += line.len();
+        let content = line.trim();
+        if !content.is_empty() && !content.starts_with('#') {
+            last = at;
+        }
+    }
+    last
+}
+
+/// One entry as [`write`] renders it: the identifier as a key at the start of
+/// its line, and each value double-quoted, so a commit of digits alone never
+/// reads as a number.
+fn render(entry: &Observation) -> String {
+    let key = key(entry.id());
+    match entry {
+        Observation::Control { commit, .. } => {
+            format!("{key}:\n  kind: control\n  commit: {}\n", quoted(commit))
+        }
+        Observation::Verification {
+            commit,
+            criterion_digest,
+            ..
+        } => format!(
+            "{key}:\n  kind: verification\n  commit: {}\n  criterion_digest: {}\n",
+            quoted(commit),
+            quoted(criterion_digest)
+        ),
+    }
+}
+
+/// An identifier as a key: plain where every character is one an identifier
+/// of this engine is minted from, and double-quoted otherwise.
+fn key(id: &str) -> String {
+    let plain = !id.is_empty()
+        && id.chars().next().is_some_and(|c| c.is_ascii_alphanumeric())
+        && id
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'));
+    match plain {
+        true => id.to_string(),
+        false => quoted(id),
+    }
+}
+
+fn quoted(text: &str) -> String {
+    format!("\"{}\"", text.replace('\\', "\\\\").replace('"', "\\\""))
 }
 
 #[cfg(test)]
@@ -972,5 +1176,86 @@ mod tests {
         // `Verification` entry shares the string but not the population, and
         // does not itself introduce a second report of it.
         assert_eq!(duplicate_ids(&entries), vec!["SAME-ID".to_string()]);
+    }
+
+    fn verification(id: &str, commit: &str, digest: &str) -> Observation {
+        Observation::Verification {
+            verification: id.to_string(),
+            commit: commit.to_string(),
+            criterion_digest: digest.to_string(),
+        }
+    }
+
+    /// A commit of digits alone is quoted, so the reader takes it as the text
+    /// it is, and an empty snapshot gains exactly the one entry.
+    #[test]
+    fn splice_writes_an_entry_the_reader_reads_back_as_written() {
+        let entry = verification("VER-1", "12345678", "sha256:abc");
+        let text = splice("", std::slice::from_ref(&entry)).expect("an empty snapshot splices");
+        assert_eq!(
+            text,
+            "VER-1:\n  kind: verification\n  commit: \"12345678\"\n  criterion_digest: \
+             \"sha256:abc\"\n"
+        );
+        assert_eq!(Observations::parse(&text).entries(), &[entry]);
+    }
+
+    /// An entry an adopter wrote by hand that already reads as asked keeps its
+    /// bytes, so a second run never re-renders it.
+    #[test]
+    fn splice_leaves_an_entry_that_already_reads_as_asked() {
+        let text = "VER-1: {kind: verification, commit: abcd, criterion_digest: 'sha256:x'}\n";
+        let entry = verification("VER-1", "abcd", "sha256:x");
+        assert_eq!(splice(text, &[entry]).expect("it splices"), text);
+    }
+
+    /// A key that does not start its line has no line range this writer can
+    /// replace without re-rendering what is around it.
+    #[test]
+    fn splice_refuses_a_key_it_would_replace_that_does_not_start_its_line() {
+        let text = "{VER-1: {kind: verification, commit: abcd, criterion_digest: x}}\n";
+        let refused = splice(text, &[verification("VER-1", "beef", "sha256:y")])
+            .expect_err("a flow mapping is refused");
+        assert!(refused.contains("VER-1"), "{refused}");
+    }
+
+    /// Two keys of one identifier leave the writer no entry to replace, and
+    /// the loader refuses the file before the writer looks for one.
+    #[test]
+    fn splice_refuses_an_identifier_that_is_a_key_twice() {
+        let text = "VER-1:\n  commit: abcd\nVER-1:\n  commit: beef\n";
+        let refused = splice(text, &[verification("VER-1", "cafe", "sha256:y")])
+            .expect_err("a duplicate key is refused");
+        assert!(refused.contains("duplicate key `VER-1`"), "{refused}");
+    }
+
+    /// The comment and the blank line after an entry belong to what follows,
+    /// and the last entry of a file with no final newline is replaced whole.
+    #[test]
+    fn splice_replaces_the_entry_and_not_the_comment_after_it() {
+        let text = "VER-1:\n  kind: verification\n  commit: abcd\n  criterion_digest: \
+                    old\n\n# next\nVER-2:\n  commit: abcd";
+        let one = verification("VER-1", "beef", "sha256:new");
+        let two = verification("VER-2", "beef", "sha256:two");
+        let out = splice(text, &[two.clone(), one.clone()]).expect("it splices");
+        assert_eq!(
+            out,
+            "VER-1:\n  kind: verification\n  commit: \"beef\"\n  criterion_digest: \
+             \"sha256:new\"\n\n# next\nVER-2:\n  kind: verification\n  commit: \"beef\"\n  \
+             criterion_digest: \"sha256:two\"\n"
+        );
+        assert_eq!(Observations::parse(&out).entries(), &[one, two]);
+    }
+
+    /// A present file that does not read is refused, and is not treated as the
+    /// empty snapshot an absent file is.
+    #[test]
+    fn splice_refuses_a_snapshot_that_does_not_read() {
+        let refused = splice(
+            "- a\n- list\n",
+            &[verification("VER-1", "beef", "sha256:y")],
+        )
+        .expect_err("a list is refused");
+        assert!(refused.contains("does not read"), "{refused}");
     }
 }

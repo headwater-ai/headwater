@@ -72,6 +72,16 @@ fn state(out: &str, id: &str) -> String {
         .to_string()
 }
 
+/// The findings of the suspect rule in the text report. The census of rule
+/// instances names the rule too, as `<n> instances of <rule>`, and that line is
+/// no finding.
+fn findings(out: &str) -> usize {
+    out.lines()
+        .map(str::trim)
+        .filter(|line| line.starts_with("relation.target.verification.suspect"))
+        .count()
+}
+
 /// The round trip the issue exists for: the written digest is the one the
 /// reader accepts, an edit to the criterion makes it suspect, and a second run
 /// of the writer makes it observed again.
@@ -95,10 +105,9 @@ fn what_observe_writes_check_reads_as_observed_and_an_edited_criterion_reads_sus
         format!("{VERIFICATION} observed at {COMMIT}"),
         "{observed:?}"
     );
-    assert!(
-        !observed
-            .out
-            .contains("relation.target.verification.suspect"),
+    assert_eq!(
+        findings(&observed.out),
+        0,
         "an observed verification is no finding: {}",
         observed.out
     );
@@ -118,11 +127,7 @@ fn what_observe_writes_check_reads_as_observed_and_an_edited_criterion_reads_sus
         format!("{VERIFICATION} suspect since {COMMIT}, {CRITERION} changed"),
         "{suspect:?}"
     );
-    assert!(
-        suspect.out.contains("relation.target.verification.suspect"),
-        "{}",
-        suspect.out
-    );
+    assert_eq!(findings(&suspect.out), 1, "{}", suspect.out);
 
     let again = root.run(&["observe", VERIFICATION, "--commit", COMMIT]);
     assert_eq!(again.code, Some(0), "{again:?}");
@@ -250,8 +255,11 @@ fn a_verification_two_criteria_reach_or_none_reaches_is_refused_with_the_criteri
     place(&root, "HW-AC-0004", |text| {
         text.replace("HW-VER-0003", VERIFICATION)
     });
-    // HW-VER-0003 is copied without the criterion it proves.
-    place(&root, "HW-VER-0003", |text| text);
+    // HW-VER-0003 is copied with the criterion it proves renamed to one this
+    // root does not hold, so no criterion reaches it.
+    place(&root, "HW-VER-0003", |text| {
+        text.replace("HW-AC-0004", "HW-AC-9999")
+    });
 
     let ran = root.run(&["observe", VERIFICATION, "HW-VER-0003", "--commit", COMMIT]);
     assert_eq!(ran.code, Some(1), "{ran:?}");

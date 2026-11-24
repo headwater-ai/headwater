@@ -335,6 +335,17 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                  .headwater/change/manifest`",
             ),
         },
+        Verb::Observe {
+            verifications,
+            commit,
+        } => match (verifications.is_empty(), commit) {
+            (false, Some(commit)) => observe(root, &verifications, &commit),
+            _ => fail(
+                "`observe` takes one or more verification identifiers and the commit they passed \
+                 at. Try `headwater observe HW-VER-0001 --commit \"$GITHUB_SHA\"` in the CI step \
+                 that ran the verification",
+            ),
+        },
         Verb::Gate {
             read_set,
             now,
@@ -6174,6 +6185,69 @@ fn change(
             ExitCode::SUCCESS
         }
         Err(message) => fail(&message),
+    }
+}
+
+/// `headwater observe`: the writer of `kind: verification` entries of the
+/// observation snapshot (#2024).
+///
+/// The corpus loads the way `check` loads it, so the criterion digest each
+/// entry records is the census digest `check` compares it with, and the
+/// criterion is the one `headwater_check::verification::reached` walks to for
+/// the report line. It prints one line on standard output for each entry the
+/// snapshot holds as asked, and one line on standard error for each
+/// identifier it refused. It exits 1 when it refused anything.
+fn observe(root: &Path, verifications: &[String], commit: &str) -> ExitCode {
+    let loaded = match opened(root) {
+        Ok(loaded) => loaded,
+        Err(code) => return code,
+    };
+    let plan = match headwater_check::verification::plan(
+        &loaded.relations,
+        &loaded.census,
+        &loaded.graph,
+        verifications,
+        commit,
+    ) {
+        Ok(plan) => plan,
+        Err(message) => return fail(&message),
+    };
+    for (id, reason) in &plan.refused {
+        eprintln!(
+            "headwater: {}",
+            err(&format!("`{id}` has no entry: {reason}"))
+        );
+    }
+    let entries: Vec<headwater_check::Observation> = plan
+        .entries
+        .iter()
+        .map(|(entry, _)| entry.clone())
+        .collect();
+    if !entries.is_empty() {
+        let wrote = match headwater_check::observation::write(root, &entries) {
+            Ok(wrote) => wrote,
+            Err(message) => return fail(&message),
+        };
+        for (entry, criterion) in &plan.entries {
+            if let headwater_check::Observation::Verification {
+                verification,
+                criterion_digest,
+                ..
+            } = entry
+            {
+                println!("{verification} observed at {commit}, {criterion} at {criterion_digest}");
+            }
+        }
+        if wrote == headwater_check::observation::Wrote::Unchanged {
+            eprintln!(
+                "headwater: {} already held every entry as asked, and nothing was written",
+                headwater_check::observation::PATH
+            );
+        }
+    }
+    match plan.refused.is_empty() {
+        true => ExitCode::SUCCESS,
+        false => ExitCode::FAILURE,
     }
 }
 
