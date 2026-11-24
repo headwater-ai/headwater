@@ -300,6 +300,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
         Verb::Check {
             strict,
             fix,
+            baseline,
             no_cache,
             now,
             change,
@@ -314,6 +315,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 strict,
                 cached: !no_cache,
                 fixing: fix,
+                baseline,
                 now,
                 read_set,
                 register_out: register,
@@ -6546,6 +6548,7 @@ struct Asked {
     strict: bool,
     cached: bool,
     fixing: bool,
+    baseline: bool,
     now: Option<Date>,
     read_set: Option<PathBuf>,
     register_out: Option<PathBuf>,
@@ -6582,6 +6585,7 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
         strict,
         cached,
         fixing,
+        baseline,
         now,
         read_set,
         register_out,
@@ -6627,6 +6631,7 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
         ))?;
         return Ok(ExitCode::FAILURE);
     };
+    let ctx = ctx.with_baseline(baseline);
     // The second injected value, read here and bound after the walk below. A
     // manifest this engine cannot read is a refusal rather than a shorter
     // change: a line that was dropped reads as a document that did not move,

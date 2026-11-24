@@ -529,13 +529,16 @@ impl<'a> Surface<'a> {
                 false => edge.target.reach(),
             },
             digest: match (inbound, &edge.target) {
-                (false, Target::Anchor { resolver, revision, .. }) if resolver == "source-tree" => {
-                    revision.get().map(|current| Digest {
-                        current: current.to_string(),
-                        recorded: edge.verified_revision().map(str::to_string),
-                        baseline: edge.verified_as_baseline(),
-                    })
-                }
+                (
+                    false,
+                    Target::Anchor {
+                        resolver, revision, ..
+                    },
+                ) if resolver == "source-tree" => revision.get().map(|current| Digest {
+                    current: current.to_string(),
+                    recorded: edge.verified_revision().map(str::to_string),
+                    baseline: edge.verified_as_baseline(),
+                }),
                 _ => None,
             },
             pointer,

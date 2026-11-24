@@ -390,6 +390,16 @@ pub enum Verb {
         )]
         fix: bool,
         #[arg(
+            long,
+            help = "offer a baseline stamp on each `governs`-like edge that records no \
+                    `verified_revision`: the digest the edge reaches now, with `verified_as: \
+                    baseline` beside it, which says that nobody read the target against the \
+                    document. It needs no `--change`. With `--fix` it writes each stamp, and \
+                    without it each is reported at `info`. An edge the change states was re-read \
+                    takes a reading stamp instead, with no marker"
+        )]
+        baseline: bool,
+        #[arg(
             long = "no-cache",
             help = "read and write no cache, and evaluate every instance. This run and a cached \
                     one write the same bytes to standard output, and a difference between them is \

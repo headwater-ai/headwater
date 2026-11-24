@@ -149,6 +149,13 @@ taxonomy: headwater/standard
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
 #
+# 4.24.0 adds one edge attribute and removes nothing, so it is a minor.
+# `governs` declares `verified_as`, the marker that says how its
+# `verified_revision` was recorded. `headwater check --fix --baseline` writes
+# `verified_as: baseline` beside a first digest that nobody read against the
+# target, so a baseline stays distinguishable from a stamp that records a
+# reading. A reading stamp drops the marker (#2016).
+#
 # 4.23.0 widens one statement and one promotion threshold, and adds and
 # removes no declaration, so it is a minor. OB-REL-12 now also covers a change
 # that removes the last governance edge onto a file inside the governed scope:
@@ -364,7 +371,7 @@ taxonomy: headwater/standard
 # each carries a recipe rather than a bare instruction. One package version
 # covers every content file it publishes, this one included, so the number
 # here moves with a change to either.
-version: 4.23.0
+version: 4.24.0
 
 purposes:
   rationale:
@@ -550,10 +557,14 @@ relations:
     created_by: agent
     # The digest of the bytes the target reached when the governing document
     # was last verified against it. `relation.target.suspect` compares it
-    # against the digest `source-tree` states now, and `headwater check --fix`
-    # records it only on a document whose `last_verified` is today (#952).
+    # against the digest `source-tree` states now. `headwater check --fix`
+    # records it on an edge that the run's change states was re-read (#1520),
+    # or as a baseline under `--baseline`, which records no reading.
+    # `verified_as: baseline` marks such a baseline, and a reading stamp drops
+    # it (#2016).
     attributes:
       verified_revision: {type: string, owner: edge}
+      verified_as: {type: string, owner: edge}
   constrains:
     family: governance
     from: [decision]

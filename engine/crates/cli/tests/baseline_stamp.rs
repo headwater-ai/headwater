@@ -136,24 +136,33 @@ fn a_baseline_stamp_writes_the_printed_digest_and_says_it_is_a_baseline() {
     let checked = root.run(&["check"]);
     let found = suspect(&checked.out);
     assert_eq!(found.len(), 1, "{}", checked.out);
-    assert!(found[0].contains(LIST), "{}", found[0]);
+    // The text report wraps a finding, so the case reads it as one line.
+    let flat = checked.out.split_whitespace().collect::<Vec<_>>().join(" ");
     assert!(
-        checked.out.contains(
-            "The recorded digest is a baseline, written by `headwater check --fix --baseline`"
+        flat.contains(&format!("declares `governs: {LIST}`")),
+        "{flat}"
+    );
+    assert!(
+        flat.contains(
+            "The recorded digest is a baseline, written by `headwater check --fix --baseline`, \
+             and it records no reading of what the entry reaches"
         ),
-        "{}",
-        checked.out
+        "{flat}"
     );
     let current = field(&root, LIST, &["digest", "current"]).expect("a digest");
     let recorded = field(&root, LIST, &["digest", "recorded"]).expect("a recorded digest");
     assert_ne!(current, recorded);
     let explained = root.run(&["explain", DOCUMENT]);
+    let flat = explained
+        .out
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ");
     assert!(
-        explained.out.contains(&format!(
+        flat.contains(&format!(
             "(content now {current}, recorded {recorded} as a baseline, which records no reading)"
         )),
-        "{}",
-        explained.out
+        "{flat}"
     );
 
     // Step 7: a change states that the author re-read the list edge.
