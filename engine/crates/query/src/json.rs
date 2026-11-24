@@ -58,7 +58,14 @@ use headwater_yaml::json::Json;
 /// document names the relation as this document stands to the far end, from
 /// both ends. No member was added or removed, but a `1.1` reader that undid the
 /// old naming would now undo a correct one, so the version moved.
-pub const VERSION: &str = "1.2";
+///
+/// `1.3` added a fourth value of `evidence.by` on a route pointer:
+/// `identifier`, with an `identifiers` member, for a document the task named by
+/// its live or former identifier (#2025). It moved the version for the reason
+/// `1.1` did: the contract page closed the set at `anchor`, `name` and `terms`,
+/// so a `1.2` reader may read this pointer as ranked. A `1.2` document never
+/// writes `identifier`.
+pub const VERSION: &str = "1.3";
 
 /// One route as JSON.
 pub fn route(route: &Route) -> String {
@@ -267,6 +274,10 @@ fn of_evidence(evidence: &Evidence) -> Json {
                         .collect(),
                 ),
             ),
+        ]),
+        Evidence::Identified { identifiers, .. } => Json::object([
+            ("by", Json::string("identifier")),
+            ("identifiers", strings(identifiers)),
         ]),
         Evidence::Titled { words } => {
             Json::object([("by", Json::string("name")), ("words", strings(words))])

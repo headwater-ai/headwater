@@ -160,6 +160,13 @@ pub const VERBS: &[Verb] = &[
         words: &[],
     },
     Verb {
+        name: "observe",
+        group: "Checking a corpus",
+        summary: "record that verifications passed at a commit",
+        description: "Record that each named verification passed at the commit given, as one `kind: verification` entry of `.headwater/observations.yml`. Each entry carries the digest of the one criterion that reaches the verification, taken from the census `check` compares it with, so `check` reads the verification as observed until that criterion changes. Every other entry and comment of the file keeps its bytes, and a second run with the same input writes nothing. It refuses a commit that is not 4 to 40 hexadecimal digits and a snapshot that does not read, and writes nothing then. It refuses an identifier that names no verification, or one that no criterion or more than one reaches, writes the others, and exits non-zero. It does not ask version control whether the commit exists.",
+        words: &[],
+    },
+    Verb {
         name: "gate",
         group: "Checking a corpus",
         summary: "hold an earlier run's read set against the tree in front of it",

@@ -346,17 +346,35 @@ pub fn contents_for(claimant: &str) -> String {
     format!("{claimant}\n")
 }
 
-/// Every identifier the phase-A report says two documents claim.
+/// Every identifier the phase-A report says two documents claim, and that two
+/// documents of the index hold as their live identifier.
 ///
 /// Both rules skip such an identifier. One path cannot hold two claimants, so
-/// a claim written for a contended identifier would silently pick a winner.
-fn contended(identity: &[headwater_graph::index::Reported]) -> Vec<&str> {
+/// a claim written for a contended identifier would silently pick a winner. A
+/// value that one document holds live and another lists as former is no
+/// contention over the claim file: the document that holds it as its `id` is
+/// its only claimant, and its claim is still owed (#2025).
+///
+/// The live holders are counted on the index, and not read off the report's
+/// `former` flag. The index compares each claim with the first one only, so
+/// where a former claim comes first in path order, two live claims of one
+/// value are both reported as former pairs.
+fn contended<'a>(identity: &'a [headwater_graph::index::Reported], index: &Index) -> Vec<&'a str> {
+    let live_holders = |id: &str| {
+        index
+            .typed
+            .iter()
+            .chain(index.untyped.iter())
+            .filter(|node| node.id == id)
+            .count()
+    };
     let mut out: Vec<&str> = identity
         .iter()
         .filter_map(|reported| match &reported.defect {
             Defect::Duplicate { id, .. } => Some(id.as_str()),
             _ => None,
         })
+        .filter(|id| live_holders(id) > 1)
         .collect();
     out.sort_unstable();
     out.dedup();
@@ -418,7 +436,7 @@ fn claiming(shape: &Shape, taxonomy: &Taxonomy) -> Vec<(String, String)> {
 
 impl CorpusCheck for Missing<'_> {
     const RULE: &'static str = self::MISSING;
-    /// The second edition. Edition 1 read the `reconcile-first` schemes alone.
+    /// The third edition. Edition 1 read the `reconcile-first` schemes alone.
     /// Edition 2 reads [`takes_a_claim`], which adds every scheme on a shelf
     /// that declares a `layout`.
     ///
@@ -435,11 +453,14 @@ impl CorpusCheck for Missing<'_> {
     /// now does, for this rule and every rule it ledgers: a verdict that moves
     /// at an unchanged edition fails there.
     ///
+    /// Edition 3 owes the claim of a value that one document holds live and
+    /// another lists as former, which edition 2 skipped as contended (#2025).
+    ///
     /// Raise the rule version when a rule's behavior changes.
-    const VERSION: u32 = 2;
+    const VERSION: u32 = 3;
     /// The duplicate guard reads the build's own report, on
-    /// [`crate::duplicate`]'s terms, rather than comparing identifiers a second
-    /// time.
+    /// [`crate::duplicate`]'s terms, and counts the live holders of each value
+    /// it reports on the index, as [`contended`] says.
     const NEEDS_PHASE_A: bool = true;
     const NEEDS_CLAIMS: bool = true;
 
@@ -450,7 +471,7 @@ impl CorpusCheck for Missing<'_> {
         let Some(claims) = view.claims() else {
             return Outcome::Skipped(NO_STORE.to_string());
         };
-        let contended = contended(identity);
+        let contended = contended(identity, self.index);
         let mut findings = Vec::new();
         for node in &self.index.typed {
             let Some(kind) = node.kind.as_deref() else {

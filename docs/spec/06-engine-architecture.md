@@ -161,6 +161,7 @@ headwater check       [--strict] [--fix] [--no-cache] [--now <date>] [--change <
                       [--read-set <path>] [--register <path>]
                       [--format text|json|sarif|markdown | --json]
 headwater change      <base-rev> <out-dir>
+headwater observe     <verification>... --commit <sha>
 headwater gate        --read-set <path> [--now <date>] [--json]
 headwater derived
 headwater site        <site-dir>

@@ -73,6 +73,9 @@ _headwater() {
             headwater,new)
                 cmd="headwater__subcmd__new"
                 ;;
+            headwater,observe)
+                cmd="headwater__subcmd__observe"
+                ;;
             headwater,probe)
                 cmd="headwater__subcmd__probe"
                 ;;
@@ -158,7 +161,7 @@ _headwater() {
 
     case "${cmd}" in
         headwater)
-            opts="-V -h --root --version --wide --no-color --no-banner --help check change gate conformance derived site merge-driver route neighbors explain show query capture mcp new infer generate import export sweep probe init taxonomy json help completions"
+            opts="-V -h --root --version --wide --no-color --no-banner --help check change observe gate conformance derived site merge-driver route neighbors explain show query capture mcp new infer generate import export sweep probe init taxonomy json help completions"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 1 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -681,6 +684,28 @@ _headwater() {
                     return 0
                     ;;
                 --now)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --root)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        headwater__subcmd__observe)
+            opts="-V -h --commit --root --version --wide --no-color --no-banner --help"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                --commit)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;

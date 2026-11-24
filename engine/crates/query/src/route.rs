@@ -211,6 +211,17 @@ pub enum Evidence {
         /// Empty where no such edge is suspect (#953).
         suspect: Vec<Suspect>,
     },
+    /// The task wrote an identifier of the document, live or former. Nothing
+    /// was ranked (#2025). Spec 3 *Identifiers* states that a former
+    /// identifier resolves to the document that lists it.
+    Identified {
+        /// The identifiers the task wrote, in task order, as [`readings`]
+        /// left each word. One that differs from `live` is former.
+        identifiers: Vec<String>,
+        /// The live identifier of the document, which the pointer also
+        /// carries. The text line needs it to say what a former one became.
+        live: String,
+    },
     /// The task repeated the declared name of the document. Nothing was
     /// ranked ([HW-DR-0109](../../../../docs/decisions/0109-a-task-that-repeats-the-declared-name-of-a-document-names-that-document.md)).
     Titled {
@@ -272,6 +283,14 @@ impl Evidence {
                 }
                 text
             }
+            Evidence::Identified { identifiers, live } => identifiers
+                .iter()
+                .map(|written| match written == live {
+                    true => format!("names its identifier, {written}"),
+                    false => format!("names its former identifier, {written} (now {live})"),
+                })
+                .collect::<Vec<_>>()
+                .join("\n"),
             Evidence::Titled { words } => format!("repeats its name, {}", words.join(" ")),
             Evidence::Ranked { terms, rank, of } => {
                 format!("matched {}, rank {rank} of {of}", terms.join(" "))
@@ -522,7 +541,13 @@ impl Surface<'_> {
         // The named set is in derived reading precedence, as each other block
         // of the route is: a successor before what it superseded, and a
         // governing document before the one it governs.
-        let mut named = self.named_documents(task, &anchored, &mut evidence);
+        // A document the task named by an identifier, live or former, is
+        // named for the same reason (#2025). It runs before the name step,
+        // so a document both identified and titled is offered once, as
+        // identified.
+        let mut named = self.identified_documents(task, &anchored, &mut evidence);
+        let skip: Vec<Pointer> = anchored.iter().chain(&named).cloned().collect();
+        named.extend(self.named_documents(task, &skip, &mut evidence));
         self.by_precedence(&mut named);
 
         // The budget never reaches this set, on any of the three branches
@@ -687,6 +712,57 @@ impl Surface<'_> {
         route.pointers.extend(offered);
         route.evidence = evidence_for(&route.pointers, &evidence);
         route
+    }
+
+    /// The documents whose identifier, live or former, the task writes as one
+    /// word, in task order, less those already anchored. Each one adds its
+    /// evidence to `evidence`.
+    ///
+    /// A word is read through [`readings`], so the prose around it comes off:
+    /// `HW-DR-0001.` and `(HW-DR-0001)` both name `HW-DR-0001`. The first
+    /// reading the index resolves is the identifier. The match is exact and
+    /// keeps case, as [`headwater_graph::index::Index::node`] does, so nothing
+    /// is inferred and the purpose gate has nothing to decide.
+    fn identified_documents(
+        &self,
+        task: &str,
+        anchored: &[Pointer],
+        evidence: &mut Vec<(String, Evidence)>,
+    ) -> Vec<Pointer> {
+        let mut identified: Vec<Pointer> = Vec::new();
+        for word in task.split_whitespace() {
+            let Some((written, node)) = readings(word)
+                .into_iter()
+                .find_map(|reading| Some((reading.clone(), self.graph.index.node(&reading)?)))
+            else {
+                continue;
+            };
+            let Some(document) = self.find(&node.path) else {
+                continue;
+            };
+            let pointer = self.pointer(&document);
+            if anchored.contains(&pointer) {
+                continue;
+            }
+            match evidence.iter_mut().find(|(path, _)| path == &pointer.path) {
+                Some((_, Evidence::Identified { identifiers, .. })) => {
+                    if !identifiers.contains(&written) {
+                        identifiers.push(written);
+                    }
+                }
+                _ => {
+                    evidence.push((
+                        pointer.path.clone(),
+                        Evidence::Identified {
+                            identifiers: vec![written],
+                            live: node.id.clone(),
+                        },
+                    ));
+                    identified.push(pointer);
+                }
+            }
+        }
+        identified
     }
 
     /// The documents whose declared name the task repeats, in census order,

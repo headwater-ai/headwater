@@ -526,6 +526,25 @@ pub enum Verb {
         )]
         verified_edge: Vec<String>,
     },
+    Observe {
+        #[arg(
+            value_name = "verification",
+            help = "the identifier of a verification that passed, repeatable. Each one is a \
+                    `kind: verification` entry of `.headwater/observations.yml`, written or \
+                    replaced"
+        )]
+        verifications: Vec<String>,
+        // Optional here and required by the verb, on the terms `change` states
+        // for its base revision: the refusal names what a commit is for.
+        #[arg(
+            long,
+            value_name = "sha",
+            help = "the commit the verifications passed at, 4 to 40 hexadecimal digits, such as \
+                    `$GITHUB_SHA` in a CI job. It is recorded as provenance and never compared \
+                    with the history of this clone"
+        )]
+        commit: Option<String>,
+    },
     Gate {
         // Optional here and required by the verb, so that the refusal a caller
         // reads is the one the verb wrote: it names what a read set is and how

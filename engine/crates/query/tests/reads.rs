@@ -566,6 +566,7 @@ fn every_decision_record_is_offered_for_its_own_title_inside_the_default_budget(
             offered.map_or("-".to_string(), |at| (at + 1).to_string()),
             offered.map_or("-", |at| match route.evidence[at] {
                 headwater_query::Evidence::Named { .. } => "anchor",
+                headwater_query::Evidence::Identified { .. } => "identifier",
                 headwater_query::Evidence::Titled { .. } => "name",
                 headwater_query::Evidence::Ranked { .. } => "terms",
             })
@@ -598,6 +599,86 @@ fn every_decision_record_is_offered_for_its_own_title_inside_the_default_budget(
     assert_eq!(
         one_word, ONE_WORD_TITLES,
         "the records outside the property by the rule"
+    );
+}
+
+/// The paths of a route whose pointer the identifier step offered.
+fn identified_by_the_task(route: &headwater_query::Route) -> Vec<&str> {
+    route
+        .pointers
+        .iter()
+        .zip(&route.evidence)
+        .filter(|(_, evidence)| matches!(evidence, headwater_query::Evidence::Identified { .. }))
+        .map(|(pointer, _)| pointer.path.as_str())
+        .collect()
+}
+
+/// A task that writes the live identifier of a record of this repository is
+/// offered that record by its identifier, with the identifier as the task
+/// wrote it (#2025). Without the step, `HW-DR-0068` splits into the terms
+/// `hw`, `dr` and `0068`, and no step sees the whole identifier.
+#[test]
+fn a_task_that_writes_an_identifier_is_offered_its_document_by_that_identifier() {
+    let built = this_repository();
+    let surface = built.surface();
+    let route = surface.route("what does HW-DR-0068 rule?", Budget::default());
+    let identified = identified_by_the_task(&route);
+    assert_eq!(identified.len(), 1, "{}", route.render(PLAIN));
+    assert!(
+        identified[0].starts_with("docs/decisions/0068-"),
+        "{}",
+        route.render(PLAIN)
+    );
+    let at = route
+        .pointers
+        .iter()
+        .position(|pointer| pointer.path == identified[0])
+        .expect("the pointer is offered");
+    assert_eq!(
+        route.evidence[at],
+        headwater_query::Evidence::Identified {
+            identifiers: vec!["HW-DR-0068".to_string()],
+            live: "HW-DR-0068".to_string(),
+        }
+    );
+    assert!(
+        route
+            .render(PLAIN)
+            .contains("names its identifier, HW-DR-0068"),
+        "{}",
+        route.render(PLAIN)
+    );
+
+    // A document both anchored and identified is offered once, as anchored.
+    // HW-DR-0109 governs the route's own source.
+    let both = surface.route(
+        "edit engine/crates/query/src/route.rs as HW-DR-0109 rules",
+        Budget::default(),
+    );
+    let at: Vec<usize> = both
+        .pointers
+        .iter()
+        .enumerate()
+        .filter(|(_, pointer)| pointer.path.starts_with("docs/decisions/0109-"))
+        .map(|(at, _)| at)
+        .collect();
+    assert_eq!(at.len(), 1, "{}", both.render(PLAIN));
+    assert!(
+        matches!(
+            both.evidence[at[0]],
+            headwater_query::Evidence::Named { .. }
+        ),
+        "{}",
+        both.render(PLAIN)
+    );
+
+    // Case is kept, as the index keeps it, so a lower-case word is no
+    // identifier.
+    let lower = surface.route("what does hw-dr-0068 rule?", Budget::default());
+    assert!(
+        identified_by_the_task(&lower).is_empty(),
+        "{}",
+        lower.render(PLAIN)
     );
 }
 
@@ -657,7 +738,8 @@ fn a_task_names_only_the_documents_whose_name_it_repeats() {
 
 /// A named pointer comes after the anchored ones and before the ranked ones,
 /// once, and JSON writes its evidence as `by: name` with the words, in a
-/// document of version `1.1` or later (HW-DR-0109), `1.2` today (#1901).
+/// document of version `1.1` or later (HW-DR-0109), `1.3` today (#1901,
+/// #2025).
 #[test]
 fn a_named_pointer_is_offered_once_before_the_ranked_ones_and_written_as_by_name() {
     let built = fixture_tree();
@@ -698,7 +780,7 @@ fn a_named_pointer_is_offered_once_before_the_ranked_ones_and_written_as_by_name
             headwater_yaml::Value::Map(_) => panic!("a mapping at {path:?}"),
         }
     };
-    assert_eq!(at(&["version"]), "1.2", "{json}");
+    assert_eq!(at(&["version"]), "1.3", "{json}");
     assert_eq!(at(&["pointers", "0", "evidence", "by"]), "name", "{json}");
     assert_eq!(
         at(&["pointers", "0", "evidence", "words"]),
