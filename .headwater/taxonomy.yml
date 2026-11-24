@@ -17,9 +17,9 @@
 
 taxonomy:
   package: headwater/standard
-  version: 4.23.0
-  digest: sha256:22bd4ef1302881f729a370e89e488d9978b844879a6b6573841cdedb636565e7
-  bundles: [design-spec, evidence-and-obligation, decision-record]
+  version: 4.24.0
+  digest: sha256:e0d5607411553c13bebfda1c49c945f6622337d17a4c222f845e6db6f363cda8
+  bundles: [design-spec, evidence-and-obligation, decision-record, requirement-verification]
   overlay: .headwater/overlay.yml
 
 # The engine this corpus asks for, in the range syntax of `requires_engine`

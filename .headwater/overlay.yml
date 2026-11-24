@@ -898,491 +898,30 @@ add:
     kind: process_how_to
 
   # --- the requirement layer ------------------------------------------------
-  # Spec 3 gives a stable name to five artifacts: "decisions, requirements,
-  # acceptance criteria, controls, and obligations". Three of the five had a
-  # kind and an identifier scheme before this block. Two did not, and
-  # [HW-EVAL-specifying-the-engine](../docs/evaluations/specifying-the-engine.md)
-  # reports the gap as its first finding: "Spec 3 names two identified artifacts
-  # that the schema cannot express." The two kinds below close it. No
-  # specification part changes, because that sentence is now satisfied rather
-  # than contradicted.
-  #
-  # **Both kinds serve the natively authored population, and nothing here
-  # carries a transcribed one.**
-  # [Q35](../docs/decisions/0035-q35-whether-one-requirement-kind-holds-an-imported-requirement-and-an-authored-one.md)
-  # rules that `requirement` and `acceptance_criterion` serve the authored
-  # population, and that a separate kind carries the imported one. This
-  # repository declares no imported kind, because Q35 leaves that kind to an
-  # adopter who has an upstream and this repository has none. That ruling is
-  # what lets both kinds below require a facet and require sections: every
-  # document of either kind is authored here, so every rule reads every one of
-  # them. Q35 also says that `verified_by` names both kinds at its `from` end.
-  # That sentence is about an adopter corpus that holds the imported kind, and
-  # one endpoint is the correct reading in a corpus that holds none.
-  #
-  # **It is in this overlay and not in `docs/taxonomies/`, and criterion 4 of
-  # the library index is the reason.** An entry is admitted when it "carries a
-  # worked instance corpus", and no requirement existed anywhere in this
-  # repository until this change. A taxonomy that never met a document is a
-  # guess about a tradition, which is what that criterion refuses. The pair of
-  # documents beside this block is the start of that corpus, and an entry can be
-  # proposed on the day there are enough documents to admit it with. This is the
-  # route `probe` and `interface_contract` both took, and `interface_contract`
-  # has since grown 19 documents under `docs/interfaces/`.
-  #
-  # **Criterion 6 refuses the addresses a library entry would want.** The
-  # `brd-prd` entry already holds `purposes.requirement`, and `shelves.requirements`
-  # at `docs/requirements/**`. An entry would collide on both, and criterion 6
-  # leaves it a rename or a `requires: [brd-prd]` dependency. The dependency is
-  # refused here, because it would pull in the `brd` and `prd` kinds, which this
-  # repository does not hold and no reader of it asks for. An adopter overlay is
-  # not a bundle and answers to no confluence check against a bundle that
-  # `.headwater/taxonomy.yml` does not select, so the local declaration takes
-  # the natural names. The collision is safe today and it is a constraint on any
-  # later entry.
-  #
-  # **What a promotion to `docs/taxonomies/` would have to rename, stated here
-  # so that work does not rediscover it.** Three addresses collide with the
-  # `brd-prd` entry: `purposes.requirement`, `shelves.requirements` at
-  # `docs/requirements/**`, and `shelves.acceptance_criteria`, which claims a
-  # sibling path under the same reading of that tradition. The shelf is the hard
-  # one. `brd-prd` declares `docs/requirements/**` heterogeneous over
-  # `[brd, prd]` with a `requirement_tier` discriminator, and the shelf below is
-  # homogeneous over one kind, so the two shapes cannot merge. Criterion 6's
-  # second remedy, a declared dependency where both entries mean the same thing,
-  # is therefore unavailable, and a rename is the only route. Whoever writes
-  # that entry renames all three, or proposes that the two become one entry that
-  # rules on the tier question first.
-  #
-  # **The purpose is new, and each of the five that exist was read first.**
-  # `rationale` is retrospective and belongs to a choice already made.
-  # `behavior` states what the system does now, and a requirement states what a
-  # thing must do before it is built. `evidence` is wrong for an acceptance
-  # criterion, which is the standard a measurement is read against rather than
-  # the measurement, and `probe` is the kind that serves `evidence` in this
-  # territory. `obligation` is spec 4's word for what the corpus owes. Both
-  # kinds below serve `requirement`, which is ordinary here, because four kinds
-  # share `evidence` today.
-  #
-  # **Two homogeneous shelves, and not one heterogeneous shelf with a
-  # discriminator facet.** The probe layer above already took that reading in
-  # writing: a homogeneous shelf keeps the front matter of a document short, the
-  # shelf states the kind, and spec 2 refuses a facet that restates it. A
-  # discriminator facet is metadata that restates placement, which OB-PLACE-1
-  # refuses. `docs/taxonomies/README.md` also records what a heterogeneous shelf
-  # costs, measured on the `standards-spec` entry: a discriminator value the
-  # shelf does not admit stops kind resolution, no rule instantiates over the
-  # document, and a run holding that document alone reports 0 findings and exits
-  # 0. The two paths below are disjoint from each other and from every shelf
-  # above them.
-  #
-  # **The voice regime is local, and it is not a dependency on `brd-prd`.** The
-  # base declares `declarative`, which forbids `future_intent`, and a
-  # requirement is prospective by construction. `regimes.voice.prospective` is a
-  # free address in the resolved set, which holds `declarative` and `narrative`
-  # only, so the `add` below is legal with no bundle selected. The declaration
-  # matches the one the `brd-prd` entry makes, and the match is a read of that
-  # source rather than an import of it.
-  #
-  # **The house language regime binds both kinds, and the EARS deferral stands
-  # anyway.** `controlled` is a member of a language regime and never of a kind,
-  # so no kind can say `controlled: none`. A kind binds a regime by name, or it
-  # binds none and generates no instance of `language.controlled.not_met`,
-  # `language.source_form.not_met` or `language.retired_term.used`. Binding none
-  # would put new prose of this repository outside the rules the repository
-  # applies to itself, which is the exemption this project would least be able
-  # to defend. `ste_house` also fights nothing in EARS:
-  # `language.controlled.not_met` implements a 25-word sentence limit, no
-  # semicolon in running prose, no contraction and no British spelling, and none
-  # of the four touches `shall`, `When`, `While`, `Where` or `If`. What the
-  # deferral protects is preserved, because no EARS regime is declared here and
-  # no EARS rule ships here. **A later EARS rule cannot arrive as a second
-  # `controlled` value on this regime**, because a kind binds one regime and
-  # `controlled` is one scalar. It arrives as a separate regime that repeats
-  # `source_form` and the 18 retired terms, or as a new member on
-  # `regimes.language`, which is the shape the same evaluation proposes for BCP
-  # 14. Either one is a meta-schema change.
-  #
-  # **`verified_by` reaches an acceptance criterion and a probe, and it reaches
-  # no anchor.** Its family is `evidence`, and its closest sibling is
-  # `discharges`, which declares the same shape from the other end. `code_path`
-  # is deliberately absent. Reciprocity is silent over an anchor target, because
-  # `Edge::declared_triple` returns nothing for a target that is not a document,
-  # so `relation.reciprocity.missing` never fires on such an edge. One
-  # `reciprocal: required` declaration that binds two endpoints and binds
-  # nothing at all on a third would state one contract over two populations,
-  # which is the shape Q35 refused one clause up. Every relation here that names
-  # an anchor at either end declares no reciprocal, and the interface-contract
-  # block above states why.
-  #
-  # **`created_by: scaffold`, and that is what lets one command write the pair.**
-  # `headwater new --relates` is refused unless the relation declares it, and it
-  # accepts the inverse name, so `--relates verifies=HW-REQ-0001` on a new
-  # acceptance criterion writes the far half into the requirement.
-  # `created_by: author` would have made the whole pair hand entry. This is the
-  # argument `applied_in` and `elaborates` already used.
-  #
-  # **The scaffolder is a convenience here and not the guarantee.** A hand
-  # written half plus `headwater check --fix` reaches the same complete pair,
-  # because a missing reciprocal link is one of the corrections that verb
-  # writes. What is enforced is narrower and stronger than any producer:
-  # `relation.reciprocity.missing` is an error, so no half-written pair survives
-  # a strict run, whoever wrote the half.
-  #
-  # **29148 names four verifying artifacts, and two of them get no edge.** The
-  # four are an acceptance criterion, a probe, a check rule and a test. A test
-  # is covered with no new declaration: the criterion names it in `Method` and
-  # declares the base relation `traces_to` onto its `code_path`, which already
-  # runs from a governed document to an anchor and declares no reciprocity.
-  # **A check rule is an anchor, and `anchors.check_rule` below declares it.**
-  # A rule identifier is not a document, so the fourth artifact reaches a
-  # requirement through the same end of `verified_by` that a document reaches
-  # it through. `headwater_check::anchors::Rules` is the resolver, and it binds
-  # a string when `headwater_check::RULES` holds it. That answers the first of
-  # the two questions [#411](https://github.com/headwater-ai/headwater/issues/411)
-  # held: `headwater-check` owns `RULES` and depends on `headwater-graph`, so a
-  # resolver there implements `headwater_graph::Resolver` with no new crate,
-  # which is the shape `headwater_import::anchors::Items` already takes. The
-  # second question is answered in that module: a rule template is addressable
-  # and a generated instance is not, because nothing anywhere carries an
-  # instance identifier. What already carried this coverage still carries it:
-  # the `Method` section names the rule identifier in prose, and the control
-  # block of spec 4 binds a rule to an invariant through
-  # `mechanism: check:<rule-id>`. The edge is what makes the pair a graph.
-  #
-  # **The verification method is a facet and the fit criterion is a section,
-  # which is the shape `probe` already uses.** 29148 supplies the closed method
-  # set and a check reads it, so it is a facet. Volere supplies the fit
-  # criterion, which the evaluation quotes as "a quantification of the
-  # requirement written beside it, which is what makes a subjective statement
-  # testable", and that is prose, so it is a section. The four values are lower
-  # case, because every closed value set in this taxonomy is, and 29148's
-  # capitalization is a rendering choice rather than a value.
-  # `verification_method` is `volatility: mutable`, because a criterion checked
-  # by inspection can later be checked by a test, and the permanence canon
-  # forbids a mutable facet only in an identifier, a path or a shelf pattern.
-  #
-  # **`headwater new acceptance_criterion` refuses to guess the method, and
-  # `--facet` is the route.** The facet is required, it declares a closed value
-  # set, and it carries no role this engine derives a value for, so the
-  # scaffolder writes nothing and names `--facet verification_method=<value>`.
-  # That is the same wall the `probe` kind hit, and the measurement layer above
-  # documents the route once.
-  #
-  # **`section.required.missing` reads a heading and never a word under it.** A
-  # criterion that writes both headings and `TODO` under each one passes. The
-  # section contract is a rule for a person and for the scaffolder, which writes
-  # the headings in this order, and this is where a reader meets that.
-  #
-  # **What is deliberately not declared.** 29148's owner, priority, source and
-  # status attributes, and its nine well-formedness characteristics. Nothing
-  # here reads them, and a kind for each characteristic would repeat the mistake
-  # the design-spec doctrine already named. No `traceability_matrix` projection
-  # either: the evaluation names it as the natural output of this corpus, and it
-  # needs a corpus that this change only starts.
+  # The requirement, the acceptance criterion and the verification come from
+  # the `requirement-verification` library entry, which `.headwater/taxonomy.yml`
+  # selects. This repository declared all three here first, and the entry's
+  # doctrine now carries the reasoning that stood in this block (#2017). What
+  # stays is true of this repository and of no adopter, which is the test this
+  # file states for what belongs in it: the namespace of each scheme, the
+  # prefix a test comment opens with, the house language regime on the two
+  # kinds whose prose this repository governs, one more verifying kind under
+  # `add_to`, and the requirement shelf's path under `override`.
+  identifier_schemes.requirement_id.namespace: HW
+  identifier_schemes.acceptance_criterion_id.namespace: HW
+  identifier_schemes.verification_id.namespace: HW
 
-  purposes.requirement:
-    intent: "state what must hold before a thing is built, and what decides that it holds"
-    answers:
-      - "what must this do"
-      - "what does done mean here"
-      - "what would show that this is met"
+  # The literal prefix a comment's citation must open with. It is a prefix
+  # rather than the whole `{namespace}-VER-{seq:04d}` template, because every
+  # scheme this corpus mints is disjoint from every other by its literal
+  # segment, so a token that opens with `HW-VER-` cites no other scheme.
+  anchors.test_site.pattern: "HW-VER-"
 
-  regimes.voice.prospective:
-    forbid: [change_narration, phased_rollout]
-
-  facets.verification_method:
-    type: string
-    values: [test, demonstration, inspection, analysis]
-    required: false
-    volatility: mutable
-    guidance:
-      test: run the system and compare a measured result against the fit criterion
-      demonstration: operate the system and observe the behavior the fit criterion states, with no instrument beyond the observation
-      inspection: read the artifact against the fit criterion, and run nothing
-      analysis: reason from a model, a calculation or a result already established, where a run is not possible and not needed
-
-  # `{seq:04d}` and `reconcile-first`, mirroring `decision_id` and
-  # `obligation_record_id`, which are the two schemes here for a numbered object
-  # that a reader cites on its own. 29148 treats a requirement as an identified
-  # object and the field numbers them. `brd-prd` chose `minted-once` with a
-  # slug, on the argument that a BRD is cited outside the corpus, and that is
-  # refused here: spec 3's allocation rule never renumbers, so a citation is
-  # stable either way, and the numbered form matches the two registers a reader
-  # of this corpus already knows. `REQ` and `AC` are disjoint from the eleven
-  # literal segments already minted.
-  identifier_schemes.requirement_id:
-    pattern: "{namespace}-REQ-{seq:04d}"
-    namespace: HW
-    allocation: reconcile-first
-
-  identifier_schemes.acceptance_criterion_id:
-    pattern: "{namespace}-AC-{seq:04d}"
-    namespace: HW
-    allocation: reconcile-first
-
-  # [HW-DR-0073](../docs/decisions/0073-a-verification-is-a-kind-and-its-identity-is-minted-rather-than-found-in-the-code-that-cites-it.md)
-  # ruling 1: a verification takes an identity of its own rather than a path a
-  # rename breaks, so it takes a scheme of the same `{seq:04d}` shape as the two
-  # above. `VER` is disjoint from every literal segment this namespace already
-  # mints.
-  identifier_schemes.verification_id:
-    pattern: "{namespace}-VER-{seq:04d}"
-    namespace: HW
-    allocation: reconcile-first
-
-  # The participation expectation is what makes an *absent* verifier visible. A
-  # relation alone reports the edges that exist, and the argument for declaring
-  # one here is that a requirement nothing verifies is a claim nobody can
-  # settle. So a `current` requirement with no `verified_by` edge is reported
-  # after 90 days, at `warn`, which is the posture `evidence-cited` takes on an
-  # evaluation in the base package.
-  #
-  # **It names no `to_kind`, and `verified_by` admits two kinds.** A relation's
-  # `to:` is a list, and an expectation that names no target kind is satisfied
-  # by any kind the relation admits at its target end. So an acceptance
-  # criterion settles this expectation and so does a probe, which is the
-  # reading this corpus wants and the reading
-  # [spec 2](../docs/spec/02-taxonomy-model.md#participation-expectations)
-  # states. The finding text follows the declaration: it names the relation
-  # alone, because the relation alone is what the document is owed.
-  #
-  # **It was declared `to_kind: acceptance_criterion` until 2026-09-11, and
-  # that was a false report waiting for a document to trip it.** A `current`
-  # requirement that a probe alone verified was reported after 90 days as
-  # reaching nothing, and the remediation told its author to declare an edge
-  # already declared. `Participation::satisfied` always read an absent
-  # `to_kind` the right way, and `engine/crates/meta/meta-schema.yml` declared
-  # the member required, so no declaration anywhere could reach that branch.
-  # The member is optional now and
-  # [HW-OBL-0039](../docs/obligations/0039-a-participation-expectation-names-one-target-kind.md)
-  # is discharged.
-  #
-  # The abstract kind that record proposed as the remedy was measured here and
-  # does not run. `to_kind: governed_document` is refused twice by expectation
-  # well-formedness, once for naming a kind no shelf reaches and once because
-  # `verified_by` does not admit it at its target end.
-  # [HW-OBL-0128](../docs/obligations/0128-nothing-holds-a-crate-to-having-a-contract-under-a-root-that-excludes-it.md)
-  # records the same measurement from the other side and stays open, because
-  # its subject is the crate root and not this member.
-  #
-  # `engine/crates/check/tests/participation_target.rs` holds the behavior over
-  # one tree: two kinds that differ in this one clause, where the narrow arm
-  # reports a probe-verified document and the broad arm does not.
-  # `engine/crates/resolve/fixtures/validate/valid/` holds the other half, that
-  # an expectation with no `to_kind` passes the meta-schema and validates.
-  kinds.requirement:
-    is_a: governed_document
-    purpose: requirement
-    write_when: an issue or a decision asks for something that the system must do, and nothing states it as a need
-    voice: prospective
-    lifecycle: standard
-    language: ste_house
-    identifier: {scheme: requirement_id}
-    facets:
-      require: [title]
-    sections:
-      require: [Context, Requirement, Verification]
-    relations:
-      expect:
-        - id: requirement-verified
-          relation: verified_by
-          when: {status: current}
-          within: 90d
-          since: state_entered
-          severity: warn
-          rationale: a requirement that nothing verifies is a claim nobody can settle
-
-  # **`acceptance-criterion-proven`, and a single `to_kind`.** `proven_by`
-  # admits exactly one target kind, unlike `verified_by` above, so the reasoning
-  # against declaring one does not carry: there is no second kind for the
-  # narrow declaration to exclude by accident, and
-  # `engine/crates/check/tests/acceptance_criterion_proven.rs` is the fixture
-  # that would catch it if a second target kind ever needed the same absence
-  # `requirement-verified` relies on.
-  #
-  # **`when` also names `verification_method: test`, and not every
-  # `acceptance_criterion`.** HW-DR-0073's Consequences section leaves the
-  # cadence of an `inspection` or a `demonstration` open: neither carries a
-  # transport a verification could observe, so an expectation that read every
-  # criterion would warn one, past its window, with no remedy HW-DR-0073 gives
-  # it. `HW-AC-0001` is that case today (`verification_method: inspection`).
-  # Narrowing `when` to `test` is the reading that stays inside this issue's
-  # own scope, and `engine/crates/check/fixtures/acceptance-criterion-proven/`
-  # carries the inspection arm as a fixture: past the window, no edge, and
-  # silent.
-  kinds.acceptance_criterion:
-    is_a: governed_document
-    purpose: requirement
-    write_when: a Done-when clause or a requirement needs a statement that a test can pass or fail
-    voice: prospective
-    lifecycle: standard
-    language: ste_house
-    identifier: {scheme: acceptance_criterion_id}
-    facets:
-      require: [title, verification_method]
-    sections:
-      require: [Fit criterion, Method]
-    relations:
-      expect:
-        - id: acceptance-criterion-proven
-          relation: proven_by
-          to_kind: verification
-          when: {status: current, verification_method: test}
-          within: 90d
-          since: state_entered
-          severity: warn
-          rationale: an acceptance criterion proved by a test that no verification reaches is a claim nobody can settle
-
-  # [HW-DR-0073](../docs/decisions/0073-a-verification-is-a-kind-and-its-identity-is-minted-rather-than-found-in-the-code-that-cites-it.md)
-  # ruling 1. The third artifact 29148 names, beside the acceptance criterion
-  # and the requirement: the thing that settles a criterion, given an identity
-  # of its own rather than the path `traces_to` binds by `Path::exists`. `Approach`
-  # states what the verification does and how; `What this does not cover` states
-  # the edge of that claim, on the model of `kinds.acceptance_criterion`'s
-  # `[Fit criterion, Method]` above. `purpose: evidence` and `voice: declarative`
-  # mirror `kinds.probe`, its closest sibling on the shelf list: both are a
-  # document that reports what was checked rather than what must hold. Neither
-  # is bound to the `ste_house` language regime, for the same reason `probe`,
-  # `probe_result` and `probe_transcript` are not: this repository's own governed
-  # shelves are listed in `CLAUDE.md` and this one is not among them.
-  kinds.verification:
-    is_a: governed_document
-    purpose: evidence
-    write_when: a test was added or changed to prove a requirement or an acceptance criterion
-    voice: declarative
-    lifecycle: standard
-    identifier: {scheme: verification_id}
-    facets:
-      require: [title]
-    sections:
-      require: [Approach, What this does not cover]
-
-  # The `check-rule` resolver, which `headwater_check::anchors::Rules` supplies
-  # and `main.rs` adds beside the import resolvers. A rule identifier is a
-  # string this engine ships in `headwater_check::RULES`, so the resolver is a
-  # membership test over that list and the identity is the string itself.
-  # `register::mechanism` reads the same list for `mechanism: check:<rule-id>`,
-  # and the two agree by construction: one engine ships one set of rules, and a
-  # control and an edge that name one rule name one thing.
-  anchors.check_rule: {resolver: check-rule}
-
-  # The governed scope of this repository (#951): the part of the tree this
-  # corpus expects a `governs` edge to reach. `taxonomy validate` refuses a
-  # pattern here that matches no entry, and `taxonomy audit` prints the share
-  # of in-scope entries an edge reaches, per pattern and in total. The seven
-  # patterns are the ones the governs-edges evaluation names under "Coverage:
-  # two numbers with two denominators". The eighth is the source of the agent
-  # set `headwater init --harness` writes, which moved there from
-  # `.claude/skills/` and `.claude/agents/` (#1578).
-  anchors.code_path.scope:
-    - engine/crates/**/src/**/*.rs
-    - engine/crates/cli/harness/**
-    - .githooks/**
-    - .claude/hooks/**
-    - .claude/agents/**
-    - .claude/skills/**
-    - tools/**
-    - site/**
-
-  # [HW-DR-0073](../docs/decisions/0073-a-verification-is-a-kind-and-its-identity-is-minted-rather-than-found-in-the-code-that-cites-it.md)
-  # ruling 4: a `comment-scan` resolver ships in the binary, and the pattern it
-  # looks for stays in configuration rather than in the engine. `pattern` here
-  # is the one member `anchor.pattern` in `engine/crates/meta/meta-schema.yml`
-  # adds for this purpose, read by `headwater_graph::anchors::CommentScan` and
-  # by no rule of the taxonomy language itself. The value is the literal
-  # prefix a comment's citation must open with, and it is a prefix rather than
-  # the fuller `{namespace}-VER-{seq:04d}` template `identifier_schemes.verification_id`
-  # already declares, because every scheme this corpus mints is disjoint from
-  # every other one by its literal segment — the identifier integrity rule
-  # `taxonomy validate` runs guarantees exactly that — so a token opening with
-  # `HW-VER-` cannot be a citation of any other scheme.
-  #
-  # A corpus that declares this anchor kind with no `pattern`, or that
-  # declares no anchor kind naming `comment-scan` at all, gets no
-  # `comment-scan` resolver: `engine/crates/cli/src/main.rs` registers one only
-  # where both are present, which is what keeps the convention out of the
-  # engine rather than merely out of this file.
-  anchors.test_site: {resolver: comment-scan, pattern: "HW-VER-"}
-
-  # `check_rule` at the target end, and the `from` end stays at `requirement`.
-  # Q35 says `verified_by` names both kinds at its `from` end, and the block
-  # above states why one endpoint is the right reading here. Widening `from` is
-  # a separate change against that ruling and not a consequence of this one.
-  relations.verified_by:
-    family: evidence
-    from: [requirement]
-    to:   [acceptance_criterion, probe, check_rule]
-    cardinality: many
-    inverse: verifies
-    reciprocal: required
-    created_by: scaffold
-
-  # HW-DR-0073 ruling 1: a distinct relation, because `verified_by`'s `from` is
-  # fixed to `[requirement]` by Q35 and the overlay comment above states that
-  # widening it is a separate change. `acceptance_criterion` is the declaring
-  # end, meaning the end that writes the relation under its own forward name:
-  # `--relates proven_by=<id>` is what a new `acceptance_criterion` accepts to
-  # reach a `verification`. `headwater new verification` reaches the other way,
-  # onto the inverse name, exactly as `verified_by` already works: a new
-  # acceptance criterion takes `--relates verifies=<id>` to reach a
-  # requirement, and a new verification takes `--relates proves=<id>` to reach
-  # an acceptance criterion, which is how `HW-VER-0001` was minted. `created_by:
-  # scaffold` and `reciprocal: required` copy `verified_by`'s shape clause for
-  # clause, so one command writes both halves and a hand-written half still
-  # reaches a complete pair under `headwater check --fix`.
-  relations.proven_by:
-    family: evidence
-    from: [acceptance_criterion]
-    to:   [verification]
-    cardinality: many
-    inverse: proves
-    reciprocal: required
-    created_by: scaffold
-
-  # HW-DR-0073 ruling 4 ships the `comment-scan` resolver for `test_site`, and
-  # until #1097 no relation named that anchor kind at either end, so no run
-  # over this corpus ever asked the resolver anything. `cited_in` is the
-  # relation that reaches it: `HW-VER-0001 cited_in <file>` binds when a
-  # comment in that file cites the verification's own identifier. It is not a
-  # wider `governs`. `edges::bind` asks every anchor kind a relation admits, and
-  # a `.rs` file that carries the citation resolves under both `code_path` and
-  # `test_site`, which is `AmbiguousAnchor` rather than an edge. An anchor
-  # cannot declare the other half of an edge, so there is no `inverse` and no
-  # `reciprocal`, exactly as `governs` has none.
-  relations.cited_in:
-    family: evidence
-    from: [verification]
-    to:   [test_site]
-    cardinality: many
-    created_by: agent
-
-  shelves.requirements:
-    title: Requirements
-    path: docs/requirements/**
-    homogeneous: true
-    kind: requirement
-    layout: "{seq:04d}-{slug}.md"
-
-  # Disjoint from the shelf above rather than under it, for the reason the probe
-  # shelves give: two shelves that claim one path resolve a kind by accident.
-  shelves.acceptance_criteria:
-    title: Acceptance criteria
-    path: docs/acceptance-criteria/**
-    homogeneous: true
-    kind: acceptance_criterion
-    layout: "{seq:04d}-{slug}.md"
-
-  # Its own shelf, disjoint from the two above for the same reason: a shared
-  # path resolves a kind by accident. HW-DR-0073 ruling 1: a verification does
-  # not unify with the assurance register (ruling 2), so it stays off
-  # `docs/decisions/` and every other register shelf too.
-  shelves.verifications:
-    title: Verifications
-    path: docs/verifications/**
-    homogeneous: true
-    kind: verification
-    layout: "{seq:04d}-{slug}.md"
+  # A verification is not bound to `ste_house`, for the reason `probe` is not:
+  # `CLAUDE.md` lists this repository's governed shelves, and that shelf is not
+  # among them.
+  kinds.requirement.language:            ste_house
+  kinds.acceptance_criterion.language:   ste_house
 
   # --- the development process ---------------------------------------------
   # Two subjects shared the decisions shelf until this block. A ruling about
@@ -1802,6 +1341,13 @@ add:
 
 add_to:
 
+  # `probe` is a kind of this repository, so the library entry cannot name it.
+  # A probe settles a requirement the way an acceptance criterion does, and
+  # `requirement-verified` names no `to_kind`, so a probe-verified requirement
+  # satisfies it. The adopter's overlay applies after every bundle, so it may
+  # append to a list a bundle declares (#2022).
+  relations.verified_by.to: [probe]
+
   projections:
     # An index at the root of each shelf this corpus holds that no other
     # declaration covers. `{shelf}` is the shelf's directory, so one entry
@@ -1842,7 +1388,7 @@ add_to:
     # account (#1231) with no edit to this list. `subsystems` is named for the same reason:
     # its shelf holds nothing yet (HW-DR-0098, #1288).
     - kind: shelf_index
-      for: [spec_series, obligations, evaluations, requirements, acceptance_criteria, verifications, probes, probe_results, probe_runs, reviews, tutorials, how_to, process_decisions, process_specs, process_evaluations, process_obligations, explanations, process_explanations, process_how_to, subsystems]
+      for: [spec_series, obligations, evaluations, verified_requirements, acceptance_criteria, verifications, probes, probe_results, probe_runs, reviews, tutorials, how_to, process_decisions, process_specs, process_evaluations, process_obligations, explanations, process_explanations, process_how_to, subsystems]
       output: "{shelf}/README.md"
 
     # The redirect map. `docs/spec/09-open-questions.md` is a tombstone: the
@@ -1980,7 +1526,7 @@ add_to:
             - title: Guides
               for: [tutorials, how_to, explanations]
             - title: Specification
-              for: [spec_series, interfaces, requirements, acceptance_criteria, verifications, subsystems]
+              for: [spec_series, interfaces, verified_requirements, acceptance_criteria, verifications, subsystems]
             - title: Taxonomy library
               for: [library_doctrine]
             - title: Decisions and evidence
@@ -1991,7 +1537,7 @@ add_to:
           noindex: true
           for: [process_specs, process_decisions, process_evaluations, process_obligations, process_how_to, process_explanations]
 
-# The one override. `relation.scope.ungoverned` reports a file a change adds
+# Two overrides. The first: `relation.scope.ungoverned` reports a file a change adds
 # inside the governed scope that no governance edge reaches, and a file in the
 # scope whose last governance edge a change removes. The package ships
 # its control advisory, because a tool that blocks on first contact is removed.
@@ -2001,5 +1547,12 @@ add_to:
 # file there, fail. Posture decides what
 # blocks, by the owner's ruling of 2026-11-22 (#2015), and the baseline is the
 # change, so no figure is stored (#1573).
+#
+# The second: the requirement-verification entry files requirements under
+# `docs/verified-requirements/**`, because the brd-prd entry holds
+# `docs/requirements/**`. This repository selects no brd-prd and its
+# requirements were filed before the entry existed, so the path moves back and
+# no document moves.
 override:
   controls.CT-REL-12.posture: blocking
+  shelves.verified_requirements.path: docs/requirements/**

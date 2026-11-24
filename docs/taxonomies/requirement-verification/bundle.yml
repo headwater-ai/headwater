@@ -1,0 +1,258 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The requirement-verification taxonomy: the verification chain of ISO/IEC/IEEE
+# 29148, in which a requirement is an identified object, an acceptance
+# criterion states the measure that settles it, and a verification is the
+# thing that applies the measure. Volere supplies the fit criterion.
+#
+# An add-only overlay over the base package. doctrine.md states what the
+# tradition is, why each declaration is here, and what this entry assumed where
+# the specification is silent. This repository typed itself with these
+# declarations in its own overlay first, and they moved here unchanged except
+# for the renames below and the leaves that only a consumer may write (#2017).
+#
+# Three things about this bundle are worth naming before the operations.
+#
+# It declares `requires: [evidence-and-obligation]` for one address.
+# `kinds.verification` serves `purpose: evidence`, and that purpose is declared
+# by that entry, which the library does not admit. HW-OBL-0185 asks whether an
+# admitted entry may require a bundle that admission refuses, and this entry is
+# its second case after decision-record.
+#
+# It renames three addresses that the brd-prd entry holds. Criterion 6 of the
+# library index refuses a second declaration of one address, and an adopter can
+# select both entries. So the purpose is `verifiable_requirement`, the voice
+# regime is `requirement_prospective`, and the requirement shelf is
+# `verified_requirements` at `docs/verified-requirements/**`, which is disjoint
+# from brd-prd's `docs/requirements/**`. A dependency on brd-prd would have
+# kept the natural names, and it would also have brought in the `brd` and
+# `prd` kinds, which a reader of this entry does not ask for.
+#
+# It writes no namespace and no comment-scan pattern. Both name a constant that
+# every adopter would otherwise mint at once, so the consumer's overlay
+# declares the namespace of each scheme and the prefix a test comment opens
+# with. doctrine.md shows those five lines.
+
+bundle: requirement-verification
+extends: headwater/standard@4.24.0
+requires: [evidence-and-obligation]
+
+add:
+
+  # --- purposes -------------------------------------------------------------
+  # The base declares `rationale` and `behavior`, and evidence-and-obligation
+  # declares `evidence` and `obligation`. None of them fits a requirement.
+  # `rationale` is retrospective. `behavior` states what the system does now.
+  # `evidence` is the measurement and not the standard it is read against.
+  # `obligation` is what the corpus owes. brd-prd's `requirement` is the same
+  # reader intent scoped to one initiative, and criterion 6 refuses its name.
+
+  purposes.verifiable_requirement:
+    intent: "state what must hold before a thing is built, and what decides that it holds"
+    answers:
+      - "what must this do"
+      - "what does done mean here"
+      - "what would show that this is met"
+
+  # --- regimes --------------------------------------------------------------
+  # The base's `declarative` forbids `future_intent`, and a requirement is
+  # prospective by construction. This regime keeps the other two categories.
+  # It states what brd-prd's `regimes.voice.prospective` states, under a name
+  # that brd-prd does not hold.
+
+  regimes.voice.requirement_prospective:
+    forbid: [change_narration, phased_rollout]
+
+  # --- facets ---------------------------------------------------------------
+  # 29148 supplies the closed method set, and a participation expectation below
+  # reads it, so it is a facet. The values are lower case, as every closed set
+  # in this language is. `mutable`, because a criterion checked by inspection
+  # can later be checked by a test.
+
+  facets.verification_method:
+    type: string
+    values: [test, demonstration, inspection, analysis]
+    required: false
+    volatility: mutable
+    guidance:
+      test: run the system and compare a measured result against the fit criterion
+      demonstration: operate the system and observe the behavior the fit criterion states, with no instrument beyond the observation
+      inspection: read the artifact against the fit criterion, and run nothing
+      analysis: reason from a model, a calculation or a result already established, where a run is not possible and not needed
+
+  # --- identifier schemes ---------------------------------------------------
+  # `{seq:04d}` and `reconcile-first`, the shape of the decision and the
+  # obligation record. 29148 treats a requirement as an identified object, and
+  # spec 3's allocation rule never renumbers, so a citation stays stable.
+  # HW-DR-0073 gives a verification an identity of its own rather than the
+  # path a rename breaks.
+  #
+  # No namespace on any of the three, for the reason the base declares none: a
+  # bundle ships to adopters, and a constant written here would be minted by all
+  # of them at once. `taxonomy validate` refuses a resolved scheme that carries
+  # none.
+
+  identifier_schemes.requirement_id:
+    pattern: "{namespace}-REQ-{seq:04d}"
+    allocation: reconcile-first
+
+  identifier_schemes.acceptance_criterion_id:
+    pattern: "{namespace}-AC-{seq:04d}"
+    allocation: reconcile-first
+
+  identifier_schemes.verification_id:
+    pattern: "{namespace}-VER-{seq:04d}"
+    allocation: reconcile-first
+
+  # --- kinds ----------------------------------------------------------------
+  # No kind binds a language regime. A language regime is a house rule of one
+  # corpus, so the consumer writes `kinds.<kind>.language` in its overlay, and
+  # this repository binds `ste_house` on the first two.
+  #
+  # `requirement-verified` names no `to_kind`, so any kind that `verified_by`
+  # admits at its target end settles it: an acceptance criterion, a check rule,
+  # or a kind a consumer appends to `to` with `add_to`.
+
+  kinds.requirement:
+    is_a: governed_document
+    purpose: verifiable_requirement
+    write_when: an issue or a decision asks for something that the system must do, and nothing states it as a need
+    voice: requirement_prospective
+    lifecycle: standard
+    identifier: {scheme: requirement_id}
+    facets:
+      require: [title]
+    sections:
+      require: [Context, Requirement, Verification]
+    relations:
+      expect:
+        - id: requirement-verified
+          relation: verified_by
+          when: {status: current}
+          within: 90d
+          since: state_entered
+          severity: warn
+          rationale: a requirement that nothing verifies is a claim nobody can settle
+
+  # `when` names `verification_method: test`. HW-DR-0073 leaves the cadence of
+  # an inspection or a demonstration open, because neither carries a transport
+  # a verification could observe, so an expectation over every criterion would
+  # warn one with no remedy.
+
+  kinds.acceptance_criterion:
+    is_a: governed_document
+    purpose: verifiable_requirement
+    write_when: a Done-when clause or a requirement needs a statement that a test can pass or fail
+    voice: requirement_prospective
+    lifecycle: standard
+    identifier: {scheme: acceptance_criterion_id}
+    facets:
+      require: [title, verification_method]
+    sections:
+      require: [Fit criterion, Method]
+    relations:
+      expect:
+        - id: acceptance-criterion-proven
+          relation: proven_by
+          to_kind: verification
+          when: {status: current, verification_method: test}
+          within: 90d
+          since: state_entered
+          severity: warn
+          rationale: an acceptance criterion proved by a test that no verification reaches is a claim nobody can settle
+
+  # A verification reports what was checked rather than what must hold, so it
+  # serves `evidence` and takes the base's `declarative` voice.
+
+  kinds.verification:
+    is_a: governed_document
+    purpose: evidence
+    write_when: a test was added or changed to prove a requirement or an acceptance criterion
+    voice: declarative
+    lifecycle: standard
+    identifier: {scheme: verification_id}
+    facets:
+      require: [title]
+    sections:
+      require: [Approach, What this does not cover]
+
+  # --- anchors --------------------------------------------------------------
+  # A check rule is not a document, so it reaches a requirement as an anchor.
+  # The `check-rule` resolver ships in the binary and binds a string that the
+  # engine's own rule list holds.
+
+  anchors.check_rule: {resolver: check-rule}
+
+  # HW-DR-0073 ruling 4: the `comment-scan` resolver ships in the binary, and
+  # the pattern it looks for stays in configuration. No `pattern` here, because
+  # the pattern opens with the consumer's namespace. With no pattern the engine
+  # registers no comment-scan resolver, so a consumer that wants `cited_in` to
+  # bind writes `anchors.test_site.pattern` in its overlay.
+
+  anchors.test_site: {resolver: comment-scan}
+
+  # --- relations ------------------------------------------------------------
+  # `verified_by` runs from a requirement, and Q35 holds its `from` end there.
+  # `proven_by` is a distinct relation for that reason, from a criterion to a
+  # verification. Both are `created_by: scaffold` and `reciprocal: required`,
+  # so `headwater new --relates verifies=<id>` and `--relates proves=<id>`
+  # write both halves, and `relation.reciprocity.missing` reports a pair that a
+  # hand left half-written.
+  #
+  # `cited_in` reaches the anchor above. An anchor cannot declare the other
+  # half of an edge, so it has no inverse and no reciprocal, as `governs` has
+  # none.
+
+  relations.verified_by:
+    family: evidence
+    from: [requirement]
+    to:   [acceptance_criterion, check_rule]
+    cardinality: many
+    inverse: verifies
+    reciprocal: required
+    created_by: scaffold
+
+  relations.proven_by:
+    family: evidence
+    from: [acceptance_criterion]
+    to:   [verification]
+    cardinality: many
+    inverse: proves
+    reciprocal: required
+    created_by: scaffold
+
+  relations.cited_in:
+    family: evidence
+    from: [verification]
+    to:   [test_site]
+    cardinality: many
+    created_by: agent
+
+  # --- shelves --------------------------------------------------------------
+  # Three homogeneous shelves, disjoint from each other and from every shelf of
+  # the base and of every admitted entry. The requirement shelf takes
+  # `docs/verified-requirements/**` because brd-prd holds `docs/requirements/**`,
+  # and two shelves that claim one path resolve a kind by accident. A consumer
+  # that selects no brd-prd may move it back with an overlay `override` of the
+  # path, as this repository does.
+
+  shelves.verified_requirements:
+    title: Requirements
+    path: docs/verified-requirements/**
+    homogeneous: true
+    kind: requirement
+    layout: "{seq:04d}-{slug}.md"
+
+  shelves.acceptance_criteria:
+    title: Acceptance criteria
+    path: docs/acceptance-criteria/**
+    homogeneous: true
+    kind: acceptance_criterion
+    layout: "{seq:04d}-{slug}.md"
+
+  shelves.verifications:
+    title: Verifications
+    path: docs/verifications/**
+    homogeneous: true
+    kind: verification
+    layout: "{seq:04d}-{slug}.md"

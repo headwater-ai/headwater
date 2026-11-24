@@ -149,6 +149,14 @@ taxonomy: headwater/standard
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
 #
+# 4.24.0 adds one library entry, `requirement-verification`, and removes
+# nothing, so it is a minor. The base taxonomy is unchanged. The entry carries
+# the requirement, the acceptance criterion and the verification of ISO/IEC/IEEE
+# 29148, the two relations that link them, the `comment-scan` anchor kind for a
+# test that cites a verification, and the two participation expectations. It
+# renames the three addresses that `brd-prd` holds, so an adopter can select
+# both entries (#2017).
+#
 # 4.23.0 widens one statement and one promotion threshold, and adds and
 # removes no declaration, so it is a minor. OB-REL-12 now also covers a change
 # that removes the last governance edge onto a file inside the governed scope:
@@ -364,7 +372,7 @@ taxonomy: headwater/standard
 # each carries a recipe rather than a bare instruction. One package version
 # covers every content file it publishes, this one included, so the number
 # here moves with a change to either.
-version: 4.23.0
+version: 4.24.0
 
 purposes:
   rationale:

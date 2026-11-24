@@ -159,7 +159,13 @@ fn consumer(root: &Root, bundles: &str, overlay: &str) -> PathBuf {
 /// Everything an adopter writes to take the three kinds: a namespace for each
 /// scheme the selected entries leave without one, and the prefix a test cites.
 /// No kind, relation, shelf or purpose is declared here.
-const OVERLAY: &str = "add:\n  identifier_schemes.obligation_record_id.namespace: ACME\n  identifier_schemes.requirement_id.namespace: ACME\n  identifier_schemes.acceptance_criterion_id.namespace: ACME\n  identifier_schemes.verification_id.namespace: ACME\n  anchors.test_site.pattern: \"ACME-VER-\"\n";
+///
+/// The selection names `decision-record` as well. The entry requires
+/// `evidence-and-obligation` for `purposes.evidence`, and that bundle alone
+/// declares `purposes.obligation` with no kind to serve it, so purpose
+/// completeness refuses it until `decision-record` or `design-spec` supplies
+/// the kind. The doctrine records that as a finding.
+const OVERLAY: &str = "add:\n  identifier_schemes.decision_id.namespace: ACME\n  identifier_schemes.obligation_record_id.namespace: ACME\n  identifier_schemes.requirement_id.namespace: ACME\n  identifier_schemes.acceptance_criterion_id.namespace: ACME\n  identifier_schemes.verification_id.namespace: ACME\n  anchors.test_site.pattern: \"ACME-VER-\"\n";
 
 fn read(path: &Path) -> String {
     std::fs::read_to_string(path).unwrap_or_else(|error| panic!("{}: {error}", path.display()))
@@ -172,7 +178,7 @@ fn an_adopter_selects_the_entry_and_links_a_requirement_a_criterion_and_a_verifi
         OVERLAY.lines().count() < 10,
         "the adopter overlay is meant to hold leaves and nothing else"
     );
-    let consumer = consumer(&root, "evidence-and-obligation, requirement-verification", OVERLAY);
+    let consumer = consumer(&root, "evidence-and-obligation, decision-record, requirement-verification", OVERLAY);
 
     let made = run(
         &consumer,
@@ -206,31 +212,53 @@ fn an_adopter_selects_the_entry_and_links_a_requirement_a_criterion_and_a_verifi
     );
     assert_eq!(made.code, Some(0), "{made:?}");
 
-    let requirement = read(
-        &consumer.join("docs/verified-requirements/0001-replay-a-failed-webhook.md"),
-    );
-    assert!(requirement.contains("id: ACME-REQ-0001"), "{requirement}");
-    assert!(requirement.contains("verified_by:"), "{requirement}");
-    assert!(requirement.contains("ACME-AC-0001"), "{requirement}");
+    let requirement_path =
+        consumer.join("docs/verified-requirements/0001-replay-a-failed-webhook.md");
+    let criterion_path =
+        consumer.join("docs/acceptance-criteria/0001-a-replay-delivers-within-one-minute.md");
+    let verification_path = consumer.join("docs/verifications/0001-the-replay-latency-test.md");
 
-    let criterion = read(
-        &consumer.join("docs/acceptance-criteria/0001-a-replay-delivers-within-one-minute.md"),
-    );
+    let criterion = read(&criterion_path);
     assert!(criterion.contains("id: ACME-AC-0001"), "{criterion}");
+    assert!(criterion.contains("verification_method: test"), "{criterion}");
     assert!(criterion.contains("verifies:"), "{criterion}");
-    assert!(criterion.contains("proven_by:"), "{criterion}");
-    assert!(criterion.contains("ACME-VER-0001"), "{criterion}");
-
-    let verification =
-        read(&consumer.join("docs/verifications/0001-the-replay-latency-test.md"));
+    let verification = read(&verification_path);
     assert!(verification.contains("id: ACME-VER-0001"), "{verification}");
     assert!(verification.contains("proves:"), "{verification}");
+
+    // A draft owes its far half only once it leaves `draft`, so a fresh trio
+    // passes a strict run with the near halves alone.
+    let checked = run(&consumer, &["check", "--strict"]);
+    assert_eq!(checked.code, Some(0), "{checked:?}");
+
+    // All three are settled, and `check --fix` writes the two far halves the
+    // scaffolder named. The requirement then reaches
+    // the criterion over `verified_by` and the criterion reaches the
+    // verification over `proven_by`, with no hand edit to either relation.
+    for path in [&requirement_path, &criterion_path, &verification_path] {
+        let text = read(path).replacen("status: draft\n", "status: current\n", 1);
+        std::fs::write(path, text).expect("the state is set");
+    }
+    let fixed = run(&consumer, &["check", "--fix"]);
+    assert_eq!(fixed.code, Some(0), "{fixed:?}");
+
+    let requirement = read(&requirement_path);
+    assert!(requirement.contains("id: ACME-REQ-0001"), "{requirement}");
+    assert!(
+        requirement.contains("verified_by:\n    - ACME-AC-0001"),
+        "{requirement}"
+    );
+    let criterion = read(&criterion_path);
+    assert!(
+        criterion.contains("proven_by:\n    - ACME-VER-0001"),
+        "{criterion}"
+    );
 
     let checked = run(&consumer, &["check", "--strict"]);
     assert_eq!(checked.code, Some(0), "{checked:?}");
     assert!(
-        !checked.out.contains("relation.reciprocity.missing"),
-        "{}\n{}",
+        checked.out.contains("\n  0 findings\n"),
+        "a settled trio reports nothing, a missing half or an unverified requirement included\n{}\n{}",
         checked.out,
         checked.err
     );
@@ -244,7 +272,7 @@ fn the_entry_resolves_beside_brd_prd_because_it_renames_the_three_addresses_brd_
     );
     let consumer = consumer(
         &root,
-        "brd-prd, evidence-and-obligation, requirement-verification",
+        "brd-prd, evidence-and-obligation, decision-record, requirement-verification",
         &overlay,
     );
     let validated = run(&consumer, &["taxonomy", "validate"]);
