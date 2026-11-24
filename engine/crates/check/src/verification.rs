@@ -627,6 +627,74 @@ pub fn plan(
     Ok(plan)
 }
 
+/// What `headwater observe` prints, and whether it refused anything.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Observed {
+    /// One line for each entry the snapshot now holds as asked, each ended
+    /// by a newline, for standard output.
+    pub out: String,
+    /// One sentence for each identifier that has no entry, for standard
+    /// error. Not empty means the verb exits 1.
+    pub refused: Vec<String>,
+    /// One line for standard error, ended by a newline, where the snapshot
+    /// already held every entry as asked and nothing was written. Empty
+    /// otherwise.
+    pub note: String,
+}
+
+/// `headwater observe` (#2024): [`plan`] the entries, then
+/// [`crate::observation::write`] them into the snapshot under `root`.
+///
+/// `Err` is a refusal of the whole call, and nothing is written: a commit
+/// [`plan`] refuses, or a snapshot that [`crate::observation::write`] refuses.
+/// An identifier that [`plan`] refuses is one line of [`Observed::refused`],
+/// and the entries of the others are still written.
+pub fn observe(
+    root: &std::path::Path,
+    declarations: &Declarations,
+    census: &Census,
+    graph: &Graph,
+    ids: &[String],
+    commit: &str,
+) -> Result<Observed, String> {
+    let plan = plan(declarations, census, graph, ids, commit)?;
+    let mut observed = Observed {
+        refused: plan
+            .refused
+            .iter()
+            .map(|(id, reason)| format!("`{id}` has no entry: {reason}"))
+            .collect(),
+        ..Observed::default()
+    };
+    if plan.entries.is_empty() {
+        return Ok(observed);
+    }
+    let entries: Vec<Observation> = plan
+        .entries
+        .iter()
+        .map(|(entry, _)| entry.clone())
+        .collect();
+    if crate::observation::write(root, &entries)? == crate::observation::Wrote::Unchanged {
+        observed.note = format!(
+            "headwater: {} already held every entry as asked, and nothing was written\n",
+            crate::observation::PATH
+        );
+    }
+    for (entry, criterion) in &plan.entries {
+        if let Observation::Verification {
+            verification,
+            criterion_digest,
+            ..
+        } = entry
+        {
+            observed.out.push_str(&format!(
+                "{verification} observed at {commit}, {criterion} at {criterion_digest}\n"
+            ));
+        }
+    }
+    Ok(observed)
+}
+
 /// The census's digest of the bytes at one path, which is the same digest
 /// [`crate::scope::EdgeEnd::digest`] hands the rule.
 fn digest_at<'a>(census: &'a Census, path: &str) -> Option<&'a str> {

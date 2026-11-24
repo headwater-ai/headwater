@@ -139,16 +139,18 @@ fn what_observe_writes_check_reads_as_observed_and_an_edited_criterion_reads_sus
     );
 }
 
-/// Done-when 2: a second run with the same input changes nothing.
+/// Done-when 2: a second run with the same input changes nothing. The second
+/// run names the verification two times, which still plans one entry.
 #[test]
 fn a_second_run_with_the_same_input_leaves_the_snapshot_byte_identical() {
     let root = pair("idempotent");
     let first = root.run(&["observe", VERIFICATION, "--commit", COMMIT]);
     assert_eq!(first.code, Some(0), "{first:?}");
     let once = snapshot(&root.at);
-    let second = root.run(&["observe", VERIFICATION, "--commit", COMMIT]);
+    let second = root.run(&["observe", VERIFICATION, VERIFICATION, "--commit", COMMIT]);
     assert_eq!(second.code, Some(0), "{second:?}");
     assert_eq!(snapshot(&root.at), once);
+    assert!(second.err.contains("nothing was written"), "{second:?}");
 }
 
 /// Every entry the verb does not write keeps its bytes, comments and a control

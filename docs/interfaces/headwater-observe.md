@@ -80,6 +80,8 @@ No environment variable reaches this verb. The identifiers, the commit and the r
 | `.headwater/observations.yml` | Read, then written. The verb writes the new bytes to a temporary file beside it, reads them back through the same parser as `check`, and renames the file over the old one. A failed write leaves the old file as it was. |
 | The corpus under `--root` | Read, through the census and the graph. Never written. |
 | `.headwater/taxonomy.lock` | Read. Never written. |
+| `.headwater/imports/` | Read where `.headwater/taxonomy.yml` declares an import, for the anchors that an imported snapshot supplies. An `imports` entry that does not read stops the verb with exit 1, and so does an `at` path outside the repository root. |
+| the path each `harvests.<name>.at` names | Read where `.headwater/taxonomy.yml` declares a pinned corpus export, for the anchors that export supplies. A `harvests` entry that does not read stops the verb with exit 1, and so does an `at` path outside the repository root. |
 
 The verb touches no cache and no claim store.
 
