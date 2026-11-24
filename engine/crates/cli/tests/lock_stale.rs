@@ -202,6 +202,54 @@ fn an_edit_that_changes_no_resolution_is_silent() {
     assert_eq!(other_errors(&control), other_errors(&edited));
 }
 
+/// A version the lock was not resolved from is named against the lock, and
+/// not only as a package that does not resolve.
+#[test]
+fn a_moved_version_names_the_version_the_lock_was_resolved_from() {
+    let root = Root::new("lock-stale-version");
+    let (_, control) = strict(&root);
+    let path = root.at.join(CONSUMER);
+    let text = std::fs::read_to_string(&path).expect("the declaration reads");
+    let from = "  version: 1.0.0\n";
+    assert!(text.contains(from), "the declaration takes 1.0.0: {text}");
+    std::fs::write(&path, text.replacen(from, "  version: 9.9.9\n", 1))
+        .expect("the declaration writes");
+
+    let (_, edited) = strict(&root);
+    assert_one_error_on(&control, &edited, CONSUMER);
+    let found = &stale(&edited)[0].text;
+    assert!(
+        found.contains("9.9.9")
+            && found.contains("the lock was resolved from headwater/standard 1.0.0"),
+        "{found}"
+    );
+}
+
+/// A deleted overlay is one finding, on the overlay. The selection is not read
+/// again over a source that is gone, which would report the same edit twice.
+#[test]
+fn a_deleted_overlay_is_one_error_on_the_overlay() {
+    let root = Root::new("lock-stale-deleted");
+    let (_, control) = strict(&root);
+    std::fs::remove_file(root.at.join(OVERLAY)).expect("the overlay is removed");
+
+    let (_, edited) = strict(&root);
+    assert_one_error_on(&control, &edited, OVERLAY);
+    assert!(stale(&edited)[0].text.contains("no digest"));
+}
+
+/// A root that holds the lock and not the package has nothing to hold the
+/// lock to, so the rule is silent there, as the pin rule is silent where
+/// nothing is pinned.
+#[test]
+fn a_root_with_the_lock_and_no_package_is_silent() {
+    let root = Root::new("lock-stale-lock-only");
+    std::fs::remove_dir_all(root.at.join(".headwater/packages/headwater-standard"))
+        .expect("the package is removed");
+    let (_, found) = strict(&root);
+    assert!(stale(&found).is_empty(), "{:?}", stale(&found));
+}
+
 /// `headwater mcp` reruns the binary for its `check` tool, and keeps the
 /// findings on files changed since it started. An overlay edited after the
 /// server started is one of them, so the answer names the rule and the verb.
