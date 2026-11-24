@@ -17,8 +17,17 @@
 identifier_schemes:
   fixture_id: {pattern: "SRR-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
 
+#
+# `governs_elsewhere` is a `governance` relation onto `other_path`, a second
+# anchor kind whose scope admits `kept.rs` alone. The prior `narrowing.md`
+# wrote `governs_elsewhere: stray.rs`, so a prior target is matched only
+# against the scope of the anchor kind its relation reaches: `stray.rs` is in
+# the `code_path` scope and not in the `other_path` scope, and it is no
+# finding.
+
 anchors:
   code_path: {resolver: source-tree, scope: [scope-ratchet-removal-src/**]}
+  other_path: {resolver: source-tree, scope: [scope-ratchet-removal-src/kept.rs]}
 
 kinds:
   governing_fixture:
@@ -34,6 +43,11 @@ relations:
     family: association
     from: [governing_fixture]
     to:   [code_path]
+    cardinality: many
+  governs_elsewhere:
+    family: governance
+    from: [governing_fixture]
+    to:   [other_path]
     cardinality: many
 
 shelves:
