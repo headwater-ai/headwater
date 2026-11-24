@@ -221,7 +221,7 @@ const HOMES: [(&str, &str); 14] = [
     ),
     (
         "docs/subsystems/projections-and-export.md",
-        "A relation view would carry the lineage of decisions and a traceability matrix.",
+        "A relation view is the traceability matrix, and it has an emitter.",
     ),
     (
         "docs/subsystems/projections-and-export.md",

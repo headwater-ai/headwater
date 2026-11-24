@@ -166,8 +166,15 @@ fn labelling(kind: Kind) -> Labelling {
             "an entry point is `{shelf, path, id}` for a machine, and the `id` member is \
              absent where the document has none. It offers a reader no string at all",
         ),
-        Kind::RelationView
-        | Kind::AgentRules
+        // A judgment, recorded in the build note of #2018 and not in
+        // HW-DR-0114: a matrix cell is a key to match, not a label to read.
+        Kind::RelationView => Labelling::NoDocumentLabel(
+            "a cell names a document by its identifier, which is the value the edges of the \
+             chain and the entries of the observation snapshot are keyed on, so a reader \
+             matches a cell to a relation target and to a snapshot entry. A document with no \
+             identifier prints its path, and a title in every cell would not fit a table row",
+        ),
+        Kind::AgentRules
         | Kind::Template
         | Kind::Transcription
         | Kind::CoverageReport => Labelling::Unbuilt,

@@ -36,6 +36,8 @@ docs/process/specs/README.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/requirements/README.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
+docs/requirements/traceability.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/reviews/README.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/spec/README.md

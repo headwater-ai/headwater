@@ -238,6 +238,8 @@ docs/decisions/0112-the-additive-campaign-measures-eleven-actions-by-five-layers
   typed: decision
 docs/decisions/0113-whether-an-agent-may-write-the-acceptance-stamp-while-the-default-branch-requires-no-approving-review.md
   typed: decision
+docs/decisions/0114-a-relation-view-follows-an-ordered-chain-of-relations-from-every-document-of-one-shelf.md
+  typed: decision
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md
@@ -1600,6 +1602,8 @@ docs/requirements/0005-a-code-path-names-every-document-that-governs-it.md
   typed: requirement
 docs/requirements/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/requirements/traceability.md
+  generated: `relation_view`, and `headwater generate --check` holds it rather than this census
 docs/reviews/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/reviews/core-concepts-findings-assessment.md

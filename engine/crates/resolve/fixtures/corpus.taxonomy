@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 4.25.0
+version: 4.27.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -1241,6 +1241,14 @@ projections:
       - decisions
       - specifications
     output: "{shelf}/README.md"
+  - kind: relation_view
+    for:
+      - verified_requirements
+    relations:
+      - verified_by
+      - proven_by
+      - cited_in
+    output: "{shelf}/traceability.md"
   - kind: shelf_index
     for:
       - spec_series
