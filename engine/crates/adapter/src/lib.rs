@@ -76,6 +76,7 @@ pub mod text;
 
 use headwater_census::census::Census as Taken;
 use headwater_check::adoption::Task;
+use headwater_check::paint::visible;
 use headwater_check::suppression::Suppression;
 use headwater_check::{Finding, Run, Severity};
 use headwater_graph::Graph;
@@ -803,7 +804,7 @@ fn blocks(artifact: &str) -> Vec<Record> {
         let line = plain(line);
         match line.starts_with("  ") && !line.starts_with("   ") {
             true => found.push(Record {
-                path: bare_path(line.split_whitespace().next().unwrap_or_default()).to_string(),
+                path: bare_path(opening(&line)).to_string(),
                 rule: line,
             }),
             false => {
@@ -830,6 +831,31 @@ fn blocks(artifact: &str) -> Vec<Record> {
     found
 }
 
+/// The location on the opening line of a text block.
+///
+/// `Finding::render` writes the location, a space and the severity word, with
+/// the glyph before the word under `Plain`. So the location is everything
+/// before that word and its glyph, and a path that holds a space arrives whole
+/// (#1970). A line that ends in no severity word opens no finding block, and
+/// its first word is enough for the filter in [`blocks`] to discard it.
+fn opening(line: &str) -> &str {
+    let line = line.trim();
+    for severity in [Severity::Error, Severity::Warn, Severity::Info] {
+        let Some(head) = line.strip_suffix(severity.to_string().as_str()) else {
+            continue;
+        };
+        let head = head.trim_end();
+        let head = head
+            .strip_suffix(headwater_check::paint::glyph(severity))
+            .unwrap_or(head)
+            .trim_end();
+        if !head.is_empty() {
+            return head;
+        }
+    }
+    line.split_whitespace().next().unwrap_or_default()
+}
+
 /// Why this finding is not among the ones a reader sees, as one sentence.
 ///
 /// Two formats write it: SARIF as the `justification` of a suppression, and the
@@ -842,8 +868,8 @@ pub(crate) fn held_by(entry: &Reported<'_>, escape: Escape) -> String {
         Escape::MigrationPending => match entry.task {
             Some(task) => format!(
                 "held by the adoption task {}, owned by {}, until {}",
-                task.id,
-                task.owner,
+                visible(&task.id),
+                visible(&task.owner),
                 task.until.render()
             ),
             None => "held by the adoption payload".to_string(),
@@ -852,11 +878,11 @@ pub(crate) fn held_by(entry: &Reported<'_>, escape: Escape) -> String {
             Some(directive) => {
                 let note = match directive.note.is_empty() {
                     true => String::new(),
-                    false => format!(" ({})", directive.note),
+                    false => format!(" ({})", visible(&directive.note)),
                 };
                 format!(
                     "suppressed at {}:{} as {}, until {}{note}",
-                    directive.path,
+                    visible(&directive.path),
                     directive.line,
                     directive.reason.name(),
                     directive.until.render()
@@ -965,11 +991,22 @@ pub fn census_with(run: &Run, format: Format, artifact: &str, loss: &[Loss]) -> 
     for (at, record) in written.iter().enumerate() {
         by_path.entry(record.path.as_str()).or_default().push(at);
     }
+    // The path each finding is written under. The two prose formats write it
+    // through `visible`, so a control character in a file name arrives as
+    // backslash text, and the record is matched in that form (#1970). The two
+    // machine formats are parsed, and a parser gives back the exact value.
+    let keys: Vec<std::borrow::Cow<'_, str>> = held_to
+        .iter()
+        .map(|entry| match format {
+            Format::Text | Format::Markdown => visible(&entry.finding.path),
+            Format::Json | Format::Sarif => std::borrow::Cow::Borrowed(entry.finding.path.as_str()),
+        })
+        .collect();
     let mut cursors: HashMap<(&str, &str), usize> = HashMap::new();
     let mut unaccounted = Vec::new();
     let mut carried = 0;
-    for entry in &held_to {
-        let (path, rule) = (entry.finding.path.as_str(), entry.finding.rule);
+    for (entry, key) in held_to.iter().zip(&keys) {
+        let (path, rule) = (key.as_ref(), entry.finding.rule);
         let found = by_path.get(path).and_then(|ats| {
             let next = cursors.entry((path, rule)).or_insert(0);
             while *next < ats.len()
@@ -986,7 +1023,9 @@ pub fn census_with(run: &Run, format: Format, artifact: &str, loss: &[Loss]) -> 
             }
             None => unaccounted.push(format!(
                 "{} {} at {}",
-                entry.finding.rule, entry.finding.path, entry.finding.line
+                entry.finding.rule,
+                visible(&entry.finding.path),
+                entry.finding.line
             )),
         }
     }

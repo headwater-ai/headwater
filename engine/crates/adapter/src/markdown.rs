@@ -31,6 +31,7 @@
 //! write, in the one form this format has for anything.
 
 use crate::{reported, Carrier, Escape, Loss, Reported, Subject};
+use headwater_check::paint::visible;
 use headwater_check::{Coverage, Run, Scoped, Severity};
 
 /// What a job summary cannot carry, and where each value went instead.
@@ -222,7 +223,7 @@ fn scoped_to(scoped: &Scoped) -> String {
             scoped.unmatched.len()
         );
         for path in &scoped.unmatched {
-            let _ = writeln!(out, "- `{path}`");
+            let _ = writeln!(out, "- `{}`", visible(path));
         }
         out.push('\n');
     }
@@ -236,7 +237,7 @@ fn scoped_to(scoped: &Scoped) -> String {
             scoped.unstated.len()
         );
         for (document, target) in &scoped.unstated {
-            let _ = writeln!(out, "- `{document}` onto `{target}`");
+            let _ = writeln!(out, "- `{}` onto `{}`", visible(document), visible(target));
         }
         out.push('\n');
     }
@@ -291,7 +292,7 @@ fn coverage_of(coverage: &Coverage) -> String {
             coverage.unaccounted.len()
         );
         for path in &coverage.unaccounted {
-            let _ = writeln!(out, "- `{path}`");
+            let _ = writeln!(out, "- `{}`", visible(path));
         }
         out.push('\n');
     }
@@ -338,10 +339,15 @@ fn word(severity: Severity) -> &'static str {
 
 /// The location, in the form the text report writes: a finding with no line is
 /// about the document rather than about a place in it.
+///
+/// The path is written through [`visible`], so a line feed in a file name
+/// cannot end the row and an escape sequence cannot reach the terminal that
+/// shows the report (#1970). The census reads the row in the same form.
 fn at(entry: &Reported<'_>) -> String {
+    let path = visible(&entry.finding.path);
     match entry.finding.line {
-        0 => entry.finding.path.clone(),
-        line => format!("{}:{line}", entry.finding.path),
+        0 => path.into_owned(),
+        line => format!("{path}:{line}"),
     }
 }
 
@@ -350,9 +356,11 @@ fn at(entry: &Reported<'_>) -> String {
 /// A pipe would end the cell and a newline would end the row, so both are
 /// escaped rather than dropped: a message this engine writes is the sentence a
 /// reader acts on, and a truncated one sends them to the source to find out
-/// what it said.
+/// what it said. A line feed becomes a space, as it always has. Every other
+/// control character, which a message quotes from a document, is written
+/// through [`visible`] (#1970).
 fn cell(message: &str) -> String {
-    message.replace('|', "\\|").replace('\n', " ")
+    visible(&message.replace('|', "\\|").replace('\n', " ")).into_owned()
 }
 
 #[cfg(test)]

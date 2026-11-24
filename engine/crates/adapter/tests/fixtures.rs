@@ -530,6 +530,227 @@ fn every_finding_reaches_every_format() {
     }
 }
 
+/// The file name of #1970: a line feed that opens a forged workflow command,
+/// and an escape sequence that turns a terminal red.
+const HOSTILE_PATH: &str = "docs/decisions/0003-x\n::error ::forged-name\u{1b}[31m.md";
+
+/// The identifier of #1970, which clears a terminal and turns it red.
+const HOSTILE_ID: &str = "\u{1b}[2J\u{1b}[31m";
+
+/// Every scalar of a parsed artifact, at any depth.
+fn scalars(value: &Value, into: &mut Vec<String>) {
+    match value {
+        Value::Scalar(found) => into.push(headwater_yaml::core_schema::as_str(found).to_string()),
+        Value::Seq(items) => items.iter().for_each(|item| scalars(&item.value, into)),
+        Value::Map(map) => map
+            .iter()
+            .for_each(|entry| scalars(&entry.value.value, into)),
+    }
+}
+
+/// A file name or an identifier that a document supplies reaches no format
+/// with a control character intact, forges no line, and costs no finding
+/// (#1970).
+///
+/// Text and Markdown write each control character as a visible backslash form,
+/// and JSON and SARIF write it with their own string escape, so a parser gives
+/// back the exact value. The census of each artifact still carries every
+/// finding, which is the third clause of the issue: before the fix, the line
+/// feed split the text record and the Markdown row, and the audit read the
+/// path as `docs/decisions/0003-x`.
+#[test]
+fn a_control_character_from_a_document_reaches_no_format_intact() {
+    let mut ran = fixture_run();
+    assert!(ran.run.findings.len() > 1, "two findings to make hostile");
+    ran.run.findings[0].path = HOSTILE_PATH.to_string();
+    for finding in ran.run.findings.iter_mut().take(2) {
+        finding.message.push_str(HOSTILE_ID);
+        finding.remediation.push_str(HOSTILE_ID);
+    }
+    // The read set lists every file a run read, so the hostile file is in it
+    // too, and the text report prints it.
+    for digest in [None, Some("sha256:0".to_string())] {
+        ran.run.read_set.inputs.push(Input {
+            path: HOSTILE_PATH.to_string(),
+            digest,
+        });
+    }
+    // An obligation identifier and an adoption task's id and owner come from
+    // the taxonomy and the lock, which an adopter writes, and the text report
+    // prints all three.
+    ran.run.findings[0].obligation = Some(format!("OB-\n::error ::x{HOSTILE_ID}"));
+    assert!(
+        ran.run
+            .adoption
+            .tasks
+            .iter()
+            .any(|task| ran.run.adoption.pending.iter().any(|finding| task
+                .pairs
+                .iter()
+                .any(|pair| pair.rule == finding.rule && pair.path == finding.path))),
+        "the fixture run holds a pending finding under a task"
+    );
+    for task in &mut ran.run.adoption.tasks {
+        task.id = format!("task\n::error ::id{HOSTILE_ID}");
+        task.owner = format!("owner\n::error ::owner{HOSTILE_ID}");
+        task.statement = format!("a statement\n::error ::statement{HOSTILE_ID}");
+    }
+    // A task the engine refuses and a key it does not read are named in the
+    // ledger with the reason, and the adopter wrote both names in the lock.
+    ran.run
+        .adoption
+        .refused
+        .push(headwater_check::adoption::Refused {
+            task: format!("refused\n::error ::task{HOSTILE_ID}"),
+            why: format!("a reason\n::error ::why{HOSTILE_ID}"),
+        });
+    ran.run
+        .adoption
+        .unread
+        .push(headwater_check::adoption::Unread {
+            key: format!("key\n::error ::key{HOSTILE_ID}"),
+            why: format!("a reason\n::error ::unread{HOSTILE_ID}"),
+        });
+    // A blocking control over the hostile finding's rule, so the text report
+    // lists that finding by its path in the block of what `--strict` fails on.
+    let rule = ran.run.findings[0].rule;
+    let control = ran
+        .run
+        .register
+        .controls
+        .first_mut()
+        .expect("the fixture register declares a control");
+    control.posture = Some(headwater_check::register::Posture::Blocking);
+    control.mechanism = headwater_check::register::Mechanism::Rule(rule.to_string());
+    // A suppression directive's note is prose an author wrote, and the reason
+    // an escaped finding is not reported quotes it.
+    assert!(
+        !ran.run.suppressions.suppressions.is_empty(),
+        "the fixture run carries a suppression"
+    );
+    for suppression in &mut ran.run.suppressions.suppressions {
+        suppression.note = format!("a note\n::error ::forged{HOSTILE_ID}");
+        // The directive's own path is a file name too, and the reason an
+        // escaped finding is not reported names it.
+        suppression.path = format!("{}{HOSTILE_ID}", suppression.path);
+    }
+    // The census lists the rows it did not type in the text report, so one of
+    // them takes the hostile name as well, and an exclusion pattern and reason
+    // that the overlay supplies carry the hostile identifier.
+    let untyped = ran
+        .census
+        .rows
+        .iter_mut()
+        .find(|row| !matches!(row.outcome, census::Outcome::Typed { .. }))
+        .expect("the fixture tree holds a row the census does not type");
+    untyped.path = HOSTILE_PATH.to_string();
+    untyped.outcome = census::Outcome::Excluded {
+        pattern: format!("docs/**{HOSTILE_ID}"),
+        reason: format!("excluded\n::error ::forged{HOSTILE_ID}"),
+    };
+    let escaped_path = "docs/decisions/0003-x\\n::error ::forged-name\\x1b[31m.md";
+    // Both layouts, because `--verbose` adds the rule scopes and the read set
+    // to the text report (#1990), and the read set names every file.
+    let layouts = Format::ALL
+        .into_iter()
+        .flat_map(|format| [(format, false), (format, true)]);
+    for (format, verbose) in layouts {
+        let artifact = render_as(&ran, format, headwater_check::fill::WIDTH, verbose);
+        let name = format!("{} (verbose {verbose})", format.name());
+        let raw = artifact
+            .bytes()
+            .find(|byte| (*byte < 0x20 && *byte != b'\n') || *byte == 0x7f);
+        assert_eq!(raw, None, "{name} writes a raw control byte");
+        let forged: Vec<&str> = artifact
+            .lines()
+            .filter(|line| line.trim_start().starts_with("::"))
+            .collect();
+        assert!(forged.is_empty(), "{name} writes a forged line: {forged:?}");
+        let audited = headwater_adapter::census(&ran.run, format, &artifact);
+        assert!(
+            !audited.is_defective(),
+            "the {name} adapter dropped {:?}",
+            audited.unaccounted
+        );
+        assert_eq!(audited.carried, audited.findings, "{name}");
+        // The complaint a caller prints on standard error names each dropped
+        // finding by its path, so an artifact that carries nothing makes it
+        // name the hostile one too.
+        let complaint = headwater_adapter::census(&ran.run, format, "").complaint(format);
+        assert!(complaint.contains("forged-name"), "{name}: {complaint}");
+        assert!(
+            !complaint
+                .bytes()
+                .any(|byte| (byte < 0x20 && byte != b'\n') || byte == 0x7f),
+            "{name} complains with a raw control byte: {complaint:?}"
+        );
+        assert!(
+            !complaint
+                .lines()
+                .any(|line| line.trim_start().starts_with("::")),
+            "{name} complains with a forged line: {complaint}"
+        );
+        match format {
+            Format::Text | Format::Markdown => assert!(
+                artifact.contains(escaped_path),
+                "{name} does not write the escaped path"
+            ),
+            Format::Json | Format::Sarif => {
+                let mut found = Vec::new();
+                scalars(&parse(&artifact), &mut found);
+                assert!(
+                    found.iter().any(|one| one == HOSTILE_PATH),
+                    "{name} does not give back the exact path"
+                );
+                assert!(
+                    found.iter().any(|one| one.ends_with(HOSTILE_ID)),
+                    "{name} does not give back the exact message"
+                );
+            }
+        }
+    }
+}
+
+/// A path that a change manifest names reaches no format with a control
+/// character intact either (#1970).
+///
+/// A manifest is a file an author or a hook writes, so the paths it names that
+/// bind to no row, and the `verified` lines that name no edge, are as hostile
+/// as a file name.
+#[test]
+fn a_control_character_from_a_change_manifest_reaches_no_format_intact() {
+    let mut ran = scoped_run();
+    let change = ran
+        .run
+        .change
+        .as_mut()
+        .expect("the scoped run reads a change");
+    change.unmatched.push(HOSTILE_PATH.to_string());
+    change
+        .unstated
+        .push((HOSTILE_PATH.to_string(), format!("HW-DR-{HOSTILE_ID}")));
+    // Both layouts, because `--verbose` adds the rule scopes and the read set
+    // to the text report (#1990), and the read set names every file.
+    let layouts = Format::ALL
+        .into_iter()
+        .flat_map(|format| [(format, false), (format, true)]);
+    for (format, verbose) in layouts {
+        let artifact = render_as(&ran, format, headwater_check::fill::WIDTH, verbose);
+        let name = format!("{} (verbose {verbose})", format.name());
+        let raw = artifact
+            .bytes()
+            .find(|byte| (*byte < 0x20 && *byte != b'\n') || *byte == 0x7f);
+        assert_eq!(raw, None, "{name} writes a raw control byte");
+        assert!(
+            !artifact
+                .lines()
+                .any(|line| line.trim_start().starts_with("::")),
+            "{name} writes a forged line"
+        );
+        assert!(artifact.contains("forged-name"), "{name} names the path");
+    }
+}
+
 /// Every entry of every loss set reaches one of the three outcomes, and the
 /// three sum to the entries declared.
 ///

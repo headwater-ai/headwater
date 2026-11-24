@@ -847,6 +847,70 @@ fn no_escape_byte_reaches_a_document_this_binary_writes() {
     }
 }
 
+/// No control character that a document supplies reaches either stream of
+/// `check --no-color`, in any of the four formats (#1970).
+///
+/// The file name holds a line feed that opens a GitHub Actions workflow command
+/// and an escape sequence, and the identifier of a second document clears the
+/// terminal. Before the fix, the text and Markdown reports printed both raw, the
+/// line feed split a record, and the census then reported a finding as dropped
+/// on standard error and exited 1. Unix only, because no Windows file name can
+/// hold a line feed.
+#[cfg(unix)]
+#[test]
+fn no_control_character_from_a_document_reaches_check_output() {
+    let root = common::Root::shaped("json-hostile-names", |at| {
+        let decisions = at.join("docs/decisions");
+        let body = |id: &str| {
+            format!(
+                "---\nid: {id}\ntitle: A hostile name\nstatus: current\nstatus_since: 2026-08-01\n\
+                 last_verified: 2026-08-01\nsummary: A document whose name or identifier holds a \
+                 control character.\nprovenance:\n  warrant: accepted\n  agency: human\n  \
+                 accepted_by: a.person\n  evidence_basis: unevidenced\n---\n\n# A hostile \
+                 name\n\n## Context\n\nA name.\n\n## Decision\n\nA name.\n\n## Consequences\n\n\
+                 A name.\n"
+            )
+        };
+        std::fs::write(
+            decisions.join("0003-x\n::error ::forged-name\u{1b}[31m.md"),
+            body("HW-DR-0003"),
+        )
+        .expect("the hostile file name writes");
+        std::fs::write(
+            decisions.join("0004-y.md"),
+            body("HW-DR-\u{1b}[2J\u{1b}[31m4"),
+        )
+        .expect("the hostile identifier writes");
+    });
+    for format in ["text", "json", "markdown", "sarif"] {
+        let run = root.run(&["check", "--no-color", "--format", format]);
+        for (stream, text) in [("stdout", &run.out), ("stderr", &run.err)] {
+            assert!(
+                !text.contains('\u{1b}'),
+                "`check --format {format}` writes an escape byte on {stream}: {run:?}"
+            );
+            let forged: Vec<&str> = text
+                .lines()
+                .filter(|line| line.trim_start().starts_with("::"))
+                .collect();
+            assert!(
+                forged.is_empty(),
+                "`check --format {format}` forges a line on {stream}: {forged:?}"
+            );
+        }
+        assert!(
+            !run.err.contains("dropped"),
+            "`check --format {format}` drops a finding: {}",
+            run.err
+        );
+        assert!(
+            run.out.contains("forged-name"),
+            "`check --format {format}` reports the hostile file: {}",
+            run.out
+        );
+    }
+}
+
 /// Every document this binary writes names its own shape, and not the engine's.
 ///
 /// A consumer outside this repository holds no clone, so a document that named

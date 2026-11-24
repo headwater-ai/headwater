@@ -81,6 +81,7 @@
 
 use crate::context::Date;
 use crate::instance::{Input, Instance, Outcome};
+use crate::paint::visible;
 use crate::scope::Grain;
 
 /// One rule as a run served it: which edition ran, and whether it read the
@@ -252,13 +253,16 @@ impl ReadSet {
         for (rule, version) in &self.versions {
             let _ = writeln!(out, "version {rule} {version}");
         }
+        // A path is a file name the tree supplies, so a control character in
+        // one is written as visible text and never reaches the terminal or a
+        // CI log as an instruction (#1970). JSON and SARIF write the exact path.
         for input in &self.inputs {
             let _ = match &input.digest {
-                Some(digest) => writeln!(out, "input {} {digest}", input.path),
+                Some(digest) => writeln!(out, "input {} {digest}", visible(&input.path)),
                 // Written rather than dropped, and written so that a reader
                 // cannot mistake it for a hash. An input with no digest is the
                 // one entry that stops a gate deciding anything.
-                None => writeln!(out, "input {} -", input.path),
+                None => writeln!(out, "input {} -", visible(&input.path)),
             };
         }
         out

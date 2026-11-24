@@ -89,6 +89,19 @@ pub fn fold_at(text: &str, width: usize, tail: usize) -> String {
         .join("\n")
 }
 
+/// Whether a word would open a GitHub Actions workflow command at the start of
+/// a line.
+///
+/// Every fold here breaks only at a space, so a word that opens `::` reaches
+/// the start of a line only when a fold puts it there. A report quotes values
+/// that a document supplies, and a title or a message that holds ` ::error`
+/// would then open a line that a CI log reads as a command (#1970). So such a
+/// word stays on the line before it, past the width if it must, for the reason
+/// a word longer than the width is written whole.
+fn opens_a_command(word: &str) -> bool {
+    word.starts_with("::")
+}
+
 fn one_line(text: &str, width: usize, tail: usize) -> String {
     let words: Vec<&str> = text.split_whitespace().collect();
     if words.is_empty() {
@@ -106,7 +119,7 @@ fn one_line(text: &str, width: usize, tail: usize) -> String {
         if used == 0 {
             out.push_str(word);
             used = measure;
-        } else if used + 1 + measure <= width {
+        } else if used + 1 + measure <= width || opens_a_command(word) {
             out.push(' ');
             out.push_str(word);
             used += 1 + measure;
@@ -143,7 +156,9 @@ pub fn block(out: &mut String, indent: usize, label: &str, text: &str, width: us
                     line.push_str(word);
                     written = true;
                 }
-                true => match line.chars().count() + 1 + word.chars().count() <= width {
+                true => match line.chars().count() + 1 + word.chars().count() <= width
+                    || opens_a_command(word)
+                {
                     true => {
                         line.push(' ');
                         line.push_str(word);
@@ -231,7 +246,9 @@ fn one_indented(line: &str, width: usize) -> String {
                 line_out.push_str(word);
                 written = true;
             }
-            true => match line_out.chars().count() + 1 + word.chars().count() <= width {
+            true => match line_out.chars().count() + 1 + word.chars().count() <= width
+                || opens_a_command(word)
+            {
                 true => {
                     line_out.push(' ');
                     line_out.push_str(word);
@@ -342,6 +359,24 @@ pub fn unfoldable(line: &str, width: usize) -> bool {
 #[cfg(test)]
 mod tests {
     use super::{block, filled, fold, fold_at, unfoldable, WIDEST, WIDTH};
+
+    /// No fold puts a word that opens `::` at the start of a line, in any of
+    /// the three ways a report is laid out (#1970).
+    #[test]
+    fn no_fold_opens_a_line_with_a_workflow_command() {
+        let text = "a title that quotes ::error ::forged and then ::warning";
+        let opens = |laid: &str| laid.lines().any(|line| line.trim_start().starts_with("::"));
+        for width in 8..60 {
+            assert!(!opens(&fold(text, width)), "fold at {width}");
+            assert!(
+                !opens(&filled(&format!("  {text}"), width)),
+                "filled at {width}"
+            );
+            let mut out = String::new();
+            block(&mut out, 2, "fix: ", text, width);
+            assert!(!opens(&out), "block at {width}: {out}");
+        }
+    }
 
     #[test]
     fn a_folded_line_is_never_wider_than_the_width() {
