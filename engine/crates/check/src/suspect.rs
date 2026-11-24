@@ -597,8 +597,12 @@ impl EdgeCheck for Suspect<'_> {
                         false => Reach::Set(revision.covered().unwrap_or(reached)),
                     },
                     under,
-                    edge.verified_as_baseline(),
-                ),
+                ) + match edge.verified_as_baseline() {
+                    // A baseline stamp recorded no reading, so the reader is
+                    // told the digest it moved from was never read (#2016).
+                    true => BASELINE_MOVED,
+                    false => "",
+                },
                 match (declares, &recorded) {
                     // `--fix` cannot write an attribute the relation does
                     // not declare, so this remedy names the reason and not
@@ -786,6 +790,12 @@ enum Under {
     Unnamed,
 }
 
+/// The clause a moved digest ends with where the edge carries
+/// `verified_as: baseline` (#2016).
+const BASELINE_MOVED: &str = ". The recorded digest is a baseline, written by `headwater check \
+                              --fix --baseline`, and it records no reading of what the entry \
+                              reaches";
+
 /// A moved digest, in the terms of the document that declares the edge.
 fn moved(
     id: &str,
@@ -795,7 +805,6 @@ fn moved(
     current: &str,
     reach: Reach,
     under: Under,
-    baseline: bool,
 ) -> String {
     let mut text = match reach {
         Reach::One => format!(
@@ -812,14 +821,6 @@ fn moved(
             }
         ),
     };
-    // A baseline stamp recorded no reading, so the reader is told the digest
-    // it moved from was never read against (#2016).
-    if baseline {
-        text.push_str(
-            ". The recorded digest is a baseline, written by `headwater check --fix --baseline`, \
-             and it records no reading of what the entry reaches",
-        );
-    }
     let what = match reach {
         Reach::One => "the entry",
         Reach::Set(_) => "a file it covers",
@@ -1028,18 +1029,7 @@ mod tests {
     /// reader in a commit hook learns which act the finding asks for.
     #[test]
     fn a_moved_digest_says_whether_this_change_names_what_it_reaches() {
-        let text = |under| {
-            moved(
-                "GS-FIX",
-                "governs",
-                "lib.sh",
-                "a",
-                "b",
-                Reach::One,
-                under,
-                false,
-            )
-        };
+        let text = |under| moved("GS-FIX", "governs", "lib.sh", "a", "b", Reach::One, under);
         let plain = text(Under::NoChange);
         assert!(!plain.contains("This change"), "{plain}");
         let named = text(Under::Named);
@@ -1060,7 +1050,6 @@ mod tests {
             "b",
             Reach::Set(3),
             Under::Unnamed,
-            false,
         );
         assert!(set.contains("3 regular files"), "{set}");
         assert!(
