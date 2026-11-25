@@ -91,7 +91,7 @@ The four-step process in the header of `.headwater/packages/headwater-standard/p
 
 ### How the two releases depend on each other
 
-The workflows do not depend on each other, and a taxonomy release needs no engine version bump. The one link is `requires_engine` in `taxonomy-source/headwater-standard/package.yml`. When a package version raises that floor, cut the engine release that satisfies it first. An engine release depends on no taxonomy release. [HW-DR-0088](../../decisions/0088-an-engine-release-and-a-taxonomy-release-have-disjoint-tag-namespaces-and-are-cut-independently.md) is the record of this rule.
+The workflows do not depend on each other, and a taxonomy release needs no engine version bump. The one link is `requires_engine` in `taxonomy-source/headwater-standard/package.yml`. Raise that floor in the same change that makes the package use a member that older engines do not read, to the first engine version that reads it. Package 4.27.0 declares a `relation_view` with `relations`, which engines before 0.7 refuse, so its floor is `>=0.7` ([#2081](https://github.com/headwater-ai/headwater/issues/2081)). When a package version raises that floor, cut the engine release that satisfies it first. An engine release depends on no taxonomy release. [HW-DR-0088](../../decisions/0088-an-engine-release-and-a-taxonomy-release-have-disjoint-tag-namespaces-and-are-cut-independently.md) is the record of this rule.
 
 ## When a step fails
 
