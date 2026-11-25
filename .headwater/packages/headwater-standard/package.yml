@@ -79,7 +79,7 @@ package: headwater/standard
 # names both files and both numbers. Whether a taxonomy source should carry a
 # version at all is a meta-schema question that #212 leaves open.
 version: 4.27.0
-requires_engine: ">=0.1 <2"
+requires_engine: ">=0.7 <2"
 
 contents:
   taxonomy: taxonomy.yml
