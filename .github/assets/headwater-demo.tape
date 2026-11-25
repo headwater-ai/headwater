@@ -46,7 +46,7 @@ Sleep 300ms
 Enter
 Sleep 3s
 
-Type "headwater taxonomy vendor https://github.com/headwater-ai/headwater/releases/download/taxonomy/headwater-standard/v4.13.0/headwater-standard-4.13.0.zip --expect sha256:b0f032403027e4c003396172c6ca3767709dcefa64317cbfc18dfa253adfb2a3"
+Type "headwater taxonomy vendor https://github.com/headwater-ai/headwater/releases/download/taxonomy/headwater-standard/v4.27.0/headwater-standard-4.27.0.zip --expect sha256:bd91ea00021d012163e5af81b96b17fc450e17eb263433106b25323ef017e867"
 Sleep 300ms
 Enter
 Sleep 4s
@@ -55,7 +55,7 @@ Type "clear"
 Enter
 Type "# Steps 5 and 6: pin the version, and give the identifiers a namespace"
 Enter
-Type "sed -i 's/  version: 0.0.0/  version: 4.13.0/' .headwater/taxonomy.yml"
+Type "sed -i 's/  version: 0.0.0/  version: 4.27.0/' .headwater/taxonomy.yml"
 Enter
 Type "sed -i 's/^add: {}$/add:\n  identifier_schemes.decision_id.namespace: ACME/' .headwater/overlay.yml"
 Enter
