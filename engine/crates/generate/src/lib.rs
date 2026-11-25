@@ -1702,8 +1702,8 @@ fn graph_export(
 pub fn unbuilt(kind: Kind) -> Option<&'static str> {
     match kind {
         Kind::AgentRules => Some(
-            "the glossary names the artifact and no document states its form, so an emitter here \
-             would be this engine inventing a schema for somebody else's consumer",
+            "HW-DR-0115 states its form, a budgeted pointer at the Copilot instructions path, \
+             and the emitter that writes it is not built yet",
         ),
         Kind::Template => Some(
             "a template is the permitted relations, facets and sections of a kind, which \
