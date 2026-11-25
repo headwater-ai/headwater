@@ -515,9 +515,17 @@ const BUDGET_RULE: &str = "projection.budget.exceeded";
 /// standard `regulates` the delivery functional spec, which is the governance
 /// family, so it precedes it. The technical spec `realizes` the functional
 /// spec, `nucleus: to`, so the functional spec is its nucleus and precedes it.
+///
+/// The technical spec is renamed `build.md`, so that the order of the rule
+/// paths is `api-design`, `build`, `functional`, which is not the reading
+/// order. A prune by path order would then keep the satellite and drop its
+/// nucleus, which is the defect the cases exist to catch.
 const STANDARD: &str = ".github/instructions/api-design.instructions.md";
 const NUCLEUS: &str = ".github/instructions/functional.instructions.md";
-const SATELLITE: &str = ".github/instructions/technical.instructions.md";
+const SATELLITE: &str = ".github/instructions/build.instructions.md";
+
+/// The source of [`SATELLITE`], renamed from `technical.md`.
+const SATELLITE_SOURCE: &str = "docs/component-specs/delivery/build.md";
 
 /// An `agent_rules` over every shelf with the two budget figures given.
 fn every_shelf(per_file: u64, aggregate: u64) -> String {
@@ -534,7 +542,12 @@ fn every_shelf(per_file: u64, aggregate: u64) -> String {
 fn three_rules(root: &Root) -> (PathBuf, [u64; 3]) {
     let consumer = beacon_declaring(root, &every_shelf(1_000_000, 1_000_000));
     govern(&consumer.join("docs/component-specs/delivery/functional.md"));
-    govern(&consumer.join("docs/component-specs/delivery/technical.md"));
+    std::fs::rename(
+        consumer.join("docs/component-specs/delivery/technical.md"),
+        consumer.join(SATELLITE_SOURCE),
+    )
+    .expect("the technical spec is renamed");
+    govern(&consumer.join(SATELLITE_SOURCE));
     let generated = run(&consumer, &["generate"]);
     assert_eq!(generated.code, Some(0), "{generated:?}");
     let size = |path: &str| read(&consumer.join(path)).len() as u64;
@@ -544,13 +557,16 @@ fn three_rules(root: &Root) -> (PathBuf, [u64; 3]) {
 
 /// Declares the budget again and resolves, so that the next run reads it.
 fn rebudget(consumer: &Path, per_file: u64, aggregate: u64) {
-    write(
-        &consumer.join(".headwater/overlay.yml"),
-        &read(&consumer.join(".headwater/overlay.yml")).replace(
-            &every_shelf(1_000_000, 1_000_000),
-            &every_shelf(per_file, aggregate),
-        ),
-    );
+    let overlay = read(&consumer.join(".headwater/overlay.yml"));
+    let rebudgeted: String = overlay
+        .lines()
+        .map(|line| match line.starts_with("      budget: ") {
+            true => format!("      budget: {{per_file: {per_file}, aggregate: {aggregate}}}\n"),
+            false => format!("{line}\n"),
+        })
+        .collect();
+    assert_ne!(overlay, rebudgeted, "the overlay declares a budget");
+    write(&consumer.join(".headwater/overlay.yml"), &rebudgeted);
     let resolved = run(consumer, &["taxonomy", "resolve"]);
     assert_eq!(resolved.code, Some(0), "{resolved:?}");
 }
@@ -609,6 +625,7 @@ fn an_aggregate_two_rules_fit_prunes_the_satellite_and_check_reports_the_project
 
     // The satellite's rule that the larger budget wrote is still on disk, and
     // it carries the marker, so it would keep loading: the gate names it.
+    let left = read(&consumer.join(SATELLITE));
     let stale = run(&consumer, &["generate", "--check"]);
     assert_eq!(stale.code, Some(1), "{stale:?}");
     let verdict = stale
@@ -626,7 +643,7 @@ fn an_aggregate_two_rules_fit_prunes_the_satellite_and_check_reports_the_project
     let sources = [
         "docs/standards/api-design.md",
         "docs/component-specs/delivery/functional.md",
-        "docs/component-specs/delivery/technical.md",
+        SATELLITE_SOURCE,
     ];
     let before: Vec<String> = sources
         .iter()
@@ -644,6 +661,26 @@ fn an_aggregate_two_rules_fit_prunes_the_satellite_and_check_reports_the_project
     assert!(consumer.join(NUCLEUS).is_file(), "{pruned:?}");
     let clean = run(&consumer, &["generate", "--check"]);
     assert_eq!(clean.code, Some(0), "{clean:?}");
+
+    // Over a tree that is otherwise current, the marked copy alone fails the
+    // gate, and a write removes it again.
+    write(&consumer.join(SATELLITE), &left);
+    let held = run(&consumer, &["generate", "--check"]);
+    assert_eq!(held.code, Some(1), "{held:?}");
+    let removed = run(&consumer, &["generate"]);
+    assert_eq!(removed.code, Some(0), "{removed:?}");
+    assert!(!consumer.join(SATELLITE).exists(), "{removed:?}");
+
+    // An unmarked file at the path is authored: the gate passes over it, and
+    // a write leaves it as it is.
+    let authored = "Hand-written instructions.\n";
+    write(&consumer.join(SATELLITE), authored);
+    let beside = run(&consumer, &["generate", "--check"]);
+    assert_eq!(beside.code, Some(0), "{beside:?}");
+    let kept = run(&consumer, &["generate"]);
+    assert_eq!(kept.code, Some(0), "{kept:?}");
+    assert_eq!(read(&consumer.join(SATELLITE)), authored, "{kept:?}");
+    std::fs::remove_file(consumer.join(SATELLITE)).expect("the authored file is removed");
 
     // From an empty directory, the same two files and not the third.
     std::fs::remove_dir_all(consumer.join(".github/instructions")).expect("the rules are removed");
@@ -679,7 +716,7 @@ fn a_rule_past_per_file_is_not_written_and_check_names_its_size_and_the_layer_to
     let (over, source) = match largest {
         size if size == standard => (STANDARD, "docs/standards/api-design.md"),
         size if size == nucleus => (NUCLEUS, "docs/component-specs/delivery/functional.md"),
-        size if size == satellite => (SATELLITE, "docs/component-specs/delivery/technical.md"),
+        size if size == satellite => (SATELLITE, SATELLITE_SOURCE),
         _ => unreachable!(),
     };
     let per_file = largest - 1;
@@ -713,6 +750,18 @@ fn a_rule_past_per_file_is_not_written_and_check_names_its_size_and_the_layer_to
     }
     let current = run(&consumer, &["generate", "--check"]);
     assert_eq!(current.code, Some(0), "{current:?}");
+
+    // The aggregate reads the rules that the per-file figure did not
+    // withhold: the other two fit it exactly, so no aggregate finding.
+    rebudget(
+        &consumer,
+        per_file,
+        standard + nucleus + satellite - largest,
+    );
+    let exact = run(&consumer, &["check"]);
+    let found = budget_findings(&exact);
+    assert_eq!(found.len(), 1, "the per-file finding alone\n{exact:?}");
+    assert!(found[0].contains(over), "{found:?}");
 }
 
 /// The gate in its third direction: a budget every rule fits exactly gives no
@@ -744,7 +793,7 @@ fn a_budget_every_rule_fits_exactly_reports_nothing_and_writes_all_three() {
 fn a_satellite_that_would_fit_the_gap_its_pruned_nucleus_left_is_pruned_too() {
     let root = Root::scratch("gap");
     let (consumer, _) = three_rules(&root);
-    let technical = consumer.join("docs/component-specs/delivery/technical.md");
+    let technical = consumer.join(SATELLITE_SOURCE);
     std::fs::write(
         &technical,
         read(&technical).replacen(
