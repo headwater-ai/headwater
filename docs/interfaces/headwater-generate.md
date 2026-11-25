@@ -10,6 +10,8 @@ relations:
     - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
     - engine/crates/generate/src/lib.rs
     - .headwater/corpus.json
+  traces_to:
+    - HW-DR-0115
 ---
 
 # headwater generate
