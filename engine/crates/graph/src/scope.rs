@@ -206,6 +206,83 @@ impl Scope {
             })
             .collect()
     }
+
+    /// The one decision about this scope read against the tree beside the
+    /// taxonomy, which `taxonomy validate` and `headwater check` both take
+    /// (#2099).
+    ///
+    /// `base` is the root the resolver's paths are relative to, `sources` the
+    /// taxonomy sources the resolution read, and `own` the content
+    /// directories of a package manifest at the root, as
+    /// [`tree_directories`] takes them. `ignored` is what the count leaves
+    /// out: `validate` passes what git ignores, and the check passes
+    /// [`Ignored::default`], because spec 12 keeps every version control
+    /// command off that loop. That is the one way the two answers can differ,
+    /// and the `headwater check` contract states it.
+    ///
+    /// Where no tree stands beside the taxonomy, the count is skipped (owner
+    /// ruling 2026-09-25, #951 and #1103). Otherwise the answer is each
+    /// pattern that matches no entry, with the resolver's reason.
+    pub fn coverage(
+        self,
+        resolvers: &Resolvers,
+        base: &Path,
+        sources: &[String],
+        own: &[String],
+        ignored: Ignored,
+    ) -> Coverage {
+        let beside = tree_directories(base, sources, own, &ignored);
+        if self.tree_is_absent(resolvers, &beside) {
+            Coverage::NoTree {
+                patterns: self.members.len(),
+            }
+        } else {
+            Coverage::Unmatched(self.ignoring(ignored).unmatched(resolvers))
+        }
+    }
+}
+
+/// What [`Scope::coverage`] found: the count skipped, or every pattern that
+/// matches no entry of the tree.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Coverage {
+    /// No tree stands beside the taxonomy, so the count of its `patterns` is
+    /// skipped and nothing is refused.
+    NoTree { patterns: usize },
+    /// Each pattern that matches no entry, as the taxonomy wrote it, with the
+    /// resolver's reason, in declaration order. Empty where every pattern
+    /// matches.
+    Unmatched(Vec<(String, String)>),
+}
+
+impl Coverage {
+    /// The one-line notice both verbs print where the count is skipped, and
+    /// `None` where it is not.
+    pub fn notice(&self) -> Option<String> {
+        match self {
+            Coverage::NoTree { patterns } => {
+                let noun = if *patterns == 1 {
+                    "pattern"
+                } else {
+                    "patterns"
+                };
+                Some(format!(
+                    "governed scope: no tree beside this taxonomy, so the coverage count of its \
+                     {patterns} {noun} is skipped"
+                ))
+            }
+            Coverage::Unmatched(_) => None,
+        }
+    }
+
+    /// Each pattern that matches no entry, with the reason. Empty where the
+    /// count is skipped.
+    pub fn unmatched(&self) -> &[(String, String)] {
+        match self {
+            Coverage::NoTree { .. } => &[],
+            Coverage::Unmatched(unmatched) => unmatched,
+        }
+    }
 }
 
 /// The directories at the top of `base` that could hold a tree, sorted.

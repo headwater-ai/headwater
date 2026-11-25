@@ -193,6 +193,7 @@ pub mod retention;
 pub mod retired;
 pub mod scope;
 pub mod scope_ratchet;
+pub mod scope_unmatched;
 pub mod sections;
 pub mod self_target;
 pub mod shape;
@@ -246,7 +247,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 56] = [
+pub const RULES: [&str; 57] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
@@ -303,6 +304,7 @@ pub const RULES: [&str; 56] = [
     import_pin::RULE,
     verification::RULE,
     agent_budget::RULE,
+    scope_unmatched::RULE,
 ];
 
 /// The declarations one run reads, from a taxonomy that is already resolved.
@@ -368,6 +370,13 @@ pub struct Declared<'a> {
     /// The caller reads it, because the crate that measures a rule file
     /// depends on this one. See [`agent_budget`].
     pub agent_budgets: &'a [agent_budget::Reading],
+    /// The governed scope read against the tree beside the taxonomy: the
+    /// count skipped, or each pattern that matches no entry. `None` where the
+    /// caller read no lock or took no reading.
+    ///
+    /// Read off the tree on the terms [`Self::pin`] is, through the one
+    /// decision `taxonomy validate` takes. See [`scope_unmatched`].
+    pub scope_coverage: Option<&'a headwater_graph::scope::Coverage>,
     /// Every pinned corpus export `.headwater/taxonomy.yml` declares under
     /// `harvests`, as the caller read it, and empty where it took no reading.
     ///
@@ -434,6 +443,13 @@ pub struct Run {
     /// the read set: a reader who cannot see what a run was scoped to cannot
     /// reproduce it from what it printed. See [`Scoped`].
     pub change: Option<Scoped>,
+    /// The one-line notice that the governed scope was not counted, because
+    /// no tree stands beside the taxonomy, and `None` where it was counted or
+    /// no reading was taken. It states what the run did not read, as the
+    /// change does, so the text report prints it, and the JSON and SARIF
+    /// formats carry nothing for it: `taxonomy validate` prints the same line,
+    /// and [`scope_unmatched`] reports no finding there (#2099).
+    pub scope_notice: Option<String>,
     /// What this run did with its cache. Deliberately outside [`Run::render`]:
     /// see [`cache`] for why a hit count is not part of a verdict.
     pub cache: cache::Report,
@@ -800,6 +816,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             agent_budget::SCOPE,
             agent_budget::VERSION,
             agent_budget::EXPORTABLE_AS,
+        ),
+        (
+            scope_unmatched::RULE,
+            scope_unmatched::SCOPE,
+            scope_unmatched::VERSION,
+            scope_unmatched::EXPORTABLE_AS,
         ),
     ]
 }
@@ -1311,6 +1333,13 @@ pub fn run(
         declared.agent_budgets,
         declared.source,
     ));
+    // A governed scope pattern that matches no entry of the tree, as an
+    // error, for the same reason: it is about the taxonomy read against the
+    // tree, and `taxonomy validate` refuses the same pattern (#2099).
+    findings.extend(scope_unmatched::findings(
+        declared.scope_coverage,
+        declared.source,
+    ));
     // A pinned corpus export that did not read, as an error that names the
     // pin, for the same reason: spec 7 owes the finding whether or not an
     // anchor reaches the export.
@@ -1471,6 +1500,9 @@ pub fn run(
             declared.observations,
         ),
         change,
+        scope_notice: declared
+            .scope_coverage
+            .and_then(headwater_graph::scope::Coverage::notice),
         cache: cache.report(),
     };
     phase::mark("run.findings");
@@ -1724,6 +1756,11 @@ impl Run {
             out.push_str(&change.render());
         }
         out.push_str(&self.coverage.render());
+        // The governed scope that was not counted, beside coverage for its
+        // reason: it says what this run did not read (#2099).
+        if let Some(notice) = &self.scope_notice {
+            let _ = writeln!(out, "{notice}");
+        }
         // Spec 7 puts the count of open pairs "beside coverage", and spec 4
         // says what it adds there: a payload that never shrinks is visible from
         // the second run rather than at its expiry.

@@ -119,6 +119,7 @@ fn run_in(name: &str, ctx: &Context, cache: &mut Cache) -> Run {
             pin: None,
             lock_stale: None,
             agent_budgets: &[],
+            scope_coverage: None,
             harvests: &[],
             imports: &[],
             adoption: None,

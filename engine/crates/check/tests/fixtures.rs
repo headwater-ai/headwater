@@ -154,6 +154,7 @@ fn run_scanning(
             pin: None,
             lock_stale: None,
             agent_budgets: &[],
+            scope_coverage: None,
             harvests: &[],
             imports: &[],
             adoption,
@@ -2036,6 +2037,9 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             // `projection.budget.exceeded`, taxonomy grained like
             // `taxonomy.lock.stale`: an agent rules projection read against
             // the rule files it would write.
+            Grain::Taxonomy,
+            // `relation.scope.unmatched`, on the same terms: the governed
+            // scope read against the tree beside the taxonomy (#2099).
             Grain::Taxonomy,
         ]
     );

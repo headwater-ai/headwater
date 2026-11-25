@@ -67,9 +67,9 @@ use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::{
     adoption, agent_budget, basis, command, coverage, dependency, endpoint, harvest, import_pin,
-    initial_dependency, lock_stale, outside_root, pin, reciprocity, register, surface, suspect,
-    target, verification, Cache, Context, Date, Declared, Observation, Observations, Outcome,
-    Register, Run, Shape, RULES,
+    initial_dependency, lock_stale, outside_root, pin, reciprocity, register, scope_unmatched,
+    surface, suspect, target, verification, Cache, Context, Date, Declared, Observation,
+    Observations, Outcome, Register, Run, Shape, RULES,
 };
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
@@ -132,6 +132,12 @@ const UNCOVERED: &[(&str, &str)] = &[
         "the runner reaches it from the agent rule measurement the caller took, outside any \
          instance, so no cache entry holds its verdict; its cases are unit tests in \
          src/agent_budget.rs and the CLI cases in cli/tests/agent_rules.rs",
+    ),
+    (
+        scope_unmatched::RULE,
+        "the runner reaches it from the governed scope reading the caller took against the \
+         tree, outside any instance, so no cache entry holds its verdict; its cases are unit \
+         tests in src/scope_unmatched.rs and the CLI cases in cli/tests/scope_unmatched.rs",
     ),
     (
         harvest::RULE,
@@ -375,6 +381,7 @@ fn run(recorded: &Recorded, root: &Path) -> Run {
             pin: None,
             lock_stale: None,
             agent_budgets: &[],
+            scope_coverage: None,
             harvests: &[],
             imports: &[],
             adoption: None,

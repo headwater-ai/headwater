@@ -188,6 +188,7 @@ fn the_check_layer_reports_no_unresolved_target_over_an_imported_edge() {
             pin: None,
             lock_stale: None,
             agent_budgets: &[],
+            scope_coverage: None,
             harvests: &[],
             imports: &[],
             adoption: None,

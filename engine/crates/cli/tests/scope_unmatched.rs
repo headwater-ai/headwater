@@ -35,6 +35,11 @@ use std::process::Command;
 const RULE: &str = "relation.scope.unmatched";
 const WILDCARD: &str = "mod-*/src/main/**";
 
+/// The words every finding of the rule opens its message with. The rule's
+/// name alone is no test of a finding, because the register in the text
+/// report lists every rule by name.
+const FINDING: &str = "governed scope pattern `";
+
 /// A repository root that removes itself.
 struct Root {
     at: PathBuf,
@@ -175,7 +180,7 @@ fn check_strict_passes_where_every_governed_scope_pattern_matches() {
     root.resolve();
     let ran = root.run(&["check", "--strict"]);
     assert_eq!(ran.code, Some(0), "{ran:?}");
-    assert!(!ran.out.contains(RULE), "{ran:?}");
+    assert!(!ran.out.contains(FINDING), "{ran:?}");
     assert!(!ran.out.contains("governed scope:"), "{ran:?}");
 }
 
@@ -202,9 +207,14 @@ fn check_strict_refuses_a_governed_scope_pattern_that_opens_on_a_wildcard() {
     );
     assert!(!report.contains("`site/**`"), "{ran:?}");
     assert_eq!(
-        ran.out.matches(&format!("{RULE} (")).count(),
+        report.matches(FINDING).count(),
         1,
         "one finding, on the one pattern: {ran:?}"
+    );
+    // The control `OB-REL-13` binds the rule, so the finding names it.
+    assert!(
+        report.contains(&format!("{RULE} (OB-REL-13): {FINDING}{WILDCARD}`")),
+        "{ran:?}"
     );
 
     let validated = root.run(&["taxonomy", "validate"]);
@@ -238,7 +248,8 @@ fn check_strict_refuses_a_governed_scope_pattern_whose_literal_root_is_missing()
 /// A taxonomy with no tree beside it, as one published as its own repository
 /// has, is not refused for its scope (owner ruling 2026-09-25, #951 and
 /// #1103). `check --strict` exits 0, reports no finding of this rule, and
-/// prints the one-line notice `taxonomy validate` prints.
+/// prints the notice `taxonomy validate` prints. The text report folds a line
+/// at its width, so the case reads the report with whitespace folded.
 ///
 /// The root keeps the four files the house regime lists outside the corpus
 /// root. Each is a file at the top or under `.github/`, so none of them is a
@@ -251,28 +262,26 @@ fn check_skips_the_governed_scope_with_a_notice_where_no_tree_is_beside_the_taxo
     root.resolve();
     let ran = root.run(&["check", "--strict"]);
     assert_eq!(ran.code, Some(0), "{ran:?}");
-    assert!(!ran.out.contains(RULE), "{ran:?}");
-    let notices: Vec<&str> = ran
+    assert!(!ran.out.contains(FINDING), "{ran:?}");
+    let report = flat(&ran.out);
+    assert_eq!(report.matches("governed scope").count(), 1, "{ran:?}");
+
+    // The notice `taxonomy validate` prints on one line, word for word.
+    let validated = root.run(&["taxonomy", "validate"]);
+    assert_eq!(validated.code, Some(0), "{validated:?}");
+    let notices: Vec<&str> = validated
         .out
         .lines()
         .filter(|line| line.contains("governed scope"))
         .collect();
-    assert_eq!(notices.len(), 1, "{ran:?}");
+    assert_eq!(notices.len(), 1, "{validated:?}");
     assert!(notices[0].contains("no tree"), "{notices:?}");
     assert!(notices[0].contains("skipped"), "{notices:?}");
-
-    // The same notice `taxonomy validate` prints, word for word.
-    let validated = root.run(&["taxonomy", "validate"]);
-    assert_eq!(validated.code, Some(0), "{validated:?}");
-    let said = validated
-        .out
-        .lines()
-        .find(|line| line.contains("governed scope"))
-        .expect("validate prints the notice");
-    assert_eq!(notices[0].trim(), said.trim(), "{ran:?}");
+    assert!(report.contains(&flat(notices[0])), "{ran:?}");
 
     // JSON carries no notice and no finding of the rule.
     let json = root.run(&["check", "--strict", "--format", "json"]);
     assert_eq!(json.code, Some(0), "{json:?}");
-    assert!(!json.out.contains(RULE), "{json:?}");
+    assert!(!json.out.contains(FINDING), "{json:?}");
+    assert!(!json.out.contains("governed scope:"), "{json:?}");
 }

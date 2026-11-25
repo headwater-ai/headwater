@@ -158,6 +158,12 @@ pub struct Session {
     /// because `taxonomy validate` and `generate` refuse that already. See
     /// [`headwater_check::agent_budget`].
     pub agent_budgets: Vec<headwater_check::agent_budget::Reading>,
+    /// The governed scope read against the tree beside the taxonomy, through
+    /// the one decision `taxonomy validate` takes, with nothing ignored.
+    /// Taken once per load and never cached, for the reason `pin` is. `None`
+    /// for a candidate, which carries no lock. See
+    /// [`headwater_check::scope_unmatched`].
+    pub scope_coverage: Option<headwater_graph::scope::Coverage>,
     /// Each pinned corpus export, as the resolver built for it read it: whether
     /// it binds, and why not. Read once per load beside the resolver set and
     /// never cached, for the reason `pin` is. See
@@ -433,6 +439,30 @@ impl Session {
             ..Config::default()
         };
         let graph = Graph::build(&census, &relations, &resolvers, &corpus, &config);
+        // The governed scope against the tree, through the session's own
+        // resolvers so the walks the graph build took are reused (#2099). The
+        // sources are the paths the lock records, which are the paths the
+        // resolution read. A package manifest at the root that does not read
+        // names no directory here, because `taxonomy validate` refuses it.
+        // Nothing is ignored, because spec 12 keeps every version control
+        // command off the check loop.
+        let scope_coverage = bound.lock.as_ref().map(|lock| {
+            let sources: Vec<String> = lock
+                .sources
+                .iter()
+                .map(|source| source.path.clone())
+                .collect();
+            let own = headwater_resolve::package::manifest_at(&corpus.base)
+                .map(|manifest| headwater_resolve::package::content_roots(&manifest))
+                .unwrap_or_default();
+            headwater_graph::scope::Scope::declared(&relations).coverage(
+                &resolvers,
+                &corpus.base,
+                &sources,
+                &own,
+                headwater_graph::scope::Ignored::default(),
+            )
+        });
         let pin = headwater_check::pin::Pin::read(root, &consumer);
         let lock_stale = bound.lock.as_ref().and_then(|lock| {
             let recorded: Vec<(String, String)> = lock
@@ -453,6 +483,7 @@ impl Session {
             pin,
             lock_stale,
             agent_budgets: Vec::new(),
+            scope_coverage,
             harvests: harvested,
             imported,
             consumer,
@@ -506,6 +537,7 @@ impl Session {
             pin: Some(&self.pin),
             lock_stale: self.lock_stale.as_ref(),
             agent_budgets: &self.agent_budgets,
+            scope_coverage: self.scope_coverage.as_ref(),
             harvests: &self.harvests,
             imports: &self.imported,
             adoption: self.bound.adoption.as_ref(),
