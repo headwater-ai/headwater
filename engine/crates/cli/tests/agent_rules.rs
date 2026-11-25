@@ -615,8 +615,7 @@ fn an_aggregate_two_rules_fit_prunes_the_satellite_and_check_reports_the_project
     assert_eq!(clean.code, Some(0), "{clean:?}");
 
     // From an empty directory, the same two files and not the third.
-    std::fs::remove_dir_all(consumer.join(".github/instructions"))
-        .expect("the rules are removed");
+    std::fs::remove_dir_all(consumer.join(".github/instructions")).expect("the rules are removed");
     let generated = run(&consumer, &["generate"]);
     assert_eq!(generated.code, Some(0), "{generated:?}");
     assert!(consumer.join(STANDARD).is_file(), "{generated:?}");
@@ -671,8 +670,7 @@ fn a_rule_past_per_file_is_not_written_and_check_names_its_size_and_the_layer_to
         );
     }
 
-    std::fs::remove_dir_all(consumer.join(".github/instructions"))
-        .expect("the rules are removed");
+    std::fs::remove_dir_all(consumer.join(".github/instructions")).expect("the rules are removed");
     let generated = run(&consumer, &["generate"]);
     assert_eq!(generated.code, Some(0), "{generated:?}");
     assert!(!consumer.join(over).exists(), "{generated:?}");
