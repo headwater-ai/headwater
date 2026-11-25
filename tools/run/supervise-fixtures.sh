@@ -38,6 +38,10 @@ export HW_RUN_CHECKOUT="$scratch/checkout"
 unset HW_RUN_ALLOW_STALE
 # The loop must set this itself, so the host's value cannot pass the case.
 unset CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS
+# A session the run loop started exports its own thresholds (THRESHOLD=300000,
+# K=12), and with them 12 of 51 cases failed inside such a session (#1997).
+# Each case sets the value it tests, so the host's value is cleared first.
+unset HW_SUPERVISE_THRESHOLD HW_SUPERVISE_K HW_SUPERVISE_FIVE_HOUR HW_SUPERVISE_ARGS HW_SUPERVISE_FF
 
 passed=0
 failed=0
@@ -46,6 +50,11 @@ fail() { printf 'FAIL %s\n  %s\n' "$1" "$2"; failed=$((failed + 1)); }
 same() {
     if [ "$2" = "$3" ]; then pass "$1"; else fail "$1" "expected \`$2\`, got \`$3\`"; fi
 }
+
+# The unset above holds only while it names every variable the loop exports.
+# Run inside a loop session, a name it drops is still set here (#1997).
+same 'none of the loop thresholds reaches the cases' '' \
+    "$(env | grep -E '^HW_SUPERVISE_(THRESHOLD|K|FIVE_HOUR|ARGS|FF)=' | cut -d= -f1 | tr '\n' ' ')"
 
 cat > "$HW_SUPERVISE_CLAUDE" <<'EOF'
 #!/bin/sh

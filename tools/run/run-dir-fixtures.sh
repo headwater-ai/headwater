@@ -520,7 +520,7 @@ sh "$tool" stage "$resume" 11 verified-fail >"$scratch/out" 2>&1
 sh "$tool" claim "$resume" 13 issue-13 b-file >>"$scratch/out" 2>&1
 same 'without a drain file, stage and claim print no DRAIN' 0 "$(grep -c '^DRAIN$' "$scratch/out")"
 sh "$tool" release "$resume" 13 >/dev/null 2>&1
-printf '{"iter":1,"issue":12,"pr":3,"merge":"m","verdict":"refused","proved":"p","opened":[],"closed":[]}\n' >> "$resume/log.jsonl"
+printf '{"iter":1,"issue":12,"pr":3,"merge":"89abcdef","verdict":"merge","proved":"p","opened":[],"closed":[12]}\n' >> "$resume/log.jsonl"
 same 'next skips an issue the log records, and prints EMPTY when nothing is left' EMPTY "$(sh "$tool" next "$resume" 2>&1)"
 : > "$resume/log.jsonl"
 # A `Refs` slice merge closes nothing and does not release the issue, so the
@@ -530,6 +530,18 @@ same 'resume still prints an issue whose logged merge closed nothing' 'verified-
     "$(sh "$tool" resume "$resume" 2>&1 | awk '$1 == 11 { print $2, $3 }')"
 printf '{"iter":1,"issue":11,"pr":912,"merge":"4567cdef","verdict":"merge","proved":"p","opened":[],"closed":[11]}\n' >> "$resume/log.jsonl"
 same '  and drops it once a logged merge closes it' '' "$(sh "$tool" resume "$resume" 2>&1 | awk '$1 == 11')"
+: > "$resume/log.jsonl"
+# An ejection releases nothing (#1996): a line whose merge is not a commit and
+# that closed nothing leaves the handover to resume, as PR #1991 of run
+# 20261122-next1959 did not.
+printf '{"iter":1,"issue":11,"pr":913,"merge":"ejected","verdict":"merge","proved":"p","opened":[],"closed":[]}\n' >> "$resume/log.jsonl"
+same 'resume still prints an issue whose logged pull request was ejected' 'verified-fail iterate' \
+    "$(sh "$tool" resume "$resume" 2>&1 | awk '$1 == 11 { print $2, $3 }')"
+: > "$resume/log.jsonl"
+# The predicate is "and closed nothing": a line with no commit that still
+# records the issue closed ends it.
+printf '{"iter":1,"issue":11,"pr":914,"merge":null,"verdict":"merge","proved":"p","opened":[],"closed":[11]}\n' >> "$resume/log.jsonl"
+same '  and drops one whose line with no commit records it closed' '' "$(sh "$tool" resume "$resume" 2>&1 | awk '$1 == 11')"
 : > "$resume/log.jsonl"
 printf -- '- 2026-10-29 — RULED #11 gated (run %s): remainder ruled a separate issue\n' "${resume##*/}" >> "$resume/decisions.md"
 same 'resume drops a handover whose issue this run ruled gated' '' "$(sh "$tool" resume "$resume" 2>&1 | awk '$1 == 11')"

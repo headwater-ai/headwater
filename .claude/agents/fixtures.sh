@@ -10,7 +10,7 @@
 # definition's instructions, and a skill name nobody matches never loads. This
 # suite is what reports the drift.
 #
-# Seventeen cases, and this list is the one place that names them all:
+# Eighteen cases, and this list is the one place that names them all:
 #
 #     1   every agent a command or an agent dispatches is a definition
 #     2   every skill an agent invokes is a skill on this tree
@@ -30,6 +30,7 @@
 #     15  the first session hands the run to supervise.sh
 #     16  a one-line lesson is ruled Apply and applied at the end of the run
 #     17  a paid experiment never enters the build-order loop
+#     18  the applied lessons of run 20261122-0114 keep their operative words
 #
 # The ceilings are the reason two of them exist. The parent's
 # context is the unit of cost ([HW-PD-0003]), so the command and the doctrine
@@ -1326,6 +1327,44 @@ if [ -f "$paid_command" ]; then
 else
     fail 'the arms on next-experiment.md run' 'the command does not exist'
 fi
+
+# --- 18. the applied lessons of run 20261122-0114 keep their operative words --
+
+# Four lessons of run 20261122-0114 were remedies of one sentence each in an
+# agent definition or in the run policy. Nothing else reads those sentences,
+# so a later edit that drops one fails silently and the run repeats the
+# defect: a builder rebuilt a branch whose veto it had already answered (#1986),
+# a verify report was a stub on disk (#1969), a title still said Closes on a
+# Refs slice and closed the issue (PR #2065), and the first session's
+# fast-forward went unstated (#1997). One row each, in the shape of the upkeep
+# rows above.
+lesson_rows='agents/hw-iterate.md@F@`verified-fail` dispatches a verify, not a builder, when the `## Follow-up` of `build.md` answers the finding
+agents/hw-iterate.md@F@first write its returned block to `<scratch>/verify-report.md` if that file is absent or shorter than the block
+agents/hw-integrate.md@F@On a `merge-refs` ruling, a title that still says `Closes #N` or `Fixes #N` is a `LEFT` line
+agents/hw-integrate.md@F@`sh tools/run/run-dir.sh start` runs it for the first session
+skills/hw-run-policy/SKILL.md@F@which `run-dir.sh start` runs for the first session'
+lesson_lost() {
+    printf '%s\n' "$lesson_rows" | while IFS='@' read -r path mode phrase; do
+        grep -q"$mode"F -- "$phrase" "$1/$path" || printf '%s: %s\n' "$path" "$phrase"
+    done
+}
+printf '\n# the applied lessons of run 20261122-0114 keep their operative words\n'
+lost=$(lesson_lost "$root/.claude")
+if [ -z "$lost" ]; then
+    pass "each of the $(printf '%s\n' "$lesson_rows" | wc -l | tr -d ' ') applied lessons is stated"
+else
+    fail 'each applied lesson of run 20261122-0114 is stated' "lost: $lost"
+fi
+# Its refusal arm: a loop agent that rebuilds every vetoed handover is reported.
+mkdir -p "$scratch/lessons/agents" "$scratch/lessons/skills/hw-run-policy"
+cp "$agents/hw-integrate.md" "$scratch/lessons/agents/"
+cp "$skills/hw-run-policy/SKILL.md" "$scratch/lessons/skills/hw-run-policy/"
+sed 's/`verified-fail` dispatches a verify, not a builder,/`verified-fail` dispatches a fresh builder,/' "$agents/hw-iterate.md" > "$scratch/lessons/agents/hw-iterate.md"
+lost=$(lesson_lost "$scratch/lessons")
+case $lost in
+    'agents/hw-iterate.md: `verified-fail` dispatches a verify, not a builder,'*) pass 'and a loop agent that rebuilds an answered veto is reported' ;;
+    *) fail 'a loop agent that rebuilds an answered veto is reported' "reported: \`$lost\`" ;;
+esac
 
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]
