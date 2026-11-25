@@ -166,6 +166,7 @@ fn run_at(base: &Path, now: &str) -> Run {
             observations: &headwater_check::Observations::empty(),
             pin: None,
             lock_stale: None,
+            agent_budgets: &[],
             harvests: &[],
             imports: &[],
             adoption: None,

@@ -66,6 +66,7 @@ fn run_over(scratch: &Scratch, declaration: &Declaration, cache: &mut Cache) -> 
             observations: &headwater_check::Observations::empty(),
             pin: None,
             lock_stale: None,
+            agent_budgets: &[],
             harvests: &[],
             imports: &[],
             adoption: None,
