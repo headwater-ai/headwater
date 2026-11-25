@@ -143,7 +143,15 @@ fn subfolder(label: &str) -> (Root, Scratch) {
     git(&root, &["add", "-A"]);
     git(
         &root,
-        &["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "base"],
+        &[
+            "-c",
+            "user.name=t",
+            "-c",
+            "user.email=t@t",
+            "commit",
+            "-qm",
+            "base",
+        ],
     );
     std::fs::write(&tool, "echo ungoverned\n").expect("the tool writes");
     let name = root.at.file_name().expect("a name").to_string_lossy();
@@ -201,12 +209,16 @@ fn strict_in_sub(root: &Root, manifest: &std::path::Path) -> common::Ran {
 fn a_subfolder_root_raises_the_ungoverned_add_from_the_manifest_headwater_change_wrote() {
     let (root, out) = subfolder("scope-ratchet-subfolder");
     let dir = out.0.join("change");
-    let made = in_sub(&root, &["change", "HEAD", dir.to_str().expect("a UTF-8 path")]);
+    let made = in_sub(
+        &root,
+        &["change", "HEAD", dir.to_str().expect("a UTF-8 path")],
+    );
     assert_eq!(made.code, Some(0), "{}{}", made.out, made.err);
     let manifest = dir.join("manifest");
     let text = std::fs::read_to_string(&manifest).expect("the manifest reads");
     assert!(
-        text.lines().any(|line| line == "added\tsub/tools/ungoverned.sh"),
+        text.lines()
+            .any(|line| line == "added\tsub/tools/ungoverned.sh"),
         "headwater change writes from the git top level: {text}"
     );
     let ran = strict_in_sub(&root, &manifest);
@@ -233,7 +245,8 @@ fn a_path_outside_the_subfolder_root_is_named_and_reaches_no_rule() {
     assert_eq!(ran.code, Some(1), "{}{}", ran.out, ran.err);
     assert_eq!(findings(&ran.out), 1, "{}", ran.out);
     assert!(
-        !ran.out.contains("relation.scope.ungoverned (tools/outside.sh"),
+        !ran.out
+            .contains("relation.scope.ungoverned (tools/outside.sh"),
         "{}",
         ran.out
     );
