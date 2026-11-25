@@ -339,8 +339,8 @@ fn check_counts_no_directory_that_holds_a_taxonomy_source_as_a_tree() {
     )
     .expect("the declaration writes");
     root.resolve();
-    let lock = std::fs::read_to_string(root.at.join(".headwater/taxonomy.lock"))
-        .expect("the lock reads");
+    let lock =
+        std::fs::read_to_string(root.at.join(".headwater/taxonomy.lock")).expect("the lock reads");
     assert!(
         lock.contains("path: taxonomy/overlay.yml"),
         "the lock records the moved overlay"
