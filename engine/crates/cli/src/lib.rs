@@ -432,8 +432,11 @@ pub enum Verb {
                     change lands, which spec 12 fixes as the merge base of a proposed change and \
                     the committed `HEAD` of a working-tree hook. Every path is held against the \
                     corpus this run walks, and one that reaches no row of it is counted and named \
-                    in the report rather than absorbed. No path is normalized, so `./docs/a.md` \
-                    reaches no row. What this engine cannot check is whether the manifest tells \
+                    in the report rather than absorbed. Each path is written from the git top \
+                    level, as `headwater change` writes it, and the run strips the root's own \
+                    prefix below that top level. A path outside the root reaches no rule and is \
+                    named in the report. No other path is normalized, so `./docs/a.md` reaches \
+                    no row. What this engine cannot check is whether the manifest tells \
                     the truth: a line that says `added` for a document that already stood, and a \
                     document the change carried and the manifest omits, are both invisible without \
                     the history that spec 12 rules out as an input"
