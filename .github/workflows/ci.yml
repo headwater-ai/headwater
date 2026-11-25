@@ -2446,6 +2446,7 @@ jobs:
         # first, for the next step (#977).
         env:
           HEADWATER_TUTORIAL_KEEP: ${{ runner.temp }}/tutorial-corpus
+          HEADWATER_TUTORIAL_KEEP_ENGINE: ${{ runner.temp }}/tutorial-engine
           HEADWATER_TUTORIAL_RELEASE: '1'
         run: sh .claude/tutorial/fixtures.sh
       - name: The site guide builds the tutorial corpus, its last step holds the site, and a missing page fails it
@@ -2465,8 +2466,15 @@ jobs:
         # navigation builds" already installed in this job, and the script
         # fails when the guide's `pip install` line pins another version
         # (#1370). So the guide's pin and that step's pin move together.
+        #
+        # The engine is the one the tutorial step drove, which is the release
+        # the pages install. The kept corpus asks for that release's engine
+        # range, and an adopter who follows the tutorial and then this guide
+        # runs one binary for both. The engine of this branch refuses that
+        # range once a release pull request moves the version.
         env:
           MKDOCS: python3 -m mkdocs
+          HEADWATER_BIN: ${{ runner.temp }}/tutorial-engine/headwater
         run: sh integrations/site-generator/fixtures/build-site.sh "$RUNNER_TEMP/tutorial-corpus"
       - name: The n8n fixture READMEs print a recipe and state its figures, and this runs it
         # `docs/taxonomies/*/fixtures/n8n/README.md`, three of them, each type a

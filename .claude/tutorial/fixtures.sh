@@ -102,6 +102,18 @@ if [ -z "$bin" ] || [ ! -x "$bin" ]; then
   exit 1
 fi
 
+# `HEADWATER_TUTORIAL_KEEP_ENGINE` names a directory to copy the engine this
+# walk drives into, beside the corpus `HEADWATER_TUTORIAL_KEEP` keeps. A step
+# that reads the kept corpus runs this engine, because the corpus asks for the
+# engine range of the binary that wrote it. In release mode that is the
+# release the page installs, and the engine of this tree refuses that range
+# once a version bump moves it, so the kept corpus and the engine of this tree
+# disagree for every release pull request.
+if [ -n "${HEADWATER_TUTORIAL_KEEP_ENGINE:-}" ]; then
+  mkdir -p "$HEADWATER_TUTORIAL_KEEP_ENGINE"
+  cp "$bin" "$HEADWATER_TUTORIAL_KEEP_ENGINE/headwater"
+fi
+
 if [ -z "$fetched" ]; then
   HEADWATER_BIN=$bin exec python3 "$root/.claude/tutorial/drive.py" "$root"
 fi
