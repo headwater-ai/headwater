@@ -24,19 +24,19 @@ relations:
 
 ## Context
 
-Spec 5 says that rules load when an agent opens a file that matches, and that a rule is a generated pointer to the standard it derives from. It also says that a rule obeys a size budget, per file and in aggregate. The projection kind `agent_rules` had a place in the meta-schema and no emitter. Its reason in `unbuilt()` said that no document states the form of the file. No member of a projection could hold a budget, and [HW-OBL-0034](../obligations/0034-two-rules-of-taxonomy-validate-name-a-declaration.md) records that gap.
+Spec 5 says that rules load when an agent opens a file that matches. A rule is a generated pointer to the standard that it derives from. It also says that a rule obeys a size budget, per file and in aggregate. The projection kind `agent_rules` had a place in the meta-schema and no emitter. Its reason in `unbuilt()` said that no document states the form of the file. No member of a projection could hold a budget, and [HW-OBL-0034](../obligations/0034-two-rules-of-taxonomy-validate-name-a-declaration.md) records that gap.
 
-The owner ruled on 2026-11-25, in a comment on [#2026](https://github.com/headwater-ai/headwater/issues/2026): build the projection with the size budget that spec 5 requires, and do not restate spec 5 to drop the budget. The same comment states seven defaults for the build. The owner did not rule on them, and they stand unless the owner overturns them on #2026. The owner's ruling and the seven defaults are the evidence for this record.
+The owner ruled on 2026-11-25, in a comment on [#2026](https://github.com/headwater-ai/headwater/issues/2026): build the projection with the size budget that spec 5 requires. Spec 5 is not restated to drop the budget. The same comment states seven defaults for the build. The owner did not rule on them, and they stand unless the owner overturns them on #2026. The owner's ruling and the seven defaults are the evidence for this record.
 
 [#2087](https://github.com/headwater-ai/headwater/issues/2087) is the first of four build issues. This record states the form, so that the emitter of [#2089](https://github.com/headwater-ai/headwater/issues/2089) implements a statement and does not make one.
 
 ## Decision
 
-**The form is one file for each source document, at the GitHub Copilot path.** The output is `.github/instructions/{name}.instructions.md`. `{name}` is the file stem of the source document, which is its file name without `.md`. Two source documents with one stem would write one file, and the emitter refuses that and does not overwrite. Spec 16 lists this path as the one glob-scoped surface of the three harnesses. A `CLAUDE.md` or an `AGENTS.md` in each directory waits, because adopters write those files themselves, and a generator would collide with them. The output ends in `.md`, so the census reads its marker.
+**The form is one file for each source document, at the GitHub Copilot path.** The output is `.github/instructions/{name}.instructions.md`. `{name}` is the file stem of the source document, which is its file name without `.md`. Two source documents with one stem would write one file. The emitter refuses that, and it does not overwrite. Spec 16 lists this path as the one glob-scoped surface of the three harnesses. A `CLAUDE.md` or an `AGENTS.md` in each directory waits, because adopters write those files themselves, and a generator would collide with them. The output ends in `.md`, so the census reads its marker.
 
 **A source document is a document with a `governs` edge, of a kind that the projection's `for` admits.** The `applyTo` member of the front matter holds the `governs` patterns of that document.
 
-**The marker is a member of the front matter.** The file opens with its front matter block, because Copilot reads `applyTo` from a block on line 1. So the `headwater:generated` marker is a top-level member of that block, in the form that a generated Markdown file with front matter already uses. A comment line above the block would move the block off line 1.
+**The marker is a member of the front matter.** The file opens with its front matter block, because Copilot reads `applyTo` from a block on line 1. So the `headwater:generated` marker is a top-level member of that block. A generated Markdown file with front matter already uses this form. A comment line above the block would move the block off line 1.
 
 **The body is a pointer and not a copy.** It holds the title of the source document, its summary, its path, and the instruction "read this before you edit these files". It holds no other text of the source.
 

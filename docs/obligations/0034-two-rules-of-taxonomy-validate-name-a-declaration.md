@@ -5,7 +5,7 @@ status: current
 status_since: 2026-08-12
 waiting_on: build
 last_verified: 2026-11-25
-summary: "Context safety wants a size budget on every agent-facing projection, which an agent_rules can declare and nothing yet requires, and mapping integrity wants a taxonomy that nothing fetches."
+summary: "Context safety wants a size budget on every agent-facing projection, and nothing yet requires one. Mapping integrity wants a taxonomy that nothing fetches."
 provenance:
   warrant: accepted
   agency: mixed
