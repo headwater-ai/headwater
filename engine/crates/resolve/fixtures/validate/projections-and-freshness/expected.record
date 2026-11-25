@@ -1,4 +1,5 @@
 the resolved taxonomy `projections.2`: warrant integrity: is a transcription and pins nothing. A transcribed document carries the identity of the snapshot it copies
+the resolved taxonomy `projections.3`: context safety: is an `agent_rules` and states no `budget`, so nothing bounds what it writes into an agent's context. A budget is `per_file` and `aggregate`, in bytes (HW-DR-0115)
 the resolved taxonomy `facets.last_verified`: context safety: carries the freshness role and declares no staleness policy, so nothing decides when a verification has expired
 the resolved taxonomy `projections.0.output`: projection targets: is `/var/tmp/index.md`, which is absolute. A projection writes inside the corpus
 the resolved taxonomy `projections.1.output`: projection targets: is `../outside/index.md`, which climbs above the corpus root

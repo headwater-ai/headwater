@@ -23,7 +23,7 @@
 lock:
   format: 3
   digest: sha256:5ec2104425e42b9969372d8d4becc6341ed63a791e358a41e900d1893353a9c6
-  rules: 3
+  rules: 4
   package: headwater/standard
   version: 4.27.0
   sources:

@@ -980,27 +980,46 @@ fn resolve_refuses_an_overlay_projection_the_generator_refuses() {
 /// and an aggregate one (HW-DR-0115). The meta-schema admits the member on
 /// every projection, because it cannot say "on one kind", so the generator's
 /// reader refuses it on every kind but `agent_rules`, and that refusal reaches
-/// `taxonomy resolve` through the #1758 gate above (#2087).
+/// `taxonomy resolve` through the #1758 gate above (#2087). The other half is
+/// the context-safety rule of `taxonomy validate`, which refuses an
+/// `agent_rules` that states no `budget`, because nothing would then bound what
+/// it writes into an agent's context (#2088).
 ///
-/// The two arms hold the reader in both directions: the first fails on a
+/// The three arms hold both readers in both directions: the first fails on a
 /// meta-schema with no `budget` member and on a reader that refuses it
-/// everywhere, and the second fails on a reader that refuses it nowhere.
+/// everywhere, the second fails on a reader that refuses it nowhere, and the
+/// third fails on a context-safety rule that does not require it.
 #[test]
-fn resolve_takes_a_budget_on_agent_rules_and_refuses_it_on_every_other_kind() {
+fn resolve_requires_a_budget_on_agent_rules_and_refuses_it_on_every_other_kind() {
     let anchor = "      output: \"{shelf}/README.md\"";
     let budget = "budget: {per_file: 600, aggregate: 8192}";
-    for (label, added, refused) in [
+    let agent_rules =
+        "\n    - kind: agent_rules\n      output: \".github/instructions/{name}.instructions.md\"";
+    // Each refused arm names the substrings its finding carries, the reason first.
+    let taken: &[&str] = &[];
+    for (label, added, expected) in [
         (
             "agent-rules-budget-taken",
-            format!(
-                "\n    - kind: agent_rules\n      output: \".github/instructions/{{name}}.instructions.md\"\n      {budget}"
-            ),
-            false,
+            format!("{agent_rules}\n      {budget}"),
+            taken,
         ),
         (
             "agent-rules-budget-refused",
             format!("\n      {budget}"),
-            true,
+            &[
+                "only an `agent_rules` takes `budget`",
+                ".headwater/overlay.yml: `projections.",
+                "is a `shelf_index` and states `budget`",
+            ][..],
+        ),
+        (
+            "agent-rules-budget-absent",
+            agent_rules.to_string(),
+            &[
+                "is an `agent_rules` and states no `budget`",
+                "the resolved taxonomy `projections.",
+                "context safety",
+            ][..],
         ),
     ] {
         let root = Root::new(label);
@@ -1025,18 +1044,11 @@ fn resolve_takes_a_budget_on_agent_rules_and_refuses_it_on_every_other_kind() {
         let resolved = root.run(&["taxonomy", "resolve"]);
         let checked = root.run(&["taxonomy", "resolve", "--check"]);
         let validated = root.run(&["taxonomy", "validate"]);
-        let reason = "only an `agent_rules` takes `budget`";
-        if refused {
+        if let Some(reason) = expected.first() {
             assert_eq!(resolved.code, Some(1), "{label}: {resolved:?}");
-            assert!(
-                resolved.err.contains(".headwater/overlay.yml: `projections."),
-                "the refusal names the overlay against the entry: {resolved:?}"
-            );
-            assert!(
-                resolved.err.contains("is a `shelf_index` and states `budget`"),
-                "the refusal names the kind: {resolved:?}"
-            );
-            assert!(resolved.err.contains(reason), "{label}: {resolved:?}");
+            for part in expected {
+                assert!(resolved.err.contains(part), "{label}: {part}: {resolved:?}");
+            }
             assert_eq!(
                 std::fs::read(&lock).expect("the lock is still there"),
                 written,
@@ -1050,7 +1062,7 @@ fn resolve_takes_a_budget_on_agent_rules_and_refuses_it_on_every_other_kind() {
             assert_eq!(resolved.code, Some(0), "{label}: {resolved:?}");
             assert_eq!(checked.code, Some(0), "{label}: {checked:?}");
             assert_eq!(validated.code, Some(0), "{label}: {validated:?}");
-            assert!(!validated.err.contains(reason), "{label}: {validated:?}");
+            assert!(!validated.err.contains("budget"), "{label}: {validated:?}");
             let locked = std::fs::read_to_string(&lock).expect("the lock reads");
             assert!(
                 locked.contains("agent_rules")

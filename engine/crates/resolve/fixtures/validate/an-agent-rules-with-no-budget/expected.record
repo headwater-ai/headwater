@@ -1,0 +1,1 @@
+the resolved taxonomy `projections.1`: context safety: is an `agent_rules` and states no `budget`, so nothing bounds what it writes into an agent's context. A budget is `per_file` and `aggregate`, in bytes (HW-DR-0115)

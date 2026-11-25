@@ -1,0 +1,45 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The size-budget half of context safety (#2088).
+#
+#   one `agent_rules` projection states a budget and passes
+#   one `agent_rules` projection states none, so nothing bounds what it writes
+#   into an agent's context
+#   a `shelf_index` states none and owes none, because it is not agent-facing
+#
+# No facet carries the freshness role, so the half of the rule that reads a
+# staleness policy has nothing to say. The budget half still runs.
+
+taxonomy: acme/fixture
+version: 1.0.0
+
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+
+facets:
+  status:
+    role: state
+    values: [draft, current]
+    required: true
+    volatility: mutable
+    guidance: {draft: it is being argued over, current: it states what holds now}
+
+kinds:
+  decision:
+    purpose: rationale
+    facets: {require: [status]}
+
+shelves:
+  decisions: {path: "docs/decisions/**", homogeneous: true, kind: decision}
+
+projections:
+  - kind: agent_rules
+    output: ".github/instructions/{name}.instructions.md"
+    budget: {per_file: 600, aggregate: 8192}
+  - kind: agent_rules
+    output: ".github/instructions/{name}.instructions.md"
+  - {kind: shelf_index, for: [decisions], output: "docs/decisions/README.md"}
+
+core:
+  requires:
+    - facet_role: state
