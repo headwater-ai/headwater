@@ -302,7 +302,7 @@ echo "what this repository itself carries"
 # go stale. So it is a case.
 #
 # `docs/spec/05-ai-integration.md` is copied into the scratch corpus unedited.
-# It carries one line of the shape, at line 285, and that line is spec 5
+# It carries one line of the shape, and that line is spec 5
 # illustrating the convention with an identifier and a path from an imagined
 # corpus. The checker reports it as unresolved, which is right about what it
 # was asked and beside the point about what the line means. That is the whole
@@ -312,7 +312,10 @@ echo "what this repository itself carries"
 status=$(run sarif docs/spec/05-ai-integration.md)
 same "spec 5 carries exactly one line of the shape" 1 \
     "$(field . 'd["runs"][0]["properties"]["headwater"]["citations"]')"
-same "  at the line the page writes its worked example on" 293 \
+# The line is read from the page rather than pinned, because a paragraph
+# added above it moved the pin three times (285, 293, 295).
+example_line=$(grep -n '^# per REQ-INGEST-014 ' docs/spec/05-ai-integration.md | cut -d: -f1)
+same "  at the line the page writes its worked example on" "$example_line" \
     "$(field . 'd["runs"][0]["results"][0]["locations"][0]["physicalLocation"]["region"]["startLine"]')"
 same "  and it does not resolve, because its corpus is imagined" \
     citation.identifier.unresolved "$(rules)"

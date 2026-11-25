@@ -472,3 +472,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 ## 114 — A relation view follows an ordered chain of relations from every document of one shelf
 
 [HW-DR-0114](../decisions/0114-a-relation-view-follows-an-ordered-chain-of-relations-from-every-document-of-one-shelf.md) — A relation view is a matrix with one row per path from each document of one shelf through an ordered chain of relations. A missing link is an empty cell, and a cell states the status, the stamp or freshness, and the observation of its document (asserted, and no human has accepted it)
+
+## 115 — An agent rules file is a budgeted pointer at the Copilot instructions path
+
+[HW-DR-0115](../decisions/0115-an-agent-rules-file-is-a-budgeted-pointer-at-the-copilot-instructions-path.md) — An agent_rules file is one Copilot .instructions.md file for each source document with a governs edge. Its applyTo is the governs patterns, its marker is in its front matter, and its body points at the source. The projection declares a byte budget for one file and for all of them (asserted, and no human has accepted it)

@@ -240,6 +240,8 @@ docs/decisions/0113-whether-an-agent-may-write-the-acceptance-stamp-while-the-de
   typed: decision
 docs/decisions/0114-a-relation-view-follows-an-ordered-chain-of-relations-from-every-document-of-one-shelf.md
   typed: decision
+docs/decisions/0115-an-agent-rules-file-is-a-budgeted-pointer-at-the-copilot-instructions-path.md
+  typed: decision
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md
