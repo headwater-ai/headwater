@@ -120,3 +120,123 @@ fn an_advisory_control_reports_the_add_and_passes_the_strict_gate() {
         ran.out
     );
 }
+
+/// The stub moved into `sub/` of a git repository whose top level is the
+/// scratch root, with every file committed but `sub/tools/ungoverned.sh`, so
+/// that `headwater change` names it `added` from the git top level (#2098).
+/// The second value is a directory beside the repository for the manifest,
+/// which `headwater change` refuses inside the tree it compares.
+fn subfolder(label: &str) -> (Root, Scratch) {
+    let root = root(label, false);
+    let sub = root.at.join("sub");
+    std::fs::create_dir(&sub).expect("the subfolder is made");
+    for entry in std::fs::read_dir(&root.at).expect("the root reads") {
+        let from = entry.expect("the entry reads").path();
+        if from != sub {
+            let to = sub.join(from.file_name().expect("a name"));
+            std::fs::rename(&from, to).expect("the entry moves");
+        }
+    }
+    let tool = sub.join("tools/ungoverned.sh");
+    std::fs::remove_file(&tool).expect("the tool is set aside");
+    git(&root, &["init", "-q"]);
+    git(&root, &["add", "-A"]);
+    git(
+        &root,
+        &["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "base"],
+    );
+    std::fs::write(&tool, "echo ungoverned\n").expect("the tool writes");
+    let name = root.at.file_name().expect("a name").to_string_lossy();
+    let out = Scratch(root.at.with_file_name(format!("{name}-out")));
+    let _ = std::fs::remove_dir_all(&out.0);
+    std::fs::create_dir_all(&out.0).expect("the out directory is made");
+    (root, out)
+}
+
+/// A directory that removes itself, for the manifest `headwater change` writes.
+struct Scratch(std::path::PathBuf);
+
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+fn git(root: &Root, arguments: &[&str]) {
+    let mut command = std::process::Command::new("git");
+    common::fence(&mut command, &root.at);
+    let status = command
+        .arg("-C")
+        .arg(&root.at)
+        .args(arguments)
+        .status()
+        .expect("git runs");
+    assert!(status.success(), "git {arguments:?}");
+}
+
+/// The binary with `--root <outer>/sub`, fenced at the outer repository's
+/// parent so that git finds the outer repository and nothing above it.
+fn in_sub(root: &Root, arguments: &[&str]) -> common::Ran {
+    let output = root
+        .command()
+        .args(arguments)
+        .arg("--root")
+        .arg(root.at.join("sub"))
+        .output()
+        .expect("the binary runs");
+    common::Ran {
+        code: output.status.code(),
+        out: String::from_utf8_lossy(&output.stdout).into_owned(),
+        err: String::from_utf8_lossy(&output.stderr).into_owned(),
+    }
+}
+
+/// A strict run from the subfolder over the manifest at `manifest`.
+fn strict_in_sub(root: &Root, manifest: &std::path::Path) -> common::Ran {
+    let manifest = manifest.to_str().expect("a UTF-8 path");
+    in_sub(root, &["check", "--strict", "--change", manifest])
+}
+
+#[test]
+fn a_subfolder_root_raises_the_ungoverned_add_from_the_manifest_headwater_change_wrote() {
+    let (root, out) = subfolder("scope-ratchet-subfolder");
+    let dir = out.0.join("change");
+    let made = in_sub(&root, &["change", "HEAD", dir.to_str().expect("a UTF-8 path")]);
+    assert_eq!(made.code, Some(0), "{}{}", made.out, made.err);
+    let manifest = dir.join("manifest");
+    let text = std::fs::read_to_string(&manifest).expect("the manifest reads");
+    assert!(
+        text.lines().any(|line| line == "added\tsub/tools/ungoverned.sh"),
+        "headwater change writes from the git top level: {text}"
+    );
+    let ran = strict_in_sub(&root, &manifest);
+    assert_eq!(ran.code, Some(1), "{}{}", ran.out, ran.err);
+    assert_eq!(findings(&ran.out), 1, "{}", ran.out);
+    assert!(ran.out.contains("tools/ungoverned.sh"), "{}", ran.out);
+    assert!(ran.out.contains("`tools/**`"), "{}", ran.out);
+}
+
+/// A path outside the root is named as the manifest wrote it and reaches no
+/// rule, even where it would match a scope pattern read from the root:
+/// `tools/outside.sh` at the git top level is not `tools/**` of the corpus.
+#[test]
+fn a_path_outside_the_subfolder_root_is_named_and_reaches_no_rule() {
+    let (root, out) = subfolder("scope-ratchet-outside");
+    let manifest = out.0.join("manifest");
+    std::fs::write(
+        &manifest,
+        "headwater change 1\nadded\tother/x.sh\nadded\ttools/outside.sh\n\
+         added\tsub/tools/ungoverned.sh\n",
+    )
+    .expect("the manifest writes");
+    let ran = strict_in_sub(&root, &manifest);
+    assert_eq!(ran.code, Some(1), "{}{}", ran.out, ran.err);
+    assert_eq!(findings(&ran.out), 1, "{}", ran.out);
+    assert!(
+        !ran.out.contains("relation.scope.ungoverned (tools/outside.sh"),
+        "{}",
+        ran.out
+    );
+    assert!(ran.out.contains("other/x.sh"), "{}", ran.out);
+    assert!(ran.out.contains("tools/outside.sh"), "{}", ran.out);
+}
