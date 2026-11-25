@@ -393,6 +393,21 @@ pub struct Declaration {
     /// The chain and the format of a `relation_view` (HW-DR-0114). `None` for
     /// every other kind, which [`relation_view::read`] refuses `relations` on.
     pub view: Option<relation_view::View>,
+    /// The byte budget of an agent-facing projection (HW-DR-0115). `None` for
+    /// every kind but `agent_rules`, which [`budget`] refuses the member on,
+    /// and for an `agent_rules` that states none. Nothing enforces it yet:
+    /// #2088 makes an agent-facing projection without one invalid, and #2090
+    /// reports the files past it.
+    pub budget: Option<Budget>,
+}
+
+/// The two figures of a `budget`, in bytes (HW-DR-0115).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Budget {
+    /// What one written file may hold.
+    pub per_file: u64,
+    /// What every file of the declaration may hold together.
+    pub aggregate: u64,
 }
 
 /// One labeled top-level entry of a `site_nav` (#1681).
@@ -561,6 +576,19 @@ impl Projections {
                 continue;
             }
             let shelves = scalars(body, "for");
+            // Read before the readers of each kind, so a `budget` on the wrong
+            // kind is the refusal an author reads, and not whatever else that
+            // kind's entry left out.
+            let budget = match budget(body, kind, index) {
+                Ok(budget) => budget,
+                Err(message) => {
+                    errors.push(DeclarationError {
+                        message,
+                        span: item.span,
+                    });
+                    continue;
+                }
+            };
             let view = match relation_view::read(root, body, kind, index, &shelves, &output.text) {
                 Ok(view) => view,
                 Err(message) => {
@@ -617,6 +645,7 @@ impl Projections {
                 committed,
                 sections,
                 view,
+                budget,
             });
         }
         // The grouping runs over what read, so a taxonomy with one bad entry
@@ -670,6 +699,58 @@ fn committed(body: &Mapping, kind: Kind, index: usize) -> Result<bool, String> {
             kind.name()
         )),
     }
+}
+
+/// The `budget` member of one projection, `None` where it is absent
+/// (HW-DR-0115).
+///
+/// Only an `agent_rules` takes it, because only an agent-facing projection
+/// writes what an agent loads into its context, and the budget is what bounds
+/// that load. The meta-schema cannot say "on one kind", so the refusal of every
+/// other kind is here. The meta-schema refuses a figure that is not an integer
+/// over the sources, and this refuses one that is not a positive integer over
+/// a lock, for the reason [`Projections::read`] gives: a zero budget admits no
+/// file at all, which no declaration means.
+fn budget(body: &Mapping, kind: Kind, index: usize) -> Result<Option<Budget>, String> {
+    let Some(node) = body.get("budget") else {
+        return Ok(None);
+    };
+    if kind != Kind::AgentRules {
+        return Err(format!(
+            "`projections.{index}` is a `{}` and states `budget`, and only an `agent_rules` \
+             takes `budget`. A budget bounds what an agent loads, and no other kind writes \
+             for an agent",
+            kind.name()
+        ));
+    }
+    let Value::Map(figures) = &node.value else {
+        return Err(format!(
+            "`projections.{index}.budget` is {}, and a budget is a block of `per_file` and \
+             `aggregate`",
+            node.value.kind_name()
+        ));
+    };
+    let figure = |key: &str| -> Result<u64, String> {
+        let text = figures
+            .get(key)
+            .and_then(|node| node.value.as_scalar())
+            .map(|scalar| scalar.text.as_str());
+        match text.and_then(|text| text.parse::<u64>().ok()) {
+            Some(bytes) if bytes > 0 => Ok(bytes),
+            _ => Err(format!(
+                "`projections.{index}.budget.{key}` is {}, and a budget figure is a positive \
+                 whole number of bytes",
+                match text {
+                    Some(text) => format!("`{text}`"),
+                    None => "absent".to_string(),
+                }
+            )),
+        }
+    };
+    Ok(Some(Budget {
+        per_file: figure("per_file")?,
+        aggregate: figure("aggregate")?,
+    }))
 }
 
 /// The scalar items of a sequence member, in order. A member that is absent or
@@ -1621,8 +1702,8 @@ fn graph_export(
 pub fn unbuilt(kind: Kind) -> Option<&'static str> {
     match kind {
         Kind::AgentRules => Some(
-            "the glossary names the artifact and no document states its form, so an emitter here \
-             would be this engine inventing a schema for somebody else's consumer",
+            "HW-DR-0115 states its form, a budgeted pointer at the Copilot instructions path, \
+             and the emitter that writes it is not built yet",
         ),
         Kind::Template => Some(
             "a template is the permitted relations, facets and sections of a kind, which \

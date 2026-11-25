@@ -3,7 +3,7 @@ id: HW-DR-0092
 status: current
 status_since: 2026-09-27
 summary: "The per-identifier citation comment of spec 5 is a convention for an adopter's corpus. By the owner's ruling, the code of this repository carries none. Its comments that name an identifier are prose, and the checker does not read them."
-last_verified: 2026-09-27
+last_verified: 2026-11-25
 title: "92 — The citation comment of spec 5 is for an adopter's corpus, and this repository does not practice it on its own code"
 provenance:
   warrant: asserted
@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: tools/cite/check-citations-fixtures.sh
-      verified_revision: sha256:693e8bbb4c2c8278d55d4fa39c7e0cb1388d518c6ae580c455896db62218d00b
+      verified_revision: sha256:87c6a03bffad74873e2416be955336d92f03a1f1e870ef7b6af6b81b17c3239f
   traces_to:
     - HW-SPEC-ai-integration
 ---
@@ -36,7 +36,7 @@ relations:
 | what was counted | result | how |
 |---|---|---|
 | lines of the citation shape outside `tools/cite/` | 1, in the whole tree | `grep -rEn "(//\|#) per [A-Z][A-Z-]*-?[0-9]+ \("`, with `target`, `.git` and worktrees excluded |
-| where that one line is | `docs/spec/05-ai-integration.md` line 285 | the worked example of spec 5, which names an imagined corpus |
+| where that one line is | `docs/spec/05-ai-integration.md` line 285 when this was counted, and line 295 on 2026-11-25 | the worked example of spec 5, which names an imagined corpus |
 | citations in this repository's own code | 0 citations in 365 files, exit status 0 | the checker over `engine/crates/*/src`, `engine/crates/*/tests`, `.claude/hooks`, `.claude/agents`, `.claude/skills`, `.claude/commands`, `.githooks` and `.github` |
 | comment lines that name an `HW-` identifier in any shape | 459 lines in 183 files | `grep -rEn` for a comment marker and `HW-[A-Z]+-[0-9]{4}` on one line, over `engine/crates`, `.claude/hooks`, `tools` and `.githooks`, with each `fixtures` and `target` directory excluded |
 | instruction files for an agent that mention the convention | 0 | `CLAUDE.md` and each file under `.claude/agents`, `.claude/skills` and `.claude/commands` |
@@ -47,7 +47,7 @@ The population of the checker is `engine/crates` by crate, not whole. `engine/cr
 
 **The citation comment of spec 5 is a convention for an adopter's corpus.** An adopter who wants an answer to "why does the code do this?" writes the comment, and runs the checker over their own code.
 
-**This repository does not practice the convention on its own code.** No instruction file for an agent tells an agent to write the comment, and no CI step runs the checker over this repository's own code. The CI step for the checker stays the fixture suite. Its case over the real spec 5 pins what this repository carries: one line of the shape, at line 285, which does not resolve.
+**This repository does not practice the convention on its own code.** No instruction file for an agent tells an agent to write the comment, and no CI step runs the checker over this repository's own code. The CI step for the checker stays the fixture suite. Its case over the real spec 5 holds what this repository carries: one line of the shape, which does not resolve. The case reads the line number from the page and does not pin it, because an edit above the line moved the pin from 285 to 293 and then to 295.
 
 **The comments that name an identifier are prose, and they are not a partial adoption.** The code of this repository names decisions and obligations in its comments, most often as a Markdown link. The checker reads only the `per <IDENTIFIER> (<path>)` shape, so it reads none of these. They tell a reader where to find the reason. They make no claim that the checker can hold, and nothing in this record asks for one.
 

@@ -144,6 +144,9 @@ declarations
               title (required) scalar:string
               for (required) seq of scalar:string
           noindex scalar:boolean
+      budget members
+        per_file (required) scalar:integer
+        aggregate (required) scalar:integer
   obligations map of members
       statement (required) scalar:string
       rationale (required) scalar:string

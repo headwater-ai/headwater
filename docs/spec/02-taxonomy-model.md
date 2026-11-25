@@ -236,8 +236,10 @@ projections:
   - kind: shelf_index
     for: [decisions, governance]
     output: "{shelf}/README.md"
-  - kind: agent_rules
-    output: .agent/rules/
+  - kind: agent_rules                # one pointer file per document that governs code (HW-DR-0115)
+    for: [decisions]
+    output: ".github/instructions/{name}.instructions.md"
+    budget: {per_file: 600, aggregate: 8192}   # bytes; only an agent_rules takes it
   - kind: site_nav
     output: .headwater/nav.yml
   - kind: graph_export                 # a projection that leaves the repository
@@ -849,7 +851,7 @@ The taxonomy language has a formal schema, published with the engine and version
 - **edge provenance** — every relation declares a `created_by` from the closed set.
 - **attribute well-formedness** — every instance attribute names a value space from the facet set and an owning end. No attribute takes a reference, and no attribute name collides with `to`.
 - **warrant integrity** — every `transcription` projection names a declared anchor kind as its pin, and that anchor kind names exactly one resolver. A transcription that writes over an authored path is a projection-target error like any other.
-- **context safety** — every agent-facing kind or projection has an applicable size budget, and every facet that carries the freshness role has an applicable staleness policy. The regimes that once wrapped these are gone. The mandates are not.
+- **context safety** — every agent-facing kind or projection has an applicable size budget, and every facet that carries the freshness role has an applicable staleness policy. An `agent_rules` projection states its budget in the `budget` member, in bytes for one file and in aggregate ([HW-DR-0115](../decisions/0115-an-agent-rules-file-is-a-budgeted-pointer-at-the-copilot-instructions-path.md)). The regimes that once wrapped these are gone. The mandates are not.
 - **overlay confluence** — the overlay set commutes.
 - **mapping integrity** — every mapping names kinds and facet values that exist in both taxonomies, with a valid SKOS relation.
 - projection targets — every projection writes inside the corpus and does not collide with an authored path. Every shelf path stays inside the repository: a path that is absolute or that climbs above the repository root is refused. Every path that a language regime lists outside the corpus root stays inside the repository, and one literal path answers to one regime. The consumer declaration holds `corpus.root` to the same test. The lock reader runs the test again on every shelf path and projection output in a lock.

@@ -3,13 +3,15 @@ id: HW-IFACE-headwater-generate
 status: current
 status_since: 2026-09-06
 summary: "How to write the projections declared by the taxonomy and detect stale generated files."
-last_verified: 2026-10-02
+last_verified: 2026-11-25
 title: "headwater generate"
 relations:
   governs:
     - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
     - engine/crates/generate/src/lib.rs
     - .headwater/corpus.json
+  traces_to:
+    - HW-DR-0115
 ---
 
 # headwater generate
@@ -128,6 +130,12 @@ A `relation_view` is a traceability matrix ([HW-DR-0114](../decisions/0114-a-rel
 **The command refuses a chain that cannot be walked.** It refuses `relations` on another kind, and a view with no `relations` or with a `for` that does not name one shelf. It refuses a step that names no declared relation. It refuses a step that reaches only code before the last step, and two steps that do not join. Two steps join when a `to` kind of the first is, or inherits from, a `from` kind of the second, or the reverse.
 
 **A Markdown view is a page of the site.** A `site_nav` lists a Markdown view that sits in the directory of a shelf it covers, under the label "The traceability matrix". It lists no CSV or JSON view, because MkDocs serves neither as a page.
+
+### Agent rules
+
+An `agent_rules` projection is declared and not yet emitted. [HW-DR-0115](../decisions/0115-an-agent-rules-file-is-a-budgeted-pointer-at-the-copilot-instructions-path.md) states its form: one GitHub Copilot `.instructions.md` file for each document with a `governs` edge. The file points at that document and does not copy it. [#2089](https://github.com/headwater-ai/headwater/issues/2089) builds the emitter. Until then, a run lists `agent_rules` under *what this verb does not write, and why*. Its reason names the record.
+
+**`budget` is taken on an `agent_rules` alone.** It holds `per_file` and `aggregate`, two positive whole numbers of bytes. The command refuses `budget` on every other kind, a figure that is zero or not a whole number, and a budget that omits a figure. `taxonomy resolve` and `taxonomy validate` read the same declaration, so each refuses a misplaced budget before it writes a lock. Nothing enforces the figures yet: [#2088](https://github.com/headwater-ai/headwater/issues/2088) refuses an agent-facing projection with no budget, and [#2090](https://github.com/headwater-ai/headwater/issues/2090) reports a file past it.
 
 ## Preconditions
 
