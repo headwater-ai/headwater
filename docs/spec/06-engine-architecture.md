@@ -104,7 +104,7 @@ headwater generate            # write
 headwater generate --check    # fail if any committed output differs
 ```
 
-**Thirteen projection kinds exist, and this engine emits nine of them.** The block below names all thirteen, as a taxonomy writes each name. A kind under `runs` has an emitter here. A kind under `waits` has a slot that a declaration opens and no emitter fills.
+**Thirteen projection kinds exist, and this engine emits ten of them.** The block below names all thirteen, as a taxonomy writes each name. A kind under `runs` has an emitter here. A kind under `waits` has a slot that a declaration opens and no emitter fills.
 
 ```
 runs
@@ -117,9 +117,9 @@ runs
   verb_index
   consumer_surface
   corpus_descriptor
+  agent_rules
 
 waits
-  agent_rules
   template
   transcription
   coverage_report

@@ -581,6 +581,7 @@ dependencies = [
  "headwater-hash",
  "headwater-import",
  "headwater-lock",
+ "headwater-meta",
  "headwater-probe",
  "headwater-query",
  "headwater-resolve",
