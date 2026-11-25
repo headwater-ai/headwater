@@ -37,7 +37,7 @@ This spec describes the inside of the parse stage of [spec 6](../spec/06-engine-
 
 The stage has two inputs. The first is the corpus root on disk. The second is the shelves and kinds of the resolved taxonomy, which the [Taxonomy resolution](taxonomy-resolution.md) subsystem writes into the lock. The stage gives a `Census`, with one `Row` for each file under the corpus root. Each row carries the parsed `Document` where the stage read one. [Graph build](graph-build.md) reads the documents through the census and opens no document file itself.
 
-The `vcs` crate is in this subsystem because `census` and `graph` use it, as the row of spec 6 states. It writes the change manifest that `headwater check --change` reads. It also answers two questions about the tree for other crates. Which paths does git ignore, and which merge attribute does git give a path?
+The `vcs` crate is in this subsystem because `census` and `graph` use it, as the row of spec 6 states. It writes the change manifest that `headwater check --change` reads. It also answers three questions about the tree for other crates. Which paths does git ignore, which merge attribute does git give a path, and where does the root sit below the git top level?
 
 Other documents state what the stage does, and this spec does not repeat them:
 
@@ -132,7 +132,7 @@ A file can be several things at once, and a row has one outcome. So the module c
 
 `produce` runs the git commands that the script ran: `rev-parse`, `diff --name-status`, `show` and `ls-files`. It reads no corpus and parses no document. A deleted document goes into the manifest with its prior version. [HW-OBL-0127](../obligations/0127-a-deletion-is-invisible-where-the-version-that-stood-there-does-not-parse.md) is open because a deletion reaches no rule where that prior version does not parse.
 
-`ignored` gives the paths that git ignores. `taxonomy audit` and `derived.rs` read it, so git decides what it ignores and no second reader of ignore rules exists. `merge_attributes` asks git for the `merge` attribute of each path. `names_merge` asks whether any attributes file names that attribute for a path. Git reads `!merge` and no line as the same answer, so `names_merge` adds a probe file. It fails closed: a probe that did not match is an error and never an answer. Each of the three gives `None` outside a git work tree, and an error where git refused inside one.
+`ignored` gives the paths that git ignores. `taxonomy audit` and `derived.rs` read it, so git decides what it ignores and no second reader of ignore rules exists. `merge_attributes` asks git for the `merge` attribute of each path. `names_merge` asks whether any attributes file names that attribute for a path. Git reads `!merge` and no line as the same answer, so `names_merge` adds a probe file. It fails closed: a probe that did not match is an error and never an answer. Each of the three gives `None` outside a git work tree, and an error where git refused inside one. `show_prefix` gives the path of the root below the git top level, which `headwater check --change` removes from each manifest path. It gives `None` outside a git work tree and also where git refused, because `check` then reads each path as written.
 
 ## Invariants
 

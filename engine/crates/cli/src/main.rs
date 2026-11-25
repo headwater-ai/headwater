@@ -6644,7 +6644,9 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
     let unbound = match &change {
         None => None,
         Some(path) => match headwater_check::change::Unbound::at(path) {
-            Ok(unbound) => Some(unbound),
+            Ok(unbound) => {
+                Some(unbound.under(&headwater_vcs::show_prefix(root).unwrap_or_default()))
+            }
             Err(why) => {
                 say(&format!(
                     "headwater: {}\n{}\n",
