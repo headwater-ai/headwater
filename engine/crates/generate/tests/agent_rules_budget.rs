@@ -114,10 +114,7 @@ fn a_figure_that_is_not_a_positive_whole_number_is_refused() {
             "    budget: {per_file: 600}\n",
             "`projections.0.budget.aggregate` is absent",
         ),
-        (
-            "    budget: 600\n",
-            "`projections.0.budget` is",
-        ),
+        ("    budget: 600\n", "`projections.0.budget` is"),
     ] {
         refused(&rules(budget), says);
     }
