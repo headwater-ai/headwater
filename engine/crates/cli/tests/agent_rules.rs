@@ -538,7 +538,8 @@ fn three_rules(root: &Root) -> (PathBuf, [u64; 3]) {
     let generated = run(&consumer, &["generate"]);
     assert_eq!(generated.code, Some(0), "{generated:?}");
     let size = |path: &str| read(&consumer.join(path)).len() as u64;
-    (consumer, [size(STANDARD), size(NUCLEUS), size(SATELLITE)])
+    let sizes = [size(STANDARD), size(NUCLEUS), size(SATELLITE)];
+    (consumer, sizes)
 }
 
 /// Declares the budget again and resolves, so that the next run reads it.
@@ -595,7 +596,16 @@ fn an_aggregate_two_rules_fit_prunes_the_satellite_and_check_reports_the_project
     // it carries the marker, so it would keep loading: the gate names it.
     let stale = run(&consumer, &["generate", "--check"]);
     assert_eq!(stale.code, Some(1), "{stale:?}");
-    assert!(stale.out.contains(SATELLITE), "{stale:?}");
+    let verdict = stale
+        .out
+        .lines()
+        .skip_while(|line| !line.ends_with(SATELLITE))
+        .nth(1)
+        .unwrap_or_else(|| panic!("the gate names {SATELLITE}\n{stale:?}"));
+    assert!(
+        verdict.contains("the budget withholds it"),
+        "the gate holds the pruned rule as stale, and says `{verdict}`\n{stale:?}"
+    );
     let pruned = run(&consumer, &["generate"]);
     assert_eq!(pruned.code, Some(0), "{pruned:?}");
     assert!(!consumer.join(SATELLITE).exists(), "{pruned:?}");
@@ -686,6 +696,8 @@ fn a_budget_every_rule_fits_exactly_reports_nothing_and_writes_all_three() {
     rebudget(&consumer, largest, standard + nucleus + satellite);
     let checked = run(&consumer, &["check"]);
     assert!(budget_findings(&checked).is_empty(), "{checked:?}");
+    let generated = run(&consumer, &["generate"]);
+    assert_eq!(generated.code, Some(0), "{generated:?}");
     let current = run(&consumer, &["generate", "--check"]);
     assert_eq!(current.code, Some(0), "{current:?}");
     for kept in [STANDARD, NUCLEUS, SATELLITE] {
