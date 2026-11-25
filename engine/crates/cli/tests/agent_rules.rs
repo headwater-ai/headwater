@@ -146,6 +146,9 @@ fn publish(root: &Root) -> (PathBuf, String, String) {
 /// The projection every case declares: rule files for the `standards` shelf.
 const PROJECTION: &str = "    - kind: agent_rules\n      for: [standards]\n      output: \".github/instructions/{name}.instructions.md\"\n      budget: {per_file: 600, aggregate: 8192}\n";
 
+/// The clause a pointer adds when nobody accepted the governing document.
+const UNACCEPTED: &str = "No person has accepted that document.";
+
 /// The rule file the API design standard owns.
 const RULE: &str = ".github/instructions/api-design.instructions.md";
 
@@ -279,6 +282,10 @@ fn a_standard_that_governs_src_api_writes_one_rule_file_whose_apply_to_admits_a_
         );
     }
     assert!(text.len() < 600, "{} bytes\n{text}", text.len());
+    assert!(
+        !text.contains(UNACCEPTED),
+        "the standard is accepted, so the pointer warns of nothing\n{text}"
+    );
 
     let clean = run(&consumer, &["generate", "--check"]);
     assert_eq!(clean.code, Some(0), "{clean:?}");
@@ -437,5 +444,29 @@ fn an_output_with_no_name_placeholder_is_refused_and_writes_nothing() {
     assert!(
         generated.out.contains("names no `{name}`"),
         "the refusal says why\n{generated:?}"
+    );
+}
+
+/// Spec 5: a pointer to a document that nobody accepted says so beside the
+/// summary, because an agent that follows it must know before it reads.
+#[test]
+fn a_rule_file_for_an_unaccepted_source_says_that_nobody_accepted_it() {
+    let root = Root::scratch("asserted");
+    let consumer = beacon(&root);
+    let standard = consumer.join("docs/standards/api-design.md");
+    let text = read(&standard);
+    assert!(text.contains("  warrant: accepted\n"), "{text}");
+    std::fs::write(
+        &standard,
+        text.replacen("  warrant: accepted\n", "  warrant: asserted\n", 1)
+            .replacen("  accepted_by: fixture-acceptor\n", "", 1),
+    )
+    .expect("the standard is rewritten");
+    let generated = run(&consumer, &["generate"]);
+    assert_eq!(generated.code, Some(0), "{generated:?}");
+    let rule = read(&consumer.join(RULE));
+    assert!(
+        rule.contains(UNACCEPTED),
+        "the source's warrant is `asserted`, and the pointer does not say so\n{rule}"
     );
 }
