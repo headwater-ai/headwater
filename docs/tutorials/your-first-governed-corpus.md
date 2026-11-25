@@ -3,7 +3,7 @@ id: HW-TUT-your-first-governed-corpus
 status: current
 status_since: 2026-09-06
 summary: "An untyped repository reaches a passing strict check in sixteen steps, and the reader leaves holding shelf, kind, facet, overlay and obligation."
-last_verified: 2026-10-20
+last_verified: 2026-11-25
 title: "Your first governed corpus"
 provenance:
   warrant: accepted
@@ -42,19 +42,19 @@ Install the engine once. The block below downloads the release archive for Linux
 
 ```sh
 mkdir -p ~/.local/bin
-curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.6.1/headwater-v0.6.1-x86_64-unknown-linux-musl.tar.gz
-tar -xzf headwater-v0.6.1-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater
+curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.7.0/headwater-v0.7.0-x86_64-unknown-linux-musl.tar.gz
+tar -xzf headwater-v0.7.0-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater
 ```
 
-On macOS on Apple silicon, the archive is `headwater-v0.6.1-aarch64-apple-darwin.tar.gz`. Use that name in the `curl` line and in the `tar` line.
+On macOS on Apple silicon, the archive is `headwater-v0.7.0-aarch64-apple-darwin.tar.gz`. Use that name in the `curl` line and in the `tar` line.
 
-Each archive has a checksum file beside it on [the release page](https://github.com/headwater-ai/headwater/releases/tag/v0.6.1). The name of the checksum file is the name of the archive with `.sha256` added. To verify the archive, download that file too and give it to `sha256sum -c`, or to `shasum -a 256 -c` on macOS.
+Each archive has a checksum file beside it on [the release page](https://github.com/headwater-ai/headwater/releases/tag/v0.7.0). The name of the checksum file is the name of the archive with `.sha256` added. To verify the archive, download that file too and give it to `sha256sum -c`, or to `shasum -a 256 -c` on macOS.
 
 **Check.** `headwater --version` prints a number.
 
 Many Linux distributions put `~/.local/bin` on your `PATH` when the directory exists at login. macOS does not. If your shell cannot find `headwater`, add `~/.local/bin` to your `PATH` in the startup file of your shell. Then open a new shell. You can also run the binary as `~/.local/bin/headwater`.
 
-This installs version 0.6.1 of the engine. It does not install `taxonomy-source`, and step 3 fetches that. If you have a Rust toolchain, `cargo install headwater-cli --locked` is an alternative route, and the README's *Obtaining a named version* section describes it.
+This installs version 0.7.0 of the engine. It does not install `taxonomy-source`, and step 3 fetches that. If you have a Rust toolchain, `cargo install headwater-cli --locked` is an alternative route, and the README's *Obtaining a named version* section describes it.
 
 ## Steps
 
@@ -233,7 +233,7 @@ census
 ```
 
 ```
-  1 seen, 0 classified, 0 checked, 8 check instances
+  1 seen, 0 classified, 0 checked, 10 check instances
 ```
 
 ```
@@ -324,12 +324,12 @@ census
 ```
 
 ```
-  1 seen, 1 classified, 1 checked, 22 check instances
+  1 seen, 1 classified, 1 checked, 26 check instances
 ```
 
 **Check.** `headwater check 2>/dev/null | grep 'check instances'` prints the second block above.
 
-The corpus did not grow. The count of checks that ran went from 8 to 22, because a typed document is a document that rules can reach. That is the whole trade this system asks for: type a document, and fourteen more questions become answerable about it.
+The corpus did not grow. The count of checks that ran went from 10 to 26, because a typed document is a document that rules can reach. That is the whole trade this system asks for: type a document, and sixteen more questions become answerable about it.
 
 ### Step 10 — Commit the first governed corpus
 
@@ -476,14 +476,14 @@ docs/decisions/0002-deliver-at-least-once.md
   may declare traces_to to governed_document, code_path
   to ACME-DR-0001 supersedes — The queue keeps every delivery attempt in
     Postgres. (the target's own summary) [this document governs the reading]
-  from docs/decisions/0001-store-attempts-in-postgres.md superseded_by — The
-    queue keeps every delivery attempt in Postgres. (the target's own summary)
-    [this document governs the reading]
+  from docs/decisions/0001-store-attempts-in-postgres.md supersedes — The queue
+    keeps every delivery attempt in Postgres. (the target's own summary) [this
+    document governs the reading]
 ```
 
 **Check.** The first line of that output is the path of the document whose identifier you named.
 
-Every word this tutorial taught is on that screen at once. There you read the shelf, the kind, the facets, the sections, the relations and both halves of the edge. The line to ACME-DR-0001 names the relation as this document wrote it, `supersedes`. The line from it names the relation as that document wrote it, `superseded_by`. This is the verb to reach for before you open a file.
+Every word this tutorial taught is on that screen at once. There you read the shelf, the kind, the facets, the sections, the relations and both halves of the edge. The line to ACME-DR-0001 names the relation as this document wrote it, `supersedes`. The line from it names the relation the same way, as it reads from this document, although that document wrote it as `superseded_by`. This is the verb to reach for before you open a file.
 
 ### Step 15 — Ask a question in your own words
 

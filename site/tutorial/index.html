@@ -246,13 +246,13 @@
       <div>
         <p>Install the engine once. The block below downloads the release archive for Linux on x86_64 and puts the <code>headwater</code> binary in <code>~/.local/bin</code>. The archive holds a static build, so it needs no particular C library.</p>
         <pre class="cmd verbatim">mkdir -p ~/.local/bin
-curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.6.1/headwater-v0.6.1-x86_64-unknown-linux-musl.tar.gz
-tar -xzf headwater-v0.6.1-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater</pre>
-        <p>On macOS on Apple silicon, the archive is <code>headwater-v0.6.1-aarch64-apple-darwin.tar.gz</code>. Use that name in the <code>curl</code> line and in the <code>tar</code> line.</p>
+curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.7.0/headwater-v0.7.0-x86_64-unknown-linux-musl.tar.gz
+tar -xzf headwater-v0.7.0-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater</pre>
+        <p>On macOS on Apple silicon, the archive is <code>headwater-v0.7.0-aarch64-apple-darwin.tar.gz</code>. Use that name in the <code>curl</code> line and in the <code>tar</code> line.</p>
         <p>Each archive has a checksum file beside it on the release page. The name of the checksum file is the name of the archive with <code>.sha256</code> added. To verify the archive, download that file too and give it to <code>sha256sum -c</code>, or to <code>shasum -a 256 -c</code> on macOS.</p>
         <p class="check"><span class="checkword">Check</span> <span><code>headwater --version</code> prints a number.</span></p>
         <p>Many Linux distributions put <code>~/.local/bin</code> on your <code>PATH</code> when the directory exists at login. macOS does not. If your shell cannot find <code>headwater</code>, add <code>~/.local/bin</code> to your <code>PATH</code> in the startup file of your shell. Then open a new shell. You can also run the binary as <code>~/.local/bin/headwater</code>.</p>
-        <p>This installs version 0.6.1 of the engine. It does not install <code>taxonomy-source</code>, and step 3 fetches that. If you have a Rust toolchain, <code>cargo install headwater-cli --locked</code> is an alternative route, and the README's <em>Obtaining a named version</em> section describes it.</p>
+        <p>This installs version 0.7.0 of the engine. It does not install <code>taxonomy-source</code>, and step 3 fetches that. If you have a Rust toolchain, <code>cargo install headwater-cli --locked</code> is an alternative route, and the README's <em>Obtaining a named version</em> section describes it.</p>
       </div>
     </div>
   </div>
@@ -462,7 +462,7 @@ taxonomy.yml</pre>
     untyped: no front matter, so nobody has typed this file. It sits on the
       `decisions` shelf, which types every file `decision`. Run `headwater new
       decision --title "&lt;title&gt;"` instead</pre>
-          <pre class="out verbatim">  1 seen, 0 classified, 0 checked, 8 check instances</pre>
+          <pre class="out verbatim">  1 seen, 0 classified, 0 checked, 10 check instances</pre>
           <pre class="out verbatim">  0 findings</pre>
           <p class="trimnote">Output trimmed to the lines that matter — the full run prints more.</p>
       </div>
@@ -544,7 +544,7 @@ TODO write this section.</pre>
     <div class="stepgrid">
       <div>
         <h2><span class="n">09</span>Check again, and read the difference</h2>
-        <p class="prose">The corpus did not grow. The count of checks that ran went from 8 to 22, because a typed document is a document that rules can reach. That is the whole trade this system asks for: type a document, and fourteen more questions become answerable about it.</p>
+        <p class="prose">The corpus did not grow. The count of checks that ran went from 10 to 26, because a typed document is a document that rules can reach. That is the whole trade this system asks for: type a document, and sixteen more questions become answerable about it.</p>
         <p class="check"><span class="checkword">Check</span> <span><code>headwater check 2&gt;/dev/null | grep 'check instances'</code> prints the second block above.</span></p>
       </div>
       <div>
@@ -554,7 +554,7 @@ TODO write this section.</pre>
   1 files under the corpus root
         1 typed
         1 typed decision</pre>
-          <pre class="out verbatim">  1 seen, 1 classified, 1 checked, 22 check instances</pre>
+          <pre class="out verbatim">  1 seen, 1 classified, 1 checked, 26 check instances</pre>
           <p class="trimnote">Output trimmed to the lines that matter — the full run prints more.</p>
       </div>
     </div>
@@ -697,7 +697,7 @@ git commit -m "A first governed corpus"</pre>
     <div class="stepgrid">
       <div>
         <h2><span class="n">14</span>Ask the engine what it knows about one document</h2>
-        <p class="prose">Every word this tutorial taught is on that screen at once. There you read the shelf, the kind, the facets, the sections, the relations and both halves of the edge. The line to ACME-DR-0001 names the relation as this document wrote it, <code>supersedes</code>. The line from it names the relation as that document wrote it, <code>superseded_by</code>. This is the verb to reach for before you open a file.</p>
+        <p class="prose">Every word this tutorial taught is on that screen at once. There you read the shelf, the kind, the facets, the sections, the relations and both halves of the edge. The line to ACME-DR-0001 names the relation as this document wrote it, <code>supersedes</code>. The line from it names the relation the same way, as it reads from this document, although that document wrote it as <code>superseded_by</code>. This is the verb to reach for before you open a file.</p>
         <p class="check"><span class="checkword">Check</span> <span>The first line of that output is the path of the document whose identifier you named.</span></p>
       </div>
       <div>
@@ -721,9 +721,9 @@ git commit -m "A first governed corpus"</pre>
   may declare traces_to to governed_document, code_path
   to ACME-DR-0001 supersedes — The queue keeps every delivery attempt in
     Postgres. (the target's own summary) [this document governs the reading]
-  from docs/decisions/0001-store-attempts-in-postgres.md superseded_by — The
-    queue keeps every delivery attempt in Postgres. (the target's own summary)
-    [this document governs the reading]</pre>
+  from docs/decisions/0001-store-attempts-in-postgres.md supersedes — The queue
+    keeps every delivery attempt in Postgres. (the target's own summary) [this
+    document governs the reading]</pre>
       </div>
     </div>
   </div>
