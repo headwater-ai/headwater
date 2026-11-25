@@ -594,6 +594,50 @@ fn budget_findings(ran: &Ran) -> Vec<String> {
     found
 }
 
+/// HW-DR-0115 measures the budget in bytes. A summary in multibyte text is
+/// longer in bytes than in characters, so a `per_file` equal to the character
+/// count of the rule withholds it.
+#[test]
+fn a_rule_whose_summary_is_multibyte_is_measured_in_bytes_not_characters() {
+    let root = Root::scratch("multibyte");
+    let consumer = beacon_declaring(&root, &every_shelf(1_000_000, 1_000_000));
+    let standard = consumer.join("docs/standards/api-design.md");
+    let edited = read(&standard).replace(
+        "summary: The rules every Beacon component",
+        "summary: The naïve façade rules, déjà vu über alles, every Beacon component",
+    );
+    assert_ne!(read(&standard), edited, "the summary is edited");
+    write(&standard, &edited);
+    let generated = run(&consumer, &["generate"]);
+    assert_eq!(generated.code, Some(0), "{generated:?}");
+    let text = read(&consumer.join(RULE));
+    assert!(
+        text.contains("naïve façade"),
+        "the rule carries the summary\n{text}"
+    );
+    let bytes = text.len() as u64;
+    let chars = text.chars().count() as u64;
+    assert!(
+        chars < bytes,
+        "the rule holds multibyte text: {chars} chars, {bytes} bytes"
+    );
+    rebudget(&consumer, chars, 1_000_000);
+
+    let checked = run(&consumer, &["check"]);
+    let found = budget_findings(&checked);
+    assert_eq!(found.len(), 1, "one per-file finding\n{checked:?}");
+    for named in [RULE.to_string(), format!("{bytes} bytes")] {
+        assert!(
+            found[0].contains(&named),
+            "the per-file finding names `{named}`\n{checked:?}"
+        );
+    }
+
+    let generated = run(&consumer, &["generate"]);
+    assert_eq!(generated.code, Some(0), "{generated:?}");
+    assert!(!consumer.join(RULE).exists(), "{generated:?}");
+}
+
 /// HW-DR-0115: the prune drops from the satellite end of the derived reading
 /// precedence. Two of three rules fit the aggregate. A prune by path order
 /// would drop the standard, which sorts last, and a prune by size would drop
