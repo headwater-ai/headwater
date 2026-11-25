@@ -102,7 +102,7 @@ use headwater_query::{Document, Pointer, Surface};
 use headwater_yaml::value::{Mapping, Value};
 use std::path::Path;
 
-mod agent_rules;
+pub mod agent_rules;
 pub mod consumer_surface;
 mod derived;
 pub mod descriptor;
@@ -396,9 +396,10 @@ pub struct Declaration {
     pub view: Option<relation_view::View>,
     /// The byte budget of an agent-facing projection (HW-DR-0115). `None` for
     /// every kind but `agent_rules`, which [`budget`] refuses the member on,
-    /// and for an `agent_rules` that states none. Nothing enforces it yet:
-    /// #2088 makes an agent-facing projection without one invalid, and #2090
-    /// reports the files past it.
+    /// and for an `agent_rules` that states none. #2088 makes an agent-facing
+    /// projection without one invalid. Since #2090 the emitter withholds the
+    /// rules past it, and `projection.budget.exceeded` reports them: see
+    /// [`agent_rules::measure`].
     pub budget: Option<Budget>,
 }
 
@@ -1355,6 +1356,13 @@ pub struct Plan {
     /// tell a file it does not write from a file nobody writes: see
     /// [`export_plan`].
     pub orphaned: Vec<Orphaned>,
+    /// The paths of the rule files an `agent_rules` budget withholds (#2090).
+    /// Each one is also an [`Unwritten`] that says why. A marked file at one
+    /// of these paths is what an earlier run wrote under a larger budget, and
+    /// an agent harness would keep loading it, so `--check` holds it as stale
+    /// and a write removes it. The orphan rule cannot see it, because the
+    /// census does not walk outside the corpus root.
+    pub pruned: Vec<String>,
     /// Every path a `site_nav` output names, in the order it names them, as a
     /// path from the repository root. `headwater site` reads this rather than
     /// the YAML a nav writes, so the verb and the file hold one list. Empty for
@@ -1764,6 +1772,12 @@ pub enum Verdict {
     /// because the pass refused before its first write (#1466). Not an error by
     /// itself: the refusal is what fails the run, and the report names it.
     Withheld,
+    /// `--check` only: a marked file is at a path that an `agent_rules` budget
+    /// withholds (#2090), so an agent harness would keep loading it.
+    Pruned,
+    /// A write only: the marked file at a path that an `agent_rules` budget
+    /// withholds was removed (#2090).
+    Removed,
 }
 
 impl Verdict {
@@ -1780,6 +1794,7 @@ impl Verdict {
                 | Verdict::Missing
                 | Verdict::MarkerUnread
                 | Verdict::Escapes
+                | Verdict::Pruned
                 | Verdict::Failed(_)
         )
     }
@@ -1813,6 +1828,10 @@ impl Verdict {
             Verdict::Withheld => {
                 "not written, because the run refused before it wrote this file".to_string()
             }
+            Verdict::Pruned => "a marked rule file is there, and the budget withholds it, so an \
+                 agent would keep loading it. `headwater generate` removes it"
+                .to_string(),
+            Verdict::Removed => "removed, because the budget withholds it".to_string(),
         }
     }
 }
@@ -2297,10 +2316,12 @@ pub fn write_settled<E>(
     loop {
         pass += 1;
         let mut report = write(root, &planned()?);
-        let changed = report
-            .wrote
-            .iter()
-            .any(|wrote| matches!(wrote.verdict, Verdict::Written | Verdict::Rewritten));
+        let changed = report.wrote.iter().any(|wrote| {
+            matches!(
+                wrote.verdict,
+                Verdict::Written | Verdict::Rewritten | Verdict::Removed
+            )
+        });
         for wrote in &report.wrote {
             match seen.iter_mut().find(|earlier| earlier.path == wrote.path) {
                 Some(earlier) if earlier.verdict == Verdict::Unchanged => {
@@ -2315,11 +2336,12 @@ pub fn write_settled<E>(
             // A later pass that refused wrote nothing itself, and an earlier
             // pass did write, so the run as a whole did not leave the tree as
             // it found it and must not say it did.
-            if report
-                .wrote
-                .iter()
-                .any(|wrote| matches!(wrote.verdict, Verdict::Written | Verdict::Rewritten))
-            {
+            if report.wrote.iter().any(|wrote| {
+                matches!(
+                    wrote.verdict,
+                    Verdict::Written | Verdict::Rewritten | Verdict::Removed
+                )
+            }) {
                 report.withheld = false;
             }
             if changed && !report.has_errors() {
@@ -2438,6 +2460,32 @@ fn run(root: &Path, plan: &Plan, mode: Mode) -> Report {
             verdict,
         });
     }
+    // A marked rule file at a path the budget withholds is held as stale by
+    // `--check` and removed by a write (#2090). An unmarked file there is
+    // authored, and nothing here reads or removes it.
+    let mut removals: Vec<(usize, std::path::PathBuf)> = Vec::new();
+    for pruned in &plan.pruned {
+        if headwater_resolve::containment::escapes(pruned).is_some() {
+            continue;
+        }
+        let path = root.join(pruned);
+        let marked = std::fs::read_to_string(&path)
+            .is_ok_and(|text| headwater_mark::carries_marker(pruned, &text));
+        if !marked {
+            continue;
+        }
+        if !checking {
+            removals.push((report.wrote.len(), path));
+        }
+        report.wrote.push(Wrote {
+            path: pruned.clone(),
+            kind: Kind::AgentRules,
+            verdict: match checking {
+                true => Verdict::Pruned,
+                false => Verdict::Removed,
+            },
+        });
+    }
     // `generate` (#1466) and `headwater export` (#1510) alike, because a
     // publish that refuses after a partial write leaves a published directory
     // half updated. `--check` writes nothing either way.
@@ -2447,6 +2495,18 @@ fn run(root: &Path, plan: &Plan, mode: Mode) -> Report {
         *verdict = match report.withheld {
             true => Verdict::Withheld,
             false => put(&path, bytes, verdict.clone()),
+        };
+    }
+    for (line, path) in removals {
+        let verdict = &mut report.wrote[line].verdict;
+        // The refusal is read before the removal is tried, so a withheld run
+        // leaves the file where it was.
+        *verdict = match report.withheld {
+            true => Verdict::Withheld,
+            false => match std::fs::remove_file(&path) {
+                Ok(()) => Verdict::Removed,
+                Err(error) => Verdict::Failed(format!("cannot remove {}: {error}", path.display())),
+            },
         };
     }
     report

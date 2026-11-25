@@ -152,6 +152,12 @@ pub struct Session {
     /// which carries no lock, and where the package is not on disk. See
     /// [`headwater_check::lock_stale`].
     pub lock_stale: Option<headwater_check::lock_stale::Stale>,
+    /// Every `agent_rules` projection that declares a budget, measured by the
+    /// emitter after the graph is built. Taken once per load and never cached,
+    /// for the reason `pin` is, and empty where the projections do not read,
+    /// because `taxonomy validate` and `generate` refuse that already. See
+    /// [`headwater_check::agent_budget`].
+    pub agent_budgets: Vec<headwater_check::agent_budget::Reading>,
     /// Each pinned corpus export, as the resolver built for it read it: whether
     /// it binds, and why not. Read once per load beside the resolver set and
     /// never cached, for the reason `pin` is. See
@@ -442,10 +448,11 @@ impl Session {
                 &recorded,
             )
         });
-        Ok(Session {
+        let mut session = Session {
             bound,
             pin,
             lock_stale,
+            agent_budgets: Vec::new(),
             harvests: harvested,
             imported,
             consumer,
@@ -459,7 +466,18 @@ impl Session {
             config,
             claims: headwater_check::claim::Claims::at(root),
             resolvers,
-        })
+        };
+        // The emitter measures a rule file against the surface, so the reading
+        // waits for the graph. The check crate cannot take it, because the
+        // generator depends on it (#2090).
+        session.agent_budgets = match headwater_generate::Projections::read(&session.bound.taxonomy)
+        {
+            Ok(projections) => {
+                headwater_generate::agent_rules::readings(&session.surface(), &projections)
+            }
+            Err(_) => Vec::new(),
+        };
+        Ok(session)
     }
 
     /// The engine range this corpus asks for, where this engine is outside it.
@@ -487,6 +505,7 @@ impl Session {
             observations: &self.observations,
             pin: Some(&self.pin),
             lock_stale: self.lock_stale.as_ref(),
+            agent_budgets: &self.agent_budgets,
             harvests: &self.harvests,
             imports: &self.imported,
             adoption: self.bound.adoption.as_ref(),

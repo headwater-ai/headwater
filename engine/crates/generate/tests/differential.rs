@@ -207,6 +207,7 @@ fn engine_run(built: &Built) -> Run {
             observations: &headwater_check::Observations::empty(),
             pin: None,
             lock_stale: None,
+            agent_budgets: &[],
             harvests: &[],
             imports: &[],
             adoption: None,

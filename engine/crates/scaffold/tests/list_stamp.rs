@@ -134,6 +134,7 @@ fn run(root: &Path, change: Change) -> Run {
             observations: &Observations::empty(),
             pin: None,
             lock_stale: None,
+            agent_budgets: &[],
             harvests: &[],
             imports: &[],
             source: "engine/crates/check/fixtures/governs-suspect.taxonomy.yml",

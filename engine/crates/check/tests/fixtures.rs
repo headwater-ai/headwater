@@ -153,6 +153,7 @@ fn run_scanning(
             observations: &headwater_check::Observations::empty(),
             pin: None,
             lock_stale: None,
+            agent_budgets: &[],
             harvests: &[],
             imports: &[],
             adoption,
@@ -2032,6 +2033,10 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             // verification's snapshot entry is read against the digest of the
             // other.
             Grain::Edge,
+            // `projection.budget.exceeded`, taxonomy grained like
+            // `taxonomy.lock.stale`: an agent rules projection read against
+            // the rule files it would write.
+            Grain::Taxonomy,
         ]
     );
     let bodies: Vec<&str> = run

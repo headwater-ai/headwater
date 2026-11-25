@@ -110,6 +110,7 @@ fn run() -> Run {
             observations: &headwater_check::Observations::empty(),
             pin: None,
             lock_stale: None,
+            agent_budgets: &[],
             harvests: &[],
             imports: &[],
             adoption: None,
