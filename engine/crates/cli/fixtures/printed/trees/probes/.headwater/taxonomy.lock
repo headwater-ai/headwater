@@ -23,7 +23,7 @@
 lock:
   format: 3
   digest: sha256:ca3c47a2f8b062bab1b62b6f5849be25b89110ec578b22da01968aa51148c4c7
-  rules: 3
+  rules: 4
   package: acme/probes
   version: 1.0.0
   sources:

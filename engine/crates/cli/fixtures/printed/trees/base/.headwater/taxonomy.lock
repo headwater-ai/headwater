@@ -23,7 +23,7 @@
 lock:
   format: 3
   digest: sha256:f7b59451cdd1886258a459d887aad5bfda131ebe2fb7747321712eecdbcb8b51
-  rules: 3
+  rules: 4
   package: acme/printed
   version: 1.0.0
   sources:
