@@ -73,6 +73,13 @@
 //! silently accepted and an invitation to the next one, and the duplicate guard
 //! below would then have two spellings of one path to reconcile.
 //!
+//! One mapping is not a normalizer, because it removes no spelling: a
+//! manifest's paths are written from the git top level, which is where
+//! `headwater change` writes them, and [`Unbound::under`] strips the corpus
+//! root's own prefix below that top level from each one before the bind. A
+//! path outside that prefix reaches no rule and is reported as written
+//! (#2098).
+//!
 //! # A re-verification the author states
 //!
 //! A `verified\t<path>` line states that the author re-read the document at
@@ -275,6 +282,9 @@ pub struct Unbound {
     /// The `(document, target)` pairs a three-field `verified` line names,
     /// in order. See the module comment.
     edges: Vec<(String, String)>,
+    /// The paths [`Unbound::under`] found outside the corpus root, as the
+    /// manifest wrote them, in path order. No rule reads one.
+    outside: Vec<String>,
 }
 
 /// The documents one change carries, each held against the corpus this run
@@ -301,6 +311,9 @@ pub struct Change {
     /// each one that names no edge, and a pair whose document no row holds
     /// would otherwise reach it only as its document path (#1631).
     pairs: Vec<(String, String)>,
+    /// The paths outside the corpus root, as [`Unbound::under`] found
+    /// them. They are reported with the unmatched entries (#2098).
+    outside: Vec<String>,
 }
 
 /// What a run injected, for the report that states its own inputs.
@@ -435,7 +448,53 @@ impl Unbound {
             entries,
             verified,
             edges,
+            outside: Vec::new(),
         })
+    }
+
+    /// Read every path from the corpus root, given `prefix`, the path of the
+    /// root below the git top level that `headwater change` writes from, as
+    /// `git rev-parse --show-prefix` prints it (#2098).
+    ///
+    /// A path under `prefix` loses it. A path outside it is taken out of
+    /// every line, so no rule reads it, and [`Change::unmatched`] names it as
+    /// the manifest wrote it: a change in a larger repository carries files
+    /// of other trees, and refusing the run for one would refuse every such
+    /// change. An edge is kept only when both of its paths are under
+    /// `prefix`. An empty `prefix` changes nothing, and the third field of a
+    /// `prior` line was read in [`Unbound::read`] and is no path here.
+    pub fn under(self, prefix: &str) -> Unbound {
+        if prefix.is_empty() {
+            return self;
+        }
+        let mut outside = self.outside;
+        let mut inside = |path: String| match path.strip_prefix(prefix) {
+            Some(rest) => Some(rest.to_string()),
+            None => {
+                outside.push(path);
+                None
+            }
+        };
+        let entries = (self.entries.into_iter())
+            .filter_map(|(path, held)| Some((inside(path)?, held)))
+            .collect();
+        let verified = self.verified.into_iter().filter_map(&mut inside).collect();
+        let edges = (self.edges.into_iter())
+            .filter_map(
+                |(document, target)| match (inside(document), inside(target)) {
+                    (Some(document), Some(target)) => Some((document, target)),
+                    _ => None,
+                },
+            )
+            .collect();
+        outside.sort();
+        outside.dedup();
+        Unbound {
+            entries,
+            verified,
+            edges,
+            outside,
+        }
     }
 
     /// Read a manifest from a file, which is what `headwater check --change`
@@ -476,6 +535,7 @@ impl Unbound {
             unverifiable,
             edges,
             pairs,
+            outside: self.outside,
             entries: self
                 .entries
                 .into_iter()
@@ -553,6 +613,7 @@ impl Change {
             .map(|(path, _)| path.as_str())
             .chain(stated.iter().copied())
             .chain(self.unverifiable.iter().map(String::as_str))
+            .chain(self.outside.iter().map(String::as_str))
             .collect();
         paths.sort_unstable();
         paths.dedup();
@@ -594,6 +655,9 @@ impl Change {
     ///
     /// A `verified` line that names such a path is listed too, once, because
     /// it is the same mistyped path and it states nothing about a document.
+    ///
+    /// A path outside the corpus root, which [`Unbound::under`] took out of
+    /// every line, is listed as the manifest wrote it (#2098).
     pub fn unmatched(&self) -> Vec<&str> {
         let mut paths: Vec<&str> = self
             .entries
@@ -601,6 +665,7 @@ impl Change {
             .filter(|(_, held)| matches!(held, Held::Unmatched { .. }))
             .map(|(path, _)| path.as_str())
             .chain(self.unverifiable.iter().map(String::as_str))
+            .chain(self.outside.iter().map(String::as_str))
             .collect();
         paths.sort_unstable();
         paths.dedup();
@@ -844,6 +909,44 @@ mod tests {
             .bind(every);
         let why = missing.prior_of("docs/a.md").expect_err("a reason");
         assert!(why.contains("prior/a.md"), "{why}");
+    }
+
+    /// A manifest written from the git top level, read from a corpus root at
+    /// `sub/` below it (#2098). The prior bytes sit at `sub/prior/a.md`, the
+    /// third field as written, and they are still held after the mapping.
+    #[test]
+    fn a_path_under_the_root_prefix_loses_it_and_one_outside_is_named() {
+        let text = format!(
+            "{FORMAT}\nadded\tsub/docs/b.md\nadded\tdocs/b.md\nprior\tsub/docs/a.md\t\
+             sub/prior/a.md\nverified\tsub/docs/a.md\nverified\tother/c.md\n\
+             verified\tsub/docs/a.md\tsub/tools/x.sh\nverified\tsub/docs/a.md\ttools/y.sh\n"
+        );
+        let open = tree(&[("sub/prior/a.md", ASSERTED)]);
+        let unbound = Unbound::read(&text, open).expect("a change").under("sub/");
+        assert_eq!(unbound.paths(), ["docs/a.md", "docs/b.md"]);
+        assert_eq!(unbound.verified(), ["docs/a.md"]);
+        assert_eq!(unbound.verified_edges(), [("docs/a.md", "tools/x.sh")]);
+        let change = unbound.bind(every);
+        assert!(matches!(
+            change.prior_of("docs/a.md"),
+            Ok(Prior::Committed { .. })
+        ));
+        assert_eq!(change.prior_of("docs/b.md"), Ok(Prior::Added));
+        // `docs/b.md` at the top level is not the corpus's `docs/b.md`: it
+        // reaches no rule and is named as written, with the other two.
+        assert_eq!(change.added(), ["docs/b.md"]);
+        assert_eq!(
+            change.unmatched(),
+            ["docs/b.md", "other/c.md", "tools/y.sh"]
+        );
+        assert_eq!(change.named().unmatched, 3);
+
+        // An empty prefix is a root at the top level, and nothing moves.
+        let same = Unbound::read(&manifest(), tree(&[("prior/a.md", ASSERTED)]))
+            .expect("a change")
+            .under("");
+        assert_eq!(same.paths(), ["docs/a.md", "docs/b.md"]);
+        assert!(same.bind(every).unmatched().is_empty());
     }
 
     /// Every state writes different characters into the key.

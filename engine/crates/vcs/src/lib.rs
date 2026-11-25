@@ -244,6 +244,30 @@ fn show_toplevel(root: &Path) -> Result<PathBuf, String> {
     Ok(PathBuf::from(text.trim()))
 }
 
+/// The path of `root` below the top level of its git work tree, with a
+/// trailing `/`, which is what `git rev-parse --show-prefix` prints.
+///
+/// It is empty when `root` is the top level, and `None` when `root` is in no
+/// work tree or git does not run. [`produce`] writes every path from the top
+/// level, so `headwater check --change` strips this prefix to read a manifest
+/// from the corpus root (#2098).
+pub fn show_prefix(root: &Path) -> Option<String> {
+    let output = Command::new("git")
+        .arg("-C")
+        .arg(root)
+        .args(["rev-parse", "--show-prefix"])
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    Some(
+        String::from_utf8_lossy(&output.stdout)
+            .trim_end_matches('\n')
+            .to_string(),
+    )
+}
+
 fn commit_exists(root: &Path, base: &str) -> bool {
     Command::new("git")
         .arg("-C")
