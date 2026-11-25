@@ -891,19 +891,20 @@ fn this_repository_generates_its_one_hundred_and_forty_six_artifacts_and_account
     // until #885 put a document on it, which held this literal at 7 for one
     // commit. The register is the third declaration that produces a reason
     // rather than a file. Nothing is passed over: a projection that produced
-    // no file states a reason. The other three are the declarable kinds this
-    // engine does not emit and this corpus does not declare — `agent_rules`,
-    // `template` and `transcription` — which a run states whether or not a
-    // declaration named them, because the reason is a property of this engine
-    // rather than of the corpus. `relation_view` was the fourth until #2018
-    // gave it an emitter and this corpus a declaration, which moved this
-    // literal from 8 to 7. The last two are the shelves no `shelf_index`
+    // no file states a reason. The other two are the declarable kinds this
+    // engine does not emit and this corpus does not declare — `template` and
+    // `transcription` — which a run states whether or not a declaration named
+    // them, because the reason is a property of this engine rather than of the
+    // corpus. `relation_view` was the fourth until #2018 gave it an emitter and
+    // this corpus a declaration, which moved this literal from 8 to 7, and
+    // `agent_rules` the third until #2089 gave it an emitter, which moved it
+    // from 7 to 6. This corpus declares no `agent_rules`. The last two are the shelves no `shelf_index`
     // declaration names (#1988), which moved this literal from 6 to 8:
     // `interfaces`, which a `verb_index` indexes instead, and
     // `library_doctrine`.
     assert_eq!(
         plan.unwritten.len(),
-        7,
+        6,
         "a projection produced neither a file nor a reason"
     );
     let uncovered: Vec<&str> = plan

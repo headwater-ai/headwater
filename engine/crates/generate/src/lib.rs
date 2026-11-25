@@ -102,6 +102,7 @@ use headwater_query::{Document, Pointer, Surface};
 use headwater_yaml::value::{Mapping, Value};
 use std::path::Path;
 
+mod agent_rules;
 pub mod consumer_surface;
 mod derived;
 pub mod descriptor;
@@ -1450,6 +1451,7 @@ pub fn plan(
                 probe_result::emit(surface, census, declaration, runs, identity, &mut plan);
             }
             Kind::VerbIndex => verb_index::emit(surface, declaration, verbs, &mut plan),
+            Kind::AgentRules => agent_rules::emit(surface, declaration, &mut plan),
             Kind::RelationView => {
                 relation_view::emit(surface, census, declaration, &runs.observations, &mut plan);
             }
@@ -1701,10 +1703,6 @@ fn graph_export(
 /// fourteenth variant is `E0004` here before it is anything else.
 pub fn unbuilt(kind: Kind) -> Option<&'static str> {
     match kind {
-        Kind::AgentRules => Some(
-            "HW-DR-0115 states its form, a budgeted pointer at the Copilot instructions path, \
-             and the emitter that writes it is not built yet",
-        ),
         Kind::Template => Some(
             "a template is the permitted relations, facets and sections of a kind, which \
              `headwater explain` already prints. What no document states is the file it goes in",
@@ -1718,7 +1716,8 @@ pub fn unbuilt(kind: Kind) -> Option<&'static str> {
              because a migration task lapses and a suppression expires on a date. A committed \
              copy would fail this check on a morning when nothing changed. Spec 13 carries it",
         ),
-        Kind::ShelfIndex
+        Kind::AgentRules
+        | Kind::ShelfIndex
         | Kind::ShelfSections
         | Kind::RelationView
         | Kind::GraphExport

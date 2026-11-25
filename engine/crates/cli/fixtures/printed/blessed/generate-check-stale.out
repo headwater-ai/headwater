@@ -11,8 +11,6 @@ projections, held to regeneration
 what this verb does not write, and why
   shelf_index shelf `answers`
     no `shelf_index` declaration names the shelf `answers`, so no index is written for it. To add one, name `answers` in the `for` of a `shelf_index` declaration, or declare `{kind: shelf_index, for: [answers], output: "{shelf}/README.md"}` under `add_to: projections:` in `.headwater/overlay.yml`
-  agent_rules no declaration names one
-    HW-DR-0115 states its form, a budgeted pointer at the Copilot instructions path, and the emitter that writes it is not built yet
   template no declaration names one
     a template is the permitted relations, facets and sections of a kind, which `headwater explain` already prints. What no document states is the file it goes in
   transcription no declaration names one

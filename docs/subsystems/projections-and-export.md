@@ -89,9 +89,11 @@ One output can feed another. A generated document is a node of the census, and a
 
 `unbuilt` gives the reason that this engine writes no output for a kind, or nothing where it writes one. The reason is a property of the engine, so a run prints it for a kind that no declaration names. The match is exhaustive, so a new kind fails to compile until it has an answer. `engine_defined` lists the register as unwritten with its reason from `unbuilt`. The register depends on the clock, so a committed copy could not pass `--check` ([HW-OBL-0037](../obligations/0037-the-register-is-not-a-projection-of-the-lock-alone-so-generate.md)).
 
-Three declarable kinds wait, and `unbuilt` gives each one its reason. A template would carry the permitted relations, facets and sections of one kind. An agent rule file is the artifact that [the glossary](../spec/glossary.md#projection) names. A transcription reads a pinned external snapshot, and [Q19](../spec/09-decisions.md#q19--inbound-integration-an-external-system-of-record) leaves it to the first adopter who asks for one.
+Two declarable kinds wait, and `unbuilt` gives each one its reason. A template would carry the permitted relations, facets and sections of one kind. A transcription reads a pinned external snapshot, and [Q19](../spec/09-decisions.md#q19--inbound-integration-an-external-system-of-record) leaves it to the first adopter who asks for one.
 
 A relation view is the traceability matrix, and it has an emitter. `relation_view.rs` walks an ordered chain of relations from each document of one shelf. It writes one row for each path, with an empty cell for a missing link ([HW-DR-0114](../decisions/0114-a-relation-view-follows-an-ordered-chain-of-relations-from-every-document-of-one-shelf.md)). Its cells read the observation snapshot, which `Runs` carries in from the caller, because this crate opens no file of its own.
+
+An agent rule file is the artifact that [the glossary](../spec/glossary.md#projection) names, and it has an emitter. `agent_rules.rs` writes one Copilot `.instructions.md` file for each document with a `governs` edge ([HW-DR-0115](../decisions/0115-an-agent-rules-file-is-a-budgeted-pointer-at-the-copilot-instructions-path.md)). The file points at the document and copies none of its body.
 
 No output states when it was generated, because `--check` compares bytes. `headwater export --at` injects a time into an output that leaves the repository, and `plan` passes none.
 
