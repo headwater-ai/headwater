@@ -241,6 +241,9 @@ fn a_path_outside_the_subfolder_root_is_named_and_reaches_no_rule() {
          added\tsub/tools/ungoverned.sh\n",
     )
     .expect("the manifest writes");
+    // The corpus holds an ungoverned `tools/outside.sh` of its own, which the
+    // manifest's top-level `tools/outside.sh` is not.
+    std::fs::write(root.at.join("sub/tools/outside.sh"), "echo inside\n").expect("a tool writes");
     let ran = strict_in_sub(&root, &manifest);
     // One finding, for `sub/tools/ungoverned.sh`: a second would be
     // `tools/outside.sh` read as the corpus's own `tools/outside.sh`.

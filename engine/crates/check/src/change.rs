@@ -283,7 +283,7 @@ pub struct Unbound {
     /// in order. See the module comment.
     edges: Vec<(String, String)>,
     /// The paths [`Unbound::under`] found outside the corpus root, as the
-    /// manifest wrote them, in path order. No rule reads one.
+    /// manifest wrote them. No rule reads one.
     outside: Vec<String>,
 }
 
@@ -464,9 +464,6 @@ impl Unbound {
     /// `prefix`. An empty `prefix` changes nothing, and the third field of a
     /// `prior` line was read in [`Unbound::read`] and is no path here.
     pub fn under(self, prefix: &str) -> Unbound {
-        if prefix.is_empty() {
-            return self;
-        }
         let mut outside = self.outside;
         let mut inside = |path: String| match path.strip_prefix(prefix) {
             Some(rest) => Some(rest.to_string()),
@@ -487,8 +484,6 @@ impl Unbound {
                 },
             )
             .collect();
-        outside.sort();
-        outside.dedup();
         Unbound {
             entries,
             verified,
