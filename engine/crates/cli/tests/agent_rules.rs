@@ -387,7 +387,9 @@ fn a_document_on_a_shelf_the_for_does_not_name_gets_no_rule_file() {
 
 /// A pattern that opens with `@` is a YAML reserved indicator when it is not
 /// quoted, and one that opens with `*` is an alias, so a
-/// harness that parses the front matter would read no `applyTo` at all.
+/// harness that parses the front matter would read no `applyTo` at all. The
+/// third `governs` target is one anchor over two patterns that the first two
+/// already declare, so each pattern appears once, at its first declaration.
 #[test]
 fn an_apply_to_that_opens_with_a_yaml_indicator_still_loads_and_holds_every_pattern_in_declared_order(
 ) {
@@ -398,7 +400,7 @@ fn an_apply_to_that_opens_with_a_yaml_indicator_still_loads_and_holds_every_patt
         &standard,
         read(&standard).replacen(
             "  governs:\n    - src/api/**\n",
-            "  governs:\n    - \"@generated/**\"\n    - src/api/**\n",
+            "  governs:\n    - \"@generated/**\"\n    - src/api/**\n    - [\"src/api/**\", \"@generated/**\"]\n",
             1,
         ),
     )
@@ -469,4 +471,39 @@ fn a_rule_file_for_an_unaccepted_source_says_that_nobody_accepted_it() {
         rule.contains(UNACCEPTED),
         "the source's warrant is `asserted`, and the pointer does not say so\n{rule}"
     );
+}
+
+/// A pattern may hold a `"`, because a path may. Inside the quoted `applyTo`
+/// it is escaped, or the front matter does not load. The `source-tree`
+/// resolver binds no pattern with a `\`, so the unit case in `agent_rules.rs`
+/// holds that escape.
+#[test]
+fn an_apply_to_whose_pattern_holds_a_quote_loads_to_the_declared_pattern() {
+    let root = Root::scratch("escape");
+    let consumer = beacon(&root);
+    let standard = consumer.join("docs/standards/api-design.md");
+    std::fs::write(
+        &standard,
+        read(&standard).replacen(
+            "  governs:\n    - src/api/**\n",
+            "  governs:\n    - 'src/q\"uote/**'\n",
+            1,
+        ),
+    )
+    .expect("the standard is rewritten");
+    write(&consumer.join("src/q\"uote/a.rs"), "fn a() {}\n");
+
+    let generated = run(&consumer, &["generate"]);
+    assert_eq!(generated.code, Some(0), "{generated:?}");
+    let text = read(&consumer.join(RULE));
+    let loaded = headwater_yaml::load(front_matter(&text))
+        .unwrap_or_else(|errors| panic!("the front matter loads: {errors:?}\n{text}"))
+        .value;
+    let apply_to = loaded
+        .as_map()
+        .and_then(|members| members.get("applyTo"))
+        .and_then(|node| node.value.as_scalar())
+        .map(|scalar| scalar.text.clone())
+        .unwrap_or_else(|| panic!("`applyTo` is a string\n{text}"));
+    assert_eq!(apply_to, "src/q\"uote/**", "{text}");
 }

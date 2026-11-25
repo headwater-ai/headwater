@@ -131,15 +131,21 @@ fn patterns(surface: &Surface<'_>, path: &str) -> Vec<String> {
     out
 }
 
-fn render(path: &str, pointer: &headwater_query::Pointer, patterns: &[String]) -> String {
-    let mut out = String::from("---\n");
-    out.push_str(&format!(
+/// The `applyTo` line: the patterns joined by `,` inside one double-quoted
+/// YAML scalar, with `\` and `"` escaped, because a path may hold either.
+fn apply_to(patterns: &[String]) -> String {
+    format!(
         "applyTo: \"{}\"\n",
         patterns
             .join(",")
             .replace('\\', "\\\\")
             .replace('"', "\\\"")
-    ));
+    )
+}
+
+fn render(path: &str, pointer: &headwater_query::Pointer, patterns: &[String]) -> String {
+    let mut out = String::from("---\n");
+    out.push_str(&apply_to(patterns));
     out.push_str(&headwater_mark::marker_member(Kind::AgentRules.name()));
     out.push_str("\n---\n\n");
     let link = shelf_index::relative(&shelf_index::parent_of(path), &pointer.path);
@@ -156,4 +162,32 @@ fn render(path: &str, pointer: &headwater_query::Pointer, patterns: &[String]) -
     }
     out.push_str("\n\nRead that document before you edit these files.\n");
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::apply_to;
+
+    /// Each pattern loads back from the line as the source declared it. The
+    /// `source-tree` resolver binds a path with a `"` and the CLI case holds
+    /// it there, and this case holds the `\` that no CLI case can reach.
+    #[test]
+    fn an_apply_to_line_loads_back_to_the_declared_patterns_with_a_quote_and_a_backslash() {
+        let patterns = vec![
+            "src/q\"uote/**".to_string(),
+            "src/back\\slash/**".to_string(),
+            "@generated/**".to_string(),
+        ];
+        let line = apply_to(&patterns);
+        let loaded = headwater_yaml::load(&line)
+            .unwrap_or_else(|errors| panic!("{line} does not load: {errors:?}"))
+            .value;
+        let text = loaded
+            .as_map()
+            .and_then(|members| members.get("applyTo"))
+            .and_then(|node| node.value.as_scalar())
+            .map(|scalar| scalar.text.clone())
+            .unwrap_or_else(|| panic!("{line} holds no `applyTo` string"));
+        assert_eq!(text, patterns.join(","), "{line}");
+    }
 }
