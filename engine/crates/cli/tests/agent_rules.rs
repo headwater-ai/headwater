@@ -621,9 +621,25 @@ fn an_aggregate_two_rules_fit_prunes_the_satellite_and_check_reports_the_project
         verdict.contains("the budget withholds it"),
         "the gate holds the pruned rule as stale, and says `{verdict}`\n{stale:?}"
     );
+    // The prune drops a rule and never its source: every source document
+    // reads the same bytes after the run.
+    let sources = [
+        "docs/standards/api-design.md",
+        "docs/component-specs/delivery/functional.md",
+        "docs/component-specs/delivery/technical.md",
+    ];
+    let before: Vec<String> = sources
+        .iter()
+        .map(|path| read(&consumer.join(path)))
+        .collect();
     let pruned = run(&consumer, &["generate"]);
     assert_eq!(pruned.code, Some(0), "{pruned:?}");
     assert!(!consumer.join(SATELLITE).exists(), "{pruned:?}");
+    let after: Vec<String> = sources
+        .iter()
+        .map(|path| read(&consumer.join(path)))
+        .collect();
+    assert_eq!(before, after, "the prune edited a source document");
     assert!(consumer.join(STANDARD).is_file(), "{pruned:?}");
     assert!(consumer.join(NUCLEUS).is_file(), "{pruned:?}");
     let clean = run(&consumer, &["generate", "--check"]);
