@@ -10,6 +10,8 @@
 #   the copy is current
 #   the facet that carries the freshness role declares no staleness policy, so
 #   nothing decides when a verification has expired
+#   an `agent_rules` states no budget, so nothing bounds what it writes into
+#   an agent's context
 
 taxonomy: acme/fixture
 version: 1.0.0
@@ -57,6 +59,7 @@ projections:
   - {kind: shelf_index, for: [decisions], output: "/var/tmp/index.md"}
   - {kind: shelf_index, for: [decisions], output: "../outside/index.md"}
   - {kind: transcription, output: "docs/imported/requirements.md"}
+  - {kind: agent_rules, output: ".github/instructions/{name}.instructions.md"}
 
 core:
   requires:

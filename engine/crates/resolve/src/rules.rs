@@ -82,7 +82,10 @@ pub enum Ran {
 /// 3: `projection targets` refuses a shelf path that is absolute or climbs out
 /// of the repository, and a projection output that starts at `\` or a drive
 /// (#1967).
-pub const RULE_SET: u32 = 3;
+///
+/// 4: `context safety` refuses an `agent_rules` projection that states no
+/// `budget` (#2088).
+pub const RULE_SET: u32 = 4;
 
 /// Every rule that [spec 2](../../../../docs/spec/02-taxonomy-model.md#the-meta-schema)
 /// lists for `taxonomy validate`, in spec 2's own order, and where each runs.
@@ -231,12 +234,12 @@ pub const RULES: [(&str, Ran); 23] = [
     ),
     (
         "context safety",
-        Ran::Partly {
-            decides: "every facet that carries the freshness role declares a staleness policy",
-            waits: "the size budget half. Spec 5 requires one on every agent-facing kind and \
-                    projection. An `agent_rules` declares one in `budget` (HW-DR-0115), and \
-                    nothing yet refuses an agent-facing projection without one (#2088)",
-        },
+        Ran::Resolved(
+            "every facet that carries the freshness role declares a staleness policy, and \
+             every `agent_rules` projection, the one agent-facing declaration the language \
+             has, declares a `budget` (HW-DR-0115). No declaration marks a kind agent-facing, \
+             so no kind owes one",
+        ),
     ),
     (
         "overlay confluence",
@@ -1991,9 +1994,25 @@ fn warrant_integrity(view: &View, out: &mut Vec<ResolveError>) {
     }
 }
 
-/// The half of context safety that a declaration exists for.
+/// Context safety, as far as a declaration exists for it: every `agent_rules`
+/// projection states a `budget`, and the facet that carries the freshness role
+/// states a staleness policy. The budget half runs whether or not any facet
+/// carries that role. Whether a present budget is well formed is the
+/// meta-schema's and the generator's reader's to say, not this rule's.
 fn context_safety(view: &View, out: &mut Vec<ResolveError>) {
     const RULE: &str = "context safety";
+    for (index, body) in view.items("projections").into_iter().enumerate() {
+        if text(body, "kind") == Some("agent_rules") && body.get("budget").is_none() {
+            out.push(refusal(
+                RULE,
+                &format!("projections.{index}"),
+                "is an `agent_rules` and states no `budget`, so nothing bounds what it writes \
+                 into an agent's context. A budget is `per_file` and `aggregate`, in bytes \
+                 (HW-DR-0115)"
+                    .to_string(),
+            ));
+        }
+    }
     let Some(facet) = view.facet_with_role("freshness") else {
         return;
     };
