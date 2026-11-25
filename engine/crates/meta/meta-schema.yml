@@ -633,6 +633,20 @@ definitions:
       # `nav:` for that template to read. The engine takes `sections` on a
       # `site_nav` alone, and refuses a shelf named twice.
       sections: {seq: {block: site_nav_section}}
+      # The byte budget of an agent-facing projection (HW-DR-0115): what one
+      # written file may hold, and what every file of the declaration may hold
+      # together. The engine takes `budget` on an `agent_rules` alone, because
+      # the meta-schema cannot say "on one kind". Reading the budget is this
+      # member; enforcing it is #2088 and #2090.
+      budget: {block: projection_budget}
+
+  # The two figures of a `budget`, both in bytes and both required. A budget
+  # that stated one figure would leave the other to an engine default, and the
+  # budget is the taxonomy's decision and not the engine's.
+  projection_budget:
+    members:
+      per_file: {scalar: integer, required: true}
+      aggregate: {scalar: integer, required: true}
 
   # One section of a `site_nav`. It states `for` or `groups`, and the engine
   # refuses both and neither, because the meta-schema has no way to say "one
