@@ -234,8 +234,8 @@ pub const RULES: [(&str, Ran); 23] = [
         Ran::Partly {
             decides: "every facet that carries the freshness role declares a staleness policy",
             waits: "the size budget half. Spec 5 requires one on every agent-facing kind and \
-                    projection, and no declaration in the language carries a budget or marks a \
-                    kind agent-facing",
+                    projection. An `agent_rules` declares one in `budget` (HW-DR-0115), and \
+                    nothing yet refuses an agent-facing projection without one (#2088)",
         },
     ),
     (
