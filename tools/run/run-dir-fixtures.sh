@@ -632,6 +632,29 @@ rm -f "$none_run/intake.md"
 same 'applies reads a run with no intake.md as a zero count' 'APPLY: 0' \
     "$(sh "$tool" applies applies-none 2>&1)"
 
+# `decisions` prints the lines of decisions.md that a queue refill and a
+# resumed session read before they fill a slot: each SCOPE, OWNER and RULED
+# line, then one count line. A worktree-isolated reader's shell refuses a path
+# that names `.git`, so without the verb it reads none of them (#2087). A line
+# that names one of the three words in its text and not as its form is not
+# printed, and neither is any other decision.
+dec_run=$(sh "$tool" start decisions-run 2>/dev/null)
+: > "$dec_run/decisions.md"
+sh "$tool" decide decisions-run 'SCOPE: #7 #8 and nothing else' 2>"$scratch/err"
+sh "$tool" decide decisions-run 'ruled #7 MERGE, and the SCOPE line stands' 2>"$scratch/err"
+sh "$tool" decide decisions-run --owner 9 -- 'build it' >/dev/null 2>"$scratch/err"
+sh "$tool" rule decisions-run 8 gated 'waits on #7' >/dev/null 2>"$scratch/err"
+sh "$tool" decide decisions-run 'an OWNER question went to the end of the run' 2>"$scratch/err"
+day=$(date -u +%Y-%m-%d)
+same 'decisions prints each SCOPE, OWNER and RULED line, then the count' \
+    "- $day — SCOPE: #7 #8 and nothing else
+- $day — OWNER ($day) #9: build it
+- $day — RULED #8 gated (run decisions-run): waits on #7
+DECISIONS: 3" "$(sh "$tool" decisions decisions-run 2>&1)"
+rm -f "$dec_run/decisions.md"
+same 'decisions reads a run with no decisions.md as a zero count' 'DECISIONS: 0' \
+    "$(sh "$tool" decisions decisions-run 2>&1)"
+
 printf '## Parent\n\n- a lesson on two lines\n' > "$scratch/lesson"
 before=$(wc -l < "$prose/lessons.md" | tr -d ' ')
 same 'lesson takes a bare run id, appends a file of prose to lessons.md, and says how many lines' \
