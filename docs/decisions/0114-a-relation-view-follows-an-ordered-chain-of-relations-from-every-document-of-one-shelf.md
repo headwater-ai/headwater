@@ -66,7 +66,7 @@ The observation of a cell is the commit of the snapshot entry that names its doc
 
 ## Consequences
 
-`unbuilt()` returns `None` for `relation_view`, and spec 6 lists it under `runs`. Nine of the thirteen projection kinds have an emitter, and four wait: `agent_rules`, `template`, `transcription` and `coverage_report`. [The `headwater generate` contract](../interfaces/headwater-generate.md#a-relation-view) states the projection.
+`unbuilt()` returns `None` for `relation_view`, and spec 6 lists it under `runs`. When this record was written, nine of the thirteen projection kinds had an emitter, and four waited: `agent_rules`, `template`, `transcription` and `coverage_report`. #2089 gave `agent_rules` an emitter, so ten have one now. [The `headwater generate` contract](../interfaces/headwater-generate.md#a-relation-view) states the projection.
 
 The requirement-verification entry declares one view, from `verified_requirements` through `verified_by`, `proven_by` and `cited_in`. This repository generates it, and every verification cell here reads `declared` until a snapshot records one.
 
