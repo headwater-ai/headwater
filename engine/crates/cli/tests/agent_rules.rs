@@ -149,16 +149,21 @@ const PROJECTION: &str = "    - kind: agent_rules\n      for: [standards]\n     
 /// The rule file the API design standard owns.
 const RULE: &str = ".github/instructions/api-design.instructions.md";
 
-/// Gives the standard at `path` a `governs` edge to `src/api/**`, written under
+/// Gives the document at `path` a `governs` edge to `src/api/**`, written under
 /// its existing `relations` block.
 fn govern(path: &Path) {
     let text = read(path);
+    assert!(
+        text.contains("relations:\n"),
+        "{} has no relations block, so no governs edge would be written",
+        path.display()
+    );
     let text = text.replacen(
         "relations:\n",
         "relations:\n  governs:\n    - src/api/**\n",
         1,
     );
-    std::fs::write(path, text).expect("the standard is rewritten");
+    std::fs::write(path, text).expect("the document is rewritten");
 }
 
 /// The Beacon corpus, assembled as the entry's `fixtures/README.md` says, with
@@ -293,6 +298,24 @@ fn a_standard_that_governs_src_api_writes_one_rule_file_whose_apply_to_admits_a_
     assert!(read(&consumer.join(RULE)).contains("The rules each Beacon component"));
     let current = run(&consumer, &["generate", "--check"]);
     assert_eq!(current.code, Some(0), "{current:?}");
+
+    // The gate in its other two directions: a rule file that is gone, and one
+    // edited by hand, are each stale, and each names the file.
+    std::fs::remove_file(consumer.join(RULE)).expect("the rule file is removed");
+    let missing = run(&consumer, &["generate", "--check"]);
+    assert_eq!(missing.code, Some(1), "{missing:?}");
+    assert!(missing.out.contains(RULE), "{missing:?}");
+    let restored = run(&consumer, &["generate"]);
+    assert_eq!(restored.code, Some(0), "{restored:?}");
+    let rule = consumer.join(RULE);
+    std::fs::write(
+        &rule,
+        read(&rule).replace("Read that document", "Skim that document"),
+    )
+    .expect("the rule file is edited by hand");
+    let tampered = run(&consumer, &["generate", "--check"]);
+    assert_eq!(tampered.code, Some(1), "{tampered:?}");
+    assert!(tampered.out.contains(RULE), "{tampered:?}");
 }
 
 #[test]
@@ -343,7 +366,7 @@ fn two_sources_with_one_file_stem_write_neither_rule_file_and_say_why() {
 fn a_document_on_a_shelf_the_for_does_not_name_gets_no_rule_file() {
     let root = Root::scratch("other-shelf");
     let consumer = beacon(&root);
-    govern(&consumer.join("docs/component-specs/webhooks/functional.md"));
+    govern(&consumer.join("docs/component-specs/signing/functional.md"));
     let generated = run(&consumer, &["generate"]);
     assert_eq!(generated.code, Some(0), "{generated:?}");
     assert!(consumer.join(RULE).is_file(), "{generated:?}");
