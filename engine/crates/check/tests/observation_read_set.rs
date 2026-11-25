@@ -84,6 +84,7 @@ fn run_over(root: &Path) -> Run {
             observations: &observations,
             pin: None,
             lock_stale: None,
+            agent_budgets: &[],
             harvests: &[],
             imports: &[],
             adoption: None,

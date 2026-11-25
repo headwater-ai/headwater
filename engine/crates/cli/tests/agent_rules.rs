@@ -555,12 +555,26 @@ fn rebudget(consumer: &Path, per_file: u64, aggregate: u64) {
     assert_eq!(resolved.code, Some(0), "{resolved:?}");
 }
 
-/// The lines of a `check` run that the budget rule printed.
-fn budget_findings(ran: &Ran) -> Vec<&str> {
-    ran.out
-        .lines()
-        .filter(|line| line.contains(BUDGET_RULE))
-        .collect()
+/// The findings of the budget rule in a `check` run, each with the lines the
+/// report wrapped it over joined by one space.
+fn budget_findings(ran: &Ran) -> Vec<String> {
+    let opens = format!("{BUDGET_RULE}: ");
+    let mut found: Vec<String> = Vec::new();
+    let mut open = false;
+    for line in ran.out.lines() {
+        let line = line.trim();
+        if line.starts_with(&opens) {
+            found.push(line.to_string());
+            open = true;
+        } else if open && !line.is_empty() && !line.contains(" warn") && !line.contains(" error") {
+            let last = found.last_mut().expect("a finding is open");
+            last.push(' ');
+            last.push_str(line);
+        } else {
+            open = false;
+        }
+    }
+    found
 }
 
 /// HW-DR-0115: the prune drops from the satellite end of the derived reading
@@ -580,14 +594,14 @@ fn an_aggregate_two_rules_fit_prunes_the_satellite_and_check_reports_the_project
     let found = budget_findings(&checked);
     assert_eq!(found.len(), 1, "exactly one aggregate finding\n{checked:?}");
     for named in [
-        "projections.0".to_string(),
-        "agent_rules".to_string(),
+        "`projections.".to_string(),
+        "`agent_rules`".to_string(),
         format!("{total} bytes"),
-        format!("{aggregate}"),
-        "withholds 1".to_string(),
+        format!("`budget.aggregate` is {aggregate}"),
+        "withholds 1 rule ".to_string(),
     ] {
         assert!(
-            checked.out.contains(&named),
+            found[0].contains(&named),
             "the aggregate finding names `{named}`\n{checked:?}"
         );
     }
@@ -662,10 +676,10 @@ fn a_rule_past_per_file_is_not_written_and_check_names_its_size_and_the_layer_to
         format!("{largest} bytes"),
         format!("{per_file}"),
         format!("the `summary` of `{source}`"),
-        "projections.0.budget.per_file".to_string(),
+        format!(".budget.per_file` is {per_file}"),
     ] {
         assert!(
-            checked.out.contains(&named),
+            found[0].contains(&named),
             "the per-file finding names `{named}`\n{checked:?}"
         );
     }

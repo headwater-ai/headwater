@@ -368,6 +368,7 @@ fn run(recorded: &Recorded, root: &Path) -> Run {
             observations: &recorded.observations,
             pin: None,
             lock_stale: None,
+            agent_budgets: &[],
             harvests: &[],
             imports: &[],
             adoption: None,

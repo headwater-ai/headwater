@@ -27,14 +27,28 @@
 //! The body is a pointer: the document's label, its summary and a link to it.
 //! Nothing of its body is copied, so the rule file never states a rule the
 //! governing document does not, and an edit of the rule moves nothing here.
-//! The budget is #2090's to enforce, and the pointer stays far below it.
+//!
+//! # The budget
+//!
+//! [`measure`] renders every rule and holds it against the declaration's
+//! `budget`. A rule past `per_file` is withheld. The rest stand in the derived
+//! reading precedence of their sources, and the prune drops them from the
+//! satellite end until the total fits `aggregate` (#2090). A withheld rule is
+//! an [`Unwritten`] that names the figure, and its path joins
+//! [`Plan::pruned`], so that a marked copy an earlier run wrote there is stale
+//! under `--check` and removed by a write rather than left to load. The check
+//! rule `projection.budget.exceeded` reads [`readings`], which calls the same
+//! [`measure`], so the rule and the prune cannot disagree. A source document is
+//! never edited to fit: the projection writes rule files and nothing else.
 //!
 //! # Two sources with one stem
 //!
 //! `{name}` is the file stem of the source, so two sources with one stem own
 //! one path. Neither is written, and the plan names both, because a file that
 //! one of them silently overwrote would load the wrong document's pointer.
-use crate::{label, shelf_index, shelf_of, Declaration, Kind, Output, Plan, Unwritten};
+use crate::{
+    label, shelf_index, shelf_of, Budget, Declaration, Kind, Output, Plan, Projections, Unwritten,
+};
 use headwater_graph::declarations::Direction;
 use headwater_graph::Target;
 use headwater_query::Surface;
@@ -46,9 +60,68 @@ const NAME: &str = "{name}";
 /// The relation a source governs code by.
 const GOVERNS: &str = "governs";
 
-pub(crate) fn emit(surface: &Surface<'_>, declaration: &Declaration, plan: &mut Plan) {
+/// What becomes of one rule under the declaration's budget.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Fate {
+    /// Written.
+    Written,
+    /// Not written, because the file alone is past `per_file`.
+    OverFile,
+    /// Not written, because the rules before it in the reading order already
+    /// fill `aggregate`.
+    Pruned,
+}
+
+/// One rule this declaration would write if no budget bound it.
+#[derive(Clone, Debug)]
+pub struct Candidate {
+    /// The path of the rule file.
+    pub path: String,
+    /// The source document it points at.
+    pub source: String,
+    /// The rendered file, marker included.
+    pub bytes: String,
+    pub fate: Fate,
+}
+
+impl Candidate {
+    /// The size the budget reads: the bytes of the file as written.
+    pub fn size(&self) -> u64 {
+        self.bytes.len() as u64
+    }
+}
+
+/// Every rule one declaration would write, held against its budget.
+///
+/// The emitter and the check rule both read this, so the file `generate`
+/// withholds and the file the finding names are one measurement.
+#[derive(Clone, Debug)]
+pub struct Measured {
+    /// Every rule with a path of its own, in derived reading precedence of
+    /// its source: a nucleus before its satellite, and a governing document
+    /// before the one it governs.
+    pub candidates: Vec<Candidate>,
+    /// The paths two sources share, which neither writes. Not measured,
+    /// because neither is a rule.
+    pub collisions: Vec<Unwritten>,
+    /// The bytes of every candidate that is not past `per_file`, together.
+    pub total: u64,
+    pub budget: Option<Budget>,
+}
+
+/// Measure every rule of one declaration and settle its fate.
+///
+/// A rule past `per_file` is withheld. The rest stand in derived reading
+/// precedence, and the prune drops them from the satellite end until the
+/// total is at or under `aggregate`, which keeps the longest head of the
+/// order that fits. A smaller rule further down is not admitted into the gap,
+/// because that would keep a satellite and drop its nucleus. HW-DR-0115 says
+/// why the order is the one `route` and `explain` already give.
+///
+/// `Err` where the output names no `{name}`, which is no measurement at all.
+pub fn measure(surface: &Surface<'_>, declaration: &Declaration) -> Result<Measured, Unwritten> {
     if !declaration.output.contains(NAME) {
-        plan.unwritten.push(Unwritten {
+        return Err(Unwritten {
             at: declaration.output.clone(),
             kind: Kind::AgentRules,
             reason: format!(
@@ -56,7 +129,6 @@ pub(crate) fn emit(surface: &Surface<'_>, declaration: &Declaration, plan: &mut 
                  HW-DR-0115 writes one file for each source, named by its file stem"
             ),
         });
-        return;
     }
 
     let mut sources: Vec<_> = surface
@@ -82,22 +154,24 @@ pub(crate) fn emit(surface: &Surface<'_>, declaration: &Declaration, plan: &mut 
         by_path.entry(path).or_default().push((document, patterns));
     }
 
+    let mut collisions = Vec::new();
+    let mut pointers = Vec::new();
+    let mut rendered: BTreeMap<String, (String, String)> = BTreeMap::new();
     for (path, owners) in by_path {
         if let [(document, patterns)] = owners.as_slice() {
             let pointer = surface.pointer(document);
-            plan.outputs.push(Output {
-                bytes: render(&path, &pointer, patterns),
-                path,
-                kind: Kind::AgentRules,
-                committed: true,
-            });
+            rendered.insert(
+                pointer.path.clone(),
+                (path.clone(), render(&path, &pointer, patterns)),
+            );
+            pointers.push(pointer);
             continue;
         }
         let named: Vec<String> = owners
             .iter()
             .map(|(document, _)| format!("`{}`", document.path))
             .collect();
-        plan.unwritten.push(Unwritten {
+        collisions.push(Unwritten {
             at: path,
             kind: Kind::AgentRules,
             reason: format!(
@@ -107,6 +181,154 @@ pub(crate) fn emit(surface: &Surface<'_>, declaration: &Declaration, plan: &mut 
             ),
         });
     }
+
+    surface.by_precedence(&mut pointers);
+    let mut candidates: Vec<Candidate> = pointers
+        .into_iter()
+        .filter_map(|pointer| {
+            let (path, bytes) = rendered.remove(&pointer.path)?;
+            Some(Candidate {
+                path,
+                source: pointer.path,
+                bytes,
+                fate: Fate::Written,
+            })
+        })
+        .collect();
+
+    let mut total = 0;
+    if let Some(budget) = declaration.budget {
+        for candidate in &mut candidates {
+            if candidate.size() > budget.per_file {
+                candidate.fate = Fate::OverFile;
+            }
+        }
+        let mut kept = 0;
+        let mut full = false;
+        for candidate in &mut candidates {
+            if candidate.fate == Fate::OverFile {
+                continue;
+            }
+            total += candidate.size();
+            if full || kept + candidate.size() > budget.aggregate {
+                full = true;
+                candidate.fate = Fate::Pruned;
+                continue;
+            }
+            kept += candidate.size();
+        }
+    } else {
+        total = candidates.iter().map(Candidate::size).sum();
+    }
+
+    Ok(Measured {
+        candidates,
+        collisions,
+        total,
+        budget: declaration.budget,
+    })
+}
+
+/// The budget reading of every `agent_rules` declaration that states a budget,
+/// for the check rule `projection.budget.exceeded` (#2090).
+///
+/// A declaration with no budget gives no reading, because `taxonomy validate`
+/// refuses it, and one whose output names no `{name}` gives none, because the
+/// plan already refuses it.
+pub fn readings(
+    surface: &Surface<'_>,
+    projections: &Projections,
+) -> Vec<headwater_check::agent_budget::Reading> {
+    projections
+        .declared
+        .iter()
+        .enumerate()
+        .filter(|(_, declaration)| declaration.kind == Kind::AgentRules)
+        .filter_map(|(index, declaration)| {
+            let budget = declaration.budget?;
+            let measured = measure(surface, declaration).ok()?;
+            let mut over: Vec<headwater_check::agent_budget::Over> = measured
+                .candidates
+                .iter()
+                .filter(|candidate| candidate.fate == Fate::OverFile)
+                .map(|candidate| headwater_check::agent_budget::Over {
+                    path: candidate.path.clone(),
+                    source: candidate.source.clone(),
+                    bytes: candidate.size(),
+                })
+                .collect();
+            over.sort_by(|a, b| a.path.cmp(&b.path));
+            Some(headwater_check::agent_budget::Reading {
+                index,
+                output: declaration.output.clone(),
+                per_file: budget.per_file,
+                aggregate: budget.aggregate,
+                over,
+                total: measured.total,
+                pruned: measured
+                    .candidates
+                    .iter()
+                    .filter(|candidate| candidate.fate == Fate::Pruned)
+                    .count(),
+            })
+        })
+        .collect()
+}
+
+pub(crate) fn emit(surface: &Surface<'_>, declaration: &Declaration, plan: &mut Plan) {
+    let measured = match measure(surface, declaration) {
+        Ok(measured) => measured,
+        Err(refused) => {
+            plan.unwritten.push(refused);
+            return;
+        }
+    };
+    let mut written: Vec<Output> = Vec::new();
+    let mut withheld: Vec<Unwritten> = Vec::new();
+    for candidate in &measured.candidates {
+        let budget = measured.budget.unwrap_or(Budget {
+            per_file: u64::MAX,
+            aggregate: u64::MAX,
+        });
+        let reason = match candidate.fate {
+            Fate::Written => {
+                written.push(Output {
+                    bytes: candidate.bytes.clone(),
+                    path: candidate.path.clone(),
+                    kind: Kind::AgentRules,
+                    committed: true,
+                });
+                continue;
+            }
+            Fate::OverFile => format!(
+                "the rule for `{}` is {} bytes, and `budget.per_file` is {}, so it is not \
+                 written. Trim the `summary` of `{}`, or raise `budget.per_file`",
+                candidate.source,
+                candidate.size(),
+                budget.per_file,
+                candidate.source
+            ),
+            Fate::Pruned => format!(
+                "the rules of `{}` total {} bytes, and `budget.aggregate` is {}, so the rule \
+                 for `{}` is pruned. HW-DR-0115 prunes from the satellite end of the reading \
+                 order",
+                declaration.output, measured.total, budget.aggregate, candidate.source
+            ),
+        };
+        plan.pruned.push(candidate.path.clone());
+        withheld.push(Unwritten {
+            at: candidate.path.clone(),
+            kind: Kind::AgentRules,
+            reason,
+        });
+    }
+    // Path order, as before the budget, so that the plan does not move with
+    // the reading order of sources that all fit.
+    written.sort_by(|a, b| a.path.cmp(&b.path));
+    withheld.sort_by(|a, b| a.at.cmp(&b.at));
+    plan.outputs.extend(written);
+    plan.unwritten.extend(withheld);
+    plan.unwritten.extend(measured.collisions);
 }
 
 /// The `governs` patterns the document at `path` declares, in declared order

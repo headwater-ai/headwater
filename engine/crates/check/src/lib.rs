@@ -140,6 +140,7 @@
 
 pub mod acceptance_state;
 pub mod adoption;
+pub mod agent_budget;
 pub mod anchors;
 pub mod basis;
 pub mod cache;
@@ -245,7 +246,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 55] = [
+pub const RULES: [&str; 56] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
@@ -301,6 +302,7 @@ pub const RULES: [&str; 55] = [
     harvest::RULE,
     import_pin::RULE,
     verification::RULE,
+    agent_budget::RULE,
 ];
 
 /// The declarations one run reads, from a taxonomy that is already resolved.
@@ -360,6 +362,12 @@ pub struct Declared<'a> {
     /// Read off the tree on the terms [`Self::pin`] is: the sources are
     /// hashed and no declaration is taken from them. See [`lock_stale`].
     pub lock_stale: Option<&'a lock_stale::Stale>,
+    /// Every `agent_rules` projection that declares a budget, measured by
+    /// the emitter, and empty where the caller took no reading.
+    ///
+    /// The caller reads it, because the crate that measures a rule file
+    /// depends on this one. See [`agent_budget`].
+    pub agent_budgets: &'a [agent_budget::Reading],
     /// Every pinned corpus export `.headwater/taxonomy.yml` declares under
     /// `harvests`, as the caller read it, and empty where it took no reading.
     ///
@@ -786,6 +794,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::edge_scope::<verification::Verified<'_>>(),
             scope::edge_version::<verification::Verified<'_>>(),
             scope::edge_exports::<verification::Verified<'_>>(),
+        ),
+        (
+            agent_budget::RULE,
+            agent_budget::SCOPE,
+            agent_budget::VERSION,
+            agent_budget::EXPORTABLE_AS,
         ),
     ]
 }
@@ -1291,6 +1305,12 @@ pub fn run(
     // A lock its sources no longer resolve to, as an error, for the same
     // reason: it is about the lock read against the tree (#1975).
     findings.extend(lock_stale::findings(declared.lock_stale));
+    // An agent rule file past its projection's budget, as a warning, for the
+    // same reason: it is about a projection read against the corpus (#2090).
+    findings.extend(agent_budget::findings(
+        declared.agent_budgets,
+        declared.source,
+    ));
     // A pinned corpus export that did not read, as an error that names the
     // pin, for the same reason: spec 7 owes the finding whether or not an
     // anchor reaches the export.
