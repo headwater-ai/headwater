@@ -507,3 +507,188 @@ fn an_apply_to_whose_pattern_holds_a_quote_loads_to_the_declared_pattern() {
         .unwrap_or_else(|| panic!("`applyTo` is a string\n{text}"));
     assert_eq!(apply_to, "src/q\"uote/**", "{text}");
 }
+
+/// The check rule that reports a rule file past its budget (#2090).
+const BUDGET_RULE: &str = "projection.budget.exceeded";
+
+/// The three rules of the prune cases, in derived reading precedence. The
+/// standard `regulates` the delivery functional spec, which is the governance
+/// family, so it precedes it. The technical spec `realizes` the functional
+/// spec, `nucleus: to`, so the functional spec is its nucleus and precedes it.
+const STANDARD: &str = ".github/instructions/api-design.instructions.md";
+const NUCLEUS: &str = ".github/instructions/functional.instructions.md";
+const SATELLITE: &str = ".github/instructions/technical.instructions.md";
+
+/// An `agent_rules` over every shelf with the two budget figures given.
+fn every_shelf(per_file: u64, aggregate: u64) -> String {
+    format!(
+        "    - kind: agent_rules\n      output: \".github/instructions/{{name}}.instructions.md\"\n      budget: {{per_file: {per_file}, aggregate: {aggregate}}}\n"
+    )
+}
+
+/// The Beacon corpus with `governs: src/api/**` on the standard, on the
+/// delivery functional spec and on the delivery technical spec, and the
+/// projection declared over every shelf with a budget that admits all three.
+/// Generated once, and the byte size of each of the three rule files, in the
+/// order [`STANDARD`], [`NUCLEUS`], [`SATELLITE`].
+fn three_rules(root: &Root) -> (PathBuf, [u64; 3]) {
+    let consumer = beacon_declaring(root, &every_shelf(1_000_000, 1_000_000));
+    govern(&consumer.join("docs/component-specs/delivery/functional.md"));
+    govern(&consumer.join("docs/component-specs/delivery/technical.md"));
+    let generated = run(&consumer, &["generate"]);
+    assert_eq!(generated.code, Some(0), "{generated:?}");
+    let size = |path: &str| read(&consumer.join(path)).len() as u64;
+    (consumer, [size(STANDARD), size(NUCLEUS), size(SATELLITE)])
+}
+
+/// Declares the budget again and resolves, so that the next run reads it.
+fn rebudget(consumer: &Path, per_file: u64, aggregate: u64) {
+    write(
+        &consumer.join(".headwater/overlay.yml"),
+        &read(&consumer.join(".headwater/overlay.yml")).replace(
+            &every_shelf(1_000_000, 1_000_000),
+            &every_shelf(per_file, aggregate),
+        ),
+    );
+    let resolved = run(consumer, &["taxonomy", "resolve"]);
+    assert_eq!(resolved.code, Some(0), "{resolved:?}");
+}
+
+/// The lines of a `check` run that the budget rule printed.
+fn budget_findings(ran: &Ran) -> Vec<&str> {
+    ran.out
+        .lines()
+        .filter(|line| line.contains(BUDGET_RULE))
+        .collect()
+}
+
+/// HW-DR-0115: the prune drops from the satellite end of the derived reading
+/// precedence. Two of three rules fit the aggregate. A prune by path order
+/// would drop the standard, which sorts last, and a prune by size would drop
+/// the largest. Only the precedence order drops the satellite and keeps its
+/// nucleus.
+#[test]
+fn an_aggregate_two_rules_fit_prunes_the_satellite_and_check_reports_the_projection_once() {
+    let root = Root::scratch("aggregate");
+    let (consumer, [standard, nucleus, satellite]) = three_rules(&root);
+    let aggregate = standard + nucleus;
+    let total = standard + nucleus + satellite;
+    rebudget(&consumer, 1_000_000, aggregate);
+
+    let checked = run(&consumer, &["check"]);
+    let found = budget_findings(&checked);
+    assert_eq!(found.len(), 1, "exactly one aggregate finding\n{checked:?}");
+    for named in [
+        "projections.0".to_string(),
+        "agent_rules".to_string(),
+        format!("{total} bytes"),
+        format!("{aggregate}"),
+        "withholds 1".to_string(),
+    ] {
+        assert!(
+            checked.out.contains(&named),
+            "the aggregate finding names `{named}`\n{checked:?}"
+        );
+    }
+
+    // The satellite's rule that the larger budget wrote is still on disk, and
+    // it carries the marker, so it would keep loading: the gate names it.
+    let stale = run(&consumer, &["generate", "--check"]);
+    assert_eq!(stale.code, Some(1), "{stale:?}");
+    assert!(stale.out.contains(SATELLITE), "{stale:?}");
+    let pruned = run(&consumer, &["generate"]);
+    assert_eq!(pruned.code, Some(0), "{pruned:?}");
+    assert!(!consumer.join(SATELLITE).exists(), "{pruned:?}");
+    assert!(consumer.join(STANDARD).is_file(), "{pruned:?}");
+    assert!(consumer.join(NUCLEUS).is_file(), "{pruned:?}");
+    let clean = run(&consumer, &["generate", "--check"]);
+    assert_eq!(clean.code, Some(0), "{clean:?}");
+
+    // From an empty directory, the same two files and not the third.
+    std::fs::remove_dir_all(consumer.join(".github/instructions"))
+        .expect("the rules are removed");
+    let generated = run(&consumer, &["generate"]);
+    assert_eq!(generated.code, Some(0), "{generated:?}");
+    assert!(consumer.join(STANDARD).is_file(), "{generated:?}");
+    assert!(consumer.join(NUCLEUS).is_file(), "{generated:?}");
+    assert!(
+        !consumer.join(SATELLITE).exists(),
+        "the satellite's rule is pruned before its nucleus's\n{generated:?}"
+    );
+    assert!(
+        generated.out.contains(SATELLITE) && generated.out.contains(&format!("{aggregate}")),
+        "the plan names the pruned rule and the aggregate\n{generated:?}"
+    );
+    let current = run(&consumer, &["generate", "--check"]);
+    assert_eq!(current.code, Some(0), "{current:?}");
+}
+
+/// Done-when 1: a rule file past `per_file` is withheld, and the finding names
+/// the file, its size, the figure and the two layers that can trim it.
+#[test]
+fn a_rule_past_per_file_is_not_written_and_check_names_its_size_and_the_layer_to_trim() {
+    let root = Root::scratch("per-file");
+    let (consumer, sizes) = three_rules(&root);
+    let [standard, nucleus, satellite] = sizes;
+    let largest = sizes.into_iter().max().expect("three sizes");
+    assert_eq!(
+        sizes.iter().filter(|size| **size == largest).count(),
+        1,
+        "one rule is the largest, so one alone is past the figure: {sizes:?}"
+    );
+    let (over, source) = match largest {
+        size if size == standard => (STANDARD, "docs/standards/api-design.md"),
+        size if size == nucleus => (NUCLEUS, "docs/component-specs/delivery/functional.md"),
+        size if size == satellite => (SATELLITE, "docs/component-specs/delivery/technical.md"),
+        _ => unreachable!(),
+    };
+    let per_file = largest - 1;
+    rebudget(&consumer, per_file, 1_000_000);
+
+    let checked = run(&consumer, &["check"]);
+    let found = budget_findings(&checked);
+    assert_eq!(found.len(), 1, "exactly one per-file finding\n{checked:?}");
+    for named in [
+        over.to_string(),
+        format!("{largest} bytes"),
+        format!("{per_file}"),
+        format!("the `summary` of `{source}`"),
+        "projections.0.budget.per_file".to_string(),
+    ] {
+        assert!(
+            checked.out.contains(&named),
+            "the per-file finding names `{named}`\n{checked:?}"
+        );
+    }
+
+    std::fs::remove_dir_all(consumer.join(".github/instructions"))
+        .expect("the rules are removed");
+    let generated = run(&consumer, &["generate"]);
+    assert_eq!(generated.code, Some(0), "{generated:?}");
+    assert!(!consumer.join(over).exists(), "{generated:?}");
+    for kept in [STANDARD, NUCLEUS, SATELLITE]
+        .into_iter()
+        .filter(|path| *path != over)
+    {
+        assert!(consumer.join(kept).is_file(), "{kept}\n{generated:?}");
+    }
+    let current = run(&consumer, &["generate", "--check"]);
+    assert_eq!(current.code, Some(0), "{current:?}");
+}
+
+/// The gate in its third direction: a budget every rule fits exactly gives no
+/// finding and withholds nothing.
+#[test]
+fn a_budget_every_rule_fits_exactly_reports_nothing_and_writes_all_three() {
+    let root = Root::scratch("fits");
+    let (consumer, [standard, nucleus, satellite]) = three_rules(&root);
+    let largest = standard.max(nucleus).max(satellite);
+    rebudget(&consumer, largest, standard + nucleus + satellite);
+    let checked = run(&consumer, &["check"]);
+    assert!(budget_findings(&checked).is_empty(), "{checked:?}");
+    let current = run(&consumer, &["generate", "--check"]);
+    assert_eq!(current.code, Some(0), "{current:?}");
+    for kept in [STANDARD, NUCLEUS, SATELLITE] {
+        assert!(consumer.join(kept).is_file(), "{kept}");
+    }
+}
