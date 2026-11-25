@@ -94,8 +94,8 @@ same 'exit 0' 0 "$status"
 same '  and the first line is PRE-PR: ok' 'PRE-PR: ok' "$(printf '%s\n' "$out" | head -n 1)"
 same '  and origin/main was merged, one commit brought in' "MERGED: origin/main at $later, 1 commits brought in" "$(printf '%s\n' "$out" | grep '^MERGED:')"
 same '  and the branch now has that commit' 1 "$(ls "$wt/later.txt" 2>/dev/null | grep -c .)"
-same '  and the steps ran in order: build, generate, test, fmt, generate --check, check --strict' \
-    "cargo build|engine generate --root $wt|cargo test|cargo fmt|engine generate --check --root $wt|engine check --strict --root $wt" \
+same '  and the steps ran in order: fmt, build, generate, test, generate --check, check --strict' \
+    "cargo fmt|cargo build|engine generate --root $wt|cargo test|engine generate --check --root $wt|engine check --strict --root $wt" \
     "$(paste -sd'|' "$LOG")"
 same '  and the block names each' 'BUILT: '"$scratch/engine"'|GENERATED: ok|SUITE: pass|FMT: ok|CHECK: ok|FIXTURES: ok' \
     "$(printf '%s\n' "$out" | grep -E '^(BUILT|GENERATED|SUITE|FMT|CHECK|FIXTURES):' | paste -sd'|')"
@@ -110,9 +110,13 @@ out=$(FAIL_AT=cargo-test run 7 2>&1); status=$?
 same 'a failed suite is exit 1' 1 "$status"
 same '  and the first line names the step' 'PRE-PR: failed at suite' "$(printf '%s\n' "$out" | head -n 1)"
 same '  and the SUITE line names its log' "SUITE: fail ($scratch/jobtmp/issue-7/pre-pr/suite.log)" "$(printf '%s\n' "$out" | grep '^SUITE:')"
-same '  and the later steps were not reached' 'FMT: not reached|CHECK: not reached|FIXTURES: not reached' "$(printf '%s\n' "$out" | grep -E '^(FMT|CHECK|FIXTURES):' | paste -sd'|')"
-same '  and fmt was not run' 0 "$(grep -c 'cargo fmt' "$LOG")"
+same '  and fmt ran before it, and the later steps were not reached' 'FMT: ok|CHECK: not reached|FIXTURES: not reached' "$(printf '%s\n' "$out" | grep -E '^(FMT|CHECK|FIXTURES):' | paste -sd'|')"
 git -C "$wt" checkout -q -- docs/derived.md
+out=$(FAIL_AT=cargo-fmt run 7 2>&1); status=$?
+same 'a failed format check is exit 1' 1 "$status"
+same '  and the first line names the step' 'PRE-PR: failed at fmt' "$(printf '%s\n' "$out" | head -n 1)"
+same '  and nothing slow ran: no build, no suite' 0 "$(grep -cE 'cargo (build|test)' "$LOG")"
+same '  and the later steps were not reached' 'BUILT: not reached|SUITE: not reached|CHECK: not reached' "$(printf '%s\n' "$out" | grep -E '^(BUILT|SUITE|CHECK):' | paste -sd'|')"
 out=$(FAIL_AT='engine-check --strict' run 7 2>&1); status=$?
 same 'a failed commit gate names which half' "CHECK: fail, check --strict ($scratch/jobtmp/issue-7/pre-pr/check.log)" "$(printf '%s\n' "$out" | grep '^CHECK:')"
 git -C "$wt" checkout -q -- docs/derived.md

@@ -1,7 +1,7 @@
 #!/bin/sh
 # What a build owes before it opens its pull request, in one call and in the
-# order `.claude/agents/hw-build.md` states: merge `origin/main`, rebuild the
-# engine, regenerate, re-bless and run the workspace suite, the format gate,
+# order `.claude/agents/hw-build.md` states: merge `origin/main`, check the format, rebuild the
+# engine, regenerate, re-bless and run the workspace suite,
 # the commit gate, and the fixture suites CI runs over the tree.
 #
 #     sh tools/run/pre-pr.sh <issue|none>     in the builder's own worktree, on its branch
@@ -173,6 +173,15 @@ fi
 brought=$(git rev-list --count "$before..origin/main" 2>/dev/null || echo '?')
 merged="origin/main at $(git rev-parse --short origin/main), $brought commits brought in"
 
+# --- format ------------------------------------------------------------------
+# First after the merge, because it takes seconds and reads only the source:
+# #2088's first pass waited 21 minutes on the suite to fail here in 2 seconds.
+if ! sh "$cargo" fmt --manifest-path engine/Cargo.toml --all -- --check > "$logs/fmt.log" 2>&1; then
+    fmt="fail ($logs/fmt.log)"
+    finish 'failed at fmt'
+fi
+fmt=ok
+
 # --- build -------------------------------------------------------------------
 if ! sh "$cargo" build --profile dev-release -p headwater-cli --manifest-path engine/Cargo.toml --locked > "$logs/build.log" 2>&1; then
     built="fail ($logs/build.log)"
@@ -202,13 +211,6 @@ if ! HEADWATER_BLESS=1 sh "$cargo" test --workspace --no-fail-fast --manifest-pa
     finish 'failed at suite'
 fi
 suite=pass
-
-# --- format ------------------------------------------------------------------
-if ! sh "$cargo" fmt --manifest-path engine/Cargo.toml --all -- --check > "$logs/fmt.log" 2>&1; then
-    fmt="fail ($logs/fmt.log)"
-    finish 'failed at fmt'
-fi
-fmt=ok
 
 # --- the commit gate: what pre-push and pre-commit refuse ---------------------
 if ! "$engine" generate --check --root "$tree" > "$logs/generate-check.log" 2>&1; then
