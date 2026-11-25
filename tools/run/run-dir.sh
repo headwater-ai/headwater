@@ -349,9 +349,11 @@ applies() {
 # worktree-isolated reader's shell refuses a command that names `.git`, so it
 # could read none of them (#2087, run 20261125-0427). This verb prints the
 # three forms a reader acts on: the SCOPE line `decide` writes, the OWNER line
-# `decide --owner` writes, and the RULED line `rule` writes. A line that only
-# names one of the words in its text is not printed, because the form opens
-# the decision.
+# `decide --owner` writes, and the RULED line `rule` writes. The OWNER and
+# RULED patterns are the ones `answered_issues` and `ruled_issues` read, so
+# the verb prints every line that `next` acts on: an old hand-written OWNER
+# line whose form appears after its opening is one of them. A line that only
+# names one of the words in its text is not printed.
 decisions() {
     dir=$1
     need_dir "$dir"
@@ -359,8 +361,8 @@ decisions() {
         printf 'DECISIONS: 0\n'
         return
     fi
-    awk -v owner="^- [^ ]+ — $owner_form" '
-        /^- [^ ]+ — SCOPE:/ || $0 ~ owner || /^- [^ ]+ — RULED #[0-9]+ / { print; n++ }
+    awk -v owner="$owner_form" '
+        /^- [^ ]+ — SCOPE:/ || $0 ~ owner || / — RULED #[0-9]+ (gated|deferred|refused|open) [(]run / { print; n++ }
         END { printf "DECISIONS: %d\n", n }' "$dir/decisions.md"
 }
 
