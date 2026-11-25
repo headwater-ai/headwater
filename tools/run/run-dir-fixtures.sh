@@ -646,6 +646,9 @@ sh "$tool" decide decisions-run 'SCOPE: #7 #8 and nothing else' 2>"$scratch/err"
 sh "$tool" decide decisions-run 'ruled #7 MERGE; SCOPE: unchanged' 2>"$scratch/err"
 sh "$tool" decide decisions-run --owner 9 -- 'build it' >/dev/null 2>"$scratch/err"
 sh "$tool" rule decisions-run 8 gated 'waits on #7' >/dev/null 2>"$scratch/err"
+sh "$tool" rule decisions-run 11 deferred 'owner question' >/dev/null 2>"$scratch/err"
+sh "$tool" rule decisions-run 12 refused 'stale premise' >/dev/null 2>"$scratch/err"
+sh "$tool" rule decisions-run 8 open 'blocker merged' >/dev/null 2>"$scratch/err"
 sh "$tool" decide decisions-run 'an OWNER question went to the end of the run' 2>"$scratch/err"
 sh "$tool" decide decisions-run 'noted that RULED #3 still binds' 2>"$scratch/err"
 printf -- '- 2026-09-29 — OWNER (2026-09-29) 0.6 release: cut it. OWNER (2026-09-29) #10: fold it\n' >> "$dec_run/decisions.md"
@@ -654,8 +657,11 @@ same 'decisions prints each SCOPE, OWNER and RULED line, then the count' \
     "- $day — SCOPE: #7 #8 and nothing else
 - $day — OWNER ($day) #9: build it
 - $day — RULED #8 gated (run decisions-run): waits on #7
+- $day — RULED #11 deferred (run decisions-run): owner question
+- $day — RULED #12 refused (run decisions-run): stale premise
+- $day — RULED #8 open (run decisions-run): blocker merged
 - 2026-09-29 — OWNER (2026-09-29) 0.6 release: cut it. OWNER (2026-09-29) #10: fold it
-DECISIONS: 4" "$(sh "$tool" decisions decisions-run 2>&1)"
+DECISIONS: 7" "$(sh "$tool" decisions decisions-run 2>&1)"
 rm -f "$dec_run/decisions.md"
 same 'decisions reads a run with no decisions.md as a zero count' 'DECISIONS: 0' \
     "$(sh "$tool" decisions decisions-run 2>&1)"
