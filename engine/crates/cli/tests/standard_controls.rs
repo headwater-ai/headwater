@@ -348,6 +348,16 @@ const BOUND_IN_4_26: [(&str, &str, &str, &str); 1] = [(
     "final_posture",
 )];
 
+/// The rule that 4.28.0 bound, in the same shape (#2090). It is permanently
+/// advisory, because its remedy is a shorter summary, a narrower projection or
+/// a larger budget, and only the author knows which one is right.
+const BOUND_IN_4_28: [(&str, &str, &str, &str); 1] = [(
+    "projection.budget.exceeded",
+    "OB-AGENT-1",
+    "advisory",
+    "permanently_advisory",
+)];
+
 /// The declaration of the one control of the maintained package whose
 /// mechanism is `check:<rule>`. Controls sit one to a block, a blank line
 /// separates two blocks, and each block opens with its identifier.
@@ -381,6 +391,7 @@ fn each_lifecycle_control_declares_its_obligation_posture_and_promotion() {
         .chain(BOUND_IN_4_19)
         .chain(BOUND_IN_4_20)
         .chain(BOUND_IN_4_26)
+        .chain(BOUND_IN_4_28)
     {
         let control = control_of(&taxonomy, rule);
         for line in [

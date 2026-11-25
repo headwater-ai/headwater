@@ -66,7 +66,7 @@ use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::{
-    adoption, basis, command, coverage, dependency, endpoint, harvest, import_pin,
+    adoption, agent_budget, basis, command, coverage, dependency, endpoint, harvest, import_pin,
     initial_dependency, lock_stale, outside_root, pin, reciprocity, register, surface, suspect,
     target, verification, Cache, Context, Date, Declared, Observation, Observations, Outcome,
     Register, Run, Shape, RULES,
@@ -126,6 +126,12 @@ const UNCOVERED: &[(&str, &str)] = &[
         "the runner reaches it from the lock and its sources outside any instance, so no cache \
          entry holds its verdict; its cases are unit tests in src/lock_stale.rs and the CLI \
          cases in cli/tests/lock_stale.rs",
+    ),
+    (
+        agent_budget::RULE,
+        "the runner reaches it from the agent rule measurement the caller took, outside any \
+         instance, so no cache entry holds its verdict; its cases are unit tests in \
+         src/agent_budget.rs and the CLI cases in cli/tests/agent_rules.rs",
     ),
     (
         harvest::RULE,
