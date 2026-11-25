@@ -2499,12 +2499,14 @@ fn run(root: &Path, plan: &Plan, mode: Mode) -> Report {
     }
     for (line, path) in removals {
         let verdict = &mut report.wrote[line].verdict;
-        *verdict = match (report.withheld, std::fs::remove_file(&path)) {
-            (true, _) => Verdict::Withheld,
-            (false, Ok(())) => Verdict::Removed,
-            (false, Err(error)) => {
-                Verdict::Failed(format!("cannot remove {}: {error}", path.display()))
-            }
+        // The refusal is read before the removal is tried, so a withheld run
+        // leaves the file where it was.
+        *verdict = match report.withheld {
+            true => Verdict::Withheld,
+            false => match std::fs::remove_file(&path) {
+                Ok(()) => Verdict::Removed,
+                Err(error) => Verdict::Failed(format!("cannot remove {}: {error}", path.display())),
+            },
         };
     }
     report
