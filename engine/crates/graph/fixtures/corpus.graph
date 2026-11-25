@@ -307,6 +307,8 @@ anchors
     cited by HW-SPEC-check-layer
   code_path `engine/crates/check/src/scope.rs` via source-tree
     cited by HW-OBL-0071
+  code_path `engine/crates/check/src/scope_unmatched.rs` via source-tree
+    cited by HW-OBL-0272
   code_path `engine/crates/check/src/self_target.rs` via source-tree
     cited by HW-SPEC-taxonomy-model
   code_path `engine/crates/check/src/suspect.rs` via source-tree
@@ -513,6 +515,8 @@ anchors
     cited by HW-DR-0049
   code_path `engine/crates/graph/src/lib.rs` via source-tree
     cited by HW-DR-0068
+  code_path `engine/crates/graph/src/scope.rs` via source-tree
+    cited by HW-OBL-0272
   code_path `engine/crates/hash/src/**` via source-tree
     cited by HW-SPEC-taxonomy-resolution
   code_path `engine/crates/import/src/**` via source-tree

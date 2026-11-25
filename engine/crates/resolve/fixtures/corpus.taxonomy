@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 4.28.0
+version: 4.29.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -1622,6 +1622,12 @@ obligations:
     class: cohesion
     prevents: process.traceability
     severity: medium
+  OB-REL-13:
+    statement: "A governed scope pattern matches at least one entry of the tree, or a finding names the pattern"
+    rationale: "A scope pattern that matches nothing is a claim about no file. Every count over the governed scope reads it as covered ground while it admits nothing, and `headwater taxonomy validate` already refuses it, so a strict check that passed it would let one taxonomy be refused and passed at once"
+    class: cohesion
+    prevents: process.traceability
+    severity: medium
   OB-PIN-1:
     statement: "A pin that the corpus commits reads as the bytes it pins, or a finding names the pin"
     rationale: "A digest pin, an imports snapshot and a harvested export each tell a reader what the corpus rests on. A pin that no longer reads as what it names, and that no anchor happens to cite, reaches nobody, so a corpus that rests on a moved or edited artifact reads the same as one that rests on the artifact it pinned"
@@ -2163,6 +2169,18 @@ controls:
       criteria:
         window: "one release of the taxonomy over an adopting corpus"
         threshold: "no false positive, because the rule reads only the paths a change adds and the in-scope files that a governance entry of a prior version the change carries reached, and asks the reach test that taxonomy audit counts with, so a finding is a file that the change made ungoverned by the audit's count"
+        sample: "every finding of one run over the adopting corpus, adjudicated once"
+  CT-REL-13:
+    mechanism: "check:relation.scope.unmatched"
+    discharges:
+      - OB-REL-13
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      criteria:
+        window: "one release of the taxonomy over an adopting corpus"
+        threshold: "no false positive, because the rule reports the refusal `taxonomy validate` makes, through the one function both verbs call, so a finding is a pattern the validator refuses too"
         sample: "every finding of one run over the adopting corpus, adjudicated once"
   CT-PIN-1:
     mechanism: "check:taxonomy.pin.diverged"

@@ -65,6 +65,24 @@ impl Root {
             std::fs::write(to, "# A stub\n\nThis file stands in for the real one.\n")
                 .expect("the stub writes");
         }
+        // The overlay declares a governed scope, and a pattern that matches no
+        // entry of the tree is an error of a strict run (#2099), so one entry
+        // under each pattern stands in for the code the copy does not carry.
+        for entry in [
+            "engine/crates/stub/src/lib.rs",
+            "engine/crates/cli/harness/stub",
+            ".githooks/stub",
+            ".claude/hooks/stub",
+            ".claude/agents/stub",
+            ".claude/skills/stub",
+            "tools/stub",
+            "site/stub",
+        ] {
+            let to = at.join(entry);
+            std::fs::create_dir_all(to.parent().expect("it has a parent"))
+                .expect("the scope directory is there");
+            std::fs::write(to, "").expect("the scope entry writes");
+        }
 
         let mut root = Root {
             at,

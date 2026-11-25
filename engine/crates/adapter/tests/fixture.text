@@ -269,6 +269,8 @@ checks
         observation snapshot
     projection.budget.exceeded
       taxonomy scope, the resolved taxonomy, and no document
+    relation.scope.unmatched
+      taxonomy scope, the resolved taxonomy, and no document
   register
     29 obligations: 23 verified, 2 gap, 1 unverifiable, 3 with no disposition
        10 high, 9 verified
@@ -341,6 +343,7 @@ checks
     import.pin.unread reaches no obligation, so it names none
     relation.target.verification.suspect reaches no obligation, so it names none
     projection.budget.exceeded reaches no obligation, so it names none
+    relation.scope.unmatched reaches no obligation, so it names none
   70 findings
        40 ✗ error
        28 ▲ warn
@@ -819,6 +822,7 @@ read set
   version import.pin.unread 1
   version relation.target.verification.suspect 2
   version projection.budget.exceeded 1
+  version relation.scope.unmatched 1
   input .headwater/ids sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
   input check/evaluations/alpha.md sha256:e651a58ed6489f388954343391d6321a708a2b7492bb4dc1386699a8bf65cc7b
   input check/evaluations/beta.md sha256:37e03d2c518cced7604d74dd38c1949cbc72186db9b4a4bd5bb8f3fe9503d31d
