@@ -20,7 +20,7 @@
 //! it. `applyTo` holds the `governs` patterns as the document declared them,
 //! not the paths they matched, because the harness evaluates the glob itself
 //! against the file being edited. It is quoted, because a plain scalar that
-//! opens with `*` is a YAML alias. The patterns join with `,` and no space,
+//! opens with `@` is a YAML error. The patterns join with `,` and no space,
 //! which is the form Copilot reads. The marker is a front-matter member, as
 //! [`headwater_mark::carries_marker`] reads one on a `.md` path.
 //!

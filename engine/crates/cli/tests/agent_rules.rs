@@ -165,6 +165,11 @@ fn govern(path: &Path) {
 /// the agent rules projection declared and `governs: src/api/**` on the API
 /// design standard. Resolved, and not yet generated.
 fn beacon(root: &Root) -> PathBuf {
+    beacon_declaring(root, PROJECTION)
+}
+
+/// [`beacon`] with `projection` declared in place of [`PROJECTION`].
+fn beacon_declaring(root: &Root, projection: &str) -> PathBuf {
     let (artifact, version, digest) = publish(root);
     let consumer = root.path().join("consumer");
     copy_tree(&entry().join("corpus/docs"), &consumer.join("docs"));
@@ -173,7 +178,7 @@ fn beacon(root: &Root) -> PathBuf {
     write(
         &consumer.join(".headwater/overlay.yml"),
         &format!(
-            "add:\n  identifier_schemes.standard_id.namespace: SCR\n  identifier_schemes.functional_spec_id.namespace: SCR\n  identifier_schemes.technical_spec_id.namespace: SCR\n  identifier_schemes.decision_id.namespace: SCR\nadd_to:\n  projections:\n{PROJECTION}"
+            "add:\n  identifier_schemes.standard_id.namespace: SCR\n  identifier_schemes.functional_spec_id.namespace: SCR\n  identifier_schemes.technical_spec_id.namespace: SCR\n  identifier_schemes.decision_id.namespace: SCR\nadd_to:\n  projections:\n{projection}"
         ),
     );
     write(
@@ -332,4 +337,82 @@ fn two_sources_with_one_file_stem_write_neither_rule_file_and_say_why() {
             "the refusal names `{named}`\n{generated:?}"
         );
     }
+}
+
+#[test]
+fn a_document_on_a_shelf_the_for_does_not_name_gets_no_rule_file() {
+    let root = Root::scratch("other-shelf");
+    let consumer = beacon(&root);
+    govern(&consumer.join("docs/component-specs/webhooks/functional.md"));
+    let generated = run(&consumer, &["generate"]);
+    assert_eq!(generated.code, Some(0), "{generated:?}");
+    assert!(consumer.join(RULE).is_file(), "{generated:?}");
+    assert!(
+        !consumer
+            .join(".github/instructions/functional.instructions.md")
+            .exists(),
+        "the functional spec governs src/api, and the declaration's `for` names only `standards`"
+    );
+}
+
+/// A pattern that opens with `@` is a YAML reserved indicator when it is not
+/// quoted, and one that opens with `*` is an alias, so a
+/// harness that parses the front matter would read no `applyTo` at all.
+#[test]
+fn an_apply_to_that_opens_with_a_yaml_indicator_still_loads_and_holds_every_pattern_in_declared_order(
+) {
+    let root = Root::scratch("star");
+    let consumer = beacon(&root);
+    let standard = consumer.join("docs/standards/api-design.md");
+    std::fs::write(
+        &standard,
+        read(&standard).replacen(
+            "  governs:\n    - src/api/**\n",
+            "  governs:\n    - \"@generated/**\"\n    - src/api/**\n",
+            1,
+        ),
+    )
+    .expect("the standard is rewritten");
+    write(&consumer.join("@generated/y.rs"), "fn y() {}\n");
+
+    let generated = run(&consumer, &["generate"]);
+    assert_eq!(generated.code, Some(0), "{generated:?}");
+    let text = read(&consumer.join(RULE));
+    let loaded = headwater_yaml::load(front_matter(&text))
+        .unwrap_or_else(|errors| panic!("the front matter loads: {errors:?}\n{text}"))
+        .value;
+    let apply_to = loaded
+        .as_map()
+        .and_then(|members| members.get("applyTo"))
+        .and_then(|node| node.value.as_scalar())
+        .map(|scalar| scalar.text.clone())
+        .unwrap_or_else(|| panic!("`applyTo` is a string\n{text}"));
+    assert_eq!(apply_to, "@generated/**,src/api/**", "{text}");
+    let patterns: Vec<Pattern> = apply_to.split(',').map(Pattern::new).collect();
+    for admitted in ["@generated/y.rs", "src/api/x.rs"] {
+        assert!(
+            patterns.iter().any(|pattern| pattern.matches(admitted)),
+            "`applyTo: {apply_to}` admits {admitted}\n{text}"
+        );
+    }
+}
+
+#[test]
+fn an_output_with_no_name_placeholder_is_refused_and_writes_nothing() {
+    let root = Root::scratch("no-name");
+    let consumer = beacon_declaring(
+        &root,
+        "    - kind: agent_rules\n      for: [standards]\n      output: \".github/instructions/all.instructions.md\"\n      budget: {per_file: 600, aggregate: 8192}\n",
+    );
+    let generated = run(&consumer, &["generate"]);
+    assert!(
+        !consumer
+            .join(".github/instructions/all.instructions.md")
+            .exists(),
+        "every source would own one path\n{generated:?}"
+    );
+    assert!(
+        generated.out.contains("names no `{name}`"),
+        "the refusal says why\n{generated:?}"
+    );
 }
