@@ -135,7 +135,10 @@ fn render(path: &str, pointer: &headwater_query::Pointer, patterns: &[String]) -
     let mut out = String::from("---\n");
     out.push_str(&format!(
         "applyTo: \"{}\"\n",
-        patterns.join(",").replace('\\', "\\\\").replace('"', "\\\"")
+        patterns
+            .join(",")
+            .replace('\\', "\\\\")
+            .replace('"', "\\\"")
     ));
     out.push_str(&headwater_mark::marker_member(Kind::AgentRules.name()));
     out.push_str("\n---\n\n");

@@ -153,7 +153,11 @@ const RULE: &str = ".github/instructions/api-design.instructions.md";
 /// its existing `relations` block.
 fn govern(path: &Path) {
     let text = read(path);
-    let text = text.replacen("relations:\n", "relations:\n  governs:\n    - src/api/**\n", 1);
+    let text = text.replacen(
+        "relations:\n",
+        "relations:\n  governs:\n    - src/api/**\n",
+        1,
+    );
     std::fs::write(path, text).expect("the standard is rewritten");
 }
 
@@ -253,7 +257,12 @@ fn a_standard_that_governs_src_api_writes_one_rule_file_whose_apply_to_admits_a_
         text.contains("](../../docs/standards/api-design.md)"),
         "the link is relative to the rule file\n{text}"
     );
-    for heading in ["## Scope", "## Requirements", "## Conformance", "# API design"] {
+    for heading in [
+        "## Scope",
+        "## Requirements",
+        "## Conformance",
+        "# API design",
+    ] {
         assert!(
             !text.contains(heading),
             "the body points at the standard and copies none of it, and it holds `{heading}`\n{text}"

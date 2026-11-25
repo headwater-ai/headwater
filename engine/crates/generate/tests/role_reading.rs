@@ -177,9 +177,7 @@ fn labelling(kind: Kind) -> Labelling {
         // `crate::label(pointer)` at `agent_rules.rs`, as the link text of the
         // pointer to the governing document.
         Kind::AgentRules => Labelling::ReadsTheNameRole,
-        Kind::Template | Kind::Transcription | Kind::CoverageReport => {
-            Labelling::Unbuilt
-        }
+        Kind::Template | Kind::Transcription | Kind::CoverageReport => Labelling::Unbuilt,
     }
 }
 
