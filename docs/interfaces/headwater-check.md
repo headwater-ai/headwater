@@ -191,7 +191,7 @@ Without `--fix`, this verb writes no byte of the corpus. The cache is outside th
 | `change.unreadable` | With `change` | The number of those documents whose prior version does not read. |
 | `change.verified` | With `change` | The number of documents that a `verified` line names and that a row of the census holds. This count overlaps the counts above. |
 | `change.verified_alone` | With `change` | The number of documents that only a `verified` line names. `added`, `carried`, `unreadable`, `verified_alone` and the length of `unmatched` sum to `documents`. |
-| `change.unmatched` | With `change` | Each path of the manifest that no row of the census holds, so that a mistyped path is visible. A path outside a root in a subfolder of the git repository is in this list too, as the manifest wrote it. |
+| `change.unmatched` | With `change` | Each path of the manifest that no row of the census holds, so that a mistyped path is visible. A path outside a root in a subfolder of the git repository is in this list too, as the manifest wrote it. These paths come after the paths of the corpus. Each one counts in `documents` as a document of its own, also when a path of the corpus has the same spelling. |
 | `change.unstated` | With `change` | Each `verified` line that names no edge of its document, as an object with `document` and `target`. Such a line stamps nothing. A line whose document no row of the census holds is here too, and its document is also in `unmatched`. |
 | `change.promotions` | With `change` | The number of warrants that the change moves from `asserted` to `accepted`. |
 | `coverage` | Always | The census counts, the instances and the account of each skipped instance. |

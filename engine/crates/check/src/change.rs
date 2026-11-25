@@ -283,7 +283,7 @@ pub struct Unbound {
     /// in order. See the module comment.
     edges: Vec<(String, String)>,
     /// The paths [`Unbound::under`] found outside the corpus root, as the
-    /// manifest wrote them. No rule reads one.
+    /// manifest wrote them, in path order and once each. No rule reads one.
     outside: Vec<String>,
 }
 
@@ -484,6 +484,8 @@ impl Unbound {
                 },
             )
             .collect();
+        outside.sort();
+        outside.dedup();
         Unbound {
             entries,
             verified,
@@ -608,12 +610,14 @@ impl Change {
             .map(|(path, _)| path.as_str())
             .chain(stated.iter().copied())
             .chain(self.unverifiable.iter().map(String::as_str))
-            .chain(self.outside.iter().map(String::as_str))
             .collect();
         paths.sort_unstable();
         paths.dedup();
         let mut named = Named {
-            documents: paths.len(),
+            // A path outside the root is written from another base, so it is
+            // never one document with a corpus path of the same spelling, and
+            // `unmatched` lists it apart for the same reason (#2098).
+            documents: paths.len() + self.outside.len(),
             verified: stated.len(),
             ..Named::default()
         };
@@ -642,7 +646,7 @@ impl Change {
     }
 
     /// The paths this change named that no row of the corpus holds, in path
-    /// order.
+    /// order, and then the paths outside the corpus root, in path order.
     ///
     /// Named rather than counted alone, because a caller who mistyped one
     /// character needs to see which path, and a count sends them to read their
@@ -652,7 +656,9 @@ impl Change {
     /// it is the same mistyped path and it states nothing about a document.
     ///
     /// A path outside the corpus root, which [`Unbound::under`] took out of
-    /// every line, is listed as the manifest wrote it (#2098).
+    /// every line, is listed as the manifest wrote it (#2098). It is never
+    /// merged with a corpus path of the same spelling, because the two are
+    /// written from different bases.
     pub fn unmatched(&self) -> Vec<&str> {
         let mut paths: Vec<&str> = self
             .entries
@@ -660,10 +666,10 @@ impl Change {
             .filter(|(_, held)| matches!(held, Held::Unmatched { .. }))
             .map(|(path, _)| path.as_str())
             .chain(self.unverifiable.iter().map(String::as_str))
-            .chain(self.outside.iter().map(String::as_str))
             .collect();
         paths.sort_unstable();
         paths.dedup();
+        paths.extend(self.outside.iter().map(String::as_str));
         paths
     }
 
@@ -913,32 +919,46 @@ mod tests {
     fn a_path_under_the_root_prefix_loses_it_and_one_outside_is_named() {
         let text = format!(
             "{FORMAT}\nadded\tsub/docs/b.md\nadded\tdocs/b.md\nprior\tsub/docs/a.md\t\
-             sub/prior/a.md\nverified\tsub/docs/a.md\nverified\tother/c.md\n\
+             sub/prior/a.md\nverified\tsub/docs/a.md\nverified\tother/c.md\nadded\tother/c.md\n\
+             added\tsub/tools/z.sh\nadded\ttools/z.sh\n\
              verified\tsub/docs/a.md\tsub/tools/x.sh\nverified\tsub/docs/a.md\ttools/y.sh\n"
         );
         let open = tree(&[("sub/prior/a.md", ASSERTED)]);
         let unbound = Unbound::read(&text, open).expect("a change").under("sub/");
-        assert_eq!(unbound.paths(), ["docs/a.md", "docs/b.md"]);
+        assert_eq!(unbound.paths(), ["docs/a.md", "docs/b.md", "tools/z.sh"]);
         assert_eq!(unbound.verified(), ["docs/a.md"]);
         assert_eq!(unbound.verified_edges(), [("docs/a.md", "tools/x.sh")]);
-        let change = unbound.bind(every);
+        // The corpus holds every path but `tools/z.sh`, a source file.
+        let change = unbound.bind(|path| path != "tools/z.sh");
         assert!(matches!(
             change.prior_of("docs/a.md"),
             Ok(Prior::Committed { .. })
         ));
         assert_eq!(change.prior_of("docs/b.md"), Ok(Prior::Added));
-        // `docs/b.md` at the top level is not the corpus's `docs/b.md`: it
-        // reaches no rule and is named as written, with the other two.
-        assert_eq!(change.added(), ["docs/b.md"]);
+        // `docs/b.md` and `tools/z.sh` at the top level are not the corpus's
+        // own: they reach no rule and are named as written, after the
+        // corpus's unmatched `tools/z.sh` and apart from it. `other/c.md`,
+        // named on two lines, is named once.
+        assert_eq!(change.added(), ["docs/b.md", "tools/z.sh"]);
         assert_eq!(
             change.unmatched(),
-            ["docs/b.md", "other/c.md", "tools/y.sh"]
+            [
+                "tools/z.sh",
+                "docs/b.md",
+                "other/c.md",
+                "tools/y.sh",
+                "tools/z.sh"
+            ]
         );
-        // Two documents of the corpus and three paths outside it, of which
-        // `docs/b.md` is spelled as the corpus's own `docs/b.md` is, so the
-        // count of paths named is four. An outside path is named as written.
-        assert_eq!(change.named().unmatched, 3);
-        assert_eq!(change.named().documents, 4);
+        // Three documents of the corpus and four paths outside it, each a
+        // document of its own, so the counts sum to `documents`.
+        let named = change.named();
+        assert_eq!(named.unmatched, 5);
+        assert_eq!(named.documents, 7);
+        assert_eq!(
+            named.added + named.carried + named.unreadable + named.verified_alone + named.unmatched,
+            named.documents
+        );
 
         // An empty prefix is a root at the top level, and nothing moves.
         let same = Unbound::read(&manifest(), tree(&[("prior/a.md", ASSERTED)]))
