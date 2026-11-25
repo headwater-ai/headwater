@@ -49,9 +49,8 @@ rules
   warrant integrity (in part)
     on the result: every transcription projection pins a declared anchor kind, and that anchor kind names one resolver
     not decided: whether a transcription writes over an authored path is a question about a corpus, and it belongs to the same rule as every other projection target
-  context safety (in part)
-    on the result: every facet that carries the freshness role declares a staleness policy
-    not decided: the size budget half. Spec 5 requires one on every agent-facing kind and projection. An `agent_rules` declares one in `budget` (HW-DR-0115), and nothing yet refuses an agent-facing projection without one (#2088)
+  context safety
+    on the result: every facet that carries the freshness role declares a staleness policy, and every `agent_rules` projection, the one agent-facing declaration the language has, declares a `budget` (HW-DR-0115). No declaration marks a kind agent-facing, so no kind owes one
   overlay confluence
     at merge time: pairwise over the leaves each operation writes, before anything merges
   mapping integrity (in part)

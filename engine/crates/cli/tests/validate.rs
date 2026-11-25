@@ -993,7 +993,8 @@ fn resolve_refuses_an_overlay_projection_the_generator_refuses() {
 fn resolve_requires_a_budget_on_agent_rules_and_refuses_it_on_every_other_kind() {
     let anchor = "      output: \"{shelf}/README.md\"";
     let budget = "budget: {per_file: 600, aggregate: 8192}";
-    let agent_rules = "\n    - kind: agent_rules\n      output: \".github/instructions/{name}.instructions.md\"";
+    let agent_rules =
+        "\n    - kind: agent_rules\n      output: \".github/instructions/{name}.instructions.md\"";
     // Each refused arm names the substrings its finding carries, the reason first.
     let taken: &[&str] = &[];
     for (label, added, expected) in [
