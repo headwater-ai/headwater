@@ -212,6 +212,8 @@ Two more inputs are not about time. Each one is a file outside the census, so no
 
 **The agent rule measurement** is an input at taxonomy grain. The caller measures each rule file that an `agent_rules` projection would write against the byte budget of that projection. It uses the function that `headwater generate` prunes with. It injects the result, because the generator depends on this layer and this layer cannot call it. `projection.budget.exceeded` is the one rule that reads it. It creates no instance and writes no cache entry. Its inputs are the source documents, which the census already covers, and the lock, which keys the cache.
 
+**The governed scope reading** is an input at taxonomy grain. The caller reads each governed scope pattern against the tree beside the taxonomy. It uses the function that `headwater taxonomy validate` uses, and it passes nothing as ignored, because this loop runs no version control command. It injects the result: each pattern that matches no entry, or the notice that no tree stands beside the taxonomy. `relation.scope.unmatched` is the one rule that reads it. It creates no instance and writes no cache entry. It adds nothing to the read set, because a walk of the tree is not a list of files that a gate can hash.
+
 The corpus-scoped view carries four more `NEEDS_` constants that are not `Scope` flags. The [Checks and cache](../subsystems/checks-and-cache.md#the-four-corpus-view-constants-that-are-not-scope-flags) spec says which of them join the cache key.
 
 ## Instances, and why coverage needs them
