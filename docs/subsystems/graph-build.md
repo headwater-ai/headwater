@@ -95,7 +95,7 @@ A literal pattern binds when its path exists. It binds to an excluded file as we
 
 ### Governed scope
 
-`scope.rs` is the one reader of `anchors.<kind>.scope`. `Scope::contains` tests one path with no walk, `Scope::unmatched` finds each pattern that matches no entry, and `Scope::reach` lists what each pattern admits. The last two go through the resolver of the anchor kind, so a scope and an anchor use one matcher. `Graph::build` counts a scope with nothing ignored, because spec 12 keeps each version control command off the check loop. `taxonomy audit` then drops the entries that git ignores, with `Reach::retain_unignored`. A root with no tree beside it counts nothing. `Graph::scope` is empty when the taxonomy declares no scope.
+`scope.rs` is the one reader of `anchors.<kind>.scope`. `Scope::contains` tests one path with no walk, `Scope::unmatched` finds each pattern that matches no entry, and `Scope::reach` lists what each pattern admits. The last two go through the resolver of the anchor kind, so a scope and an anchor use one matcher. `Graph::build` counts a scope with nothing ignored, because spec 12 keeps each version control command off the check loop. `taxonomy audit` then drops the entries that git ignores, with `Reach::retain_unignored`. A root with no tree beside it counts nothing. `Scope::coverage` makes the one decision that `taxonomy validate` and `headwater check` both take: no tree, or each pattern that `Scope::unmatched` finds. The two verbs pass it different ignored sets (#2099). `Graph::scope` is empty when the taxonomy declares no scope.
 
 ## Invariants
 

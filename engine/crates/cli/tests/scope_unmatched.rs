@@ -285,3 +285,104 @@ fn check_skips_the_governed_scope_with_a_notice_where_no_tree_is_beside_the_taxo
     assert!(!json.out.contains(FINDING), "{json:?}");
     assert!(!json.out.contains("governed scope:"), "{json:?}");
 }
+
+/// A root that is an authored package source holds its own content
+/// directories, `assemblies/` and `doctrine/`, at the top, and they are the
+/// taxonomy rather than a tree (#1103). With no other directory beside it, the
+/// check skips the scope with the notice, as `taxonomy validate` does. The
+/// check reads the root's package manifest for those directories, so a check
+/// that ignored the manifest would count them as a tree and refuse each
+/// pattern.
+#[test]
+fn check_skips_the_governed_scope_at_an_authored_package_source_with_no_tree() {
+    let root = Root::copy_only("authored-source").with_outside_root_stubs();
+    std::fs::remove_dir_all(root.at.join("docs")).expect("the copied docs go");
+    common::copy(
+        &common::repository().join("taxonomy-source/headwater-standard"),
+        &root.at,
+    );
+    for own in ["package.yml", "assemblies", "doctrine"] {
+        assert!(root.at.join(own).exists(), "the source ships {own}");
+    }
+    root.resolve();
+    let ran = root.run(&["check", "--strict"]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    assert!(!ran.out.contains(FINDING), "{ran:?}");
+    assert!(
+        flat(&ran.out).contains("governed scope: no tree beside this taxonomy"),
+        "{ran:?}"
+    );
+}
+
+/// A taxonomy source in a directory at the top of the root is the taxonomy
+/// and not a tree. Here the overlay sits at `taxonomy/overlay.yml`, which the
+/// lock records as a source, and no other directory stands beside it. The
+/// check takes the sources from the lock, so a check that read none would count
+/// `taxonomy/` as a tree and refuse each pattern.
+#[test]
+fn check_counts_no_directory_that_holds_a_taxonomy_source_as_a_tree() {
+    let root = Root::copy_only("source-directory").with_outside_root_stubs();
+    std::fs::remove_dir_all(root.at.join("docs")).expect("the copied docs go");
+    std::fs::create_dir_all(root.at.join("taxonomy")).expect("the directory is made");
+    std::fs::rename(
+        root.at.join(".headwater/overlay.yml"),
+        root.at.join("taxonomy/overlay.yml"),
+    )
+    .expect("the overlay moves");
+    let consumer = root.at.join(".headwater/taxonomy.yml");
+    let text = std::fs::read_to_string(&consumer).expect("the declaration reads");
+    let from = "  overlay: .headwater/overlay.yml\n";
+    assert!(text.contains(from), "the declaration names the overlay");
+    std::fs::write(
+        &consumer,
+        text.replacen(from, "  overlay: taxonomy/overlay.yml\n", 1),
+    )
+    .expect("the declaration writes");
+    root.resolve();
+    let lock = std::fs::read_to_string(root.at.join(".headwater/taxonomy.lock"))
+        .expect("the lock reads");
+    assert!(
+        lock.contains("path: taxonomy/overlay.yml"),
+        "the lock records the moved overlay"
+    );
+
+    let ran = root.run(&["check", "--strict"]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    assert!(!ran.out.contains(FINDING), "{ran:?}");
+    assert!(
+        flat(&ran.out).contains("governed scope: no tree beside this taxonomy"),
+        "{ran:?}"
+    );
+}
+
+/// The one way the two verbs differ, held in both directions (HW-OBL-0272).
+/// The only entry under `site/**` is in a directory git ignores. `taxonomy
+/// validate` leaves out what git ignores, so it refuses the pattern. The check
+/// runs no version control command (spec 12), so it counts the entry and
+/// passes. A change that makes the two verbs agree changes this case and
+/// discharges the record.
+#[test]
+fn a_pattern_whose_only_entry_git_ignores_passes_check_and_fails_validate() {
+    let root = Root::new("ignored-only");
+    std::fs::write(root.at.join(".gitignore"), "site/\n").expect("the ignore file writes");
+    let init = Command::new("git")
+        .args(["init", "-q"])
+        .current_dir(&root.at)
+        .status()
+        .expect("git runs");
+    assert!(init.success());
+    root.resolve();
+
+    let ran = root.run(&["check", "--strict"]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    assert!(!ran.out.contains(FINDING), "{ran:?}");
+
+    let validated = root.run(&["taxonomy", "validate"]);
+    assert_eq!(validated.code, Some(1), "{validated:?}");
+    assert!(
+        validated
+            .err
+            .contains("governed scope pattern `site/**` matches no entry of the tree"),
+        "{validated:?}"
+    );
+}
