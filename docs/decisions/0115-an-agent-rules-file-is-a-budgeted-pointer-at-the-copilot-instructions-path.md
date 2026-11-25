@@ -52,7 +52,7 @@ The owner ruled on 2026-11-25, in a comment on [#2026](https://github.com/headwa
 
 The meta-schema gives the `projection` block a thirteenth member, `budget`, and a closed block `projection_budget` with the two figures. The generator's reader refuses `budget` on every kind but `agent_rules`, and `taxonomy resolve` and `taxonomy validate` run that reader before they write a lock. So an author who puts a budget on the wrong kind reads the refusal at resolve, against the source that wrote it.
 
-The reason that `unbuilt()` gives for `agent_rules` now names this record, and says that the emitter is not built. #2089 removes that reason when it builds the emitter.
+The reason that `unbuilt()` gave for `agent_rules` named this record, and said that the emitter was not built. #2089 removed that reason when it built the emitter.
 
 HW-OBL-0034 stays open. This record supplies the declaration that its size-budget half names. #2088 discharges that half, because the obligation is the refusal of a projection with no budget, and not the member that holds one. Its mapping-integrity half does not change.
 

@@ -495,26 +495,26 @@ fn every_unbuilt_reason_reaches_a_reader_of_a_corpus_that_declares_none() {
 /// routes would be printed twice, so a reader would meet one reason under two
 /// headings and could not tell which of the two the corpus asked for.
 ///
-/// The case declares two of the four declarable waiting kinds and leaves two
-/// undeclared, so both routes run in one report and the count holds over every
-/// kind rather than over the declared pair alone.
+/// The case declares one of the two declarable waiting kinds and leaves the
+/// other undeclared, so both routes run in one report and the count holds over
+/// every kind rather than over the declared one alone. It declared
+/// `agent_rules` until that kind gained an emitter (#2089).
 ///
 /// # Watched failing
 ///
 /// Deleting the `!declared.contains(kind)` filter from `undeclared` reddens
-/// this, naming `agent_rules` and the count 2. The case before this one
+/// this, naming the declared kind and the count 2. The case before this one
 /// stays green over that regression, because a doubled reason still appears.
 #[test]
 fn a_kind_a_declaration_named_is_reported_once_and_not_twice() {
     let declared = projections_from(
         "projections:\n  \
-         - {kind: agent_rules, output: generate/rules.md}\n  \
-         - {kind: template, output: generate/templates.md}\n",
+         - {kind: transcription, output: generate/transcribed.md}\n",
     );
     assert_eq!(
         declared.declared.len(),
-        2,
-        "this case declares two projections, and the block read {:?}",
+        1,
+        "this case declares one projection, and the block read {:?}",
         declared
             .declared
             .iter()

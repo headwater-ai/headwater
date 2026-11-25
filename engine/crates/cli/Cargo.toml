@@ -152,6 +152,10 @@ clap = { version = "4.6.6", features = ["derive"] }
 clap_complete = { version = "4.6.9", default-features = false }
 
 [dev-dependencies]
+# `tests/agent_rules.rs` holds a rule file's `applyTo` glob to the pattern
+# language the engine's own resolvers read, rather than to a string compare.
+# A workspace crate this binary already reaches through every other crate.
+headwater-meta = { workspace = true }
 # `tests/publish.rs` packs a published artifact into the zip a release carries
 # and serves it on 127.0.0.1, to hold `vendor <location>` to `vendor <dir>`.
 # The same version `headwater-fetch` reads with, so the lock gains nothing.

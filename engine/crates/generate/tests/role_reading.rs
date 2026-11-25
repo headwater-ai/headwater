@@ -174,9 +174,10 @@ fn labelling(kind: Kind) -> Labelling {
              matches a cell to a relation target and to a snapshot entry. A document with no \
              identifier prints its path, and a title in every cell would not fit a table row",
         ),
-        Kind::AgentRules | Kind::Template | Kind::Transcription | Kind::CoverageReport => {
-            Labelling::Unbuilt
-        }
+        // `crate::label(pointer)` at `agent_rules.rs`, as the link text of the
+        // pointer to the governing document.
+        Kind::AgentRules => Labelling::ReadsTheNameRole,
+        Kind::Template | Kind::Transcription | Kind::CoverageReport => Labelling::Unbuilt,
     }
 }
 
@@ -186,11 +187,12 @@ fn labelling(kind: Kind) -> Labelling {
 /// it complete: a kind this table calls `ReadsTheNameRole` and no case below
 /// exercises fails there. That is what stops the positive property from
 /// becoming a claim about a set nobody ran.
-const EXERCISED: [Kind; 4] = [
+const EXERCISED: [Kind; 5] = [
     Kind::ShelfIndex,
     Kind::ShelfSections,
     Kind::SiteNav,
     Kind::VerbIndex,
+    Kind::AgentRules,
 ];
 
 /// A `name`-role value that no identifier, path or file name of either fixture
@@ -310,7 +312,20 @@ fn copy_tree(from: &Path, to: &Path) {
 /// The temporary directory is named for the case rather than for the pid,
 /// because cargo runs the cases of one target as threads of one process.
 fn sentinel_tree(corpus_root: &str, document: &str, old_title: &str, sentinel: &str) -> PathBuf {
-    let at = Path::new(env!("CARGO_TARGET_TMPDIR")).join(format!("role-reading-{corpus_root}"));
+    sentinel_tree_at(corpus_root, corpus_root, document, old_title, sentinel)
+}
+
+/// [`sentinel_tree`] under a directory named by `label`, so that two cases over
+/// one fixture corpus, which cargo runs as threads of one process, never write
+/// one directory.
+fn sentinel_tree_at(
+    label: &str,
+    corpus_root: &str,
+    document: &str,
+    old_title: &str,
+    sentinel: &str,
+) -> PathBuf {
+    let at = Path::new(env!("CARGO_TARGET_TMPDIR")).join(format!("role-reading-{label}"));
     let _ = std::fs::remove_dir_all(&at);
     copy_tree(&fixtures_dir().join(corpus_root), &at.join(corpus_root));
     let path = at.join(corpus_root).join(document);
@@ -435,6 +450,65 @@ fn every_emitter_that_labels_a_document_prints_its_declared_name() {
         SENTINEL,
         &[Kind::ShelfIndex, Kind::ShelfSections, Kind::SiteNav],
     );
+    let _ = std::fs::remove_dir_all(&at);
+}
+
+/// An agent rule file labels its governing document with the declared name.
+///
+/// The `generate` fixture taxonomy declares no anchor, so this case adds a
+/// `code_path` anchor and a `governs` relation to it, and gives the sentinel
+/// document a `governs` edge to the guides. Everything else is the surface the
+/// case above reads.
+#[test]
+fn an_agent_rule_file_labels_its_source_with_its_declared_name() {
+    let at = sentinel_tree_at(
+        "agent-rules",
+        "generate",
+        "decisions/0002-rebuild-the-graph.md",
+        "Rebuild the graph on every run",
+        SENTINEL,
+    );
+    let document = at.join("generate/decisions/0002-rebuild-the-graph.md");
+    let source = std::fs::read_to_string(&document).expect("the sentinel document");
+    std::fs::write(
+        &document,
+        source.replacen(
+            "relations:\n",
+            "relations:\n  governs: [\"generate/guides/**\"]\n",
+            1,
+        ),
+    )
+    .expect("the governed sentinel document");
+    let taxonomy = std::fs::read_to_string(fixtures_dir().join("generate.taxonomy.yml"))
+        .expect("the fixture taxonomy")
+        .replacen(
+            "relations:\n",
+            "anchors:\n  code_path: {resolver: source-tree}\n\nrelations:\n  governs: {family: governance, from: [decision], to: [code_path]}\n",
+            1,
+        );
+    let root = headwater_yaml::load(&taxonomy)
+        .expect("the fixture taxonomy loads")
+        .value
+        .as_map()
+        .expect("a mapping")
+        .clone();
+    let corpus = Corpus::new(at.clone(), "generate");
+    let built = Built::over(&corpus, &root);
+    let surface = built.surface();
+    let projections = projections_from(concat!(
+        "projections:\n",
+        "  - kind: agent_rules\n",
+        "    output: \"rules/{name}.instructions.md\"\n",
+    ));
+    let plan: Plan = plan(
+        &surface,
+        &built.census,
+        &projections,
+        &Identity::default(),
+        &Runs::default(),
+        headwater_verbs::VERBS,
+    );
+    assert_sentinel_reached(&plan, SENTINEL_STEM, SENTINEL, &[Kind::AgentRules]);
     let _ = std::fs::remove_dir_all(&at);
 }
 
