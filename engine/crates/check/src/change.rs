@@ -939,7 +939,11 @@ mod tests {
             change.unmatched(),
             ["docs/b.md", "other/c.md", "tools/y.sh"]
         );
+        // Two documents of the corpus and three paths outside it, of which
+        // `docs/b.md` is spelled as the corpus's own `docs/b.md` is, so the
+        // count of paths named is four. An outside path is named as written.
         assert_eq!(change.named().unmatched, 3);
+        assert_eq!(change.named().documents, 4);
 
         // An empty prefix is a root at the top level, and nothing moves.
         let same = Unbound::read(&manifest(), tree(&[("prior/a.md", ASSERTED)]))

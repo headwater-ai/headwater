@@ -242,14 +242,27 @@ fn a_path_outside_the_subfolder_root_is_named_and_reaches_no_rule() {
     )
     .expect("the manifest writes");
     let ran = strict_in_sub(&root, &manifest);
+    // One finding, for `sub/tools/ungoverned.sh`: a second would be
+    // `tools/outside.sh` read as the corpus's own `tools/outside.sh`.
     assert_eq!(ran.code, Some(1), "{}{}", ran.out, ran.err);
     assert_eq!(findings(&ran.out), 1, "{}", ran.out);
-    assert!(
-        !ran.out
-            .contains("relation.scope.ungoverned (tools/outside.sh"),
-        "{}",
-        ran.out
-    );
     assert!(ran.out.contains("other/x.sh"), "{}", ran.out);
     assert!(ran.out.contains("tools/outside.sh"), "{}", ran.out);
+}
+
+/// The passing direction of the gate under a subfolder root: the governed
+/// tool, named from the git top level, raises nothing.
+#[test]
+fn a_subfolder_root_passes_a_governed_add() {
+    let (root, out) = subfolder("scope-ratchet-subfolder-governed");
+    let manifest = out.0.join("manifest");
+    std::fs::write(
+        &manifest,
+        "headwater change 1\nadded\tsub/tools/governed.sh\n",
+    )
+    .expect("the manifest writes");
+    let ran = strict_in_sub(&root, &manifest);
+    assert_eq!(ran.code, Some(0), "{}{}", ran.out, ran.err);
+    assert_eq!(findings(&ran.out), 0, "{}", ran.out);
+    assert!(!ran.out.contains("sub/tools/governed.sh"), "{}", ran.out);
 }
