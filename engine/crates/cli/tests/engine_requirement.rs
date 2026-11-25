@@ -733,7 +733,7 @@ fn a_resolve_refuses_a_corpus_range_the_package_range_does_not_meet() {
     let refused = root.run(&["taxonomy", "resolve"]);
     assert_ne!(refused.code, Some(0), "{refused:?}");
     assert!(refused.err.contains("\">=2\""), "{}", refused.err);
-    assert!(refused.err.contains("\">=0.1 <2\""), "{}", refused.err);
+    assert!(refused.err.contains("\">=0.7 <2\""), "{}", refused.err);
 
     // A range that overlaps the package range but excludes this engine
     // resolves, and the resolve reports the engine once. The floor is the
