@@ -556,17 +556,18 @@ fn rebudget(consumer: &Path, per_file: u64, aggregate: u64) {
 }
 
 /// The findings of the budget rule in a `check` run, each with the lines the
-/// report wrapped it over joined by one space.
+/// report wrapped it over joined by one space. A finding opens on the rule
+/// name, with or without the obligation it reaches, and ends at its `fix:`.
 fn budget_findings(ran: &Ran) -> Vec<String> {
-    let opens = format!("{BUDGET_RULE}: ");
+    let opens = [format!("{BUDGET_RULE}: "), format!("{BUDGET_RULE} (")];
     let mut found: Vec<String> = Vec::new();
     let mut open = false;
     for line in ran.out.lines() {
         let line = line.trim();
-        if line.starts_with(&opens) {
+        if opens.iter().any(|open| line.starts_with(open.as_str())) && line.contains(':') {
             found.push(line.to_string());
             open = true;
-        } else if open && !line.is_empty() && !line.contains(" warn") && !line.contains(" error") {
+        } else if open && !line.is_empty() && !line.starts_with("fix:") {
             let last = found.last_mut().expect("a finding is open");
             last.push(' ');
             last.push_str(line);
@@ -715,4 +716,47 @@ fn a_budget_every_rule_fits_exactly_reports_nothing_and_writes_all_three() {
     for kept in [STANDARD, NUCLEUS, SATELLITE] {
         assert!(consumer.join(kept).is_file(), "{kept}");
     }
+}
+
+/// HW-DR-0115 keeps the longest head of the reading order that fits, and
+/// admits nothing further down into the gap. Here the satellite is smaller
+/// than its nucleus, and the aggregate fits the standard and the satellite but
+/// not the standard and the nucleus. A prune that filled the gap would keep
+/// the satellite's rule and drop its nucleus's, which is the case the issue
+/// exists to prevent, so both go.
+#[test]
+fn a_satellite_that_would_fit_the_gap_its_pruned_nucleus_left_is_pruned_too() {
+    let root = Root::scratch("gap");
+    let (consumer, _) = three_rules(&root);
+    let technical = consumer.join("docs/component-specs/delivery/technical.md");
+    std::fs::write(
+        &technical,
+        read(&technical).replacen(
+            "summary: How the Beacon delivery worker is built, and where its state lives.",
+            "summary: How it is built.",
+            1,
+        ),
+    )
+    .expect("the summary is shortened");
+    let generated = run(&consumer, &["generate"]);
+    assert_eq!(generated.code, Some(0), "{generated:?}");
+    let size = |path: &str| read(&consumer.join(path)).len() as u64;
+    let (standard, nucleus, satellite) = (size(STANDARD), size(NUCLEUS), size(SATELLITE));
+    assert!(satellite < nucleus, "{satellite} < {nucleus}");
+    rebudget(&consumer, 1_000_000, standard + satellite);
+
+    let checked = run(&consumer, &["check"]);
+    let found = budget_findings(&checked);
+    assert_eq!(found.len(), 1, "{checked:?}");
+    assert!(found[0].contains("withholds 2 rules "), "{found:?}");
+
+    std::fs::remove_dir_all(consumer.join(".github/instructions")).expect("the rules are removed");
+    let pruned = run(&consumer, &["generate"]);
+    assert_eq!(pruned.code, Some(0), "{pruned:?}");
+    assert!(consumer.join(STANDARD).is_file(), "{pruned:?}");
+    assert!(!consumer.join(NUCLEUS).exists(), "{pruned:?}");
+    assert!(
+        !consumer.join(SATELLITE).exists(),
+        "the satellite's rule fits the gap and its nucleus's rule is pruned\n{pruned:?}"
+    );
 }
