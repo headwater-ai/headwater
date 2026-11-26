@@ -56,6 +56,10 @@ pub struct Context {
     change: Option<Change>,
     orphaned: std::collections::BTreeSet<String>,
     baseline: bool,
+    /// The directory the paths of a `source-tree` anchor are read from, which
+    /// is the corpus root on disk, and `None` where the caller named none.
+    /// See [`Context::reading`].
+    base: Option<std::path::PathBuf>,
 }
 
 impl Context {
@@ -68,6 +72,7 @@ impl Context {
             change: None,
             orphaned: std::collections::BTreeSet::new(),
             baseline: false,
+            base: None,
         }
     }
 
@@ -82,6 +87,7 @@ impl Context {
             change: Some(change),
             orphaned: std::collections::BTreeSet::new(),
             baseline: false,
+            base: None,
         }
     }
 
@@ -109,6 +115,7 @@ impl Context {
             change: None,
             orphaned: std::collections::BTreeSet::new(),
             baseline: false,
+            base: None,
         })
     }
 
@@ -136,6 +143,28 @@ impl Context {
     /// Whether this run offers a baseline stamp. See [`Context::with_baseline`].
     pub fn baseline(&self) -> bool {
         self.baseline
+    }
+
+    /// The same run, told where the current bytes of a governed file are read
+    /// from (#2100).
+    ///
+    /// `headwater check` sets it to the corpus root. A change-scoped run then
+    /// classifies each touched file of a suspect `source-tree` edge, which
+    /// needs the current bytes beside the prior ones the manifest named. The
+    /// classification is read after every rule ran, as the gate is, so no
+    /// check reaches this value and no cache key holds it. A run that names
+    /// no base classifies nothing, and its gate is the one it had before.
+    pub fn reading(self, base: std::path::PathBuf) -> Self {
+        Context {
+            base: Some(base),
+            ..self
+        }
+    }
+
+    /// Where the current bytes of a governed file are read from. See
+    /// [`Context::reading`].
+    pub fn base(&self) -> Option<&std::path::Path> {
+        self.base.as_deref()
     }
 
     /// The same run, told which marked files the projection plan claims no

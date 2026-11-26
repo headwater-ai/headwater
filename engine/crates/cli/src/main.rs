@@ -6627,7 +6627,9 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
         ))?;
         return Ok(ExitCode::FAILURE);
     };
-    let ctx = ctx.with_baseline(baseline);
+    // The corpus root is where a touched governed file is read now, so a
+    // change-scoped run can classify it beside its prior version (#2100).
+    let ctx = ctx.with_baseline(baseline).reading(root.to_path_buf());
     // The second injected value, read here and bound after the walk below. A
     // manifest this engine cannot read is a refusal rather than a shorter
     // change: a line that was dropped reads as a document that did not move,

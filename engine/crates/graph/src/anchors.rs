@@ -283,7 +283,9 @@ impl Revision {
 
     fn value(&self) -> &Option<String> {
         self.0.value.get_or_init(|| match &self.0.tree {
-            Some((base, matched)) => tree_revision_in(base, matched, &self.0.digested),
+            Some((base, matched)) => {
+                tree_revision_in(base, matched, |path| self.0.digested.of(base, path))
+            }
             None => None,
         })
     }
@@ -653,15 +655,58 @@ impl Resolver for SourceTree {
 /// directory literal at `Info` and names `**` after the directory as the
 /// remedy, rather than passing it in silence.
 pub fn tree_revision(base: &Path, matched: &[String]) -> Option<String> {
-    tree_revision_in(base, matched, &FileDigests::default())
+    let digested = FileDigests::default();
+    tree_revision_in(base, matched, |path| digested.of(base, path))
 }
 
-/// [`tree_revision`], reading each file through `digested`.
-fn tree_revision_in(base: &Path, matched: &[String], digested: &FileDigests) -> Option<String> {
+/// [`tree_revision`], with the digest of each path in `given` taken from it
+/// rather than from the bytes on disk, and every other entry read as
+/// [`tree_revision`] reads it (#2100).
+///
+/// It is how a run rebuilds the value an edge had before a change: `given`
+/// holds the digest of each touched file's prior version. A path in `given`
+/// is still held to the same tests of what stands at it now, so a directory
+/// or a pipe is treated alike by both, and the two values cannot disagree
+/// about which entries a digest covers.
+pub fn tree_revision_given(
+    base: &Path,
+    matched: &[String],
+    given: &dyn Fn(&str) -> Option<String>,
+) -> Option<String> {
+    let digested = FileDigests::default();
+    tree_revision_in(base, matched, |path| {
+        given(path).or_else(|| digested.of(base, path))
+    })
+}
+
+/// The digest of a manifest of `(path, digest)` pairs, which are sorted by
+/// path with no path twice: one line per pair, the path, a NUL, the digest
+/// and a newline, digested once.
+///
+/// [`tree_revision`] and [`tree_revision_given`] both end here, so a value
+/// rebuilt from prior digests and a value read from the tree are one function
+/// of their pairs (#2100).
+pub fn manifest_digest<'a>(pairs: impl IntoIterator<Item = (&'a str, &'a str)>) -> String {
+    let mut manifest = String::new();
+    for (path, digest) in pairs {
+        manifest.push_str(path);
+        manifest.push('\0');
+        manifest.push_str(digest);
+        manifest.push('\n');
+    }
+    headwater_hash::digest(manifest.as_bytes())
+}
+
+/// [`tree_revision`], taking the digest of each regular file from `digest`.
+fn tree_revision_in(
+    base: &Path,
+    matched: &[String],
+    digest: impl Fn(&str) -> Option<String>,
+) -> Option<String> {
     let mut sorted: Vec<&String> = matched.iter().collect();
     sorted.sort();
     sorted.dedup();
-    let mut manifest = String::new();
+    let mut pairs: Vec<(&str, String)> = Vec::new();
     let mut skipped = false;
     for path in sorted {
         let at = base.join(path);
@@ -673,16 +718,14 @@ fn tree_revision_in(base: &Path, matched: &[String], digested: &FileDigests) -> 
             skipped = true;
             continue;
         }
-        let digest = digested.of(base, path)?;
-        manifest.push_str(path);
-        manifest.push('\0');
-        manifest.push_str(&digest);
-        manifest.push('\n');
+        pairs.push((path.as_str(), digest(path)?));
     }
-    if skipped && manifest.is_empty() {
+    if skipped && pairs.is_empty() {
         return None;
     }
-    Some(headwater_hash::digest(manifest.as_bytes()))
+    Some(manifest_digest(
+        pairs.iter().map(|(path, digest)| (*path, digest.as_str())),
+    ))
 }
 
 /// The `comment-scan` resolver: a path binds only where a comment inside it
@@ -1964,6 +2007,36 @@ mod tests {
         assert_eq!(
             format!("{:?}", Revision::of_tree(&dir, &["to-sub".to_owned()])),
             "None"
+        );
+    }
+
+    /// The value rebuilt from given digests is the value read from the tree
+    /// when the given digests are the ones on disk, and it moves when one
+    /// given digest differs, because both end in one manifest digest (#2100).
+    #[test]
+    fn a_tree_revision_rebuilt_from_given_digests_is_the_one_read_from_the_tree() {
+        let dir = scratch("given");
+        std::fs::write(dir.join("a.sh"), b"echo a\n").expect("a file");
+        std::fs::write(dir.join("b.sh"), b"echo b\n").expect("a file");
+        let matched = ["b.sh".to_owned(), "a.sh".to_owned()];
+        let read = tree_revision(&dir, &matched).expect("two regular files");
+        assert_eq!(
+            read,
+            manifest_digest([
+                ("a.sh", headwater_hash::digest(b"echo a\n").as_str()),
+                ("b.sh", headwater_hash::digest(b"echo b\n").as_str()),
+            ])
+        );
+        let same = headwater_hash::digest(b"echo a\n");
+        assert_eq!(
+            tree_revision_given(&dir, &matched, &|path| (path == "a.sh").then(|| same.clone())),
+            Some(read.clone())
+        );
+        let before = headwater_hash::digest(b"echo A\n");
+        assert_ne!(
+            tree_revision_given(&dir, &matched, &|path| (path == "a.sh")
+                .then(|| before.clone())),
+            Some(read)
         );
     }
 }

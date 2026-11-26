@@ -1156,8 +1156,15 @@ fn target_patterns(edge: &Edge) -> Vec<headwater_meta::Pattern> {
 /// test [`Stated::of`] applies. A pair no edge of the graph answers is listed
 /// in the report, because it stamps nothing (#1631).
 pub(crate) fn names_edge(edge: &Edge, document: &str, target: &str) -> bool {
-    edge.source.path == document
-        && crate::change::reaches(&target_names(edge), &target_patterns(edge), target)
+    edge.source.path == document && reaches_edge(edge, target)
+}
+
+/// Whether `path` names what `edge` targets, under the test [`Stated::of`]
+/// applies. [`crate::spare`] reads it to find the touched files of a suspect
+/// edge, so the files it classifies are the ones the change was said to name
+/// (#2100).
+pub(crate) fn reaches_edge(edge: &Edge, path: &str) -> bool {
+    crate::change::reaches(&target_names(edge), &target_patterns(edge), path)
 }
 
 /// Every literal spelling of what `edge` targets that a change can name: the

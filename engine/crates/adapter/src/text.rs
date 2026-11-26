@@ -207,6 +207,19 @@ pub fn render_at(
         ));
         out.push_str(&fill::filled(&indent(&blocking), width));
     }
+    // What the change did to the files each suspect `source-tree` edge
+    // reaches: each touched file with its class, the count against the
+    // matched set, and the control that spares the finding where one does
+    // (#2100, #2028). Left out when the run classified nothing. Like the
+    // block above, a record carries no severity word.
+    let touched = touched_by_change(run);
+    if !touched.is_empty() {
+        out.push_str(&format!(
+            "\n{}\n",
+            paint(Role::Heading, "touched by the change", mode)
+        ));
+        out.push_str(&fill::filled(&indent(&touched), width));
+    }
     // The escaped findings, each marked with what holds it. Checks and cache:
     // "A suppressed finding is in the output, and it is marked. A live finding,
     // a `migration-pending` finding and a suppressed one are three different
@@ -277,6 +290,36 @@ fn blocks_strict(run: &Run) -> String {
             )
         })
         .collect()
+}
+
+/// One record for each live finding the change classified: its place on the
+/// first line, the rule and the count of touched files against the matched
+/// set on the second, one line per touched file with its class, and the
+/// control that spares it where one does. Empty when the run classified
+/// nothing (#2100, #2028).
+fn touched_by_change(run: &Run) -> String {
+    let mut out = String::new();
+    for finding in &run.findings {
+        let Some(classified) = run.class_of(finding) else {
+            continue;
+        };
+        out.push_str(&format!(
+            "{}:{}:{}\n  {} touched {} of {} matched\n",
+            visible(&finding.path),
+            finding.line,
+            finding.column,
+            finding.rule,
+            classified.touched.len(),
+            classified.matched
+        ));
+        for (path, class) in &classified.touched {
+            out.push_str(&format!("  {} {}\n", visible(path), class.name()));
+        }
+        if let Some(control) = run.spared_by(finding) {
+            out.push_str(&format!("  spared by {control}\n"));
+        }
+    }
+    out
 }
 
 /// Every line moved two spaces right, and a blank line left blank.
