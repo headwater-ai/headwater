@@ -561,9 +561,11 @@ impl EdgeCheck for Suspect<'_> {
             // stamp when the change states this edge was re-read, so the
             // marker comes off whether or not the target moved. The gate is
             // `stamped`, the one a moved digest takes: a re-verified document
-            // alone does not say that a person read this edge (#2076). Only
-            // the source tree states a digest, so the gate names no resolver.
-            if !(edge.verified_as_baseline() && stamped) {
+            // alone does not say that a person read this edge (#2076). A
+            // snapshot edge states a digest too, and its revision is never
+            // fixed here, as on the moved path, so the gate names the source
+            // tree.
+            if !(edge.verified_as_baseline() && stamped && resolver == SOURCE_TREE) {
                 return Outcome::Passed;
             }
             let Some(patch) = recording(edge, current) else {
