@@ -728,24 +728,26 @@ fn a_control_character_from_a_document_reaches_no_format_intact() {
 }
 
 /// The file names of #2070: a path past the width that holds single spaces and
-/// one double space, a pipe, a backtick inside and a backtick at the end.
-const SPACED_PATHS: [&str; 4] = [
+/// one double space, a pipe, a backtick inside, a backtick at the end, and a
+/// backslash before a pipe.
+const SPACED_PATHS: [&str; 5] = [
     "docs/decisions/0003-a path that is long enough to wrap  past the width of a report.md",
     "docs/a|b.md",
     "docs/a`b.md",
     "docs/b`",
+    "docs/c\\|d.md",
 ];
 
-/// The cells of one Markdown table row, split on a `|` no backslash escapes.
+/// The pieces of one Markdown table row, split as a GFM table splits it: on a
+/// `|` that no backslash comes straight before.
 fn unescaped_cells(row: &str) -> usize {
     let mut pieces = 1;
-    let mut escaped = false;
+    let mut previous = None;
     for char in row.chars() {
-        match (char, escaped) {
-            ('\\', false) => escaped = true,
-            ('|', false) => pieces += 1,
-            _ => escaped = false,
+        if char == '|' && previous != Some('\\') {
+            pieces += 1;
         }
+        previous = Some(char);
     }
     pieces
 }
