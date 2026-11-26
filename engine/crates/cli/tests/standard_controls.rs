@@ -368,6 +368,16 @@ const BOUND_IN_4_29: [(&str, &str, &str, &str); 1] = [(
     "criteria",
 )];
 
+/// The rule that 4.30.0 bound, in the same shape (#2101). It is advisory with
+/// promotion criteria: its severity is already an error, and its remedy is a
+/// judgment between moving the file and editing the value.
+const BOUND_IN_4_30: [(&str, &str, &str, &str); 1] = [(
+    "shelf.bound_facet.disagrees",
+    "OB-PLACE-2",
+    "advisory",
+    "criteria",
+)];
+
 /// The declaration of the one control of the maintained package whose
 /// mechanism is `check:<rule>`. Controls sit one to a block, a blank line
 /// separates two blocks, and each block opens with its identifier.
@@ -403,6 +413,7 @@ fn each_lifecycle_control_declares_its_obligation_posture_and_promotion() {
         .chain(BOUND_IN_4_26)
         .chain(BOUND_IN_4_28)
         .chain(BOUND_IN_4_29)
+        .chain(BOUND_IN_4_30)
     {
         let control = control_of(&taxonomy, rule);
         for line in [
