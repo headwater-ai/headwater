@@ -651,9 +651,16 @@ pub enum Refusal {
     /// The claim this run owes did not land. The create is the test for an
     /// occupied path, so `AlreadyExists` arrives here rather than as an
     /// overwrite. See [`crate::claim`].
+    ///
+    /// `removed` is what became of a claim file this run created and then
+    /// could not write whole: `None` where the create itself failed and no
+    /// file of this run is there, and otherwise the outcome of
+    /// [`crate::claim::withdraw`], so the message never says that nothing was
+    /// written while a claim is on disk (#2041).
     ClaimUnwritable {
         path: String,
         why: String,
+        removed: Option<Result<(), String>>,
     },
     PathTaken {
         path: String,
@@ -730,9 +737,13 @@ pub enum Refusal {
     /// `report` is [`tree::Halted`]'s own account, which names the file that
     /// stopped it, what that file holds now, which of the others went back, and
     /// what became of the document this run created. Nothing here restates it.
+    ///
+    /// `left` is [`tree::Halted::left`]: the document this run created that is
+    /// still on the tree, which a claim made for it must stand behind (#2041).
     WriteHalted {
         path: String,
         report: String,
+        left: Option<String>,
     },
     /// The composition names some number of new documents other than one.
     ///
@@ -922,10 +933,24 @@ impl std::fmt::Display for Refusal {
                 f,
                 "{path} is already there, and this verb never overwrites a document"
             ),
-            Refusal::ClaimUnwritable { path, why } => write!(
+            Refusal::ClaimUnwritable {
+                path,
+                why,
+                removed: None,
+            } => write!(
                 f,
                 "the identifier claim `{path}` was not written: {why}. Nothing else was written \
                  either, because the claim is made before the document"
+            ),
+            Refusal::ClaimUnwritable {
+                path,
+                why,
+                removed: Some(outcome),
+            } => write!(
+                f,
+                "the identifier claim `{path}` was not written whole: {why}. {} No document was \
+                 written, because the claim is made before the document",
+                crate::claim::withdrawn(path, outcome)
             ),
             Refusal::PlacementDoesNotResolve { path, kind, found } => write!(
                 f,

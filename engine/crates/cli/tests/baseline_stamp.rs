@@ -211,3 +211,44 @@ fn a_baseline_without_fix_reports_and_writes_nothing() {
     assert_eq!(suspect(&ran.out).len(), 2, "{}", ran.out);
     assert_eq!(contract(&root), before);
 }
+
+/// A change that states a re-reading of a baseline edge whose target did not
+/// move drops the marker and keeps the digest, and a second run writes
+/// nothing (#2076). Before #2076 the unmoved edge kept `verified_as:
+/// baseline`, so a later move of its target named a reading as a baseline.
+#[test]
+fn a_reading_of_an_unmoved_baseline_drops_the_marker() {
+    let root = governed("unmoved");
+    stamps_what_explain_printed(&root, &[]);
+    let recorded = field(&root, SCALAR, &["digest", "recorded"]).expect("a recorded digest");
+
+    let manifest = root.at.join("manifest");
+    std::fs::write(
+        &manifest,
+        format!("headwater change 1\nverified\t{DOCUMENT}\t{SCALAR}\n"),
+    )
+    .expect("the manifest writes");
+    let manifest = manifest.to_string_lossy().into_owned();
+    let read = root.run(&["check", "--fix", "--change", &manifest]);
+    assert_eq!(read.code, Some(0), "{read:?}");
+    let text = contract(&root);
+    assert_eq!(text.matches("verified_as: baseline").count(), 1, "{text}");
+    assert_eq!(
+        field(&root, SCALAR, &["digest", "baseline"]).as_deref(),
+        Some("false"),
+        "{text}"
+    );
+    assert_eq!(
+        field(&root, SCALAR, &["digest", "recorded"]),
+        Some(recorded),
+        "{text}"
+    );
+    assert_eq!(
+        field(&root, LIST, &["digest", "baseline"]).as_deref(),
+        Some("true")
+    );
+
+    let again = root.run(&["check", "--fix", "--change", &manifest]);
+    assert_eq!(again.code, Some(0), "{again:?}");
+    assert_eq!(contract(&root), text, "a second run changed the contract");
+}

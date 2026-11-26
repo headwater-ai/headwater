@@ -778,7 +778,7 @@ read set
   version relation.key.outside_block 1
   version relation.target.unresolved 3
   version relation.target.is_source 3
-  version relation.target.suspect 12
+  version relation.target.suspect 13
   version relation.reciprocity.missing 3
   version relation.endpoint.not_permitted 1
   version lifecycle.dependency.on_terminal 1

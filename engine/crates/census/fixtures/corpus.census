@@ -1640,6 +1640,8 @@ docs/process/obligations/0258-the-cargo-pool-grows-with-nothing-pruning-it-betwe
   typed: process_obligation
 docs/process/obligations/0259-resume-reads-the-claim-file-of-an-issue-and-not-who-holds-its-footprint.md
   typed: process_obligation
+docs/process/obligations/0273-no-queue-run-yet-shows-two-pull-requests-that-add-documents-land-in-consecutive-batches.md
+  typed: process_obligation
 docs/process/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/process/specs/README.md
