@@ -83,6 +83,7 @@ fn run() -> Run {
             pin: None,
             lock_stale: None,
             agent_budgets: &[],
+            scope_coverage: None,
             harvests: &[],
             imports: &[],
             source: "engine/crates/check/fixtures/acceptance-criterion-proven.taxonomy.yml",

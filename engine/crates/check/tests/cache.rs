@@ -125,6 +125,7 @@ fn run_at(root: &Path, ctx: &Context, cache: &mut Cache) -> Run {
             pin: None,
             lock_stale: None,
             agent_budgets: &[],
+            scope_coverage: None,
             harvests: &[],
             imports: &[],
             adoption: None,

@@ -167,6 +167,7 @@ fn run_at(base: &Path, now: &str) -> Run {
             pin: None,
             lock_stale: None,
             agent_budgets: &[],
+            scope_coverage: None,
             harvests: &[],
             imports: &[],
             adoption: None,

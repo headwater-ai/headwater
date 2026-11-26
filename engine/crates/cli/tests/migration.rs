@@ -318,6 +318,27 @@ impl Root {
                 .expect("the declaration copies");
         }
 
+        // The overlay declares a governed scope, and the baseline run of
+        // `taxonomy diff` reads it against the tree while the candidate run,
+        // which carries no lock, takes no reading (#2099). One entry under
+        // each pattern keeps the baseline silent, so no finding of that rule
+        // reads as one the candidate no longer reports.
+        for entry in [
+            "engine/crates/stub/src/lib.rs",
+            "engine/crates/cli/harness/stub",
+            ".githooks/stub",
+            ".claude/hooks/stub",
+            ".claude/agents/stub",
+            ".claude/skills/stub",
+            "tools/stub",
+            "site/stub",
+        ] {
+            let to = at.join(entry);
+            std::fs::create_dir_all(to.parent().expect("it has a parent"))
+                .expect("the scope directory is there");
+            std::fs::write(to, "").expect("the scope entry writes");
+        }
+
         pin(&at, "1.0.0");
 
         let root = Root { at };

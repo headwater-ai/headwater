@@ -67,6 +67,7 @@ fn run_over(scratch: &Scratch, declaration: &Declaration, cache: &mut Cache) -> 
             pin: None,
             lock_stale: None,
             agent_budgets: &[],
+            scope_coverage: None,
             harvests: &[],
             imports: &[],
             adoption: None,

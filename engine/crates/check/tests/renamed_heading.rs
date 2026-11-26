@@ -170,6 +170,7 @@ fn run_over(base: &Path, adoption: Option<&Mapping>) -> Run {
             pin: None,
             lock_stale: None,
             agent_budgets: &[],
+            scope_coverage: None,
             harvests: &[],
             imports: &[],
             adoption,

@@ -168,6 +168,7 @@ fn run_over_with(root: &Path, observations: &Observations, cache: &mut Cache) ->
             pin: None,
             lock_stale: None,
             agent_budgets: &[],
+            scope_coverage: None,
             harvests: &[],
             imports: &[],
             source: "engine/crates/check/fixtures/acceptance-criterion-proven.taxonomy.yml",

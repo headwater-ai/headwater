@@ -1096,25 +1096,16 @@ fn validate(root: &Path) -> ExitCode {
                     Vec::new()
                 }
             };
-            let beside = headwater_graph::scope::tree_directories(
+            // The one decision `headwater check` takes too, so the two verbs
+            // cannot drift apart (#2099).
+            let coverage = scope.coverage(
+                &resolvers,
                 &corpus.base,
                 &repository.resolution.sources,
                 &own,
-                &ignored,
+                ignored,
             );
-            if scope.tree_is_absent(&resolvers, &beside) {
-                let count = scope.members.len();
-                let noun = if count == 1 { "pattern" } else { "patterns" };
-                (
-                    Vec::new(),
-                    Some(format!(
-                        "governed scope: no tree beside this taxonomy, so the coverage count of \
-                         its {count} {noun} is skipped"
-                    )),
-                )
-            } else {
-                (scope.ignoring(ignored).unmatched(&resolvers), None)
-            }
+            (coverage.unmatched().to_vec(), coverage.notice())
         }
         Err(_) => (Vec::new(), None),
     };

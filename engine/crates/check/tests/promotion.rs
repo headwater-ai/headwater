@@ -98,6 +98,7 @@ fn run_with(ctx: &Context, cache: &mut Cache) -> Run {
             pin: None,
             lock_stale: None,
             agent_budgets: &[],
+            scope_coverage: None,
             harvests: &[],
             imports: &[],
             adoption: None,

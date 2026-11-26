@@ -66,6 +66,7 @@ fn a_contraction_outside_the_root_is_fixed_and_the_read_back_holds() {
             pin: None,
             lock_stale: None,
             agent_budgets: &[],
+            scope_coverage: None,
             harvests: &[],
             imports: &[],
             adoption: None,

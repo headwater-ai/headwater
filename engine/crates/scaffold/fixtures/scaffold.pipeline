@@ -159,6 +159,8 @@ rules, and for each the scope that binds it
     edge scope, one relation instance and both endpoints, and the committed observation snapshot
   projection.budget.exceeded
     taxonomy scope, the resolved taxonomy, and no document
+  relation.scope.unmatched
+    taxonomy scope, the resolved taxonomy, and no document
 register
   1 obligations: 1 verified, 0 gap, 0 unverifiable, 0 with no disposition
       1 high, 1 verified
@@ -223,6 +225,7 @@ register
   import.pin.unread reaches no obligation, so it names none
   relation.target.verification.suspect reaches no obligation, so it names none
   projection.budget.exceeded reaches no obligation, so it names none
+  relation.scope.unmatched reaches no obligation, so it names none
 1 findings
       1 ✗ error
 

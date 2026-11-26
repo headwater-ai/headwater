@@ -360,6 +360,7 @@ This class dates from 2026-08-26. Before that date, such a finding was filed as 
 - [HW-OBL-0269](../obligations/0269-four-reasons-that-run-20261122-0114-stated-only-in-code-or-in-a-taxonomy-comment.md) — Four reasons that run 20261122-0114 stated only in code or in a taxonomy comment
 - [HW-OBL-0270](../obligations/0270-four-governs-edges-that-the-engine-changes-of-run-20261122-0114-left-out.md) — Four governs edges that the engine changes of run 20261122-0114 left out
 - [HW-OBL-0271](../obligations/0271-four-invariants-mentions-and-copies-that-the-engine-changes-of-run-20261122-0114-left-out.md) — Four Invariants, mentions and copies that the engine changes of run 20261122-0114 left out
+- [HW-OBL-0272](../obligations/0272-a-governed-scope-pattern-whose-only-matches-git-ignores-passes-check-and-fails-taxonomy-validate.md) — A governed scope pattern whose only matches git ignores passes check and fails taxonomy validate
 
 ## What the first typing of this corpus found
 

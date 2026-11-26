@@ -498,6 +498,7 @@ nav:
               - "Four reasons that run 20261122-0114 stated only in code or in a taxonomy comment": "obligations/0269-four-reasons-that-run-20261122-0114-stated-only-in-code-or-in-a-taxonomy-comment.md"
               - "Four governs edges that the engine changes of run 20261122-0114 left out": "obligations/0270-four-governs-edges-that-the-engine-changes-of-run-20261122-0114-left-out.md"
               - "Four Invariants, mentions and copies that the engine changes of run 20261122-0114 left out": "obligations/0271-four-invariants-mentions-and-copies-that-the-engine-changes-of-run-20261122-0114-left-out.md"
+              - "A governed scope pattern whose only matches git ignores passes check and fails taxonomy validate": "obligations/0272-a-governed-scope-pattern-whose-only-matches-git-ignores-passes-check-and-fails-taxonomy-validate.md"
           - "Review records":
               - "Review records": "reviews/README.md"
               - "Assessment of the existing core-concepts findings": "reviews/core-concepts-findings-assessment.md"

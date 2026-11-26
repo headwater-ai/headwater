@@ -339,6 +339,7 @@ fn scoped_at(adoption: Option<&Mapping>, scoping: Scoping) -> Ran {
             pin: None,
             lock_stale: None,
             agent_budgets: &[],
+            scope_coverage: None,
             harvests: &[],
             imports: &[],
             adoption,

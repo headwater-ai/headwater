@@ -81,6 +81,21 @@ impl Root {
         ] {
             root.write(stub, "# Scratch\n\nThis file is a stub.\n");
         }
+        // The overlay declares a governed scope, and a pattern that matches no
+        // entry of the tree is an error of a strict run (#2099), so one entry
+        // under each pattern stands in for the code the copy does not carry.
+        for entry in [
+            "engine/crates/stub/src/lib.rs",
+            "engine/crates/cli/harness/stub",
+            ".githooks/stub",
+            ".claude/hooks/stub",
+            ".claude/agents/stub",
+            ".claude/skills/stub",
+            "tools/stub",
+            "site/stub",
+        ] {
+            root.write(entry, "");
+        }
         root.declare(digest);
         let resolved = root.run(&["taxonomy", "resolve"]);
         assert_eq!(

@@ -103,6 +103,7 @@ fn run_with(ctx: &Context) -> Run {
             pin: None,
             lock_stale: None,
             agent_budgets: &[],
+            scope_coverage: None,
             harvests: &[],
             imports: &[],
             adoption: None,

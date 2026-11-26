@@ -953,6 +953,12 @@
       "scope": "taxonomy",
       "version": 1,
       "obligations": []
+    },
+    {
+      "rule": "relation.scope.unmatched",
+      "scope": "taxonomy",
+      "version": 1,
+      "obligations": []
     }
   ],
   "findings": [

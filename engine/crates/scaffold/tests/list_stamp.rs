@@ -135,6 +135,7 @@ fn run(root: &Path, change: Change) -> Run {
             pin: None,
             lock_stale: None,
             agent_budgets: &[],
+            scope_coverage: None,
             harvests: &[],
             imports: &[],
             source: "engine/crates/check/fixtures/governs-suspect.taxonomy.yml",
