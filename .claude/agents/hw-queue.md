@@ -14,6 +14,8 @@ Invoke the `hw-run-policy` skill before you begin. It carries the environment an
 
 One queue, written into the run directory the dispatch names through `sh tools/run/run-dir.sh queue`, and a report that is the block and the lines for `headwater-product-owner`, nothing more.
 
+Before the first `queue` call, read the run's SCOPE, OWNER and RULED lines with `sh tools/run/run-dir.sh decisions <run>`: a SCOPE line limits the queue to the issues the owner named, an OWNER line answers an issue you would otherwise mark `ruling`, and a RULED line gates, defers, refuses or opens an issue for this run alone.
+
 The queue is an ordered list of eligible issues, and you write it with one call per issue, in queue order:
 
     sh tools/run/run-dir.sh queue <run> <N> title=<title> milestone=<milestone> reader=<reader> artifacts=<artifacts> scope=wide|narrow [mark=ruling] [blocked=<M>,<M's milestone>]... [note=<words>]...
