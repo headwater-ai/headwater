@@ -336,6 +336,12 @@ mod tests {
             "docs/how-to/relocate-*.md",
             "docs/how-to/wire-x.md"
         ));
+        // The contract names `?` as one character of one segment (#2010).
+        assert!(selects("docs/how-to/v?.md", "docs/how-to/v2.md"));
+        assert!(!selects("docs/how-to/v?.md", "docs/how-to/v22.md"));
+        assert!(!selects("docs/how-to/v?.md", "docs/how-to/v/.md"));
+        // `**` as a whole segment matches zero segments too.
+        assert!(selects("docs/**/x.md", "docs/x.md"));
     }
 
     fn local_path(globs: &[String]) -> LocalPath {
