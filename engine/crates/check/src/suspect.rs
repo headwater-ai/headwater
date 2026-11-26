@@ -160,7 +160,12 @@
 //! The marker stays on the edge until a reading replaces the stamp. A reading
 //! stamp leaves out `verified_as`, so a re-read edge loses it, and a moved
 //! digest on an edge that still carries it says that the recorded digest was
-//! a baseline that records no reading.
+//! a baseline that records no reading. The reading stamp replaces the
+//! baseline whether or not the digest moved, under the gate of a moved
+//! digest: a `verified` line that names the edge, or a re-verified document
+//! whose change names the target. A re-verified document alone gives an
+//! unrecorded edge its first digest and leaves a baseline marked, because the
+//! marker comes off only on a claim that a person read this edge (#2076).
 //!
 //! Before #1259 the clock decided: a document whose freshness facet was at or
 //! after the run's date was stamped. That stamped every document that any
@@ -354,8 +359,12 @@ impl EdgeCheck for Suspect<'_> {
     /// a moved digest on a baseline stamp says so. The key holds the request,
     /// and a verdict cached at 11 was keyed without it (#2016).
     ///
+    /// 13: a stated re-reading of an edge stamped as a baseline whose digest
+    /// has not moved is offered the reading stamp, which drops the marker; a
+    /// verdict cached at 12 over such an edge passed with no patch (#2076).
+    ///
     /// Raise the rule version when a rule's behavior changes.
-    const VERSION: u32 = 12;
+    const VERSION: u32 = 13;
     /// The change decides the fix, and the clock decides nothing (#1259).
     const NEEDS_CLOCK: bool = false;
     /// The fix is offered only on a document the change re-verified, so the
@@ -548,7 +557,27 @@ impl EdgeCheck for Suspect<'_> {
         // The comparison is `Edge::suspect_revisions`, which `headwater route`
         // reads too (#953), so the two surfaces name the same edges.
         let Some((verified, current)) = edge.suspect_revisions() else {
-            return Outcome::Passed;
+            // An unmoved digest that is a baseline still takes the reading
+            // stamp when the change states this edge was re-read, so the
+            // marker comes off whether or not the target moved. The gate is
+            // `stamped`, the one a moved digest takes: a re-verified document
+            // alone does not say that a person read this edge (#2076).
+            if !(edge.verified_as_baseline() && stamped && resolver == SOURCE_TREE) {
+                return Outcome::Passed;
+            }
+            let Some(patch) = recording(edge, current) else {
+                return Outcome::Passed;
+            };
+            return Outcome::failed_with(finding(
+                Severity::Info,
+                baseline_reread(&edge.source.id, &edge.name, &edge.raw_target, current),
+                format!(
+                    "run `headwater check --fix` with the same `--change` to record \
+                     `{VERIFIED_REVISION}: {current}` on this entry as a reading, which removes \
+                     `{VERIFIED_AS}: {BASELINE}`"
+                ),
+                Some(patch),
+            ));
         };
 
         let reached: usize = {
@@ -919,6 +948,16 @@ fn unbaselined(id: &str, name: &str, raw: &str, current: &str) -> String {
         "`{id}` declares `{name}: {raw}` with no `{VERIFIED_REVISION}`, and the run asked for a \
          baseline, so the content it reaches now, `{current}`, can be recorded as a baseline that \
          records no reading"
+    )
+}
+
+/// An edge stamped as a baseline whose digest has not moved, under a change
+/// that states it was re-read (#2076).
+fn baseline_reread(id: &str, name: &str, raw: &str, current: &str) -> String {
+    format!(
+        "`{id}` declares `{name}: {raw}` with `{VERIFIED_REVISION}: {current}` recorded as a \
+         baseline that records no reading, and the change states this edge was re-read, so the \
+         digest can be recorded as a reading"
     )
 }
 
