@@ -2625,6 +2625,39 @@ fn a_filtered_run_holds_back_what_it_does_not_admit() {
         .all(|finding| finding.path.starts_with("check/spec/0")));
     assert_eq!(filter.unmatched, ["check/nowhere/**"]);
     assert!(whole.run.filter.is_none());
+    assert!(ran.run.filter_unmatched());
+    assert!(!whole.run.filter_unmatched());
+}
+
+/// A pattern that matches a finding and no census row is matched. The
+/// fixture's taxonomy is no row of its census, and a rule of the taxonomy
+/// reports on it, so `--path` over that file alone must not fail a strict run
+/// as a pattern that matched nothing (#2101).
+#[test]
+fn a_filter_that_matches_only_a_finding_is_matched() {
+    const LOCK: &str = "engine/crates/check/fixtures/check.taxonomy.yml";
+    let whole = fixture_run();
+    assert!(whole.census.rows.iter().all(|row| row.path != LOCK));
+    assert!(whole
+        .run
+        .findings
+        .iter()
+        .any(|finding| finding.path == LOCK));
+    let paths: Vec<String> = whole
+        .census
+        .rows
+        .iter()
+        .map(|row| row.path.clone())
+        .collect();
+    let run = headwater_check::filter::narrow(
+        whole.run,
+        &[LOCK.to_string()],
+        paths.iter().map(String::as_str),
+    );
+    let filter = run.filter.as_ref().expect("the run is filtered");
+    assert!(filter.unmatched.is_empty(), "{:?}", filter.unmatched);
+    assert!(!run.findings.is_empty());
+    assert!(!run.filter_unmatched());
 }
 
 #[test]

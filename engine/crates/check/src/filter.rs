@@ -85,6 +85,31 @@ impl Filtered {
     }
 }
 
+impl Run {
+    /// Whether a `--path` pattern of this run matched no census row and no
+    /// finding, which fails a strict run. False for a run with no filter.
+    pub fn filter_unmatched(&self) -> bool {
+        self.filter
+            .as_ref()
+            .is_some_and(|filter| !filter.unmatched.is_empty())
+    }
+}
+
+/// The patches `check --fix` writes: each finding's patch where a pattern
+/// admits the finding's own path, and every patch where `patterns` is empty.
+///
+/// The finding's path decides and not the path the patch edits. An inverse
+/// relation half or a claim file can live outside the filter, and the finding
+/// that asked for it is the thing the reader chose.
+pub fn patches(findings: &[crate::Finding], patterns: &[String]) -> Vec<crate::Patch> {
+    let parsed = parse(patterns);
+    findings
+        .iter()
+        .filter(|finding| parsed.is_empty() || admits(&parsed, &finding.path))
+        .filter_map(|finding| finding.patch.clone())
+        .collect()
+}
+
 /// Whether any of `patterns` admits `path`.
 pub fn admits(patterns: &[Pattern], path: &str) -> bool {
     patterns.iter().any(|pattern| pattern.matches(path))

@@ -6393,21 +6393,8 @@ fn fix(
 
     // A suppressed finding is not in this list, which is the author asking for
     // the text to stand. The runner filters, and a fix reads what a reader
-    // reads.
-    //
-    // A `--path` filter keeps the patch of a finding whose own path it admits,
-    // whatever file the patch edits: an inverse relation half or a claim file
-    // can live outside the filter, and the finding that asked for it is what
-    // the reader chose (#2101).
-    let admitted = headwater_check::filter::parse(filter);
-    let patches: Vec<headwater_check::Patch> = run
-        .findings
-        .iter()
-        .filter(|finding| {
-            admitted.is_empty() || headwater_check::filter::admits(&admitted, &finding.path)
-        })
-        .filter_map(|finding| finding.patch.clone())
-        .collect();
+    // reads, and a `--path` filter narrows it as it narrows the report (#2101).
+    let patches = headwater_check::filter::patches(&run.findings, filter);
     let composed = headwater_scaffold::fix::compose(root, &patches);
     if let Err(refusal) = headwater_scaffold::fix::apply(root, &composed.files) {
         say(&format!("headwater: {}\n", err(&format!("{refusal}"))))?;
@@ -6568,9 +6555,7 @@ struct Asked {
     /// `--verbose`: the scope of each rule and the read set in the text
     /// report (#1990).
     verbose: bool,
-    /// `--path`: the patterns the printed findings and the strict exit are
-    /// narrowed to, after the run. Empty for no filter. See
-    /// `headwater_check::filter` (#2101).
+    /// `--path`, empty for none. See `headwater_check::filter` (#2101).
     filter: Vec<String>,
 }
 
@@ -6724,15 +6709,9 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
     let mut cache = loaded.cache(root, cached);
     headwater_check::phase::mark("cache-read");
     let run = loaded.check(root, &loaded.declared(), &ctx, &mut cache);
-    // Narrowed after the run and before anything reads it: the report, the
-    // census of what the report wrote, and the strict exit below all read the
-    // one narrowed list, so none of them needs a second code path. Every
-    // instance was still evaluated (#2101).
-    let run = headwater_check::filter::narrow(
-        run,
-        &filter,
-        taken.rows.iter().map(|row| row.path.as_str()),
-    );
+    // Narrowed before the report, the census and the strict exit read it (#2101).
+    let rows = taken.rows.iter().map(|row| row.path.as_str());
+    let run = headwater_check::filter::narrow(run, &filter, rows);
     // Held until the report is out, and then said on standard error. See
     // `Cache::write` for why a failure here moves no verdict.
     let unwritten = cache.write(root).err();
@@ -6834,16 +6813,8 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
     // Two reasons under *Exit status*. A live finding is an error, or one a
     // `posture: blocking` control discharges, at any severity (#2015). And a
     // strict run by an engine the corpus did not ask for is not a gate the
-    // corpus passed.
-    //
-    // A third: a `--path` pattern that matches no file and no finding. It
-    // would otherwise hold back every finding of a mistyped CI step and pass
-    // for good (#2101).
-    let unmatched_filter = run
-        .filter
-        .as_ref()
-        .is_some_and(|filter| !filter.unmatched.is_empty());
-    if strict && (run.fails_strict() || engine_unmet || unmatched_filter) {
+    // corpus passed. And a `--path` pattern that matched nothing (#2101).
+    if strict && (run.fails_strict() || engine_unmet || run.filter_unmatched()) {
         return Ok(ExitCode::FAILURE);
     }
     Ok(ExitCode::SUCCESS)
