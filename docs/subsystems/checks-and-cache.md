@@ -3,7 +3,7 @@ id: HW-SPEC-checks-and-cache
 status: current
 status_since: 2026-10-01
 summary: "How each rule runs through one scope trait, keys a content-addressed cache, publishes its read set and renders in four formats. Raise the rule version when a rule's behavior changes."
-last_verified: 2026-11-22
+last_verified: 2026-11-26
 title: "Checks and cache"
 provenance:
   warrant: asserted
@@ -53,7 +53,7 @@ The public Rust API of the crates is not in this spec ([HW-DR-0098](../decisions
 
 `check/src/lib.rs` holds the runner. `run` takes the census and the graph as arguments, and it does not build them. Two passes over one corpus can disagree, and the pair that must agree here is the denominator and the thing that is measured against it.
 
-`RULES` lists every rule template in the order that a report lists them. On this branch the array has 57 entries, and the length of the array is the count. The `//!` header of `lib.rs` and a comment in `run` state older counts, and the array is the one that the compiler holds. `run` names each rule once, and that is the whole of registration.
+`RULES` lists every rule template in the order that a report lists them. On this branch the array has 58 entries, and the length of the array is the count. The `//!` header of `lib.rs` and a comment in `run` state older counts, and the array is the one that the compiler holds. `run` names each rule once, and that is the whole of registration.
 
 A rule is a template, and the runner instantiates it for each target. The generation step reads the taxonomy and never a document. It asks about a kind or a relation name, so a check cannot select its own targets from the corpus.
 
