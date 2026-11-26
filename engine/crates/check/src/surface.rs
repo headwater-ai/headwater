@@ -321,7 +321,7 @@ fn segment_matches(glob: &str, text: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{glob_matches, strip_variable};
+    use super::{glob_matches, strip_variable, LocalPath};
 
     #[test]
     fn a_shell_variable_before_a_path_is_removed() {
@@ -351,5 +351,32 @@ mod tests {
             "docs/how-to/relocate-*.md",
             "docs/how-to/wire-x.md"
         ));
+    }
+
+    fn local_path(globs: &[String]) -> LocalPath {
+        LocalPath {
+            adopter_documents: globs.to_vec(),
+            local_roots: vec!["tools/".into()],
+            programs: vec![],
+        }
+    }
+
+    // The hostile input of #1969 and #2010, held against the selection of a
+    // page. The bound is one second in a debug build, as in
+    // `headwater_meta::pattern`.
+    #[test]
+    fn twenty_any_depth_segments_select_no_page_in_bounded_time() {
+        let check = local_path(&[
+            format!("docs/{}nomatch", "**/".repeat(20)),
+            // `Pattern` merges adjacent `**`, so the interleaved form is the
+            // one that holds the memo to account.
+            format!("docs/{}nomatch", "**/x/".repeat(20)),
+            format!("{}b", "*a".repeat(30)),
+        ]);
+        let started = std::time::Instant::now();
+        assert!(!check.for_an_adopter(&format!("docs/{}file.md", "d/".repeat(39))));
+        assert!(!check.for_an_adopter(&format!("docs/{}file.md", "x/".repeat(39))));
+        assert!(!check.for_an_adopter(&format!("{}.md", "a".repeat(40))));
+        assert!(started.elapsed() < std::time::Duration::from_secs(1));
     }
 }
