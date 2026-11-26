@@ -93,6 +93,12 @@ shelves:
     path: docs/teams/{sequence}/{sequence}/**
     homogeneous: true
     kind: decision
+  # A bound segment ranks as `*`, so this shelf ties `twice` on every path
+  # both can match, and determinism refuses the pair.
+  wild:
+    path: docs/teams/*/*/**
+    homogeneous: true
+    kind: decision
 
 core:
   requires:

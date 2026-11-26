@@ -1,3 +1,4 @@
 the resolved taxonomy `identifier_schemes.unreadable_id.pattern`: identifier integrity: cannot be read, so nothing can be said about what it admits: the pattern `{namespace}-{slug}-END` writes `{slug}` before another segment, and a free token has no stated end
 the resolved taxonomy `shelves.partial.path`: determinism: cannot be read: `docs/ctx-{sequence}/**` writes `{sequence}` inside the segment `ctx-{sequence}`, and a shelf path binds a facet only as a whole segment, so nothing states where the value ends
 the resolved taxonomy `shelves.twice.path`: determinism: binds `sequence` in more than one segment of `docs/teams/{sequence}/{sequence}/**`, so one document could give it two values
+the resolved taxonomy `shelves.twice.path`: determinism: `docs/teams/{sequence}/{sequence}/**` and `shelves.wild.path` `docs/teams/*/*/**` can match one path and neither is more specific, so the kind of that path is a coin flip

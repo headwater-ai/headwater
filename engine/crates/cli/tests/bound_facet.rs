@@ -35,7 +35,8 @@ fn repository() -> PathBuf {
 
 /// The declarations each case adds to this repository's overlay: a `stable`
 /// facet `context` that no kind requires, a shelf that binds it, and a shelf
-/// that binds `title`, which the kind `review_record` requires. Both shelves
+/// that binds `title`, which the kind `review_record` requires, and a more
+/// specific shelf under the bound one that binds nothing. Both shelves
 /// are heterogeneous, because `review_record` requires `doc_type` and a
 /// homogeneous shelf refuses it as a restatement; a heterogeneous shelf is
 /// also the one where no shelf is "the" shelf of a kind.
@@ -49,6 +50,11 @@ const OVERLAY: &str = "
     homogeneous: false
     discriminator: doc_type
     kinds: [review_record]
+  shelves.special:
+    path: docs/contexts/billing/contracts/special/**
+    homogeneous: false
+    discriminator: doc_type
+    kinds: [review_record]
   shelves.titled:
     path: docs/titled/{title}/**
     homogeneous: false
@@ -56,8 +62,8 @@ const OVERLAY: &str = "
     kinds: [review_record]
 ";
 
-/// A scratch repository holding this repository's taxonomy, with the two
-/// bound shelves added, and nothing else.
+/// A scratch repository holding this repository's taxonomy, with the three
+/// shelves added, and nothing else.
 struct Root {
     at: PathBuf,
 }
@@ -317,6 +323,20 @@ fn an_absent_required_value_is_reported_once_by_the_required_rule() {
 fn a_record_on_a_shelf_that_binds_nothing_raises_nothing() {
     let root = Root::new("unbound");
     root.write("docs/reviews/r.md", &record("r", ""));
+    let ran = root.strict();
+    assert!(ran.of_rule().is_empty(), "{}", ran.out);
+    assert_eq!(ran.code, Some(0), "{}{}", ran.out, ran.err);
+}
+
+/// A more specific shelf that binds nothing wins a path under a bound one, so
+/// the folder of that document states no value and the rule asks for none.
+#[test]
+fn a_more_specific_shelf_that_binds_nothing_wins_and_raises_nothing() {
+    let root = Root::new("specific");
+    root.write(
+        "docs/contexts/billing/contracts/special/s.md",
+        &record("s", ""),
+    );
     let ran = root.strict();
     assert!(ran.of_rule().is_empty(), "{}", ran.out);
     assert_eq!(ran.code, Some(0), "{}{}", ran.out, ran.err);
