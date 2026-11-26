@@ -111,8 +111,9 @@ impl Built {
     ///
     /// The series is a parameter of `take` rather than something it reads, so a
     /// case states one the way it states a corpus. `Series::none` is the state
-    /// of a corpus whose store nobody has opened, which is what the recorded
-    /// report holds.
+    /// of a corpus whose store nobody has opened, which is what
+    /// `fixtures/audit.report` holds. `fixtures/audit-adoption.report` holds the
+    /// same tree with a populated series.
     fn audit_over(&self, now: &str, series: impl Fn(&str, Date) -> Series) -> Audit {
         let lock = "sha256:the-fixture";
         let date = Date::parse(now).expect("a date");
@@ -169,6 +170,63 @@ fn the_fixture_tree_produces_the_recorded_audit() {
         &fixtures_dir().join("audit.report"),
         &built.audit(AT).render(ColorMode::Plain),
     );
+}
+
+/// The adoption section recorded whole in its populated shape, which the
+/// report above holds only empty (HW-OBL-0154).
+///
+/// The series is injected, so no lock and no second tree is needed. It holds
+/// one open task and one discharged task in today's reading, one recorded
+/// reading under a second digest, and one line the store cannot read, so every
+/// shape that a case below asserts by substring is in one recorded file.
+#[test]
+fn the_fixture_tree_with_an_adoption_series_produces_the_recorded_audit() {
+    let built = fixture_tree();
+    let report = built
+        .audit_over(AT, |lock, date| Series {
+            reading: a_reading(
+                lock,
+                &date.render(),
+                vec![
+                    a_task("AD-1", "2027-06-30", 3, 1, 0),
+                    a_task("AD-2", "2027-06-30", 0, 4, 0),
+                ],
+            ),
+            recorded: vec![
+                a_reading(
+                    "sha256:one",
+                    "2026-01-01",
+                    vec![
+                        a_task("AD-1", "2027-06-30", 4, 0, 0),
+                        a_task("AD-2", "2027-06-30", 2, 2, 0),
+                    ],
+                ),
+                a_reading(
+                    lock,
+                    "2026-03-01",
+                    vec![
+                        a_task("AD-1", "2027-06-30", 3, 1, 0),
+                        a_task("AD-2", "2027-06-30", 0, 4, 0),
+                    ],
+                ),
+            ],
+            unreadable: vec![headwater_audit::reading::Unreadable {
+                line: 2,
+                why: "it names no `tasks`".to_string(),
+            }],
+        })
+        .render(ColorMode::Plain);
+    compare(&fixtures_dir().join("audit-adoption.report"), &report);
+    // The shapes the cases below assert by substring, each in the file.
+    for shape in [
+        "under 2 taxonomies",
+        "3 pairs open",
+        "open 0, closed 4",
+        "line 2 of the store is not a reading",
+    ] {
+        assert!(report.contains(shape), "`{shape}` is missing:\n{report}");
+    }
+    assert!(!report.contains("declares no adoption payload"), "{report}");
 }
 
 /// An arm that cannot be measured has a location, and it is never a zero.
