@@ -81,6 +81,33 @@ fn accepted_documents_parse_to_the_recorded_shape() {
     }
 }
 
+/// The segmenter's data-driven set (HW-OBL-0153).
+///
+/// Each case under `fixtures/sentences/` is a Markdown body, and its
+/// `.sentences` file records one line per sentence: the line and column it
+/// starts at, its word count, and its text. Q5 recorded that 32 of 58
+/// sentence-length errors were splitter defects, and it recorded the count and
+/// not the 32 cases, so those cases were not preserved. The set is rebuilt
+/// from the three rules the module states and from each failure class its
+/// inline tests name. `corpus-excerpt.md` is real prose, verbatim:
+/// `docs/spec/01-conceptual-model.md` lines 171 and 172, then the `--fix`
+/// paragraph of `CLAUDE.md`.
+#[test]
+fn segmented_documents_produce_the_recorded_sentences() {
+    for path in cases(&fixtures_dir().join("sentences")) {
+        let source = std::fs::read_to_string(&path).expect("cannot read the fixture");
+        let body = headwater_doc::body::scan(&source, &source, 0);
+        let mut out = String::new();
+        for sentence in headwater_doc::sentences::of(&body) {
+            out.push_str(&format!(
+                "{}:{} {}w | {}\n",
+                sentence.span.start.line, sentence.span.start.col, sentence.words, sentence.text
+            ));
+        }
+        compare(&path, "sentences", &out);
+    }
+}
+
 #[test]
 fn rejected_documents_report_the_recorded_errors() {
     for path in cases(&fixtures_dir().join("reject")) {
