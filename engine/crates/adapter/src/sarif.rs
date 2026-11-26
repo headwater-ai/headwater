@@ -129,7 +129,7 @@
 //! printing something false to fill a slot.
 
 use crate::{
-    a_scoped_run, every_finding, every_run, reported, Carrier, Escape, Format, Loss, Place,
+    a_filtered_run, a_scoped_run, every_finding, every_run, reported, Carrier, Escape, Format, Loss, Place,
     Reported, Subject, TOOL, TOOL_URI,
 };
 use headwater_check::instance::Input;
@@ -269,6 +269,22 @@ pub const LOSS: &[Loss] = &[
             // scoped run and requires its absence on every other, which is the
             // reading #234 rests on.
             when: a_scoped_run,
+        },
+    },
+    Loss {
+        field: "the path filter a run was narrowed by",
+        reason: "no member of this vocabulary says that a run's results were narrowed after \
+                 evaluation, or how many it held back. `invocations` holds the runtime \
+                 environment of the tool process and its command line, which a consumer would \
+                 have to parse, and the count held back is a reading rather than a process fact",
+        carrier: Carrier::Run {
+            places: &[Place {
+                at: &["properties", "headwater", "filter"],
+                members: &["patterns", "held_back", "unmatched"],
+            }],
+            // Present on a filtered run and absent on every other, on the
+            // terms of the change above (#2101).
+            when: a_filtered_run,
         },
     },
     Loss {
@@ -652,6 +668,9 @@ fn run_properties(run: &Run, subject: &Subject<'_>) -> Json {
     // vocabulary that were held against this bag first.
     if let Some(scoped) = &run.change {
         headwater.push(("change", crate::json::change(scoped)));
+    }
+    if let Some(filtered) = &run.filter {
+        headwater.push(("filter", crate::json::filter(filtered)));
     }
     headwater.extend([
         (

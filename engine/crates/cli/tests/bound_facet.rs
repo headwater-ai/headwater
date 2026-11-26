@@ -466,16 +466,49 @@ fn a_path_filter_reports_one_context_alone() {
         "the report names the pattern\n{}",
         ran.out
     );
+    // The count held back is every finding of the unfiltered run that the
+    // report leaves out: the error on d.md and the advisory findings this
+    // repository's own doctrine pages carry.
+    let whole = root.run(&["check", "--no-cache"]);
     assert!(
-        ran.out.contains("held back: 1 finding outside the filter"),
+        whole.out.contains(&format!("{D}:")),
+        "d.md has a finding to hold back\n{}",
+        whole.out
+    );
+    assert_eq!(
+        held_back(&ran),
+        total(&whole) - total(&ran),
         "the report says what it held back\n{}",
         ran.out
     );
 }
 
+/// The count on the `held back:` line of a filtered text report.
+fn held_back(ran: &Ran) -> usize {
+    ran.out
+        .lines()
+        .find_map(|line| line.trim().strip_prefix("held back: "))
+        .and_then(|rest| rest.split(' ').next())
+        .and_then(|count| count.parse().ok())
+        .unwrap_or_else(|| panic!("no held-back line\n{}", ran.out))
+}
+
+/// The run's total, the first line of the shape `<n> findings`.
+fn total(ran: &Ran) -> usize {
+    ran.out
+        .lines()
+        .find_map(|line| {
+            let line = line.trim();
+            line.strip_suffix(" findings")
+                .or_else(|| line.strip_suffix(" finding"))
+                .and_then(|count| count.parse().ok())
+        })
+        .unwrap_or_else(|| panic!("no total\n{}", ran.out))
+}
+
 /// The half that proves the strict exit is narrowed and not only the print:
 /// the one error left is outside the filter, so the strict run passes, and
-/// the report still says it held one finding back. The control is the same
+/// the report counts it among what it held back. The control is the same
 /// corpus with no filter, which fails.
 #[test]
 fn a_path_filter_narrows_the_strict_exit() {
@@ -492,11 +525,9 @@ fn a_path_filter_narrows_the_strict_exit() {
     ]);
     assert_eq!(ran.code, Some(0), "{}{}", ran.out, ran.err);
     assert!(ran.of_rule().is_empty(), "{}", ran.out);
-    assert!(
-        ran.out.contains("held back: 1 finding outside the filter"),
-        "{}",
-        ran.out
-    );
+    assert_eq!(whole.of_rule().len(), 1, "{}", whole.out);
+    assert_eq!(held_back(&ran), total(&whole) - total(&ran), "{}", ran.out);
+    assert!(held_back(&ran) >= 1, "{}", ran.out);
 }
 
 /// The JSON report carries the filter, and its `findings` holds only what the
@@ -515,7 +546,6 @@ fn a_path_filter_is_in_the_json_report() {
     assert_eq!(ran.code, Some(0), "{}{}", ran.out, ran.err);
     let parsed = headwater_yaml::load(&ran.out).expect("the report parses");
     let filter = member(&parsed.value, "filter").expect("the report has a filter");
-    assert_eq!(text(member(filter, "held_back")), "1", "{}", ran.out);
     assert_eq!(
         texts(member(filter, "patterns")),
         ["docs/contexts/billing/**"],
@@ -541,6 +571,16 @@ fn a_path_filter_is_in_the_json_report() {
     assert!(
         member(&whole.value, "filter").is_none(),
         "no filter member without --path"
+    );
+    let every = member(&whole.value, "findings")
+        .and_then(headwater_yaml::Value::as_seq)
+        .expect("findings is a list")
+        .len();
+    assert_eq!(
+        text(member(filter, "held_back")),
+        (every - paths.len()).to_string(),
+        "{}",
+        ran.out
     );
 }
 
@@ -615,42 +655,45 @@ fn a_path_filter_that_matches_nothing_fails_a_strict_run() {
     );
 }
 
+
 /// `--fix --path` writes the patch of a finding the filter admits and leaves
-/// the patch of a finding it holds back unwritten.
+/// the patch of a finding it holds back unwritten. The patch is the house
+/// regime's spelling fix, in two doctrine pages the scratch repository copies:
+/// the regime reaches a review record on no shelf here, and it reaches these.
 #[test]
 fn a_path_filter_narrows_what_fix_writes() {
-    const INSIDE: &str = "docs/contexts/billing/contracts/e.md";
-    const OUTSIDE: &str = "docs/contexts/shipping/contracts/f.md";
+    const INSIDE: &str = "docs/taxonomies/diataxis/doctrine.md";
+    const OUTSIDE: &str = "docs/taxonomies/design-spec/doctrine.md";
+    const BRITISH: &str = "The organisation is the reader.";
+    const AMERICAN: &str = "The organization is the reader.";
     let root = Root::new("path-fix");
-    let british = |slug: &str, context: &str| {
-        record(slug, &format!("context: {context}\n"))
-            .replace("This is a contract.", "This contract names the organisation.")
-    };
-    root.write(INSIDE, &british("e", "billing"));
-    root.write(OUTSIDE, &british("f", "shipping"));
+    let read = |path: &str| std::fs::read_to_string(root.at.join(path)).expect("it reads");
+    for path in [INSIDE, OUTSIDE] {
+        let text = read(path);
+        assert!(!text.contains(BRITISH) && !text.contains(AMERICAN));
+        root.write(path, &format!("{}\n\n{BRITISH}\n", text.trim_end()));
+    }
     let fixed = root.run(&[
         "check",
         "--fix",
         "--no-cache",
         "--path",
-        "docs/contexts/billing/**",
+        "docs/taxonomies/diataxis/**",
     ]);
     assert_eq!(fixed.code, Some(0), "{}{}", fixed.out, fixed.err);
-    let read = |path: &str| std::fs::read_to_string(root.at.join(path)).expect("it reads");
     assert!(
-        read(INSIDE).contains("organization"),
-        "the admitted finding's patch was not written\n{}{}",
-        fixed.out,
+        read(INSIDE).contains(AMERICAN),
+        "the admitted finding's patch was not written\n{}",
         fixed.err
     );
     assert!(
-        read(OUTSIDE).contains("organisation"),
+        read(OUTSIDE).contains(BRITISH),
         "the held-back finding's patch was written\n{}",
         fixed.err
     );
-    // The control: with no filter the same run writes both, so the document
+    // The control: with no filter the same run writes the other, so the page
     // outside the filter had a patch to hold back.
     let all = root.run(&["check", "--fix", "--no-cache"]);
     assert_eq!(all.code, Some(0), "{}{}", all.out, all.err);
-    assert!(read(OUTSIDE).contains("organization"), "{}", all.err);
+    assert!(read(OUTSIDE).contains(AMERICAN), "{}", all.err);
 }

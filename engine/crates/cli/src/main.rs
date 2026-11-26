@@ -309,6 +309,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             format,
             json,
             verbose,
+            path,
         } => check(
             root,
             Asked {
@@ -322,6 +323,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 format: chosen(json, format),
                 change,
                 verbose,
+                filter: path,
             },
         ),
         Verb::Change {
@@ -6371,6 +6373,7 @@ fn fix(
     ctx: &Context,
     change: Option<&headwater_check::change::Unbound>,
     cached: bool,
+    filter: &[String],
 ) -> Result<Fixed, ExitCode> {
     let loaded = opened(root)?;
     let mut cache = loaded.cache(root, cached);
@@ -6391,9 +6394,18 @@ fn fix(
     // A suppressed finding is not in this list, which is the author asking for
     // the text to stand. The runner filters, and a fix reads what a reader
     // reads.
+    //
+    // A `--path` filter keeps the patch of a finding whose own path it admits,
+    // whatever file the patch edits: an inverse relation half or a claim file
+    // can live outside the filter, and the finding that asked for it is what
+    // the reader chose (#2101).
+    let admitted = headwater_check::filter::parse(filter);
     let patches: Vec<headwater_check::Patch> = run
         .findings
         .iter()
+        .filter(|finding| {
+            admitted.is_empty() || headwater_check::filter::admits(&admitted, &finding.path)
+        })
         .filter_map(|finding| finding.patch.clone())
         .collect();
     let composed = headwater_scaffold::fix::compose(root, &patches);
@@ -6502,7 +6514,7 @@ fn refusal_account(refused: &[headwater_scaffold::fix::Refused]) -> String {
 /// [`headwater_adapter::render`] wrote, so it is byte for byte what a terminal
 /// reads on standard output. No cache, on the rule the whole server follows.
 fn fix_over(root: &Path, ctx: &Context, format: Format) -> Result<Written, String> {
-    let fixed = fix(root, ctx, None, false).map_err(|_| {
+    let fixed = fix(root, ctx, None, false, &[]).map_err(|_| {
         "the fixer refused a file, and the account is on the standard error of the process \
          serving this"
             .to_string()
@@ -6556,6 +6568,10 @@ struct Asked {
     /// `--verbose`: the scope of each rule and the read set in the text
     /// report (#1990).
     verbose: bool,
+    /// `--path`: the patterns the printed findings and the strict exit are
+    /// narrowed to, after the run. Empty for no filter. See
+    /// `headwater_check::filter` (#2101).
+    filter: Vec<String>,
 }
 
 fn check(root: &Path, asked: Asked) -> ExitCode {
@@ -6588,6 +6604,7 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
         format,
         change,
         verbose,
+        filter,
     } = asked;
     // The vocabulary is decided before anything is read, so a run that would
     // refuse the flag refuses it before it walks a corpus. `export --format`
@@ -6664,7 +6681,7 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
     let mut unsaid = false;
     let refused = match fixing {
         false => Vec::new(),
-        true => match fix(root, &ctx, unbound.as_ref(), cached) {
+        true => match fix(root, &ctx, unbound.as_ref(), cached, &filter) {
             Ok(fixed) => {
                 unsaid = say(&fixed.account).is_err();
                 fixed.refused
@@ -6707,6 +6724,15 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
     let mut cache = loaded.cache(root, cached);
     headwater_check::phase::mark("cache-read");
     let run = loaded.check(root, &loaded.declared(), &ctx, &mut cache);
+    // Narrowed after the run and before anything reads it: the report, the
+    // census of what the report wrote, and the strict exit below all read the
+    // one narrowed list, so none of them needs a second code path. Every
+    // instance was still evaluated (#2101).
+    let run = headwater_check::filter::narrow(
+        run,
+        &filter,
+        taken.rows.iter().map(|row| row.path.as_str()),
+    );
     // Held until the report is out, and then said on standard error. See
     // `Cache::write` for why a failure here moves no verdict.
     let unwritten = cache.write(root).err();
@@ -6809,7 +6835,15 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
     // `posture: blocking` control discharges, at any severity (#2015). And a
     // strict run by an engine the corpus did not ask for is not a gate the
     // corpus passed.
-    if strict && (run.fails_strict() || engine_unmet) {
+    //
+    // A third: a `--path` pattern that matches no file and no finding. It
+    // would otherwise hold back every finding of a mistyped CI step and pass
+    // for good (#2101).
+    let unmatched_filter = run
+        .filter
+        .as_ref()
+        .is_some_and(|filter| !filter.unmatched.is_empty());
+    if strict && (run.fails_strict() || engine_unmet || unmatched_filter) {
         return Ok(ExitCode::FAILURE);
     }
     Ok(ExitCode::SUCCESS)
