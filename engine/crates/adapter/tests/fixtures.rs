@@ -738,18 +738,45 @@ const SPACED_PATHS: [&str; 5] = [
     "docs/c\\|d.md",
 ];
 
-/// The pieces of one Markdown table row, split as a GFM table splits it: on a
-/// `|` that no backslash comes straight before.
-fn unescaped_cells(row: &str) -> usize {
-    let mut pieces = 1;
+/// The cells of one Markdown table row, split as a GFM table splits it: on a
+/// `|` that no backslash comes straight before. The edges count, so a row of
+/// four columns is six pieces.
+fn gfm_cells(row: &str) -> Vec<String> {
+    let mut cells = vec![String::new()];
     let mut previous = None;
     for char in row.chars() {
-        if char == '|' && previous != Some('\\') {
-            pieces += 1;
+        match char == '|' && previous != Some('\\') {
+            true => cells.push(String::new()),
+            false => cells.last_mut().expect("one cell").push(char),
         }
         previous = Some(char);
     }
-    pieces
+    cells
+}
+
+/// The text of `cell` where CommonMark reads all of it as one code span, and
+/// `None` where it does not: the closing fence is a run of backticks exactly as
+/// long as the opening one, no run of that length is inside, and one space is
+/// taken from each side where both sides hold one. A `\|` is a GFM table's
+/// pipe, read before the span.
+fn one_code_span(cell: &str) -> Option<String> {
+    let cell = cell.trim().replace("\\|", "|");
+    let fence = cell.len() - cell.trim_start_matches('`').len();
+    let closing = cell.len() - cell.trim_end_matches('`').len();
+    if fence == 0 || closing != fence || cell.len() < 2 * fence {
+        return None;
+    }
+    let inner = &cell[fence..cell.len() - fence];
+    let runs = inner
+        .split(|char| char != '`')
+        .any(|run| run.len() == fence);
+    if runs || inner.starts_with('`') || inner.ends_with('`') {
+        return None;
+    }
+    match inner.starts_with(' ') && inner.ends_with(' ') && !inner.trim().is_empty() {
+        true => Some(inner[1..inner.len() - 1].to_string()),
+        false => Some(inner.to_string()),
+    }
 }
 
 /// A legal file name costs no finding in any format, and a run that names one
@@ -769,6 +796,11 @@ fn a_path_with_a_space_a_pipe_or_a_backtick_reaches_every_format_whole() {
     );
     for (finding, path) in ran.run.findings.iter_mut().zip(SPACED_PATHS) {
         finding.path = path.to_string();
+        // A location that closes on a backtick is one the code span has to
+        // pad, and a line number would close it on a digit instead.
+        if path.ends_with('`') {
+            finding.line = 0;
+        }
     }
     let layouts = Format::ALL
         .into_iter()
@@ -794,8 +826,21 @@ fn a_path_with_a_space_a_pipe_or_a_backtick_reaches_every_format_whole() {
                     .filter(|line| line.starts_with("| ") && line.contains("docs/"))
                     .collect();
                 assert!(!rows.is_empty(), "{name} writes no finding row");
+                let mut locations = Vec::new();
                 for row in rows {
-                    assert_eq!(unescaped_cells(row), 6, "{name} splits a row: {row}");
+                    let cells = gfm_cells(row);
+                    assert_eq!(cells.len(), 6, "{name} splits a row: {row}");
+                    let location = one_code_span(&cells[2]);
+                    assert!(location.is_some(), "{name} breaks a code span: {row}");
+                    locations.extend(location);
+                }
+                for path in SPACED_PATHS {
+                    assert!(
+                        locations
+                            .iter()
+                            .any(|one| one == path || one.starts_with(&format!("{path}:"))),
+                        "{name} does not write {path} as one code span: {locations:?}"
+                    );
                 }
             }
             Format::Json | Format::Sarif => {
