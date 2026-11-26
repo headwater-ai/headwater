@@ -285,6 +285,74 @@ pub struct Unbound {
     /// The paths [`Unbound::under`] found outside the corpus root, as the
     /// manifest wrote them, in path order and once each. No rule reads one.
     outside: Vec<String>,
+    /// The digests of every prior version that opened, by path, in path
+    /// order. See [`Digests`].
+    prints: Vec<(String, Digests)>,
+}
+
+/// The two digests of one prior version that opened, kept whether or not its
+/// bytes parsed as a document (#2100).
+///
+/// A source file's prior bytes are no document, so [`Held`] keeps nothing of
+/// them. These two are what is left, and the white-space classification of
+/// [`crate::Run::classes`] reads them beside the current bytes.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Digests {
+    /// Over the raw bytes, by the function the census and
+    /// `headwater_graph::anchors::tree_revision` hash a file with.
+    pub raw: String,
+    /// Over [`normalized`] of the same bytes, by the same function.
+    pub normalized: String,
+}
+
+impl Digests {
+    /// Both digests of `bytes`.
+    pub fn of(bytes: &[u8]) -> Digests {
+        Digests {
+            raw: headwater_hash::digest(bytes),
+            normalized: headwater_hash::digest(&normalized(bytes)),
+        }
+    }
+}
+
+/// The bytes with every white-space-only difference taken out, which is what
+/// two versions share when they differ in white space alone (#2100).
+///
+/// CRLF becomes LF. Trailing spaces and tabs are removed from each line, a
+/// line that is then empty is dropped, and the lines left are joined with LF.
+/// Leading white space is content, because indentation carries meaning in
+/// many languages. It works on bytes and reads no language and no encoding,
+/// so it decodes nothing. A Markdown hard break written as two trailing
+/// spaces is therefore white space here, which is acceptable because a
+/// control spares the class only when an adopter declares it.
+pub fn normalized(bytes: &[u8]) -> Vec<u8> {
+    let mut out = Vec::with_capacity(bytes.len());
+    for line in bytes.split(|byte| *byte == b'\n') {
+        let line = line.strip_suffix(b"\r").unwrap_or(line);
+        let end = line
+            .iter()
+            .rposition(|byte| !matches!(byte, b' ' | b'\t' | b'\r'))
+            .map_or(0, |last| last + 1);
+        if end == 0 {
+            continue;
+        }
+        if !out.is_empty() {
+            out.push(b'\n');
+        }
+        out.extend_from_slice(&line[..end]);
+    }
+    out
+}
+
+/// What a change line said about one touched path, for the classification of
+/// [`crate::Run::classes`] (#2100).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Touched<'a> {
+    /// An `added` line names it.
+    Added,
+    /// A `prior` line names it, with the digests of the prior version, or
+    /// `None` where that version did not open.
+    Prior(Option<&'a Digests>),
 }
 
 /// The documents one change carries, each held against the corpus this run
@@ -314,6 +382,8 @@ pub struct Change {
     /// The paths outside the corpus root, as [`Unbound::under`] found
     /// them. They are reported with the unmatched entries (#2098).
     outside: Vec<String>,
+    /// As [`Unbound`] holds them, after the bind. See [`Change::touched`].
+    prints: Vec<(String, Digests)>,
 }
 
 /// What a run injected, for the report that states its own inputs.
@@ -388,6 +458,7 @@ impl Unbound {
         }
 
         let mut entries: Vec<(String, Held)> = Vec::new();
+        let mut prints: Vec<(String, Digests)> = Vec::new();
         let mut verified: Vec<String> = Vec::new();
         let mut edges: Vec<(String, String)> = Vec::new();
         for (number, line) in lines.enumerate() {
@@ -399,7 +470,11 @@ impl Unbound {
             let (path, held) = match (fields.next(), fields.next(), fields.next(), fields.next()) {
                 (Some("added"), Some(path), None, _) => (path, Held::Added),
                 (Some("prior"), Some(path), Some(source), None) => {
-                    (path, read_prior(source, &open))
+                    let (held, digests) = read_prior(source, &open);
+                    if let Some(digests) = digests {
+                        prints.push((path.to_string(), digests));
+                    }
+                    (path, held)
                 }
                 (Some("verified"), Some(path), None, _) => {
                     if verified.iter().any(|known| known == path) {
@@ -442,6 +517,7 @@ impl Unbound {
         }
 
         entries.sort_by(|(a, _), (b, _)| a.cmp(b));
+        prints.sort_by(|(a, _), (b, _)| a.cmp(b));
         verified.sort();
         edges.sort();
         Ok(Unbound {
@@ -449,6 +525,7 @@ impl Unbound {
             verified,
             edges,
             outside: Vec::new(),
+            prints,
         })
     }
 
@@ -475,6 +552,11 @@ impl Unbound {
         let entries = (self.entries.into_iter())
             .filter_map(|(path, held)| Some((inside(path)?, held)))
             .collect();
+        // Each path here is a path of an entry above, which has already
+        // named it outside where it is, so this list only follows it.
+        let prints = (self.prints.into_iter())
+            .filter_map(|(path, digests)| Some((path.strip_prefix(prefix)?.to_string(), digests)))
+            .collect();
         let verified = self.verified.into_iter().filter_map(&mut inside).collect();
         let edges = (self.edges.into_iter())
             .filter_map(
@@ -491,6 +573,7 @@ impl Unbound {
             verified,
             edges,
             outside,
+            prints,
         }
     }
 
@@ -533,6 +616,7 @@ impl Unbound {
             edges,
             pairs,
             outside: self.outside,
+            prints: self.prints,
             entries: self
                 .entries
                 .into_iter()
@@ -766,6 +850,29 @@ impl Change {
             .collect()
     }
 
+    /// Every path an `added` or a `prior` line names, in path order, with what
+    /// the line said and the digests of the prior version that opened
+    /// (#2100).
+    ///
+    /// It reads every such line, bound to a row or not, because a governed
+    /// source file is no corpus document and binds to nothing. The readers
+    /// above keep their shapes: this is the one that keeps a source file's
+    /// prior digests, which [`Held`] drops with the bytes.
+    pub fn touched(&self) -> impl Iterator<Item = (&str, Touched<'_>)> {
+        self.entries.iter().map(|(path, held)| {
+            let touched = match held {
+                Held::Added | Held::Unmatched { added: true, .. } => Touched::Added,
+                _ => Touched::Prior(
+                    self.prints
+                        .binary_search_by(|(known, _)| known.as_str().cmp(path))
+                        .ok()
+                        .map(|index| &self.prints[index].1),
+                ),
+            };
+            (path.as_str(), touched)
+        })
+    }
+
     /// The prior version of one document, or the reason no check may be handed
     /// one.
     ///
@@ -832,26 +939,40 @@ pub struct Committed<'a> {
 /// [`Change::prior_of`]: no instance exists over one today.
 const UNMATCHED: &str = "the change manifest names this path and this corpus holds no row at it";
 
-/// One prior version, read and parsed, or the reason it was neither.
-fn read_prior(source: &str, open: impl Fn(&Path) -> std::io::Result<Vec<u8>>) -> Held {
+/// One prior version, read and parsed, or the reason it was neither, and the
+/// digests of its bytes wherever they opened.
+///
+/// The digests are taken before the decode and the parse, so a source file,
+/// whose bytes are no document, keeps them too (#2100).
+fn read_prior(
+    source: &str,
+    open: impl Fn(&Path) -> std::io::Result<Vec<u8>>,
+) -> (Held, Option<Digests>) {
     let bytes = match open(Path::new(source)) {
         Ok(bytes) => bytes,
         Err(error) => {
-            return Held::Unreadable {
-                why: format!("the prior version at `{source}` did not open: {error}"),
-            }
+            return (
+                Held::Unreadable {
+                    why: format!("the prior version at `{source}` did not open: {error}"),
+                },
+                None,
+            )
         }
     };
     // The digest is over the bytes, which is what the census hashes a document
     // with. So the prior version and the current one are hashed by one function
     // and their digests are comparable.
-    let digest = headwater_hash::digest(&bytes);
+    let digests = Digests::of(&bytes);
+    let digest = digests.raw.clone();
     let Ok(text) = String::from_utf8(bytes) else {
-        return Held::Unreadable {
-            why: format!("the prior version at `{source}` is not UTF-8"),
-        };
+        return (
+            Held::Unreadable {
+                why: format!("the prior version at `{source}` is not UTF-8"),
+            },
+            Some(digests),
+        );
     };
-    match headwater_doc::parse(&text) {
+    let held = match headwater_doc::parse(&text) {
         Ok(document) => Held::Committed { digest, document },
         Err(errors) => Held::Unreadable {
             why: format!(
@@ -859,7 +980,8 @@ fn read_prior(source: &str, open: impl Fn(&Path) -> std::io::Result<Vec<u8>>) ->
                 errors.len()
             ),
         },
-    }
+    };
+    (held, Some(digests))
 }
 
 #[cfg(test)]
@@ -1207,5 +1329,69 @@ mod tests {
         // create one over, and the answer is the reason rather than a state.
         assert!(bound.prior_of("docs/a.md").is_err());
         assert_eq!(bound.prior_of("docs/b.md"), Ok(Prior::Added));
+    }
+
+    /// Line endings, trailing spaces and tabs and blank lines normalize away,
+    /// and indentation and every other byte are content. It reads bytes, so a
+    /// file that is not UTF-8 normalizes too (#2100).
+    #[test]
+    fn white_space_normalizes_away_and_indentation_does_not() {
+        let base = normalized(b"fn a() {\n    b();\n}\n");
+        assert_eq!(base, b"fn a() {\n    b();\n}".to_vec());
+        assert_eq!(normalized(b"fn a() {  \r\n    b();\t\r\n\r\n\n}\r\n"), base);
+        assert_eq!(normalized(b"\n\nfn a() {\n    b();\n}"), base);
+        assert_ne!(normalized(b"fn a() {\n  b();\n}\n"), base);
+        assert_ne!(normalized(b"fn a() {\n    c();\n}\n"), base);
+        assert_eq!(normalized(b"\xff\xfe \r\n"), b"\xff\xfe".to_vec());
+    }
+
+    /// Bytes that are not UTF-8 are no document, and they keep both digests
+    /// all the same, because the digests are taken before the decode (#2100).
+    #[test]
+    fn a_prior_version_that_is_not_utf8_keeps_its_digests() {
+        let bytes = b"\xff\xfe echo  \r\n".to_vec();
+        let given = bytes.clone();
+        let change = Unbound::read(
+            &format!("{FORMAT}\nprior\ttools/a.bin\tprior/a.bin\n"),
+            move |_| Ok(given.clone()),
+        )
+        .expect("a change")
+        .bind(|_| false);
+        let touched: Vec<(&str, Touched<'_>)> = change.touched().collect();
+        assert_eq!(
+            touched,
+            vec![("tools/a.bin", Touched::Prior(Some(&Digests::of(&bytes))))]
+        );
+    }
+
+    /// A prior version that opened keeps both digests whether or not it
+    /// parsed, a source file bound to no row included, and an `added` line
+    /// and a prior that did not open carry none (#2100).
+    #[test]
+    fn a_source_file_keeps_its_prior_digests_through_the_bind() {
+        let manifest = format!(
+            "{FORMAT}\nprior\ttools/a.sh\tprior/a.sh\nadded\ttools/b.sh\n\
+             prior\ttools/c.sh\tprior/missing.sh\nprior\tdocs/a.md\tprior/a.md\n"
+        );
+        let change = Unbound::read(
+            &manifest,
+            tree(&[("prior/a.sh", "echo a  \r\n"), ("prior/a.md", ASSERTED)]),
+        )
+        .expect("a change")
+        .bind(|path| path == "docs/a.md");
+        let touched: Vec<(&str, Touched<'_>)> = change.touched().collect();
+        let expected = Digests::of(b"echo a  \r\n");
+        assert_eq!(expected.raw, headwater_hash::digest(b"echo a  \r\n"));
+        assert_eq!(expected.normalized, headwater_hash::digest(b"echo a"));
+        let document = Digests::of(ASSERTED.as_bytes());
+        assert_eq!(
+            touched,
+            vec![
+                ("docs/a.md", Touched::Prior(Some(&document))),
+                ("tools/a.sh", Touched::Prior(Some(&expected))),
+                ("tools/b.sh", Touched::Added),
+                ("tools/c.sh", Touched::Prior(None)),
+            ]
+        );
     }
 }

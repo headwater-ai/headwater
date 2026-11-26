@@ -106,6 +106,17 @@ use std::collections::HashSet;
 /// consumer could not tell from it why a strict run over a corpus with no
 /// error failed (#2015).
 ///
+/// `1.8` added two members to a live `relation.target.suspect` finding of a
+/// change-scoped run whose edge is a `source-tree` anchor. `touched` holds
+/// `matched`, the count of entries the edge's patterns match, `files`, each
+/// manifest path the edge reaches with its `class` (`added`, `removed`,
+/// `white_space` or `content`), and `white_space`, true where every touched
+/// file is white space and the prior bytes rebuild the recorded stamp.
+/// `spared_by` names the blocking control that leaves the finding out of its
+/// gate because it declares `spares: [white_space]`. A `1.7` document carried
+/// neither, so a consumer could not tell a white-space edit from a change of
+/// content (#2100, #2028).
+///
 /// Two of the shapes here have a second reader: [`change`] and [`coverage`] are
 /// what the SARIF property bag carries, so this constant versions them for that
 /// artifact too and [`crate::sarif`] writes it there.
@@ -113,7 +124,7 @@ use std::collections::HashSet;
 /// `docs/interfaces/headwater-check.md` states this history for a reader who
 /// holds no clone, and `tests/interface_page.rs` fails when this constant
 /// names a version the page does not (#1451). Raise both together.
-pub const VERSION: &str = "1.7";
+pub const VERSION: &str = "1.8";
 
 /// What a run carries that these bytes do not write.
 ///
@@ -490,6 +501,37 @@ fn finding(entry: &Reported<'_>) -> Json {
     // these bytes do not depend on the flag.
     if let Some(control) = entry.blocked_by {
         members.push(("blocked_by", Json::string(control)));
+    }
+    // The blocking control that leaves this finding out of its gate, because
+    // the change touched white space alone (#2100). See [`VERSION`] at `1.8`.
+    if let Some(control) = entry.spared_by {
+        members.push(("spared_by", Json::string(control)));
+    }
+    // What the change did to each file the edge reaches, and the count they
+    // are read against (#2100, #2028). See [`VERSION`] at `1.8`.
+    if let Some(touched) = entry.touched {
+        members.push((
+            "touched",
+            Json::object([
+                ("matched", number(touched.matched)),
+                ("white_space", Json::Bool(touched.white_space)),
+                (
+                    "files",
+                    Json::Array(
+                        touched
+                            .touched
+                            .iter()
+                            .map(|(path, class)| {
+                                Json::object([
+                                    ("path", Json::string(path.clone())),
+                                    ("class", Json::string(class.name())),
+                                ])
+                            })
+                            .collect(),
+                    ),
+                ),
+            ]),
+        ));
     }
     if let Some(task) = entry.task {
         members.push((

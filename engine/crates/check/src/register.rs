@@ -244,7 +244,41 @@ pub struct Control {
     /// What spec 4 asks to be "recorded with the control", and `None` where a
     /// control records nothing.
     pub promotion: Option<Promotion>,
+    /// The classes of change whose finding this control does not block, and
+    /// empty where it spares none. Spec 12 gives the gate to the control, so
+    /// an exemption from the gate is the control's too (#2100).
+    pub spares: Vec<Spare>,
     pub span: Span,
+}
+
+/// A class of change that a blocking control can leave out of its gate: a
+/// closed set of one (#2100).
+///
+/// A value outside the set is refused rather than ignored, for the reason a
+/// posture outside its set is: a typo would otherwise leave the gate as it was
+/// and say nothing.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Spare {
+    /// Every file the change touched differs from its prior version only in
+    /// line endings, trailing white space and blank lines. See
+    /// [`crate::change::normalized`].
+    WhiteSpace,
+}
+
+impl Spare {
+    /// The value as the taxonomy writes it.
+    pub fn name(self) -> &'static str {
+        match self {
+            Spare::WhiteSpace => "white_space",
+        }
+    }
+
+    fn read(text: &str) -> Option<Spare> {
+        match text {
+            "white_space" => Some(Spare::WhiteSpace),
+            _ => None,
+        }
+    }
 }
 
 /// Whether a finding of a control blocks a gate: spec 12's sense of the word,
@@ -626,6 +660,8 @@ pub struct Health {
     pub acts: Option<String>,
     pub discharges: Vec<String>,
     pub promotion: Option<Promotion>,
+    /// As [`Control::spares`]. [`crate::Run::blocked_by`] reads it.
+    pub spares: Vec<Spare>,
 }
 
 /// The register as spec 4 asks for it: coverage by obligation, the disposition
@@ -715,6 +751,7 @@ impl Projection {
                 acts: control.acts.clone(),
                 discharges: control.discharges.clone(),
                 promotion: control.promotion.clone(),
+                spares: control.spares.clone(),
             })
             .collect();
         let unbound = crate::RULES
@@ -1440,6 +1477,29 @@ fn read_control(id: &str, value: &Value, span: Span) -> Result<Control, Declarat
             span,
         })?),
     };
+    let mut spares = Vec::new();
+    for item in map
+        .get("spares")
+        .and_then(|node| node.value.as_seq())
+        .into_iter()
+        .flatten()
+    {
+        let text = item
+            .value
+            .as_scalar()
+            .map(|scalar| scalar.text.clone())
+            .unwrap_or_default();
+        let spare = Spare::read(&text).ok_or_else(|| DeclarationError {
+            message: format!(
+                "control `{id}` spares `{text}`, and the one class a control can spare is \
+                 `white_space`"
+            ),
+            span,
+        })?;
+        if !spares.contains(&spare) {
+            spares.push(spare);
+        }
+    }
     Ok(Control {
         id: id.to_string(),
         mechanism,
@@ -1447,6 +1507,7 @@ fn read_control(id: &str, value: &Value, span: Span) -> Result<Control, Declarat
         posture,
         acts: scalar(map, "acts"),
         promotion: read_promotion(id, map)?,
+        spares,
         span,
     })
 }
@@ -1985,6 +2046,27 @@ controls:
                 && refused.contains("`blockng`")
                 && refused.contains("`advisory`")
                 && refused.contains("`blocking`"),
+            "{refused}"
+        );
+    }
+
+    /// A control spares one class, `white_space`, an absent member spares
+    /// nothing, and any other value is refused with the control and the
+    /// admitted value named (#2100).
+    #[test]
+    fn a_control_spares_white_space_and_anything_else_is_refused() {
+        let register = register(
+            "controls:\n  CT-1:\n    mechanism: check:r\n    posture: blocking\n    \
+             spares: [white_space]\n  CT-2:\n    mechanism: check:r\n",
+        );
+        assert_eq!(register.controls[0].spares, vec![Spare::WhiteSpace]);
+        assert!(register.controls[1].spares.is_empty());
+        let refused =
+            refusal("controls:\n  CT-1:\n    mechanism: check:r\n    spares: [whitespace]\n");
+        assert!(
+            refused.contains("`CT-1`")
+                && refused.contains("`whitespace`")
+                && refused.contains("`white_space`"),
             "{refused}"
         );
     }

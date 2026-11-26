@@ -833,6 +833,14 @@ definitions:
       # finding blocks a gate. A new control starts advisory and evidence
       # promotes it.
       posture: {enum: [advisory, blocking], required: true}
+      # Spec 12 gives the gate to the control, so an exemption from the gate is
+      # the control's too. `white_space` leaves out of a blocking gate a
+      # finding whose change touched only line endings, trailing white space
+      # and blank lines, where the prior bytes rebuild the recorded stamp
+      # (#2100). Optional, because a control that spares nothing blocks as its
+      # posture says. A package never declares it on a control it ships: an
+      # adopter adds it with an overlay `add`, which requires the key absent.
+      spares: {seq: {enum: [white_space]}}
       # `acts` is spec 4's other vocabulary: the four control classes of its
       # opening table, which say *when* a control acts rather than how loudly.
       # It is required because spec 4 gives every control one of the four, and

@@ -347,6 +347,13 @@ pub struct Reported<'a> {
     /// strict run, from [`Run::blocked_by`]. `None` for an escaped finding,
     /// which blocks nothing (#2015).
     pub blocked_by: Option<&'a str>,
+    /// The blocking control that leaves this live finding out of its gate,
+    /// from [`Run::spared_by`]. `None` for an escaped finding (#2100).
+    pub spared_by: Option<&'a str>,
+    /// What the change did to the files this finding's edge reaches, from
+    /// [`Run::class_of`], for a live suspect finding of a change-scoped run
+    /// (#2100, #2028).
+    pub touched: Option<&'a headwater_check::spare::Classified>,
 }
 
 impl Reported<'_> {
@@ -372,6 +379,8 @@ pub fn reported(run: &Run) -> Vec<Reported<'_>> {
             task: None,
             directive: None,
             blocked_by: run.blocked_by(finding),
+            spared_by: run.spared_by(finding),
+            touched: run.class_of(finding),
         });
     }
     for finding in &run.adoption.pending {
@@ -385,6 +394,8 @@ pub fn reported(run: &Run) -> Vec<Reported<'_>> {
             }),
             directive: None,
             blocked_by: None,
+            spared_by: None,
+            touched: None,
         });
     }
     for (finding, directive) in run.suppressions.hidden_findings() {
@@ -394,6 +405,8 @@ pub fn reported(run: &Run) -> Vec<Reported<'_>> {
             task: None,
             directive: Some(directive),
             blocked_by: None,
+            spared_by: None,
+            touched: None,
         });
     }
     all.sort_by(|left, right| left.finding.order().cmp(&right.finding.order()));

@@ -198,6 +198,7 @@ pub mod sections;
 pub mod self_target;
 pub mod shape;
 pub mod source_form;
+pub mod spare;
 pub mod state_not_set_by_edge;
 pub mod state_set_after_initial;
 pub mod state_set_twice;
@@ -450,6 +451,12 @@ pub struct Run {
     /// formats carry nothing for it: `taxonomy validate` prints the same line,
     /// and [`scope_unmatched`] reports no finding there (#2099).
     pub scope_notice: Option<String>,
+    /// What the change did to the files each suspect `source-tree` edge
+    /// reaches, one entry per such finding, in finding order, and empty for a
+    /// run with no change. A projection read after the rules, as
+    /// [`Run::blocked_by`] is, so no finding and no cache key carries it
+    /// (#2100). See [`spare`].
+    pub classes: Vec<spare::Classified>,
     /// What this run did with its cache. Deliberately outside [`Run::render`]:
     /// see [`cache`] for why a hit count is not part of a verdict.
     pub cache: cache::Report,
@@ -1484,6 +1491,7 @@ pub fn run(
             .count(),
     });
 
+    let classes = spare::classify(&findings, graph, ctx.change(), ctx.base());
     let run = Run {
         instances,
         coverage,
@@ -1503,6 +1511,7 @@ pub fn run(
         scope_notice: declared
             .scope_coverage
             .and_then(headwater_graph::scope::Coverage::notice),
+        classes,
         cache: cache.report(),
     };
     phase::mark("run.findings");
@@ -1673,15 +1682,52 @@ impl Run {
     /// or cache key moves with it (owner ruling on #2015, 2026-11-22). Where
     /// more than one blocking control names the rule, the first in declaration
     /// order is the one a report names.
+    ///
+    /// A blocking control that declares `spares: [white_space]` passes over a
+    /// finding whose change touched white space alone and whose prior bytes
+    /// rebuild the recorded stamp, and the next blocking control that names
+    /// the rule is read instead. The finding stays live at its own severity
+    /// and is reported (#2100). See [`Run::spared_by`].
     pub fn blocked_by(&self, finding: &Finding) -> Option<&str> {
-        self.register
-            .controls
-            .iter()
-            .find(|control| {
-                control.posture == Some(register::Posture::Blocking)
-                    && matches!(&control.mechanism, register::Mechanism::Rule(rule) if rule == finding.rule)
-            })
+        let white_space = self.white_space(finding);
+        self.blocking_controls(finding.rule)
+            .find(|control| !(white_space && control.spares.contains(&register::Spare::WhiteSpace)))
             .map(|control| control.id.as_str())
+    }
+
+    /// The blocking control that would have stopped a strict run on `finding`
+    /// and spares it, where no other blocking control names its rule, and
+    /// `None` otherwise (#2100).
+    pub fn spared_by(&self, finding: &Finding) -> Option<&str> {
+        match self.blocked_by(finding) {
+            Some(_) => None,
+            None => self
+                .blocking_controls(finding.rule)
+                .next()
+                .map(|control| control.id.as_str()),
+        }
+    }
+
+    /// What the change did to the files `finding`'s edge reaches, where it is
+    /// a suspect finding on a `source-tree` edge of a change-scoped run.
+    pub fn class_of(&self, finding: &Finding) -> Option<&spare::Classified> {
+        self.classes
+            .iter()
+            .find(|classified| classified.of(finding))
+    }
+
+    fn white_space(&self, finding: &Finding) -> bool {
+        self.class_of(finding)
+            .is_some_and(|classified| classified.white_space)
+    }
+
+    /// Every `posture: blocking` control that discharges `rule`, in
+    /// declaration order.
+    fn blocking_controls(&self, rule: &'static str) -> impl Iterator<Item = &register::Health> {
+        self.register.controls.iter().filter(move |control| {
+            control.posture == Some(register::Posture::Blocking)
+                && matches!(&control.mechanism, register::Mechanism::Rule(named) if named == rule)
+        })
     }
 
     /// Every live finding a blocking control discharges, with that control.
