@@ -1,9 +1,9 @@
 ---
 id: HW-OBL-0168
-status: current
-status_since: 2026-09-06
+status: discharged
+status_since: 2026-11-27
 summary: "The voice rule reports zero because not one of its forty patterns occurs here, and that reads the same as a clean corpus."
-last_verified: 2026-09-27
+last_verified: 2026-11-27
 title: "A saturated pattern set and a clean corpus are the same zero, and no report separates them"
 waiting_on: build
 provenance:
@@ -45,3 +45,7 @@ This reaches past voice. `language.retired_term.used` reads a list from the taxo
 ## Discharge
 
 A coverage line that names, for each rule with a pattern set, the count of patterns that matched and the count declared. Nothing here asks for a verdict on that ratio. A set with dead entries is legitimate, and a set with none alive is the finding.
+
+**[#1492](https://github.com/headwater-ai/headwater/issues/1492) met that condition, and this record is discharged.** The text report of `headwater check` now prints one line for each pattern set. The line gives the entries of the set that produced a finding in the run, and the entries that the set declares. A set where no entry produced a finding is named as a zero that does not show a clean corpus. [The contract of the verb](../interfaces/headwater-check.md#description) states what counts. A finding counts before the adoption payload and the directives remove it. The voice rule names only the first pattern of a category in a sentence. So the line counts the patterns that produced a finding, and not the patterns that occur.
+
+The reading over this corpus on 2026-11-27, with engine 0.8.1, is this. `future_intent` has 1 of 14 patterns that produced a finding. `change_narration` has 7 of 23. `phased_rollout` has 0 of 13, and the report names it. `ste_house` has 0 of 18 retired terms, and the report names it too. The two cases of `engine/crates/cli/tests/saturation.rs` hold the line. The second case suppresses its own finding, and the count still holds the pattern.
