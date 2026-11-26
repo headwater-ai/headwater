@@ -24,9 +24,9 @@
 mod chain;
 
 use chain::{declaration, import, publish, read, tree, Scratch, PAYLOAD};
+use headwater_check::change::Unbound;
 use headwater_check::finding::Severity;
 use headwater_check::paint::ColorMode;
-use headwater_check::change::Unbound;
 use headwater_check::{Cache, Context, Date, Declared, Detail, Register, Run};
 use headwater_import::Declaration;
 
