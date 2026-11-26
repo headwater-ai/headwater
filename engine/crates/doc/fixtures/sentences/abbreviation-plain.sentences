@@ -1,2 +1,9 @@
 1:1 7w | A shelf collects them, e.g. a decision.
 3:1 9w | It names a field, i.e. the facet, and stops.
+5:1 10w | A kind names a shelf, e.g. Decisions, and a scheme.
+7:1 8w | It names one field, i.e. Status, and stops.
+9:1 10w | Read the loss set, cf. Spec 6, before you start.
+11:1 8w | It compares Rust vs. Python on one task.
+13:1 7w | Smith et al. Wrote the first survey.
+15:1 6w | It runs in approx. 52 seconds.
+17:1 5w | Read item no. 5 first.
