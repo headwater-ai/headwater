@@ -2,7 +2,7 @@
 id: HW-SPEC-taxonomy-model
 status: current
 status_since: 2026-08-01
-last_verified: 2026-08-12
+last_verified: 2026-11-26
 summary: The central design, which declares kinds, facets, relations, regimes, the immutable core, and customization by overlay.
 doc_type: design_spec
 sequence: 2
@@ -176,10 +176,9 @@ anchors:                               # non-document node types relations may t
 
 shelves:
   decisions:
-    path: docs/decisions/**
+    path: docs/decisions/{domain}/**   # the folder under decisions/ is the domain
     homogeneous: true
     kind: decision
-    group_by: domain                   # sub-directory is a facet value
   specifications:
     path: docs/specifications/**
     homogeneous: true
@@ -651,7 +650,7 @@ The target is declared for two reasons. One is interoperability with the knowled
 
 Given a document path and its front matter, the engine resolves a kind in four steps:
 
-1. It matches the path against shelf patterns — the most specific wins, and ties are a schema-validation error, not a runtime coin-flip.
+1. It matches the path against shelf patterns — the most specific wins, and ties are a schema-validation error, not a runtime coin-flip. A whole segment written `{name}` matches any one folder and binds the facet `name` to it. It ranks as a wildcard segment with no literal character, so `docs/decisions/{domain}/**` and `docs/decisions/*/**` tie, and validation refuses the pair.
 2. If the shelf is homogeneous, it takes the declared kind.
 3. If the shelf is heterogeneous, it reads the discriminator facet. A missing or unrecognized value is a finding whose severity the shelf declares. The rule `shelf.discriminator.unresolved` reports it. No shelf schema has a field for the severity yet, so the engine reports the finding as an error.
 4. It applies any path-pattern refinement that the shelf declares (for instance `functional.md` and `technical.md` resolve to different kinds within one component directory).
@@ -667,6 +666,8 @@ This produces one rule with real teeth: **a homogeneous shelf forbids the discri
 Heterogeneous shelves carry the inverse risk, named here so that audits watch it. The discriminator is self-asserted, and kind determines every obligation downstream — sections, facets, voice, relations, expectations. An author who types `doc_type: reference` instead of `standard` buys out of the standard's entire contract. No check can cross-examine prose genre unless it crosses the semantic boundary that [spec 1](01-conceptual-model.md) draws.
 
 The mitigation is structural, not detective. Kinds that share a shelf should not diverge so far in obligation cost that arbitrage pays. `taxonomy audit` reports the discriminator distribution and its drift, so a shelf that quietly migrates toward its cheapest kind is visible.
+
+**A bound facet is the one stated exception to this rule.** A shelf path can bind a facet to a folder, as `docs/decisions/{domain}/**` does above. A document on that shelf states the same value in its front matter, and the `shelf.bound_facet.disagrees` check compares the two. A value that differs from the folder is an error, and a missing value is the same error. Where the kind already requires the facet, `facet.required.missing` reports the missing value instead. The engine does not fill the value in from the folder. The reason is that `check` is not the only reader of a facet: `query`, `generate` and the JSON export read the front matter. A value that only `check` derived from the path would give those readers a different answer to the same question. The owner ruled this on #2101. The missing-value half retires when every facet reader derives the bound value from the path. A placeholder inside a segment, such as `ctx-{context}`, is not a binding, and validation refuses it. Validation also refuses a facet bound twice in one path, and a `mutable` facet in any shelf path, as the Permanence canon below states.
 
 ## Facet acceptance tests
 
