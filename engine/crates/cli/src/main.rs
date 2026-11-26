@@ -3993,13 +3993,7 @@ fn route(root: &Path, task: &str, budget: Option<usize>, json: bool) -> ExitCode
 /// sit nearest the task, with the three digests that make one run comparable
 /// to another. Unlike `route`, a model it cannot load is a refusal: there is no
 /// considered silence to report, only a run that did not happen.
-fn neighbors(
-    root: &Path,
-    task: &str,
-    model: Option<PathBuf>,
-    top: Option<usize>,
-    json: bool,
-) -> ExitCode {
+fn neighbors(root: &Path, task: &str, model: Option<PathBuf>, top: usize, json: bool) -> ExitCode {
     let loaded = match opened(root) {
         Ok(loaded) => loaded,
         Err(code) => return code,
@@ -4013,7 +4007,6 @@ fn neighbors(
         Ok(embedder) => embedder,
         Err(message) => return fail(&message),
     };
-    let top = top.unwrap_or(10);
 
     let surface = loaded.surface();
     let mut cache = headwater_embed::Cache::open(root, embedder.digest());

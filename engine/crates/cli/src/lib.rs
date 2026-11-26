@@ -693,9 +693,10 @@ pub enum Verb {
             long,
             value_name = "n",
             value_parser = a_budget,
-            help = "how many documents it prints, nearest first. Ten by default"
+            default_value_t = 10,
+            help = "how many documents it prints, nearest first"
         )]
-        top: Option<usize>,
+        top: usize,
         #[arg(long, help = JSON_ALONE)]
         json: bool,
     },
@@ -2090,5 +2091,23 @@ mod tests {
             let cli = Cli::try_parse_from(arguments).expect("`--root` is global");
             assert_eq!(cli.root.as_deref(), Some(std::path::Path::new("/tmp")));
         }
+    }
+
+    /// The `--top` default of `neighbors` lives in the parser alone
+    /// (HW-OBL-0132). `main.rs` takes the parsed `usize` and states no default,
+    /// and the help prints the parser's own value, so neither can drift from it.
+    #[test]
+    fn the_neighbors_top_default_is_the_parser_s_and_the_help_prints_it() {
+        let cli = Cli::try_parse_from(["headwater", "neighbors", "x"]).expect("it parses");
+        match cli.verb {
+            Some(super::Verb::Neighbors { top, .. }) => assert_eq!(top, 10),
+            other => panic!("`neighbors x` parsed as {other:?}"),
+        }
+        let help = Cli::command()
+            .find_subcommand_mut("neighbors")
+            .expect("the verb is declared")
+            .render_long_help()
+            .to_string();
+        assert!(help.contains("[default: 10]"), "{help}");
     }
 }
