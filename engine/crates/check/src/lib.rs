@@ -1711,7 +1711,9 @@ impl Run {
     /// What the change did to the files `finding`'s edge reaches, where it is
     /// a suspect finding on a `source-tree` edge of a change-scoped run.
     pub fn class_of(&self, finding: &Finding) -> Option<&spare::Classified> {
-        self.classes.iter().find(|classified| classified.of(finding))
+        self.classes
+            .iter()
+            .find(|classified| classified.of(finding))
     }
 
     fn white_space(&self, finding: &Finding) -> bool {

@@ -32,7 +32,12 @@ const SPARE: &str = "  controls.CT-REL-6.spares: [white_space]\n";
 /// The stub root with one decision that governs `target`, the files `tools`
 /// under `tools/`, CT-REL-6 promoted, and `spare` added to the overlay's
 /// `add` block. The edge is stamped before the root is handed back.
-fn root(label: &str, target: &'static str, tools: &'static [(&str, &str)], spare: &'static str) -> Root {
+fn root(
+    label: &str,
+    target: &'static str,
+    tools: &'static [(&str, &str)],
+    spare: &'static str,
+) -> Root {
     let root = Root::shaped(label, move |at| {
         std::fs::write(
             at.join(DOCUMENT),
@@ -65,7 +70,10 @@ fn root(label: &str, target: &'static str, tools: &'static [(&str, &str)], spare
     let stamped = root.run(&["check", "--fix", "--baseline"]);
     assert_eq!(stamped.code, Some(0), "{stamped:?}");
     let decision = std::fs::read_to_string(root.at.join(DOCUMENT)).expect("the decision reads");
-    assert!(decision.contains("verified_revision: sha256:"), "{decision}");
+    assert!(
+        decision.contains("verified_revision: sha256:"),
+        "{decision}"
+    );
     root
 }
 
@@ -134,12 +142,26 @@ fn suspect_count(out: &str) -> usize {
 /// both formats classify the file `white_space` and name the control.
 #[test]
 fn a_white_space_change_passes_a_blocking_control_that_spares_it() {
-    let root = root("ws-spared", "tools/a.sh", &[("a.sh", "echo a\nexit 0\n")], SPARE);
-    let manifest = change(&root, "a.sh", "echo a\nexit 0\n", "echo a  \r\n\r\nexit 0\t\r\n");
+    let root = root(
+        "ws-spared",
+        "tools/a.sh",
+        &[("a.sh", "echo a\nexit 0\n")],
+        SPARE,
+    );
+    let manifest = change(
+        &root,
+        "a.sh",
+        "echo a\nexit 0\n",
+        "echo a  \r\n\r\nexit 0\t\r\n",
+    );
     let checked = root.run(&["check", "--strict", "--change", &manifest]);
     assert_eq!(checked.code, Some(0), "{}{}", checked.out, checked.err);
     assert_eq!(suspect_count(&checked.out), 1, "{}", checked.out);
-    assert!(!checked.out.contains("blocked by CT-REL-6"), "{}", checked.out);
+    assert!(
+        !checked.out.contains("blocked by CT-REL-6"),
+        "{}",
+        checked.out
+    );
     let block = touched(&checked.out);
     assert!(
         block.contains(DOCUMENT)
@@ -149,8 +171,14 @@ fn a_white_space_change_passes_a_blocking_control_that_spares_it() {
         "{}",
         checked.out
     );
-    assert_eq!(json_touched(&root, &manifest, &["touched", "files", "0", "class"]), "white_space");
-    assert_eq!(json_touched(&root, &manifest, &["touched", "white_space"]), "true");
+    assert_eq!(
+        json_touched(&root, &manifest, &["touched", "files", "0", "class"]),
+        "white_space"
+    );
+    assert_eq!(
+        json_touched(&root, &manifest, &["touched", "white_space"]),
+        "true"
+    );
     assert_eq!(json_touched(&root, &manifest, &["spared_by"]), "CT-REL-6");
 }
 
@@ -162,14 +190,21 @@ fn a_content_change_still_fails_a_blocking_control_that_spares_white_space() {
     let manifest = change(&root, "a.sh", "echo a\n", "echo b\n");
     let checked = root.run(&["check", "--strict", "--change", &manifest]);
     assert_eq!(checked.code, Some(1), "{}{}", checked.out, checked.err);
-    assert!(checked.out.contains("blocked by CT-REL-6"), "{}", checked.out);
+    assert!(
+        checked.out.contains("blocked by CT-REL-6"),
+        "{}",
+        checked.out
+    );
     let block = touched(&checked.out);
     assert!(
         block.contains("tools/a.sh content") && !block.contains("spared by"),
         "{}",
         checked.out
     );
-    assert_eq!(json_touched(&root, &manifest, &["touched", "files", "0", "class"]), "content");
+    assert_eq!(
+        json_touched(&root, &manifest, &["touched", "files", "0", "class"]),
+        "content"
+    );
     assert_eq!(json_touched(&root, &manifest, &["blocked_by"]), "CT-REL-6");
 }
 
@@ -191,14 +226,21 @@ fn a_white_space_change_after_an_unread_content_change_still_fails() {
         checked.out,
         checked.err
     );
-    assert!(checked.out.contains("blocked by CT-REL-6"), "{}", checked.out);
+    assert!(
+        checked.out.contains("blocked by CT-REL-6"),
+        "{}",
+        checked.out
+    );
     let block = touched(&checked.out);
     assert!(
         block.contains("tools/a.sh white_space") && !block.contains("spared by"),
         "{}",
         checked.out
     );
-    assert_eq!(json_touched(&root, &manifest, &["touched", "white_space"]), "false");
+    assert_eq!(
+        json_touched(&root, &manifest, &["touched", "white_space"]),
+        "false"
+    );
 }
 
 /// Arm 4: arm 1 with no `spares` declared. The default is unchanged, so the
@@ -209,8 +251,16 @@ fn a_white_space_change_fails_a_blocking_control_that_spares_nothing() {
     let manifest = change(&root, "a.sh", "echo a\n", "echo a  \r\n");
     let checked = root.run(&["check", "--strict", "--change", &manifest]);
     assert_eq!(checked.code, Some(1), "{}{}", checked.out, checked.err);
-    assert!(checked.out.contains("blocked by CT-REL-6"), "{}", checked.out);
-    assert!(touched(&checked.out).contains("tools/a.sh white_space"), "{}", checked.out);
+    assert!(
+        checked.out.contains("blocked by CT-REL-6"),
+        "{}",
+        checked.out
+    );
+    assert!(
+        touched(&checked.out).contains("tools/a.sh white_space"),
+        "{}",
+        checked.out
+    );
 }
 
 /// Arm 5: a glob edge over two files, one touched white-space-only. The run
@@ -236,7 +286,10 @@ fn a_glob_edge_reports_its_touched_files_against_the_matched_set() {
         checked.out
     );
     assert_eq!(json_touched(&root, &manifest, &["touched", "matched"]), "2");
-    assert_eq!(json_touched(&root, &manifest, &["touched", "files", "0", "path"]), "tools/a.sh");
+    assert_eq!(
+        json_touched(&root, &manifest, &["touched", "files", "0", "path"]),
+        "tools/a.sh"
+    );
 }
 
 /// The overlay with `entries`, each a line indented two spaces, in its

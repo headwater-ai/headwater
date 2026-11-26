@@ -2029,7 +2029,8 @@ mod tests {
         );
         let same = headwater_hash::digest(b"echo a\n");
         assert_eq!(
-            tree_revision_given(&dir, &matched, &|path| (path == "a.sh").then(|| same.clone())),
+            tree_revision_given(&dir, &matched, &|path| (path == "a.sh")
+                .then(|| same.clone())),
             Some(read.clone())
         );
         let before = headwater_hash::digest(b"echo A\n");

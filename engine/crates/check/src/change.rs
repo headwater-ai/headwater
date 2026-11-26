@@ -555,9 +555,7 @@ impl Unbound {
         // Each path here is a path of an entry above, which has already
         // named it outside where it is, so this list only follows it.
         let prints = (self.prints.into_iter())
-            .filter_map(|(path, digests)| {
-                Some((path.strip_prefix(prefix)?.to_string(), digests))
-            })
+            .filter_map(|(path, digests)| Some((path.strip_prefix(prefix)?.to_string(), digests)))
             .collect();
         let verified = self.verified.into_iter().filter_map(&mut inside).collect();
         let edges = (self.edges.into_iter())

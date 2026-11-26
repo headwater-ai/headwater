@@ -133,7 +133,7 @@ A validator check enforces this: an obligation with no cited defect class is a f
 
 ## Controls are data
 
-A control declares what discharges an obligation, when it runs, what posture it has, and which of the four classes above it acts in.
+A control declares what discharges an obligation, when it runs, what posture it has, and which of the four classes above it acts in. A blocking control can also declare `spares`, the classes of change that it leaves out of its gate. The one class is `white_space` ([spec 12](12-check-layer.md#severity-is-the-checks-posture-is-the-controls)).
 
 ```yaml
 controls:
