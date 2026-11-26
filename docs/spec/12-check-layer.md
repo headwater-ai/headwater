@@ -2,7 +2,7 @@
 id: HW-SPEC-check-layer
 status: current
 status_since: 2026-08-02
-last_verified: 2026-09-18
+last_verified: 2026-11-26
 summary: What a check is, how a scope constrains it, where it comes from, and what the check layer owes the engine.
 doc_type: design_spec
 sequence: 12
@@ -325,7 +325,7 @@ Two rules above disagree, and this section states which one wins. Coverage recor
 
 The run therefore reports the cache accounting on a second channel. The verdict goes to standard output, and the corpus, the lock and the injected values decide every byte of it. The hit count goes to standard error, which a differential over the verdict does not read.
 
-A cache also never makes a run partial. The run creates every instance, every instance carries an outcome, and coverage counts what it counts without a cache. Change-scoped evaluation is not a partial run either. It reads the same corpus and creates the same instances. The manifest decides which of them reach a verdict, and never which documents a run visits. Every instance that a full-corpus run skips for want of a prior version reaches one there, so a scoped run evaluates more and never less.
+A cache also never makes a run partial. The run creates every instance, every instance carries an outcome, and coverage counts what it counts without a cache. Change-scoped evaluation is not a partial run either. It reads the same corpus and creates the same instances. The manifest decides which of them reach a verdict, and never which documents a run visits. Every instance that a full-corpus run skips for want of a prior version reaches one there, so a scoped run evaluates more and never less. A path filter is not a partial run either. `headwater check --path` narrows the findings that a report prints and the strict exit, and never the instances that a run creates.
 
 ## The plugin interface
 

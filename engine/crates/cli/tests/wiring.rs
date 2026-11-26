@@ -1280,7 +1280,7 @@ fn the_cli_builds_its_check_cache_in_one_place_and_names_no_rule_set_digest() {
 ///
 /// The status is asserted as exactly 1 rather than as non-zero. This binary
 /// promises one failing status and no other — `docs/interfaces/headwater-check.md`
-/// states fourteen reasons for exit 1 under the sentence "There is no third
+/// states fifteen reasons for exit 1 under the sentence "There is no third
 /// status" — so a 2 here would be a defect that a `!= 0` assertion would pass.
 ///
 /// Standard output is asserted empty, because a refusal that puts one byte

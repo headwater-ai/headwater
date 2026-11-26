@@ -60,7 +60,7 @@ fn page_members(page: &str) -> Vec<String> {
 }
 
 /// The members of one recorded report that the table accounts for: every
-/// top-level member, and every member of `taxonomy`, of `change` and of an
+/// top-level member, and every member of `taxonomy`, of `change`, of `filter` and of an
 /// entry of `rules`. The table names `coverage`, `findings` and `read_set` as
 /// top-level members and sends the reader elsewhere for their insides.
 fn written_members(fixture: &str, into: &mut Vec<String>) {
@@ -81,7 +81,7 @@ fn written_members(fixture: &str, into: &mut Vec<String>) {
     for entry in top.entries() {
         let key = entry.key.value.clone();
         match key.as_str() {
-            "taxonomy" | "change" => {
+            "taxonomy" | "change" | "filter" => {
                 let inner = entry.value.value.as_map().expect("an object");
                 for member in inner.entries() {
                     push(format!("{key}.{}", member.key.value));
@@ -176,6 +176,7 @@ fn every_member_of_a_rules_entry_is_named_on_the_check_page() {
     let mut written = Vec::new();
     written_members("fixture.json", &mut written);
     written_members("fixture.scoped.json", &mut written);
+    written_members("fixture.filtered.json", &mut written);
     assert!(
         written.iter().any(|member| member == "rules[].compared"),
         "neither fixture writes `compared`, so this case no longer reaches the conditional member"
