@@ -165,6 +165,8 @@ A change to these crates must keep each of these. A test holds each one that nam
 - **A target that does not open stops the put before a file moves** (`a_target_that_will_not_open_stops_the_run_before_any_file_moves` in `engine/crates/scaffold/src/tree.rs`).
 - **A commit that fails removes the file that the run made** (`a_commit_that_fails_removes_the_document_this_run_created` in `engine/crates/scaffold/src/tree.rs`).
 - **A claim that exists refuses the second claimant** (`a_claim_that_is_already_there_refuses_and_the_first_claimant_stands` in `engine/crates/scaffold/tests/writing.rs`).
+- **A claim that did not write whole is removed** (`a_claim_that_did_not_write_whole_is_removed_and_the_refusal_says_so` in `engine/crates/scaffold/src/claim.rs`).
+- **A claim stays behind a created document that the run could not remove** (`a_claim_behind_a_document_that_would_not_go_is_kept` in `engine/crates/scaffold/tests/writing.rs`).
 - **A patch whose expected bytes are not in the file is refused** (`a_patch_that_names_bytes_the_file_does_not_hold_is_refused` in `engine/crates/scaffold/tests/fixing.rs`).
 - **A migration step refuses a key whose value is not the old value** (`a_key_that_no_longer_holds_the_value_is_refused_with_nothing_composed` in `engine/crates/scaffold/src/migrate.rs`).
 - **An overlay step moves each address under it and no value** (`every_address_under_the_step_moves_and_no_value_does` in `engine/crates/scaffold/src/overlay.rs`).
