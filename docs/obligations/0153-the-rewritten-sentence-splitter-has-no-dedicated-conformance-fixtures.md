@@ -1,15 +1,15 @@
 ---
 id: HW-OBL-0153
-status: current
-status_since: 2026-09-06
-summary: "The sentence splitter has inline tests, but it has no data-driven corpus that preserves the failures behind Q5's rewrite."
+status: discharged
+status_since: 2026-11-27
+summary: "A data-driven set of 15 recorded cases now holds the sentence splitter, rebuilt from its rules and failure classes."
 provenance:
   warrant: asserted
   agency: agent
   drafted_by: codex
   activity: draft
   evidence_basis: evidenced
-last_verified: 2026-08-27
+last_verified: 2026-11-27
 title: "The rewritten sentence splitter has no dedicated conformance fixtures"
 waiting_on: build
 ---
@@ -33,3 +33,7 @@ This debt serves Headwater's own test surface today. It therefore belongs in thi
 Add a data-driven sentence fixture set to `engine/crates/doc`. Cover the three documented rules and practical regression cases from Q5. Run the set in the crate's normal tests.
 
 Update the module comment to name the fixture location. The update discharges the comment's statement that the module still owes conformance fixtures.
+
+Discharged on 2026-11-27 by [#2132](https://github.com/headwater-ai/headwater/pull/2132), slice D of [#1494](https://github.com/headwater-ai/headwater/issues/1494). `engine/crates/doc/fixtures/sentences/` holds 15 cases. Each case is a Markdown body and a recorded `.sentences` file. The recorded file has one line for each sentence: the start position, the word count and the text. The runner `segmented_documents_produce_the_recorded_sentences` in `engine/crates/doc/tests/fixtures.rs` compares them and re-records them under `HEADWATER_BLESS=1`.
+
+Q5 recorded the count of 32 and not the 32 cases, so the cases that caused the rewrite could not be recovered. The set covers the three documented rules and each failure class that the 27 inline tests name. It also holds one excerpt of real corpus prose. The module comment of `sentences.rs` now names the fixture location and states this limit.

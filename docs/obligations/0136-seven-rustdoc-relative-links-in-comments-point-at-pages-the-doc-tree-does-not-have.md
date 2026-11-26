@@ -11,7 +11,7 @@ provenance:
   activity: draft
   accepted_by: j.baxter
   evidence_basis: evidenced
-last_verified: 2026-08-26
+last_verified: 2026-11-27
 waiting_on: build
 ---
 
@@ -33,6 +33,8 @@ Five of the seven are crate-to-crate links that name a package's short name as a
 - `generate/src/probe_result.rs:19` links `../../../probe/index.html`, also above the built tree.
 
 The other two, `meta/src/lib.rs:7` and `meta/src/shape.rs:5`, both link `../../meta-schema.yml`, a source path at `engine/crates/meta/meta-schema.yml` that reaches no page of any doc tree. Nobody has noticed, because no job here runs `cargo doc`. So nothing has ever clicked, or resolved, one of the seven. `rustdoc::broken_intra_doc_links` is warn-by-default and would catch a bad intra-doc reference, but it cannot see a hand-written HTML path. Its warning reaches nobody when no build step ever runs `cargo doc` at all.
+
+**Measured on 2026-11-27, on `b6890e117`.** The seven links are still dead. `cargo doc --no-deps --workspace --locked --keep-going` reports 55 broken intra-doc links at distinct places in nine crates. `headwater-check` has 29 and `headwater-resolve` has 8. `headwater-generate`, `headwater-scaffold` and `headwater-lock` have 4 each. `headwater-census` and `headwater-vcs` have 2 each, and `headwater-compat` and `headwater-query` have 1 each. The seven links above are not among them, because rustdoc reads a hand-written HTML path as a URL and does not resolve it. The first run took 52 seconds of wall time on the build host, and a second run with a warm target took 4 seconds. So a `deny` level on `broken_intra_doc_links`, read by a CI step, fails on `main` until the 55 are repaired. Slice D of [#1494](https://github.com/headwater-ai/headwater/issues/1494) left this record at `current` for that reason, under the split rule of its adjudication.
 
 ## Discharge
 
