@@ -3864,6 +3864,10 @@ fn run_of(root: &Path, loaded: &Session, ctx: &Context) -> headwater_check::Run 
 /// The once-per-process guard is here and not in `headwater-api`, because the
 /// library hands the range back on every session it opens (#1959). An
 /// in-process caller decides for itself how often to say so.
+///
+/// The range is written escaped, so the report stays on one line even when a
+/// YAML escape put a newline inside a range that still reads. The hooks, the
+/// commit gate and the editor client forward one line and nothing after it.
 fn report_engine(range: Option<&str>) {
     static REPORTED: std::sync::Once = std::sync::Once::new();
     if let Some(range) = range {
@@ -3871,7 +3875,7 @@ fn report_engine(range: Option<&str>) {
             eprintln!(
                 "headwater: {}",
                 err(&format!(
-                    "this corpus asks for engine \"{range}\" in {}, and this is engine {}",
+                    "this corpus asks for engine {range:?} in {}, and this is engine {}",
                     headwater_resolve::package::CONSUMER,
                     headwater_resolve::release::ENGINE
                 ))
