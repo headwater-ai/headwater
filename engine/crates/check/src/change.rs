@@ -1345,6 +1345,25 @@ mod tests {
         assert_eq!(normalized(b"\xff\xfe \r\n"), b"\xff\xfe".to_vec());
     }
 
+    /// Bytes that are not UTF-8 are no document, and they keep both digests
+    /// all the same, because the digests are taken before the decode (#2100).
+    #[test]
+    fn a_prior_version_that_is_not_utf8_keeps_its_digests() {
+        let bytes = b"\xff\xfe echo  \r\n".to_vec();
+        let given = bytes.clone();
+        let change = Unbound::read(
+            &format!("{FORMAT}\nprior\ttools/a.bin\tprior/a.bin\n"),
+            move |_| Ok(given.clone()),
+        )
+        .expect("a change")
+        .bind(|_| false);
+        let touched: Vec<(&str, Touched<'_>)> = change.touched().collect();
+        assert_eq!(
+            touched,
+            vec![("tools/a.bin", Touched::Prior(Some(&Digests::of(&bytes))))]
+        );
+    }
+
     /// A prior version that opened keeps both digests whether or not it
     /// parsed, a source file bound to no row included, and an `added` line
     /// and a prior that did not open carry none (#2100).

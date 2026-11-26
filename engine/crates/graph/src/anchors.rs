@@ -2027,6 +2027,14 @@ mod tests {
                 ("b.sh", headwater_hash::digest(b"echo b\n").as_str()),
             ])
         );
+        // The line format, written out by hand: every recorded stamp is a
+        // digest of it, so the shared function must not move it.
+        let by_hand = format!(
+            "a.sh\0{}\nb.sh\0{}\n",
+            headwater_hash::digest(b"echo a\n"),
+            headwater_hash::digest(b"echo b\n")
+        );
+        assert_eq!(read, headwater_hash::digest(by_hand.as_bytes()));
         let same = headwater_hash::digest(b"echo a\n");
         assert_eq!(
             tree_revision_given(&dir, &matched, &|path| (path == "a.sh")

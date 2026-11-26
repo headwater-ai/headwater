@@ -275,11 +275,23 @@ fn a_glob_edge_reports_its_touched_files_against_the_matched_set() {
         SPARE,
     );
     let manifest = change(&root, "a.sh", "echo a\n", "echo a \n");
+    // A file the edge does not reach, changed in content in the same change,
+    // is not one of its touched files and does not close its gate.
+    std::fs::write(root.at.join("tools/c.txt"), "two\n").expect("the file writes");
+    let other = root.at.join("prior/c.txt");
+    std::fs::write(&other, "one\n").expect("the prior version writes");
+    let text = std::fs::read_to_string(&manifest).expect("the manifest reads");
+    std::fs::write(
+        &manifest,
+        format!("{text}prior\ttools/c.txt\t{}\n", other.to_string_lossy()),
+    )
+    .expect("the manifest writes");
     let checked = root.run(&["check", "--strict", "--change", &manifest]);
     assert_eq!(checked.code, Some(0), "{}{}", checked.out, checked.err);
     let block = touched(&checked.out);
     assert!(
-        block.contains("relation.target.suspect touched 1 of 2 matched")
+        !block.contains("tools/c.txt")
+            && block.contains("relation.target.suspect touched 1 of 2 matched")
             && block.contains("tools/a.sh white_space")
             && !block.contains("tools/b.sh")
             && block.contains("spared by CT-REL-6"),
