@@ -166,9 +166,8 @@ pub fn render(run: &Run, subject: &Subject<'_>) -> String {
 /// The `check --path` filter of a run, as the JSON document and the SARIF
 /// property bag carry it (#2101).
 pub fn filter(filtered: &headwater_check::filter::Filtered) -> Json {
-    let strings = |list: &[String]| {
-        Json::Array(list.iter().map(|one| Json::string(one.clone())).collect())
-    };
+    let strings =
+        |list: &[String]| Json::Array(list.iter().map(|one| Json::string(one.clone())).collect());
     Json::object([
         ("patterns", strings(&filtered.patterns)),
         ("held_back", number(filtered.held_back)),

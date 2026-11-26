@@ -129,8 +129,8 @@
 //! printing something false to fill a slot.
 
 use crate::{
-    a_filtered_run, a_scoped_run, every_finding, every_run, reported, Carrier, Escape, Format, Loss, Place,
-    Reported, Subject, TOOL, TOOL_URI,
+    a_filtered_run, a_scoped_run, every_finding, every_run, reported, Carrier, Escape, Format,
+    Loss, Place, Reported, Subject, TOOL, TOOL_URI,
 };
 use headwater_check::instance::Input;
 use headwater_check::register::Bound;

@@ -641,8 +641,7 @@ fn a_path_filter_that_matches_nothing_fails_a_strict_run() {
         ran.out
     );
     assert!(
-        !ran.out
-            .contains("unmatched: docs/contexts/billing/**"),
+        !ran.out.contains("unmatched: docs/contexts/billing/**"),
         "a pattern that matches is not named unmatched\n{}",
         ran.out
     );
@@ -654,7 +653,6 @@ fn a_path_filter_that_matches_nothing_fails_a_strict_run() {
         loose.err
     );
 }
-
 
 /// `--fix --path` writes the patch of a finding the filter admits and leaves
 /// the patch of a finding it holds back unwritten. The patch is the house

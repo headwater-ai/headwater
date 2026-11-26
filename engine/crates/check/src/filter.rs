@@ -79,10 +79,7 @@ impl Filtered {
             }
         );
         for pattern in &self.unmatched {
-            let _ = writeln!(
-                out,
-                "  unmatched: {pattern} matches no file and no finding"
-            );
+            let _ = writeln!(out, "  unmatched: {pattern} matches no file and no finding");
         }
         out
     }
