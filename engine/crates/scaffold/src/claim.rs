@@ -235,10 +235,8 @@ mod tests {
 
     impl Dir {
         fn new(label: &str) -> Dir {
-            let path = std::env::temp_dir().join(format!(
-                "headwater-claim-{label}-{}",
-                std::process::id()
-            ));
+            let path = std::env::temp_dir()
+                .join(format!("headwater-claim-{label}-{}", std::process::id()));
             let _ = std::fs::remove_dir_all(&path);
             std::fs::create_dir_all(&path).expect("the case directory is made");
             Dir(path)
@@ -259,10 +257,15 @@ mod tests {
     #[test]
     fn a_claim_that_did_not_write_whole_is_removed_and_the_refusal_says_so() {
         let dir = Dir::new("unwritten");
-        let refused = make_with(&dir.0, CLAIM, "docs/decisions/0049-x.md", &mut |file, bytes| {
-            file.write_all(&bytes[..3])?;
-            Err(std::io::Error::from_raw_os_error(28))
-        })
+        let refused = make_with(
+            &dir.0,
+            CLAIM,
+            "docs/decisions/0049-x.md",
+            &mut |file, bytes| {
+                file.write_all(&bytes[..3])?;
+                Err(std::io::Error::from_raw_os_error(28))
+            },
+        )
         .expect_err("a failed write refuses");
 
         assert!(
@@ -270,7 +273,13 @@ mod tests {
             "no claim file is left at the path, empty or partial"
         );
         assert!(
-            matches!(&refused, Refusal::ClaimUnwritable { removed: Some(Ok(())), .. }),
+            matches!(
+                &refused,
+                Refusal::ClaimUnwritable {
+                    removed: Some(Ok(())),
+                    ..
+                }
+            ),
             "{refused:?}"
         );
         let message = refused.to_string();
@@ -296,7 +305,13 @@ mod tests {
         .expect_err("a failed write refuses");
 
         assert!(
-            matches!(&refused, Refusal::ClaimUnwritable { removed: Some(Err(_)), .. }),
+            matches!(
+                &refused,
+                Refusal::ClaimUnwritable {
+                    removed: Some(Err(_)),
+                    ..
+                }
+            ),
             "{refused:?}"
         );
         let message = refused.to_string();
