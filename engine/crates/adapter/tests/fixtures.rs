@@ -747,6 +747,222 @@ fn a_control_character_from_a_document_reaches_no_format_intact() {
     }
 }
 
+/// The file names of #2070: a path past the width that holds single spaces and
+/// one double space, a pipe, a backtick inside, a backtick at the end, a
+/// backslash before a pipe, and a space before the first character.
+const SPACED_PATHS: [&str; 6] = [
+    "docs/decisions/0003-a path that is long enough to wrap  past the width of a report.md",
+    "docs/a|b.md",
+    "docs/a`b.md",
+    "docs/b`",
+    "docs/c\\|d.md",
+    " lead/x.md",
+];
+
+/// The cells of one Markdown table row, split as a GFM table splits it: on a
+/// `|` that no backslash comes straight before. The edges count, so a row of
+/// four columns is six pieces.
+fn gfm_cells(row: &str) -> Vec<String> {
+    let mut cells = vec![String::new()];
+    let mut previous = None;
+    for char in row.chars() {
+        match char == '|' && previous != Some('\\') {
+            true => cells.push(String::new()),
+            false => cells.last_mut().expect("one cell").push(char),
+        }
+        previous = Some(char);
+    }
+    cells
+}
+
+/// The text of `cell` where CommonMark reads all of it as one code span, and
+/// `None` where it does not: the closing fence is a run of backticks exactly as
+/// long as the opening one, no run of that length is inside, and one space is
+/// taken from each side where both sides hold one. A `\|` is a GFM table's
+/// pipe, read before the span.
+fn one_code_span(cell: &str) -> Option<String> {
+    let cell = cell.trim().replace("\\|", "|");
+    let fence = cell.len() - cell.trim_start_matches('`').len();
+    let closing = cell.len() - cell.trim_end_matches('`').len();
+    if fence == 0 || closing != fence || cell.len() < 2 * fence {
+        return None;
+    }
+    let inner = &cell[fence..cell.len() - fence];
+    let runs = inner
+        .split(|char| char != '`')
+        .any(|run| run.len() == fence);
+    if runs || inner.starts_with('`') || inner.ends_with('`') {
+        return None;
+    }
+    match inner.starts_with(' ') && inner.ends_with(' ') && !inner.trim().is_empty() {
+        true => Some(inner[1..inner.len() - 1].to_string()),
+        false => Some(inner.to_string()),
+    }
+}
+
+/// A legal file name costs no finding in any format, and a run that names one
+/// does not fail on its own report (#2070).
+///
+/// Before the fix, the text report wrapped the location line of the long path
+/// at a space inside it, so the census read its first word as the path and
+/// `check` exited 1 for a reason that was not in the corpus. The Markdown table
+/// ended a cell at the pipe and a code span at the backtick, and the reader
+/// split on every pipe.
+#[test]
+fn a_path_with_a_space_a_pipe_or_a_backtick_reaches_every_format_whole() {
+    let mut ran = fixture_run();
+    assert!(
+        ran.run.findings.len() >= SPACED_PATHS.len(),
+        "six findings to rename"
+    );
+    for (finding, path) in ran.run.findings.iter_mut().zip(SPACED_PATHS) {
+        finding.path = path.to_string();
+        // A location that closes on a backtick is one the code span has to
+        // pad, and a line number would close it on a digit instead.
+        if path.ends_with('`') {
+            finding.line = 0;
+        }
+    }
+    let layouts = Format::ALL
+        .into_iter()
+        .flat_map(|format| [(format, false), (format, true)]);
+    for (format, verbose) in layouts {
+        let artifact = render_as(&ran, format, headwater_check::fill::WIDTH, verbose);
+        let name = format!("{} (verbose {verbose})", format.name());
+        let audited = headwater_adapter::census(&ran.run, format, &artifact);
+        assert!(
+            !audited.is_defective(),
+            "the {name} adapter dropped {:?}",
+            audited.unaccounted
+        );
+        assert_eq!(audited.carried, audited.findings, "{name}");
+        match format {
+            Format::Text => {
+                assert!(
+                    artifact.lines().any(|line| line.contains(SPACED_PATHS[0])),
+                    "{name} breaks the long path across lines"
+                );
+                assert!(
+                    artifact
+                        .lines()
+                        .any(|line| line.starts_with("   lead/x.md:")),
+                    "{name} does not write the leading space of a path"
+                );
+            }
+            Format::Markdown => {
+                let rows: Vec<&str> = artifact
+                    .lines()
+                    .filter(|line| {
+                        line.starts_with("| ") && (line.contains("docs/") || line.contains("lead/"))
+                    })
+                    .collect();
+                assert!(!rows.is_empty(), "{name} writes no finding row");
+                let mut locations = Vec::new();
+                for row in rows {
+                    let cells = gfm_cells(row);
+                    assert_eq!(cells.len(), 6, "{name} splits a row: {row}");
+                    let location = one_code_span(&cells[2]);
+                    assert!(location.is_some(), "{name} breaks a code span: {row}");
+                    locations.extend(location);
+                }
+                for path in SPACED_PATHS {
+                    assert!(
+                        locations
+                            .iter()
+                            .any(|one| one == path || one.starts_with(&format!("{path}:"))),
+                        "{name} does not write {path} as one code span: {locations:?}"
+                    );
+                }
+            }
+            Format::Json | Format::Sarif => {
+                let mut found = Vec::new();
+                scalars(&parse(&artifact), &mut found);
+                for path in SPACED_PATHS {
+                    assert!(found.iter().any(|one| one == path), "{name} loses {path}");
+                }
+            }
+        }
+    }
+}
+
+/// A backtick in a `check --path` pattern, and in the path it admits, leaves
+/// every code span of the Markdown report whole (#2070). The patterns are in
+/// the sentence that opens the report and the one that matched nothing is in a
+/// list under it, and both wrote a fence of one backtick before the fix.
+#[test]
+fn a_backtick_in_a_filter_pattern_or_its_path_keeps_each_code_span_whole() {
+    const ADMITTED: &str = "check/spec/0`1.md";
+    const NOWHERE: &str = "check/`nowhere/**";
+    let mut ran = fixture_run();
+    ran.run.findings[0].path = ADMITTED.to_string();
+    let paths: Vec<String> = ran
+        .census
+        .rows
+        .iter()
+        .map(|row| row.path.clone())
+        .chain([ADMITTED.to_string()])
+        .collect();
+    ran.run = headwater_check::filter::narrow(
+        ran.run,
+        &[ADMITTED.to_string(), NOWHERE.to_string()],
+        paths.iter().map(String::as_str),
+    );
+    let artifact = render_as(&ran, Format::Markdown, headwater_check::fill::WIDTH, false);
+    let audited = headwater_adapter::census(&ran.run, Format::Markdown, &artifact);
+    assert!(!audited.is_defective(), "{:?}", audited.unaccounted);
+    assert_eq!(audited.carried, audited.findings);
+    let sentence = artifact
+        .lines()
+        .find(|line| line.contains("Narrowed by a path filter"))
+        .expect("the report states the filter");
+    for span in ["``check/spec/0`1.md``", "``check/`nowhere/**``"] {
+        assert!(
+            sentence.contains(span),
+            "{span} is not one code span: {sentence}"
+        );
+    }
+    let listed: Vec<String> = artifact
+        .lines()
+        .filter_map(|line| line.strip_prefix("- "))
+        .filter_map(one_code_span)
+        .collect();
+    assert!(
+        listed.iter().any(|one| one == NOWHERE),
+        "the unmatched pattern is not one code span: {listed:?}"
+    );
+
+    // The change block lists the paths it could not match and the `verified`
+    // pairs that named no edge, and each one is a file name too.
+    let mut scoped = scoped_run();
+    let change = scoped
+        .run
+        .change
+        .as_mut()
+        .expect("the scoped run has a change");
+    change.unmatched.push("docs/x`y.md".to_string());
+    change
+        .unstated
+        .push(("docs/a`b.md".to_string(), "docs/c`d.md".to_string()));
+    let artifact = render_as(
+        &scoped,
+        Format::Markdown,
+        headwater_check::fill::WIDTH,
+        false,
+    );
+    let listed: Vec<String> = artifact
+        .lines()
+        .filter_map(|line| line.strip_prefix("- "))
+        .flat_map(|item| item.split(" onto "))
+        .filter_map(one_code_span)
+        .collect();
+    for path in ["docs/x`y.md", "docs/a`b.md", "docs/c`d.md"] {
+        assert!(
+            listed.iter().any(|one| one == path),
+            "{path} is not one code span: {listed:?}"
+        );
+    }
+}
+
 /// One label for each value the graph section prints that a document or the
 /// taxonomy supplies. Each one is made hostile by [`hostile`], and the text
 /// report must write each one as [`escaped`] text.

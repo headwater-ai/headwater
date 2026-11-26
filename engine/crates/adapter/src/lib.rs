@@ -783,19 +783,56 @@ fn parsed_records(format: Format, artifact: &str) -> Vec<Record> {
 /// the escaped ones are in the `<details>` block under it, and both write the
 /// same four columns. The second and the third are read, so a path a message
 /// names in the fourth reaches no record.
+///
+/// A cell ends at a `|` that no backslash comes straight before, which is how
+/// a GFM table reads it, and the location cell is read back from the code span
+/// `markdown::at` writes: the fence, the padding and each `\|` (#2070).
 fn rows(artifact: &str) -> Vec<Record> {
     artifact
         .lines()
         .filter(|line| line.starts_with('|'))
         .filter_map(|line| {
-            let cells: Vec<&str> = line.split('|').collect();
-            let cell = |at: usize| cells.get(at).map(|text| text.trim().trim_matches('`'));
+            let mut cells: Vec<&str> = Vec::new();
+            let mut from = 0;
+            let mut previous = None;
+            for (at, char) in line.char_indices() {
+                if char == '|' && previous != Some('\\') {
+                    cells.push(&line[from..at]);
+                    from = at + 1;
+                }
+                previous = Some(char);
+            }
+            cells.push(&line[from..]);
+            let location = code_span(cells.get(2)?.trim()).replace("\\|", "|");
             Some(Record {
-                path: bare_path(cell(2)?).to_string(),
-                rule: cell(3)?.to_string(),
+                path: bare_path(&location).to_string(),
+                rule: cells.get(3)?.trim().trim_matches('`').to_string(),
             })
         })
         .collect()
+}
+
+/// The content of a CommonMark code span: the text inside a fence of equal
+/// length, with one space taken from each side where both sides hold one and
+/// the text is not all spaces. Text that is not a code span is returned as it
+/// is.
+fn code_span(cell: &str) -> &str {
+    let fence = cell.len() - cell.trim_start_matches('`').len();
+    let inner = match fence {
+        0 => return cell,
+        fence => match cell.len() >= 2 * fence {
+            true => &cell[fence..cell.len() - fence],
+            false => return cell,
+        },
+    };
+    match inner.len() > 2
+        && inner.starts_with(' ')
+        && inner.ends_with(' ')
+        && !inner.trim().is_empty()
+    {
+        true => &inner[1..inner.len() - 1],
+        false => inner,
+    }
 }
 
 /// The finding blocks of the text report, and no block around them.
@@ -819,9 +856,15 @@ fn rows(artifact: &str) -> Vec<Record> {
 /// removes, so this reader gives one answer for both renderings.
 fn blocks(artifact: &str) -> Vec<Record> {
     let mut found: Vec<Record> = Vec::new();
-    for line in artifact.lines() {
-        let line = plain(line);
-        match line.starts_with("  ") && !line.starts_with("   ") {
+    for raw in artifact.lines() {
+        let line = plain(raw);
+        // A location whose path opens with a space is indented past two, so
+        // the indent alone would read it as a continuation and drop the
+        // finding. The severity marker it closes on, in the bytes as written,
+        // is what tells it from the prose lines under it (#2070).
+        let opens = line.starts_with("  ")
+            && (!line.starts_with("   ") || headwater_check::fill::ends_in_a_severity_marker(raw));
+        match opens {
             true => found.push(Record {
                 path: bare_path(opening(&line)).to_string(),
                 rule: line,
@@ -857,8 +900,11 @@ fn blocks(artifact: &str) -> Vec<Record> {
 /// before that word and its glyph, and a path that holds a space arrives whole
 /// (#1970). A line that ends in no severity word opens no finding block, and
 /// its first word is enough for the filter in [`blocks`] to discard it.
+///
+/// Only the two columns of the block indent are taken off the front, so a path
+/// that opens with a space keeps it (#2070).
 fn opening(line: &str) -> &str {
-    let line = line.trim();
+    let line = line.strip_prefix("  ").unwrap_or(line).trim_end();
     for severity in [Severity::Error, Severity::Warn, Severity::Info] {
         let Some(head) = line.strip_suffix(severity.to_string().as_str()) else {
             continue;

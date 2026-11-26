@@ -255,18 +255,66 @@ impl ReadSet {
         }
         // A path is a file name the tree supplies, so a control character in
         // one is written as visible text and never reaches the terminal or a
-        // CI log as an instruction (#1970). JSON and SARIF write the exact path.
+        // CI log as an instruction (#1970). It is written in the spelling a
+        // gate reads back exactly, whatever the name holds (#2070).
         for input in &self.inputs {
             let _ = match &input.digest {
-                Some(digest) => writeln!(out, "input {} {digest}", visible(&input.path)),
+                Some(digest) => writeln!(out, "input {} {digest}", spell(&input.path)),
                 // Written rather than dropped, and written so that a reader
                 // cannot mistake it for a hash. An input with no digest is the
                 // one entry that stops a gate deciding anything.
-                None => writeln!(out, "input {} -", visible(&input.path)),
+                None => writeln!(out, "input {} -", spell(&input.path)),
             };
         }
         out
     }
+}
+
+/// A path as the read set writes it: one token that [`read_back`] inverts
+/// exactly, whatever characters the path holds (#2070).
+///
+/// It is the spelling [`visible`] writes, with one addition: a backslash is
+/// written `\\`. `visible` alone leaves a backslash bare, so a name that holds
+/// `\` and `n` and a name that holds a line feed would read back as one string.
+/// With the addition every backslash in the artifact opens an escape, and the
+/// reader decodes each one. A space is written as it is, because a reader takes
+/// the path as everything between the keyword and the last space of the line,
+/// and neither a digest nor `-` holds a space.
+///
+/// An artifact written before this spelling that lists a path with a literal
+/// backslash reads back as a different path. That path is not in the tree, so
+/// the gate reads it as gone and the verdict voids. Spec 12 sends a doubtful
+/// case to invalidation, so this is the safe direction.
+#[must_use]
+pub fn spell(path: &str) -> String {
+    visible(&path.replace('\\', "\\\\")).into_owned()
+}
+
+/// The path [`spell`] wrote, or `None` where a backslash opens no escape that
+/// `spell` writes.
+#[must_use]
+pub fn read_back(spelled: &str) -> Option<String> {
+    let mut out = String::with_capacity(spelled.len());
+    let mut chars = spelled.chars();
+    while let Some(char) = chars.next() {
+        if char != '\\' {
+            out.push(char);
+            continue;
+        }
+        match chars.next()? {
+            '\\' => out.push('\\'),
+            'n' => out.push('\n'),
+            'r' => out.push('\r'),
+            't' => out.push('\t'),
+            'x' => {
+                let high = chars.next()?.to_digit(16)?;
+                let low = chars.next()?.to_digit(16)?;
+                out.push(char::from_u32(high * 16 + low)?);
+            }
+            _ => return None,
+        }
+    }
+    Some(out)
 }
 
 #[cfg(test)]
