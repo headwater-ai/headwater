@@ -51,7 +51,11 @@ fn retire_two(root: &Root) {
     let rewritten = format!("{}{TERMS}{}", &text[..from], &text[to..]);
     std::fs::write(&overlay, rewritten).expect("the overlay writes");
     let resolved = root.run(&["taxonomy", "resolve"]);
-    assert_eq!(resolved.code, Some(0), "the lock resolves again: {resolved:?}");
+    assert_eq!(
+        resolved.code,
+        Some(0),
+        "the lock resolves again: {resolved:?}"
+    );
 }
 
 /// Write [`FUTURE`] into the decision, followed by `directive` when one is

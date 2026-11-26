@@ -1427,8 +1427,7 @@ pub fn run(
     // unchanged in shape.
     // Before both filters, because a suppressed finding still shows that its
     // pattern is live, and a count taken after them would undercount (#1492).
-    let saturation =
-        saturation::Saturation::project(pattern_sets.0, pattern_sets.1, &findings);
+    let saturation = saturation::Saturation::project(pattern_sets.0, pattern_sets.1, &findings);
     let (findings, adoption) =
         adoption::apply(finding::sorted(findings), declared_payload, ctx.now());
 
