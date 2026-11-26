@@ -357,7 +357,11 @@ fn opens_past_the_room(line: &str, width: usize) -> bool {
 /// The marker is the exact text [`severity_word`] writes: a glyph, a space and
 /// the word under `Plain`, and the painted word under `Ansi`. A prose line that
 /// ends in the bare word `error` carries neither, so it is still filled.
-fn ends_in_a_severity_marker(line: &str) -> bool {
+///
+/// Public because the census of the text report asks the same question: a line
+/// that closes on a marker opens a finding block even where its path opens
+/// with a space and so pushes it past an indent of two (#2070).
+pub fn ends_in_a_severity_marker(line: &str) -> bool {
     let line = line.trim_end();
     [Severity::Error, Severity::Warn, Severity::Info]
         .into_iter()

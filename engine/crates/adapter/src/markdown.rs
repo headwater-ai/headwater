@@ -228,7 +228,7 @@ fn scoped_to(scoped: &Scoped) -> String {
             scoped.unmatched.len()
         );
         for path in &scoped.unmatched {
-            let _ = writeln!(out, "- `{}`", visible(path));
+            let _ = writeln!(out, "- {}", fenced(&visible(path)));
         }
         out.push('\n');
     }
@@ -242,7 +242,12 @@ fn scoped_to(scoped: &Scoped) -> String {
             scoped.unstated.len()
         );
         for (document, target) in &scoped.unstated {
-            let _ = writeln!(out, "- `{}` onto `{}`", visible(document), visible(target));
+            let _ = writeln!(
+                out,
+                "- {} onto {}",
+                fenced(&visible(document)),
+                fenced(&visible(target))
+            );
         }
         out.push('\n');
     }
@@ -257,7 +262,7 @@ fn filtered_to(filtered: &headwater_check::filter::Filtered) -> String {
     let patterns: Vec<String> = filtered
         .patterns
         .iter()
-        .map(|pattern| format!("`{}`", visible(pattern)))
+        .map(|pattern| fenced(&visible(pattern)))
         .collect();
     let _ = writeln!(
         out,
@@ -282,7 +287,7 @@ fn filtered_to(filtered: &headwater_check::filter::Filtered) -> String {
             filtered.unmatched.len()
         );
         for pattern in &filtered.unmatched {
-            let _ = writeln!(out, "- `{}`", visible(pattern));
+            let _ = writeln!(out, "- {}", fenced(&visible(pattern)));
         }
         out.push('\n');
     }
@@ -402,22 +407,33 @@ fn at(entry: &Reported<'_>) -> String {
         0 => path.into_owned(),
         line => format!("{path}:{line}"),
     };
-    let location = location.replace('|', "\\|");
+    fenced(&location.replace('|', "\\|"))
+}
+
+/// `text` as one CommonMark code span, whatever backticks and spaces it holds.
+///
+/// The fence is one backtick longer than the longest run of backticks in the
+/// text, and a space pads each side where the text opens or closes on a
+/// backtick or opens and closes on a space. A file name and a `--path` pattern
+/// can hold a backtick, and a fixed fence of one would end the span inside it
+/// (#2070). The caller escapes what its context needs first: a table cell
+/// escapes `|`, and a list item escapes nothing.
+fn fenced(text: &str) -> String {
     let mut longest = 0;
     let mut run = 0;
-    for char in location.chars() {
+    for char in text.chars() {
         run = if char == '`' { run + 1 } else { 0 };
         longest = longest.max(run);
     }
     let fence = "`".repeat(longest + 1);
-    let pad = match location.starts_with('`')
-        || location.ends_with('`')
-        || (location.starts_with(' ') && location.ends_with(' '))
+    let pad = match text.starts_with('`')
+        || text.ends_with('`')
+        || (text.starts_with(' ') && text.ends_with(' '))
     {
         true => " ",
         false => "",
     };
-    format!("{fence}{pad}{location}{pad}{fence}")
+    format!("{fence}{pad}{text}{pad}{fence}")
 }
 
 /// One message inside a table cell.

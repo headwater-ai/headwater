@@ -856,9 +856,15 @@ fn code_span(cell: &str) -> &str {
 /// removes, so this reader gives one answer for both renderings.
 fn blocks(artifact: &str) -> Vec<Record> {
     let mut found: Vec<Record> = Vec::new();
-    for line in artifact.lines() {
-        let line = plain(line);
-        match line.starts_with("  ") && !line.starts_with("   ") {
+    for raw in artifact.lines() {
+        let line = plain(raw);
+        // A location whose path opens with a space is indented past two, so
+        // the indent alone would read it as a continuation and drop the
+        // finding. The severity marker it closes on, in the bytes as written,
+        // is what tells it from the prose lines under it (#2070).
+        let opens = line.starts_with("  ")
+            && (!line.starts_with("   ") || headwater_check::fill::ends_in_a_severity_marker(raw));
+        match opens {
             true => found.push(Record {
                 path: bare_path(opening(&line)).to_string(),
                 rule: line,
@@ -894,8 +900,11 @@ fn blocks(artifact: &str) -> Vec<Record> {
 /// before that word and its glyph, and a path that holds a space arrives whole
 /// (#1970). A line that ends in no severity word opens no finding block, and
 /// its first word is enough for the filter in [`blocks`] to discard it.
+///
+/// Only the two columns of the block indent are taken off the front, so a path
+/// that opens with a space keeps it (#2070).
 fn opening(line: &str) -> &str {
-    let line = line.trim();
+    let line = line.strip_prefix("  ").unwrap_or(line).trim_end();
     for severity in [Severity::Error, Severity::Warn, Severity::Info] {
         let Some(head) = line.strip_suffix(severity.to_string().as_str()) else {
             continue;

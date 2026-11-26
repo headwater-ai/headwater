@@ -843,14 +843,18 @@ fn a_path_with_a_space_a_pipe_or_a_backtick_reaches_every_format_whole() {
                     "{name} breaks the long path across lines"
                 );
                 assert!(
-                    artifact.lines().any(|line| line.starts_with("   lead/x.md:")),
+                    artifact
+                        .lines()
+                        .any(|line| line.starts_with("   lead/x.md:")),
                     "{name} does not write the leading space of a path"
                 );
             }
             Format::Markdown => {
                 let rows: Vec<&str> = artifact
                     .lines()
-                    .filter(|line| line.starts_with("| ") && line.contains("docs/"))
+                    .filter(|line| {
+                        line.starts_with("| ") && (line.contains("docs/") || line.contains("lead/"))
+                    })
                     .collect();
                 assert!(!rows.is_empty(), "{name} writes no finding row");
                 let mut locations = Vec::new();
@@ -888,7 +892,7 @@ fn a_path_with_a_space_a_pipe_or_a_backtick_reaches_every_format_whole() {
 #[test]
 fn a_backtick_in_a_filter_pattern_or_its_path_keeps_each_code_span_whole() {
     const ADMITTED: &str = "check/spec/0`1.md";
-    const NOWHERE: &str = "check/``nowhere``/**";
+    const NOWHERE: &str = "check/`nowhere/**";
     let mut ran = fixture_run();
     ran.run.findings[0].path = ADMITTED.to_string();
     let paths: Vec<String> = ran
@@ -911,8 +915,11 @@ fn a_backtick_in_a_filter_pattern_or_its_path_keeps_each_code_span_whole() {
         .lines()
         .find(|line| line.contains("Narrowed by a path filter"))
         .expect("the report states the filter");
-    for span in ["``check/spec/0`1.md``", "```check/``nowhere``/**```"] {
-        assert!(sentence.contains(span), "{span} is not one code span: {sentence}");
+    for span in ["``check/spec/0`1.md``", "``check/`nowhere/**``"] {
+        assert!(
+            sentence.contains(span),
+            "{span} is not one code span: {sentence}"
+        );
     }
     let listed: Vec<String> = artifact
         .lines()
@@ -923,6 +930,37 @@ fn a_backtick_in_a_filter_pattern_or_its_path_keeps_each_code_span_whole() {
         listed.iter().any(|one| one == NOWHERE),
         "the unmatched pattern is not one code span: {listed:?}"
     );
+
+    // The change block lists the paths it could not match and the `verified`
+    // pairs that named no edge, and each one is a file name too.
+    let mut scoped = scoped_run();
+    let change = scoped
+        .run
+        .change
+        .as_mut()
+        .expect("the scoped run has a change");
+    change.unmatched.push("docs/x`y.md".to_string());
+    change
+        .unstated
+        .push(("docs/a`b.md".to_string(), "docs/c`d.md".to_string()));
+    let artifact = render_as(
+        &scoped,
+        Format::Markdown,
+        headwater_check::fill::WIDTH,
+        false,
+    );
+    let listed: Vec<String> = artifact
+        .lines()
+        .filter_map(|line| line.strip_prefix("- "))
+        .flat_map(|item| item.split(" onto "))
+        .filter_map(one_code_span)
+        .collect();
+    for path in ["docs/x`y.md", "docs/a`b.md", "docs/c`d.md"] {
+        assert!(
+            listed.iter().any(|one| one == path),
+            "{path} is not one code span: {listed:?}"
+        );
+    }
 }
 
 /// One label for each value the graph section prints that a document or the
