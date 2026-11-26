@@ -173,3 +173,57 @@ fn a_suppressed_finding_still_counts_its_pattern() {
         report.out
     );
 }
+
+/// A set is a set that a binding reads: a category no bound regime forbids
+/// gets no line, and a regime that only paths outside the corpus root bind
+/// gets one.
+///
+/// The case narrows the package's `declarative` regime to two categories, and
+/// the `requirement_prospective` regime of a copied bundle to one, with an
+/// overlay `override`. So no bound regime forbids `change_narration`. It adds a language regime that retires one term and
+/// binds `NOTICE.md` alone, through `outside_root`, and no kind.
+#[test]
+fn a_set_is_counted_only_where_a_binding_reads_it() {
+    let root = Root::new("saturation-bindings");
+    let overlay = root.at.join(".headwater/overlay.yml");
+    let text = std::fs::read_to_string(&overlay).expect("the overlay reads");
+    assert!(text.contains("\nadd:\n"), "the overlay has an add block");
+    assert!(
+        text.contains("\noverride:\n"),
+        "the overlay has an override block"
+    );
+    let front_door = "\nadd:\n  regimes.language.front_door:\n    tag: en-US\n    controlled: none\n    retired_terms:\n      - term: lantern\n        reason: a test retires it\n    outside_root:\n      - NOTICE.md\n";
+    let narrowed = "\noverride:\n  regimes.voice.declarative.forbid: [future_intent, phased_rollout]\n  regimes.voice.requirement_prospective.forbid: [phased_rollout]\n";
+    let text = text
+        .replacen("\nadd:\n", front_door, 1)
+        .replacen("\noverride:\n", narrowed, 1);
+    std::fs::write(&overlay, text).expect("the overlay writes");
+    std::fs::write(
+        root.at.join("NOTICE.md"),
+        "# A front door\n\nThis page names no term.\n",
+    )
+    .expect("the front door writes");
+    let resolved = root.run(&["taxonomy", "resolve"]);
+    assert_eq!(
+        resolved.code,
+        Some(0),
+        "the lock resolves again: {resolved:?}"
+    );
+
+    let report = root.run(&["check"]);
+    assert!(
+        !flat(&report.out).contains("pattern set voice.forbidden_construction change_narration"),
+        "no bound regime forbids change_narration, so it has no line:\n{}",
+        report.out
+    );
+    assert_eq!(
+        count(&report.out, "voice.forbidden_construction phased_rollout"),
+        (0, 13)
+    );
+    assert_eq!(
+        count(&report.out, "language.retired_term.used front_door"),
+        (0, 1),
+        "a regime that binds only a path outside the root has its line:\n{}",
+        report.out
+    );
+}
