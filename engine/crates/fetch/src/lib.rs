@@ -399,7 +399,9 @@ fn names_a_root(raw: &[u8]) -> bool {
 }
 
 /// Unpack `archive` into `dir`, refusing once more than `bound` bytes would
-/// be written. The sizes an archive declares are read first, as a cheap
+/// be written, so that at most `bound` bytes reach the disk, and refusing an
+/// archive of more than `count` members, directory entries included, before
+/// any member is written. The sizes an archive declares are read first, as a cheap
 /// refusal, and then the bound is held again on the bytes written, because a
 /// header can lie and an archive whose members use a data descriptor declares
 /// no total at all. The reader (zip 9.0.2 and later) also refuses a member
@@ -436,6 +438,12 @@ fn unpack<R: std::io::Read + std::io::Seek>(
         .is_some_and(|declared| declared > u128::from(bound))
     {
         return Err(too_large());
+    }
+    if archive.len() > count {
+        return Err(Error::Archive(format!(
+            "the archive at {location} holds more than {count} members, the most this verb \
+             unpacks"
+        )));
     }
     let mut written: u64 = 0;
     for index in 0..archive.len() {
