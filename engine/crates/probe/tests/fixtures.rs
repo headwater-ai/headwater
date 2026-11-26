@@ -3392,3 +3392,153 @@ fn a_scenario_arm_plans_only_in_the_additive_tier_and_only_where_it_is_declared(
         assert!(plan.arms.is_empty());
     }
 }
+
+// --- every refusal of the plan has a case (HW-OBL-0155) ---------------------
+
+/// Every variant of `plan::Refusal`, named once.
+///
+/// The macro writes two things from this one list, in the shape of the
+/// scaffolder's `branches!`: [`variant`], which gives a refusal its name, and
+/// `REFUSALS`, which is what [`every_plan_refusal_has_a_case`] holds the suite
+/// to. The match is exhaustive rather than a `_ =>`, so a variant added to the
+/// enum does not compile until it is named here, and it is then in `REFUSALS`
+/// and fails the coverage case until a builder in [`refused_plans`] reaches it.
+macro_rules! refusals {
+    ($($name:ident),+ $(,)?) => {
+        fn variant(refusal: &Refusal) -> &'static str {
+            match refusal {
+                $(Refusal::$name { .. } => stringify!($name),)+
+            }
+        }
+
+        const REFUSALS: &[&str] = &[$(stringify!($name)),+];
+    };
+}
+
+refusals![
+    NoProbes,
+    SelectionEmpty,
+    TierUndeclared,
+    CampaignNarrowed,
+    ArmNotDeclared,
+    Unnameable,
+    Undeclared,
+    OracleUnnamed,
+    OracleNotUsed,
+    OracleUnknown,
+    AnswersUndeclared,
+    ExpectedUndeclared,
+    ExpectedOutsideAnswers,
+    ExpectedEveryAnswer,
+    AnswersNotUsed,
+    ExpectationNamesNothing,
+    AblatedExamined,
+    ComponentExamined,
+    InstrumentExamined,
+    ExcludedUnknown,
+    SetUndeclared,
+    SetMemberUnknown,
+    RepetitionsRaised,
+    RepetitionsZero,
+    OverBudget,
+];
+
+/// A narrowing of the default, for the table below.
+fn narrowed(edit: impl FnOnce(&mut Narrowing)) -> Narrowing {
+    let mut narrowing = Narrowing::default();
+    edit(&mut narrowing);
+    narrowing
+}
+
+/// One plan for each refusal a case of this file provokes, built with the same
+/// helpers and the same edits as the case that asserts it.
+///
+/// The cases are separate tests, so the coverage case cannot read what they
+/// reached. This table restates each one's input, so a refusal reaches the
+/// coverage case only when a builder here provokes it.
+fn refused_plans() -> Vec<Plan> {
+    let fixture = || {
+        std::fs::read_to_string(fixtures_dir().join("probe.yml")).expect("the budget declaration")
+    };
+    vec![
+        plan_at(
+            Tier::Regression,
+            &narrowed(|it| it.category = Some(Category::Consistency)),
+        ),
+        plan_at(Tier::Campaign, &narrowed(|it| it.arm = Some(Arm::Present))),
+        plan_at(Tier::Campaign, &narrowed(|it| it.arm = Some(Arm::NoHook))),
+        plan_over_probe(&|source| {
+            source.replace("probe_category: discovery", "probe_category: vibes")
+        }),
+        plan_over_probe(&|source| source.replace("expectation: opened", "expectation: patched")),
+        plan_over_probe(&|source| {
+            source.replace("oracle: \"none\"", "oracle: section.required.missing")
+        }),
+        plan_over_probe(&|source| {
+            source
+                .replace("expectation: opened", "expectation: patched")
+                .replace("oracle: \"none\"", "oracle: section.required.absent")
+        }),
+        plan_over_probe(&|source| source.replace("answers: [yes, no]", "answers: []")),
+        plan_over_probe(&|source| source.replace("expected: [no]\n", "")),
+        plan_over_probe(&|source| source.replace("expected: [no]", "expected: [maybe]")),
+        plan_over_probe(&|source| source.replace("expected: [no]", "expected: [no, yes]")),
+        plan_over_probe(&|source| {
+            source.replace(
+                "`opened` over the document it names.",
+                "`opened` over the document it names.\n\n```yaml\nanswers: [yes, no]\n```",
+            )
+        }),
+        plan_over_probe(&|source| {
+            source
+                .replace("expectation: answered", "expectation: opened")
+                .replace("expectation: not_opened", "expectation: opened")
+        }),
+        plan_at(Tier::Documentation, &Narrowing::default()),
+        layer_plan(
+            &layer_budgets(&[("no-skills: [.claude/skills]", "no-skills: [corpus/probes]")]),
+            &Narrowing::default(),
+        ),
+        plan_against(
+            Tier::Regression,
+            &Budgets::read(&format!("instrument: [corpus/probes]\n{}", fixture()))
+                .expect("the declaration reads"),
+        ),
+        plan_at(
+            Tier::Regression,
+            &narrowed(|it| it.exclude = vec!["PROBE-FIX-nowhere".to_string()]),
+        ),
+        additive_plan(
+            &additive_budgets(FIXTURE_SETS),
+            Tier::Additive,
+            &narrowed(|it| it.set = Some("final".into())),
+        ),
+        additive_plan(
+            &additive_budgets("sets:\n  tuning: [PROBE-FIX-opened, PROBE-FIX-gone]\n"),
+            Tier::Additive,
+            &narrowed(|it| it.set = Some("tuning".into())),
+        ),
+        plan_at(Tier::Campaign, &narrowed(|it| it.repetitions = Some(59))),
+        plan_at(Tier::Campaign, &narrowed(|it| it.repetitions = Some(0))),
+        plan_at(Tier::Campaign, &Narrowing::default()),
+    ]
+}
+
+/// The rule this enforces is the one spec 12 states about a correctness layer:
+/// a refusal with no fixture does not ship. It is the second instance of the
+/// scaffolder's `every_refusal_branch_has_a_case`, over the plan's refusals.
+#[test]
+fn every_plan_refusal_has_a_case() {
+    let reached: Vec<&'static str> = refused_plans()
+        .iter()
+        .filter_map(|plan| plan.refusal.as_ref().map(variant))
+        .collect();
+    let missing: Vec<&&str> = REFUSALS
+        .iter()
+        .filter(|name| !reached.contains(name))
+        .collect();
+    assert!(
+        missing.is_empty(),
+        "these refusals ship with no fixture: {missing:?}"
+    );
+}
