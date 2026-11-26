@@ -196,3 +196,59 @@ fn rebuilt(base: &Path, union: &[String], reached: &[(&str, Touched<'_>)]) -> Op
     };
     headwater_graph::anchors::tree_revision_given(base, union, &given)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A directory nothing else in this process writes into: cargo runs a
+    /// target's cases as threads of one process, so the pid alone is no key.
+    fn scratch(name: &str) -> std::path::PathBuf {
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("a clock later than the epoch")
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!(
+            "headwater-spare-{name}-{}-{nanos}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&dir).expect("a scratch directory");
+        dir
+    }
+
+    /// Each of the four classes, from what the line said, the prior digests
+    /// and the bytes at the path now (#2100).
+    #[test]
+    fn a_touched_file_takes_one_of_four_classes() {
+        let base = scratch("class");
+        std::fs::write(base.join("a.sh"), "echo a  \r\n").expect("a file");
+        let prior = Digests::of(b"echo a\n");
+        let other = Digests::of(b"echo b\n");
+        assert_eq!(class(&base, "a.sh", Touched::Added), Class::Added);
+        assert_eq!(
+            class(&base, "a.sh", Touched::Prior(Some(&prior))),
+            Class::WhiteSpace
+        );
+        assert_eq!(
+            class(&base, "a.sh", Touched::Prior(Some(&other))),
+            Class::Content
+        );
+        // A prior that did not open is content, never white space.
+        assert_eq!(class(&base, "a.sh", Touched::Prior(None)), Class::Content);
+        // The same bytes moved nothing, so they are not white space either.
+        let same = Digests::of(b"echo a  \r\n");
+        assert_eq!(
+            class(&base, "a.sh", Touched::Prior(Some(&same))),
+            Class::Content
+        );
+        assert_eq!(
+            class(&base, "gone.sh", Touched::Prior(Some(&prior))),
+            Class::Removed
+        );
+        assert_eq!(
+            class(&base, "gone.sh", Touched::Prior(None)),
+            Class::Content
+        );
+        let _ = std::fs::remove_dir_all(&base);
+    }
+}
