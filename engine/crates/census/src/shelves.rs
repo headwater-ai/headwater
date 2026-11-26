@@ -226,7 +226,7 @@ fn read_shelf(name: &str, value: &Value, span: Span) -> Result<Shelf, Declaratio
     Ok(Shelf {
         name: name.to_string(),
         title: scalar(map, "title"),
-        pattern: Pattern::new(&path),
+        pattern: Pattern::shelf(&path),
         layout: scalar(map, "layout"),
         body,
         span,

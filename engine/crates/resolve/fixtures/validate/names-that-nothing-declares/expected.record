@@ -3,6 +3,7 @@ the resolved taxonomy `kinds.decision.voice`: referential integrity: reads `decl
 the resolved taxonomy `kinds.decision.identifier.scheme`: referential integrity: reads `decision_id`, and no identifier scheme of that name is declared
 the resolved taxonomy `kinds.decision.facets.require`: referential integrity: reads `owner`, and no facet of that name is declared
 the resolved taxonomy `shelves.decisions.kinds`: referential integrity: reads `proposal`, and no kind of that name is declared
+the resolved taxonomy `shelves.decisions.path`: referential integrity: reads `team`, and no facet of that name is declared
 the resolved taxonomy `shelves.decisions.discriminator`: referential integrity: reads `doc_type`, and no facet of that name is declared
 the resolved taxonomy `relations.supersedes.to`: referential integrity: reads `proposal`, and no kind or anchor kind of that name is declared
 the resolved taxonomy `controls.CT-ACME-1.discharges`: referential integrity: reads `OB-ACME-9`, and no obligation of that name is declared

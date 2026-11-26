@@ -6,7 +6,8 @@
 #   relevance        `audience` is declared and nothing reads it
 #   ascertainability `status` has values and no guidance says when to pick one
 #   permanence       `owner` declares no volatility, and `slug` is mutable and
-#                    written into a shelf layout and an identifier pattern
+#                    written into a shelf layout, an identifier pattern and,
+#                    as a bound segment, a shelf path
 
 taxonomy: acme/fixture
 version: 1.0.0
@@ -43,7 +44,7 @@ identifier_schemes:
 
 shelves:
   decisions:
-    path: docs/decisions/**
+    path: docs/decisions/{slug}/**
     homogeneous: true
     kind: decision
     layout: "{slug}.md"

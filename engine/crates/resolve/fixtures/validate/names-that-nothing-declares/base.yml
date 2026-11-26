@@ -43,7 +43,7 @@ relations:
 
 shelves:
   decisions:
-    path: docs/decisions/**
+    path: docs/decisions/{team}/**     # binds `team`, and no facet of that name is declared
     homogeneous: false
     discriminator: doc_type            # no such facet
     kinds: [decision, proposal]        # `proposal` again

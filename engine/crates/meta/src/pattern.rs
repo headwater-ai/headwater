@@ -30,9 +30,28 @@
 //! - `?` matches exactly one character inside one segment.
 //! - Everything else is literal.
 //!
-//! Four forms and no more. Every pattern this repository declares is a literal
-//! prefix followed by `**`, and a language that admits more than the corpus uses
-//! is a language with untested cases in it.
+//! A shelf path admits a fifth form, and only a shelf path:
+//!
+//! - `{name}` **as a whole segment** matches exactly one segment, as `*` does,
+//!   and binds the facet `name` to the text of that segment. A document on
+//!   `docs/contexts/{context}/contracts/**` at
+//!   `docs/contexts/billing/contracts/a.md` reads `billing` for `context`.
+//!
+//! Only [`Pattern::shelf`] parses the fifth form. [`Pattern::new`] reads
+//! `{name}` as a literal segment, because a code-path anchor, a governed scope,
+//! an exclusion and the scope ratchet are written in this language too, and
+//! [HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md)
+//! keeps a value with no wildcard naming one path outright. If `Pattern::new`
+//! learned the form, a `governs: src/{x}/**` anchor would change from a
+//! literal into a wildcard with no edit to the anchor. A placeholder inside a
+//! segment, as in `ctx-{context}`, is not the fifth form: `taxonomy validate`
+//! refuses it on a shelf path, because nothing states where its value ends.
+//!
+//! Five forms and no more. Nearly every pattern this repository declares is a
+//! literal prefix followed by `**`, and a language that admits more than the
+//! corpus uses is a language with untested cases in it. The fifth form is here
+//! because an adopter with one folder per bounded context asked for the folder
+//! to state the context (#2101).
 //!
 //! A match costs at most one test of each pattern segment against each path
 //! segment, and an overlap at most one comparison of each pair of segments,
@@ -47,7 +66,10 @@
 //! 2. then by the count of literal characters in the whole pattern.
 //!
 //! So `docs/spec/**` beats `docs/**` on the first test, and `docs/spec/*.md`
-//! beats `docs/spec/**` on the second. Two patterns that tie on both are a tie,
+//! beats `docs/spec/**` on the second. A bound segment ranks as a glob segment
+//! with no literal character in it, so `docs/contexts/{context}/contracts/**`
+//! and `docs/contexts/*/contracts/**` tie, and the determinism rule refuses the
+//! two together. Two patterns that tie on both are a tie,
 //! and `headwater_census::resolve` reports it rather than picking one.
 //!
 //! # Overlap
@@ -72,15 +94,33 @@ enum Segment {
     /// One segment, matched against a glob with `*` and `?` in it.
     Glob(String),
     Literal(String),
+    /// `{name}` as a whole segment of a shelf path: any one segment, whose
+    /// text is the value of the facet `name`. Only [`Pattern::shelf`] makes it.
+    Bound(String),
 }
 
 impl Pattern {
+    /// A pattern in the four-form language, in which `{name}` is literal.
     pub fn new(source: &str) -> Self {
+        Self::parse(source, false)
+    }
+
+    /// A shelf path: the four forms and a whole `{name}` segment, which binds
+    /// the facet `name`. See the module header for why only a shelf path
+    /// reads the fifth form.
+    pub fn shelf(source: &str) -> Self {
+        Self::parse(source, true)
+    }
+
+    fn parse(source: &str, binds: bool) -> Self {
         let mut segments: Vec<Segment> = source
             .split('/')
             .filter(|segment| !segment.is_empty())
             .map(|segment| match segment {
                 "**" => Segment::AnyDepth,
+                _ if binds && bound_name(segment).is_some() => {
+                    Segment::Bound(bound_name(segment).unwrap_or_default().to_string())
+                }
                 _ if segment.contains(['*', '?']) => Segment::Glob(segment.to_string()),
                 _ => Segment::Literal(segment.to_string()),
             })
@@ -121,9 +161,36 @@ impl Pattern {
                 Segment::AnyDepth => 0,
                 Segment::Literal(text) => text.len(),
                 Segment::Glob(text) => text.chars().filter(|c| !matches!(c, '*' | '?')).count(),
+                Segment::Bound(_) => 0,
             })
             .sum();
         (leading, literal_chars)
+    }
+
+    /// Every facet this pattern binds, with the index of its segment in the
+    /// pattern, in pattern order. Empty for a pattern [`Pattern::new`] made.
+    pub fn bound(&self) -> Vec<(usize, &str)> {
+        self.segments
+            .iter()
+            .enumerate()
+            .filter_map(|(index, segment)| match segment {
+                Segment::Bound(name) => Some((index, name.as_str())),
+                _ => None,
+            })
+            .collect()
+    }
+
+    /// The value a path gives each bound facet, or `None` when the pattern
+    /// does not match the path. A pattern that binds nothing answers an empty
+    /// list for a path it matches.
+    ///
+    /// Where a `**` stands before a bound segment, more than one reading can
+    /// match; the one returned lets each `**` take as few segments as it can,
+    /// so the answer is the same on every run.
+    pub fn bindings(&self, path: &str) -> Option<Vec<(String, String)>> {
+        let path: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();
+        let mut out = Vec::new();
+        bind_from(&self.segments, &path, &mut out).then_some(out)
     }
 
     /// Whether this pattern names one path outright: no `**` and no glob
@@ -172,6 +239,47 @@ impl Pattern {
     }
 }
 
+/// The facet name of a whole `{name}` segment: a name with no brace, no
+/// wildcard and no format specifier in it.
+pub fn bound_name(segment: &str) -> Option<&str> {
+    let name = segment.strip_prefix('{')?.strip_suffix('}')?;
+    (!name.is_empty() && !name.contains(['{', '}', '*', '?', ':'])).then_some(name)
+}
+
+/// A match that records the text of each bound segment, trying the fewest
+/// segments for each `**` first. Only [`Pattern::bindings`] calls it, on one
+/// document at a time, so it searches without the table `matches_at` keeps.
+fn bind_from(pattern: &[Segment], path: &[&str], out: &mut Vec<(String, String)>) -> bool {
+    match pattern.split_first() {
+        None => path.is_empty(),
+        Some((Segment::AnyDepth, rest)) => (0..=path.len()).any(|taken| {
+            let kept = out.len();
+            let found = bind_from(rest, &path[taken..], out);
+            if !found {
+                out.truncate(kept);
+            }
+            found
+        }),
+        Some((head, rest)) => {
+            let Some((segment, tail)) = path.split_first() else {
+                return false;
+            };
+            if !segment_matches(head, segment) {
+                return false;
+            }
+            let kept = out.len();
+            if let Segment::Bound(name) = head {
+                out.push((name.clone(), (*segment).to_string()));
+            }
+            let found = bind_from(rest, tail, out);
+            if !found {
+                out.truncate(kept);
+            }
+            found
+        }
+    }
+}
+
 /// Segment-wise intersection. `**` on either side searches over how many
 /// segments of the other side it swallows, exactly as matching does.
 ///
@@ -210,8 +318,10 @@ fn overlaps_from(left: &[Segment], right: &[Segment]) -> bool {
 
 /// Two single-segment patterns, and whether one text satisfies both.
 fn segments_overlap(left: &Segment, right: &Segment) -> bool {
+    // A bound segment admits any one segment, so it overlaps as `*` does.
     let text = |segment: &Segment| match segment {
         Segment::Literal(text) | Segment::Glob(text) => text.clone(),
+        Segment::Bound(_) => "*".to_string(),
         Segment::AnyDepth => unreachable!("handled by the caller"),
     };
     glob_overlaps(
@@ -309,6 +419,7 @@ fn segment_matches(head: &Segment, segment: &str) -> bool {
     match head {
         Segment::Literal(text) => text == segment,
         Segment::Glob(glob) => glob_matches(glob, segment),
+        Segment::Bound(_) => true,
         Segment::AnyDepth => unreachable!("handled by the caller"),
     }
 }
@@ -363,6 +474,47 @@ mod tests {
         // The failure that shrinks a denominator: a prefix comparison would say
         // yes to a sibling directory whose name starts with the same letters.
         assert!(!pattern.matches("docs/special-cases/a.md"));
+    }
+
+    #[test]
+    fn a_bound_segment_matches_one_segment_and_reads_its_value() {
+        let pattern = Pattern::shelf("docs/contexts/{context}/contracts/**");
+        assert_eq!(pattern.bound(), vec![(2, "context")]);
+        assert!(pattern.matches("docs/contexts/billing/contracts/a.md"));
+        assert!(!pattern.matches("docs/contexts/contracts/a.md"));
+        assert!(!pattern.matches("docs/contexts/a/b/contracts/a.md"));
+        assert_eq!(
+            pattern.bindings("docs/contexts/billing/contracts/deep/a.md"),
+            Some(vec![("context".to_string(), "billing".to_string())])
+        );
+        assert_eq!(pattern.bindings("docs/other/billing/contracts/a.md"), None);
+        // Ranked as a glob segment with no literal character, so it ties `*`.
+        assert_eq!(
+            pattern.specificity(),
+            Pattern::new("docs/contexts/*/contracts/**").specificity()
+        );
+        assert!(pattern.overlaps(&Pattern::new("docs/contexts/*/contracts/**")));
+        assert!(pattern.overlaps(&Pattern::new("docs/contexts/billing/**")));
+        assert!(!pattern.overlaps(&Pattern::new("docs/spec/**")));
+        assert_eq!(pattern.literal_prefix(), "docs/contexts");
+        assert!(!pattern.is_literal());
+    }
+
+    #[test]
+    fn only_a_shelf_path_binds_and_every_other_pattern_reads_braces_literally() {
+        // HW-DR-0074: a code-path anchor with no wildcard names one path.
+        let anchor = Pattern::new("src/{x}/lib.rs");
+        assert!(anchor.is_literal());
+        assert!(anchor.bound().is_empty());
+        assert!(anchor.matches("src/{x}/lib.rs"));
+        assert!(!anchor.matches("src/y/lib.rs"));
+        // A placeholder inside a segment is not the fifth form, even on a shelf.
+        let partial = Pattern::shelf("docs/ctx-{context}/**");
+        assert!(partial.bound().is_empty());
+        assert!(!partial.matches("docs/ctx-billing/a.md"));
+        assert_eq!(bound_name("{sequence:02d}"), None);
+        assert_eq!(bound_name("{}"), None);
+        assert_eq!(bound_name("{context}"), Some("context"));
     }
 
     #[test]
@@ -491,6 +643,7 @@ mod tests {
                     let matched = match head {
                         Segment::Literal(text) => text == segment,
                         Segment::Glob(glob) => glob_matches(glob, segment),
+                        Segment::Bound(_) => true,
                         Segment::AnyDepth => unreachable!("handled above"),
                     };
                     matched && reference_matches(rest, tail)
@@ -516,6 +669,7 @@ mod tests {
                     Segment::Literal(text) | Segment::Glob(text) => {
                         text.chars().collect::<Vec<char>>()
                     }
+                    Segment::Bound(_) => vec!['*'],
                     Segment::AnyDepth => unreachable!("handled above"),
                 };
                 reference_glob_overlaps(&text(head), &text(other))
