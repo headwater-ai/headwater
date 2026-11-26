@@ -26,7 +26,7 @@
 
 use crate::{Neighbour, Pointer, Surface};
 use headwater_census::census::Outcome;
-use headwater_check::paint::{dim, paint, ColorMode, Role};
+use headwater_check::paint::{dim, paint, visible, ColorMode, Role};
 use std::path::Path;
 
 /// One document, explained.
@@ -171,7 +171,13 @@ impl Explanation {
     pub fn refusal_for(&self, verb: &str) -> Option<String> {
         self.unwalkable
             .as_ref()
-            .map(|reason| format!("`{}` is {reason}, so `{verb}` prints nothing", self.path))
+            .map(|reason| {
+                format!(
+                    "`{}` is {}, so `{verb}` prints nothing",
+                    visible(&self.path),
+                    visible(reason)
+                )
+            })
     }
 
     /// The explanation as text, in spec 2's own order.
@@ -182,22 +188,26 @@ impl Explanation {
     /// comment for why this function reads no stream itself, and
     /// `crate::explain::tests` for why coloring a label before it is folded
     /// costs at most an early wrap rather than a broken one.
+    ///
+    /// Every value from a document goes through `visible`, so no control
+    /// character reaches a terminal or a CI log and no value opens a line
+    /// with `::` (#2069). A clean value is borrowed back unchanged.
     pub fn render(&self, mode: ColorMode) -> String {
         use std::fmt::Write;
         let mut out = String::new();
-        let _ = writeln!(out, "{}", paint(Role::Path, &self.path, mode));
+        let _ = writeln!(out, "{}", paint(Role::Path, &visible(&self.path), mode));
         if let Some(id) = &self.id {
-            let _ = writeln!(out, "  {id}");
+            let _ = writeln!(out, "  {}", visible(id));
         }
         match &self.kind {
             Some(kind) => {
-                let _ = writeln!(out, "  {} {kind}", dim("kind", mode));
+                let _ = writeln!(out, "  {} {}", dim("kind", mode), visible(kind));
             }
             None => out.push_str("  no kind, so nothing is required of it\n"),
         }
         for step in &self.derivation {
             out.push_str(&headwater_check::fill::filled(
-                &format!("    {step}\n"),
+                &format!("    {}\n", visible(step)),
                 headwater_check::fill::WIDTH,
             ));
         }
@@ -205,24 +215,24 @@ impl Explanation {
             let label = dim("purpose", mode);
             match intent {
                 Some(intent) => out.push_str(&headwater_check::fill::filled(
-                    &format!("  {label} {name}, to {intent}\n"),
+                    &format!("  {label} {}, to {}\n", visible(name), visible(intent)),
                     headwater_check::fill::WIDTH,
                 )),
                 None => out.push_str(&headwater_check::fill::filled(
-                    &format!("  {label} {name}\n"),
+                    &format!("  {label} {}\n", visible(name)),
                     headwater_check::fill::WIDTH,
                 )),
             };
         }
         if let Some(summary) = &self.summary {
             out.push_str(&headwater_check::fill::filled(
-                &format!("  {} {summary}\n", dim("summary", mode)),
+                &format!("  {} {}\n", dim("summary", mode), visible(summary)),
                 headwater_check::fill::WIDTH,
             ));
         }
         if let Some(warrant) = &self.warrant {
             out.push_str(&headwater_check::fill::filled(
-                &format!("  {} {warrant}\n", dim("warrant", mode)),
+                &format!("  {} {}\n", dim("warrant", mode), visible(warrant)),
                 headwater_check::fill::WIDTH,
             ));
         }
@@ -231,7 +241,7 @@ impl Explanation {
                 &format!(
                     "  {} {}\n",
                     dim("requires the facets", mode),
-                    self.facets.join(", ")
+                    visible(&self.facets.join(", "))
                 ),
                 headwater_check::fill::WIDTH,
             ));
@@ -241,7 +251,7 @@ impl Explanation {
                 &format!(
                     "  {} {}\n",
                     dim("requires the sections", mode),
-                    self.sections.join(", ")
+                    visible(&self.sections.join(", "))
                 ),
                 headwater_check::fill::WIDTH,
             ));
@@ -250,14 +260,15 @@ impl Explanation {
             let label = dim("may declare", mode);
             let line = match &permitted.inverse {
                 Some(inverse) => format!(
-                    "  {label} {} to {}, and the other end writes {inverse}\n",
-                    permitted.relation,
-                    permitted.to.join(", ")
+                    "  {label} {} to {}, and the other end writes {}\n",
+                    visible(&permitted.relation),
+                    visible(&permitted.to.join(", ")),
+                    visible(inverse)
                 ),
                 None => format!(
                     "  {label} {} to {}\n",
-                    permitted.relation,
-                    permitted.to.join(", ")
+                    visible(&permitted.relation),
+                    visible(&permitted.to.join(", "))
                 ),
             };
             out.push_str(&headwater_check::fill::filled(
@@ -338,7 +349,7 @@ impl Governed {
     /// The answer as text: the path, then one `governed by` line for each
     /// document, with the pointer `route` writes and the identifier below it.
     pub fn render(&self, mode: ColorMode) -> String {
-        let mut out = format!("{}\n", paint(Role::Path, &self.path, mode));
+        let mut out = format!("{}\n", paint(Role::Path, &visible(&self.path), mode));
         for pointer in &self.pointers {
             out.push_str(&format!(
                 "  {} {}\n",
@@ -346,7 +357,7 @@ impl Governed {
                 pointer.render()
             ));
             if let Some(id) = &pointer.id {
-                out.push_str(&format!("    {id}\n"));
+                out.push_str(&format!("    {}\n", visible(id)));
             }
         }
         out
@@ -365,7 +376,10 @@ impl Governed {
 /// invention, or whether an untyped document carries it: that finer read is
 /// `resolve_identifier`'s, over `headwater mcp`.
 pub fn identifier_text(target: &str) -> String {
-    format!("`{target}` is shaped like an identifier of this corpus, and no document declares it")
+    format!(
+        "`{}` is shaped like an identifier of this corpus, and no document declares it",
+        visible(target)
+    )
 }
 
 /// The sentence a refusal prints for a target with no document, one per state
@@ -380,15 +394,19 @@ pub fn classification_text(
     classification: &headwater_census::walk::Classification,
 ) -> String {
     use headwater_census::walk::Classification;
+    let shown = visible(target);
     match classification {
         Classification::Corpus => {
-            format!("`{target}` is a path of this corpus, with no document written there yet")
+            format!("`{shown}` is a path of this corpus, with no document written there yet")
         }
         Classification::Excluded(pattern) => {
-            format!("`{target}` is excluded by `{pattern}`, so it is not corpus content")
+            format!(
+                "`{shown}` is excluded by `{}`, so it is not corpus content",
+                visible(pattern)
+            )
         }
         Classification::Outside => {
-            format!("`{target}` is outside every corpus root this repository declares")
+            format!("`{shown}` is outside every corpus root this repository declares")
         }
         // #1227: this state is reached by a path that leaves the repository,
         // absolute, by `..` or through a symlink (#1249), and by a segment

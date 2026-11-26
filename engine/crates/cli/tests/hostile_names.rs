@@ -172,6 +172,23 @@ fn show_refuses_in_visible_text_and_writes_the_bytes_unchanged() {
         "show names the missing path: {missing:?}"
     );
     clean("show <missing>", &missing);
+    // A row the walk could not read, at a hostile path: `show` and `explain`
+    // refuse it in the one sentence `Explanation::refusal_for` writes.
+    let pipe = "docs/decisions/0009-p\u{1b}[31m.md";
+    let made = std::process::Command::new("mkfifo")
+        .arg(root.at.join(pipe))
+        .status()
+        .expect("mkfifo runs");
+    assert!(made.success(), "the named pipe is made");
+    for verb in ["show", "explain"] {
+        let refused = root.run(&[verb, "--no-color", pipe]);
+        assert_ne!(refused.code, Some(0), "{verb} refuses the pipe: {refused:?}");
+        assert!(
+            refused.err.contains("0009-p"),
+            "{verb} names the pipe: {refused:?}"
+        );
+        clean(&format!("{verb} <pipe>"), &refused);
+    }
     let output = root
         .command()
         .args(["show", "HW-DR-0004", "--root"])

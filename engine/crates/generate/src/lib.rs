@@ -97,7 +97,7 @@
 use headwater_census::census::Census;
 use headwater_census::resolve::{shelf_for, ShelfMatch};
 use headwater_census::shelves::DeclarationError;
-use headwater_check::paint::{dim, paint, ColorMode, Role};
+use headwater_check::paint::{dim, paint, visible, ColorMode, Role};
 use headwater_query::{Document, Pointer, Surface};
 use headwater_yaml::value::{Mapping, Value};
 use std::path::Path;
@@ -1964,7 +1964,9 @@ impl Report {
     /// could go wrong, and the fixture that holds the bar could only reach one
     /// of them.
     pub fn remedy(&self) -> Option<String> {
-        let sentence = self.sentence()?;
+        // The sentence can quote a transcript path or an arm, which a
+        // document supplies, so it goes through `visible` whole (#2069).
+        let sentence = visible(&self.sentence()?).into_owned();
         Some(match self.withheld {
             true => format!(
                 "{sentence}. This run refused before its first write, so it wrote nothing and the \
@@ -2056,6 +2058,10 @@ impl Report {
     /// reason lines under a path take dim weight, because HW-DR-0045's table
     /// gives already-stated context no hue. Nothing here is filled, so paint
     /// and layout do not meet — see `Route::render` for the case where they do.
+    ///
+    /// Every path and every line under one goes through `visible` before it
+    /// is painted, because a path or a reason can quote a value that a
+    /// document supplies (#2069). A clean value is borrowed back unchanged.
     pub fn render(&self, mode: ColorMode) -> String {
         let mut out = String::new();
         // First, because it is what decides whether anything below can be read
@@ -2093,9 +2099,9 @@ impl Report {
                     out.push_str(&format!(
                         "  {} {}\n",
                         wrote.kind.name(),
-                        paint(Role::Path, &wrote.path, mode)
+                        paint(Role::Path, &visible(&wrote.path), mode)
                     ));
-                    out.push_str(&dim(&format!("    {}", wrote.verdict.line()), mode));
+                    out.push_str(&dim(&format!("    {}", visible(&wrote.verdict.line())), mode));
                     out.push('\n');
                 }
             }
@@ -2110,9 +2116,9 @@ impl Report {
             for unreadable in &self.unreadable {
                 out.push_str(&format!(
                     "  {}\n",
-                    paint(Role::Path, &unreadable.path, mode)
+                    paint(Role::Path, &visible(&unreadable.path), mode)
                 ));
-                out.push_str(&dim(&format!("    {}", unreadable.detail), mode));
+                out.push_str(&dim(&format!("    {}", visible(&unreadable.detail)), mode));
                 out.push('\n');
             }
         }
@@ -2123,9 +2129,9 @@ impl Report {
             for refused in &self.refused {
                 out.push_str(&format!(
                     "  {}\n",
-                    paint(Role::Path, &refused.transcript, mode)
+                    paint(Role::Path, &visible(&refused.transcript), mode)
                 ));
-                out.push_str(&dim(&format!("    {}", refused.line()), mode));
+                out.push_str(&dim(&format!("    {}", visible(&refused.line())), mode));
                 out.push('\n');
             }
         }
@@ -2140,9 +2146,9 @@ impl Report {
             for moved in &self.moved_since_recording {
                 out.push_str(&format!(
                     "  {}\n",
-                    paint(Role::Path, &moved.transcript, mode)
+                    paint(Role::Path, &visible(&moved.transcript), mode)
                 ));
-                out.push_str(&dim(&format!("    {}", moved.line()), mode));
+                out.push_str(&dim(&format!("    {}", visible(&moved.line())), mode));
                 out.push('\n');
             }
         }
@@ -2153,10 +2159,10 @@ impl Report {
             for defective in &self.defective_arms {
                 out.push_str(&format!(
                     "  {} / {}\n",
-                    paint(Role::Path, &defective.present, mode),
-                    paint(Role::Path, &defective.absent, mode)
+                    paint(Role::Path, &visible(&defective.present), mode),
+                    paint(Role::Path, &visible(&defective.absent), mode)
                 ));
-                out.push_str(&dim(&format!("    {}", defective.line()), mode));
+                out.push_str(&dim(&format!("    {}", visible(&defective.line())), mode));
                 out.push('\n');
             }
         }
@@ -2167,9 +2173,9 @@ impl Report {
             for ambiguous in &self.ambiguous_arms {
                 out.push_str(&format!(
                     "  {}\n",
-                    paint(Role::Path, &ambiguous.selection, mode)
+                    paint(Role::Path, &visible(&ambiguous.selection), mode)
                 ));
-                out.push_str(&dim(&format!("    {}", ambiguous.line()), mode));
+                out.push_str(&dim(&format!("    {}", visible(&ambiguous.line())), mode));
                 out.push('\n');
             }
         }
@@ -2182,8 +2188,8 @@ impl Report {
             ));
             out.push('\n');
             for orphaned in &self.orphaned {
-                out.push_str(&format!("  {}\n", paint(Role::Path, &orphaned.path, mode)));
-                out.push_str(&dim(&format!("    {}", orphaned.line()), mode));
+                out.push_str(&format!("  {}\n", paint(Role::Path, &visible(&orphaned.path), mode)));
+                out.push_str(&dim(&format!("    {}", visible(&orphaned.line())), mode));
                 out.push('\n');
             }
         }
@@ -2199,9 +2205,9 @@ impl Report {
                 out.push_str(&format!(
                     "  {} {}\n",
                     unwritten.kind.name(),
-                    paint(Role::Path, &unwritten.at, mode)
+                    paint(Role::Path, &visible(&unwritten.at), mode)
                 ));
-                out.push_str(&dim(&format!("    {}", unwritten.reason), mode));
+                out.push_str(&dim(&format!("    {}", visible(&unwritten.reason)), mode));
                 out.push('\n');
             }
         }

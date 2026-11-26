@@ -53,7 +53,7 @@
 //! it, and the ranking would move on every paragraph anybody edited.
 
 use crate::{terms, Document, Pointer, Surface};
-use headwater_check::paint::{dim, paint, ColorMode, Role};
+use headwater_check::paint::{dim, paint, visible, ColorMode, Role};
 use headwater_graph::declarations::Governs;
 use headwater_graph::Target;
 
@@ -1377,7 +1377,7 @@ impl Route {
             );
         }
         for anchor in &self.anchors {
-            let _ = writeln!(out, "  names the anchor {anchor}");
+            let _ = writeln!(out, "  names the anchor {}", visible(anchor));
         }
         // No em dash on any of these lines, for the reason the withheld line
         // below gives: in this report the dash marks a pointer.
@@ -1385,7 +1385,7 @@ impl Route {
             let _ = writeln!(
                 out,
                 "  {} is in the governed scope, and nothing governs it",
-                entry.path
+                visible(&entry.path)
             );
             if entry.relations.is_empty() {
                 out.push_str("    no declared relation that governs takes it as a target\n");
@@ -1394,7 +1394,12 @@ impl Route {
             out.push_str("    a document declares the edge in its front matter:\n");
             out.push_str("    relations:\n");
             for relation in &entry.relations {
-                let _ = writeln!(out, "      {relation}:\n        - {}", entry.path);
+                let _ = writeln!(
+                    out,
+                    "      {}:\n        - {}",
+                    visible(relation),
+                    visible(&entry.path)
+                );
             }
         }
         match self.matched.is_empty() {
@@ -1422,15 +1427,14 @@ impl Route {
         // dim like the terms line. It carries no em dash, for the reason the
         // withheld line below gives.
         for (pointer, evidence) in self.offers() {
+            // `Pointer::render` writes the path through `visible`, so the
+            // text to paint is the escaped path and not the raw one (#2069).
+            let shown = visible(&pointer.path);
             let folded = fold(&format!("  {}\n", pointer.render()));
-            out.push_str(&folded.replacen(
-                &pointer.path,
-                &paint(Role::Path, &pointer.path, mode),
-                1,
-            ));
+            out.push_str(&folded.replacen(&*shown, &paint(Role::Path, &shown, mode), 1));
             if let Some(evidence) = evidence {
                 for said in evidence.render().lines() {
-                    let folded = fold(&format!("    {said}\n"));
+                    let folded = fold(&format!("    {}\n", visible(said)));
                     for line in folded.lines() {
                         let _ = writeln!(out, "{}", dim(line, mode));
                     }
