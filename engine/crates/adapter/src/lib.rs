@@ -240,6 +240,12 @@ pub fn a_scoped_run(run: &Run) -> bool {
     run.change.is_some()
 }
 
+/// A run that `check --path` narrowed writes it, and a run with no filter does
+/// not (#2101).
+pub fn a_filtered_run(run: &Run) -> bool {
+    run.filter.is_some()
+}
+
 /// Every record carries it.
 pub fn every_finding(_: &Reported<'_>, _: &Run) -> bool {
     true

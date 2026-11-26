@@ -2,7 +2,7 @@
 id: HW-IFACE-headwater-check
 status: current
 status_since: 2026-09-06
-summary: "What headwater check reads, what goes to each of its two streams, and the fourteen causes behind its one non-zero exit."
+summary: "What headwater check reads, what goes to each of its two streams, and the fifteen causes behind its one non-zero exit."
 last_verified: 2026-11-26
 title: "headwater check"
 provenance:
@@ -15,6 +15,7 @@ relations:
   governs:
     - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
     - engine/crates/check/src/lib.rs
+    - engine/crates/check/src/filter.rs
     - engine/crates/adapter/src/json.rs
     - engine/crates/check/src/harvest.rs
     - engine/crates/check/src/pin.rs
@@ -27,7 +28,7 @@ relations:
 ## Synopsis
 
     headwater check [--strict] [--fix] [--baseline] [--no-cache] [--now <date>]
-                    [--change <manifest>]
+                    [--change <manifest>] [--path <pattern>]...
                     [--read-set <path>] [--register <path>]
                     [--format text|json|sarif|markdown | --json] [--verbose]
                     [--root <path>] [--no-color] [--no-banner]
@@ -74,6 +75,8 @@ The program exclusion applies only to a whole bare token, so `mkdocs/build.sh` c
 
 **Nothing here reaches a network.** No crate that this verb reaches depends on an HTTP client, and the checks read the tree in front of them. The one crate with a client is `headwater-fetch`. It serves `taxonomy vendor`, and only the binary links it ([HW-DR-0075](../decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md)).
 
+**`--path` narrows the report after the run, and it never narrows the run** ([#2101](https://github.com/headwater-ai/headwater/issues/2101)). The run evaluates every instance, as it does without the flag. Then the verb keeps a live finding only where one of the patterns matches the path of the finding. The printed findings, the `--strict` exit and the census of the report read that narrowed list. Coverage, the cache, the read set, the register, the adoption ledger and the suppression inventory stay as they are for the whole corpus. That holds until an adopter reports that the `not reported` block of a filtered run is noise for one context. Write each pattern relative to the corpus root, as a finding path is written. A `{name}` segment is literal here, because only a shelf path binds a facet. The verb does not normalize a pattern, so `./docs/**` matches nothing. A finding on `.headwater/taxonomy.lock` is filtered as any other finding is, so `--path docs/**` holds it back. The report names each pattern and the number of findings that the filter held back. With `--fix`, the verb writes the patch of a finding only where a pattern matches the path of that finding, whatever file the patch edits. A pattern that matches no row of the census and no finding is named in the report, and it fails a `--strict` run. Without that, a mistyped `--path` in a CI step holds back every finding and passes for good. The MCP `check` and `fix` tools take no filter.
+
 **A run stays linear in the size of its input** ([#1968](https://github.com/headwater-ai/headwater/issues/1968)). Five readers hold this: the YAML loader, the sentence reader, the line reader, the edge scope and the audit of a rendered report. Each case of `engine/crates/cli/tests/linear_scale.rs` runs this verb over one document that is large in one way, and holds the run inside a time ceiling. The cases are many front matter keys, many sentences in one paragraph, many links on one line, and many unresolved relation targets. The audit has its own case in `engine/crates/adapter/tests/fixtures.rs`. The [parse and census invariants](../subsystems/parse-and-census.md#invariants) name each case and the reader that it holds.
 
 ## Preconditions
@@ -106,6 +109,7 @@ The program exclusion applies only to a whole bare token, so `mkdocs/build.sh` c
 | `--no-cache` | Read and write no cache, and evaluate every instance. Standard output is the same either way, and a difference is a defect in the cache rather than a result. |
 | `--now <date>` | The date to evaluate against, as `YYYY-MM-DD`. It defaults to the system clock. |
 | `--change <manifest>` | The manifest of a change, which the rules that read a transition use. The flag does not narrow the documents that the run checks. A run with a manifest that names one file reports the findings on every other document too. The first line is `headwater change 1`. A file that opens with anything else is refused rather than read. Each line after it is `added<TAB><path>`, `prior<TAB><path><TAB><file>` or `verified<TAB><path>`. The second form names a file holding the bytes that stood before the change. The third form states that a person re-read the document at `<path>`, and it names no version of that document. Each `<path>` is written from the top level of the git repository, and not from the root. A manifest that another tool writes from a root in a subfolder therefore names paths outside the root, and the report names each one. A document the manifest omits did not move. Without the flag, every rule that reads a transition reports each of its instances as skipped rather than as passed. [`headwater change`](headwater-change.md) is a producer of this file, and `.githooks/change-manifest` is the one this repository's own hooks call. <!-- headwater allow=surface.local_path.instructed scope=block until=2027-09-30 reason=accepted_deviation note=how this repository produces the manifest --> |
+| `--path <pattern>` | Report only the findings on a path that this pattern matches. Repeat the flag to give more than one pattern. Every document is still evaluated. The filter narrows the printed findings, the `--strict` exit and the patches that `--fix` writes, and the report says how many findings it held back. A pattern that matches no file and no finding fails a `--strict` run. |
 | `--read-set <path>` | Write the read set of this run to a file. The report carries the same read set under `--verbose`. `headwater gate` is the reader, and it reads a file rather than a report. The flag decides no finding and moves no verdict. |
 | `--register <path>` | Write the obligation and control register of this run to a file as well as into the report. The content is the content already in the report. The report lays its copy out at the width of the run. This file is written at no width, because nothing reads it back. |
 | `--format text\|json\|sarif\|markdown` | The vocabulary the report is written in. `text` is the default and the one a person reads. `sarif` is what a forge ingests, `markdown` is a job summary or a review comment, and `json` is the finding shape that [spec 4](../spec/04-assurance-model.md) declares. [The JSON report, member by member](#the-json-report-member-by-member) names each member of the `json` report, and [Raising the version](#raising-the-version) gives each version of its shape. `sarif` writes its own loss set into the artifact. `markdown` declares one in the source and not in the artifact, because nothing it writes is machine-readable. `text` declares two drops there too. The first is the routing of each skip. The second is the scope of each rule and the read set, which the report writes only under `--verbose`. `text` carries the census and the graph that no other format holds. `json` declares one there as well, the per-document account of coverage, and writes no loss set of its own. The flag moves no verdict and no exit status. |
@@ -122,7 +126,7 @@ The program exclusion applies only to a whole bare token, so `mkdocs/build.sh` c
 
 **0** where the run completed and no reason below applied. A finding of any severity, including an error, leaves the status at 0 unless `--strict` was passed.
 
-**1** for each of the fourteen reasons below. There is no third status, so a caller reads the message to tell them apart.
+**1** for each of the fifteen reasons below. There is no third status, so a caller reads the message to tell them apart.
 
 | The reason | Where it is decided |
 |---|---|
@@ -140,8 +144,9 @@ The program exclusion applies only to a whole bare token, so `mkdocs/build.sh` c
 | `--fix` was passed and a file refused its patch | after the report is written |
 | `--strict` was passed and at least one live finding is an error. Or a control that declares `posture: blocking` discharges at least one live finding, at any severity | the last reading of the verb |
 | `--strict` was passed and this engine is outside the `engine` range that `.headwater/taxonomy.yml` declares | the last reading of the verb |
+| `--strict` was passed and a `--path` pattern matches no row of the census and no finding | the last reading of the verb |
 
-Two of those are worth separating. **A refused patch is not a finding**, so no absence of `--strict` softens it. The verb was asked to write and did not, and a caller who read a 0 would believe a corpus was fixed. And **the report is written before the last six rows are decided**. A run that exits 1 for one of those six still put a complete report on standard output. That holds in `text`, `json`, `sarif` and `markdown` alike.
+Two of those are worth separating. **A refused patch is not a finding**, so no absence of `--strict` softens it. The verb was asked to write and did not, and a caller who read a 0 would believe a corpus was fixed. And **the report is written before the last seven rows are decided**. A run that exits 1 for one of those seven still put a complete report on standard output. That holds in `text`, `json`, `sarif` and `markdown` alike.
 
 **The first seven rows are refusals, and a refusal writes nothing to standard output.** The account of a refusal is one English sentence on standard error, under `--json` and `--format json` alike. So the property is that a refusal writes no document, and not that a non-zero exit writes none. [HW-DR-0043](../decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md) rules it, and `a_refusal_writes_no_document_and_accounts_for_itself_on_the_other_stream` in `engine/crates/cli/tests/json.rs` holds both halves.
 
@@ -181,7 +186,7 @@ Without `--fix`, this verb writes no byte of the corpus. The cache is outside th
 
 ### The JSON report, member by member
 
-`headwater check --format json` writes one JSON object to standard output. This table names each member of the object at the top level, and each member of `taxonomy`, `change` and an entry of `rules`. A test holds the table to what the engine writes. A path uses `.` between a key and its parent, and `[]` for each element of an array. [Spec 4](../spec/04-assurance-model.md) declares the members of an entry of `findings`.
+`headwater check --format json` writes one JSON object to standard output. This table names each member of the object at the top level, and each member of `taxonomy`, `change`, `filter` and an entry of `rules`. A test holds the table to what the engine writes. A path uses `.` between a key and its parent, and `[]` for each element of an array. [Spec 4](../spec/04-assurance-model.md) declares the members of an entry of `findings`.
 
 | Member | When it is present | What it means |
 |---|---|---|
@@ -202,6 +207,10 @@ Without `--fix`, this verb writes no byte of the corpus. The cache is outside th
 | `change.unmatched` | With `change` | Each path of the manifest that no row of the census holds, so that a mistyped path is visible. A path outside a root in a subfolder of the git repository is in this list too, as the manifest wrote it. These paths come after the paths of the corpus. Each one counts in `documents` as a document of its own, also when a path of the corpus has the same spelling. |
 | `change.unstated` | With `change` | Each `verified` line that names no edge of its document, as an object with `document` and `target`. Such a line stamps nothing. A line whose document no row of the census holds is here too, and its document is also in `unmatched`. |
 | `change.promotions` | With `change` | The number of warrants that the change moves from `asserted` to `accepted`. |
+| `filter` | Only on a run with `--path` | The account of the path filter. A run without `--path` writes no `filter`, and `findings` then holds every live finding. |
+| `filter.patterns` | With `filter` | Each pattern, as the command line wrote it, in that order. |
+| `filter.held_back` | With `filter` | The number of live findings that the filter removed from `findings`. |
+| `filter.unmatched` | With `filter` | Each pattern that matches no row of the census and no finding, in command-line order. A `--strict` run fails when this list is not empty. |
 | `coverage` | Always | The census counts, the instances and the account of each skipped instance. |
 | `rules` | Always | One entry for each rule that the run served. |
 | `rules[].rule` | Always | The identifier of the rule. |
@@ -214,7 +223,7 @@ Without `--fix`, this verb writes no byte of the corpus. The cache is outside th
 
 ### Raising the version
 
-The current version is `1.8`. The version is a constant of the shape, and it is not the version of the engine. Two engines that write one shape write one version, so a reader does not read the shape again. The SARIF report carries `change` and `coverage` in its property bag, so this version also applies to those two members of that report.
+The current version is `1.9`. The version is a constant of the shape, and it is not the version of the engine. Two engines that write one shape write one version, so a reader does not read the shape again. The SARIF report carries `change`, `filter` and `coverage` in its property bag, so this version also applies to those three members of that report.
 
 Each version added a member, and each addition moved the minor. So an absent member says a different thing at each version. At `1.1` a report with no `change` says that the run read the whole corpus. At `1.0` it says only that the engine had no such member to write.
 
@@ -227,6 +236,7 @@ Each version added a member, and each addition moved the minor. So an absent mem
 - `1.6` added `unstated` to `change`. Before `1.6`, a `verified` line whose target its document does not govern was in no member. A line whose document no row holds was in `unmatched` only as its document path ([#1631](https://github.com/headwater-ai/headwater/issues/1631)).
 - `1.7` added `blocked_by` to a live finding that a `posture: blocking` control discharges. Before `1.7`, a report did not say why a strict run over a corpus with no error failed ([#2015](https://github.com/headwater-ai/headwater/issues/2015)).
 - `1.8` added `touched` and `spared_by` to a live `relation.target.suspect` finding of a run with `--change`. Before `1.8`, a report did not say which governed files a change touched, or whether a change moved only white space ([#2100](https://github.com/headwater-ai/headwater/issues/2100), [#2028](https://github.com/headwater-ai/headwater/issues/2028)).
+- `1.9` added `filter`, for a run with `--path`. Before `1.9`, no report could give the findings of one context of a corpus alone ([#2101](https://github.com/headwater-ai/headwater/issues/2101)).
 
 ## See also
 

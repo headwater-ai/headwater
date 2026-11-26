@@ -489,6 +489,17 @@ pub enum Verb {
                     nothing"
         )]
         verbose: bool,
+        #[arg(
+            long = "path",
+            value_name = "pattern",
+            help = "report only the findings on a path this pattern matches, repeatable. Write \
+                    the pattern relative to the corpus root, as a finding path is written. \
+                    Every document is still evaluated: the filter narrows the printed findings, \
+                    the --strict exit and what --fix writes, and the report says how many \
+                    findings it held back. A pattern that matches no file and no finding is \
+                    named, and it fails a --strict run"
+        )]
+        path: Vec<String>,
     },
     Change {
         // Optional here and required by the verb, on the terms `gate` already

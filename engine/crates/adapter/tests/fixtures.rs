@@ -133,6 +133,26 @@ fn scoped_run() -> Ran {
     ran(Scoping::Change)
 }
 
+/// The same tree, narrowed after the run by a `check --path` filter of two
+/// patterns: one that admits the first nine numbered pages, and one that
+/// matches nothing (#2101).
+///
+/// The filter is applied to a finished run, as the verb applies it, so these
+/// fixtures hold the shape every format writes for it and nothing else moves.
+fn filtered_run() -> Ran {
+    let mut ran = fixture_run();
+    let paths: Vec<String> = ran.census.rows.iter().map(|row| row.path.clone()).collect();
+    ran.run = headwater_check::filter::narrow(
+        ran.run,
+        &[
+            "check/spec/0*.md".to_string(),
+            "check/nowhere/**".to_string(),
+        ],
+        paths.iter().map(String::as_str),
+    );
+    ran
+}
+
 /// The same tree, over a change that named no document at all.
 ///
 /// Not the corpus. #178 opens by naming this pair: a count over a change that
@@ -927,17 +947,17 @@ fn every_entry_of_every_loss_set_is_accounted_for() {
 ///
 /// The counts rather than the verdict. `is_defective` is false over a format
 /// that audited nothing and over one that audited everything, so a suite that
-/// asserted the verdict alone could not tell the two apart. Five of SARIF's
-/// seven entries name a member of the document and two name nowhere. All five of
+/// asserted the verdict alone could not tell the two apart. Six of SARIF's
+/// eight entries name a member of the document and two name nowhere. All five of
 /// Markdown's name nowhere in it, because that artifact is prose, and so do the
 /// two entries `text` declares and the one `json` declares.
 #[test]
 fn the_audited_and_the_unaudited_are_counted_apart() {
-    for ran in [fixture_run(), scoped_run()] {
+    for ran in [fixture_run(), scoped_run(), filtered_run()] {
         for (format, entries, held, unaudited) in [
             (Format::Text, 2, 0, 2),
             (Format::Json, 1, 0, 1),
-            (Format::Sarif, 7, 5, 2),
+            (Format::Sarif, 8, 6, 2),
             (Format::Markdown, 5, 0, 5),
         ] {
             let artifact = render(&ran, format);
@@ -1340,7 +1360,7 @@ fn a_record_list_that_does_not_line_up_with_the_finding_set_is_adrift() {
 /// else.
 ///
 /// One source for the declaration and for the string a consumer reads. The
-/// recorded artifacts pin the seven strings; this pins that they are pairwise
+/// recorded artifacts pin the eight strings; this pins that they are pairwise
 /// distinct where they say anything, so a permutation of two entries could not
 /// pass the recordings.
 #[test]
@@ -1371,6 +1391,7 @@ fn every_carrier_renders_the_one_sentence_and_no_two_agree() {
             "run.properties.headwater.coverage",
             "properties.headwater.remediation and message.markdown",
             "run.properties.headwater.change",
+            "run.properties.headwater.filter",
             "",
         ]
     );
@@ -1961,7 +1982,7 @@ fn a_run_that_skipped_nothing_is_not_a_run_that_reports_no_skips() {
     assert!(count(&skipping, "skipped") > 0);
     // And the shape version is what dates the member, so a reader of a document
     // that carries no `skipped` knows which of the two it is holding.
-    assert_eq!(headwater_adapter::json::VERSION, "1.8");
+    assert_eq!(headwater_adapter::json::VERSION, "1.9");
 }
 
 /// A change that named nothing is not a full-corpus run, in any of the four.
@@ -2555,6 +2576,88 @@ fn a_scoped_run_renders_the_recorded_json() {
         &tests_dir().join("fixture.scoped.json"),
         &render(&scoped_run(), Format::Json),
     );
+}
+
+// The same formats over the same tree, narrowed by a path filter (#2101).
+
+#[test]
+fn a_filtered_run_renders_the_recorded_sarif() {
+    compare(
+        &tests_dir().join("fixture.filtered.sarif"),
+        &render(&filtered_run(), Format::Sarif),
+    );
+}
+
+#[test]
+fn a_filtered_run_renders_the_recorded_json() {
+    compare(
+        &tests_dir().join("fixture.filtered.json"),
+        &render(&filtered_run(), Format::Json),
+    );
+}
+
+#[test]
+fn a_filtered_run_renders_the_recorded_markdown() {
+    compare(
+        &tests_dir().join("fixture.filtered.md"),
+        &render(&filtered_run(), Format::Markdown),
+    );
+}
+
+/// The filter narrows the findings and holds back the rest, and the count it
+/// states is the difference: the recorded fixtures above would hold a count
+/// of 0 as faithfully as the right one.
+#[test]
+fn a_filtered_run_holds_back_what_it_does_not_admit() {
+    let whole = fixture_run();
+    let ran = filtered_run();
+    let filter = ran.run.filter.as_ref().expect("the run is filtered");
+    assert!(!ran.run.findings.is_empty());
+    assert!(filter.held_back > 0);
+    assert_eq!(
+        ran.run.findings.len() + filter.held_back,
+        whole.run.findings.len()
+    );
+    assert!(ran
+        .run
+        .findings
+        .iter()
+        .all(|finding| finding.path.starts_with("check/spec/0")));
+    assert_eq!(filter.unmatched, ["check/nowhere/**"]);
+    assert!(whole.run.filter.is_none());
+    assert!(ran.run.filter_unmatched());
+    assert!(!whole.run.filter_unmatched());
+}
+
+/// A pattern that matches a finding and no census row is matched. The
+/// fixture's taxonomy is no row of its census, and a rule of the taxonomy
+/// reports on it, so `--path` over that file alone must not fail a strict run
+/// as a pattern that matched nothing (#2101).
+#[test]
+fn a_filter_that_matches_only_a_finding_is_matched() {
+    const LOCK: &str = "engine/crates/check/fixtures/check.taxonomy.yml";
+    let whole = fixture_run();
+    assert!(whole.census.rows.iter().all(|row| row.path != LOCK));
+    assert!(whole
+        .run
+        .findings
+        .iter()
+        .any(|finding| finding.path == LOCK));
+    let paths: Vec<String> = whole
+        .census
+        .rows
+        .iter()
+        .map(|row| row.path.clone())
+        .collect();
+    let run = headwater_check::filter::narrow(
+        whole.run,
+        &[LOCK.to_string()],
+        paths.iter().map(String::as_str),
+    );
+    let filter = run.filter.as_ref().expect("the run is filtered");
+    assert!(filter.unmatched.is_empty(), "{:?}", filter.unmatched);
+    assert!(!run.findings.is_empty());
+    assert!(!run.filter_unmatched());
 }
 
 #[test]
