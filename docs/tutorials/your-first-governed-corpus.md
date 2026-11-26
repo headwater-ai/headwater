@@ -3,7 +3,7 @@ id: HW-TUT-your-first-governed-corpus
 status: current
 status_since: 2026-09-06
 summary: "An untyped repository reaches a passing strict check in sixteen steps, and the reader leaves holding shelf, kind, facet, overlay and obligation."
-last_verified: 2026-11-26
+last_verified: 2026-11-27
 title: "Your first governed corpus"
 provenance:
   warrant: accepted
@@ -42,19 +42,19 @@ Install the engine once. The block below downloads the release archive for Linux
 
 ```sh
 mkdir -p ~/.local/bin
-curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.8.0/headwater-v0.8.0-x86_64-unknown-linux-musl.tar.gz
-tar -xzf headwater-v0.8.0-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater
+curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.8.1/headwater-v0.8.1-x86_64-unknown-linux-musl.tar.gz
+tar -xzf headwater-v0.8.1-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater
 ```
 
-On macOS on Apple silicon, the archive is `headwater-v0.8.0-aarch64-apple-darwin.tar.gz`. Use that name in the `curl` line and in the `tar` line.
+On macOS on Apple silicon, the archive is `headwater-v0.8.1-aarch64-apple-darwin.tar.gz`. Use that name in the `curl` line and in the `tar` line.
 
-Each archive has a checksum file beside it on [the release page](https://github.com/headwater-ai/headwater/releases/tag/v0.8.0). The name of the checksum file is the name of the archive with `.sha256` added. To verify the archive, download that file too and give it to `sha256sum -c`, or to `shasum -a 256 -c` on macOS.
+Each archive has a checksum file beside it on [the release page](https://github.com/headwater-ai/headwater/releases/tag/v0.8.1). The name of the checksum file is the name of the archive with `.sha256` added. To verify the archive, download that file too and give it to `sha256sum -c`, or to `shasum -a 256 -c` on macOS.
 
 **Check.** `headwater --version` prints a number.
 
 Many Linux distributions put `~/.local/bin` on your `PATH` when the directory exists at login. macOS does not. If your shell cannot find `headwater`, add `~/.local/bin` to your `PATH` in the startup file of your shell. Then open a new shell. You can also run the binary as `~/.local/bin/headwater`.
 
-This installs version 0.8.0 of the engine. It does not install `taxonomy-source`, and step 3 fetches that. If you have a Rust toolchain, `cargo install headwater-cli --locked` is an alternative route, and the README's *Obtaining a named version* section describes it.
+This installs version 0.8.1 of the engine. It does not install `taxonomy-source`, and step 3 fetches that. If you have a Rust toolchain, `cargo install headwater-cli --locked` is an alternative route, and the README's *Obtaining a named version* section describes it.
 
 ## Steps
 
@@ -103,19 +103,19 @@ The first heading names what a tree states about itself: the **corpus** is `docs
 
 ### Step 3 — Fetch the package into your tree
 
-`headwater taxonomy vendor` is the vendor route that step 2 named. Give it the `https://` location of a published zip and the digest that its publisher printed. It fetches the zip, checks every file against the digest, and installs the result. The command below fetches version 4.28.0 of `headwater/standard` from its release page.
+`headwater taxonomy vendor` is the vendor route that step 2 named. Give it the `https://` location of a published zip and the digest that its publisher printed. It fetches the zip, checks every file against the digest, and installs the result. The command below fetches version 4.30.0 of `headwater/standard` from its release page.
 
 ```sh
-headwater taxonomy vendor https://github.com/headwater-ai/headwater/releases/download/taxonomy/headwater-standard/v4.28.0/headwater-standard-4.28.0.zip --expect sha256:46083213684869c1bc956f2e3bb74ba8636ff4a4ac2af06a392c415aa4742553
+headwater taxonomy vendor https://github.com/headwater-ai/headwater/releases/download/taxonomy/headwater-standard/v4.30.0/headwater-standard-4.30.0.zip --expect sha256:2ca1eb8fa601e183ff3d767f1083c0ba0e87537f50d539f5f0c42de0c941301a
 ```
 
 Trimmed to the account of what `vendor` fetched and installed.
 
 ```
-vendored headwater/standard 4.28.0
-  from https://github.com/headwater-ai/headwater/releases/download/taxonomy/headwater-standard/v4.28.0/headwater-standard-4.28.0.zip
+vendored headwater/standard 4.30.0
+  from https://github.com/headwater-ai/headwater/releases/download/taxonomy/headwater-standard/v4.30.0/headwater-standard-4.30.0.zip
   42 files, all of them the pinned bytes
-  digest sha256:46083213684869c1bc956f2e3bb74ba8636ff4a4ac2af06a392c415aa4742553
+  digest sha256:2ca1eb8fa601e183ff3d767f1083c0ba0e87537f50d539f5f0c42de0c941301a
   doctrine at .headwater/packages/headwater-standard/doctrine/
   pinned taxonomy.digest in .headwater/taxonomy.yml
 ```
@@ -142,7 +142,7 @@ Step 2 named two routes, and this step took the second. `headwater taxonomy vend
 
 `taxonomy/headwater-standard/v<version>` is the taxonomy-only route. It publishes `headwater/standard` alone, with no engine release. A release workflow of this repository cuts a tag of this form whenever the package authors choose to. It needs no new engine version.
 
-A second route pins a fixed version of the engine and of this package. The README's *Obtaining a named version* section names both. This step already pinned the digest, and step 5 pins the version this pulled, `4.28.0`. Step 16 reads back what the second pin buys.
+A second route pins a fixed version of the engine and of this package. The README's *Obtaining a named version* section names both. This step already pinned the digest, and step 5 pins the version this pulled, `4.30.0`. Step 16 reads back what the second pin buys.
 
 ### Step 4 — Meet the first refusal
 
@@ -152,7 +152,7 @@ headwater taxonomy resolve
 
 ```
 headwater: the taxonomy did not resolve, so no lock is possible
-  .headwater/taxonomy.yml: this takes headwater/standard 0.0.0, and the package here is 4.28.0
+  .headwater/taxonomy.yml: this takes headwater/standard 0.0.0, and the package here is 4.30.0
 ```
 
 **Check.** `echo $?` prints `1`.
@@ -161,13 +161,13 @@ A refusal here is the design and not a fault. A **lock** is a validated taxonomy
 
 ### Step 5 — Pin the version, and meet the second refusal
 
-Open `.headwater/taxonomy.yml`. Change `  version: 0.0.0` to `  version: 4.28.0`. The `digest` line above it is the one step 3 wrote.
+Open `.headwater/taxonomy.yml`. Change `  version: 0.0.0` to `  version: 4.30.0`. The `digest` line above it is the one step 3 wrote.
 
 **Check.** `grep -E 'digest:|version:' .headwater/taxonomy.yml` prints two lines:
 
 ```
-  digest: sha256:46083213684869c1bc956f2e3bb74ba8636ff4a4ac2af06a392c415aa4742553
-  version: 4.28.0
+  digest: sha256:2ca1eb8fa601e183ff3d767f1083c0ba0e87537f50d539f5f0c42de0c941301a
+  version: 4.30.0
 ```
 
 Now resolve again.
@@ -409,9 +409,9 @@ Trimmed to the head of the register and to the first line below it. The same run
 
 ```
   register
-    55 obligations: 55 verified, 0 gap, 0 unverifiable, 0 with no disposition
+    57 obligations: 57 verified, 0 gap, 0 unverifiable, 0 with no disposition
        17 high, 17 verified
-       32 medium, 32 verified
+       34 medium, 34 verified
         6 low, 6 verified
 ```
 
@@ -419,7 +419,7 @@ Trimmed to the head of the register and to the first line below it. The same run
     shelf.discriminator.unresolved reaches no obligation, so it names none
 ```
 
-**Check.** `headwater check 2>/dev/null | grep 'obligations:'` prints the `55 obligations:` line of the register block above, and nothing else.
+**Check.** `headwater check 2>/dev/null | grep 'obligations:'` prints the `57 obligations:` line of the register block above, and nothing else.
 
 **One of those readings is about the package and one is about your run.** The obligations and their severities come from `headwater/standard`. They read the same on your first day and on your thousandth. The lines below the register come from the rules of the run in front of you. Each line names a rule that has no obligation behind it. Most rules carry one, which is what makes the identifier in your finding worth reading.
 
@@ -523,13 +523,13 @@ levels
   L2 Regenerated — not reached, 3 of 4 rules met
     1 gap, 0 of them waived
 
-L1 reached, against headwater/standard 4.28.0
+L1 reached, against headwater/standard 4.30.0
   a level states what this repository wired up. It measures nothing about the
   corpus, no key declares one, and a waiver moves the exit status and never the
   level.
 ```
 
-**Check.** The last line of the levels block reads `L1 reached, against headwater/standard 4.28.0`.
+**Check.** The last line of the levels block reads `L1 reached, against headwater/standard 4.30.0`.
 
 Your corpus already stands on the first two rungs, which a package copied by hand never reaches. `pin.current` is what carried you there. It reads the digest step 3 pinned against the record `.headwater/packages/headwater-standard/release.yml` carries, and step 3 already gave you both. A package you copy from a source directory has no digest to pin, because nobody has published it. That route never reaches this rung: it stays off the ladder for the whole life of a corpus built that way. One gap is left, and it closes with a command:
 
@@ -538,7 +538,7 @@ headwater generate
 headwater conformance
 ```
 
-**Check.** `headwater conformance 2>/dev/null | grep 'L2'` prints `  L2 Regenerated — reached, 4 of 4 rules met` and, further down, `L2 reached, against headwater/standard 4.28.0`.
+**Check.** `headwater conformance 2>/dev/null | grep 'L2'` prints `  L2 Regenerated — reached, 4 of 4 rules met` and, further down, `L2 reached, against headwater/standard 4.30.0`.
 
 `headwater generate` wrote the two projections that were missing, `docs/decisions/README.md` and `.headwater/corpus.json`, and that closed `projections.current`, the last rule L2 asks for. Every rung this ladder has is reached. A level still measures what you wired up rather than what your documents say. Climbing it here took one pin and two commands, not a better decision record.
 
