@@ -414,8 +414,14 @@ fn a_value_that_names_no_folder_has_one_remedy() {
         assert!(!one.contains("`~`"), "{one}");
         assert!(!one.contains("`a sequence`"), "{one}");
     }
-    let null = found.iter().find(|one| one.starts_with(A)).expect("a.md has a finding");
+    let null = found
+        .iter()
+        .find(|one| one.starts_with(A))
+        .expect("a.md has a finding");
     assert!(null.contains("a null `context`"), "{null}");
-    let list = found.iter().find(|one| one.starts_with(B)).expect("b.md has a finding");
+    let list = found
+        .iter()
+        .find(|one| one.starts_with(B))
+        .expect("b.md has a finding");
     assert!(list.contains("`context` as a sequence"), "{list}");
 }

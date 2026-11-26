@@ -146,7 +146,10 @@ impl DocumentCheck for BoundFacet {
                         }
                         Some(scalar) => (
                             format!("`{facet}: {}`", scalar.text),
-                            format!(", or move the document under the folder for `{}`", scalar.text),
+                            format!(
+                                ", or move the document under the folder for `{}`",
+                                scalar.text
+                            ),
                         ),
                         None => (
                             format!("`{facet}` as {}", entry.value.value.kind_name()),
