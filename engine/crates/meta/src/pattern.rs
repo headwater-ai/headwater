@@ -190,7 +190,8 @@ impl Pattern {
     pub fn bindings(&self, path: &str) -> Option<Vec<(String, String)>> {
         let path: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();
         let mut out = Vec::new();
-        bind_from(&self.segments, &path, &mut out).then_some(out)
+        let mut failed = vec![false; (self.segments.len() + 1) * (path.len() + 1)];
+        bind_at(&self.segments, &path, 0, 0, &mut out, &mut failed).then_some(out)
     }
 
     /// Whether this pattern names one path outright: no `**` and no glob
@@ -246,38 +247,50 @@ pub fn bound_name(segment: &str) -> Option<&str> {
     (!name.is_empty() && !name.contains(['{', '}', '*', '?', ':'])).then_some(name)
 }
 
-/// A match that records the text of each bound segment, trying the fewest
-/// segments for each `**` first. Only [`Pattern::bindings`] calls it, on one
-/// document at a time, so it searches without the table `matches_at` keeps.
-fn bind_from(pattern: &[Segment], path: &[&str], out: &mut Vec<(String, String)>) -> bool {
-    match pattern.split_first() {
-        None => path.is_empty(),
-        Some((Segment::AnyDepth, rest)) => (0..=path.len()).any(|taken| {
-            let kept = out.len();
-            let found = bind_from(rest, &path[taken..], out);
-            if !found {
-                out.truncate(kept);
-            }
-            found
-        }),
-        Some((head, rest)) => {
-            let Some((segment, tail)) = path.split_first() else {
-                return false;
-            };
-            if !segment_matches(head, segment) {
-                return false;
-            }
-            let kept = out.len();
-            if let Segment::Bound(name) = head {
-                out.push((name.clone(), (*segment).to_string()));
-            }
-            let found = bind_from(rest, tail, out);
-            if !found {
-                out.truncate(kept);
-            }
-            found
-        }
+/// Whether `pattern[i..]` matches `path[j..]`, recording the text of each
+/// bound segment in `out`, and trying the fewest segments for each `**` first.
+///
+/// It keeps the same bound as [`matches_at`]: `failed` marks each `(i, j)`
+/// that has already failed, so no pair is searched twice and a pattern with
+/// many `**` against a long path that it does not match costs one pass over
+/// the table. A failure does not depend on what `out` holds, because a bound
+/// segment matches any one segment, so the mark is sound. A success returns
+/// at once, so the reading kept is the first in fewest-segments order.
+fn bind_at(
+    pattern: &[Segment],
+    path: &[&str],
+    i: usize,
+    j: usize,
+    out: &mut Vec<(String, String)>,
+    failed: &mut [bool],
+) -> bool {
+    let cell = i * (path.len() + 1) + j;
+    if failed[cell] {
+        return false;
     }
+    let kept = out.len();
+    let found = match pattern.get(i) {
+        None => j == path.len(),
+        // Zero segments taken, or one and then the same `**` again: the
+        // order is fewest first.
+        Some(Segment::AnyDepth) => {
+            bind_at(pattern, path, i + 1, j, out, failed)
+                || (j < path.len() && bind_at(pattern, path, i, j + 1, out, failed))
+        }
+        Some(head) => {
+            j < path.len() && segment_matches(head, path[j]) && {
+                if let Segment::Bound(name) = head {
+                    out.push((name.clone(), path[j].to_string()));
+                }
+                bind_at(pattern, path, i + 1, j + 1, out, failed)
+            }
+        }
+    };
+    if !found {
+        out.truncate(kept);
+        failed[cell] = true;
+    }
+    found
 }
 
 /// Segment-wise intersection. `**` on either side searches over how many
@@ -857,6 +870,23 @@ mod tests {
         assert!(!pattern.matches(&path));
         assert!(!interleaved.matches(&all_x));
         assert!(started.elapsed() < std::time::Duration::from_secs(1));
+    }
+
+    #[test]
+    fn twenty_any_depth_segments_bind_against_a_deep_path_in_bounded_time() {
+        // The shape of the case above, through `bindings`: a bound segment
+        // up front, and `**/x` twenty times so the collapse leaves every star.
+        let pattern = Pattern::shelf(&format!("docs/{{team}}/{}nomatch", "**/x/".repeat(20)));
+        let all_x = format!("docs/core/{}file.md", "x/".repeat(39));
+        let started = std::time::Instant::now();
+        assert_eq!(pattern.bindings(&all_x), None);
+        assert!(started.elapsed() < std::time::Duration::from_secs(1));
+        // The fewest-segments reading still wins where the path does match.
+        let matching = Pattern::shelf("docs/**/{team}/**");
+        assert_eq!(
+            matching.bindings("docs/a/b/c.md"),
+            Some(vec![("team".to_string(), "a".to_string())])
+        );
     }
 
     #[test]
