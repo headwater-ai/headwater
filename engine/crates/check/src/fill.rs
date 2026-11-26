@@ -641,4 +641,30 @@ mod tests {
         let once = filled(report, 40);
         assert_eq!(filled(&once, 40), once);
     }
+
+    /// A location whose path holds spaces is still one identity, so its line
+    /// is written whole past the width, with every space it held, under both
+    /// color modes (#2070). A prose line that ends in a severity word but no
+    /// marker is still filled.
+    #[test]
+    fn a_location_with_spaces_in_its_path_is_never_broken() {
+        use crate::paint::{paint, severity_word, ColorMode, Role};
+        use crate::Severity;
+        let path = "docs/decisions/0003-a path that is long enough to wrap  past the width.md:4";
+        for mode in [ColorMode::Plain, ColorMode::Ansi] {
+            for severity in [Severity::Error, Severity::Warn, Severity::Info] {
+                let line = format!(
+                    "  {} {}",
+                    paint(Role::Path, path, mode),
+                    severity_word(severity, mode)
+                );
+                let report = format!("{line}\n    a.rule: a message\n");
+                assert_eq!(filled(&report, WIDTH), report, "{mode:?} {severity}");
+                assert!(unfoldable(&line, WIDTH), "{line}");
+            }
+        }
+        let prose = format!("  {} and so the run reports an error", "word ".repeat(16));
+        assert!(!unfoldable(&prose, WIDTH), "{prose}");
+        assert!(filled(&prose, WIDTH).lines().count() > 1);
+    }
 }

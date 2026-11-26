@@ -727,6 +727,83 @@ fn a_control_character_from_a_document_reaches_no_format_intact() {
     }
 }
 
+/// The file names of #2070: a path past the width that holds single spaces and
+/// one double space, a pipe, a backtick inside and a backtick at the end.
+const SPACED_PATHS: [&str; 4] = [
+    "docs/decisions/0003-a path that is long enough to wrap  past the width of a report.md",
+    "docs/a|b.md",
+    "docs/a`b.md",
+    "docs/b`",
+];
+
+/// The cells of one Markdown table row, split on a `|` no backslash escapes.
+fn unescaped_cells(row: &str) -> usize {
+    let mut pieces = 1;
+    let mut escaped = false;
+    for char in row.chars() {
+        match (char, escaped) {
+            ('\\', false) => escaped = true,
+            ('|', false) => pieces += 1,
+            _ => escaped = false,
+        }
+    }
+    pieces
+}
+
+/// A legal file name costs no finding in any format, and a run that names one
+/// does not fail on its own report (#2070).
+///
+/// Before the fix, the text report wrapped the location line of the long path
+/// at a space inside it, so the census read its first word as the path and
+/// `check` exited 1 for a reason that was not in the corpus. The Markdown table
+/// ended a cell at the pipe and a code span at the backtick, and the reader
+/// split on every pipe.
+#[test]
+fn a_path_with_a_space_a_pipe_or_a_backtick_reaches_every_format_whole() {
+    let mut ran = fixture_run();
+    assert!(ran.run.findings.len() >= SPACED_PATHS.len(), "four findings to rename");
+    for (finding, path) in ran.run.findings.iter_mut().zip(SPACED_PATHS) {
+        finding.path = path.to_string();
+    }
+    let layouts = Format::ALL
+        .into_iter()
+        .flat_map(|format| [(format, false), (format, true)]);
+    for (format, verbose) in layouts {
+        let artifact = render_as(&ran, format, headwater_check::fill::WIDTH, verbose);
+        let name = format!("{} (verbose {verbose})", format.name());
+        let audited = headwater_adapter::census(&ran.run, format, &artifact);
+        assert!(
+            !audited.is_defective(),
+            "the {name} adapter dropped {:?}",
+            audited.unaccounted
+        );
+        assert_eq!(audited.carried, audited.findings, "{name}");
+        match format {
+            Format::Text => assert!(
+                artifact.lines().any(|line| line.contains(SPACED_PATHS[0])),
+                "{name} breaks the long path across lines"
+            ),
+            Format::Markdown => {
+                let rows: Vec<&str> = artifact
+                    .lines()
+                    .filter(|line| line.starts_with("| ") && line.contains("docs/"))
+                    .collect();
+                assert!(!rows.is_empty(), "{name} writes no finding row");
+                for row in rows {
+                    assert_eq!(unescaped_cells(row), 6, "{name} splits a row: {row}");
+                }
+            }
+            Format::Json | Format::Sarif => {
+                let mut found = Vec::new();
+                scalars(&parse(&artifact), &mut found);
+                for path in SPACED_PATHS {
+                    assert!(found.iter().any(|one| one == path), "{name} loses {path}");
+                }
+            }
+        }
+    }
+}
+
 /// One label for each value the graph section prints that a document or the
 /// taxonomy supplies. Each one is made hostile by [`hostile`], and the text
 /// report must write each one as [`escaped`] text.
