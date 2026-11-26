@@ -903,6 +903,7 @@ nav:
           - "One clippy target directory serves every worktree, so a fingerprint can take another tree's artifact as fresh": "process/obligations/0257-one-clippy-target-directory-serves-every-worktree-so-a-fingerprint-can-take-another-tree-s-artifact-as-fresh.md"
           - "The cargo pool grows with nothing pruning it between builds": "process/obligations/0258-the-cargo-pool-grows-with-nothing-pruning-it-between-builds.md"
           - "resume reads the claim file of an issue and not who holds its footprint": "process/obligations/0259-resume-reads-the-claim-file-of-an-issue-and-not-who-holds-its-footprint.md"
+          - "No queue run yet shows two pull requests that add documents land in consecutive batches": "process/obligations/0273-no-queue-run-yet-shows-two-pull-requests-that-add-documents-land-in-consecutive-batches.md"
       - "Process how-to guides":
           - "Process how-to guides": "process/how-to/README.md"
           - "Cut a release": "process/how-to/cut-a-release.md"
