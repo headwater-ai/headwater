@@ -59,6 +59,8 @@
 #                                               replace the one intake line that holds <match>
 #     sh tools/run/run-dir.sh applies <dir>          each intake line the product owner ruled APPLY,
 #                                                    then one count line, APPLY: <n>
+#     sh tools/run/run-dir.sh decisions <dir>        each SCOPE, OWNER and RULED line of decisions.md,
+#                                                    then one count line, DECISIONS: <n>
 #     sh tools/run/run-dir.sh dispatch <dir> <issue|none> <stage> [key=value]...
 #                                               compose the stage's dispatch in the issue's scratch directory, print its path
 #     sh tools/run/run-dir.sh accept <dir> <issue> branch=… note=… footprint=<a,b|none> [title=…] [attacks=…] [deadline=…]
@@ -340,6 +342,28 @@ applies() {
         return
     fi
     awk '/ [|] APPLY[[:space:]]*$/ { print; n++ } END { printf "APPLY: %d\n", n }' "$dir/intake.md"
+}
+
+# `.claude/commands/next-run.md` has every queue refill and every resumed
+# session read the SCOPE and OWNER lines before it fills a slot, and a
+# worktree-isolated reader's shell refuses a command that names `.git`, so it
+# could read none of them (#2087, run 20261125-0427). This verb prints the
+# three forms a reader acts on: the SCOPE line `decide` writes, the OWNER line
+# `decide --owner` writes, and the RULED line `rule` writes. The OWNER and
+# RULED patterns are the ones `answered_issues` and `ruled_issues` read, so
+# the verb prints every line that `next` acts on: an old hand-written OWNER
+# line whose form appears after its opening is one of them. A line that only
+# names one of the words in its text is not printed.
+decisions() {
+    dir=$1
+    need_dir "$dir"
+    if [ ! -f "$dir/decisions.md" ]; then
+        printf 'DECISIONS: 0\n'
+        return
+    fi
+    awk -v owner="$owner_form" '
+        /^- [^ ]+ — SCOPE:/ || $0 ~ owner || / — RULED #[0-9]+ (gated|deferred|refused|open) [(]run / { print; n++ }
+        END { printf "DECISIONS: %d\n", n }' "$dir/decisions.md"
 }
 
 # The form of an OWNER line that answers an issue: every `#N` between
@@ -1606,6 +1630,7 @@ case ${1:-} in
     lesson) [ $# -eq 3 ] || usage; lesson "$run" "$3" ;;
     withdraw) [ $# -eq 4 ] || usage; withdraw "$run" "$3" "$4" ;;
     applies) [ $# -eq 2 ] || usage; applies "$run" ;;
+    decisions) [ $# -eq 2 ] || usage; decisions "$run" ;;
     dispatch) [ $# -ge 4 ] || usage; shift 2; dispatch "$run" "$@" ;;
     accept) [ $# -ge 4 ] || usage; shift 2; accept "$run" "$@" ;;
     po-rule) [ $# -eq 3 ] || usage; po_rule "$run" "$3" ;;
