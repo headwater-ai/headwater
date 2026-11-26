@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the bound-facet tree is checked against: one shelf whose path
+# binds the facet `context` to the folder under `contexts/`, one kind on it,
+# and the facet. The tree holds one contract whose value agrees with its
+# folder, one whose value disagrees and one with no value, so the editions
+# ledger records an instance of `shelf.bound_facet.disagrees` that passes and
+# two that fail (#2101). A fourth contract sits on `notes`, which binds
+# nothing, so the ledger also records the instance the rule skips. This repository binds no shelf, so no other recorded
+# corpus reaches the rule.
+
+facets:
+  context:
+    type: string
+    required: false
+    volatility: stable
+  summary:
+    role: scent
+
+identifier_schemes:
+  note_id: {pattern: "NOTE-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+kinds:
+  contract:
+    identifier: {scheme: note_id}
+
+shelves:
+  contracts:
+    path: bound-facet/contexts/{context}/contracts/**
+    homogeneous: true
+    kind: contract
+  notes:
+    path: bound-facet/notes/**
+    homogeneous: true
+    kind: contract

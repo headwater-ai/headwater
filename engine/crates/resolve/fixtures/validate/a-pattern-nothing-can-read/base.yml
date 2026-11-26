@@ -82,6 +82,23 @@ shelves:
     homogeneous: true
     kind: decision
     layout: "{sequence:02d}-{slug}.md"
+  # A shelf path binds a facet only as a whole segment. `ctx-{sequence}`
+  # writes the placeholder inside one, so nothing states where the value
+  # ends, and `{sequence}` twice gives one facet two values to disagree on.
+  partial:
+    path: docs/ctx-{sequence}/**
+    homogeneous: true
+    kind: decision
+  twice:
+    path: docs/teams/{sequence}/{sequence}/**
+    homogeneous: true
+    kind: decision
+  # A bound segment ranks as `*`, so this shelf ties `twice` on every path
+  # both can match, and determinism refuses the pair.
+  wild:
+    path: docs/teams/*/*/**
+    homogeneous: true
+    kind: decision
 
 core:
   requires:

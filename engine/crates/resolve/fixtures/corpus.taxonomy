@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 4.29.0
+version: 4.30.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -1364,6 +1364,12 @@ obligations:
     class: cohesion
     prevents: content.inconsistent
     severity: medium
+  OB-PLACE-2:
+    statement: "A document on a shelf whose path binds a facet declares that facet with the value its folder states, or a finding names both"
+    rationale: "The folder and the front matter each answer which value the document carries. A reader of the tree and a reader of the metadata get two answers once they differ, and only the front matter reaches query, generate and the export, so the value is stated there and held against the folder"
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
   OB-FACET-1:
     statement: "Every facet a kind requires is declared by every document of that kind"
     rationale: "A facet nobody declared is a question the corpus cannot answer about itself, and the reader who asks it gets silence rather than a gap"
@@ -1755,6 +1761,18 @@ controls:
     trigger: pull_request
     posture: advisory
     acts: detective
+  CT-PLACE-2:
+    mechanism: "check:shelf.bound_facet.disagrees"
+    discharges:
+      - OB-PLACE-2
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      criteria:
+        window: "one release of the taxonomy over an adopting corpus"
+        threshold: "no false positive, because the rule compares one front-matter value with the one path segment the shelf binds, on the shelf that kind resolution chose for the path, so a finding is a document whose folder and value differ or whose value is absent"
+        sample: "every finding of one run over the adopting corpus, adjudicated once"
   CT-FACET-1:
     mechanism: "check:facet.required.missing"
     discharges:

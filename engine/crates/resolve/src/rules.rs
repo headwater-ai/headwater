@@ -757,10 +757,23 @@ pub struct Dangling {
 impl Dangling {
     /// The sentence `referential_integrity` reports.
     pub fn message(&self) -> String {
-        format!(
+        let sentence = format!(
             "reads `{}`, and no {} of that name is declared",
             self.name, self.what
-        )
+        );
+        // A shelf path reads a facet in one way only: a whole `{name}`
+        // segment. Before that segment bound a facet it named a folder of
+        // that literal name, so a taxonomy written then is refused here, and
+        // the refusal says what changed.
+        if self.what == "facet" && self.at.starts_with("shelves.") && self.at.ends_with(".path") {
+            return format!(
+                "{sentence}. A whole `{{{name}}}` segment of a shelf path binds the facet \
+                 `{name}`, and it no longer names a folder called `{{{name}}}`: declare the \
+                 facet, or rename the folder and the segment",
+                name = self.name
+            );
+        }
+        sentence
     }
 }
 
@@ -839,6 +852,13 @@ fn dangling_names(view: &View) -> Vec<Dangling> {
         }
         for kind in strings(body, "kinds") {
             reads(at("kinds"), "kind", &kind, &kinds);
+        }
+        // A whole `{name}` segment of a shelf path binds the facet `name`.
+        if let Some(path) = text(body, "path") {
+            let pattern = Pattern::shelf(path);
+            for (_, facet) in pattern.bound() {
+                reads(at("path"), "facet", facet, &facets);
+            }
         }
         for member in ["discriminator", "group_by"] {
             if let Some(facet) = text(body, member) {
@@ -1363,13 +1383,56 @@ fn purpose_completeness(view: &View, out: &mut Vec<ResolveError>) {
     }
 }
 
-/// No two shelf patterns claim one path at equal specificity.
+/// No two shelf patterns claim one path at equal specificity, and every facet
+/// a shelf path binds reads one value off one segment.
 fn determinism(view: &View, out: &mut Vec<ResolveError>) {
     const RULE: &str = "determinism";
+    for (shelf, body) in view.members("shelves") {
+        let Some(path) = text(body, "path") else {
+            continue;
+        };
+        let at = format!("shelves.{shelf}.path");
+        // A placeholder inside a segment is not a binding, and the reader
+        // that would take its value has no stated end to stop at.
+        for segment in path.split('/') {
+            if segment.contains('{') && headwater_meta::pattern::bound_name(segment).is_none() {
+                for name in placeholders(segment) {
+                    out.push(refusal(
+                        RULE,
+                        &at,
+                        format!(
+                            "cannot be read: `{path}` writes `{{{name}}}` inside the segment \
+                             `{segment}`, and a shelf path binds a facet only as a whole \
+                             segment, so nothing states where the value ends"
+                        ),
+                    ));
+                }
+            }
+        }
+        let pattern = Pattern::shelf(path);
+        let bound = pattern.bound();
+        let mut seen = BTreeSet::new();
+        let mut twice = BTreeSet::new();
+        for (_, facet) in &bound {
+            if !seen.insert(*facet) {
+                twice.insert(*facet);
+            }
+        }
+        for facet in twice {
+            out.push(refusal(
+                RULE,
+                &at,
+                format!(
+                    "binds `{facet}` in more than one segment of `{path}`, so one document \
+                     could give it two values"
+                ),
+            ));
+        }
+    }
     let shelves: Vec<(&str, Pattern)> = view
         .members("shelves")
         .into_iter()
-        .filter_map(|(name, body)| text(body, "path").map(|path| (name, Pattern::new(path))))
+        .filter_map(|(name, body)| text(body, "path").map(|path| (name, Pattern::shelf(path))))
         .collect();
     for (index, (shelf, pattern)) in shelves.iter().enumerate() {
         for (other, other_pattern) in &shelves[index + 1..] {

@@ -773,6 +773,12 @@
       ]
     },
     {
+      "rule": "shelf.bound_facet.disagrees",
+      "scope": "document",
+      "version": 1,
+      "obligations": []
+    },
+    {
       "rule": "relation.key.outside_block",
       "scope": "document",
       "version": 1,

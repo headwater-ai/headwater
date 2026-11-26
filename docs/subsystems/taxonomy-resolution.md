@@ -3,7 +3,7 @@ id: HW-SPEC-taxonomy-resolution
 status: current
 status_since: 2026-09-30
 summary: "How six crates load taxonomy sources, prove that overlays commute, merge them, resolve references last, and write the content-hashed lock."
-last_verified: 2026-09-30
+last_verified: 2026-11-26
 title: "Taxonomy resolution"
 provenance:
   warrant: asserted
@@ -75,7 +75,7 @@ Ten positions of the meta-schema mark a required declaration that has no stated 
 
 ### Two small languages beside the schema
 
-`pattern.rs` is the glob language of a shelf path and of a corpus exclusion. It has four forms: `**` as a whole segment, `*`, `?` and a literal. Specificity orders two patterns first by the count of leading literal segments, and then by the count of literal characters. `Pattern::overlaps` asks whether any path matches both patterns. The determinism rule asks that question with no corpus, so a collision of two shelves is reported before somebody writes the file that shows it.
+`pattern.rs` is the glob language of a shelf path and of a corpus exclusion. It has four forms: `**` as a whole segment, `*`, `?` and a literal. A shelf path has a fifth form: a whole segment `{name}` binds the facet `name` to the folder at that segment. Only `Pattern::shelf` reads it, and `Pattern::new` reads braces as literal text, so a code-path anchor keeps its meaning. Specificity orders two patterns first by the count of leading literal segments, and then by the count of literal characters. A bound segment counts as a wildcard segment with no literal character. `Pattern::overlaps` asks whether any path matches both patterns. The determinism rule asks that question with no corpus, so a collision of two shelves is reported before somebody writes the file that shows it.
 
 `identifier.rs` is the template language of an `identifier_scheme` pattern: `{namespace}`, `{slug}` and `{seq:0Nd}`. A `{slug}` is read only in terminal position, because a free token before another segment has two readings. That restriction makes `Template::disjoint` exact in both directions. The grammar is in `meta` because `resolve` and `check` both read it, and `resolve` cannot see `check`.
 

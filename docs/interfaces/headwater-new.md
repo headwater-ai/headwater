@@ -3,7 +3,7 @@ id: HW-IFACE-headwater-new
 status: current
 status_since: 2026-09-06
 summary: "How to scaffold one typed document from the resolved taxonomy without overwriting existing files."
-last_verified: 2026-10-02
+last_verified: 2026-11-26
 title: "headwater new"
 relations:
   governs:
@@ -56,7 +56,7 @@ The repository must have a readable consumer declaration, resolved taxonomy lock
 
 The title is required. A supplied relation must declare `created_by: scaffold` or `created_by: agent`, connect permitted kinds and resolve at its target. An anchor target binds through the resolvers that `headwater check` uses, so a `governs` pattern that matches no entry is refused. A review of the pull request that carries an `agent` edge accepts it ([HW-DR-0104](../decisions/0104-an-agent-writes-governs-traces-to-and-cited-in-through-the-verb-and-the-review-of-its-pull-request-is-the-acceptance.md)). A supplied facet must be required by the kind, must not be one that a declaration decides, and must use a permitted value. The identifier the run mints must be claimed by no document and by no file of the claim store.
 
-A shelf whose path puts a glob before a fixed file name, such as `docs/modules/*/README.md`, does not decide the directory. For a kind on such a shelf, `--directory` is required. The directory must be relative, must contain no `.`, `..` or empty segment, and must make a path that the shelf claims. No segment can hold `*`, `?` or `[`, because the command reads the directory as a literal path and not as a glob. On every other shelf, `--directory` is refused. A shelf whose path is one file, such as `docs/INDEX.md`, takes that path, and the command refuses when the file is already there.
+A shelf whose path puts a glob before a fixed file name, such as `docs/modules/*/README.md`, does not decide the directory. For a kind on such a shelf, `--directory` is required. The directory must be relative, must contain no `.`, `..` or empty segment, and must make a path that the shelf claims. No segment can hold `*`, `?` or `[`, because the command reads the directory as a literal path and not as a glob. On every other shelf, `--directory` is refused. The command also refuses a shelf whose path binds a facet to a folder, such as `docs/contexts/{context}/contracts/**`. It refuses with or without `--directory`, because it does not yet choose the folder from a facet value. A shelf whose path is one file, such as `docs/INDEX.md`, takes that path, and the command refuses when the file is already there.
 
 ## Options
 

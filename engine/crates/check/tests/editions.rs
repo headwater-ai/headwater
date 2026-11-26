@@ -316,6 +316,19 @@ fn recorded() -> Vec<Recorded> {
             full: false,
             inputs: "acceptance-criterion-proven",
         },
+        // A shelf path that binds a facet to a folder, and three contracts on
+        // it: one agrees, one disagrees and one states no value (#2101).
+        Recorded {
+            label: "bound-facet",
+            base: "",
+            name: "bound-facet",
+            taxonomy: "bound-facet.taxonomy.yml",
+            lock: Some("sha256:bound-facet-fixture"),
+            clock: "2026-11-26",
+            observations: Observations::empty(),
+            full: false,
+            inputs: "bound-facet",
+        },
         Recorded {
             label: "editions/governs-suspect",
             base: "editions",
