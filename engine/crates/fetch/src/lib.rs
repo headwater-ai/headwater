@@ -55,7 +55,8 @@ const UNPACKED_LIMIT: u64 = 64 * 1024 * 1024;
 /// The most members, directory entries included, that one fetch unpacks. A
 /// member costs a file or a directory however few bytes it holds, so the byte
 /// bound alone lets an archive of 60,000 empty members (5.7 MB) create 60,000
-/// files, which a review measured unpacking in 0.28 s. The vendored
+/// files, which the hostile-input review of #1806 (finding L1, 2026-11-20)
+/// measured unpacking in 0.28 s. The vendored
 /// `headwater-standard` package holds 43 files, so an honest artifact is two
 /// orders of magnitude under this count.
 const UNPACKED_MEMBERS: usize = 4096;
