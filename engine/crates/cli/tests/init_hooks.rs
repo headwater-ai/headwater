@@ -715,7 +715,7 @@ fn the_shipped_intent_hook_names_an_engine_outside_the_corpus_range() {
     let first = out.lines().next().unwrap_or_default();
     assert!(
         first.contains("this corpus asks for engine \">=1.9 <2\"")
-            && first.contains(env!("CARGO_PKG_VERSION")),
+            && first.contains(headwater_resolve::release::ENGINE),
         "{out}"
     );
     assert!(out.contains("docs/answers/main.md"), "{out}");
