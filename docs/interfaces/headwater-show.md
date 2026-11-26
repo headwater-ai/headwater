@@ -31,6 +31,8 @@ The verb finds the document with the same function that [`headwater explain`](he
 
 Use `explain` to learn what a document is. Use `show` to read what it says, by its identifier, when you do not know its path.
 
+**No control character that a document supplies reaches standard error** ([#2069](https://github.com/headwater-ai/headwater/issues/2069)). A file name, an identifier and every other value from a document can hold a control character. A terminal or a CI log reads one as an instruction. Each refusal on standard error writes each one as visible backslash text, for example `\n` for a line feed and `\x1b` for an escape. A value that opens with `::` has its first colon written as `\x3a`, so it cannot open a workflow command in a CI log. A backslash itself is not escaped, as in [`headwater check`](headwater-check.md). Standard output is not escaped. It holds the bytes of the file, so a redirect still gives back a copy of the document.
+
 ## Preconditions
 
 The repository must carry a readable `.headwater/taxonomy.lock`, consumer declaration and corpus. The target must resolve to a typed or untyped census row. `show` refuses every row that the walk could not read, as the paragraphs under Exit status say. Such a row is a symlink, a named pipe, a socket or a device, an unreadable directory, or a name that is not UTF-8 ([#1366](https://github.com/headwater-ai/headwater/issues/1366)).

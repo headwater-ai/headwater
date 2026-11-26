@@ -28,6 +28,8 @@ Without `--check`, it computes projections and writes marked generated files. Wi
 
 It refuses to overwrite a file that lacks the generated-file marker. A stale projection or a marked file that the plan does not write is an error.
 
+**No control character that a document supplies reaches the report of this verb** ([#2069](https://github.com/headwater-ai/headwater/issues/2069)). A file name, an identifier and every other value from a document can hold a control character. A terminal or a CI log reads one as an instruction. The report on standard output and every refusal on standard error write each one as visible backslash text, for example `\n` for a line feed and `\x1b` for an escape. A value that opens with `::` has its first colon written as `\x3a`, so it cannot open a workflow command in a CI log. A backslash itself is not escaped, as in [`headwater check`](headwater-check.md). The projections themselves are not escaped, because a projection is data and not a report.
+
 **A run that refuses writes nothing.** The command finds the verdict of every output before its first write. When one of these six refusals applies, the command writes no file, and it exits 1:
 
 - more than one transcript of one arm of one tier in one run, for the present arm, the absent arm or a component arm
