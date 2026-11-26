@@ -300,7 +300,7 @@ Every rule in `CLAUDE.md` is a check that `headwater check` runs, and the taxono
 
 | Position | Script | What it does |
 |---|---|---|
-| `UserPromptSubmit` | `intent.sh` | `headwater route` on your prompt, and nothing at all when the route is silent |
+| `UserPromptSubmit` | `intent.sh` | `headwater route` on your prompt, and nothing at all when the route is silent and the engine is in the range the corpus asks for. The engine's line about an engine outside that range comes first |
 | `PreToolUse` on `Read` | `read.sh` | names the documents that declare `governs` over the path you are about to read. Context only, and it blocks nothing |
 | `PreToolUse` on `Write`/`Edit` | `write.sh` | refuses a raw write of a document that does not exist yet, and names `headwater new`. Every other call gets the documents that declare `governs` over the path you are about to change. Advisory, and it blocks nothing |
 | `PostToolUse` on `Write`/`Edit` | `write.sh` | nothing yet. [#952](https://github.com/headwater-ai/headwater/issues/952) gives it one line: the edges the edit made suspect |
