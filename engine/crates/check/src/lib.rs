@@ -143,6 +143,7 @@ pub mod adoption;
 pub mod agent_budget;
 pub mod anchors;
 pub mod basis;
+pub mod bound_facet;
 pub mod cache;
 pub mod change;
 pub mod claim;
@@ -248,12 +249,13 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 57] = [
+pub const RULES: [&str; 58] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
     identifier::RULE,
     placement::RULE,
+    bound_facet::RULE,
     outside_block::RULE,
     target::RULE,
     self_target::RULE,
@@ -522,6 +524,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::document_scope::<placement::Placement>(),
             scope::document_version::<placement::Placement>(),
             scope::document_exports::<placement::Placement>(),
+        ),
+        (
+            bound_facet::RULE,
+            scope::document_scope::<bound_facet::BoundFacet>(),
+            scope::document_version::<bound_facet::BoundFacet>(),
+            scope::document_exports::<bound_facet::BoundFacet>(),
         ),
         (
             outside_block::RULE,
@@ -878,7 +886,7 @@ pub fn run(
     ctx: &Context,
     cache: &mut Cache,
 ) -> Run {
-    // Registration, in full: twenty-seven checks, each named once. The scope trait each
+    // Registration, in full: every entry of [`RULES`], each named once. The scope trait each
     // one implements decides what it is handed, so this function cannot widen
     // a view by calling the wrong instantiation.
     let required = facet_required::Required::over(declared.shape);
@@ -897,6 +905,9 @@ pub fn run(
     let identifiers =
         identifier::Identifier::over(declared.shape, &declared.config.identifier_facet);
     let placement = placement::Placement::over(declared.taxonomy);
+    // A facet a shelf path binds, against the value the document declares.
+    // See [`bound_facet`].
+    let bound = bound_facet::BoundFacet::over(declared.taxonomy, declared.shape);
     let targets = target::Targets::over(declared.relations);
     // An entry that names the document that declares it. See [`self_target`].
     let self_targets = self_target::SelfTarget::over(declared.relations);
@@ -1048,6 +1059,7 @@ pub fn run(
         cache,
     ));
     instances.extend(scope::over_documents(&placement, census, graph, ctx, cache));
+    instances.extend(scope::over_documents(&bound, census, graph, ctx, cache));
     instances.extend(scope::over_documents(
         &outside_block,
         census,

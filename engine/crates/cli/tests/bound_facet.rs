@@ -89,7 +89,10 @@ impl Root {
         .expect("the declaration copies");
         let overlay = std::fs::read_to_string(repository.join(".headwater/overlay.yml"))
             .expect("the overlay reads");
-        assert!(overlay.contains("\nadd:\n"), "the overlay has an `add` block");
+        assert!(
+            overlay.contains("\nadd:\n"),
+            "the overlay has an `add` block"
+        );
         std::fs::write(
             declarations.join("overlay.yml"),
             overlay.replacen("\nadd:\n", &format!("\nadd:\n{OVERLAY}"), 1),
@@ -178,9 +181,11 @@ impl Ran {
     /// line, then the rule, the message and the fix joined by one space.
     fn of(&self, rule: &str) -> Vec<String> {
         let lines: Vec<&str> = self.out.lines().map(str::trim).collect();
-        let opens = format!("{rule}: ");
+        // `<rule>: ` where no obligation is named, `<rule> (<obligation>): `
+        // where one is.
+        let opens = [format!("{rule}: "), format!("{rule} (")];
         (1..lines.len())
-            .filter(|at| lines[*at].starts_with(&opens))
+            .filter(|at| opens.iter().any(|open| lines[*at].starts_with(open)))
             .map(|at| {
                 let body: Vec<&str> = lines[at..]
                     .iter()
@@ -305,13 +310,25 @@ fn an_absent_required_value_is_reported_once_by_the_required_rule() {
     assert_eq!(required.len(), 1, "{}", ran.out);
 }
 
+/// The kind instantiates on every shelf, and a shelf that binds nothing asks
+/// for no value: the same record with no `context` on `reviews` raises
+/// nothing from this rule.
+#[test]
+fn a_record_on_a_shelf_that_binds_nothing_raises_nothing() {
+    let root = Root::new("unbound");
+    root.write("docs/reviews/r.md", &record("r", ""));
+    let ran = root.strict();
+    assert!(ran.of_rule().is_empty(), "{}", ran.out);
+    assert_eq!(ran.code, Some(0), "{}{}", ran.out, ran.err);
+}
+
 /// The same required facet with a value that disagrees is this rule's.
 #[test]
 fn a_required_value_that_disagrees_is_this_rule() {
     let root = Root::new("required-disagrees");
     root.write(
         TITLED,
-        &record("t", "").replace("title: A contract t\n", "").replace("---\nid:", "---\ntitle: other\nid:"),
+        &record("t", "title: other\n").replace("title: A contract t\n", ""),
     );
     let ran = root.strict();
     assert_eq!(ran.code, Some(1), "{}{}", ran.out, ran.err);
