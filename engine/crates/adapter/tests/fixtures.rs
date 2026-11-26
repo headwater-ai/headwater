@@ -144,7 +144,10 @@ fn filtered_run() -> Ran {
     let paths: Vec<String> = ran.census.rows.iter().map(|row| row.path.clone()).collect();
     ran.run = headwater_check::filter::narrow(
         ran.run,
-        &["check/spec/0*.md".to_string(), "check/nowhere/**".to_string()],
+        &[
+            "check/spec/0*.md".to_string(),
+            "check/nowhere/**".to_string(),
+        ],
         paths.iter().map(String::as_str),
     );
     ran
