@@ -3461,10 +3461,13 @@ fn refused_plans() -> Vec<Plan> {
         std::fs::read_to_string(fixtures_dir().join("probe.yml")).expect("the budget declaration")
     };
     vec![
+        no_probes_plan(),
         plan_at(
             Tier::Regression,
             &narrowed(|it| it.category = Some(Category::Consistency)),
         ),
+        tier_undeclared_plan(),
+        unnameable_plan(),
         plan_at(Tier::Campaign, &narrowed(|it| it.arm = Some(Arm::Present))),
         plan_at(Tier::Campaign, &narrowed(|it| it.arm = Some(Arm::NoHook))),
         plan_over_probe(&|source| {
@@ -3541,4 +3544,80 @@ fn every_plan_refusal_has_a_case() {
         missing.is_empty(),
         "these refusals ship with no fixture: {missing:?}"
     );
+}
+
+/// A copy of the fixture corpus keyed by the process and the thread, so that
+/// a case and the coverage case that calls the same builder never share one
+/// (HW-OBL-0133). The directory is removed when the guard drops.
+fn copied_scratch(name: &str) -> Scratch {
+    let at = Scratch(Path::new(env!("CARGO_TARGET_TMPDIR")).join(format!(
+        "{name}-{}-{:?}",
+        std::process::id(),
+        std::thread::current().id()
+    )));
+    let _ = std::fs::remove_dir_all(&at);
+    copy_into(&fixtures_dir().join("corpus"), &at.join("corpus"));
+    at
+}
+
+/// The fixture corpus with every probe document taken out.
+fn no_probes_plan() -> Plan {
+    let at = copied_scratch("no-probes");
+    std::fs::remove_dir_all(at.join("corpus/probes")).expect("the probe shelf goes");
+    plan_over(&at)
+}
+
+/// The fixture corpus with the identifier taken off one probe.
+fn unnameable_plan() -> Plan {
+    let at = copied_scratch("unnameable");
+    edit(
+        &at,
+        "corpus/probes/0001-opened.md",
+        "id: PROBE-FIX-opened\n",
+        "",
+    );
+    plan_over(&at)
+}
+
+/// A declaration that names the regression tier alone, asked for the
+/// campaign tier.
+fn tier_undeclared_plan() -> Plan {
+    let budgets = Budgets::read(
+        "tiers:\n  regression:\n    budget_cents: 2000\n    session_cost_cents: 25\n    \
+         repetitions: 1\n    arms: [present]\n",
+    )
+    .expect("a declaration of one tier reads");
+    plan_against(Tier::Campaign, &budgets)
+}
+
+#[test]
+fn a_corpus_with_no_probe_document_refuses_the_plan() {
+    let plan = no_probes_plan();
+    assert_eq!(plan.refusal, Some(Refusal::NoProbes));
+    let message = plan.refusal.as_ref().expect("refused").to_string();
+    assert!(
+        message.contains("classifies no document of the"),
+        "{message}"
+    );
+}
+
+#[test]
+fn a_probe_with_no_identifier_refuses_the_plan() {
+    let plan = unnameable_plan();
+    assert_eq!(
+        plan.refusal,
+        Some(Refusal::Unnameable {
+            path: "corpus/probes/0001-opened.md".into(),
+        })
+    );
+    let message = plan.refusal.as_ref().expect("refused").to_string();
+    assert!(message.contains("carries no identifier"), "{message}");
+}
+
+#[test]
+fn a_tier_the_declaration_does_not_name_refuses_the_plan() {
+    let plan = tier_undeclared_plan();
+    assert_eq!(plan.refusal, Some(Refusal::TierUndeclared(Tier::Campaign)));
+    let message = plan.refusal.as_ref().expect("refused").to_string();
+    assert!(message.contains("declares no envelope for the"), "{message}");
 }
