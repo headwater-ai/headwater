@@ -777,19 +777,56 @@ fn parsed_records(format: Format, artifact: &str) -> Vec<Record> {
 /// the escaped ones are in the `<details>` block under it, and both write the
 /// same four columns. The second and the third are read, so a path a message
 /// names in the fourth reaches no record.
+///
+/// A cell ends at a `|` that no backslash comes straight before, which is how
+/// a GFM table reads it, and the location cell is read back from the code span
+/// `markdown::at` writes: the fence, the padding and each `\|` (#2070).
 fn rows(artifact: &str) -> Vec<Record> {
     artifact
         .lines()
         .filter(|line| line.starts_with('|'))
         .filter_map(|line| {
-            let cells: Vec<&str> = line.split('|').collect();
-            let cell = |at: usize| cells.get(at).map(|text| text.trim().trim_matches('`'));
+            let mut cells: Vec<&str> = Vec::new();
+            let mut from = 0;
+            let mut previous = None;
+            for (at, char) in line.char_indices() {
+                if char == '|' && previous != Some('\\') {
+                    cells.push(&line[from..at]);
+                    from = at + 1;
+                }
+                previous = Some(char);
+            }
+            cells.push(&line[from..]);
+            let location = code_span(cells.get(2)?.trim()).replace("\\|", "|");
             Some(Record {
-                path: bare_path(cell(2)?).to_string(),
-                rule: cell(3)?.to_string(),
+                path: bare_path(&location).to_string(),
+                rule: cells.get(3)?.trim().trim_matches('`').to_string(),
             })
         })
         .collect()
+}
+
+/// The content of a CommonMark code span: the text inside a fence of equal
+/// length, with one space taken from each side where both sides hold one and
+/// the text is not all spaces. Text that is not a code span is returned as it
+/// is.
+fn code_span(cell: &str) -> &str {
+    let fence = cell.len() - cell.trim_start_matches('`').len();
+    let inner = match fence {
+        0 => return cell,
+        fence => match cell.len() >= 2 * fence {
+            true => &cell[fence..cell.len() - fence],
+            false => return cell,
+        },
+    };
+    match inner.len() > 2
+        && inner.starts_with(' ')
+        && inner.ends_with(' ')
+        && !inner.trim().is_empty()
+    {
+        true => &inner[1..inner.len() - 1],
+        false => inner,
+    }
 }
 
 /// The finding blocks of the text report, and no block around them.

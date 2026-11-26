@@ -55,6 +55,12 @@ fn a_gate_reads_back_a_path_with_a_space_or_a_control_character() {
     );
 
     let unmoved = root.run(&["gate", "--read-set", read_set]);
+    // The repository's barrier rules never carry, so the gate exits 1 on any
+    // tree; what it must not do is read a listed file as gone or moved.
+    assert!(
+        !unmoved.out.contains("is not in this tree") && !unmoved.out.contains(" reads sha256:"),
+        "the gate finds every listed file as it was: {unmoved:?}"
+    );
     assert!(
         !unmoved.err.contains("does not read as a read set"),
         "the gate reads the artifact: {unmoved:?}"

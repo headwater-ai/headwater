@@ -47,6 +47,9 @@
 //! short line untouched rather than re-joining its words, so a report whose
 //! lines all fit is the same bytes before and after this function runs.
 
+use crate::paint::{severity_word, ColorMode};
+use crate::Severity;
+
 /// The width every report is laid out at, whatever the run is attached to.
 ///
 /// It is a constant rather than the width of whatever terminal ran the verb. A
@@ -308,6 +311,15 @@ const TAIL: usize = 2;
 /// is two short lines, so counting columns cannot see it.
 fn opens_past_the_room(line: &str, width: usize) -> bool {
     let indent = line.len() - line.trim_start_matches(' ').len();
+    // A location and its severity marker are one identity however many words
+    // the location holds, because a file name can hold a space. Filled, the
+    // line broke inside the path, a reader of the report took its first word
+    // for the location, and `check` failed its own audit on a legal file name
+    // (#2070). A fill also collapses a run of spaces, which no reader can
+    // undo. So the line is written whole past the width, as a long path is.
+    if ends_in_a_severity_marker(line) {
+        return line.chars().count() > width;
+    }
     let mut words = line.split_whitespace();
     let Some(first) = words.next() else {
         return false;
@@ -337,6 +349,25 @@ fn opens_past_the_room(line: &str, width: usize) -> bool {
         // reached with room to spare and the fill narrows the line as it should.
         _ => opening + 1 + tail[0].chars().count() > width,
     }
+}
+
+/// Whether `line` closes on the severity marker a finding's location line
+/// closes on, in either color mode.
+///
+/// The marker is the exact text [`severity_word`] writes: a glyph, a space and
+/// the word under `Plain`, and the painted word under `Ansi`. A prose line that
+/// ends in the bare word `error` carries neither, so it is still filled.
+fn ends_in_a_severity_marker(line: &str) -> bool {
+    let line = line.trim_end();
+    [Severity::Error, Severity::Warn, Severity::Info]
+        .into_iter()
+        .flat_map(|severity| {
+            [ColorMode::Plain, ColorMode::Ansi].map(|mode| severity_word(severity, mode))
+        })
+        .any(|marker| {
+            line.strip_suffix(marker.as_str())
+                .is_some_and(|before| before.ends_with(' ') && !before.trim().is_empty())
+        })
 }
 
 /// Whether [`filled`] leaves this line exactly as it arrived.

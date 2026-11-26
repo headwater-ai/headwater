@@ -57,7 +57,8 @@
 
 use crate::context::Date;
 use crate::instance::Input;
-use crate::paint::{paint, ColorMode, Role};
+use crate::paint::{paint, visible, ColorMode, Role};
+use crate::readset::read_back;
 use headwater_yaml::json::Json;
 
 /// A read set as a gate reads it back.
@@ -122,6 +123,26 @@ impl Recorded {
             if line.trim().is_empty() {
                 continue;
             }
+            // An `input` line is read from both ends, because its path is the
+            // one field that can hold a space: the digest, or `-`, is the last
+            // field, and the path is everything between the keyword and it.
+            if let Some(entry) = line.strip_prefix("input ") {
+                let Some((spelled, digest)) = entry.rsplit_once(' ') else {
+                    return Err(refuse("an input names no digest"));
+                };
+                let Some(path) = read_back(spelled) else {
+                    return Err(refuse(
+                        "a backslash in an input path opens no escape a read set writes",
+                    ));
+                };
+                // `-` is the one entry that carries no hash, and the writer
+                // spells it so that a reader cannot mistake it for one.
+                inputs.push(match digest {
+                    "-" => Input::new(path, None),
+                    digest => Input::new(path, Some(digest)),
+                });
+                continue;
+            }
             let fields: Vec<&str> = line.split(' ').collect();
             match fields.as_slice() {
                 ["lock", digest] => lock = Some((*digest).to_string()),
@@ -136,10 +157,6 @@ impl Recorded {
                     Ok(edition) => versions.push(((*rule).to_string(), edition)),
                     Err(_) => return Err(refuse("the edition of a rule is not a whole number")),
                 },
-                // `-` is the one entry that carries no hash, and the writer
-                // spells it so that a reader cannot mistake it for one.
-                ["input", path, "-"] => inputs.push(Input::new(*path, None)),
-                ["input", path, digest] => inputs.push(Input::new(*path, Some(digest))),
                 _ => return Err(refuse("no keyword of a read set opens this line")),
             }
         }
@@ -294,19 +311,19 @@ impl Reason {
                 found,
             } => format!(
                 "{} reads {found} and this verdict rests on {recorded}",
-                paint(Role::Path, path, mode)
+                paint(Role::Path, &visible(path), mode)
             ),
             Reason::Gone { path } => {
-                format!("{} is not in this tree", paint(Role::Path, path, mode))
+                format!("{} is not in this tree", paint(Role::Path, &visible(path), mode))
             }
             Reason::Escaped { path } => format!(
                 "{} resolves outside the repository root, so it is not read",
-                paint(Role::Path, path, mode)
+                paint(Role::Path, &visible(path), mode)
             ),
             Reason::Unhashed { path } => {
                 format!(
                     "{} carried no hash when it was read, so nothing compares",
-                    paint(Role::Path, path, mode)
+                    paint(Role::Path, &visible(path), mode)
                 )
             }
         }
@@ -913,7 +930,12 @@ mod tests {
     fn every_input_path_reads_back_exactly() {
         let text = hostile_set().render();
         let read = Recorded::parse(&text).expect("the artifact this run wrote");
-        assert_eq!(read.inputs, hostile_inputs(), "{text}");
+        // The read set writes its inputs in path order.
+        let mut given = hostile_inputs();
+        given.sort_by(|a, b| a.path.cmp(&b.path));
+        let mut inputs = read.inputs.clone();
+        inputs.sort_by(|a, b| a.path.cmp(&b.path));
+        assert_eq!(inputs, given, "{text}");
         for line in text.lines() {
             assert!(!line.contains('\u{7}'), "a control character reached the artifact: {line:?}");
         }
