@@ -33,8 +33,21 @@ fn bomb() -> Vec<u8> {
     writer.finish().unwrap().into_inner()
 }
 
+/// A zip of 4,097 empty members, one more than a fetch unpacks. It is a few
+/// hundred kilobytes and unpacks to no bytes at all, so only the count of
+/// members can refuse it.
+fn many() -> Vec<u8> {
+    let mut writer = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
+    let options = zip::write::SimpleFileOptions::default();
+    for at in 0..4097 {
+        writer.start_file(format!("m{at}.bin"), options).unwrap();
+    }
+    writer.finish().unwrap().into_inner()
+}
+
 /// Serve `count` requests. `/moved` answers 302 to `/x.zip`, `/x.zip` answers
-/// with the archive, `/bomb.zip` with [`bomb`], and anything else answers 404.
+/// with the archive, `/bomb.zip` with [`bomb`], `/many.zip` with [`many`], and
+/// anything else answers 404.
 fn serve(count: usize) -> String {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let base = format!("http://{}", listener.local_addr().unwrap());
@@ -46,10 +59,10 @@ fn serve(count: usize) -> String {
             let read = stream.read(&mut request).unwrap();
             let line = String::from_utf8_lossy(&request[..read]).to_string();
             let path = line.split_whitespace().nth(1).unwrap_or("").to_string();
-            let bomb = if path == "/bomb.zip" {
-                bomb()
-            } else {
-                Vec::new()
+            let bomb = match path.as_str() {
+                "/bomb.zip" => bomb(),
+                "/many.zip" => many(),
+                _ => Vec::new(),
             };
             let (head, payload): (String, &[u8]) = match path.as_str() {
                 "/away" => (
@@ -67,7 +80,7 @@ fn serve(count: usize) -> String {
                     ),
                     &body,
                 ),
-                "/bomb.zip" => (
+                "/bomb.zip" | "/many.zip" => (
                     format!(
                         "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
                         bomb.len()
@@ -143,4 +156,20 @@ fn a_served_zip_that_unpacks_past_the_bound_is_refused() {
     );
     assert!(error.to_string().contains(&location), "{error}");
     assert!(error.to_string().contains("67108864 bytes"), "{error}");
+}
+
+#[test]
+fn a_served_zip_of_more_members_than_the_count_is_refused() {
+    let base = serve(1);
+    let location = format!("{base}/many.zip");
+    let error = headwater_fetch::fetch(&location).unwrap_err();
+    assert!(
+        matches!(error, headwater_fetch::Error::Archive(_)),
+        "{error}"
+    );
+    assert!(error.to_string().contains(&location), "{error}");
+    assert!(
+        error.to_string().contains("more than 4096 members"),
+        "{error}"
+    );
 }
