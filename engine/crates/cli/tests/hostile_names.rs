@@ -146,14 +146,14 @@ fn explain_json_keeps_the_raw_name() {
 #[test]
 fn route_writes_a_hostile_pointer_as_visible_text() {
     let root = corpus("hostile-route", false);
-    let run = root.run(&["route", "--no-color", "wombat control character"]);
+    let run = root.run(&["route", "--no-color", "what does HW-DR-0003 decide"]);
     assert_eq!(run.code, Some(0), "route answers: {run:?}");
     assert!(
         run.out.contains("forged-name"),
         "route offers the hostile document: {run:?}"
     );
     clean("route", &run);
-    let json = root.run(&["route", "--json", "wombat control character"]);
+    let json = root.run(&["route", "--json", "what does HW-DR-0003 decide"]);
     assert_eq!(json.code, Some(0), "route --json answers: {json:?}");
     assert!(
         holds_raw(&json.out),
