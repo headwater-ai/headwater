@@ -3582,7 +3582,7 @@
       ],
       "properties": {
         "headwater": {
-          "shape": "1.7",
+          "shape": "1.8",
           "taxonomy": {
             "package": "headwater/fixture",
             "version": "1.0.0",

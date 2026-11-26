@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! What a change did to the files a suspect `source-tree` edge reaches, and
 //! whether a blocking control may leave the finding out of its gate (#2100,
 //! #2028).
