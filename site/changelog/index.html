@@ -147,6 +147,22 @@
 
   <p class="note"><strong>An entry arrives when a tag is cut.</strong> A tag is the only condition that fills this page, and not a date and not a milestone. There is no cadence, and this page says so rather than promise one.</p>
 
+  <h2>v0.8.2</h2>
+
+  <p><a href="https://github.com/headwater-ai/headwater/releases/tag/v0.8.2">A patch release</a>, written on 2026-11-27, fixes six bugs. It adds no rule and no option, and it comes with no taxonomy release. <code>headwater/standard</code> stays at 4.30.0.</p>
+
+  <p>Two fixes concern a file name that holds a space, a <code>|</code>, a backtick or a control character. Such a name is legal on disk. <code>headwater gate</code> now reads such a path back from the read set exactly. The text and Markdown reports of <code>headwater check</code> now keep it whole. A long location line no longer wraps, and a <code>|</code> or a backtick no longer splits a Markdown table cell.</p>
+
+  <p><code>explain</code>, <code>route</code>, <code>generate</code> and the standard error of <code>show</code> now write each document value as visible text, as <code>check</code> already did. So a hostile file name or summary cannot start a GitHub Actions workflow command or send escape sequences to your terminal. JSON output still carries the exact value, and <code>show</code> still writes the bytes of the file.</p>
+
+  <p>The engine can fetch a taxonomy archive from a URL. When it unpacks that archive, it now stops at the exact byte limit, and no byte past the limit reaches the disk. It still refuses a symbolic link, and a test now holds that refusal. It also refuses an archive of more than 4,096 members before it writes any member.</p>
+
+  <p>The two consumer-surface rules now select pages through the same pattern matcher as the rest of the engine. That matcher finishes in bounded time on a pattern with many <code>**</code> or <code>*</code>. In an <code>adopter_documents</code> pattern, <code>?</code> now matches one character, and it was a literal before.</p>
+
+  <p>When <code>headwater new</code> cannot write a claim file completely, it now removes the partial claim, and the message says so. When it cannot remove a document that it created, it now keeps the claim for that document, and it names both files. A change can state that you read the target of an edge again. Then <code>check --fix</code> now removes the baseline marker from that edge, also when the target did not move. Before, the edge kept <code>verified_as: baseline</code>, and a later finding said wrongly that nobody had read the target.</p>
+
+  <p>Upgrading: no change to your corpus or your taxonomy pin is necessary. The <code>headwater-check</code> action can be pinned to <code>@v0.8.2</code>.</p>
+
   <h2>v0.8.1</h2>
 
   <p><a href="https://github.com/headwater-ai/headwater/releases/tag/v0.8.1">A patch release</a>, written on 2026-11-27, lets you check one part of a corpus alone and lets a folder name carry a facet. The new repeatable option <code>check --path</code> takes a pattern, such as <code>'docs/billing/**'</code>. The run still evaluates every document. Then it keeps only the findings on a path that a pattern matches. The printed findings, the <code>--strict</code> exit and what <code>--fix</code> writes all follow that narrowed list, and the report says how many findings it held back. A pattern that matches no file and no finding fails a <code>--strict</code> run, so a mistyped pattern in a CI step cannot hide every finding and pass. The check JSON shape moves to 1.9, which adds <code>filter</code> on a run with <code>--path</code>.</p>
