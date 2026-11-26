@@ -757,10 +757,23 @@ pub struct Dangling {
 impl Dangling {
     /// The sentence `referential_integrity` reports.
     pub fn message(&self) -> String {
-        format!(
+        let sentence = format!(
             "reads `{}`, and no {} of that name is declared",
             self.name, self.what
-        )
+        );
+        // A shelf path reads a facet in one way only: a whole `{name}`
+        // segment. Before that segment bound a facet it named a folder of
+        // that literal name, so a taxonomy written then is refused here, and
+        // the refusal says what changed.
+        if self.what == "facet" && self.at.starts_with("shelves.") && self.at.ends_with(".path") {
+            return format!(
+                "{sentence}. A whole `{{{name}}}` segment of a shelf path binds the facet \
+                 `{name}`, and it no longer names a folder called `{{{name}}}`: declare the \
+                 facet, or rename the folder and the segment",
+                name = self.name
+            );
+        }
+        sentence
     }
 }
 

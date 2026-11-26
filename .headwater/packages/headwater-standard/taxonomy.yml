@@ -157,6 +157,12 @@ taxonomy: headwater/standard
 # exception to `OB-PLACE-1`, and spec 2 says why. The control is advisory with
 # promotion criteria, because the remedy is a judgment between moving the file
 # and editing the value. Nothing is removed, so it is a minor (#2101).
+# Migration: a shelf path segment that is exactly `{name}` was a literal folder
+# called `{name}` before this release, and it binds the facet `name` now. Where
+# no facet `name` is declared, `taxonomy validate` refuses the shelf and says
+# so. Where one is declared, a document in a folder literally called `{name}`
+# reads `{name}` as its bound value and `shelf.bound_facet.disagrees` reports
+# it. Rename such a folder and its segment before you adopt this release.
 #
 # 4.29.0 adds one obligation, `OB-REL-13`, and one control, `CT-REL-13`,
 # which names the rule `relation.scope.unmatched`: a governed scope pattern
