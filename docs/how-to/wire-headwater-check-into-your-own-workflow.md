@@ -46,14 +46,14 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: headwater-ai/headwater/integrations/headwater-check@main
+      - uses: headwater-ai/headwater/integrations/headwater-check@v0.8.0
         with:
           root: .
-          version: v0.1.2
+          version: v0.8.0
           strict: "true"
 ```
 
-Two different refs are in play, and they answer two different questions. `@main` names the commit of *this action's own YAML and scripts* your workflow runs. No tagged release of this repository yet carries `integrations/`. Pin it at a release tag once one does. `version: v0.1.2` names the *engine binary* the action downloads and runs against your corpus. That choice is entirely independent of the first ref. `root` is the corpus this action checks, relative to your checkout. `latest` also works for `version`. It resolves to the newest tag that carries the binary this action needs. It skips a tag of the `taxonomy/…` release stream, and it skips a tag whose release carries no asset. When `.headwater/taxonomy.yml` under `root` has an `engine` line, `latest` resolves to the newest such tag that the range admits. When no release is in the range, the job fails and names the range. A tag that you name in `version` is installed as you name it. `strict` is `true` by default. The job fails on an error-severity finding from `headwater check`. It also fails when a committed projection, such as a shelf index or the graph export, disagrees with your corpus and your lock. It also fails when your taxonomy lock is not what your overlay and your vendored packages resolve to.
+Two different refs are in play, and they answer two different questions. `@v0.8.0` names the commit of *this action's own YAML and scripts* that your workflow runs. Each engine release tag also tags the action, so pin the action at the release that you install, and move both refs together. `version: v0.8.0` names the *engine binary* that the action downloads and runs against your corpus. That choice is independent of the first ref. `root` is the corpus this action checks, relative to your checkout. `latest` also works for `version`. It resolves to the newest tag that carries the binary this action needs. It skips a tag of the `taxonomy/…` release stream, and it skips a tag whose release carries no asset. When `.headwater/taxonomy.yml` under `root` has an `engine` line, `latest` resolves to the newest such tag that the range admits. When no release is in the range, the job fails and names the range. A tag that you name in `version` is installed as you name it. `strict` is `true` by default. The job fails on an error-severity finding from `headwater check`. It also fails when a committed projection, such as a shelf index or the graph export, disagrees with your corpus and your lock. It also fails when your taxonomy lock is not what your overlay and your vendored packages resolve to.
 
 The action runs three checks, and you add no step of your own for the lock. `headwater check --strict` reads your documents against your lock. `headwater generate --check` compares each committed projection with what your corpus and your lock produce. `headwater taxonomy resolve --check` compares your lock with what your overlay and your vendored packages resolve to. Neither of the first two checks reads the overlay or the packages, so only the third check finds a lock that is out of date. When the lock fails, the job log and the job summary show the message of the engine, which names the source that changed.
 
@@ -79,7 +79,7 @@ The run covers the merge only when you set two things in the branch protection o
 
 A second action writes an upkeep report for each pull request. It needs no model and no assistant, so it works on any harness. The report has four parts:
 
-- **Touched** names each changed document. It also names each changed file that a document governs, with that document and its summary. A file that the change deletes or renames is in this part too, with the document that governed it before the change. When the change deletes a document, this part names each file that the document governed and that is still on the tree. It names the file even if the change did not edit it. Where the document governed files through a pattern, the engine must list the files that the pattern matches, and v0.4.0 does not. With that engine, Unmeasured names the pattern instead. It also says whether another document governs that file now. For a file whose path holds a space, it says that this is not measured.
+- **Touched** names each changed document. It also names each changed file that a document governs, with that document and its summary. A file that the change deletes or renames is in this part too, with the document that governed it before the change. When the change deletes a document, this part names each file that the document governed and that is still on the tree. It names the file even if the change did not edit it. Where the document governed files through a pattern, the engine must list the files that the pattern matches. Engine v0.4.1 and later list them. With an older engine, Unmeasured names the pattern instead. It also says whether another document governs that file now. For a file whose path holds a space, it says that this is not measured.
 - **Stale** names each edge that the engine reports as suspect.
 - **Owed** lists the findings of `headwater check --change`, by rule and by document. It lists each finding that the change caused, on any document, and marks it as new. It also lists the older findings on the documents that the change touched. It counts the other findings and does not list them.
 - **Unmeasured** names what the report did not see. It names each changed file that no `governs` edge names, and each file under a directory that an edge names by its literal path. It names each changed or deleted file whose path holds a space, because `headwater route` reads its task as words split at whitespace. For that file, the report does not measure whether a document governs it. It names each pattern of a deleted document whose files the engine did not list. It also states that no reader checked a sentence against the change. This part is never empty.
@@ -96,10 +96,10 @@ Add a second job to your workflow:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: headwater-ai/headwater/integrations/headwater-upkeep@main
+      - uses: headwater-ai/headwater/integrations/headwater-upkeep@v0.8.0
         with:
           root: .
-          version: v0.4.0
+          version: v0.8.0
 ```
 
 The action measures the change from the merge base of the pull request, so the checkout needs the full history. Set `base` to measure from a different revision. The report goes to the job summary. To post it on the pull request as a comment, set `comment: "true"` and give the job `pull-requests: write`.
