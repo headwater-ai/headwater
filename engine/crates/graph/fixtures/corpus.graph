@@ -281,6 +281,8 @@ anchors
     cited by HW-OBL-0171
   code_path `engine/crates/check/src/facet_value.rs` via source-tree
     cited by HW-DR-0066
+  code_path `engine/crates/check/src/filter.rs` via source-tree
+    cited by HW-IFACE-headwater-check
   code_path `engine/crates/check/src/gate.rs` via source-tree
     cited by HW-IFACE-headwater-gate
   code_path `engine/crates/check/src/harvest.rs` via source-tree

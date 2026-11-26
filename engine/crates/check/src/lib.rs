@@ -160,6 +160,7 @@ pub mod facet_blank;
 pub mod facet_required;
 pub mod facet_value;
 pub mod fill;
+pub mod filter;
 pub mod finding;
 pub mod fragment;
 pub mod frontmatter;
@@ -446,6 +447,11 @@ pub struct Run {
     /// the read set: a reader who cannot see what a run was scoped to cannot
     /// reproduce it from what it printed. See [`Scoped`].
     pub change: Option<Scoped>,
+    /// The `check --path` filter this run's findings were narrowed by, and
+    /// nothing for a run with no filter. Like the change, it states an input:
+    /// a reader of a filtered report learns what it held back. See
+    /// [`filter`].
+    pub filter: Option<filter::Filtered>,
     /// The one-line notice that the governed scope was not counted, because
     /// no tree stands beside the taxonomy, and `None` where it was counted or
     /// no reading was taken. It states what the run did not read, as the
@@ -1520,6 +1526,7 @@ pub fn run(
             declared.observations,
         ),
         change,
+        filter: None,
         scope_notice: declared
             .scope_coverage
             .and_then(headwater_graph::scope::Coverage::notice),
@@ -1812,6 +1819,12 @@ impl Run {
         // ones that did not.
         if let Some(change) = &self.change {
             out.push_str(&change.render());
+        }
+        // The filter beside the change, for the same reason: it is an input,
+        // and a reader of a narrowed report learns here what it held back
+        // (#2101).
+        if let Some(filter) = &self.filter {
+            out.push_str(&filter.render());
         }
         out.push_str(&self.coverage.render());
         // The governed scope that was not counted, beside coverage for its

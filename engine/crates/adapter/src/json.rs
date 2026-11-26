@@ -117,14 +117,22 @@ use std::collections::HashSet;
 /// neither, so a consumer could not tell a white-space edit from a change of
 /// content (#2100, #2028).
 ///
-/// Two of the shapes here have a second reader: [`change`] and [`coverage`] are
-/// what the SARIF property bag carries, so this constant versions them for that
+/// `1.9` added `filter`, a top-level member of a run that `check --path`
+/// narrowed: `patterns` as the command line wrote them, `held_back`, the
+/// count of live findings the filter removed, and `unmatched`, each pattern
+/// that matches no file and no finding. Every document was still evaluated,
+/// and `findings` holds only what the filter admits. A `1.9` document
+/// without the member is a run with no filter. A `1.8` document could not
+/// report one context of a corpus alone (#2101).
+///
+/// Three of the shapes here have a second reader: [`change`], [`filter`] and
+/// [`coverage`] are what the SARIF property bag carries, so this constant versions them for that
 /// artifact too and [`crate::sarif`] writes it there.
 ///
 /// `docs/interfaces/headwater-check.md` states this history for a reader who
 /// holds no clone, and `tests/interface_page.rs` fails when this constant
 /// names a version the page does not (#1451). Raise both together.
-pub const VERSION: &str = "1.8";
+pub const VERSION: &str = "1.9";
 
 /// What a run carries that these bytes do not write.
 ///
@@ -153,6 +161,18 @@ pub const LOSS: &[Loss] = &[Loss {
 /// One run as JSON.
 pub fn render(run: &Run, subject: &Subject<'_>) -> String {
     document(run, subject).render_pretty()
+}
+
+/// The `check --path` filter of a run, as the JSON document and the SARIF
+/// property bag carry it (#2101).
+pub fn filter(filtered: &headwater_check::filter::Filtered) -> Json {
+    let strings =
+        |list: &[String]| Json::Array(list.iter().map(|one| Json::string(one.clone())).collect());
+    Json::object([
+        ("patterns", strings(&filtered.patterns)),
+        ("held_back", number(filtered.held_back)),
+        ("unmatched", strings(&filtered.unmatched)),
+    ])
 }
 
 /// The change a run was scoped to, in the shape this document and the SARIF
@@ -408,6 +428,11 @@ fn document(run: &Run, subject: &Subject<'_>) -> Json {
     // the counts below count the ones that did not.
     if let Some(scoped) = &run.change {
         members.push(("change", change(scoped)));
+    }
+    // After the change and for its reason: an input a reader needs to know
+    // what the findings below leave out (#2101).
+    if let Some(filtered) = &run.filter {
+        members.push(("filter", filter(filtered)));
     }
     members.extend([
         ("coverage", coverage(&run.coverage, &run.instances)),

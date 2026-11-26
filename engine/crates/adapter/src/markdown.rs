@@ -107,6 +107,11 @@ pub fn render(run: &Run, subject: &Subject<'_>) -> String {
     if let Some(scoped) = &run.change {
         out.push_str(&scoped_to(scoped));
     }
+    // The path filter, beside the change and for its reason: a reviewer of a
+    // narrowed report needs to know what it left out (#2101).
+    if let Some(filtered) = &run.filter {
+        out.push_str(&filtered_to(filtered));
+    }
 
     // What the run looked at, under what it was told, and above the findings.
     // The order the other three formats write these two blocks in, and the
@@ -238,6 +243,46 @@ fn scoped_to(scoped: &Scoped) -> String {
         );
         for (document, target) in &scoped.unstated {
             let _ = writeln!(out, "- `{}` onto `{}`", visible(document), visible(target));
+        }
+        out.push('\n');
+    }
+    out
+}
+
+/// The `check --path` filter, as one sentence and the patterns that matched
+/// nothing (#2101).
+fn filtered_to(filtered: &headwater_check::filter::Filtered) -> String {
+    use std::fmt::Write;
+    let mut out = String::new();
+    let patterns: Vec<String> = filtered
+        .patterns
+        .iter()
+        .map(|pattern| format!("`{}`", visible(pattern)))
+        .collect();
+    let _ = writeln!(
+        out,
+        "**Narrowed by a path filter.** Every document was evaluated, and the findings below are \
+         only those on a path that one of these patterns matches: {}. {} finding{} outside the \
+         filter {} held back.\n",
+        patterns.join(", "),
+        filtered.held_back,
+        match filtered.held_back {
+            1 => "",
+            _ => "s",
+        },
+        match filtered.held_back {
+            1 => "was",
+            _ => "were",
+        }
+    );
+    if !filtered.unmatched.is_empty() {
+        let _ = writeln!(
+            out,
+            "{} of those patterns matched no file and no finding:\n",
+            filtered.unmatched.len()
+        );
+        for pattern in &filtered.unmatched {
+            let _ = writeln!(out, "- `{}`", visible(pattern));
         }
         out.push('\n');
     }

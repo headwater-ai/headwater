@@ -1,0 +1,3346 @@
+{
+  "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "headwater",
+          "informationUri": "https://github.com/headwater-ai/headwater",
+          "rules": [
+            {
+              "id": "facet.required.missing",
+              "shortDescription": {
+                "text": "document scope, one document and its front matter"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 1,
+                  "obligations": [
+                    "OB-FIX-3"
+                  ],
+                  "exportable_as": [
+                    "jsonschema"
+                  ]
+                }
+              }
+            },
+            {
+              "id": "facet.value.not_permitted",
+              "shortDescription": {
+                "text": "document scope, one document and its front matter"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 3,
+                  "obligations": [
+                    "OB-FIX-4"
+                  ],
+                  "exportable_as": [
+                    "jsonschema"
+                  ]
+                }
+              }
+            },
+            {
+              "id": "facet.value.blank",
+              "shortDescription": {
+                "text": "document scope, one document and its front matter"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "identifier.pattern.not_met",
+              "shortDescription": {
+                "text": "document scope, one document and its front matter"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 1,
+                  "obligations": [
+                    "OB-FIX-23"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "shelf.placement_is_primary",
+              "shortDescription": {
+                "text": "document scope, one document and its front matter"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 2,
+                  "obligations": [
+                    "OB-FIX-2"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "shelf.bound_facet.disagrees",
+              "shortDescription": {
+                "text": "document scope, one document and its front matter"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "relation.key.outside_block",
+              "shortDescription": {
+                "text": "document scope, one document and its front matter"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "relation.target.unresolved",
+              "shortDescription": {
+                "text": "edge scope, one relation instance and both endpoints"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "edge",
+                  "version": 3,
+                  "obligations": [
+                    "OB-FIX-24"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "relation.target.is_source",
+              "shortDescription": {
+                "text": "edge scope, one relation instance and both endpoints"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "edge",
+                  "version": 3,
+                  "obligations": [
+                    "OB-FIX-29"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "relation.target.suspect",
+              "shortDescription": {
+                "text": "edge scope, one relation instance and both endpoints, and the version of the declaring document that stood before the change, where the run carries one"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "edge",
+                  "version": 12,
+                  "obligations": [
+                    "OB-FIX-27"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "relation.reciprocity.missing",
+              "shortDescription": {
+                "text": "edge scope, one relation instance and both endpoints"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "edge",
+                  "version": 3,
+                  "obligations": [
+                    "OB-FIX-1"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "relation.endpoint.not_permitted",
+              "shortDescription": {
+                "text": "edge scope, one relation instance and both endpoints"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "edge",
+                  "version": 1,
+                  "obligations": [
+                    "OB-FIX-5",
+                    "OB-FIX-17"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "lifecycle.dependency.on_terminal",
+              "shortDescription": {
+                "text": "edge scope, one relation instance and both endpoints"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "edge",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "lifecycle.dependency.on_initial",
+              "shortDescription": {
+                "text": "edge scope, one relation instance and both endpoints"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "edge",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "lifecycle.state.not_set_by_edge",
+              "shortDescription": {
+                "text": "edge scope, one relation instance and both endpoints"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "edge",
+                  "version": 2,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "lifecycle.state.set_after_initial",
+              "shortDescription": {
+                "text": "edge scope, one relation instance and both endpoints"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "edge",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "relation.pair.invalid",
+              "shortDescription": {
+                "text": "edge scope, one relation instance and both endpoints"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "edge",
+                  "version": 2,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "warrant.evidence.unsupported",
+              "shortDescription": {
+                "text": "edge scope, one relation instance and both endpoints"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "edge",
+                  "version": 4,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "relation.participation.overdue",
+              "shortDescription": {
+                "text": "neighbourhood scope, one document and the documents one relation away from it, and the injected clock"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "neighbourhood",
+                  "version": 1,
+                  "obligations": [
+                    "OB-FIX-6"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "lifecycle.state.set_twice",
+              "shortDescription": {
+                "text": "corpus scope, every row of the census, and it is a barrier"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "corpus",
+                  "version": 2,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "relation.declaration.unusable",
+              "shortDescription": {
+                "text": "document scope, one document and its front matter, and what phase A could not make of it"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 1,
+                  "obligations": [
+                    "OB-FIX-25"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "identifier.unusable",
+              "shortDescription": {
+                "text": "document scope, one document and its front matter, and what phase A could not make of it"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 1,
+                  "obligations": [
+                    "OB-FIX-26"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "identifier.claimed_twice",
+              "shortDescription": {
+                "text": "corpus scope, every row of the census, and what phase A could not make of each document's identity, and it is a barrier"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "corpus",
+                  "version": 2,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "shelf.discriminator.unresolved",
+              "shortDescription": {
+                "text": "corpus scope, every row of the census, and it is a barrier"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "corpus",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "identifier.claim.missing",
+              "shortDescription": {
+                "text": "corpus scope, every row of the census, and what phase A could not make of each document's identity, and the identifier claim store, and it is a barrier"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "corpus",
+                  "version": 3,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "identifier.claim.stale",
+              "shortDescription": {
+                "text": "corpus scope, every row of the census, and the identifier claim store, and it is a barrier"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "corpus",
+                  "version": 3,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "voice.forbidden_construction",
+              "shortDescription": {
+                "text": "document scope, one document, its front matter and its body"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 7,
+                  "obligations": [
+                    "OB-FIX-7"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "language.controlled.not_met",
+              "shortDescription": {
+                "text": "document scope, one document, its front matter and its body"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 6,
+                  "obligations": [
+                    "OB-FIX-8"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "language.retired_term.used",
+              "shortDescription": {
+                "text": "document scope, one document, its front matter and its body"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 6,
+                  "obligations": [
+                    "OB-FIX-22"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "surface.local_path.instructed",
+              "shortDescription": {
+                "text": "document scope, one document, its front matter and its body"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 5,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "surface.command.undeclared",
+              "shortDescription": {
+                "text": "document scope, one document, its front matter and its body"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 3,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "language.source_form.not_met",
+              "shortDescription": {
+                "text": "document scope, one document, its front matter and its body"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 1,
+                  "obligations": [
+                    "OB-FIX-21"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "section.required.missing",
+              "shortDescription": {
+                "text": "document scope, one document, its front matter and its body"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 1,
+                  "obligations": [
+                    "OB-FIX-9"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "link.fragment.unresolved",
+              "shortDescription": {
+                "text": "corpus scope, every row of the census, and it is a barrier"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "corpus",
+                  "version": 4,
+                  "obligations": [
+                    "OB-FIX-10"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "link.path.unresolved",
+              "shortDescription": {
+                "text": "corpus scope, every row of the census, and it is a barrier"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "corpus",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "link.identifier.mismatch",
+              "shortDescription": {
+                "text": "corpus scope, every row of the census, and it is a barrier"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "corpus",
+                  "version": 1,
+                  "obligations": [
+                    "OB-FIX-28"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "relation.mention.undeclared",
+              "shortDescription": {
+                "text": "corpus scope, every row of the census, and it is a barrier"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "corpus",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "warrant.promoted",
+              "shortDescription": {
+                "text": "document scope, one document and its front matter, and the version of it that stood before the change"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "lifecycle.transition.not_permitted",
+              "shortDescription": {
+                "text": "document scope, one document and its front matter, and the version of it that stood before the change"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 2,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "lifecycle.state.not_admitted",
+              "shortDescription": {
+                "text": "document scope, one document and its front matter"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "warrant.value.not_permitted",
+              "shortDescription": {
+                "text": "document scope, one document and its front matter"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "warrant.acceptance.unpaired",
+              "shortDescription": {
+                "text": "document scope, one document and its front matter"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "warrant.acceptance.at_initial",
+              "shortDescription": {
+                "text": "document scope, one document and its front matter"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "lifecycle.deletion.not_permitted",
+              "shortDescription": {
+                "text": "corpus scope, every row of the census, and the version of each path the change named that no row of this corpus holds, and it is a barrier"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "corpus",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "relation.scope.ungoverned",
+              "shortDescription": {
+                "text": "corpus scope, every row of the census, and the version of each path the change named that no row of this corpus holds, and it is a barrier"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "corpus",
+                  "version": 2,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "coverage.document_unchecked",
+              "shortDescription": {
+                "text": "corpus scope, every row of the census, and it is a barrier"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "corpus",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "obligation.disposition.not_one",
+              "shortDescription": {
+                "text": "taxonomy scope, the resolved taxonomy, and no document"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "taxonomy",
+                  "version": 1,
+                  "obligations": [
+                    "OB-FIX-11"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "control.mechanism.unimplemented",
+              "shortDescription": {
+                "text": "taxonomy scope, the resolved taxonomy, and no document"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "taxonomy",
+                  "version": 1,
+                  "obligations": [
+                    "OB-FIX-12"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "control.observation.invalid",
+              "shortDescription": {
+                "text": "taxonomy scope, the resolved taxonomy, and no document"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "taxonomy",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "adoption.task.expired",
+              "shortDescription": {
+                "text": "taxonomy scope, the resolved taxonomy, and no document"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "taxonomy",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "language.outside_root.refused",
+              "shortDescription": {
+                "text": "taxonomy scope, the resolved taxonomy, and no document"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "taxonomy",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "taxonomy.pin.diverged",
+              "shortDescription": {
+                "text": "taxonomy scope, the resolved taxonomy, and no document"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "taxonomy",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "taxonomy.lock.stale",
+              "shortDescription": {
+                "text": "taxonomy scope, the resolved taxonomy, and no document"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "taxonomy",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "harvest.pin.unread",
+              "shortDescription": {
+                "text": "taxonomy scope, the resolved taxonomy, and no document"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "taxonomy",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "import.pin.unread",
+              "shortDescription": {
+                "text": "taxonomy scope, the resolved taxonomy, and no document"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "taxonomy",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "relation.target.verification.suspect",
+              "shortDescription": {
+                "text": "edge scope, one relation instance and both endpoints, and the committed observation snapshot"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "edge",
+                  "version": 2,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "projection.budget.exceeded",
+              "shortDescription": {
+                "text": "taxonomy scope, the resolved taxonomy, and no document"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "taxonomy",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "relation.scope.unmatched",
+              "shortDescription": {
+                "text": "taxonomy scope, the resolved taxonomy, and no document"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "taxonomy",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            }
+          ]
+        }
+      },
+      "columnKind": "unicodeCodePoints",
+      "invocations": [
+        {
+          "executionSuccessful": true
+        }
+      ],
+      "artifacts": [
+        {
+          "location": {
+            "uri": ".headwater/ids"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/evaluations/alpha.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "e651a58ed6489f388954343391d6321a708a2b7492bb4dc1386699a8bf65cc7b"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/evaluations/beta.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "37e03d2c518cced7604d74dd38c1949cbc72186db9b4a4bd5bb8f3fe9503d31d"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/evaluations/delta.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "2f0828576f6ae90573d0a3e6acb2ba64eacf43fd4221e4b821efd5ea335c948f"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/evaluations/epsilon.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "630bb5d4cad70de102c942ff505a8597f750ee2358fceb6fa5b73ff8a31a4337"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/evaluations/eta.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "d1882e10c05b15d1c6aafcc982b2ecbf429ec169a0fcd7ad11f79dbf5b20228a"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/evaluations/gamma.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "bb74fe7df19ea383b01be2f8686fb87dbea18757b4134e601e3e718aeee9e09b"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/evaluations/zeta.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "78ec68e48f9e8e1f8826c1280bdb523820556b14e2ac375f21cf8c1915240964"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/00-both-halves.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "8cdc1e857f7d3693d206faddeec09ef622aa44fbe9d1e378744ae9e2ac49600b"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/01-one-half.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "20a913097b2d04bc39e5ff8271b47a21dfaa135f78b5fdda234e38c3a30c7017"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/02-cited-only.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "9f4f5fff759b2f04d2956dabbb3cdc0e86bdc8f306159a58ad4f7f80cbad9c82"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/03-no-instance.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "bb254e9a27d62cf8ff126895c545a797d9eeadee7e756bd34a7536ce21cba7ad"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/04-untyped.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "6f9c76a6e1b6a236587c96e19fc84ee2181b0e65bc30be672104b98df6421680"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/05-no-summary.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "e93ab39ba0f3d03cf7593bc046d7c0a5aa0fbf102df0e02e2dbf34c263aa346d"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/06-retired.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "d40b65fea5627e9da5693ba6ff1239180b1a3b6a9ab83ed5b414f286d7ded636"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/07-prose-defects.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "0374176cdaaae0476d0f195b7530f5a93646c00bd9c41fe16bcdaf480ec2410d"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/08-contract-met.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "1f137d2e39a164a976bcfb76d662b7469171f99bd3ce643c4d3fb2fd247ba34f"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/09-contract-missing.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "6bc8ae424b8a20472a5d244ed71613195ad527e11e4739ec7cf5fa88f4315d4a"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/10-suppressed.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "2258c21842ba066fc11cadfee7b462909dda6bd93cf7693e9c93fa786382ebba"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/11-identifier-mismatch.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "c916abc0cb05ccfcb8c239e8482d6afe7c2ae975efceba2888ec2895d09bc6bd"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/13-dangling.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "4b5fdd89f22e4d82ee47b8b77652168b082ec821800ad890cf12569980412336"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/14-relations-not-a-mapping.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "6227db15ae52d35b0f49e63b059aa9d15b37bada401d19339ac3a92e403f72b3"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/15-unusable-entries.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "b0cec4bd6cad730288e9c126bf7daabd890f52975e80840ec1266fef86eacb87"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/16-no-identifier.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "2f42a485abe65d5e2c22de86c8bfecb7bbfc1e06e64ef2f6c64c914fc7792b85"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/17-identifier-not-a-word.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "9d82bc120f67b7b5a999433bbae8502e18587777cf94bcc8254491ebe9c73981"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/18-blank-facets.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "ab8d0eb139f3733cde3ca712a0f637ff8fe82f70fc93a55f87b27273fad00d57"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/20-fragment-target.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "fb666df2800fa7bc1213d78c4e42a46448d98cdc8b40043495c1b4cc706cc9a5"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/21-summary-facet-prose.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "16254913bd0c34a373fdb76b1a6acd730f6bd03bdd1ad47b2d964a496aaf6695"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/22-voice-facet-prose.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "404a707df4c8b5fb0e958ce3e87f5a4eec0ed5d12588f0ebe6f6a3398f641822"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/23-voice-empty-population.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "43da22615732693705b57847374fa9b93eeadc834fa0007fbf6eecd929f30e6a"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/24-voice-context-section.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "fd29ca33cfa7fb0582f0131f5eddd05b3c032efd3cf63e45bf51dc87f963ffd5"
+          }
+        }
+      ],
+      "results": [
+        {
+          "ruleId": "relation.reciprocity.missing",
+          "ruleIndex": 10,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`EVAL-FIX-delta` declares `cited_by: SPEC-FIX-cited-only`, and `cites_evidence` requires both ends, so check/spec/02-cited-only.md owes `cites_evidence`",
+            "markdown": "`EVAL-FIX-delta` declares `cited_by: SPEC-FIX-cited-only`, and `cites_evidence` requires both ends, so check/spec/02-cited-only.md owes `cites_evidence`\n\n**Fix:** add `cites_evidence: EVAL-FIX-delta` under `relations:` in check/spec/02-cited-only.md\n\n_Not reported: held by the adoption task AD-1, owned by the fixture tree, until 2027-01-01._"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/evaluations/delta.md"
+                },
+                "region": {
+                  "startLine": 8,
+                  "startColumn": 7
+                }
+              }
+            }
+          ],
+          "suppressions": [
+            {
+              "kind": "external",
+              "status": "accepted",
+              "justification": "held by the adoption task AD-1, owned by the fixture tree, until 2027-01-01",
+              "properties": {
+                "headwater": {
+                  "escape": "migration-pending"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": true,
+              "remediation": "add `cites_evidence: EVAL-FIX-delta` under `relations:` in check/spec/02-cited-only.md",
+              "escape": "migration-pending",
+              "obligation": "OB-FIX-1",
+              "obligation_severity": "medium"
+            }
+          }
+        },
+        {
+          "ruleId": "relation.mention.undeclared",
+          "ruleIndex": 36,
+          "level": "note",
+          "kind": "fail",
+          "message": {
+            "text": "the prose names `SPEC-FIX-fragment-target` and the front matter declares no relation to it; the taxonomy offers the relation `assesses` from `design_spec` to `design_spec`",
+            "markdown": "the prose names `SPEC-FIX-fragment-target` and the front matter declares no relation to it; the taxonomy offers the relation `assesses` from `design_spec` to `design_spec`\n\n**Fix:** if this document rests on `SPEC-FIX-fragment-target`, declare it under `relations:`, for example `assesses: [SPEC-FIX-fragment-target]`; if the mention is an aside, leave it. `headwater explain SPEC-FIX-fragment-target` names the document, and `headwater explain` on a relation says what it means"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/00-both-halves.md"
+                },
+                "region": {
+                  "startLine": 30,
+                  "startColumn": 14
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "info",
+              "fixable": false,
+              "remediation": "if this document rests on `SPEC-FIX-fragment-target`, declare it under `relations:`, for example `assesses: [SPEC-FIX-fragment-target]`; if the mention is an aside, leave it. `headwater explain SPEC-FIX-fragment-target` names the document, and `headwater explain` on a relation says what it means",
+              "escape": "none"
+            }
+          }
+        },
+        {
+          "ruleId": "relation.reciprocity.missing",
+          "ruleIndex": 10,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`SPEC-FIX-one-half` declares `cites_evidence: EVAL-FIX-beta`, and `cites_evidence` requires both ends, so check/evaluations/beta.md owes `cited_by`",
+            "markdown": "`SPEC-FIX-one-half` declares `cites_evidence: EVAL-FIX-beta`, and `cites_evidence` requires both ends, so check/evaluations/beta.md owes `cited_by`\n\n**Fix:** add `cited_by: SPEC-FIX-one-half` under `relations:` in check/evaluations/beta.md"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/01-one-half.md"
+                },
+                "region": {
+                  "startLine": 9,
+                  "startColumn": 7
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": true,
+              "remediation": "add `cited_by: SPEC-FIX-one-half` under `relations:` in check/evaluations/beta.md",
+              "escape": "none",
+              "obligation": "OB-FIX-1",
+              "obligation_severity": "medium"
+            }
+          }
+        },
+        {
+          "ruleId": "language.controlled.not_met",
+          "ruleIndex": 27,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` holds prose to 25 words a sentence, and this one has 34",
+            "markdown": "`ste_house` holds prose to 25 words a sentence, and this one has 34\n\n**Fix:** split the sentence, or move a clause into its own sentence"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/01-one-half.md"
+                },
+                "region": {
+                  "startLine": 18,
+                  "startColumn": 151
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "split the sentence, or move a clause into its own sentence",
+              "escape": "none",
+              "obligation": "OB-FIX-8",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "coverage.document_unchecked",
+          "ruleIndex": 45,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "this document is classified and all 4 of its check instances were skipped",
+            "markdown": "this document is classified and all 4 of its check instances were skipped\n\n**Fix:** check that the shelf pattern claims the right files, and that the kind declares something a check reads"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/03-no-instance.md"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "check that the shelf pattern claims the right files, and that the kind declares something a check reads",
+              "escape": "none"
+            }
+          }
+        },
+        {
+          "ruleId": "shelf.discriminator.unresolved",
+          "ruleIndex": 23,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "the shelf is heterogeneous and the document declares no `doc_type`, so no kind resolves and no check of a kind reaches this document",
+            "markdown": "the shelf is heterogeneous and the document declares no `doc_type`, so no kind resolves and no check of a kind reaches this document\n\n**Fix:** set `doc_type` to one kind this shelf admits, as one word; `headwater explain check/spec/04-untyped.md` prints the shelf and its kinds"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/04-untyped.md"
+                },
+                "region": {
+                  "startLine": 1,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "set `doc_type` to one kind this shelf admits, as one word; `headwater explain check/spec/04-untyped.md` prints the shelf and its kinds",
+              "escape": "none"
+            }
+          }
+        },
+        {
+          "ruleId": "facet.required.missing",
+          "ruleIndex": 0,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`design_spec` requires the facet `summary`, and it is not declared",
+            "markdown": "`design_spec` requires the facet `summary`, and it is not declared\n\n**Fix:** add `summary:` to the front matter of check/spec/05-no-summary.md, with the value this document has"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/05-no-summary.md"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "add `summary:` to the front matter of check/spec/05-no-summary.md, with the value this document has",
+              "escape": "none",
+              "obligation": "OB-FIX-3",
+              "obligation_severity": "high"
+            }
+          }
+        },
+        {
+          "ruleId": "language.controlled.not_met",
+          "ruleIndex": 27,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` holds prose to 25 words a sentence, and this one has 31",
+            "markdown": "`ste_house` holds prose to 25 words a sentence, and this one has 31\n\n**Fix:** split the sentence, or move a clause into its own sentence"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/05-no-summary.md"
+                },
+                "region": {
+                  "startLine": 12,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "split the sentence, or move a clause into its own sentence",
+              "escape": "none",
+              "obligation": "OB-FIX-8",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "facet.value.not_permitted",
+          "ruleIndex": 1,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`status` admits draft, current, superseded, and this document declares `retired`",
+            "markdown": "`status` admits draft, current, superseded, and this document declares `retired`\n\n**Fix:** change `status` in check/spec/06-retired.md to one of: draft, current, superseded"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/06-retired.md"
+                },
+                "region": {
+                  "startLine": 4,
+                  "startColumn": 9
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "change `status` in check/spec/06-retired.md to one of: draft, current, superseded",
+              "escape": "none",
+              "obligation": "OB-FIX-4",
+              "obligation_severity": "medium"
+            }
+          }
+        },
+        {
+          "ruleId": "language.controlled.not_met",
+          "ruleIndex": 27,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` holds prose to 25 words a sentence, and this one has 34",
+            "markdown": "`ste_house` holds prose to 25 words a sentence, and this one has 34\n\n**Fix:** split the sentence, or move a clause into its own sentence"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/06-retired.md"
+                },
+                "region": {
+                  "startLine": 11,
+                  "startColumn": 131
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "split the sentence, or move a clause into its own sentence",
+              "escape": "none",
+              "obligation": "OB-FIX-8",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "voice.forbidden_construction",
+          "ruleIndex": 26,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`declarative` forbids future_intent, and this sentence writes `will be`",
+            "markdown": "`declarative` forbids future_intent, and this sentence writes `will be`\n\n**Fix:** state what the system does now, or move the sentence to a document whose kind narrates"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 15,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "state what the system does now, or move the sentence to a document whose kind narrates",
+              "escape": "none",
+              "obligation": "OB-FIX-7",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "voice.forbidden_construction",
+          "ruleIndex": 26,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`declarative` forbids change_narration, and this sentence writes `we renamed`",
+            "markdown": "`declarative` forbids change_narration, and this sentence writes `we renamed`\n\n**Fix:** state the position that holds, and leave the change to the decision that made it"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 17,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "state the position that holds, and leave the change to the decision that made it",
+              "escape": "none",
+              "obligation": "OB-FIX-7",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "voice.forbidden_construction",
+          "ruleIndex": 26,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`declarative` forbids phased_rollout, and this sentence writes `for now`",
+            "markdown": "`declarative` forbids phased_rollout, and this sentence writes `for now`\n\n**Fix:** state what holds, and record the sequence in the plan that owns it"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 19,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "state what holds, and record the sequence in the plan that owns it",
+              "escape": "none",
+              "obligation": "OB-FIX-7",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "language.controlled.not_met",
+          "ruleIndex": 27,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` holds prose to 25 words a sentence, and this one has 43",
+            "markdown": "`ste_house` holds prose to 25 words a sentence, and this one has 43\n\n**Fix:** split the sentence, or move a clause into its own sentence"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 23,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "split the sentence, or move a clause into its own sentence",
+              "escape": "none",
+              "obligation": "OB-FIX-8",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "language.controlled.not_met",
+          "ruleIndex": 27,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` admits no contraction, and this sentence writes `doesn't`",
+            "markdown": "`ste_house` admits no contraction, and this sentence writes `doesn't`\n\n**Fix:** write `does not`"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 25,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": true,
+              "remediation": "write `does not`",
+              "escape": "none",
+              "obligation": "OB-FIX-8",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "language.controlled.not_met",
+          "ruleIndex": 27,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` declares the tag `en-US`, and this sentence writes `behaviour`",
+            "markdown": "`ste_house` declares the tag `en-US`, and this sentence writes `behaviour`\n\n**Fix:** write `behavior`"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 27,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": true,
+              "remediation": "write `behavior`",
+              "escape": "none",
+              "obligation": "OB-FIX-8",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "language.controlled.not_met",
+          "ruleIndex": 27,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` admits no semicolon in running prose, and this sentence writes one",
+            "markdown": "`ste_house` admits no semicolon in running prose, and this sentence writes one\n\n**Fix:** split the sentence in two, and let each half state one thing"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 29,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "split the sentence in two, and let each half state one thing",
+              "escape": "none",
+              "obligation": "OB-FIX-8",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "language.controlled.not_met",
+          "ruleIndex": 27,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` holds prose to 25 words a sentence, and this one has 49",
+            "markdown": "`ste_house` holds prose to 25 words a sentence, and this one has 49\n\n**Fix:** split the sentence, or move a clause into its own sentence"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 35,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "split the sentence, or move a clause into its own sentence",
+              "escape": "none",
+              "obligation": "OB-FIX-8",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "language.retired_term.used",
+          "ruleIndex": 28,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives",
+            "markdown": "`ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives\n\n**Fix:** rewrite the sentence without `robust`"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 35,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "rewrite the sentence without `robust`",
+              "escape": "none",
+              "obligation": "OB-FIX-22",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "voice.forbidden_construction",
+          "ruleIndex": 26,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`declarative` forbids future_intent, and this sentence writes `will be`",
+            "markdown": "`declarative` forbids future_intent, and this sentence writes `will be`\n\n**Fix:** state what the system does now, or move the sentence to a document whose kind narrates"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 35,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "state what the system does now, or move the sentence to a document whose kind narrates",
+              "escape": "none",
+              "obligation": "OB-FIX-7",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "language.retired_term.used",
+          "ruleIndex": 28,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives",
+            "markdown": "`ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives\n\n**Fix:** rewrite the sentence without `robust`"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 39,
+                  "startColumn": 14
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "rewrite the sentence without `robust`",
+              "escape": "none",
+              "obligation": "OB-FIX-22",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "voice.forbidden_construction",
+          "ruleIndex": 26,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`declarative` forbids future_intent, and this sentence writes `will be`",
+            "markdown": "`declarative` forbids future_intent, and this sentence writes `will be`\n\n**Fix:** state what the system does now, or move the sentence to a document whose kind narrates"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 39,
+                  "startColumn": 14
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "state what the system does now, or move the sentence to a document whose kind narrates",
+              "escape": "none",
+              "obligation": "OB-FIX-7",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "language.controlled.not_met",
+          "ruleIndex": 27,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` admits no contraction, and this sentence writes `doesn't`",
+            "markdown": "`ste_house` admits no contraction, and this sentence writes `doesn't`\n\n**Fix:** write `does not`"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 47,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": true,
+              "remediation": "write `does not`",
+              "escape": "none",
+              "obligation": "OB-FIX-8",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "language.retired_term.used",
+          "ruleIndex": 28,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` retires `reference system`, and this sentence writes it: the corpus renamed it",
+            "markdown": "`ste_house` retires `reference system`, and this sentence writes it: the corpus renamed it\n\n**Fix:** write `taxonomy`"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 51,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": true,
+              "remediation": "write `taxonomy`",
+              "escape": "none",
+              "obligation": "OB-FIX-22",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "language.retired_term.used",
+          "ruleIndex": 28,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives",
+            "markdown": "`ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives\n\n**Fix:** rewrite the sentence without `robust`"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 53,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "rewrite the sentence without `robust`",
+              "escape": "none",
+              "obligation": "OB-FIX-22",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "language.source_form.not_met",
+          "ruleIndex": 31,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` writes one paragraph on one line, and this line continues the paragraph above",
+            "markdown": "`ste_house` writes one paragraph on one line, and this line continues the paragraph above\n\n**Fix:** join this line to the line above, or end the paragraph there"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 64,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "join this line to the line above, or end the paragraph there",
+              "escape": "none",
+              "obligation": "OB-FIX-21",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "language.source_form.not_met",
+          "ruleIndex": 31,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` writes one paragraph on one line, and this line continues the paragraph above",
+            "markdown": "`ste_house` writes one paragraph on one line, and this line continues the paragraph above\n\n**Fix:** join this line to the line above, or end the paragraph there"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 65,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "join this line to the line above, or end the paragraph there",
+              "escape": "none",
+              "obligation": "OB-FIX-21",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "link.fragment.unresolved",
+          "ruleIndex": 33,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`#no-such-section` names no heading of this document",
+            "markdown": "`#no-such-section` names no heading of this document\n\n**Fix:** point it at a heading of check/spec/07-prose-defects.md, or write the heading it names"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 69,
+                  "startColumn": 32
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "point it at a heading of check/spec/07-prose-defects.md, or write the heading it names",
+              "escape": "none",
+              "obligation": "OB-FIX-10",
+              "obligation_severity": "medium"
+            }
+          }
+        },
+        {
+          "ruleId": "link.path.unresolved",
+          "ruleIndex": 34,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`19-renamed.md` names no file of this repository: nothing stands at `check/spec/19-renamed.md`",
+            "markdown": "`19-renamed.md` names no file of this repository: nothing stands at `check/spec/19-renamed.md`\n\n**Fix:** point it at a file that exists, or restore `check/spec/19-renamed.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 71,
+                  "startColumn": 28
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "point it at a file that exists, or restore `check/spec/19-renamed.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went",
+              "escape": "none"
+            }
+          }
+        },
+        {
+          "ruleId": "link.path.unresolved",
+          "ruleIndex": 34,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`19-renamed.md#a-heading` names no file of this repository: nothing stands at `check/spec/19-renamed.md`",
+            "markdown": "`19-renamed.md#a-heading` names no file of this repository: nothing stands at `check/spec/19-renamed.md`\n\n**Fix:** point it at a file that exists, or restore `check/spec/19-renamed.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 73,
+                  "startColumn": 91
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "point it at a file that exists, or restore `check/spec/19-renamed.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went",
+              "escape": "none"
+            }
+          }
+        },
+        {
+          "ruleId": "link.path.unresolved",
+          "ruleIndex": 34,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`../../../outside.md` does not name a path of this repository at all: `check/spec/../../../outside.md` climbs above the repository",
+            "markdown": "`../../../outside.md` does not name a path of this repository at all: `check/spec/../../../outside.md` climbs above the repository\n\n**Fix:** rewrite the destination as a path relative to the document that writes it, or as an absolute address with a scheme"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 75,
+                  "startColumn": 63
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "rewrite the destination as a path relative to the document that writes it, or as an absolute address with a scheme",
+              "escape": "none"
+            }
+          }
+        },
+        {
+          "ruleId": "link.path.unresolved",
+          "ruleIndex": 34,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`19-renamed.md?v=2` names no file of this repository: nothing stands at `check/spec/19-renamed.md`",
+            "markdown": "`19-renamed.md?v=2` names no file of this repository: nothing stands at `check/spec/19-renamed.md`\n\n**Fix:** point it at a file that exists, or restore `check/spec/19-renamed.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 77,
+                  "startColumn": 46
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "point it at a file that exists, or restore `check/spec/19-renamed.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went",
+              "escape": "none"
+            }
+          }
+        },
+        {
+          "ruleId": "link.path.unresolved",
+          "ruleIndex": 34,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`/spec/00-both-halves.md` names no file of this repository: nothing stands at `/spec/00-both-halves.md`",
+            "markdown": "`/spec/00-both-halves.md` names no file of this repository: nothing stands at `/spec/00-both-halves.md`\n\n**Fix:** point it at a file that exists, or restore `/spec/00-both-halves.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 79,
+                  "startColumn": 90
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "point it at a file that exists, or restore `/spec/00-both-halves.md`. A document that moved keeps its identifier, so `headwater explain` finds where it went",
+              "escape": "none"
+            }
+          }
+        },
+        {
+          "ruleId": "link.identifier.mismatch",
+          "ruleIndex": 35,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "the link text names `SPEC-FIX-cited-only`, but `20-fragment-target.md` reaches `check/spec/20-fragment-target.md`, which is `SPEC-FIX-fragment-target`",
+            "markdown": "the link text names `SPEC-FIX-cited-only`, but `20-fragment-target.md` reaches `check/spec/20-fragment-target.md`, which is `SPEC-FIX-fragment-target`\n\n**Fix:** point the link at the document that carries `SPEC-FIX-cited-only`, or change the text to `SPEC-FIX-fragment-target`. `headwater explain SPEC-FIX-cited-only` names where `SPEC-FIX-cited-only` lives"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 81,
+                  "startColumn": 70
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "point the link at the document that carries `SPEC-FIX-cited-only`, or change the text to `SPEC-FIX-fragment-target`. `headwater explain SPEC-FIX-cited-only` names where `SPEC-FIX-cited-only` lives",
+              "escape": "none",
+              "obligation": "OB-FIX-28",
+              "obligation_severity": "medium"
+            }
+          }
+        },
+        {
+          "ruleId": "relation.mention.undeclared",
+          "ruleIndex": 36,
+          "level": "note",
+          "kind": "fail",
+          "message": {
+            "text": "the prose names `SPEC-FIX-cited-only` and the front matter declares no relation to it; the taxonomy offers the relation `assesses` from `design_spec` to `design_spec`",
+            "markdown": "the prose names `SPEC-FIX-cited-only` and the front matter declares no relation to it; the taxonomy offers the relation `assesses` from `design_spec` to `design_spec`\n\n**Fix:** if this document rests on `SPEC-FIX-cited-only`, declare it under `relations:`, for example `assesses: [SPEC-FIX-cited-only]`; if the mention is an aside, leave it. `headwater explain SPEC-FIX-cited-only` names the document, and `headwater explain` on a relation says what it means"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 81,
+                  "startColumn": 71
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "info",
+              "fixable": false,
+              "remediation": "if this document rests on `SPEC-FIX-cited-only`, declare it under `relations:`, for example `assesses: [SPEC-FIX-cited-only]`; if the mention is an aside, leave it. `headwater explain SPEC-FIX-cited-only` names the document, and `headwater explain` on a relation says what it means",
+              "escape": "none"
+            }
+          }
+        },
+        {
+          "ruleId": "identifier.claim.missing",
+          "ruleIndex": 24,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`DR-FIX-0008` is spent by check/spec/08-contract-met.md and no file of `.headwater/ids` claims it, so this identifier is invisible to the allocator of every other branch and a second document can be minted onto it",
+            "markdown": "`DR-FIX-0008` is spent by check/spec/08-contract-met.md and no file of `.headwater/ids` claims it, so this identifier is invisible to the allocator of every other branch and a second document can be minted onto it\n\n**Fix:** run `headwater check --fix`, which writes `.headwater/ids/decision_id/DR-FIX-0008` holding `check/spec/08-contract-met.md`"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/08-contract-met.md"
+                },
+                "region": {
+                  "startLine": 2,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": true,
+              "remediation": "run `headwater check --fix`, which writes `.headwater/ids/decision_id/DR-FIX-0008` holding `check/spec/08-contract-met.md`",
+              "escape": "none"
+            }
+          }
+        },
+        {
+          "ruleId": "section.required.missing",
+          "ruleIndex": 32,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`decision_record` requires the section `Decision`, and no heading of this document says so",
+            "markdown": "`decision_record` requires the section `Decision`, and no heading of this document says so\n\n**Fix:** add a `Decision` heading to check/spec/09-contract-missing.md, with the content the kind is for"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/09-contract-missing.md"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "add a `Decision` heading to check/spec/09-contract-missing.md, with the content the kind is for",
+              "escape": "none",
+              "obligation": "OB-FIX-9",
+              "obligation_severity": "high"
+            }
+          }
+        },
+        {
+          "ruleId": "identifier.claim.missing",
+          "ruleIndex": 24,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`DR-FIX-0009` is spent by check/spec/09-contract-missing.md and no file of `.headwater/ids` claims it, so this identifier is invisible to the allocator of every other branch and a second document can be minted onto it",
+            "markdown": "`DR-FIX-0009` is spent by check/spec/09-contract-missing.md and no file of `.headwater/ids` claims it, so this identifier is invisible to the allocator of every other branch and a second document can be minted onto it\n\n**Fix:** run `headwater check --fix`, which writes `.headwater/ids/decision_id/DR-FIX-0009` holding `check/spec/09-contract-missing.md`"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/09-contract-missing.md"
+                },
+                "region": {
+                  "startLine": 2,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": true,
+              "remediation": "run `headwater check --fix`, which writes `.headwater/ids/decision_id/DR-FIX-0009` holding `check/spec/09-contract-missing.md`",
+              "escape": "none"
+            }
+          }
+        },
+        {
+          "ruleId": "voice.forbidden_construction",
+          "ruleIndex": 26,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`declarative` forbids future_intent, and this sentence writes `will be`",
+            "markdown": "`declarative` forbids future_intent, and this sentence writes `will be`\n\n**Fix:** state what the system does now, or move the sentence to a document whose kind narrates\n\n_Not reported: suppressed at check/spec/10-suppressed.md:15 as accepted_deviation, until 2030-01-01 (this fixture states a plan on purpose)._"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/10-suppressed.md"
+                },
+                "region": {
+                  "startLine": 17,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "suppressions": [
+            {
+              "kind": "inSource",
+              "status": "accepted",
+              "justification": "suppressed at check/spec/10-suppressed.md:15 as accepted_deviation, until 2030-01-01 (this fixture states a plan on purpose)",
+              "properties": {
+                "headwater": {
+                  "escape": "suppression"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "state what the system does now, or move the sentence to a document whose kind narrates",
+              "escape": "suppression",
+              "obligation": "OB-FIX-7",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "language.controlled.not_met",
+          "ruleIndex": 27,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` holds prose to 25 words a sentence, and this one has 33",
+            "markdown": "`ste_house` holds prose to 25 words a sentence, and this one has 33\n\n**Fix:** split the sentence, or move a clause into its own sentence\n\n_Not reported: suppressed at check/spec/10-suppressed.md:21 as false_positive, until 2030-01-01 (the length is the fixture)._"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/10-suppressed.md"
+                },
+                "region": {
+                  "startLine": 21,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "suppressions": [
+            {
+              "kind": "inSource",
+              "status": "accepted",
+              "justification": "suppressed at check/spec/10-suppressed.md:21 as false_positive, until 2030-01-01 (the length is the fixture)",
+              "properties": {
+                "headwater": {
+                  "escape": "suppression"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "split the sentence, or move a clause into its own sentence",
+              "escape": "suppression",
+              "obligation": "OB-FIX-8",
+              "obligation_severity": "low"
+            }
+          }
+        }
+      ],
+      "properties": {
+        "headwater": {
+          "shape": "1.9",
+          "taxonomy": {
+            "package": "headwater/fixture",
+            "version": "1.0.0",
+            "lock": "105e82f4b4435094f6bfd8ba5b3c3f3380341b35aeebc9aca2c3d508726d1601"
+          },
+          "clock": "2026-08-12",
+          "filter": {
+            "patterns": [
+              "check/spec/0*.md",
+              "check/nowhere/**"
+            ],
+            "held_back": 33,
+            "unmatched": [
+              "check/nowhere/**"
+            ]
+          },
+          "coverage": {
+            "seen": 31,
+            "classified": 29,
+            "checked": 28,
+            "generated": 1,
+            "instances": 455,
+            "skipped": 119,
+            "skips": [
+              {
+                "reason": "this document declares no warrant, and an absent warrant is not a value outside the closed set",
+                "instances": 58,
+                "documents": [
+                  {
+                    "path": "check/evaluations/alpha.md",
+                    "rules": [
+                      "warrant.value.not_permitted",
+                      "warrant.acceptance.unpaired"
+                    ],
+                    "routings": 2
+                  },
+                  {
+                    "path": "check/evaluations/beta.md",
+                    "rules": [
+                      "warrant.value.not_permitted",
+                      "warrant.acceptance.unpaired"
+                    ],
+                    "routings": 2
+                  },
+                  {
+                    "path": "check/evaluations/delta.md",
+                    "rules": [
+                      "warrant.value.not_permitted",
+                      "warrant.acceptance.unpaired"
+                    ],
+                    "routings": 2
+                  },
+                  {
+                    "path": "check/evaluations/epsilon.md",
+                    "rules": [
+                      "warrant.value.not_permitted",
+                      "warrant.acceptance.unpaired"
+                    ],
+                    "routings": 2
+                  },
+                  {
+                    "path": "check/evaluations/eta.md",
+                    "rules": [
+                      "warrant.value.not_permitted",
+                      "warrant.acceptance.unpaired"
+                    ],
+                    "routings": 2
+                  },
+                  {
+                    "path": "check/evaluations/gamma.md",
+                    "rules": [
+                      "warrant.value.not_permitted",
+                      "warrant.acceptance.unpaired"
+                    ],
+                    "routings": 2
+                  },
+                  {
+                    "path": "check/evaluations/zeta.md",
+                    "rules": [
+                      "warrant.value.not_permitted",
+                      "warrant.acceptance.unpaired"
+                    ],
+                    "routings": 2
+                  },
+                  {
+                    "path": "check/spec/00-both-halves.md",
+                    "rules": [
+                      "warrant.value.not_permitted",
+                      "warrant.acceptance.unpaired"
+                    ],
+                    "routings": 2
+                  },
+                  {
+                    "path": "check/spec/01-one-half.md",
+                    "rules": [
+                      "warrant.value.not_permitted",
+                      "warrant.acceptance.unpaired"
+                    ],
+                    "routings": 2
+                  },
+                  {
+                    "path": "check/spec/02-cited-only.md",
+                    "rules": [
+                      "warrant.value.not_permitted",
+                      "warrant.acceptance.unpaired"
+                    ],
+                    "routings": 2
+                  },
+                  {
+                    "path": "check/spec/03-no-instance.md",
+                    "rules": [
+                      "warrant.value.not_permitted",
+                      "warrant.acceptance.unpaired"
+                    ],
+                    "routings": 2
+                  },
+                  {
+                    "path": "check/spec/05-no-summary.md",
+                    "rules": [
+                      "warrant.value.not_permitted",
+                      "warrant.acceptance.unpaired"
+                    ],
+                    "routings": 2
+                  },
+                  {
+                    "path": "check/spec/06-retired.md",
+                    "rules": [
+                      "warrant.value.not_permitted",
+                      "warrant.acceptance.unpaired"
+                    ],
+                    "routings": 2
+                  },
+                  {
+                    "path": "check/spec/07-prose-defects.md",
+                    "rules": [
+                      "warrant.value.not_permitted",
+                      "warrant.acceptance.unpaired"
+                    ],
+                    "routings": 2
+                  },
+                  {
+                    "path": "check/spec/08-contract-met.md",
+                    "rules": [
+                      "warrant.value.not_permitted",
+                      "warrant.acceptance.unpaired"
+                    ],
+                    "routings": 2
+                  },
+                  {
+                    "path": "check/spec/09-contract-missing.md",
+                    "rules": [
+                      "warrant.value.not_permitted",
+                      "warrant.acceptance.unpaired"
+                    ],
+                    "routings": 2
+                  },
+                  {
+                    "path": "check/spec/10-suppressed.md",
+                    "rules": [
+                      "warrant.value.not_permitted",
+                      "warrant.acceptance.unpaired"
+                    ],
+                    "routings": 2
+                  },
+                  {
+                    "path": "check/spec/11-identifier-mismatch.md",
+                    "rules": [
+                      "warrant.value.not_permitted",
+                      "warrant.acceptance.unpaired"
+                    ],
+                    "routings": 2
+                  },
+                  {
+                    "path": "check/spec/13-dangling.md",
+                    "rules": [
+                      "warrant.value.not_permitted",
+                      "warrant.acceptance.unpaired"
+                    ],
+                    "routings": 2
+                  },
+                  {
+                    "path": "check/spec/14-relations-not-a-mapping.md",
+                    "rules": [
+                      "warrant.value.not_permitted",
+                      "warrant.acceptance.unpaired"
+                    ],
+                    "routings": 2
+                  },
+                  {
+                    "path": "check/spec/15-unusable-entries.md",
+                    "rules": [
+                      "warrant.value.not_permitted",
+                      "warrant.acceptance.unpaired"
+                    ],
+                    "routings": 2
+                  },
+                  {
+                    "path": "check/spec/16-no-identifier.md",
+                    "rules": [
+                      "warrant.value.not_permitted",
+                      "warrant.acceptance.unpaired"
+                    ],
+                    "routings": 2
+                  },
+                  {
+                    "path": "check/spec/17-identifier-not-a-word.md",
+                    "rules": [
+                      "warrant.value.not_permitted",
+                      "warrant.acceptance.unpaired"
+                    ],
+                    "routings": 2
+                  },
+                  {
+                    "path": "check/spec/18-blank-facets.md",
+                    "rules": [
+                      "warrant.value.not_permitted",
+                      "warrant.acceptance.unpaired"
+                    ],
+                    "routings": 2
+                  },
+                  {
+                    "path": "check/spec/20-fragment-target.md",
+                    "rules": [
+                      "warrant.value.not_permitted",
+                      "warrant.acceptance.unpaired"
+                    ],
+                    "routings": 2
+                  },
+                  {
+                    "path": "check/spec/21-summary-facet-prose.md",
+                    "rules": [
+                      "warrant.value.not_permitted",
+                      "warrant.acceptance.unpaired"
+                    ],
+                    "routings": 2
+                  },
+                  {
+                    "path": "check/spec/22-voice-facet-prose.md",
+                    "rules": [
+                      "warrant.value.not_permitted",
+                      "warrant.acceptance.unpaired"
+                    ],
+                    "routings": 2
+                  },
+                  {
+                    "path": "check/spec/23-voice-empty-population.md",
+                    "rules": [
+                      "warrant.value.not_permitted",
+                      "warrant.acceptance.unpaired"
+                    ],
+                    "routings": 2
+                  },
+                  {
+                    "path": "check/spec/24-voice-context-section.md",
+                    "rules": [
+                      "warrant.value.not_permitted",
+                      "warrant.acceptance.unpaired"
+                    ],
+                    "routings": 2
+                  }
+                ],
+                "unrouted": 0
+              },
+              {
+                "reason": "no `id` facet, which is the key this engine reads an identifier from and which no declaration states",
+                "instances": 1,
+                "documents": [
+                  {
+                    "path": "check/spec/16-no-identifier.md",
+                    "rules": [
+                      "identifier.pattern.not_met"
+                    ],
+                    "routings": 1
+                  }
+                ],
+                "unrouted": 0
+              },
+              {
+                "reason": "the `id` facet is a sequence, and an identifier is a word",
+                "instances": 1,
+                "documents": [
+                  {
+                    "path": "check/spec/17-identifier-not-a-word.md",
+                    "rules": [
+                      "identifier.pattern.not_met"
+                    ],
+                    "routings": 1
+                  }
+                ],
+                "unrouted": 0
+              },
+              {
+                "reason": "the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it",
+                "instances": 22,
+                "documents": [
+                  {
+                    "path": "check/spec/00-both-halves.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/01-one-half.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/02-cited-only.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/03-no-instance.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/05-no-summary.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/06-retired.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/07-prose-defects.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/08-contract-met.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/09-contract-missing.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/10-suppressed.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/11-identifier-mismatch.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/13-dangling.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/14-relations-not-a-mapping.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/15-unusable-entries.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/16-no-identifier.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/17-identifier-not-a-word.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/18-blank-facets.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/20-fragment-target.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/21-summary-facet-prose.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/22-voice-facet-prose.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/23-voice-empty-population.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/24-voice-context-section.md",
+                    "rules": [
+                      "shelf.placement_is_primary"
+                    ],
+                    "routings": 1
+                  }
+                ],
+                "unrouted": 0
+              },
+              {
+                "reason": "`guarded` forbids hedging, and this engine has no pattern set for it",
+                "instances": 2,
+                "documents": [
+                  {
+                    "path": "check/spec/08-contract-met.md",
+                    "rules": [
+                      "voice.forbidden_construction"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/09-contract-missing.md",
+                    "rules": [
+                      "voice.forbidden_construction"
+                    ],
+                    "routings": 1
+                  }
+                ],
+                "unrouted": 0
+              },
+              {
+                "reason": "`declarative` binds this kind and this document carries no prose to read: no body and no `summary` facet with a value",
+                "instances": 1,
+                "documents": [
+                  {
+                    "path": "check/spec/23-voice-empty-population.md",
+                    "rules": [
+                      "voice.forbidden_construction"
+                    ],
+                    "routings": 1
+                  }
+                ],
+                "unrouted": 0
+              },
+              {
+                "reason": "`ste_strict` declares ASD-STE100, profile strict, and this engine has no rules for it",
+                "instances": 2,
+                "documents": [
+                  {
+                    "path": "check/spec/08-contract-met.md",
+                    "rules": [
+                      "language.controlled.not_met"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/09-contract-missing.md",
+                    "rules": [
+                      "language.controlled.not_met"
+                    ],
+                    "routings": 1
+                  }
+                ],
+                "unrouted": 0
+              },
+              {
+                "reason": "change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change",
+                "instances": 31,
+                "documents": [
+                  {
+                    "path": "check/evaluations/alpha.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/evaluations/beta.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/evaluations/delta.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/evaluations/epsilon.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/evaluations/eta.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/evaluations/gamma.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/evaluations/zeta.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/00-both-halves.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/01-one-half.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/02-cited-only.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/03-no-instance.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/05-no-summary.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/06-retired.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/07-prose-defects.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/08-contract-met.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/09-contract-missing.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/10-suppressed.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/11-identifier-mismatch.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/13-dangling.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/14-relations-not-a-mapping.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/15-unusable-entries.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/16-no-identifier.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/17-identifier-not-a-word.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/18-blank-facets.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/20-fragment-target.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/21-summary-facet-prose.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/22-voice-facet-prose.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/23-voice-empty-population.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/spec/24-voice-context-section.md",
+                    "rules": [
+                      "warrant.promoted"
+                    ],
+                    "routings": 1
+                  }
+                ],
+                "unrouted": 2
+              },
+              {
+                "reason": "the document at the target end, `FIX-REG-open-questions`, declares no value for the state facet, so there is no state to read there",
+                "instances": 1,
+                "documents": [
+                  {
+                    "path": "check/evaluations/alpha.md",
+                    "rules": [
+                      "lifecycle.dependency.on_terminal"
+                    ],
+                    "routings": 1
+                  },
+                  {
+                    "path": "check/evaluations/beta.md",
+                    "rules": [
+                      "lifecycle.dependency.on_terminal"
+                    ],
+                    "routings": 1
+                  }
+                ],
+                "unrouted": 0
+              }
+            ],
+            "unaccounted": []
+          },
+          "escaped": {
+            "waived": "no waiver reaches a check finding",
+            "migration_pending": 1,
+            "suppressed": 2
+          },
+          "read_set": {
+            "inputs": 31,
+            "unhashed": 0
+          },
+          "loss_set": [
+            {
+              "field": "the obligation's severity",
+              "reason": "`level` is the check's scale, and SARIF has no second member for how much an invariant matters. A consumer that ranks by `level` ranks by the check",
+              "carried_in": "properties.headwater.obligation_severity"
+            },
+            {
+              "field": "the escape class",
+              "reason": "`suppression.kind` has two values and spec 4 fixes three escape classes. A directive is `inSource`; a task of the adoption payload is `external`, and a waiver would be `external` too",
+              "carried_in": "properties.headwater.escape"
+            },
+            {
+              "field": "the control's posture",
+              "reason": "no member says whether a finding stops a gate, and the engine emits what it evaluated and never orders what lands",
+              "carried_in": ""
+            },
+            {
+              "field": "coverage",
+              "reason": "a `kind: \"pass\"` result would count check instances, and the census counts documents, including the ones no check classified. What is carried is every number the text report writes and one it does not: the counts, the skip classes with their reasons, the documents each class was routed to, and the paths no census row accounts for",
+              "carried_in": "run.properties.headwater.coverage"
+            },
+            {
+              "field": "the remediation of a mechanical fix",
+              "reason": "`fixes[]` carries replacement text and a finding carries prose with a `fixable` flag, so no result here carries a `fix`",
+              "carried_in": "properties.headwater.remediation and message.markdown"
+            },
+            {
+              "field": "the change a run was scoped to",
+              "reason": "no member of this vocabulary says which change a run was told about. `invocations` holds the runtime environment of the tool process and these are readings rather than process facts, and `automationDetails.id` uniquely identifies one run, which is an identity this engine mints none of",
+              "carried_in": "run.properties.headwater.change"
+            },
+            {
+              "field": "the path filter a run was narrowed by",
+              "reason": "no member of this vocabulary says that a run's results were narrowed after evaluation, or how many it held back. `invocations` holds the runtime environment of the tool process and its command line, which a consumer would have to parse, and the count held back is a reading rather than a process fact",
+              "carried_in": "run.properties.headwater.filter"
+            },
+            {
+              "field": "the corpus tree",
+              "reason": "`run.automationDetails.id` is where one would go and nothing computes one. The read set is not a tree: it holds what the checks read",
+              "carried_in": ""
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

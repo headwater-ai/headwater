@@ -3596,7 +3596,7 @@
       ],
       "properties": {
         "headwater": {
-          "shape": "1.8",
+          "shape": "1.9",
           "taxonomy": {
             "package": "headwater/fixture",
             "version": "1.0.0",
@@ -4368,6 +4368,11 @@
               "field": "the change a run was scoped to",
               "reason": "no member of this vocabulary says which change a run was told about. `invocations` holds the runtime environment of the tool process and these are readings rather than process facts, and `automationDetails.id` uniquely identifies one run, which is an identity this engine mints none of",
               "carried_in": "run.properties.headwater.change"
+            },
+            {
+              "field": "the path filter a run was narrowed by",
+              "reason": "no member of this vocabulary says that a run's results were narrowed after evaluation, or how many it held back. `invocations` holds the runtime environment of the tool process and its command line, which a consumer would have to parse, and the count held back is a reading rather than a process fact",
+              "carried_in": "run.properties.headwater.filter"
             },
             {
               "field": "the corpus tree",
