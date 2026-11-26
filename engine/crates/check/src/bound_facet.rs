@@ -133,15 +133,26 @@ impl DocumentCheck for BoundFacet {
         for (facet, folder) in &bindings {
             match view.facets().entry(facet) {
                 Some(entry) => {
-                    let value = entry
-                        .value
-                        .value
-                        .as_scalar()
-                        .map(|scalar| scalar.text.clone());
-                    if value.as_deref() == Some(folder.as_str()) {
+                    let value = entry.value.value.as_scalar();
+                    if value.map(|scalar| scalar.text.as_str()) == Some(folder.as_str()) {
                         continue;
                     }
-                    let stated = value.unwrap_or_else(|| entry.value.value.kind_name().to_string());
+                    // A folder name is a scalar. A null, a sequence or a
+                    // mapping names no folder to move the document under, so
+                    // the one remedy is the value the folder gives.
+                    let (stated, elsewhere) = match value {
+                        Some(scalar) if headwater_yaml::core_schema::as_null(scalar) => {
+                            (format!("a null `{facet}`"), String::new())
+                        }
+                        Some(scalar) => (
+                            format!("`{facet}: {}`", scalar.text),
+                            format!(", or move the document under the folder for `{}`", scalar.text),
+                        ),
+                        None => (
+                            format!("`{facet}` as {}", entry.value.value.kind_name()),
+                            String::new(),
+                        ),
+                    };
                     let (line, column) = at(Some(entry.key.span));
                     findings.push(Finding {
                         rule: self::RULE,
@@ -152,11 +163,10 @@ impl DocumentCheck for BoundFacet {
                         column,
                         message: format!(
                             "`{name}` binds `{facet}` to the folder `{folder}`, \
-                             and this document declares `{facet}: {stated}`"
+                             and this document declares {stated}"
                         ),
                         remediation: format!(
-                            "set `{facet}: {folder}` in the front matter of {}, \
-                             or move the document under the folder for `{stated}`",
+                            "set `{facet}: {folder}` in the front matter of {}{elsewhere}",
                             view.path()
                         ),
                         patch: None,

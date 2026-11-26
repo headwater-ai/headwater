@@ -36,7 +36,9 @@ fn repository() -> PathBuf {
 /// The declarations each case adds to this repository's overlay: a `stable`
 /// facet `context` that no kind requires, a shelf that binds it, and a shelf
 /// that binds `title`, which the kind `review_record` requires, and a more
-/// specific shelf under the bound one that binds nothing. Both shelves
+/// specific shelf under the bound one that binds nothing. A second facet
+/// `team` and a shelf that binds it and `title` together hold the case where
+/// one document breaks two bindings in two ways. Every shelf
 /// are heterogeneous, because `review_record` requires `doc_type` and a
 /// homogeneous shelf refuses it as a restatement; a heterogeneous shelf is
 /// also the one where no shelf is "the" shelf of a kind.
@@ -57,6 +59,15 @@ const OVERLAY: &str = "
     kinds: [review_record]
   shelves.titled:
     path: docs/titled/{title}/**
+    homogeneous: false
+    discriminator: doc_type
+    kinds: [review_record]
+  facets.team:
+    type: string
+    required: false
+    volatility: stable
+  shelves.two:
+    path: docs/two/{team}/{title}/**
     homogeneous: false
     discriminator: doc_type
     kinds: [review_record]
@@ -355,4 +366,56 @@ fn a_required_value_that_disagrees_is_this_rule() {
     let found = ran.of_rule();
     assert_eq!(found.len(), 1, "{}", ran.out);
     assert!(found[0].starts_with(&format!("{TITLED}:2:")), "{}", ran.out);
+}
+
+/// One document on a shelf that binds two facets: `team` disagrees with its
+/// folder and `title`, which the kind requires, is absent. The absence is
+/// `facet.required.missing`'s, and the disagreement is still this rule's: the
+/// required facet does not turn the whole document over to the other rule.
+#[test]
+fn a_disagreement_beside_an_absent_required_value_is_still_this_rule() {
+    const D: &str = "docs/two/core/x/d.md";
+    let root = Root::new("two");
+    root.write(
+        D,
+        &record("d", "team: ops\n").replace("title: A contract d\n", ""),
+    );
+    let ran = root.strict();
+    assert_eq!(ran.code, Some(1), "{}{}", ran.out, ran.err);
+    let found = ran.of_rule();
+    assert_eq!(found.len(), 1, "one finding of {RULE}\n{}", ran.out);
+    assert!(found[0].starts_with(&format!("{D}:2:")), "{}", ran.out);
+    for named in ["`team`", "`core`", "`ops`"] {
+        assert!(found[0].contains(named), "it names {named}\n{}", found[0]);
+    }
+    let required: Vec<String> = ran
+        .of("facet.required.missing")
+        .into_iter()
+        .filter(|found| found.starts_with(D))
+        .collect();
+    assert_eq!(required.len(), 1, "{}", ran.out);
+}
+
+/// A value that is no folder name, a null or a sequence, is the same finding,
+/// and its remedy is the value the folder gives: there is no folder for a
+/// null or a list to move the document under.
+#[test]
+fn a_value_that_names_no_folder_has_one_remedy() {
+    let root = Root::new("no-folder");
+    root.write(A, &record("a", "context: ~\n"));
+    root.write(B, &record("b", "context: [billing, shipping]\n"));
+    let ran = root.strict();
+    assert_eq!(ran.code, Some(1), "{}{}", ran.out, ran.err);
+    let found = ran.of_rule();
+    assert_eq!(found.len(), 2, "{}", ran.out);
+    for one in &found {
+        assert!(one.contains("set `context: billing`"), "{one}");
+        assert!(!one.contains("move the document"), "{one}");
+        assert!(!one.contains("`~`"), "{one}");
+        assert!(!one.contains("`a sequence`"), "{one}");
+    }
+    let null = found.iter().find(|one| one.starts_with(A)).expect("a.md has a finding");
+    assert!(null.contains("a null `context`"), "{null}");
+    let list = found.iter().find(|one| one.starts_with(B)).expect("b.md has a finding");
+    assert!(list.contains("`context` as a sequence"), "{list}");
 }
