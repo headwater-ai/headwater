@@ -15,6 +15,12 @@
 
 facets:
 
+  # The facet a shelf path binds, one folder per value.
+  area:
+    type: string
+    required: false
+    volatility: stable
+
   status:
     role: state
     required: true
@@ -177,6 +183,12 @@ kinds:
     identifier: {scheme: spec_id}
     lifecycle: standard
 
+  # The shelf that claims it binds a facet to a folder.
+  contexted:
+    is_a: governed_document
+    identifier: {scheme: spec_id}
+    lifecycle: standard
+
   # Its shelf fixes the file name under a glob, so the caller names the
   # directory the glob stands for.
   module_readme:
@@ -288,6 +300,13 @@ shelves:
     path: corpus/*/misplaced/**
     homogeneous: true
     kind: misplaced
+
+  # A bound segment before the last one. Which folder a new document joins
+  # is the value of `area`, and placing into it is not this verb's yet.
+  contexts:
+    path: corpus/contexts/{area}/contracts/**
+    homogeneous: true
+    kind: contexted
 
   # A fixed file name under a glob. The caller names the directory.
   module_readmes:

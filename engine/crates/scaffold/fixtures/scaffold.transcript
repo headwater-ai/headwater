@@ -524,7 +524,7 @@ TODO write this section.
 === new nonesuch --title "A kind nobody declared"
 
 refused, KindUnknown
-  no kind is named `nonesuch`. This taxonomy declares `addressed`, `ambiguous`, `annexed`, `chaptered`, `decision_record`, `deeper`, `design_spec`, `exhausted`, `holed`, `index_page`, `misplaced`, `module_readme`, `note`, `numbered`, `orphan`, `standalone`, `standard`, `unmintable`, `unopened_record`
+  no kind is named `nonesuch`. This taxonomy declares `addressed`, `ambiguous`, `annexed`, `chaptered`, `contexted`, `decision_record`, `deeper`, `design_spec`, `exhausted`, `holed`, `index_page`, `misplaced`, `module_readme`, `note`, `numbered`, `orphan`, `standalone`, `standard`, `unmintable`, `unopened_record`
 
 === new governed_document --title "An abstract kind"
 
@@ -544,7 +544,12 @@ refused, KindOnManyShelves
 === new misplaced --title "A shelf that globs early"
 
 refused, ShelfPathNotLiteral
-  the shelf `misplacements` declares `corpus/*/misplaced/**`, and a glob before the last segment names no directory to write into
+  the shelf `misplacements` declares `corpus/*/misplaced/**`, and a glob or a bound facet before the last segment names no directory to write into
+
+=== new contexted --title "A shelf that binds a folder"
+
+refused, ShelfPathNotLiteral
+  the shelf `contexts` declares `corpus/contexts/{area}/contracts/**`, and a glob or a bound facet before the last segment names no directory to write into
 
 === new holed --title "A layout with nothing to fill it"
 

@@ -769,8 +769,8 @@ impl std::fmt::Display for Refusal {
             ),
             Refusal::ShelfPathNotLiteral { shelf, pattern } => write!(
                 f,
-                "the shelf `{shelf}` declares `{pattern}`, and a glob before the last segment \
-                 names no directory to write into"
+                "the shelf `{shelf}` declares `{pattern}`, and a glob or a bound facet before \
+                 the last segment names no directory to write into"
             ),
             Refusal::DirectoryNeeded { shelf, pattern } => write!(
                 f,
@@ -1243,6 +1243,13 @@ fn placement(shelf: &Shelf, directory: Option<&str>) -> Result<Placement, Refusa
     let Some((last, leading)) = segments.split_last() else {
         return Err(not_literal());
     };
+    // A segment that binds a facet names one folder per value, and which
+    // folder a new document joins is a question this verb does not answer
+    // yet. Writing the placeholder as a literal directory would put the
+    // document where no shelf reads it (#2101).
+    if !shelf.pattern.bound().is_empty() {
+        return Err(not_literal());
+    }
     let open = leading.iter().any(|segment| globbed(segment));
 
     let placement = match (globbed(last), open) {

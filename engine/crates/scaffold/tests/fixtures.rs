@@ -366,6 +366,7 @@ fn cases() -> Vec<Case> {
         case("orphan", "A kind on no shelf"),
         case("ambiguous", "A kind on two shelves"),
         case("misplaced", "A shelf that globs early"),
+        case("contexted", "A shelf that binds a folder"),
         case("holed", "A layout with nothing to fill it"),
         case("decision_record", ""),
         case("unopened_record", "A regime with no initial state"),
