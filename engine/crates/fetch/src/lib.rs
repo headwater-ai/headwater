@@ -739,9 +739,9 @@ mod tests {
     }
 
     /// The bytes written under `dir`, summed over every file below it. The
-    /// cases below allow the bound plus one: `unpack` copies one byte past
-    /// what remains to learn that a member overruns, and the caller's
-    /// [`Fetched`] removes the directory when it drops.
+    /// cases below hold that this is at most the bound when `unpack` refuses:
+    /// it probes for a byte past what remains without writing that byte, and
+    /// the caller's [`Fetched`] removes the directory when it drops.
     fn bytes_under(dir: &Path) -> u64 {
         std::fs::read_dir(dir)
             .unwrap()
@@ -766,7 +766,7 @@ mod tests {
         // Since zip 9.0.2 the reader refuses a member that grows past its
         // declared size, so either layer can raise this. What holds whichever
         // one fires is that no more than the bound reaches the disk.
-        assert!(bytes_under(fetched.path()) <= 1024 + 1);
+        assert!(bytes_under(fetched.path()) <= 1024);
     }
 
     #[test]
@@ -779,7 +779,7 @@ mod tests {
         let refused = result.unwrap_err();
         assert!(matches!(refused, Error::Archive(_)), "{refused}");
         assert!(refused.to_string().contains("test.zip"), "{refused}");
-        assert!(bytes_under(fetched.path()) <= 1024 + 1);
+        assert!(bytes_under(fetched.path()) <= 1024);
     }
 
     #[test]
@@ -800,7 +800,7 @@ mod tests {
         // the count and not from the declared sizes, which refuse first.
         let first = std::fs::metadata(fetched.path().join("a.bin")).unwrap();
         assert_eq!(first.len(), 600);
-        assert!(bytes_under(fetched.path()) <= 1024 + 1);
+        assert!(bytes_under(fetched.path()) <= 1024);
     }
 
     #[test]
@@ -819,7 +819,38 @@ mod tests {
             let whole = std::fs::metadata(fetched.path().join(name)).unwrap();
             assert_eq!(whole.len(), 400, "{name}");
         }
-        assert!(bytes_under(fetched.path()) <= 1024 + 1);
+        assert!(bytes_under(fetched.path()) <= 1024);
+    }
+
+    #[test]
+    fn the_bytes_written_when_the_count_refuses_are_at_most_the_bound() {
+        // 1,025 bytes in all and no declared total, so only the count of the
+        // bytes written refuses, inside the second member. One byte past the
+        // bound must never reach the disk.
+        let streamed = without_a_declared_total(members(&[("a.bin", 600), ("b.bin", 425)]));
+        let (result, fetched) = unpacked(streamed, 1024);
+        let refused = result.unwrap_err();
+        assert!(
+            refused.to_string().contains("more than 1024 bytes"),
+            "{refused}"
+        );
+        assert!(bytes_under(fetched.path()) <= 1024);
+    }
+
+    #[test]
+    fn a_member_that_is_a_symbolic_link_is_refused_and_not_written() {
+        let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        let options = zip::write::SimpleFileOptions::default();
+        writer.add_symlink("link", "target", options).unwrap();
+        let bytes = writer.finish().unwrap().into_inner();
+        let (result, fetched) = unpacked(bytes, 1024);
+        let refused = result.unwrap_err();
+        assert!(matches!(refused, Error::Archive(_)), "{refused}");
+        let message = refused.to_string();
+        assert!(message.contains("link"), "{message}");
+        assert!(message.contains("symbolic link"), "{message}");
+        assert_eq!(bytes_under(fetched.path()), 0);
+        assert!(!fetched.path().join("link").exists());
     }
 
     #[test]
