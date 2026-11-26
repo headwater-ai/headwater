@@ -51,8 +51,9 @@ use crate::finding::{Finding, Severity};
 use crate::instance::Outcome;
 use crate::scope::{DocumentCheck, DocumentView};
 use crate::shape::Shape;
-use crate::surface::glob_matches;
+use crate::surface::adopter_patterns;
 use headwater_doc::body::{BlockKind, Ownership};
+use headwater_meta::Pattern;
 
 pub const RULE: &str = "surface.command.undeclared";
 
@@ -62,7 +63,7 @@ pub(crate) const SHELLS: [&str; 4] = ["sh", "shell", "bash", "console"];
 
 /// The check, generated from the `surface` block of the taxonomy.
 pub struct Undeclared {
-    adopter_documents: Vec<String>,
+    adopter_documents: Vec<Pattern>,
     commands: Vec<String>,
 }
 
@@ -71,7 +72,7 @@ impl Undeclared {
     /// command generates no instance.
     pub fn over(shape: &Shape) -> Self {
         Undeclared {
-            adopter_documents: shape.surface.adopter_documents.clone(),
+            adopter_documents: adopter_patterns(shape),
             commands: shape.surface.commands.clone(),
         }
     }
@@ -83,7 +84,7 @@ impl Undeclared {
     fn for_an_adopter(&self, path: &str) -> bool {
         self.adopter_documents
             .iter()
-            .any(|glob| glob_matches(glob, path))
+            .any(|pattern| pattern.matches(path))
     }
 }
 
@@ -593,7 +594,30 @@ fn heredoc_end(command: &str) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{programs, Read};
+    use super::{programs, Read, Undeclared};
+    use headwater_meta::Pattern;
+
+    // The second rule that selects a page through `adopter_documents` (#2010).
+    // It selects through the same memoized matcher as the first, so a hostile
+    // glob returns in bounded time here too.
+    #[test]
+    fn an_adopter_glob_selects_a_page_and_a_hostile_one_returns_in_bounded_time() {
+        let check = Undeclared {
+            adopter_documents: [
+                "docs/tutorials/**".to_string(),
+                format!("docs/{}nomatch", "**/x/".repeat(20)),
+            ]
+            .iter()
+            .map(|glob| Pattern::new(glob))
+            .collect(),
+            commands: vec!["headwater".into()],
+        };
+        let started = std::time::Instant::now();
+        assert!(check.for_an_adopter("docs/tutorials/a/b.md"));
+        assert!(!check.for_an_adopter("docs/how-to/b.md"));
+        assert!(!check.for_an_adopter(&format!("docs/{}file.md", "x/".repeat(39))));
+        assert!(started.elapsed() < std::time::Duration::from_secs(1));
+    }
 
     fn names(text: &str, console: bool) -> Vec<(usize, String)> {
         programs(text, console)
