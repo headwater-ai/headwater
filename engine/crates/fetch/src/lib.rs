@@ -475,11 +475,8 @@ fn unpack<R: std::io::Read + std::io::Seek>(
         }
         let mut file = std::fs::File::create(&path).map_err(|error| io(&path, error))?;
         let remaining = bound - written;
-        let copied = std::io::copy(
-            &mut std::io::Read::take(&mut member, remaining),
-            &mut file,
-        )
-        .map_err(|error| broken(&error))?;
+        let copied = std::io::copy(&mut std::io::Read::take(&mut member, remaining), &mut file)
+            .map_err(|error| broken(&error))?;
         // Probe one more byte into a buffer and not into the file, so that a
         // member which overruns is refused with at most `bound` bytes written.
         let mut probe = [0_u8; 1];
