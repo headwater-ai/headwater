@@ -8,7 +8,7 @@ tree: sha256:f445be2bee480bd419137a84965ce7f5bffe67a3335819be0e41fd1bebb1878d
 selection: sha256:f42c669753dc4e211eaee04b9d79b8fb0f78499300923e1341f815bb5a5ce0af
 read_set: sha256:ac1e3801b1f468f6fb03496ce0698d4d1a5a083a6424e6d2050846daaa2acc48
 seed: 0
-harness: 0.8.0
+harness: 0.8.1
 tier: regression
 arms: [present]
 ```
