@@ -872,8 +872,11 @@ mod tests {
         let at = base.join(root);
         std::fs::create_dir_all(&at).expect("the hostile root is made");
         std::fs::write(at.join("a\u{1b}[31m.md"), "no front matter\n").expect("it writes");
-        std::fs::write(at.join("b\n::error ::forged.md"), "---\nid: \u{1b}[2J\n---\n")
-            .expect("it writes");
+        std::fs::write(
+            at.join("b\n::error ::forged.md"),
+            "---\nid: \u{1b}[2J\n---\n",
+        )
+        .expect("it writes");
         // The literal name the issue gives, at the corpus root.
         std::fs::write(at.join(root), "no front matter\n").expect("it writes");
         let census = take(&Corpus::new(&base, root), &taxonomy());

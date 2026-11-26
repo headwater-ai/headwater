@@ -169,15 +169,13 @@ impl Explanation {
     /// `explain` refuses, and this one function writes each sentence, so the
     /// sentences differ only in the verb (#1366).
     pub fn refusal_for(&self, verb: &str) -> Option<String> {
-        self.unwalkable
-            .as_ref()
-            .map(|reason| {
-                format!(
-                    "`{}` is {}, so `{verb}` prints nothing",
-                    visible(&self.path),
-                    visible(reason)
-                )
-            })
+        self.unwalkable.as_ref().map(|reason| {
+            format!(
+                "`{}` is {}, so `{verb}` prints nothing",
+                visible(&self.path),
+                visible(reason)
+            )
+        })
     }
 
     /// The explanation as text, in spec 2's own order.
@@ -420,6 +418,32 @@ pub fn classification_text(
 mod tests {
     use super::Explanation;
     use headwater_check::paint::ColorMode;
+
+    /// Each refusal sentence writes the target, and the pattern that excluded
+    /// it, as visible text (#2069). A target arrives from argv or a hook, and
+    /// a hook can pass a path read from the tree.
+    #[test]
+    fn a_refusal_writes_a_hostile_target_as_visible_text() {
+        use headwater_census::walk::Classification;
+        let target = "::error ::x\u{1b}[31m";
+        let sentences = [
+            super::identifier_text(target),
+            super::classification_text(target, &Classification::Corpus),
+            super::classification_text(
+                target,
+                &Classification::Excluded("::warning\u{1b}[2J/**".to_string()),
+            ),
+            super::classification_text(target, &Classification::Outside),
+            super::classification_text(target, &Classification::Unclassifiable),
+        ];
+        for sentence in sentences {
+            assert!(!sentence.contains('\u{1b}'), "{}", sentence.escape_debug());
+            assert!(
+                sentence.contains("`\\x3a:error ::x\\x1b[31m`"),
+                "{sentence}"
+            );
+        }
+    }
 
     fn minimal() -> Explanation {
         Explanation {

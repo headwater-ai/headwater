@@ -44,10 +44,13 @@ fn body(id: &str, summary: &str, extra: &str) -> String {
 }
 
 /// The corpus every case reads. `marker` puts the generated marker on the
-/// hostile file, so `generate` lists it as written by no declaration.
+/// hostile file, so `generate` lists it as written by no declaration. The
+/// hostile file declares an edge to the second document, so `explain` of the
+/// second prints a neighbour line whose far end is the hostile path, and
+/// `explain` of the first prints the second's hostile summary as its cue.
 fn corpus(label: &str, marker: bool) -> common::Root {
     common::Root::shaped(label, |at| {
-        let extra = match marker {
+        let marked = match marker {
             true => "\"headwater:generated\": \"stray_pages. Placed by hand.\"\n",
             false => "",
         };
@@ -56,7 +59,7 @@ fn corpus(label: &str, marker: bool) -> common::Root {
             body(
                 "HW-DR-0003",
                 "A wombat document whose name holds a control character.",
-                extra,
+                &format!("{marked}relations:\n  traces_to:\n    - HW-DR-0004\n"),
             ),
         )
         .expect("the hostile file name writes");
@@ -65,7 +68,7 @@ fn corpus(label: &str, marker: bool) -> common::Root {
             body(
                 "HW-DR-0004",
                 "A summary that clears \\e[2J the terminal.",
-                "relations:\n  traces_to:\n    - HW-DR-0003\n",
+                "",
             ),
         )
         .expect("the hostile summary writes");
@@ -106,6 +109,14 @@ fn explain_writes_a_hostile_path_and_value_as_visible_text() {
     assert!(
         summary.out.contains("clears"),
         "explain prints the hostile summary: {summary:?}"
+    );
+    assert!(
+        summary.out.contains("from docs/decisions/0003-x\\n::error"),
+        "explain names the hostile path as the far end of the edge: {summary:?}"
+    );
+    assert!(
+        hostile.out.contains("\\x1b[2J"),
+        "explain prints the hostile summary as the cue of the edge: {hostile:?}"
     );
     clean("explain HW-DR-0004", &summary);
     let missing = root.run(&["explain", "--no-color", MISSING]);
@@ -182,7 +193,11 @@ fn show_refuses_in_visible_text_and_writes_the_bytes_unchanged() {
     assert!(made.success(), "the named pipe is made");
     for verb in ["show", "explain"] {
         let refused = root.run(&[verb, "--no-color", pipe]);
-        assert_ne!(refused.code, Some(0), "{verb} refuses the pipe: {refused:?}");
+        assert_ne!(
+            refused.code,
+            Some(0),
+            "{verb} refuses the pipe: {refused:?}"
+        );
         assert!(
             refused.err.contains("0009-p"),
             "{verb} names the pipe: {refused:?}"
