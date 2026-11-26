@@ -50,6 +50,13 @@ const TOOLS = Object.freeze(['route', 'governing_docs_for_path']);
 
 const DEFAULT_TIMEOUT_MS = 5000;
 const MAX_OUTPUT = 1 << 20;
+const MAX_STDERR = 64 * 1024;
+
+// The words of the one line the engine writes on standard error when it is
+// outside the range `.headwater/taxonomy.yml` asks for, as `report_engine` in
+// `engine/crates/cli/src/main.rs` writes it. The client forwards that line and
+// parses no range of its own: the engine is the one parser (#1600).
+const ENGINE_LINE = 'this corpus asks for engine';
 
 // The sentence `route` and `governing_docs_for_path` write after a pointer to a
 // document nobody accepted, as `engine/crates/query/src/lib.rs` writes it. The
@@ -149,6 +156,11 @@ function ask(tool, args, options = {}) {
  * `{ ok: false, reason }` on a spawn error, a non-zero exit, a timeout or
  * output past `maxOutput`. It never rejects. `ask` and `relay.js` both run
  * every session through it, so a server never outlives the request it served.
+ *
+ * Standard error is read up to `MAX_STDERR` and decides nothing. When the
+ * process ends, each line of it that holds the engine's words about an engine
+ * outside the corpus range is passed to `options.onEngine`, if the caller gave
+ * one, whatever the process answered.
  */
 function exchange(messages, options = {}) {
   const root = options.root;
@@ -161,10 +173,12 @@ function exchange(messages, options = {}) {
     let done = false;
     let child;
     let timer;
+    let stderr = '';
     const finish = (ended) => {
       if (done) return;
       done = true;
       clearTimeout(timer);
+      engineLines(stderr, options.onEngine);
       if (child && child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
       resolve(ended);
     };
@@ -173,7 +187,7 @@ function exchange(messages, options = {}) {
       child = spawn(bin, argv, {
         cwd: root,
         env: options.env || process.env,
-        stdio: ['pipe', 'pipe', 'ignore'],
+        stdio: ['pipe', 'pipe', 'pipe'],
         windowsHide: true,
       });
     } catch (error) {
@@ -190,6 +204,12 @@ function exchange(messages, options = {}) {
       stdout += chunk;
       if (stdout.length > maxOutput) finish({ ok: false, reason: `output past ${maxOutput} bytes` });
     });
+    if (child.stderr) {
+      child.stderr.setEncoding('utf8');
+      child.stderr.on('data', (chunk) => {
+        if (stderr.length < MAX_STDERR) stderr += chunk.slice(0, MAX_STDERR - stderr.length);
+      });
+    }
     child.on('close', (code) => {
       if (code !== 0) {
         finish({ ok: false, reason: `the server exited with status ${code}` });
@@ -200,6 +220,20 @@ function exchange(messages, options = {}) {
 
     child.stdin.end(messages.map((m) => JSON.stringify(m)).join('\n') + '\n');
   });
+}
+
+// Pass each line of `stderr` that holds the engine's words to `onEngine`. A
+// callback that throws is ignored, so the warning never fails a query.
+function engineLines(stderr, onEngine) {
+  if (typeof onEngine !== 'function') return;
+  for (const line of stderr.split('\n')) {
+    if (!line.includes(ENGINE_LINE)) continue;
+    try {
+      onEngine(line.trimEnd());
+    } catch {
+      // The query's answer does not depend on the log.
+    }
+  }
 }
 
 // The answer in the response to the `tools/call`, or the empty answer.

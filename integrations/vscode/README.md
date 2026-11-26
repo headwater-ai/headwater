@@ -34,7 +34,7 @@ The extension degrades to nothing and says nothing in each of these cases:
 - the workspace folder has no `.headwater/` directory
 - the server exits with an error, answers with an error, answers without `structuredContent`, answers JSON the extension cannot read, or takes more than five seconds
 
-This is the same fails-open posture as every hook in this repository. A missing engine never blocks your editor.
+This is the same fails-open posture as every hook in this repository. A missing engine never blocks your editor. When the engine is outside the range that `.headwater/taxonomy.yml` asks for, the extension writes the line that the engine prints about it to the *Headwater* output channel, once in a session, and the relay writes it to the log of the MCP server. The answers do not change.
 
 For Copilot Chat the posture is the same, with one change for the reader that is a model. When the extension finds no engine, it registers no MCP server, and the *Headwater* output channel (View, then Output) says which binary it looked for. When a relay session fails, the relay answers with a JSON-RPC error and not with an empty list. It stops a session after 60 seconds, because the `check` tool reads the whole corpus.
 

@@ -3,7 +3,7 @@ id: HW-DR-0102
 status: current
 status_since: 2026-09-30
 summary: "An editor plugin is a client of headwater mcp: it starts the server for each query, sends one read request and stops it. The library stays embeddable, but no editor host embeds it."
-last_verified: 2026-10-02
+last_verified: 2026-11-27
 title: "102 — An editor integration starts headwater mcp for each query and does not embed the library"
 provenance:
   warrant: asserted
