@@ -72,6 +72,17 @@ fn corpus(label: &str, marker: bool) -> common::Root {
             ),
         )
         .expect("the hostile summary writes");
+        // A warrant outside the four values, which `route` quotes back in the
+        // bracket after the summary (#2069, verify round 1).
+        std::fs::write(
+            at.join("docs/decisions/0005-w.md"),
+            body("HW-DR-0005", "A warrant that is not one of the four.", "").replacen(
+                "warrant: accepted",
+                "warrant: \"\\e[2J::w\"",
+                1,
+            ),
+        )
+        .expect("the hostile warrant writes");
     })
 }
 
@@ -171,6 +182,13 @@ fn route_writes_a_hostile_pointer_as_visible_text() {
         "route --json holds the raw name: {}",
         json.out
     );
+    let warrant = root.run(&["route", "--no-color", "what does HW-DR-0005 decide"]);
+    assert_eq!(warrant.code, Some(0), "route answers: {warrant:?}");
+    assert!(
+        warrant.out.contains("\\x1b[2J::w"),
+        "route quotes the hostile warrant as visible text: {warrant:?}"
+    );
+    clean("route <warrant>", &warrant);
 }
 
 #[test]

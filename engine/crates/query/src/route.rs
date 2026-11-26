@@ -1611,6 +1611,34 @@ mod tests {
         assert!(plain.contains("names the anchor a\\x1b[2Jb"), "{plain}");
     }
 
+    /// The other values a route prints from the tree, a document or the
+    /// taxonomy: a declared warrant outside the four values, an ungoverned path
+    /// and the name of a relation that could govern it (#2069). Each is
+    /// written as visible text, and none opens a line with `::`.
+    #[test]
+    fn a_hostile_warrant_ungoverned_path_and_relation_are_visible_text() {
+        let mut route = route();
+        route.pointers[0].outside = Some("\u{1b}[2J::w".to_string());
+        route.ungoverned = vec![Ungoverned {
+            path: "::error ::src/x\u{1b}[31m.rs".to_string(),
+            relations: vec!["::gov\u{1b}[1m".to_string()],
+        }];
+        let plain = route.render(ColorMode::Plain);
+        assert!(!plain.contains('\u{1b}'), "{}", plain.escape_debug());
+        let forged: Vec<&str> = plain
+            .lines()
+            .filter(|line| line.trim_start().starts_with("::"))
+            .collect();
+        assert!(forged.is_empty(), "{forged:?}");
+        for shown in [
+            "[warrant `\\x1b[2J::w`",
+            "  \\x3a:error ::src/x\\x1b[31m.rs is in the governed scope",
+            "      \\x3a:gov\\x1b[1m:\n        - \\x3a:error ::src/x\\x1b[31m.rs\n",
+        ] {
+            assert!(plain.contains(shown), "no `{shown}` in\n{plain}");
+        }
+    }
+
     /// `Plain` writes not one escape byte, which is what every recorded fixture
     /// and both machine readers of this text depend on.
     #[test]
