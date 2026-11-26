@@ -48,7 +48,10 @@ fn a_gate_reads_back_a_path_with_a_space_or_a_control_character() {
     let ran = root.run(&["check", "--read-set", read_set]);
     assert!(ran.code.is_some(), "{ran:?}");
     let recorded = std::fs::read_to_string(read_set).expect("the read set reads");
-    assert!(recorded.contains(SPACED), "the read set lists the spaced file: {recorded}");
+    assert!(
+        recorded.contains(SPACED),
+        "the read set lists the spaced file: {recorded}"
+    );
     assert!(
         recorded.contains("0003-a\\x07bell.md"),
         "the read set spells the bell: {recorded}"
@@ -73,8 +76,11 @@ fn a_gate_reads_back_a_path_with_a_space_or_a_control_character() {
     }
 
     let edited = std::fs::read_to_string(root.at.join(SPACED)).expect("the decision reads");
-    std::fs::write(root.at.join(SPACED), edited.replace("It is read.", "It is read again."))
-        .expect("the decision writes");
+    std::fs::write(
+        root.at.join(SPACED),
+        edited.replace("It is read.", "It is read again."),
+    )
+    .expect("the decision writes");
     let moved = root.run(&["gate", "--read-set", read_set]);
     assert_eq!(moved.code, Some(1), "{moved:?}");
     assert!(

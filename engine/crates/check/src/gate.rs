@@ -314,7 +314,10 @@ impl Reason {
                 paint(Role::Path, &visible(path), mode)
             ),
             Reason::Gone { path } => {
-                format!("{} is not in this tree", paint(Role::Path, &visible(path), mode))
+                format!(
+                    "{} is not in this tree",
+                    paint(Role::Path, &visible(path), mode)
+                )
             }
             Reason::Escaped { path } => format!(
                 "{} resolves outside the repository root, so it is not read",
@@ -937,7 +940,10 @@ mod tests {
         inputs.sort_by(|a, b| a.path.cmp(&b.path));
         assert_eq!(inputs, given, "{text}");
         for line in text.lines() {
-            assert!(!line.contains('\u{7}'), "a control character reached the artifact: {line:?}");
+            assert!(
+                !line.contains('\u{7}'),
+                "a control character reached the artifact: {line:?}"
+            );
         }
     }
 
@@ -984,7 +990,12 @@ mod tests {
     /// A malformed escape refuses the line rather than guessing at a path.
     #[test]
     fn a_malformed_escape_in_a_path_refuses_the_line() {
-        for path in ["docs/a\\q.md", "docs/a\\x0.md", "docs/a\\xzz.md", "docs/a\\"] {
+        for path in [
+            "docs/a\\q.md",
+            "docs/a\\x0.md",
+            "docs/a\\xzz.md",
+            "docs/a\\",
+        ] {
             let text = format!("lock sha256:lock\nclock 2026-08-13\ninput {path} sha256:a\n");
             let refused = Recorded::parse(&text).expect_err(path);
             assert_eq!(refused.line, 3, "{path}");

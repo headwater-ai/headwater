@@ -763,7 +763,10 @@ fn unescaped_cells(row: &str) -> usize {
 #[test]
 fn a_path_with_a_space_a_pipe_or_a_backtick_reaches_every_format_whole() {
     let mut ran = fixture_run();
-    assert!(ran.run.findings.len() >= SPACED_PATHS.len(), "four findings to rename");
+    assert!(
+        ran.run.findings.len() >= SPACED_PATHS.len(),
+        "five findings to rename"
+    );
     for (finding, path) in ran.run.findings.iter_mut().zip(SPACED_PATHS) {
         finding.path = path.to_string();
     }
