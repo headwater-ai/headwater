@@ -271,6 +271,7 @@ pub fn apply(root: &Path, composed: &[Composed]) -> Result<(), Refusal> {
         .map_err(|halted| Refusal::WriteHalted {
             path: halted.path().to_string(),
             report: halted.to_string(),
+            left: halted.left().map(str::to_string),
         })?;
     Ok(())
 }

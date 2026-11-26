@@ -204,8 +204,9 @@ fn a_write_that_does_not_read_back_halts_and_the_new_document_goes_with_it() {
     );
     assert_eq!(dir.read("recip.md"), "was", "and the edited file is back");
     match &refused {
-        Refusal::WriteHalted { path, report } => {
+        Refusal::WriteHalted { path, report, left } => {
             assert_eq!(path, "recip.md");
+            assert_eq!(left, &None, "the created document went, so none is left");
             assert!(
                 report.contains("the document this run created at new.md was removed"),
                 "the report is the rollback's own account: {report}"
@@ -335,6 +336,60 @@ fn a_withdrawn_claim_goes_and_its_sibling_stays() {
             "The claim {second} this run wrote could not be removed: "
         )) && sentence.ends_with(". Delete it by hand."),
         "{sentence}"
+    );
+}
+
+/// A claim stands behind its document, so a run whose created document could
+/// not be removed keeps the claim it made for it (#2041). Withdrawing it would
+/// leave a document with no claim, which is the defect
+/// `identifier.claim.missing` reports, and the message names both the document
+/// left and the claim kept.
+#[test]
+fn a_claim_behind_a_document_that_would_not_go_is_kept() {
+    let dir = Dir::with("kept", &[]);
+    let claim = ".headwater/ids/decision_id/HW-DR-0049";
+    let document = "docs/decisions/0049-first.md";
+    headwater_scaffold::claim::make(dir.path(), claim, document).expect("the claim lands");
+
+    let refusal = Refusal::WriteHalted {
+        path: "recip.md".to_string(),
+        report: "recip.md did not write".to_string(),
+        left: Some(document.to_string()),
+    };
+    let message = headwater_scaffold::claim::settle(dir.path(), claim, &refusal);
+
+    assert_eq!(
+        dir.read(claim),
+        format!("{document}\n"),
+        "the claim still stands behind the document that is still there"
+    );
+    assert!(
+        message.contains(claim) && message.contains(document),
+        "the message names the claim kept and the document left: {message}"
+    );
+    assert!(message.contains("was kept"), "{message}");
+}
+
+/// The twin of the case above with no document left: the claim is withdrawn
+/// as before, so a failed run spends no number (#1972).
+#[test]
+fn a_claim_behind_a_document_that_went_is_withdrawn() {
+    let dir = Dir::with("gone", &[]);
+    let claim = ".headwater/ids/decision_id/HW-DR-0049";
+    headwater_scaffold::claim::make(dir.path(), claim, "docs/decisions/0049-first.md")
+        .expect("the claim lands");
+
+    let refusal = Refusal::WriteHalted {
+        path: "recip.md".to_string(),
+        report: "recip.md did not write".to_string(),
+        left: None,
+    };
+    let message = headwater_scaffold::claim::settle(dir.path(), claim, &refusal);
+
+    assert!(!dir.holds(claim), "the claim is withdrawn");
+    assert!(
+        message.ends_with(&format!("The claim {claim} this run wrote was removed.")),
+        "{message}"
     );
 }
 

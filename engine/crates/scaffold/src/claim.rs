@@ -44,6 +44,7 @@
 
 use crate::{Plan, Refusal};
 use headwater_check::claim::contents_for;
+use std::fs::File;
 use std::path::Path;
 
 /// Write the claim this plan mints, and nothing for a plan that mints none.
@@ -69,10 +70,28 @@ pub fn write(root: &Path, plan: &Plan) -> Result<Option<String>, Refusal> {
 /// without composing a whole plan, and so that the create-new decision is one
 /// function rather than a property of the caller.
 pub fn make(root: &Path, claim: &str, claimant: &str) -> Result<(), Refusal> {
+    make_with(root, claim, claimant, &mut |file, bytes| {
+        std::io::Write::write_all(file, bytes)
+    })
+}
+
+/// [`make`], with the write of the claim's bytes passed in.
+///
+/// The seam exists for one test. No unprivileged, thread-safe test can make a
+/// `write_all` fail on a file that `create_new` just opened: `/dev/full` and a
+/// symlink both fail at the create. It is the reasoning of
+/// [`crate::tree::Reserved`]'s own `commit_with`.
+fn make_with(
+    root: &Path,
+    claim: &str,
+    claimant: &str,
+    write: &mut dyn FnMut(&mut File, &[u8]) -> std::io::Result<()>,
+) -> Result<(), Refusal> {
     let at = root.join(claim);
     let refuse = |why: String| Refusal::ClaimUnwritable {
         path: claim.to_string(),
         why,
+        removed: None,
     };
     if let Some(parent) = at.parent() {
         std::fs::create_dir_all(parent).map_err(|error| refuse(error.to_string()))?;
@@ -85,8 +104,7 @@ pub fn make(root: &Path, claim: &str, claimant: &str) -> Result<(), Refusal> {
         .create_new(true)
         .open(&at)
         .map_err(|error| refuse(error.to_string()))?;
-    std::io::Write::write_all(&mut file, contents_for(claimant).as_bytes())
-        .map_err(|error| refuse(error.to_string()))?;
+    write(&mut file, contents_for(claimant).as_bytes()).map_err(|error| refuse(error.to_string()))?;
     Ok(())
 }
 
@@ -107,14 +125,21 @@ pub fn land(
     let Err(why) = crate::write::apply(root, composed) else {
         return Ok(claimed);
     };
-    let why = why.to_string();
     Err(match &claimed {
-        None => why,
-        Some(claim) => {
-            let outcome = withdraw(root, claim);
-            joined(&why, &withdrawn(claim, &outcome))
-        }
+        None => why.to_string(),
+        Some(claim) => settle(root, claim, &why),
     })
+}
+
+/// What a run that made `claim` does with it when the files were refused, and
+/// the message it then reports.
+///
+/// The decision of [`land`], held apart so that a test reaches every refusal
+/// without a disk that fails on cue.
+pub fn settle(root: &Path, claim: &str, refusal: &Refusal) -> String {
+    let why = refusal.to_string();
+    let outcome = withdraw(root, claim);
+    joined(&why, &withdrawn(claim, &outcome))
 }
 
 /// A refusal and the claim sentence after it, with one period and one space
@@ -158,4 +183,105 @@ pub fn withdrawn(claim: &str, outcome: &Result<(), String>) -> String {
 /// reads too.
 pub fn claimed(plan: &Plan) -> Option<String> {
     plan.minting.as_ref()?.claim.clone()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+    use std::path::PathBuf;
+
+    /// A directory that cleans itself up, keyed on the case so that two cases
+    /// of this target, which run as threads of one process, never share one.
+    struct Dir(PathBuf);
+
+    impl Dir {
+        fn new(label: &str) -> Dir {
+            let path = std::env::temp_dir().join(format!(
+                "headwater-claim-{label}-{}",
+                std::process::id()
+            ));
+            let _ = std::fs::remove_dir_all(&path);
+            std::fs::create_dir_all(&path).expect("the case directory is made");
+            Dir(path)
+        }
+    }
+
+    impl Drop for Dir {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    const CLAIM: &str = ".headwater/ids/decision_id/HW-DR-0049";
+
+    /// A claim whose bytes did not all land is removed, so this writer never
+    /// leaves an empty or partial claim behind, and the refusal says the claim
+    /// went (#2041).
+    #[test]
+    fn a_claim_that_did_not_write_whole_is_removed_and_the_refusal_says_so() {
+        let dir = Dir::new("unwritten");
+        let refused = make_with(&dir.0, CLAIM, "docs/decisions/0049-x.md", &mut |file, bytes| {
+            file.write_all(&bytes[..3])?;
+            Err(std::io::Error::from_raw_os_error(28))
+        })
+        .expect_err("a failed write refuses");
+
+        assert!(
+            !dir.0.join(CLAIM).exists(),
+            "no claim file is left at the path, empty or partial"
+        );
+        assert!(
+            matches!(&refused, Refusal::ClaimUnwritable { removed: Some(Ok(())), .. }),
+            "{refused:?}"
+        );
+        let message = refused.to_string();
+        assert!(
+            message.contains(&format!("The claim {CLAIM} this run wrote was removed.")),
+            "{message}"
+        );
+        assert!(!message.contains("Nothing else was written"), "{message}");
+    }
+
+    /// The twin whose removal fails: the refusal names the claim still there
+    /// and asks for it to be deleted by hand, rather than saying nothing was
+    /// written.
+    #[test]
+    fn a_claim_that_could_not_be_removed_is_named_for_deletion_by_hand() {
+        let dir = Dir::new("unremoved");
+        let at = dir.0.join(CLAIM);
+        let refused = make_with(&dir.0, CLAIM, "docs/decisions/0049-x.md", &mut |_, _| {
+            // Take the file away first, so the withdraw meets nothing there.
+            std::fs::remove_file(&at)?;
+            Err(std::io::Error::from_raw_os_error(28))
+        })
+        .expect_err("a failed write refuses");
+
+        assert!(
+            matches!(&refused, Refusal::ClaimUnwritable { removed: Some(Err(_)), .. }),
+            "{refused:?}"
+        );
+        let message = refused.to_string();
+        assert!(message.contains("could not be removed"), "{message}");
+        assert!(message.contains("Delete it by hand."), "{message}");
+        assert!(!message.contains("Nothing else was written"), "{message}");
+    }
+
+    /// A create that fails leaves no file of this run, so the refusal names no
+    /// removal and still says that nothing else was written.
+    #[test]
+    fn a_claim_whose_create_failed_names_no_removal() {
+        let dir = Dir::new("taken");
+        make(&dir.0, CLAIM, "docs/decisions/0049-first.md").expect("the first claim lands");
+        let refused =
+            make(&dir.0, CLAIM, "docs/decisions/0049-second.md").expect_err("the path is taken");
+        assert!(
+            matches!(&refused, Refusal::ClaimUnwritable { removed: None, .. }),
+            "{refused:?}"
+        );
+        assert!(
+            refused.to_string().contains("Nothing else was written"),
+            "{refused}"
+        );
+    }
 }

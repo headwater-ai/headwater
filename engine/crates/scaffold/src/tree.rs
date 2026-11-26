@@ -235,6 +235,21 @@ impl Halted {
         &self.failed
     }
 
+    /// The document this run created and could not remove, and nothing where
+    /// the run created none or removed the one it created.
+    ///
+    /// An observation off the tree, like [`Halted::failed`]: it is `Some`
+    /// exactly when the undo read something still at that path. A caller that
+    /// made a claim for the document reads it, because a claim stands behind
+    /// its document and must not be withdrawn from one that is still there
+    /// (#2041).
+    pub fn left(&self) -> Option<&str> {
+        match self.created.as_deref() {
+            Some(Created::NotRemoved { path, .. }) => Some(path),
+            Some(Created::Removed { .. }) | None => None,
+        }
+    }
+
     /// The clause about every file other than the one the run failed on.
     ///
     /// `also` is the word joining them to a failing file that went back, and is
@@ -1294,22 +1309,32 @@ mod tests {
 
         let table = [
             (halted(Failed::PutBack, "b.md", removed()),
-             "b.md did not write: no space left on device. It was put back, and the document this run created at new.md was removed, and the 1 file already written was put back too, so the tree is as it was"),
+             "b.md did not write: no space left on device. It was put back, and the document this run created at new.md was removed, and the 1 file already written was put back too, so the tree is as it was",
+             None),
             (halted(Failed::PutBack, "b.md", stuck("new.md")),
-             "b.md did not write: no space left on device. It was put back, and the document this run created at new.md could not be removed: permission denied, and the 1 file already written was put back too, so this run's damage is that one file"),
+             "b.md did not write: no space left on device. It was put back, and the document this run created at new.md could not be removed: permission denied, and the 1 file already written was put back too, so this run's damage is that one file",
+             Some("new.md")),
             (halted(Failed::Damaged { why: "no space left on device".to_string() }, "b.md", stuck("new.md")),
-             "b.md did not write: no space left on device. It could not be put back and now holds neither what it held nor what this run asked for (no space left on device), and the document this run created at new.md could not be removed: permission denied, and the 1 file already written was put back, so this run's damage is those two files"),
+             "b.md did not write: no space left on device. It could not be put back and now holds neither what it held nor what this run asked for (no space left on device), and the document this run created at new.md could not be removed: permission denied, and the 1 file already written was put back, so this run's damage is those two files",
+             Some("new.md")),
             // The run failed on the document it created. The clause about the
             // failing file already named the path, so the created clause says
             // *it* rather than naming a second file that is the same file.
             (halted(Failed::Unmade, "new.md", removed()),
-             "new.md did not write: no space left on device. It is the document this run created, and it was removed, and the 1 file already written was put back, so the tree is as it was"),
+             "new.md did not write: no space left on device. It is the document this run created, and it was removed, and the 1 file already written was put back, so the tree is as it was",
+             None),
             (halted(Failed::Unmade, "new.md", stuck("new.md")),
-             "new.md did not write: no space left on device. It is the document this run created, and it could not be removed: permission denied, and the 1 file already written was put back, so this run's damage is that one file"),
+             "new.md did not write: no space left on device. It is the document this run created, and it could not be removed: permission denied, and the 1 file already written was put back, so this run's damage is that one file",
+             Some("new.md")),
         ];
 
-        for (halted, expected) in &table {
+        for (halted, expected, left) in &table {
             assert_eq!(&halted.to_string(), expected);
+            assert_eq!(
+                halted.left(),
+                *left,
+                "left names the created document exactly when it is still there: {halted}"
+            );
             let intact = halted.damaged() == 0 && halted.lost.is_empty();
             assert_eq!(
                 halted.to_string().contains("the tree is as it was"),
