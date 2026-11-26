@@ -91,6 +91,20 @@
               }
             },
             {
+              "id": "shelf.bound_facet.disagrees",
+              "shortDescription": {
+                "text": "document scope, one document and its front matter"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
               "id": "relation.key.outside_block",
               "shortDescription": {
                 "text": "document scope, one document and its front matter"
@@ -1208,7 +1222,7 @@
       "results": [
         {
           "ruleId": "relation.reciprocity.missing",
-          "ruleIndex": 9,
+          "ruleIndex": 10,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1253,7 +1267,7 @@
         },
         {
           "ruleId": "relation.participation.overdue",
-          "ruleIndex": 17,
+          "ruleIndex": 18,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1286,7 +1300,7 @@
         },
         {
           "ruleId": "relation.endpoint.not_permitted",
-          "ruleIndex": 10,
+          "ruleIndex": 11,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1350,7 +1364,7 @@
         },
         {
           "ruleId": "relation.reciprocity.missing",
-          "ruleIndex": 9,
+          "ruleIndex": 10,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1383,7 +1397,7 @@
         },
         {
           "ruleId": "relation.mention.undeclared",
-          "ruleIndex": 35,
+          "ruleIndex": 36,
           "level": "note",
           "kind": "fail",
           "message": {
@@ -1414,7 +1428,7 @@
         },
         {
           "ruleId": "relation.reciprocity.missing",
-          "ruleIndex": 9,
+          "ruleIndex": 10,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1447,7 +1461,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 26,
+          "ruleIndex": 27,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1480,7 +1494,7 @@
         },
         {
           "ruleId": "coverage.document_unchecked",
-          "ruleIndex": 44,
+          "ruleIndex": 45,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1507,7 +1521,7 @@
         },
         {
           "ruleId": "shelf.discriminator.unresolved",
-          "ruleIndex": 22,
+          "ruleIndex": 23,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1567,7 +1581,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 26,
+          "ruleIndex": 27,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1633,7 +1647,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 26,
+          "ruleIndex": 27,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1666,7 +1680,7 @@
         },
         {
           "ruleId": "voice.forbidden_construction",
-          "ruleIndex": 25,
+          "ruleIndex": 26,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1699,7 +1713,7 @@
         },
         {
           "ruleId": "voice.forbidden_construction",
-          "ruleIndex": 25,
+          "ruleIndex": 26,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1732,7 +1746,7 @@
         },
         {
           "ruleId": "voice.forbidden_construction",
-          "ruleIndex": 25,
+          "ruleIndex": 26,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1765,7 +1779,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 26,
+          "ruleIndex": 27,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1798,7 +1812,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 26,
+          "ruleIndex": 27,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1831,7 +1845,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 26,
+          "ruleIndex": 27,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1864,7 +1878,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 26,
+          "ruleIndex": 27,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1897,7 +1911,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 26,
+          "ruleIndex": 27,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1930,7 +1944,7 @@
         },
         {
           "ruleId": "language.retired_term.used",
-          "ruleIndex": 27,
+          "ruleIndex": 28,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1963,7 +1977,7 @@
         },
         {
           "ruleId": "voice.forbidden_construction",
-          "ruleIndex": 25,
+          "ruleIndex": 26,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1996,7 +2010,7 @@
         },
         {
           "ruleId": "language.retired_term.used",
-          "ruleIndex": 27,
+          "ruleIndex": 28,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2029,7 +2043,7 @@
         },
         {
           "ruleId": "voice.forbidden_construction",
-          "ruleIndex": 25,
+          "ruleIndex": 26,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2062,7 +2076,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 26,
+          "ruleIndex": 27,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2095,7 +2109,7 @@
         },
         {
           "ruleId": "language.retired_term.used",
-          "ruleIndex": 27,
+          "ruleIndex": 28,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2128,7 +2142,7 @@
         },
         {
           "ruleId": "language.retired_term.used",
-          "ruleIndex": 27,
+          "ruleIndex": 28,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2161,7 +2175,7 @@
         },
         {
           "ruleId": "language.source_form.not_met",
-          "ruleIndex": 30,
+          "ruleIndex": 31,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2194,7 +2208,7 @@
         },
         {
           "ruleId": "language.source_form.not_met",
-          "ruleIndex": 30,
+          "ruleIndex": 31,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2227,7 +2241,7 @@
         },
         {
           "ruleId": "link.fragment.unresolved",
-          "ruleIndex": 32,
+          "ruleIndex": 33,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2260,7 +2274,7 @@
         },
         {
           "ruleId": "link.path.unresolved",
-          "ruleIndex": 33,
+          "ruleIndex": 34,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2291,7 +2305,7 @@
         },
         {
           "ruleId": "link.path.unresolved",
-          "ruleIndex": 33,
+          "ruleIndex": 34,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2322,7 +2336,7 @@
         },
         {
           "ruleId": "link.path.unresolved",
-          "ruleIndex": 33,
+          "ruleIndex": 34,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2353,7 +2367,7 @@
         },
         {
           "ruleId": "link.path.unresolved",
-          "ruleIndex": 33,
+          "ruleIndex": 34,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2384,7 +2398,7 @@
         },
         {
           "ruleId": "link.path.unresolved",
-          "ruleIndex": 33,
+          "ruleIndex": 34,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2415,7 +2429,7 @@
         },
         {
           "ruleId": "link.identifier.mismatch",
-          "ruleIndex": 34,
+          "ruleIndex": 35,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2448,7 +2462,7 @@
         },
         {
           "ruleId": "relation.mention.undeclared",
-          "ruleIndex": 35,
+          "ruleIndex": 36,
           "level": "note",
           "kind": "fail",
           "message": {
@@ -2479,7 +2493,7 @@
         },
         {
           "ruleId": "identifier.claim.missing",
-          "ruleIndex": 23,
+          "ruleIndex": 24,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2510,7 +2524,7 @@
         },
         {
           "ruleId": "section.required.missing",
-          "ruleIndex": 31,
+          "ruleIndex": 32,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2539,7 +2553,7 @@
         },
         {
           "ruleId": "identifier.claim.missing",
-          "ruleIndex": 23,
+          "ruleIndex": 24,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2570,7 +2584,7 @@
         },
         {
           "ruleId": "voice.forbidden_construction",
-          "ruleIndex": 25,
+          "ruleIndex": 26,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2615,7 +2629,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 26,
+          "ruleIndex": 27,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2660,7 +2674,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 26,
+          "ruleIndex": 27,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2726,7 +2740,7 @@
         },
         {
           "ruleId": "relation.target.unresolved",
-          "ruleIndex": 6,
+          "ruleIndex": 7,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2759,7 +2773,7 @@
         },
         {
           "ruleId": "relation.target.unresolved",
-          "ruleIndex": 6,
+          "ruleIndex": 7,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2792,7 +2806,7 @@
         },
         {
           "ruleId": "relation.declaration.unusable",
-          "ruleIndex": 19,
+          "ruleIndex": 20,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2825,7 +2839,7 @@
         },
         {
           "ruleId": "relation.declaration.unusable",
-          "ruleIndex": 19,
+          "ruleIndex": 20,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2858,7 +2872,7 @@
         },
         {
           "ruleId": "relation.declaration.unusable",
-          "ruleIndex": 19,
+          "ruleIndex": 20,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2891,7 +2905,7 @@
         },
         {
           "ruleId": "relation.declaration.unusable",
-          "ruleIndex": 19,
+          "ruleIndex": 20,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2924,7 +2938,7 @@
         },
         {
           "ruleId": "relation.declaration.unusable",
-          "ruleIndex": 19,
+          "ruleIndex": 20,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2957,7 +2971,7 @@
         },
         {
           "ruleId": "identifier.unusable",
-          "ruleIndex": 20,
+          "ruleIndex": 21,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2990,7 +3004,7 @@
         },
         {
           "ruleId": "identifier.unusable",
-          "ruleIndex": 20,
+          "ruleIndex": 21,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -3116,7 +3130,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 26,
+          "ruleIndex": 27,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3149,7 +3163,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 26,
+          "ruleIndex": 27,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -3182,7 +3196,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 26,
+          "ruleIndex": 27,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -3215,7 +3229,7 @@
         },
         {
           "ruleId": "language.retired_term.used",
-          "ruleIndex": 27,
+          "ruleIndex": 28,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -3248,7 +3262,7 @@
         },
         {
           "ruleId": "voice.forbidden_construction",
-          "ruleIndex": 25,
+          "ruleIndex": 26,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3281,7 +3295,7 @@
         },
         {
           "ruleId": "voice.forbidden_construction",
-          "ruleIndex": 25,
+          "ruleIndex": 26,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3345,7 +3359,7 @@
         },
         {
           "ruleId": "voice.forbidden_construction",
-          "ruleIndex": 25,
+          "ruleIndex": 26,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3378,7 +3392,7 @@
         },
         {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 46,
+          "ruleIndex": 47,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3407,7 +3421,7 @@
         },
         {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 46,
+          "ruleIndex": 47,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3436,7 +3450,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 45,
+          "ruleIndex": 46,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3465,7 +3479,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 45,
+          "ruleIndex": 46,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3494,7 +3508,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 45,
+          "ruleIndex": 46,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3523,7 +3537,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 45,
+          "ruleIndex": 46,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3552,7 +3566,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 45,
+          "ruleIndex": 46,
           "level": "warning",
           "kind": "fail",
           "message": {
