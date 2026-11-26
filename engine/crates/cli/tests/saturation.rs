@@ -16,6 +16,9 @@
 //! `change_narration`, `phased_rollout`) and the `ste_house` language regime.
 //! The case replaces the house list of retired terms with two terms, so the
 //! declared count of that list is a fact of this file and not of the overlay.
+//! The root also copies the doctrine pages, whose prose writes patterns of its
+//! own, so each case reads the `future_intent` count of the root before it
+//! adds its sentence and holds the count after it to one more.
 
 mod common;
 use common::Root;
@@ -24,15 +27,18 @@ use common::Root;
 /// `engine/crates/cli/fixtures/change/docs`.
 const DECISION: &str = "docs/decisions/0001-the-warrant-a-person-set.md";
 
-/// The paragraph the case appends to the decision. It writes one
-/// `future_intent` pattern, `will eventually`, and no other forbidden pattern
-/// and no retired term.
-const FUTURE: &str = "The record will eventually name its reader.";
+/// The sentence the case appends to the decision. It writes one
+/// `future_intent` pattern, `at a later date`, and no other forbidden pattern
+/// and no retired term. The copied doctrine pages do not write that pattern,
+/// which the count before the sentence shows.
+const FUTURE: &str = "The record names its reader at a later date.";
 
-/// Replace the house list of retired terms with two terms, write the one
-/// sentence of `future_intent` into the decision, followed by `directive`
-/// when one is given, and resolve the lock again.
-fn prepare(root: &Root, directive: Option<&str>) {
+/// The two terms the case retires. No copied page writes either.
+const TERMS: &str = "    retired_terms:\n      - term: lighthouse\n        reason: a test retires it\n      - term: windmill\n        reason: a test retires it\n";
+
+/// Replace the house list of retired terms with [`TERMS`] and resolve the lock
+/// again.
+fn retire_two(root: &Root) {
     let overlay = root.at.join(".headwater/overlay.yml");
     let text = std::fs::read_to_string(&overlay).expect("the overlay reads");
     let from = text
@@ -42,10 +48,15 @@ fn prepare(root: &Root, directive: Option<&str>) {
         .find("    # The front-door prose")
         .map(|at| from + at)
         .expect("the house list ends before the outside-root comment");
-    let two = "    retired_terms:\n      - term: lighthouse\n        reason: a test retires it\n      - term: windmill\n        reason: a test retires it\n";
-    let rewritten = format!("{}{two}{}", &text[..from], &text[to..]);
+    let rewritten = format!("{}{TERMS}{}", &text[..from], &text[to..]);
     std::fs::write(&overlay, rewritten).expect("the overlay writes");
+    let resolved = root.run(&["taxonomy", "resolve"]);
+    assert_eq!(resolved.code, Some(0), "the lock resolves again: {resolved:?}");
+}
 
+/// Write [`FUTURE`] into the decision, followed by `directive` when one is
+/// given.
+fn write_future(root: &Root, directive: Option<&str>) {
     let decision = root.at.join(DECISION);
     let mut text = std::fs::read_to_string(&decision).expect("the decision reads");
     text.push('\n');
@@ -56,53 +67,75 @@ fn prepare(root: &Root, directive: Option<&str>) {
     }
     text.push('\n');
     std::fs::write(&decision, text).expect("the decision writes");
-
-    let resolved = root.run(&["taxonomy", "resolve"]);
-    assert_eq!(resolved.code, Some(0), "the lock resolves again: {resolved:?}");
 }
 
-/// The line the report prints for one voice category.
-fn voice_line(category: &str, matched: usize, declared: usize) -> String {
-    let mut line = format!(
-        "pattern set voice.forbidden_construction {category}: {matched} of {declared} patterns produced a finding"
-    );
-    if matched == 0 {
-        line.push_str(", so a zero here does not show a clean corpus");
+/// The report with every run of white space read as one space. The text
+/// report is laid out at the width of the run, so one line of the projection
+/// can wrap onto two.
+fn flat(report: &str) -> String {
+    report.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+/// The count the report prints for one set: the entries that produced a
+/// finding and the entries the set declares. `name` is the rule and the set,
+/// as in `voice.forbidden_construction future_intent`.
+fn count(report: &str, name: &str) -> (usize, usize) {
+    let flat = flat(report);
+    let prefix = format!("pattern set {name}: ");
+    let at = flat
+        .find(&prefix)
+        .unwrap_or_else(|| panic!("the report prints the set `{name}`:\n{report}"));
+    let mut words = flat[at + prefix.len()..].split(' ');
+    let matched = words.next().and_then(|word| word.parse().ok());
+    let of = words.next();
+    let declared = words.next().and_then(|word| word.parse().ok());
+    match (matched, of, declared) {
+        (Some(matched), Some("of"), Some(declared)) => (matched, declared),
+        _ => panic!("the set `{name}` prints `<n> of <m>`:\n{report}"),
     }
-    line
 }
 
-/// The line the report prints for the house list of retired terms.
-fn retired_line(matched: usize, declared: usize) -> String {
-    let mut line = format!(
-        "pattern set language.retired_term.used ste_house: {matched} of {declared} terms produced a finding"
-    );
-    if matched == 0 {
-        line.push_str(", so a zero here does not show a clean corpus");
-    }
-    line
-}
+/// The warning a set where no entry produced a finding carries.
+const ZERO: &str = "produced a finding, so a zero here does not show a clean corpus";
 
 /// Each set prints its count, and a set where no entry produced a finding is
 /// named as a zero that shows no clean corpus.
 #[test]
 fn each_pattern_set_prints_the_entries_that_produced_a_finding() {
     let root = Root::new("saturation-counts");
-    prepare(&root, None);
+    retire_two(&root);
+    let before = root.run(&["check"]);
+    let (base, declared) = count(&before.out, "voice.forbidden_construction future_intent");
+    assert_eq!(declared, 14, "future_intent declares 14 patterns");
+
+    write_future(&root, None);
     let report = root.run(&["check"]);
     assert!(
-        report.out.contains("writes `will eventually`"),
+        flat(&report.out).contains("writes `at a later date`"),
         "the fixture sentence produces its finding:\n{}",
         report.out
     );
-    for line in [
-        voice_line("future_intent", 1, 14),
-        voice_line("phased_rollout", 0, 13),
-        retired_line(0, 2),
+    assert_eq!(
+        count(&report.out, "voice.forbidden_construction future_intent"),
+        (base + 1, 14),
+        "the sentence adds one pattern to future_intent:\n{}",
+        report.out
+    );
+    assert_eq!(
+        count(&report.out, "voice.forbidden_construction phased_rollout"),
+        (0, 13)
+    );
+    assert_eq!(
+        count(&report.out, "language.retired_term.used ste_house"),
+        (0, 2)
+    );
+    for name in [
+        "voice.forbidden_construction phased_rollout: 0 of 13 patterns",
+        "language.retired_term.used ste_house: 0 of 2 terms",
     ] {
         assert!(
-            report.out.contains(&format!("{line}\n")),
-            "the report prints `{line}`:\n{}",
+            flat(&report.out).contains(&format!("pattern set {name} {ZERO}")),
+            "the report names `{name}` as a zero that shows no clean corpus:\n{}",
             report.out
         );
     }
@@ -113,7 +146,11 @@ fn each_pattern_set_prints_the_entries_that_produced_a_finding() {
 #[test]
 fn a_suppressed_finding_still_counts_its_pattern() {
     let root = Root::new("saturation-suppressed");
-    prepare(
+    retire_two(&root);
+    let before = root.run(&["check"]);
+    let (base, _) = count(&before.out, "voice.forbidden_construction future_intent");
+
+    write_future(
         &root,
         Some(
             "<!-- headwater allow=voice.forbidden_construction scope=block until=2099-12-31 reason=accepted_deviation note=the case suppresses its own finding -->",
@@ -121,14 +158,14 @@ fn a_suppressed_finding_still_counts_its_pattern() {
     );
     let report = root.run(&["check"]);
     assert!(
-        !report.out.contains("writes `will eventually`"),
+        flat(&report.out).contains("0 migration-pending, 1 suppressed"),
         "the directive suppresses the fixture finding:\n{}",
         report.out
     );
-    let line = voice_line("future_intent", 1, 14);
-    assert!(
-        report.out.contains(&format!("{line}\n")),
-        "the suppressed finding still counts: `{line}`:\n{}",
+    assert_eq!(
+        count(&report.out, "voice.forbidden_construction future_intent"),
+        (base + 1, 14),
+        "the suppressed finding still counts its pattern:\n{}",
         report.out
     );
 }
