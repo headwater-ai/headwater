@@ -112,6 +112,24 @@ impl Retired {
         self.bound.iter().find(|bound| bound.kind == kind)
     }
 
+    /// Each regime that a kind or a path outside the corpus root binds, with
+    /// the number of distinct terms it retires, in name order and each once
+    /// (#1492). A regime that retires nothing binds nothing, so it is not here.
+    pub fn pattern_sets(&self) -> Vec<(String, usize)> {
+        let mut sets = std::collections::BTreeMap::new();
+        for bound in self.bound.iter().chain(&self.outside) {
+            sets.entry(bound.regime.clone()).or_insert_with(|| {
+                bound
+                    .terms
+                    .iter()
+                    .map(|term| term.term.as_str())
+                    .collect::<std::collections::BTreeSet<_>>()
+                    .len()
+            });
+        }
+        sets.into_iter().collect()
+    }
+
     /// The binding a view is read under: its regime for a path outside the
     /// corpus root, and its kind for every other document.
     fn bound_for(&self, view: &DocumentView<'_>) -> Option<&Bound> {
@@ -120,6 +138,21 @@ impl Retired {
             None => self.bound_to(view.kind()),
         }
     }
+}
+
+/// The message of a finding of this rule. [`named`] reads it back, and the two
+/// are beside each other so that neither moves alone.
+fn message(regime: &str, term: &str, subject: &str, reason: &str) -> String {
+    format!("`{regime}` retires `{term}`, and {subject} writes it: {reason}")
+}
+
+/// The regime and the term that the message of a finding of this rule names,
+/// and nothing for a message [`message`] did not write. The saturation count
+/// reads it, for the reason [`crate::voice::named`] gives (#1492).
+pub fn named(message: &str) -> Option<(&str, &str)> {
+    let (regime, rest) = message.strip_prefix('`')?.split_once("` retires `")?;
+    let (term, _) = rest.split_once("`, and ")?;
+    Some((regime, term))
 }
 
 /// One binding of the rule to a regime, and nothing for a regime that retires
@@ -281,10 +314,7 @@ impl DocumentCheck for Retired {
                     path: view.path().to_string(),
                     line,
                     column,
-                    message: format!(
-                        "`{}` retires `{}`, and {subject} writes it: {}",
-                        bound.regime, term.term, term.reason
-                    ),
+                    message: message(&bound.regime, &term.term, &subject, &term.reason),
                     remediation: match (&term.replacement, in_body) {
                         (Some(replacement), Some(_)) => format!("write `{replacement}`"),
                         (Some(replacement), None) => format!(

@@ -323,6 +323,36 @@ impl Voice {
     fn bound_to(&self, kind: &str) -> Option<&Bound> {
         self.bound.iter().find(|bound| bound.kind == kind)
     }
+
+    /// Each category that a bound regime forbids, with the number of patterns
+    /// its set declares, in [`CATEGORIES`] order and each once. A category no
+    /// regime forbids reads no sentence, so it has no set to count (#1492).
+    pub fn pattern_sets(&self) -> Vec<(&'static str, usize)> {
+        CATEGORIES
+            .iter()
+            .enumerate()
+            .filter(|(index, _)| self.bound.iter().any(|bound| bound.known.contains(index)))
+            .map(|(_, category)| (category.name, category.patterns.len()))
+            .collect()
+    }
+}
+
+/// The message of a finding of this rule. [`named`] reads it back, and the two
+/// are beside each other so that neither moves alone.
+fn message(regime: &str, category: &str, subject: &str, pattern: &str) -> String {
+    format!("`{regime}` forbids {category}, and {subject} writes `{pattern}`")
+}
+
+/// The category and the pattern that the message of a finding of this rule
+/// names, and nothing for a message [`message`] did not write.
+///
+/// The saturation count reads findings after the cache served them, so it
+/// reads the message rather than a field no cache entry carries (#1492).
+pub fn named(message: &str) -> Option<(&str, &str)> {
+    let (_, rest) = message.split_once("` forbids ")?;
+    let (category, _) = rest.split_once(", and ")?;
+    let (_, pattern) = message.strip_suffix('`')?.rsplit_once(" writes `")?;
+    Some((category, pattern))
 }
 
 impl DocumentCheck for Voice {
@@ -491,10 +521,7 @@ impl DocumentCheck for Voice {
                     path: view.path().to_string(),
                     line,
                     column,
-                    message: format!(
-                        "`{}` forbids {}, and {subject} writes `{pattern}`",
-                        bound.regime, category.name
-                    ),
+                    message: message(&bound.regime, category.name, &subject, pattern),
                     remediation: category.instead.to_string(),
                     // A rewrite is never mechanical, which is the whole of why
                     // this rule is advisory. See the module comment.
