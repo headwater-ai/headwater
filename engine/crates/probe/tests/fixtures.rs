@@ -3619,5 +3619,8 @@ fn a_tier_the_declaration_does_not_name_refuses_the_plan() {
     let plan = tier_undeclared_plan();
     assert_eq!(plan.refusal, Some(Refusal::TierUndeclared(Tier::Campaign)));
     let message = plan.refusal.as_ref().expect("refused").to_string();
-    assert!(message.contains("declares no envelope for the"), "{message}");
+    assert!(
+        message.contains("declares no envelope for the"),
+        "{message}"
+    );
 }
