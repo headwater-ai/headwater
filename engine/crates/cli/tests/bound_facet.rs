@@ -425,3 +425,232 @@ fn a_value_that_names_no_folder_has_one_remedy() {
         .expect("b.md has a finding");
     assert!(list.contains("`context` as a sequence"), "{list}");
 }
+
+const D: &str = "docs/contexts/shipping/contracts/d.md";
+
+/// Two contexts, each with one document that its folder contradicts: one
+/// `shelf.bound_facet.disagrees` error under `billing/` and one under
+/// `shipping/`, before a case changes either.
+fn two_contexts(label: &str) -> Root {
+    let root = Root::new(label);
+    root.write(B, &record("b", "context: shipping\n"));
+    root.write(D, &record("d", "context: billing\n"));
+    root
+}
+
+/// The decisive case of clause 4 of #2101: `check --path` reports one context
+/// alone. The finding under `billing/` is printed and fails the run, the one
+/// under `shipping/` is held back, and the report names the pattern and the
+/// count it held back.
+#[test]
+fn a_path_filter_reports_one_context_alone() {
+    let root = two_contexts("path-one");
+    let ran = root.run(&[
+        "check",
+        "--strict",
+        "--no-cache",
+        "--path",
+        "docs/contexts/billing/**",
+    ]);
+    assert_eq!(ran.code, Some(1), "{}{}", ran.out, ran.err);
+    let found = ran.of_rule();
+    assert_eq!(found.len(), 1, "one finding of {RULE}\n{}", ran.out);
+    assert!(found[0].starts_with(&format!("{B}:")), "{}", ran.out);
+    assert!(
+        !ran.out.contains(&format!("{D}:")),
+        "nothing is reported on d.md\n{}",
+        ran.out
+    );
+    assert!(
+        ran.out.contains("filter: --path docs/contexts/billing/**"),
+        "the report names the pattern\n{}",
+        ran.out
+    );
+    assert!(
+        ran.out.contains("held back: 1 finding outside the filter"),
+        "the report says what it held back\n{}",
+        ran.out
+    );
+}
+
+/// The half that proves the strict exit is narrowed and not only the print:
+/// the one error left is outside the filter, so the strict run passes, and
+/// the report still says it held one finding back. The control is the same
+/// corpus with no filter, which fails.
+#[test]
+fn a_path_filter_narrows_the_strict_exit() {
+    let root = two_contexts("path-exit");
+    root.write(D, &record("d", "context: shipping\n"));
+    let whole = root.strict();
+    assert_eq!(whole.code, Some(1), "{}{}", whole.out, whole.err);
+    let ran = root.run(&[
+        "check",
+        "--strict",
+        "--no-cache",
+        "--path",
+        "docs/contexts/shipping/**",
+    ]);
+    assert_eq!(ran.code, Some(0), "{}{}", ran.out, ran.err);
+    assert!(ran.of_rule().is_empty(), "{}", ran.out);
+    assert!(
+        ran.out.contains("held back: 1 finding outside the filter"),
+        "{}",
+        ran.out
+    );
+}
+
+/// The JSON report carries the filter, and its `findings` holds only what the
+/// filter admits. A run with no `--path` writes no `filter` member.
+#[test]
+fn a_path_filter_is_in_the_json_report() {
+    let root = two_contexts("path-json");
+    let ran = root.run(&[
+        "check",
+        "--no-cache",
+        "--format",
+        "json",
+        "--path",
+        "docs/contexts/billing/**",
+    ]);
+    assert_eq!(ran.code, Some(0), "{}{}", ran.out, ran.err);
+    let parsed = headwater_yaml::load(&ran.out).expect("the report parses");
+    let filter = member(&parsed.value, "filter").expect("the report has a filter");
+    assert_eq!(text(member(filter, "held_back")), "1", "{}", ran.out);
+    assert_eq!(
+        texts(member(filter, "patterns")),
+        ["docs/contexts/billing/**"],
+        "{}",
+        ran.out
+    );
+    assert!(texts(member(filter, "unmatched")).is_empty(), "{}", ran.out);
+    let paths: Vec<String> = member(&parsed.value, "findings")
+        .and_then(headwater_yaml::Value::as_seq)
+        .expect("findings is a list")
+        .iter()
+        .map(|finding| text(member(&finding.value, "path")))
+        .collect();
+    assert!(paths.iter().any(|path| path == B), "{}", ran.out);
+    assert!(
+        paths
+            .iter()
+            .all(|path| path.starts_with("docs/contexts/billing/")),
+        "{paths:?}"
+    );
+    let whole = root.run(&["check", "--no-cache", "--format", "json"]);
+    let whole = headwater_yaml::load(&whole.out).expect("the report parses");
+    assert!(
+        member(&whole.value, "filter").is_none(),
+        "no filter member without --path"
+    );
+}
+
+fn member<'a>(value: &'a headwater_yaml::Value, key: &str) -> Option<&'a headwater_yaml::Value> {
+    value
+        .as_map()
+        .and_then(|map| map.get(key))
+        .map(|spanned| &spanned.value)
+}
+
+fn text(value: Option<&headwater_yaml::Value>) -> String {
+    value
+        .and_then(headwater_yaml::Value::as_scalar)
+        .map(headwater_yaml::core_schema::as_str)
+        .expect("a scalar")
+        .to_string()
+}
+
+fn texts(value: Option<&headwater_yaml::Value>) -> Vec<String> {
+    value
+        .and_then(headwater_yaml::Value::as_seq)
+        .expect("a list")
+        .iter()
+        .map(|one| text(Some(&one.value)))
+        .collect()
+}
+
+/// A pattern that matches no file and no finding fails a strict run and is
+/// named, so a mistyped `--path` in a CI step cannot hold back every finding
+/// and pass. The control is a filter that matches, over the same clean
+/// corpus, which passes.
+#[test]
+fn a_path_filter_that_matches_nothing_fails_a_strict_run() {
+    let root = Root::new("path-unmatched");
+    root.write(A, &record("a", "context: billing\n"));
+    let matched = root.run(&[
+        "check",
+        "--strict",
+        "--no-cache",
+        "--path",
+        "docs/contexts/billing/**",
+    ]);
+    assert_eq!(matched.code, Some(0), "{}{}", matched.out, matched.err);
+    let ran = root.run(&[
+        "check",
+        "--strict",
+        "--no-cache",
+        "--path",
+        "docs/contexts/billing/**",
+        "--path",
+        "docs/contexts/nowhere/**",
+    ]);
+    assert_eq!(ran.code, Some(1), "{}{}", ran.out, ran.err);
+    assert!(
+        ran.out
+            .contains("unmatched: docs/contexts/nowhere/** matches no file and no finding"),
+        "{}",
+        ran.out
+    );
+    assert!(
+        !ran.out
+            .contains("unmatched: docs/contexts/billing/**"),
+        "a pattern that matches is not named unmatched\n{}",
+        ran.out
+    );
+    let loose = root.run(&["check", "--no-cache", "--path", "docs/contexts/nowhere/**"]);
+    assert_eq!(
+        loose.code,
+        Some(0),
+        "an advisory run does not fail\n{}",
+        loose.err
+    );
+}
+
+/// `--fix --path` writes the patch of a finding the filter admits and leaves
+/// the patch of a finding it holds back unwritten.
+#[test]
+fn a_path_filter_narrows_what_fix_writes() {
+    const INSIDE: &str = "docs/contexts/billing/contracts/e.md";
+    const OUTSIDE: &str = "docs/contexts/shipping/contracts/f.md";
+    let root = Root::new("path-fix");
+    let british = |slug: &str, context: &str| {
+        record(slug, &format!("context: {context}\n"))
+            .replace("This is a contract.", "This contract names the organisation.")
+    };
+    root.write(INSIDE, &british("e", "billing"));
+    root.write(OUTSIDE, &british("f", "shipping"));
+    let fixed = root.run(&[
+        "check",
+        "--fix",
+        "--no-cache",
+        "--path",
+        "docs/contexts/billing/**",
+    ]);
+    assert_eq!(fixed.code, Some(0), "{}{}", fixed.out, fixed.err);
+    let read = |path: &str| std::fs::read_to_string(root.at.join(path)).expect("it reads");
+    assert!(
+        read(INSIDE).contains("organization"),
+        "the admitted finding's patch was not written\n{}{}",
+        fixed.out,
+        fixed.err
+    );
+    assert!(
+        read(OUTSIDE).contains("organisation"),
+        "the held-back finding's patch was written\n{}",
+        fixed.err
+    );
+    // The control: with no filter the same run writes both, so the document
+    // outside the filter had a patch to hold back.
+    let all = root.run(&["check", "--fix", "--no-cache"]);
+    assert_eq!(all.code, Some(0), "{}{}", all.out, all.err);
+    assert!(read(OUTSIDE).contains("organization"), "{}", all.err);
+}
