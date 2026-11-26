@@ -803,7 +803,7 @@
     {
       "rule": "relation.target.suspect",
       "scope": "edge",
-      "version": 12,
+      "version": 13,
       "obligations": [
         "OB-FIX-27"
       ]
