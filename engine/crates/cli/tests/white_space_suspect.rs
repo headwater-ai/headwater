@@ -35,9 +35,10 @@ const SPARE: &str = "  controls.CT-REL-6.spares: [white_space]\n";
 fn root(
     label: &str,
     target: &'static str,
-    tools: &'static [(&str, &str)],
+    tools: &[(&'static str, &'static str)],
     spare: &'static str,
 ) -> Root {
+    let tools = tools.to_vec();
     let root = Root::shaped(label, move |at| {
         std::fs::write(
             at.join(DOCUMENT),
@@ -290,6 +291,64 @@ fn a_glob_edge_reports_its_touched_files_against_the_matched_set() {
         json_touched(&root, &manifest, &["touched", "files", "0", "path"]),
         "tools/a.sh"
     );
+}
+
+/// A class outside the closed set is refused at resolve, with the control,
+/// the value and the admitted class named, so a misspelled exemption cannot
+/// leave the gate as it was in silence.
+#[test]
+fn a_class_outside_the_set_is_refused_at_resolve() {
+    let root = root("ws-refused", "tools/a.sh", &[("a.sh", "echo a\n")], "");
+    let file = root.at.join(".headwater/overlay.yml");
+    let source = std::fs::read_to_string(&file).expect("the overlay reads");
+    let source = source.replacen(
+        "\nadd:\n",
+        "\nadd:\n  controls.CT-REL-6.spares: [whitespace]\n",
+        1,
+    );
+    std::fs::write(&file, source).expect("the overlay writes");
+    let resolved = root.run(&["taxonomy", "resolve"]);
+    assert_ne!(resolved.code, Some(0), "{resolved:?}");
+    let said = format!("{}{}", resolved.out, resolved.err);
+    assert!(
+        said.contains("whitespace") && said.contains("white_space"),
+        "the refusal names the value and the admitted class:\n{said}"
+    );
+}
+
+/// Edits chosen to sit on each side of the line: blank lines and a final
+/// newline only are white space and pass, and an indentation change or a
+/// space inside a line is content and fails.
+#[test]
+fn each_edit_is_classified_on_its_own_side_of_the_line() {
+    for (label, before, after, class, code) in [
+        ("blank", "a\nb\n", "a\n\n\n\nb\n", "white_space", 0),
+        ("newline", "echo a", "echo a\n", "white_space", 0),
+        ("tab", "echo a\n", "echo a\t\t\n", "white_space", 0),
+        ("indent", "if x\n  y\n", "if x\n    y\n", "content", 1),
+        ("inner", "echo a\n", "echo  a\n", "content", 1),
+    ] {
+        let root = root(
+            &format!("ws-edit-{label}"),
+            "tools/a.sh",
+            &[("a.sh", before)],
+            SPARE,
+        );
+        let manifest = change(&root, "a.sh", before, after);
+        let checked = root.run(&["check", "--strict", "--change", &manifest]);
+        assert_eq!(
+            checked.code,
+            Some(code),
+            "{label}\n{}{}",
+            checked.out,
+            checked.err
+        );
+        assert!(
+            touched(&checked.out).contains(&format!("tools/a.sh {class}")),
+            "{label}\n{}",
+            checked.out
+        );
+    }
 }
 
 /// The overlay with `entries`, each a line indented two spaces, in its
