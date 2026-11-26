@@ -1857,6 +1857,78 @@ fn a_reading_stamp_over_a_baseline_drops_the_marker() {
     );
 }
 
+/// A stated re-reading of an edge stamped as a baseline drops the marker when
+/// the target did not move too: a `verified\t<document>\t<target>` line yields
+/// one `Info` patch that writes `verified_revision` and no `verified_as`. No
+/// change, or a change that re-verifies the document and names no target,
+/// yields nothing, and neither does a reading stamp at an unmoved digest
+/// (#2076).
+#[test]
+fn a_reading_of_an_unmoved_baseline_drops_the_marker() {
+    let root = scratch("baseline-unmoved");
+    let digest = expected(&root, &[LIB]);
+    let marked = format!(
+        "    - to: {LIB}\n      verified_revision: \"{digest}\"\n      verified_as: baseline"
+    );
+    document(&root, TODAY, &[marked]);
+    let edge = at(TODAY).scoped_to(edges(&[], &[], &[(DOCUMENT, LIB)]));
+    let ran = run_in(&root, &edge, &mut Cache::disabled(), &taxonomy());
+    let reported = suspect(&ran);
+    assert_eq!(reported.len(), 1, "{reported:?}");
+    assert_eq!(
+        reported[0].severity,
+        headwater_check::finding::Severity::Info
+    );
+    assert_eq!(
+        written("unmoved", reported[0]),
+        &[("verified_revision".to_string(), digest.clone())]
+    );
+
+    let silent = cold(&root, TODAY);
+    assert!(suspect(&silent).is_empty(), "{:?}", suspect(&silent));
+    let document_only = at(TODAY).scoped_to(stated(&[], &[DOCUMENT]));
+    let ran = run_in(&root, &document_only, &mut Cache::disabled(), &taxonomy());
+    assert!(suspect(&ran).is_empty(), "{:?}", suspect(&ran));
+
+    let read = format!("    - to: {LIB}\n      verified_revision: \"{digest}\"");
+    document(&root, TODAY, &[read]);
+    let ran = run_in(&root, &edge, &mut Cache::disabled(), &taxonomy());
+    assert!(suspect(&ran).is_empty(), "{:?}", suspect(&ran));
+}
+
+/// A warm cache does not serve a stated re-reading of an unmoved baseline edge
+/// the verdict of a run that stated none over the same tree (#2076).
+#[test]
+fn a_warm_cache_keys_the_unmoved_reread_on_the_statement() {
+    let root = scratch("baseline-unmoved-warm");
+    let digest = expected(&root, &[LIB]);
+    let marked = format!(
+        "    - to: {LIB}\n      verified_revision: \"{digest}\"\n      verified_as: baseline"
+    );
+    document(&root, TODAY, &[marked]);
+    for (label, stated_edge, reported) in [
+        ("no statement, cold", false, 0),
+        ("statement, after a plain run", true, 1),
+        ("no statement, after a statement", false, 0),
+        ("statement, warm", true, 1),
+    ] {
+        let mut cache = Cache::at(&root, LOCK, "sha256:rules");
+        let ctx = if stated_edge {
+            at(TODAY).scoped_to(edges(&[], &[], &[(DOCUMENT, LIB)]))
+        } else {
+            at(TODAY)
+        };
+        let ran = run_in(&root, &ctx, &mut cache, &taxonomy());
+        cache.write(&root).expect("the cache writes");
+        let found = suspect(&ran);
+        assert_eq!(found.len(), reported, "{label}: {found:?}");
+        assert!(
+            found.iter().all(|finding| finding.patch.is_some()),
+            "{label}"
+        );
+    }
+}
+
 /// A warm cache does not serve a run with `--baseline` the verdict of a run
 /// without it over the same tree, nor the other way round (#2016).
 #[test]
