@@ -125,6 +125,38 @@ test('route reads the pointers from structuredContent, in order, and nothing els
   );
 });
 
+const ENGINE_LINE =
+  'headwater: this corpus asks for engine ">=9" in .headwater/taxonomy.yml, and this is engine 0.8.1';
+
+test('the engine\'s line about an engine outside the corpus range reaches onEngine once, and the pointers do not move', async () => {
+  const plain = fake('route-pointers.jsonl');
+  const expected = await client.route('add a VS Code extension', plain.options);
+  assert.ok(expected.pointers.length > 0, 'the fixture answers pointers');
+
+  const heard = [];
+  const { options } = fake('route-pointers.jsonl');
+  options.env = { ...options.env, FAKE_STDERR: ENGINE_LINE };
+  options.onEngine = (line) => heard.push(line);
+  assert.deepEqual(await client.route('add a VS Code extension', options), expected);
+  assert.deepEqual(heard, [ENGINE_LINE]);
+
+  // Any other line on standard error is not passed on.
+  const other = [];
+  const quiet = fake('route-pointers.jsonl');
+  quiet.options.env = { ...quiet.options.env, FAKE_STDERR: 'headwater: something else went to the log' };
+  quiet.options.onEngine = (line) => other.push(line);
+  assert.deepEqual(await client.route('add a VS Code extension', quiet.options), expected);
+  assert.deepEqual(other, []);
+
+  // A callback that throws does not cost the answer.
+  const loud = fake('route-pointers.jsonl');
+  loud.options.env = { ...loud.options.env, FAKE_STDERR: ENGINE_LINE };
+  loud.options.onEngine = () => {
+    throw new Error('the log is gone');
+  };
+  assert.deepEqual(await client.route('add a VS Code extension', loud.options), expected);
+});
+
 test('route reports the count the budget withheld, and governing withholds nothing', async () => {
   const withheld = await client.route('x', fake('route-pointers.jsonl').options);
   assert.equal(withheld.pointers.length, 5);

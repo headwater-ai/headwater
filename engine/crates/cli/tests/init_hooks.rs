@@ -674,6 +674,53 @@ fn the_shipped_intent_hook_routes_a_task_and_is_silent_on_a_notification() {
     assert!(notification.stdout.is_empty());
 }
 
+/// An engine outside the range the corpus asks for says so on standard error,
+/// and the intent hook carries that line into the agent's context ahead of the
+/// pointers, rather than discarding it with the rest of standard error (#1600).
+#[test]
+fn the_shipped_intent_hook_names_an_engine_outside_the_corpus_range() {
+    let scratch = an_adopter("intent-engine");
+    let root = &scratch.0;
+    let consumer = root.join(".headwater/taxonomy.yml");
+    let source = std::fs::read_to_string(&consumer).expect("the consumer reads");
+    let moved: String = source
+        .lines()
+        .map(|line| {
+            if line.starts_with("engine:") {
+                "engine: \">=1.9 <2\"".to_owned()
+            } else {
+                line.to_owned()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+        + "\n";
+    assert_ne!(moved, source, "the consumer declares an engine range");
+    std::fs::write(&consumer, moved).expect("the consumer writes");
+    succeeded(
+        &headwater(root, &["taxonomy", "resolve"]),
+        "`headwater taxonomy resolve` on a range that overlaps the package",
+    );
+    let routed = hook(
+        root,
+        "intent",
+        &format!(
+            "{{\"session_id\":\"i2\",\"hook_event_name\":\"UserPromptSubmit\",\"cwd\":{},\"prompt\":{}}}",
+            quoted(&root.display().to_string()),
+            quoted("why is main the entry point of the program")
+        ),
+    );
+    succeeded(&routed, "the intent hook under an engine outside the range");
+    let out = text(&routed.stdout);
+    let first = out.lines().next().unwrap_or_default();
+    assert!(
+        first.contains("this corpus asks for engine \">=1.9 <2\"")
+            && first.contains(env!("CARGO_PKG_VERSION")),
+        "{out}"
+    );
+    assert!(out.contains("docs/answers/main.md"), "{out}");
+}
+
 #[test]
 fn a_hook_with_no_binary_on_the_path_does_nothing() {
     let scratch = an_adopter("no-binary");
