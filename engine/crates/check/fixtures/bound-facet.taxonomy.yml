@@ -5,7 +5,8 @@
 # and the facet. The tree holds one contract whose value agrees with its
 # folder, one whose value disagrees and one with no value, so the editions
 # ledger records an instance of `shelf.bound_facet.disagrees` that passes and
-# two that fail (#2101). This repository binds no shelf, so no other recorded
+# two that fail (#2101). A fourth contract sits on `notes`, which binds
+# nothing, so the ledger also records the instance the rule skips. This repository binds no shelf, so no other recorded
 # corpus reaches the rule.
 
 facets:
@@ -26,5 +27,9 @@ kinds:
 shelves:
   contracts:
     path: bound-facet/contexts/{context}/contracts/**
+    homogeneous: true
+    kind: contract
+  notes:
+    path: bound-facet/notes/**
     homogeneous: true
     kind: contract

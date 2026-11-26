@@ -494,6 +494,8 @@ mod tests {
             Pattern::new("docs/contexts/*/contracts/**").specificity()
         );
         assert!(pattern.overlaps(&Pattern::new("docs/contexts/*/contracts/**")));
+        // As `*` and not as any one text: it meets a glob a literal would miss.
+        assert!(pattern.overlaps(&Pattern::new("docs/contexts/??/contracts/**")));
         assert!(pattern.overlaps(&Pattern::new("docs/contexts/billing/**")));
         assert!(!pattern.overlaps(&Pattern::new("docs/spec/**")));
         assert_eq!(pattern.literal_prefix(), "docs/contexts");
