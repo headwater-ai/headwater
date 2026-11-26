@@ -748,14 +748,15 @@ fn a_control_character_from_a_document_reaches_no_format_intact() {
 }
 
 /// The file names of #2070: a path past the width that holds single spaces and
-/// one double space, a pipe, a backtick inside, a backtick at the end, and a
-/// backslash before a pipe.
-const SPACED_PATHS: [&str; 5] = [
+/// one double space, a pipe, a backtick inside, a backtick at the end, a
+/// backslash before a pipe, and a space before the first character.
+const SPACED_PATHS: [&str; 6] = [
     "docs/decisions/0003-a path that is long enough to wrap  past the width of a report.md",
     "docs/a|b.md",
     "docs/a`b.md",
     "docs/b`",
     "docs/c\\|d.md",
+    " lead/x.md",
 ];
 
 /// The cells of one Markdown table row, split as a GFM table splits it: on a
@@ -812,7 +813,7 @@ fn a_path_with_a_space_a_pipe_or_a_backtick_reaches_every_format_whole() {
     let mut ran = fixture_run();
     assert!(
         ran.run.findings.len() >= SPACED_PATHS.len(),
-        "five findings to rename"
+        "six findings to rename"
     );
     for (finding, path) in ran.run.findings.iter_mut().zip(SPACED_PATHS) {
         finding.path = path.to_string();
@@ -836,10 +837,16 @@ fn a_path_with_a_space_a_pipe_or_a_backtick_reaches_every_format_whole() {
         );
         assert_eq!(audited.carried, audited.findings, "{name}");
         match format {
-            Format::Text => assert!(
-                artifact.lines().any(|line| line.contains(SPACED_PATHS[0])),
-                "{name} breaks the long path across lines"
-            ),
+            Format::Text => {
+                assert!(
+                    artifact.lines().any(|line| line.contains(SPACED_PATHS[0])),
+                    "{name} breaks the long path across lines"
+                );
+                assert!(
+                    artifact.lines().any(|line| line.starts_with("   lead/x.md:")),
+                    "{name} does not write the leading space of a path"
+                );
+            }
             Format::Markdown => {
                 let rows: Vec<&str> = artifact
                     .lines()
@@ -872,6 +879,50 @@ fn a_path_with_a_space_a_pipe_or_a_backtick_reaches_every_format_whole() {
             }
         }
     }
+}
+
+/// A backtick in a `check --path` pattern, and in the path it admits, leaves
+/// every code span of the Markdown report whole (#2070). The patterns are in
+/// the sentence that opens the report and the one that matched nothing is in a
+/// list under it, and both wrote a fence of one backtick before the fix.
+#[test]
+fn a_backtick_in_a_filter_pattern_or_its_path_keeps_each_code_span_whole() {
+    const ADMITTED: &str = "check/spec/0`1.md";
+    const NOWHERE: &str = "check/``nowhere``/**";
+    let mut ran = fixture_run();
+    ran.run.findings[0].path = ADMITTED.to_string();
+    let paths: Vec<String> = ran
+        .census
+        .rows
+        .iter()
+        .map(|row| row.path.clone())
+        .chain([ADMITTED.to_string()])
+        .collect();
+    ran.run = headwater_check::filter::narrow(
+        ran.run,
+        &[ADMITTED.to_string(), NOWHERE.to_string()],
+        paths.iter().map(String::as_str),
+    );
+    let artifact = render_as(&ran, Format::Markdown, headwater_check::fill::WIDTH, false);
+    let audited = headwater_adapter::census(&ran.run, Format::Markdown, &artifact);
+    assert!(!audited.is_defective(), "{:?}", audited.unaccounted);
+    assert_eq!(audited.carried, audited.findings);
+    let sentence = artifact
+        .lines()
+        .find(|line| line.contains("Narrowed by a path filter"))
+        .expect("the report states the filter");
+    for span in ["``check/spec/0`1.md``", "```check/``nowhere``/**```"] {
+        assert!(sentence.contains(span), "{span} is not one code span: {sentence}");
+    }
+    let listed: Vec<String> = artifact
+        .lines()
+        .filter_map(|line| line.strip_prefix("- "))
+        .filter_map(one_code_span)
+        .collect();
+    assert!(
+        listed.iter().any(|one| one == NOWHERE),
+        "the unmatched pattern is not one code span: {listed:?}"
+    );
 }
 
 /// One label for each value the graph section prints that a document or the
