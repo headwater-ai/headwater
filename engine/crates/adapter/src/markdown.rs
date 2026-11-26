@@ -125,7 +125,7 @@ pub fn render(run: &Run, subject: &Subject<'_>) -> String {
         for entry in &live {
             let _ = writeln!(
                 out,
-                "| {} | `{}` | `{}` | {} |",
+                "| {} | {} | `{}` | {} |",
                 word(entry.finding.severity),
                 at(entry),
                 entry.finding.rule,
@@ -151,7 +151,7 @@ pub fn render(run: &Run, subject: &Subject<'_>) -> String {
         for entry in &escaped {
             let _ = writeln!(
                 out,
-                "| {} | `{}` | `{}` | {} |",
+                "| {} | {} | `{}` | {} |",
                 entry.escape.map(Escape::name).unwrap_or("none"),
                 at(entry),
                 entry.finding.rule,
@@ -228,7 +228,7 @@ fn scoped_to(scoped: &Scoped) -> String {
             scoped.unmatched.len()
         );
         for path in &scoped.unmatched {
-            let _ = writeln!(out, "- `{}`", visible(path));
+            let _ = writeln!(out, "- {}", fenced(&visible(path)));
         }
         out.push('\n');
     }
@@ -242,7 +242,12 @@ fn scoped_to(scoped: &Scoped) -> String {
             scoped.unstated.len()
         );
         for (document, target) in &scoped.unstated {
-            let _ = writeln!(out, "- `{}` onto `{}`", visible(document), visible(target));
+            let _ = writeln!(
+                out,
+                "- {} onto {}",
+                fenced(&visible(document)),
+                fenced(&visible(target))
+            );
         }
         out.push('\n');
     }
@@ -257,7 +262,7 @@ fn filtered_to(filtered: &headwater_check::filter::Filtered) -> String {
     let patterns: Vec<String> = filtered
         .patterns
         .iter()
-        .map(|pattern| format!("`{}`", visible(pattern)))
+        .map(|pattern| fenced(&visible(pattern)))
         .collect();
     let _ = writeln!(
         out,
@@ -282,7 +287,7 @@ fn filtered_to(filtered: &headwater_check::filter::Filtered) -> String {
             filtered.unmatched.len()
         );
         for pattern in &filtered.unmatched {
-            let _ = writeln!(out, "- `{}`", visible(pattern));
+            let _ = writeln!(out, "- {}", fenced(&visible(pattern)));
         }
         out.push('\n');
     }
@@ -382,18 +387,53 @@ fn word(severity: Severity) -> &'static str {
     crate::severity(severity)
 }
 
-/// The location, in the form the text report writes: a finding with no line is
-/// about the document rather than about a place in it.
+/// The location, in the form the text report writes, as a code span: a finding
+/// with no line is about the document rather than about a place in it.
 ///
 /// The path is written through [`visible`], so a line feed in a file name
 /// cannot end the row and an escape sequence cannot reach the terminal that
 /// shows the report (#1970). The census reads the row in the same form.
+///
+/// A file name can hold a `|` and a backtick, and each would end something: a
+/// `|` the table cell, and a backtick the code span (#2070). So a `|` is
+/// written `\|`, which a GFM table reads as a pipe inside the cell and inside
+/// the span. The fence is one backtick longer than the longest run of backticks
+/// in the location, and a space pads each side where the location opens or
+/// closes on a backtick or opens and closes on a space, which is the CommonMark
+/// rule for a code span. `crate::rows` inverts all three.
 fn at(entry: &Reported<'_>) -> String {
     let path = visible(&entry.finding.path);
-    match entry.finding.line {
+    let location = match entry.finding.line {
         0 => path.into_owned(),
         line => format!("{path}:{line}"),
+    };
+    fenced(&location.replace('|', "\\|"))
+}
+
+/// `text` as one CommonMark code span, whatever backticks and spaces it holds.
+///
+/// The fence is one backtick longer than the longest run of backticks in the
+/// text, and a space pads each side where the text opens or closes on a
+/// backtick or opens and closes on a space. A file name and a `--path` pattern
+/// can hold a backtick, and a fixed fence of one would end the span inside it
+/// (#2070). The caller escapes what its context needs first: a table cell
+/// escapes `|`, and a list item escapes nothing.
+fn fenced(text: &str) -> String {
+    let mut longest = 0;
+    let mut run = 0;
+    for char in text.chars() {
+        run = if char == '`' { run + 1 } else { 0 };
+        longest = longest.max(run);
     }
+    let fence = "`".repeat(longest + 1);
+    let pad = match text.starts_with('`')
+        || text.ends_with('`')
+        || (text.starts_with(' ') && text.ends_with(' '))
+    {
+        true => " ",
+        false => "",
+    };
+    format!("{fence}{pad}{text}{pad}{fence}")
 }
 
 /// One message inside a table cell.

@@ -61,7 +61,9 @@
 //! past the width, whole, so a path, a rule name and a digest arrive intact
 //! wherever they are — which is what `crate::census` needs, because it reads
 //! this format by cutting it into blocks and asking each one for the location
-//! it opens on.
+//! it opens on. A finding's location line is written whole too, even where its
+//! path holds a space, because `headwater_check::fill` reads a line that closes
+//! on a severity marker as one identity (#2070).
 
 use crate::{held_by, reported, Carrier, Loss, Subject};
 use headwater_census::census::{Census, Detail as CensusDetail};
