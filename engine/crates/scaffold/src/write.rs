@@ -268,12 +268,19 @@ pub fn apply(root: &Path, composed: &[Composed]) -> Result<(), Refusal> {
             why: unopened.why,
         })?
         .commit()
-        .map_err(|halted| Refusal::WriteHalted {
-            path: halted.path().to_string(),
-            report: halted.to_string(),
-            left: halted.left().map(str::to_string),
-        })?;
+        .map_err(|halted| halted_refusal(&halted))?;
     Ok(())
+}
+
+/// The refusal a halted write reports: the file that stopped it, the
+/// rollback's own account, and the created document still on the tree, which
+/// a claim made for it must stand behind (#2041).
+pub(crate) fn halted_refusal(halted: &crate::tree::Halted) -> Refusal {
+    Refusal::WriteHalted {
+        path: halted.path().to_string(),
+        report: halted.to_string(),
+        left: halted.left().map(str::to_string),
+    }
 }
 
 /// Put one edge half into a document's front matter, and read the result back.

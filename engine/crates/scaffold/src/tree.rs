@@ -1335,6 +1335,14 @@ mod tests {
                 *left,
                 "left names the created document exactly when it is still there: {halted}"
             );
+            match crate::write::halted_refusal(halted) {
+                crate::Refusal::WriteHalted { left: carried, .. } => assert_eq!(
+                    carried.as_deref(),
+                    *left,
+                    "the refusal carries what the report observed: {halted}"
+                ),
+                other => panic!("a halted write is a WriteHalted refusal: {other:?}"),
+            }
             let intact = halted.damaged() == 0 && halted.lost.is_empty();
             assert_eq!(
                 halted.to_string().contains("the tree is as it was"),
