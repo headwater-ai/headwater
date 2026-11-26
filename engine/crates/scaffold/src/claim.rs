@@ -34,8 +34,13 @@
 //! remove that file is the `Ok` that `create_new` returned for it in this run:
 //! no other claimant's record can be at that path, so the removal is not an
 //! overwrite of anybody's fact. It is the rule [`crate::write::apply`] follows
-//! for the document it created. Only a run that dies between the two writes
-//! still leaves a claim with no document, and
+//! for the document it created. The same permission removes a claim whose own
+//! bytes did not all land, so this writer never leaves an empty or partial
+//! claim (#2041). One refusal keeps the claim: where the run could not remove
+//! the document it created, the document is still on the tree, and a claim
+//! stands behind its document, so [`settle`] keeps it and says so (#2041).
+//! Only a run that dies between the two writes still leaves a claim with no
+//! document, and
 //! [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#identifiers)
 //! declares that state legitimate: "**Never reused.** … A deleted document
 //! does not free its number." The other order can leave a document with no
@@ -104,7 +109,18 @@ fn make_with(
         .create_new(true)
         .open(&at)
         .map_err(|error| refuse(error.to_string()))?;
-    write(&mut file, contents_for(claimant).as_bytes()).map_err(|error| refuse(error.to_string()))?;
+    // The `Ok` above is the permission to remove this path: `create_new` made
+    // it in this run, so it holds no other claimant's record. A claim that did
+    // not write whole is empty or partial, and leaving it would spend a number
+    // on a file no reader can parse (#2041).
+    if let Err(error) = write(&mut file, contents_for(claimant).as_bytes()) {
+        drop(file);
+        return Err(Refusal::ClaimUnwritable {
+            path: claim.to_string(),
+            why: error.to_string(),
+            removed: Some(withdraw(root, claim)),
+        });
+    }
     Ok(())
 }
 
@@ -112,10 +128,11 @@ fn make_with(
 /// claim when the files cannot be written.
 ///
 /// The one caller of [`write`], so the order and its undo live in one place. A
-/// claim that cannot be made refuses with nothing written. A refusal of
-/// [`crate::write::apply`] removes the claim this call made, with [`withdraw`],
-/// and the message ends with the sentence [`withdrawn`] writes, so it names
-/// the claim it removed or the claim it could not remove (#1972).
+/// claim that cannot be made refuses with no document written. A refusal of
+/// [`crate::write::apply`] goes to [`settle`], which removes the claim this
+/// call made, with [`withdraw`], unless the created document is still on the
+/// tree. The message ends with the sentence [`withdrawn`] or [`kept`] writes,
+/// so it names what became of the claim (#1972, #2041).
 pub fn land(
     root: &Path,
     plan: &Plan,
@@ -136,8 +153,20 @@ pub fn land(
 ///
 /// The decision of [`land`], held apart so that a test reaches every refusal
 /// without a disk that fails on cue.
+///
+/// A refusal that left the created document on the tree keeps the claim,
+/// because a claim stands behind its document and a document with no claim is
+/// the defect `identifier.claim.missing` reports (#2041). Every other refusal
+/// left no document of this run, so the claim is withdrawn (#1972).
 pub fn settle(root: &Path, claim: &str, refusal: &Refusal) -> String {
     let why = refusal.to_string();
+    if let Refusal::WriteHalted {
+        left: Some(document),
+        ..
+    } = refusal
+    {
+        return joined(&why, &kept(claim, document));
+    }
     let outcome = withdraw(root, claim);
     joined(&why, &withdrawn(claim, &outcome))
 }
@@ -173,6 +202,15 @@ pub fn withdrawn(claim: &str, outcome: &Result<(), String>) -> String {
             "The claim {claim} this run wrote could not be removed: {why}. Delete it by hand."
         ),
     }
+}
+
+/// The sentence a failed run adds to its refusal when the document it created
+/// is still on the tree, and the claim it made for that document stays.
+pub fn kept(claim: &str, document: &str) -> String {
+    format!(
+        "The claim {claim} this run wrote was kept, because the document {document} it stands \
+         behind is still on the tree."
+    )
 }
 
 /// The claim path this plan owes, and nothing where it owes none.
