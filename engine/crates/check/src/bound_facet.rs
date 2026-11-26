@@ -109,8 +109,9 @@ impl BoundFacet {
 
 impl DocumentCheck for BoundFacet {
     const RULE: &'static str = self::RULE;
-    /// Which edition of this rule reached a verdict. Raise it when the rule's
-    /// behavior changes ([`crate::cache`]).
+    /// Which edition of this rule reached a verdict ([`crate::cache`]).
+    ///
+    /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 1;
 
     fn instantiates(&self, kind: &str) -> bool {
