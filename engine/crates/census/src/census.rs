@@ -858,8 +858,9 @@ mod tests {
 
     /// No line of the per-row form opens with `::`, and none holds an escape
     /// byte, whatever the tree names (#2069). The walk writes every row path
-    /// under the corpus root, so the root here is a directory whose own name
-    /// opens with `::`, which puts `::` at the start of every row path. Unix
+    /// under the corpus root, so a file named `::warning file=x::y` at the
+    /// root gets a row that opens with the root's name. So the root here is a
+    /// directory of that name too, which puts `::` at the start of every row. Unix
     /// only, because no Windows file name can hold an escape byte or a colon.
     #[cfg(unix)]
     #[test]
@@ -873,10 +874,12 @@ mod tests {
         std::fs::write(at.join("a\u{1b}[31m.md"), "no front matter\n").expect("it writes");
         std::fs::write(at.join("b\n::error ::forged.md"), "---\nid: \u{1b}[2J\n---\n")
             .expect("it writes");
+        // The literal name the issue gives, at the corpus root.
+        std::fs::write(at.join(root), "no front matter\n").expect("it writes");
         let census = take(&Corpus::new(&base, root), &taxonomy());
         let rendered = census.render_rows(Detail::EveryRow);
         let _ = std::fs::remove_dir_all(&base);
-        assert_eq!(census.rows.len(), 2, "both files get a row: {rendered}");
+        assert_eq!(census.rows.len(), 3, "each file gets a row: {rendered}");
         assert!(
             !rendered.contains('\u{1b}'),
             "a row writes an escape byte: {rendered:?}"
@@ -887,8 +890,8 @@ mod tests {
             .collect();
         assert!(forged.is_empty(), "a row forges a line: {forged:?}");
         assert!(
-            rendered.starts_with("\\x3a:warning file=x::y/a\\x1b[31m.md\n"),
-            "the first row is the escaped path: {rendered:?}"
+            rendered.contains("\\x3a:warning file=x::y/a\\x1b[31m.md\n"),
+            "the row writes the escaped path: {rendered:?}"
         );
     }
 

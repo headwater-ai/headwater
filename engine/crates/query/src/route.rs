@@ -1591,6 +1591,26 @@ mod tests {
         );
     }
 
+    /// A hostile pointer path is written escaped and still painted (#2069).
+    /// `Pointer::render` writes the path through `visible`, so the paint has
+    /// to look for the escaped text. A paint that looked for the raw path
+    /// would find nothing and leave the path uncolored.
+    #[test]
+    fn a_hostile_pointer_path_is_escaped_and_still_painted() {
+        let mut route = route();
+        route.pointers[0].path = "docs/decisions/0045-x\n::error ::y\u{1b}[31m.md".to_string();
+        route.anchors = vec!["a\u{1b}[2Jb".to_string()];
+        let painted = route.render(ColorMode::Ansi);
+        assert!(
+            painted.contains("\u{1b}[36mdocs/decisions/0045-x\\n::error ::y\\x1b[31m.md\u{1b}[0m"),
+            "the escaped path is painted cyan:\n{}",
+            painted.escape_debug()
+        );
+        let plain = route.render(ColorMode::Plain);
+        assert!(!plain.contains('\u{1b}'), "{}", plain.escape_debug());
+        assert!(plain.contains("names the anchor a\\x1b[2Jb"), "{plain}");
+    }
+
     /// `Plain` writes not one escape byte, which is what every recorded fixture
     /// and both machine readers of this text depend on.
     #[test]
