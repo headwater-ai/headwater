@@ -719,6 +719,25 @@ fn the_shipped_intent_hook_names_an_engine_outside_the_corpus_range() {
         "{out}"
     );
     assert!(out.contains("docs/answers/main.md"), "{out}");
+
+    // A route with no pointer still says so, because the warning matters more
+    // than the pointers.
+    let unrouted = hook(
+        root,
+        "intent",
+        &format!(
+            "{{\"session_id\":\"i3\",\"hook_event_name\":\"UserPromptSubmit\",\"cwd\":{},\"prompt\":{}}}",
+            quoted(&root.display().to_string()),
+            quoted("zzqx")
+        ),
+    );
+    succeeded(&unrouted, "the intent hook on a task nothing answers");
+    let out = text(&unrouted.stdout);
+    assert_eq!(out.lines().count(), 1, "{out}");
+    assert!(
+        out.contains("this corpus asks for engine \">=1.9 <2\""),
+        "{out}"
+    );
 }
 
 #[test]

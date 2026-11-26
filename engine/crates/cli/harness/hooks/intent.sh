@@ -80,7 +80,6 @@ fi
 pointers=$(hw_count "$route" pointers) || {
     skip=no_pointers_count
     hw_intent_done
-    [ -n "$engine_line" ] && printf '%s\n' "$engine_line"
     exit 0
 }
 

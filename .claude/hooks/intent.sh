@@ -80,7 +80,6 @@ fi
 pointers=$(hw_count "$route" pointers) || {
     skip=no_pointers_count
     hw_intent_done
-    [ -n "$engine_line" ] && printf '%s\n' "$engine_line"
     exit 0
 }
 
@@ -107,4 +106,4 @@ if [ "$injected" = true ]; then
     printf '%s\n' "$report"
 fi
 exit 0
-# installed by headwater init --harness, digest sha256:ab948cbfc731ac8c21b2383c8494b86bdd805290a1f2295b91a0be96b4e75a5f
+# installed by headwater init --harness, digest sha256:aae9d0031b8228a2fc3c0c96bdcc8d70569bbeefb5fb456a0cadfea6e6030f9c
