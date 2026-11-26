@@ -52,6 +52,14 @@ const LIMIT: u64 = 64 * 1024 * 1024;
 /// artifact never meets it.
 const UNPACKED_LIMIT: u64 = 64 * 1024 * 1024;
 
+/// The most members, directory entries included, that one fetch unpacks. A
+/// member costs a file or a directory however few bytes it holds, so the byte
+/// bound alone lets an archive of 60,000 empty members (5.7 MB) create 60,000
+/// files, which a review measured unpacking in 0.28 s. The vendored
+/// `headwater-standard` package holds 43 files, so an honest artifact is two
+/// orders of magnitude under this count.
+const UNPACKED_MEMBERS: usize = 4096;
+
 /// The most redirects one fetch follows. A release asset takes one.
 const MAX_REDIRECTS: u32 = 10;
 
@@ -368,7 +376,13 @@ fn fetch_within(location: &str, connect: Duration, total: Duration) -> Result<Fe
         ))
     })?;
     let fetched = scratch()?;
-    unpack(&mut archive, &fetched.artifact, UNPACKED_LIMIT, location)?;
+    unpack(
+        &mut archive,
+        &fetched.artifact,
+        UNPACKED_LIMIT,
+        UNPACKED_MEMBERS,
+        location,
+    )?;
     Ok(fetched)
 }
 
@@ -400,6 +414,7 @@ fn unpack<R: std::io::Read + std::io::Seek>(
     archive: &mut zip::ZipArchive<R>,
     dir: &Path,
     bound: u64,
+    count: usize,
     location: &str,
 ) -> Result<(), Error> {
     let too_large = || {
@@ -453,11 +468,14 @@ fn unpack<R: std::io::Read + std::io::Seek>(
         let mut file = std::fs::File::create(&path).map_err(|error| io(&path, error))?;
         let remaining = bound - written;
         let copied = std::io::copy(
-            &mut std::io::Read::take(&mut member, remaining.saturating_add(1)),
+            &mut std::io::Read::take(&mut member, remaining),
             &mut file,
         )
         .map_err(|error| broken(&error))?;
-        if copied > remaining {
+        // Probe one more byte into a buffer and not into the file, so that a
+        // member which overruns is refused with at most `bound` bytes written.
+        let mut probe = [0_u8; 1];
+        if std::io::Read::read(&mut member, &mut probe).map_err(|error| broken(&error))? > 0 {
             return Err(too_large());
         }
         written += copied;
@@ -690,9 +708,13 @@ mod tests {
     }
 
     fn unpacked(bytes: Vec<u8>, bound: u64) -> (Result<(), Error>, Fetched) {
+        unpacked_counted(bytes, bound, UNPACKED_MEMBERS)
+    }
+
+    fn unpacked_counted(bytes: Vec<u8>, bound: u64, count: usize) -> (Result<(), Error>, Fetched) {
         let mut archive = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
         let fetched = scratch().unwrap();
-        let result = unpack(&mut archive, fetched.path(), bound, "test.zip");
+        let result = unpack(&mut archive, fetched.path(), bound, count, "test.zip");
         (result, fetched)
     }
 
@@ -851,6 +873,35 @@ mod tests {
         assert!(message.contains("symbolic link"), "{message}");
         assert_eq!(bytes_under(fetched.path()), 0);
         assert!(!fetched.path().join("link").exists());
+    }
+
+    /// `count` empty members named `m0.bin`, `m1.bin` and on.
+    fn empty_members(count: usize) -> Vec<u8> {
+        let names: Vec<String> = (0..count).map(|at| format!("m{at}.bin")).collect();
+        let files: Vec<(&str, usize)> = names.iter().map(|name| (name.as_str(), 0)).collect();
+        members(&files)
+    }
+
+    #[test]
+    fn an_archive_with_one_member_past_the_count_is_refused_before_a_member_is_written() {
+        let (result, fetched) = unpacked_counted(empty_members(9), 1024, 8);
+        let refused = result.unwrap_err();
+        assert!(matches!(refused, Error::Archive(_)), "{refused}");
+        let message = refused.to_string();
+        assert!(message.contains("test.zip"), "{message}");
+        assert!(message.contains("more than 8 members"), "{message}");
+        let written: Vec<_> = std::fs::read_dir(fetched.path()).unwrap().collect();
+        assert!(
+            written.is_empty(),
+            "written before the refusal: {written:?}"
+        );
+    }
+
+    #[test]
+    fn an_archive_with_exactly_the_count_of_members_is_accepted() {
+        let (result, fetched) = unpacked_counted(empty_members(8), 1024, 8);
+        result.unwrap();
+        assert_eq!(std::fs::read_dir(fetched.path()).unwrap().count(), 8);
     }
 
     #[test]
