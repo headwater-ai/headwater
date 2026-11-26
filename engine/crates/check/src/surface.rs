@@ -61,13 +61,14 @@ use crate::instance::Outcome;
 use crate::scope::{DocumentCheck, DocumentView};
 use crate::shape::Shape;
 use headwater_doc::body::{BlockKind, Ownership};
+use headwater_meta::Pattern;
 use headwater_yaml::{Spanned, Value};
 
 pub const RULE: &str = "surface.local_path.instructed";
 
 /// The check, generated from the `surface` block of the taxonomy.
 pub struct LocalPath {
-    adopter_documents: Vec<String>,
+    adopter_documents: Vec<Pattern>,
     local_roots: Vec<String>,
     programs: Vec<String>,
 }
@@ -78,7 +79,7 @@ impl LocalPath {
     /// instance.
     pub fn over(shape: &Shape) -> Self {
         LocalPath {
-            adopter_documents: shape.surface.adopter_documents.clone(),
+            adopter_documents: adopter_patterns(shape),
             local_roots: shape.surface.local_roots.clone(),
             programs: shape.surface.programs.clone(),
         }
@@ -91,7 +92,7 @@ impl LocalPath {
     fn for_an_adopter(&self, path: &str) -> bool {
         self.adopter_documents
             .iter()
-            .any(|glob| glob_matches(glob, path))
+            .any(|pattern| pattern.matches(path))
     }
 
     /// The local root a token opens with, if it opens with one, or the root a
@@ -288,40 +289,27 @@ fn paths_in(node: &Spanned<Value>) -> Vec<&Spanned<Value>> {
     }
 }
 
-/// `*` matches inside one path segment and `**` matches across any number.
-pub fn glob_matches(glob: &str, path: &str) -> bool {
-    let glob: Vec<&str> = glob.split('/').collect();
-    let path: Vec<&str> = path.split('/').collect();
-    segments(&glob, &path)
-}
-
-fn segments(glob: &[&str], path: &[&str]) -> bool {
-    match glob.split_first() {
-        None => path.is_empty(),
-        Some((&"**", rest)) => (0..=path.len()).any(|skip| segments(rest, &path[skip..])),
-        Some((first, rest)) => match path.split_first() {
-            Some((segment, tail)) => segment_matches(first, segment) && segments(rest, tail),
-            None => false,
-        },
-    }
-}
-
-fn segment_matches(glob: &str, text: &str) -> bool {
-    match glob.split_once('*') {
-        None => glob == text,
-        Some((head, tail)) => {
-            text.len() >= head.len()
-                && text.starts_with(head)
-                && (0..=text.len() - head.len())
-                    .filter(|at| text.is_char_boundary(head.len() + at))
-                    .any(|at| segment_matches(tail, &text[head.len() + at..]))
-        }
-    }
+/// The `adopter_documents` of a surface, each compiled once. An entry is a
+/// path pattern in the language of a shelf path, matched by the one glob
+/// matcher of the engine, whose walk over `**` keeps a memo (#1969, #2010).
+pub(crate) fn adopter_patterns(shape: &Shape) -> Vec<Pattern> {
+    shape
+        .surface
+        .adopter_documents
+        .iter()
+        .map(|glob| Pattern::new(glob))
+        .collect()
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{glob_matches, strip_variable, LocalPath};
+    use super::{strip_variable, LocalPath};
+    use headwater_meta::Pattern;
+
+    /// Whether a surface that lists `glob` alone selects the page at `path`.
+    fn selects(glob: &str, path: &str) -> bool {
+        local_path(&[glob.to_string()]).for_an_adopter(path)
+    }
 
     #[test]
     fn a_shell_variable_before_a_path_is_removed() {
@@ -337,17 +325,14 @@ mod tests {
 
     #[test]
     fn a_glob_matches_inside_a_segment_and_across_segments() {
-        assert!(glob_matches(
+        assert!(selects(
             "docs/interfaces/*.md",
             "docs/interfaces/headwater-check.md"
         ));
-        assert!(!glob_matches(
-            "docs/interfaces/*.md",
-            "docs/interfaces/sub/x.md"
-        ));
-        assert!(glob_matches("docs/tutorials/**", "docs/tutorials/a/b.md"));
-        assert!(glob_matches("README.md", "README.md"));
-        assert!(!glob_matches(
+        assert!(!selects("docs/interfaces/*.md", "docs/interfaces/sub/x.md"));
+        assert!(selects("docs/tutorials/**", "docs/tutorials/a/b.md"));
+        assert!(selects("README.md", "README.md"));
+        assert!(!selects(
             "docs/how-to/relocate-*.md",
             "docs/how-to/wire-x.md"
         ));
@@ -355,7 +340,7 @@ mod tests {
 
     fn local_path(globs: &[String]) -> LocalPath {
         LocalPath {
-            adopter_documents: globs.to_vec(),
+            adopter_documents: globs.iter().map(|glob| Pattern::new(glob)).collect(),
             local_roots: vec!["tools/".into()],
             programs: vec![],
         }
