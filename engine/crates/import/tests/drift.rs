@@ -24,6 +24,7 @@
 mod chain;
 
 use chain::{declaration, import, publish, read, tree, Scratch, PAYLOAD};
+use headwater_check::change::Unbound;
 use headwater_check::finding::Severity;
 use headwater_check::paint::ColorMode;
 use headwater_check::{Cache, Context, Date, Declared, Detail, Register, Run};
@@ -43,6 +44,18 @@ const DECLARING: &str = "docs/spec/00-first.md";
 /// One run of the check layer over the tree, with whichever cache the caller
 /// holds.
 fn run_over(scratch: &Scratch, declaration: &Declaration, cache: &mut Cache) -> Run {
+    let context = Context::at(Date::parse(TODAY).expect("the pinned date"));
+    run_under(scratch, declaration, cache, &context)
+}
+
+/// [`run_over`], under a context the caller builds, such as one scoped to a
+/// change.
+fn run_under(
+    scratch: &Scratch,
+    declaration: &Declaration,
+    cache: &mut Cache,
+    context: &Context,
+) -> Run {
     let read = read(scratch);
     let graph = read.graph(scratch.path(), std::slice::from_ref(declaration));
     let source = std::fs::read_to_string(scratch.path().join("taxonomy.yml")).expect("it is there");
@@ -74,7 +87,7 @@ fn run_over(scratch: &Scratch, declaration: &Declaration, cache: &mut Cache) -> 
             source: "taxonomy.yml",
         },
         &headwater_check::claim::Claims::empty(),
-        &Context::at(Date::parse(TODAY).expect("the pinned date")),
+        context,
         cache,
     )
 }
@@ -266,6 +279,46 @@ fn an_edge_of_an_importable_relation_with_no_recorded_revision_is_not_suspect() 
 
     // It is an instance all the same, so the denominator counts the edge that
     // was examined and found to carry nothing to compare.
+    let instances = run
+        .instances
+        .iter()
+        .filter(|instance| instance.rule == headwater_check::suspect::RULE)
+        .count();
+    assert_eq!(instances, 1, "{:#?}", run.instances);
+}
+
+/// A snapshot edge marked `verified_as: baseline` at the revision the snapshot
+/// still pins, under a change that names the edge in a `verified` line, gets
+/// no finding and no patch. The moved path never fixes a snapshot's revision,
+/// and the unmoved path that drops a baseline marker on a source-tree edge
+/// does not either (#2076). The relation declares both attributes, so only
+/// the resolver decides.
+#[test]
+fn a_stated_reading_of_an_unmoved_snapshot_edge_marked_as_a_baseline_offers_no_patch() {
+    let scratch = Scratch::new("drift-baseline-unmoved");
+    let digest = tree(&scratch);
+    let pinned = declaration(&digest);
+    scratch.write(
+        "taxonomy.yml",
+        &chain::TAXONOMY.replace(
+            "      verified_revision: {type: string, owner: edge}\n",
+            "      verified_revision: {type: string, owner: edge}\n      verified_as: {type: string, owner: edge}\n",
+        ),
+    );
+    scratch.write(
+        DECLARING,
+        "---\nid: SPEC-FIX-one\ndoc_type: design_spec\nrelations:\n  audited_by:\n    - to: \"12345\"\n      verified_revision: \"7\"\n      verified_as: baseline\n---\n\n# The first part\n",
+    );
+    let manifest = format!("headwater change 1\nverified\t{DECLARING}\t12345\n");
+    let change = Unbound::read(&manifest, |_: &std::path::Path| {
+        Err(std::io::Error::from(std::io::ErrorKind::NotFound))
+    })
+    .expect("the manifest reads")
+    .bind(|_| true);
+    let context = Context::at(Date::parse(TODAY).expect("the pinned date")).scoped_to(change);
+
+    let run = run_under(&scratch, &pinned, &mut Cache::disabled(), &context);
+    assert!(suspect(&run).is_empty(), "{:#?}", suspect(&run));
     let instances = run
         .instances
         .iter()

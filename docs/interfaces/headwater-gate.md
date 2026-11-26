@@ -70,7 +70,7 @@ No environment variable reaches this verb. The repository, date and read-set pat
 |---|---|
 | `.headwater/taxonomy.lock` | Read for the current lock digest. |
 | The `--read-set` path | Read as the recorded artifact. |
-| Each `input` path in the artifact | Read and hashed under `--root`. |
+| Each `input` path in the artifact | Read and hashed under `--root`. The verb reads each path back exactly, whatever characters it holds, a space and a control character included. |
 
 The verb writes no file and does not change the corpus or cache.
 

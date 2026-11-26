@@ -57,7 +57,8 @@
 
 use crate::context::Date;
 use crate::instance::Input;
-use crate::paint::{paint, ColorMode, Role};
+use crate::paint::{paint, visible, ColorMode, Role};
+use crate::readset::read_back;
 use headwater_yaml::json::Json;
 
 /// A read set as a gate reads it back.
@@ -122,6 +123,26 @@ impl Recorded {
             if line.trim().is_empty() {
                 continue;
             }
+            // An `input` line is read from both ends, because its path is the
+            // one field that can hold a space: the digest, or `-`, is the last
+            // field, and the path is everything between the keyword and it.
+            if let Some(entry) = line.strip_prefix("input ") {
+                let Some((spelled, digest)) = entry.rsplit_once(' ') else {
+                    return Err(refuse("an input names no digest"));
+                };
+                let Some(path) = read_back(spelled) else {
+                    return Err(refuse(
+                        "a backslash in an input path opens no escape a read set writes",
+                    ));
+                };
+                // `-` is the one entry that carries no hash, and the writer
+                // spells it so that a reader cannot mistake it for one.
+                inputs.push(match digest {
+                    "-" => Input::new(path, None),
+                    digest => Input::new(path, Some(digest)),
+                });
+                continue;
+            }
             let fields: Vec<&str> = line.split(' ').collect();
             match fields.as_slice() {
                 ["lock", digest] => lock = Some((*digest).to_string()),
@@ -136,10 +157,6 @@ impl Recorded {
                     Ok(edition) => versions.push(((*rule).to_string(), edition)),
                     Err(_) => return Err(refuse("the edition of a rule is not a whole number")),
                 },
-                // `-` is the one entry that carries no hash, and the writer
-                // spells it so that a reader cannot mistake it for one.
-                ["input", path, "-"] => inputs.push(Input::new(*path, None)),
-                ["input", path, digest] => inputs.push(Input::new(*path, Some(digest))),
                 _ => return Err(refuse("no keyword of a read set opens this line")),
             }
         }
@@ -294,19 +311,22 @@ impl Reason {
                 found,
             } => format!(
                 "{} reads {found} and this verdict rests on {recorded}",
-                paint(Role::Path, path, mode)
+                paint(Role::Path, &visible(path), mode)
             ),
             Reason::Gone { path } => {
-                format!("{} is not in this tree", paint(Role::Path, path, mode))
+                format!(
+                    "{} is not in this tree",
+                    paint(Role::Path, &visible(path), mode)
+                )
             }
             Reason::Escaped { path } => format!(
                 "{} resolves outside the repository root, so it is not read",
-                paint(Role::Path, path, mode)
+                paint(Role::Path, &visible(path), mode)
             ),
             Reason::Unhashed { path } => {
                 format!(
                     "{} carried no hash when it was read, so nothing compares",
-                    paint(Role::Path, path, mode)
+                    paint(Role::Path, &visible(path), mode)
                 )
             }
         }
@@ -870,5 +890,115 @@ mod tests {
             tree(&[("docs/a.md", "sha256:different")]),
         );
         assert!(!verdict.render(ColorMode::Plain).contains('\x1b'));
+    }
+
+    /// The inputs of the #2070 cases: a space, a control character, a literal
+    /// backslash-n, a line feed, a leading and trailing space, and a backslash
+    /// before a hex form.
+    fn hostile_inputs() -> Vec<Input> {
+        vec![
+            Input::new("docs/a b.md", Some("sha256:space")),
+            Input::new("docs/a\u{7}b.md", Some("sha256:bell")),
+            Input::new("docs/a\\nb.md", Some("sha256:backslash")),
+            Input::new("docs/a\nb.md", Some("sha256:feed")),
+            Input::new("docs/ trailing .md", None),
+            Input::new("docs/a\\x07b.md", Some("sha256:hex")),
+            Input::new("::docs/a.md", Some("sha256:command")),
+        ]
+    }
+
+    fn hostile_set() -> ReadSet {
+        ReadSet::of(
+            "sha256:lock",
+            day("2026-08-13"),
+            &[Rule {
+                name: "a.rule",
+                version: 1,
+                needs_clock: false,
+                needs_prior: false,
+            }],
+            &[Instance::of(
+                "a.rule",
+                Grain::Document,
+                hostile_inputs(),
+                Outcome::Passed,
+            )],
+        )
+    }
+
+    /// A path is read back exactly, whatever characters it holds (#2070). A
+    /// space no longer adds a field, and a control character and a literal
+    /// backslash no longer read back as one string.
+    #[test]
+    fn every_input_path_reads_back_exactly() {
+        let text = hostile_set().render();
+        let read = Recorded::parse(&text).expect("the artifact this run wrote");
+        // The read set writes its inputs in path order.
+        let mut given = hostile_inputs();
+        given.sort_by(|a, b| a.path.cmp(&b.path));
+        let mut inputs = read.inputs.clone();
+        inputs.sort_by(|a, b| a.path.cmp(&b.path));
+        assert_eq!(inputs, given, "{text}");
+        for line in text.lines() {
+            assert!(
+                !line.contains('\u{7}'),
+                "a control character reached the artifact: {line:?}"
+            );
+        }
+    }
+
+    /// With the paths read back raw, the tree is asked about the file itself,
+    /// so an unchanged tree carries and one moved byte names the file.
+    #[test]
+    fn a_hostile_path_carries_and_moves_like_any_other() {
+        let read = Recorded::parse(&hostile_set().render()).expect("the artifact this run wrote");
+        let mut known: Vec<(String, String)> = hostile_inputs()
+            .into_iter()
+            .filter_map(|input| input.digest.map(|digest| (input.path, digest)))
+            .collect();
+        let lookup = |known: &[(String, String)], path: &str| {
+            known
+                .iter()
+                .find(|(listed, _)| listed == path)
+                .map(|(_, digest)| digest.clone())
+        };
+        // The one input with no digest stops the verdict, so drop it.
+        let mut carried = read.clone();
+        carried.inputs.retain(|input| input.digest.is_some());
+        let verdict = decide(&carried, "sha256:lock", day("2026-08-13"), |path| {
+            lookup(&known, path)
+        });
+        assert!(verdict.carries(), "{verdict:?}");
+
+        known[1].1 = "sha256:other".to_string();
+        let verdict = decide(&carried, "sha256:lock", day("2026-08-13"), |path| {
+            lookup(&known, path)
+        });
+        assert_eq!(
+            verdict.reasons,
+            vec![Reason::Moved {
+                path: "docs/a\u{7}b.md".to_string(),
+                recorded: "sha256:bell".to_string(),
+                found: "sha256:other".to_string(),
+            }]
+        );
+        let said = verdict.reasons[0].render(ColorMode::Plain);
+        assert!(said.starts_with("docs/a\\x07b.md reads"), "{said}");
+        assert!(!said.contains('\u{7}'), "{said:?}");
+    }
+
+    /// A malformed escape refuses the line rather than guessing at a path.
+    #[test]
+    fn a_malformed_escape_in_a_path_refuses_the_line() {
+        for path in [
+            "docs/a\\q.md",
+            "docs/a\\x0.md",
+            "docs/a\\xzz.md",
+            "docs/a\\",
+        ] {
+            let text = format!("lock sha256:lock\nclock 2026-08-13\ninput {path} sha256:a\n");
+            let refused = Recorded::parse(&text).expect_err(path);
+            assert_eq!(refused.line, 3, "{path}");
+        }
     }
 }

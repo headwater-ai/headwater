@@ -3,16 +3,18 @@ id: HW-IFACE-headwater-show
 status: current
 status_since: 2026-09-27
 summary: "headwater show prints the bytes of one document as they are on disk, found by path or identifier through the resolver that explain uses."
-last_verified: 2026-11-23
+last_verified: 2026-11-27
 title: "headwater show"
 relations:
   governs:
-    - [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
+    - to: [engine/crates/cli/src/lib.rs, engine/crates/cli/src/main.rs]
+      verified_revision: sha256:38dbd4e1ad85ad33823be8d912059a49d681211f2d6edba6264373649fb3bbc4
     - to: engine/crates/query/src/explain.rs
-      verified_revision: sha256:785942bd8dd0c45ace2cac7220cdd31ecccee1575770b356dd86de98ebf822ce
+      verified_revision: sha256:e9287848fbcb95d5040514067fcbf0f0b89fed14ea5d7cdddce11813466c6dc6
     - to: engine/crates/census/src/walk.rs
       verified_revision: sha256:6228d800c912a624b41ac0e5c3c6dda21265520b08f4f11eeefcdfd363f18539
-    - engine/crates/query/src/lib.rs
+    - to: engine/crates/query/src/lib.rs
+      verified_revision: sha256:e816a632643322554d4ece086181af445f4992e9d203b322797390b5318bea62
 ---
 
 # headwater show
@@ -30,6 +32,8 @@ The target is a path under the corpus root or an identifier declared by a docume
 The verb finds the document with the same function that [`headwater explain`](headwater-explain.md) uses. A document that `explain` resolves, `show` resolves to the same file. A target that `explain` refuses, `show` refuses with the same sentence on standard error. `explain` also answers for a code file that a document governs ([#1968](https://github.com/headwater-ai/headwater/issues/1968)). `show` refuses that file with the sentence of its state, because the file is not a document.
 
 Use `explain` to learn what a document is. Use `show` to read what it says, by its identifier, when you do not know its path.
+
+**No control character that a document supplies reaches standard error** ([#2069](https://github.com/headwater-ai/headwater/issues/2069)). A file name, an identifier and every other value from a document can hold a control character. A terminal or a CI log reads one as an instruction. Each refusal on standard error writes each one as visible backslash text. For example, a line feed is `\n` and an escape is `\x1b`. A value that opens with `::` has its first colon written as `\x3a`, so it cannot open a workflow command in a CI log. A backslash itself is not escaped, as in [`headwater check`](headwater-check.md). Standard output is not escaped. It holds the bytes of the file, so a redirect still gives back a copy of the document.
 
 ## Preconditions
 
