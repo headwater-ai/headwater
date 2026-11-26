@@ -347,6 +347,14 @@ checks
     relation.target.verification.suspect reaches no obligation, so it names none
     projection.budget.exceeded reaches no obligation, so it names none
     relation.scope.unmatched reaches no obligation, so it names none
+  pattern set voice.forbidden_construction future_intent: 1 of 14 patterns
+    produced a finding
+  pattern set voice.forbidden_construction change_narration: 2 of 23 patterns
+    produced a finding
+  pattern set voice.forbidden_construction phased_rollout: 1 of 13 patterns
+    produced a finding
+  pattern set language.retired_term.used ste_house: 2 of 2 terms produced a
+    finding
   70 findings
        40 ✗ error
        28 ▲ warn
