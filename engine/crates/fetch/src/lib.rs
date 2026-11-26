@@ -52,6 +52,15 @@ const LIMIT: u64 = 64 * 1024 * 1024;
 /// artifact never meets it.
 const UNPACKED_LIMIT: u64 = 64 * 1024 * 1024;
 
+/// The most members, directory entries included, that one fetch unpacks. A
+/// member costs a file or a directory however few bytes it holds, so the byte
+/// bound alone lets an archive of 60,000 empty members (5.7 MB) create 60,000
+/// files, which the hostile-input review of #1806 (finding L1, 2026-11-20)
+/// measured unpacking in 0.28 s. The vendored
+/// `headwater-standard` package holds 43 files, so an honest artifact is two
+/// orders of magnitude under this count.
+const UNPACKED_MEMBERS: usize = 4096;
+
 /// The most redirects one fetch follows. A release asset takes one.
 const MAX_REDIRECTS: u32 = 10;
 
@@ -368,7 +377,13 @@ fn fetch_within(location: &str, connect: Duration, total: Duration) -> Result<Fe
         ))
     })?;
     let fetched = scratch()?;
-    unpack(&mut archive, &fetched.artifact, UNPACKED_LIMIT, location)?;
+    unpack(
+        &mut archive,
+        &fetched.artifact,
+        UNPACKED_LIMIT,
+        UNPACKED_MEMBERS,
+        location,
+    )?;
     Ok(fetched)
 }
 
@@ -385,7 +400,9 @@ fn names_a_root(raw: &[u8]) -> bool {
 }
 
 /// Unpack `archive` into `dir`, refusing once more than `bound` bytes would
-/// be written. The sizes an archive declares are read first, as a cheap
+/// be written, so that at most `bound` bytes reach the disk, and refusing an
+/// archive of more than `count` members, directory entries included, before
+/// any member is written. The sizes an archive declares are read first, as a cheap
 /// refusal, and then the bound is held again on the bytes written, because a
 /// header can lie and an archive whose members use a data descriptor declares
 /// no total at all. The reader (zip 9.0.2 and later) also refuses a member
@@ -400,6 +417,7 @@ fn unpack<R: std::io::Read + std::io::Seek>(
     archive: &mut zip::ZipArchive<R>,
     dir: &Path,
     bound: u64,
+    count: usize,
     location: &str,
 ) -> Result<(), Error> {
     let too_large = || {
@@ -421,6 +439,12 @@ fn unpack<R: std::io::Read + std::io::Seek>(
         .is_some_and(|declared| declared > u128::from(bound))
     {
         return Err(too_large());
+    }
+    if archive.len() > count {
+        return Err(Error::Archive(format!(
+            "the archive at {location} holds more than {count} members, the most this verb \
+             unpacks"
+        )));
     }
     let mut written: u64 = 0;
     for index in 0..archive.len() {
@@ -452,12 +476,12 @@ fn unpack<R: std::io::Read + std::io::Seek>(
         }
         let mut file = std::fs::File::create(&path).map_err(|error| io(&path, error))?;
         let remaining = bound - written;
-        let copied = std::io::copy(
-            &mut std::io::Read::take(&mut member, remaining.saturating_add(1)),
-            &mut file,
-        )
-        .map_err(|error| broken(&error))?;
-        if copied > remaining {
+        let copied = std::io::copy(&mut std::io::Read::take(&mut member, remaining), &mut file)
+            .map_err(|error| broken(&error))?;
+        // Probe one more byte into a buffer and not into the file, so that a
+        // member which overruns is refused with at most `bound` bytes written.
+        let mut probe = [0_u8; 1];
+        if std::io::Read::read(&mut member, &mut probe).map_err(|error| broken(&error))? > 0 {
             return Err(too_large());
         }
         written += copied;
@@ -690,9 +714,13 @@ mod tests {
     }
 
     fn unpacked(bytes: Vec<u8>, bound: u64) -> (Result<(), Error>, Fetched) {
+        unpacked_counted(bytes, bound, UNPACKED_MEMBERS)
+    }
+
+    fn unpacked_counted(bytes: Vec<u8>, bound: u64, count: usize) -> (Result<(), Error>, Fetched) {
         let mut archive = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
         let fetched = scratch().unwrap();
-        let result = unpack(&mut archive, fetched.path(), bound, "test.zip");
+        let result = unpack(&mut archive, fetched.path(), bound, count, "test.zip");
         (result, fetched)
     }
 
@@ -739,9 +767,9 @@ mod tests {
     }
 
     /// The bytes written under `dir`, summed over every file below it. The
-    /// cases below allow the bound plus one: `unpack` copies one byte past
-    /// what remains to learn that a member overruns, and the caller's
-    /// [`Fetched`] removes the directory when it drops.
+    /// cases below hold that this is at most the bound when `unpack` refuses:
+    /// it probes for a byte past what remains without writing that byte, and
+    /// the caller's [`Fetched`] removes the directory when it drops.
     fn bytes_under(dir: &Path) -> u64 {
         std::fs::read_dir(dir)
             .unwrap()
@@ -766,7 +794,7 @@ mod tests {
         // Since zip 9.0.2 the reader refuses a member that grows past its
         // declared size, so either layer can raise this. What holds whichever
         // one fires is that no more than the bound reaches the disk.
-        assert!(bytes_under(fetched.path()) <= 1024 + 1);
+        assert!(bytes_under(fetched.path()) <= 1024);
     }
 
     #[test]
@@ -779,7 +807,7 @@ mod tests {
         let refused = result.unwrap_err();
         assert!(matches!(refused, Error::Archive(_)), "{refused}");
         assert!(refused.to_string().contains("test.zip"), "{refused}");
-        assert!(bytes_under(fetched.path()) <= 1024 + 1);
+        assert!(bytes_under(fetched.path()) <= 1024);
     }
 
     #[test]
@@ -800,7 +828,7 @@ mod tests {
         // the count and not from the declared sizes, which refuse first.
         let first = std::fs::metadata(fetched.path().join("a.bin")).unwrap();
         assert_eq!(first.len(), 600);
-        assert!(bytes_under(fetched.path()) <= 1024 + 1);
+        assert!(bytes_under(fetched.path()) <= 1024);
     }
 
     #[test]
@@ -819,7 +847,67 @@ mod tests {
             let whole = std::fs::metadata(fetched.path().join(name)).unwrap();
             assert_eq!(whole.len(), 400, "{name}");
         }
-        assert!(bytes_under(fetched.path()) <= 1024 + 1);
+        assert!(bytes_under(fetched.path()) <= 1024);
+    }
+
+    #[test]
+    fn the_bytes_written_when_the_count_refuses_are_at_most_the_bound() {
+        // 1,025 bytes in all and no declared total, so only the count of the
+        // bytes written refuses, inside the second member. One byte past the
+        // bound must never reach the disk.
+        let streamed = without_a_declared_total(members(&[("a.bin", 600), ("b.bin", 425)]));
+        let (result, fetched) = unpacked(streamed, 1024);
+        let refused = result.unwrap_err();
+        assert!(
+            refused.to_string().contains("more than 1024 bytes"),
+            "{refused}"
+        );
+        assert!(bytes_under(fetched.path()) <= 1024);
+    }
+
+    #[test]
+    fn a_member_that_is_a_symbolic_link_is_refused_and_not_written() {
+        let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        let options = zip::write::SimpleFileOptions::default();
+        writer.add_symlink("link", "target", options).unwrap();
+        let bytes = writer.finish().unwrap().into_inner();
+        let (result, fetched) = unpacked(bytes, 1024);
+        let refused = result.unwrap_err();
+        assert!(matches!(refused, Error::Archive(_)), "{refused}");
+        let message = refused.to_string();
+        assert!(message.contains("link"), "{message}");
+        assert!(message.contains("symbolic link"), "{message}");
+        assert_eq!(bytes_under(fetched.path()), 0);
+        assert!(!fetched.path().join("link").exists());
+    }
+
+    /// `count` empty members named `m0.bin`, `m1.bin` and on.
+    fn empty_members(count: usize) -> Vec<u8> {
+        let names: Vec<String> = (0..count).map(|at| format!("m{at}.bin")).collect();
+        let files: Vec<(&str, usize)> = names.iter().map(|name| (name.as_str(), 0)).collect();
+        members(&files)
+    }
+
+    #[test]
+    fn an_archive_with_one_member_past_the_count_is_refused_before_a_member_is_written() {
+        let (result, fetched) = unpacked_counted(empty_members(9), 1024, 8);
+        let refused = result.unwrap_err();
+        assert!(matches!(refused, Error::Archive(_)), "{refused}");
+        let message = refused.to_string();
+        assert!(message.contains("test.zip"), "{message}");
+        assert!(message.contains("more than 8 members"), "{message}");
+        let written: Vec<_> = std::fs::read_dir(fetched.path()).unwrap().collect();
+        assert!(
+            written.is_empty(),
+            "written before the refusal: {written:?}"
+        );
+    }
+
+    #[test]
+    fn an_archive_with_exactly_the_count_of_members_is_accepted() {
+        let (result, fetched) = unpacked_counted(empty_members(8), 1024, 8);
+        result.unwrap();
+        assert_eq!(std::fs::read_dir(fetched.path()).unwrap().count(), 8);
     }
 
     #[test]
