@@ -1,11 +1,11 @@
 ---
 id: HW-OBL-0032
 title: "A `remove` that orphans a name is refused, and the message names the wrong line"
-status: current
-status_since: 2026-08-12
+status: discharged
+status_since: 2026-11-28
 waiting_on: build
-last_verified: 2026-08-13
-summary: "Referential integrity finds every orphan a removal leaves, and the finding blames the declaration that reads it rather than the `remove`."
+last_verified: 2026-11-28
+summary: "Referential integrity found every orphan a removal left and blamed the declaration that read it. The finding now names the `remove` and the reader both."
 provenance:
   warrant: accepted
   agency: mixed
@@ -32,4 +32,8 @@ What is open is the blame. The finding names the declaration that reads the orph
 
 ## Discharge
 
-`headwater taxonomy validate` runs the rule. What closes the rest is a finding that carries the operation that caused the orphan, and no part of the report holds one today.
+`headwater taxonomy validate` runs the rule. Until this change, no part of the report carried the operation that caused the orphan.
+
+**`Resolution::validate` discharges this record ([#1491](https://github.com/headwater-ai/headwater/issues/1491), slice 6).** The rule still finds the orphan over the result, because only the result shows it. `Resolution::validate` holds the operations, so it adds the blame. For each referential integrity refusal, it reads the block that would declare the name, from the sort of thing the position reads: a `kind` read wants `kinds.<name>`, and a `facet` read wants `facets.<name>`. When a `remove` covers that address, the refusal stands at the `remove`, in the source that wrote it, at its line. The message names both ends, for example ``removing `kinds.decision` leaves `shelves.decisions.kind` reading `decision`, and no kind of that name is declared``. A refusal that no `remove` covers keeps its line. Two examples are a typo, and a facet that has the same name as the removed kind.
+
+The rule keeps its name, `referential integrity`, so the count of rules does not change. The list of what no phase decides is now empty, and `taxonomy validate` prints `not decided anywhere: 0`.

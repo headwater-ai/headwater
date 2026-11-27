@@ -174,7 +174,6 @@ The second said that a control declares one posture and that spec 4 writes two v
 - [HW-OBL-0029](../obligations/0029-what-headwater-query-takes.md) — What `headwater query` takes
 - [HW-OBL-0030](../obligations/0030-the-provenance-block-belongs-to-the-engine-and-nothing-states.md) — The provenance block belongs to the engine, and nothing states its shape
 - [HW-OBL-0031](../obligations/0031-list-extension-in-an-add-only-overlay.md) — List extension in an add-only overlay
-- [HW-OBL-0032](../obligations/0032-a-remove-that-orphans-a-name-is-refused-and-the-message-names.md) — A `remove` that orphans a name is refused, and the message names the wrong line
 - [HW-OBL-0033](../obligations/0033-a-required-declaration-that-an-overlay-may-supply.md) — A required declaration that an overlay may supply cannot be required of a source
 - [HW-OBL-0034](../obligations/0034-two-rules-of-taxonomy-validate-name-a-declaration.md) — Two rules of `taxonomy validate` name a declaration or an artifact that does not exist
 - [HW-OBL-0035](../obligations/0035-section-contracts-in-the-base.md) — Section contracts in the base
@@ -254,6 +253,8 @@ The second said that a control declares one posture and that spec 4 writes two v
 [HW-OBL-0191](../obligations/0191-an-unknown-discriminator-value-removes-a-document-from-every-check-and-no-gate-reports-it.md) is discharged and it is not in the list above. A document whose discriminator named no kind left every check, and a strict run exited 0. `shelf.discriminator.unresolved` now reports that document as an error. It reads the census rows where kind resolution stopped at the discriminator.
 
 [HW-OBL-0113](../obligations/0113-every-check-passes-a-document-that-is-still-the-scaffolder-s-placeholder.md) is discharged and it is not in the list above. A document that still held the prompts the scaffolder writes passed every check, and no finding named it. `scaffold.placeholder.unwritten` now names each such section and facet as a warning. It reads the exact strings that the scaffolder writes, from one copy that the two share.
+
+[HW-OBL-0032](../obligations/0032-a-remove-that-orphans-a-name-is-refused-and-the-message-names.md) is discharged and it is not in the list above. A `remove` that orphaned a bare name was refused, and the finding named the declaration that read the name and not the `remove`. `taxonomy validate` now reports that refusal at the `remove`, in the file and at the line that wrote it, and the message also names the declaration that reads the name.
 
 ## What else each decision left open
 
@@ -454,7 +455,7 @@ The third cost is this section and the framing paragraph of each class. A projec
 
 **The argument above is about an editorial class, and one facet over this shelf answers a different question.** [HW-DR-0030](../decisions/0030-q30-whether-what-an-obligation-waits-on-is-a-state-or-a-property-and-how-many-values-it-takes.md) declares `waiting_on`, which states what a record is waiting on right now, in four values with no residual: `ruling`, `build`, `measurement` and `adopter`. The objection above holds against a class that is editorial and partly about provenance, and it does not reach a present-tense state. The pair it names is the test. HW-OBL-0011 and HW-OBL-0096 take one value under `waiting_on`, so the duplicate stays visible rather than being split. This file keeps its lists, its headings and its authored form, and the facet asks for no projection at this path.
 
-**The two partitions are not the same partition, and the difference is what a hand-maintained list costs.** Each heading here was read for the distinct records it links. *Design work that nothing blocks* links 93 records and 42 of them wait on a ruling. *Unmeasured claims* links 17 and 8 of them wait on a build. So the largest heading says that nothing blocks work that a ruling blocks, and nothing reports that.
+**The two partitions are not the same partition, and the difference is what a hand-maintained list costs.** Each heading here was read for the distinct records it links. *Design work that nothing blocks* links 92 records and 54 of them wait on a ruling. *Unmeasured claims* links 21 and 5 of them wait on a build. So the largest heading says that nothing blocks work that a ruling blocks, and nothing reports that.
 
 **The shelf carries each record, and this file carries the argument about the set.** [The obligations shelf](../obligations/README.md) holds every record with its identifier, its dates and its edges. A question about one obligation is answered there. This file holds the partition, the framing of each class, and the history of what left each list. That is prose about a set rather than a row of it.
 
