@@ -68,7 +68,7 @@ test('governing answers the contract\'s pointers, silence for an ungoverned path
 
   // The server answers the sentence `no document governs <path>`, and a
   // sentence is not a pointer: it is never shown as a guess.
-  assert.deepEqual(await client.governing('integrations/vscode/extension.js', options), []);
+  assert.deepEqual(await client.governing('integrations/vscode/test/fake-server.js', options), []);
 
   // The sentence repeats the path. A file name that holds a newline and a
   // pointer's shape must not put a pointer into it.
