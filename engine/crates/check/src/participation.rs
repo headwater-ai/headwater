@@ -152,7 +152,7 @@ impl<'a> Participation<'a> {
 
 impl NeighbourhoodCheck for Participation<'_> {
     const RULE: &'static str = self::RULE;
-    /// See [`crate::placement::Placement::VERSION`].
+    /// See [`crate::scope::NeighbourhoodCheck::VERSION`].
     ///
     /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 1;

@@ -73,7 +73,7 @@
 //!
 //! # The marker is a member, not a comment
 //!
-//! JSON carries no comment, which is why [`crate::marker`] answers `None` for
+//! JSON carries no comment, which is why `crate::marker` answers `None` for
 //! it. The marker is what stops this engine from destroying an authored file,
 //! so a format with no comment needs the same permission by another route. The
 //! two candidates were a top-level member and the rule that a path the engine

@@ -325,7 +325,7 @@ impl Observations {
     }
 
     /// The snapshot these bytes hold, read on [`Observations::at`]'s terms.
-    /// [`write`] reads what it is about to write through this, so the writer
+    /// [`write`](fn@write) reads what it is about to write through this, so the writer
     /// writes nothing the reader then reads otherwise.
     pub fn parse(text: &str) -> Self {
         // Hashed once, here, over exactly the bytes this run read — whether or
@@ -591,7 +591,7 @@ pub(crate) fn duplicate_ids(entries: &[Observation]) -> Vec<String> {
     duplicate
 }
 
-/// What [`write`] did to the snapshot.
+/// What [`write`](fn@write) did to the snapshot.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Wrote {
     /// Every entry already read as asked, so no byte moved and the file was
@@ -659,7 +659,7 @@ pub fn write(root: &Path, entries: &[Observation]) -> Result<Wrote, String> {
     Ok(Wrote::Written)
 }
 
-/// The text of a snapshot with `entries` written into `text`, on [`write`]'s
+/// The text of a snapshot with `entries` written into `text`, on [`write`](fn@write)'s
 /// terms, and nothing written to disk.
 pub fn splice(text: &str, entries: &[Observation]) -> Result<String, String> {
     let current = Observations::parse(text);

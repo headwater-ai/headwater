@@ -260,6 +260,15 @@ jobs:
         # `--locked` before the `--`, or clippy passes it to rustc.
         run: cargo clippy --all-targets --locked -- -D warnings
         working-directory: engine
+      - name: Every intra-doc link in the engine resolves
+        # `[workspace.lints.rustdoc]` in `engine/Cargo.toml` denies
+        # `broken_intra_doc_links`, and rustdoc is the one tool that reads that
+        # table: clippy and `cargo test` do not. So this step is what holds a
+        # doc-comment link that names no item, or two items, and it fails with
+        # the file and line. No `RUSTDOCFLAGS` and no `--keep-going`: the level
+        # lives in the manifest, so a local `cargo doc` fails the same way.
+        run: cargo doc --no-deps --workspace --locked
+        working-directory: engine
       - name: The binary without the fetch still builds
         # `headwater-cli` links `headwater-fetch` behind its default `fetch`
         # feature, and a build without it answers a location with a refusal

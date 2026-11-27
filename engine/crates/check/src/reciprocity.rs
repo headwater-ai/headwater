@@ -110,7 +110,7 @@ impl<'a> Reciprocity<'a> {
 
 impl EdgeCheck for Reciprocity<'_> {
     const RULE: &'static str = self::RULE;
-    /// See [`crate::placement::Placement::VERSION`].
+    /// See [`crate::scope::EdgeCheck::VERSION`].
     /// 2: a lone half written by a document at an initial state passes.
     /// 3: a half that names its own document carries no patch.
     ///

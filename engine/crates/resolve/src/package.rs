@@ -1238,7 +1238,7 @@ fn find(root: &Path, name: &str) -> Result<(PathBuf, Mapping), Vec<ResolveError>
 /// since neither carries a record, so it reports what it knows rather than
 /// guessing which one this is. See [#355].
 ///
-/// **This is [`headwater_scaffold::tree::Reserved`]'s shape and not its code.**
+/// **This is `headwater_scaffold::tree::Reserved`'s shape and not its code.**
 /// `headwater-scaffold` depends on `headwater-check`, which depends on this
 /// crate, so a dependency the other way is a cycle the compiler refuses. The
 /// technique does not transfer either: `Reserved` opens every target for writing
@@ -1267,7 +1267,7 @@ pub fn publish(root: &Path, name: &str, out: &Path) -> Result<Release, Vec<Resol
 /// an output path that `headwater generate` refuses, and every consumer met the
 /// refusal after it had taken the version. `headwater-generate` depends on this
 /// crate, so a call the other way is a cycle the compiler refuses, and the
-/// reader comes in as a value, as [`crate::selection::derive`] takes its
+/// reader comes in as a value, as `crate::selection::derive` takes its
 /// `dangling` reader.
 ///
 /// `Err` carries one message for each declaration the reader refused, and the
@@ -1540,7 +1540,7 @@ pub enum Cleared {
 ///    being removed.
 ///
 /// The first three are [`killed_direct_write`], and they are read there rather
-/// than here so that [`found::held`] — which tells a person to pass this flag —
+/// than here so that `found::held` — which tells a person to pass this flag —
 /// cannot offer it in a state where this function would remove nothing. That
 /// function's own doc comment carries the account of when the two disagreed.
 ///
@@ -3214,7 +3214,7 @@ pub enum Delivery {
     /// The artifact was written file by file straight into `--out`. A run killed
     /// during the write leaves files there with no release record, and leaves
     /// [`MARKER`] and [`DIRECT`] together beside them, which is what lets
-    /// [`found::held`] tell the next run that those files are a killed
+    /// `found::held` tell the next run that those files are a killed
     /// publish's rather than that it cannot tell.
     Direct(Direct),
 }
@@ -4072,7 +4072,7 @@ fn doctrine_at(
 ///
 /// **Neither residue is inert to the rest of the engine, and whether it is
 /// depends on the adopter's configuration rather than on the residue.**
-/// [`headwater_census::walk`] walks the corpus root and every directory under
+/// `headwater_census::walk` walks the corpus root and every directory under
 /// it. This repository declares `corpus.root: docs`, so `.headwater/packages/` is outside
 /// the walk and a residue changes no census number here. An adopter whose root
 /// includes `.headwater/packages/` counts every file of one: measured by an independent

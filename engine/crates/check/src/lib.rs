@@ -857,7 +857,7 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
 ///
 /// [Spec 12](../../../../docs/spec/12-check-layer.md#exportable_as-is-a-set-with-a-partition-rule)
 /// asks for both halves and for neither to be authored. Both come from
-/// [`declared`], so no rule can fall into both or into neither, and a rule
+/// `declared`, so no rule can fall into both or into neither, and a rule
 /// added to the registry lands in one of them without anybody remembering to
 /// put it there.
 #[derive(Clone, Debug)]

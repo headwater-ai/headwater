@@ -196,7 +196,7 @@
 //! re-read.
 //!
 //! The patch is a [`crate::Patch::Half`] with
-//! the edge's attributes, which [`headwater_scaffold::write::splice`] writes
+//! the edge's attributes, which `headwater_scaffold::write::splice` writes
 //! over the entry that names the target and reads back. It turns a bare entry
 //! into the mapping form, and keeps every other attribute the entry had. An
 //! entry with an attribute that is not a scalar gets no patch, because the
@@ -311,7 +311,7 @@ impl<'a> Suspect<'a> {
 
 impl EdgeCheck for Suspect<'_> {
     const RULE: &'static str = self::RULE;
-    /// See [`crate::placement::Placement::VERSION`]. 2: the denominator
+    /// See [`crate::scope::EdgeCheck::VERSION`]. 2: the denominator
     /// widened to every relation onto an anchor kind, and the rule reads the
     /// clock (#952). 3: a literal that names a directory is reported rather
     /// than passed, so a verdict cached at 2 over such an edge is stale. 4: a

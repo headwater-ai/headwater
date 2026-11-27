@@ -47,7 +47,7 @@ pub struct Shelf {
     /// names each file from the slug alone.
     ///
     /// It arrives here because a check reads it:
-    /// [`headwater_check::claim::takes_a_claim`] decides which identifiers the
+    /// `headwater_check::claim::takes_a_claim` decides which identifiers the
     /// claim store covers from this member, and `headwater_scaffold` reads the
     /// same member to write a file name. Two readings of one declaration would
     /// be the drift

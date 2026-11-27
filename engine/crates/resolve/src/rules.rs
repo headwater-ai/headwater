@@ -55,7 +55,7 @@ pub enum Ran {
 /// [`headwater_lock`](../../../../engine/crates/lock/src/lib.rs) to bind a lock
 /// to.
 ///
-/// [`headwater_lock::read`] checks a lock's format and its digest, and neither
+/// `headwater_lock::read` checks a lock's format and its digest, and neither
 /// says whether the 23 rules that validated it are the 23 rules this build of
 /// the engine would run. A lock is written once, at `taxonomy resolve` time,
 /// and a rule can gain or lose ground between that write and any later read —
@@ -64,7 +64,7 @@ pub enum Ran {
 /// "reachable in some lifecycle regime", which took a lock that a resolve had
 /// already validated and made it accept taxonomies the same rule now refuses.
 /// A hand-maintained number is what stands in for "this is what validated it",
-/// because [`env!("CARGO_PKG_VERSION")`] is the wrong grain: it moves on a
+/// because `env!("CARGO_PKG_VERSION")` is the wrong grain: it moves on a
 /// change to this crate that touches no rule, and it stays put on a rule moved
 /// out of this crate into another one this crate depends on.
 ///

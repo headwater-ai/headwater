@@ -83,7 +83,7 @@ impl Corpus {
     /// The corpus a consumer declaration describes: a root, and each exclusion
     /// with the reason it states.
     ///
-    /// The pairs come from [`headwater_resolve::Consumer`], and they arrive as
+    /// The pairs come from `headwater_resolve::Consumer`, and they arrive as
     /// pairs rather than as a type so that the walker keeps no dependency on
     /// the resolver. What the census needs from a consumer declaration is two
     /// strings per exclusion, and the reason is not optional: an exclusion with

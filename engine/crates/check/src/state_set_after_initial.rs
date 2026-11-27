@@ -101,7 +101,7 @@ pub fn first_settled<'r>(regime: &'r LifecycleRegime, facet: &StateFacet) -> Opt
 
 impl EdgeCheck for SetAfterInitial<'_> {
     const RULE: &'static str = self::RULE;
-    /// The first edition. See [`crate::placement::Placement::VERSION`].
+    /// The first edition. See [`crate::scope::EdgeCheck::VERSION`].
     ///
     /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 1;

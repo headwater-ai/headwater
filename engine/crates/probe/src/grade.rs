@@ -5,9 +5,9 @@
 //! # What earns this component the right to grade
 //!
 //! Every other mechanism in this engine that reaches toward a model refuses to
-//! return a verdict. The [sweep](../../sweep/index.html) verifies the citations
+//! return a verdict. The sweep (`headwater_sweep`) verifies the citations
 //! of what an agent wrote and reports findings that a person accepts. The
-//! [intake](../intake/index.html) confirms five things about a transcript and
+//! [intake](crate::intake) confirms five things about a transcript and
 //! evaluates no expectation. This module grades, and three properties are the
 //! whole of why it may.
 //!

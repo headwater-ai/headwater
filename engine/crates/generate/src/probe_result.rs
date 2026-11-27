@@ -16,7 +16,7 @@
 //!
 //! # The grader runs inside a gate, and that is not the thing that may not gate
 //!
-//! [`headwater_probe`](../../../probe/index.html) states four things that keep a
+//! [`headwater_probe`] states four things that keep a
 //! probe out of every gate, and the third of them used to read "no caller in any
 //! gate". This emitter is now such a caller: `generate --check` runs in
 //! continuous integration and it reaches the grader through this module.

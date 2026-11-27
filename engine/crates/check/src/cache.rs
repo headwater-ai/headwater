@@ -42,7 +42,7 @@
 //!
 //! Four components, and all four are here. The in-scope inputs arrive as
 //! [`Input`]s carrying the census digest of each file. The lock digest is
-//! [`headwater_lock::digest`], through the caller. The check version is a
+//! `headwater_lock::digest`, through the caller. The check version is a
 //! constant on the scope trait.
 //!
 //! **The injected values are the fourth component.**
