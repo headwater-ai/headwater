@@ -177,6 +177,21 @@ fn read(path: &Path) -> String {
     std::fs::read_to_string(path).unwrap_or_else(|error| panic!("{}: {error}", path.display()))
 }
 
+/// A scaffolded document as an author settles it: the state leaves `draft`,
+/// and the prompts the scaffolder wrote are replaced with content, so that
+/// `scaffold.placeholder.unwritten` has nothing to name (HW-OBL-0113).
+fn settled(text: &str) -> String {
+    text.replacen("status: draft\n", "status: current\n", 1)
+        .replace(
+            headwater_check::placeholder::SECTION_PROMPT,
+            "The author wrote this section.",
+        )
+        .replace(
+            headwater_check::placeholder::SCENT_PROMPT,
+            "What the author settled",
+        )
+}
+
 #[test]
 fn an_adopter_selects_the_entry_and_links_a_requirement_a_criterion_and_a_verification() {
     let root = Root::scratch("adopter");
@@ -249,7 +264,7 @@ fn an_adopter_selects_the_entry_and_links_a_requirement_a_criterion_and_a_verifi
     // the criterion over `verified_by` and the criterion reaches the
     // verification over `proven_by`, with no hand edit to either relation.
     for path in [&requirement_path, &criterion_path, &verification_path] {
-        let text = read(path).replacen("status: draft\n", "status: current\n", 1);
+        let text = settled(&read(path));
         std::fs::write(path, text).expect("the state is set");
     }
     let fixed = run(&consumer, &["check", "--fix"]);
@@ -343,7 +358,7 @@ fn past_the_window_the_entry_reports_an_unverified_requirement_and_an_unproved_t
         "docs/acceptance-criteria/0002-inspected.md",
     ] {
         let path = consumer.join(path);
-        let text = read(&path).replacen("status: draft\n", "status: current\n", 1);
+        let text = settled(&read(&path));
         std::fs::write(&path, text).expect("the state is set");
     }
     let fixed = run(&consumer, &["check", "--fix"]);
