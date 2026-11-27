@@ -306,8 +306,7 @@ fn a_check_names_the_placeholder_document_and_the_sweep_still_does() {
         .map(|finding| finding.rule)
         .collect();
     assert_eq!(
-        named,
-        ["scaffold.placeholder.unwritten"; 3],
+        named, ["scaffold.placeholder.unwritten"; 3],
         "the placeholder document is not named once per section prompt and \
          once for the summary prompt, and by nothing else"
     );
