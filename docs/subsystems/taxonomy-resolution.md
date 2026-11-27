@@ -113,7 +113,7 @@ Two `add` operations commute when no leaf that one writes is a prefix of a leaf 
 
 ### Validation of the result
 
-`rules.rs` runs the checks of `headwater taxonomy validate` that read a resolved tree. `RULES` lists every item of the list in spec 2 and where it runs. `Ran::Partly` marks a rule that this code decides in part, because the other part needs a declaration that the language does not have. A finding here names an address and no line. A merged tree does not know which source declared a node, and an overlay writes the same address.
+`rules.rs` runs the checks of `headwater taxonomy validate` that read a resolved tree. `RULES` lists every item of the list in spec 2 and where it runs. `Ran::Partly` marks a rule that this code decides in part, because the other part needs a declaration that the language does not have. A finding here names an address and no line. A merged tree does not know which source declared a node, and an overlay writes the same address. `Resolution::validate` in `lib.rs` holds the operations, so it adds the source back in two places. A refused shelf path names the source that wrote it. A name that a `remove` orphaned is reported at that `remove`, with its source and its line. An orphan that no `remove` covers keeps the address of the declaration that reads it.
 
 ### Selection, assembly and templates
 
