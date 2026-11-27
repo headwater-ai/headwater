@@ -1,9 +1,9 @@
 ---
 id: HW-OBL-0155
-status: current
-status_since: 2026-09-06
-summary: "Three of the `probe` crate's fourteen refusals are named by no test, and no case holds the set to its own coverage."
-last_verified: 2026-08-28
+status: discharged
+status_since: 2026-11-27
+summary: "A coverage case now holds all 25 refusals of the probe plan, and the three that no test named now have fixtures."
+last_verified: 2026-11-27
 title: "probe's fourteen refusals have no coverage test, and three of them are named by no test at all"
 waiting_on: build
 ---
@@ -44,6 +44,14 @@ The corpus owes `engine/crates/probe/` a case that holds its refusals to their o
 The count above is a measurement of one moment. A refusal added to the enum reaches the terminal, the plan render and the grade decision with nothing to report its absence. `stops_a_grade` is the only exhaustive match over the set, and it asks about a verdict rather than about a fixture.
 
 ## Discharge
+
+Discharged on 2026-11-27 by [#2132](https://github.com/headwater-ai/headwater/pull/2132), slice D of [#1494](https://github.com/headwater-ai/headwater/issues/1494). On `b6890e117`, `plan::Refusal` had 25 variants and not fourteen. The same three were named by no test: `NoProbes`, `TierUndeclared` and `Unnameable`.
+
+`engine/crates/probe/tests/fixtures.rs` now holds a `refusals!` macro in the shape of the scaffolder's `branches!`. One list of the 25 names writes an exhaustive `variant` match and the `REFUSALS` constant. So a variant added to the enum does not compile until the list names it. The case `every_plan_refusal_has_a_case` then requires a plan builder in `refused_plans` that provokes it. Before the three fixtures, the case failed with `these refusals ship with no fixture: ["NoProbes", "TierUndeclared", "Unnameable"]`. Three cases now provoke the three refusals, and each one asserts the variant and one phrase of its message.
+
+`grade::Refusal` and `intake::Refusal` are outside this record, and this discharge did not measure them.
+
+The text below is the condition as it was recorded.
 
 A case over one list of the refusal names closes the first half. The scaffolder's `branches!` macro is the shape, and it makes the naming function and the coverage list one list rather than two that agree today.
 

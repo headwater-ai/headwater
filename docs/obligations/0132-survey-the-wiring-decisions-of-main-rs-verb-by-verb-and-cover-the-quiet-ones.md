@@ -1,10 +1,10 @@
 ---
 id: HW-OBL-0132
-status: current
-status_since: 2026-09-06
-last_verified: 2026-11-20
+status: discharged
+status_since: 2026-11-27
+last_verified: 2026-11-27
 title: "Survey the wiring decisions of main.rs, verb by verb, and cover the quiet ones"
-summary: "The survey of main.rs covers 51 command lines. One quiet wiring decision is still uncovered: the default of neighbors --top, which no fixture can reach."
+summary: "The survey of main.rs covers 51 command lines, and no quiet wiring decision is uncovered: the parser now holds the default of neighbors --top."
 provenance:
   warrant: accepted
   agency: agent
@@ -41,7 +41,7 @@ Two passes found the decisions. The first read each arm of `dispatch` and the fu
 | `site` | It refuses with no directory | covered | `site.rs` |
 | `merge-driver` | It uses the current side and the path, and it ignores the ancestor and the other side | covered | `merge_driver.rs` |
 | `route` | It joins the words of the task into one description | covered | `route.rs`, `governed_paths.rs` |
-| `neighbors` | It joins the words of the task, and it sets `--model` to `.headwater/models` and `--top` to ten where neither is given | uncovered | The `--top` default is quiet, because a moved default exits 0. No fixture carries the model, so no case reaches the ranking. `governed_pipe.rs` reaches the default model directory only as far as a missing `model.onnx` |
+| `neighbors` | It joins the words of the task, and it sets `--model` to `.headwater/models` where the flag is not given | covered, structurally impossible | The `--top` default of ten is the parser's `default_value_t`, and `main.rs` takes the parsed number and states no default. The case `the_neighbors_top_default_is_the_parser_s_and_the_help_prints_it` in `crates/cli/src/lib.rs` holds the parser. No fixture carries the model, so no case reaches the ranking. `governed_pipe.rs` reaches the default model directory only as far as a missing `model.onnx` |
 | `explain` | It refuses with no target | covered | `classify.rs`, `show.rs`, `json.rs` |
 | `show` | It refuses with no target | covered | `show.rs` |
 | `mcp` | It gives the server the two write tools under `--write`, and no write tool without it | covered | `wiring.rs` `mcp_offers_the_write_tools_under_write_and_only_there`, added by this slice. `route.rs` drives the read tools |
@@ -85,7 +85,7 @@ Two passes found the decisions. The first read each arm of `dispatch` and the fu
 | `taxonomy <other>` | none | decides nothing | It refuses with exit status 1 |
 | an unknown verb | none | decides nothing | It refuses with exit status 1 |
 
-The table has 34 rows `covered`, 2 of them also `structurally impossible`, 15 rows `decides nothing` and 1 row `uncovered`.
+The table has 35 rows `covered`, 3 of them also `structurally impossible`, 15 rows `decides nothing` and no row `uncovered`.
 
 **What the survey cost.** This slice added 5 cases to `wiring.rs`, which went from 34 cases to 39. Over three runs with the 5 cases skipped, the target ran in 0.47 to 0.48 seconds. Over three runs with them, it ran in 0.36 to 0.68 seconds. The cases run as threads of one process. So the 5 new cases moved the wall time by less than the spread between runs on a loaded host.
 
@@ -93,11 +93,13 @@ The table has 34 rows `covered`, 2 of them also `structurally impossible`, 15 ro
 
 The survey below is done, and the two named sites have their cases. `probe stale` is covered. `taxonomy vendor` reads both halves of its doctrine path from `Vendored`, so it re-derives no name and reads no manifest.
 
-One row is still owed. `neighbors` sets `--top` to ten where the flag is not given, and a moved default exits 0. No fixture carries the model that the verb loads, so no case of `crates/cli/tests/wiring.rs` reaches the ranking. The remedy is a fixture model small enough to commit, or a parser default that `main.rs` does not restate. Either one discharges the row.
+The last row, `neighbors --top`, was a default that `main.rs` restated with `unwrap_or(10)`, and a moved default exits 0. No fixture carries the model that the verb loads, so no case of `crates/cli/tests/wiring.rs` reaches the ranking. Slice D of [#1494](https://github.com/headwater-ai/headwater/issues/1494) took the second remedy that this section named: a parser default that `main.rs` does not restate.
 
 Every other uncovered decision with a quiet failure now has a case in `crates/cli/tests/wiring.rs`, and each was watched failing against the form its defect names.
 
 ## Discharge
+
+Discharged on 2026-11-27 by [#2132](https://github.com/headwater-ai/headwater/pull/2132), slice D of [#1494](https://github.com/headwater-ai/headwater/issues/1494). `Neighbors.top` in `engine/crates/cli/src/lib.rs` is a `usize` with `default_value_t = 10`, and `neighbors` in `main.rs` takes that number. The help prints the parser's `[default: 10]` in place of the prose "Ten by default", so the help cannot drift from the parser either. The parser case was watched failing with the default set to 9. The paragraphs below are the terms as they were recorded.
 
 This is discharged when the survey exists as a table over all thirty verbs. Each row names a verb as covered, structurally impossible, or uncovered, and no verb is left unlisted.
 

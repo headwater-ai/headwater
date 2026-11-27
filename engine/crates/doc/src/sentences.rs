@@ -7,8 +7,13 @@
 //! it is there rather than the pattern sets: over this repository's own
 //! specification, most errors of a lexical checker came from the decision about
 //! which text is a sentence, and 32 of 58 sentence-length errors on one landing
-//! were defects in the splitter. So this module owes conformance fixtures the
-//! way a check owes a failing one.
+//! were defects in the splitter. So this module carries conformance fixtures
+//! the way a check carries a failing one: each case under
+//! `engine/crates/doc/fixtures/sentences/` records the sentences of one body,
+//! and `segmented_documents_produce_the_recorded_sentences` in
+//! `tests/fixtures.rs` holds them. Q5 recorded the count and not the 32 cases,
+//! so they were not preserved. The set is rebuilt from the three rules below
+//! and from each failure class the inline tests name.
 //!
 //! # What this splitter does not have to do
 //!
