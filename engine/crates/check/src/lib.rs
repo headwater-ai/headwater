@@ -157,8 +157,8 @@ pub mod duplicate;
 pub mod endpoint;
 pub mod enumerated;
 pub mod facet_blank;
-pub mod facet_type;
 pub mod facet_required;
+pub mod facet_type;
 pub mod facet_value;
 pub mod fill;
 pub mod filter;
@@ -1068,7 +1068,13 @@ pub fn run(
     let mut instances = scope::over_documents(&required, census, graph, ctx, cache);
     instances.extend(scope::over_documents(&values, census, graph, ctx, cache));
     instances.extend(scope::over_documents(&blank, census, graph, ctx, cache));
-    instances.extend(scope::over_documents(&not_of_type, census, graph, ctx, cache));
+    instances.extend(scope::over_documents(
+        &not_of_type,
+        census,
+        graph,
+        ctx,
+        cache,
+    ));
     instances.extend(scope::over_documents(&closed, census, graph, ctx, cache));
     instances.extend(scope::over_documents(&pairing, census, graph, ctx, cache));
     instances.extend(scope::over_documents(

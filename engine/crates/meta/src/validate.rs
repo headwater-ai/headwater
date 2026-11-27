@@ -430,4 +430,3 @@ fn not_a_segment(key: &str) -> Option<String> {
         Err(error) => Some(error.to_string()),
     }
 }
-
