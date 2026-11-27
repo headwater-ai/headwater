@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 //
-// What holds `integrations/vscode/client.js`, the one file of the extension
-// that decides anything. `extension.js` is glue over the `vscode` module, which
-// `node --test` cannot load, so it is kept thin enough to carry no decision.
+// What holds `integrations/vscode/client.js`, which makes every decision about
+// what the engine answered. `extension.js` is glue over the `vscode` module,
+// which `node --test` cannot load, so no test here runs it. It still decides
+// four things that nothing holds, and `README.md` under *Tests* names them.
 //
 // The first test runs against the real engine: `HEADWATER_BIN` names it. With
 // the variable unset it skips with a printed reason on a workstation, and it
@@ -257,6 +258,15 @@ test('a server that never answers is no pointers within the timeout', { timeout:
   assert.ok(Date.now() - started < 3000, 'the client waited past its timeout');
 });
 
+// `governing` drops the withheld count and the silence, so the case above
+// cannot see a timeout that answers a nonzero count. `route` returns both.
+test('a route over a server that never answers is the empty answer within the timeout', { timeout: 3000 }, async () => {
+  const { options } = fake('silent', { timeoutMs: 300 });
+  const started = Date.now();
+  assert.deepEqual(await client.route('x', options), EMPTY);
+  assert.ok(Date.now() - started < 3000, 'the client waited past its timeout');
+});
+
 test('a workspace with no .headwater/ spawns nothing and answers nothing', async () => {
   const empty = fs.mkdtempSync(path.join(os.tmpdir(), 'hw-vscode-empty-'));
   const { options, asked } = fake('route-pointers.jsonl', { root: empty });
@@ -351,6 +361,8 @@ test('an answer readPointers refuses withholds nothing either', () => {
   assert.deepEqual(client.readAnswer({ pointers: 'docs/a.md', withheld: 3 }), EMPTY);
   // One element that is not a pointer makes the whole answer untrusted.
   assert.deepEqual(client.readAnswer({ pointers: [{ path: 'docs/a.md' }, { name: 'no path' }], withheld: 3 }), EMPTY);
+  // So does one alone: its count is not shown for a pointer nobody could read.
+  assert.deepEqual(client.readAnswer({ pointers: [{ name: 'no path' }], withheld: 3 }), EMPTY);
 });
 
 test('a route that gets no answer to its call withholds nothing', async () => {
