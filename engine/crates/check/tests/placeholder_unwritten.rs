@@ -15,6 +15,11 @@
 //! which quotes the prompt in a fenced block, and `span.md`, which quotes it in
 //! an inline code span.
 //!
+//! **A rule that read a paragraph as authored when any one run is** reports
+//! `mixed-span.md`, whose ``TODO write `this` section.`` reads as the prompt
+//! once its runs are joined, and whose one word is in a code span. The
+//! scaffolder writes no code span, so the author wrote that paragraph.
+//!
 //! **A rule that read "contains the prompt"** reports `started.md`, whose one
 //! paragraph goes on after the prompt.
 //!
@@ -135,6 +140,7 @@ fn a_written_document_and_each_neighbor_reading_pass() {
         "decisions/authored-todo.md",
         "decisions/fenced.md",
         "decisions/span.md",
+        "decisions/mixed-span.md",
         "decisions/started.md",
         "decisions/quoted.md",
         "decisions/other-key.md",
