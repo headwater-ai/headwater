@@ -185,7 +185,9 @@ fn check_names_a_document_that_new_wrote_and_strict_still_passes() {
     assert_eq!(
         strict.code,
         Some(0),
-        "a placeholder is a warning, so a strict run passes it\n{strict:?}"
+        "a placeholder is a warning, so a strict run passes it\n{}{}",
+        strict.out,
+        strict.err
     );
 }
 
