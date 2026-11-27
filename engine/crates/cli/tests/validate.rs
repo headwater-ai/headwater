@@ -566,6 +566,46 @@ fn a_selection_whose_closure_is_complete_is_told_nothing_about_bundles() {
     );
 }
 
+/// A `remove` that orphans a bare name is refused against the `remove`, at the
+/// verb (HW-OBL-0032).
+///
+/// The library suite holds the source, the address and the span of the
+/// refusal, and nothing there reaches the print. So the adopter's file, the
+/// operation as the overlay writes it, its line, and the shelf that still reads
+/// the name are asserted on standard error here.
+#[test]
+fn validate_names_the_remove_that_orphaned_a_name_a_shelf_reads() {
+    let root = Root::new("remove-orphans");
+    std::fs::write(
+        root.at.join(".headwater/overlay.yml"),
+        "remove:\n  - kinds.specification\n",
+    )
+    .expect("the overlay writes");
+    let ran = root.run(&["taxonomy", "validate"]);
+
+    assert_eq!(ran.code, Some(1), "the orphan is refused: {ran:?}");
+    let line = ran
+        .err
+        .lines()
+        .find(|line| line.contains("`shelves.specifications.kind`"))
+        .unwrap_or_else(|| panic!("the shelf that reads the name is named: {ran:?}"));
+    assert!(
+        line.contains(".headwater/overlay.yml `remove.kinds.specification` (2:5)"),
+        "the refusal stands at the `remove`, in the adopter's file, at its line: {line}"
+    );
+    assert!(
+        line.contains(
+            "removing `kinds.specification` leaves `shelves.specifications.kind` reading \
+             `specification`"
+        ),
+        "and names both ends: {line}"
+    );
+    assert!(
+        !line.contains("the resolved taxonomy"),
+        "and not the taxonomy the overlay never wrote: {line}"
+    );
+}
+
 /// Every bundle the copied package ships, read off the package.
 fn shipped_bundles() -> Vec<String> {
     let at = repository().join(".headwater/packages/headwater-standard/bundles");
