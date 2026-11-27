@@ -15,7 +15,6 @@ provenance:
 relations:
   traces_to:
     - engine/crates/check/src/facet_blank.rs
-    - HW-DR-0116
 ---
 
 # No rule reads a document facet value against the type its declaration states
