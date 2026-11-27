@@ -2,7 +2,7 @@
 //! The shape language that the meta-schema is written in.
 //!
 //! Eight forms and two modifiers, and the whole of it is in
-//! [`meta-schema.yml`](../../meta-schema.yml)'s header comment. This module is
+//! `meta-schema.yml`'s header comment. This module is
 //! the reader: it turns a loaded YAML node into a [`Shape`], and it refuses a
 //! shape that names no form or more than one.
 //!

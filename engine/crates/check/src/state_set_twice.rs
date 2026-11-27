@@ -146,7 +146,7 @@ impl<'a> StateSetTwice<'a> {
 
 impl CorpusCheck for StateSetTwice<'_> {
     const RULE: &'static str = self::RULE;
-    /// See [`crate::placement::Placement::VERSION`].
+    /// See [`crate::scope::CorpusCheck::VERSION`].
     ///
     /// 2 from #1137: a marked file that no output of the projection plan
     /// claims is no longer read.

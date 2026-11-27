@@ -173,7 +173,7 @@ pub struct Pointer {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Neighbour {
     /// The relation as this document stands to the far end, so that every
-    /// entry reads "this document <relation> the far end" (#1901). An edge
+    /// entry reads "this document `<relation>` the far end" (#1901). An edge
     /// read from the end that wrote it carries the key that end wrote, the
     /// canonical name or its declared inverse. An edge read from the far end
     /// carries the other name of the pair: the inverse where one is declared,
@@ -295,7 +295,7 @@ impl<'a> Surface<'a> {
 
     /// Every document of the corpus, in the census's own path order.
     ///
-    /// "Every document" is [`Outcome::node`]'s answer and never a second one.
+    /// "Every document" is `Outcome::node`'s answer and never a second one.
     /// The census admits a generated Markdown file that declares an identity as
     /// a document, and the identifier index and the edge builder both read it
     /// that way. A read here that answered `Typed` alone would hold a second

@@ -158,7 +158,7 @@ fn scalar<'m>(facets: &'m Mapping, name: &str) -> Option<&'m str> {
 
 impl EdgeCheck for NotSetByEdge<'_> {
     const RULE: &'static str = self::RULE;
-    /// See [`crate::placement::Placement::VERSION`].
+    /// See [`crate::scope::EdgeCheck::VERSION`].
     ///
     /// 2: a target already terminal at another state became advisory and a
     /// draft target became silent. Version 1 never reached `main`, and a

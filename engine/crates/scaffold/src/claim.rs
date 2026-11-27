@@ -12,7 +12,7 @@
 //!
 //! # Create-new, and why it is the strictest line in this crate
 //!
-//! [`write`] opens with `create_new`, so the test for an existing claim and the
+//! [`write`](fn@write) opens with `create_new`, so the test for an existing claim and the
 //! creation of one are a single syscall and there is no window between them.
 //! `AlreadyExists` is a refusal.
 //!
@@ -71,7 +71,7 @@ pub fn write(root: &Path, plan: &Plan) -> Result<Option<String>, Refusal> {
 
 /// Make one claim file, or refuse.
 ///
-/// The primitive, held apart from [`write`] so that a test reaches the refusal
+/// The primitive, held apart from [`write`](fn@write) so that a test reaches the refusal
 /// without composing a whole plan, and so that the create-new decision is one
 /// function rather than a property of the caller.
 pub fn make(root: &Path, claim: &str, claimant: &str) -> Result<(), Refusal> {
@@ -127,7 +127,7 @@ fn make_with(
 /// Write the claim this plan mints, then the composed files, and withdraw the
 /// claim when the files cannot be written.
 ///
-/// The one caller of [`write`], so the order and its undo live in one place. A
+/// The one caller of [`write`](fn@write), so the order and its undo live in one place. A
 /// claim that cannot be made refuses with no document written. A refusal of
 /// [`crate::write::apply`] goes to [`settle`], which removes the claim this
 /// call made, with [`withdraw`], unless the created document is still on the
@@ -180,7 +180,7 @@ pub fn joined(refusal: &str, sentence: &str) -> String {
 /// Remove one claim file that this run made, because its document was not
 /// created.
 ///
-/// Call it only with a path that [`write`] or [`make`] returned `Ok` for in
+/// Call it only with a path that [`write`](fn@write) or [`make`] returned `Ok` for in
 /// this run. That `Ok` is the permission: `create_new` made the file, so the
 /// path held no other claimant's record, and removing it destroys no fact. A
 /// claim this run did not make is never passed here, and this function touches

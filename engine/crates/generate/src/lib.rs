@@ -885,7 +885,7 @@ pub struct Output {
     pub bytes: String,
     /// Whether the tree holds this file, from [`Declaration::committed`].
     /// An uncommitted output stays in the plan, so the orphan rule still sees
-    /// its path as claimed. [`write`] and [`check`] skip it, and [`publish`]
+    /// its path as claimed. [`write`](fn@write) and [`check`] skip it, and [`publish`]
     /// writes it.
     pub committed: bool,
 }
@@ -2233,10 +2233,10 @@ pub fn write(root: &Path, plan: &Plan) -> Report {
 ///
 /// This is `headwater export`, the publish step. An output declared
 /// `committed: false` is built here and nowhere else, so this is the one
-/// writer that does not skip it. [`write`] and [`check`] leave it alone,
+/// writer that does not skip it. [`write`](fn@write) and [`check`] leave it alone,
 /// because the tree does not hold it.
 ///
-/// It refuses before its first write as [`write`] does: where
+/// It refuses before its first write as [`write`](fn@write) does: where
 /// [`Report::refuses_before_writing`] holds, it writes no file, the
 /// uncommitted outputs included, and [`Report::withheld`] says so (#1510).
 pub fn publish(root: &Path, plan: &Plan) -> Report {

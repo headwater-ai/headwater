@@ -95,7 +95,7 @@ impl<'a> Targets<'a> {
 
 impl EdgeCheck for Targets<'_> {
     const RULE: &'static str = self::RULE;
-    /// See [`crate::placement::Placement::VERSION`].
+    /// See [`crate::scope::EdgeCheck::VERSION`].
     /// 2: the path of a typed document with an identifier, under a relation
     /// that admits a document, binds to nothing (#1410).
     /// 3: so does a symlink onto that document, or a path through a symlinked

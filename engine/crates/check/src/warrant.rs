@@ -116,7 +116,7 @@ pub struct Closed;
 
 impl DocumentCheck for Closed {
     const RULE: &'static str = self::VALUE;
-    /// The first edition. See [`crate::placement::Placement::VERSION`].
+    /// The first edition. See [`crate::scope::DocumentCheck::VERSION`].
     ///
     /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 1;
@@ -160,7 +160,7 @@ pub struct Pairing;
 
 impl DocumentCheck for Pairing {
     const RULE: &'static str = self::UNPAIRED;
-    /// The first edition. See [`crate::placement::Placement::VERSION`].
+    /// The first edition. See [`crate::scope::DocumentCheck::VERSION`].
     ///
     /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 1;

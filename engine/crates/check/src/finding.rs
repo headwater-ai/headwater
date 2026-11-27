@@ -115,7 +115,7 @@ impl Finding {
     /// One finding as text, in the form a person reads in a terminal.
     ///
     /// `mode` is the color decision the caller already made —
-    /// [`crate::paint::stdout_color`]'s equivalent under `headwater-cli`, or
+    /// `crate::paint::stdout_color`'s equivalent under `headwater-cli`, or
     /// [`ColorMode::Plain`] for a machine format or a recorded fixture. This
     /// function reads no stream itself, on the rule
     /// `crate::paint`'s module comment states.

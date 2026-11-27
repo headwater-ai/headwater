@@ -770,7 +770,7 @@ pub trait CorpusCheck {
     ///
     /// The store is at `.headwater/ids`, beside the corpus and not inside it,
     /// so no census row covers it and no read set would carry it by accident.
-    /// A rule that declares this receives [`headwater_check::claim::Claims`]
+    /// A rule that declares this receives [`crate::claim::Claims`]
     /// and one more [`Input`] in its read set, whose digest is over the store's
     /// canonical listing. See [`crate::claim`].
     ///

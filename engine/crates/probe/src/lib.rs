@@ -35,7 +35,7 @@
 //! # The sweep's shape does not carry a transcript, and that is this crate's
 //! sharpest finding
 //!
-//! [`headwater_sweep`](../../sweep/index.html) reaches a model in three parts:
+//! `headwater_sweep` reaches a model in three parts:
 //! the engine writes a briefing, an agent reads it, and the engine reads back
 //! the file the agent wrote. The obvious move here was to copy all three. It
 //! does not work, and the reason is a rule spec 5 already states.
@@ -78,7 +78,7 @@
 //!    `.claude/skills/fixtures.sh` asserts that.
 //!
 //!    One gate reaches [`grade`] and it does not reach a run.
-//!    [`headwater_generate`](../../generate/probe_result/index.html) writes a
+//!    `headwater_generate::probe_result` writes a
 //!    probe result as a projection over a committed transcript, so
 //!    `generate --check` grades in continuous integration. A run in which the
 //!    model answered every question wrongly writes a result that reports a low
@@ -177,7 +177,7 @@ headwater_check::enumerated! {
     ///
     /// Closed because a grader evaluates it. A question whose answer needs a rubric
     /// is not a probe: it is a coherence question, and the
-    /// [sweep](../../sweep/index.html) owns those.
+    /// sweep (`headwater_sweep`) owns those.
     #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
     pub enum Expectation {
         /// The transcript shows that the session read one of the named documents.

@@ -4,7 +4,7 @@
 //!
 //! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#the-meta-schema) says that
 //! the taxonomy language has a formal schema, published with the engine and
-//! versioned with it. [`meta-schema.yml`](../../meta-schema.yml) is that schema
+//! versioned with it. `meta-schema.yml` is that schema
 //! and this crate is its reader.
 //!
 //! # Expressed in its own dialect

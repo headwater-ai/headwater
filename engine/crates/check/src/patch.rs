@@ -27,7 +27,7 @@
 //!
 //! [`Patch::Text`] replaces a byte range of one file. [`Patch::Half`] declares
 //! one edge half in a document's front matter, and the writer for it is
-//! [`headwater_scaffold::write::splice`] rather than anything here. Two writers
+//! `headwater_scaffold::write::splice` rather than anything here. Two writers
 //! into one `relations:` block would disagree the first time a document nested
 //! differently, and the splice already carries the read-back guard that makes a
 //! wrong guess a refusal.
@@ -62,7 +62,7 @@
 //! filesystem. So a patch states an offset and **what the check believes lies
 //! at it**, and the applier holds the belief against the bytes before it moves
 //! one. `expect` is that statement. It is the first of the three guards
-//! [`headwater_scaffold::fix`] runs.
+//! `headwater_scaffold::fix` runs.
 
 use headwater_doc::body::{Body, Ownership};
 use headwater_doc::Sentence;
@@ -86,7 +86,7 @@ pub enum Patch {
     /// beside it.
     ///
     /// No offset, because the far document's shape decides where the half goes
-    /// and [`headwater_scaffold::write::splice`] is the one thing that knows.
+    /// and `headwater_scaffold::write::splice` is the one thing that knows.
     /// The splice replaces an entry that already names `id` rather than
     /// appending a second one, and it reads the result back and refuses where
     /// the entry does not hold every attribute it was given. So a patch that
@@ -118,7 +118,7 @@ pub enum Patch {
     /// as `(facet, expect, value)`.
     ///
     /// No offset, for [`Patch::Half`]'s reason: the front matter is a
-    /// writer's own, and [`headwater_scaffold::fix`] finds the key. `expect`
+    /// writer's own, and `headwater_scaffold::fix` finds the key. `expect`
     /// is the value the check read for that facet, and the applier refuses
     /// the whole patch where any one of them no longer holds. The writes land
     /// together or none of them do, which is what a state and its
