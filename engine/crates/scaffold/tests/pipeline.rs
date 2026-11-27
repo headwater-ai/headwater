@@ -464,11 +464,15 @@ fn a_promoted_successor_is_owed_its_far_half_and_the_fix_writes_it() {
         );
     }
 
-    // Both ends are live now, so neither rule has anything to say.
+    // Both ends are live now, so neither rule has anything to say. The
+    // sections and the summary still hold the scaffolder's prompts, which is
+    // `scaffold.placeholder.unwritten`'s to say and the subject of the case
+    // above, so it is left out here.
     let again = check_over(root);
     let left: Vec<String> = again
         .findings
         .iter()
+        .filter(|finding| finding.rule != headwater_check::placeholder::RULE)
         .filter(|finding| touched.contains(&finding.path) || FAR.contains(&finding.path.as_str()))
         .map(|finding| format!("{} {}: {}", finding.path, finding.rule, finding.message))
         .collect();
