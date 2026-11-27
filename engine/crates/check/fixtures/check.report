@@ -62,6 +62,8 @@ rules, and for each the scope that binds it
     document scope, one document and its front matter
   facet.value.blank
     document scope, one document and its front matter
+  facet.value.not_of_type
+    document scope, one document and its front matter
   identifier.pattern.not_met
     document scope, one document and its front matter
   shelf.placement_is_primary
@@ -204,6 +206,7 @@ register
       1 producing facts rather than findings
   escaped findings, in the precedence spec 4 fixes: no waiver reaches a check finding, 0 migration-pending, 2 suppressed
   facet.value.blank reaches no obligation, so it names none
+  facet.value.not_of_type reaches no obligation, so it names none
   shelf.bound_facet.disagrees reaches no obligation, so it names none
   relation.key.outside_block reaches no obligation, so it names none
   relation.endpoint.not_permitted reaches OB-FIX-5, OB-FIX-17, and a finding names one obligation, so it names none

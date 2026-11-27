@@ -1898,6 +1898,9 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             Grain::Document,
             Grain::Document,
             Grain::Document,
+            // `facet.value.not_of_type`: one document's value against the
+            // type its kind declares (#1492, HW-OBL-0171).
+            Grain::Document,
             Grain::Document,
             Grain::Document,
             // `shelf.bound_facet.disagrees`: one document's value against the

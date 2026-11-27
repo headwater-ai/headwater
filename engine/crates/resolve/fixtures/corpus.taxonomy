@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 4.30.0
+version: 4.31.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -1472,6 +1472,12 @@ obligations:
     class: cohesion
     prevents: content.incomplete
     severity: high
+  OB-SECT-2:
+    statement: "A document carries no prompt that the scaffolder wrote for a person to replace"
+    rationale: "The scaffolder writes every required heading and a value in every facet, so a document that still holds its prompts passes every rule that reads for a missing heading or a missing value, and a reader gets a page that answers nothing"
+    class: cohesion
+    prevents: content.incomplete
+    severity: medium
   OB-LINK-1:
     statement: "A fragment of a prose link names a heading of the document that the link points at"
     rationale: "A link that lands nowhere costs the reader the paragraph it was written to reach, and an anchor rots silently when the heading beside it is edited. The target is another document as often as it is the citing one, and a rename in the target touches no byte of the document that cited it"
@@ -1567,6 +1573,12 @@ obligations:
     rationale: "A key written with nothing after it passes the rule that reads for an absent key and the rule that reads a closed set, so the blank reaches a rendered index as the parser's null and every reader of the page sees a document with no name"
     class: cohesion
     prevents: content.incomplete
+    severity: high
+  OB-FACET-4:
+    statement: "A facet value that a document declares is of the type its declaration states"
+    rationale: "A date that no calendar has, or a mapping where the declaration says date, passes every rule that reads for an absent key, a closed set or a blank, and each rule that computes with the date then reads a date nobody wrote"
+    class: cohesion
+    prevents: content.inconsistent
     severity: high
   OB-WARRANT-3:
     statement: "The warrant of a document carries one of the values of the closed set that spec 3 declares"
@@ -1733,6 +1745,18 @@ controls:
     promotion:
       produces_facts:
         reasoning: "The coverage account is the denominator every other number in the report is read against, and a denominator has no false-positive rate. It is right or it is wrong, and the fixture tree is what says which"
+  CT-COV-4:
+    mechanism: "check:shelf.discriminator.unresolved"
+    discharges:
+      - OB-COV-1
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      criteria:
+        window: "one release of the taxonomy over an adopting corpus"
+        threshold: "no false positive, because the rule reports only the three stops of kind resolution on a heterogeneous shelf that spec 2 names as a finding, a missing discriminator, a value the shelf does not admit and a value that is not a scalar, and derives nothing else"
+        sample: "every finding of one run over the adopting corpus, adjudicated once"
   CT-REG-1:
     mechanism: "check:obligation.disposition.not_one"
     discharges:
@@ -2035,6 +2059,18 @@ controls:
     trigger: pull_request
     posture: advisory
     acts: detective
+  CT-SECT-2:
+    mechanism: "check:scaffold.placeholder.unwritten"
+    discharges:
+      - OB-SECT-2
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      criteria:
+        window: "one release of the taxonomy over an adopting corpus"
+        threshold: "no false positive, because the rule matches the exact text of the three prompts that the scaffolder writes, in the places it writes them, and reads no quotation of a prompt"
+        sample: "every finding of one run over the adopting corpus, adjudicated once"
   CT-LINK-1:
     mechanism: "check:link.fragment.unresolved"
     discharges:
@@ -2079,6 +2115,18 @@ controls:
       criteria:
         window: "one release of the taxonomy over an adopting corpus"
         threshold: "no false positive, because the rule reads the core schema's own null resolver and an empty scalar rather than deciding what blank means"
+        sample: "every finding of one run over the adopting corpus, adjudicated once"
+  CT-FACET-4:
+    mechanism: "check:facet.value.not_of_type"
+    discharges:
+      - OB-FACET-4
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      criteria:
+        window: "one release of the taxonomy over an adopting corpus"
+        threshold: "no false positive, because the rule applies the one type predicate that the meta-schema applies to a taxonomy value, and reads the proleptic Gregorian calendar for a date rather than a digit pattern"
         sample: "every finding of one run over the adopting corpus, adjudicated once"
   CT-WARRANT-3:
     mechanism: "check:warrant.value.not_permitted"
