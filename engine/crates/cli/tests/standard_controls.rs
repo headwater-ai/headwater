@@ -102,12 +102,9 @@ fn every_lifecycle_rule_reaches_one_obligation_of_the_standard_package() {
 /// The rules that may reach no single obligation of `headwater/standard`, each
 /// with the reason it stands outside the package. A rule is named here one at
 /// a time and never by a pattern, so a new rule that ships without a control
-/// fails the case below and names itself (#1492).
-const EXCEPTIONS: &[(&str, &str)] = &[(
-    "shelf.discriminator.unresolved",
-    "new in #1491 (HW-OBL-0191); its control binds it to OB-COV-1 at the next release of \
-     headwater/standard, and the build of the rule does not publish the package",
-)];
+/// fails the case below and names itself (#1492). It is empty since 4.31.0,
+/// which bound the last rule it named.
+const EXCEPTIONS: &[(&str, &str)] = &[];
 
 /// Every rule the engine carries reaches exactly one obligation of the
 /// maintained package, except the rules [`EXCEPTIONS`] names (#1492,
@@ -378,6 +375,26 @@ const BOUND_IN_4_30: [(&str, &str, &str, &str); 1] = [(
     "criteria",
 )];
 
+/// The rules that 4.31.0 bound, in the same shape (#1492, HW-OBL-0171). The
+/// type rule is advisory with promotion criteria: its severity is already an
+/// error, and its remedy is a value the author writes. The discriminator rule
+/// was the last row of [`EXCEPTIONS`], and its control binds it to the
+/// classification obligation that its `EXCEPTIONS` row named.
+const BOUND_IN_4_31: [(&str, &str, &str, &str); 2] = [
+    (
+        "facet.value.not_of_type",
+        "OB-FACET-4",
+        "advisory",
+        "criteria",
+    ),
+    (
+        "shelf.discriminator.unresolved",
+        "OB-COV-1",
+        "advisory",
+        "criteria",
+    ),
+];
+
 /// The declaration of the one control of the maintained package whose
 /// mechanism is `check:<rule>`. Controls sit one to a block, a blank line
 /// separates two blocks, and each block opens with its identifier.
@@ -414,6 +431,7 @@ fn each_lifecycle_control_declares_its_obligation_posture_and_promotion() {
         .chain(BOUND_IN_4_28)
         .chain(BOUND_IN_4_29)
         .chain(BOUND_IN_4_30)
+        .chain(BOUND_IN_4_31)
     {
         let control = control_of(&taxonomy, rule);
         for line in [
