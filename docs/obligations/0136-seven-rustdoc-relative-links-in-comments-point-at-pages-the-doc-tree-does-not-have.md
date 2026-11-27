@@ -3,7 +3,7 @@ id: HW-OBL-0136
 status: discharged
 status_since: 2026-11-28
 title: "Seven rustdoc-relative links in comments point at pages the doc tree does not have"
-summary: "Seven links in engine comments are written for rustdoc output that no job ever builds, so nothing has ever resolved them."
+summary: "Seven links in engine comments were written for rustdoc output that no job built, so nothing resolved them until a CI step ran cargo doc at a deny level."
 provenance:
   warrant: accepted
   agency: agent

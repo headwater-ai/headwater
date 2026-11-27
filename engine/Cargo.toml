@@ -156,11 +156,11 @@ headwater-yaml = { path = "crates/yaml", version = "0.8.2" }
 # remembered by whoever writes the next crate.
 #
 # CI runs `cargo clippy --all-targets -- -D warnings`, so a rust or clippy lint
-# named here at any level fails the build. Clippy does not read the rustdoc
-# table at the end, and a separate `cargo doc` step does. That is why the set is chosen by measurement: each
-# entry was at zero hits when it was added, or its hits were fixed in the same
-# change. A lint that would need a rewrite is left out, and Q23 records which
-# ones and why.
+# named here at any level fails the build. That is why the set is chosen by
+# measurement: each entry was at zero hits when it was added, or its hits were
+# fixed in the same change. A lint that would need a rewrite is left out, and
+# Q23 records which ones and why. Clippy does not read the rustdoc table at the
+# end. A separate `cargo doc` step reads it, and only a `deny` there fails it.
 [workspace.lints.rust]
 # The engine has no `unsafe` block and no reason to acquire one: it reads files,
 # builds a graph and writes text. `forbid` rather than `deny` because the point
