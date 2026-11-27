@@ -1278,7 +1278,13 @@ pub fn run(
     instances.extend(scope::over_outside_root(&retired, census, cache));
     instances.extend(scope::over_outside_root(&source_form, census, cache));
     instances.extend(scope::over_documents(&sections, census, graph, ctx, cache));
-    instances.extend(scope::over_documents(&placeholders, census, graph, ctx, cache));
+    instances.extend(scope::over_documents(
+        &placeholders,
+        census,
+        graph,
+        ctx,
+        cache,
+    ));
     instances.extend(scope::over_corpus(
         &fragments, census, graph, claims, ctx, cache,
     ));

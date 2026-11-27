@@ -162,5 +162,8 @@ fn a_kind_that_requires_nothing_has_no_instance() {
         .instances
         .iter()
         .any(|instance| instance.rule == RULE && instance.paths().contains(&path)));
-    assert_eq!(lines(&run, "notes/requires-nothing.md"), Vec::<usize>::new());
+    assert_eq!(
+        lines(&run, "notes/requires-nothing.md"),
+        Vec::<usize>::new()
+    );
 }
