@@ -227,6 +227,24 @@ out=$(gate); status=$?
 judge 'a renamed document is read against the version at the path it left' 1 "$status" \
     'moved from `draft` to `discharged`' "$out"
 
+# An engine outside the range the corpus asks for fails a strict run with no
+# finding at all, so the engine's own line is the only reason the commit is
+# refused, and the gate prints it (#1600). The range still overlaps the
+# package's `requires_engine`, so the resolve succeeds.
+reset
+sed -i 's/^engine: .*$/engine: ">=1.9 <2"/' "$scratch/.headwater/taxonomy.yml"
+grep -q '^engine: ">=1.9 <2"$' "$scratch/.headwater/taxonomy.yml" || {
+    printf 'FAIL setup: the corpus engine range did not move\n'
+    exit 1
+}
+"$scratch/engine/target/release/headwater" taxonomy resolve --root "$scratch" >/dev/null 2>&1 || {
+    printf 'FAIL setup: the moved range did not resolve\n'
+    exit 1
+}
+out=$(gate); status=$?
+judge 'an engine outside the corpus range is named when the gate refuses' 1 "$status" \
+    'this corpus asks for engine ">=1.9 <2"' "$out"
+
 printf '# the producer, and the arms with nothing in them\n'
 
 reset

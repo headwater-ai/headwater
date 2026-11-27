@@ -19,9 +19,24 @@ const path = require('node:path');
 const vscode = require('vscode');
 const client = require('./client.js');
 
+// The *Headwater* output channel, made once in `activate`, and the engine
+// lines it has already shown in this session.
+let log = null;
+const warned = new Set();
+
+// The engine says in one line on standard error when it is outside the range
+// the corpus asks for. The client hands that line here, and it is shown once a
+// session in View > Output > Headwater: a fail-open extension shows no pop-up
+// (#1600).
+function onEngine(line) {
+  if (!log || warned.has(line)) return;
+  warned.add(line);
+  log.warn(line);
+}
+
 function options(folder) {
   const bin = vscode.workspace.getConfiguration('headwater').get('path') || 'headwater';
-  return { root: folder.uri.fsPath, bin };
+  return { root: folder.uri.fsPath, bin, onEngine };
 }
 
 // The workspace folder and the path inside it, or null for a document that is
@@ -56,6 +71,8 @@ function describe(pointer) {
 }
 
 function activate(context) {
+  log = vscode.window.createOutputChannel('Headwater', { log: true });
+  context.subscriptions.push(log);
   const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
   status.command = 'headwater.governing';
   context.subscriptions.push(status);
@@ -139,12 +156,11 @@ function activate(context) {
 // language model tools and the `@headwater` participant.
 function registerCopilot(context) {
   // The provider registers nothing when it finds no engine, and says so only
-  // here: View > Output > Headwater. A fail-open extension shows no pop-up,
-  // and without this line a person cannot tell why no server is listed.
-  const log = vscode.window.createOutputChannel('Headwater', { log: true });
+  // in the output channel `activate` made: View > Output > Headwater. A
+  // fail-open extension shows no pop-up, and without this line a person cannot
+  // tell why no server is listed.
   const changed = new vscode.EventEmitter();
   context.subscriptions.push(
-    log,
     changed,
     vscode.lm.registerMcpServerDefinitionProvider('headwater', {
       onDidChangeMcpServerDefinitions: changed.event,

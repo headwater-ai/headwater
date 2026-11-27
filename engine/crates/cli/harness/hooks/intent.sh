@@ -17,6 +17,13 @@
 # reaches the agent is the `text` member, the rendering of the binary byte for
 # byte, so the hook composes no line of its own.
 #
+# An engine outside the range `.headwater/taxonomy.yml` asks for says so in one
+# line on standard error. The hook keeps that line and prints it first, even
+# when the route offered no pointer, because a stale engine is worth a line on
+# every prompt. It forwards the engine's own line and parses no range itself:
+# the engine is the one parser of a range, and a hook always runs beside one
+# (#1600).
+#
 # A repository that defines `hw_local_intent` in `lib.local.sh` hears of each
 # route after it is decided. The function reads `input`, `task`, `route`,
 # `skip` and `injected`, and it must write nothing to either stream.
@@ -54,11 +61,18 @@ hw_root=$(hw_resolve_root "$input")
 
 skip=
 injected=false
-route=$("$engine" route --root "$hw_root" --json "$task" 2>/dev/null) || {
+errors=$(mktemp 2>/dev/null) || errors=
+route=$("$engine" route --root "$hw_root" --json "$task" 2>"${errors:-/dev/null}") || {
+    [ -n "$errors" ] && rm -f "$errors"
     skip=route_failed
     hw_intent_done
     exit 0
 }
+engine_line=
+if [ -n "$errors" ]; then
+    engine_line=$(grep -F 'this corpus asks for engine' "$errors" 2>/dev/null | head -n 1)
+    rm -f "$errors"
+fi
 
 # The count is the decision, and an empty `pointers` is a result rather than a
 # failure. A document that does not parse ends the hook with the prompt
@@ -82,6 +96,10 @@ fi
 
 hw_intent_done
 
+if [ -n "$engine_line" ]; then
+    printf '%s\n' "$engine_line"
+    [ "$injected" = true ] && printf '\n'
+fi
 if [ "$injected" = true ]; then
     printf 'Headwater routed this task to the documents that govern it, before you open a file.\n'
     printf 'These are pointers, not content. Open the ones that bear on the task.\n\n'

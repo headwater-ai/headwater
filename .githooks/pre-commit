@@ -397,6 +397,12 @@ fi
 # place the reason is written. `.headwater/overlay.yml` promotes `CT-REL-12`,
 # so a staged file in the governed scope that no edge reaches is refused that
 # way (#1573).
+#
+# An engine outside the range `.headwater/taxonomy.yml` asks for fails a strict
+# run with no finding at all, so the engine's own line about it is printed
+# first, verbatim. The hook matches the engine's words and parses no range of
+# its own (#1600).
+printf '%s\n' "$report" | grep -F 'this corpus asks for engine' || :
 printf '%s\n' "$report" | awk '
     /^blocks a strict run$/ { print; blocks = 1; next }
     blocks && /^ / { print; next }

@@ -84,7 +84,16 @@ function failure(id, reason) {
 
 function main() {
   const options = parseArgs(process.argv.slice(2));
-  const session = { ...options, maxOutput: MAX_OUTPUT };
+  // The engine's line about an engine outside the corpus range goes to this
+  // process's own standard error, once per distinct line, which VS Code shows
+  // in the log of the MCP server (#1600).
+  const warned = new Set();
+  const onEngine = (line) => {
+    if (warned.has(line)) return;
+    warned.add(line);
+    process.stderr.write(line + '\n');
+  };
+  const session = { ...options, maxOutput: MAX_OUTPUT, onEngine };
   let initialize = DEFAULT_INITIALIZE;
 
   const send = (message) => process.stdout.write(JSON.stringify(message) + '\n');

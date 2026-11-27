@@ -336,7 +336,7 @@ pub fn sources(root: &Path, consumer: &Consumer) -> Result<Vec<Source>, Vec<Reso
                 return Err(refusal(
                     CONSUMER,
                     &format!(
-                        "this corpus asks for engine \"{asked}\", and {} needs engine \"{needed}\"; no engine is in both",
+                        "this corpus asks for engine {asked:?}, and {} needs engine {needed:?}; no engine is in both",
                         consumer.package
                     ),
                 ));
