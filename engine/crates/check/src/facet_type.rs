@@ -337,13 +337,28 @@ kinds:
 
     #[test]
     fn a_date_facet_admits_a_calendar_date_and_nothing_else() {
-        for line in ["f: 2024-02-29", "f: 2026-12-31", "f: \"2026-01-01\""] {
+        // `2000-02-29` holds the 400-year arm of the leap rule.
+        for line in [
+            "f: 2024-02-29",
+            "f: 2000-02-29",
+            "f: 2026-12-31",
+            "f: \"2026-01-01\"",
+        ] {
             assert_eq!(refused(line, ScalarType::Date), None, "{line}");
         }
         for line in [
             "f: 2026-02-30",
             "f: 0000-00-00",
             "f: 2025-02-29",
+            // A century year is not a leap year unless 400 divides it.
+            "f: 1900-02-29",
+            "f: 2100-02-29",
+            // Day zero and month zero, each beside a valid other field, so
+            // each bound is held by its own case.
+            "f: 2026-02-00",
+            "f: 2026-00-10",
+            "f: 2026-13-01",
+            "f: 2026-01-32",
             "f: 2026-8-12",
             "f: 99999-99-99",
         ] {
