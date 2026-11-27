@@ -186,6 +186,7 @@ pub mod participation;
 pub mod patch;
 pub mod phase;
 pub mod pin;
+pub mod placeholder;
 pub mod placement;
 pub mod promotion;
 pub mod readset;
@@ -251,7 +252,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 58] = [
+pub const RULES: [&str; 59] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
@@ -285,6 +286,7 @@ pub const RULES: [&str; 58] = [
     command::RULE,
     source_form::RULE,
     sections::RULE,
+    placeholder::RULE,
     fragment::RULE,
     link_path::RULE,
     link_identifier::RULE,
@@ -706,6 +708,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::document_exports::<sections::Sections>(),
         ),
         (
+            placeholder::RULE,
+            scope::document_scope::<placeholder::Placeholder>(),
+            scope::document_version::<placeholder::Placeholder>(),
+            scope::document_exports::<placeholder::Placeholder>(),
+        ),
+        (
             fragment::RULE,
             scope::corpus_scope::<fragment::Fragments>(),
             scope::corpus_version::<fragment::Fragments>(),
@@ -1004,6 +1012,7 @@ pub fn run(
     let commands = command::Undeclared::over(declared.shape);
     let source_form = source_form::SourceForm::over(declared.shape);
     let sections = sections::Sections::over(declared.shape);
+    let placeholders = placeholder::Placeholder::over(declared.shape);
     // Whether a fragment names a heading of the document it points at, whether
     // that is the citing document or another one. Corpus-scoped for
     // [`link_path`]'s reason below, and because handing a document-scoped rule
@@ -1278,6 +1287,13 @@ pub fn run(
     instances.extend(scope::over_outside_root(&retired, census, cache));
     instances.extend(scope::over_outside_root(&source_form, census, cache));
     instances.extend(scope::over_documents(&sections, census, graph, ctx, cache));
+    instances.extend(scope::over_documents(
+        &placeholders,
+        census,
+        graph,
+        ctx,
+        cache,
+    ));
     instances.extend(scope::over_corpus(
         &fragments, census, graph, claims, ctx, cache,
     ));

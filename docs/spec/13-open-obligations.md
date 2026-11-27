@@ -225,7 +225,6 @@ The second said that a control declares one posture and that spec 4 writes two v
 - [HW-OBL-0107](../obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md) — The base package ships a kind that the scaffolder refuses to write
 - [HW-OBL-0109](../obligations/0109-the-capture-cost-denominator-is-set-by-declaration-and-not-by-work.md) — The capture-cost denominator is set by declaration and not by work
 - [HW-OBL-0111](../obligations/0111-the-capture-cost-surface-names-an-entry-point-and-never-the-caller.md) — The capture-cost surface names an entry point and never the caller
-- [HW-OBL-0113](../obligations/0113-every-check-passes-a-document-that-is-still-the-scaffolder-s-placeholder.md) — Every check passes a document that is still the scaffolder's placeholder
 - [HW-OBL-0118](../obligations/0118-the-published-read-set-names-no-anchor-so-a-gate-decides-nothing-about-one.md) — The published read set names no anchor, so a gate decides nothing about one
 - [HW-OBL-0119](../obligations/0119-an-audit-reading-carries-no-declared-bar-so-a-distribution-cannot-become-a-finding.md) — An audit reading carries no declared bar, so a distribution cannot become a finding
 - [HW-OBL-0120](../obligations/0120-no-reader-takes-a-waiver-against-a-check-finding-so-one-arm-of-the-escape-partition-is-empty.md) — No reader takes a waiver against a check finding, so one arm of the escape partition is empty
@@ -253,6 +252,8 @@ The second said that a control declares one posture and that spec 4 writes two v
 [HW-OBL-0042](../obligations/0042-a-declared-invalid-when-reaches-no-check-and-two-live.md) is discharged and it is not in the list above. The base declared `invalid_when` on `conflicts_with`, and no rule read it. `relation.pair.invalid` now reports a pair of documents where the declared condition holds at both ends. It reads the facet that the condition names. [#1491](https://github.com/headwater-ai/headwater/issues/1491) holds seven more declarations that reach no check.
 
 [HW-OBL-0191](../obligations/0191-an-unknown-discriminator-value-removes-a-document-from-every-check-and-no-gate-reports-it.md) is discharged and it is not in the list above. A document whose discriminator named no kind left every check, and a strict run exited 0. `shelf.discriminator.unresolved` now reports that document as an error. It reads the census rows where kind resolution stopped at the discriminator.
+
+[HW-OBL-0113](../obligations/0113-every-check-passes-a-document-that-is-still-the-scaffolder-s-placeholder.md) is discharged and it is not in the list above. A document that still held the prompts the scaffolder writes passed every check, and no finding named it. `scaffold.placeholder.unwritten` now names each such section and facet as a warning. It reads the exact strings that the scaffolder writes, from one copy that the two share.
 
 ## What else each decision left open
 

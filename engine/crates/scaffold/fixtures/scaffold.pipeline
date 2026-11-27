@@ -2,7 +2,7 @@ touched corpus/spec/04-a-scaffolded-fourth-part.md
 touched corpus/decisions/a-scaffolded-successor.md
 touched corpus/decisions/a-second-successor.md
 
-14 seen, 9 classified, 9 checked, 171 check instances
+14 seen, 9 classified, 9 checked, 180 check instances
      12 skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
       6 skipped: this document declares no warrant, so there is no acceptance to read beside the state
       4 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
@@ -30,6 +30,7 @@ adoption
       1 instances of identifier.claim.stale
       7 instances of voice.forbidden_construction
       7 instances of section.required.missing
+      9 instances of scaffold.placeholder.unwritten
       1 instances of link.fragment.unresolved
       1 instances of link.path.unresolved
       1 instances of link.identifier.mismatch
@@ -110,6 +111,8 @@ rules, and for each the scope that binds it
   language.source_form.not_met
     document scope, one document, its front matter and its body
   section.required.missing
+    document scope, one document, its front matter and its body
+  scaffold.placeholder.unwritten
     document scope, one document, its front matter and its body
   link.fragment.unresolved
     corpus scope, every row of the census, and it is a barrier
@@ -204,6 +207,7 @@ register
   surface.command.undeclared reaches no obligation, so it names none
   language.source_form.not_met reaches no obligation, so it names none
   section.required.missing reaches no obligation, so it names none
+  scaffold.placeholder.unwritten reaches no obligation, so it names none
   link.fragment.unresolved reaches no obligation, so it names none
   link.path.unresolved reaches no obligation, so it names none
   link.identifier.mismatch reaches no obligation, so it names none
@@ -232,8 +236,9 @@ register
 pattern set voice.forbidden_construction future_intent: 0 of 14 patterns produced a finding, so a zero here does not show a clean corpus
 pattern set voice.forbidden_construction change_narration: 0 of 23 patterns produced a finding, so a zero here does not show a clean corpus
 pattern set voice.forbidden_construction phased_rollout: 0 of 13 patterns produced a finding, so a zero here does not show a clean corpus
-1 findings
+12 findings
       1 ✗ error
+     11 ▲ warn
 
 instances
   facet.required.missing corpus/decisions/a-scaffolded-successor.md
@@ -512,6 +517,24 @@ instances
     passed
   section.required.missing corpus/spec/04-a-scaffolded-fourth-part.md
     passed
+  scaffold.placeholder.unwritten corpus/decisions/a-scaffolded-successor.md
+    failed
+  scaffold.placeholder.unwritten corpus/decisions/a-second-successor.md
+    failed
+  scaffold.placeholder.unwritten corpus/decisions/an-earlier-decision.md
+    passed
+  scaffold.placeholder.unwritten corpus/exhausted/the-last-one.md
+    passed
+  scaffold.placeholder.unwritten corpus/spec/01-the-first-part.md
+    passed
+  scaffold.placeholder.unwritten corpus/spec/02-the-second-part.md
+    passed
+  scaffold.placeholder.unwritten corpus/spec/03-the-third-part.md
+    passed
+  scaffold.placeholder.unwritten corpus/spec/04-a-scaffolded-fourth-part.md
+    failed
+  scaffold.placeholder.unwritten corpus/standards/a-standard.md
+    passed
   link.fragment.unresolved corpus/decisions/a-scaffolded-successor.md + corpus/decisions/a-second-successor.md + corpus/decisions/an-earlier-decision.md + corpus/exhausted/the-last-one.md + corpus/spec/01-the-first-part.md + corpus/spec/02-the-second-part.md + corpus/spec/03-the-third-part.md + corpus/spec/04-a-scaffolded-fourth-part.md + corpus/standards/a-standard.md
     passed
   link.path.unresolved corpus/decisions/a-scaffolded-successor.md + corpus/decisions/a-second-successor.md + corpus/decisions/an-earlier-decision.md + corpus/exhausted/the-last-one.md + corpus/spec/01-the-first-part.md + corpus/spec/02-the-second-part.md + corpus/spec/03-the-third-part.md + corpus/spec/04-a-scaffolded-fourth-part.md + corpus/standards/a-standard.md
@@ -579,6 +602,39 @@ instances
   relation.scope.ungoverned corpus/decisions/a-scaffolded-successor.md + corpus/decisions/a-second-successor.md + corpus/decisions/an-earlier-decision.md + corpus/exhausted/the-last-one.md + corpus/spec/01-the-first-part.md + corpus/spec/02-the-second-part.md + corpus/spec/03-the-third-part.md + corpus/spec/04-a-scaffolded-fourth-part.md + corpus/standards/a-standard.md
     skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
 
+corpus/decisions/a-scaffolded-successor.md:5:10 ▲ warn
+  scaffold.placeholder.unwritten: `summary` still holds the prompt the scaffolder wrote for a person to replace
+  fix: write the value of `summary` into corpus/decisions/a-scaffolded-successor.md
+corpus/decisions/a-scaffolded-successor.md:18:1 ▲ warn
+  scaffold.placeholder.unwritten: this section still reads `TODO write this section.`, the prompt the scaffolder wrote for a person to replace
+  fix: write the section in corpus/decisions/a-scaffolded-successor.md, in place of the prompt
+corpus/decisions/a-scaffolded-successor.md:22:1 ▲ warn
+  scaffold.placeholder.unwritten: this section still reads `TODO write this section.`, the prompt the scaffolder wrote for a person to replace
+  fix: write the section in corpus/decisions/a-scaffolded-successor.md, in place of the prompt
+corpus/decisions/a-scaffolded-successor.md:26:1 ▲ warn
+  scaffold.placeholder.unwritten: this section still reads `TODO write this section.`, the prompt the scaffolder wrote for a person to replace
+  fix: write the section in corpus/decisions/a-scaffolded-successor.md, in place of the prompt
+corpus/decisions/a-second-successor.md:5:10 ▲ warn
+  scaffold.placeholder.unwritten: `summary` still holds the prompt the scaffolder wrote for a person to replace
+  fix: write the value of `summary` into corpus/decisions/a-second-successor.md
+corpus/decisions/a-second-successor.md:18:1 ▲ warn
+  scaffold.placeholder.unwritten: this section still reads `TODO write this section.`, the prompt the scaffolder wrote for a person to replace
+  fix: write the section in corpus/decisions/a-second-successor.md, in place of the prompt
+corpus/decisions/a-second-successor.md:22:1 ▲ warn
+  scaffold.placeholder.unwritten: this section still reads `TODO write this section.`, the prompt the scaffolder wrote for a person to replace
+  fix: write the section in corpus/decisions/a-second-successor.md, in place of the prompt
+corpus/decisions/a-second-successor.md:26:1 ▲ warn
+  scaffold.placeholder.unwritten: this section still reads `TODO write this section.`, the prompt the scaffolder wrote for a person to replace
+  fix: write the section in corpus/decisions/a-second-successor.md, in place of the prompt
+corpus/spec/04-a-scaffolded-fourth-part.md:5:10 ▲ warn
+  scaffold.placeholder.unwritten: `summary` still holds the prompt the scaffolder wrote for a person to replace
+  fix: write the value of `summary` into corpus/spec/04-a-scaffolded-fourth-part.md
+corpus/spec/04-a-scaffolded-fourth-part.md:16:1 ▲ warn
+  scaffold.placeholder.unwritten: this section still reads `TODO write this section.`, the prompt the scaffolder wrote for a person to replace
+  fix: write the section in corpus/spec/04-a-scaffolded-fourth-part.md, in place of the prompt
+corpus/spec/04-a-scaffolded-fourth-part.md:20:1 ▲ warn
+  scaffold.placeholder.unwritten: this section still reads `TODO write this section.`, the prompt the scaffolder wrote for a person to replace
+  fix: write the section in corpus/spec/04-a-scaffolded-fourth-part.md, in place of the prompt
 corpus/standards/a-standard.md:1:1 ✗ error
   identifier.unusable (OB-FIX-1): a typed `standard` that declares no identifier, so no edge can name it
   fix: write one identifier of this document under the `id` key, because a relation names a document by its identifier and a document with none can stand at neither end of one

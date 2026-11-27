@@ -278,7 +278,16 @@ impl Root {
             .map(|entry| entry.expect("the entry reads").path())
             .next()
             .expect("the scaffolder wrote a document");
-        let mut text = std::fs::read_to_string(&at).expect("the document reads");
+        // The prompts are replaced with content, so that the one debt this
+        // corpus carries is the long sentence below and not the scaffolder's
+        // prompts, which `scaffold.placeholder.unwritten` names (HW-OBL-0113).
+        let mut text = std::fs::read_to_string(&at)
+            .expect("the document reads")
+            .replace(
+                headwater_check::placeholder::SECTION_PROMPT,
+                "The author wrote this section.",
+            )
+            .replace(headwater_check::placeholder::SCENT_PROMPT, "A scratch part");
         text.push_str(
             "\n## A scratch section\n\nThis document is scratch and it does not meet the \
              controlled language, because the sentence is deliberately long enough to pass the \

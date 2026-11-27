@@ -78,7 +78,7 @@ The minting step runs before the placement step, because a shelf layout can name
 
 The scaffolder writes no far half while the new document is at its initial state ([HW-DR-0086](../decisions/0086-a-reciprocal-half-is-owed-once-its-writer-leaves-its-initial-state.md)). It records the half as `Owed`. It writes no far half of a symmetric relation, and it sets no state on the target of `supersedes` ([HW-DR-0101](../decisions/0101-new-writes-no-far-half-of-a-symmetric-relation-and-no-state-on-a-supersedes-target.md)). The check layer reports each of these later, and `check --fix` writes them through the same splice. Thus the rule stays the one writer of each fact.
 
-[HW-OBL-0107](../obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md) records a kind of the base package that the scaffolder refuses to write. [HW-OBL-0113](../obligations/0113-every-check-passes-a-document-that-is-still-the-scaffolder-s-placeholder.md) records that every check passes a document that still holds the placeholder of the scaffolder.
+[HW-OBL-0107](../obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md) records a kind of the base package that the scaffolder refuses to write. [HW-OBL-0113](../obligations/0113-every-check-passes-a-document-that-is-still-the-scaffolder-s-placeholder.md) recorded that every check passed a document that still held the placeholder of the scaffolder. The check `scaffold.placeholder.unwritten` discharged it, and it names each such prompt as a warning.
 
 ### Three lock members that only the scaffolder reads
 

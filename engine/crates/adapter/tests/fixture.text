@@ -68,7 +68,7 @@ graph
     identifier: the identifier is not a scalar, and an identifier is a word
 
 checks
-  31 seen, 29 classified, 28 checked, 455 check instances
+  31 seen, 29 classified, 28 checked, 483 check instances
         1 generated, held to regeneration by `headwater generate --check`
        58 skipped: this document declares no warrant, and an absent warrant is
          not a value outside the closed set
@@ -120,6 +120,7 @@ checks
        19 instances of language.retired_term.used
        19 instances of language.source_form.not_met
         2 instances of section.required.missing
+       28 instances of scaffold.placeholder.unwritten
         1 instances of link.fragment.unresolved
         1 instances of link.path.unresolved
         1 instances of link.identifier.mismatch
@@ -215,6 +216,8 @@ checks
     language.source_form.not_met
       document scope, one document, its front matter and its body
     section.required.missing
+      document scope, one document, its front matter and its body
+    scaffold.placeholder.unwritten
       document scope, one document, its front matter and its body
     link.fragment.unresolved
       corpus scope, every row of the census, and it is a barrier
@@ -326,6 +329,7 @@ checks
     identifier.claim.stale reaches no obligation, so it names none
     surface.local_path.instructed reaches no obligation, so it names none
     surface.command.undeclared reaches no obligation, so it names none
+    scaffold.placeholder.unwritten reaches no obligation, so it names none
     link.path.unresolved reaches no obligation, so it names none
     relation.mention.undeclared reaches no obligation, so it names none
     warrant.promoted reaches no obligation, so it names none
@@ -810,6 +814,7 @@ read set
   version surface.command.undeclared 3
   version language.source_form.not_met 1
   version section.required.missing 1
+  version scaffold.placeholder.unwritten 1
   version link.fragment.unresolved 4
   version link.path.unresolved 1
   version link.identifier.mismatch 1

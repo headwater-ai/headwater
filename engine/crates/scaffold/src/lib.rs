@@ -51,6 +51,7 @@
 //! | a target that resolves to nothing | `relation.target.unresolved` | [`Refusal::TargetUnresolved`] |
 //! | a facet value outside its set | `facet.value.not_permitted` | [`Refusal::FacetUndeterminable`] |
 //! | a missing required section | `section.required.missing` | none needed: the headings are written |
+//! | a section or a facet still holding the prompt | `scaffold.placeholder.unwritten` | none: the prompt is for a person, and the finding is a warning |
 //!
 //! The refusals are a closed set for the reason spec 12 gives every closed set
 //! in this engine. A test is written against a name, so an invariant that lived
@@ -1674,12 +1675,13 @@ fn next_in_series(sources: &Sources<'_>, shelf: &Shelf, facet: &str) -> u64 {
 }
 
 /// The question a field asks when nothing determines its value.
+///
+/// Both strings are the check crate's, so that `scaffold.placeholder.unwritten`
+/// reads what this function writes.
 fn prompt(facet: &str, role: Option<&str>) -> String {
     match role {
-        Some("scent") => {
-            "TODO one sentence: what a reader learns here, which is what routing reads".to_string()
-        }
-        _ => format!("TODO {facet}"),
+        Some("scent") => headwater_check::placeholder::SCENT_PROMPT.to_string(),
+        _ => headwater_check::placeholder::facet_prompt(facet),
     }
 }
 

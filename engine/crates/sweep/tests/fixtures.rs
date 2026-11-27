@@ -219,13 +219,6 @@ fn a_report_is_the_same_bytes_twice() {
 
 // --- the HW-OBL-0113 case -------------------------------------------------
 
-/// The placeholder document, held twice: once against every check this engine
-/// runs, and once against the sweep.
-///
-/// The first half is the finding HW-OBL-0113 records, turned into a standing
-/// assertion. If a rule ever starts to report a document whose sections are the
-/// scaffolder's prompt, this test fails and the record is discharged. Until
-/// then it says, in a file that runs, that the run names nothing.
 /// A claim for every identifier the fixture tree declares, as a bootstrapped
 /// store holds them.
 ///
@@ -246,8 +239,17 @@ fn claims_over(index: &headwater_graph::index::Index) -> headwater_check::claim:
     )
 }
 
+/// The placeholder document, held twice: once against every check this engine
+/// runs, and once against the sweep.
+///
+/// The first half is the finding HW-OBL-0113 recorded, and the rule that
+/// discharged it: `scaffold.placeholder.unwritten` names the document once for
+/// each of its two sections that still read `TODO write this section.` and
+/// once for the summary that is still the scaffolder's prompt, and no other
+/// rule names it. The second half is a judgment that no exact string reveals,
+/// so the sweep still carries it.
 #[test]
-fn no_check_names_the_placeholder_document_and_the_sweep_does() {
+fn a_check_names_the_placeholder_document_and_the_sweep_still_does() {
     let placeholder = "corpus/0003-every-check-may-be-disabled-by-an-operator.md";
     let root = taxonomy_map();
     let taken = fixture_census(&root);
@@ -303,10 +305,10 @@ fn no_check_names_the_placeholder_document_and_the_sweep_does() {
         .filter(|finding| finding.path == placeholder)
         .map(|finding| finding.rule)
         .collect();
-    assert!(
-        named.is_empty(),
-        "a check now names the placeholder document: {named:?}. \
-         HW-OBL-0113 is discharged and this test is what should change"
+    assert_eq!(
+        named, ["scaffold.placeholder.unwritten"; 3],
+        "the placeholder document is not named once per section prompt and \
+         once for the summary prompt, and by nothing else"
     );
 
     let report = report_of(&returned());

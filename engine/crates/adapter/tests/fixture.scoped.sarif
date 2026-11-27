@@ -510,6 +510,20 @@
               }
             },
             {
+              "id": "scaffold.placeholder.unwritten",
+              "shortDescription": {
+                "text": "document scope, one document, its front matter and its body"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
               "id": "link.fragment.unresolved",
               "shortDescription": {
                 "text": "corpus scope, every row of the census, and it is a barrier"
@@ -1441,7 +1455,7 @@
         },
         {
           "ruleId": "relation.mention.undeclared",
-          "ruleIndex": 36,
+          "ruleIndex": 37,
           "level": "note",
           "kind": "fail",
           "message": {
@@ -2258,7 +2272,7 @@
         },
         {
           "ruleId": "link.fragment.unresolved",
-          "ruleIndex": 33,
+          "ruleIndex": 34,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2291,7 +2305,7 @@
         },
         {
           "ruleId": "link.path.unresolved",
-          "ruleIndex": 34,
+          "ruleIndex": 35,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2322,7 +2336,7 @@
         },
         {
           "ruleId": "link.path.unresolved",
-          "ruleIndex": 34,
+          "ruleIndex": 35,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2353,7 +2367,7 @@
         },
         {
           "ruleId": "link.path.unresolved",
-          "ruleIndex": 34,
+          "ruleIndex": 35,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2384,7 +2398,7 @@
         },
         {
           "ruleId": "link.path.unresolved",
-          "ruleIndex": 34,
+          "ruleIndex": 35,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2415,7 +2429,7 @@
         },
         {
           "ruleId": "link.path.unresolved",
-          "ruleIndex": 34,
+          "ruleIndex": 35,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2446,7 +2460,7 @@
         },
         {
           "ruleId": "link.identifier.mismatch",
-          "ruleIndex": 35,
+          "ruleIndex": 36,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -2479,7 +2493,7 @@
         },
         {
           "ruleId": "relation.mention.undeclared",
-          "ruleIndex": 36,
+          "ruleIndex": 37,
           "level": "note",
           "kind": "fail",
           "message": {
@@ -3409,7 +3423,7 @@
         },
         {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 47,
+          "ruleIndex": 48,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3438,7 +3452,7 @@
         },
         {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 47,
+          "ruleIndex": 48,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3467,7 +3481,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 46,
+          "ruleIndex": 47,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3496,7 +3510,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 46,
+          "ruleIndex": 47,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3525,7 +3539,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 46,
+          "ruleIndex": 47,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3554,7 +3568,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 46,
+          "ruleIndex": 47,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3583,7 +3597,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 46,
+          "ruleIndex": 47,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -3641,7 +3655,7 @@
             "classified": 29,
             "checked": 29,
             "generated": 1,
-            "instances": 455,
+            "instances": 483,
             "skipped": 91,
             "skips": [
               {

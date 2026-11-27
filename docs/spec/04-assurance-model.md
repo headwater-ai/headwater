@@ -282,7 +282,7 @@ To name a coherence class is easy. To discharge it is the hard part, and structu
 - documents whose declared audience cannot actually use them
 - a heading that a kind requires, over prose that says nothing about it
 
-The fifth entry arrived from a measurement. [HW-OBL-0113](../obligations/0113-every-check-passes-a-document-that-is-still-the-scaffolder-s-placeholder.md) records a decision record whose two required sections each held the scaffolder's own prompt. Every check passed it and the strict run exited zero. The remedy is a rewrite, so no rule can ever block on it. A sweep is the only surface that reads what is under a heading. The class is `unwritten_section`.
+The fifth entry arrived from a measurement. [HW-OBL-0113](../obligations/0113-every-check-passes-a-document-that-is-still-the-scaffolder-s-placeholder.md) records a decision record whose two required sections each held the scaffolder's own prompt. Every check passed it and the strict run exited zero. The remedy is a rewrite, so no rule can ever block on it. The check `scaffold.placeholder.unwritten` now names a section that still holds the exact prompt, as a warning. A section that holds other text and says nothing is still a judgment, and only a sweep reads it. The class is `unwritten_section`.
 
 Four constraints keep this inside the rules that the rest of the system obeys:
 
