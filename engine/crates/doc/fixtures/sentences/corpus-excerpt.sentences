@@ -1,0 +1,5 @@
+1:5 24w | Voice regime — the voice in which a document is written, with the machine-checkable part of it: e.g. declarative present-state (no future intent, no narration of change, no phased-rollout language), narrative (time-boxed exploration, changelogs), or unconstrained.
+2:5 20w | Lifecycle regime — a state machine over the state facet: states, legal transitions, terminal states, and what each state implies (e.g. superseded documents are retained and delinked from live dependency paths).
+4:1 18w | headwater check --fix writes the corrections the engine can derive without judgment and prints what it wrote on standard error.
+4:131 18w | It leaves every finding whose remedy is a rewrite, and it refuses a file rather than half-writing one.
+4:234 7w | Read the diff before you commit it.

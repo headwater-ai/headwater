@@ -1,9 +1,9 @@
 ---
 id: HW-OBL-0154
-status: current
-status_since: 2026-09-06
-summary: "Every section of the recorded audit report renders populated except the adoption one, whose fixture tree declares no payload."
-last_verified: 2026-08-28
+status: discharged
+status_since: 2026-11-27
+summary: "A second recorded audit report holds the adoption section populated, over a series the case injects, so no lock was needed."
+last_verified: 2026-11-27
 title: "The adoption decay section is fixture-recorded only in its empty shape"
 waiting_on: build
 ---
@@ -23,6 +23,10 @@ Every other shape of that section is asserted by substring rather than held byte
 The identifier of this record is `HW-OBL-0154` rather than the number the scaffolder minted. Two obligation drafts were open elsewhere at the numbers below it when this landed.
 
 ## Discharge
+
+Discharged on 2026-11-27 by [#2132](https://github.com/headwater-ai/headwater/pull/2132), slice D of [#1494](https://github.com/headwater-ai/headwater/issues/1494). The case `the_fixture_tree_with_an_adoption_series_produces_the_recorded_audit` in `engine/crates/audit/tests/readings.rs` renders the same fixture tree with a populated `Series`, and records the whole report in `engine/crates/audit/fixtures/audit-adoption.report`. The series holds one open task and one discharged task, two recorded readings under two digests, and one line the store cannot read. So the recorded file holds the pairs line, both digests, the per-task trend and the unreadable line, in order.
+
+No lock and no second tree were needed, because `Built::audit_over` already takes the `Series` as a closure. The text below is the condition as it was recorded, and its last paragraph was stale on that point.
 
 A second recorded fixture over a tree that declares a payload closes this, and the audit crate already has the two halves it needs. What it does not have is a fixture tree with a lock, because `Series` is a parameter of `take` rather than something the crate reads.
 
