@@ -59,4 +59,11 @@ What was run and what was not, on 2026-10-02: `npx @vscode/vsce package` in this
 
     HEADWATER_BIN=engine/target/dev-release/headwater node --test integrations/vscode/test/client.test.js integrations/vscode/test/relay.test.js
 
-Run it from the repository root. `client.js` makes every decision, and the suite holds it, including the text of the two tools and the lines of the participant. One case runs against the real engine that `HEADWATER_BIN` names. It skips on a workstation when the variable is unset, and it fails in CI when the variable is unset. The other cases replay sessions that the real server recorded, under `test/fixtures/`. The relay suite starts `relay.js` over the same recorded sessions and counts the servers that each request started. `extension.js` has no tests, because the `vscode` module does not load under `node --test`. It only shows what `client.js` returns.
+Run it from the repository root. `client.js` makes every decision about what the engine answered, and the suite holds it, including the text of the two tools and the lines of the participant. One case runs against the real engine that `HEADWATER_BIN` names. It skips on a workstation when the variable is unset, and it fails in CI when the variable is unset. The other cases replay sessions that the real server recorded, under `test/fixtures/`. The relay suite starts `relay.js` over the same recorded sessions and counts the servers that each request started. `extension.js` has no tests, because the `vscode` module does not load under `node --test`, and a stub of that module would test agreement with the stub and not with VS Code. It shows what `client.js` returns, but it also makes four decisions that no test runs:
+
+- When *Headwater: Route a task* finds no document, the message joins the silence and the withheld note with `; `, and no message shows when both are empty.
+- When it finds documents, the title of the list adds the withheld note in parentheses.
+- Each line that the engine writes to standard error shows once a session in the *Headwater* output channel, and a line repeats only when its text differs.
+- The extension asks the engine nothing about a document that is not a `file` URI, that is outside every workspace folder, or whose path is the folder itself or starts with `..`.
+
+If a VS Code test host runs in CI, or a fifth decision moves into `extension.js`, move these decisions into `client.js`, where the suite holds them.
