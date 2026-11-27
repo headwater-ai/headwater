@@ -57,6 +57,7 @@ use headwater_adapter::{Format, Subject};
 use headwater_api::{plan_of, Bound, LoadError, Session};
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
+use headwater_check::paint::visible;
 use headwater_check::{Cache, Context, Date, Shape};
 use headwater_cli::{JsonWord, ProbeWord, SweepWord, TaxonomyWord, Verb};
 use headwater_graph::declarations::Declarations;
@@ -4195,7 +4196,8 @@ fn show(root: &Path, target: &str) -> ExitCode {
         eprintln!(
             "headwater: {}",
             err(&format!(
-                "`{link}` is a symlink, which the walk does not follow, so `show` prints nothing"
+                "`{}` is a symlink, which the walk does not follow, so `show` prints nothing",
+                visible(&link)
             ))
         );
         return ExitCode::FAILURE;
@@ -4210,7 +4212,7 @@ fn show(root: &Path, target: &str) -> ExitCode {
             err(&format!(
                 "`{}` is a named pipe, a socket or a device, which the census never opens, so \
                  `show` prints nothing",
-                explanation.path
+                visible(&explanation.path)
             ))
         );
         return ExitCode::FAILURE;
@@ -4225,7 +4227,7 @@ fn show(root: &Path, target: &str) -> ExitCode {
                 "headwater: {}",
                 err(&format!(
                     "`{}` is a document of this corpus, and it could not be read: {error}",
-                    explanation.path
+                    visible(&explanation.path)
                 ))
             );
             ExitCode::FAILURE
