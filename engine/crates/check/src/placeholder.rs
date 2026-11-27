@@ -23,12 +23,14 @@
 //!
 //! The match is exact, so detection is total and no judgment decides it:
 //!
-//! - a paragraph of the document's own author, outside a block quotation,
-//!   whose whole text, trimmed, is [`SECTION_PROMPT`] and none of it in a code
-//!   span. The prompt inside a fenced block or an inline code span is a
-//!   quotation of the prompt, and a paragraph that goes on after the prompt,
-//!   such as `TODO write this section. The pool holds eight connections.`, is
-//!   a section somebody started to write. Neither is reported.
+//! - a paragraph whose whole text, trimmed, is [`SECTION_PROMPT`], and every
+//!   run of which the document's own author wrote. The prompt inside a fenced
+//!   block, an inline code span or a block quotation is a quotation of the
+//!   prompt. A paragraph that goes on after the prompt, such as
+//!   `TODO write this section. The pool holds eight connections.`, is a
+//!   section somebody started to write. A list item or a heading that reads
+//!   the prompt is not where the scaffolder writes it. None of these is
+//!   reported.
 //! - a top-level scalar facet whose value is [`SCENT_PROMPT`], or is
 //!   [`facet_prompt`] of its own key.
 //!
@@ -147,7 +149,11 @@ impl DocumentCheck for Placeholder {
             .collect();
         if let Some(body) = view.body() {
             findings.extend(
-                body.authored()
+                // One test of ownership covers both exclusions: a run inside a
+                // block quotation is `Quoted` and a run in a code block or a
+                // code span is `Code`, so the parser decides each of them once.
+                body.blocks
+                    .iter()
                     .filter(|block| block.kind == BlockKind::Paragraph)
                     .filter(|block| {
                         block

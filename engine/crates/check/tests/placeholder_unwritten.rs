@@ -18,8 +18,12 @@
 //! **A rule that read "contains the prompt"** reports `started.md`, whose one
 //! paragraph goes on after the prompt.
 //!
-//! **A rule that read every block** reports `quoted.md`, whose prompt is in a
-//! block quotation and so belongs to another author.
+//! **A rule that read every authored run** reports `quoted.md`, whose prompt
+//! is in a block quotation and so belongs to another author.
+//!
+//! **A rule that read every kind of block** reports `item-and-heading.md`,
+//! whose prompt is a tight list item and a heading. The scaffolder writes it
+//! as a paragraph under a heading, and nowhere else.
 //!
 //! **A rule that read `TODO <any facet>`** reports `other-key.md`, whose
 //! `owner` reads `TODO summary`. The scaffolder writes `TODO owner` into
@@ -134,6 +138,7 @@ fn a_written_document_and_each_neighbor_reading_pass() {
         "decisions/started.md",
         "decisions/quoted.md",
         "decisions/other-key.md",
+        "decisions/item-and-heading.md",
     ] {
         let path = format!("placeholder/{file}");
         // Classified, so the silence is a verdict and not an omission.
