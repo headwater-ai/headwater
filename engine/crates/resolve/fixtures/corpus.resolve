@@ -165,7 +165,7 @@ rule by rule
   reference well-formedness
     over one source: every address and every `$`-reference parses, and stands where one may
   referential integrity
-    on the result: every name a declaration reads is declared, every relation endpoint is a kind or an anchor kind, and every control discharges a declared obligation. The `$`-reference half runs at merge time, because a reference that reads nothing stops the merge
+    on the result: every name a declaration reads is declared, every relation endpoint is a kind or an anchor kind, and every control discharges a declared obligation. A name that a `remove` orphaned is reported against that `remove`. The `$`-reference half runs at merge time, because a reference that reads nothing stops the merge
   anchor integrity
     on the result: one resolver per anchor kind, and no two anchor kinds share a namespace
   identifier integrity
