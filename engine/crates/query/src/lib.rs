@@ -63,6 +63,7 @@ pub use route::{Budget, Entry, Evidence, Route, Silence, Suspect};
 use headwater_census::census::{Census, Row};
 use headwater_census::resolve::Resolution;
 use headwater_census::shelves::Taxonomy;
+use headwater_check::paint::visible;
 use headwater_check::Shape;
 use headwater_graph::declarations::{Declarations, Direction, Governs};
 use headwater_graph::{Config, Edge, Graph, Target};
@@ -680,19 +681,23 @@ impl Neighbour {
     /// crate is written to avoid.
     pub fn render(&self) -> String {
         use std::fmt::Write;
+        // Every value here can come from a document, so each one goes through
+        // `visible`: no control character reaches a terminal or a CI log, and
+        // no value opens a line with `::` (#2069). A clean value is borrowed.
         let mut line = format!(
             "{} {} {}",
             match self.inbound {
                 true => "from",
                 false => "to",
             },
-            self.target,
-            self.relation
+            visible(&self.target),
+            visible(&self.relation)
         );
         if let Some(cue) = &self.cue {
             let _ = write!(
                 line,
-                " — {cue}{}",
+                " — {}{}",
+                visible(cue),
                 match self.cue_is_declared {
                     true => "",
                     false => " (the target's own summary)",
@@ -706,13 +711,15 @@ impl Neighbour {
             (Governs::Source, Some(state)) => {
                 let _ = write!(
                     line,
-                    " [this document will govern the reading once it leaves `{state}`]"
+                    " [this document will govern the reading once it leaves `{}`]",
+                    visible(state)
                 );
             }
             (Governs::Target, Some(state)) => {
                 let _ = write!(
                     line,
-                    " [that document will govern the reading once it leaves `{state}`]"
+                    " [that document will govern the reading once it leaves `{}`]",
+                    visible(state)
                 );
             }
             (Governs::Source, None) => line.push_str(" [this document governs the reading]"),
@@ -737,7 +744,7 @@ impl Neighbour {
                 members => {
                     let breakdown = members
                         .iter()
-                        .map(|(pattern, paths)| format!("{pattern}: {}", paths.len()))
+                        .map(|(pattern, paths)| format!("{}: {}", visible(pattern), paths.len()))
                         .collect::<Vec<String>>()
                         .join(", ");
                     let _ = write!(line, " (reaches {} entries — {breakdown})", reach.total);
@@ -747,16 +754,17 @@ impl Neighbour {
         // The digest a stamp writes now, beside the one the edge records, so
         // an author can compare the two without a shell recipe (#2016).
         if let Some(digest) = &self.digest {
-            let _ = write!(line, " (content now {}, ", digest.current);
+            let _ = write!(line, " (content now {}, ", visible(&digest.current));
             match (&digest.recorded, digest.baseline) {
                 (None, _) => line.push_str("none recorded)"),
                 (Some(recorded), false) => {
-                    let _ = write!(line, "recorded {recorded})");
+                    let _ = write!(line, "recorded {})", visible(recorded));
                 }
                 (Some(recorded), true) => {
                     let _ = write!(
                         line,
-                        "recorded {recorded} as a baseline, which records no reading)"
+                        "recorded {} as a baseline, which records no reading)",
+                        visible(recorded)
                     );
                 }
             }
@@ -773,20 +781,26 @@ impl Pointer {
     /// dash, so that a reader and a script can both tell the declaration from
     /// the prose beside it. A document that declares no name renders exactly as
     /// it did before this field existed.
+    ///
+    /// Every value goes through `visible`, because each one comes from a
+    /// document and `route`, `explain` and the MCP tools all print this line
+    /// (#2069). `Route::render_at` paints `visible(&self.path)`, so the two
+    /// agree on the text they look for.
     pub fn render(&self) -> String {
-        let mut line = self.path.clone();
+        let mut line = visible(&self.path).into_owned();
         if let Some(name) = &self.name {
             line.push_str(" (");
-            line.push_str(name);
+            line.push_str(&visible(name));
             line.push(')');
         }
         if let Some(summary) = &self.summary {
             line.push_str(" — ");
-            line.push_str(summary);
+            line.push_str(&visible(summary));
         }
         match (&self.outside, self.unwarranted) {
             (Some(warrant), _) => line.push_str(&format!(
-                " [warrant `{warrant}` is not one of the four values: no acceptance is read from it]"
+                " [warrant `{}` is not one of the four values: no acceptance is read from it]",
+                visible(warrant)
             )),
             (None, true) => line.push_str(" [asserted: nobody accepted this document]"),
             (None, false) => {}
@@ -809,7 +823,10 @@ impl Pointer {
 /// `docs/interfaces/headwater-explain.md`'s refusal table. It carries no
 /// newline and no prefix, because both belong to the channel.
 pub fn outside_text(target: &str) -> String {
-    format!("`{target}` is outside this repository, or is not a path it can read")
+    format!(
+        "`{}` is outside this repository, or is not a path it can read",
+        visible(target)
+    )
 }
 
 /// The words of a string, lowercased, in the order they were written.

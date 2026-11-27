@@ -97,7 +97,7 @@
 use headwater_census::census::Census;
 use headwater_census::resolve::{shelf_for, ShelfMatch};
 use headwater_census::shelves::DeclarationError;
-use headwater_check::paint::{dim, paint, ColorMode, Role};
+use headwater_check::paint::{dim, paint, visible, ColorMode, Role};
 use headwater_query::{Document, Pointer, Surface};
 use headwater_yaml::value::{Mapping, Value};
 use std::path::Path;
@@ -1964,7 +1964,9 @@ impl Report {
     /// could go wrong, and the fixture that holds the bar could only reach one
     /// of them.
     pub fn remedy(&self) -> Option<String> {
-        let sentence = self.sentence()?;
+        // The sentence can quote a transcript path or an arm, which a
+        // document supplies, so it goes through `visible` whole (#2069).
+        let sentence = visible(&self.sentence()?).into_owned();
         Some(match self.withheld {
             true => format!(
                 "{sentence}. This run refused before its first write, so it wrote nothing and the \
@@ -2056,6 +2058,10 @@ impl Report {
     /// reason lines under a path take dim weight, because HW-DR-0045's table
     /// gives already-stated context no hue. Nothing here is filled, so paint
     /// and layout do not meet — see `Route::render` for the case where they do.
+    ///
+    /// Every path and every line under one goes through `visible` before it
+    /// is painted, because a path or a reason can quote a value that a
+    /// document supplies (#2069). A clean value is borrowed back unchanged.
     pub fn render(&self, mode: ColorMode) -> String {
         let mut out = String::new();
         // First, because it is what decides whether anything below can be read
@@ -2093,9 +2099,12 @@ impl Report {
                     out.push_str(&format!(
                         "  {} {}\n",
                         wrote.kind.name(),
-                        paint(Role::Path, &wrote.path, mode)
+                        paint(Role::Path, &visible(&wrote.path), mode)
                     ));
-                    out.push_str(&dim(&format!("    {}", wrote.verdict.line()), mode));
+                    out.push_str(&dim(
+                        &format!("    {}", visible(&wrote.verdict.line())),
+                        mode,
+                    ));
                     out.push('\n');
                 }
             }
@@ -2110,9 +2119,9 @@ impl Report {
             for unreadable in &self.unreadable {
                 out.push_str(&format!(
                     "  {}\n",
-                    paint(Role::Path, &unreadable.path, mode)
+                    paint(Role::Path, &visible(&unreadable.path), mode)
                 ));
-                out.push_str(&dim(&format!("    {}", unreadable.detail), mode));
+                out.push_str(&dim(&format!("    {}", visible(&unreadable.detail)), mode));
                 out.push('\n');
             }
         }
@@ -2123,9 +2132,9 @@ impl Report {
             for refused in &self.refused {
                 out.push_str(&format!(
                     "  {}\n",
-                    paint(Role::Path, &refused.transcript, mode)
+                    paint(Role::Path, &visible(&refused.transcript), mode)
                 ));
-                out.push_str(&dim(&format!("    {}", refused.line()), mode));
+                out.push_str(&dim(&format!("    {}", visible(&refused.line())), mode));
                 out.push('\n');
             }
         }
@@ -2140,9 +2149,9 @@ impl Report {
             for moved in &self.moved_since_recording {
                 out.push_str(&format!(
                     "  {}\n",
-                    paint(Role::Path, &moved.transcript, mode)
+                    paint(Role::Path, &visible(&moved.transcript), mode)
                 ));
-                out.push_str(&dim(&format!("    {}", moved.line()), mode));
+                out.push_str(&dim(&format!("    {}", visible(&moved.line())), mode));
                 out.push('\n');
             }
         }
@@ -2153,10 +2162,10 @@ impl Report {
             for defective in &self.defective_arms {
                 out.push_str(&format!(
                     "  {} / {}\n",
-                    paint(Role::Path, &defective.present, mode),
-                    paint(Role::Path, &defective.absent, mode)
+                    paint(Role::Path, &visible(&defective.present), mode),
+                    paint(Role::Path, &visible(&defective.absent), mode)
                 ));
-                out.push_str(&dim(&format!("    {}", defective.line()), mode));
+                out.push_str(&dim(&format!("    {}", visible(&defective.line())), mode));
                 out.push('\n');
             }
         }
@@ -2167,9 +2176,9 @@ impl Report {
             for ambiguous in &self.ambiguous_arms {
                 out.push_str(&format!(
                     "  {}\n",
-                    paint(Role::Path, &ambiguous.selection, mode)
+                    paint(Role::Path, &visible(&ambiguous.selection), mode)
                 ));
-                out.push_str(&dim(&format!("    {}", ambiguous.line()), mode));
+                out.push_str(&dim(&format!("    {}", visible(&ambiguous.line())), mode));
                 out.push('\n');
             }
         }
@@ -2182,8 +2191,11 @@ impl Report {
             ));
             out.push('\n');
             for orphaned in &self.orphaned {
-                out.push_str(&format!("  {}\n", paint(Role::Path, &orphaned.path, mode)));
-                out.push_str(&dim(&format!("    {}", orphaned.line()), mode));
+                out.push_str(&format!(
+                    "  {}\n",
+                    paint(Role::Path, &visible(&orphaned.path), mode)
+                ));
+                out.push_str(&dim(&format!("    {}", visible(&orphaned.line())), mode));
                 out.push('\n');
             }
         }
@@ -2199,9 +2211,9 @@ impl Report {
                 out.push_str(&format!(
                     "  {} {}\n",
                     unwritten.kind.name(),
-                    paint(Role::Path, &unwritten.at, mode)
+                    paint(Role::Path, &visible(&unwritten.at), mode)
                 ));
-                out.push_str(&dim(&format!("    {}", unwritten.reason), mode));
+                out.push_str(&dim(&format!("    {}", visible(&unwritten.reason)), mode));
                 out.push('\n');
             }
         }
@@ -2818,6 +2830,65 @@ mod paint_tests {
             unsettled: None,
             withheld: false,
         }
+    }
+
+    /// No control character from a path reaches the report or the remedy,
+    /// and no line opens with `::` (#2069). Every path of the report holds a
+    /// line feed that opens a workflow command and an escape sequence.
+    #[test]
+    fn a_hostile_path_is_written_as_visible_text() {
+        let hostile = |path: &str| format!("{path}\n::error ::x\u{1b}[31m");
+        let mut report = report();
+        report.producer = None;
+        for wrote in &mut report.wrote {
+            wrote.path = hostile(&wrote.path);
+        }
+        for unwritten in &mut report.unwritten {
+            unwritten.at = hostile(&unwritten.at);
+            unwritten.reason = hostile(&unwritten.reason);
+        }
+        for refused in &mut report.refused {
+            refused.transcript = hostile(&refused.transcript);
+        }
+        for moved in &mut report.moved_since_recording {
+            moved.transcript = hostile(&moved.transcript);
+        }
+        for defective in &mut report.defective_arms {
+            defective.present = hostile(&defective.present);
+            defective.absent = hostile(&defective.absent);
+        }
+        for ambiguous in &mut report.ambiguous_arms {
+            ambiguous.selection = hostile(&ambiguous.selection);
+        }
+        for unreadable in &mut report.unreadable {
+            unreadable.path = hostile(&unreadable.path);
+            unreadable.detail = hostile(&unreadable.detail);
+        }
+        for orphaned in &mut report.orphaned {
+            orphaned.path = hostile(&orphaned.path);
+        }
+        let rendered = report.render(ColorMode::Plain);
+        // The arms go first in the remedy, so the refused transcript is
+        // reached only once they are gone.
+        report.ambiguous_arms.clear();
+        report.defective_arms.clear();
+        let remedy = report
+            .remedy()
+            .expect("a refused transcript names a remedy");
+        for text in [&rendered, &remedy] {
+            assert!(!text.contains('\u{1b}'), "{}", text.escape_debug());
+            let forged: Vec<&str> = text
+                .lines()
+                .filter(|line| line.trim_start().starts_with("::"))
+                .collect();
+            assert!(forged.is_empty(), "{forged:?}");
+        }
+        assert!(remedy.contains("one.md\\n::error ::x\\x1b[31m"), "{remedy}");
+        // Eleven fields were made hostile, and a verdict line can quote one.
+        assert!(
+            rendered.matches("::error ::x\\x1b[31m").count() >= 11,
+            "{rendered}"
+        );
     }
 
     #[test]

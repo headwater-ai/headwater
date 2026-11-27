@@ -53,7 +53,7 @@
 //! it, and the ranking would move on every paragraph anybody edited.
 
 use crate::{terms, Document, Pointer, Surface};
-use headwater_check::paint::{dim, paint, ColorMode, Role};
+use headwater_check::paint::{dim, paint, visible, ColorMode, Role};
 use headwater_graph::declarations::Governs;
 use headwater_graph::Target;
 
@@ -1377,7 +1377,7 @@ impl Route {
             );
         }
         for anchor in &self.anchors {
-            let _ = writeln!(out, "  names the anchor {anchor}");
+            let _ = writeln!(out, "  names the anchor {}", visible(anchor));
         }
         // No em dash on any of these lines, for the reason the withheld line
         // below gives: in this report the dash marks a pointer.
@@ -1385,7 +1385,7 @@ impl Route {
             let _ = writeln!(
                 out,
                 "  {} is in the governed scope, and nothing governs it",
-                entry.path
+                visible(&entry.path)
             );
             if entry.relations.is_empty() {
                 out.push_str("    no declared relation that governs takes it as a target\n");
@@ -1394,7 +1394,12 @@ impl Route {
             out.push_str("    a document declares the edge in its front matter:\n");
             out.push_str("    relations:\n");
             for relation in &entry.relations {
-                let _ = writeln!(out, "      {relation}:\n        - {}", entry.path);
+                let _ = writeln!(
+                    out,
+                    "      {}:\n        - {}",
+                    visible(relation),
+                    visible(&entry.path)
+                );
             }
         }
         match self.matched.is_empty() {
@@ -1422,15 +1427,14 @@ impl Route {
         // dim like the terms line. It carries no em dash, for the reason the
         // withheld line below gives.
         for (pointer, evidence) in self.offers() {
+            // `Pointer::render` writes the path through `visible`, so the
+            // text to paint is the escaped path and not the raw one (#2069).
+            let shown = visible(&pointer.path);
             let folded = fold(&format!("  {}\n", pointer.render()));
-            out.push_str(&folded.replacen(
-                &pointer.path,
-                &paint(Role::Path, &pointer.path, mode),
-                1,
-            ));
+            out.push_str(&folded.replacen(&*shown, &paint(Role::Path, &shown, mode), 1));
             if let Some(evidence) = evidence {
                 for said in evidence.render().lines() {
-                    let folded = fold(&format!("    {said}\n"));
+                    let folded = fold(&format!("    {}\n", visible(said)));
                     for line in folded.lines() {
                         let _ = writeln!(out, "{}", dim(line, mode));
                     }
@@ -1585,6 +1589,54 @@ mod tests {
             stripped(&route.render(ColorMode::Ansi)),
             route.render(ColorMode::Plain)
         );
+    }
+
+    /// A hostile pointer path is written escaped and still painted (#2069).
+    /// `Pointer::render` writes the path through `visible`, so the paint has
+    /// to look for the escaped text. A paint that looked for the raw path
+    /// would find nothing and leave the path uncolored.
+    #[test]
+    fn a_hostile_pointer_path_is_escaped_and_still_painted() {
+        let mut route = route();
+        route.pointers[0].path = "docs/decisions/0045-x\n::error ::y\u{1b}[31m.md".to_string();
+        route.anchors = vec!["a\u{1b}[2Jb".to_string()];
+        let painted = route.render(ColorMode::Ansi);
+        assert!(
+            painted.contains("\u{1b}[36mdocs/decisions/0045-x\\n::error ::y\\x1b[31m.md\u{1b}[0m"),
+            "the escaped path is painted cyan:\n{}",
+            painted.escape_debug()
+        );
+        let plain = route.render(ColorMode::Plain);
+        assert!(!plain.contains('\u{1b}'), "{}", plain.escape_debug());
+        assert!(plain.contains("names the anchor a\\x1b[2Jb"), "{plain}");
+    }
+
+    /// The other values a route prints from the tree, a document or the
+    /// taxonomy: a declared warrant outside the four values, an ungoverned path
+    /// and the name of a relation that could govern it (#2069). Each is
+    /// written as visible text, and none opens a line with `::`.
+    #[test]
+    fn a_hostile_warrant_ungoverned_path_and_relation_are_visible_text() {
+        let mut route = route();
+        route.pointers[0].outside = Some("\u{1b}[2J::w".to_string());
+        route.ungoverned = vec![Ungoverned {
+            path: "::error ::src/x\u{1b}[31m.rs".to_string(),
+            relations: vec!["::gov\u{1b}[1m".to_string()],
+        }];
+        let plain = route.render(ColorMode::Plain);
+        assert!(!plain.contains('\u{1b}'), "{}", plain.escape_debug());
+        let forged: Vec<&str> = plain
+            .lines()
+            .filter(|line| line.trim_start().starts_with("::"))
+            .collect();
+        assert!(forged.is_empty(), "{forged:?}");
+        for shown in [
+            "[warrant `\\x1b[2J::w`",
+            "  \\x3a:error ::src/x\\x1b[31m.rs is in the governed scope",
+            "      \\x3a:gov\\x1b[1m:\n        - \\x3a:error ::src/x\\x1b[31m.rs\n",
+        ] {
+            assert!(plain.contains(shown), "no `{shown}` in\n{plain}");
+        }
     }
 
     /// `Plain` writes not one escape byte, which is what every recorded fixture
