@@ -45,7 +45,7 @@ The finding is an error at the value, and it carries no patch, because the value
 
 ## Consequences
 
-A document whose date facet holds an impossible date, a word, a null, a list or a mapping fails a strict run. On this repository on 2026-11-27, the rule had 739 instances, one for each of the 739 typed documents, and it reported 0 findings.
+A document whose date facet holds an impossible date, a word, a null, a list or a mapping fails a strict run. On this repository on 2026-11-27, the rule had 740 instances, one for each of the 740 typed documents, and it reported 0 findings.
 
 A taxonomy that writes an impossible date in a date member now fails `taxonomy validate`, where before it passed. That is correct, and it is the same answer that the check layer gave for the same text.
 
