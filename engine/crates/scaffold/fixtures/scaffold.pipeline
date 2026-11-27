@@ -229,6 +229,9 @@ register
   relation.target.verification.suspect reaches no obligation, so it names none
   projection.budget.exceeded reaches no obligation, so it names none
   relation.scope.unmatched reaches no obligation, so it names none
+pattern set voice.forbidden_construction future_intent: 0 of 14 patterns produced a finding, so a zero here does not show a clean corpus
+pattern set voice.forbidden_construction change_narration: 0 of 23 patterns produced a finding, so a zero here does not show a clean corpus
+pattern set voice.forbidden_construction phased_rollout: 0 of 13 patterns produced a finding, so a zero here does not show a clean corpus
 1 findings
       1 ✗ error
 

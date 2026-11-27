@@ -193,6 +193,7 @@ pub mod reciprocity;
 pub mod register;
 pub mod retention;
 pub mod retired;
+pub mod saturation;
 pub mod scope;
 pub mod scope_ratchet;
 pub mod scope_unmatched;
@@ -465,6 +466,11 @@ pub struct Run {
     /// [`Run::blocked_by`] is, so no finding and no cache key carries it
     /// (#2100). See [`spare`].
     pub classes: Vec<spare::Classified>,
+    /// How many entries of each lexical pattern set produced a finding, read
+    /// from the findings before the adoption payload and the directives
+    /// remove any. A projection, as [`Run::classes`] is, so no finding and no
+    /// cache key carries it (#1492). See [`saturation`].
+    pub saturation: saturation::Saturation,
     /// What this run did with its cache. Deliberately outside [`Run::render`]:
     /// see [`cache`] for why a hit count is not part of a verdict.
     pub cache: cache::Report,
@@ -991,6 +997,9 @@ pub fn run(
     let voice = voice::Voice::over(declared.shape);
     let language = language::Language::over(declared.shape);
     let retired = retired::Retired::over(declared.shape);
+    // The declared pattern sets, read here because the two checks move into
+    // their instances below. See [`saturation`].
+    let pattern_sets = (voice.pattern_sets(), retired.pattern_sets());
     let surface = surface::LocalPath::over(declared.shape);
     let commands = command::Undeclared::over(declared.shape);
     let source_form = source_form::SourceForm::over(declared.shape);
@@ -1416,6 +1425,9 @@ pub fn run(
     // `declared_payload` was read above, ahead of the findings list, so that
     // `adoption::expired` could contribute to it. It moves in by value here,
     // unchanged in shape.
+    // Before both filters, because a suppressed finding still shows that its
+    // pattern is live, and a count taken after them would undercount (#1492).
+    let saturation = saturation::Saturation::project(pattern_sets.0, pattern_sets.1, &findings);
     let (findings, adoption) =
         adoption::apply(finding::sorted(findings), declared_payload, ctx.now());
 
@@ -1531,6 +1543,7 @@ pub fn run(
             .scope_coverage
             .and_then(headwater_graph::scope::Coverage::notice),
         classes,
+        saturation,
         cache: cache.report(),
     };
     phase::mark("run.findings");
@@ -1917,6 +1930,12 @@ impl Run {
         // verifications could not show which were observed and which were
         // only declared (#937).
         out.push_str(&self.verifications.render());
+        // What each lexical pattern set produced, beside the register for its
+        // reason: a zero there is a clean corpus or a dead set, and this says
+        // which. A count of findings, so the totals leave it out (#1492).
+        if detail != Detail::Totals {
+            out.push_str(&self.saturation.render());
+        }
 
         if detail != Detail::Totals {
             let _ = writeln!(out, "{} findings", self.findings.len());
