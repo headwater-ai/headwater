@@ -22,13 +22,13 @@
 
 lock:
   format: 3
-  digest: sha256:e15f808ac98b45c2bd4b8be0256ef8ba2ee63eb016674f0e52e0a5cdfe207a9b
+  digest: sha256:ecd78f0a2fb7da583fdfc60395743d2bfd752fecb7310f18a835288a458403ba
   rules: 4
   package: headwater/standard
   version: 4.31.0
   sources:
     - path: .headwater/packages/headwater-standard/taxonomy.yml
-      digest: sha256:b0b4ea3937c43f7451c7a143d3934d9c53bd0ccc14a9bf9b1772db9b5e429154
+      digest: sha256:a6af9d2c24601774b9529f8131bbf8b0dada3a51e79116ccd002af77e64df76e
     - path: .headwater/packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml
       digest: sha256:fd65c2f4a94d4f0a6d38ea74d4700f9439c36a6bcc407a30061ff4002d2b81f8
     - path: .headwater/packages/headwater-standard/bundles/design-spec/bundle.yml
@@ -1560,6 +1560,12 @@ resolved:
       class: cohesion
       prevents: content.incomplete
       severity: high
+    OB-SECT-2:
+      statement: "A document carries no prompt that the scaffolder wrote for a person to replace"
+      rationale: "The scaffolder writes every required heading and a value in every facet, so a document that still holds its prompts passes every rule that reads for a missing heading or a missing value, and a reader gets a page that answers nothing"
+      class: cohesion
+      prevents: content.incomplete
+      severity: medium
     OB-LINK-1:
       statement: "A fragment of a prose link names a heading of the document that the link points at"
       rationale: "A link that lands nowhere costs the reader the paragraph it was written to reach, and an anchor rots silently when the heading beside it is edited. The target is another document as often as it is the citing one, and a rename in the target touches no byte of the document that cited it"
@@ -2141,6 +2147,18 @@ resolved:
       trigger: pull_request
       posture: advisory
       acts: detective
+    CT-SECT-2:
+      mechanism: "check:scaffold.placeholder.unwritten"
+      discharges:
+        - OB-SECT-2
+      trigger: pull_request
+      posture: advisory
+      acts: detective
+      promotion:
+        criteria:
+          window: "one release of the taxonomy over an adopting corpus"
+          threshold: "no false positive, because the rule matches the exact text of the three prompts that the scaffolder writes, in the places it writes them, and reads no quotation of a prompt"
+          sample: "every finding of one run over the adopting corpus, adjudicated once"
     CT-LINK-1:
       mechanism: "check:link.fragment.unresolved"
       discharges:

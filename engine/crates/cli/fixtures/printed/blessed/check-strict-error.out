@@ -25,7 +25,7 @@ graph
       name it
 
 checks
-  3 seen, 3 classified, 3 checked, 37 check instances
+  3 seen, 3 classified, 3 checked, 40 check instances
         6 skipped: this document declares no warrant, and an absent warrant is
           not a value outside the closed set
         1 skipped: this document stands at `nosuch`, which `status` does not
@@ -47,6 +47,7 @@ checks
         1 instances of shelf.discriminator.unresolved
         1 instances of identifier.claim.missing
         1 instances of identifier.claim.stale
+        3 instances of scaffold.placeholder.unwritten
         1 instances of link.fragment.unresolved
         1 instances of link.path.unresolved
         1 instances of link.identifier.mismatch

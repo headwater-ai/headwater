@@ -2,7 +2,7 @@
 //! The one crate of this workspace that runs a version control command.
 //!
 //! [Spec 12](../../../../docs/spec/12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version)
-//! and [`headwater_check::change`] both state the boundary this crate sits
+//! and `headwater_check::change` both state the boundary this crate sits
 //! outside of: the check-evaluation path "runs no version control command, and
 //! opens no file that the [manifest] does not name". A change manifest still
 //! has to come from somewhere, and until this crate existed the only producer
@@ -17,7 +17,7 @@
 //! the hook already ran: `rev-parse`, `diff --name-status`, `show`,
 //! `ls-files`. Nothing here reads a corpus, resolves a taxonomy, or parses a
 //! document; that reading happens once the manifest this crate writes reaches
-//! [`headwater_check::change::Unbound::at`].
+//! `headwater_check::change::Unbound::at`.
 //!
 //! [manifest]: https://github.com/headwater-ai/headwater/blob/main/docs/spec/12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version
 

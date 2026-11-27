@@ -84,7 +84,7 @@ impl<'a> AtInitial<'a> {
 
 impl DocumentCheck for AtInitial<'_> {
     const RULE: &'static str = self::RULE;
-    /// The first edition. See [`crate::placement::Placement::VERSION`].
+    /// The first edition. See [`crate::scope::DocumentCheck::VERSION`].
     ///
     /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 1;

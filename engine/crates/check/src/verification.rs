@@ -137,7 +137,7 @@ impl<'a> Verified<'a> {
 
 impl EdgeCheck for Verified<'_> {
     const RULE: &'static str = self::RULE;
-    /// See [`crate::placement::Placement::VERSION`].
+    /// See [`crate::scope::EdgeCheck::VERSION`].
     ///
     /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 2;

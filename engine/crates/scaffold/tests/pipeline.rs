@@ -335,11 +335,44 @@ fn what_the_scaffolder_wrote_passes_the_engines_own_checks() {
         "a draft writes nothing into a live document, so none of them warns"
     );
 
-    // The assertion the issue asks for, with no rule exempt. A reciprocity
+    // The prompts are the scaffolder's deliberate request to a person, and
+    // `scaffold.placeholder.unwritten` names each of them (HW-OBL-0113): once
+    // for each section the plan wrote, which is each `## ` heading under the
+    // title, and once for each facet whose value is a prompt. The count is
+    // read from the file, so a prompt the scaffolder writes and the rule does
+    // not know fails here.
+    for path in &touched {
+        let text = read(root, path);
+        let sections = text.lines().filter(|line| line.starts_with("## ")).count();
+        let facets = text
+            .split("\n---\n")
+            .next()
+            .unwrap_or_default()
+            .lines()
+            .filter(|line| line.contains(": \"TODO "))
+            .count();
+        let named = run
+            .findings
+            .iter()
+            .filter(|finding| {
+                finding.rule == headwater_check::placeholder::RULE && &finding.path == path
+            })
+            .count();
+        assert!(sections > 0, "{path}: the plan wrote no section");
+        assert_eq!(
+            named,
+            sections + facets,
+            "{path}: one finding for each of {sections} sections and {facets} prompt facets"
+        );
+    }
+
+    // The assertion the issue asks for, with one rule exempt: the one above,
+    // whose findings are the prompts this run meant to write. A reciprocity
     // check that did not defer would anchor its finding on a new draft here.
     let against_scaffolded: Vec<String> = run
         .findings
         .iter()
+        .filter(|finding| finding.rule != headwater_check::placeholder::RULE)
         .filter(|finding| touched.contains(&finding.path) || FAR.contains(&finding.path.as_str()))
         .map(|finding| format!("{}:{} {}", finding.path, finding.line, finding.message))
         .collect();
@@ -431,11 +464,15 @@ fn a_promoted_successor_is_owed_its_far_half_and_the_fix_writes_it() {
         );
     }
 
-    // Both ends are live now, so neither rule has anything to say.
+    // Both ends are live now, so neither rule has anything to say. The
+    // sections and the summary still hold the scaffolder's prompts, which is
+    // `scaffold.placeholder.unwritten`'s to say and the subject of the case
+    // above, so it is left out here.
     let again = check_over(root);
     let left: Vec<String> = again
         .findings
         .iter()
+        .filter(|finding| finding.rule != headwater_check::placeholder::RULE)
         .filter(|finding| touched.contains(&finding.path) || FAR.contains(&finding.path.as_str()))
         .map(|finding| format!("{} {}: {}", finding.path, finding.rule, finding.message))
         .collect();

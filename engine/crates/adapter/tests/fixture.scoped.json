@@ -28,7 +28,7 @@
     "classified": 29,
     "checked": 29,
     "generated": 1,
-    "instances": 455,
+    "instances": 483,
     "skipped": 91,
     "skips": [
       {
@@ -805,6 +805,12 @@
       "obligations": [
         "OB-FIX-9"
       ]
+    },
+    {
+      "rule": "scaffold.placeholder.unwritten",
+      "scope": "document",
+      "version": 1,
+      "obligations": []
     },
     {
       "rule": "link.fragment.unresolved",

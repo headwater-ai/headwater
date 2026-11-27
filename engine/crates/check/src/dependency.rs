@@ -147,7 +147,7 @@ impl<'a> Dependency<'a> {
 
 impl EdgeCheck for Dependency<'_> {
     const RULE: &'static str = self::RULE;
-    /// See [`crate::placement::Placement::VERSION`].
+    /// See [`crate::scope::EdgeCheck::VERSION`].
     ///
     /// Raise the rule version when a rule's behavior changes.
     const VERSION: u32 = 1;

@@ -79,7 +79,7 @@
 //! # A key this engine does not read
 //!
 //! [`read`] refuses a pair that names a rule this engine does not carry, on the
-//! argument [`crate::suppression::read`] makes about `allow=`: a directive
+//! argument `crate::suppression::read` makes about `allow=`: a directive
 //! against a rule that does not exist is a directive its author believes is
 //! working. The same holds of a key, and the two levels want different answers.
 //!
@@ -200,7 +200,7 @@ pub struct Ledger {
 ///
 /// `rules` is the rule set of this engine, so a pair that names a rule nothing
 /// runs is refused by name rather than silently matching nothing. That is the
-/// same argument [`crate::suppression::read`] makes about `allow=`: a directive
+/// same argument `crate::suppression::read` makes about `allow=`: a directive
 /// against a rule that does not exist is a directive its author believes is
 /// working.
 pub fn read(block: &Mapping, rules: &[&'static str]) -> Declared {

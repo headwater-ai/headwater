@@ -17,7 +17,7 @@
 //!
 //! # Where the reader runs, and why it is `publish`
 //!
-//! [`crate::package::publish_at`] calls [`holds`] after the two name
+//! `crate::package::publish_at` calls [`holds`] after the two name
 //! declarations are held to each other and before `--out` is observed, so a
 //! refusal here fires before an output directory exists. `taxonomy validate`
 //! cannot carry this: it resolves the *consumer's* selection, and a bundle no

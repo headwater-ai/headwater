@@ -137,17 +137,18 @@ Each job that builds the engine first installs current stable Rust:
 
 It is a setup step and not a gate, and you never run it by hand. When `rustup update` fails, it uninstalls stable and installs it again, because the self-hosted runner's image holds the old toolchain in a layer that refuses the rename an update makes. Its header has the measurement.
 
-The cargo commands. The `engine` job runs the first six. The `headwater` job runs the build, because it needs the binary before it can run a verb over the corpus:
+The cargo commands. The `engine` job runs the first seven. The `headwater` job runs the build, because it needs the binary before it can run a verb over the corpus:
 
     cargo --version
     cargo fmt --check
     cargo clippy --all-targets --locked -- -D warnings
+    cargo doc --no-deps --workspace --locked
     cargo test --locked
     cargo test -p headwater-cli --no-default-features --locked --test no_fetch
     cargo tree -e normal --no-default-features -p headwater-cli --locked
     cargo build --release -p headwater-cli --locked
 
-The two commands with `--no-default-features` hold the binary without the `fetch` feature. The first runs its refusal of a location, and the second fails when `headwater-fetch` is in its tree.
+`cargo doc` is the one command that reads `[workspace.lints.rustdoc]` in `engine/Cargo.toml`, which denies a doc-comment link that names no item or two items. Clippy does not read that table, so a green clippy says nothing about the links. Run the same command from `engine/` to see what CI will report. The two commands with `--no-default-features` hold the binary without the `fetch` feature. The first runs its refusal of a location, and the second fails when `headwater-fetch` is in its tree.
 
 A green clippy on your host is not evidence about CI. Three toolchains disagree about this source — the floor container, your host, and CI's — and a host clippy has reported zero warnings on a tree that CI rejected with two errors. CI's toolchain is the version in `tools/ci/rust-version`, which `tools/ci/toolchain.sh` installs in every job that judges a branch, so a new stable release no longer changes the verdict of a branch nobody touched. `sh tools/engine/clippy.sh` runs the command above on that same version in a container, with the caches kept under `~/.cache/headwater/clippy/` and one run at a time on the host. Its exit status is evidence about CI, and a host `cargo clippy` is not. Run it once before the first push of a branch, and again only after a change that could move a lint. To move the pin, edit `tools/ci/rust-version` in a pull request that also repairs what the new version reports.
 

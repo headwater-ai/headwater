@@ -92,9 +92,12 @@ pub fn render(plan: &Plan) -> String {
     out.push_str("---\n\n");
     out.push_str(&format!("# {}\n", plan.title));
     for section in &plan.sections {
+        // The prompt is the check crate's, so that the rule which names an
+        // unwritten section reads the same string this line writes.
         out.push_str(&format!(
-            "\n## {}\n\nTODO write this section.\n",
-            section.heading
+            "\n## {}\n\n{}\n",
+            section.heading,
+            headwater_check::placeholder::SECTION_PROMPT
         ));
     }
     out

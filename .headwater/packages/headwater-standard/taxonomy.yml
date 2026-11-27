@@ -149,15 +149,17 @@ taxonomy: headwater/standard
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
 #
-# 4.31.0 adds one obligation, `OB-FACET-4`, and two controls. `CT-FACET-4`
+# 4.31.0 adds two obligations, `OB-FACET-4` and `OB-SECT-2`, and three controls. `CT-FACET-4`
 # names the rule `facet.value.not_of_type`: a document facet value is of the
 # type its declaration states, so a date that no calendar has, a word in a date
 # field or a mapping where the declaration says `date` is an error that names
 # the value and the type (HW-OBL-0171, #1492). `CT-COV-4` binds
 # `shelf.discriminator.unresolved`, which #1491 added, to `OB-COV-1`, because a
 # document on a heterogeneous shelf whose discriminator names no kind is a file
-# the census did not classify. Both controls are advisory with promotion
-# criteria. Nothing is removed, so it is a minor. Migration: a document whose
+# the census did not classify. `CT-SECT-2` binds `scaffold.placeholder.unwritten`,
+# which #1491 added, to `OB-SECT-2`: a document still holds a prompt that the
+# scaffolder wrote for a person to replace (HW-OBL-0113). The three controls
+# are advisory with promotion criteria. Nothing is removed, so it is a minor. Migration: a document whose
 # date facet holds a value such as `2026-02-30`, or whose typed facet holds a
 # null, a list or a mapping, passed a strict run before this release and fails
 # one now. Write the value that the declaration states, or remove the key where
@@ -872,6 +874,13 @@ obligations:
     prevents: content.incomplete
     severity: high
 
+  OB-SECT-2:
+    statement: A document carries no prompt that the scaffolder wrote for a person to replace
+    rationale: The scaffolder writes every required heading and a value in every facet, so a document that still holds its prompts passes every rule that reads for a missing heading or a missing value, and a reader gets a page that answers nothing
+    class: cohesion
+    prevents: content.incomplete
+    severity: medium
+
   OB-LINK-1:
     statement: A fragment of a prose link names a heading of the document that the link points at
     rationale: A link that lands nowhere costs the reader the paragraph it was written to reach, and an anchor rots silently when the heading beside it is edited. The target is another document as often as it is the citing one, and a rename in the target touches no byte of the document that cited it
@@ -1509,6 +1518,18 @@ controls:
     trigger: pull_request
     posture: advisory
     acts: detective
+
+  CT-SECT-2:
+    mechanism: check:scaffold.placeholder.unwritten
+    discharges: [OB-SECT-2]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      criteria:
+        window: one release of the taxonomy over an adopting corpus
+        threshold: no false positive, because the rule matches the exact text of the three prompts that the scaffolder writes, in the places it writes them, and reads no quotation of a prompt
+        sample: every finding of one run over the adopting corpus, adjudicated once
 
   CT-LINK-1:
     mechanism: check:link.fragment.unresolved

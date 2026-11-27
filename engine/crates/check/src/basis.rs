@@ -199,7 +199,7 @@ impl<'a> Basis<'a> {
 
 impl EdgeCheck for Basis<'_> {
     const RULE: &'static str = self::RULE;
-    /// See [`crate::placement::Placement::VERSION`]. Version 2 reads the
+    /// See [`crate::scope::EdgeCheck::VERSION`]. Version 2 reads the
     /// derived warrant of a generated target, so the verdict over a pair that
     /// version 1 skipped is now a pass and a warm cache would serve the skip
     /// forever at the version it was written under.

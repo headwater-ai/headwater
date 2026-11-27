@@ -378,9 +378,11 @@ const BOUND_IN_4_30: [(&str, &str, &str, &str); 1] = [(
 /// The rules that 4.31.0 bound, in the same shape (#1492, HW-OBL-0171). The
 /// type rule is advisory with promotion criteria: its severity is already an
 /// error, and its remedy is a value the author writes. The discriminator rule
-/// was the last row of [`EXCEPTIONS`], and its control binds it to the
-/// classification obligation that its `EXCEPTIONS` row named.
-const BOUND_IN_4_31: [(&str, &str, &str, &str); 2] = [
+/// and the placeholder rule were the two rows of [`EXCEPTIONS`]. The first
+/// binds to the classification obligation that its row named. The second
+/// binds to a new obligation, because `OB-SECT-1` is about a heading and a
+/// placeholder is also a facet value.
+const BOUND_IN_4_31: [(&str, &str, &str, &str); 3] = [
     (
         "facet.value.not_of_type",
         "OB-FACET-4",
@@ -390,6 +392,12 @@ const BOUND_IN_4_31: [(&str, &str, &str, &str); 2] = [
     (
         "shelf.discriminator.unresolved",
         "OB-COV-1",
+        "advisory",
+        "criteria",
+    ),
+    (
+        "scaffold.placeholder.unwritten",
+        "OB-SECT-2",
         "advisory",
         "criteria",
     ),

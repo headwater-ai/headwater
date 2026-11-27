@@ -155,11 +155,12 @@ headwater-yaml = { path = "crates/yaml", version = "0.8.2" }
 # rule is declared once here rather than repeated in twenty-two manifests or
 # remembered by whoever writes the next crate.
 #
-# CI runs `cargo clippy --all-targets -- -D warnings`, so a lint named here at
-# any level fails the build. That is why the set is chosen by measurement: each
-# entry was at zero hits when it was added, or its hits were fixed in the same
-# change. A lint that would need a rewrite is left out, and Q23 records which
-# ones and why.
+# CI runs `cargo clippy --all-targets -- -D warnings`, so a rust or clippy lint
+# named here at any level fails the build. That is why the set is chosen by
+# measurement: each entry was at zero hits when it was added, or its hits were
+# fixed in the same change. A lint that would need a rewrite is left out, and
+# Q23 records which ones and why. Clippy does not read the rustdoc table at the
+# end. A separate `cargo doc` step reads it, and only a `deny` there fails it.
 [workspace.lints.rust]
 # The engine has no `unsafe` block and no reason to acquire one: it reads files,
 # builds a graph and writes text. `forbid` rather than `deny` because the point
@@ -228,6 +229,21 @@ needless_raw_string_hashes = "deny"
 # `assigning_clones` is not here. Its correction is `clone_from`, which trades a
 # readable assignment for a method that saves an allocation this engine does not
 # count, in ten places that read correctly today.
+
+[workspace.lints.rustdoc]
+# Clippy does not read this table, and neither does `cargo test`. The step
+# "Every intra-doc link in the engine resolves" in `.github/workflows/ci.yml`
+# runs `cargo doc --no-deps --workspace --locked`, and that is the one command
+# that reads it. Without that step, an entry here is read by nothing. Without
+# this entry, that step only warns, and a warning in CI reaches nobody.
+#
+# A link that does not resolve, or that names two items (a function and a macro
+# both called `write`), fails the step and names the file. The entry was at zero
+# hits when it was added: the same change repaired the 55 broken links that
+# `cargo doc` reported on `main`. `private_intra_doc_links` is not here. It
+# reports a public comment that links to a private item, which renders as plain
+# text and breaks nothing, and it had 159 hits when this entry was added.
+broken_intra_doc_links = "deny"
 
 # `cargo test`, `cargo check` and a plain `cargo build` use this profile. Cargo's
 # default is `debug = 2`, full debug information that only a debugger reads. A

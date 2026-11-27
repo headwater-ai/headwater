@@ -148,7 +148,7 @@ impl Values {
 
 impl DocumentCheck for Values {
     const RULE: &'static str = self::RULE;
-    /// See [`crate::placement::Placement::VERSION`]. 2 reads a kind's
+    /// See [`crate::scope::DocumentCheck::VERSION`]. 2 reads a kind's
     /// `facets.values`, so a warm cache written by 1 holds the verdict of a
     /// rule that admitted the whole declared set on every kind. 3 reads each
     /// scalar item of a list (#1873), so a warm cache written by 2 holds a pass

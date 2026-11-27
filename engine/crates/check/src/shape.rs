@@ -650,7 +650,7 @@ impl Shape {
     /// [`headwater_meta::identifier::Template::prefix`] is the looser question
     /// this reads: a target one digit short of a declared `{seq}` width, or
     /// with a slug this corpus never minted, still answers `true` here, and
-    /// [`Shape::identifier_scheme_of`] plus [`Template::admits`] is what a
+    /// [`Shape::identifier_scheme_of`] plus `Template::admits` is what a
     /// caller reaches for the exact question. `headwater explain` is the one
     /// caller today, and it asks this before it asks whether a target is a
     /// path, so a typo'd identifier is refused in the words of an identifier

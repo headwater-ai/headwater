@@ -787,7 +787,7 @@ pub struct Report {
     pub base: Base,
     pub measured: Measured,
     /// The sources the lock records whose bytes on disk no longer hash to what
-    /// it recorded, as [`headwater_lock::Lock::moved`] names them.
+    /// it recorded, as `headwater_lock::Lock::moved` names them.
     ///
     /// The previous side of every dimension is read out of the lock and never
     /// out of these files, so this decides nothing and is never a refusal. It

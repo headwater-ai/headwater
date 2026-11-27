@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the placeholder tree is checked against. `decision` requires
+# two sections and two facets, so the scaffolder would write a prompt into
+# each of them. `note` requires nothing, so the scaffolder writes no prompt
+# into one and the rule has no instance over it.
+#
+# `summary` carries the `scent` role, so its prompt is the scent prompt.
+# `owner` carries no role, so its prompt is `TODO owner`.
+
+facets:
+  summary:
+    role: scent
+  owner: {}
+
+kinds:
+  decision:
+    facets: {require: [summary, owner]}
+    sections: {require: [Context, Decision]}
+  note: {}
+
+shelves:
+  decisions:
+    path: placeholder/decisions/**
+    homogeneous: true
+    kind: decision
+  notes:
+    path: placeholder/notes/**
+    homogeneous: true
+    kind: note

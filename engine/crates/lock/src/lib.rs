@@ -45,7 +45,7 @@
 //! # The lock is where "no partial load" is enforced
 //!
 //! Spec 2 rules that the engine never applies a taxonomy that does not validate.
-//! [`write`] runs every rule of `taxonomy validate` and returns the findings
+//! [`write`](fn@write) runs every rule of `taxonomy validate` and returns the findings
 //! rather than a lock when any of them fires. So a lock is by construction a
 //! validated taxonomy, and everything downstream reads a lock. The rule is
 //! carried by the artifact rather than by a call that a caller may forget.
@@ -67,7 +67,7 @@
 //!
 //! # A lock also binds to the rule set that validated it
 //!
-//! [`write`] runs every rule of `taxonomy validate` and [`read`] runs none of
+//! [`write`](fn@write) runs every rule of `taxonomy validate` and [`read`] runs none of
 //! them: it checks the format and the digest, and it has always trusted that
 //! whatever wrote the lock ran the rules current at the time. Between one write
 //! and a later read the rules themselves can move — a taxonomy that validated
@@ -385,7 +385,7 @@ pub fn write(
 
 /// Rewrite a committed lock's `adoption` block, and nothing else about it.
 ///
-/// [`write`] is for a caller that just resolved a taxonomy and wants a lock a
+/// [`write`](fn@write) is for a caller that just resolved a taxonomy and wants a lock a
 /// digest can vouch for. This is for a caller — `taxonomy migrate` — that
 /// changes nothing about the resolution and only has a new `adoption` block to
 /// carry. It does not re-validate and it does not re-resolve, because the
@@ -861,7 +861,7 @@ pub enum Divergence {
 
 /// Compare a committed lock against the text its sources resolve to.
 ///
-/// `resolved` is what [`write`] produced from this repository's sources and
+/// `resolved` is what [`write`](fn@write) produced from this repository's sources and
 /// from the authored block the committed file carries, which is the one text
 /// `--check` has to compare against. Because the authored block comes from the
 /// committed file, the two texts can never disagree about its *content*, and a
