@@ -103,11 +103,19 @@ fn every_lifecycle_rule_reaches_one_obligation_of_the_standard_package() {
 /// with the reason it stands outside the package. A rule is named here one at
 /// a time and never by a pattern, so a new rule that ships without a control
 /// fails the case below and names itself (#1492).
-const EXCEPTIONS: &[(&str, &str)] = &[(
-    "shelf.discriminator.unresolved",
-    "new in #1491 (HW-OBL-0191); its control binds it to OB-COV-1 at the next release of \
-     headwater/standard, and the build of the rule does not publish the package",
-)];
+const EXCEPTIONS: &[(&str, &str)] = &[
+    (
+        "shelf.discriminator.unresolved",
+        "new in #1491 (HW-OBL-0191); its control binds it to OB-COV-1 at the next release of \
+         headwater/standard, and the build of the rule does not publish the package",
+    ),
+    (
+        "scaffold.placeholder.unwritten",
+        "new in #1491 (HW-OBL-0113); its control binds it at the next release of \
+         headwater/standard, to OB-SECT-1, whose `prevents: content.incomplete` is the nearest \
+         obligation, or to a new one, and the build of the rule does not publish the package",
+    ),
+];
 
 /// Every rule the engine carries reaches exactly one obligation of the
 /// maintained package, except the rules [`EXCEPTIONS`] names (#1492,
