@@ -216,9 +216,13 @@ fn refuses(label: &str, key: &str, line: &str, complaint: &str) {
         ran.err
     );
     let named = root.named();
+    // The text report wraps a long message onto a second line, so the words
+    // are compared with the wrap taken out.
+    let words = |text: &str| text.split_whitespace().collect::<Vec<_>>().join(" ");
     let reported = ran.out.split(&named).skip(1).any(|after| {
+        let after = words(after);
         after.contains(&format!("facet.value.not_of_type ({OBLIGATION})"))
-            && after.contains(complaint)
+            && after.contains(&words(complaint))
     });
     assert!(
         reported,
@@ -311,7 +315,10 @@ fn a_leap_day_in_a_leap_year_is_not_reported() {
         ran.err
     );
     assert!(
-        !ran.out.contains("facet.value.not_of_type"),
+        // A finding names the rule before a colon, or before its obligation.
+        // The census line `instances of facet.value.not_of_type` does neither.
+        !ran.out.contains("facet.value.not_of_type:")
+            && !ran.out.contains("facet.value.not_of_type ("),
         "the rule reported a real date\n{}",
         ran.out
     );

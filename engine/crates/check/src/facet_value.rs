@@ -64,10 +64,12 @@
 //! # What this check declines to decide
 //!
 //! A facet whose value is a mapping, and a list item that is not a scalar,
-//! produce nothing here. That is a shape defect, the meta-schema owns shape,
-//! and a second report of it from the check layer would send an author to two
-//! places. The same posture the rest of this crate takes toward a taxonomy it
-//! can read but did not validate.
+//! produce nothing here. That is a shape defect and not a question about the
+//! admitted set, and a second report of it from this rule would send an author
+//! to two places. Where the facet declares a type, the type rules report it:
+//! [`crate::facet_blank`] for `type: string` and [`crate::facet_type`] for
+//! every other type, which is the one place a mapping in a value-set facet is
+//! named.
 
 use crate::finding::{at, Finding, Severity};
 use crate::instance::Outcome;

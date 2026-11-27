@@ -10,9 +10,9 @@
 
 use crate::error::{MetaError, MetaErrorKind};
 use crate::schema::{MetaSchema, Position};
-use crate::shape::{Form, ScalarType, Shape};
+use crate::shape::{Form, Shape};
 use headwater_ref::{classify, Address, Scalar as RefScalar};
-use headwater_yaml::{core_schema, Mapping, Span, Spanned, Value};
+use headwater_yaml::{Mapping, Span, Spanned, Value};
 
 /// The rules of the meta-schema that need a resolved taxonomy, and why.
 ///
@@ -301,7 +301,7 @@ fn check(
             let Some(scalar) = node.value.as_scalar() else {
                 return wrong(out, at, node, "a scalar");
             };
-            if !is_of_type(scalar, *declared) {
+            if !declared.admits(scalar) {
                 out.push(MetaError::new(
                     MetaErrorKind::NotOfType {
                         declared: declared.name(),
@@ -431,47 +431,3 @@ fn not_a_segment(key: &str) -> Option<String> {
     }
 }
 
-/// Whether a scalar's text is of the declared type.
-///
-/// Q2 puts this decision here rather than in the loader, so every rule about
-/// what `no` or `013` means lives in one place: the core schema offers a
-/// reading, and a declared type is what asks for it.
-fn is_of_type(scalar: &headwater_yaml::Scalar, declared: ScalarType) -> bool {
-    match declared {
-        // A key written with nothing after it is not a string. It is the
-        // author leaving the value out, and a required member that is there
-        // and empty would otherwise pass.
-        ScalarType::String => !core_schema::as_null(scalar),
-        ScalarType::Integer => core_schema::as_int(scalar).is_some(),
-        ScalarType::Boolean => core_schema::as_bool(scalar).is_some(),
-        ScalarType::Date => is_date(&scalar.text),
-        ScalarType::Duration => is_duration(&scalar.text),
-        ScalarType::Null => core_schema::as_null(scalar),
-    }
-}
-
-/// `YYYY-MM-DD`, which is the one form [spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md)
-/// writes and the one form a date facet holds in this repository's corpus.
-fn is_date(text: &str) -> bool {
-    let bytes = text.as_bytes();
-    bytes.len() == 10
-        && bytes[4] == b'-'
-        && bytes[7] == b'-'
-        && [0, 1, 2, 3, 5, 6, 8, 9]
-            .iter()
-            .all(|index| bytes[*index].is_ascii_digit())
-}
-
-/// A count and a unit, as `within: 90d` writes it.
-///
-/// The unit set is a guess in the direction Q2 settles: `d`, `w`, `m` and `y`
-/// are what a participation window is written in, and nothing states the set.
-fn is_duration(text: &str) -> bool {
-    let Some(unit) = text.chars().last() else {
-        return false;
-    };
-    let count = &text[..text.len() - unit.len_utf8()];
-    matches!(unit, 'd' | 'w' | 'm' | 'y')
-        && !count.is_empty()
-        && count.bytes().all(|byte| byte.is_ascii_digit())
-}

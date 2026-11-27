@@ -12,7 +12,7 @@
 //! no taxonomy could exercise.
 
 use crate::error::{SchemaError, SchemaErrorKind};
-use headwater_yaml::{Span, Value};
+use headwater_yaml::{core_schema, Scalar, Span, Value};
 
 /// A scalar type. Q2 rules that a scalar takes its type from here and never
 /// from the YAML resolver, so this list is the whole of what a scalar may be.
@@ -50,6 +50,83 @@ impl ScalarType {
             ScalarType::Null => "null",
         }
     }
+
+    /// Whether a scalar's text is of this type.
+    ///
+    /// Q2 puts this decision here rather than in the loader, so every rule about
+    /// what `no` or `013` means lives in one place: the core schema offers a
+    /// reading, and a declared type is what asks for it. Two readers ask: the
+    /// meta-schema, for a value a taxonomy writes, and the check layer's
+    /// `facet.value.not_of_type`, for a value a document writes. One predicate
+    /// serves both, because one declaration with two parsers is the defect that
+    /// [`headwater_yaml::core_schema`] records.
+    pub fn admits(self, scalar: &Scalar) -> bool {
+        match self {
+            // A key written with nothing after it is not a string. It is the
+            // author leaving the value out, and a required member that is there
+            // and empty would otherwise pass.
+            ScalarType::String => !core_schema::as_null(scalar),
+            ScalarType::Integer => core_schema::as_int(scalar).is_some(),
+            ScalarType::Boolean => core_schema::as_bool(scalar).is_some(),
+            ScalarType::Date => calendar_date(&scalar.text).is_some(),
+            ScalarType::Duration => is_duration(&scalar.text),
+            ScalarType::Null => core_schema::as_null(scalar),
+        }
+    }
+}
+
+/// `YYYY-MM-DD` read as a real date of the proleptic Gregorian calendar, which
+/// is what YAML 1.2 and ISO 8601 both mean by a date, as `(year, month, day)`.
+///
+/// It is the one form [spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md)
+/// writes. Until HW-OBL-0171 this crate read the digit positions only, so it
+/// admitted `2026-02-30` and `0000-00-00`, which the check layer's date reader
+/// refused. The check layer's `Date::parse` now calls this function, so a date
+/// that one reader refuses the other refuses too.
+pub fn calendar_date(text: &str) -> Option<(i64, u32, u32)> {
+    let bytes = text.as_bytes();
+    if bytes.len() != 10 || bytes[4] != b'-' || bytes[7] != b'-' {
+        return None;
+    }
+    if ![0, 1, 2, 3, 5, 6, 8, 9]
+        .iter()
+        .all(|index| bytes[*index].is_ascii_digit())
+    {
+        return None;
+    }
+    let year: i64 = text[0..4].parse().ok()?;
+    let month: u32 = text[5..7].parse().ok()?;
+    let day: u32 = text[8..10].parse().ok()?;
+    if !(1..=12).contains(&month) || day < 1 || day > days_in_month(year, month) {
+        return None;
+    }
+    Some((year, month, day))
+}
+
+/// The length of a month of the proleptic Gregorian calendar.
+fn days_in_month(year: i64, month: u32) -> u32 {
+    match month {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        _ => match (year % 4 == 0 && year % 100 != 0) || year % 400 == 0 {
+            true => 29,
+            false => 28,
+        },
+    }
+}
+
+/// A count and a unit, as `within: 90d` writes it.
+///
+/// The unit set is a guess in the direction Q2 settles: `d`, `w`, `m` and `y`
+/// are what a participation window is written in, and nothing states the set.
+fn is_duration(text: &str) -> bool {
+    let Some(unit) = text.chars().last() else {
+        return false;
+    };
+    let count = &text[..text.len() - unit.len_utf8()];
+    matches!(unit, 'd' | 'w' | 'm' | 'y')
+        && !count.is_empty()
+        && count.bytes().all(|byte| byte.is_ascii_digit())
 }
 
 /// One member of a closed mapping: a shape, plus whether it must be there.
