@@ -247,6 +247,57 @@ mod tests {
         }
     }
 
+    /// The generation step: a kind that forbids its only typed facet, and a
+    /// taxonomy that types nothing but strings, give no instance. An instance
+    /// that could only pass would count a document as checked by a rule that
+    /// had nothing to check.
+    #[test]
+    fn a_kind_with_no_typed_facet_generates_no_instance() {
+        let source = "\
+facets:
+  title: {type: string}
+  since: {type: date}
+  rank: {type: integer}
+kinds:
+  record: {}
+  note: {facets: {forbid: [since, rank]}}
+  memo: {facets: {forbid: [since]}}
+";
+        let root = headwater_yaml::load(source)
+            .expect("the taxonomy loads")
+            .value
+            .as_map()
+            .expect("a mapping")
+            .clone();
+        let shape = Shape::read(&root).expect("the shape reads");
+        let check = NotOfType::over(&shape);
+        assert!(check.instantiates("record"));
+        assert!(check.instantiates("memo"));
+        assert!(!check.instantiates("note"), "a forbidden facet is read");
+        let facets = |kind: &str| -> Vec<(String, &'static str)> {
+            check
+                .declared_by(kind)
+                .iter()
+                .map(|typed| (typed.facet.clone(), typed.declared.name()))
+                .collect()
+        };
+        assert_eq!(
+            facets("record"),
+            vec![("since".to_owned(), "date"), ("rank".to_owned(), "integer")]
+        );
+        assert_eq!(facets("memo"), vec![("rank".to_owned(), "integer")]);
+
+        let strings =
+            headwater_yaml::load("facets:\n  title: {type: string}\nkinds:\n  record: {}\n")
+                .expect("the taxonomy loads")
+                .value
+                .as_map()
+                .expect("a mapping")
+                .clone();
+        let shape = Shape::read(&strings).expect("the shape reads");
+        assert!(!NotOfType::over(&shape).instantiates("record"));
+    }
+
     #[test]
     fn an_integer_facet_admits_a_core_schema_integer_and_nothing_else() {
         for line in ["f: 3", "f: -12", "f: 0x1F", "f: 0o17"] {
