@@ -55,6 +55,7 @@
 use crate::finding::{at, Finding, Severity};
 use crate::instance::Outcome;
 use crate::scope::{DocumentCheck, DocumentView};
+use crate::shape::Shape;
 use headwater_doc::body::{BlockKind, Ownership};
 
 pub const RULE: &str = "scaffold.placeholder.unwritten";
@@ -72,8 +73,36 @@ pub fn facet_prompt(facet: &str) -> String {
     format!("TODO {facet}")
 }
 
-/// The check. It reads no declaration, so it has no generation step.
-pub struct Placeholder;
+/// The check, generated from the kinds a scaffolder can write a prompt into.
+///
+/// The scaffolder writes a prompt under each heading a kind requires and into
+/// each facet a kind requires that nothing determines, and nowhere else. So a
+/// kind that requires neither a section nor a facet has no instance, on the
+/// accounting [`crate::facet_required`] states: an instance that could only
+/// ever pass counts a document as checked by a rule that had nothing to check.
+/// The match itself reads every top-level facet and every paragraph, because
+/// a prompt an author copied into a facet the kind does not require is still
+/// a prompt.
+pub struct Placeholder {
+    kinds: Vec<String>,
+}
+
+impl Placeholder {
+    /// The generation step, in full.
+    pub fn over(shape: &Shape) -> Self {
+        Placeholder {
+            kinds: shape
+                .kinds
+                .iter()
+                .filter(|kind| {
+                    !shape.required_sections(&kind.name).is_empty()
+                        || !shape.required_facets(&kind.name).is_empty()
+                })
+                .map(|kind| kind.name.clone())
+                .collect(),
+        }
+    }
+}
 
 impl DocumentCheck for Placeholder {
     const RULE: &'static str = self::RULE;
@@ -83,6 +112,10 @@ impl DocumentCheck for Placeholder {
     const VERSION: u32 = 1;
     /// The section prompt is in the body.
     const NEEDS_BODY: bool = true;
+
+    fn instantiates(&self, kind: &str) -> bool {
+        self.kinds.iter().any(|known| known == kind)
+    }
 
     fn evaluate(&self, view: &DocumentView<'_>) -> Outcome {
         let path = view.path();

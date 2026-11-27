@@ -1003,6 +1003,7 @@ pub fn run(
     let commands = command::Undeclared::over(declared.shape);
     let source_form = source_form::SourceForm::over(declared.shape);
     let sections = sections::Sections::over(declared.shape);
+    let placeholders = placeholder::Placeholder::over(declared.shape);
     // Whether a fragment names a heading of the document it points at, whether
     // that is the citing document or another one. Corpus-scoped for
     // [`link_path`]'s reason below, and because handing a document-scoped rule
@@ -1277,13 +1278,7 @@ pub fn run(
     instances.extend(scope::over_outside_root(&retired, census, cache));
     instances.extend(scope::over_outside_root(&source_form, census, cache));
     instances.extend(scope::over_documents(&sections, census, graph, ctx, cache));
-    instances.extend(scope::over_documents(
-        &placeholder::Placeholder,
-        census,
-        graph,
-        ctx,
-        cache,
-    ));
+    instances.extend(scope::over_documents(&placeholders, census, graph, ctx, cache));
     instances.extend(scope::over_corpus(
         &fragments, census, graph, claims, ctx, cache,
     ));
