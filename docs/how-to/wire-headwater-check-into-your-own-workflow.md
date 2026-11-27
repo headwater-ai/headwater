@@ -46,14 +46,14 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: headwater-ai/headwater/integrations/headwater-check@v0.8.1
+      - uses: headwater-ai/headwater/integrations/headwater-check@v0.8.2
         with:
           root: .
-          version: v0.8.1
+          version: v0.8.2
           strict: "true"
 ```
 
-Two different refs are in play, and they answer two different questions. `@v0.8.1` names the commit of *this action's own YAML and scripts* that your workflow runs. Each engine release tag also tags the action, so pin the action at the release that you install, and move both refs together. `version: v0.8.1` names the *engine binary* that the action downloads and runs against your corpus. That choice is independent of the first ref. `root` is the corpus this action checks, relative to your checkout. `latest` also works for `version`. It resolves to the newest tag that carries the binary this action needs. It skips a tag of the `taxonomy/…` release stream, and it skips a tag whose release carries no asset. When `.headwater/taxonomy.yml` under `root` has an `engine` line, `latest` resolves to the newest such tag that the range admits. When no release is in the range, the job fails and names the range. A tag that you name in `version` is installed as you name it. `strict` is `true` by default. The job fails on an error-severity finding from `headwater check`. It also fails when a committed projection, such as a shelf index or the graph export, disagrees with your corpus and your lock. It also fails when your taxonomy lock is not what your overlay and your vendored packages resolve to.
+Two different refs are in play, and they answer two different questions. `@v0.8.2` names the commit of *this action's own YAML and scripts* that your workflow runs. Each engine release tag also tags the action, so pin the action at the release that you install, and move both refs together. `version: v0.8.2` names the *engine binary* that the action downloads and runs against your corpus. That choice is independent of the first ref. `root` is the corpus this action checks, relative to your checkout. `latest` also works for `version`. It resolves to the newest tag that carries the binary this action needs. It skips a tag of the `taxonomy/…` release stream, and it skips a tag whose release carries no asset. When `.headwater/taxonomy.yml` under `root` has an `engine` line, `latest` resolves to the newest such tag that the range admits. When no release is in the range, the job fails and names the range. A tag that you name in `version` is installed as you name it. `strict` is `true` by default. The job fails on an error-severity finding from `headwater check`. It also fails when a committed projection, such as a shelf index or the graph export, disagrees with your corpus and your lock. It also fails when your taxonomy lock is not what your overlay and your vendored packages resolve to.
 
 The action runs three checks, and you add no step of your own for the lock. `headwater check --strict` reads your documents against your lock. `headwater generate --check` compares each committed projection with what your corpus and your lock produce. `headwater taxonomy resolve --check` compares your lock with what your overlay and your vendored packages resolve to. Neither of the first two checks reads the overlay or the packages, so only the third check finds a lock that is out of date. When the lock fails, the job log and the job summary show the message of the engine, which names the source that changed.
 
@@ -96,10 +96,10 @@ Add a second job to your workflow:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: headwater-ai/headwater/integrations/headwater-upkeep@v0.8.1
+      - uses: headwater-ai/headwater/integrations/headwater-upkeep@v0.8.2
         with:
           root: .
-          version: v0.8.1
+          version: v0.8.2
 ```
 
 The action measures the change from the merge base of the pull request, so the checkout needs the full history. Set `base` to measure from a different revision. The report goes to the job summary. To post it on the pull request as a comment, set `comment: "true"` and give the job `pull-requests: write`.
