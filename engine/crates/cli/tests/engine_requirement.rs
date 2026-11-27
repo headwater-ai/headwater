@@ -269,6 +269,26 @@ fn an_engine_outside_the_corpus_range_is_reported_and_fails_a_strict_check() {
     }
 }
 
+/// A range splits on any white space, so a YAML escape can put a newline or a
+/// tab inside one that still reads. The line names it escaped and stays one
+/// line, because a hook, the commit gate and the editor client forward the
+/// first line that holds the engine's words and nothing after it (#1600).
+#[test]
+fn a_corpus_range_with_a_newline_in_it_is_named_on_one_line() {
+    let root = Root::new("engine-requirement-newline");
+    // YAML reads `\n` and `\t` inside the double quotes `set_engine` writes.
+    set_engine(&root.at, Some(">=99\\n\\t<100"));
+    let ran = root.run(&["check", "--strict"]);
+    assert_ne!(ran.code, Some(0), "{ran:?}");
+    let lines = reports(&ran.err);
+    assert_eq!(lines.len(), 1, "one line: {}", ran.err);
+    assert!(
+        lines[0].contains(r#"engine ">=99\n\t<100" in"#) && lines[0].contains(release::ENGINE),
+        "{}",
+        lines[0]
+    );
+}
+
 /// A range this engine cannot read is refused, never read as no range.
 #[test]
 fn an_unreadable_corpus_range_is_refused() {

@@ -13,6 +13,9 @@
 //   FAKE_EXIT     the status to exit with once standard input closes (default 0).
 //   FAKE_FLOOD    a count of bytes: one line of that many `x` is written before
 //                 the first answer, which is how the output cap is reached.
+//   FAKE_STDERR   a line written to standard error when the server starts, as
+//                 the engine writes its line about an engine outside the range
+//                 the corpus asks for.
 
 'use strict';
 
@@ -29,6 +32,7 @@ function note(entry) {
 }
 
 note({ argv: process.argv.slice(2) });
+if (process.env.FAKE_STDERR) process.stderr.write(process.env.FAKE_STDERR + '\n');
 
 const silent = !fixture || !fs.existsSync(fixture);
 const lines = silent ? [] : fs.readFileSync(fixture, 'utf8').split('\n').filter((l) => l.trim() !== '');

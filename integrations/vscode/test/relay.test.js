@@ -87,6 +87,32 @@ test('each call starts a fresh server and carries its result back under the call
   }
 });
 
+test('the engine\'s line about an engine outside the corpus range reaches the relay\'s log once', async () => {
+  const line = 'headwater: this corpus asks for engine ">=9" in .headwater/taxonomy.yml, and this is engine 0.8.1';
+  const child = spawn(process.execPath, [RELAY, '--bin', process.execPath, '--bin-arg', FAKE, '--root', REPO], {
+    env: { ...process.env, FAKE_FIXTURE: path.join(FIXTURES, 'route-pointers.jsonl'), FAKE_STDERR: line },
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+  let log = '';
+  child.stderr.setEncoding('utf8');
+  child.stderr.on('data', (chunk) => {
+    log += chunk;
+  });
+  const waiting = [];
+  readline.createInterface({ input: child.stdout }).on('line', (l) => waiting.shift()(JSON.parse(l)));
+  const send = (message) => {
+    child.stdin.write(JSON.stringify(message) + '\n');
+    return new Promise((resolve) => waiting.push(resolve));
+  };
+  const first = await send({ ...CALL, id: 1 });
+  const second = await send({ ...CALL, id: 2 });
+  const closed = new Promise((resolve) => child.on('close', resolve));
+  child.stdin.end();
+  await closed;
+  assert.ok(first.result && second.result, 'the answers still arrive');
+  assert.deepEqual(log.split('\n').filter((l) => l !== ''), [line]);
+});
+
 test('the relay never passes --write', async (t) => {
   const r = start('route-pointers.jsonl');
   t.after(r.stop);
