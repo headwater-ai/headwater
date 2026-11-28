@@ -1714,6 +1714,10 @@ mod tests {
             "a copy is still not the document"
         );
         assert!(
+            !names("xdocs/spec/12-check-layer.md", &want),
+            "the numbered name still matches only at a `/` boundary"
+        );
+        assert!(
             !names("docs/other/12-check-layer.md", &want),
             "the number comes off the file name and not off the directory"
         );
