@@ -399,12 +399,7 @@ pub fn render(run: &Run, census: &Census, subject: &Subject<'_>) -> String {
 /// silent emitter would be an audit with nothing to report. Hand it a grading
 /// that returns nothing over a run whose register grades an obligation, and
 /// the census has to say so.
-pub fn render_with(
-    run: &Run,
-    census: &Census,
-    subject: &Subject<'_>,
-    grading: Grading,
-) -> String {
+pub fn render_with(run: &Run, census: &Census, subject: &Subject<'_>, grading: Grading) -> String {
     document(run, &census.tree_digest(), subject, grading).render_pretty()
 }
 
