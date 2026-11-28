@@ -3,7 +3,7 @@ id: HW-PD-0008
 status: current
 status_since: 2026-09-24
 summary: "One agent owns where work sits on the board and never what the work is, and each milestone is a capped version."
-last_verified: 2026-10-13
+last_verified: 2026-11-28
 title: "The board has an owner of its structure, and its milestones are capped versions"
 provenance:
   warrant: asserted
@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: .claude/agents/headwater-product-owner.md
-      verified_revision: sha256:18a1673c9f863c564fab3ad9c256e30471a1ca4bd1ffd7eb8c04b56e857c8e72
+      verified_revision: sha256:c7bbcba7da81678476f8a90785e0b77204dce13d90719368a1ec53635517c188
 ---
 
 # The board has an owner of its structure, and its milestones are capped versions

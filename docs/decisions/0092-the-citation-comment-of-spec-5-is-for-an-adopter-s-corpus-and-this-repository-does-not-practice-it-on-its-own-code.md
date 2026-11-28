@@ -3,7 +3,7 @@ id: HW-DR-0092
 status: current
 status_since: 2026-09-27
 summary: "The per-identifier citation comment of AI integration is a convention for an adopter's corpus. By the owner's ruling, the code of this repository carries none. Its comments that name an identifier are prose, and the checker does not read them."
-last_verified: 2026-11-25
+last_verified: 2026-11-28
 title: "92 — The citation comment of AI integration is for an adopter's corpus, and this repository does not practice it on its own code"
 provenance:
   warrant: asserted
@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: tools/cite/check-citations-fixtures.sh
-      verified_revision: sha256:87c6a03bffad74873e2416be955336d92f03a1f1e870ef7b6af6b81b17c3239f
+      verified_revision: sha256:8aeba259ceb071e0377b0ec4ae702503fd16995e6d7a14592cbfa6ecb0622bb0
   traces_to:
     - HW-SPEC-ai-integration
 ---
