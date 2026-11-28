@@ -151,11 +151,11 @@ const MOVED_CREDITS: &[(&str, &str, &str)] = &[
         "the marker exempts the file from checks and from nothing else",
     ),
     // What a run states beside its findings: the lock hash, and the corpus
-    // tree that nothing computes yet.
+    // tree that every format writes (HW-OBL-0028).
     (
         "corpus tree",
         "docs/subsystems/checks-and-cache.md",
-        "the corpus tree is a gap",
+        "each format also writes the corpus tree",
     ),
     // A count: the engine architecture (docs/spec/engine-architecture.md) still lists the projection kinds, and the count moved.
     (
