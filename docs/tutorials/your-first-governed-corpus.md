@@ -42,19 +42,19 @@ Install the engine once. The block below downloads the release archive for Linux
 
 ```sh
 mkdir -p ~/.local/bin
-curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.8.2/headwater-v0.8.2-x86_64-unknown-linux-musl.tar.gz
-tar -xzf headwater-v0.8.2-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater
+curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.8.3/headwater-v0.8.3-x86_64-unknown-linux-musl.tar.gz
+tar -xzf headwater-v0.8.3-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater
 ```
 
-On macOS on Apple silicon, the archive is `headwater-v0.8.2-aarch64-apple-darwin.tar.gz`. Use that name in the `curl` line and in the `tar` line.
+On macOS on Apple silicon, the archive is `headwater-v0.8.3-aarch64-apple-darwin.tar.gz`. Use that name in the `curl` line and in the `tar` line.
 
-Each archive has a checksum file beside it on [the release page](https://github.com/headwater-ai/headwater/releases/tag/v0.8.2). The name of the checksum file is the name of the archive with `.sha256` added. To verify the archive, download that file too and give it to `sha256sum -c`, or to `shasum -a 256 -c` on macOS.
+Each archive has a checksum file beside it on [the release page](https://github.com/headwater-ai/headwater/releases/tag/v0.8.3). The name of the checksum file is the name of the archive with `.sha256` added. To verify the archive, download that file too and give it to `sha256sum -c`, or to `shasum -a 256 -c` on macOS.
 
 **Check.** `headwater --version` prints a number.
 
 Many Linux distributions put `~/.local/bin` on your `PATH` when the directory exists at login. macOS does not. If your shell cannot find `headwater`, add `~/.local/bin` to your `PATH` in the startup file of your shell. Then open a new shell. You can also run the binary as `~/.local/bin/headwater`.
 
-This installs version 0.8.2 of the engine. It does not install `taxonomy-source`, and step 3 fetches that. If you have a Rust toolchain, `cargo install headwater-cli --locked` is an alternative route, and the README's *Obtaining a named version* section describes it.
+This installs version 0.8.3 of the engine. It does not install `taxonomy-source`, and step 3 fetches that. If you have a Rust toolchain, `cargo install headwater-cli --locked` is an alternative route, and the README's *Obtaining a named version* section describes it.
 
 ## Steps
 
@@ -237,13 +237,10 @@ census
 ```
 
 ```
-  4 findings
-        4 ▲ warn
+  0 findings
 ```
 
 **Check.** `headwater check --strict > /dev/null 2>&1; echo $?` prints `0`.
-
-The four warnings name the package and not your file. This release's engine predates two checks the package names, and the next engine release carries them. They are two `control.mechanism.unimplemented` and two `obligation.disposition.not_one`, on `CT-FACET-4` and `CT-SECT-2`, and they appear on every run until you install that release.
 
 **The most important state in the tutorial.** The run is green, and it is green because it checked nothing: one file seen, none classified, none checked. A green run over an untyped corpus measures your taxonomy rather than your documents. Read the census before the verdict, on every run, forever.
 
@@ -327,12 +324,12 @@ census
 ```
 
 ```
-  1 seen, 1 classified, 1 checked, 26 check instances
+  1 seen, 1 classified, 1 checked, 28 check instances
 ```
 
 **Check.** `headwater check 2>/dev/null | grep 'check instances'` prints the second block above.
 
-The corpus did not grow. The count of checks that ran went from 10 to 26, because a typed document is a document that rules can reach. That is the whole trade this system asks for: type a document, and sixteen more questions become answerable about it.
+The corpus did not grow. The count of checks that ran went from 10 to 28, because a typed document is a document that rules can reach. That is the whole trade this system asks for: type a document, and eighteen more questions become answerable about it.
 
 ### Step 10 — Commit the first governed corpus
 
@@ -388,12 +385,12 @@ Open `docs/decisions/0002-deliver-at-least-once.md`. Change `status: draft` to `
 headwater check
 ```
 
-Trimmed to the findings block:
+Trimmed to the head of the findings block and to the error:
 
 ```
-  5 findings
+  7 findings
         1 ✗ error
-        4 ▲ warn
+        6 ▲ warn
 
   docs/decisions/0002-deliver-at-least-once.md:11:7 ✗ error
     relation.reciprocity.missing (OB-REL-1): `ACME-DR-0002` declares
@@ -407,15 +404,17 @@ Trimmed to the findings block:
 
 The new decision is live now, so the far half is owed. One edge has one end.
 
+The six warnings are `scaffold.placeholder.unwritten`. `headwater new` wrote the prompt `TODO write this section.` into the three sections of each decision, and each warning asks you to replace one prompt with your text. A warning does not fail a strict run, so this tutorial leaves the prompts in place. Write those sections before you commit a real decision.
+
 Read the identifier in parentheses. An **obligation** is a claim this system makes about itself, with the rule that verifies it named beside it. `OB-REL-1` is the obligation that this rule discharges, and every finding names the one it serves.
 
 Trimmed to the head of the register and to the last line of it. The same run printed both, above the findings:
 
 ```
   register
-    59 obligations: 57 verified, 0 gap, 0 unverifiable, 2 with no disposition
-       18 high, 17 verified
-       35 medium, 34 verified
+    59 obligations: 59 verified, 0 gap, 0 unverifiable, 0 with no disposition
+       18 high, 18 verified
+       35 medium, 35 verified
         6 low, 6 verified
 ```
 
@@ -426,8 +425,6 @@ Trimmed to the head of the register and to the last line of it. The same run pri
 **Check.** `headwater check 2>/dev/null | grep 'obligations:'` prints the `59 obligations:` line of the register block above, and nothing else.
 
 **One of those readings is about the package and one is about your run.** The obligations and their severities come from `headwater/standard`. They read the same on your first day and on your thousandth. The last line comes from the rules of the run in front of you. It says that each rule this engine carries serves an obligation, which is what makes the identifier in your finding worth reading.
-
-The two obligations with no disposition are the ones that step 7's warnings named. Their controls name the two checks that this release's engine does not carry, so nothing verifies them yet. The next engine release carries both checks, and the row then reads `59 verified`.
 
 **Your corpus will not show you a gap, and the reason is worth knowing.** A `gap` is a disposition that a package author writes, with an owner, for an obligation that no mechanism verifies. The base package declares none, so this row reads `0 gap` on every run of yours and no step here moves it. Headwater's own corpus takes a bundle that declares obligations that no mechanism verifies. The same block there shows `gap` and `unverifiable` counts above zero, and it names the owner of each gap. To read the current counts, run `headwater check 2>/dev/null | grep 'obligations:'` in a clone of Headwater. The number worth watching is the one that is not `verified`.
 
