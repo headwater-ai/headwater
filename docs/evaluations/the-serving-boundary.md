@@ -253,7 +253,7 @@ Six rules make the filter honest, and three of them are copied from rules that a
 - **Every projection inside a profile regenerates from the filtered graph.** This is the rule that the entry did not know it needed, and the [indexed deposition](#prior-art-and-what-practitioners-shipped) is why. A shelf index or a navigation file built once at full visibility carries what the filter removed. It carries it after the documents themselves were correctly withheld.
 - **The declaration travels with the artifact.** A filtered export states that it is filtered and when it was generated, in the artifact. It states this for the same reason that it states its emitter coverage there. A supported database feature does the opposite — it copies filtered rows and drops the policy — and it is the clearest available warning.
 
-There is no new facet role, and the closed role registry ([the taxonomy model](../spec/taxonomy-model.md#the-meta-schema)) is untouched. The entry proposed to promote `confidentiality` "from descriptive metadata to an enforced security control", and named it a facet that [the conceptual model](../spec/conceptual-model.md) already has. Spec 1 lists it as an example of what facets express, and no facet role carries it. Promotion would have been a meta-schema change for no gain. A filter that names its own facet and values in the profile is [principle 1](../spec/vision-and-scope.md#design-principles) working correctly. An adopter whose confidentiality axis is called `sensitivity`, or who filters on `audience`, needs no engine change and no argument with us.
+There is no new facet role, and the closed role registry ([the taxonomy model](../spec/taxonomy-model.md#the-meta-schema)) is untouched. The entry proposed to promote `confidentiality` "from descriptive metadata to an enforced security control", and named it a facet that [the conceptual model](../spec/conceptual-model.md) already has. [The conceptual model](../spec/conceptual-model.md) lists it as an example of what facets express, and no facet role carries it. Promotion would have been a meta-schema change for no gain. A filter that names its own facet and values in the profile is [principle 1](../spec/vision-and-scope.md#design-principles) working correctly. An adopter whose confidentiality axis is called `sensitivity`, or who filters on `audience`, needs no engine change and no argument with us.
 
 What the entry got right survives in a sharper form. A facet that a filter reads is a facet whose every change is a disclosure decision. The mislabel is not a lint, and the front-matter diff that changes it is the review.
 
@@ -298,7 +298,7 @@ The entry asserts that access control is the one place where [principle 4](../sp
 
 Principle 4 promotes a rule from advisory to blocking against evidence about its false-positive rate. [The assurance model](../spec/assurance-model.md#promotion-advisory-to-blocking) collects that evidence from suppression labels and an adjudicated sample. Both instruments measure one error class: the finding that fired and should not have.
 
-A withholding rule has the opposite error asymmetry. A false positive — a document withheld that could have been carried — is visible, cheap, and recoverable. The reader asks, the profile changes, the next run carries it. A false negative — a document carried that should have been withheld — is invisible to every instrument that spec 4 has. It is not recoverable at all. The bytes are gone.
+A withholding rule has the opposite error asymmetry. A false positive — a document withheld that could have been carried — is visible, cheap, and recoverable. The reader asks, the profile changes, the next run carries it. A false negative — a document carried that should have been withheld — is invisible to every instrument that [the assurance model](../spec/assurance-model.md) has. It is not recoverable at all. The bytes are gone.
 
 So the exception is not about security as a subject. It is about a control whose two error classes are not both recoverable. State the general rule, and the instance follows:
 
@@ -318,7 +318,7 @@ The principle's own gloss gives it away. An agent-facing helper degrades silentl
 
 So the rule is: **degrade toward the cheaper error, and name which error that is.** For a hint, silence is cheaper than a wrong pointer. For a validator, a loud failure is cheaper than a false pass. For an exporter with a filter, an empty output is cheaper than one document too many. An exporter that cannot evaluate its filter emits nothing and fails the run. It never emits an unfiltered artifact, and it never emits a partly filtered one.
 
-That statement belongs in spec 0 beside the principle. Otherwise, the positional shorthand will be read literally by exactly the person who is writing the exporter.
+That statement belongs in [the vision and scope](../spec/vision-and-scope.md) beside the principle. Otherwise, the positional shorthand will be read literally by exactly the person who is writing the exporter.
 
 #### Topology, and an honest account of what the mitigation is worth
 

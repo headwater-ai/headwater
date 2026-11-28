@@ -633,7 +633,7 @@ if [ -x "$engine" ] && [ -f "$oprobe" ]; then
     # transform kept that path in `produced`. The oracle branch then exited 5
     # on the `cp` of a file that was never there, and the non-oracle branch
     # wrote `findings: []` for it, which the grader scores as a clean pass.
-    # Spec 15 gives `path` as "where the artifact landed", so the path leaves.
+    # The recorder contract (docs/spec/the-recorder-contract.md) gives `path` as "where the artifact landed", so the path leaves.
     refused='docs/obligations/9999-a-write-the-hook-refused.md'
     {
         printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s-refused"}'
@@ -1298,14 +1298,14 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Spec 15's account of the session, held to the driver's source (#1641).
+# The recorder contract's (docs/spec/the-recorder-contract.md) account of the session, held to the driver's source (#1641).
 #
-# Spec 15 said the driver "clears the environment, so no token of the host
+# The recorder contract (docs/spec/the-recorder-contract.md) said the driver "clears the environment, so no token of the host
 # reaches the session", while the driver set 12 variables and passed `LANG`
 # and `ANTHROPIC_API_KEY` from the host. It said the file system held its
 # list "and no other", while the driver also bound the target of
 # `/etc/resolv.conf`. Nothing compared the two. So each set is read off the
-# driver's code, with the comments stripped, and off spec 15's section, and
+# driver's code, with the comments stripped, and off the recorder contract's (docs/spec/the-recorder-contract.md) section, and
 # the two must be equal in both directions: a variable or a bind in the
 # driver that the spec does not list fails, and so does one the spec lists
 # that the driver does not set.
@@ -1337,7 +1337,7 @@ else
 fi
 
 # The binds. Each source the driver binds, or the destination of a symlink,
-# maps to the phrase of spec 15's list that names it. A source with no row is
+# maps to the phrase of the recorder contract's (docs/spec/the-recorder-contract.md) list that names it. A source with no row is
 # a bind the spec does not list; a row whose phrase is not in the list is an
 # item the spec lost; a row whose source the driver no longer binds is an
 # item the spec lists and the driver does not bind.
@@ -1381,7 +1381,7 @@ else
     pass "spec 15 lists every bind of the session's file system, and no other"
 fi
 
-# The leak figure: the evaluation's three numbers, each in spec 15 and in the
+# The leak figure: the evaluation's three numbers, each in the recorder contract (docs/spec/the-recorder-contract.md) and in the
 # driver's comment, and each still in the evaluation they are copied from. A
 # figure the evaluation no longer states is one the copies must not keep.
 evaluation="$root/docs/evaluations/what-the-counterfactual-campaign-of-2026-09-30-measured-by-component.md"
@@ -2821,7 +2821,7 @@ STUB
 
         # THE decisive case of #1467's network half (clause 5): the public
         # repository is not reachable from a session by a direct connection.
-        # (The provider API stays a channel, which spec 15 names and no case
+        # (The provider API stays a channel, which the recorder contract (docs/spec/the-recorder-contract.md) names and no case
         # can measure without spending.) A server on the host's
         # loopback stands in for it, so the case needs no internet access. It
         # serves a marker file and a git repository that holds the marker. The

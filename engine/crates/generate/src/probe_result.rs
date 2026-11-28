@@ -26,7 +26,7 @@
 //! wrongly produces a transcript whose result reports a rate near zero, and the
 //! gate exits 0 over it, because the gate compares the committed result against
 //! the result this corpus derives. What fails the gate is a *derivation* that no
-//! longer agrees with its source, which spec 5 names as "a defect in the grader,
+//! longer agrees with its source, which [AI integration](../../../../docs/spec/ai-integration.md) names as "a defect in the grader,
 //! the parser, or the committed inputs". No socket is opened here, no crate
 //! below opens one, and the component that reaches the network is the recorder,
 //! which is not a crate of this workspace.
@@ -61,7 +61,7 @@
 //! grading moves it. That change makes every committed result stale until it is
 //! regenerated. A release that bumps the workspace version does not move it, so
 //! a release leaves every committed result as it was (#1317). That is the
-//! behavior spec 5 asks for: a result is a function of the grader version, and
+//! behavior [AI integration](../../../../docs/spec/ai-integration.md) asks for: a result is a function of the grader version, and
 //! a series that averaged over two of them would report a change in the
 //! instrument as a change in the corpus.
 
@@ -594,7 +594,7 @@ impl Comparison {
 /// # The key is the run, and the tier is a role inside it
 ///
 /// Two transcripts belong to one run when they share the selection, the model,
-/// the served version and the tree. The first three are the members spec 5 pins
+/// the served version and the tree. The first three are the members [AI integration](../../../../docs/spec/ai-integration.md) pins
 /// before a run starts. The tree joined them for #980: a campaign is recorded
 /// from workspaces built from one pinned commit, so a pair recorded over two
 /// commits compares two corpora, and the key must say so rather than pair them.
@@ -604,13 +604,13 @@ impl Comparison {
 ///
 /// - `campaign` present against `campaign` absent, the governance.
 /// - `campaign` absent against `documentation` absent, the documents alone,
-///   which spec 5 names as the only reading of that claim.
+///   which [AI integration](../../../../docs/spec/ai-integration.md) names as the only reading of that claim.
 /// - a present arm against `documentation` absent, both together.
 ///
 /// Each component arm (#1472) is one more role of the `campaign` tier, and it
 /// is compared with the `campaign` present arm alone: the present arm is
 /// treated against a component that removes a part, and `mcp`, which adds
-/// one, is treated against the present arm (spec 5).
+/// one, is treated against the present arm ([AI integration](../../../../docs/spec/ai-integration.md)).
 ///
 /// # One present arm serves both tiers
 ///
@@ -683,7 +683,7 @@ fn pair_arms(graded: &[Graded], plan: &mut Plan) -> Vec<Comparison> {
             role(Tier::Documentation, Arm::Absent),
         ];
         // Each component arm of #1472 is one more role, compared with the
-        // `campaign` present arm alone (spec 5).
+        // `campaign` present arm alone (AI integration (docs/spec/ai-integration.md)).
         let components: Vec<(Arm, Vec<&Graded>)> = Arm::ALL
             .into_iter()
             .filter(|arm| arm.is_component())
@@ -842,7 +842,7 @@ fn points_at(binding: &Binding, path: &str) -> bool {
 /// `current` is "the document states what holds now, and a reader may rely on
 /// it", and `deprecated` is "the document is no longer to be relied on". So the
 /// reading is [`headwater_check::lifecycle_state::StateFacet::standing`], which
-/// is the fold spec 3's dependency rule already takes, and a sixth state added
+/// is the fold [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s dependency rule already takes, and a sixth state added
 /// to the vocabulary is classified here by the role it declares and by no edit
 /// to this crate.
 ///
@@ -1156,7 +1156,7 @@ const READ_SET: &str = "The `read_set` digest above covers every probe of the se
 /// cannot recover the digest, the transcript is graded over the probes its
 /// events name alone, and a probe the run was planned over and never ran is
 /// not reported. That is the cost of not comparing, and the run report names
-/// such a result. Spec 15 records it.
+/// such a result. [The recorder contract](../../../../docs/spec/the-recorder-contract.md) records it.
 ///
 /// The `tree`, the `seed` and the `harness` are provenance and stay provenance.
 /// The tree digest covers every classified document, so a result that tracked

@@ -2,7 +2,7 @@
 id: HW-OBL-0198
 status: discharged
 status_since: 2026-10-01
-summary: "Every session loads standing instructions before any task begins. The #1384 batch measured this repository's share at a median of 7,225 tokens, and spec 5 states it."
+summary: "Every session loads standing instructions before any task begins. The #1384 batch measured this repository's share at a median of 7,225 tokens, and AI integration states it."
 last_verified: 2026-10-01
 title: "Nothing states how much of a session's budget the standing instructions consume before work starts"
 waiting_on: measurement

@@ -20,7 +20,7 @@
 //! `lifecycle.state.set_twice` and `generate --check` already own.
 //!
 //! **A fix that invented a date** writes a stamp where the successor declares
-//! none. Spec 2 says `--fix` never reconstructs a missing date after the fact,
+//! none. [The taxonomy model](../../../../docs/spec/taxonomy-model.md) says `--fix` never reconstructs a missing date after the fact,
 //! so that finding carries no patch.
 
 use headwater_census::census;

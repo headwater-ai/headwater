@@ -4,7 +4,7 @@
 //! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#the--reference-sublanguage):
 //! "A reference resolves last, over the merged tree… The order is thus: apply
 //! every overlay, resolve every reference, validate the result." The reason is
-//! spec 2's own worked overlay. It overrides `vocabularies.lifecycle_state`,
+//! [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s own worked overlay. It overrides `vocabularies.lifecycle_state`,
 //! and the facet that reads `$vocabularies.lifecycle_state` is expected to
 //! follow it. An early resolution freezes the base list before any overlay is
 //! read, and the override then changes nothing that a check can see.
@@ -34,7 +34,7 @@ use headwater_yaml::{Mapping, Scalar, Span, Spanned, Value};
 ///
 /// [The taxonomy model](../../../../docs/spec/taxonomy-model.md#the--reference-sublanguage)
 /// says outright that what `optional` means under the `package` root "is not
-/// fixed here", that spec 7 declares no such block in the package manifest, and
+/// fixed here", that [distribution and federation](../../../../docs/spec/distribution-and-federation.md) declares no such block in the package manifest, and
 /// that [Open obligations](../../../../docs/spec/open-obligations.md)
 /// carries the gap. So the root parses, the resolver knows the name, and there
 /// is nothing for it to read. A refusal that says that is better than a

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # The migration payload of a candidate 2.0.0 of `headwater/standard`, in the
-# form spec 7 (The migration payload) states. It is the artifact that pays the
+# form distribution and federation (docs/spec/distribution-and-federation.md) (The migration payload) states. It is the artifact that pays the
 # cost of the format: `engine/crates/cli/tests/migration.rs` publishes a
 # candidate that carries it and runs `taxonomy diff` over a corpus, so a wrong
 # format is a failing test rather than a specification nobody has met.

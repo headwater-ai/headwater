@@ -68,7 +68,7 @@ HW-EVAL-adjacent-work also records TrustGraph as a **candidate integration, not 
 
 ### Vale — the closest analog, and it already drew the commercial line
 
-Spec 0 names [Vale](https://vale.sh/) as the closest observed analog to this engine. MIT-licensed CLI, free for any team of any size, plus **Vale Studio**, a hosted product from the same maintainer adding a web UI, team management and analytics.
+[The vision and scope](../../docs/spec/vision-and-scope.md) names [Vale](https://vale.sh/) as the closest observed analog to this engine. MIT-licensed CLI, free for any team of any size, plus **Vale Studio**, a hosted product from the same maintainer adding a web UI, team management and analytics.
 
 The lesson, already recorded in the first-contact evaluation: *"The command-line checker is not the product. The place where a person cannot easily self-host is."* That is exactly where Q7, Q8 and Q17 left a hole — a hosted server and a hosted probe harness. **The site should not sell that yet**, but it should not architecturally preclude it either.
 
@@ -119,7 +119,7 @@ No row below carries a count. A shelf gains and loses documents on ordinary chan
 | Page | Job | Notes |
 |---|---|---|
 | `/` — landing | Answer "is this for me?" in under 30 seconds for a platform lead | Primary CTA: install line + tutorial. Secondary: book a call |
-| `/how-it-works` | Taxonomy → graph → checks → projections, in four diagrams | Sources: spec 1, 6, 12 |
+| `/how-it-works` | Taxonomy → graph → checks → projections, in four diagrams | Sources: [The conceptual model](../../docs/spec/conceptual-model.md), 6, 12 |
 | `/compare` | LeanCTX, TrustGraph, Vale, plain linters, static-site generators — *including the arguments against us* | The strongest page. Content already exists in HW-EVAL-adjacent-work |
 | `/services` | Audit, consulting, and "hosted, later" | The revenue page. See §6 |
 | `/audit` | Fixed-price corpus audit — what you get, what it costs, how to start | The conversion page that is deliverable today |
@@ -170,7 +170,7 @@ Hero CTA: a copyable install line and `headwater init`, leading to the tutorial.
 
 **Section 4 — how it works.** Four steps, four diagrams.
 
-**Section 5 — what it is not.** Spec 0's "what we do not build" table. Refusing scope publicly reads as confidence to a platform lead who has been sold too much.
+**Section 5 — what it is not.** [The vision and scope](../../docs/spec/vision-and-scope.md)'s "what we do not build" table. Refusing scope publicly reads as confidence to a platform lead who has been sold too much.
 
 **Section 6 — comparison teaser** → `/compare`.
 
@@ -211,7 +211,7 @@ Specifics for the designer:
 - **Keep the serif for body prose.** It is the differentiator against every developer-tool site in this space, and it suits documents about documents.
 - **Sans for structure only** — labels, table headers, navigation, code annotations. The existing pairing already does this.
 - **Terminal output is a primary visual element.** Real `headwater check` output, unedited, is the most persuasive asset available. Set it properly; do not screenshot it.
-- **Tables over cards.** This audience reads tables. The Q16 sitemap audit and the spec 0 refusal table are both more convincing as tables than as feature grids.
+- **Tables over cards.** This audience reads tables. The Q16 sitemap audit and [the vision and scope](../../docs/spec/vision-and-scope.md) refusal table are both more convincing as tables than as feature grids.
 - **The empty benchmark row must look deliberate** — a rule, a gap, a label. Designed, not broken.
 - **No stock illustration, no abstract 3D graph render, no logo wall.** There are no customer logos, and inventing social proof would violate the principle the site is built on.
 - **Diagrams:** the graph as nodes and typed edges, drawn as an actual small corpus using real document names from this repository.

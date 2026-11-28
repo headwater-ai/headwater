@@ -93,7 +93,7 @@ This contradicts the casual half of the Q6 leaning. It offered "a committed JSON
 
 **CodeQL is the honest contradiction.** A CodeQL database is created from source, uploaded as an artifact, and *is* the query surface. A derived store as the query surface is a shipped design at very large scale. What CodeQL never does is treat the database as canonical for the code, and nobody reviews a database in a pull request. Headwater declines the pattern on its own stated constraints — offline, deterministic, reviewable in a diff — and not on a claim that the pattern fails. That distinction belongs in the record.
 
-**OKF and TrustGraph point the other way and are already recorded.** [HW-EVAL-adjacent-work §I.2](../evaluations/adjacent-work.md#i2-the-arrow-points-the-other-way-and-that-is-the-whole-difference) and [§J](../evaluations/adjacent-work.md#j-trustgraph--the-same-pitch-the-opposite-mechanism) hold a durable graph store with text projected out of it. Both work. Neither shares spec 0's non-negotiables.
+**OKF and TrustGraph point the other way and are already recorded.** [HW-EVAL-adjacent-work §I.2](../evaluations/adjacent-work.md#i2-the-arrow-points-the-other-way-and-that-is-the-whole-difference) and [§J](../evaluations/adjacent-work.md#j-trustgraph--the-same-pitch-the-opposite-mechanism) hold a durable graph store with text projected out of it. Both work. Neither shares [the vision and scope](../spec/vision-and-scope.md)'s non-negotiables.
 
 ### Model-first emission, and what happens when emitters chain
 
@@ -109,7 +109,7 @@ They sharpen the requirement rather than supply it. Both declare a positive set 
 
 ### Harvest, not fan-out
 
-**SPARQL federation is the standards-track version of query fan-out, and its documented behavior is the failure that spec 4 forbids.** Under SPARQL 1.1 and 1.2, a `SERVICE` pattern that cannot reach its endpoint fails the whole query. The remedy in the specification is the `SILENT` keyword, which makes the query succeed with a silently incomplete answer. Research on public endpoints reports that low reliability pushes serious consumers onto dataset dumps and local reinstallation. Wikidata maintains a page of federation issues that lists downtime, timeouts and protocol incompatibilities among its federated endpoints.
+**SPARQL federation is the standards-track version of query fan-out, and its documented behavior is the failure that [the assurance model](../spec/assurance-model.md) forbids.** Under SPARQL 1.1 and 1.2, a `SERVICE` pattern that cannot reach its endpoint fails the whole query. The remedy in the specification is the `SILENT` keyword, which makes the query succeed with a silently incomplete answer. Research on public endpoints reports that low reliability pushes serious consumers onto dataset dumps and local reinstallation. Wikidata maintains a page of federation issues that lists downtime, timeouts and protocol incompatibilities among its federated endpoints.
 
 **Digital libraries ran this experiment for two decades and the harvesters won.** The two candidate architectures were distributed broadcast search over Z39.50 and metadata harvesting over OAI-PMH. Europeana aggregates from more than 3,700 providers through its Metis ingestion service, partly through intermediary aggregators. DPLA harvests over the same protocol. ResourceSync, built on sitemaps, is the successor for the cases that need faster synchronization.
 
@@ -185,7 +185,7 @@ That placement makes the standing worry concrete. OKF's own conformance check is
 
 Three points were open. All three close, and one of them closes by fixing a sentence in [the conceptual model](../spec/conceptual-model.md#the-corpus).
 
-**The monorepo half was answered all along, in the wrong words.** Spec 1 said that a repository has exactly one corpus. The binding constraint is not the repository. A corpus is one taxonomy and one root, and a repository holds one or more of them. A monorepo with several independent documentation sets is not one corpus under strain. It is several corpora that share a working tree.
+**The monorepo half was answered all along, in the wrong words.** [The conceptual model](../spec/conceptual-model.md) said that a repository has exactly one corpus. The binding constraint is not the repository. A corpus is one taxonomy and one root, and a repository holds one or more of them. A monorepo with several independent documentation sets is not one corpus under strain. It is several corpora that share a working tree.
 
 Nothing in the engine changes. The lock is per corpus root. The census walks one root. A path resolves to exactly one corpus by the determinism rule that shelf patterns already use. The most specific root wins, and a tie is a validation error. Identifiers are namespaced at minting ([authoring and lifecycle](../spec/authoring-and-lifecycle.md#identifiers)), so two corpora in one tree cannot collide. The sentence named the wrong container, and that is the whole defect.
 
@@ -233,7 +233,7 @@ Q17 keeps everything else: whether to build access control at all, the identity 
 
 | Claim | Instrument | Status |
 |---|---|---|
-| Rebuild plus cache meets spec 6's budgets, so no database is justified | the change-scoped benchmark from the [Q1 spike](language-spike-results.md), run over a real corpus | measured at spike scale only, on generated documents |
+| Rebuild plus cache meets [the engine architecture](../spec/engine-architecture.md)'s budgets, so no database is justified | the change-scoped benchmark from the [Q1 spike](language-spike-results.md), run over a real corpus | measured at spike scale only, on generated documents |
 | Emitted JSON Schema lowers the rate of invalid front matter that reaches a check | finding rate for Shape-origin rules in the coverage report, before and after the emitter ships | unmeasured |
 | The projection census catches projector defects that no consumer can catch | the differential test against a stock validator, plus the projector's fixture tree | unmeasured, and no emitter exists |
 | Harvest keeps a solution-tier route query inside the 100 ms budget | route latency at the solution tier, against the same target | unmeasured |
@@ -252,7 +252,7 @@ Fourteen changes follow, and all are applied.
 | [The engine architecture](../spec/engine-architecture.md#nothing-stores-the-graph) | The three derived artifacts, their lifetimes, and what each may claim |
 | [The engine architecture](../spec/engine-architecture.md#nothing-stores-the-graph) | No embedded database, with the revisit trigger stated |
 | [The engine architecture](../spec/engine-architecture.md#projections) | The export is a declared projection. Two classes of export, the loss set, and the projection census |
-| [The engine architecture](../spec/engine-architecture.md#checks) | The `Exportable as` column becomes a target set, and points at spec 12 |
+| [The engine architecture](../spec/engine-architecture.md#checks) | The `Exportable as` column becomes a target set, and points at [the check layer](../spec/check-layer.md) |
 | [The engine architecture](../spec/engine-architecture.md#cli) | `headwater export` joins the command list, which never carried it |
 | [Distribution and federation](../spec/distribution-and-federation.md#the-tier-above-a-corpus-harvests-it) | The aggregator is a solution corpus plus one anchor kind. There is no merged graph |
 | [Distribution and federation](../spec/distribution-and-federation.md#the-tier-above-a-corpus-harvests-it) | Harvest and never fan-out, with an unreadable pin as a finding |

@@ -43,7 +43,7 @@ The measurement is a hand run on 2026-08-14 over a repository built for it. It c
 
 Both resolvers are reached, so this is a property of the read set rather than of either one. The `governs` case has been reachable since the source-tree resolver shipped, and no record held it. The snapshot case arrives with `headwater_import::anchors`.
 
-**What the engine already does for the same problem, one input over.** `Cache::key` returns nothing for an instance whose input carries no digest. The comment on that branch states the reason. "The result cannot be keyed on a hash that does not exist, and inventing one is the correctness bug spec 12 names." An anchor target is the same case, and it never reaches that branch, because the read set of the instance never held the target.
+**What the engine already does for the same problem, one input over.** `Cache::key` returns nothing for an instance whose input carries no digest. The comment on that branch states the reason. "The result cannot be keyed on a hash that does not exist, and inventing one is the correctness bug [the check layer](../spec/check-layer.md) names." An anchor target is the same case, and it never reaches that branch, because the read set of the instance never held the target.
 
 **What this costs a reader.** A green run over a corpus whose edges point at nothing is the exact outcome [`relation.target.unresolved`](../spec/check-layer.md#two-phases-and-why-the-order-matters) exists to prevent. The commit gate runs `headwater check --strict` with the cache on, so a deletion that breaks an anchor passes the gate on the commit that makes it.
 

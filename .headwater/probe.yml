@@ -90,7 +90,7 @@ folds:
 #
 # `tools/probe/seal.sh` removes each key from a workspace, with its claim under
 # `.headwater/ids/`, and removes every line of any other file that names the
-# key's identifier or slug. A shelf index, spec 13's register and a paragraph
+# key's identifier or slug. A shelf index, the register of open obligations's (docs/spec/open-obligations.md) register and a paragraph
 # that cites the key each lose that line and keep the rest. `probe-record.sh`
 # refuses a workspace that still names a key. The engine reads this block,
 # and `headwater probe plan --answer-keys <probe>` prints the keys of one
@@ -635,7 +635,7 @@ tiers:
   # is inside it. `tools/probe/campaign.sh --session-cents` is what holds a
   # batch below the figure it was given, and not this declaration.
   #
-  # Spec 5 takes the session count from statistical power rather than from
+  # AI integration (docs/spec/ai-integration.md) takes the session count from statistical power rather than from
   # taste: 0.50 against 0.75 at 80% power and a 5% two-sided level is about 58
   # sessions per arm. That count is per arm of one claim, and a result pools
   # every probe of its selection into one rate. So 30 repetitions over the 4
@@ -1241,7 +1241,7 @@ base_invalidators:
   - tools/probe/campaign.sh
   - tools/probe/ablate.sh
 
-# The absent arm names a declared ablation (spec 5, "the counterfactual is not
+# The absent arm names a declared ablation (AI integration (docs/spec/ai-integration.md), "the counterfactual is not
 # a category, it is an arm of every probe... the absent arm names a declared
 # ablation, so what 'corpus absent' removed is a recorded fact"). The
 # `ablation` field of each paired tier is that record, and the engine refuses

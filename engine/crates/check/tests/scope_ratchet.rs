@@ -210,7 +210,7 @@ fn an_added_file_outside_the_scope_is_not_reported() {
 }
 
 /// A run with no change has no additions to read, so the instance is skipped
-/// with the reason spec 12 fixes rather than passed.
+/// with the reason [the check layer](../../../../docs/spec/check-layer.md) fixes rather than passed.
 #[test]
 fn a_run_without_a_change_skips_the_rule() {
     let run = run_with(

@@ -369,7 +369,7 @@ impl Edge {
 
     /// The target after the thing that owns its identity normalized it.
     ///
-    /// An identifier is its own normal form: spec 3 mints it once and never
+    /// An identifier is its own normal form: [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) mints it once and never
     /// reuses it. An anchor string is whatever its resolver made of it. The
     /// path of a document, which binds to nothing (#1410), keeps the normalized
     /// path the resolver made of it, so that two spellings of one path are
@@ -447,7 +447,7 @@ impl Target {
     ///
     /// **It is the derived `Debug`, and that is the point.** The value has to
     /// be total over the type: a variant or a field that this rendering omits
-    /// is an input that a key omits, which is the correctness bug spec 12 names
+    /// is an input that a key omits, which is the correctness bug [the check layer](../../../../docs/spec/check-layer.md) names
     /// and the one this method exists for. A hand-written arm per variant is a
     /// second statement of the shape of [`Target`], and the next variant added
     /// beside it would key nothing new while compiling clean. The compiler

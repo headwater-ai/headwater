@@ -7,7 +7,7 @@
 //! measurement. The `match verb.as_slice()` arms of the binary were the truth.
 //! The message a caller reads on an unknown verb listed fifteen names where the
 //! arms carried seventeen, and it omitted `probe` and `query`. The `USAGE`
-//! synopsis that `--help` printed omitted `query` and `taxonomy migrate`. Spec 6
+//! synopsis that `--help` printed omitted `query` and `taxonomy migrate`. [The engine architecture](../../../../docs/spec/engine-architecture.md)
 //! kept a fourth copy as the CLI grammar.
 //!
 //! The one that costs the most is `query`. `headwater query "anything"` exits 1
@@ -195,7 +195,7 @@ pub const VERBS: &[Verb] = &[
         words: &[],
     },
     // The one verb git calls rather than a person. HW-DR-0077 rules that merge
-    // safety ships as a verb of the binary and gives the reason spec 5's "no
+    // safety ships as a verb of the binary and gives the reason AI integration's (docs/spec/ai-integration.md) "no
     // hook introduces a verb" does not forbid it: that rule forbids a second
     // entry point to `route` or `check`, and this answers a question no verb
     // answers, which is what a merge does with a derived fold.
@@ -234,7 +234,7 @@ pub const VERBS: &[Verb] = &[
         description: "Print the bytes of one document exactly as they are on disk, found by its path or by the identifier it declares. It finds the document the way `explain` does, and it refuses a target that `explain` refuses in the same sentence.",
         words: &[],
     },
-    // Listed in spec 6, and no document states what an expression is. The verb
+    // Listed in the engine architecture (docs/spec/engine-architecture.md), and no document states what an expression is. The verb
     // states that wait when a caller types it, which is what #146 requires of a
     // declared name. It is a verb of this surface for exactly that reason: a
     // wait a caller cannot discover is a wait nobody reads.

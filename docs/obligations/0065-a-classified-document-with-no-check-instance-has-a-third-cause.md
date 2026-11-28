@@ -5,7 +5,7 @@ status: current
 status_since: 2026-08-12
 waiting_on: build
 last_verified: 2026-08-13
-summary: "Spec 12 names two causes for a document with zero instances, and the one this corpus met is neither."
+summary: "The check layer names two causes for a document with zero instances, and the one this corpus met is neither."
 provenance:
   warrant: accepted
   agency: mixed
@@ -28,7 +28,7 @@ The runner reported three such documents in this repository when it landed, and 
 
 ## Obligation
 
-Either spec 12 names the third cause, or the remediation prose says what a reader is to do about it.
+Either [the check layer](../spec/check-layer.md) names the third cause, or the remediation prose says what a reader is to do about it.
 
 ## Discharge
 

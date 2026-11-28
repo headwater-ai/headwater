@@ -147,7 +147,7 @@ impl Subject {
     /// The dimensions of [the taxonomy model](../../../../docs/spec/taxonomy-model.md#versioning-by-measured-compatibility)
     /// that a step over this subject is a remedy for.
     ///
-    /// A facet value names two because spec 2 rules that one contains the
+    /// A facet value names two because [the taxonomy model](../../../../docs/spec/taxonomy-model.md) rules that one contains the
     /// other: "a broken `instance_validity` breaks `consequence` too". A kind
     /// names one, because whether a kind rename also stops a document
     /// validating depends on the facet requirements of the two kinds, and the
@@ -181,7 +181,7 @@ pub enum Application {
     /// publisher closed.
     Choice { among: Vec<String>, task: String },
     /// No target. Nothing replaces the old value and the subject is re-stated,
-    /// which is spec 2's third category.
+    /// which is [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s third category.
     Restatement { task: String },
 }
 

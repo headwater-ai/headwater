@@ -66,7 +66,7 @@
 //!
 //! **A Markdown file that declares no front matter at all is not a template —
 //! unless its own stem states a kind this package declares.** A file whose
-//! stem names no kind (spec 7's own example manifest ships `templates/note.md`
+//! stem names no kind ([distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s own example manifest ships `templates/note.md`
 //! as prose beside the templates, under this very key) is skipped: every check
 //! above reads front matter, so skipping it takes no check away. But a stem
 //! that names a kind is a template's own claim to teach it, and this reader
@@ -130,7 +130,7 @@ pub enum Reason {
     Unparseable { why: String },
     /// The stem names no kind the package declares.
     KindUnknown { kind: String },
-    /// The stem names an abstract kind, and spec 2 says no document is one.
+    /// The stem names an abstract kind, and [the taxonomy model](../../../../docs/spec/taxonomy-model.md) says no document is one.
     KindAbstract { kind: String },
     /// A facet with an enumerated value set carries a value outside it.
     FacetValueNotPermitted {
@@ -316,7 +316,7 @@ pub fn refusals(
 /// Two shapes reach this, and both are walked. `<contents.bundles>/<name>/
 /// templates/*.md` is where this repository's library keeps them, one set per
 /// bundle, and it is the only shape any manifest here declares.
-/// `<contents.templates>/*.md` is the package-level shape spec 7's example
+/// `<contents.templates>/*.md` is the package-level shape [distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s example
 /// manifest block writes; no manifest in this repository declares it, and
 /// covering it costs one directory read.
 ///

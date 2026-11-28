@@ -9,7 +9,7 @@
 //!
 //! # Four formats, and one dispatcher over them
 //!
-//! Spec 6 fixes the set: `text`, `json`, `sarif`, `markdown`. [`render`] writes
+//! [The engine architecture](../../../../docs/spec/engine-architecture.md) fixes the set: `text`, `json`, `sarif`, `markdown`. [`render`] writes
 //! every one of them, and it is the only place any caller turns a run into
 //! bytes. [`text`] needs the census and the graph as well as the run, so
 //! [`render`] takes all three and the three translations ignore two of them.
@@ -22,7 +22,7 @@
 //!
 //! # Why this is a crate and not a module of `headwater-check`
 //!
-//! The dependency direction is the boundary spec 8 asks for.
+//! The dependency direction is the boundary [the design departures](../../../../docs/spec/design-departures.md) asks for.
 //! [Departure 6](../../../../docs/spec/design-departures.md): "a
 //! platform-neutral core with thin adapters. No forge, tracker, or cloud is
 //! privileged. More than one adapter exists from the start, and that enforces
@@ -34,7 +34,7 @@
 //! buys
 //!
 //! [`Format::Sarif`] and [`Format::Markdown`] translate into two platform
-//! vocabularies that spec 6 names: a check run, which a forge ingests as SARIF,
+//! vocabularies that [the engine architecture](../../../../docs/spec/engine-architecture.md) names: a check run, which a forge ingests as SARIF,
 //! and a job summary, which a forge renders as Markdown. They lose different
 //! things, and that is the point of shipping both. One adapter cannot show
 //! where the boundary is, because everything it needs is in the core by
@@ -103,16 +103,16 @@ headwater_check::enumerated! {
         /// The report a person reads in a terminal, in the engine's own words. See
         /// [`text`].
         Text,
-        /// The finding shape spec 4 declares. Not an adapter.
+        /// The finding shape [the assurance model](../../../../docs/spec/assurance-model.md) declares. Not an adapter.
         Json,
         /// Static Analysis Results Interchange Format 2.1.0 (OASIS), which is what
         /// a forge ingests as a check run.
         Sarif,
-        /// A job summary or a review comment, which is the other vocabulary spec 6
+        /// A job summary or a review comment, which is the other vocabulary [the engine architecture](../../../../docs/spec/engine-architecture.md)
         /// names.
         Markdown,
     }
-    /// Every format, in the order spec 6 lists them.
+    /// Every format, in the order [the engine architecture](../../../../docs/spec/engine-architecture.md) lists them.
     const ALL;
 }
 
@@ -369,7 +369,7 @@ impl Reported<'_> {
     }
 }
 
-/// Every finding of a run, live and escaped, in the one order spec 12 fixes.
+/// Every finding of a run, live and escaped, in the one order [the check layer](../../../../docs/spec/check-layer.md) fixes.
 ///
 /// The three sources are disjoint by construction: the runner applies the
 /// adoption payload first and the directives second, so a held finding never
@@ -927,7 +927,7 @@ fn opening(line: &str) -> &str {
 /// text report as the second line of an escaped finding's record. One sentence
 /// rather than two, because a reader who compares the two artifacts of one run
 /// is comparing the reason each gives, and two spellings of one reason is the
-/// drift spec 6 makes the library API the answer to.
+/// drift [the engine architecture](../../../../docs/spec/engine-architecture.md) makes the library API the answer to.
 pub(crate) fn held_by(entry: &Reported<'_>, escape: Escape) -> String {
     match escape {
         Escape::MigrationPending => match entry.task {

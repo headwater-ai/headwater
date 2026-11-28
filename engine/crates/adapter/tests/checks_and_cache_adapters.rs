@@ -5,7 +5,7 @@
 //!
 //! # Why this file exists
 //!
-//! The CI-adapter rules used to live in spec 6, under `### CI adapters`, and
+//! The CI-adapter rules used to live in [the engine architecture](../../../../docs/spec/engine-architecture.md), under `### CI adapters`, and
 //! #1572 moved them to the design document of the crate that implements them.
 //! A rule that two documents state drifts in one of them, which is the defect
 //! the move removed. So this file holds these things:
@@ -16,9 +16,9 @@
 //!   writes, for every [`Escape`];
 //! - the three census outcomes that checks-and-cache names are the outcome
 //!   fields of [`Census`], and no other;
-//! - spec 6 shares no run of eight words with the adapter sections, and it
+//! - [the engine architecture](../../../../docs/spec/engine-architecture.md) shares no run of eight words with the adapter sections, and it
 //!   states neither of two moved sentences;
-//! - no engine comment credits spec 6 with a sentence that now lives in the
+//! - no engine comment credits [the engine architecture](../../../../docs/spec/engine-architecture.md) with a sentence that now lives in the
 //!   adapter sections.
 //!
 //! Each private `_exhaustive` function makes a new variant or a new field fail
@@ -343,23 +343,23 @@ fn words(text: &str) -> Vec<String> {
         .collect()
 }
 
-/// The fewest words in a row that spec 6 may not share with the adapter
+/// The fewest words in a row that [the engine architecture](../../../../docs/spec/engine-architecture.md) may not share with the adapter
 /// sections.
 const RUN_WORDS: usize = 8;
 
-/// Two sentences that moved, each of which spec 6 stated word for word.
+/// Two sentences that moved, each of which [the engine architecture](../../../../docs/spec/engine-architecture.md) stated word for word.
 const MOVED_SENTENCES: [&str; 2] = [
     "A suppressed finding is in the output, and it is marked",
     "An entry is held when the artifact agrees with the run",
 ];
 
-/// Spec 6 shares no run of eight words with the adapter sections, so that no
+/// [The engine architecture](../../../../docs/spec/engine-architecture.md) shares no run of eight words with the adapter sections, so that no
 /// moved rule is stated in both places.
 ///
 /// # Watched failing
 ///
 /// On `main` at `a629c0be` this reddened because checks-and-cache had no
-/// adapter sections. With the sections written and spec 6 unedited, it
+/// adapter sections. With the sections written and [the engine architecture](../../../../docs/spec/engine-architecture.md) unedited, it
 /// reddens naming the runs both state.
 #[test]
 fn spec_6_shares_no_run_of_eight_words_with_the_adapter_sections_of_checks_and_cache() {
@@ -395,7 +395,7 @@ fn spec_6_shares_no_run_of_eight_words_with_the_adapter_sections_of_checks_and_c
     }
 }
 
-/// The body of spec 6's `### CI adapters`, from its heading to the next
+/// The body of [the engine architecture](../../../../docs/spec/engine-architecture.md)'s `### CI adapters`, from its heading to the next
 /// heading.
 fn ci_adapters(six: &str) -> Vec<&str> {
     let mut lines = six.lines().skip_while(|l| *l != "### CI adapters");
@@ -403,7 +403,7 @@ fn ci_adapters(six: &str) -> Vec<&str> {
     lines.take_while(|l| !l.starts_with('#')).collect()
 }
 
-/// Spec 6's `### CI adapters` is one short paragraph that points at
+/// [The engine architecture](../../../../docs/spec/engine-architecture.md)'s `### CI adapters` is one short paragraph that points at
 /// checks-and-cache, and it keeps its heading, which inbound links name.
 ///
 /// # Watched failing
@@ -452,10 +452,10 @@ fn quote_after(text: &str, at: usize) -> Option<&str> {
     Some(&body[..close])
 }
 
-/// Sentences of the moved rules that a comment can credit to spec 6 without
+/// Sentences of the moved rules that a comment can credit to [the engine architecture](../../../../docs/spec/engine-architecture.md) without
 /// quoting them. Each one is a clause of a rule, never a generic term such as
 /// "loss set" or "suppression", so a comment that names the term and credits
-/// spec 6 for something else does not match.
+/// [the engine architecture](../../../../docs/spec/engine-architecture.md) for something else does not match.
 const MOVED_CLAIMS: [&str; 6] = [
     "a run reports what it evaluated",
     "emits what it evaluated",
@@ -465,7 +465,7 @@ const MOVED_CLAIMS: [&str; 6] = [
     "an entry names its members",
 ];
 
-/// Where `text`, in lower case, first names spec 6: the words `spec 6`, or a
+/// Where `text`, in lower case, first names [the engine architecture](../../../../docs/spec/engine-architecture.md): the words `spec 6`, or a
 /// link into its file, whatever the link text says.
 fn spec_six_mention(text: &str) -> Option<usize> {
     ["spec 6", "engine-architecture.md"]
@@ -474,14 +474,14 @@ fn spec_six_mention(text: &str) -> Option<usize> {
         .min()
 }
 
-/// A comment that credits spec 6 with a sentence of the adapter sections
+/// A comment that credits [the engine architecture](../../../../docs/spec/engine-architecture.md) with a sentence of the adapter sections
 /// points a reader at a part that no longer holds it.
 ///
-/// It reads every comment line that names spec 6, in words or by a link to
+/// It reads every comment line that names [the engine architecture](../../../../docs/spec/engine-architecture.md), in words or by a link to
 /// `engine-architecture.md`, joined with the five lines after it, and
 /// fails when the text from that mention on opens a quote that the
 /// adapter sections hold, or states one of [`MOVED_CLAIMS`] within 240 bytes.
-/// A quote of text that spec 6 keeps is not this test's business, and neither
+/// A quote of text that [the engine architecture](../../../../docs/spec/engine-architecture.md) keeps is not this test's business, and neither
 /// is a string literal, which is a message or a test input. This file is
 /// skipped, because it names the claims it looks for.
 ///
@@ -534,7 +534,7 @@ fn no_comment_quotes_moved_adapter_text_as_spec_6() {
                     credited.push(format!("{rel}:{}: {quote:?}", i + 1));
                     continue;
                 }
-                // A quote under a link to spec 6's section is text that the
+                // A quote under a link to the engine architecture's (docs/spec/engine-architecture.md) section is text that the
                 // section still holds, or the link points at nothing.
                 if quote.split_whitespace().count() >= 4
                     && joined.contains("#ci-adapters")

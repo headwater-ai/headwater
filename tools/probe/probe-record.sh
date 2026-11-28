@@ -826,7 +826,7 @@ probe_log=$(cd "$probe_log" && pwd -P)
 # configuration directory of the session's own read-write, and the target of
 # `/etc/resolv.conf` read-only where it links out of `/etc` and `/usr`. The
 # environment is cleared, and the variables set below are the whole of it,
-# `LANG` and `ANTHROPIC_API_KEY` from the host among them. Spec 15 lists both
+# `LANG` and `ANTHROPIC_API_KEY` from the host among them. The recorder contract (docs/spec/the-recorder-contract.md) lists both
 # sets, and probe-record-fixtures.sh holds each list against this code
 # (#1641). Nothing else of
 # `$HOME`, no other tree of the batch and no copy of this repository on the

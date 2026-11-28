@@ -64,7 +64,7 @@
 //! state the edge declares, and write the state-entry date beside it. The
 //! date is the successor's own `state_entered` value, which is the date the
 //! supersession landed. It is read from the corpus and not from a clock, so
-//! the fix derives it rather than inventing it, which is what spec 2 requires
+//! the fix derives it rather than inventing it, which is what [the taxonomy model](../../../../docs/spec/taxonomy-model.md) requires
 //! of `--fix`. Both writes ride in one [`Patch::Facets`], so the state never
 //! lands without its stamp.
 //!

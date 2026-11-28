@@ -29,9 +29,9 @@ The earlier leaning read "YAML plus JSON Schema for the authored surface". That 
 
 This is the same finding that Q13 reached from the other end. Q13 found that LinkML and SHACL validate one instance against a shape. Q2 finds that JSON Schema validates one document against a shape. Two questions, opposite directions, one architecture.
 
-**Why the typed configuration languages lost.** CUE unifies, and unification only narrows. It expresses `add` well, and it expresses neither `override` nor `remove`. The workaround is a default inside a disjunction, which makes the publisher pre-enumerate every value that an adopter might choose. That is premature commitment, placed on the party least able to carry it. Dhall does express override, and an overlay there becomes a function. But spec 2 requires a static confluence check over the paths that each overlay addresses. No reader can take that address set off a function that branches on its input.
+**Why the typed configuration languages lost.** CUE unifies, and unification only narrows. It expresses `add` well, and it expresses neither `override` nor `remove`. The workaround is a default inside a disjunction, which makes the publisher pre-enumerate every value that an adopter might choose. That is premature commitment, placed on the party least able to carry it. Dhall does express override, and an overlay there becomes a function. But [the taxonomy model](../spec/taxonomy-model.md) requires a static confluence check over the paths that each overlay addresses. No reader can take that address set off a function that branches on its input.
 
-**What the walkthrough derived rather than assumed.** A statically checkable confluence property needs the address set of an overlay to be readable off its syntax. That leaves a first-order path-addressed patch language as the only available shape, which is the shape that spec 2 already sketched. The overlay design is now derived, not preferred.
+**What the walkthrough derived rather than assumed.** A statically checkable confluence property needs the address set of an overlay to be readable off its syntax. That leaves a first-order path-addressed patch language as the only available shape, which is the shape that [the taxonomy model](../spec/taxonomy-model.md) already sketched. The overlay design is now derived, not preferred.
 
 ## Decision
 
@@ -43,7 +43,7 @@ YAML 1.2 is the concrete syntax. The schema language, the reference sublanguage,
 
 **Explicit tags, ruled after the loader met the case.** An explicit tag is forbidden, on the argument that the alias ruling already makes. A tag declares a type, and the meta-schema is the authority on type. The engine derived the rule and this record accepts it. A loader can relax a rule later at no cost. It cannot add one later without a finding against every source that already used the form.
 
-**The implementation cost is known, and the spike retired it.** [Q1](0001-implementation-language.md) closed on Rust, where the YAML crate ecosystem is in poor repair. That matters less than it looks, because spec 12 requires source spans that no convenient deserializer supplies. The engine writes its own parse either way. The spike built one for front matter, and a taxonomy file is the same problem ([results](../evaluations/language-spike-results.md)).
+**The implementation cost is known, and the spike retired it.** [Q1](0001-implementation-language.md) closed on Rust, where the YAML crate ecosystem is in poor repair. That matters less than it looks, because [the check layer](../spec/check-layer.md) requires source spans that no convenient deserializer supplies. The engine writes its own parse either way. The spike built one for front matter, and a taxonomy file is the same problem ([results](../evaluations/language-spike-results.md)).
 
 **The lock.** The lock is generated, so authorability is not one of its criteria. "A stricter representation" thus means a canonical serialization rather than a typed language. The lock is JSON with sorted keys, one spelling per value, every reference resolved, and a hash over the bytes.
 

@@ -43,11 +43,11 @@ The signatures below are pseudocode, given as examples. Nothing here depends on 
 check(view: ScopedView, ctx: Context) -> [Finding]
 ```
 
-**Pure.** No file I/O, no network, no clock, no mutation of the graph. Everything that the check can read arrives through the view. Everything time-dependent arrives through `ctx` as an injected value. That purity is not for its own sake. It makes results cacheable, reproducible, and safe to run in parallel. It is also what the determinism requirement in spec 6 reduces to.
+**Pure.** No file I/O, no network, no clock, no mutation of the graph. Everything that the check can read arrives through the view. Everything time-dependent arrives through `ctx` as an injected value. That purity is not for its own sake. It makes results cacheable, reproducible, and safe to run in parallel. It is also what the determinism requirement in [the engine architecture](engine-architecture.md) reduces to.
 
 ## The five origins of a check
 
-Spec 6 sketched three tiers. The correct decomposition is five. It comes from the boundary that the two standards evaluations found, not from guesswork.
+[The engine architecture](engine-architecture.md) sketched three tiers. The correct decomposition is five. It comes from the boundary that the two standards evaluations found, not from guesswork.
 
 | Origin | Comes from | Examples | Exportable as |
 |---|---|---|---|
@@ -342,7 +342,7 @@ No filesystem, no network, no clock, no graph mutation. A plugin receives the sa
 
 **The scope is the trait, so a host is never handed a scope claim to trust.** A plugin that wants to compare siblings implements the corpus-scoped trait, which is the only way to receive a corpus view. That is the rule of the section above, applied where it matters most.
 
-**The obligation is not a method here, and the rule that made it one still holds.** Spec 4 admits no orphan check, and the binding between a rule and an obligation is data. A control names the mechanism `check:<id>` and the obligations that it discharges ([the assurance model](assurance-model.md#controls-are-data)). The runner reads that register and stamps the finding. A check that named its own obligation would be a second source of truth for one binding. It could also name an identifier that no register holds. So the plugin surface is still not the place where a rule escapes the "every rule earns its place" discipline. A run names every rule that no control names. That is a report rather than a method signature. An adopter can then rebind a rule with no edit to code that they do not own.
+**The obligation is not a method here, and the rule that made it one still holds.** [The assurance model](assurance-model.md) admits no orphan check, and the binding between a rule and an obligation is data. A control names the mechanism `check:<id>` and the obligations that it discharges ([the assurance model](assurance-model.md#controls-are-data)). The runner reads that register and stamps the finding. A check that named its own obligation would be a second source of truth for one binding. It could also name an identifier that no register holds. So the plugin surface is still not the place where a rule escapes the "every rule earns its place" discipline. A run names every rule that no control names. That is a report rather than a method signature. An adopter can then rebind a rule with no edit to code that they do not own.
 
 ## Where the LLM coherence sweep fits
 
@@ -360,7 +360,7 @@ A promise that a mechanism never blocks is worth what enforces it. Four things e
 
 **The exit status.** `headwater sweep report` exits zero with findings, exits zero with every finding refused, and exits zero when it refuses the whole file. No `--strict` reaches this verb. A refusal is a verdict about the sampler rather than about the corpus, and it is tempting to exit non-zero on one. That would put a model's output on an exit status, which is the property this section exists to deny. Three non-zero exits are the caller's, and this verb decides all three. A path that the process cannot read, a `--format` that names no target, and a lock that no `taxonomy resolve` wrote. A fourth is decided before the verb is entered, and it belongs to no verb. The parse admits the flags a verb declares and refuses every other word. An unknown flag, and a flag with no value after it, are refused there. None of the four reads a byte a model wrote. [HW-IFACE-headwater-sweep](../interfaces/headwater-sweep.md) states where each one is decided, and `engine/crates/cli/tests/sweep.rs` asserts every row of it.
 
-**The absence of a caller.** [The commit gate](https://github.com/headwater-ai/headwater/blob/main/CLAUDE.md) runs `headwater check --strict` and nothing else, and the CI job runs the verbs that spec 6 lists. Neither names this verb. A sweep runs when a person or a schedule asks for one.
+**The absence of a caller.** [The commit gate](https://github.com/headwater-ai/headwater/blob/main/CLAUDE.md) runs `headwater check --strict` and nothing else, and the CI job runs the verbs that [the engine architecture](engine-architecture.md) lists. Neither names this verb. A sweep runs when a person or a schedule asks for one.
 
 The probe half of this path is where the third enforcement reads differently, and the difference is worth stating. `generate --check` runs in the CI job and it reaches the grader, because a probe result is a projection over a committed transcript. What that gate compares is bytes. A run in which the model answered every question wrongly writes a result that reports a low rate, and the gate passes over it. The gate fails on a derivation that does not agree with its source. That is a defect in the grader, the parser or the committed inputs. So no exit status carries a model's behavior, and that is the property the four enforcements exist for.
 

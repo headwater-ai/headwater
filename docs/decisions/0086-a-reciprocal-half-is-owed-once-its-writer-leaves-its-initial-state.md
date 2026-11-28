@@ -43,7 +43,7 @@ A far half is owed only when the document that wrote the one half that exists st
 
 The engine reads "initial" through one predicate, `StateFacet::standing` in `headwater-check`. The rule and `headwater new` both call it, so `new` defers exactly where the rule passes. No state name is written in the engine, so a taxonomy that renames every state is read the same way.
 
-This record changes what HW-DR-0004 and spec 3 mean when they say that both documents declare a pair. The pair is complete when both declare it, and the far document owes its half only from the writer's promotion. This record also withdraws the cost that HW-DR-0085 accepts in its Consequences. A scaffold does not write a line from a live document to a draft.
+This record changes what HW-DR-0004 and [authoring and lifecycle](../spec/authoring-and-lifecycle.md) mean when they say that both documents declare a pair. The pair is complete when both declare it, and the far document owes its half only from the writer's promotion. This record also withdraws the cost that HW-DR-0085 accepts in its Consequences. A scaffold does not write a line from a live document to a draft.
 
 ## Consequences
 

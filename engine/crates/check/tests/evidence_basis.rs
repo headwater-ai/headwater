@@ -35,7 +35,7 @@
 //!
 //! **A rule that read only a declared warrant** passes nothing and decides
 //! nothing over `claims/onto-generated.md`, whose target this engine wrote.
-//! Spec 3 derives `regenerated` from the marker and never from a declaration,
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) derives `regenerated` from the marker and never from a declaration,
 //! so a generated document has a warrant and states none, and a rule that
 //! reads the declaration alone records a skip where there is an answer. The
 //! set of such targets is open, because a projection can be declared over any
@@ -280,7 +280,7 @@ fn every_relation_of_the_evidence_family_is_read_and_not_traces_to_alone() {
 /// one is not reported.
 ///
 /// `discharges` declares `evidence_at: from`, so the document at the source end
-/// is the evidence and the document at the target end makes the claim. Spec 1
+/// is the evidence and the document at the target end makes the claim. [The conceptual model](../../../../docs/spec/conceptual-model.md)
 /// says so: "An asserted document does not discharge an evidence obligation."
 /// `NOTE-FIX-asserted` claims no evidence, and the evidenced source is what
 /// substantiates it, so the pair passes. An earlier edition read the source's
@@ -597,7 +597,7 @@ fn a_source_that_does_not_claim_evidenced_passes_in_all_three_of_its_forms() {
     }
 }
 
-/// A warrant outside spec 3's closed set supports nothing, whatever it is.
+/// A warrant outside [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s closed set supports nothing, whatever it is.
 ///
 /// An earlier edition passed it, on the reasoning that the defect was the
 /// value and another rule would report it. No rule did, so `acepted` read as
@@ -729,7 +729,7 @@ fn a_target_as_the_scaffolder_writes_it_is_reported_rather_than_skipped() {
 ///
 /// The parser hands `warrant:` back as the plain scalar `~`, which the core
 /// schema reads as null. A reader that took the text reported "`~` is not a
-/// value of spec 3's closed set" over an edge that passed before (round 1 of
+/// value of [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s closed set" over an edge that passed before (round 1 of
 /// the verify of #1438). `headwater_doc::warrant` reads it as absent, so the
 /// instance skips as it does onto `quiet.md`.
 #[test]

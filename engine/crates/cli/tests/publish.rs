@@ -698,7 +698,7 @@ fn a_flattened_assembly_is_pinned_vendored_and_resolved_without_bundle_selection
 /// The two cases above prove the mechanism over `acme/fixture`, which is a
 /// fixture written to make the boundary visible. This is the first case here to
 /// run `--assembly` over the real maintained source, and its subject is the
-/// artifact spec 0 deliverable 6 promises an adopter:
+/// artifact [the vision and scope](../../../../docs/spec/vision-and-scope.md) deliverable 6 promises an adopter:
 /// `taxonomy-source/headwater-standard/assemblies/starter/assembly.yml`,
 /// published as `headwater/starter`, vendored into a tree that names no bundle,
 /// and resolved to a lock.
@@ -2127,7 +2127,7 @@ fn this_repository_passes_publish_check_on_its_own_source() {
 /// #518: an artifact carries no bundle reference corpus, and the publisher
 /// keeps every one of its own.
 ///
-/// Spec 7's Publishing section rules that publication takes the package
+/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s Publishing section rules that publication takes the package
 /// directory whole, and it names one exception: a `fixtures/` directory at the
 /// root of a bundle. Those corpora are how a publisher measures its own
 /// taxonomy against prose it controls. No consumer verb opens one, and before
@@ -2924,7 +2924,7 @@ enum Step {
     /// A `headwater …` command line, `<scratch-dir>` still unsubstituted.
     Run(Vec<String>),
     /// The hand edit that no verb performs: write the digest `publish` printed
-    /// into `.headwater/taxonomy.yml` as `taxonomy.digest`. Spec 7 keeps this
+    /// into `.headwater/taxonomy.yml` as `taxonomy.digest`. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) keeps this
     /// step out of the engine deliberately, so an instruction block that omits
     /// it omits the one step a reader cannot infer from a verb.
     Pin,
@@ -3190,7 +3190,7 @@ fn the_shipped_maintenance_loop_runs_as_written_over_a_source_that_changed() {
 /// assertions stays green with the `if let Some(divergence)` block in
 /// `main.rs` deleted, because the value would still be computed and simply
 /// never printed. The contract clause of `docs/interfaces/headwater-taxonomy.md`
-/// and the paragraph in spec 7 both promise what a person *sees*, so this runs
+/// and the paragraph in [distribution and federation](../../../../docs/spec/distribution-and-federation.md) both promise what a person *sees*, so this runs
 /// the binary and reads standard output. It is the same separation the module
 /// comment above states for `nothing was published`: a correctness root can be
 /// completely right and the visible result still be missing.

@@ -66,7 +66,7 @@ pub const PROVENANCE: &str = "provenance";
 pub const WARRANT: &str = "warrant";
 
 /// The member of that block that states what kind of evidence the document
-/// rests on. Spec 3's three honest states are `evidenced`, `reconstructed` and
+/// rests on. [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s three honest states are `evidenced`, `reconstructed` and
 /// `unevidenced`, and the block that carries them is the engine's on the same
 /// terms as the warrant beside it.
 pub const EVIDENCE_BASIS: &str = "evidence_basis";
@@ -103,11 +103,11 @@ pub const WARRANTS: [&str; 4] = [ACCEPTED, REGENERATED, "transcribed", ASSERTED]
 
 /// The member of the provenance block that names who accepted the document.
 ///
-/// Spec 3's table pairs it with the warrant: `accepted` requires it, and the
+/// [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s table pairs it with the warrant: `accepted` requires it, and the
 /// other three values forbid it.
 pub const ACCEPTED_BY: &str = "accepted_by";
 
-/// Whether a warrant is one of spec 3's four values, exactly as written.
+/// Whether a warrant is one of [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s four values, exactly as written.
 ///
 /// Case counts. `Accepted` is not `accepted`, for the reason a misspelling is
 /// not: a reader that folded the case would be guessing what the author meant.
@@ -161,7 +161,7 @@ pub fn warrant(facets: &Mapping) -> Option<&str> {
 /// this engine wrote.
 ///
 /// The derivation wins over a declaration, and that is the ruling rather than a
-/// precedence this function invented. Spec 3 derives the value from the marker
+/// precedence this function invented. [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) derives the value from the marker
 /// "and never from a declaration", so a generated document that also wrote a
 /// warrant into a provenance block wrote a fact a hand edit can falsify, and
 /// reading it would be reading the falsifiable half.

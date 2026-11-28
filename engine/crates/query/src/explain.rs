@@ -178,7 +178,7 @@ impl Explanation {
         })
     }
 
-    /// The explanation as text, in spec 2's own order.
+    /// The explanation as text, in [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s own order.
     ///
     /// `mode` colors the path and dims the repeated structural labels —
     /// `purpose`, `summary`, `warrant`, and the rest — that this report prints

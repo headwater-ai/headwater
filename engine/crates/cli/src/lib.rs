@@ -504,7 +504,7 @@ pub enum Verb {
     Change {
         // Optional here and required by the verb, on the terms `gate` already
         // states for `--read-set`: the refusal names what a base revision is
-        // and points at the two anchors spec 12 fixes, which a
+        // and points at the two anchors the check layer (docs/spec/check-layer.md) fixes, which a
         // missing-argument message from the parser cannot.
         #[arg(
             value_name = "base-rev",
@@ -1053,7 +1053,7 @@ pub enum Verb {
 /// # Four, where `clap_complete` offers five
 ///
 /// `clap_complete::Shell` carries `Elvish` as well. It is not here, and the
-/// reason is spec 6's own rule about the CLI grammar block: a name that block
+/// reason is [the engine architecture](../../../../docs/spec/engine-architecture.md)'s own rule about the CLI grammar block: a name that block
 /// declares either runs or states its wait. Clause 8 of
 /// [#321](https://github.com/headwater-ai/headwater/issues/321) names four
 /// shells, the grammar block names the same four, and each of the four is a
@@ -1308,7 +1308,7 @@ pub enum ProbeWord {
         // It is a member of the run identity and not an input to the selection.
         // `crates/probe/src/plan.rs` records it and prints it, and the selection
         // is every declared probe, narrowed by category and sorted by
-        // identifier. Spec 5 asks for deterministic rotation and this engine
+        // identifier. AI integration (docs/spec/ai-integration.md) asks for deterministic rotation and this engine
         // implements none, so the help says that rather than implying a draw.
         #[arg(
             long,

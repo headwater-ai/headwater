@@ -8,7 +8,7 @@
 //!
 //! # The obligation is optional here, and it says what a taxonomy declared
 //!
-//! Spec 4 says every finding names the obligation it serves, and
+//! [The assurance model](../../../../docs/spec/assurance-model.md) says every finding names the obligation it serves, and
 //! [The check layer](../../../../docs/spec/check-layer.md#the-plugin-interface)
 //! makes `obligation()` required so that the check surface does not become the
 //! place where a rule escapes the "every rule earns its place" discipline. An
@@ -29,14 +29,14 @@
 //! control's business. That is the field below, and its values are `error`,
 //! `warn` and `info`. An obligation also declares a severity, on the scale
 //! `high`, `medium`, `low`, and that one says how much the invariant matters.
-//! The coverage report reads it, because spec 4 asks what fraction of
-//! obligations are verified *by severity*. Spec 4's own worked finding carries
+//! The coverage report reads it, because [the assurance model](../../../../docs/spec/assurance-model.md) asks what fraction of
+//! obligations are verified *by severity*. [The assurance model](../../../../docs/spec/assurance-model.md)'s own worked finding carries
 //! `error` against `OB-014`, which carries `medium`, so the two were never one
 //! field.
 //!
 //! # Fixability is the patch, and it stopped being a field
 //!
-//! Spec 4 lists fixability among the members and
+//! [The assurance model](../../../../docs/spec/assurance-model.md) lists fixability among the members and
 //! [The check layer](../../../../docs/spec/check-layer.md#fixability) says what may
 //! carry it: "A check may return a patch alongside a finding." Until `--fix`
 //! there was no patch, so a `fixable: bool` stood in for one, and three files
@@ -75,7 +75,7 @@ impl std::fmt::Display for Severity {
 /// One finding, from any origin.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Finding {
-    /// The rule that produced it, in the dotted form spec 4 writes.
+    /// The rule that produced it, in the dotted form [the assurance model](../../../../docs/spec/assurance-model.md) writes.
     pub rule: &'static str,
     pub severity: Severity,
     /// The obligation this rule serves, and `None` when no control names the
@@ -135,7 +135,7 @@ impl Finding {
             crate::paint::severity_word(self.severity, mode)
         );
         // The obligation rides beside the rule, because "why am I being made to
-        // do this?" is the question spec 4 gives every rule an answer to, and a
+        // do this?" is the question the assurance model (docs/spec/assurance-model.md) gives every rule an answer to, and a
         // reader who has to look the rule up in a register does not ask it.
         let _ = match &self.obligation {
             Some(obligation) => writeln!(
@@ -177,7 +177,7 @@ pub fn at(span: Option<headwater_yaml::Span>) -> (usize, usize) {
     }
 }
 
-/// Every finding of a run, in the one order spec 12 fixes.
+/// Every finding of a run, in the one order [the check layer](../../../../docs/spec/check-layer.md) fixes.
 pub fn sorted(mut findings: Vec<Finding>) -> Vec<Finding> {
     findings.sort_by(|a, b| a.order().cmp(&b.order()));
     findings

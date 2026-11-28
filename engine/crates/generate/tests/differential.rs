@@ -11,7 +11,7 @@
 //! # Two directions, and the second one is why this file exists
 //!
 //! A finding the engine reports and the validator misses is a partial
-//! translation. It is a coverage claim that is partly true, which spec 12 rules
+//! translation. It is a coverage claim that is partly true, which [the check layer](../../../../docs/spec/check-layer.md) rules
 //! worse than a claim of none.
 //!
 //! A finding the validator reports and the engine does not is worse, and no loss

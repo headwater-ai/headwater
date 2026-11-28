@@ -5,7 +5,7 @@
 # It is deliberately not the check crate's fixture taxonomy, and the reason is
 # one relation. A sweep refuses a finding that restates an edge the graph
 # already declares, so the corpus under it has to be able to declare
-# `conflicts_with` and `supersedes` — the two relations spec 4 names as the
+# `conflicts_with` and `supersedes` — the two relations the assurance model (docs/spec/assurance-model.md) names as the
 # outcome a sweep is for. Neither is in a taxonomy written to exercise the
 # check layer, and adding them there would move that crate's recorded report
 # for a reason that has nothing to do with a check.

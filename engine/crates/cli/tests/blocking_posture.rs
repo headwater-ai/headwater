@@ -2,7 +2,7 @@
 //! `headwater check --strict` fails on a live finding that a `posture:
 //! blocking` control discharges, whatever the finding's severity (#2015).
 //!
-//! Spec 12 separates the two words: severity is the check's, and posture is
+//! [The check layer](../../../../docs/spec/check-layer.md) separates the two words: severity is the check's, and posture is
 //! the control's. The owner ruled on 2026-11-22 that posture is the adopter's
 //! to configure, with an overlay `override`, and that a promotion by
 //! configuration alone moves the gate. Before #2015 the gate read severity

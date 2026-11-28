@@ -79,7 +79,7 @@ There is no precondition about a model, about a network, or about a plan having 
 | `--no-color` | both | Force plain text on both streams: bold and dim weight plus glyphs, no escape sequence. The default already senses whether each stream is a terminal, and renders color only there. |
 | `--no-banner` | both | Suppress the masthead: the line naming this binary and its version, that the root help screen alone prints. It is accepted here and does nothing, since only the root screen prints one. |
 
-**There is no `--strict`, and the parser refuses one.** `headwater sweep report <path> --strict` exits 1 and writes no report. Spec 12 states the absence of a `--strict` that does anything. The parse states the absence of the word, so both readings of that sentence hold of this verb. [HW-DR-0033](../decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md) is the ruling, and `engine/crates/cli/tests/sweep.rs` holds the refusal.
+**There is no `--strict`, and the parser refuses one.** `headwater sweep report <path> --strict` exits 1 and writes no report. [The check layer](../spec/check-layer.md) states the absence of a `--strict` that does anything. The parse states the absence of the word, so both readings of that sentence hold of this verb. [HW-DR-0033](../decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md) is the ruling, and `engine/crates/cli/tests/sweep.rs` holds the refusal.
 
 ## Exit status
 

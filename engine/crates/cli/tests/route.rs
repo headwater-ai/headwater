@@ -622,7 +622,7 @@ fn the_mcp_route_tool_reads_an_ignore_rule_written_after_the_session_started() {
 /// it (#1358). `docs/interfaces/headwater-route.md` states this in its
 /// Description: a document that governs a file which calls the named path is
 /// not reached through that call, and its author declares `governs` over the
-/// called file as well. Spec 5 fixes the read set as summaries, facets,
+/// called file as well. [AI integration](../../../../docs/spec/ai-integration.md) fixes the read set as summaries, facets,
 /// relations and code-path anchors, so route holds no call graph. The case
 /// passes on the day it lands, because the engine already behaves as the
 /// contract says. If route learns to follow callers, it fails, and the

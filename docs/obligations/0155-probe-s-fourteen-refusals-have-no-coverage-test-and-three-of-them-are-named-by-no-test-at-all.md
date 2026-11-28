@@ -12,7 +12,7 @@ waiting_on: build
 
 ## Context
 
-The scaffolder carries a test named `every_refusal_branch_has_a_case`, and spec 12 states what it is for: a refusal with no fixture does not ship.
+The scaffolder carries a test named `every_refusal_branch_has_a_case`, and [the check layer](../spec/check-layer.md) states what it is for: a refusal with no fixture does not ship.
 
 [#338](https://github.com/headwater-ai/headwater/issues/338) records that the test did not hold the property its name claims. Its `variant` function matched 26 arms and its `BRANCHES` constant listed 23. The three it omitted were the whole `--facet` refusal surface, which is why a discriminator value reached a document in silence with the suite green.
 

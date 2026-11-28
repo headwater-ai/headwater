@@ -15,7 +15,7 @@ repository.workspace = true
 headwater-yaml = { workspace = true }
 
 # The pin. A snapshot is checked with `release::verify`, which is the object #77
-# built for a package. Spec 7 says a taxonomy pin, a requirements snapshot pin
+# built for a package. Distribution and federation (docs/spec/distribution-and-federation.md) says a taxonomy pin, a requirements snapshot pin
 # and a source-export pin all work the same way, so this crate takes the same
 # object rather than writing a second one that would drift from it.
 headwater-resolve = { workspace = true }

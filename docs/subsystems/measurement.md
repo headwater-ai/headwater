@@ -43,7 +43,7 @@ Each crate measures a different thing:
 - `conformance` evaluates a consumer repository against the rule set that its taxonomy package ships, and reports the level that the met rules reach.
 - `sweep` writes the briefing for a coherence sweep and verifies the return file that an agent wrote.
 
-The verbs over these crates are `probe plan`, `probe record`, `probe grade`, `probe compare`, `probe stale`, `conformance`, `sweep plan` and `sweep report`. Their bodies are in the `cli` crate, which belongs to the Command surface row of spec 6. This spec describes the libraries that those bodies call.
+The verbs over these crates are `probe plan`, `probe record`, `probe grade`, `probe compare`, `probe stale`, `conformance`, `sweep plan` and `sweep report`. Their bodies are in the `cli` crate, which belongs to the Command surface row of [the engine architecture](../spec/engine-architecture.md). This spec describes the libraries that those bodies call.
 
 Other documents state what the subsystem does, and this spec does not repeat them:
 
@@ -106,7 +106,7 @@ The file is outside the corpus root. No rule reads it and no kind classifies it,
 
 `intake.rs` reads a `probe_transcript` document into a `Record`. `Record::read` is a pure function of the transcript, the tree and this code. It confirms the five things that `CONFIRMATIONS` names: the taxonomy, a complete identity, the membership of every probe, no prose, and a recorded cost.
 
-The "no prose" confirmation is four closed key sets: `IDENTITY_KEYS`, `EVENT_KEYS`, `CALL_KEYS` and `PRODUCED_KEYS`. One key outside them refuses the file. `engine/crates/probe/tests/contract.rs` holds the four sets equal to the four tables of spec 15, so the contract and the code cannot drift.
+The "no prose" confirmation is four closed key sets: `IDENTITY_KEYS`, `EVENT_KEYS`, `CALL_KEYS` and `PRODUCED_KEYS`. One key outside them refuses the file. `engine/crates/probe/tests/contract.rs` holds the four sets equal to the four tables of [the recorder contract](../spec/the-recorder-contract.md), so the contract and the code cannot drift.
 
 A moved lock refuses a transcript only where the tree composes no read set over its probes. Where the tree composes one, the intake grades the transcript, and a moved read set keeps every verdict. `Record` notes a moved lock and a moved read set in `lock_moved` and `read_set_moved`. `Record::render` prints both for `headwater probe record`.
 
@@ -174,7 +174,7 @@ The waivers live in the consumer declaration and not in the package. `taxonomy v
 
 ### The sweep JSON is the finding shape with two more members
 
-`json.rs` writes one sweep in the finding shape of spec 4, with `provenance` and `evidence` on each finding. `headwater_adapter::json` writes the same finding shape for a run of the checks, without those two members. The two are separate functions over separate types, because `headwater-check` cannot name this crate and so a `Run` cannot hold a sweep finding. The `sample` member states in the artifact that the set is a sample, so a consumer that counts findings meets the warning.
+`json.rs` writes one sweep in the finding shape of [the assurance model](../spec/assurance-model.md), with `provenance` and `evidence` on each finding. `headwater_adapter::json` writes the same finding shape for a run of the checks, without those two members. The two are separate functions over separate types, because `headwater-check` cannot name this crate and so a `Run` cannot hold a sweep finding. The `sample` member states in the artifact that the set is a sample, so a consumer that counts findings meets the warning.
 
 ## Invariants
 
@@ -182,7 +182,7 @@ A change to these crates must keep each of these. A test holds each one that nam
 
 - **A plan, a record and a grade are each the same bytes twice** (`a_plan_a_record_and_a_grade_are_each_the_same_bytes_twice` in `engine/crates/probe/tests/fixtures.rs`). The sweep holds the same for a plan and a report (`a_plan_is_the_same_bytes_twice`, `a_report_is_the_same_bytes_twice` in `engine/crates/sweep/tests/fixtures.rs`).
 - **Every satisfied verdict carries a witness that a reader can check** (`every_satisfied_verdict_carries_a_witness_a_reader_can_check`). **A key that the recorder never wrote reaches a refusal and never a pass** (`a_key_the_recorder_never_wrote_reaches_a_refusal_and_never_a_pass`).
-- **A key outside the closed sets refuses the transcript** (`a_key_outside_the_closed_set_refuses_the_transcript`). The closed sets equal the tables of spec 15 (`the_four_tables_of_the_contract_are_the_four_closed_sets_of_the_intake` in `engine/crates/probe/tests/contract.rs`).
+- **A key outside the closed sets refuses the transcript** (`a_key_outside_the_closed_set_refuses_the_transcript`). The closed sets equal the tables of [the recorder contract](../spec/the-recorder-contract.md) (`the_four_tables_of_the_contract_are_the_four_closed_sets_of_the_intake` in `engine/crates/probe/tests/contract.rs`).
 - **The read set is not the corpus tree** (`the_read_set_of_the_fixture_selection_is_not_the_corpus_tree`). **An edit that the read set does not cover voids no result** (`an_edit_the_read_set_does_not_cover_voids_no_result`). **An absent `calls` key is not a session that opened nothing** (`an_absent_calls_key_is_not_a_session_that_opened_nothing`).
 - **A tree rule with no reading ends the run** (`a_tree_rule_this_engine_holds_no_reading_for_ends_the_run` in `engine/crates/conformance/tests/rules.rs`), and **a live waiver moves the gate and never the level** (`a_live_waiver_moves_the_gate_and_never_the_level`).
 - **A quotation that the document does not hold is refused** (`a_quotation_the_document_does_not_hold_is_refused`), **a paraphrase is not a quotation** (`a_paraphrase_is_not_a_quotation`), and **a restated edge is refused** (`a_finding_that_restates_a_declared_edge_is_refused`).

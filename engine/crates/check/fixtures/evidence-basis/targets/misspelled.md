@@ -11,4 +11,4 @@ provenance:
 
 # The misspelled record
 
-`acepted` is not one of spec 3's four values. Nothing in it says a person read this record, so a pointer at it supports no evidenced claim.
+`acepted` is not one of [authoring and lifecycle](../../../../../../docs/spec/authoring-and-lifecycle.md)'s four values. Nothing in it says a person read this record, so a pointer at it supports no evidenced claim.

@@ -700,7 +700,7 @@ mod tests {
         );
     }
 
-    /// Spec 3 puts a quotation outside every prose rule by construction, and
+    /// [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) puts a quotation outside every prose rule by construction, and
     /// the construction is here rather than in a rule.
     #[test]
     fn a_quoted_block_holds_no_sentence_of_this_document() {

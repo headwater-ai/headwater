@@ -196,4 +196,4 @@ docs/adr/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a
     `decisions` is homogeneous, so placement carries the kind `decision`
 ```
 
-Three facts, together, say the relocation is complete. `headwater check --strict` exits `0`. The finding count reads the same as it did before you moved anything. `headwater explain` resolves the identifier you moved to its new path, under the shelf name you never changed. The core spec 2 names holds. You renamed a directory. Every identifier, edge, and rule that named a document by identifier, rather than by path, kept working through the move.
+Three facts, together, say the relocation is complete. `headwater check --strict` exits `0`. The finding count reads the same as it did before you moved anything. `headwater explain` resolves the identifier you moved to its new path, under the shelf name you never changed. The core [the taxonomy model](../spec/taxonomy-model.md) names holds. You renamed a directory. Every identifier, edge, and rule that named a document by identifier, rather than by path, kept working through the move.

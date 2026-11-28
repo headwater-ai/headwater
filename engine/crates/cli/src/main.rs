@@ -16,16 +16,16 @@
 //!
 //! # Advisory is the default for `check`, and never for the taxonomy
 //!
-//! Spec 6: "The CLI is advisory by default (exit 0 with findings on stdout).
+//! [The engine architecture](../../../../docs/spec/engine-architecture.md): "The CLI is advisory by default (exit 0 with findings on stdout).
 //! Use `--strict` for gates." That is a rule about findings over a *corpus*. A
-//! taxonomy that does not validate is not a finding, and spec 2 rules that the
+//! taxonomy that does not validate is not a finding, and [the taxonomy model](../../../../docs/spec/taxonomy-model.md) rules that the
 //! engine never applies one and that there is no partial-load mode. So
 //! `taxonomy validate` exits non-zero on a refusal with no flag to soften it,
 //! and `check` stays advisory over the documents it reads.
 //!
 //! # Where the taxonomy comes from, and why it is not the sources
 //!
-//! From the lock. Spec 6: "Everything downstream reads the lock, never the
+//! From the lock. [The engine architecture](../../../../docs/spec/engine-architecture.md): "Everything downstream reads the lock, never the
 //! sources. Thus a check result depends on a hash that a reviewer can see in a
 //! diff." `check` therefore reads `.headwater/taxonomy.lock` and refuses to run
 //! without one. `taxonomy resolve` is what writes it, and it writes one only
@@ -47,7 +47,7 @@
 //! written beside the cache file, so a repository never needs one of its own
 //! to keep the cache uncommitted.
 //!
-//! `--no-cache` is the differential that spec 12 asks for rather than a way
+//! `--no-cache` is the differential that [the check layer](../../../../docs/spec/check-layer.md) asks for rather than a way
 //! out of a bad cache. The two runs write the same bytes to standard output,
 //! and the standing test in `crates/check/tests/cache.rs` is that comparison
 //! under `cargo test`. What the cached run writes to standard error is the hit
@@ -557,7 +557,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
         Verb::Conformance { level, now, json } => {
             conformance(root, level.as_deref(), now, json)
         }
-        // Spec 6 lists this verb and no document of the specification states
+        // The engine architecture (docs/spec/engine-architecture.md) lists this verb and no document of the specification states
         // what an expression is. The engine names the gap rather than invent a
         // form, which is the posture the resolver takes over a `$package`
         // reference for the same reason.
@@ -1011,7 +1011,7 @@ fn no_such_second_word(verb: &str, words: &[String]) -> ExitCode {
 /// It prints what it ran as well as what it found. A verdict with no statement
 /// of what was checked is the silent pass that
 /// [The assurance model](../../../../docs/spec/assurance-model.md) exists to remove, and
-/// eight of the rules on spec 2's list decide only part of what that list says.
+/// eight of the rules on [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s list decide only part of what that list says.
 fn validate(root: &Path) -> ExitCode {
     let mode = headwater_cli::paint::stdout_color();
     let repository = match headwater_resolve::repository(root) {
@@ -1705,7 +1705,7 @@ fn audit(root: &Path, now: Option<Date>, record: bool, json: bool) -> ExitCode {
     };
 
     // `Graph::build` counts the governed scope with nothing ignored, because
-    // spec 12 keeps git off the check loop that builds it. This verb is not on
+    // the check layer (docs/spec/check-layer.md) keeps git off the check loop that builds it. This verb is not on
     // that loop, so it drops what git ignores here (#951, owner ruling
     // 2026-09-25): a local audit and a CI audit count one tree.
     let mut graph = loaded.graph;
@@ -2360,7 +2360,7 @@ fn publish(
 /// [HW-DR-0075](../../../../docs/decisions/0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md)
 /// rules that a location may reach this verb, resolved by `headwater-fetch`, a
 /// crate only this binary links. So the fetch is present here and absent from
-/// every crate the checking loop reaches, which is what keeps spec 0's
+/// every crate the checking loop reaches, which is what keeps [the vision and scope](../../../../docs/spec/vision-and-scope.md)'s
 /// guarantee: no network dependency at check time. The fetch writes a
 /// temporary directory, and the same `package::vendor` reads it as it reads a
 /// directory handed in by path, with the same digest check.
@@ -2452,7 +2452,7 @@ fn vendor(root: &Path, source: &str, expect: Option<&str>) -> ExitCode {
     // **The pin `--expect` verified is recorded, and a declared pin is never
     // replaced** (#1063). The value came from the publisher by the caller's
     // hand and the artifact has just matched it, so it is not a pin against
-    // itself (spec 7). Without this write the identical next run with no flag
+    // itself (distribution and federation (docs/spec/distribution-and-federation.md)). Without this write the identical next run with no flag
     // refused with "nothing pins this artifact", which is #641.
     //
     // A tree whose declaration does not read is not edited. The install stands,
@@ -2662,7 +2662,7 @@ fn fetch_location(source: &str) -> Result<Option<NoFetch>, ExitCode> {
 /// `headwater taxonomy diff`: measured compatibility between two versions, over
 /// this corpus.
 ///
-/// **It takes a directory, and only [`vendor`] takes a location.** Spec 7 writes
+/// **It takes a directory, and only [`vendor`] takes a location.** [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) writes
 /// the invocation as `taxonomy diff --to 4.0.0`, and this function reaches no
 /// crate that opens a socket, so the artifact is one the caller already
 /// fetched. `--to` is
@@ -2673,7 +2673,7 @@ fn fetch_location(source: &str) -> Result<Option<NoFetch>, ExitCode> {
 /// are read by the same code that reads `requires_engine`.
 ///
 /// **The candidate is resolved under this repository's own overlays**, which is
-/// what makes the report about this corpus rather than about the base. Spec 7:
+/// what makes the report about this corpus rather than about the base. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md):
 /// the consumer's run "verifies that claim against documents that the publisher
 /// never saw".
 ///
@@ -2798,7 +2798,7 @@ fn artifact(
 /// it. This run merges `from` and `to` into whatever the block already
 /// declares and carries every other key, `tasks` above all, through
 /// unchanged. Where there is no `tasks` key to carry, it writes an empty one,
-/// for the reason [`migrated`] states: the next verb spec 7 names refuses a
+/// for the reason [`migrated`] states: the next verb [distribution and federation](../../../../docs/spec/distribution-and-federation.md) names refuses a
 /// block that declares none.
 fn migrate(
     root: &Path,
@@ -2899,7 +2899,7 @@ fn migrate(
         0 => {
             // `refuse` (#455): the publisher shipped an artifact this
             // transition is not covered by, which the message says by naming
-            // spec 2. A different `--to` is a different migration rather than
+            // the taxonomy model (docs/spec/taxonomy-model.md). A different `--to` is a different migration rather than
             // a repair of this one.
             // The second sentence is unconditional, and it is unconditional
             // because nothing has been measured yet: this arm is reached
@@ -3280,7 +3280,7 @@ fn migrate(
         // refuses a block that declares no such key, because replacing an
         // authored block is the defect that refusal exists for. A block this
         // run generated carried `from` and `to` and no `tasks`, so the two
-        // verbs spec 7 puts in order refused each other on every first
+        // verbs distribution and federation (docs/spec/distribution-and-federation.md) puts in order refused each other on every first
         // migration. `migrated` takes this entry only where nothing else
         // carried one through, so a standing task list is never touched.
         state.push_str("tasks: []\n");
@@ -3370,7 +3370,7 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
         Err(code) => return code,
     };
 
-    // What this repository takes today. The lock and not the sources: spec 6
+    // What this repository takes today. The lock and not the sources: the engine architecture (docs/spec/engine-architecture.md)
     // fixes the lock as the one thing downstream reads, and a comparison
     // against unresolved sources would report the state of a working tree.
     let lock = match headwater_lock::at(root) {
@@ -3502,7 +3502,7 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
         return ExitCode::FAILURE;
     };
 
-    // Every rule of `taxonomy validate`, over the resolved candidate. Spec 7
+    // Every rule of `taxonomy validate`, over the resolved candidate. Distribution and federation (docs/spec/distribution-and-federation.md)
     // asks the upgrade report for "whether the new base still satisfies the
     // core under the local overlay", and this is that question.
     let refusals = resolution.validate();
@@ -3562,7 +3562,7 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
         // whose breaks are keyed by a rule: a `classification` break is keyed
         // by a document path and it is a `kind` step's business, which is a
         // step the vocabulary does have. So a change that reclassified
-        // anything answers the empty set here and keeps the sentence spec 2
+        // anything answers the empty set here and keeps the sentence the taxonomy model (docs/spec/taxonomy-model.md)
         // states.
         rules: match &classification {
             headwater_compat::Outcome::Broken(_) => std::collections::BTreeSet::new(),
@@ -3684,14 +3684,14 @@ struct Sides<'a> {
 /// `moved.rules` is the rules the measured dimensions report, and it decides
 /// which
 /// closing sentence a reader gets. A break every rule of which is
-/// [`FACET_REQUIRED`] is a break no step of this vocabulary reaches: spec 7
+/// [`FACET_REQUIRED`] is a break no step of this vocabulary reaches: [distribution and federation](../../../../docs/spec/distribution-and-federation.md)
 /// names three subjects, a facet that became required is none of them, and
 /// there is no old value for a `facet_value` step to move. Telling a publisher
 /// to ship a payload for that is telling them to write a file the format
 /// cannot express, so the sentence names the route the engine does reach
 /// instead — `headwater infer --write`, which derives the pair set, and
 /// `headwater check`, which then reports it as migration-pending. Every other
-/// break keeps the sentence spec 2 makes true of it.
+/// break keeps the sentence [the taxonomy model](../../../../docs/spec/taxonomy-model.md) makes true of it.
 ///
 /// # The two taxonomies the source half is held against
 ///
@@ -3822,7 +3822,7 @@ struct Movement {
 /// The one rule a break can consist entirely of and still be unreachable by any
 /// step of the migration vocabulary.
 ///
-/// Spec 7 (*The migration payload*) declares three subjects — a facet value, a
+/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) (*The migration payload*) declares three subjects — a facet value, a
 /// kind, and an overlay address — and each one names an old thing that a step
 /// moves. A facet that became required names no old thing: the documents never
 /// carried the facet, so there is no value for a step to move and no address
@@ -3944,7 +3944,7 @@ fn print_refusal(error: &LoadError) {
 
 /// `headwater route`.
 ///
-/// It exits 0 whether or not it offers a pointer. Spec 5 makes silence a
+/// It exits 0 whether or not it offers a pointer. [AI integration](../../../../docs/spec/ai-integration.md) makes silence a
 /// result: "below the threshold it says nothing", and a non-zero exit would
 /// make an agent's shell treat a considered silence as a failure.
 fn route(root: &Path, task: &str, budget: Option<usize>, json: bool) -> ExitCode {
@@ -5838,7 +5838,7 @@ fn import(root: &Path, name: Option<&str>, expect: Option<&str>, writing: bool) 
 
 /// `headwater generate`, and `--check` over what is committed.
 ///
-/// Advisory is not the default here, and that is deliberate. Spec 6 fixes the
+/// Advisory is not the default here, and that is deliberate. [The engine architecture](../../../../docs/spec/engine-architecture.md) fixes the
 /// advisory posture for `check`, which reports findings about prose a person
 /// wrote. A projection that differs from its source is not a finding about a
 /// document, it is an artifact that is out of date, and the remedy is one
@@ -6056,7 +6056,7 @@ fn export(
 /// every client that ever opens it, and the person who started the server would
 /// not have said anything. The consent would then be a fact about a file that
 /// somebody else committed. A second verb would be a second server to hold in
-/// step with this one, and spec 6's grammar names verbs rather than modes.
+/// step with this one, and [the engine architecture](../../../../docs/spec/engine-architecture.md)'s grammar names verbs rather than modes.
 ///
 /// So the switch is a word in the command line that started the process, which
 /// is the same place `--now` is: the two inputs a caller is answerable for, at
@@ -6163,7 +6163,7 @@ fn mcp(root: &Path, now: Option<Date>, writing: bool) -> ExitCode {
 /// taxonomy, on the terms
 /// [HW-DR-0072](../../../../docs/decisions/0072-the-binary-is-the-only-interface-an-adopter-must-run-and-every-integration-point-outside-it-is-declared.md)
 /// draws the boundary: this verb is the git plumbing, and `check --change` is
-/// the reader that stays inside the check-evaluation path spec 12 describes.
+/// the reader that stays inside the check-evaluation path [the check layer](../../../../docs/spec/check-layer.md) describes.
 fn change(
     root: &Path,
     base: &str,
@@ -6279,7 +6279,7 @@ fn gate(root: &Path, read_set: Option<PathBuf>, now: Option<Date>, json: bool) -
     }
     match verdict.carries() {
         true => ExitCode::SUCCESS,
-        // Spec 12: "a false invalidation costs one run. A false survival ships
+        // The check layer (docs/spec/check-layer.md): "a false invalidation costs one run. A false survival ships
         // an invalid corpus with a green report." A non-zero exit is the signal
         // to run the checks again, and it is the cheaper of the two errors.
         false => ExitCode::FAILURE,
@@ -6618,7 +6618,7 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
         )));
     }
     // The one clock read of the whole engine, and it is here rather than in a
-    // check. Spec 12: "`ctx.now` is a bound value, never a syscall." A run
+    // check. The check layer (docs/spec/check-layer.md): "`ctx.now` is a bound value, never a syscall." A run
     // whose host cannot say what day it is refuses rather than guesses, because
     // a windowed expectation evaluated against a guess is a wrong verdict.
     let Some(ctx) = now.map(Context::at).or_else(Context::from_system_clock) else {
@@ -6716,11 +6716,11 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
     let unwritten = cache.write(root).err();
     headwater_check::phase::mark("cache-write");
 
-    // The run, in the vocabulary the caller asked for. Spec 6 lists four
+    // The run, in the vocabulary the caller asked for. The engine architecture (docs/spec/engine-architecture.md) lists four
     // formats and `headwater_adapter::render` writes every one of them, so this
     // verb composes no report of its own and the MCP `check` tool composes none
     // either. A run reports the state it evaluated, and the report is not
-    // optional (spec 4): `Subject` is that statement, and the corpus tree is
+    // optional (the assurance model (docs/spec/assurance-model.md)): `Subject` is that statement, and the corpus tree is
     // the half of it that nothing computes yet.
     //
     // What the flag does not touch: the exit status, the cache accounting on
@@ -6749,7 +6749,7 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
         headwater_adapter::render_at(&run, taken, graph, &subject, format, width, mode, verbose);
     report(&artifact)?;
     headwater_check::phase::mark("render");
-    // The census over what was written, in the shape spec 7 fixes for the
+    // The census over what was written, in the shape distribution and federation (docs/spec/distribution-and-federation.md) fixes for the
     // graph emitters. A finding that reached no output and that no loss
     // reason covers is a defect in the adapter, and it fails the run the
     // way a defective projection census does.
@@ -6769,7 +6769,7 @@ fn checked(root: &Path, asked: Asked) -> Result<ExitCode, ExitCode> {
         }
     }
 
-    // The register. It is already in the report above, because spec 4 makes it
+    // The register. It is already in the report above, because the assurance model (docs/spec/assurance-model.md) makes it
     // mandatory and inspectable rather than a flag. What the flag adds is a
     // file, and the content is the same content for the reason the read set's
     // is: a projection a consumer regenerates and one a reader reads are one
@@ -6865,7 +6865,7 @@ fn unwritten_cache(path: &Path, error: &std::io::Error) -> String {
 
 /// How long a task holds when nobody says.
 ///
-/// A quarter. Spec 7 wants the expiry to force a conversation, and a date the
+/// A quarter. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) wants the expiry to force a conversation, and a date the
 /// adopter did not choose should arrive while the people who ran `infer` are
 /// still the people who own the corpus. It is a default rather than a rule: a
 /// payload states its own dates and `--until` writes them.
@@ -6960,7 +6960,7 @@ fn infer(
     let owner =
         match (&owner, write) {
             (Some(owner), _) => owner.clone(),
-            // Refused rather than defaulted. The owner is the field spec 4 ranks a
+            // Refused rather than defaulted. The owner is the field the assurance model (docs/spec/assurance-model.md) ranks a
             // migration state above a suppression for, and an owner this engine
             // invented would rank it above nothing.
             (None, true) => return fail(
@@ -7015,7 +7015,7 @@ fn infer(
         payload.push_str(&format!("    until: {until}\n"));
         payload.push_str("    pairs:\n");
         // The cell, once. Two findings of one rule on one document are one
-        // pair, which is the grain spec 7 fixes.
+        // pair, which is the grain distribution and federation (docs/spec/distribution-and-federation.md) fixes.
         let mut cells: Vec<&str> = held.iter().map(|finding| finding.path.as_str()).collect();
         cells.sort_unstable();
         cells.dedup();
@@ -7081,7 +7081,7 @@ fn infer(
     }
 
     // What the tree holds that the taxonomy does not explain, and the overlay
-    // fragment that would type it. Spec 7 makes both artifacts of one read,
+    // fragment that would type it. Distribution and federation (docs/spec/distribution-and-federation.md) makes both artifacts of one read,
     // and they are the half a payload cannot carry: an unclassified file
     // raises no finding to declare. `propose` holds the rules.
     let names = headwater_cli::propose::Declared::of(&loaded.shape, &loaded.taxonomy);
@@ -7093,7 +7093,7 @@ fn infer(
         println!("{line}");
     }
 
-    // The debt that is not a rule violation. Spec 5 ranks a route on the scent
+    // The debt that is not a rule violation. AI integration (docs/spec/ai-integration.md) ranks a route on the scent
     // facet, so a document with none is reachable by name and by nothing else.
     // A payload holds the finding where a facet contract requires a summary. It
     // cannot hold this, because where no contract requires one there is no
@@ -7493,7 +7493,7 @@ fn migrated(
 
 /// `headwater init`: the consumer declaration and the overlay, scaffolded.
 ///
-/// Spec 7 makes `init` and [`infer`] one command with two evidence sources: the
+/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) makes `init` and [`infer`] one command with two evidence sources: the
 /// tree, and an interview. This is the half that asks. It emits an overlay and
 /// never a resolved taxonomy, which is what keeps a bundle selection add-only.
 ///

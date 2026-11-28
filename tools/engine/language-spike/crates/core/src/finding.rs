@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! The finding shape from spec 4, reduced to what the spike needs.
+//! The finding shape from [the assurance model](../../../../../../docs/spec/assurance-model.md), reduced to what the spike needs.
 
 use crate::span::Span;
 
@@ -20,7 +20,7 @@ impl Severity {
     }
 }
 
-/// A mechanical and total fix, in the sense spec 12 defines. Anything needing
+/// A mechanical and total fix, in the sense [the check layer](../../../../../../docs/spec/check-layer.md) defines. Anything needing
 /// judgment carries remediation prose instead and no patch.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Fix {
@@ -43,7 +43,7 @@ pub struct Finding {
 }
 
 impl Finding {
-    /// Spec 12's stable ordering: path, line, check id, message.
+    /// [The check layer](../../../../../../docs/spec/check-layer.md)'s stable ordering: path, line, check id, message.
     pub fn sort_key(&self) -> (&str, usize, usize, &'static str, &str) {
         (
             self.path.as_str(),

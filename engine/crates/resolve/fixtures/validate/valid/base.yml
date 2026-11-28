@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # The taxonomy that every case in this directory is a mutation of. It passes
-# every rule of `taxonomy validate`, which is the other half of what spec 12
+# every rule of `taxonomy validate`, which is the other half of what the check layer (docs/spec/check-layer.md)
 # asks for: "every check ships with at least one fixture that it fails and one
 # that it passes."
 #

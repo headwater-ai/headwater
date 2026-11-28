@@ -36,7 +36,7 @@ Read the issue and its comments, because corrections live there:
 
 Then read the run's `decisions.md`, at the path the dispatch names, for `OWNER` lines that name this issue, in the form `hw-run-policy` states. Such a line is the owner's ruling on the issue, even before the product owner has posted it to the comments.
 
-Confirm the premise against `docs/spec/`, [The decision register](../../docs/spec/decisions.md) and spec 13. `headwater explain` and `headwater route` answer from the graph the engine built; open a specification part only after they have named the right one, and never read a whole part. Read each relation the note names, such as `supersedes` or `constrains`, from the front matter of the document that declares it, never from prose about it: the note for #1339 said HW-DR-0097 supersedes HW-DR-0047, and its front matter declares `constrains`.
+Confirm the premise against `docs/spec/`, [The decision register](../../docs/spec/decisions.md) and [the register of open obligations](../../docs/spec/open-obligations.md). `headwater explain` and `headwater route` answer from the graph the engine built; open a specification part only after they have named the right one, and never read a whole part. Read each relation the note names, such as `supersedes` or `constrains`, from the front matter of the document that declares it, never from prose about it: the note for #1339 said HW-DR-0097 supersedes HW-DR-0047, and its front matter declares `constrains`.
 
 Where the change extends an interface contract, a decision's stated clause or an existing case table, write that into the note as the first thing to build: the new case against the contract as stated, run, and failing for the change's own reason before the implementation exists.
 

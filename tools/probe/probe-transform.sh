@@ -247,7 +247,7 @@ base_abs=$(cd "$base" 2>/dev/null && pwd) || base_abs=$base
 # are still read off the file.
 #
 # **A path inside the base that holds no file at the end of the session is not
-# in `produced` (#1659).** Spec 15 gives `path` as "where the artifact landed",
+# in `produced` (#1659).** The recorder contract (docs/spec/the-recorder-contract.md) gives `path` as "where the artifact landed",
 # and a write the harness refused landed nothing. Neither did a file the session
 # wrote and then removed. Four sessions of the 2026-10-03 campaign met the
 # workspace's write hook. Each named a path in a refused `Write`, and the old
@@ -256,7 +256,7 @@ base_abs=$(cd "$base" 2>/dev/null && pwd) || base_abs=$base
 # the grader scores as a clean pass. So the fold below drops a relative entry
 # whose file is absent, whether the log or `--produced` named it. A session
 # whose only write was refused records `produced: []`, the scored failure. An
-# absolute path is outside the base and stays as it is. Spec 15's sentence "The
+# absolute path is outside the base and stays as it is. The recorder contract's (docs/spec/the-recorder-contract.md) sentence "The
 # transform adds each of those paths to `produced` once" is owed this
 # narrowing, and it lands after the campaign that this recorder serves.
 #

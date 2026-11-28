@@ -24,7 +24,7 @@
 //!
 //! # One finding, because there is one repair
 //!
-//! All three say: mint an identifier for this document. Spec 4 reports a defect
+//! All three say: mint an identifier for this document. [The assurance model](../../../../docs/spec/assurance-model.md) reports a defect
 //! to the person who can act on it, once, so this rule reports once and names
 //! both consequences in the sentence. Two rules over one edit would put one
 //! author on two lines of a report and leave them to work out that the second
@@ -63,7 +63,7 @@
 //! loss is invisible in every count a report prints.
 //!
 //! No fix, and the reason is [`crate::identifier`]'s: to choose an identifier
-//! is to allocate one, which is the part of spec 2 no rule in this engine
+//! is to allocate one, which is the part of [the taxonomy model](../../../../docs/spec/taxonomy-model.md) no rule in this engine
 //! implements. A `{seq:04d}` that this engine picked would be an allocation
 //! made without reading the corpus that already spent them.
 

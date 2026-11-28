@@ -5,7 +5,7 @@ status: current
 status_since: 2026-08-12
 waiting_on: build
 last_verified: 2026-09-30
-summary: "Spec 2 requires that anchor strings normalize before comparison, and it states no rule that does it."
+summary: "The taxonomy model requires that anchor strings normalize before comparison, and it states no rule that does it."
 provenance:
   warrant: accepted
   agency: mixed

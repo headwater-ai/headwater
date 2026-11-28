@@ -53,7 +53,7 @@
 //! filter reaches it. A filter clause names facet values, which is one step
 //! closer to the content than the shape a descriptor is allowed to disclose. So
 //! a reader learns that a profile is filtered and at what grain, which is what
-//! spec 7 requires a filtered view to admit, and learns the clause from the
+//! [distribution and federation](../../../../docs/spec/distribution-and-federation.md) requires a filtered view to admit, and learns the clause from the
 //! export itself if the export reaches them.
 //!
 //! # Two things the five did not mention, and one of them is a correction
@@ -66,9 +66,9 @@
 //! and its reason are already required to be stated, and no artifact a cold
 //! reader can reach states them, so the descriptor carries both.
 //!
-//! **`corpora` is a list of one.** Spec 7 says a repository holds one or more
+//! **`corpora` is a list of one.** [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) says a repository holds one or more
 //! corpora and the engine reads one consumer declaration, so this engine
-//! produces exactly one entry. The list is the shape spec 7 fixes, and a second
+//! produces exactly one entry. The list is the shape [distribution and federation](../../../../docs/spec/distribution-and-federation.md) fixes, and a second
 //! root arrives into it rather than into a changed shape.
 //!
 //! # The marker is a member, not a comment
@@ -83,7 +83,7 @@
 //! reader Q14 is addressed to.
 //!
 //! The member also does a second job, and that is what settles the choice.
-//! Spec 7 rules that **absence must not read as presence**: a reader that
+//! [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) rules that **absence must not read as presence**: a reader that
 //! fetches the descriptor and receives a host's default page must conclude
 //! *absent* rather than *malformed*. That requires a self-identifying member
 //! whatever the marker rule decides. One member answers both, and two would be
@@ -100,7 +100,7 @@ pub const PATH: &str = ".headwater/corpus.json";
 
 /// The descriptor's own version, as `Major.Minor`.
 ///
-/// Spec 7 attaches a client behavior to it, which is what keeps it from being
+/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) attaches a client behavior to it, which is what keeps it from being
 /// a string that nobody reads. A major above what the reader understands is a
 /// hard failure with a message. A minor mismatch is a warning and the reader
 /// continues. So a member added later moves the minor, and a member removed or

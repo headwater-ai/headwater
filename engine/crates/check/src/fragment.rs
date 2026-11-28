@@ -216,7 +216,7 @@ fn finding(link: &Link, anchors: &Anchors) -> Option<Finding> {
         message,
         remediation,
         // The heading an author meant is a guess among the headings the target
-        // has, and spec 12 admits a fix only where one outcome is derivable
+        // has, and the check layer (docs/spec/check-layer.md) admits a fix only where one outcome is derivable
         // without judgment.
         patch: None,
     })
@@ -799,7 +799,7 @@ mod renderer_slug {
     ///
     /// `pymdownx` is the site's own. `default` is Python-Markdown's, which
     /// this corpus is **not** rendered with, and it is here so that the
-    /// comparison can be watched refusing something: spec 12 refuses a check
+    /// comparison can be watched refusing something: [the check layer](../../../../docs/spec/check-layer.md) refuses a check
     /// that ships with no failing fixture, and a gate that has refused nothing
     /// is a gate nobody has seen work. `pymdown-extensions` depends on
     /// `Markdown`, so the second slugger needs no second pin.

@@ -5,7 +5,7 @@
 //!
 //! # The defect this target exists for
 //!
-//! Spec 7 and HW-DR-0012 say one read of a tree gives three artifacts: an
+//! [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) and HW-DR-0012 say one read of a tree gives three artifacts: an
 //! overlay, a report of what no proposed shelf or kind explains, and the
 //! adoption payload. Until #2019 the verb gave the payload alone, and an
 //! outside trial typed 0 of 76 documents on its first run. A fragment that

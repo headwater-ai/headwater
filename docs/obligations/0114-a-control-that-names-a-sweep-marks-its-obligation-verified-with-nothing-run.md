@@ -25,7 +25,7 @@ relations:
 
 [The assurance model](../spec/assurance-model.md#discharging-coherence-obligations-the-assisted-sweep) says that the assisted sweep is how coherence obligations get discharged at all. This repository declares 25 obligations and every one of them carries `class: cohesion`. The class the sweep serves has no member, so the sweep discharges nothing here and the claim has never been tested against a declaration.
 
-The binding a sweep would need is a control. A control names a mechanism and the obligations that mechanism discharges. The engine reads two prefixes, `check:` and `phase:`, and it names any other prefix external. Spec 4 admits an external control on purpose, because a corpus may declare a control that no check layer runs.
+The binding a sweep would need is a control. A control names a mechanism and the obligations that mechanism discharges. The engine reads two prefixes, `check:` and `phase:`, and it names any other prefix external. [The assurance model](../spec/assurance-model.md) admits an external control on purpose, because a corpus may declare a control that no check layer runs.
 
 ## Obligation
 

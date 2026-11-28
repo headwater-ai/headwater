@@ -1,7 +1,7 @@
 #!/bin/sh
 # What holds `tools/site/check-live-site.py`.
 #
-# Spec 12 refuses a check that ships with no failing fixture. Every refusal
+# The check layer (docs/spec/check-layer.md) refuses a check that ships with no failing fixture. Every refusal
 # below is provoked on purpose, and so is every pass, because a gate that
 # refuses everything is as useless as one that refuses nothing.
 # `tools/site/site-noindex-fixtures.sh` is the shape.

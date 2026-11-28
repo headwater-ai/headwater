@@ -49,4 +49,4 @@ The session writes an obligation record on the shelf of obligation records that 
 
 **The axes.** No phrasing names a file, so the probe does not carry `names_file`. HW-DR-0111, the superseded design of the same campaign, names probes, so the seal removes it from every workspace and it cannot stand in the way. The probe does not carry `superseded_target`.
 
-**The gap is real on the pin.** On 2026-10-29 no record under `docs/obligations/` or on spec 13 names the corpus-size axis. HW-DR-0112 says the three deferred axes are "recorded as debt", and none of them is.
+**The gap is real on the pin.** On 2026-10-29 no record under `docs/obligations/` or on [the register of open obligations](../spec/open-obligations.md) names the corpus-size axis. HW-DR-0112 says the three deferred axes are "recorded as debt", and none of them is.

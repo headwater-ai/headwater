@@ -50,4 +50,4 @@ expected: [manifest]
 
 **Expected rates, from proposal 2 of #1835.** The guess floor is 33 percent. Scenario 0: 45 to 60 percent. The right answer is in the rustdoc of two modules, and the wrong one is in the rustdoc of a third, so the rate is the share that reads `change.rs` or the `vcs` header rather than stopping at the first place that runs a command. Scenario 1: 80 to 90 percent.
 
-**Leak.** The comments state the rule in prose and name spec 12. None of them holds the expected word beside a marker that names this probe. The expected word is also the name of the flag's operand, which is the one place plain code states it as a word, and that is the fair case.
+**Leak.** The comments state the rule in prose and name [the check layer](../spec/check-layer.md). None of them holds the expected word beside a marker that names this probe. The expected word is also the name of the flag's operand, which is the one place plain code states it as a word, and that is the fair case.

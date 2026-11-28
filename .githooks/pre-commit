@@ -8,7 +8,7 @@
 #     git config core.hooksPath .githooks
 #
 # What blocks is what the engine reports as an error, which is the fixability
-# bar of spec 12 rather than a judgment about how much a defect matters. A
+# bar of the check layer (docs/spec/check-layer.md) rather than a judgment about how much a defect matters. A
 # contraction, a British spelling, a hard-wrapped block and a retired term that
 # names its replacement are all repaired mechanically, so they block. A sentence
 # past the word limit, a semicolon in running prose and a stock metaphor are
@@ -31,7 +31,7 @@
 # it.
 #
 # `change-manifest` beside this file is what turns `HEAD` and the working tree
-# into the manifest the engine reads. Spec 12 fixes `HEAD` as the anchor here
+# into the manifest the engine reads. The check layer (docs/spec/check-layer.md) fixes `HEAD` as the anchor here
 # and the merge base as the anchor for a proposed change, which is what the CI
 # job passes.
 #

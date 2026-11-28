@@ -1,7 +1,7 @@
 #!/bin/sh
 # What holds the claim `.claude/hooks/fixtures.sh` cannot: that Codex and
 # Copilot actually send the shapes that suite assumes, and actually honor the
-# deny and the block the way spec 16 says they do. `fixtures.sh` proves this
+# deny and the block the way harness support (docs/spec/harness-support.md) says they do. `fixtures.sh` proves this
 # repository's own scripts answer a recorded payload correctly. It cannot
 # prove a harness still sends that payload, because it never runs a harness.
 # This does: a real `codex exec` and a real `copilot -p`, over a scratch clone
@@ -314,7 +314,7 @@ print(count)
         # cannot bind until it is known (#953). A catch-all recorder in the
         # scratch clone keeps every `preToolUse` payload, and the case reads
         # the one that names the file it asked for. It passes on any read it
-        # recorded and prints the name, which is the fact spec 16's C11 cell
+        # recorded and prints the name, which is the fact harness support's (docs/spec/harness-support.md) C11 cell
         # waits on. It fails when no recorded call names the file.
         printf '%s\n' '{ "version": 1, "hooks": { "preToolUse": [ { "hooks": [ { "type": "command", "command": "cat >> .tool-calls.log; echo >> .tool-calls.log", "timeoutSec": 15 } ] } ] } }' \
             > "$scratch/.github/hooks/zz-record-every-call.json"

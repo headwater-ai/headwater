@@ -26,7 +26,7 @@
 //! unobserved, and the alternative is a verb that refuses a corpus over a file
 //! that names no obligation and no control.
 //!
-//! # What a control entry reads, and what spec 4 does not promise
+//! # What a control entry reads, and what [the assurance model](../../../../docs/spec/assurance-model.md) does not promise
 //!
 //! It reads whether a control is named, and nothing about the commit beside
 //! it. [`Observations::observed`] compares the control key alone; the

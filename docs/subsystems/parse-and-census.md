@@ -37,7 +37,7 @@ This spec describes the inside of the parse stage of [the engine architecture](.
 
 The stage has two inputs. The first is the corpus root on disk. The second is the shelves and kinds of the resolved taxonomy, which the [Taxonomy resolution](taxonomy-resolution.md) subsystem writes into the lock. The stage gives a `Census`, with one `Row` for each file under the corpus root. Each row carries the parsed `Document` where the stage read one. [Graph build](graph-build.md) reads the documents through the census and opens no document file itself.
 
-The `vcs` crate is in this subsystem because `census` and `graph` use it, as the row of spec 6 states. It writes the change manifest that `headwater check --change` reads. It also answers three questions about the tree for other crates. Which paths does git ignore, which merge attribute does git give a path, and where does the root sit below the git top level?
+The `vcs` crate is in this subsystem because `census` and `graph` use it, as the row of [the engine architecture](../spec/engine-architecture.md) states. It writes the change manifest that `headwater check --change` reads. It also answers three questions about the tree for other crates. Which paths does git ignore, which merge attribute does git give a path, and where does the root sit below the git top level?
 
 Other documents state what the stage does, and this spec does not repeat them:
 
@@ -62,7 +62,7 @@ The front matter loads through `headwater_yaml`, so the parser has no second YAM
 
 ### A CommonMark parse, not a regular expression
 
-`body.rs` scans the body with a CommonMark parser. Spec 12 names the spans of the parser a correctness root, and the failure is a silent pass. A scan by regular expression reads a `# heading` inside a fenced code block as a heading, and a section contract then holds with no finding. A setext heading has no leading `#`, so a pattern match does not see it at all.
+`body.rs` scans the body with a CommonMark parser. [The check layer](../spec/check-layer.md) names the spans of the parser a correctness root, and the failure is a silent pass. A scan by regular expression reads a `# heading` inside a fenced code block as a heading, and a section contract then holds with no finding. A setext heading has no leading `#`, so a pattern match does not see it at all.
 
 The scan keeps three things. `Block` is each block in document order, with its span, its soft breaks and the info string of a fence. `Link` is each link with its destination as written, because normalization belongs to the anchor resolvers. `Ownership` marks each run of text as `Authored`, `Quoted` or `Code`. A voice rule that reads a block quote as the author's own prose reports the grammar of another author as a defect. No exemption in the rule can repair that, because the rule cannot see the quote, and the parser can.
 
@@ -70,7 +70,7 @@ The scan keeps three things. `Block` is each block in document order, with its s
 
 ### Sentences
 
-`sentences.rs` splits the text that the author wrote into sentences. Spec 12 puts segmentation on the correctness-root list, and [Q5](../spec/decisions.md#q5--voice-checking-depth) measured that 32 of 58 sentence-length errors on one landing were defects in the splitter. The module works on the runs that `body.rs` gives it, so it removes no Markdown itself.
+`sentences.rs` splits the text that the author wrote into sentences. [The check layer](../spec/check-layer.md) puts segmentation on the correctness-root list, and [Q5](../spec/decisions.md#q5--voice-checking-depth) measured that 32 of 58 sentence-length errors on one landing were defects in the splitter. The module works on the runs that `body.rs` gives it, so it removes no Markdown itself.
 
 It has three rules. A sentence ends at a terminator that a new sentence follows. A terminator inside code is not a terminator, because the parser marks that run `Code`. A quoted block holds no sentence of this document, so no rule downstream declares an exemption for a quotation. [HW-OBL-0153](../obligations/0153-the-rewritten-sentence-splitter-has-no-dedicated-conformance-fixtures.md) is open because the splitter has no data-driven fixture corpus.
 
@@ -78,11 +78,11 @@ It has three rules. A sentence ends at a terminator that a new sentence follows.
 
 `error.rs` gives each rejection a `Reason` and a span, and `render` writes one line per error in source order. The doc fixtures record that form. A file that cannot be split reports one error, because nothing after that point is readable.
 
-`lib.rs` holds the names of the provenance block and its readers. Spec 3 gives the shape of that block to the engine and not to a taxonomy, so the four warrant values are constants here. The checks, the query layer and the audit read the set from these constants and do not spell the values again. `is_warrant` compares case exactly, because a reader that folded case would guess what the author meant.
+`lib.rs` holds the names of the provenance block and its readers. [Authoring and lifecycle](../spec/authoring-and-lifecycle.md) gives the shape of that block to the engine and not to a taxonomy, so the four warrant values are constants here. The checks, the query layer and the audit read the set from these constants and do not spell the values again. `is_warrant` compares case exactly, because a reader that folded case would guess what the author meant.
 
 ### Why resolution and the census share a crate
 
-The `census` crate holds kind resolution and the census. Spec 12 names both a correctness root, and both fail in the same way: the result is green when it is wrong. A walk that misses a subtree reports nothing about it. A resolution that assigns the wrong kind runs the wrong checks and passes them. Thus the rules of the walk are written out in the code, and a fixture tree holds them.
+The `census` crate holds kind resolution and the census. [The check layer](../spec/check-layer.md) names both a correctness root, and both fail in the same way: the result is green when it is wrong. A walk that misses a subtree reports nothing about it. A resolution that assigns the wrong kind runs the wrong checks and passes them. Thus the rules of the walk are written out in the code, and a fixture tree holds them.
 
 ### The walk
 
@@ -100,7 +100,7 @@ The fixture tree `engine/crates/census/fixtures/walk/` holds one case for each r
 
 `resolve.rs` resolves a kind from a path and the front matter, and it records each step as a `Step`. `headwater explain` prints the derivation, and the MCP surface reads the same value, so the two say the same thing. Every resolution returns a derivation, the failed ones too, because the derivation of a failure tells an author which step to repair.
 
-`resolve` returns a `Resolution`, never a `Result`. A document that no shelf claims, and a document with no discriminator, are ordinary states of a corpus that spec 4 counts. A `Result` would let a caller use `?`, and the file would leave the denominator at that line.
+`resolve` returns a `Resolution`, never a `Result`. A document that no shelf claims, and a document with no discriminator, are ordinary states of a corpus that [the assurance model](../spec/assurance-model.md) counts. A `Result` would let a caller use `?`, and the file would leave the denominator at that line.
 
 Three steps run. `shelf_for` is step 1 alone, because it needs only a path, so the census can ask it of a file with no front matter. It sorts the shelves that match by the specificity of their patterns, and it records the shelves that lost. Where two shelves tie, it reports the tie and picks neither. [HW-OBL-0060](../obligations/0060-the-most-specific-shelf-wins-names-no-order.md) is open because no document names that order. Step 2 reads the kind from a homogeneous shelf, and step 3 reads a discriminator facet on a heterogeneous shelf. An unknown discriminator value stops the derivation, and the census keeps the row. [HW-OBL-0191](../obligations/0191-an-unknown-discriminator-value-removes-a-document-from-every-check-and-no-gate-reports-it.md) is open because no gate reports that row.
 
@@ -148,4 +148,4 @@ A change to these crates must keep each of these. A test holds each one that nam
 - **Five readers stay linear in their input** ([#1968](https://github.com/headwater-ai/headwater/issues/1968)). They are the YAML loader, the sentence reader, the line reader, the edge scope and the audit of a rendered report. The cases of the first four are in `engine/crates/cli/tests/linear_scale.rs`, which [`headwater check`](../interfaces/headwater-check.md#description) governs. The YAML loader reads many front matter keys in linear time (`many_unknown_front_matter_keys_check_in_linear_time`). The sentence reader and the line reader do the same for many sentences in one paragraph and many links on one line (`many_sentences_in_one_paragraph_check_in_linear_time` and `many_links_on_one_line_check_in_linear_time`). The edge scope belongs to [graph build](graph-build.md#invariants) and [checks and cache](checks-and-cache.md#invariants). It finds a repeated triple in constant time (`many_unresolved_relation_targets_check_in_linear_time`). The audit of a rendered report reads many records on one document in linear time (`many_records_on_one_document_are_audited_in_linear_time` in `engine/crates/adapter/tests/fixtures.rs`). A column far into a long line counts from the start of that line (`a_column_past_many_checkpoints_counts_from_the_line_start` in `engine/crates/doc/src/lines.rs`). The YAML loader keeps the first span of each key in a map, so the error for a repeated key names its first occurrence (`keys_that_differ_in_case_are_two_keys_and_a_repeat_names_its_own_first` and `a_key_repeated_three_times_names_the_first_in_both_errors` in `engine/crates/yaml/src/loader.rs`). At release scale, a release record of 200,000 keys is refused inside a time ceiling (`a_release_of_many_keys_is_refused_in_time_and_leaves_nothing` in `engine/crates/cli/tests/publish.rs`).
 - **The recorded census of the fixture tree and of this repository is the assertion.** Record it again with `HEADWATER_BLESS=1` and read the diff.
 
-The parser, the sentence splitter, the census walker and kind resolution are correctness roots ([the check layer](../spec/check-layer.md#the-correctness-roots)). A wrong answer from any one of them causes no error, and spec 12 states what each one owes.
+The parser, the sentence splitter, the census walker and kind resolution are correctness roots ([the check layer](../spec/check-layer.md#the-correctness-roots)). A wrong answer from any one of them causes no error, and [the check layer](../spec/check-layer.md) states what each one owes.

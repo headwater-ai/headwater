@@ -9,7 +9,7 @@
 //! and they answer the two questions that are the lock's alone.
 //!
 //! - **`identity.record`** — does the identity that the lock uses agree with the
-//!   identity that spec 2 requires? Spec 2 says any legal order of an overlay
+//!   identity that [the taxonomy model](../../../../docs/spec/taxonomy-model.md) requires? [The taxonomy model](../../../../docs/spec/taxonomy-model.md) says any legal order of an overlay
 //!   set gives "the same resolved taxonomy", and the lock hashes text. So every
 //!   permutation of every case is resolved and hashed, and one digest per case is
 //!   the claim. This is `confluence.record` restated in the coordinate that

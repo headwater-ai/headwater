@@ -35,4 +35,4 @@ Whether every shipped check meets the sharpened bar is a separate survey, and #2
 
 ## Discharge
 
-This closes when the owner accepts the wording of the discriminating condition in spec 12. It also closes when the owner replaces that wording, and `sh .claude/skills/fixtures.sh` then holds the new wording in the spec and in the two skill files.
+This closes when the owner accepts the wording of the discriminating condition in [the check layer](../spec/check-layer.md). It also closes when the owner replaces that wording, and `sh .claude/skills/fixtures.sh` then holds the new wording in the spec and in the two skill files.

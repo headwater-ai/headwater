@@ -32,4 +32,4 @@ The artifact that answers the second question is one row per instance rather tha
 
 ## Discharge
 
-Either spec 12 states that the published artifact answers the coarse question alone, or the artifact carries a row per instance. The cost question of [Q21](../spec/decisions.md#q21--terminological-succession-and-validity-under-merge) is then asked again at that size.
+Either [the check layer](../spec/check-layer.md) states that the published artifact answers the coarse question alone, or the artifact carries a row per instance. The cost question of [Q21](../spec/decisions.md#q21--terminological-succession-and-validity-under-merge) is then asked again at that size.

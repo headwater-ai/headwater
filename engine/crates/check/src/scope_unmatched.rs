@@ -24,7 +24,7 @@
 //! of `taxonomy diff` and `gate`, the caller takes no reading.
 //!
 //! **Where it differs from `validate`.** The check counts with nothing
-//! ignored, because spec 12 keeps every version control command off the check
+//! ignored, because [the check layer](../../../../docs/spec/check-layer.md) keeps every version control command off the check
 //! loop, and `validate` leaves out what git ignores. So a pattern whose only
 //! matches are files git ignores passes the check and fails `validate`, and a
 //! top directory git ignores counts as a tree here and not there. A pattern

@@ -53,6 +53,6 @@ relations:
 
 **The two consumption forms keep their different owners, and the reason is now written down.** A composer pins the source package and owns its selection, so it advances the source package when it chooses. A batteries-included consumer takes the flattened package and waits for the publisher to release a new one, because `distribution.derived_from` gives it nothing to resolve.
 
-**A flattened package cannot be repaired by a selection.** An adopter who takes `headwater/starter` and then wants a fourth bundle cannot add it to the consumer declaration. The refusal above is what they get. They move to the composer form, or they wait for a recipe that includes it. Spec 7 states this and now cites a ruling for it.
+**A flattened package cannot be repaired by a selection.** An adopter who takes `headwater/starter` and then wants a fourth bundle cannot add it to the consumer declaration. The refusal above is what they get. They move to the composer form, or they wait for a recipe that includes it. [Distribution and federation](../spec/distribution-and-federation.md) states this and now cites a ruling for it.
 
 **This record does not rule on two neighboring questions.** Whether `requires:` should become a mechanism stays with HW-DR-0040. Where a bundle's own doctrine lands inside a flattened artifact stays open. `flatten::assets` copies the source package's own `contents.doctrine` and `contents.templates` into namespaced paths, and it carries no bundle doctrine.

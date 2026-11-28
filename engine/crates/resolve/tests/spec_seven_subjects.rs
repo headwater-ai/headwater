@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Spec 7's *The migration payload* section, held against
+//! [Distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s *The migration payload* section, held against
 //! [`headwater_resolve::migration::Subject`].
 //!
 //! # Why this file exists
@@ -23,7 +23,7 @@
 //!
 //! # The model
 //!
-//! `engine/crates/generate/tests/spec_six_projections.rs` holds spec 6's
+//! `engine/crates/generate/tests/spec_six_projections.rs` holds [the engine architecture](../../../../docs/spec/engine-architecture.md)'s
 //! projection-kinds block against `Kind::ALL` the same way, and the two design
 //! points are taken from it. First, the block carries **engine identifiers**
 //! rather than the prose the paragraph uses, so there is no prose-to-identifier
@@ -57,7 +57,7 @@ fn spec_seven() -> PathBuf {
         .join("../../../docs/spec/distribution-and-federation.md")
 }
 
-/// The text of spec 7's *The migration payload* section, from its heading to
+/// The text of [distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s *The migration payload* section, from its heading to
 /// the next heading of any level.
 fn migration_payload_section() -> (PathBuf, String) {
     let path = spec_seven();
@@ -117,10 +117,10 @@ fn subject_rows() -> Vec<String> {
     rows
 }
 
-/// The subject table of spec 7 names exactly the subjects a payload may write.
+/// The subject table of [distribution and federation](../../../../docs/spec/distribution-and-federation.md) names exactly the subjects a payload may write.
 ///
 /// The decisive case. It reddens if a row is deleted, if a row is added, and if
-/// a fourth `Subject` arm lands without spec 7 gaining a row — which is the
+/// a fourth `Subject` arm lands without [distribution and federation](../../../../docs/spec/distribution-and-federation.md) gaining a row — which is the
 /// drift #543 exists to prevent, in whichever direction the owner's ruling
 /// eventually sends it.
 ///
@@ -203,7 +203,7 @@ fn no_absence_in_the_migration_payload_section_is_left_as_an_open_question() {
 ///
 /// A product decision merges only if it is reversible and recorded with the
 /// condition that reopens it, written where the next reader meets it. For this
-/// absence the next reader is a publisher reading spec 7, so the condition
+/// absence the next reader is a publisher reading [distribution and federation](../../../../docs/spec/distribution-and-federation.md), so the condition
 /// lives in that paragraph rather than only in a decision record.
 ///
 /// The two route strings are held against the sentence `headwater taxonomy
@@ -304,7 +304,7 @@ fn facet_required_paragraph(path: &Path) -> String {
     paragraph.join(" ")
 }
 
-/// The clause of spec 7 that the ruling sentence opens with, which is what the
+/// The clause of [distribution and federation](../../../../docs/spec/distribution-and-federation.md) that the ruling sentence opens with, which is what the
 /// extractor anchors on.
 const RULING_OPENS: &str = "The vocabulary holds no fourth subject";
 
@@ -321,7 +321,7 @@ const RULING_OPENS: &str = "The vocabulary holds no fourth subject";
 ///
 /// The rule is a heuristic and it has a known limit, stated here because the
 /// message is what a reader acts on: an abbreviation whose next word is
-/// capitalized, `U.S. Federal`, ends a sentence as far as this reads. Spec 7
+/// capitalized, `U.S. Federal`, ends a sentence as far as this reads. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md)
 /// holds no such construction today.
 fn sentence_end(text: &str) -> Option<usize> {
     for (index, _) in text.match_indices('.') {
@@ -341,11 +341,11 @@ fn sentence_end(text: &str) -> Option<usize> {
     None
 }
 
-/// Spec 7's own ruling sentence, read out of the specification at run time.
+/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s own ruling sentence, read out of the specification at run time.
 ///
 /// Typing the sentence here would be a second copy of it, and a reword of
-/// spec 7 would leave the copy standing. Reading it means the package record is
-/// held against whatever spec 7 says today: a reword of the ruling reddens the
+/// [distribution and federation](../../../../docs/spec/distribution-and-federation.md) would leave the copy standing. Reading it means the package record is
+/// held against whatever [distribution and federation](../../../../docs/spec/distribution-and-federation.md) says today: a reword of the ruling reddens the
 /// record until the record follows.
 ///
 /// A sentence that closes the section with no space after its period is bounded
@@ -428,10 +428,10 @@ fn the_ruling_extractor_bounds_on_a_sentence_and_not_on_the_first_period() {
 ///
 /// A curated family and not a complete one. Each member says the same thing:
 /// that this project owes a mechanism it has not built. `facet.required.missing`
-/// is the break every one of them was written about, and spec 7 has ruled it.
+/// is the break every one of them was written about, and [distribution and federation](../../../../docs/spec/distribution-and-federation.md) has ruled it.
 /// The list is the second line of this case rather than the first, because a
 /// blocklist over prose saturates: a phrasing nobody listed passes it. What
-/// holds the record is the positive assertion below, which reads spec 7's own
+/// holds the record is the positive assertion below, which reads [distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s own
 /// sentence and requires the record to carry it.
 ///
 /// `pending a decision` rather than `pending`, because the paragraph has to name
@@ -448,15 +448,15 @@ const DEFERRALS: [&str; 8] = [
 ];
 
 /// The package's own record of 4.0.0 states the facet-required absence the way
-/// spec 7 rules it, and names the route instead of a mechanism to wait for.
+/// [distribution and federation](../../../../docs/spec/distribution-and-federation.md) rules it, and names the route instead of a mechanism to wait for.
 ///
 /// The decisive case for Done-when 4 of
-/// [#543](https://github.com/headwater-ai/headwater/issues/543). Spec 7 rules
+/// [#543](https://github.com/headwater-ai/headwater/issues/543). [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) rules
 /// the absence deliberate and sends a publisher whose whole break is
 /// `facet.required.missing` to `headwater infer --owner <name> --write`, after
 /// which `headwater check` reports each pair as `migration-pending`. Until this
 /// case, the record of the release that caused exactly that break closed by
-/// calling the absence a finding against spec 7, so a publisher who read the
+/// calling the absence a finding against [distribution and federation](../../../../docs/spec/distribution-and-federation.md), so a publisher who read the
 /// package rather than the specification was told to wait for a mechanism that
 /// has been ruled will not come.
 ///
@@ -465,10 +465,10 @@ const DEFERRALS: [&str; 8] = [
 ///
 /// # What this holds, and what it does not
 ///
-/// The first assertion is the one that holds the ruling. It reads spec 7's own
+/// The first assertion is the one that holds the ruling. It reads [distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s own
 /// ruling sentence out of the specification and requires the record to carry it
 /// word for word, so the record cannot state the absence in its own terms at
-/// all, and a reword of spec 7 reddens the record rather than passing it.
+/// all, and a reword of [distribution and federation](../../../../docs/spec/distribution-and-federation.md) reddens the record rather than passing it.
 ///
 /// The second is a curated family of deferring phrasings. It is a blocklist and
 /// it saturates: a paraphrase nobody listed passes it. The residual hole is a
@@ -478,10 +478,10 @@ const DEFERRALS: [&str; 8] = [
 ///
 /// # Watched failing
 ///
-/// Restoring "which is a finding against spec 7 rather than an omission of this
+/// Restoring "which is a finding against [distribution and federation](../../../../docs/spec/distribution-and-federation.md) rather than an omission of this
 /// release" reddens the deferral assertion, printing the paragraph. Deleting the
-/// quoted ruling reddens the first, printing the sentence spec 7 holds and the
-/// record does not. Rewording that sentence in spec 7 reddens the first too,
+/// quoted ruling reddens the first, printing the sentence [distribution and federation](../../../../docs/spec/distribution-and-federation.md) holds and the
+/// record does not. Rewording that sentence in [distribution and federation](../../../../docs/spec/distribution-and-federation.md) reddens the first too,
 /// which is what proves it reads the specification rather than a list typed
 /// here. Deleting the `headwater infer` sentence reddens the route assertion.
 #[test]

@@ -2,9 +2,9 @@
 id: HW-OBL-0162
 status: discharged
 status_since: 2026-10-01
-summary: "Spec 7's assembly example and the shipped recipe both pin one package version, and nothing compares them. The example was stale for four minor versions and no rule, no fixture and no CI job reported it."
+summary: "Distribution and federation's assembly example and the shipped recipe both pin one package version, and nothing compares them. The example was stale for four minor versions and no rule, no fixture and no CI job reported it."
 last_verified: 2026-10-01
-title: "Spec 7 prints a package version that no check compares with the recipe"
+title: "Distribution and federation prints a package version that no check compares with the recipe"
 waiting_on: build
 provenance:
   warrant: asserted
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 ---
 
-# Spec 7 prints a package version that no check compares with the recipe
+# Distribution and federation prints a package version that no check compares with the recipe
 
 ## Context
 
@@ -46,4 +46,4 @@ Any of three closes it.
 
 Nothing here is discharged by rewriting the example again. The example is correct today, and it was correct on the day it was written too.
 
-**This record is discharged, by the first of the three.** The example went stale a second time: on 2026-09-30 it printed `headwater/standard@4.0.0` while the recipe pinned `4.13.0`. [#1487](https://github.com/headwater-ai/headwater/issues/1487) added `the_recipe_spec_seven_prints_is_the_recipe_this_repository_ships` in `engine/crates/resolve/tests/spec_seven_recipe.rs`. It reads the fenced YAML block under *An assembly has two consumption forms* and `taxonomy-source/headwater-standard/assemblies/starter/assembly.yml`. It fails unless `assembly`, `package`, `version`, `from.package` and `from.bundles` are equal in both. It also fails unless the first line of the text diagram is the same `from.package`. The case failed on the tree before the fix and passes after it. The check is a test in the engine suite rather than a rule of `headwater check`, so it holds this repository's example and no adopter's. Step 1 of the taxonomy release in `docs/process/how-to/cut-a-release.md` now names spec 7, because the next version bump must move it.
+**This record is discharged, by the first of the three.** The example went stale a second time: on 2026-09-30 it printed `headwater/standard@4.0.0` while the recipe pinned `4.13.0`. [#1487](https://github.com/headwater-ai/headwater/issues/1487) added `the_recipe_spec_seven_prints_is_the_recipe_this_repository_ships` in `engine/crates/resolve/tests/spec_seven_recipe.rs`. It reads the fenced YAML block under *An assembly has two consumption forms* and `taxonomy-source/headwater-standard/assemblies/starter/assembly.yml`. It fails unless `assembly`, `package`, `version`, `from.package` and `from.bundles` are equal in both. It also fails unless the first line of the text diagram is the same `from.package`. The case failed on the tree before the fix and passes after it. The check is a test in the engine suite rather than a rule of `headwater check`, so it holds this repository's example and no adopter's. Step 1 of the taxonomy release in `docs/process/how-to/cut-a-release.md` now names [distribution and federation](../spec/distribution-and-federation.md), because the next version bump must move it.

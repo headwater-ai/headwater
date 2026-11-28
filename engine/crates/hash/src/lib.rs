@@ -40,7 +40,7 @@
 //! reads. The check cache hashes a key built over both
 //! ([the check layer](../../../../docs/spec/check-layer.md#determinism-concretely)).
 //! A cache key that disagreed with a lock digest about what the digest of one
-//! byte string is would be the correctness bug that spec 12 names, so there is
+//! byte string is would be the correctness bug that [the check layer](../../../../docs/spec/check-layer.md) names, so there is
 //! one implementation of the function and no crate carries a second.
 
 const K: [u32; 64] = [

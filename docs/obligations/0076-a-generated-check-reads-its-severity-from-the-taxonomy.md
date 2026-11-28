@@ -5,7 +5,7 @@ status: current
 status_since: 2026-08-13
 waiting_on: ruling
 last_verified: 2026-08-13
-summary: "An adopter moves a generated finding from `warn` to `error` by editing data, and spec 12 reads as though only a control is data."
+summary: "An adopter moves a generated finding from `warn` to `error` by editing data, and the check layer reads as though only a control is data."
 provenance:
   warrant: accepted
   agency: mixed
@@ -26,8 +26,8 @@ relations:
 
 ## Obligation
 
-So an adopter moves a finding from `warn` to `error` by editing data, and no code changes. What is open is whether spec 12 admits it, because its own sentence reads as though only a control is data.
+So an adopter moves a finding from `warn` to `error` by editing data, and no code changes. What is open is whether [the check layer](../spec/check-layer.md) admits it, because its own sentence reads as though only a control is data.
 
 ## Discharge
 
-For a generated rule the declaration is the check, so the engine reads this as consistent. A sentence in spec 12 is what settles whether that reading is the intended one.
+For a generated rule the declaration is the check, so the engine reads this as consistent. A sentence in [the check layer](../spec/check-layer.md) is what settles whether that reading is the intended one.

@@ -17,7 +17,7 @@
 //! and a live waiver answers for the rule it covers
 //! ([`crate::Reading::passes_gate`]). A document that reported one number would
 //! let an adopter's dashboard show a rung that the package did not grant, which
-//! is the confusion spec 7 keeps the two readings apart to prevent. Both are
+//! is the confusion [distribution and federation](../../../../docs/spec/distribution-and-federation.md) keeps the two readings apart to prevent. Both are
 //! members below and neither is derived from the other.
 //!
 //! # `gate` is written only where a caller asked for it

@@ -30,7 +30,7 @@ Three obligations already in the register look like this one and are not. HW-OBL
 
 ## Obligation
 
-The corpus owes a decision on whether an unresolved path in a link is a finding, and at what severity. The remedy is mechanical only when the intended target can be derived. It is a rewrite when it cannot, so spec 12's fixability bar points at advisory rather than error. Until the decision is taken, this corpus and every corpus that adopts this taxonomy carries broken references that a green strict run says nothing about.
+The corpus owes a decision on whether an unresolved path in a link is a finding, and at what severity. The remedy is mechanical only when the intended target can be derived. It is a rewrite when it cannot, so [the check layer](../spec/check-layer.md)'s fixability bar points at advisory rather than error. Until the decision is taken, this corpus and every corpus that adopts this taxonomy carries broken references that a green strict run says nothing about.
 
 ## Discharge
 

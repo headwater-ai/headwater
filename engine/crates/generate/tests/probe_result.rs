@@ -1782,7 +1782,7 @@ fn a_documentation_absent_arm_is_compared_with_the_campaign_present_arm() {
     );
 }
 
-/// The two absent arms of one run are the documents claim, and spec 5 names
+/// The two absent arms of one run are the documents claim, and [AI integration](../../../../docs/spec/ai-integration.md) names
 /// that difference as its only reading (HW-OBL-0223).
 #[test]
 fn the_two_absent_arms_measure_the_documents() {
@@ -1837,7 +1837,7 @@ fn result_of<'a>(plan: &'a headwater_generate::Plan, path: &str) -> &'a str {
 }
 
 /// Each component arm of #1472 against the `campaign` present arm measures
-/// one part of the layer, and spec 5 names it as a claim. A `no-hook`
+/// one part of the layer, and [AI integration](../../../../docs/spec/ai-integration.md) names it as a claim. A `no-hook`
 /// transcript beside a present one is compared, and the comparison names the
 /// intent hook. Before the component arms had a role, the transcript was
 /// graded and compared with nothing.

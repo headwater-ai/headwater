@@ -298,7 +298,7 @@ fn of_evidence(evidence: &Evidence) -> Json {
 /// One pointer.
 ///
 /// `unwarranted` is written on every pointer, including `false`. It is a
-/// two-valued fact rather than a value that may be missing, and spec 5 requires
+/// two-valued fact rather than a value that may be missing, and [AI integration](../../../../docs/spec/ai-integration.md) requires
 /// a pointer to an `asserted` document to state that warrant, so a consumer
 /// that met no member could not tell a warranted document from a producer with
 /// nothing to say about warrants.
@@ -336,7 +336,7 @@ fn of_pointer(pointer: &Pointer) -> Json {
 }
 
 /// The explanation document, in the order [`Explanation::render`] prints it,
-/// which is spec 2's own order.
+/// which is [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s own order.
 ///
 /// `kind` is absent for a document the census did not type, and that is the
 /// case this verb most exists for: `derivation` then carries the step that
@@ -586,7 +586,7 @@ mod tests {
     /// Every silence carries a token, and no two silences share one.
     ///
     /// The tokens are what a caller branches on, so a duplicate would collapse
-    /// two facts about a corpus that spec 5 keeps apart on purpose.
+    /// two facts about a corpus that [AI integration](../../../../docs/spec/ai-integration.md) keeps apart on purpose.
     #[test]
     fn each_silence_is_named_by_a_token_of_its_own() {
         let every = [

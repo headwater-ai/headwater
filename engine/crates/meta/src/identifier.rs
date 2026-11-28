@@ -40,7 +40,7 @@
 //!   it. So it is required to be present and not empty, and nothing is required
 //!   of its alphabet. A rule that admitted only lower-case words would be this
 //!   engine inventing a lexical constraint that no declaration makes, over the
-//!   one part of an identifier spec 2 leaves to the author.
+//!   one part of an identifier [the taxonomy model](../../../../docs/spec/taxonomy-model.md) leaves to the author.
 //!
 //! Matching is left to right, and each placeholder is bounded by what follows
 //! it. `{namespace}` and `{seq:0Nd}` have a known width or a known value, so
@@ -460,7 +460,7 @@ fn digits(text: &str, width: usize) -> Option<&str> {
     }
 }
 
-/// One placeholder, in the three forms spec 2 writes.
+/// One placeholder, in the three forms [the taxonomy model](../../../../docs/spec/taxonomy-model.md) writes.
 fn read_placeholder(name: &str, pattern: &str) -> Result<Segment, Unreadable> {
     if name == "namespace" {
         return Ok(Segment::Namespace);
@@ -469,7 +469,7 @@ fn read_placeholder(name: &str, pattern: &str) -> Result<Segment, Unreadable> {
         return Ok(Segment::Slug);
     }
     // `seq:04d`, and any width. The `d` is Python's format language, which is
-    // what spec 2 borrowed the form from.
+    // what the taxonomy model (docs/spec/taxonomy-model.md) borrowed the form from.
     if let Some(spec) = name.strip_prefix("seq:0") {
         if let Some(width) = spec.strip_suffix('d').and_then(|w| w.parse::<usize>().ok()) {
             if width > 0 {
@@ -736,7 +736,7 @@ mod tests {
             // A free token before another segment: two readings, and the
             // declaration does not choose.
             ("SPEC-{slug}-{namespace}", "HW"),
-            // A placeholder spec 2 does not write.
+            // A placeholder the taxonomy model (docs/spec/taxonomy-model.md) does not write.
             ("{namespace}-SPEC-{uuid}", "HW"),
             // A width the format language does not give.
             ("{namespace}-DR-{seq:d}", "HW"),

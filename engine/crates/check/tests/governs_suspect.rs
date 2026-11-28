@@ -1280,7 +1280,7 @@ fn a_stated_re_verification_needs_no_freshness_facet() {
 }
 
 /// A relation that does not declare `verified_revision` is offered no fix and
-/// no advisory on an unrecorded edge, because spec 2 makes an attribute the
+/// no advisory on an unrecorded edge, because [the taxonomy model](../../../../docs/spec/taxonomy-model.md) makes an attribute the
 /// relation does not declare a finding, and a fix must not write one.
 #[test]
 fn no_fix_is_offered_where_the_relation_does_not_declare_the_attribute() {

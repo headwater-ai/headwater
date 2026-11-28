@@ -8,14 +8,14 @@
 # It is the smallest shape in which every reading has something to say, and each
 # piece of it is here for one of them:
 #
-#   * Four of spec 2's six creators are declared and two are not, so the report
+#   * Four of the taxonomy model's (docs/spec/taxonomy-model.md) six creators are declared and two are not, so the report
 #     has both an arm it can fill and an arm it cannot. `import` is one of the
 #     two, which is the arm Q19's comparison needs.
 #   * `annotates` declares `multinuclear` against a `derivation` family whose
 #     default is `nucleus-satellite`, so the override reading has one row. Every
 #     other relation either restates its family's default or declares nothing.
 #   * `catalogues` is eligible on every document and captured by one, which is
-#     the case spec 2 names: "a relation declared `created_by: author` but
+#     the case the taxonomy model (docs/spec/taxonomy-model.md) names: "a relation declared `created_by: author` but
 #     present on 4% of eligible documents visibly receives no maintenance".
 #   * `notes` has a declared creator and no edge at all.
 #   * The freshness window is short, so a fixture document can sit past it

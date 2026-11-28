@@ -11,8 +11,8 @@
 //!
 //! # The manifest and the taxonomy source are two files, and this is why
 //!
-//! Spec 2 makes `package` a reserved reference root that no taxonomy may
-//! declare, and spec 7 gives the manifest a `package:` key. The two rules never
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md) makes `package` a reserved reference root that no taxonomy may
+//! declare, and [distribution and federation](../../../../docs/spec/distribution-and-federation.md) gives the manifest a `package:` key. The two rules never
 //! meet while the two files are two files. The only committed copy of this
 //! repository's base package was one file playing both parts, and the
 //! meta-schema refused it on the first line
@@ -998,7 +998,7 @@ pub fn manifest_at(directory: &Path) -> Result<Mapping, Vec<ResolveError>> {
 ///
 /// # A manifest that is not a mapping is reported, and does not stop the search
 ///
-/// `.headwater/packages/` holds nothing anybody hand-edits — spec 7: only `taxonomy
+/// `.headwater/packages/` holds nothing anybody hand-edits — [distribution and federation](../../../../docs/spec/distribution-and-federation.md): only `taxonomy
 /// vendor` and `taxonomy publish --from` write under it — so a manifest that
 /// parses into something that is not a mapping is always an anomaly, never a
 /// scratch file this walk should quietly step around. But the anomaly belongs
@@ -1715,7 +1715,7 @@ fn publish_at(
 
     // The base with every bundle the package ships, resolved once for the whole
     // publish. [#387](https://github.com/headwater-ai/headwater/issues/387) is
-    // why it is here rather than inside `migrations`: spec 7 states the
+    // why it is here rather than inside `migrations`: distribution and federation (docs/spec/distribution-and-federation.md) states the
     // confluence guarantee for every release, and resolving the shipped set only
     // where a migration payload happens to exist made the proof conditional on
     // something unrelated to it. Two readers take this one resolution — the
@@ -1742,7 +1742,7 @@ fn publish_at(
 
     // Before `--out` is observed, so a template refusal fires with no output
     // directory in existence and `found::Found`'s undo is never entangled with
-    // it. Spec 7's "Nothing is written until everything is read" holds unchanged.
+    // it. Distribution and federation's (docs/spec/distribution-and-federation.md) "Nothing is written until everything is read" holds unchanged.
     crate::template::holds(root, directory, manifest, &widest.taxonomy)?;
 
     // The widest set again, because a bundle can add a projection, and every
@@ -2631,7 +2631,7 @@ impl Kind {
 /// What the reader of a `contents` key opens at the path that key names.
 ///
 /// Each row was read off the verb that reads the key, and not off the manifest
-/// or off spec 7:
+/// or off [distribution and federation](../../../../docs/spec/distribution-and-federation.md):
 ///
 /// - `taxonomy` is a file: [`taxonomy_source`] hands it to [`crate::source::load`],
 ///   which is `read_to_string`.
@@ -2694,7 +2694,7 @@ pub(crate) fn required_kind(key: &str) -> Option<Kind> {
 /// the bound is `root`, not the filesystem: a bundle library lives somewhere
 /// in this repository or it is refused, and `bundles: /` is one of the cases a
 /// fixture pins. No other key has a rewrite, so a path that reaches a consumer
-/// in the published manifest at all is the one thing spec 7 says no artifact
+/// in the published manifest at all is the one thing [distribution and federation](../../../../docs/spec/distribution-and-federation.md) says no artifact
 /// carries.
 ///
 /// [#303]: https://github.com/headwater-ai/headwater/issues/303
@@ -2915,7 +2915,7 @@ fn stage(
 /// manifest wrote. A bundle root is one segment under that, so what this
 /// answers to is `<at>/<bundle>/fixtures/…` and nothing else. A `fixtures`
 /// directory elsewhere in the package, or deeper inside a bundle, is carried
-/// like any other file, because spec 7 states the exception over one path
+/// like any other file, because [distribution and federation](../../../../docs/spec/distribution-and-federation.md) states the exception over one path
 /// rather than over a name. A *file* named `fixtures` at a bundle root is
 /// carried too, because the exception is a directory.
 ///
@@ -3648,14 +3648,14 @@ fn put(out: &Path, staged: &[Staged]) -> Result<(), String> {
 /// The maximal half is resolved once for the whole publish and handed in, which
 /// is [#387](https://github.com/headwater-ai/headwater/issues/387). It used to
 /// be built here and only where a payload exists, so a package that had
-/// published no major version proved nothing about a guarantee spec 7 states for
+/// published no major version proved nothing about a guarantee [distribution and federation](../../../../docs/spec/distribution-and-federation.md) states for
 /// every release. The base half stays here, because it is a second source list
 /// rather than a second reading of the same one, and only a payload asks the
 /// question it answers.
 ///
 /// The maximal selection reaches no validate layer, so the only failures it can
 /// take are `NotConfluent` and `AddCollides`. Both are defects of the artifact
-/// under spec 2, and [`maximal_from`]'s prefix says which question reached them.
+/// under [the taxonomy model](../../../../docs/spec/taxonomy-model.md), and [`maximal_from`]'s prefix says which question reached them.
 ///
 /// The source is handed in rather than read here. [`publish`] holds the two
 /// version declarations to each other and needs the same file to do it, and two
@@ -3700,7 +3700,7 @@ pub const BUNDLES: &str = "bundles";
 /// prose the publisher controls and no consumer verb opens one, so a consumer
 /// that vendors this repository's own package took 71 of 102 members and 40 per
 /// cent of the bytes in files nothing reads. [`a_bundles_own_corpus`] is the
-/// reader, and spec 7's Publishing section is the ruling, stated in the same
+/// reader, and [distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s Publishing section is the ruling, stated in the same
 /// paragraph that rules publication takes the package directory whole.
 ///
 /// A publisher keeps its corpora where they are. This names what leaves the
@@ -3725,7 +3725,7 @@ pub const DOCTRINE: &str = "doctrine";
 
 /// Where a package keeps the document skeletons an adopter copies.
 ///
-/// A package-level `templates/` is the shape spec 7's example manifest block
+/// A package-level `templates/` is the shape [distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s example manifest block
 /// writes. This repository's library keeps one per bundle instead, under
 /// `<bundles>/<name>/templates/`, and [`crate::template::holds`] walks both.
 pub const TEMPLATES: &str = "templates";
@@ -4302,7 +4302,7 @@ pub struct Vendored {
 /// bytes, seen together on disk.
 ///
 /// **A version number does not name an artifact, and nothing in this engine
-/// makes it one.** Spec 7 states the invariant that is held: a pin names bytes.
+/// makes it one.** [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) states the invariant that is held: a pin names bytes.
 /// Nothing refuses a republish of different bytes under a version already
 /// published, and [`publish`] could not refuse one if it wanted to — it calls
 /// `found::observe`, which refuses a non-empty `--out`, so every publish writes
@@ -4627,7 +4627,7 @@ fn holds_the_same_package(
 /// `.headwater/packages/` is closed*, never as *the parse was fixed*.
 ///
 /// The engine range is the opposite case and is compared as an [`Option`]: absent on
-/// both sides is a publisher that states no floor, which spec 7 gives a meaning
+/// both sides is a publisher that states no floor, which [distribution and federation](../../../../docs/spec/distribution-and-federation.md) gives a meaning
 /// to. The version sits between them — absent on both sides is a versionless
 /// package, which the version pin refuses at resolve on its own terms, and a
 /// second copy of that rule here would be a copy in a worse place.
@@ -4724,7 +4724,7 @@ fn stated(range: Option<&str>) -> String {
 /// Whether a string is a package name.
 ///
 /// One or more segments separated by `/`, each matching
-/// `[A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9])?`. Spec 7's *Publishing* section
+/// `[A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9])?`. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s *Publishing* section
 /// states the same grammar in prose, and this is the only reader of it.
 ///
 /// **It is stated positively, and that is the whole of why it is complete.** A

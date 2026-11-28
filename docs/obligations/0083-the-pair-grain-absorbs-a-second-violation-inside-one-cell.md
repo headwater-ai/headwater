@@ -34,6 +34,6 @@ A pair is a `(document, rule)` cell, so it holds every finding of that rule on t
 
 ## Discharge
 
-The grain that would report it is `(document, rule, line)`, and a line number moves whenever a paragraph above it moves. A payload at that grain expires on the next edit rather than on its date. So the cell is the coarsest grain that cannot blanket a rule or a document, and the absorption is its price. Spec 7 states the property and not the price.
+The grain that would report it is `(document, rule, line)`, and a line number moves whenever a paragraph above it moves. A payload at that grain expires on the next edit rather than on its date. So the cell is the coarsest grain that cannot blanket a rule or a document, and the absorption is its price. [Distribution and federation](../spec/distribution-and-federation.md) states the property and not the price.
 
 The severity half has a second remedy that the line grain does not need. A pair could name a severity ceiling, so that a task declared for a warning stops holding an error. Nothing declares one today. This paragraph is an agent's measurement on a record that a human accepted, so it is flagged for ratification rather than assumed.

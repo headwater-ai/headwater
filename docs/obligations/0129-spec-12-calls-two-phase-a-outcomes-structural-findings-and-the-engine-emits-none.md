@@ -3,9 +3,9 @@ id: HW-OBL-0129
 status: current
 status_since: 2026-09-06
 waiting_on: build
-summary: "Spec 12 lists an unparseable file and an unclassifiable path among the structural findings of Phase A, and the engine emits no finding for either. The census and `corpus.classified` report both, which is what the control on OB-COV-1 declares, and no document says so."
+summary: "The check layer lists an unparseable file and an unclassifiable path among the structural findings of Phase A, and the engine emits no finding for either. The census and `corpus.classified` report both, which is what the control on OB-COV-1 declares, and no document says so."
 last_verified: 2026-08-16
-title: "Spec 12 calls two Phase A outcomes structural findings and the engine emits none"
+title: "The check layer calls two Phase A outcomes structural findings and the engine emits none"
 provenance:
   warrant: asserted
   agency: agent
@@ -18,7 +18,7 @@ relations:
     - HW-DR-0029
 ---
 
-# Spec 12 calls two Phase A outcomes structural findings and the engine emits none
+# The check layer calls two Phase A outcomes structural findings and the engine emits none
 
 ## Context
 
@@ -36,7 +36,7 @@ The corpus owes one sentence that says which Phase A outcomes are findings and w
 
 **The reconciliation is already decided, and only the writing down is missing.** `OB-COV-1` reads "Every file under the corpus root is classified, or reported as unclassifiable". The control that discharges it declares `produces_facts` rather than a rule, and the comment above that block says what that is for. It names a way to discharge an obligation by doing the thing rather than by reporting a finding about it. So a census row is the discharge, by declaration, and it always was.
 
-**What this costs a reader.** A person reads spec 12, and then reads a green strict run over a corpus holding three untyped files. They have to decide which of the two is wrong. Three such files stand in this corpus today. The right answer is that neither is wrong and the word "findings" is carrying two meanings, and no artifact in this repository says so.
+**What this costs a reader.** A person reads [the check layer](../spec/check-layer.md), and then reads a green strict run over a corpus holding three untyped files. They have to decide which of the two is wrong. Three such files stand in this corpus today. The right answer is that neither is wrong and the word "findings" is carrying two meanings, and no artifact in this repository says so.
 
 ## Discharge
 

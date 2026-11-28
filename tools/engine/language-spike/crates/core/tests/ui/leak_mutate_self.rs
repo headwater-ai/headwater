@@ -1,6 +1,6 @@
 //! Leak 5: accumulate state across instances.
 //!
-//! Spec 12 requires a check to be pure. `evaluate(&self, ..)` is what makes
+//! [The check layer](../../../../../../../docs/spec/check-layer.md) requires a check to be pure. `evaluate(&self, ..)` is what makes
 //! "no mutation of the check" mechanical: a counter across instances would make
 //! results depend on evaluation order, and order is not in any cache key.
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The check traits.
 //!
-//! Spec 12 models scope as a value that a check returns from `scope()`. The
+//! [The check layer](../../../../../../docs/spec/check-layer.md) models scope as a value that a check returns from `scope()`. The
 //! spike found that a *type* is the better carrier, and the difference is the
 //! point of item 2.
 //!
@@ -40,7 +40,7 @@ impl Scope {
 /// whatever its scope.
 pub trait CheckMeta {
     fn id(&self) -> &'static str;
-    /// Required. Spec 4 admits no orphan checks, and spec 12 keeps this on the
+    /// Required. [The assurance model](../../../../../../docs/spec/assurance-model.md) admits no orphan checks, and [the check layer](../../../../../../docs/spec/check-layer.md) keeps this on the
     /// plugin surface for the same reason.
     fn obligation(&self) -> &'static str;
     fn severity(&self) -> Severity;

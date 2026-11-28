@@ -51,9 +51,9 @@ The text report prints the same evidence on one dim line under each pointer. Tha
 
 ## Consequences
 
-Spec 5's intent-time routing section states the amended rule. The sentence about lexical ranking now says that the matched purposes take turns at the budget.
+[AI integration](../spec/ai-integration.md)'s intent-time routing section states the amended rule. The sentence about lexical ranking now says that the matched purposes take turns at the budget.
 
-On this tree the first task offers `HW-OBL-0107`, `docs/spec/check-layer.md`, `docs/evaluations/graph-export-and-federation.md`, `docs/how-to/relocate-a-shelf.md` and `HW-DR-0062`. That is five kinds under five purposes. Spec 12 does not answer that task. The documents that answer it are still out of reach, and HW-DR-0071 records why this record does not reach them.
+On this tree the first task offers `HW-OBL-0107`, `docs/spec/check-layer.md`, `docs/evaluations/graph-export-and-federation.md`, `docs/how-to/relocate-a-shelf.md` and `HW-DR-0062`. That is five kinds under five purposes. [The check layer](../spec/check-layer.md) does not answer that task. The documents that answer it are still out of reach, and HW-DR-0071 records why this record does not reach them.
 
 **Diversity is not precision, and this record does not claim it is.** The change removes the case where one purpose hides every other purpose. It does not make a weak pointer strong. The evidence line is there so that an agent can see a weak pointer, for example one reached only by "where", "comes" and "from".
 

@@ -13,7 +13,7 @@
 //! # Why a fixture and not a rule
 //!
 //! "An emitter must read a role" is a fact about this engine and not about any
-//! document, and spec 12 rules out a verdict the engine derived from nothing a
+//! document, and [the check layer](../../../../docs/spec/check-layer.md) rules out a verdict the engine derived from nothing a
 //! corpus declared. [HW-OBL-0119](../../../../docs/obligations/0119-an-audit-reading-carries-no-declared-bar-so-a-distribution-cannot-become-a-finding.md)
 //! is the obligation this records against: an audit reading carries no declared
 //! bar, so a distribution cannot become a finding. The mechanism is therefore a

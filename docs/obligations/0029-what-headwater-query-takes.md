@@ -5,7 +5,7 @@ status: current
 status_since: 2026-08-13
 waiting_on: ruling
 last_verified: 2026-08-13
-summary: "Spec 6 lists the verb `headwater query <expression>`, and no document states what an expression is."
+summary: "The engine architecture lists the verb `headwater query <expression>`, and no document states what an expression is."
 provenance:
   warrant: accepted
   agency: mixed

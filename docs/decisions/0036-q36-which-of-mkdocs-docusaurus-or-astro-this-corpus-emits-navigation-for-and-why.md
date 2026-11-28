@@ -26,7 +26,7 @@ relations:
 
 ## Context
 
-**Spec 0 already closes the candidate set to three.** [The vision and scope](../spec/vision-and-scope.md#what-we-do-not-build) refuses to build a documentation renderer and names the alternative: "Emit navigation config for MkDocs / Docusaurus / Astro." No fourth generator is named anywhere else in this corpus. This record picks among the three, and states why.
+**[The vision and scope](../spec/vision-and-scope.md) already closes the candidate set to three.** [The vision and scope](../spec/vision-and-scope.md#what-we-do-not-build) refuses to build a documentation renderer and names the alternative: "Emit navigation config for MkDocs / Docusaurus / Astro." No fourth generator is named anywhere else in this corpus. This record picks among the three, and states why.
 
 **`site_nav` is declarable and unbuilt today.** [The engine architecture](../spec/engine-architecture.md#projections) lists it among the eleven declarable projection kinds. `engine/crates/generate/src/lib.rs` reports it under `Unwritten`, with the reason: `spec 5 and Q16 name the artifact and no document states its form, so an emitter here would be this engine inventing a schema for somebody else's consumer`. This record removes that reason. `.headwater/overlay.yml` declares no `site_nav` entry yet.
 

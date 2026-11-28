@@ -8,7 +8,7 @@
 # merge clean. Neither outcome is written anywhere in this repository, so this
 # suite is the only thing that holds them.
 #
-# Spec 12 refuses a check that ships with no failing fixture, and the reason
+# The check layer (docs/spec/check-layer.md) refuses a check that ships with no failing fixture, and the reason
 # carries to a mechanism: a mechanism nobody has seen refuse anything is a
 # mechanism nobody has seen work. Every refusal below is provoked on purpose,
 # and so is every clean merge, because a store that conflicted on every pair

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 //! **Item 4 of the spike.** A warm change-scoped run over a 1,000-document
-//! corpus, against the 200 ms hook budget from spec 6.
+//! corpus, against the 200 ms hook budget from [the engine architecture](../../../../../../docs/spec/engine-architecture.md).
 //!
 //! The number that matters is not the total. It is the breakdown, because the
 //! breakdown says which part would grow with the corpus. Run with:

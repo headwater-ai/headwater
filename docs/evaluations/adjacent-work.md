@@ -28,7 +28,7 @@ relations:
 
 > **Status.** This document was specification 11 of the numbered series until 2026-08-25, when it moved to the evaluations shelf.
 
-[HW-EVAL-theoretical-foundations](theoretical-foundations.md) tested the design against the research literature. This document does the same against **practitioner work and existing tooling**. These are projects that solve adjacent problems, and standards that may already implement parts of what spec 2 describes.
+[HW-EVAL-theoretical-foundations](theoretical-foundations.md) tested the design against the research literature. This document does the same against **practitioner work and existing tooling**. These are projects that solve adjacent problems, and standards that may already implement parts of what [the taxonomy model](../spec/taxonomy-model.md) describes.
 
 The question here is narrower and more uncomfortable: *what did we specify that someone already built?*
 
@@ -52,7 +52,7 @@ Adoption of the standard names costs nothing and buys precision. It also explain
 
 **One boundary to state plainly.** Headwater's ABox is the graph of *documents and their declared edges* — not the claims inside the prose. "This service returns 404 on a missing key" is a sentence in a document. The system knows that the document exists, what kind it is, and what it governs, but not what it asserts. To pretend otherwise is to promise semantic consistency checks that we cannot deliver. The ABox stops at the document boundary, and that limit belongs in the specification rather than in a footnote that someone discovers later.
 
-> **Applied:** TBox/ABox vocabulary adopted in specs 1, 2 and 6, with the ABox boundary stated explicitly.
+> **Applied:** TBox/ABox vocabulary adopted in [the conceptual model](../spec/conceptual-model.md), [the taxonomy model](../spec/taxonomy-model.md) and [the engine architecture](../spec/engine-architecture.md), with the ABox boundary stated explicitly.
 
 ### A.1 The solution layer presses on that boundary
 
@@ -116,9 +116,9 @@ This matters enough to state in our own terms, below.
 
 [LinkML](https://linkml.io/) is a schema language authored in YAML that compiles to JSON Schema, SHACL, RDF/OWL, ShEx, Pydantic classes, SQL DDL, and GraphQL. It also has a validation runtime.
 
-When you read [the taxonomy model](../spec/taxonomy-model.md) and then the LinkML documentation, the overlap is substantial. The shared features are classes with slots, ranges, cardinality, enums with permissible values, inheritance, and schema-level imports. The Q2 leaning of spec 2 read "YAML plus a published JSON Schema, with the resolved lock in a stricter representation". That describes something that LinkML already implements. LinkML also ships the multi-format compilation that we would otherwise write.
+When you read [the taxonomy model](../spec/taxonomy-model.md) and then the LinkML documentation, the overlap is substantial. The shared features are classes with slots, ranges, cardinality, enums with permissible values, inheritance, and schema-level imports. The Q2 leaning of [the taxonomy model](../spec/taxonomy-model.md) read "YAML plus a published JSON Schema, with the resolved lock in a stricter representation". That describes something that LinkML already implements. LinkML also ships the multi-format compilation that we would otherwise write.
 
-**[Q2](../spec/decisions.md#q2--schema-format) has since closed, and it withdrew that leaning as wrong.** Spec 2 already carries references that no JSON Schema keyword resolves, so the authored surface was always YAML plus a Headwater resolver. The overlap with LinkML survives the correction, because it is a fact about the two languages and never followed from our leaning. What the correction removes is option 1's cheapest argument, which was that our own leaning already described LinkML.
+**[Q2](../spec/decisions.md#q2--schema-format) has since closed, and it withdrew that leaning as wrong.** [The taxonomy model](../spec/taxonomy-model.md) already carries references that no JSON Schema keyword resolves, so the authored surface was always YAML plus a Headwater resolver. The overlap with LinkML survives the correction, because it is a fact about the two languages and never followed from our leaning. What the correction removes is option 1's cheapest argument, which was that our own leaning already described LinkML.
 
 Where it stops:
 
@@ -133,7 +133,7 @@ Where it stops:
 
 **That table is wrong, and a [worked example](linkml-worked-example.md) shows why.** An expression of the taxonomy in real LinkML establishes two things that the guess above missed. LinkML already ships three of the twenty research-derived changes — SKOS mappings, PROV alignment, and `recommended` as advisory severity. Its `designates_type` is our heterogeneous-shelf discriminator under another name.
 
-But the boundary is not structural-versus-governance: *reciprocity* fails, and reciprocity is as structural as anything in spec 2. The real line is that LinkML, SHACL, and JSON Schema all validate **one instance against a shape**. Everything that Headwater does that they cannot is a property of the **whole graph, or of the corpus over time**.
+But the boundary is not structural-versus-governance: *reciprocity* fails, and reciprocity is as structural as anything in [the taxonomy model](../spec/taxonomy-model.md). The real line is that LinkML, SHACL, and JSON Schema all validate **one instance against a shape**. Everything that Headwater does that they cannot is a property of the **whole graph, or of the corpus over time**.
 
 That reframes the question from "does LinkML cover enough?" to "is a two-layer architecture — standard shape layer plus Headwater graph layer — better than one custom layer?" Three readings follow:
 
@@ -199,9 +199,9 @@ A further data point: the pattern reports that a maintained index file works wel
 
 **Lint as a coherence control.** Their lint pass looks for contradictions between pages, claims superseded by newer sources, orphans, and concepts referenced but never defined. Most of that is cohesion, and the engine already does it deterministically. But *contradiction between pages* is not. It is exactly what [the assurance model](../spec/assurance-model.md#cohesion-and-coherence-are-different-obligations) classes as coherence: undecidable structurally, so it needs judgment.
 
-An LLM lint pass is therefore a legitimate **coherence control** — sampled, detective, non-blocking, exactly as spec 4 requires of that class. It does not violate "no LLM in the validation path", because that rule governs *verdicts*. A coherence finding is a prompt for human attention rather than a verdict. This is a real addition: spec 4 named the coherence class and left it thin.
+An LLM lint pass is therefore a legitimate **coherence control** — sampled, detective, non-blocking, exactly as [the assurance model](../spec/assurance-model.md) requires of that class. It does not violate "no LLM in the validation path", because that rule governs *verdicts*. A coherence finding is a prompt for human attention rather than a verdict. This is a real addition: [The assurance model](../spec/assurance-model.md) named the coherence class and left it thin.
 
-> **Applied:** LLM-assisted coherence sweep added as a control class in spec 4.
+> **Applied:** LLM-assisted coherence sweep added as a control class in [the assurance model](../spec/assurance-model.md).
 
 **The gap that it exposes: a third content tier.** The pattern's wiki is neither hand-authored nor mechanically generated. It is *synthesized* — an agent's interpretation of sources, which evolves and is revised as new sources arrive. Headwater recognizes only two tiers: authored documents and deterministic projections. Synthesized content fits neither. The difference matters, because a projection can be verified through regeneration and a synthesis cannot.
 
@@ -308,7 +308,7 @@ Three things deserve a record:
 - **A preview of Q15's provenance burden.** TrustGraph's extracted graph is precisely the tier that Q15 asks about — LLM-maintained, never verifiable by regeneration. Its per-fact receipts (source, timestamp, derivation method) are a concrete, operational design for the provenance record that such a tier needs. Q15 has since closed, and it read the receipts against the standard that they follow. A receipt records derivation and never endorsement, so it supplies the shape of the provenance block and none of the [warrant](../spec/conceptual-model.md#warrant) ([§P.1](#p1-w3c-prov-records-derivation-and-it-has-no-word-for-endorsement)).
 - **Attribution, implemented.** The receipt model — every answer traceable to the facts and the traversal that licensed it — is the attribution row of §H in production form. It is independent confirmation that a shipped system also put its effort into oracles and traceability.
 
-And one relationship deserves a record as complementary rather than rival. Source quality bounds extraction quality, so a governed corpus is an unusually good input to an extraction platform. Kinds, facets, and declared edges arrive as structure that the extractor otherwise must guess at. Under the [better-together principle](../spec/vision-and-scope.md#design-principles) of spec 0, that makes TrustGraph ingestion a candidate integration — a Headwater corpus fed in as pre-structured source material. It is in the same family as the OKF export, and equally cheap to hold. The arrow points out of the corpus, and nothing flows back in.
+And one relationship deserves a record as complementary rather than rival. Source quality bounds extraction quality, so a governed corpus is an unusually good input to an extraction platform. Kinds, facets, and declared edges arrive as structure that the extractor otherwise must guess at. Under the [better-together principle](../spec/vision-and-scope.md#design-principles) of [the vision and scope](../spec/vision-and-scope.md), that makes TrustGraph ingestion a candidate integration — a Headwater corpus fed in as pre-structured source material. It is in the same family as the OKF export, and equally cheap to hold. The arrow points out of the corpus, and nothing flows back in.
 
 > **Recorded:** counterweight evidence added to [Q13](../spec/decisions.md#q13--linkml-and-shacl-as-substrate); provenance precedent added to [Q15](../spec/decisions.md#q15--a-synthesized-content-tier).
 
@@ -328,13 +328,13 @@ Even the exclusion is already written. [The vision and scope](../spec/vision-and
 
 What has no precedent is the direction. Every integration recorded so far points out of the corpus — TrustGraph ingestion, the OKF bundle, and the LinkML, SHACL, and SKOS emissions. §J prices TrustGraph as cheap on exactly that ground: nothing flows back in. Here the requirements come from a store that the corpus does not govern, and the corpus consumes them. This is the first inbound candidate, and it is a different family with a different cost.
 
-It meets three stated positions of spec 0 head-on. Each one resolves into a design constraint, not a refusal:
+It meets three stated positions of [the vision and scope](../spec/vision-and-scope.md) head-on. Each one resolves into a design constraint, not a refusal:
 
 - **"We refer to work items. We do not manage them."** This position holds untouched. The integration reads. On the day that it writes a work item, it becomes a requirements tool and leaves the scope table.
-- **No network dependency at check time.** So the fetch is not part of validation. A scheduled job pulls a snapshot — a ReqIF bundle or an API export — and commits it. This is the [upstream-awareness pattern](../spec/distribution-and-federation.md#upstream-awareness) of spec 7, pointed at a second kind of upstream. An `ado_work_item` resolver then binds anchors against the committed snapshot, and that step is offline and deterministic. Check-time behavior stays a function of repository content, as everywhere else.
+- **No network dependency at check time.** So the fetch is not part of validation. A scheduled job pulls a snapshot — a ReqIF bundle or an API export — and commits it. This is the [upstream-awareness pattern](../spec/distribution-and-federation.md#upstream-awareness) of [distribution and federation](../spec/distribution-and-federation.md), pointed at a second kind of upstream. An `ado_work_item` resolver then binds anchors against the committed snapshot, and that step is offline and deterministic. Check-time behavior stays a function of repository content, as everywhere else.
 - **One source of truth per fact.** Requirement content is canonical in the RM tool and never here. What the corpus canonically owns is its own half of the join: which documents trace to which requirements. The corpus declares those edges, and the RM tool knows nothing of them.
 
-What flows in is therefore deliberately small: anchor identities, `traces_to` edges, and drift findings. Upstream, someone can reword, close, or delete a requirement that documents trace to. When the snapshot shows such a change, the comparison raises a change proposal with the diff attached. That is exactly what spec 7 already does for taxonomy upstreams. It never mutates the corpus silently.
+What flows in is therefore deliberately small: anchor identities, `traces_to` edges, and drift findings. Upstream, someone can reword, close, or delete a requirement that documents trace to. When the snapshot shows such a change, the comparison raises a change proposal with the diff attached. That is exactly what [distribution and federation](../spec/distribution-and-federation.md) already does for taxonomy upstreams. It never mutates the corpus silently.
 
 Two declarations that currently have no operational story acquire one here. `created_by: import` is a legal edge provenance [in spec 2](../spec/taxonomy-model.md#who-creates-each-edge), but nothing says what an import *is*. An RM importer is what the value is for, and the staleness-by-creator report of `taxonomy audit` is what keeps a decayed import visible. And [Q15](../spec/decisions.md#q15--a-synthesized-content-tier) gains a sharper test case than the one that raised it. Imported requirement text is *not* synthesized, because regeneration against the pinned snapshot verifies it. That makes it a projection whose source the corpus does not govern. The authored/generated split does not name that case, and the tier question has to answer it.
 
@@ -370,7 +370,7 @@ The overlap stops where it stopped for OKF. A memory carries no front matter, no
 
 The criterion states that any retrieval method, lexical or semantic, produces both false positives and false negatives. An explicit reference, named and chosen by the agent, produces neither. Retrieval is therefore a source of variance, and a declared edge removes it.
 
-That is §H in operational form. §H sets the target as bounded, auditable non-determinism, and it names ambiguity removal as the mechanism that narrows variance. A named edge in place of a similarity match is one concrete instance of that mechanism. Serena also keeps plain search as a complement and never as the authority, which is the posture spec 5 already takes toward embeddings.
+That is §H in operational form. §H sets the target as bounded, auditable non-determinism, and it names ambiguity removal as the mechanism that narrows variance. A named edge in place of a similarity match is one concrete instance of that mechanism. Serena also keeps plain search as a complement and never as the authority, which is the posture [AI integration](../spec/ai-integration.md) already takes toward embeddings.
 
 > **Applied:** the third argument added to [AI integration](../spec/ai-integration.md#what-we-do-not-do).
 
@@ -382,14 +382,14 @@ Serena ships a convention document to every onboarded project. One of its rules 
 
 [AI integration](../spec/ai-integration.md#scent-is-the-thing-being-engineered) puts that cue in the `summary` facet of the target, and calls the summary facet "the corpus's entire scent surface". Serena puts it on the edge. Both designs engineer scent deliberately, and they place it in opposite locations.
 
-Foraging theory settles more of this than I expected, and it settles it against the stronger half of our claim. Scent is the **proximal** cue at the point of decision. When a reader follows a relation, the proximal cue is the referring text, and the target's own summary is distal. Spec 5 cites the theory correctly and then applies it to one moment only.
+Foraging theory settles more of this than I expected, and it settles it against the stronger half of our claim. Scent is the **proximal** cue at the point of decision. When a reader follows a relation, the proximal cue is the referring text, and the target's own summary is distal. [AI integration](../spec/ai-integration.md) cites the theory correctly and then applies it to one moment only.
 
 The two placements are not interchangeable, and each one fails where the other works.
 
 - **Query-time routing needs the cue on the node.** `headwater route` builds a pointer list from a task description, so no referring edge exists to carry a cue. Serena has no routing, and never meets this case.
 - **Traversal-time reading needs the cue on the edge.** A summary cannot say why *this* link, from *here*. One standard, referenced once by a decision and once by a specification, deserves a different cue in each place.
 - **Orphans separate the two.** A document with no inbound edge still has node scent, and routing still finds it. Under edge-only scent it is invisible. Serena covers this with the up-front name list and a `mem:core` root, which works at the scale of a single project.
-- **Measurement separated them, until it did not.** Spec 5 graded distinctiveness by a comparison of sibling summaries in one place, and this entry concluded that edge cues have no such place. [§R.1](#r1-foraging-models-compute-a-utility-over-the-options-in-view) later found that they do. Serena grades neither.
+- **Measurement separated them, until it did not.** [AI integration](../spec/ai-integration.md) graded distinctiveness by a comparison of sibling summaries in one place, and this entry concluded that edge cues have no such place. [§R.1](#r1-foraging-models-compute-a-utility-over-the-options-in-view) later found that they do. Serena grades neither.
 
 Headwater serves both moments, so it needs both placements. The cost of the second is real. A cue on a relation instance means prose on an edge. It adds an authoring burden at every reference, and a new object for the checks to grade. That is why the cue is optional and the summary is not.
 
@@ -401,9 +401,9 @@ Serena seeds a `memory_maintenance` memory at first onboarding, under a stated p
 
 That is [distribution and federation](../spec/distribution-and-federation.md)'s overlay shape, reached independently: a shipped default, an organization-wide override, and a local copy. Two details are worth keeping.
 
-First, the precedence runs opposite to ours. [Distribution and federation](../spec/distribution-and-federation.md#federation) has overlays compose in one direction, where each tier may override the tier above it. A global convention here does the reverse. It **suppresses** the local copy, and no local copy is written at all. The stated reason is that a team wants one convention document across all of its projects. So a convention overlay and a content overlay want opposite precedence, which spec 7 does not currently allow for.
+First, the precedence runs opposite to ours. [Distribution and federation](../spec/distribution-and-federation.md#federation) has overlays compose in one direction, where each tier may override the tier above it. A global convention here does the reverse. It **suppresses** the local copy, and no local copy is written at all. The stated reason is that a team wants one convention document across all of its projects. So a convention overlay and a content overlay want opposite precedence, which [distribution and federation](../spec/distribution-and-federation.md) does not currently allow for.
 
-Second, the mechanism seeds once and then diverges. No pin exists, no version, and no drift report. The documented route to an improved template is deletion of the local copy. Spec 7's [upstream awareness](../spec/distribution-and-federation.md#upstream-awareness) and change proposals are the machinery this lacks, which is mild confirmation that they earn their cost.
+Second, the mechanism seeds once and then diverges. No pin exists, no version, and no drift report. The documented route to an improved template is deletion of the local copy. [Distribution and federation](../spec/distribution-and-federation.md)'s [upstream awareness](../spec/distribution-and-federation.md#upstream-awareness) and change proposals are the machinery this lacks, which is mild confirmation that they earn their cost.
 
 ### L.5 Onboarding ships the synthesized tier, and marks nothing
 
@@ -431,9 +431,9 @@ This entry then decided more than it looked like it would. Q17 first read the se
 
 **A rule for what not to record.** The convention document sets an add threshold. It keeps stable, non-obvious project conventions that prevent expensive rediscovery. It then refuses quick-read facts, generic framework knowledge, one-off task notes, volatile line-level detail, and behavior that is likely to change soon. [Authoring and lifecycle](../spec/authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric) argues that cheap capture is what saves a corpus. This is the other half of that argument. Once capture is cheap, over-capture becomes the failure mode, and something has to say what to leave out. Headwater's kinds and shelves say where a document belongs. Nothing yet says that a fact is too volatile to record at all.
 
-**A voice regime for a machine reader.** The same document sets a style: "Dense agent notes, not prose docs". It asks for invariants and terse bullets, and it refuses rationale or examples unless they prevent a likely mistake. That is a voice regime whose primary reader is an agent. It is close to the opposite of the regimes spec 3 describes for human-facing kinds. The regime abstraction holds under the change of reader, which is the useful result. Headwater has not yet named a regime of this class.
+**A voice regime for a machine reader.** The same document sets a style: "Dense agent notes, not prose docs". It asks for invariants and terse bullets, and it refuses rationale or examples unless they prevent a likely mistake. That is a voice regime whose primary reader is an agent. It is close to the opposite of the regimes [authoring and lifecycle](../spec/authoring-and-lifecycle.md) describes for human-facing kinds. The regime abstraction holds under the change of reader, which is the useful result. Headwater has not yet named a regime of this class.
 
-**The closest part is the unmeasured part.** Serena publishes a real evaluation, with a methodology, a fixed prompt, five agent and model combinations, and a classification that admits neutral and negative results. It evaluates the code tools. It does not evaluate the memory system, which is the part that resembles Headwater. Reported user feedback is what carries that layer. The method is also agent-as-evaluator, where [AI integration](../spec/ai-integration.md#measuring-whether-any-of-this-works) grades from the tool-call transcript instead. Above all, no counterfactual run compares agent behavior with the memories present against the same behavior without them. Spec 5 names the counterfactual as the category that matters most, and the one most often skipped. The most widely adopted example of this pattern skips it.
+**The closest part is the unmeasured part.** Serena publishes a real evaluation, with a methodology, a fixed prompt, five agent and model combinations, and a classification that admits neutral and negative results. It evaluates the code tools. It does not evaluate the memory system, which is the part that resembles Headwater. Reported user feedback is what carries that layer. The method is also agent-as-evaluator, where [AI integration](../spec/ai-integration.md#measuring-whether-any-of-this-works) grades from the tool-call transcript instead. Above all, no counterfactual run compares agent behavior with the memories present against the same behavior without them. [AI integration](../spec/ai-integration.md) names the counterfactual as the category that matters most, and the one most often skipped. The most widely adopted example of this pattern skips it.
 
 ## M — What the survey shows as a whole: convergence is not evidence
 
@@ -520,7 +520,7 @@ That last property is [Q9](../spec/decisions.md#the-aggregator-authors-its-own-f
 
 ### N.4 CodeQL — the contradiction worth keeping in view
 
-A CodeQL database is created from source, uploaded as an artifact, and it *is* the query surface. That is a shipped design at very large scale, so the refusal in spec 6 is not a general truth.
+A CodeQL database is created from source, uploaded as an artifact, and it *is* the query surface. That is a shipped design at very large scale, so the refusal in [the engine architecture](../spec/engine-architecture.md) is not a general truth.
 
 What CodeQL never does is treat the database as canonical for the code, and nobody reviews a database in a pull request. Headwater declines the pattern on its own stated constraints: offline, deterministic, and reviewable in a diff. It does not decline it on a claim that the pattern fails.
 
@@ -851,7 +851,7 @@ The web budget for that session ran out before four of the sources could be re-v
 
 ### R.1 Foraging models compute a utility over the options in view
 
-Pirolli and Card's information foraging gives spec 5 its vocabulary, and §E.1 of [HW-EVAL-theoretical-foundations](theoretical-foundations.md#e1-information-foraging--routing-has-a-theory) already records that. The computational descendants add the part that [Q20](../spec/decisions.md#q20--where-scent-lives) needed. SNIF-ACT and the Bloodhound line score a link decision as a utility over **the links available at the current position**. They treat patch leaving as that utility falling below what another patch offers.
+Pirolli and Card's information foraging gives [AI integration](../spec/ai-integration.md) its vocabulary, and §E.1 of [HW-EVAL-theoretical-foundations](theoretical-foundations.md#e1-information-foraging--routing-has-a-theory) already records that. The computational descendants add the part that [Q20](../spec/decisions.md#q20--where-scent-lives) needed. SNIF-ACT and the Bloodhound line score a link decision as a utility over **the links available at the current position**. They treat patch leaving as that utility falling below what another patch offers.
 
 That contradicts Q20's own premise. Q20 concluded that a cue on an edge has no sibling set to compare against, and therefore no way to grade distinctiveness. The theory says the opposite. The comparison set for a cue is the other links that the document in hand offers, which is precisely the choice the reader is making.
 
@@ -1043,7 +1043,7 @@ The sharper finding is what OSCAL does with the prose of a control. The statemen
 
 ### T.4 What this section confirms, sharpens and contradicts
 
-**Confirms.** The no-meaning rule of spec 0, by the field's own practice: every policy engine evaluates structure a producer supplied. HW-DR-0073's minted identity, by InSpec's string reference and the drift it cannot report. Spec 4's obligations-as-data, by a standard with the same three layers.
+**Confirms.** The no-meaning rule of [the vision and scope](../spec/vision-and-scope.md), by the field's own practice: every policy engine evaluates structure a producer supplied. HW-DR-0073's minted identity, by InSpec's string reference and the drift it cannot report. [The assurance model](../spec/assurance-model.md)'s obligations-as-data, by a standard with the same three layers.
 
 **Sharpens.** The export is the integration surface, and a Rego runtime is not. The verification entry is the compliance hook, and the suspect rule is the signal the field lacks.
 
@@ -1075,7 +1075,7 @@ This design already has an edge from a document to code, and it runs the other w
 
 That sentence is a taxonomy declaration and an emitter, and not a parser. A kind whose relations name a permitted or forbidden dependency between two `code_path` anchors carries the structure, in front matter. An emitter target writes `.importlinter`, a dependency-cruiser rules file or a PlantUML diagram from the graph. `generate --check` holds the written file to its source under principle 3. Principle 9 names emitted configurations as the way the corpus serves a tool it does not own. The kind is a bundle under principle 1, and the emitter joins the projection kinds that [the engine architecture](../spec/engine-architecture.md#projections) names. The equivalence bar of [the check layer](../spec/check-layer.md#exportable_as-is-a-set-with-a-partition-rule) does not reach it, because there is no native dependency check for the emitted constraint to be equivalent to. It is a projection with a declared loss set, as the JSON Schema target is.
 
-Nothing in the family runs when a document is edited. The generated rule fails on the code's next test run, and that is the moment the proposal describes. What this waits on is the thing spec 13 names for every emitter: an adopter with a codebase, an architecture document and a request. None has arrived.
+Nothing in the family runs when a document is edited. The generated rule fails on the code's next test run, and that is the moment the proposal describes. What this waits on is the thing [the register of open obligations](../spec/open-obligations.md) names for every emitter: an adopter with a codebase, an architecture document and a request. None has arrived.
 
 ### U.5 What this section confirms, sharpens and contradicts
 
@@ -1091,57 +1091,57 @@ Nothing in the family runs when a document is edited. The generated rule fails o
 
 | Source | Verdict | Outcome |
 |---|---|---|
-| TBox/ABox framing | Adopt the vocabulary | Applied — specs 1, 2, 6 |
-| testerstories, spec → ontology → implementation | Strongest supporting evidence found | Applied — oracle and citation (specs 2, 4, 5). Authority adopted, then cut by review |
-| LinkML | May already be half of spec 2 | Closed — **Q13**. Emitted, never authored, and last in the emitter order |
+| TBox/ABox framing | Adopt the vocabulary | Applied — [the conceptual model](../spec/conceptual-model.md), [the taxonomy model](../spec/taxonomy-model.md) and [the engine architecture](../spec/engine-architecture.md) |
+| testerstories, spec → ontology → implementation | Strongest supporting evidence found | Applied — oracle and citation ([the taxonomy model](../spec/taxonomy-model.md), [the assurance model](../spec/assurance-model.md) and [AI integration](../spec/ai-integration.md)). Authority adopted, then cut by review |
+| LinkML | May already be half of [the taxonomy model](../spec/taxonomy-model.md) | Closed — **Q13**. Emitted, never authored, and last in the emitter order |
 | SHACL | May already be the check layer | Closed — **Q13**. A compilation target, and never the validator |
 | OpenGEO | Different direction, same substrate | Discovery gap recorded — **Q14** |
 | KG chunking for RAG | Framing useful, chunking not applicable | Non-adoption reasoned and recorded |
 | r/OntologyEngineering | Ontology-first methodology, further than we go | Noted. Oracle work is the shared ground |
-| Karpathy, *LLM Wiki* | Best anti-RAG argument, independent capture-cost confirmation | Applied — coherence sweep (spec 4). **Q15** closed: the tier is real and its axis is the warrant |
-| LeanCTX / OKF | Same substrate, opposite arrow. No taxonomy to collide with | Applied — declaration boundary (spec 4). OKF export → **Q13**. Presentation gap → **Q16** |
+| Karpathy, *LLM Wiki* | Best anti-RAG argument, independent capture-cost confirmation | Applied — coherence sweep ([the assurance model](../spec/assurance-model.md)). **Q15** closed: the tier is real and its axis is the warrant |
+| LeanCTX / OKF | Same substrate, opposite arrow. No taxonomy to collide with | Applied — declaration boundary ([the assurance model](../spec/assurance-model.md)). OKF export → **Q13**. Presentation gap → **Q16** |
 | TrustGraph | Same pitch, opposite mechanism — extracts the graph we declare | Standards-stack counterweight → **Q13**. A receipt records derivation and not endorsement → **Q15**. Ingestion integration candidate |
 | Modern Requirements / Azure DevOps | First inbound candidate — the arrow reverses | Model already fits. Applied — the `transcribed` warrant and the importer as a correctness root. **Q19** closed |
-| Serena | Fourth arrival at the substrate. The first to disagree with us | Applied — third anti-retrieval argument (spec 5). Scent placement: **Q20** closed, and both placements ship. Evidence → **Q15**, **Q17** |
-| W3C PROV, SPDX, C2PA | A provenance standard records derivation. None of them records who vouched | Applied — the warrant, and a positive mark rather than an absent field (specs 1, 3) |
+| Serena | Fourth arrival at the substrate. The first to disagree with us | Applied — third anti-retrieval argument ([AI integration](../spec/ai-integration.md)). Scent placement: **Q20** closed, and both placements ship. Evidence → **Q15**, **Q17** |
+| W3C PROV, SPDX, C2PA | A provenance standard records derivation. None of them records who vouched | Applied — the warrant, and a positive mark rather than an absent field ([the conceptual model](../spec/conceptual-model.md) and [authoring and lifecycle](../spec/authoring-and-lifecycle.md)) |
 | Wikipedia verifiability, and its rule for machine output | The trigger is the absence of review, and never the presence of a model | Applied — agency is not the warrant. **Q15** closed |
-| Baselines, suspect links, ReqIF | The pin has an industry name, and drift belongs on the edge | Applied — snapshot properties and edge-level drift (spec 7). **Q19** closed |
-| Debian archive areas | Content whose terms you do not control travels by an explicit act | Confirms default-deny. Applied as a license non-claim (spec 6) |
+| Baselines, suspect links, ReqIF | The pin has an industry name, and drift belongs on the edge | Applied — snapshot properties and edge-level drift ([distribution and federation](../spec/distribution-and-federation.md)). **Q19** closed |
+| Debian archive areas | Content whose terms you do not control travels by an explicit act | Confirms default-deny. Applied as a license non-claim ([the engine architecture](../spec/engine-architecture.md)) |
 | Shepard's and KeyCite, Crossref retractions | A treatment flag is a projection over a document, and two citators disagree | Applied — the adjudication is a document, and `overrides` is its edge. **Q18** closed |
-| **The survey as a whole** | Convergence on the substrate, and near-zero measurement of the claim | Applied — grader and counterfactual constraints (spec 5), and a new principle 11, *efficacy is measured, not inherited* |
-| SCIP and LSIF, Software Heritage | An index is a transmission format, not a store | Applied — the three artifacts and the no-database ruling (spec 6). **Q6** closed |
-| Package-manager indexes in git | A committed derived index is priced by churn, not by principle | Applied — the pin at the federation tier, not a merged graph (spec 7) |
+| **The survey as a whole** | Convergence on the substrate, and near-zero measurement of the claim | Applied — grader and counterfactual constraints ([AI integration](../spec/ai-integration.md)), and a new principle 11, *efficacy is measured, not inherited* |
+| SCIP and LSIF, Software Heritage | An index is a transmission format, not a store | Applied — the three artifacts and the no-database ruling ([the engine architecture](../spec/engine-architecture.md)). **Q6** closed |
+| Package-manager indexes in git | A committed derived index is priced by churn, not by principle | Applied — the pin at the federation tier, not a merged graph ([distribution and federation](../spec/distribution-and-federation.md)) |
 | Backstage | Rebuild over store, and the aggregator authors its own entries | Confirms **Q9**. No change needed |
-| CodeQL | A derived store *is* a query surface at scale | Contradiction kept in view, in spec 6 |
+| CodeQL | A derived store *is* a query surface at scale | Contradiction kept in view, in [the engine architecture](../spec/engine-architecture.md) |
 | SPDX 3.0, LinkML's SHACL generator | Model-first works. A chained emitter drops what it never declares | Applied — staging order and no chaining. **Q13** closed |
-| OGC API, STAC conformance | The declared subset, already an industry convention | Applied — partition rule and equivalence bar (spec 12) |
-| SPARQL federation, OAI-PMH aggregators, GraphQL federation | Harvest, and never fan out | Applied — the harvesting tier (spec 7). **Q9** closed |
-| Foraging models, Cranfield and TREC, LLM-as-judge, RAGAS, model drift | The instrument is measurable, and almost nobody measured the claim | Applied — the probe as a document, the expectation forms, the two tiers (spec 5). **Q8** and **Q20** closed |
-| Well-known URIs, robots.txt, sitemaps | A fixed path describes a known location, and never makes one known | Applied — the descriptor and the registration split (spec 7). **Q14** closed |
-| Package-registry indexes, OGC and STAC conformance | The index is configuration. A version needs a client rule, and a declaration needs a verifier | Applied — the version contract and the shape check (spec 7) |
+| OGC API, STAC conformance | The declared subset, already an industry convention | Applied — partition rule and equivalence bar ([the check layer](../spec/check-layer.md)) |
+| SPARQL federation, OAI-PMH aggregators, GraphQL federation | Harvest, and never fan out | Applied — the harvesting tier ([distribution and federation](../spec/distribution-and-federation.md)). **Q9** closed |
+| Foraging models, Cranfield and TREC, LLM-as-judge, RAGAS, model drift | The instrument is measurable, and almost nobody measured the claim | Applied — the probe as a document, the expectation forms, the two tiers ([AI integration](../spec/ai-integration.md)). **Q8** and **Q20** closed |
+| Well-known URIs, robots.txt, sitemaps | A fixed path describes a known location, and never makes one known | Applied — the descriptor and the registration split ([distribution and federation](../spec/distribution-and-federation.md)). **Q14** closed |
+| Package-registry indexes, OGC and STAC conformance | The index is configuration. A version needs a client rule, and a declaration needs a verifier | Applied — the version contract and the shape check ([distribution and federation](../spec/distribution-and-federation.md)) |
 | `llms.txt` | A descriptor with no obliged reader goes unread, measurably | Corrects §I.5. Carried into **Q16** |
-| MCP tool annotations, tool poisoning, line jumping | The annotation is a hint, and injection lands before any call | Applied — the three tool classes (spec 5). **Q7** closed |
+| MCP tool annotations, tool poisoning, line jumping | The annotation is a hint, and injection lands before any call | Applied — the three tool classes ([AI integration](../spec/ai-integration.md)). **Q7** closed |
 | Vale, `textlint`, `proselint`, `alex` | Five arrivals at the same shape, and not one of them blocks on voice | Confirms the shape, and decides nothing about posture. **Q5** closed |
-| Coverity in the field, Google Tricorder | A developer tolerates less than intuition says, and ignores what has no fix | Applied — posture by fixability, and the permanently advisory class (specs 3, 4) |
-| `bors`, GitHub merge queue, Zuul | Testing the merged state is complete, and it costs control of the landing order | Applied — the engine emits and never orders (spec 6). **Q21** closed |
-| Bazel, Salsa, `rustc` red-green | A result carries the inputs it read, and survives only while they hold | Applied — the read set of a run (spec 12) |
-| The git branch rename, inclusive-language migrations | A retirement carries by tooling. A replacement is what makes it mechanical | Applied — `retired_terms` in the language regime (spec 2) |
-| Forge coding agents, dependency bots, Allstar | Propose and never land. The credential alone does not confine a proposer | Applied — the proposal budget and the confinement statement (spec 7) |
-| MLS databases: SeaView against LDV, cover stories, the inference reports | Classify once at write. A visible hole is a named channel, and its acceptability is conditional | Applied — export-step filtering and the declared tombstone grain (spec 6). **Q17** closed |
-| Vaughn v. Rosen, 5 U.S.C. § 552(b), FRCP 26(b)(5), HTTP 451 | Amount, position and reason, at the site of the cut — unless the marking causes the harm | Applied — the `counted` placeholder and the `sealed` exception (spec 6) |
-| Redaction failures, NSA redaction guidance, the indexed deposition | Delete rather than cover. The derived artifact is where a correct redaction leaks | Applied — no partial-document redaction, and regenerate every projection (spec 6) |
-| PostgreSQL RLS, BigQuery, Snowflake | A diagnostic is a channel. A copy carries the data and drops the policy | Applied — the closed reason set, and the declaration travels with the artifact (spec 6) |
-| Zanzibar, object capabilities, macaroons | They answer whether a principal may act now. We have no principal and no now | Declined, with the reason recorded. Their staleness and vocabulary objections applied (specs 6, 7) |
+| Coverity in the field, Google Tricorder | A developer tolerates less than intuition says, and ignores what has no fix | Applied — posture by fixability, and the permanently advisory class ([authoring and lifecycle](../spec/authoring-and-lifecycle.md) and [the assurance model](../spec/assurance-model.md)) |
+| `bors`, GitHub merge queue, Zuul | Testing the merged state is complete, and it costs control of the landing order | Applied — the engine emits and never orders ([the engine architecture](../spec/engine-architecture.md)). **Q21** closed |
+| Bazel, Salsa, `rustc` red-green | A result carries the inputs it read, and survives only while they hold | Applied — the read set of a run ([the check layer](../spec/check-layer.md)) |
+| The git branch rename, inclusive-language migrations | A retirement carries by tooling. A replacement is what makes it mechanical | Applied — `retired_terms` in the language regime ([the taxonomy model](../spec/taxonomy-model.md)) |
+| Forge coding agents, dependency bots, Allstar | Propose and never land. The credential alone does not confine a proposer | Applied — the proposal budget and the confinement statement ([distribution and federation](../spec/distribution-and-federation.md)) |
+| MLS databases: SeaView against LDV, cover stories, the inference reports | Classify once at write. A visible hole is a named channel, and its acceptability is conditional | Applied — export-step filtering and the declared tombstone grain ([the engine architecture](../spec/engine-architecture.md)). **Q17** closed |
+| Vaughn v. Rosen, 5 U.S.C. § 552(b), FRCP 26(b)(5), HTTP 451 | Amount, position and reason, at the site of the cut — unless the marking causes the harm | Applied — the `counted` placeholder and the `sealed` exception ([the engine architecture](../spec/engine-architecture.md)) |
+| Redaction failures, NSA redaction guidance, the indexed deposition | Delete rather than cover. The derived artifact is where a correct redaction leaks | Applied — no partial-document redaction, and regenerate every projection ([the engine architecture](../spec/engine-architecture.md)) |
+| PostgreSQL RLS, BigQuery, Snowflake | A diagnostic is a channel. A copy carries the data and drops the policy | Applied — the closed reason set, and the declaration travels with the artifact ([the engine architecture](../spec/engine-architecture.md)) |
+| Zanzibar, object capabilities, macaroons | They answer whether a principal may act now. We have no principal and no now | Declined, with the reason recorded. Their staleness and vocabulary objections applied ([the engine architecture](../spec/engine-architecture.md) and [distribution and federation](../spec/distribution-and-federation.md)) |
 | Confluence and SharePoint permission models | A second permission model diverges in its derived structure, and does not scale | Confirms one permission system, and it is the platform's |
-| Microsoft security servicing criteria, ISO 29147/30111, the CRA | The obligation attaches to the published claim. Publish the non-boundaries too | Applied — the claim and the five non-claims (spec 6) |
+| Microsoft security servicing criteria, ISO 29147/30111, the CRA | The obligation attaches to the published claim. Publish the non-boundaries too | Applied — the claim and the five non-claims ([the engine architecture](../spec/engine-architecture.md)) |
 | Cross-fork object reference on a large forge | Repository permissions hold for an unforked tip, and are qualified otherwise | Recorded as a qualification on **Q17** |
 | BUSL and SSPL relicensing, OpenTofu and Valkey, the OSI position | A restriction on a competing offering is a question the user cannot answer about themselves. The licensor keeps the trademark and loses the fork | Applied — the narrowed field and the namespace argument. **Q11** closed on Apache-2.0 |
 | The Developer Certificate of Origin against a contributor agreement | The one power an agreement adds is the power to change the terms later | Applied — the certificate, and no agreement, in the Q11 recommendation |
 | Vale's hosted products | The closest analog ships the checker free and sells the hosted layer | Applied — where a commercial tier could sit (**Q11**, **Q7**, **Q17**) |
-| Sorbet's per-file sigil | Gradual adoption is a declaration in the tree, and the untouched file stays in the denominator | Applied — a gating `--since` refused (spec 6). **Q12** closed |
-| RuboCop's exclusion limit, ESLint's suppressions file | A grandfathering mechanism has a scale at which it switches a rule off and says nothing | Applied — no threshold, and the count reported on every run (specs 4, 7) |
+| Sorbet's per-file sigil | Gradual adoption is a declaration in the tree, and the untouched file stays in the denominator | Applied — a gating `--since` refused ([the engine architecture](../spec/engine-architecture.md)). **Q12** closed |
+| RuboCop's exclusion limit, ESLint's suppressions file | A grandfathering mechanism has a scale at which it switches a rule off and says nothing | Applied — no threshold, and the count reported on every run ([the assurance model](../spec/assurance-model.md) and [distribution and federation](../spec/distribution-and-federation.md)) |
 | Rogers, diffusion of innovations | Trialability and observability reduce uncertainty by different routes, and neither substitutes | Applied — the order in which Q11, Q12 and Q16 had to close |
 | Diátaxis | Four modes on two axes, and this repository found one of the splits first | Noted as a candidate kind set for a documentation-site bundle. **Q16** closed |
-| OPA and Conftest | A policy engine evaluates structured input, and the producer supplies the structure. No tool in the family reads prose | Declined as a parser front-end. The graph export is the input a Rego adapter would take, and it waits on a consumer (spec 13) |
-| InSpec, OSCAL | The control's prose lives inside the data model with an identifier, and evidence attaches by identifier and never by meaning | Confirms HW-DR-0073 and spec 4. The verification entry is the compliance hook |
+| OPA and Conftest | A policy engine evaluates structured input, and the producer supplies the structure. No tool in the family reads prose | Declined as a parser front-end. The graph export is the input a Rego adapter would take, and it waits on a consumer ([the register of open obligations](../spec/open-obligations.md)) |
+| InSpec, OSCAL | The control's prose lives inside the data model with an identifier, and evidence attaches by identifier and never by meaning | Confirms HW-DR-0073 and [the assurance model](../spec/assurance-model.md). The verification entry is the compliance hook |
 | ArchUnit, import-linter, dependency-cruiser, jQAssistant | A document is a rule source where it carries a diagram or a query, and nowhere else. `FreezingArchRule` is a grandfathering store with no owner and no expiry | A dependency kind in a bundle and an emitted configuration are the shape (principles 1, 9). Waits on a first adopter |

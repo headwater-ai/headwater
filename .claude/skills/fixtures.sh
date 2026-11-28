@@ -2,7 +2,7 @@
 # What holds the skills and the maintainer agent of this repository.
 #
 # A skill is prose that an agent reads. Nothing makes a model follow it, and
-# spec 5 says so rather than pretending otherwise. What a suite can hold is the
+# AI integration (docs/spec/ai-integration.md) says so rather than pretending otherwise. What a suite can hold is the
 # half that is a claim about this engine: a verb that a skill tells an agent to
 # run, a refusal a skill says the verb makes, a rule a skill names, a path a
 # skill cites, and a sentence a skill has to keep saying for its fixture to
@@ -89,7 +89,7 @@ for file in $instruction_files; do
     fi
 
     # The description is the whole mechanism by which a skill loads, so an
-    # empty one is a skill nobody can reach. The band is spec 5's length
+    # empty one is a skill nobody can reach. The band is AI integration's (docs/spec/ai-integration.md) length
     # measure at the one placement no check can see.
     description=$(sed -n 's/^description: *//p' "$file" | head -1)
     length=$(printf '%s' "$description" | wc -c | tr -d ' ')
@@ -396,7 +396,7 @@ do
 done
 
 printf '\n# the fixture bar for a new check, in the two skills that repeat it\n'
-# HW-OBL-0140: spec 12 states the discriminating condition beside the firing
+# HW-OBL-0140: the check layer (docs/spec/check-layer.md) states the discriminating condition beside the firing
 # condition, and each skill that repeats the bar says the same. The spec is
 # the third file read, because it is the source the skills repeat. No rule reads
 # this prose, so this case holds only that the sentence is still there.
@@ -809,7 +809,7 @@ $out" ;;
 
     # The sweep is the one mechanism here whose output no engine produces, and
     # the promise it rests on is that no exit status ever reads that output.
-    # Four cases hold it, one per thing that enforces it in spec 12. Three of
+    # Four cases hold it, one per thing that enforces it in the check layer (docs/spec/check-layer.md). Three of
     # them read no skill sentence, because what they assert is a property of
     # this tree rather than a claim a skill makes.
 
@@ -926,7 +926,7 @@ $out" ;;
         0 'does not start' \
         "$engine" probe plan --tier campaign --root "$root"
 
-    # A transcript with a key outside the closed set. Spec 5 says the transcript
+    # A transcript with a key outside the closed set. AI integration (docs/spec/ai-integration.md) says the transcript
     # holds no model prose and that the omission is the enforcement, so the
     # failing arm is a file that carries some.
     printf '# A run\n\n## Run identity\n\n```yaml\nmodel: a\nreasoning: I read the governing document first.\n```\n\n## Events\n\n```yaml\n- probe: HW-PROBE-nothing\n```\n' \

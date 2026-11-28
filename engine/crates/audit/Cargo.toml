@@ -18,7 +18,7 @@ headwater-census = { workspace = true }
 headwater-graph = { workspace = true }
 
 # `Shape` reads the facet, kind and purpose declarations, and `Context` carries
-# the injected clock. A second reader of either would be the drift that spec 4
+# the injected clock. A second reader of either would be the drift that the assurance model (docs/spec/assurance-model.md)
 # names, so this crate depends on the one that exists.
 headwater-check = { workspace = true }
 

@@ -45,7 +45,7 @@ pub enum Outcome {
 pub enum Untyped {
     /// Step 1 found nothing. The path is outside every declared shelf.
     NoShelf,
-    /// Step 1 found two shelves of equal specificity. Spec 2 calls this a
+    /// Step 1 found two shelves of equal specificity. [The taxonomy model](../../../../docs/spec/taxonomy-model.md) calls this a
     /// schema-validation error rather than a runtime coin-flip, and the
     /// validation is [M2](https://github.com/headwater-ai/headwater/milestone/2).
     /// Until it exists, resolution reports the tie and picks neither.
@@ -60,7 +60,7 @@ pub enum Untyped {
     },
     /// The discriminator is a sequence or a mapping, and a kind name is a word.
     DiscriminatorNotAScalar { facet: String },
-    /// Spec 2: no document resolves to an abstract kind. A shelf that declares
+    /// [The taxonomy model](../../../../docs/spec/taxonomy-model.md): no document resolves to an abstract kind. A shelf that declares
     /// one, or a discriminator value that names one, is a taxonomy defect that
     /// shows up here first because this is the layer that has a document.
     AbstractKind { kind: String },
@@ -254,7 +254,7 @@ pub fn resolve(path: &str, facets: &Mapping, taxonomy: &Taxonomy) -> Resolution 
         }
     };
 
-    // Spec 2 forbids an abstract kind here whichever step produced it: an
+    // The taxonomy model (docs/spec/taxonomy-model.md) forbids an abstract kind here whichever step produced it: an
     // abstract kind may never be "a shelf's declared kind, and never a
     // discriminator value".
     if taxonomy.kind(&kind).is_some_and(|k| k.is_abstract) {

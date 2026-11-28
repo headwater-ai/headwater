@@ -17,7 +17,7 @@ Nothing below is settled anywhere in the specification. Each item is a guess tha
 | Guess | Why nothing settles it |
 |---|---|
 | The consumer declaration lives at `.headwater/taxonomy.yml` | [Distribution and federation](../docs/spec/distribution-and-federation.md#consuming) shows the block and fixes no path for it. It fixes `.headwater/corpus.json` and shows `.headwater/overlay.yml`, so this file follows both |
-| `bundles:` names a bundle selection in that block | Spec 7 shows `profile:` and `overlay:` only. A selection has to be recorded, and the interview emits an overlay rather than this field |
+| `bundles:` names a bundle selection in that block | [Distribution and federation](../docs/spec/distribution-and-federation.md) shows `profile:` and `overlay:` only. A selection has to be recorded, and the interview emits an overlay rather than this field |
 | `{slug}` is a legal placeholder in a `pattern` | The meta-schema types `pattern` as a string and marks the position `gap:`. The base uses `{namespace}` and `{seq:04d}`, and neither one names a value set for placeholders |
 | `allocation: minted-once` is a legal policy | The base names `reconcile-first`, which counts. A slug is not allocated by counting, no value set states the alternatives, and the meta-schema marks the position `gap:` for that reason |
 | `language:` on a kind binds a language regime | The base binds `voice:` and `lifecycle:` on a kind and declares `regimes.language` beside them. No kind in the base names a language regime |

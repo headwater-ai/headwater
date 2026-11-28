@@ -50,7 +50,7 @@ The owner re-cut milestone 0.07 on 2026-10-28 and 2026-10-29. His rulings are on
 
 This record supersedes HW-DR-0111 as a whole, because a supersession sets its target to `superseded` and the taxonomy has no partial form. So this record states again, as its own rule, each part of HW-DR-0111 that #1868 keeps. No rule in force lives only in the superseded record.
 
-The campaign is the next instrument for four open claims of spec 13: HW-OBL-0012, HW-OBL-0013, HW-OBL-0014 and HW-OBL-0016. This record reads those claims and closes none of them.
+The campaign is the next instrument for four open claims of [the register of open obligations](../spec/open-obligations.md): HW-OBL-0012, HW-OBL-0013, HW-OBL-0014 and HW-OBL-0016. This record reads those claims and closes none of them.
 
 ## Decision
 
@@ -230,6 +230,6 @@ Each paid issue gets its own ceiling when its dry-run plan is posted on it. No r
 
 **The tools carry this design.** #1872 re-cut `probe.yml` to five layers and seven scenarios. #1873 added the `action`, `moments` and `axes` facets, and #1875 built the campaign tooling. #1874 built the 44-probe set and wrote the two sets of 22 under `sets:`. It deprecated the 14 probes of the old sets, which stay on the probe shelf as the record that their transcripts cite. It also removed the code round, its pilot and their two specs. HW-DR-0111 keeps each `governs` edge on `tools/probe/` that no later issue moved.
 
-**The open claims of spec 13 stay open.** This record reads HW-OBL-0012, HW-OBL-0013, HW-OBL-0014 and HW-OBL-0016, and it closes none of them. The evaluation that phase B publishes is the record that can discharge them.
+**The open claims of [the register of open obligations](../spec/open-obligations.md) stay open.** This record reads HW-OBL-0012, HW-OBL-0013, HW-OBL-0014 and HW-OBL-0016, and it closes none of them. The evaluation that phase B publishes is the record that can discharge them.
 
 **These rulings open again** if the owner changes the grid, the scenarios or the keep rule. They also open again if the owner approves a ceiling for a paid issue, or if a phase A layer cannot be kept or closed. The grid opens again if a held-out row saturates in the base of every scenario. The workspace without a compiler opens again before any rerun of the code rows. The remedy then is vendored crates or a local registry sealed into the workspace, with no host added to the proxy. The held-out set opens again for the three probes of #1979 before any rerun.

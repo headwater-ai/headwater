@@ -15,7 +15,7 @@
 //! lexicon. Today that judgment exists only as prose and a diff, so no
 //! mechanism inherits it. `retired_terms` is where it becomes data."
 //!
-//! # The replacement decides the posture, and spec 2 decides that
+//! # The replacement decides the posture, and [the taxonomy model](../../../../docs/spec/taxonomy-model.md) decides that
 //!
 //! "With one, the fix is a substitution, which meets the mechanical-and-total
 //! bar of [the check layer](../../../../docs/spec/check-layer.md#fixability), and the
@@ -322,7 +322,7 @@ impl DocumentCheck for Retired {
                         ),
                         (None, _) => format!("rewrite the sentence without `{}`", term.term),
                     },
-                    // Spec 2 decides this, and it is the one place in the engine
+                    // The taxonomy model (docs/spec/taxonomy-model.md) decides this, and it is the one place in the engine
                     // where a taxonomy entry rather than a rule says whether the
                     // fix is mechanical. An entry with a replacement whose term
                     // this engine cannot place in the source carries the same

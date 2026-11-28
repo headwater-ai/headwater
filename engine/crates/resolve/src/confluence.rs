@@ -24,7 +24,7 @@
 //! Every other pair owns its whole subtree. An `override` keeps the fields the
 //! consumer did not restate and a `remove` takes everything below the key, so
 //! two operations that reach one subtree with either of those in the pair leave
-//! the result to the order of application. That is the conflict spec 2 names,
+//! the result to the order of application. That is the conflict [the taxonomy model](../../../../docs/spec/taxonomy-model.md) names,
 //! and it is decided with [`headwater_ref::Address::is_disjoint_from`].
 //!
 //! Two pairs are ordered rather than tested. [HW-DR-0095] (Q67) lets a library
@@ -48,7 +48,7 @@
 //!
 //! # It runs between sources and not inside one
 //!
-//! Spec 2 asks for a message that "names both overlays". Two operations in one
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md) asks for a message that "names both overlays". Two operations in one
 //! file are ordered by the file, and where they genuinely collide the
 //! precondition that each operation asserts about the base reports it during
 //! the merge: an `add` under an `add` finds the key already there. So this

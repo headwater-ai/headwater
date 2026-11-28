@@ -45,7 +45,7 @@
 //!
 //! # What the grain costs, and the thing it does not cost
 //!
-//! Spec 12 calls corpus-scoped checks the barriers: this instance reads every
+//! [The check layer](../../../../docs/spec/check-layer.md) calls corpus-scoped checks the barriers: this instance reads every
 //! document, so any change to any document invalidates it, and no incremental
 //! test rescues one. That is one instance re-evaluated per edit, and it is the
 //! whole of the cost.

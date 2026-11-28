@@ -155,7 +155,7 @@ pub fn marker(kind: &str, path: &str) -> Option<String> {
 /// quotes the marker while discussing it is an authored document, and this
 /// repository's own specification is exactly such a document. Reading the first
 /// line alone is what keeps a run from overwriting it, and it is what keeps the
-/// census from reporting spec 6 as a file this engine generated. The line has to
+/// census from reporting [the engine architecture](../../../../docs/spec/engine-architecture.md) as a file this engine generated. The line has to
 /// open with the comment syntax of the path's format, `<!--` for Markdown and
 /// `#` otherwise, so a compact JSON object or another format's comment on the
 /// first line is not a marker there.

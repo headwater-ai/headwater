@@ -100,7 +100,7 @@ identifier_schemes:
   # A fixed-width sequence, which the minter fills by reconciling over the
   # corpus.
   decision_id: {pattern: "DR-{namespace}-{seq:04d}", namespace: FIX, allocation: reconcile-first}
-  # A free token before another segment. Spec 2 states no end for it, so the
+  # A free token before another segment. The taxonomy model (docs/spec/taxonomy-model.md) states no end for it, so the
   # template reader refuses the pattern and the minter issues nothing under it.
   broken_id: {pattern: "BAD-{slug}-{namespace}", namespace: FIX, allocation: minted-once}
   # Two digits, and the corpus already spends 99. The next value does not fit

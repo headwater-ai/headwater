@@ -164,7 +164,7 @@ A transcript is a **committed snapshot** that a `probe_run` anchor resolver read
 
 The **probe result** is a document, and it is a projection over the transcript, the expectations, and the grader version. Its warrant is **`regenerated`**, and `generate --check` proves it. That answers the question that this group inherited.
 
-The alternative is worth stating, because it is what the leaning implied. Suppose the result is committed and the transcript is not. Then nothing inside the repository stands behind the result, so its warrant is `asserted`. [Authoring and lifecycle](../spec/authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two) then says that an asserted document does not discharge an evidence obligation. A probe result could never support `evidenced` on any decision record. The measurement layer would produce content that the evidence rules refuse. **So committing the transcript is not a storage preference. It is what makes a probe result usable as evidence at all**. It is the same sentence that spec 3 already carries for an imported pointer: the pointer resolves offline against a committed snapshot.
+The alternative is worth stating, because it is what the leaning implied. Suppose the result is committed and the transcript is not. Then nothing inside the repository stands behind the result, so its warrant is `asserted`. [Authoring and lifecycle](../spec/authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two) then says that an asserted document does not discharge an evidence obligation. A probe result could never support `evidenced` on any decision record. The measurement layer would produce content that the evidence rules refuse. **So committing the transcript is not a storage preference. It is what makes a probe result usable as evidence at all**. It is the same sentence that [authoring and lifecycle](../spec/authoring-and-lifecycle.md) already carries for an imported pointer: the pointer resolves offline against a committed snapshot.
 
 ### A probe never runs against a pull request, and a pull request still does something
 
@@ -227,13 +227,13 @@ That does not remove the envelope, because an adopter's corpus is not this one. 
 
 ### Grade a cue against the alternatives it competes with
 
-Q20's standing question is how anything grades an edge cue, and it rests on a premise that foraging theory contradicts. Spec 5 grades distinctiveness by comparing siblings in one place, and Q20 concludes that edge cues have no such place. They do.
+Q20's standing question is how anything grades an edge cue, and it rests on a premise that foraging theory contradicts. [AI integration](../spec/ai-integration.md) grades distinctiveness by comparing siblings in one place, and Q20 concludes that edge cues have no such place. They do.
 
 > **Grade a cue against the alternatives that it competes with at the moment it is read.**
 
 For a document summary, the alternatives are the other documents the reader is choosing among. The shelf is the static proxy for that set, and the pointer list that routing returns is the real one. That is why the static check and the probe measure the same property at different fidelities. For a cue on an edge, the alternatives are **the other outbound cues of the document that the reader is holding**. That is the choice set on traversal, and the foraging models place the decision exactly there.
 
-This is one rule with two instances rather than two measures, and it corrects the node side as well. Spec 5's distinctiveness measure compares shelf siblings, and a shelf is not the set that a reader is choosing among. The comparison set was never named, so it read as a property of the document rather than of the decision.
+This is one rule with two instances rather than two measures, and it corrects the node side as well. [AI integration](../spec/ai-integration.md)'s distinctiveness measure compares shelf siblings, and a shelf is not the set that a reader is choosing among. The comparison set was never named, so it read as a property of the document rather than of the decision.
 
 ### Three static checks, and no new machinery
 

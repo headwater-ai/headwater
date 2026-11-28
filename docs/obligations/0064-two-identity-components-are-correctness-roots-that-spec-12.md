@@ -1,6 +1,6 @@
 ---
 id: HW-OBL-0064
-title: "Two identity components are correctness roots that spec 12 does not cover"
+title: "Two identity components are correctness roots that the check layer does not cover"
 status: current
 status_since: 2026-08-12
 waiting_on: build
@@ -18,7 +18,7 @@ relations:
     - HW-SPEC-check-layer
 ---
 
-# Two identity components are correctness roots that spec 12 does not cover
+# Two identity components are correctness roots that the check layer does not cover
 
 ## Context
 
@@ -28,7 +28,7 @@ The external-anchor resolver entry states the failure and stops, so nothing asks
 
 ## Obligation
 
-One sentence in spec 12 makes each fixture set an obligation rather than a habit.
+One sentence in [the check layer](../spec/check-layer.md) makes each fixture set an obligation rather than a habit.
 
 ## Discharge
 

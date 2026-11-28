@@ -24,7 +24,7 @@
 //! So the loss set is a claim and the census is the audit of it, and neither
 //! alone is worth much. That is the coverage doctrine of
 //! [The assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
-//! applied one layer out, which is what spec 7 says it is.
+//! applied one layer out, which is what [distribution and federation](../../../../docs/spec/distribution-and-federation.md) says it is.
 //!
 //! # The denominator is the corpus, not the identifier index
 //!
@@ -77,7 +77,7 @@ pub const VERSION: &str = "1.3";
 
 /// What a loss is about.
 ///
-/// The three classes spec 7 names, and no fourth. An attribute is the class that
+/// The three classes [distribution and federation](../../../../docs/spec/distribution-and-federation.md) names, and no fourth. An attribute is the class that
 /// is easy to forget, and it is where a cue and an edge's instance data live.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Class {
@@ -149,7 +149,7 @@ pub struct Census {
 impl Census {
     /// Whether this census fails the run.
     ///
-    /// One rule, and it is spec 7's: an omission that no reason covers is a
+    /// One rule, and it is [distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s: an omission that no reason covers is a
     /// projector defect.
     pub fn is_defective(&self) -> bool {
         !self.unaccounted.is_empty()
@@ -171,7 +171,7 @@ pub struct Emission {
 /// one."
 #[derive(Clone, Debug)]
 pub enum Refusal {
-    /// The target is one of spec 6's seven and this engine does not emit it.
+    /// The target is one of [the engine architecture](../../../../docs/spec/engine-architecture.md)'s seven and this engine does not emit it.
     NotBuilt(Emitter),
     /// A filter clause names a facet this taxonomy does not declare, so the
     /// exporter cannot tell whether a document satisfies it.
@@ -447,7 +447,7 @@ fn native(
         if let Some(id) = document.id {
             members.push(("id".to_string(), Json::string(id)));
         }
-        // Spec 7: "Every node carries a warrant, and the native export carries
+        // Distribution and federation (docs/spec/distribution-and-federation.md): "Every node carries a warrant, and the native export carries
         // it with no loss." It is a member of the provenance block, and it
         // travels twice for a reason: once inside `facets` as the document
         // wrote it, and once here where a consumer that reads no taxonomy still
@@ -500,7 +500,7 @@ fn native(
         )],
         carried_nodes,
         carried_edges,
-        // Spec 7: "The native graph export carries the property graph with no
+        // Distribution and federation (docs/spec/distribution-and-federation.md): "The native graph export carries the property graph with no
         // loss, and that includes the instance attributes on edges." An empty
         // loss set is a claim, and the census below is what audits it: a node
         // or an edge this emitter dropped has no reason to fall under and fails
@@ -511,7 +511,7 @@ fn native(
 
 /// The rule that withheld an edge, which is the rule that withheld either end.
 ///
-/// Spec 7's claim about a filtered export is that it "contains no document that
+/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s claim about a filtered export is that it "contains no document that
 /// its declared filter withholds, and no artifact inside the profile derives
 /// from one". An edge names both of its ends, so an edge into a withheld
 /// document states that the document exists and what it is called.
@@ -860,7 +860,7 @@ fn schema(surface: &Surface<'_>, all: &[Node<'_>]) -> Body {
 /// omission is deliberate. The taxonomy declares whether a facet is required and
 /// what values it admits, and it declares no type. A `type: string` here would
 /// be this emitter inventing a constraint that no native check enforces, which
-/// is the resemblance spec 12 refuses.
+/// is the resemblance [the check layer](../../../../docs/spec/check-layer.md) refuses.
 ///
 /// A declared value set becomes `enum` over the same members. The guard is the
 /// part the differential forced. `facet.value.not_permitted` produces nothing
@@ -1078,7 +1078,7 @@ fn note(accounted: &mut Vec<Accounted>, class: Class, name: &str, reason: &str) 
 
 /// The reason a withheld node or edge carries.
 ///
-/// The rule identifier and nothing else. Spec 7: "A withholding reason comes
+/// The rule identifier and nothing else. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md): "A withholding reason comes
 /// from a closed set that the taxonomy declares. Free prose in a tombstone is a
 /// channel, and a reason that quotes the document is a leak wearing a label."
 fn withholding(rule: &str) -> String {
@@ -1106,7 +1106,7 @@ fn envelope(
     let mut declaration = vec![
         ("name".to_string(), Json::string(profile.name.as_str())),
         ("target".to_string(), Json::string(emitter.name())),
-        // The invariant, stated in the artifact under both grains. Spec 7: "No
+        // The invariant, stated in the artifact under both grains. Distribution and federation (docs/spec/distribution-and-federation.md): "No
         // profile may produce a view that presents as total." Under `sealed` a
         // reader still learns to stop drawing conclusions from absence, which
         // is the harm the rule exists to prevent.
@@ -1118,7 +1118,7 @@ fn envelope(
             Json::string(profile.tombstone.name()),
         ));
     }
-    // Spec 7 asks a filtered export to state when it was generated, so that a
+    // Distribution and federation (docs/spec/distribution-and-federation.md) asks a filtered export to state when it was generated, so that a
     // reader can compute the revocation lag. A clock read inside the emitter
     // would make every run differ from the last and turn `--check` into a coin
     // toss, so the time is injected and never read: `headwater export --at`

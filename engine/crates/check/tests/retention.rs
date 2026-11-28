@@ -349,7 +349,7 @@ fn a_renamed_document_at_a_terminal_state_is_not_a_departure() {
 /// A run that names no change reports the reason rather than a pass.
 ///
 /// A corpus-grained instance covers the whole change, so a pass here would say
-/// that a full-corpus run had cleared every deletion the history holds. Spec 4
+/// that a full-corpus run had cleared every deletion the history holds. [The assurance model](../../../../docs/spec/assurance-model.md)
 /// asks for the visible skip, and this is the corpus-grained half of the arm
 /// `promotion.rs` and `transition.rs` already hold at document grain.
 #[test]

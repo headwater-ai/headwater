@@ -15,7 +15,7 @@
 //!
 //! - **`expected.record`** — what the case resolves to, or why it does not.
 //! - **`confluence.record`** — every permutation of every case's overlay set,
-//!   resolved, and whether the results agree. This is the property that spec 2
+//!   resolved, and whether the results agree. This is the property that [the taxonomy model](../../../../docs/spec/taxonomy-model.md)
 //!   requires and that the static check claims to prove, tested by running it.
 //! - **`roundtrip.record`** — the resolved taxonomy written out, loaded again
 //!   as a package with no overlays, and resolved again. A resolver whose result
@@ -133,7 +133,7 @@ fn every_case_resolves_to_the_recorded_result() {
     }
 }
 
-/// The property spec 2 requires: "the application of a set of overlays in any
+/// The property [the taxonomy model](../../../../docs/spec/taxonomy-model.md) requires: "the application of a set of overlays in any
 /// legal order yields the same resolved taxonomy".
 ///
 /// Every permutation of every case's overlay set is resolved, and the results

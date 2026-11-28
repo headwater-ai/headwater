@@ -28,7 +28,7 @@
 //! invariant rather than of the finding, so every finding of every rule that
 //! serves one obligation would carry one level, and two findings of one check
 //! would carry two. That is the control's judgment arriving inside the check's
-//! field, which is the confusion spec 12 exists to prevent.
+//! field, which is the confusion [the check layer](../../../../docs/spec/check-layer.md) exists to prevent.
 //!
 //! The posture cannot be the source either, and for a stronger reason.
 //! [Checks and cache](../../../../docs/subsystems/checks-and-cache.md#what-a-run-states-beside-its-findings)
@@ -81,7 +81,7 @@
 //! # What no member of this vocabulary can hold
 //!
 //! [`LOSS`] is the declaration and [`crate::census`] is the audit of it, in the
-//! shape spec 7 fixes for the graph emitters. A value that rides in a property
+//! shape [distribution and federation](../../../../docs/spec/distribution-and-federation.md) fixes for the graph emitters. A value that rides in a property
 //! bag is still a loss, because a property bag is not a member of the
 //! vocabulary and a consumer that reads SARIF alone does not find it.
 //!
@@ -111,7 +111,7 @@
 //! object", and `correlationGuid` beside it as a GUID. This engine mints no run
 //! identity: [`crate::text`] and every artifact here are a function of the
 //! corpus, the lock and the injected clock alone, so a value that varied per
-//! run would break the determinism spec 12 fixes, and a constant would identify
+//! run would break the determinism [the check layer](../../../../docs/spec/check-layer.md) fixes, and a constant would identify
 //! a class rather than a run. Writing either would be this emitter filling a
 //! uniqueness member with something that is not unique. The residue is real: a
 //! consumer that baselines still cannot tell the two runs apart from a member
@@ -481,7 +481,7 @@ fn descriptor(served: &headwater_check::Serves) -> Json {
 ///
 /// `analysisTarget` is the role, because every one of these is a file a check
 /// read. An input the run could not hash carries no `hashes` member rather than
-/// an empty one: spec 12 counts those apart, because a gate can decide nothing
+/// an empty one: [the check layer](../../../../docs/spec/check-layer.md) counts those apart, because a gate can decide nothing
 /// about a file whose content it cannot identify.
 fn artifacts(inputs: &[Input]) -> Vec<Json> {
     inputs
@@ -680,12 +680,12 @@ fn run_properties(run: &Run, subject: &Subject<'_>) -> Json {
         (
             "escaped",
             Json::object([
-                // In the precedence spec 4 fixes. The first is absent
+                // In the precedence the assurance model (docs/spec/assurance-model.md) fixes. The first is absent
                 // because no waiver reaches a check finding, and a reader
                 // who meets two counts should not have to work out whether
                 // the third is zero or missing. The mechanism does ship —
                 // `headwater conformance` reads a waiver over a conformance
-                // rule — and spec 7 states that the reader for the other
+                // rule — and distribution and federation (docs/spec/distribution-and-federation.md) states that the reader for the other
                 // population is what has not landed.
                 ("waived", Json::string("no waiver reaches a check finding")),
                 (

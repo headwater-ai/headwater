@@ -29,7 +29,7 @@ relations:
 **Across two locks, nothing compares them, and the engine has no place to do it.** Three facts, measured against `main` at `a0736315`, stop a rule from being written now:
 
 1. Every verb takes one `--root` and reads one `.headwater/taxonomy.lock`. No code in `engine/crates/` looks for a second lock under a root.
-2. Spec 1 says that a path resolves to exactly one corpus, and that the most specific root wins. No code implements that rule, so the engine has no index of the corpora in one tree.
+2. [The conceptual model](../spec/conceptual-model.md) says that a path resolves to exactly one corpus, and that the most specific root wins. No code implements that rule, so the engine has no index of the corpora in one tree.
 3. The tier above a corpus that would read two exports side by side does not exist. [HW-OBL-0006](../obligations/0006-route-latency-at-a-harvesting-tier-is-unmeasured.md), [HW-OBL-0020](../obligations/0020-whether-a-solution-corpus-vendors-each-source-export.md) and [HW-OBL-0093](../obligations/0093-whether-a-harvesting-tier-owes-conformance-rules-of-its-own.md) hold what that tier still owes.
 
 A cross-lock rule would therefore need a new model of how the engine finds corpora. That is a product decision and not a repair.
@@ -49,8 +49,8 @@ The second step was measured against the same commit. The probe added a scheme `
 
 ## Consequences
 
-Spec 1 and spec 3 now say that a namespace makes a collision unlikely and does not prevent one, and each links here. Spec 1 also stops saying that the root rule reuses machinery that exists.
+[The conceptual model](../spec/conceptual-model.md) and [authoring and lifecycle](../spec/authoring-and-lifecycle.md) now say that a namespace makes a collision unlikely and does not prevent one, and each links here. [The conceptual model](../spec/conceptual-model.md) also stops saying that the root rule reuses machinery that exists.
 
-**The question opens again when the engine gains a place to compare two locks.** That place is one of two things. The first is an index of the corpora in one tree, which the root rule of spec 1 needs. The second is a harvest tier that reads two pinned exports. The comparison then goes there, and it reuses `Template::disjoint` from `engine/crates/meta/src/identifier.rs`, which already decides the pair.
+**The question opens again when the engine gains a place to compare two locks.** That place is one of two things. The first is an index of the corpora in one tree, which the root rule of [the conceptual model](../spec/conceptual-model.md) needs. The second is a harvest tier that reads two pinned exports. The comparison then goes there, and it reuses `Template::disjoint` from `engine/crates/meta/src/identifier.rs`, which already decides the pair.
 
 The claim store under `.headwater/ids/` does not change this. It stops two branches of one corpus from minting one value ([HW-DR-0054](0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md)). It never compares two schemes, and it never reads a second lock.

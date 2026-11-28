@@ -40,10 +40,10 @@
 //! [The engine architecture](../../../../docs/spec/engine-architecture.md#pipeline) gives the
 //! verb: "merges the base taxonomy and overlays, validates against the
 //! meta-schema, and writes a content-hashed lock". [`Resolution::validate`] is
-//! the rest of spec 2's list — the rules that read the result and report on it
+//! the rest of [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s list — the rules that read the result and report on it
 //! rather than decide a merge. [`rules::RULES`] is the accounting of both.
 //!
-//! Spec 2 also rules that "the engine never applies a taxonomy that does not
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md) also rules that "the engine never applies a taxonomy that does not
 //! validate" and that there is no partial-load mode. That rule is enforced by
 //! the artifact rather than by the call graph: `headwater taxonomy resolve`
 //! writes a lock only when every rule passes, and everything downstream reads
@@ -148,7 +148,7 @@ pub struct Resolution {
 /// of the resolved taxonomy. Two overlays that write leaves nowhere near each
 /// other commute, and the one that reaches into a kind records a founding only
 /// in the orders where it runs before the one that declares it. A refusal would
-/// therefore refuse one legal order of a pair that spec 2's confluence rule
+/// therefore refuse one legal order of a pair that [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s confluence rule
 /// certifies as one resolution, and accept the other.
 /// `a_commuting_pair_records_a_founding_in_one_order_and_not_the_other` in
 /// `tests/founded.rs` is that reason as a case, over the committed

@@ -631,7 +631,7 @@ mod tests {
         let entries = walk(&corpus);
         let excluded: Vec<&Entry> = entries.iter().filter(|e| e.excluded_by.is_some()).collect();
         assert!(!excluded.is_empty(), "nothing under walk/excluded/");
-        // The rule of spec 7 applied to the walk: the exclusion changes the
+        // The rule of distribution and federation (docs/spec/distribution-and-federation.md) applied to the walk: the exclusion changes the
         // outcome of a row and never the presence of one.
         assert!(entries.iter().any(|e| e.path.starts_with("walk/excluded/")));
     }

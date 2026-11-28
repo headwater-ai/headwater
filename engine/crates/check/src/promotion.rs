@@ -45,7 +45,7 @@
 //!
 //! # The severity is `info`, and no bar exists to raise it
 //!
-//! Spec 3: "Forty in one change is a finding about the review rather than about
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md): "Forty in one change is a finding about the review rather than about
 //! the documents. The posture is advisory permanently... A threshold teaches
 //! people to promote in smaller batches, and nothing declares one." So one
 //! promotion is not a defect and this rule reports it at `info`. The count is
@@ -78,13 +78,13 @@ pub const RULE: &str = "warrant.promoted";
 /// Both are values of the closed set that
 /// [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires)
 /// declares. They are written here rather than read from a declaration because
-/// the promotion act is spec 3's rather than a taxonomy's: no member of the
+/// the promotion act is [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s rather than a taxonomy's: no member of the
 /// language names a warrant, and `taxonomy audit` writes the same closed set out
 /// for the same reason.
 pub const FROM: &str = "asserted";
 pub const TO: &str = "accepted";
 
-/// The check. It carries no state: the transition it reads is spec 3's, and
+/// The check. It carries no state: the transition it reads is [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s, and
 /// nothing in a taxonomy parameterizes it.
 pub struct Promoted;
 
@@ -140,7 +140,7 @@ impl DocumentCheck for Promoted {
                  HW-OBL-0119 holds")
                     .to_string(),
             // No patch. There is nothing to correct: this rule reports an act
-            // rather than a defect, and spec 12's fixability bar is about a
+            // rather than a defect, and the check layer's (docs/spec/check-layer.md) fixability bar is about a
             // remediation this engine can write.
             patch: None,
         }])

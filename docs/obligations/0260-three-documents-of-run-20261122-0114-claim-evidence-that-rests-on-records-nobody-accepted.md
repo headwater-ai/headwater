@@ -18,7 +18,7 @@ relations:
 
 ## Context
 
-Spec 13 holds a finding that has no reader outside this repository. Run `20261122-0114` wrote intake lines 8, 38 and 51. The product owner ruled each one RECORD into the group that its end-of-run report calls S1. This record checked each front matter again on `0cdd96298`.
+[The register of open obligations](../spec/open-obligations.md) holds a finding that has no reader outside this repository. Run `20261122-0114` wrote intake lines 8, 38 and 51. The product owner ruled each one RECORD into the group that its end-of-run report calls S1. This record checked each front matter again on `0cdd96298`.
 
 ## Obligation
 

@@ -26,7 +26,7 @@ relations:
 
 Nine constants of that shape sit in six files across five crates. The population comes from `(const|static) +ALL[A-Z_]*` over `engine/crates/**/*.rs` on `c574ddc`, and it holds `Shell::ALL`, `Emitter::ALL`, `Kind::ALL`, `Category::ALL`, `Expectation::ALL`, `Tier::ALL`, `Arm::ALL`, `Format::ALL` and `Class::ALL`. Four of the nine are in `engine/crates/probe/src/lib.rs`. No crate of this workspace depends on `strum` or on `enum-iterator`, so no derive produces a variant set for any of them.
 
-The module comment of `engine/crates/generate/tests/spec_six_projections.rs` states the gap in terms: `Kind::ALL` is a hand-kept list the compiler does not hold complete. The test below it compares `Kind::ALL` against the projection-kinds block of spec 6, which is a second hand-kept list. Two lists agreeing says nothing about the enum that both describe.
+The module comment of `engine/crates/generate/tests/spec_six_projections.rs` states the gap in terms: `Kind::ALL` is a hand-kept list the compiler does not hold complete. The test below it compares `Kind::ALL` against the projection-kinds block of [the engine architecture](../spec/engine-architecture.md), which is a second hand-kept list. Two lists agreeing says nothing about the enum that both describe.
 
 The same grain runs through the suite. `assert_eq!(<expression>.len(), <literal>)` occurs 146 times in 51 files across 17 crates, measured with `assert_eq!\(.*\.len\(\), *[0-9]+` over the same tree. Each literal is a population size copied into a test, and none of them is derived from the declaration that produces the population.
 

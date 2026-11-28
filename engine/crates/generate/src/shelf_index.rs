@@ -325,7 +325,7 @@ fn render(
         if let Some(summary) = &pointer.summary {
             out.push_str(&format!(" — {summary}"));
         }
-        // Spec 7 rules that an emitter which cannot carry the warrant does not
+        // Distribution and federation (docs/spec/distribution-and-federation.md) rules that an emitter which cannot carry the warrant does not
         // carry the content. Markdown can carry it, so this one says it rather
         // than withholding the row.
         match (&pointer.outside, pointer.unwarranted) {
@@ -395,7 +395,7 @@ mod tests {
     use super::{relative, render};
     use headwater_query::Pointer;
 
-    /// A warrant outside spec 3's closed set is stated as what it is, and is
+    /// A warrant outside [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s closed set is stated as what it is, and is
     /// not called `asserted` (#1438). An `asserted` one keeps its sentence.
     #[test]
     fn a_warrant_outside_the_closed_set_is_stated_and_not_called_asserted() {

@@ -75,7 +75,7 @@ The remedy is one added instruction under `## Task`, which states that the whole
 
 ## What the three share
 
-A probe is a document that a session never reads, and a document that a person reads carefully. The two audiences met under one heading, and nothing separated them. The commentary that helps a reviewer understand why a task is worded as it is becomes prompt the moment the recorder copies the section. Spec 15 held every other line of the boundary between a recorder and a session, and it held neither of these two.
+A probe is a document that a session never reads, and a document that a person reads carefully. The two audiences met under one heading, and nothing separated them. The commentary that helps a reviewer understand why a task is worded as it is becomes prompt the moment the recorder copies the section. [The recorder contract](../spec/the-recorder-contract.md) held every other line of the boundary between a recorder and a session, and it held neither of these two.
 
 The misses that followed are not cheap. Each of the two recordings graded eight sessions, at a realized cost of $1.66 and $3.90. Three of the eight in each ran against a probe that could not be passed as written. Each result reported 3 of 8 satisfied before this change, a rate of 37.5%.
 
@@ -85,7 +85,7 @@ The read-set digest of each of these three probes moves with this change, so [th
 
 **One of the three remedies re-grades the two recordings, and two of them cannot.** A probe result is a function of the transcript, the expectations and the grader version. So a corrected `examines` edge changes what the committed transcripts already say. `headwater generate` rewrites both results. The adjudication session of each run moves from `not satisfied` to `satisfied`, on a witness that names the call it came from. The reported rate of each moves from 3 of 8 to 4 of 8. Read the new number beside the staleness rather than instead of it. The other two remedies reach nothing recorded. A task text that never went to a session is outside what a re-grade can recover. So is an answer the recorder never wrote down. Each needs a fresh recording.
 
-No engine change follows from this evaluation. The grader already satisfies `opened` over any of several examined documents, and the recorder's answer rule is the one the design asks for. What was missing was a written contract, and spec 15 now carries it.
+No engine change follows from this evaluation. The grader already satisfies `opened` over any of several examined documents, and the recorder's answer rule is the one the design asks for. What was missing was a written contract, and [the recorder contract](../spec/the-recorder-contract.md) now carries it.
 
 Three things a later reader checks against a fresh recording of this tier:
 

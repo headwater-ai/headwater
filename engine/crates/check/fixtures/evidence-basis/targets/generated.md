@@ -6,4 +6,4 @@ summary: a record this engine wrote, whose warrant the engine derives from the m
 
 # The record this engine wrote
 
-This file declares no provenance block, and that is correct rather than missing. Spec 3 rules that the engine derives `regenerated` from the marker and never from a declaration, because a declared warrant here would be a fact that a hand edit can falsify. So the warrant of this document is known, and a rule that read only the declaration reads an absence where there is an answer.
+This file declares no provenance block, and that is correct rather than missing. [Authoring and lifecycle](../../../../../../docs/spec/authoring-and-lifecycle.md) rules that the engine derives `regenerated` from the marker and never from a declaration, because a declared warrant here would be a fact that a hand edit can falsify. So the warrant of this document is known, and a rule that read only the declaration reads an absence where there is an answer.

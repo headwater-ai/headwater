@@ -13,14 +13,14 @@
 # The edit moment is `write.sh`, on `PreToolUse` for `Write|Edit`. It gives the
 # same account of the same path from the same reader, `hw_derived_report` in
 # `lib.sh`, which reads `headwater derived`. That is an existing verb, and no
-# hook introduces a verb (spec 5, "The hook contract").
+# hook introduces a verb (AI integration (docs/spec/ai-integration.md), "The hook contract").
 #
 # Cost: most `Bash` calls meet no merge. Every call reads the event name and
 # the `cwd` of its payload with `headwater json field`, two small engine calls,
 # because the root of the worktree comes from that `cwd`. The state test after
 # them calls no engine: one `git rev-parse --git-dir` and five `test -e` on the
 # files git leaves in this worktree's own git dir. `headwater derived` runs
-# only inside a stopped merge that has an unmerged path. Spec 16 C5 records
+# only inside a stopped merge that has an unmerged path. Harness support (docs/spec/harness-support.md) C5 records
 # both costs as measured.
 #
 # The git dir is the per-worktree one, never the common dir: `MERGE_HEAD` and
@@ -35,7 +35,7 @@
 #
 # Claude Code only. Codex and Copilot bind `write.sh` for the edit moment, and
 # the name of their shell tool on a `PostToolUse` payload is not measured, so
-# neither binds this position. Spec 16 C5 records that.
+# neither binds this position. Harness support (docs/spec/harness-support.md) C5 records that.
 #
 # It fails open, silently: no engine, no git, no payload it can read, and the
 # call has already happened.

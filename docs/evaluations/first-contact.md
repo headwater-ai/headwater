@@ -43,7 +43,7 @@ Q11 goes first inside that, because Q16 cannot fill two of its ten rows until Q1
 
 Q11's entry names four postures: open source, source-available, internal-only, and the separate question of whether the taxonomy package ships under the terms of the engine. The entry treats all four as open. Rulings already made close more than that.
 
-**1. Spec 6 requires an embeddable library, and [Q1](../spec/open-questions.md#1--implementation-language) chose the language for that requirement alone.** [The engine architecture](../spec/engine-architecture.md#library) says that editor integrations, the MCP server and CI adapters consume the library in-process and never start a subprocess. Q1's decisive argument was that Rust reaches a Node, Python or JVM host as a shared library and reaches a browser through WebAssembly. Each of those hosts belongs to the adopter. A license whose obligations extend to a work that links the library therefore reaches into software the adopter owns. It makes the embedding that the whole language choice bought into a legal event. That refuses GPL-3.0 and AGPL-3.0 for the library. It does not refuse MPL-2.0, whose copyleft is per file and survives linking, which is why Terraform carried MPL-2.0 for a decade.
+**1. [The engine architecture](../spec/engine-architecture.md) requires an embeddable library, and [Q1](../spec/open-questions.md#1--implementation-language) chose the language for that requirement alone.** [The engine architecture](../spec/engine-architecture.md#library) says that editor integrations, the MCP server and CI adapters consume the library in-process and never start a subprocess. Q1's decisive argument was that Rust reaches a Node, Python or JVM host as a shared library and reaches a browser through WebAssembly. Each of those hosts belongs to the adopter. A license whose obligations extend to a work that links the library therefore reaches into software the adopter owns. It makes the embedding that the whole language choice bought into a legal event. That refuses GPL-3.0 and AGPL-3.0 for the library. It does not refuse MPL-2.0, whose copyleft is per file and survives linking, which is why Terraform carried MPL-2.0 for a decade.
 
 **2. [Principle 1](../spec/vision-and-scope.md#design-principles) puts the adopter's asset in the taxonomy and not in the engine.** Configuration over code means that an adopter who wants something different writes a schema and never patches the engine. So the engine's license governs almost nothing that an adopter builds. Three things must stay unobstructed: run the engine in CI, publish a taxonomy package, and consume an emitted artifact. All three are use and distribution, and every candidate license permits all three. This is why the license question is smaller than it looks for the engine, and larger than it looks for the package.
 
@@ -153,7 +153,7 @@ Read against the three entries, the mapping is exact and it explains the sequenc
 
 | Attribute | What supplies it here | State |
 |---|---|---|
-| Relative advantage | Spec 0's thesis, and the comparison against every adjacent tool in [HW-EVAL-adjacent-work](adjacent-work.md) | Argued, unmeasured ([principle 11](../spec/vision-and-scope.md#design-principles)) |
+| Relative advantage | [The vision and scope](../spec/vision-and-scope.md)'s thesis, and the comparison against every adjacent tool in [HW-EVAL-adjacent-work](adjacent-work.md) | Argued, unmeasured ([principle 11](../spec/vision-and-scope.md#design-principles)) |
 | Compatibility | Principle 1 — the adopter's taxonomy, not ours. Q13's emitters | Specified |
 | Complexity | Q3's minimal base and the interview | Specified |
 | Trialability | Q11's terms, and Q12's on-ramp | Q11 pending, Q12 closes here |
@@ -173,9 +173,9 @@ This lands on Q16 through [principle 8](../spec/vision-and-scope.md#design-princ
 
 | Option | What it buys | What it forecloses | Which ruling refuses it |
 |---|---|---|---|
-| **Permissive** (Apache-2.0, MIT, BSD) | Trialability with no legal review. Embedding under spec 6. A taxonomy publisher may ship a plugin. Distribution packaging | Any later restriction on a hosted competitor, unless every contributor agrees | None |
+| **Permissive** (Apache-2.0, MIT, BSD) | Trialability with no legal review. Embedding under [the engine architecture](../spec/engine-architecture.md). A taxonomy publisher may ship a plugin. Distribution packaging | Any later restriction on a hosted competitor, unless every contributor agrees | None |
 | **Weak copyleft** (MPL-2.0) | Engine improvements return. Still links into a host the adopter owns | Little, and it adds a compliance question at every embedding site | None, but it taxes constraint 1 |
-| **Strong or network copyleft** (GPL-3.0, AGPL-3.0) | Improvements return, including from a hosted service | The in-process embedding that Q1 selected the language for | Spec 6's library requirement (constraint 1) |
+| **Strong or network copyleft** (GPL-3.0, AGPL-3.0) | Improvements return, including from a hosted service | The in-process embedding that Q1 selected the language for | [The engine architecture](../spec/engine-architecture.md)'s library requirement (constraint 1) |
 | **Source-available** (BUSL, ELv2, SSPL) | Protects a hosted business | OSI status, distribution packaging, and principle 9's integrations. The SSPL specifically is not an open-source license, on the OSI's stated ground that restricting a field of endeavor violates OSD 6 | Principle 9 and Q13's staging order (constraint 4); and it protects a business Q7 and Q17 have not specified (constraint 6) |
 | **Internal-only** | Nothing that this specification asks for | Q13's emitters 3 through 6, principle 9 entirely, principle 8's public half, Q17's disclosure channel, and Q16 | Constraints 4, 5 and 8 |
 
@@ -236,7 +236,7 @@ The leaning proposes an incremental adoption mode "where checks apply only to ne
 
 **It makes two runs over one tree disagree.** [The engine architecture](../spec/engine-architecture.md#implementation-constraints) requires that the same corpus and the same lock produce byte-identical output. A flag that decides which findings count is a second input to the verdict that no reviewer sees. [Q6](../spec/open-questions.md#6--where-the-corpus-graph-lives-at-rest) already refused the same shape for the cache: an artifact that can change a verdict is a store under another name.
 
-**It converts an unchecked document into an unreported one.** Spec 4's coverage obligations require every classified document to reach a check and every run to account for what it skipped, with reasons. A run scoped to touched documents either reports the rest as skipped, or it does not. Reporting the rest as skipped gains nothing, since `migration-pending` already reports them better. Not reporting them is the silent pass that the whole coverage doctrine exists to forbid.
+**It converts an unchecked document into an unreported one.** [The assurance model](../spec/assurance-model.md)'s coverage obligations require every classified document to reach a check and every run to account for what it skipped, with reasons. A run scoped to touched documents either reports the rest as skipped, or it does not. Reporting the rest as skipped gains nothing, since `migration-pending` already reports them better. Not reporting them is the silent pass that the whole coverage doctrine exists to forbid.
 
 **The name is taken.** `headwater check --changed-only` already exists, for the 200 ms commit-hook budget. It is a performance scope over a verdict that a full run would reach identically. Giving a second flag posture semantics would put two mechanisms with opposite properties behind nearly the same word. The one that reviewers already trust would be the one that gets confused.
 
@@ -287,7 +287,7 @@ The cost of the refusal is real and is stated. There is no way to enumerate Head
 
 [Principle 8](../spec/vision-and-scope.md#design-principles) applied to the public surface: a governance system whose own public documentation is ungoverned fails the first check a skeptical reader runs. The entry states that constraint, and the ruling makes it cheap rather than aspirational.
 
-**Spec 0 already refuses to build a renderer, and already lists site navigation as a projection.** So the division is settled before the question is asked. Headwater emits the navigation configuration and the content from the corpus. A third-party static-site generator renders it. No site generator is a Headwater component, and this entry does not create one.
+**[The vision and scope](../spec/vision-and-scope.md) already refuses to build a renderer, and already lists site navigation as a projection.** So the division is settled before the question is asked. Headwater emits the navigation configuration and the content from the corpus. A third-party static-site generator renders it. No site generator is a Headwater component, and this entry does not create one.
 
 That matters for a reason beyond scope. The owner's standing position is that the STE enforcement scaffolding in this repository is interim. It should retire into Headwater's own check layer rather than grow. A Q16 ruling that quietly commissioned a bespoke site generator would repeat that mistake at a larger size. **Nothing here is built until the engine exists.** When it does, the site is an emitter target and a projection, which are two mechanisms that already have owners.
 
@@ -299,7 +299,7 @@ The entry says to draft the sitemap early because it is a forcing function. It a
 |---|---|---|
 | How it works, architecture | [The engine architecture](../spec/engine-architecture.md), [the conceptual model](../spec/conceptual-model.md), [the check layer](../spec/check-layer.md) | Answered |
 | Benchmarks, metrics | Nothing. Every efficacy claim is marked unmeasured | **Empty, and must stay empty** |
-| Comparisons | [HW-EVAL-adjacent-work](../evaluations/adjacent-work.md), [the design departures](../spec/design-departures.md), spec 0's table of what we do not build | Answered, and the strongest row |
+| Comparisons | [HW-EVAL-adjacent-work](../evaluations/adjacent-work.md), [the design departures](../spec/design-departures.md), [the vision and scope](../spec/vision-and-scope.md)'s table of what we do not build | Answered, and the strongest row |
 | Use cases | The five adopters of the [Q3 walkthrough](default-taxonomy-first-run.md#five-first-runs) | Answered, from an evaluation |
 | Compatibility, integrations | [Q13](../spec/open-questions.md#13--linkml-and-shacl-as-substrate)'s six emitters, of which two ship | Answered, and the answer is "two" |
 | Docs, getting started | [Authoring and lifecycle](../spec/authoring-and-lifecycle.md) and the [interview](../spec/distribution-and-federation.md#the-interview) | Partial. No quickstart, because there is nothing to start |
@@ -351,7 +351,7 @@ That sentence was true when this evaluation ran, and it is no longer true. The o
 | # | Finding | Landed in |
 |---|---|---|
 | 1 | Q11 is pending ratification, and the field is narrowed rather than open. Internal-only and source-available are refused by rulings already made; strong copyleft is refused for the library | [Q11](../spec/open-questions.md#11--license-and-distribution-posture) |
-| 2 | The base package and the bundles may impose nothing on a derived taxonomy. An overlay resolution contains base content, and spec 0 promises the taxonomy is the adopter's | [Distribution and federation](../spec/distribution-and-federation.md#publishing) and [Q11](../spec/open-questions.md#11--license-and-distribution-posture) |
+| 2 | The base package and the bundles may impose nothing on a derived taxonomy. An overlay resolution contains base content, and [the vision and scope](../spec/vision-and-scope.md) promises the taxonomy is the adopter's | [Distribution and federation](../spec/distribution-and-federation.md#publishing) and [Q11](../spec/open-questions.md#11--license-and-distribution-posture) |
 | 3 | The from-version of a migration state is optional, and adoption is a migration from no taxonomy | [Distribution and federation](../spec/distribution-and-federation.md#first-contact-adoption-is-a-migration-from-no-taxonomy) |
 | 4 | `infer` emits three artifacts: the overlay, the misfit report, and the adoption payload | [Distribution and federation](../spec/distribution-and-federation.md#the-interview) |
 | 5 | An adoption payload declares no threshold past which a rule is switched off, and every run reports the remaining pair count | [Distribution and federation](../spec/distribution-and-federation.md#first-contact-adoption-is-a-migration-from-no-taxonomy) and [the assurance model](../spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for) |

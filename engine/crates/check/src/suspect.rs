@@ -106,7 +106,7 @@
 //! re-verified.** The change states that its author has just re-read the
 //! document (see below), and the rule reports at `Info` with a patch that
 //! records the digest the edge reaches now. Only where the relation declares
-//! `verified_revision`, because spec 2 makes an attribute the relation does
+//! `verified_revision`, because [the taxonomy model](../../../../docs/spec/taxonomy-model.md) makes an attribute the relation does
 //! not declare a finding. That patch is the one way a digest is recorded
 //! without typing it.
 //!
@@ -401,7 +401,7 @@ impl EdgeCheck for Suspect<'_> {
         };
 
         // A fix writes `verified_revision`, so it is offered only where the
-        // relation declares that attribute: spec 2 makes an undeclared one a
+        // relation declares that attribute: the taxonomy model (docs/spec/taxonomy-model.md) makes an undeclared one a
         // finding, and a fix must not write what a later rule refuses.
         let declares_attribute = |name: &str| {
             self.declared

@@ -12,7 +12,7 @@ waiting_on: build
 
 ## Context
 
-`hw-run-policy` sends a finding about the build order, its tooling or this repository's CI to this shelf, and spec 13 lists none of them. Run `20260929-2201` wrote seven such intake lines. The product owner ruled each one RECORD, on passes 2, 3 and 4 of that run, and no pass had the time to write them. None names a reader outside this repository. Each item below gives the stage that found it and the issue in hand at the time. Where this record measured an item again on `origin/main` at `8d9feed4`, the item says so. One item is discharged, and the Discharge section states it. Six items stay open, and each one says what would move it.
+`hw-run-policy` sends a finding about the build order, its tooling or this repository's CI to this shelf, and [the register of open obligations](../../spec/open-obligations.md) lists none of them. Run `20260929-2201` wrote seven such intake lines. The product owner ruled each one RECORD, on passes 2, 3 and 4 of that run, and no pass had the time to write them. None names a reader outside this repository. Each item below gives the stage that found it and the issue in hand at the time. Where this record measured an item again on `origin/main` at `8d9feed4`, the item says so. One item is discharged, and the Discharge section states it. Six items stay open, and each one says what would move it.
 
 ## Obligation
 

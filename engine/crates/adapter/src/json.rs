@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! The run in the finding shape spec 4 already declares.
+//! The run in the finding shape [the assurance model](../../../../docs/spec/assurance-model.md) already declares.
 //!
 //! [The assurance model](../../../../docs/spec/assurance-model.md#findings) fixes it:
 //! "Every finding, from every mechanism, has one shape", and the worked
@@ -236,7 +236,7 @@ pub fn change(scoped: &Scoped) -> Json {
 ///
 /// One shape with two readers, for the reason [`change`] is one. The four counts
 /// were the whole of it until #233: a consumer read `3498 instances` and could
-/// not see that 585 of them reached no verdict, which crosses spec 4's rule that
+/// not see that 585 of them reached no verdict, which crosses [the assurance model](../../../../docs/spec/assurance-model.md)'s rule that
 /// a skip is visible rather than silent.
 ///
 /// **Every member is written on every run, including a zero and an empty list.**

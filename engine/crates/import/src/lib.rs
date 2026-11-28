@@ -150,7 +150,7 @@ pub struct Proposed {
     pub relation: String,
     pub to: String,
     /// The upstream revision this edge was checked against, which the edge
-    /// carries as an instance attribute. Spec 2 declares the attribute on the
+    /// carries as an instance attribute. [The taxonomy model](../../../../docs/spec/taxonomy-model.md) declares the attribute on the
     /// relation type and this is the value that fills it.
     pub verified_revision: String,
     /// Whether the document already declares this edge at this revision, in
@@ -384,7 +384,7 @@ pub fn declared(root: &Path) -> Result<Vec<Declaration>, String> {
                 entry.key.value
             )
         })?;
-        // The snapshot is repository content (spec 2), and both the importer
+        // The snapshot is repository content (the taxonomy model (docs/spec/taxonomy-model.md)), and both the importer
         // and the resolver read `root.join(at)`, so a path that leaves the
         // root is refused here, before either reads it.
         if !contained(root, &at) {

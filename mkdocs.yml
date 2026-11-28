@@ -64,7 +64,7 @@ site_dir: .headwater/site-build
 
 theme:
   name: mkdocs
-  # HW-DR-0038 is why this directory exists at all: spec 7 requires that a
+  # HW-DR-0038 is why this directory exists at all: distribution and federation (docs/spec/distribution-and-federation.md) requires that a
   # rendered page carry a link relation to the served copy of the corpus
   # descriptor, and Q38 rules that the relation is `describedby`. Not
   # `overrides/`, because *override* is already this corpus's word for an entry

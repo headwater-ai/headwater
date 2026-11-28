@@ -13,7 +13,7 @@
 //! [AI integration](../../../../docs/spec/ai-integration.md#what-the-server-may-do-and-the-axis-that-decides-it)
 //! lists three classes: query, working-tree write, and landed write. This
 //! module registers the first, registers the second where the operator asked
-//! for it, and can register the third under no argument at all. Spec 5 says why
+//! for it, and can register the third under no argument at all. [AI integration](../../../../docs/spec/ai-integration.md) says why
 //! the registration rather than the annotation is what carries the property:
 //!
 //! > "The protocol lets a server declare that a tool only reads. It also states
@@ -41,7 +41,7 @@
 //!    for the default shape, which is the shape a client reaches by connecting
 //!    to a checkout nobody meant to change.
 //! 2. **The landed-write class is reachable by no argument.** A commit, a push
-//!    and a merge are refused by spec 5 rather than by a flag, and no table
+//!    and a merge are refused by [AI integration](../../../../docs/spec/ai-integration.md) rather than by a flag, and no table
 //!    here holds one. That is the row that mattered for the disclosure
 //!    argument: an injected instruction needs an actuator, and a server that
 //!    cannot land a change lends it none.
@@ -85,7 +85,7 @@
 //!
 //! [`Server`] therefore stays immutable, and [`Session`] holds the single bit
 //! that is not. "A caller that wants another tree starts another server" is the
-//! remedy spec 5 already states for the clock, and this is that sentence with a
+//! remedy [AI integration](../../../../docs/spec/ai-integration.md) already states for the clock, and this is that sentence with a
 //! code path under it.
 //!
 //! # `check` runs the check layer, and its three inputs arrive rather than
@@ -110,7 +110,7 @@
 //! never wrote is a third mode that no other caller of this engine has, which
 //! is a second set of defaults reached by another road. So the run is
 //! [`headwater_check::Cache::disabled`], and the invariant that makes that free
-//! of consequence is the one spec 12 states: a cached run and an uncached run
+//! of consequence is the one [the check layer](../../../../docs/spec/check-layer.md) states: a cached run and an uncached run
 //! write the same bytes, so refusing the cache costs time and never an answer.
 //!
 //! **There is no corpus walk.** The corpus is walked once, before the server
@@ -122,7 +122,7 @@
 //!
 //! # The one argument is the format, and there is no default for it
 //!
-//! Spec 6 closes the set of output formats at four, and
+//! [The engine architecture](../../../../docs/spec/engine-architecture.md) closes the set of output formats at four, and
 //! [`headwater_adapter::render`] writes all four for the CLI and for this tool
 //! alike. So the argument this tool takes is the one the CLI also takes at this
 //! boundary, and the answer is byte-identical to `headwater check --format
@@ -144,7 +144,7 @@
 //! of [`Argument`] rather than one name, and a repeatable one arrives as an
 //! array of strings. The member of each pair is written `<relation>=<identifier>`,
 //! which is the form `headwater new --relates` takes, so a caller who read
-//! spec 6 types the same string here.
+//! [the engine architecture](../../../../docs/spec/engine-architecture.md) types the same string here.
 //!
 //! What the write tools do **not** take is the whole of the argument. `fix`
 //! takes a format and nothing else: no clock, because the server holds one for
@@ -165,7 +165,7 @@
 //!
 //! There is no cache in either class. A write tool has a root, so the reason
 //! `check` gives — that a cache write is a write this server does not do — no
-//! longer covers it. What covers it is the invariant spec 12 carries: a cached
+//! longer covers it. What covers it is the invariant [the check layer](../../../../docs/spec/check-layer.md) carries: a cached
 //! run and an uncached run write the same bytes, so refusing the cache costs
 //! time and never an answer. One rule for the whole server is worth more than a
 //! second mode reached by a switch.
@@ -246,7 +246,7 @@ pub struct Server<'a> {
     ///
     /// `None` is the default shape, and it is the whole of the old property: no
     /// tool that writes is registered, so no handler that writes exists to
-    /// reach. Spec 5 fixes the default, because a client may connect to a
+    /// reach. [AI integration](../../../../docs/spec/ai-integration.md) fixes the default, because a client may connect to a
     /// checkout that the user did not intend to change.
     pub writing: Option<Writing<'a>>,
     /// What the `check` tool runs to check the tree as it is now. `headwater
@@ -412,7 +412,7 @@ macro_rules! path_spellings {
     };
 }
 
-/// Spec 5's query class: it changes nothing, and it is always registered.
+/// [AI integration](../../../../docs/spec/ai-integration.md)'s query class: it changes nothing, and it is always registered.
 pub const QUERY_CLASS: [Tool; 7] = [
     Tool {
         name: "route",
@@ -504,12 +504,12 @@ pub const QUERY_CLASS: [Tool; 7] = [
     },
 ];
 
-/// Spec 5's working-tree write class, registered only where the operator asked
+/// [AI integration](../../../../docs/spec/ai-integration.md)'s working-tree write class, registered only where the operator asked
 /// for it.
 ///
 /// Both tools are the verb of the same name, run in full over the checkout the
 /// server was started in. Neither takes a clock, a root or a path, for the
-/// reasons the module comment states. The third class of spec 5 — a commit, a
+/// reasons the module comment states. The third class of [AI integration](../../../../docs/spec/ai-integration.md) — a commit, a
 /// push, a merge — has no table here and no switch that would reach one.
 pub const WRITE_CLASS: [Tool; 2] = [
     Tool {
@@ -625,7 +625,7 @@ pub fn respond(server: &Server<'_>, session: &mut Session, request: &str) -> Opt
             }),
         },
         // The protocol's own code for a method a server does not implement.
-        // Every tool of spec 5's landed-write class arrives here or at the tool
+        // Every tool of AI integration's (docs/spec/ai-integration.md) landed-write class arrives here or at the tool
         // refusal below, because no handler for one exists to reach.
         other => Err(Failure {
             code: -32601,
@@ -739,7 +739,7 @@ fn tools(server: &Server<'_>) -> Json {
                         ]),
                     ),
                     (
-                        // Correct, and not what carries the property. Spec 5: a
+                        // Correct, and not what carries the property. AI integration (docs/spec/ai-integration.md): a
                         // client must not treat this declaration from an
                         // untrusted server as a guarantee. The registration
                         // above is what a caller may rely on.
@@ -776,7 +776,7 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
             // asked for a tool this server does not carry is owed the reason
             // rather than a bare refusal. There are two reasons, and they are
             // different facts: a switch the operator did not give, and a class
-            // spec 5 refuses outright.
+            // AI integration (docs/spec/ai-integration.md) refuses outright.
             let names: Vec<&str> = known.iter().map(|tool| tool.name).collect();
             let why = match server.writing.is_some() {
                 false => {
@@ -1469,7 +1469,7 @@ fn check(server: &Server<'_>, format: &str) -> Result<String, Failure> {
         });
     };
     // No cache, and the run is therefore complete every time. See the module
-    // comment: one rule for the whole server, and spec 12's invariant is what
+    // comment: one rule for the whole server, and the check layer's (docs/spec/check-layer.md) invariant is what
     // makes it cost time rather than an answer.
     let mut cache = Cache::disabled();
     let run = headwater_check::run(

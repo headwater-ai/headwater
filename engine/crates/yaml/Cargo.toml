@@ -11,7 +11,7 @@ repository.workspace = true
 
 [dependencies]
 # An event stream with a span per event, and nothing else. Q2 rules out a
-# deserializer: spec 12 needs a span on every key, and no convenient
+# deserializer: the check layer (docs/spec/check-layer.md) needs a span on every key, and no convenient
 # `Deserialize` implementation supplies one.
 saphyr-parser = "0.0.11"
 

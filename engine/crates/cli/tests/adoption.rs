@@ -1251,7 +1251,7 @@ fn check_strict_exits_zero_with_no_adoption_task_declared() {
 /// The decisive arm: a task past its `until` fails `--strict`, and the
 /// finding names the task and its owner.
 ///
-/// Spec 7: "A migration state past its expiry is a finding against the
+/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md): "A migration state past its expiry is a finding against the
 /// owner." `2020-01-01` stays in the past for the life of this suite, so the
 /// case needs no `--now` flag the way none of this file's other cases do.
 #[test]
@@ -1620,7 +1620,7 @@ fn a_corpus_with_no_declared_payload_records_a_reading_of_none() {
 /// And nothing held the `refused` member itself. Forcing `Reading::of` to
 /// report `refused: 0` and deleting the render branch outright left the whole
 /// suite green, because every series a case built stated zero and the one unit
-/// case round-tripped a hand-built value through the writer. Spec 7's words for
+/// case round-tripped a hand-built value through the writer. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s words for
 /// this member are that "a series that dropped it would report a payload
 /// shrinking when it went dark", which is exactly what that pair of mutations
 /// produced. This case runs a real refusal through `Reading::of` and out to

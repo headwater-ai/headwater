@@ -12,7 +12,7 @@
 //! The meta-schema is a YAML source on the [Q2](../../../../docs/spec/decisions.md#q2--schema-format)
 //! loader rulings, read by `headwater-yaml` exactly as a taxonomy source is.
 //! That is not a stylistic choice. Q2 rules that JSON Schema is an emitted
-//! export and never the validator, and the reason is visible in spec 2 itself:
+//! export and never the validator, and the reason is visible in [the taxonomy model](../../../../docs/spec/taxonomy-model.md) itself:
 //! the language carries `$`-references, and no JSON Schema keyword resolves
 //! one. A second language for the schema would also be a second dialect to
 //! keep in step with the first, and the two would drift at the first ruling
@@ -20,7 +20,7 @@
 //!
 //! # What one source can decide, and what it cannot
 //!
-//! Spec 2 lists what `headwater taxonomy validate` checks. Four of those items
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md) lists what `headwater taxonomy validate` checks. Four of those items
 //! are decidable over a single source and the rest read a *resolved* taxonomy:
 //!
 //! - **structural conformance** — the thirteen declarations, their members, the
@@ -52,7 +52,7 @@
 //! written in, with the specificity order that decides which of two shelves
 //! claims a path. It came from `headwater-census`, which was the first code to
 //! read a shelf declaration, and it moved here when `taxonomy validate` needed
-//! to ask whether two shelf patterns can collide with no corpus in hand. Spec 13
+//! to ask whether two shelf patterns can collide with no corpus in hand. [The register of open obligations](../../../../docs/spec/open-obligations.md)
 //! already said that the decision belongs to the meta-schema.
 //!
 //! # Example

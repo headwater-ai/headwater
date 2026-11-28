@@ -40,7 +40,7 @@
 //! behavior under it is not. It is not what makes the result *right*: a grader
 //! that returned `Satisfied` for everything is perfectly deterministic. So the
 //! recorded fixture set is the instrument, and the property above is the design
-//! that gives the fixtures something to hold. Spec 12 asks a correctness root
+//! that gives the fixtures something to hold. [The check layer](../../../../docs/spec/check-layer.md) asks a correctness root
 //! for its own failing fixtures, and every verdict form and every refusal here
 //! has one.
 //!
@@ -488,7 +488,7 @@ impl Interval {
 
     /// The difference `self - other`, with a Newcombe hybrid score interval.
     ///
-    /// Spec 5 powers a campaign for a two-sample test: 0.50 against 0.75 at 80%
+    /// [AI integration](../../../../docs/spec/ai-integration.md) powers a campaign for a two-sample test: 0.50 against 0.75 at 80%
     /// power and a 5% two-sided level is about 58 sessions per arm. Reading the
     /// two arms' Wilson intervals for overlap is a much stricter test, with
     /// roughly half that power at the same count (#980). This interval is the
@@ -744,7 +744,7 @@ impl Results {
     /// The satisfied rate with its interval, and `None` where nothing was
     /// graded.
     ///
-    /// Spec 5: "a probe result reports an interval rather than a point. An
+    /// [AI integration](../../../../docs/spec/ai-integration.md): "a probe result reports an interval rather than a point. An
     /// interval that overlaps the previous one is variance. An interval that
     /// does not overlap is drift." It is a Wilson score interval, which stays
     /// inside zero and one at the session counts a regression tier runs, where
@@ -1016,7 +1016,7 @@ fn sessions_of<'a>(record: &'a Record, probe: &str) -> Vec<Vec<&'a Event>> {
 
 /// The finding the recorder puts on every produced artifact of a session
 /// whose tree `headwater check` refused (#1879). `tools/probe/probe-transform.sh`
-/// writes it, and spec 15 states it.
+/// writes it, and [the recorder contract](../../../../docs/spec/the-recorder-contract.md) states it.
 pub const CHECK_REFUSED: &str = "check:refused";
 
 /// The predicate, evaluated over one session.

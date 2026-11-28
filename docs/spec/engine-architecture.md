@@ -88,7 +88,7 @@ The graph is a function of the corpus and the lock, and every run builds it agai
 
 **There is no embedded database, and the trigger to add one is named.** The [language spike](../evaluations/language-spike-results.md) measured a warm change-scoped pass at about 2 ms for 1,000 documents, and the budget is 200 ms. Nothing in the design asks a question that the in-memory graph cannot answer inside the targets below. Only a named query workload that misses a target reopens this.
 
-The industry does not agree, and the disagreement belongs in view. CodeQL ships a derived database as its query surface, at very large scale. The refusal here follows from spec 0's non-negotiables: offline, deterministic, and reviewable in a diff. It does not follow from a claim that a derived store cannot work ([evaluation](../evaluations/graph-export-and-federation.md)).
+The industry does not agree, and the disagreement belongs in view. CodeQL ships a derived database as its query surface, at very large scale. The refusal here follows from [the vision and scope](vision-and-scope.md)'s non-negotiables: offline, deterministic, and reviewable in a diff. It does not follow from a claim that a derived store cannot work ([evaluation](../evaluations/graph-export-and-federation.md)).
 
 ## Checks
 

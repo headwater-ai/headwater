@@ -5,7 +5,7 @@ status: discharged
 status_since: 2026-08-15
 waiting_on: ruling
 last_verified: 2026-08-14
-summary: "Spec 12 voids a verdict by a tree diff, and the engine voids it by a hash comparison that no added document reaches."
+summary: "The check layer voids a verdict by a tree diff, and the engine voids it by a hash comparison that no added document reaches."
 provenance:
   warrant: accepted
   agency: mixed
@@ -35,7 +35,7 @@ The corpus owes one statement of what voids a verdict, and that statement must r
 
 Three consequences follow from the disagreement, and no document records any of them.
 
-The first is a sentence that the published test falsifies. Spec 12 rules that a corpus-scoped instance reads everything, so any concurrent change voids it. Under a comparison over listed inputs, a merge that only adds documents moves no listed hash, and the instance survives.
+The first is a sentence that the published test falsifies. [The check layer](../spec/check-layer.md) rules that a corpus-scoped instance reads everything, so any concurrent change voids it. Under a comparison over listed inputs, a merge that only adds documents moves no listed hash, and the instance survives.
 
 The second is that the reading of [HW-OBL-0017](0017-publishing-the-read-set-skips-a-re-run-on-two-of-the-eighteen.md) points the gate at the merges it cannot inspect. Two Shape rules generate over every kind, so an edit to any classified document voids almost every instance. The merges that a gate could carry are therefore the ones that add rather than edit. That is the class that a comparison over listed inputs cannot see.
 

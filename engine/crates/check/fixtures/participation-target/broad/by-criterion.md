@@ -10,4 +10,4 @@ relations:
 
 # Verified by a criterion
 
-The target kind is the one the narrow expectation names, so both arms are silent over this document. It is the passing fixture that spec 12 asks for beside a failing one.
+The target kind is the one the narrow expectation names, so both arms are silent over this document. It is the passing fixture that [the check layer](../../../../../../docs/spec/check-layer.md) asks for beside a failing one.

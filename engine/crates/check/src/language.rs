@@ -16,7 +16,7 @@
 //! # A profile the engine does not know skips, and says which one
 //!
 //! `language_regime` marks `controlled` a gap in the meta-schema, for a stated
-//! reason: spec 2 names `none`, `ste-house` and `ste-strict`, this repository
+//! reason: [the taxonomy model](../../../../docs/spec/taxonomy-model.md) names `none`, `ste-house` and `ste-strict`, this repository
 //! writes `ASD-STE100` with a separate `profile`, and a closed set in the
 //! language would refuse a committed source. So the engine matches the pairs it
 //! knows, and an instance that meets any other pair **skips with a reason that
@@ -45,7 +45,7 @@
 //!   semicolon separates items rather than joins clauses.
 //! - **The spelling variant the tag declares.** An error on the same terms. The
 //!   tag is data and the word list is not, which is the same split as the voice
-//!   patterns and is recorded in spec 13 as one gap rather than two.
+//!   patterns and is recorded in [the register of open obligations](../../../../docs/spec/open-obligations.md) as one gap rather than two.
 //!
 //! # Not every contraction has one expansion, and the split is per finding
 //!
@@ -79,7 +79,7 @@ const MAX_WORDS: usize = 25;
 
 /// The controlled language and profile pairs this engine has rules for.
 ///
-/// Two spellings of one thing: spec 2 writes the profile into `controlled`,
+/// Two spellings of one thing: [the taxonomy model](../../../../docs/spec/taxonomy-model.md) writes the profile into `controlled`,
 /// and this repository's overlay separates the two. Both name the house
 /// profile, and neither is more correct than the other while the meta-schema
 /// leaves the position a gap.
@@ -396,7 +396,7 @@ impl DocumentCheck for Language {
             // A substitution this rule can place. The two rules below that name
             // a replacement reach it, and the two that ask for a rewrite do
             // not: a sentence past the word limit and a semicolon both have a
-            // rewrite for a remediation, and spec 4 keeps that category
+            // rewrite for a remediation, and the assurance model (docs/spec/assurance-model.md) keeps that category
             // advisory whatever a lexicon could do to it.
             //
             // A sentence of front matter reaches none of them. The patch shape

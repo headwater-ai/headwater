@@ -12,4 +12,4 @@ provenance:
 # The promoted record
 
 Before the change it stood at `asserted`. A person read it, set the warrant and
-named themselves, which is the act spec 3 states.
+named themselves, which is the act [authoring and lifecycle](../../../../../docs/spec/authoring-and-lifecycle.md) states.

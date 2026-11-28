@@ -3,9 +3,9 @@
 #
 #     sh tools/measure/mcp-check.sh [runs]
 #
-# Spec 5 states the cost of one `check` call of the MCP server, and until #1346
+# AI integration (docs/spec/ai-integration.md) states the cost of one `check` call of the MCP server, and until #1346
 # nothing recorded the command that took it, so the figure could not be taken
-# again. This script is that command. It prints one line per figure, and spec 5
+# again. This script is that command. It prints one line per figure, and AI integration (docs/spec/ai-integration.md)
 # quotes them.
 #
 # The server walks the corpus once, before it accepts a message, and it keeps
@@ -18,7 +18,7 @@
 #
 # The cost of the call is the second figure less the first. The script also
 # times `headwater check --strict` and `headwater check --strict --no-cache`
-# over the same repository, because spec 5 compares the call with those two.
+# over the same repository, because AI integration (docs/spec/ai-integration.md) compares the call with those two.
 # And it times `headwater explain --json` of one document, which walks, parses
 # and builds the graph and runs no check. HW-OBL-0080 calls that part Phase A,
 # and its discharge condition reads this figure.

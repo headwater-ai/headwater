@@ -20,7 +20,7 @@
 //!
 //! # A classified document with no instance is a finding
 //!
-//! Spec 12 says so in one sentence: "**a document with zero instances is a
+//! [The check layer](../../../../docs/spec/check-layer.md) says so in one sentence: "**a document with zero instances is a
 //! finding.** It means that a shelf pattern is wrong or that a file is
 //! misplaced. Both facts are good to know." That finding is the whole content
 //! of OB-COV-2, and it is the reason coverage is a check rather than a

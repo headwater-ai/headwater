@@ -17,7 +17,7 @@
 //! document and not the pair of a document and a facet.
 //!
 //! A document can omit four facets, and each omission is a separate line for
-//! its author to write. Spec 12 gives a check the signature
+//! its author to write. [The check layer](../../../../docs/spec/check-layer.md) gives a check the signature
 //! `check(view, ctx) -> [Finding]` for exactly this, and
 //! [`crate::instance::Outcome::Failed`] carries the list. A verdict that named
 //! the first omission would make the other three cost one run each to find.

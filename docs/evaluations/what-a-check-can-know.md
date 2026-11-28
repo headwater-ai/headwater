@@ -107,7 +107,7 @@ So the false-positive rate that Q5 asks to revisit on is a fraction with a denom
 
 Read the passive column again. The rule measures 92% precise on its sample, 449 findings stand, and not one of them should block.
 
-Precision is not what decides the posture of this rule. Spec 4 already lists the criterion that does: promotion needs "an unambiguous, mechanical remediation path". The remediation for a passive sentence is a rewrite. The rewrite needs judgment about who the actor is and whether naming the actor helps the reader. ASD-STE100 itself permits the passive in descriptive writing where the agent is unknown, which is most of a specification.
+Precision is not what decides the posture of this rule. [The assurance model](../spec/assurance-model.md) already lists the criterion that does: promotion needs "an unambiguous, mechanical remediation path". The remediation for a passive sentence is a rewrite. The rewrite needs judgment about who the actor is and whether naming the actor helps the reader. ASD-STE100 itself permits the passive in descriptive writing where the agent is unknown, which is most of a specification.
 
 So a rule can hold an excellent false-positive rate and still be one that must never block. The promotion criteria already carry the fact, in a list where it reads as one requirement among four. This evaluation makes it decisive for a class of rules rather than a checkbox.
 
@@ -137,13 +137,13 @@ Fekete and colleagues (2005) showed that snapshot isolation is serializable when
 
 **The revisit condition is replaced, because it names an instrument that cannot reach the question.** "Measured false-positive data" would have promoted a rule that must never block. It cannot be collected for an advisory rule by the suppression instrument at all. What decides a voice category's posture is [the check layer](../spec/check-layer.md#fixability)'s fixability bar. A category may become blocking only when its remediation is mechanical and total. A category whose remediation is a rewrite is **permanently advisory**, on the same terms that [the assurance model](../spec/assurance-model.md#measuring-coherence-where-we-can-continuity-across-links) already gives the shift ratio.
 
-That is a general rule and it is stated as one. Where the promotion path stops early, spec 4 records it beside the case where the path is skipped entirely.
+That is a general rule and it is stated as one. Where the promotion path stops early, [the assurance model](../spec/assurance-model.md) records it beside the case where the path is skipped entirely.
 
 **The classifier is refused on aim rather than on accuracy.** A small local classifier attacks the third of the three error sources measured above, which is the smallest. It does not touch segmentation, and segmentation produced 32 of 58 blocking errors at first contact. It does not touch the lexicon, which produced approximately none. The residue it could fix lives inside the categories that may never block. There, a better finding buys nothing that an advisory finding does not already buy. The trigger to reopen this is named. It is a voice category with a mechanical remediation, whose measured errors come mostly from part of speech. A classifier would then make that category eligible to block.
 
 **Two obligations follow, and both land on the parser rather than on the rules.** A voice check runs over author-owned text. So a quotation, a code span, a citation line and a generated block are outside every voice rule by construction. And sentence segmentation joins the correctness roots of [the check layer](../spec/check-layer.md#the-correctness-roots), beside span retention. This corpus shows that it is where a lexical checker's errors actually come from.
 
-**The escape hatch carries a reason from spec 4's closed set.** A free-text reason cannot feed the promotion statistics, and the interim linter accepts only free text. That divergence is recorded here rather than repaired, because the scaffolding retires into the check layer and does not grow.
+**The escape hatch carries a reason from [the assurance model](../spec/assurance-model.md)'s closed set.** A free-text reason cannot feed the promotion statistics, and the interim linter accepts only free text. That divergence is recorded here rather than repaired, because the scaffolding retires into the check layer and does not grow.
 
 ## The decision — Q21, part one: the vocabulary
 
@@ -171,7 +171,7 @@ That is a general rule and it is stated as one. Where the promotion path stops e
 
 > A verdict is about one state of the corpus. Two changes that are each valid against the merge base can produce an invalid corpus, and no run against either branch tip reports it.
 
-**A run therefore reports what it evaluated and what it read.** The corpus tree, the lock hash, and the **read set**: the union of the in-scope inputs that produced the run's results. Spec 12 already computes that set per check instance. The cache key is a hash of exactly those inputs, and a key that omits one is a correctness bug. Publishing the union costs a report and no new mechanism.
+**A run therefore reports what it evaluated and what it read.** The corpus tree, the lock hash, and the **read set**: the union of the in-scope inputs that produced the run's results. [The check layer](../spec/check-layer.md) already computes that set per check instance. The cache key is a hash of exactly those inputs, and a key that omits one is a correctness bug. Publishing the union costs a report and no new mechanism.
 
 **The merge is then an ordinary change, and change-scoped evaluation decides whether a verdict survives it.** Given the merge result and the tree that a run evaluated, the engine computes the invalidated instances. It uses the same method as for any other diff. An empty result means the verdict carries. A non-empty result voids the verdict, and the recomputation is change-scoped over the union of the two changes rather than a full run.
 
@@ -183,7 +183,7 @@ That is the read-set half of Serializable Snapshot Isolation, arrived at from th
 
 **The engine emits and never orders.** Headwater does not hold a queue, decide a landing order, speculate on future states, or block a merge. Those belong to the forge, and [Q7](../spec/open-questions.md#7--scope-of-the-mcp-surface) already drew that line for the write path. What the engine owes a gate is the read set and the tree that it applies to. A merge queue can then skip a full re-run when nothing in that set moved. That is the same relationship as "emit what a change proposal needs, and let an adapter open it". Over this corpus, the condition does not hold. Over listed inputs, a gate carries the verdict on 2 of the 18 merges that carry a window. Every read set also carries a `barrier` line that voids the whole answer, so the fraction is zero ([HW-OBL-0017](../obligations/0017-publishing-the-read-set-skips-a-re-run-on-two-of-the-eighteen.md), [the check layer](../spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)).
 
-**The error asymmetry is stated, because it decides which way the test fails.** A false invalidation costs a re-run. A false validation ships an invalid corpus and reports it green. So the test fails toward re-running, which is [principle 7](../spec/vision-and-scope.md#design-principles) read the way that spec 6 reads it for an exporter. SSI makes the same trade and calls its cost the false abort.
+**The error asymmetry is stated, because it decides which way the test fails.** A false invalidation costs a re-run. A false validation ships an invalid corpus and reports it green. So the test fails toward re-running, which is [principle 7](../spec/vision-and-scope.md#design-principles) read the way that [the engine architecture](../spec/engine-architecture.md) reads it for an exporter. SSI makes the same trade and calls its cost the false abort.
 
 ### How exposed this repository is
 
@@ -219,7 +219,7 @@ The rate is not evidence that the failure is common. It is evidence that the win
 
 **Q5's real measurement has not been made, and the run that makes it is now specified.** This evaluation measured three ASD-STE100 structural rules as proxies. It did not measure `future_intent`, `change_narration` or `phased_rollout`, which are the categories that the declarative voice regime actually forbids, because no implementation of them exists. The run has three steps. Implement the three categories. Evaluate them over `docs/spec/`, which declares the declarative regime for every kind that it contains. Then adjudicate a fixed random sample of at least 50 findings per category, under the two labels above. Until that run exists, the claim that declarative voice is "mechanically detectable at useful precision" ([the design departures](../spec/design-departures.md)) is unmeasured, and it is published as unmeasured.
 
-**Whether any voice category is ever fixable.** If none is, the whole voice layer is permanently advisory, and that is a smaller feature than spec 8 currently claims. Phased-rollout language is the most likely candidate for a mechanical fix, and nobody has tried.
+**Whether any voice category is ever fixable.** If none is, the whole voice layer is permanently advisory, and that is a smaller feature than [the design departures](../spec/design-departures.md) currently claims. Phased-rollout language is the most likely candidate for a mechanical fix, and nobody has tried.
 
 **Whether a corpus ever needs a retired-term lexicon at all.** This repository needed one, at a scale of one entry. An adopter with no vocabulary judgment to record declares none, and the check has no instances.
 
@@ -237,7 +237,7 @@ Twelve changes follow, and all are applied.
 | [The taxonomy model](../spec/taxonomy-model.md#language-is-declared-not-assumed) | A new lexicon entry breaks the `consequence` dimension, so it forces a major and rides the migration state |
 | [Authoring and lifecycle](../spec/authoring-and-lifecycle.md#voice) | Posture per voice category is decided by fixability, not by precision. A rewrite-remediated category is permanently advisory |
 | [Authoring and lifecycle](../spec/authoring-and-lifecycle.md#voice) | A voice check runs over author-owned text. Quotations, code, citations and generated blocks are outside it |
-| [Authoring and lifecycle](../spec/authoring-and-lifecycle.md#voice) | A voice escape hatch carries a reason from spec 4's closed set, and free prose beside it |
+| [Authoring and lifecycle](../spec/authoring-and-lifecycle.md#voice) | A voice escape hatch carries a reason from [the assurance model](../spec/assurance-model.md)'s closed set, and free prose beside it |
 | [The assurance model](../spec/assurance-model.md#where-promotion-cannot-finish) | New rule: a control whose remediation needs judgment stays advisory permanently, whatever its false-positive rate |
 | [The assurance model](../spec/assurance-model.md#a-verdict-is-about-one-state-of-the-corpus) | New section: validity is not preserved under merge, stated as a property of a verdict |
 | [The engine architecture](../spec/engine-architecture.md#ci-adapters) | A run reports its tree, its lock hash and its read set. The engine emits and never orders the landing |

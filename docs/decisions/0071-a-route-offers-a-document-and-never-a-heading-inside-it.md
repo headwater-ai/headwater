@@ -2,7 +2,7 @@
 id: HW-DR-0071
 status: current
 status_since: 2026-09-17
-summary: "A route does not read headings and offers no anchor inside a document. A measured heading surface never reached spec 02 or spec 03 for the task that raised the question. At every threshold, function words reached wrong anchors."
+summary: "A route does not read headings and offers no anchor inside a document. A measured heading surface never reached the taxonomy model or authoring and lifecycle for the task that raised the question. At every threshold, function words reached wrong anchors."
 last_verified: 2026-09-17
 title: "71 — A route offers a document and never a heading inside it"
 relations:
@@ -35,17 +35,17 @@ This record tests that claim before it rules. A branch built the route with a he
 
 **Second, with a term rare among headings.** A term could reach a heading only where few headings carry it. That rule needed a threshold, and it also needed a plural fold, because the heading "Identifiers" does not hold the task term "identifier". Four thresholds ran: one heading in 200, 100, 50 and 25. The result was the same at all four:
 
-- Neither spec 02 nor spec 03 reached the default five for the first task. Spec 12 took the `behavior` slot on its summary, which "where it comes from" reaches.
-- Wrong anchors reached the five. "decide", "which" and "on" reached the heading "What decides it" in `docs/evaluations/language-choice.md`. At one in 25, "where" reached "Where the LLM coherence sweep fits" in spec 12.
+- Neither [the taxonomy model](../spec/taxonomy-model.md) nor [authoring and lifecycle](../spec/authoring-and-lifecycle.md) reached the default five for the first task. [The check layer](../spec/check-layer.md) took the `behavior` slot on its summary, which "where it comes from" reaches.
+- Wrong anchors reached the five. "decide", "which" and "on" reached the heading "What decides it" in `docs/evaluations/language-choice.md`. At one in 25, "where" reached "Where the LLM coherence sweep fits" in [the check layer](../spec/check-layer.md).
 - One anchor was right. For the second task of the issue, `docs/spec/check-layer.md#severity-is-the-checks-posture-is-the-controls` answers "what its severity is".
 
-The spec 02 heading "Kind resolution" shares no term with the task at any threshold. The spec 03 heading "Identifiers" shares one term only through an English plural fold.
+[The taxonomy model](../spec/taxonomy-model.md) heading "Kind resolution" shares no term with the task at any threshold. The [authoring and lifecycle](../spec/authoring-and-lifecycle.md) heading "Identifiers" shares one term only through an English plural fold.
 
 ## Decision
 
-**A route offers a document and never a heading inside it.** The read set in spec 5 stays as it is. No kind qualifies.
+**A route offers a document and never a heading inside it.** The read set in [AI integration](../spec/ai-integration.md) stays as it is. No kind qualifies.
 
-The reason is the rule in spec 5 that a wrong pointer costs more than a missing one, because an agent follows it. A heading anchor is a stronger claim than a document pointer. It tells an agent where to read, and not only what to open. On this corpus the heading surface made that claim wrongly more often than rightly. It never reached the case that raised the question.
+The reason is the rule in [AI integration](../spec/ai-integration.md) that a wrong pointer costs more than a missing one, because an agent follows it. A heading anchor is a stronger claim than a document pointer. It tells an agent where to read, and not only what to open. On this corpus the heading surface made that claim wrongly more often than rightly. It never reached the case that raised the question.
 
 Two parts of the build would each need a ruling of their own, and neither has one:
 
@@ -54,11 +54,11 @@ Two parts of the build would each need a ruling of their own, and neither has on
 
 ## Consequences
 
-The answer to the first task is still out of reach of the route. That gap is in how the corpus names its topics, and not in how many surfaces the route reads. Spec 02 answers "which shelf" under a heading that says "Kind resolution". A lexical router cannot join those words, and no weighting of headings changes that.
+The answer to the first task is still out of reach of the route. That gap is in how the corpus names its topics, and not in how many surfaces the route reads. [The taxonomy model](../spec/taxonomy-model.md) answers "which shelf" under a heading that says "Kind resolution". A lexical router cannot join those words, and no weighting of headings changes that.
 
 Two ways remain open, and this record does not choose between them:
 
-- **An authored cue.** Spec 5 already makes the summary the scent facet. A spec part that answers a common task under an unexpected name can say so in its summary, at the cost of a longer summary.
+- **An authored cue.** [AI integration](../spec/ai-integration.md) already makes the summary the scent facet. A spec part that answers a common task under an unexpected name can say so in its summary, at the cost of a longer summary.
 - **A meaning-based lookup.** [HW-DR-0064](0064-q64-whether-intent-time-routing-gains-an-offline-embedding-path-in-shadow-mode.md) collects a shadow-mode log for an embedding path, and [#819](https://github.com/headwater-ai/headwater/issues/819) builds it. That path reaches no agent until a second ruling. The first task is a case that its comparison can report on.
 
 A later proposal to read headings has to answer the two findings above. It also has to show a measurement over a corpus that did not set its threshold.

@@ -4,7 +4,7 @@
 //! **Item 4 of the spike.** The claim under test is that a change-scoped run
 //! over a 1,000-document corpus fits inside 200 ms warm.
 //!
-//! The runner is also where two of spec 12's rules become mechanical rather
+//! The runner is also where two of [the check layer](../../../../../../docs/spec/check-layer.md)'s rules become mechanical rather
 //! than aspirational. Cache keys carry every in-scope input, and findings sort
 //! before they leave.
 
@@ -16,7 +16,7 @@ use crate::view::{CorpusView, DocumentView, EdgeView};
 use std::collections::HashMap;
 
 /// A cache key covers exactly the inputs in scope, plus the taxonomy lock hash
-/// and the check's version. Spec 12 calls a key that omits an input a
+/// and the check's version. [The check layer](../../../../../../docs/spec/check-layer.md) calls a key that omits an input a
 /// correctness bug, so the construction is centralized here.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct CacheKey {
@@ -43,7 +43,7 @@ impl Cache {
     }
 }
 
-/// What a run accounted for. Spec 4's no-silent-passes rule reduces to this
+/// What a run accounted for. [The assurance model](../../../../../../docs/spec/assurance-model.md)'s no-silent-passes rule reduces to this
 /// being reported rather than inferred.
 #[derive(Debug, Default, Clone)]
 pub struct RunReport {
@@ -93,14 +93,14 @@ impl<'r> Runner<'r> {
     }
 
     /// Full-corpus run. Every instance is created before any check runs, so the
-    /// denominator is fixed first (spec 12, phase A then phase B).
+    /// denominator is fixed first ([the check layer](../../../../../../docs/spec/check-layer.md), phase A then phase B).
     pub fn run_full(&self, graph: &Graph, cache: &mut Cache) -> RunReport {
         let docs: Vec<DocIdx> = (0..graph.documents().len()).collect();
         let edges: Vec<usize> = (0..graph.edges().len()).collect();
         self.run(graph, cache, &docs, &edges, true)
     }
 
-    /// Change-scoped run. Invalidation follows spec 12 exactly: document checks
+    /// Change-scoped run. Invalidation follows [the check layer](../../../../../../docs/spec/check-layer.md) exactly: document checks
     /// for changed files, edge checks for every edge *incident to* a changed
     /// file in both directions, and corpus checks unconditionally, because a
     /// corpus check has the whole corpus in scope and cannot be narrowed.
@@ -236,7 +236,7 @@ impl<'r> Runner<'r> {
             cache.entries.insert(key, found);
         }
 
-        // A document with zero instances is a finding (spec 12).
+        // A document with zero instances is a finding (the check layer (docs/spec/check-layer.md)).
         if self.registry.document.is_empty() {
             for d in graph.documents() {
                 report.documents_with_zero_instances.push(d.path.clone());

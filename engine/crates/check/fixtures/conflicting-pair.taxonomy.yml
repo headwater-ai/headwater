@@ -6,7 +6,7 @@
 #
 # `conflicts_with` is the standard package's declaration as written: symmetric,
 # with `invalid_when: {both: {status: current}}`, so two `current` decisions
-# joined by it are an incoherent corpus state (spec 2).
+# joined by it are an incoherent corpus state (the taxonomy model (docs/spec/taxonomy-model.md)).
 #
 # `constrains` joins the same kind and declares no condition. Two `current`
 # ends of it are silent, which proves the declaration gates the rule and the

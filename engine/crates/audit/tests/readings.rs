@@ -231,7 +231,7 @@ fn the_fixture_tree_with_an_adoption_series_produces_the_recorded_audit() {
 
 /// An arm that cannot be measured has a location, and it is never a zero.
 ///
-/// This is the defect that the figure in spec 3 carried before this reading
+/// This is the defect that the figure in [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) carried before this reading
 /// existed. That sentence read `56 of 142`, and the denominator held 16
 /// documents of a kind that requires no facet in the `name` role. A rule of the
 /// shape it was arguing about could not have measured one of them, so counting
@@ -295,7 +295,7 @@ fn a_shelf_that_cannot_be_measured_is_located_rather_than_counted_at_zero() {
 /// Every shelf that declares a layout reports a population it could measure.
 ///
 /// Over this repository rather than over the tree written for it, and it is the
-/// arithmetic that spec 3 now cites: a document that was not measured is in no
+/// arithmetic that [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) now cites: a document that was not measured is in no
 /// numerator and in no denominator. A reading whose measured count exceeded its
 /// identified count would be counting a document twice, and one whose renders
 /// exceeded its measured count would be reporting a name it never rendered.
@@ -849,7 +849,7 @@ fn an_undated_document_is_counted_apart_from_a_fresh_one() {
     assert_eq!(annotates.expired, 0);
 }
 
-/// Every creator of spec 2's closed set has a row, in use or not.
+/// Every creator of [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s closed set has a row, in use or not.
 ///
 /// This is the property the whole creator reading exists for. Q19 asks whether
 /// an imported edge decays faster than a scaffolded one, and the answer over a
@@ -1229,7 +1229,7 @@ fn a_reading_that_still_waits_says_where_the_absence_lives() {
 /// report does not name as derived would send a reader to the wrong row with
 /// no test anywhere reporting it.
 ///
-/// It also holds the derived value inside spec 3's closed set. A value outside
+/// It also holds the derived value inside [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s closed set. A value outside
 /// it is reported as one a corpus invented, and the engine's own answer must
 /// not be one of those.
 #[test]

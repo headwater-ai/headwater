@@ -15,7 +15,7 @@
 //!
 //! Every other role stays out. A facet in the `name` role is a title a reader
 //! scans, it holds no verb, and a sentence-length rule over one reports a defect
-//! whose only repair is a rename. Spec 12 states the whole ruling and the
+//! whose only repair is a rename. [The check layer](../../../../docs/spec/check-layer.md) states the whole ruling and the
 //! condition that reopens it.
 //!
 //! # Every position is the position of the value

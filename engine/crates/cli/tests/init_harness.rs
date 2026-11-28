@@ -741,7 +741,7 @@ fn first_stop_rule(path: &str) -> String {
         .to_owned()
 }
 
-/// Stop rule 1 of the shipped authoring skill, and of spec 5 which it restates,
+/// Stop rule 1 of the shipped authoring skill, and of [AI integration](../../../../docs/spec/ai-integration.md) which it restates,
 /// counts a ruling that the person states in the conversation as evidence for
 /// a decision record (#1974). The rule once said "if no work item, commit,
 /// discussion or measurement supports it, halt and ask", and in phase B of

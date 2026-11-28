@@ -47,14 +47,14 @@ The reasons are in the header comments of the two clients and in `integrations/v
 
 **The owner rejected the alternative.** A library binding for each editor host is not the design, and the plugins do not move to one.
 
-**This decision does not change three things.** The library stays embeddable, and spec 6 still states that as an implementation constraint. The MCP server consumes the library in the same process. [HW-DR-0001](0001-implementation-language.md) stands: the language is Rust so that a host can embed the library. It was not chosen because every host must embed it.
+**This decision does not change three things.** The library stays embeddable, and [the engine architecture](../spec/engine-architecture.md) still states that as an implementation constraint. The MCP server consumes the library in the same process. [HW-DR-0001](0001-implementation-language.md) stands: the language is Rust so that a host can embed the library. It was not chosen because every host must embed it.
 
 ## Consequences
 
-Spec 6 §Library states the position. The CLI and the MCP server use the library in their own process. An editor integration starts `headwater mcp` for each query, and the section links here. The CI adapter under `integrations/headwater-check/` runs the released binary, and spec 6 states that too. The owner ruled on editor integrations alone, so spec 6 states no rule for CI adapters beyond what the action does.
+[The engine architecture](../spec/engine-architecture.md) §Library states the position. The CLI and the MCP server use the library in their own process. An editor integration starts `headwater mcp` for each query, and the section links here. The CI adapter under `integrations/headwater-check/` runs the released binary, and [the engine architecture](../spec/engine-architecture.md) states that too. The owner ruled on editor integrations alone, so [the engine architecture](../spec/engine-architecture.md) states no rule for CI adapters beyond what the action does.
 
 The two `governs` edges name the two client files. An agent that edits one of them sees this record, and the edge goes suspect when either file changes.
 
-HW-DR-0001 still says that spec 6 requires editor integrations to consume the library in the same process. That sentence records the reasoning of 2026-08-11, and this record does not edit an accepted decision. This record traces to HW-DR-0001, and the paragraph above states what of it still holds.
+HW-DR-0001 still says that [the engine architecture](../spec/engine-architecture.md) requires editor integrations to consume the library in the same process. That sentence records the reasoning of 2026-08-11, and this record does not edit an accepted decision. This record traces to HW-DR-0001, and the paragraph above states what of it still holds.
 
 **Two conditions open this decision again.** The first is a measured cost for each query that a reader in an editor notices, near the 5 s limit of the plugins. The second is an editor host where a plugin cannot start a subprocess.

@@ -69,7 +69,7 @@ The line between the two is not fixed by subject matter. It is fixed by one ques
 
 Contradiction is the clearest case. To detect that two documents disagree is structurally undecidable — someone must read both and judge. But a `conflicts_with` edge between two decisions is an assertion already in the front matter. Everything downstream of it is ordinary graph work.
 
-Spec 2 gives the rule that [two `current` decisions joined by `conflicts_with`](taxonomy-model.md#the-decision-relation-vocabulary) is an invalid state. That rule is deterministic, total, and blocking-eligible. The judgment happened once, when the author declared the edge. After that, the check is cohesion.
+[The taxonomy model](taxonomy-model.md) gives the rule that [two `current` decisions joined by `conflicts_with`](taxonomy-model.md#the-decision-relation-vocabulary) is an invalid state. That rule is deterministic, total, and blocking-eligible. The judgment happened once, when the author declared the edge. After that, the check is cohesion.
 
 The same move settles the conflict itself. A human who resolves the disagreement writes a decision, and that decision `overrides` the one whose effect it displaces. The judgment is then data twice over: once in the edge that declared the conflict, and once in the document that settled it. Derived reading precedence carries the ruling to every later reader with no further mechanism ([Q18](decisions.md#q18--recording-adjudicated-disagreements)).
 

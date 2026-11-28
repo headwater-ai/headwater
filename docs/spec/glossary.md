@@ -448,7 +448,7 @@ The [voice regime](#voice-regime) for time-bound kinds such as proposals, eviden
 
 ### `Neighbourhood`
 
-A check scope: a node and its n-hop neighbors. The identifier keeps the spelling that spec 12 gives it. Spec 12 marks it speculative and offers to cut it if no real check needs depth greater than one. See [the check layer](check-layer.md#scope--the-declaration-everything-else-rests-on).
+A check scope: a node and its n-hop neighbors. The identifier keeps the spelling that [the check layer](check-layer.md) gives it. [The check layer](check-layer.md) marks it speculative and offers to cut it if no real check needs depth greater than one. See [the check layer](check-layer.md#scope--the-declaration-everything-else-rests-on).
 
 ### Normative language
 
@@ -813,8 +813,8 @@ An index of every term is what makes a name collision visible, so this page foun
 
 - **register** — the voice sense is now *voice*. The word is left to the [register projection](#register-projection) and the registers that it generates.
 - **gap** — the evidence sense is now [`unevidenced`](#unevidenced). The word is left to the obligation [disposition](#disposition).
-- **audit** and **conformance** — spec 4's conformance audit is now the [accuracy audit](#accuracy-audit). `taxonomy audit` keeps its CLI verb, and [conformance](#conformance) keeps the adoption sense that owns `headwater conformance`.
+- **audit** and **conformance** — [the assurance model](assurance-model.md)'s conformance audit is now the [accuracy audit](#accuracy-audit). `taxonomy audit` keeps its CLI verb, and [conformance](#conformance) keeps the adoption sense that owns `headwater conformance`.
 
-One question survives the renames. Spec 3 says that an `unevidenced` document appears in the gap register, and spec 4 says that an uncovered obligation appears in the gap register. Whether that is one artifact with two entry classes, or two artifacts that share a name, is unsettled and recorded.
+One question survives the renames. [Authoring and lifecycle](authoring-and-lifecycle.md) says that an `unevidenced` document appears in the gap register, and [the assurance model](assurance-model.md) says that an uncovered obligation appears in the gap register. Whether that is one artifact with two entry classes, or two artifacts that share a name, is unsettled and recorded.
 
 One further usage is deliberate rather than accidental. Routing **fails open** when it stays silent below its confidence gate. Conventional security usage would call that failing closed. Design principle 7 in [the vision and scope](vision-and-scope.md#design-principles) fixes the project meaning.

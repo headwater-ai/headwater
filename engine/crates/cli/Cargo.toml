@@ -13,7 +13,7 @@ repository.workspace = true
 name = "headwater"
 path = "src/main.rs"
 
-# Spec 6: "The CLI is a thin shell over a library API." Everything below is a
+# The engine architecture (docs/spec/engine-architecture.md): "The CLI is a thin shell over a library API." Everything below is a
 # library that an editor, the MCP server or a CI adapter consumes directly, and
 # none of them starts this binary and parses its text.
 #
@@ -77,7 +77,7 @@ headwater-audit = { workspace = true }
 headwater-census = { workspace = true }
 headwater-check = { workspace = true }
 
-# `taxonomy diff`. The six dimensions of spec 2, and the crate runs no phase: it
+# `taxonomy diff`. The six dimensions of the taxonomy model (docs/spec/taxonomy-model.md), and the crate runs no phase: it
 # takes two censuses, two runs, two plans and two graphs, and says where they
 # differ. Nothing else names it, so no phase can read a compatibility verdict.
 headwater-compat = { workspace = true }

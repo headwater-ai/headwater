@@ -2,7 +2,7 @@
 #
 # Every closed value set the meta-schema carries, each one written wrongly once.
 # The role registry, the relation families and the `created_by` set are closed
-# in spec 2 itself; the rest are marked as guesses in `meta-schema.yml`.
+# in the taxonomy model (docs/spec/taxonomy-model.md) itself; the rest are marked as guesses in `meta-schema.yml`.
 taxonomy: acme
 version: 1.0.0
 

@@ -20,14 +20,14 @@
 //!    path that is not there at all is the plainest sign that a model invented
 //!    it.
 //! 3. **The citation.** Every quotation is in the document the finding
-//!    attributes it to. Spec 4's third constraint asks a finding to quote the
+//!    attributes it to. [The assurance model](../../../../docs/spec/assurance-model.md)'s third constraint asks a finding to quote the
 //!    passages it believes are in conflict, "so a human can adjudicate in
 //!    seconds"; a quotation the file does not hold costs that human the whole
 //!    minute instead. This is the test that catches the failure a prose
 //!    judgment fails by, and it is the reason a rejected finding never reaches
 //!    a reader.
 //! 4. **Novelty.** A finding whose class implies a relation, over two documents
-//!    the graph already joins by that relation, is refused. Spec 4's fourth
+//!    the graph already joins by that relation, is refused. [The assurance model](../../../../docs/spec/assurance-model.md)'s fourth
 //!    constraint: "A finding that restates an edge already in the front matter
 //!    is a defect in the sweep, not a finding about the corpus."
 //! 5. **The endpoints of a proposal.** A proposed edge joins two documents the
@@ -538,7 +538,7 @@ fn one(
         }
     };
 
-    // Spec 4's fourth constraint, applied to the class rather than to the
+    // The assurance model's (docs/spec/assurance-model.md) fourth constraint, applied to the class rather than to the
     // proposal. A finding may name two documents and propose nothing, and it
     // still restates the graph when the relation its class implies is already
     // declared between them.
@@ -566,7 +566,7 @@ fn one(
         finding: Finding {
             rule: class.rule(),
             // Every sweep finding is `info`, and the value is not a judgment
-            // about how much the defect matters. Spec 12 puts severity on the
+            // about how much the defect matters. The check layer (docs/spec/check-layer.md) puts severity on the
             // check and posture on the control; a sampler has neither, so the
             // one honest value is the one that says "read this" and claims
             // nothing about blocking. Nothing reads it either way: no control
@@ -748,7 +748,7 @@ fn quoted(text: &str) -> String {
 ///
 /// This is the one place a sweep finding becomes bytes a person reads, and
 /// every one of them is stamped [`PROVENANCE`]. See [`crate::json`] for the
-/// same report in the finding shape spec 4 declares.
+/// same report in the finding shape [the assurance model](../../../../docs/spec/assurance-model.md) declares.
 impl Report {
     /// `mode` is the color decision the caller already made — see
     /// `headwater_check::paint`'s module comment for why this function reads

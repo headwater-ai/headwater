@@ -120,7 +120,7 @@ The exercise is not one-sided. Six things map cleanly and would cost an emitter 
 
 - **Kind inheritance.** `is_a` to `rdfs:subClassOf` works, and the SHACL example already noted that `sh:targetClass` follows it, so a shape on the abstract kind reaches every concrete one.
 - **Controlled vocabularies.** A vocabulary is a `skos:ConceptScheme` and each value a `skos:Concept`, with `skos:prefLabel` and `skos:inScheme`. This is what SKOS is for, and the fit is exact.
-- **Purpose prose.** `intent` becomes `skos:definition` and each entry in `answers` becomes a `skos:scopeNote`. The reader intent that spec 2 requires a purpose to declare survives intact.
+- **Purpose prose.** `intent` becomes `skos:definition` and each entry in `answers` becomes a `skos:scopeNote`. The reader intent that [the taxonomy model](../spec/taxonomy-model.md) requires a purpose to declare survives intact.
 - **Facet guidance.** Per-value guidance becomes `skos:scopeNote` on the value concept.
 - **Lineage.** `supersedes` emits as `rdfs:subPropertyOf prov:wasRevisionOf`, which is the alignment [the taxonomy model](../spec/taxonomy-model.md#lineage-aligns-with-prov) already declared. It costs one triple and it is the single place where an external standard says what Headwater means.
 - **Symmetry.** `reciprocal: symmetric` on `conflicts_with` emits as `owl:SymmetricProperty` and means the same thing on both sides.
@@ -191,7 +191,7 @@ Four items, and [the register](../spec/open-obligations.md) now carries all of t
 
 **The base package has no machine-readable home.** Its only committed copy is a fenced YAML block in an evaluation. Any tool that wants to resolve the taxonomy has to parse Markdown to find it. That includes this emitter, the confluence check that admission criterion 6 requires, and the engine when it exists. The design-spec bundle has a real file at `docs/taxonomies/design-spec/bundle.yml` and extends a base that does not.
 
-**`exportable_as` should be read as forbidding entailment-shaped constraints.** Spec 12's equivalence bar already excludes `owl:minCardinality` and `rdfs:range`, and nothing states the general case. One sentence would close it.
+**`exportable_as` should be read as forbidding entailment-shaped constraints.** [The check layer](../spec/check-layer.md)'s equivalence bar already excludes `owl:minCardinality` and `rdfs:range`, and nothing states the general case. One sentence would close it.
 
 **`owl:inverseOf` conflicts with `created_by` measurement.** Emitting the inverse fabricates 332 unauthored edges in this corpus alone. Whether the RDF emitter omits inverses is a decision that emitter 4 will have to take, and finding 3 is the argument for omitting them.
 

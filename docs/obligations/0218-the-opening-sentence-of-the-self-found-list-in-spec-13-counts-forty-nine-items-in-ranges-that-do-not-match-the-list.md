@@ -2,13 +2,13 @@
 id: HW-OBL-0218
 status: discharged
 status_since: 2026-09-27
-summary: "Spec 13 opened its self-found list with a count of forty-nine items in five ranges that the list did not match. The sentence now states no count and no range, and a fixture fails on a prose line of spec 13 that does."
+summary: "The register of open obligations opened its self-found list with a count of forty-nine items in five ranges that the list did not match. The sentence now states no count and no range, and a fixture fails on a prose line of the register of open obligations that does."
 last_verified: 2026-09-27
-title: "The opening sentence of the self-found list in spec 13 counts forty-nine items in ranges that do not match the list"
+title: "The opening sentence of the self-found list in the register of open obligations counts forty-nine items in ranges that do not match the list"
 waiting_on: build
 ---
 
-# The opening sentence of the self-found list in spec 13 counts forty-nine items in ranges that do not match the list
+# The opening sentence of the self-found list in the register of open obligations counts forty-nine items in ranges that do not match the list
 
 ## Context
 
@@ -29,4 +29,4 @@ The same paragraph also states that three items name a decision and "the other f
 
 This record discharges in one of two ways. The opening sentence states no count and no range that a person keeps aligned with the list by hand. Or a check compares each count and range in the sentence to the list, and the check fails on a difference.
 
-**Discharged on 2026-09-27 by #906, by the first arm.** The opening sentence of the section now states no count and no range. The four other prose lines of spec 13 that named a range or a count of items lost it in the same change. Case group 3 of `tools/repo/obligation-register-fixtures.sh` reads each prose line of spec 13. It fails on a line that opens with a spelled count of items or names a range of identifiers. The case does not compare a count with the list. It refuses the count, so no sentence of that shape can drift again.
+**Discharged on 2026-09-27 by #906, by the first arm.** The opening sentence of the section now states no count and no range. The four other prose lines of [the register of open obligations](../spec/open-obligations.md) that named a range or a count of items lost it in the same change. Case group 3 of `tools/repo/obligation-register-fixtures.sh` reads each prose line of [the register of open obligations](../spec/open-obligations.md). It fails on a line that opens with a spelled count of items or names a range of identifiers. The case does not compare a count with the list. It refuses the count, so no sentence of that shape can drift again.

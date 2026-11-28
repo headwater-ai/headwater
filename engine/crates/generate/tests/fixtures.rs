@@ -12,7 +12,7 @@
 //! 4. `--check` over an empty tree. Everything is missing, and the run fails.
 //! 5. A write into a tree where an authored file already holds one of the output
 //!    paths. That one is refused and the authored bytes are still there
-//!    afterwards, which is the property spec 6 gives the marker.
+//!    afterwards, which is the property [the engine architecture](../../../../docs/spec/engine-architecture.md) gives the marker.
 //!
 //!     HEADWATER_BLESS=1 cargo test -p headwater-generate --test fixtures
 //!
@@ -1374,7 +1374,7 @@ fn the_native_export_carries_the_members_of_a_list_anchor() {
 
 /// A filter withholds a document whole, and every edge that names it.
 ///
-/// Spec 7's claim about a filtered export: it "contains no document that its
+/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s claim about a filtered export: it "contains no document that its
 /// declared filter withholds, and no artifact inside the profile derives from
 /// one". An edge into a withheld document states that the document exists and
 /// what it is called, so it goes too.
@@ -1404,7 +1404,7 @@ fn a_filtered_profile_withholds_a_document_and_its_edges() {
         "the path of the withheld document reached the artifact"
     );
 
-    // The tombstone carries the rule identifier and never the document. Spec 7:
+    // The tombstone carries the rule identifier and never the document. Distribution and federation (docs/spec/distribution-and-federation.md):
     // "The rule identifier is what a reader needs to ask for access, and it is
     // all that they get."
     assert!(
@@ -1466,7 +1466,7 @@ fn a_sealed_grain_states_the_filtering_and_no_count() {
 
 /// The census fails a projector that dropped something with no reason.
 ///
-/// This is the failing fixture for the rule spec 7 states: "An omission that no
+/// This is the failing fixture for the rule [distribution and federation](../../../../docs/spec/distribution-and-federation.md) states: "An omission that no
 /// reason covers is a projector defect, and it fails the run." It runs the
 /// census against a projector that carried nothing and declared no loss, which
 /// is the emitter this whole apparatus exists to catch, and then against one
@@ -1503,7 +1503,7 @@ fn the_census_fails_a_projector_that_dropped_a_node_with_no_reason() {
 
 /// A JSON Schema carries constraints and no instance, and it says so.
 ///
-/// The two check families that clear spec 12's equivalence bar are here, and the
+/// The two check families that clear [the check layer](../../../../docs/spec/check-layer.md)'s equivalence bar are here, and the
 /// third construction that would not clear it is deliberately absent: the kind
 /// is selected by a discriminator under `if`/`then`, never by a root `oneOf`
 /// that reports an error where the native check has none.
@@ -1625,7 +1625,7 @@ fn the_schema_export_carries_constraints_and_accounts_for_every_instance() {
 /// The third assertion is the one that fires on a change to this engine rather
 /// than to the document. The refusal names the emitters that ship, and a third
 /// emitter marked built and left out of that sentence makes the sentence false
-/// in the engine and in spec 2 at once — which is the state a comparison
+/// in the engine and in [the taxonomy model](../../../../docs/spec/taxonomy-model.md) at once — which is the state a comparison
 /// between the two cannot see, because both sides are wrong in the same words.
 #[test]
 fn an_unbuilt_emitter_refuses_and_says_what_it_waits_on() {
@@ -1666,7 +1666,7 @@ fn an_unbuilt_emitter_refuses_and_says_what_it_waits_on() {
 
 /// An exporter that cannot evaluate its filter emits nothing.
 ///
-/// Spec 7, on principle 7 read for an exporter: "It never emits an unfiltered
+/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md), on principle 7 read for an exporter: "It never emits an unfiltered
 /// artifact, and it never emits a partly filtered one." A clause over a facet
 /// that the taxonomy does not declare withholds nothing at all, so the failure
 /// it produces is the one an export may not have.

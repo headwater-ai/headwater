@@ -14,7 +14,7 @@
 //! is a corpus-wide fold that every branch rewrites, and
 //! [HW-DR-0049](../../../../docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md)
 //! rules that such a fold is derived and never stored. A figure computed on
-//! the base branch is an input that spec 12 keeps out of a check. The change
+//! the base branch is an input that [the check layer](../../../../docs/spec/check-layer.md) keeps out of a check. The change
 //! already names what it adds, so the rule reads that: a path the manifest
 //! names on an `added` line, inside a scope pattern, that no `governance`
 //! edge onto the pattern's anchor kind matches, is new debt. A file that
@@ -216,7 +216,7 @@ impl CorpusCheck for Ungoverned<'_> {
     const VERSION: u32 = 2;
     /// The paths the change adds, and the prior version of each document it
     /// carries. A run with no change has neither, and the runner skips the
-    /// instance with the reason spec 12 fixes.
+    /// instance with the reason [the check layer](../../../../docs/spec/check-layer.md) fixes.
     const NEEDS_PRIOR: bool = true;
     /// The edges, for the reach test, and the scope the graph build walked.
     const NEEDS_GRAPH: bool = true;

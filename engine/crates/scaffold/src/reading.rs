@@ -33,7 +33,7 @@
 //!
 //! # What a reading deliberately does not hold
 //!
-//! **No person and no agent.** No user name, no host, no `drafted_by`. Spec 3
+//! **No person and no agent.** No user name, no host, no `drafted_by`. [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)
 //! aims the remedy for a falling fraction at the taxonomy — derive more, or
 //! require less — and never at the author. A per-author capture-cost number is
 //! a performance measure, and a performance measure changes the behavior it

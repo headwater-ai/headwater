@@ -105,7 +105,7 @@
   Access-Control-Allow-Origin: *
 
 # The corpus descriptor is what every generated page names in its
-# `rel="describedby"` link, and spec 7 expects a cold reader to fetch it from
+# `rel="describedby"` link, and distribution and federation (docs/spec/distribution-and-federation.md) expects a cold reader to fetch it from
 # another origin. `/ns/*` above carries the same header for the same reason.
 /corpus.json
   Access-Control-Allow-Origin: *

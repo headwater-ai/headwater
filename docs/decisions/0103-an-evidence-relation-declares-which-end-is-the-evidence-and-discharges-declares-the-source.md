@@ -21,11 +21,11 @@ relations:
 
 ## Context
 
-The rule `warrant.evidence.unsupported` holds spec 3's sentence: "A pointer to a document with the `asserted` warrant does not support `evidenced`." It reads every relation of the `evidence` family in one direction. The source makes the claim, and the target is the evidence. So it reads the `evidence_basis` of the source and the warrant of the target.
+The rule `warrant.evidence.unsupported` holds [authoring and lifecycle](../spec/authoring-and-lifecycle.md)'s sentence: "A pointer to a document with the `asserted` warrant does not support `evidenced`." It reads every relation of the `evidence` family in one direction. The source makes the claim, and the target is the evidence. So it reads the `evidence_basis` of the source and the warrant of the target.
 
 Most evidence relations point that way. `traces_to`, `cites_evidence`, `verified_by` and `proven_by` all point from a claim to what it rests on. `discharges` points the other way. The `decision-record` bundle declares it from an `evaluation` to an `obligation_record`, and the evaluation substantiates the obligation. [The conceptual model](../spec/conceptual-model.md) states the direction: "An asserted document does not discharge an evidence obligation." So the evaluation is the evidence.
 
-The rule therefore read a `discharges` edge backwards. An `evidenced` evaluation that discharged an `asserted` obligation was reported, because the rule read the obligation's warrant as support for the evaluation's own claim. An `asserted` evaluation that discharged an `evidenced` obligation passed, and that is the failure spec 1 names. #1384 met the first case and left its `discharges` edges out of an evaluation for that reason. #1511 is the report.
+The rule therefore read a `discharges` edge backwards. An `evidenced` evaluation that discharged an `asserted` obligation was reported, because the rule read the obligation's warrant as support for the evaluation's own claim. An `asserted` evaluation that discharged an `evidenced` obligation passed, and that is the failure [the conceptual model](../spec/conceptual-model.md) names. #1384 met the first case and left its `discharges` edges out of an evaluation for that reason. #1511 is the report.
 
 The rule cannot find the direction by reading the family. [The taxonomy model](../spec/taxonomy-model.md#nuclearity) gives the reason for nuclearity. It says: "One thing that the family cannot supply is *which end* is the nucleus, because relation direction is the choice of the taxonomy author." The same is true of which end substantiates. The rule also cannot name `discharges` in a list of exceptions, because it reads the family and never one relation name. A taxonomy that renames its relations must read the same.
 

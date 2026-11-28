@@ -4,7 +4,7 @@
 //! The point of this crate is what it does *not* contain. There is no child
 //! process, no stdio protocol, no JSON envelope over a pipe, and no server.
 //! Node loads this as a shared library and calls into it, which is the
-//! arrangement spec 6 requires of editor integrations, the MCP server, and CI
+//! arrangement [the engine architecture](../../../../../../docs/spec/engine-architecture.md) requires of editor integrations, the MCP server, and CI
 //! adapters:
 //!
 //! > Editor integrations, the MCP server, and CI adapters all consume the

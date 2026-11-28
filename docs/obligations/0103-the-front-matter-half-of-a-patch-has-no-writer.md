@@ -39,7 +39,7 @@ The read-back that ships compares every scalar of the front matter, as a key pat
 
 - **A deletion.** A writer for it now exists, and `relation.key.outside_block` uses it. `shelf.placement_is_primary` still reports an error whose remedy is to remove one key of one mapping, and it still reports that remedy as remediation prose with no patch.
 - **A normalization of key order.** It moves every key, so no entry stays at its source position.
-- **An added key.** Spec 2 stamps a date where the source holds no date key.
+- **An added key.** [The taxonomy model](../spec/taxonomy-model.md) stamps a date where the source holds no date key.
 
 One sentence states the expectation for a deletion: the scalar list of the source, minus each entry under the removed key path, in source order. `Patch::Relocate` holds that expectation, so the next act for a deletion is to connect `shelf.placement_is_primary` to a deletion patch. A re-order and an addition each still need an expectation that somebody states.
 

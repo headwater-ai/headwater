@@ -125,7 +125,7 @@ pub const HOOKS: [Member; 6] = [
 ];
 
 impl Member {
-    /// Every path, relative to the repository root, that a harness of spec 16
+    /// Every path, relative to the repository root, that a harness of [harness support](../../../../docs/spec/harness-support.md)
     /// reads this member from.
     ///
     /// Claude Code reads `.claude/`, and Copilot reads it too. Codex reads

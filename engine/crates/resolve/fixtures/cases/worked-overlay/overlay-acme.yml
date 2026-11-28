@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
-# Spec 2's own worked overlay (Customization by composition), as a file. It uses
-# every operation an adopter has, and it is here because spec 2 states what its
+# The taxonomy model's (docs/spec/taxonomy-model.md) own worked overlay (Customization by composition), as a file. It uses
+# every operation an adopter has, and it is here because the taxonomy model (docs/spec/taxonomy-model.md) states what its
 # result has to be: "the names change completely, the roles survive, and the
 # core is satisfied".
 #

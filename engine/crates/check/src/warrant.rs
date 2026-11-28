@@ -21,7 +21,7 @@
 //!
 //! # Absent is not a bad value, and this rule skips it
 //!
-//! Spec 3 also says "an absent value is a finding rather than a default". That
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) also says "an absent value is a finding rather than a default". That
 //! is a separate defect with a separate remedy, and 134 documents of this
 //! repository declare no warrant on the day these rules landed.
 //! [HW-OBL-0125](../../../../docs/obligations/0125-nine-documents-state-a-warrant-outside-the-closed-set-and-only-a-person-can-set-the-value.md)
@@ -31,7 +31,7 @@
 //!
 //! # A generated document is not read
 //!
-//! Spec 3 derives `regenerated` from the marker "and never from a
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) derives `regenerated` from the marker "and never from a
 //! declaration". [`crate::scope::over_documents`] creates no document instance
 //! over a generated file, so a stray `warrant:` that a hand edit put into one
 //! is judged by neither rule, which is what [`headwater_doc::warrant_of`]
@@ -64,7 +64,7 @@ use headwater_doc::{ACCEPTED, ACCEPTED_BY, WARRANT, WARRANTS};
 use headwater_yaml::core_schema::as_null;
 use headwater_yaml::{Entry, Mapping, Value};
 
-/// A warrant outside spec 3's closed set.
+/// A warrant outside [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s closed set.
 pub const VALUE: &str = "warrant.value.not_permitted";
 
 /// An acceptor where the warrant forbids one, or none where it requires one.

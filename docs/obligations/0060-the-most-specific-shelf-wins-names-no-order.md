@@ -5,7 +5,7 @@ status: current
 status_since: 2026-08-12
 waiting_on: build
 last_verified: 2026-11-26
-summary: "Spec 2 rules that the most specific shelf pattern wins, and it never states what makes one pattern more specific."
+summary: "The taxonomy model rules that the most specific shelf pattern wins, and it never states what makes one pattern more specific."
 provenance:
   warrant: accepted
   agency: mixed
@@ -32,4 +32,4 @@ The engine decided both, and a decision of that class belongs to the meta-schema
 
 Until the meta-schema takes it, `engine/crates/meta/src/pattern.rs` states the order: first the count of leading segments that hold no wildcard, then the count of literal characters.
 
-On 2026-11-26, #2101 put the rank of one construct into spec 2. A bound `{name}` segment of a shelf path ranks as a wildcard segment with no literal character. Spec 2 still does not state how a wildcard segment ranks against a literal one, so this obligation stays open.
+On 2026-11-26, #2101 put the rank of one construct into [the taxonomy model](../spec/taxonomy-model.md). A bound `{name}` segment of a shelf path ranks as a wildcard segment with no literal character. [The taxonomy model](../spec/taxonomy-model.md) still does not state how a wildcard segment ranks against a literal one, so this obligation stays open.

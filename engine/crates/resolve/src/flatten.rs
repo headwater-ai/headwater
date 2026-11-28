@@ -203,7 +203,7 @@ pub enum Fate {
 ///
 /// - **`bundles` is absorbed.** Flattening resolves the selected bundles into
 ///   the generated `taxonomy.yml`, so every declaration they added is in the
-///   artifact. Spec 7 states the consequence a consumer sees: the package
+///   artifact. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) states the consequence a consumer sees: the package
 ///   declares no bundle directory and its consumer selects no bundles.
 /// - **`assemblies` is absorbed.** The recipe that produced this package is
 ///   recorded under `distribution.derived_from`, by digest. A flattened package

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # Four rules with one shape: two declarations claim one thing, and the engine
-# would have to pick. Spec 2 refuses each of them for the same reason it gives
+# would have to pick. The taxonomy model (docs/spec/taxonomy-model.md) refuses each of them for the same reason it gives
 # for shelf patterns — a coin flip at run time is not a resolution.
 #
 #   anchor integrity     two anchor kinds, one resolver namespace

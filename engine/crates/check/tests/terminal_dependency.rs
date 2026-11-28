@@ -337,7 +337,7 @@ fn a_target_standing_outside_its_own_machine_is_left_to_the_rule_that_owns_it() 
     );
 }
 
-/// A source that is not live is not what spec 3's sentence is about, in both of
+/// A source that is not live is not what [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s sentence is about, in both of
 /// the two ways a source can fail to be live.
 ///
 /// `draft` carries the role `initial`, and a document being argued over rests

@@ -30,7 +30,7 @@ Measured on 2026-09-07, 43 records are listed under [what the engine found about
 
 So every `adopter` value added since that reading comes from the prescription rather than from the definition. Read against HW-DR-0030, almost every one of the 31 is a `build`: a rule to write, an assertion to add, a fixture to record. No outside corpus stands between any of them and the work.
 
-The cost is the query the facet exists to answer. Spec 13 already states three adopter counts on one tree, and the largest of them is the one this facet derives. A reader asking what waits on a first adopter is handed a population that is mostly work this repository can do alone.
+The cost is the query the facet exists to answer. [The register of open obligations](../../spec/open-obligations.md) already states three adopter counts on one tree, and the largest of them is the one this facet derives. A reader asking what waits on a first adopter is handed a population that is mostly work this repository can do alone.
 
 ## Obligation
 

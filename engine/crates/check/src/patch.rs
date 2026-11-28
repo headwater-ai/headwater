@@ -122,7 +122,7 @@ pub enum Patch {
     /// is the value the check read for that facet, and the applier refuses
     /// the whole patch where any one of them no longer holds. The writes land
     /// together or none of them do, which is what a state and its
-    /// state-entry date need: spec 2 calls a state change with no stamp a
+    /// state-entry date need: [the taxonomy model](../../../../docs/spec/taxonomy-model.md) calls a state change with no stamp a
     /// defect whatever caused it.
     Facets {
         path: String,

@@ -21,7 +21,7 @@
 //!    changes no verdict, and a move that reaches one of them is refused
 //!    (#1292). Without that rule, every taxonomy change that landed during a
 //!    batch voided the batch.
-//! 2. **The identity is complete.** Every member of spec 5's run identity is
+//! 2. **The identity is complete.** Every member of [AI integration](../../../../docs/spec/ai-integration.md)'s run identity is
 //!    present. An incomplete identity is a measurement nobody can locate, and a
 //!    missing served version is the one that
 //!    [AI integration](../../../../docs/spec/ai-integration.md#a-run-produces-a-snapshot-and-a-document)
@@ -30,10 +30,10 @@
 //!    corpus. A probe that is not there is the plainest sign that the
 //!    transcript and the corpus are not the same measurement.
 //! 4. **No prose.** Every key of the transcript is one of the closed sets
-//!    below, and one key outside them refuses the file. Spec 5 says the
+//!    below, and one key outside them refuses the file. [AI integration](../../../../docs/spec/ai-integration.md) says the
 //!    transcript "holds no model prose. That omission is the enforcement", and
 //!    an omission that nothing tests is a claim rather than an enforcement.
-//! 5. **The realized cost is present.** Spec 4 asks the adaptive layer to
+//! 5. **The realized cost is present.** [The assurance model](../../../../docs/spec/assurance-model.md) asks the adaptive layer to
 //!    report the cost of its own instrument, and a run that did not record what
 //!    it spent leaves that number to a guess.
 //!
@@ -56,7 +56,7 @@ use headwater_yaml::value::{Mapping, Value};
 /// The kind a transcript document is.
 pub const KIND: &str = "probe_transcript";
 
-/// Every key a run identity may carry. Spec 5's nine members, plus the three
+/// Every key a run identity may carry. [AI integration](../../../../docs/spec/ai-integration.md)'s nine members, plus the three
 /// the harness needs to hold a run to the plan that fixed it.
 pub const IDENTITY_KEYS: [&str; 12] = [
     "model",
@@ -78,7 +78,7 @@ pub const EVENT_KEYS: [&str; 5] = ["probe", "session", "calls", "produced", "ans
 
 /// Every key one tool call may carry.
 ///
-/// Spec 5: a transcript holds "the ordered tool-call events with their
+/// [AI integration](../../../../docs/spec/ai-integration.md): a transcript holds "the ordered tool-call events with their
 /// arguments and result identities". A result *identity* and not a result: the
 /// bytes a tool returned are the corpus, and a transcript that inlined them
 /// would be a second copy of the tree it already names by digest.

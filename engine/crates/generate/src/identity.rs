@@ -154,7 +154,7 @@ pub(crate) fn read(
 /// form, so nothing states whether it is a document.
 ///
 /// A probe result is the case that makes the block earn its keep a second time.
-/// Spec 5 asks a result to be citable, and a rate that no document can name is a
+/// [AI integration](../../../../docs/spec/ai-integration.md) asks a result to be citable, and a rate that no document can name is a
 /// number a reader reaches only by opening the file it happens to sit in.
 fn writes_a_document(kind: Kind) -> bool {
     matches!(

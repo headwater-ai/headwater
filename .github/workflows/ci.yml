@@ -14,7 +14,7 @@
 #
 # The check itself is advisory and it stays that way until a rule earns a
 # promotion. The posture is not set here: `headwater check` exits 0 with findings on stdout
-# unless it is given `--strict`, which is the default spec 6 fixes. So a
+# unless it is given `--strict`, which is the default the engine architecture (docs/spec/engine-architecture.md) fixes. So a
 # promotion is one flag on one line, with the diff that added it as its audit
 # trail, rather than a `continue-on-error` that hides which rules block.
 #
@@ -587,7 +587,7 @@ jobs:
         # the reason the check below is advisory. A projection that differs from
         # its source is not a judgment about prose somebody wrote. It is a
         # derived artifact that is out of date, the remedy is one command, and
-        # spec 12 blocks on what a machine repairs.
+        # the check layer (docs/spec/check-layer.md) blocks on what a machine repairs.
         #
         # It needs no `--now`. Nothing this verb writes reads a clock, which is
         # what lets it sit above the step that fixes the date for the three runs
@@ -696,7 +696,7 @@ jobs:
         # and `text` blocks carry content shaped like transcript fields and
         # asserts that no byte of any of them survives, which is the one case
         # a filter by position, by index or by the tags in a sample fails. It
-        # also holds spec 15's three-state rule, where `calls: []` for a
+        # also holds the recorder contract's (docs/spec/the-recorder-contract.md) three-state rule, where `calls: []` for a
         # stream nobody watched turns an unobserved run into a clean result.
         # It needs `jq` and skips with a warning without it. The suite holds
         # the driver and the batch driver too, which start every session
@@ -984,7 +984,7 @@ jobs:
           sh tools/run/integrate-fixtures.sh
       - name: A citation that went stale reads differently from one that was invented
         # `tools/cite/check-citations.py` is the only checker in this
-        # repository that reads a code file rather than a document. Spec 5 asks
+        # repository that reads a code file rather than a document. AI integration (docs/spec/ai-integration.md) asks
         # generated code to carry `# per <IDENTIFIER> (<path>)` and states the
         # purpose that rests on the comment being true, and nothing checked it,
         # so a citation that aged out read exactly like one that still holds.
@@ -1002,12 +1002,12 @@ jobs:
         # the reason is a measurement this suite pins rather than a claim this
         # comment makes. Outside `tools/cite/`, one line of this repository
         # carries the shape: `docs/spec/ai-integration.md` line 285, where
-        # spec 5 illustrates the convention with an identifier and a path from
+        # AI integration (docs/spec/ai-integration.md) illustrates the convention with an identifier and a path from
         # an imagined corpus. A case reads that real document and holds the
         # count and the line. What this repository carries nowhere is a
         # citation written as a claim about what licensed a line of its own
         # code, and that is by ruling: HW-DR-0092 records that the convention
-        # is for an adopter's corpus, and a case holds that spec 5 says so.
+        # is for an adopter's corpus, and a case holds that AI integration (docs/spec/ai-integration.md) says so.
         #
         # It writes only under a temporary directory and it builds no engine:
         # it drives the one the build step above already wrote.
@@ -1426,7 +1426,7 @@ jobs:
         # at all.
         run: python3 tools/site/check-site-canonical.py site
       - name: The canonical URL checker refuses what it claims to refuse
-        # Spec 12 refuses a check that ships with no failing fixture, and
+        # The check layer (docs/spec/check-layer.md) refuses a check that ships with no failing fixture, and
         # `tools/site/site-fragments-fixtures.sh` is the shape this follows. Two of
         # its cases run over a scratch copy of the real build: one deletes a
         # page's canonical element, the other points it at another URL, and the
@@ -1739,7 +1739,7 @@ jobs:
         # hand-built pages only, so a check of those two alone caught nothing.
         run: python3 tools/site/check-site-noindex.py .headwater/site-deploy
       - name: The noindex checker refuses what it claims to refuse
-        # Spec 12 refuses a check that ships with no failing fixture. Case 3
+        # The check layer (docs/spec/check-layer.md) refuses a check that ships with no failing fixture. Case 3
         # plants a `noindex` page in an assembled sitemap, which is the defect
         # the served sitemap carried for all 56 process pages before #1681.
         # It writes only under a temporary directory.
@@ -1756,7 +1756,7 @@ jobs:
         # is not a served page.
         run: python3 tools/site/check-site-links.py .headwater/site-deploy
       - name: The link checker refuses what it claims to refuse
-        # Spec 12 refuses a check that ships with no failing fixture. Cases 3
+        # The check layer (docs/spec/check-layer.md) refuses a check that ships with no failing fixture. Cases 3
         # to 6 are the four ways the 44 URLs were lost: a link out of
         # `docs/`, a root-absolute link to a repository file, a directory link
         # one level too deep, and a link to a renamed page. It writes only
@@ -1854,7 +1854,7 @@ jobs:
         # outcomes, including each refusal, and runs in the step below.
         run: python3 tools/site/check-site-fragments.py
       - name: The fragment checker refuses what it claims to refuse
-        # Spec 12 refuses a check that ships with no failing fixture, and
+        # The check layer (docs/spec/check-layer.md) refuses a check that ships with no failing fixture, and
         # `.githooks/fixtures.sh` is the shape this follows: every refusal is
         # provoked on purpose and so is every pass, because a gate that
         # refuses everything is as useless as one that refuses nothing. It
@@ -1902,7 +1902,7 @@ jobs:
           fi
           exit "$status"
       - name: The console checker refuses what it claims to refuse
-        # Spec 12 refuses a check that ships with no failing fixture, and the
+        # The check layer (docs/spec/check-layer.md) refuses a check that ships with no failing fixture, and the
         # reason carries double weight for a check whose verdict is an absence.
         # The suite injects a page that throws, and points the checker at
         # `/bin/true` — which exits 0 and prints nothing, byte for byte what a
@@ -1936,7 +1936,7 @@ jobs:
           fi
           exit "$status"
       - name: The site review flags what it claims to flag
-        # Spec 12 refuses a check that ships with no failing fixture. The suite
+        # The check layer (docs/spec/check-layer.md) refuses a check that ships with no failing fixture. The suite
         # serves a page 1000 pixels wide and asserts it is flagged at 390 and
         # not at 1280, beside a clean page that is not flagged, and provokes
         # the dark, focus and navigation readings the same way.
@@ -2211,7 +2211,7 @@ jobs:
         # carries no change: 382 of 3498 instances report `change-scoped-only`
         # on a full-corpus run, which every step above is.
         #
-        # The anchor is the merge base with `main`, which is what spec 12
+        # The anchor is the merge base with `main`, which is what the check layer (docs/spec/check-layer.md)
         # fixes for a proposed change. `.githooks/pre-commit` passes `HEAD`
         # instead, which is the other anchor that sentence names, so the commit
         # gate and this step ask the same rules two different questions.
@@ -2223,7 +2223,7 @@ jobs:
         # are the head and that very SHA, so the base tip and the merge base
         # were one commit. A `push` run checks out the branch itself, where a
         # base tip that has moved is neither. Asking git for the merge base
-        # names spec 12's anchor on both events, and needs no field from the
+        # names the check layer's (docs/spec/check-layer.md) anchor on both events, and needs no field from the
         # event payload to do it.
         #
         # Advisory, like the check above it and for the same reason. What
@@ -2399,7 +2399,7 @@ jobs:
             engine/crates/adapter/tests/sarif-schema-2.1.0.json headwater.sarif > oracle.txt
           head -1 oracle.txt | grep -qx "$(printf 'schema\tvalid')" || { cat oracle.txt; exit 1; }
       - name: The cache cannot change a verdict
-        # Spec 12 makes the cache a correctness root, and the standing test is
+        # The check layer (docs/spec/check-layer.md) makes the cache a correctness root, and the standing test is
         # that `headwater check --no-cache` and `headwater check` write the
         # same bytes. `cargo test` runs that comparison over the library in the
         # job above. This runs it over the verb, because the verb is what an

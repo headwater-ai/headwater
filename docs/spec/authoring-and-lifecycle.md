@@ -238,7 +238,7 @@ The failure mode is bulk. A script that stamps forty documents writes bytes that
 
 **The count over this repository is zero, and the zero is a measurement.** The producer ran over the last 120 commits of this repository, each commit against its parent. No change moved a warrant from `asserted` to `accepted`. No change made a state movement that a regime refuses, and that includes the one change where four obligation records reached `discharged`. A person checked those four by hand, and the rule that decides such a movement now agrees with the person.
 
-**It cannot live in `taxonomy audit`, and an earlier draft of this section said it would.** That verb reads one working tree, and spec 12 makes the prior version available only in change-scoped evaluation. So the mis-assignment was the verb rather than the shape of the reading. What `taxonomy audit` reports instead is the population standing at `asserted`, which is the denominator a promotion rate divides by. That figure is a stock rather than a flow. A bulk stamp lowers it and forty separate acceptances lower it by the same amount. So it answers whether anything is ever promoted, and it does not answer whether one change was a review. [HW-OBL-0119](../obligations/0119-an-audit-reading-carries-no-declared-bar-so-a-distribution-cannot-become-a-finding.md) holds the missing bar, with the other readings that carry none.
+**It cannot live in `taxonomy audit`, and an earlier draft of this section said it would.** That verb reads one working tree, and [the check layer](check-layer.md) makes the prior version available only in change-scoped evaluation. So the mis-assignment was the verb rather than the shape of the reading. What `taxonomy audit` reports instead is the population standing at `asserted`, which is the denominator a promotion rate divides by. That figure is a stock rather than a flow. A bulk stamp lowers it and forty separate acceptances lower it by the same amount. So it answers whether anything is ever promoted, and it does not answer whether one change was a review. [HW-OBL-0119](../obligations/0119-an-audit-reading-carries-no-declared-bar-so-a-distribution-cannot-become-a-finding.md) holds the missing bar, with the other readings that carry none.
 
 Promotion never rewrites history. `drafted_by` and `agency` stay as they were, so the corpus can still say which parts an agent drafted.
 
@@ -290,7 +290,7 @@ The store is `.headwater/capture-cost.jsonl`. A run of `headwater new` that writ
 | `headwater new <kind>` | Scaffold a document with correct placement, metadata, sections, identifier |
 | `headwater check --fix` | Apply mechanical corrections: format front matter, add missing reciprocal links, regenerate projections |
 | Editor integration | Schema-driven completion and inline validation via a language server over front matter |
-| Agent-assisted authoring | The judgment-bearing path: drafting, evidence checks, cross-linking (spec 5) |
+| Agent-assisted authoring | The judgment-bearing path: drafting, evidence checks, cross-linking ([AI integration](ai-integration.md)) |
 
 All four converge on the same schema. There is no path into the corpus that skips it.
 

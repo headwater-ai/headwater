@@ -41,7 +41,7 @@ Registration closes with no new machinery, because two obliged channels already 
 |---|---|---|
 | How it works, architecture | [The engine architecture](../spec/engine-architecture.md), [the conceptual model](../spec/conceptual-model.md), [the check layer](../spec/check-layer.md) | Answered |
 | Benchmarks, metrics | Nothing. Every efficacy claim is marked unmeasured | Empty, and it stays empty |
-| Comparisons | [HW-EVAL-adjacent-work](../evaluations/adjacent-work.md), [the design departures](../spec/design-departures.md), and spec 0's table of what we do not build | Answered, and the strongest row |
+| Comparisons | [HW-EVAL-adjacent-work](../evaluations/adjacent-work.md), [the design departures](../spec/design-departures.md), and [the vision and scope](../spec/vision-and-scope.md)'s table of what we do not build | Answered, and the strongest row |
 | Use cases | The five adopters of the [first-run walkthrough](../evaluations/default-taxonomy-first-run.md#five-first-runs) | Answered, from an evaluation |
 | Compatibility, integrations | [Q13](0013-linkml-and-shacl-as-substrate.md)'s six emitters, of which two ship | Answered, and the answer is two |
 | Docs, getting started | [Authoring and lifecycle](../spec/authoring-and-lifecycle.md), the [interview](../spec/distribution-and-federation.md#the-interview) and the [tutorial](../tutorials/your-first-governed-corpus.md) | Answered as a document, and the page that would carry it waits on the site |
@@ -52,7 +52,7 @@ Registration closes with no new machinery, because two obliged channels already 
 
 **One row moved on 2026-08-17, and the reason it carried had expired.** The getting-started row read *no quickstart, because there is nothing to start*. That was true when this entry closed. It stopped being true when M1 and M2 shipped `headwater check`, `headwater taxonomy validate` and `headwater taxonomy resolve`. [The tutorial](../tutorials/your-first-governed-corpus.md) now takes a reader from an empty directory to a passing strict run. The row is answered as a document and no further. This entry rules the site a projection, and no item of the plan builds one.
 
-**The compliance row's count moved on 2026-10-03, and the old count was wrong when the row was written.** The row gave the count of non-claims as five. The specification already listed six on 2026-08-11, because the warrant ruling of 2026-08-10 added the sixth: no claim about a license reaches any content ([Q19](0019-inbound-integration-an-external-system-of-record.md)). Spec 7 now holds the list, and it lists six. The row now says six, and its answer did not change.
+**The compliance row's count moved on 2026-10-03, and the old count was wrong when the row was written.** The row gave the count of non-claims as five. The specification already listed six on 2026-08-11, because the warrant ruling of 2026-08-10 added the sixth: no claim about a license reaches any content ([Q19](0019-inbound-integration-an-external-system-of-record.md)). [Distribution and federation](../spec/distribution-and-federation.md) now holds the list, and it lists six. The row now says six, and its answer did not change.
 
 **What the forcing function found is uncomfortable and correct.** The largest hole in the public story is the one that this project has decided it may not fill. The benchmark row is empty because [principle 11](../spec/vision-and-scope.md#design-principles) forbids a number that no run produced, and it stays empty until a campaign runs. The pressure to relax that will arrive exactly when the site does.
 

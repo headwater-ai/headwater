@@ -786,7 +786,7 @@ fn declare(root: &Root, from: &str, to: &str) {
 
 /// Two pins that name one resolver are refused before any graph is built. A
 /// run that kept the first and skipped the second would bind an anchor in
-/// whichever export registered first, which is the silent answer spec 7
+/// whichever export registered first, which is the silent answer [distribution and federation](../../../../docs/spec/distribution-and-federation.md)
 /// forbids. `docs/interfaces/headwater-check.md` promises exit 1 for it.
 #[test]
 fn two_pins_that_name_one_resolver_refuse_the_run() {
@@ -834,7 +834,7 @@ const EXPORT_C: &str = "harvest/repo-c.json";
 
 /// The decisive case of #1311. A third pin names an export that is not there,
 /// and no anchor kind names its resolver, so no edge reaches it and the
-/// per-anchor finding never fires. Spec 7 says a pinned export the tier cannot
+/// per-anchor finding never fires. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) says a pinned export the tier cannot
 /// read is a finding that names the pin, so the pin itself is reported, once,
 /// on the declaration, and the edges into A and B still bind.
 #[test]

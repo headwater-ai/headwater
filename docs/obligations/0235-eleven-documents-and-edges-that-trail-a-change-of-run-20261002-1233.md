@@ -14,7 +14,7 @@ provenance:
 
 ## Context
 
-The builders and the maintainer of run `20261002-1233` found sentences that a change made stale, and code that no document governs or cites. None stops an adopter, and most name no reader outside this repository. So the product owner ruled each one RECORD and not an issue. Intake lines 8, 34, 46, 58, 60, 61, 62, 63, 64, 66, 77, 93 and 123 were ruled during the run. Lines 88, 100, 106, 128, 129 and 130 were ruled at the top of run `20261003-1026`. This is one of three spec 13 records for that run. Each item was checked on `a46bd95e` by the file and the heading or symbol it names.
+The builders and the maintainer of run `20261002-1233` found sentences that a change made stale, and code that no document governs or cites. None stops an adopter, and most name no reader outside this repository. So the product owner ruled each one RECORD and not an issue. Intake lines 8, 34, 46, 58, 60, 61, 62, 63, 64, 66, 77, 93 and 123 were ruled during the run. Lines 88, 100, 106, 128, 129 and 130 were ruled at the top of run `20261003-1026`. This is one of three [the register of open obligations](../spec/open-obligations.md) records for that run. Each item was checked on `a46bd95e` by the file and the heading or symbol it names.
 
 ## Obligation
 
@@ -31,10 +31,10 @@ The builders and the maintainer of run `20261002-1233` found sentences that a ch
 
 **Edges between specs, code and tests.**
 
-- `docs/spec/ai-integration.md` describes what spec 15 does with the mark of a probe result. It declares no `traces_to` or `cites_evidence` edge onto `docs/spec/the-recorder-contract.md`, so nothing points a reader of the next change to spec 15 at it.
-- `tools/probe/probe-record-fixtures.sh`, `tools/probe/ci-confine.sh`, `tools/probe/ci-confine-fixtures.sh`, `tools/probe/campaign.sh`, `tools/probe/campaign-dry-run.sh` and `tools/probe/layer-campaign.spec` are in the governed scope of `tools/**`. Spec 15 declares `governs` onto `tools/probe/probe-record.sh` and `tools/probe/egress-proxy.py` only. Spec 15 says that `probe-record-fixtures.sh` holds its environment and bind lists against the driver. The header of that script names the tools it holds and not spec 15.
-- Slice 4d of #1572 repointed engine comments to documents outside the `traces_to` list of their subsystem spec. `docs/subsystems/parse-and-census.md`, `taxonomy-distribution-and-audit.md`, `graph-build.md` and `authoring.md` now have code that cites the `headwater generate` contract. `projections-and-export.md` has code that cites the checks-and-cache page. `command-surface.md` has code that cites the `headwater taxonomy` contract and spec 4. No `traces_to` lists them.
-- `engine/crates/generate/tests/spec_seven_export.rs` holds six invariants of spec 7 and the non-claims count of HW-DR-0016 and HW-DR-0017. No document cites it, and no record under `docs/verifications/` names it.
+- `docs/spec/ai-integration.md` describes what [the recorder contract](../spec/the-recorder-contract.md) does with the mark of a probe result. It declares no `traces_to` or `cites_evidence` edge onto `docs/spec/the-recorder-contract.md`, so nothing points a reader of the next change to [the recorder contract](../spec/the-recorder-contract.md) at it.
+- `tools/probe/probe-record-fixtures.sh`, `tools/probe/ci-confine.sh`, `tools/probe/ci-confine-fixtures.sh`, `tools/probe/campaign.sh`, `tools/probe/campaign-dry-run.sh` and `tools/probe/layer-campaign.spec` are in the governed scope of `tools/**`. [The recorder contract](../spec/the-recorder-contract.md) declares `governs` onto `tools/probe/probe-record.sh` and `tools/probe/egress-proxy.py` only. [The recorder contract](../spec/the-recorder-contract.md) says that `probe-record-fixtures.sh` holds its environment and bind lists against the driver. The header of that script names the tools it holds and not [the recorder contract](../spec/the-recorder-contract.md).
+- Slice 4d of #1572 repointed engine comments to documents outside the `traces_to` list of their subsystem spec. `docs/subsystems/parse-and-census.md`, `taxonomy-distribution-and-audit.md`, `graph-build.md` and `authoring.md` now have code that cites the `headwater generate` contract. `projections-and-export.md` has code that cites the checks-and-cache page. `command-surface.md` has code that cites the `headwater taxonomy` contract and [the assurance model](../spec/assurance-model.md). No `traces_to` lists them.
+- `engine/crates/generate/tests/spec_seven_export.rs` holds six invariants of [distribution and federation](../spec/distribution-and-federation.md) and the non-claims count of HW-DR-0016 and HW-DR-0017. No document cites it, and no record under `docs/verifications/` names it.
 
 **Counts and statements no change has caught up with.**
 

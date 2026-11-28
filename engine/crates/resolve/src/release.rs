@@ -35,7 +35,7 @@
 //! **It does not prove that the record's own header is the publisher's.** The
 //! digest is over the member list and [`members`] skips the record itself, so
 //! the header lines above the digest — the format, the package, the version and
-//! the engine range — are covered by nothing. Spec 7 states that non-coverage as
+//! the engine range — are covered by nothing. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) states that non-coverage as
 //! the design and it cannot be otherwise while the digest field sits inside the
 //! file that would be hashed. What keeps that out of the vendor's way is that
 //! `package.yml` is inside the walk, so the artifact carries an authenticated
@@ -815,7 +815,7 @@ pub fn engine_range(package: &str, range: Option<&str>) -> Result<(), ReleaseErr
 
 /// Whether a version satisfies a range.
 ///
-/// A range is a space-separated list of comparators, in the form spec 7 writes:
+/// A range is a space-separated list of comparators, in the form [distribution and federation](../../../../docs/spec/distribution-and-federation.md) writes:
 /// `">=1.4 <2"`. Every comparator must hold. A version is one, two or three
 /// numeric parts, and an absent part is zero, so `1.4` in a comparator means
 /// `1.4.0` and `<2` excludes every `2.x`.

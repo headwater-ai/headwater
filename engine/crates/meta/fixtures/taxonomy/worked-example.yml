@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 #
-# Spec 2's own worked shape, trimmed to what one file needs to exercise every
+# The taxonomy model's (docs/spec/taxonomy-model.md) own worked shape, trimmed to what one file needs to exercise every
 # declaration at least once. If the meta-schema refuses this, it refuses the
 # specification's own illustration.
 taxonomy: acme-engineering

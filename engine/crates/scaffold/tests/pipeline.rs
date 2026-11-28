@@ -103,7 +103,7 @@ fn copy_tree(from: &Path, to: &Path) {
     }
 }
 
-/// One run of the whole check layer over a tree, in the order spec 6 draws it.
+/// One run of the whole check layer over a tree, in the order [the engine architecture](../../../../docs/spec/engine-architecture.md) draws it.
 fn check_over(root: &Path) -> Run {
     let resolved = load_map(&fixtures_dir().join("scaffold.taxonomy.yml"));
     let taxonomy = Taxonomy::read(&resolved).expect("the shelves read");

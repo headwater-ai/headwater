@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 #
-# Spec 2's own worked overlay, under Customization by composition, plus the
+# The taxonomy model's (docs/spec/taxonomy-model.md) own worked overlay, under Customization by composition, plus the
 # enabling line from the decision-relation vocabulary. Three operations and a
 # reference in the one place an overlay writes one: an operation's whole value.
 taxonomy: acme-engineering

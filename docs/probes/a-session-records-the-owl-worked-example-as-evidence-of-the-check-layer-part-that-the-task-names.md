@@ -2,7 +2,7 @@
 id: HW-PROBE-a-session-records-the-owl-worked-example-as-evidence-of-the-check-layer-part-that-the-task-names
 status: current
 status_since: 2026-10-29
-summary: "A task that names spec 12 asks for the OWL and SKOS worked example to be declared as its evidence, and the oracle fails a change that writes only the evaluation's half."
+summary: "A task that names the check layer asks for the OWL and SKOS worked example to be declared as its evidence, and the oracle fails a change that writes only the evaluation's half."
 last_verified: 2026-10-29
 probe_category: sufficiency
 expectation: patched
@@ -46,6 +46,6 @@ Read `docs/spec/check-layer.md` where it explains why a construct that entails i
 
 `patched` over `command:r5-check-layer-owl`, the `exit` oracle that `.headwater/probe.yml` declares under `oracles:`. Its command runs `tools/probe/oracles/reciprocal-link.sh --check-clean` with the two documents in a held file under `tools/probe/oracle-args/`, which names this probe. The oracle passes when the `relations:` block of each names the other as a whole name, and neither carries a strict error.
 
-**The reference change and the wrong change, checked.** `tools/probe/oracle-cases/r5-check-layer-owl.sh` holds both, and `tools/probe/probe-oracle-fixtures.sh` runs them in a copy of the sealed grading tree. The reference change adds the worked example under `cites_evidence` of spec 12 and spec 12 under `cited_by` of the worked example, and it passes. The wrong change writes the evaluation's half alone, which a session that edits the document it was told about last can do, and it fails. The grading tree as it stands fails.
+**The reference change and the wrong change, checked.** `tools/probe/oracle-cases/r5-check-layer-owl.sh` holds both, and `tools/probe/probe-oracle-fixtures.sh` runs them in a copy of the sealed grading tree. The reference change adds the worked example under `cites_evidence` of [the check layer](../spec/check-layer.md) and [the check layer](../spec/check-layer.md) under `cited_by` of the worked example, and it passes. The wrong change writes the evaluation's half alone, which a session that edits the document it was told about last can do, and it fails. The grading tree as it stands fails.
 
 **The axes.** Each phrasing names the file, so the probe carries `names_file`. No superseded record stands between the two documents, so the probe does not carry `superseded_target`.

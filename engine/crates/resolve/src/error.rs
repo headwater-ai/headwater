@@ -126,7 +126,7 @@ pub enum ResolveErrorKind {
 impl ResolveErrorKind {
     /// Whether this refusal is about an address that an overlay wrote.
     ///
-    /// Spec 2's [`addressability`](../../../../docs/spec/taxonomy-model.md#versioning-by-measured-compatibility)
+    /// [The taxonomy model](../../../../docs/spec/taxonomy-model.md)'s [`addressability`](../../../../docs/spec/taxonomy-model.md#versioning-by-measured-compatibility)
     /// dimension asks whether every path an overlay can address still exists
     /// and means the same thing, and it is the one dimension whose subject is
     /// the schema rather than a corpus. This is the engine's answer, and it is
@@ -313,7 +313,7 @@ pub fn collisions(errors: &[ResolveError]) -> String {
 
 /// The remedy of every collision, which is the same remedy every time.
 ///
-/// Spec 2 admits two operations at a declared address, and which of the two a
+/// [The taxonomy model](../../../../docs/spec/taxonomy-model.md) admits two operations at a declared address, and which of the two a
 /// consumer wants is the judgment. The last sentence names the route the
 /// engine refuses, because it is the route a reader tries first;
 /// `fixtures/cases/add-collides-behind-remove/` is what holds that claim.

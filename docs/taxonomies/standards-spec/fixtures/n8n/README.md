@@ -135,7 +135,7 @@ So a sweep proposes an edge that the gate then refuses, and nothing between the 
 
 ### `class: coherence` gets its first member
 
-`obligations.OB-SS-1` of this entry carries `class: coherence`. Spec 4 and HW-OBL-0114 both record that this repository's own register has no coherence-class obligation, so a sweep here discharges nothing. Resolving this entry over this corpus gives that class its first member in any real corpus of this library. It still discharges nothing: OB-SS-1's disposition is `unverifiable`, and no control names a `sweep:` mechanism. The gap is now visible rather than hypothetical, and this fixture is where it is visible.
+`obligations.OB-SS-1` of this entry carries `class: coherence`. [The assurance model](../../../../spec/assurance-model.md) and HW-OBL-0114 both record that this repository's own register has no coherence-class obligation, so a sweep here discharges nothing. Resolving this entry over this corpus gives that class its first member in any real corpus of this library. It still discharges nothing: OB-SS-1's disposition is `unverifiable`, and no control names a `sweep:` mechanism. The gap is now visible rather than hypothetical, and this fixture is where it is visible.
 
 ## What this repository's own house regime would have reported
 

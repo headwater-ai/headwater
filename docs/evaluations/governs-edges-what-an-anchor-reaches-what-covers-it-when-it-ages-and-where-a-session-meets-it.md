@@ -45,7 +45,7 @@ Nothing in the engine or the harness could have named those six at the time of t
 
 **Aging.** Nothing reports that a governed file changed after the document that governs it was last verified. `relation.target.suspect` in `engine/crates/check/src/suspect.rs` compares a `verified_revision` on the edge against the revision the resolver reports. It reads only relations with `created_by: import`. `SourceTree` reports no revision at all. `engine/crates/check/src/change.rs` states that the check layer walks no history and runs no version control tool. This evaluation keeps that rule.
 
-**The four moments.** Spec 5 names intent, read, write and review. The harness hooks under `.claude/hooks/` hold two of them for code. `intent.sh` runs `headwater route` over every prompt, and a route names the documents that govern a path the prompt spells out. `write.sh` runs on `PostToolUse` for `Edit` and `Write`. It routes the edited path and prints the governing documents after the edit landed. No position runs when an agent reads a governed file. No position speaks when nothing governs a path, so an ungoverned file and a silent hook read the same. The review position runs the commit gate, which reports an unresolved target and nothing about a changed one.
+**The four moments.** [AI integration](../spec/ai-integration.md) names intent, read, write and review. The harness hooks under `.claude/hooks/` hold two of them for code. `intent.sh` runs `headwater route` over every prompt, and a route names the documents that govern a path the prompt spells out. `write.sh` runs on `PostToolUse` for `Edit` and `Write`. It routes the edited path and prints the governing documents after the edit landed. No position runs when an agent reads a governed file. No position speaks when nothing governs a path, so an ungoverned file and a silent hook read the same. The review position runs the commit gate, which reports an unresolved target and nothing about a changed one.
 
 | moment | what runs today | what it reaches | what it misses |
 |---|---|---|---|
@@ -84,11 +84,11 @@ The suspect rule is the right mechanism and it reads the wrong set. The design e
 
 An author records the digest by verifying the document. `headwater check --fix` writes `verified_revision` onto a `governs` edge only in a run with `--change`. The change must state that a person re-read the document that declares the edge. A change states a re-reading in three ways. It adds the document, or it moves the document's `last_verified`. Or it names the document in a `verified` line, which `headwater change --verified <path>` writes. The date does not decide, and an edit to the document alone states no re-reading. [The `headwater check` contract](../interfaces/headwater-check.md) states the full rule, which #1259 and #1376 set. That is the mechanical half. The finding on a mismatch is advisory. It names the document, the pattern and the count of entries that changed, because the remedy is to reread. Under this design the four hooks that #946 changed make the isolation evaluation's edge suspect on the next `headwater check`. The commit gate prints every finding.
 
-Three alternatives were measured against this repository's own history and refused. A modification time is not a fact about content, and a fresh worktree gives every file a new one. A `git log` comparison puts a version control tool inside a verdict, which `change.rs` forbids for a reason spec 5 states about hooks. `last_verified` alone measures the age of the document and says nothing about the target.
+Three alternatives were measured against this repository's own history and refused. A modification time is not a fact about content, and a fresh worktree gives every file a new one. A `git log` comparison puts a version control tool inside a verdict, which `change.rs` forbids for a reason [AI integration](../spec/ai-integration.md) states about hooks. `last_verified` alone measures the age of the document and says nothing about the target.
 
 ### Injection: every moment names the governing set, and silence is a report
 
-Spec 5 states that a hook calls a verb that ships and introduces none, and every position below keeps that term. `headwater route <path>` is the verb at each one.
+[AI integration](../spec/ai-integration.md) states that a hook calls a verb that ships and introduces none, and every position below keeps that term. `headwater route <path>` is the verb at each one.
 
 **Read.** A `PreToolUse` position on `Read` routes the path and prints the governing documents before the agent has the bytes. It is silent when nothing governs the path. So it costs one route per file open. That was 35 milliseconds on this corpus when this evaluation measured it, and 180 milliseconds on 2026-09-26. [Harness support](../spec/harness-support.md) keeps the current figure. It adds context only where a document has something to say.
 
@@ -117,10 +117,10 @@ The remaining candidate pairs are the backfill issue's evidence. The ones that a
 
 ## What an adopter takes from this
 
-Four things are portable. The ruling that an anchor is a pattern, because every adopter has a directory of forty files. The scope declaration and the tree-side coverage number, because the document-side number answers a question nobody asks. The digest on the edge, because every adopter has a file that changed after its document. The four positions, because spec 5 names the moments for every harness and the verb at each one ships.
+Four things are portable. The ruling that an anchor is a pattern, because every adopter has a directory of forty files. The scope declaration and the tree-side coverage number, because the document-side number answers a question nobody asks. The digest on the edge, because every adopter has a file that changed after its document. The four positions, because [AI integration](../spec/ai-integration.md) names the moments for every harness and the verb at each one ships.
 
 Two things are local. The build order's dispatch of the maintainer agent, and the list of paths this repository governs.
 
 ## What this evaluation leaves open
 
-Which documents govern the 564 candidate paths is a judgment per pair, and this evaluation took it for one cluster. A `Bash` write reaches no hook, and spec 5 records that bypass. The digest names the count of changed entries and not the lines, and a reader who wants the lines has git. Whether a scope is declared by the base package for an adopter, or only by an overlay, is a question for the library track.
+Which documents govern the 564 candidate paths is a judgment per pair, and this evaluation took it for one cluster. A `Bash` write reaches no hook, and [AI integration](../spec/ai-integration.md) records that bypass. The digest names the count of changed entries and not the lines, and a reader who wants the lines has git. Whether a scope is declared by the base package for an adopter, or only by an overlay, is a question for the library track.

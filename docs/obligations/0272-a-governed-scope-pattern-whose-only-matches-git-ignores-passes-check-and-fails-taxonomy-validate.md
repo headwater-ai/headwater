@@ -34,4 +34,4 @@ The adopter case of #2099 is not affected. A pattern that opens with a wildcard 
 
 ## Discharge
 
-This record discharges when the two verbs give one answer for an ignored path. It also discharges when a ruling accepts the difference and the contract cites the ruling. One fix is a check input that names the ignored paths with no git command on the loop. A verb outside the loop can write that list. That way needs a ruling against the line spec 12 draws.
+This record discharges when the two verbs give one answer for an ignored path. It also discharges when a ruling accepts the difference and the contract cites the ruling. One fix is a check input that names the ignored paths with no git command on the loop. A verb outside the loop can write that list. That way needs a ruling against the line [the check layer](../spec/check-layer.md) draws.

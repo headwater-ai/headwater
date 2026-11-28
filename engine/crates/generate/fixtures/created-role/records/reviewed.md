@@ -11,4 +11,4 @@ relations:
 
 # Overdue by the dates, and reviewed
 
-The same two dates as `overdue.md`, and one declared edge. The rule generates an instance over this document and passes it, so the silence of the report here is a verdict rather than an absent instance. Spec 12 asks for a passing fixture beside a failing one.
+The same two dates as `overdue.md`, and one declared edge. The rule generates an instance over this document and passes it, so the silence of the report here is a verdict rather than an absent instance. [The check layer](../../../../../../docs/spec/check-layer.md) asks for a passing fixture beside a failing one.

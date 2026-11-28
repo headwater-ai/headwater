@@ -38,7 +38,7 @@ The parser supplies three of the four. It marks a block quotation as another aut
 
 **Discharged on 2026-09-11 by #783, in the parse.** A quotation mark is in the source, and a rule cannot see it. So `mark_inline_quotations` in `engine/crates/doc/src/body.rs` splits a run at the marks. It marks what is between them as another author's. No rule in the check layer knows what a quotation mark is. That is the form [authoring and lifecycle](../spec/authoring-and-lifecycle.md#what-a-lexical-rule-gets-wrong-and-where-posture-comes-from) asks for.
 
-**The open half was the edge cases.** The build rules on each with a case rather than with a decision record. Spec 3 answers whether it means the inline case. No document answers the behavior of an unbalanced or a nested mark. These are the rulings, and a test in `mod tests` of that file holds each one:
+**The open half was the edge cases.** The build rules on each with a case rather than with a decision record. [Authoring and lifecycle](../spec/authoring-and-lifecycle.md) answers whether it means the inline case. No document answers the behavior of an unbalanced or a nested mark. These are the rulings, and a test in `mod tests` of that file holds each one:
 
 - A straight `"` pairs in order of appearance and does not nest, because nothing in the source says which of two straight marks opens.
 - A curly `“` and `”` pair by direction, and they nest.

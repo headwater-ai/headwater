@@ -154,7 +154,7 @@ fn sweep_return() -> PathBuf {
 /// the first run of a pair evaluates and writes the cache and the second serves
 /// from it, and their standard-error lines differ by construction — on a cold
 /// tree, and not on a warm one. `--no-cache` makes both runs report the same
-/// accounting because neither reads or writes a cache, and spec 12 fixes that
+/// accounting because neither reads or writes a cache, and [the check layer](../../../../docs/spec/check-layer.md) fixes that
 /// the flag moves no byte of standard output, so nothing about the artifact
 /// under comparison is weakened.
 ///

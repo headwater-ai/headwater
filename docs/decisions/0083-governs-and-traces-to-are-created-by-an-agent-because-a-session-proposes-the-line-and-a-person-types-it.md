@@ -43,7 +43,7 @@ The change is a minor release of the package, 4.7.0. No check reads `hook` or `a
 
 ## Consequences
 
-Four of the five base relations have no mechanical creator: `governs`, `traces_to`, `constrains` and `conflicts_with`. Only `supersedes` has one, which is the scaffold. No base relation is `created_by: author`, so the rule that spec 2 states still holds.
+Four of the five base relations have no mechanical creator: `governs`, `traces_to`, `constrains` and `conflicts_with`. Only `supersedes` has one, which is the scaffold. No base relation is `created_by: author`, so the rule that [the taxonomy model](../spec/taxonomy-model.md) states still holds.
 
 Over this corpus on 2026-09-26, the audit moved 533 of 762 declared edge halves from `hook` to `agent`. The 533 are the halves of `governs` and `traces_to` on that date, and the `hook` row kept the 166 halves of the bundle relations below. At 4.8.0 the `agent` row holds 548 of 766 halves, and the `hook` row is empty. The capture of each relation does not change, because the reading keys on the relation and not on its actor.
 

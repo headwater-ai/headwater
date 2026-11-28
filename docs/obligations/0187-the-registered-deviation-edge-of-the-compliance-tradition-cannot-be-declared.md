@@ -2,7 +2,7 @@
 id: HW-OBL-0187
 status: current
 status_since: 2026-09-11
-summary: "Spec 2 names a registered-deviation check on `does_not_comply_with`, and no entry can enable or declare that relation."
+summary: "The taxonomy model names a registered-deviation check on `does_not_comply_with`, and no entry can enable or declare that relation."
 last_verified: 2026-09-11
 title: "The registered-deviation edge of the compliance tradition cannot be declared"
 waiting_on: ruling
@@ -24,10 +24,10 @@ The [`standards-spec` entry](../taxonomies/standards-spec/doctrine.md#findings) 
 
 ## Obligation
 
-The central negative edge of the tradition is unreachable, so a check that spec 2 names runs for no adopter. [HW-OBL-0027](0027-what-optional-holds-under-the-package-root.md) holds the root question, which is what `optional` holds under the `package` root. This record is the first measured consequence of that silence rather than a second copy of it.
+The central negative edge of the tradition is unreachable, so a check that [the taxonomy model](../spec/taxonomy-model.md) names runs for no adopter. [HW-OBL-0027](0027-what-optional-holds-under-the-package-root.md) holds the root question, which is what `optional` holds under the `package` root. This record is the first measured consequence of that silence rather than a second copy of it.
 
 An adopter meets the gap directly. A team that takes a standards taxonomy to record its deviations takes a taxonomy that cannot say a document deviates.
 
 ## Discharge
 
-This record discharges when `package.optional` holds `does_not_comply_with` and an entry may enable it. It discharges the other way when spec 2 stops naming a check that no taxonomy can produce. A ruling on HW-OBL-0027 that leaves `optional` empty discharges this record as well, if it says what an entry declares instead.
+This record discharges when `package.optional` holds `does_not_comply_with` and an entry may enable it. It discharges the other way when [the taxonomy model](../spec/taxonomy-model.md) stops naming a check that no taxonomy can produce. A ruling on HW-OBL-0027 that leaves `optional` empty discharges this record as well, if it says what an entry declares instead.

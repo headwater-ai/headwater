@@ -28,4 +28,4 @@ The owner owes a form for a positive lexical requirement, or a correction to the
 
 ## Discharge
 
-This record discharges when a voice regime carries a `require` list beside its `forbid` list, with a check behind it. It discharges the other way when spec 2 states that a positive keyword rule is out of scope. The worked example then drops the promise.
+This record discharges when a voice regime carries a `require` list beside its `forbid` list, with a check behind it. It discharges the other way when [the taxonomy model](../spec/taxonomy-model.md) states that a positive keyword rule is out of scope. The worked example then drops the promise.

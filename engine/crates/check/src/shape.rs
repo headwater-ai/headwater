@@ -40,7 +40,7 @@ pub struct Shape {
     /// In declaration order, because a report is read by a person.
     pub facets: Vec<Facet>,
     pub kinds: Vec<Kind>,
-    /// `purposes`, the reader intents the corpus serves. Spec 2 declares them
+    /// `purposes`, the reader intents the corpus serves. [The taxonomy model](../../../../docs/spec/taxonomy-model.md) declares them
     /// once at the taxonomy level and has kinds reference them, and
     /// [AI integration](../../../../docs/spec/ai-integration.md#intent-time-routing)
     /// routes a task description over them before it reads any prose.
@@ -237,7 +237,7 @@ pub struct RetiredTerm {
 /// A language regime: the tag, and the controlled language the prose is held to.
 ///
 /// `controlled` and `profile` are two strings and the meta-schema marks both as
-/// a gap, for a reason it states: spec 2 names `none`, `ste-house` and
+/// a gap, for a reason it states: [the taxonomy model](../../../../docs/spec/taxonomy-model.md) names `none`, `ste-house` and
 /// `ste-strict`, and this repository's own overlay writes `ASD-STE100` with a
 /// separate `profile`. So the engine matches what it knows and skips the rest,
 /// which is the same posture as an unreadable participation window.
@@ -359,7 +359,7 @@ pub struct Purpose {
 pub struct Kind {
     pub name: String,
     pub is_a: Option<String>,
-    /// The reader intent this kind serves, as this kind declares it. Spec 2
+    /// The reader intent this kind serves, as this kind declares it. [The taxonomy model](../../../../docs/spec/taxonomy-model.md)
     /// permits a concrete kind to inherit one from an abstract parent, and
     /// [`Shape::purpose_of`] is the inherited answer.
     pub purpose: Option<String>,
@@ -716,7 +716,7 @@ impl Shape {
     /// The whole declared set for a facet that no kind in the chain narrows,
     /// and otherwise the intersection of every narrowing in the chain with it.
     /// Intersection rather than replacement, and it is the same ruling that
-    /// [`Shape::required_facets`] rests on: spec 2 gives a child no way to void
+    /// [`Shape::required_facets`] rests on: [the taxonomy model](../../../../docs/spec/taxonomy-model.md) gives a child no way to void
     /// a contract a reader of the parent trusts, and a child that admitted a
     /// value its parent excluded would void one exactly as an un-require would
     /// ([HW-DR-0066](../../../../docs/decisions/0066-a-kind-narrows-the-value-set-of-an-enumerated-facet-and-nothing-else-can.md)).
@@ -802,7 +802,7 @@ impl Shape {
 
     /// The purpose a kind serves, through the chain that declares it.
     ///
-    /// Spec 2: "Every concrete kind declares the reader intent that it serves,
+    /// [The taxonomy model](../../../../docs/spec/taxonomy-model.md): "Every concrete kind declares the reader intent that it serves,
     /// or inherits it from an abstract parent." So this walks the same chain
     /// [`Shape::voice_of`] walks, and a kind under a parent that declares one
     /// serves it. A name no `purposes` block declares reads as no purpose

@@ -38,7 +38,7 @@ Everything else holds the refusal. Four readings land there. A row parsed no doc
 
 **The reading is the one that [HW-DR-0026](0026-q26-whether-terminality-belongs-to-a-state-or-to-a-state-and-a-regime.md) already placed in the check layer.** `StateFacet::standing` folds a state value into the terms that [authoring and lifecycle](../spec/authoring-and-lifecycle.md#lifecycle) states its dependency rule in. The fold is now public, and `headwater-generate` calls it. One reader of the role serves every rule that asks, so a taxonomy cannot be sound under one reading and gated under another.
 
-That fold carries four answers, and the fourth is here for this decision. Spec 3's own rule reads an initial state and an unreadable role alike, because neither of them is live. This decision needs the two apart. One of them releases the refusal and the other holds it.
+That fold carries four answers, and the fourth is here for this decision. [Authoring and lifecycle](../spec/authoring-and-lifecycle.md)'s own rule reads an initial state and an unreadable role alike, because neither of them is live. This decision needs the two apart. One of them releases the refusal and the other holds it.
 
 ## Consequences
 

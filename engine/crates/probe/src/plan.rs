@@ -18,7 +18,7 @@
 //!
 //! # The seed is the caller's, and a derived one would be worse
 //!
-//! Spec 5 asks for deterministic rotation, so the seed is part of the run
+//! [AI integration](../../../../docs/spec/ai-integration.md) asks for deterministic rotation, so the seed is part of the run
 //! identity. It would be easy to derive one from the lock and the selection,
 //! and that would be a defect: the rotation would then change whenever the
 //! corpus changed, and a difference between two runs would carry a change in
@@ -334,7 +334,7 @@ pub enum Refusal {
     RepetitionsRaised { asked: u32, declared: u32 },
     /// The caller asked for no repetitions, which plans a run of nothing.
     RepetitionsZero,
-    /// The projected cost is above the tier's ceiling. Spec 5: a run that does
+    /// The projected cost is above the tier's ceiling. [AI integration](../../../../docs/spec/ai-integration.md): a run that does
     /// not happen is the cheaper error.
     OverBudget {
         sessions: u64,
@@ -1595,7 +1595,7 @@ pub fn read_set_over(selected: &[Selected], census: &Census) -> ReadSet {
             match examined.id {
                 // A document of this corpus, which the census hashes.
                 Some(_) => add(&examined.path, Because::Examined),
-                // An external anchor. Spec 12: it is in no read set.
+                // An external anchor. The check layer (docs/spec/check-layer.md): it is in no read set.
                 None => {
                     if !anchors.contains(&examined.path) {
                         anchors.push(examined.path.clone());

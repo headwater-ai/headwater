@@ -53,4 +53,4 @@ The question for a person: **does the engine build a digest over the code of eac
 
 If the ruling is to build the digest, this record is discharged when the digest joins the key. A fixture then changes the code of one rule and leaves its version alone, and a warm cache from the older binary serves nothing.
 
-If the ruling is to accept the ledger, this record is discharged when spec 12 states the accepted gaps. The two instance rules above each gain a recorded corpus that reaches them, or the specification names them as accepted.
+If the ruling is to accept the ledger, this record is discharged when [the check layer](../spec/check-layer.md) states the accepted gaps. The two instance rules above each gain a recorded corpus that reaches them, or the specification names them as accepted.

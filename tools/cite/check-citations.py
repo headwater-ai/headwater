@@ -84,7 +84,7 @@ SARIF_SCHEMA = (
     "schemas/sarif-schema-2.1.0.json"
 )
 
-# The shape spec 5 shows, wherever it sits inside a line comment. The
+# The shape AI integration (docs/spec/ai-integration.md) shows, wherever it sits inside a line comment. The
 # identifier carries at least one hyphen, because a single bare word after
 # `per` is prose and not an identifier.
 CITATION = re.compile(

@@ -5,7 +5,7 @@ status: current
 status_since: 2026-08-13
 waiting_on: build
 last_verified: 2026-08-13
-summary: "Spec 12 calls the neighbourhood scope speculative and offers a test that misses the check that arrived."
+summary: "The check layer calls the neighbourhood scope speculative and offers a test that misses the check that arrived."
 provenance:
   warrant: accepted
   agency: mixed
@@ -26,7 +26,7 @@ relations:
 
 ## Obligation
 
-Either spec 12 keeps the scope and restates its test, or it names the grain that a check about an absent edge receives.
+Either [the check layer](../spec/check-layer.md) keeps the scope and restates its test, or it names the grain that a check about an absent edge receives.
 
 ## Discharge
 

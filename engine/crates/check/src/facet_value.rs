@@ -51,7 +51,7 @@
 //! classified document was routed to any check, and a universal rule answers
 //! yes for every corpus before anything is looked at. The same trap
 //! [`crate::coverage`] describes for a corpus-scoped check, met from the other
-//! side. Spec 13 carries what is left of it.
+//! side. [The register of open obligations](../../../../docs/spec/open-obligations.md) carries what is left of it.
 //!
 //! # A list is read item by item
 //!

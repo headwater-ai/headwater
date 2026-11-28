@@ -33,7 +33,7 @@ Every run rebuilds the graph. Three artifacts derive from it, and none of them i
 
 **The cache is disposable by test.** `headwater check --no-cache` produces output byte-identical to `headwater check`. A cache that can change a verdict is a store under another name, and only the test keeps that distinction true under maintenance.
 
-**No embedded database, and the trigger is named.** The [Q1 spike](../evaluations/language-spike-results.md) ran a warm change-scoped pass over 1,000 documents in about 2 ms, against a 200 ms budget. A named query workload that misses one of spec 6's targets reopens this, and nothing else does. The industry does not agree, and spec 6 now records the disagreement rather than omitting it.
+**No embedded database, and the trigger is named.** The [Q1 spike](../evaluations/language-spike-results.md) ran a warm change-scoped pass over 1,000 documents in about 2 ms, against a 200 ms budget. A named query workload that misses one of [the engine architecture](../spec/engine-architecture.md)'s targets reopens this, and nothing else does. The industry does not agree, and [the engine architecture](../spec/engine-architecture.md) now records the disagreement rather than omitting it.
 
 **The largest correction: a round trip is the wrong instrument.** The leaning promised round-trip fidelity tests for an RDF view, and the same paragraph called RDF the lossy direction. Both cannot hold. A projection that is lossy by design cannot round-trip.
 

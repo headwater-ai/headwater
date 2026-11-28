@@ -366,7 +366,7 @@ fn render(shelf: &str, output: &str, sections: &[Section], front: Option<&str>) 
         if let Some(summary) = &section.pointer.summary {
             out.push_str(&format!(" — {summary}"));
         }
-        // Spec 7 rules that an emitter which cannot carry the warrant does not
+        // Distribution and federation (docs/spec/distribution-and-federation.md) rules that an emitter which cannot carry the warrant does not
         // carry the content. Markdown carries it, so the section says it.
         match (&section.pointer.outside, section.pointer.unwarranted) {
             (Some(warrant), _) => out.push_str(&format!(
@@ -424,7 +424,7 @@ mod tests {
         assert_eq!(out.matches("\n## ").count(), 2, "{out}");
     }
 
-    /// A warrant outside spec 3's closed set is stated as what it is, and is
+    /// A warrant outside [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s closed set is stated as what it is, and is
     /// not called `asserted` (#1438). An `asserted` one keeps its sentence.
     #[test]
     fn a_warrant_outside_the_closed_set_is_stated_and_not_called_asserted() {

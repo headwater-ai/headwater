@@ -5,7 +5,7 @@
 # reaches inside the kind the bundle declared.
 #
 # Read over the addressed paths, `kinds.design_spec` is a prefix of
-# `kinds.design_spec.identifier`, so the two are not disjoint and spec 2's
+# `kinds.design_spec.identifier`, so the two are not disjoint and the taxonomy model's (docs/spec/taxonomy-model.md)
 # confluence rule refuses them as written. Read over the leaves each operation
 # writes, they meet nowhere and either order gives one tree. That is what this
 # case exists to hold in place.

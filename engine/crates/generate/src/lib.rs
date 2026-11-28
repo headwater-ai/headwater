@@ -9,14 +9,14 @@
 //!
 //! # The kinds are two value sets, not one
 //!
-//! Spec 6 names the kinds the engine implements,
+//! [The engine architecture](../../../../docs/spec/engine-architecture.md) names the kinds the engine implements,
 //! [Q19](../../../../docs/spec/decisions.md) adds `transcription`, and
 //! [AI integration](../../../../docs/spec/ai-integration.md#a-run-produces-a-snapshot-and-a-document)
 //! adds `probe_result`. Collecting them for the meta-schema showed that they do
 //! not form one set. Eleven are declarable: a taxonomy names the kind and the
 //! output path, and
 //! [principle 1](../../../../docs/spec/vision-and-scope.md#design-principles)
-//! makes the path a schema decision. Two are engine-defined. Spec 4 makes the
+//! makes the path a schema decision. Two are engine-defined. [The assurance model](../../../../docs/spec/assurance-model.md) makes the
 //! register "engine-defined and non-optional", and
 //! [Q14](../../../../docs/spec/decisions.md#q14--discovery-surface) fixes the
 //! corpus descriptor at `.headwater/corpus.json`. Both for the same reason: a
@@ -79,7 +79,7 @@
 //! `--check` compares bytes. A timestamp inside a generated file makes every run
 //! differ from the last one, so the gate reports drift on a corpus nobody
 //! touched. Every marker this module writes is therefore a function of the kind
-//! alone. Spec 7 asks a *filtered export* to state "when it was generated", and
+//! alone. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) asks a *filtered export* to state "when it was generated", and
 //! that sentence and this one cannot both hold for an artifact that `--check`
 //! covers.
 //!
@@ -88,7 +88,7 @@
 //! [The check layer](../../../../docs/spec/check-layer.md#determinism-concretely)
 //! injects the clock into a check rather than let one call a syscall. A
 //! committed export is held to regeneration and gets no time, so `plan` passes
-//! none. An export that leaves the repository is the artifact spec 7 is talking
+//! none. An export that leaves the repository is the artifact [distribution and federation](../../../../docs/spec/distribution-and-federation.md) is talking
 //! about, and `headwater export --at <date>` supplies its time: to the output of
 //! `--format`, and to a declared export that states `committed: false`, which
 //! `headwater export` builds at publish time and no gate compares. Same corpus,
@@ -253,7 +253,7 @@ headwater_check::enumerated! {
         GraphExport,
         Template,
         Transcription,
-        /// Spec 5: the verdicts the grader returned over one committed transcript,
+        /// [AI integration](../../../../docs/spec/ai-integration.md): the verdicts the grader returned over one committed transcript,
         /// written as a document of the corpus.
         ProbeResult,
         /// #257: every verb the binary dispatches, and the contract that describes
@@ -263,7 +263,7 @@ headwater_check::enumerated! {
         /// #1051: the consumer surface of HW-DR-0077, as a page an adopter reads.
         /// The rows are the `surface` block of the taxonomy and nothing else.
         ConsumerSurface,
-        /// Spec 4: the register, engine-defined and non-optional.
+        /// [The assurance model](../../../../docs/spec/assurance-model.md): the register, engine-defined and non-optional.
         CoverageReport,
         /// Q14: `.headwater/corpus.json`, engine-defined and non-optional.
         CorpusDescriptor,
@@ -383,7 +383,7 @@ pub struct Declaration {
     pub identity: Option<DeclaredIdentity>,
     /// Whether the tree holds the written file. `false` says that
     /// `headwater export` builds it at publish time, so `generate` does not
-    /// write it and `--check` does not compare it. Spec 7: "whether an export
+    /// write it and `--check` does not compare it. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md): "whether an export
     /// is committed is a schema decision and not an engine default". Read on a
     /// `graph_export` alone, and `true` for a declaration that states nothing.
     pub committed: bool,
@@ -1129,7 +1129,7 @@ impl RefusedTranscript {
 /// planned over and never ran is not reported by the result.
 ///
 /// **This never fails a run.** The staleness of a measurement is a fact about
-/// the measurement, and spec 15 rules that no exit status carries it. The run
+/// the measurement, and [the recorder contract](../../../../docs/spec/the-recorder-contract.md) rules that no exit status carries it. The run
 /// names the result so that the author of the move meets it.
 #[derive(Clone, Debug, Default)]
 pub struct MovedSinceRecording {
@@ -1258,7 +1258,7 @@ impl DefectiveArms {
 /// never reached [`DefectiveArms`] at all, and a run with a real
 /// defect in one of them could report none.
 ///
-/// Nothing in the run identity spec 5 fixes before a run names which present
+/// Nothing in the run identity [AI integration](../../../../docs/spec/ai-integration.md) fixes before a run names which present
 /// transcript pairs with which absent one beyond the selection, the model
 /// and the served version. So once either side of one key holds more than
 /// one transcript, there is no key left to pair by, and guessing is what
@@ -1422,7 +1422,7 @@ pub struct Plan {
 ///
 /// One of the two engine-defined kinds is emitted and one is not. The register
 /// is listed here with its reason, so that a run states the whole of what a
-/// projection layer owes rather than the part that is built. Spec 4 calls the
+/// projection layer owes rather than the part that is built. [The assurance model](../../../../docs/spec/assurance-model.md) calls the
 /// register "a projection like any other" and asks this verb to hold it to
 /// regeneration; building the rest of the verb is what showed why it cannot
 /// yet. The descriptor had the same entry until it acquired an emitter, and the
@@ -1677,7 +1677,7 @@ pub fn export_plan(
 
 /// One declared `graph_export`, written through the emitter its profile names.
 ///
-/// Spec 7: "A graph export is a projection like the others. The taxonomy
+/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md): "A graph export is a projection like the others. The taxonomy
 /// declares its output path, so whether an export is committed is a schema
 /// decision and not an engine default. A committed export is held to regeneration
 /// by `generate --check`, exactly as a shelf index is."
@@ -1754,7 +1754,7 @@ fn graph_export(
 /// a declarable kind no declaration named, and the `other =>` arm of [`plan`]
 /// carries the reason of one a declaration did name. `spec_six_projections.rs`
 /// holds the whole set against one run, and
-/// `engine/crates/generate/tests/spec_six_projections.rs` holds spec 6's
+/// `engine/crates/generate/tests/spec_six_projections.rs` holds [the engine architecture](../../../../docs/spec/engine-architecture.md)'s
 /// projection-kinds block against it. The `match` is exhaustive, so a
 /// fourteenth variant is `E0004` here before it is anything else.
 pub fn unbuilt(kind: Kind) -> Option<&'static str> {
@@ -2620,7 +2620,7 @@ pub(crate) fn shelf_of<'a>(
 /// keyed by path, as ` (superseded)`.
 ///
 /// A row of an index that carried no mark listed a superseded decision exactly
-/// as it listed a current one (#1198). Spec 3 says a terminal document is kept
+/// as it listed a current one (#1198). [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) says a terminal document is kept
 /// as a record and that nothing new may rest on it, so an index that a reader
 /// picks a document from says which rows are records.
 ///
@@ -2666,7 +2666,7 @@ pub(crate) fn pointers(surface: &Surface<'_>, documents: &[Document<'_>]) -> Vec
 /// a caller of this function.
 ///
 /// The declared `name`-role facet first, because that is what the document
-/// calls itself and spec 2 puts a reader-facing name in a facet rather than in
+/// calls itself and [the taxonomy model](../../../../docs/spec/taxonomy-model.md) puts a reader-facing name in a facet rather than in
 /// body prose. The identifier next, for a kind that declares no name: it is
 /// stable and it is short, and it is a poor label rather than no label. The
 /// file name last, for the one shape that carries neither.

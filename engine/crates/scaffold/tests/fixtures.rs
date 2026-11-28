@@ -42,7 +42,7 @@ use headwater_scaffold::{propose, write, Plan, Refusal, Request, Sources};
 use headwater_yaml::Mapping;
 use std::path::{Path, PathBuf};
 
-/// The date every recorded run is taken at. Spec 12 makes the clock an injected
+/// The date every recorded run is taken at. [The check layer](../../../../docs/spec/check-layer.md) makes the clock an injected
 /// value, and a fixture that read today's date would rewrite itself nightly.
 const PINNED: &str = "2026-08-14";
 
@@ -844,7 +844,7 @@ fn provenance_block(rendered: &str) -> String {
 /// every edge that points at it, and `warrant.value.not_permitted` and
 /// `warrant.acceptance.unpaired` on the document itself (#1409). The
 /// scaffolder writes `asserted` because nobody has accepted the document yet,
-/// and it writes no `accepted_by`, because spec 3 forbids one at `asserted`.
+/// and it writes no `accepted_by`, because [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) forbids one at `asserted`.
 ///
 /// The second half binds the check side. The target of
 /// `a_target_as_the_scaffolder_writes_it_is_reported_rather_than_skipped` in
@@ -912,7 +912,7 @@ fn every_kind_the_scaffolder_writes_states_warrant_asserted() {
 
 /// Every branch of `Refusal` is reached by a case of the transcript.
 ///
-/// The rule this enforces is the one spec 12 states about a check: a refusal
+/// The rule this enforces is the one [the check layer](../../../../docs/spec/check-layer.md) states about a check: a refusal
 /// with no fixture does not ship. `BRANCHES` is the list the `branches!` macro
 /// above writes out of the same names `variant` matches on, so no branch can be
 /// left out of it. Five branches no `propose` case reaches are named below with

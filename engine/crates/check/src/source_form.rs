@@ -25,7 +25,7 @@
 //!
 //! [`headwater_doc::body::Block::soft_breaks`] is the fact instead. The parser
 //! records one span per CommonMark soft break and none for a hard break, which
-//! is the distinction `CLAUDE.md` asks for, held where spec 12 already holds
+//! is the distinction `CLAUDE.md` asks for, held where [the check layer](../../../../docs/spec/check-layer.md) already holds
 //! the parser as a correctness root.
 //!
 //! # The set of forms is closed, and this rule therefore never skips

@@ -35,7 +35,7 @@
 //!   [`intake`] is a pure function of the return file and the tree.
 //!   ([`Report::render`] over one file writes one set of bytes.)
 //! - the engine confirmed the *claim to novelty*: the graph does not already
-//!   declare the edge the finding proposes. Spec 4's fourth constraint makes a
+//!   declare the edge the finding proposes. [The assurance model](../../../../docs/spec/assurance-model.md)'s fourth constraint makes a
 //!   restatement a defect in the sweep rather than a fact about the corpus.
 //!
 //! So the sweep is a reproducible verification of an unreproducible sample.
@@ -60,7 +60,7 @@
 //!
 //! # The best outcome is an edge, so the report writes the edge out
 //!
-//! Spec 4: "the best outcome of a sweep is not a finding but an edge". A
+//! [The assurance model](../../../../docs/spec/assurance-model.md): "the best outcome of a sweep is not a finding but an edge". A
 //! carried finding that proposes one prints the front matter that declares it.
 //! Nothing here writes it. A proposal an agent applies to itself is the same
 //! act as an agent accepting its own work, which is what
@@ -76,7 +76,7 @@ pub use intake::{Refusal, Rejected, Report, Tree, Verified};
 pub use plan::Plan;
 
 headwater_check::enumerated! {
-    /// What a sweep finding claims, from the closed set spec 4 declares.
+    /// What a sweep finding claims, from the closed set [the assurance model](../../../../docs/spec/assurance-model.md) declares.
     ///
     /// Closed for the reason every value set in this engine is closed: a class
     /// nobody declared is a class no reader can act on and no report can total. A
@@ -89,7 +89,7 @@ headwater_check::enumerated! {
     /// documents. A newer claim against an older one. A term against the place its
     /// definition is owed. A document against its declared audience. A heading
     /// against the prose beneath it. A reader holds one against the other and
-    /// adjudicates in seconds, which is the standard spec 4 sets, and
+    /// adjudicates in seconds, which is the standard [the assurance model](../../../../docs/spec/assurance-model.md) sets, and
     /// [`Class::remediation`] reads the same way: every remedy declares an edge,
     /// defines a term, narrows an audience or writes a section.
     ///
@@ -115,7 +115,7 @@ headwater_check::enumerated! {
         /// [HW-OBL-0113](../../../../docs/obligations/0113-every-check-passes-a-document-that-is-still-the-scaffolder-s-placeholder.md).
         UnwrittenSection,
     }
-    /// Every class, in the order spec 4 lists them.
+    /// Every class, in the order [the assurance model](../../../../docs/spec/assurance-model.md) lists them.
     const ALL;
 }
 
@@ -152,7 +152,7 @@ impl Class {
     }
 
     /// The relation a finding of this class is a candidate for, when the class
-    /// implies one. Spec 4's fourth constraint reads this: a finding of a class
+    /// implies one. [The assurance model](../../../../docs/spec/assurance-model.md)'s fourth constraint reads this: a finding of a class
     /// whose relation the graph already declares between the two documents is
     /// a restatement, and a restatement is a defect in the sweep.
     pub fn implies(self) -> Option<&'static str> {
@@ -192,7 +192,7 @@ impl Class {
 
 /// The word every sweep finding is stamped with, wherever one is rendered.
 ///
-/// Spec 12: "Its provenance is marked `agent`". It is a constant rather than a
+/// [The check layer](../../../../docs/spec/check-layer.md): "Its provenance is marked `agent`". It is a constant rather than a
 /// member of [`headwater_check::Finding`], because a finding's provenance is a
 /// fact about the mechanism that produced it, and this mechanism has one. A
 /// field on the shared shape would be a constant in one crate and dead weight

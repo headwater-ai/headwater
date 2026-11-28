@@ -5,7 +5,7 @@ status: current
 status_since: 2026-08-13
 waiting_on: build
 last_verified: 2026-08-14
-summary: "Spec 3 gives the provenance block to the engine and states no shape for it, so a read depends on a key that nothing validates."
+summary: "Authoring and lifecycle gives the provenance block to the engine and states no shape for it, so a read depends on a key that nothing validates."
 provenance:
   warrant: accepted
   agency: mixed
@@ -27,7 +27,7 @@ relations:
 
 ## Obligation
 
-The query surface is the first code to read `provenance.warrant`, because [AI integration](../spec/ai-integration.md#intent-time-routing) makes a pointer state the `asserted` warrant beside the summary. So a read depends on a key that nothing validates. A document that misspells the key gets a pointer with no warning on it, and every rule that spec 3 promises is still absent.
+The query surface is the first code to read `provenance.warrant`, because [AI integration](../spec/ai-integration.md#intent-time-routing) makes a pointer state the `asserted` warrant beside the summary. So a read depends on a key that nothing validates. A document that misspells the key gets a pointer with no warning on it, and every rule that [authoring and lifecycle](../spec/authoring-and-lifecycle.md) promises is still absent.
 
 ## Discharge
 

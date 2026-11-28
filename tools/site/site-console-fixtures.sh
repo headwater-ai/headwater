@@ -1,7 +1,7 @@
 #!/bin/sh
 # What holds `tools/site/check-site-console.py`.
 #
-# Spec 12 refuses a check that ships with no failing fixture, and the reason
+# The check layer (docs/spec/check-layer.md) refuses a check that ships with no failing fixture, and the reason
 # carries double weight here. This checker's whole verdict is an *absence* — no
 # console message — and an absence-of-errors check is the one assertion that
 # goes quiet the moment its own mechanism breaks. A wrong URL, a server that

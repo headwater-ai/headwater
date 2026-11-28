@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Spec 6 is an overview of the engine, and each rule it once stated alone now
+//! [The engine architecture](../../../../docs/spec/engine-architecture.md) is an overview of the engine, and each rule it once stated alone now
 //! lives in one home that it points at (#1572, slice 4b).
 //!
 //! The file keeps all 18 of its headings, because inbound links name them.
 //! It keeps the pipeline, the subsystem map and one pointer for each rule.
 //! The audit readings went to the `headwater taxonomy` contract, the declaring
-//! rules of `exportable_as` to spec 12, and the waiting projection kinds and
+//! rules of `exportable_as` to [the check layer](../../../../docs/spec/check-layer.md), and the waiting projection kinds and
 //! the cycle of passes to the projections subsystem. Every other removed
 //! paragraph already had a home that stated it.
 //!
@@ -54,11 +54,11 @@ fn words(text: &str) -> Vec<String> {
         .collect()
 }
 
-/// The fewest words in a row that spec 6's prose may not share with a home it
+/// The fewest words in a row that [the engine architecture](../../../../docs/spec/engine-architecture.md)'s prose may not share with a home it
 /// points at.
 const RUN_WORDS: usize = 8;
 
-/// The most prose words spec 6 may carry, outside its front matter and its
+/// The most prose words [the engine architecture](../../../../docs/spec/engine-architecture.md) may carry, outside its front matter and its
 /// fences.
 const WORD_BAR: usize = 2500;
 
@@ -97,7 +97,7 @@ fn prose_word_count(text: &str) -> usize {
         .sum()
 }
 
-/// Spec 6's prose with its `### CLI` section left out, which
+/// [The engine architecture](../../../../docs/spec/engine-architecture.md)'s prose with its `### CLI` section left out, which
 /// `spec_six_cli_rules.rs` holds against the verb contracts.
 fn prose_outside_cli(text: &str) -> String {
     let mut out = String::new();
@@ -114,7 +114,7 @@ fn prose_outside_cli(text: &str) -> String {
     out
 }
 
-/// Each heading line of spec 6 at `1b12d20c`, which inbound links name: the
+/// Each heading line of [the engine architecture](../../../../docs/spec/engine-architecture.md) at `1b12d20c`, which inbound links name: the
 /// title and the 18 section headings the adjudication counted.
 const HEADINGS: [&str; 19] = [
     "# 6 — Engine architecture",
@@ -138,7 +138,7 @@ const HEADINGS: [&str; 19] = [
     "## Implementation constraints",
 ];
 
-/// One lead sentence of each paragraph that left spec 6, because a home states
+/// One lead sentence of each paragraph that left [the engine architecture](../../../../docs/spec/engine-architecture.md), because a home states
 /// its rule.
 const MOVED_LEADS: [&str; 23] = [
     // `taxonomy validate` versus `taxonomy audit`, to the `headwater taxonomy` contract.
@@ -154,12 +154,12 @@ const MOVED_LEADS: [&str; 23] = [
     // MCP server, to `headwater-mcp.md` and queries-and-explain.
     "The server walks the corpus once",
     "A call that moves a byte of that tree ends the server",
-    // Checks, to spec 12.
+    // Checks, to the check layer (docs/spec/check-layer.md).
     "Checks come from five origins",
     "The last three are why a native engine exists at all",
     "The last column is a **set of emitter targets**",
     "The declaration is per rule, and it lives on the check as `EXPORTABLE_AS`",
-    // Nothing stores the graph, to HW-DR-0006 and spec 12.
+    // Nothing stores the graph, to HW-DR-0006 and the check layer (docs/spec/check-layer.md).
     "| The in-memory graph | one run |",
     "The cache is disposable, and a test says so",
     // Projections, to projections-and-export and the generate contract.
@@ -233,7 +233,7 @@ const HOMES: [(&str, &str); 14] = [
     ),
 ];
 
-/// The documents spec 6 points at for a rule it no longer states.
+/// The documents [the engine architecture](../../../../docs/spec/engine-architecture.md) points at for a rule it no longer states.
 const POINTED_HOMES: [&str; 7] = [
     "docs/interfaces/headwater-taxonomy.md",
     "docs/interfaces/headwater-mcp.md",
@@ -244,7 +244,7 @@ const POINTED_HOMES: [&str; 7] = [
     "docs/decisions/0006-where-the-corpus-graph-lives-at-rest.md",
 ];
 
-/// Spec 6 is an overview, and an overview of 4,601 words is the specification
+/// [The engine architecture](../../../../docs/spec/engine-architecture.md) is an overview, and an overview of 4,601 words is the specification
 /// it points at under another heading.
 ///
 /// # Watched failing
@@ -291,7 +291,7 @@ fn every_heading_of_spec_6_survives() {
     );
 }
 
-/// A rule that moved to its home is not left behind in spec 6, so it has one
+/// A rule that moved to its home is not left behind in [the engine architecture](../../../../docs/spec/engine-architecture.md), so it has one
 /// statement and not two.
 ///
 /// # Watched failing
@@ -312,7 +312,7 @@ fn no_moved_rule_is_left_in_spec_6() {
     );
 }
 
-/// Each rule that left spec 6 for a home that did not state it is now stated
+/// Each rule that left [the engine architecture](../../../../docs/spec/engine-architecture.md) for a home that did not state it is now stated
 /// in that home.
 ///
 /// # Watched failing
@@ -340,7 +340,7 @@ fn runs(text: &str) -> BTreeSet<Vec<String>> {
         .collect()
 }
 
-/// Spec 6 points at a home rather than repeating it, so the two share no run
+/// [The engine architecture](../../../../docs/spec/engine-architecture.md) points at a home rather than repeating it, so the two share no run
 /// of eight words. The CLI section is left to `spec_six_cli_rules.rs`.
 #[test]
 fn spec_6_shares_no_run_of_eight_words_with_a_home() {
@@ -375,7 +375,7 @@ fn sentences(text: &str) -> Vec<String> {
         .collect()
 }
 
-/// The commit hook runs `check --strict --change`, so no sentence of spec 6
+/// The commit hook runs `check --strict --change`, so no sentence of [the engine architecture](../../../../docs/spec/engine-architecture.md)
 /// may deny that a change-scoped check exists, however it is worded.
 #[test]
 fn no_sentence_of_spec_6_denies_the_change_scoped_check() {
@@ -666,13 +666,13 @@ fn engine_stale_quotes(rel: &str, name: &str) -> (Vec<String>, usize) {
     (stale, read_count)
 }
 
-/// A comment that quotes spec 6 sends a reader to spec 6 for that sentence.
-/// Slice 4b of #1572 moved each rule that spec 6 alone stated to its home, and
+/// A comment that quotes [the engine architecture](../../../../docs/spec/engine-architecture.md) sends a reader to [the engine architecture](../../../../docs/spec/engine-architecture.md) for that sentence.
+/// Slice 4b of #1572 moved each rule that [the engine architecture](../../../../docs/spec/engine-architecture.md) alone stated to its home, and
 /// nine engine comments went on quoting the old text, with one more that
-/// credited spec 6 in the past tense and named no commit. A reader who
+/// credited [the engine architecture](../../../../docs/spec/engine-architecture.md) in the past tense and named no commit. A reader who
 /// followed any of them found no such sentence. This reads every comment of
-/// every engine source that credits a quote to spec 6, and fails on each quote
-/// that spec 6 does not hold. A quote that names the commit at which spec 6
+/// every engine source that credits a quote to [the engine architecture](../../../../docs/spec/engine-architecture.md), and fails on each quote
+/// that [the engine architecture](../../../../docs/spec/engine-architecture.md) does not hold. A quote that names the commit at which [the engine architecture](../../../../docs/spec/engine-architecture.md)
 /// held it is history, and it passes.
 #[test]
 fn no_engine_comment_quotes_text_spec_6_does_not_hold() {

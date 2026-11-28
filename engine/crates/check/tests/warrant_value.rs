@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! A warrant outside spec 3's closed set, and an acceptor the warrant does not
+//! A warrant outside [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s closed set, and an acceptor the warrant does not
 //! pair with.
 //!
 //! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires)
@@ -15,7 +15,7 @@
 //! - **A test for one bad value** passes `cased.md` (`Accepted`) and
 //!   `listed.md` (a list), which are outside the set and are not `acepted`.
 //! - **A rule that collapsed an absent warrant into a bad one** reports
-//!   `quiet.md` and `blank.md`. Spec 3's "absent is a finding" is a separate
+//!   `quiet.md` and `blank.md`. [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s "absent is a finding" is a separate
 //!   rule that no edition of this engine has written yet, and
 //!   [HW-OBL-0125](../../../../docs/obligations/0125-nine-documents-state-a-warrant-outside-the-closed-set-and-only-a-person-can-set-the-value.md)
 //!   holds it. These two instances skip and say why.
@@ -43,7 +43,7 @@ const VALUE: &str = "warrant.value.not_permitted";
 const UNPAIRED: &str = "warrant.acceptance.unpaired";
 const BASIS: &str = "warrant.evidence.unsupported";
 
-/// Spec 3's closed set, in the order of its table.
+/// [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s closed set, in the order of its table.
 const CLOSED: [&str; 4] = ["accepted", "regenerated", "transcribed", "asserted"];
 
 fn fixtures_dir() -> PathBuf {
@@ -256,7 +256,7 @@ fn a_generated_document_is_not_judged_on_its_declaration() {
     assert!(findings(&run, UNPAIRED, "generated.md").is_empty());
 }
 
-/// Spec 3's table, row by row: `accepted` requires an acceptor, and the other
+/// [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s table, row by row: `accepted` requires an acceptor, and the other
 /// three forbid one.
 #[test]
 fn the_pairing_follows_spec_three_row_by_row() {

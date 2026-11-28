@@ -963,7 +963,7 @@ mod tests {
         );
     }
 
-    /// The same for a quotation. Spec 3 puts another author's words outside
+    /// The same for a quotation. [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) puts another author's words outside
     /// every lexical rule, and this is that rule at the write end.
     #[test]
     fn an_offset_inside_a_block_quote_is_refused() {

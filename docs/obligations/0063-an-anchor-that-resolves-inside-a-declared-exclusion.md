@@ -5,7 +5,7 @@ status: current
 status_since: 2026-08-12
 waiting_on: ruling
 last_verified: 2026-08-13
-summary: "Spec 1 fixes three outcomes for an anchor, and a hit inside a corpus exclusion is none of them."
+summary: "The conceptual model fixes three outcomes for an anchor, and a hit inside a corpus exclusion is none of them."
 provenance:
   warrant: accepted
   agency: mixed
@@ -26,7 +26,7 @@ relations:
 
 ## Obligation
 
-Either spec 1 admits a fourth outcome, or an exclusion is a fact about the census alone and an anchor never sees it.
+Either [the conceptual model](../spec/conceptual-model.md) admits a fourth outcome, or an exclusion is a fact about the census alone and an anchor never sees it.
 
 ## Discharge
 

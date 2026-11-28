@@ -12,4 +12,4 @@ provenance:
 
 # The guessed evaluation that an obligation names
 
-This document declares no edge. `targets/obligation-by-inverse-guessed.md` writes the `discharged_by` half onto it, so it is the evidence end of a `discharges` edge that it never wrote. Its warrant is outside spec 3's closed set.
+This document declares no edge. `targets/obligation-by-inverse-guessed.md` writes the `discharged_by` half onto it, so it is the evidence end of a `discharges` edge that it never wrote. Its warrant is outside [authoring and lifecycle](../../../../../../docs/spec/authoring-and-lifecycle.md)'s closed set.

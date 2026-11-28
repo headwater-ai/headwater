@@ -1,11 +1,11 @@
 ---
 id: HW-OBL-0067
-title: "A rule that reads the taxonomy has no grain in spec 12's list"
+title: "A rule that reads the taxonomy has no grain in the check layer's list"
 status: discharged
 status_since: 2026-10-03
 waiting_on: build
 last_verified: 2026-10-03
-summary: "Two register rules are about the taxonomy and about no document, and spec 12 draws every scope over the corpus."
+summary: "Two register rules are about the taxonomy and about no document, and the check layer draws every scope over the corpus."
 provenance:
   warrant: accepted
   agency: mixed
@@ -18,7 +18,7 @@ relations:
     - HW-SPEC-check-layer
 ---
 
-# A rule that reads the taxonomy has no grain in spec 12's list
+# A rule that reads the taxonomy has no grain in the check layer's list
 
 ## Context
 
@@ -26,7 +26,7 @@ relations:
 
 ## Obligation
 
-Either spec 12 names the fifth grain, or these two rules move out of the check layer and into `taxonomy validate`.
+Either [the check layer](../spec/check-layer.md) names the fifth grain, or these two rules move out of the check layer and into `taxonomy validate`.
 
 ## Discharge
 

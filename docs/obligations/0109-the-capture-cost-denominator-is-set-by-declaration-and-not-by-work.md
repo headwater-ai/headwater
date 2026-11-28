@@ -55,7 +55,7 @@ Under the first reading the assisted fraction is a measure of the scaffolder aga
 
 Under the second reading it is the answer to Grudin, which [HW-EVAL-theoretical-foundations](../evaluations/theoretical-foundations.md#what-the-theory-did-not-settle) names as the strongest claim in the design. Capture cost is what an author pays. Under this reading a metric that never counts prose measures the cheap half of the work and reports a high number for it.
 
-Spec 3 uses the fraction in both ways in one section. It calls a rise in hand entry a sign that the taxonomy demands more than the tooling supports, which is the first reading. It then makes the fraction the test of the agent-authoring claim, which is the second.
+[Authoring and lifecycle](../spec/authoring-and-lifecycle.md) uses the fraction in both ways in one section. It calls a rise in hand entry a sign that the taxonomy demands more than the tooling supports, which is the first reading. It then makes the fraction the test of the agent-authoring claim, which is the second.
 
 A ratio whose numerator and denominator both move with a declaration also has a property that a trend store has to hold. A required facet that the scaffolder can fill raises the number with no change in what a person types. So a reading is comparable only against another reading taken under the same taxonomy. The store records the lock digest of each run for that reason, and `headwater capture` refuses to average readings taken under two of them.
 
@@ -65,6 +65,6 @@ A ruling in the decision register on which of the two readings the metric carrie
 
 Under the first reading nothing more is owed. The number is what it is, the store trends it, and the taxonomy is what it reports on.
 
-Under the second reading the metric owes a term for the body. Nothing here proposes one. Spec 12 holds a scaffolder to account for a fabricated fact, and an invented term for author burden would be one. A word count is not author burden either, and a term that measured the wrong thing precisely would be worse than the honest gap.
+Under the second reading the metric owes a term for the body. Nothing here proposes one. [The check layer](../spec/check-layer.md) holds a scaffolder to account for a fabricated fact, and an invented term for author burden would be one. A word count is not author burden either, and a term that measured the wrong thing precisely would be worse than the honest gap.
 
 The measurement above is repeatable. Run `headwater new <kind>` over every concrete kind in a copy of this tree, then `headwater capture` over the copy.

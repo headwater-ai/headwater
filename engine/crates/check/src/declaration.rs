@@ -59,7 +59,7 @@
 //! that produced no edge is a claim the corpus does not hold, and every query
 //! and projection over that relation reads the corpus rather than the claim.
 //!
-//! No fix, on spec 12's own bar. Three of the four repairs are a rewrite of the
+//! No fix, on [the check layer](../../../../docs/spec/check-layer.md)'s own bar. Three of the four repairs are a rewrite of the
 //! block. The fourth looks mechanical and is not: a repeated triple is two
 //! entries, either of which may carry instance attributes the other does not,
 //! and only the author knows which entry was the one they meant.

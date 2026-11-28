@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 #
-# Spec 2: "Lists never silently merge. An overlay either replaces a list or uses
+# The taxonomy model (docs/spec/taxonomy-model.md): "Lists never silently merge. An overlay either replaces a list or uses
 # explicit `add_to` / `remove_from` operations." Both are here over one list,
 # and the result does not depend on the order they were written in: additions
 # run before deletions, whichever way round the file states them.

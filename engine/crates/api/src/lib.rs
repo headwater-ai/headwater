@@ -57,7 +57,7 @@ pub fn plan_of(
 
 /// The taxonomy one load runs against, and where it came from.
 ///
-/// Every verb but one takes this from `.headwater/taxonomy.lock`, which spec 6
+/// Every verb but one takes this from `.headwater/taxonomy.lock`, which [the engine architecture](../../../../docs/spec/engine-architecture.md)
 /// fixes as the one thing downstream reads. `taxonomy diff` takes a second one
 /// out of a published artifact, so that the same phases run twice over one tree
 /// and a difference is attributable to the schema. The type exists so that the
@@ -444,7 +444,7 @@ impl Session {
         // sources are the paths the lock records, which are the paths the
         // resolution read. A package manifest at the root that does not read
         // names no directory here, because `taxonomy validate` refuses it.
-        // Nothing is ignored, because spec 12 keeps every version control
+        // Nothing is ignored, because the check layer (docs/spec/check-layer.md) keeps every version control
         // command off the check loop.
         let scope_coverage = bound.lock.as_ref().map(|lock| {
             let sources: Vec<String> = lock

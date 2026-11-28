@@ -14,7 +14,7 @@ provenance:
 
 ## Context
 
-Spec 13 holds a finding that has no reader outside this repository. Run `20261122-0114` wrote intake lines 10, 11, 22, 24 and 156. The product owner ruled each one RECORD into the group that its end-of-run report calls S3, behavior that no case holds. That group held eight lines. A record that bundles gaps is split when it passes five, so this record holds the probe tools and the skill. The mutants are as the verifiers reported them, and this record did not run them again.
+[The register of open obligations](../spec/open-obligations.md) holds a finding that has no reader outside this repository. Run `20261122-0114` wrote intake lines 10, 11, 22, 24 and 156. The product owner ruled each one RECORD into the group that its end-of-run report calls S3, behavior that no case holds. That group held eight lines. A record that bundles gaps is split when it passes five, so this record holds the probe tools and the skill. The mutants are as the verifiers reported them, and this record did not run them again.
 
 ## Obligation
 

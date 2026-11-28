@@ -3,7 +3,7 @@ id: HW-EVAL-linkml-worked-example
 status: current
 status_since: 2026-08-02
 last_verified: 2026-08-11
-summary: The Headwater taxonomy written out in LinkML, and the boundary where the standard stops covering what spec 2 declares.
+summary: The Headwater taxonomy written out in LinkML, and the boundary where the standard stops covering what the taxonomy model declares.
 title: "The Headwater taxonomy in LinkML — a worked example"
 provenance:
   warrant: accepted
@@ -258,7 +258,7 @@ Four of these were genuinely surprising — not "can be encoded" but "is the sam
 | Lineage semantics | `slot_uri: prov:wasRevisionOf` | PROV alignment, natively — change #11, for free |
 | Relation endpoints and cardinality | `range` to a class, `multivalued` | Direct |
 
-Three of the twenty research-derived changes (SKOS mappings, PROV alignment, advisory severity) are things LinkML already ships. That is a real argument for adoption, and also mild evidence the modeling instincts in spec 2 were conventional rather than eccentric.
+Three of the twenty research-derived changes (SKOS mappings, PROV alignment, advisory severity) are things LinkML already ships. That is a real argument for adoption, and also mild evidence the modeling instincts in [the taxonomy model](../spec/taxonomy-model.md) were conventional rather than eccentric.
 
 ## Where it stops — and the boundary is not the one I claimed
 
@@ -270,7 +270,7 @@ Three of the twenty research-derived changes (SKOS mappings, PROV alignment, adv
 - **Sequence expectations.** "A current decision acquires an implementing specification within 90 days" is a query over the graph *and over time*.
 - **Overlays, core, compatibility.** Operations on the schema itself, not statements in it.
 
-None of that is "governance" as opposed to "structure". Reciprocity is as structural as anything in spec 2. The actual line is:
+None of that is "governance" as opposed to "structure". Reciprocity is as structural as anything in [the taxonomy model](../spec/taxonomy-model.md). The actual line is:
 
 > **LinkML, SHACL, and JSON Schema all validate one instance against a shape. Everything Headwater does that they cannot is a property of the graph as a whole, or of the corpus over time.**
 

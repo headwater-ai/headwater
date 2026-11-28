@@ -23,7 +23,7 @@
 //! this corpus holds no row at, and the version of each one.
 //!
 //! One instance covers the whole change. A run that names no change skips it
-//! with the reason spec 12 fixes, exactly as an instance of the two
+//! with the reason [the check layer](../../../../docs/spec/check-layer.md) fixes, exactly as an instance of the two
 //! document-scoped rules that declare the same input does.
 //!
 //! # A rename is not a deletion, and nothing here decides that
@@ -39,7 +39,7 @@
 //! caller that turned similarity detection off would present a rename as a
 //! deletion and an addition, and this rule would refuse the deletion. That is
 //! the honest failure. The alternative is an engine that walks history, which
-//! spec 12 rules out as an input.
+//! [the check layer](../../../../docs/spec/check-layer.md) rules out as an input.
 //!
 //! # What it reads out of the declaration, and the three answers
 //!

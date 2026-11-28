@@ -124,7 +124,7 @@ impl DocumentCheck for Placement {
             ),
             remediation: format!("remove `{facet}` from the front matter of {}", view.path()),
             // No patch, and this rule used to claim one. The remedy is
-            // mechanical — spec 12 puts "normalize front-matter key order"
+            // mechanical — the check layer (docs/spec/check-layer.md) puts "normalize front-matter key order"
             // among its own examples — and the engine does not write it. What
             // [`crate::Patch`] carries is what `check --fix` will do, so the
             // claim goes with the capability. A deletion inside front matter

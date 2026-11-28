@@ -48,7 +48,7 @@ Three answers were open, and the hook contract constrains all three. Its third t
 
 The three hooks require a built engine at every position. Two of them required one already. The review position requires one for the guard, and it exits 0 where it has none. A machine with no engine therefore ends the turn rather than stopping it twice. The commit gate holds that tree, and the gate prints its own line about a missing engine.
 
-**The intent position spawns one process more than it did, and it costs less than it did.** Spec 5 states that a hook is invisible or it is bypassed. The count is therefore the wrong measure, and the clock is the right one. Ten reads of one member cost 0.077 seconds through this verb and 0.698 seconds through the interpreter, measured on an idle machine on 2026-09-06. That is 8 milliseconds against 70 for one read. The position now makes three calls where it made two, and the three are faster than the two by a factor of six.
+**The intent position spawns one process more than it did, and it costs less than it did.** [AI integration](../spec/ai-integration.md) states that a hook is invisible or it is bypassed. The count is therefore the wrong measure, and the clock is the right one. Ten reads of one member cost 0.077 seconds through this verb and 0.698 seconds through the interpreter, measured on an idle machine on 2026-09-06. That is 8 milliseconds against 70 for one read. The position now makes three calls where it made two, and the three are faster than the two by a factor of six.
 
 `headwater json` is the first verb of this binary that reads no corpus. It takes `--root` because every verb does, and it reads nothing under it. A later utility joins the group rather than becoming a second bucket.
 

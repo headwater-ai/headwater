@@ -37,7 +37,7 @@ This corpus owes an answer to one question. **What does a consumer rely on for t
 
 Three answers would discharge it, and each is a different amount of work.
 
-1. **The channel is enough, stated as a requirement on the publisher.** Spec 7 would require a publisher to carry the digest of each release on a channel that a consumer already trusts. It would also require the artifact and the digest to travel apart. This is the cheapest answer, and it moves the obligation onto the publisher rather than removing it.
+1. **The channel is enough, stated as a requirement on the publisher.** [Distribution and federation](../spec/distribution-and-federation.md) would require a publisher to carry the digest of each release on a channel that a consumer already trusts. It would also require the artifact and the digest to travel apart. This is the cheapest answer, and it moves the obligation onto the publisher rather than removing it.
 2. **A signature, argued as the dependency it costs.** A signing scheme, a key distribution route, and a revocation rule, each recorded. The engine gains a verifier, and [Q22](../decisions/0022-q22-the-integrity-posture-of-a-published-package.md)'s reasoning about third-party crates is reopened for a component that nobody should write.
 3. **A trust root that an organization already runs.** Many adopters distribute packages through an artifact store that authenticates the publisher on their behalf. Where that holds, the engine adds nothing and the specification says which property it is relying on.
 

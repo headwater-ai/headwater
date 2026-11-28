@@ -24,7 +24,7 @@
 //!
 //! # A resolver never reaches the network
 //!
-//! Spec 2 states the rule and gives both reasons: check time stays offline, and
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md) states the rule and gives both reasons: check time stays offline, and
 //! a resolution result stays reproducible. [`SourceTree`] reads the working
 //! tree under the corpus base. The second resolver this specification names, a
 //! committed snapshot of an external system of record, reads committed files by
@@ -400,7 +400,7 @@ impl Resolvers {
 
     /// The resolvers a run over a repository has today: the source tree, and
     /// nothing else. Every other anchor kind the taxonomy declares reports that
-    /// no resolver claims it, which is the finding spec 2 asks for.
+    /// no resolver claims it, which is the finding [the taxonomy model](../../../../docs/spec/taxonomy-model.md) asks for.
     pub fn over(corpus: &Corpus) -> Self {
         Self::new(vec![Box::new(SourceTree::over(corpus))])
     }
@@ -408,7 +408,7 @@ impl Resolvers {
     /// Add one resolver that this crate cannot build, and refuse a second of
     /// one name.
     ///
-    /// Spec 2 rules that "every anchor kind names exactly one resolver, and no
+    /// [The taxonomy model](../../../../docs/spec/taxonomy-model.md) rules that "every anchor kind names exactly one resolver, and no
     /// two anchor kinds claim the same resolver namespace". Two entries of one
     /// name would leave [`Resolvers::get`] answering with whichever was pushed
     /// first, so one of the two would own an identity in silence. That is the
@@ -1356,7 +1356,7 @@ mod tests {
         assert!(resolvers.get("source-tree").is_none());
     }
 
-    /// Spec 2: exactly one component owns each anchor identity. A second entry
+    /// [The taxonomy model](../../../../docs/spec/taxonomy-model.md): exactly one component owns each anchor identity. A second entry
     /// of one name is refused rather than shadowed, because `get` would answer
     /// with the first one and nothing would say the second was ignored.
     #[test]

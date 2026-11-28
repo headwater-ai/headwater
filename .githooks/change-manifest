@@ -34,7 +34,7 @@
 #
 # # The two anchors, unchanged
 #
-# Spec 12 fixes what `prior` is anchored to and names two: the committed `HEAD`
+# The check layer (docs/spec/check-layer.md) fixes what `prior` is anchored to and names two: the committed `HEAD`
 # for a working-tree hook, and the merge base for a proposed change. Both are a
 # revision, and the side that is compared against it is the working tree in
 # both cases. `.githooks/pre-commit` passes `HEAD`; the CI job passes the base

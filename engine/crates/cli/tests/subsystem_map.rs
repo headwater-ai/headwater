@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Spec 6's subsystem map names every engine crate once, and a subsystem spec
+//! [The engine architecture](../../../../docs/spec/engine-architecture.md)'s subsystem map names every engine crate once, and a subsystem spec
 //! it links governs the crates of its row.
 //!
 //! [HW-DR-0098](../../../../docs/decisions/0098-an-engine-subsystem-is-described-by-a-technical-design-spec-on-a-shelf-of-its-own-and-its-behavior-stays-where-it-is-already-written.md)
 //! rules that every crate under `engine/crates/` belongs to exactly one
-//! subsystem, and that spec 6 keeps the map from each stage to its subsystem
+//! subsystem, and that [the engine architecture](../../../../docs/spec/engine-architecture.md) keeps the map from each stage to its subsystem
 //! spec. The map is a table of prose, so a crate added next month drifts from
 //! it with nothing to say so. These cases are that review, read off the
 //! directory listing, the table under `### Subsystems` in
@@ -72,7 +72,7 @@ fn cells(line: &str) -> Vec<String> {
         .collect()
 }
 
-/// The body rows of the one table under `### Subsystems` in spec 6. The
+/// The body rows of the one table under `### Subsystems` in [the engine architecture](../../../../docs/spec/engine-architecture.md). The
 /// columns are found by their header names `subsystem` and `crates`, so a
 /// column added later for the reason of a row moves nothing here.
 fn spec_six_rows() -> Vec<Row> {

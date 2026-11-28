@@ -72,7 +72,7 @@ pub struct Relation {
     pub inverse: Option<String>,
     /// What the relation says about the half nobody wrote.
     pub reciprocal: Reciprocal,
-    /// The relation family, which is one of spec 2's six. Read as written: the
+    /// The relation family, which is one of [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s six. Read as written: the
     /// meta-schema owns the value set, and a family this engine does not know
     /// derives no reading order rather than an invented one.
     pub family: Option<String>,
@@ -108,7 +108,7 @@ pub struct Relation {
     /// evidence, `from` or `to`, as written. Absent means `to`, which is the
     /// reading every evidence relation had before the member existed.
     ///
-    /// Spec 2 leaves the direction of a relation to its author, so the family
+    /// [The taxonomy model](../../../../docs/spec/taxonomy-model.md) leaves the direction of a relation to its author, so the family
     /// cannot say which end substantiates the other. `discharges` points from
     /// the evaluation that is the evidence to the obligation it substantiates,
     /// and `traces_to` points from the claim to its evidence (#1511).
@@ -162,14 +162,14 @@ pub enum Governs {
     Source,
     /// The far end governs.
     Target,
-    /// Spec 2's fourth clause: "Everything else carries no reading order."
+    /// [The taxonomy model](../../../../docs/spec/taxonomy-model.md)'s fourth clause: "Everything else carries no reading order."
     Neither,
 }
 
 impl Relation {
     /// The end that governs the reading, from what this relation declares.
     ///
-    /// Spec 2's four clauses, in its own order, and they are total over the six
+    /// [The taxonomy model](../../../../docs/spec/taxonomy-model.md)'s four clauses, in its own order, and they are total over the six
     /// families. A nucleus–satellite relation that names no `nucleus` derives
     /// nothing: `taxonomy validate` refuses that declaration, and a reader that
     /// guessed an end would order a pair by a coin toss.
@@ -474,7 +474,7 @@ fn read_anchor(name: &str, value: &Value, span: Span) -> Result<AnchorKind, Decl
         span,
     })?;
 
-    // Spec 2 requires exactly one resolver per anchor kind, and the requirement
+    // The taxonomy model (docs/spec/taxonomy-model.md) requires exactly one resolver per anchor kind, and the requirement
     // is about identity rather than about tidiness: the resolver is what
     // normalizes two spellings of one target into one node. An anchor kind with
     // no resolver has no identity, so it is refused here rather than carried.
@@ -710,7 +710,7 @@ anchors:
         );
     }
 
-    /// Spec 2's four clauses, one per relation, and the fourth is the one that
+    /// [The taxonomy model](../../../../docs/spec/taxonomy-model.md)'s four clauses, one per relation, and the fourth is the one that
     /// has to stay silent. A declaration that carried a reading order for
     /// `is_alternative_to` would misstate what the relation asserts.
     #[test]

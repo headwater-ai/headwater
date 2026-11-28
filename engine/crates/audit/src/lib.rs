@@ -24,7 +24,7 @@
 //! A rate is a numerator over a denominator. This verb holds the denominator:
 //! the population standing at `asserted`, which the warrant reading reports.
 //! The numerator is a count of promotions in one change, and a promotion is a
-//! lifecycle transition. Spec 12 makes the version that stood before a change
+//! lifecycle transition. [The check layer](../../../../docs/spec/check-layer.md) makes the version that stood before a change
 //! available only in change-scoped evaluation, and this verb reads one working
 //! tree. So the numerator is `headwater_check::promotion`, and no build of this
 //! crate would bring it here. The warrant reading names that rule beside the
@@ -110,7 +110,7 @@ impl Series {
     }
 }
 
-/// Spec 2's closed set of edge creators, in the order that document lists them.
+/// [The taxonomy model](../../../../docs/spec/taxonomy-model.md)'s closed set of edge creators, in the order that document lists them.
 ///
 /// The set is here rather than derived from the relations a taxonomy declares,
 /// and that is the whole point of the creator reading. A creator that no
@@ -164,7 +164,7 @@ impl RelationReading {
     }
 }
 
-/// The creator reading: every value of spec 2's closed set, in use or not.
+/// The creator reading: every value of [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s closed set, in use or not.
 #[derive(Clone, Debug)]
 pub struct Creators {
     pub by_creator: Vec<(String, Vec<RelationReading>)>,
@@ -320,7 +320,7 @@ pub const WARRANTS: [&str; 4] = headwater_doc::WARRANTS;
 
 /// The two warrants the engine derives from the generated-file marker.
 ///
-/// Spec 3: "The engine derives `regenerated` from the marker, and never from a
+/// [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md): "The engine derives `regenerated` from the marker, and never from a
 /// declaration." A generated document that declares one would state a fact a
 /// hand edit can falsify. So a zero on either row is a property of this engine
 /// rather than of the authoring, and the report says which.
@@ -335,7 +335,7 @@ pub const DERIVED: [&str; 2] = [headwater_doc::REGENERATED, "transcribed"];
 
 /// The role a facet would take to record the state a document left.
 ///
-/// No taxonomy declares it, because spec 2's closed role registry holds no such
+/// No taxonomy declares it, because [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s closed role registry holds no such
 /// role. The name is here so that the transition-continuity wait names what
 /// would end it, rather than describing an absence.
 pub const STATE_LEFT: &str = "state_left";
@@ -346,7 +346,7 @@ pub struct WarrantReading {
     pub value: String,
     /// Classified documents whose provenance block states this value.
     pub stated: usize,
-    /// Whether the closed set of spec 3 holds this value. A row where this is
+    /// Whether the closed set of [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) holds this value. A row where this is
     /// false is a value a corpus invented. `warrant.value.not_permitted`
     /// reports each document that states one, and this reading counts them.
     /// `warrant.promoted` reads a movement between two values and admits any
@@ -360,10 +360,10 @@ pub struct WarrantReading {
 /// The warrant distribution: the closed set in full, and what a corpus wrote.
 #[derive(Clone, Debug)]
 pub struct Warrants {
-    /// Every value of the closed set in spec 3's order, then every value a
+    /// Every value of the closed set in [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s order, then every value a
     /// document stated that the set does not hold.
     pub readings: Vec<WarrantReading>,
-    /// Classified documents that state no warrant at all. Spec 3 makes the
+    /// Classified documents that state no warrant at all. [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) makes the
     /// value required, so this is a population and never a default.
     pub unstated: usize,
     /// Rows the census reported as generated, whose warrant the engine reads
@@ -545,7 +545,7 @@ pub enum Finding<'a> {
     /// A declared scope pattern with at least one entry no edge reaches: one
     /// finding per pattern, carrying the count and the list, and never one per
     /// file. The remedy is a judgment about which document governs, so it is
-    /// advisory under the fixability bar of spec 12.
+    /// advisory under the fixability bar of [the check layer](../../../../docs/spec/check-layer.md).
     Ungoverned(&'a ScopeReading),
 }
 
@@ -925,7 +925,7 @@ fn creators(
         }
     }
 
-    // Spec 2's order, and every value of it, so a creator with no relation
+    // The taxonomy model's (docs/spec/taxonomy-model.md) order, and every value of it, so a creator with no relation
     // still has a row. A map ordered by the values in use would print exactly
     // the arms that exist and omit the ones a comparison needs.
     let mut ordered: Vec<(String, Vec<RelationReading>)> = CREATORS

@@ -5,7 +5,7 @@ status: current
 status_since: 2026-08-13
 waiting_on: ruling
 last_verified: 2026-08-13
-summary: "Spec 4 names an observation window, a false-positive threshold and an adjudicated sample, and it gives none of them a form."
+summary: "The assurance model names an observation window, a false-positive threshold and an adjudicated sample, and it gives none of them a form."
 provenance:
   warrant: accepted
   agency: mixed
@@ -30,4 +30,4 @@ Nothing states a unit for the window, a scale for the threshold, or a form for t
 
 ## Discharge
 
-Spec 4 states none of them, and a closed set here would refuse a control before anyone has written one. The base package records no criteria at all. Twelve of its eighteen controls carry no promotion record, and the register reports that count.
+[The assurance model](../spec/assurance-model.md) states none of them, and a closed set here would refuse a control before anyone has written one. The base package records no criteria at all. Twelve of its eighteen controls carry no promotion record, and the register reports that count.

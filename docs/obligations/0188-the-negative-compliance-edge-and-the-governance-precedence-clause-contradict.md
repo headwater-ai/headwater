@@ -2,7 +2,7 @@
 id: HW-OBL-0188
 status: current
 status_since: 2026-09-11
-summary: "Spec 2 puts `does_not_comply_with` in the governance family and spells it from the deviating document, so the violator governs the standard."
+summary: "The taxonomy model puts `does_not_comply_with` in the governance family and spells it from the deviating document, so the violator governs the standard."
 last_verified: 2026-09-11
 title: "The negative compliance edge and the governance precedence clause contradict"
 waiting_on: ruling
@@ -24,10 +24,10 @@ The [`standards-spec` entry](../taxonomies/standards-spec/doctrine.md#findings) 
 
 ## Obligation
 
-Either the family assignment of the negative edge or the precedence clause is wrong, and no reading makes both right. The owner owes one of two changes to spec 2. The negative edge leaves the governance family, or the precedence clause stops deriving direction from the source of an edge.
+Either the family assignment of the negative edge or the precedence clause is wrong, and no reading makes both right. The owner owes one of two changes to [the taxonomy model](../spec/taxonomy-model.md). The negative edge leaves the governance family, or the precedence clause stops deriving direction from the source of an edge.
 
 Nothing measures the contradiction today, because no corpus here holds such an edge. [HW-OBL-0187](0187-the-registered-deviation-edge-of-the-compliance-tradition-cannot-be-declared.md) records why no entry can declare the relation at all.
 
 ## Discharge
 
-This record discharges when spec 2 states one direction and one family for the negative edge, with the reason. The ruling is cheap now and expensive after the first adopter writes a deviation. The direction is then in a corpus that a migration has to rewrite.
+This record discharges when [the taxonomy model](../spec/taxonomy-model.md) states one direction and one family for the negative edge, with the reason. The ruling is cheap now and expensive after the first adopter writes a deviation. The direction is then in a corpus that a migration has to rewrite.

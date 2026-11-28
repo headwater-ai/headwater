@@ -66,7 +66,7 @@ pub fn render(plan: &Plan) -> String {
     }
     // Nobody has accepted a document this run writes, so it is `asserted`, and
     // an edge onto it is decided rather than skipped (#1409). Nothing else of
-    // the block: `accepted_by` is forbidden at `asserted` by spec 3, the engine
+    // the block: `accepted_by` is forbidden at `asserted` by authoring and lifecycle (docs/spec/authoring-and-lifecycle.md), the engine
     // does not know who ran the verb, and HW-OBL-0030 records why a member no
     // check reads is not written. The block is not a `Field`, so
     // `Plan::assisted` does not count it.
@@ -290,7 +290,7 @@ pub(crate) fn halted_refusal(halted: &crate::tree::Halted) -> Refusal {
 ///
 /// # Replace when the target is already there, append otherwise
 ///
-/// A relation's item list holds at most one entry per target — spec 2 states
+/// A relation's item list holds at most one entry per target — [the taxonomy model](../../../../docs/spec/taxonomy-model.md) states
 /// that no attribute name collides with `to`, and the importer's own
 /// `RepeatedLink` refusal holds it at plan time, so two entries for one
 /// target is not a shape this system produces on purpose. When `half.relation`
@@ -321,7 +321,7 @@ pub fn splice(source: &str, half: &Half) -> Result<String, Refusal> {
         .ok_or_else(|| refuse("the front-matter block is never closed"))?;
 
     // An entry with no attribute is a bare target reference, and one with
-    // attributes is the mapping form that spec 2 declares: `to`, and the
+    // attributes is the mapping form that the taxonomy model (docs/spec/taxonomy-model.md) declares: `to`, and the
     // declared attributes beside it. The two forms are one list, so a relation
     // that already holds one takes the other.
     // A list target is written as a flow list of its members, in the order
@@ -480,7 +480,7 @@ fn existing_entry(source: &str, half: &Half) -> Option<(usize, usize)> {
 }
 
 /// The target identity an entry names: the mapping form's `to`, or the bare
-/// form's own scalar. Every attribute value is ignored on purpose — spec 2's
+/// form's own scalar. Every attribute value is ignored on purpose — [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s
 /// "no attribute name collides with `to`" makes this injective over what
 /// legitimately varies between two proposals for the same target, and
 /// `verified_revision` is exactly the attribute a re-import at a moved

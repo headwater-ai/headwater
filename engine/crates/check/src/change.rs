@@ -24,7 +24,7 @@
 //!
 //! The caller is a hook or a CI job, which is where a repository's version
 //! control lives. `git show HEAD:<path>` and `git merge-base` are commands that
-//! belong to the caller, and spec 12 states what the caller must anchor "prior"
+//! belong to the caller, and [the check layer](../../../../docs/spec/check-layer.md) states what the caller must anchor "prior"
 //! to: the version on the branch where the change lands.
 //!
 //! # Three states, and the fourth that never reaches a check
@@ -109,7 +109,7 @@
 //!
 //! A manifest that names `added` for a document that already stood, or that
 //! omits a document the change carried, is a manifest that lies. Neither is
-//! detectable without the history that spec 12 rules out as an input. That is
+//! detectable without the history that [the check layer](../../../../docs/spec/check-layer.md) rules out as an input. That is
 //! the trust boundary rather than a defect: the caller names the change, this
 //! engine reads what the names reach, and every reading here is worth what the
 //! caller's statement is worth.

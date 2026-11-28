@@ -1,7 +1,7 @@
 #!/bin/sh
 # What holds `tools/site/check-site-canonical.py`.
 #
-# Spec 12 refuses a check that ships with no failing fixture, and the reason
+# The check layer (docs/spec/check-layer.md) refuses a check that ships with no failing fixture, and the reason
 # carries to a gate: a gate that has refused nothing is a gate nobody has seen
 # work. Every refusal below is provoked on purpose, and so is every pass,
 # because a gate that refuses everything is as useless as one that refuses

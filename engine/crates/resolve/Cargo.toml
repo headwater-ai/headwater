@@ -26,7 +26,7 @@ headwater-meta = { workspace = true }
 # Front matter. A template is a Markdown document with a YAML block at the top,
 # and `taxonomy publish` holds every template a package ships against the
 # taxonomy that package resolves to. It reads that block through the one parser
-# spec 12 names a correctness root, because a second reading of front matter
+# the check layer (docs/spec/check-layer.md) names a correctness root, because a second reading of front matter
 # would pass its own tests and admit what the corpus reader refuses.
 headwater-doc = { workspace = true }
 

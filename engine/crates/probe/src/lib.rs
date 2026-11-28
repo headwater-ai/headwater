@@ -38,7 +38,7 @@
 //! `headwater_sweep` reaches a model in three parts:
 //! the engine writes a briefing, an agent reads it, and the engine reads back
 //! the file the agent wrote. The obvious move here was to copy all three. It
-//! does not work, and the reason is a rule spec 5 already states.
+//! does not work, and the reason is a rule [AI integration](../../../../docs/spec/ai-integration.md) already states.
 //!
 //! > A self-report is the agent's account of its own process, and no probe
 //! > accepts one.
@@ -84,7 +84,7 @@
 //!    model answered every question wrongly writes a result that reports a low
 //!    rate, and the gate passes over it: the comparison is bytes against a
 //!    derivation of committed inputs. What fails it is a result that no longer
-//!    agrees with its own transcript, which spec 5 calls a defect in the
+//!    agrees with its own transcript, which [AI integration](../../../../docs/spec/ai-integration.md) calls a defect in the
 //!    grader, the parser or the committed inputs. No exit status of this engine
 //!    carries a model's behavior, which is what the four enforcements are for.
 //!
@@ -102,7 +102,7 @@
 //!
 //! # The harness fails closed, and a refusal is the cheaper error
 //!
-//! Spec 5: "The harness projects the cost of a run before it starts, and it
+//! [AI integration](../../../../docs/spec/ai-integration.md): "The harness projects the cost of a run before it starts, and it
 //! refuses to start a run that exceeds the budget." Five things stop a run
 //! here, and every one of them stops the whole run rather than dropping the
 //! probe that caused it:
@@ -228,7 +228,7 @@ impl Expectation {
 headwater_check::enumerated! {
     /// Which run watches for a change and which estimates a difference.
     ///
-    /// Spec 5: cadence follows the purpose of the run and never the category.
+    /// [AI integration](../../../../docs/spec/ai-integration.md): cadence follows the purpose of the run and never the category.
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub enum Tier {
         /// A fixed scenario set, one arm, against a recorded baseline. It
@@ -291,7 +291,7 @@ headwater_check::enumerated! {
     /// Which tree a run had: the corpus present, the corpus absent, or the present
     /// tree with one component of the Headwater layer taken away or put in.
     ///
-    /// Spec 5 removed the counterfactual from the category list because it applies
+    /// [AI integration](../../../../docs/spec/ai-integration.md) removed the counterfactual from the category list because it applies
     /// to every category, and listing it beside them hid that the pair doubles the
     /// cost of whatever it measures.
     ///

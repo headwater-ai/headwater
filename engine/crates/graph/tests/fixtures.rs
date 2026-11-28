@@ -263,7 +263,7 @@ fn both_halves_of_a_reciprocal_pair_normalize_to_one_triple() {
 /// Two spellings of one anchor are one node, and the second is a repeated
 /// triple rather than a second edge.
 ///
-/// This is the correctness root spec 12 names, asserted the only way it can be:
+/// This is the correctness root [the check layer](../../../../docs/spec/check-layer.md) names, asserted the only way it can be:
 /// a resolver that mis-normalizes reports two edges here and fails nothing.
 #[test]
 fn two_spellings_of_one_anchor_are_one_node() {

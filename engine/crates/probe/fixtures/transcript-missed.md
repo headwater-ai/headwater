@@ -9,7 +9,7 @@ arm: present
 
 # The same run, with every expectation refuted
 
-Spec 12 asks a check for one fixture it fails and one it passes, and a correctness root owes the same. This file is the failing half for all five predicate forms, and `transcript.md` is the passing half. A grader that returned one verdict for everything would pass exactly one of the two.
+[The check layer](../../../../docs/spec/check-layer.md) asks a check for one fixture it fails and one it passes, and a correctness root owes the same. This file is the failing half for all five predicate forms, and `transcript.md` is the passing half. A grader that returned one verdict for everything would pass exactly one of the two.
 
 ## Run identity
 

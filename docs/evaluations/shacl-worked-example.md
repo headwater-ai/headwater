@@ -280,10 +280,10 @@ The pattern is consistent with the LinkML finding. SHACL covers the **graph** la
 **The real objections are different, and sharper:**
 
 - **Line numbers are lost.** A SHACL `ValidationResult` carries `focusNode`, `resultPath`, `value`, `sourceShape`, `resultSeverity` and `resultMessage`. RDF has no notion of a byte offset in a Markdown file, so the `line` field that [the assurance model](../spec/assurance-model.md#findings) requires cannot survive the round trip. Findings would need to be re-anchored to source positions by the Headwater side.
-- **No remediation, no fixability.** Spec 4 requires every finding to carry a remediation and a `fixable` flag. SHACL has no slot for either. They can be hung off the shape as custom properties and looked up via `sourceShape`. But that is a convention we would define, not something a stock SHACL consumer would understand.
+- **No remediation, no fixability.** [The assurance model](../spec/assurance-model.md) requires every finding to carry a remediation and a `fixable` flag. SHACL has no slot for either. They can be hung off the shape as custom properties and looked up via `sourceShape`. But that is a convention we would define, not something a stock SHACL consumer would understand.
 - **Posture is not severity.** `sh:Violation` / `sh:Warning` / `sh:Info` map onto Headwater's severities. But Headwater's *posture* — advisory versus blocking, and the promotion criteria attached to it — is a property of the control, not of the shape. It lives in the runner either way.
 
-**And one objection dissolves.** Q13 noted that a SPARQL engine pulls against the single-binary, offline, sub-second constraints of spec 6. Embeddable Rust SPARQL engines exist, so an in-memory store over a corpus of this size is not obviously a problem. It needs measuring against the change-scoped budget rather than assuming, but it is not the blocker it looked like.
+**And one objection dissolves.** Q13 noted that a SPARQL engine pulls against the single-binary, offline, sub-second constraints of [the engine architecture](../spec/engine-architecture.md). Embeddable Rust SPARQL engines exist, so an in-memory store over a corpus of this size is not obviously a problem. It needs measuring against the change-scoped budget rather than assuming, but it is not the blocker it looked like.
 
 ## What this means for Q13
 

@@ -99,7 +99,7 @@ pub enum DecidedBy {
     /// This engine reads the repository and answers.
     Tree,
     /// No reading of a tree decides it, so the rule waits on a recorded
-    /// attestation with an owner and a date. Spec 7: such a rule is "not
+    /// attestation with an owner and a date. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md): such a rule is "not
     /// silently dropped".
     Attestation,
 }
@@ -412,7 +412,7 @@ impl Reason {
 
 /// One declared deviation.
 ///
-/// Four fields and every one is required. Spec 7: "A waiver names the rule, the
+/// Four fields and every one is required. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md): "A waiver names the rule, the
 /// reason, the owner, and an expiry." The expiry is what makes the mechanism
 /// different from a decision nobody revisits.
 #[derive(Clone, Debug, PartialEq, Eq)]

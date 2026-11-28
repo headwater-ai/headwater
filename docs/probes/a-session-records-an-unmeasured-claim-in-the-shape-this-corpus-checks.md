@@ -2,7 +2,7 @@
 id: HW-PROBE-a-session-records-an-unmeasured-claim-in-the-shape-this-corpus-checks
 status: deprecated
 status_since: 2026-10-29
-summary: "Deprecated on 2026-10-29 because HW-OBL-0198, the gap its task asks a session to record, was discharged on 2026-10-01 and spec 5 now states the figure, so the task has no sound answer."
+summary: "Deprecated on 2026-10-29 because HW-OBL-0198, the gap its task asks a session to record, was discharged on 2026-10-01 and AI integration now states the figure, so the task has no sound answer."
 last_verified: 2026-09-11
 probe_category: sufficiency
 expectation: patched

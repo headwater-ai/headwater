@@ -12,7 +12,7 @@
 //! - **Blocks**, in document order, each with the span a finding points at.
 //! - **Links**, with the destination a later milestone resolves to an
 //!   identifier. Prose-link extraction is on the correctness-root list too.
-//! - **Ownership**, per run of text. Spec 12 puts the author-owned span there
+//! - **Ownership**, per run of text. [The check layer](../../../../docs/spec/check-layer.md) puts the author-owned span there
 //!   on measured grounds: over this repository's own specification, the
 //!   remaining structural share of a lexical checker's errors came from text
 //!   which quotes another author. A voice rule that reads a block quote as the

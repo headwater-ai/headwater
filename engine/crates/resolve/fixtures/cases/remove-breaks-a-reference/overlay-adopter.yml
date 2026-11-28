@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 #
-# Spec 2: `remove` "deletes a key and everything that depends on it — and the
+# The taxonomy model (docs/spec/taxonomy-model.md): `remove` "deletes a key and everything that depends on it — and the
 # resolver **fails** if a declaration that survives still references the removed
 # key". The state facet reads this vocabulary, so removing the vocabulary is an
 # error at resolve time rather than a facet with no values that a check meets

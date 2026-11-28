@@ -12,7 +12,7 @@
 //!
 //! # A profile is a group of entries, and the name is what groups them
 //!
-//! Spec 7 asks that "every projection inside a profile regenerates from the
+//! [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) asks that "every projection inside a profile regenerates from the
 //! filtered graph", so a profile holds more than one projection. The
 //! meta-schema writes `profile` on each entry, which makes the name the thing
 //! that groups them. Two entries that name one profile are two artifacts for
@@ -29,7 +29,7 @@
 //!
 //! # An entry that names no profile is in `default`
 //!
-//! Spec 7: "A corpus with one audience declares one profile with no filter,
+//! [Distribution and federation](../../../../docs/spec/distribution-and-federation.md): "A corpus with one audience declares one profile with no filter,
 //! which is the first release." So an entry that names no profile is not
 //! profile-less, it is the one profile. The engine names it `default` rather
 //! than leave it anonymous, because `--profile` selects by name and a name that
@@ -64,7 +64,7 @@ headwater_check::enumerated! {
         Okf,
         LinkMl,
     }
-    /// Every target, in the order spec 6 writes them on the verb.
+    /// Every target, in the order [the engine architecture](../../../../docs/spec/engine-architecture.md) writes them on the verb.
     const ALL;
 }
 
@@ -165,7 +165,7 @@ mod emitter_tests {
 /// The tombstone grain: what a reader of a filtered view learns about what is
 /// missing.
 ///
-/// Spec 7 gives the two values and makes `counted` the default.
+/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) gives the two values and makes `counted` the default.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Grain {
     /// A placeholder stands where each withheld node or edge would have been,
@@ -203,10 +203,10 @@ pub struct Clause {
 ///
 /// # Two directions, and only one of them is default-deny
 ///
-/// Spec 7 asks for a filter that is **default-deny**: "a node class, an edge
+/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) asks for a filter that is **default-deny**: "a node class, an edge
 /// class, or an attribute that no profile names does not travel", because "a
 /// filter stated as a list of exclusions grows a hole every time the schema
-/// grows". Spec 2's own example writes an exclusion. Both are here, and they are
+/// grows". [The taxonomy model](../../../../docs/spec/taxonomy-model.md)'s own example writes an exclusion. Both are here, and they are
 /// not two spellings of one rule.
 ///
 /// - An `include` clause is default-deny over one facet. A document travels only
@@ -215,7 +215,7 @@ pub struct Clause {
 ///   that makes it deny by default: a facet value added to the taxonomy next
 ///   month reaches no profile until somebody names it.
 /// - An `exclude` clause names values that do not travel, and it grows the hole
-///   spec 7 warns about. It is admitted because the specification's own example
+///   [distribution and federation](../../../../docs/spec/distribution-and-federation.md) warns about. It is admitted because the specification's own example
 ///   uses one, and because a corpus whose confidentiality facet is required has
 ///   no hole to grow.
 ///
@@ -237,7 +237,7 @@ impl Filter {
     /// withheld it when it does not.
     ///
     /// The rule identifier is built from the declaration and never from the
-    /// document. Spec 7: "Free prose in a tombstone is a channel, and a reason
+    /// document. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md): "Free prose in a tombstone is a channel, and a reason
     /// that quotes the document is a leak wearing a label. The rule identifier
     /// is what a reader needs to ask for access, and it is all that they get."
     /// So the identifier names the profile, the direction and the facet, and it

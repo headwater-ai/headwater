@@ -390,7 +390,7 @@ fi
 
 echo "the judges, provoked on purpose"
 
-# 8a. Spec 12 refuses a check that ships with no failing fixture, and the reason
+# 8a. The check layer (docs/spec/check-layer.md) refuses a check that ships with no failing fixture, and the reason
 #     carries to a suite: a judge nobody has seen refuse anything is a judge
 #     nobody has seen work. Every judge above returns the empty string on this
 #     tree, and the empty string is also what a broken judge returns.

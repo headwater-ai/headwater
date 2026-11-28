@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Spec 12's `Scope` block, held against [`headwater_check::scope::Scope`].
+//! [The check layer](../../../../docs/spec/check-layer.md)'s `Scope` block, held against [`headwater_check::scope::Scope`].
 //!
 //! # Why this file exists
 //!
@@ -23,7 +23,7 @@
 //!
 //! The engine's list is [`Scope::flags`], whose body destructures `Scope` with
 //! no `..`. A new field does not compile until `flags` names it, and this file
-//! then fails until spec 12 does. The compiler's help for that error offers
+//! then fails until [the check layer](../../../../docs/spec/check-layer.md) does. The compiler's help for that error offers
 //! `needs_x: _` and `..`, and either one compiles, so a second case reads the
 //! `needs_*` fields of `struct Scope` from its source and holds `flags` to
 //! them.
@@ -80,14 +80,14 @@ fn spec_flags() -> Vec<String> {
     flags
 }
 
-/// The `Scope` block of spec 12 names every input flag `Scope` declares, and
+/// The `Scope` block of [the check layer](../../../../docs/spec/check-layer.md) names every input flag `Scope` declares, and
 /// no other.
 ///
 /// The decisive case for #1407.
 ///
 /// # Watched failing
 ///
-/// On `main` at `16eecca0`, with `Scope::flags` in place and spec 12 unedited,
+/// On `main` at `16eecca0`, with `Scope::flags` in place and [the check layer](../../../../docs/spec/check-layer.md) unedited,
 /// this reddened naming `needs_claims` and `needs_observations` as declared and
 /// unstated. Deleting one flag line from the block reddens it naming that flag.
 /// Adding `+ needs_bogus: bool` reddens it naming `needs_bogus` as extra.
@@ -177,7 +177,7 @@ fn _exhaustive(grain: headwater_check::scope::Grain) -> &'static str {
     }
 }
 
-/// The `Scope` block of spec 12 names every grain `Grain` has, and no other.
+/// The `Scope` block of [the check layer](../../../../docs/spec/check-layer.md) names every grain `Grain` has, and no other.
 ///
 /// The decisive case for slice 3 of #1572. It compares identifiers
 /// (`Neighbourhood`), not [`headwater_check::scope::Grain::name`]
@@ -185,7 +185,7 @@ fn _exhaustive(grain: headwater_check::scope::Grain) -> &'static str {
 ///
 /// # Watched failing
 ///
-/// On `main` at `a629c0be`, with spec 12 unedited, this reddened naming
+/// On `main` at `a629c0be`, with [the check layer](../../../../docs/spec/check-layer.md) unedited, this reddened naming
 /// `Taxonomy` as a grain the block does not name and `Shelf` as a grain no
 /// code has.
 #[test]

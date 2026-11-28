@@ -1,11 +1,11 @@
 ---
 id: HW-OBL-0069
-title: "A suppressed finding leaves its obligation verified, and spec 4 does not say so"
+title: "A suppressed finding leaves its obligation verified, and the assurance model does not say so"
 status: current
 status_since: 2026-08-13
 waiting_on: ruling
 last_verified: 2026-08-13
-summary: "The engine rules that an obligation with accepted deviations against it stays verified, and spec 4 states no such rule."
+summary: "The engine rules that an obligation with accepted deviations against it stays verified, and the assurance model states no such rule."
 provenance:
   warrant: accepted
   agency: mixed
@@ -18,15 +18,15 @@ relations:
     - HW-SPEC-assurance-model
 ---
 
-# A suppressed finding leaves its obligation verified, and spec 4 does not say so
+# A suppressed finding leaves its obligation verified, and the assurance model does not say so
 
 ## Context
 
-A [suppression](../spec/assurance-model.md#suppression) runs after the runner stamps each finding with the obligation that its control discharges, so the inventory holds findings that name obligations. Spec 4 does not say what an obligation with two accepted deviations against it is.
+A [suppression](../spec/assurance-model.md#suppression) runs after the runner stamps each finding with the obligation that its control discharges, so the inventory holds findings that name obligations. [The assurance model](../spec/assurance-model.md) does not say what an obligation with two accepted deviations against it is.
 
 ## Obligation
 
-What is open is whether spec 4 admits the engine's reading. A second question is whether the register needs a rate rather than a count.
+What is open is whether [the assurance model](../spec/assurance-model.md) admits the engine's reading. A second question is whether the register needs a rate rather than a count.
 
 ## Discharge
 

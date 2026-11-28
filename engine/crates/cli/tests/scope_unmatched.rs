@@ -358,7 +358,7 @@ fn check_counts_no_directory_that_holds_a_taxonomy_source_as_a_tree() {
 /// The one way the two verbs differ, held in both directions (HW-OBL-0272).
 /// The only entry under `site/**` is in a directory git ignores. `taxonomy
 /// validate` leaves out what git ignores, so it refuses the pattern. The check
-/// runs no version control command (spec 12), so it counts the entry and
+/// runs no version control command ([the check layer](../../../../docs/spec/check-layer.md)), so it counts the entry and
 /// passes. A change that makes the two verbs agree changes this case and
 /// discharges the record.
 #[test]

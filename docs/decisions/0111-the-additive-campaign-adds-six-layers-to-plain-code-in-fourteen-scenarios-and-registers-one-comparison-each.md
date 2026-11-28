@@ -35,7 +35,7 @@ Milestone 0.07 turns the design around. It starts from plain code and adds layer
 
 The data half of this record is in `.headwater/probe.yml`, under `layers` and `scenarios`. The engine reads it, and `headwater probe plan --scenario <n> --delta` prints what a scenario holds. `sh tools/probe/ablate.sh --scenario <n> <workspace>` builds the tree of a scenario from that output.
 
-The campaign is the next instrument for four open claims of spec 13: HW-OBL-0012, HW-OBL-0013, HW-OBL-0014 and HW-OBL-0016. This record reads those claims and closes none of them.
+The campaign is the next instrument for four open claims of [the register of open obligations](../spec/open-obligations.md): HW-OBL-0012, HW-OBL-0013, HW-OBL-0014 and HW-OBL-0016. This record reads those claims and closes none of them.
 
 ## Decision
 

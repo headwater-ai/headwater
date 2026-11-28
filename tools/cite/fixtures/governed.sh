@@ -1,5 +1,5 @@
 #!/bin/sh
-# A citation that is true: spec 5 declares a `governs` edge onto this exact
+# A citation that is true: AI integration (docs/spec/ai-integration.md) declares a `governs` edge onto this exact
 # path, so the document the identifier resolves to is in this file's
 # governing set and nothing is reported.
 # per HW-SPEC-ai-integration (docs/spec/ai-integration.md)

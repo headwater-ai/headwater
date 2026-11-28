@@ -33,7 +33,7 @@ One [evaluation](../evaluations/the-serving-boundary.md) settles this with [Q14]
 
 ### Why authority does not move
 
-The case for inversion is that no one can enforce access control on files that someone already cloned. That is true, and it is the right instinct pointed at the wrong layer. Inversion costs four things that the design gets free. The low capture cost of spec 3. Review on a pull request, where documents diff. The detectability of a projector defect against the Markdown. And provenance from git. Against that it buys nothing that the ruling below does not give.
+The case for inversion is that no one can enforce access control on files that someone already cloned. That is true, and it is the right instinct pointed at the wrong layer. Inversion costs four things that the design gets free. The low capture cost of [authoring and lifecycle](../spec/authoring-and-lifecycle.md). Review on a pull request, where documents diff. The detectability of a projector defect against the Markdown. And provenance from git. Against that it buys nothing that the ruling below does not give.
 
 There is a coherent version of the proposal. Name it, so that no one adopts it by accident. An organization for whom a repository clone is *itself* the leak wants documentation that is never committed to the repository at all. That is a real market. It also abandons "documents are files in the repository, next to the code they describe". That is [the vision and scope](../spec/vision-and-scope.md)'s central bet, and the reason that capture is cheap. It is a **pivot, not an extension**.
 

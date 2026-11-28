@@ -15,4 +15,4 @@ relations:
 
 # The misspelled evaluation that discharges an evidenced obligation
 
-The warrant is outside spec 3's closed set, so nothing in it says that a person read this evaluation. It is the evidence for the obligation at the target end, so the pair is reported with the value as written.
+The warrant is outside [authoring and lifecycle](../../../../../../docs/spec/authoring-and-lifecycle.md)'s closed set, so nothing in it says that a person read this evaluation. It is the evidence for the obligation at the target end, so the pair is reported with the value as written.

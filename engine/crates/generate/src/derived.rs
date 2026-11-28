@@ -80,7 +80,7 @@
 //! The one exception is not an exception to that rule. A facet that the shelf's
 //! `layout` names is found by that declaration rather than by a role, because a
 //! layout is where a taxonomy says which facet a file name carries. `sequence`
-//! has no role in the registry spec 2 closes at five members, and
+//! has no role in the registry [the taxonomy model](../../../../docs/spec/taxonomy-model.md) closes at five members, and
 //! `{sequence:02d}-{slug}.md` is how the numbered specification series says
 //! that the number is in the path.
 //!

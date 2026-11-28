@@ -44,7 +44,7 @@ No document states the boundary. The eleven principles in [the vision and scope]
 
 **The test for the edge is necessity and never convenience.** An integration point is legal here only where the binary cannot do the work without the loss of a property the corpus depends on. Git plumbing meets the test, because consent of the clone is not a property this engine can grant itself. A point that fails this test is a defect, and a missing verb is a gap to file rather than an exception to grant.
 
-**The change manifest is inside the binary.** `headwater change` writes the manifest that `headwater check --change` reads, from the two anchors that spec 12 fixes. So the manifest is not an integration point outside the binary, and it has no entry in this list. [#929](https://github.com/headwater-ai/headwater/issues/929) is the issue that built the verb.
+**The change manifest is inside the binary.** `headwater change` writes the manifest that `headwater check --change` reads, from the two anchors that [the check layer](../spec/check-layer.md) fixes. So the manifest is not an integration point outside the binary, and it has no entry in this list. [#929](https://github.com/headwater-ai/headwater/issues/929) is the issue that built the verb.
 
 **This list grows by a decision record and never by a script.** A contributor who reaches for a script in adopter-facing prose either finds the verb or files the gap.
 

@@ -27,7 +27,7 @@
 //! # An instance is accounted to every document it read
 //!
 //! Coverage is per document, and an instance of a Graph-origin check has an
-//! edge for a target rather than a document. Spec 12 fixes what an edge-scoped
+//! edge for a target rather than a document. [The check layer](../../../../docs/spec/check-layer.md) fixes what an edge-scoped
 //! instance reads: "one relation instance **and both endpoints**". So an
 //! instance names every document it read, and coverage counts it against each
 //! of them.
@@ -83,7 +83,7 @@ pub struct Input {
 pub enum Outcome {
     /// It ran and found nothing.
     Passed,
-    /// It ran and found something. Spec 12 gives a check the signature
+    /// It ran and found something. [The check layer](../../../../docs/spec/check-layer.md) gives a check the signature
     /// `check(view, ctx) -> [Finding]`, and the list is not a formality: one
     /// document can omit four facets that its kind requires, and each omission
     /// is a separate line for a separate author to add. A verdict that named

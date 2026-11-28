@@ -5,7 +5,7 @@ status: current
 status_since: 2026-08-13
 waiting_on: ruling
 last_verified: 2026-08-13
-summary: "Spec 12 lists an identifier correction among four mechanical fixes, and no such repair is confined to one document."
+summary: "The check layer lists an identifier correction among four mechanical fixes, and no such repair is confined to one document."
 provenance:
   warrant: accepted
   agency: mixed
@@ -28,8 +28,8 @@ Neither fix is confined to the document that holds the finding. An identifier is
 
 ## Obligation
 
-Either spec 12 qualifies its own example, or `check --fix` gains a class of fix that spans documents and reports every file it would touch.
+Either [the check layer](../spec/check-layer.md) qualifies its own example, or `check --fix` gains a class of fix that spans documents and reports every file it would touch.
 
 ## Discharge
 
-So `identifier.pattern.not_met` offers no fix, and the rule that spec 12 states is per finding while this repair is corpus-wide. [The record on `fixable`](0087-fixable-has-two-readings-inside-one-engine.md) is the same flag read two ways, and this is a third question about it.
+So `identifier.pattern.not_met` offers no fix, and the rule that [the check layer](../spec/check-layer.md) states is per finding while this repair is corpus-wide. [The record on `fixable`](0087-fixable-has-two-readings-inside-one-engine.md) is the same flag read two ways, and this is a third question about it.

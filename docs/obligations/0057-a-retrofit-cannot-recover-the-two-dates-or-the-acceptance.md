@@ -24,7 +24,7 @@ relations:
 
 The typing derived `status_since` from the first commit on each path and `last_verified` from the last commit that a human merged. Neither is the fact that the facet asks for, and no earlier record of either survives.
 
-It also wrote one `accepted_by` across 36 documents in one change. That is the bulk promotion that [authoring and lifecycle](../spec/authoring-and-lifecycle.md#promotion-is-one-human-one-document-one-diff) says no check can separate from 36 real acceptances. Spec 3 predicts the response, which is a finding about the review rather than about the documents.
+It also wrote one `accepted_by` across 36 documents in one change. That is the bulk promotion that [authoring and lifecycle](../spec/authoring-and-lifecycle.md#promotion-is-one-human-one-document-one-diff) says no check can separate from 36 real acceptances. [Authoring and lifecycle](../spec/authoring-and-lifecycle.md) predicts the response, which is a finding about the review rather than about the documents.
 
 ## Obligation
 

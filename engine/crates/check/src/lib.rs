@@ -19,7 +19,7 @@
 //! no code", and it is why the rule list is short while the instance count is
 //! not. [`coverage`] is the runner's own accounting. [`fragment`] and
 //! [`duplicate`] read no declaration, because the language has no member that
-//! turns prose-link resolution or identifier uniqueness on or off: spec 3
+//! turns prose-link resolution or identifier uniqueness on or off: [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)
 //! states the second of them of every corpus.
 //!
 //! Four of the five origins are represented. Shape, Graph and Document are
@@ -52,7 +52,7 @@
 //! Two parts of the designed check layer are not here, and neither is an
 //! oversight. Suppression used to be the third. It is now [`suppression`]: the
 //! runner filters findings, records what it filtered, and feeds the inventory
-//! into the coverage report, which is where spec 12 puts it.
+//! into the coverage report, which is where [the check layer](../../../../docs/spec/check-layer.md) puts it.
 //!
 //! **Change-scoped evaluation, under the name `--changed-only`.** Every
 //! instance is created on every run, and the flag does not exist.
@@ -62,7 +62,7 @@
 //! repository takes about 57 ms against about 476 ms with no cache
 //! ([HW-OBL-0080](../../../../docs/obligations/0080-changed-only-is-the-content-addressed-cache-under-another-name.md)
 //! holds the conditions). The cache derives what
-//! moved from the bytes rather than from a list a caller supplies, and spec 6
+//! moved from the bytes rather than from a list a caller supplies, and [the engine architecture](../../../../docs/spec/engine-architecture.md)
 //! forbids a flag that puts an input into a verdict which no reviewer sees.
 //! What is left unscoped is Phase A, which no flag reaches.
 //!
@@ -70,7 +70,7 @@
 //! obligation it serves, because the base package declares `obligations` and
 //! `controls` and [`register`] is the path from a rule to its obligation. What
 //! is absent is the register as an artifact: coverage by obligation,
-//! dispositions, and the control health that spec 4 asks a projection to carry.
+//! dispositions, and the control health that [the assurance model](../../../../docs/spec/assurance-model.md) asks a projection to carry.
 //! That is [#59](https://github.com/headwater-ai/headwater/issues/59).
 //!
 //! # Scope is a type, and [`scope`] is where that holds
@@ -82,7 +82,7 @@
 //! [`run`] names the seventeen checks it runs, which is the whole of
 //! registration.
 //! The scope a trait fixes is now read twice: once for the report, and once as
-//! a component of the cache key that spec 12 derives from the same fact. The
+//! a component of the cache key that [the check layer](../../../../docs/spec/check-layer.md) derives from the same fact. The
 //! injected clock rides the same declaration, so a rule that reads a date
 //! cannot be left out of its own key ([`cache`]).
 //!
@@ -99,7 +99,7 @@
 //!
 //! # Two phase-A outcomes stay in phase A, and two of them could not
 //!
-//! Spec 12 calls an unparseable file, an unclassifiable path, a dangling edge
+//! [The check layer](../../../../docs/spec/check-layer.md) calls an unparseable file, an unclassifiable path, a dangling edge
 //! and an ambiguous shelf match *structural findings*. Three of the four are a
 //! census row, and the census accounts for each one with the row that names
 //! the author who can act. An unparseable file and an ambiguous shelf match
@@ -109,7 +109,7 @@
 //! **An unclassifiable path was a row and no finding.** [`coverage`] reads
 //! typed rows alone, so a document on a heterogeneous shelf whose
 //! discriminator names no kind left every check, and a strict run exited 0
-//! over it (HW-OBL-0191). [`discriminator`] is the finding spec 2 states for
+//! over it (HW-OBL-0191). [`discriminator`] is the finding [the taxonomy model](../../../../docs/spec/taxonomy-model.md) states for
 //! that stop. A path that no shelf claims is still a census row and nothing
 //! more, because it is an ordinary state of a corpus.
 //!
@@ -135,7 +135,7 @@
 //! the one that needed a fifth grain. Two documents that claim one identifier
 //! are `headwater_graph::index::Defect::Duplicate`, a document-scoped instance
 //! reads one of the two, and [`duplicate`] reads the corpus. It is the first
-//! corpus-scoped check this engine carries, and spec 12 calls those the
+//! corpus-scoped check this engine carries, and [the check layer](../../../../docs/spec/check-layer.md) calls those the
 //! barriers.
 
 pub mod acceptance_state;
@@ -410,7 +410,7 @@ pub struct Declared<'a> {
     ///
     /// It is here because two rules of [`register`] are about the taxonomy
     /// rather than about the corpus, and a finding carries a path. For a run of
-    /// the verb that is `.headwater/taxonomy.lock`, which spec 6 fixes as the
+    /// the verb that is `.headwater/taxonomy.lock`, which [the engine architecture](../../../../docs/spec/engine-architecture.md) fixes as the
     /// one thing downstream reads.
     pub source: &'a str,
 }
@@ -433,13 +433,13 @@ pub struct Run {
     pub suppressions: Inventory,
     /// What each rule sees and what it serves, in [`RULES`] order. A rule that
     /// reaches no obligation is in this list too, because a rule that cannot
-    /// say which invariant it protects is what spec 4 asks a reader to notice.
+    /// say which invariant it protects is what [the assurance model](../../../../docs/spec/assurance-model.md) asks a reader to notice.
     pub served: Vec<Serves>,
     /// The union of what this run read, with the lock, the clock and the check
     /// versions beside it. See [`readset`].
     pub read_set: ReadSet,
     /// The register: every obligation with its disposition, every control with
-    /// its health, and what escaped under each obligation. Spec 4 makes it a
+    /// its health, and what escaped under each obligation. [The assurance model](../../../../docs/spec/assurance-model.md) makes it a
     /// projection of the two declarations, generated and never authored.
     pub register: register::Projection,
     /// Every verification of the corpus with its state: `declared`,
@@ -925,7 +925,7 @@ pub fn run(
     // A value of every other declared type, against that type. See
     // [`facet_type`].
     let not_of_type = facet_type::NotOfType::over(declared.shape);
-    // The provenance block's warrant against spec 3's closed set, and its
+    // The provenance block's warrant against authoring and lifecycle's (docs/spec/authoring-and-lifecycle.md) closed set, and its
     // acceptor against the warrant. The set is the engine's, so these two carry
     // no declaration. See [`warrant`].
     let closed = warrant::Closed;
@@ -1047,7 +1047,7 @@ pub fn run(
     // edge the named document writes silences it. See [`mention`].
     let mentioned = mention::Mentioned::over(declared.relations, declared.shape);
     // The one rule that declares `NEEDS_PRIOR`, and it carries no declaration:
-    // the transition it reads is spec 3's act rather than a member of any
+    // the transition it reads is authoring and lifecycle's (docs/spec/authoring-and-lifecycle.md) act rather than a member of any
     // taxonomy. See [`promotion`].
     let promoted = promotion::Promoted;
     // The second, and this one carries a declaration: the machine it reads is
@@ -1409,7 +1409,7 @@ pub fn run(
         declared.source,
     ));
     // A pinned corpus export that did not read, as an error that names the
-    // pin, for the same reason: spec 7 owes the finding whether or not an
+    // pin, for the same reason: distribution and federation (docs/spec/distribution-and-federation.md) owes the finding whether or not an
     // anchor reaches the export.
     findings.extend(harvest::findings(declared.harvests));
     // A committed imports snapshot that binds nothing, on the same terms: Q19
@@ -1452,7 +1452,7 @@ pub fn run(
     // obligation is stamped. So a cache holds what a check decided, an
     // inventory holds what a reader did not see, and the two cannot drift
     // ([`suppression`]).
-    // The adoption payload runs first, which is the precedence spec 4 fixes:
+    // The adoption payload runs first, which is the precedence the assurance model (docs/spec/assurance-model.md) fixes:
     // waiver, then migration-pending, then suppression. A finding a task holds
     // never reaches a directive, so the two inventories partition by the order
     // of these two calls rather than by a rule checked afterwards.
@@ -1586,7 +1586,7 @@ pub fn run(
 
 /// What one run's change carried, for the report that states its own inputs.
 ///
-/// A full-corpus run has none of this, and the absence is the statement: spec 12
+/// A full-corpus run has none of this, and the absence is the statement: [the check layer](../../../../docs/spec/check-layer.md)
 /// makes the prior version available only in change-scoped evaluation, and
 /// coverage already reports every instance that skipped for want of one.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1742,7 +1742,7 @@ impl Run {
     /// The `posture: blocking` control that discharges `finding`'s rule, and
     /// `None` where every control that names the rule is advisory or none does.
     ///
-    /// Spec 12: severity is the check's, and posture is the control's. The
+    /// [The check layer](../../../../docs/spec/check-layer.md): severity is the check's, and posture is the control's. The
     /// posture is read from the register this run carries, which the lock
     /// decides, so a promotion is a change to configuration alone and no check
     /// or cache key moves with it (owner ruling on #2015, 2026-11-22). Where
@@ -1879,11 +1879,11 @@ impl Run {
         if let Some(notice) = &self.scope_notice {
             let _ = writeln!(out, "{notice}");
         }
-        // Spec 7 puts the count of open pairs "beside coverage", and spec 4
+        // Distribution and federation (docs/spec/distribution-and-federation.md) puts the count of open pairs "beside coverage", and the assurance model (docs/spec/assurance-model.md)
         // says what it adds there: a payload that never shrinks is visible from
         // the second run rather than at its expiry.
         out.push_str(&self.adoption.render(mode));
-        // Spec 12 puts the read set here, "beside its coverage numbers". The
+        // The check layer (docs/spec/check-layer.md) puts the read set here, "beside its coverage numbers". The
         // size is beside them and the union is an artifact of its own, because
         // a hash of every document is a thing a gate reads and a thing a
         // recorded report would re-bless on every edit to a paragraph.
@@ -1894,20 +1894,20 @@ impl Run {
             }
         }
 
-        // Spec 4 puts the suppression inventory in the coverage report, and
+        // The assurance model (docs/spec/assurance-model.md) puts the suppression inventory in the coverage report, and
         // this is it. It is above the rule list rather than below the findings
         // for the reason coverage is above everything: a reader who stops here
         // has read what this run did not report as well as what it did.
         out.push_str(&self.suppressions.render());
 
-        // What each rule sees. Spec 12 asks that the count of the barriers be a
+        // What each rule sees. The check layer (docs/spec/check-layer.md) asks that the count of the barriers be a
         // number a reader can read, rather than a property discovered under
         // load, and this is that number written out per rule.
         //
         // What each rule *serves* used to be here too, one line under the
         // scope. It is in the register below now, from the obligation's side,
         // with the disposition and the control beside it. Two printings of one
-        // binding is what spec 4 rules against in the declarations, and a
+        // binding is what the assurance model (docs/spec/assurance-model.md) rules against in the declarations, and a
         // report is no different.
         //
         // `Detail::Brief` leaves the whole block out, the per-rule count of
@@ -1956,7 +1956,7 @@ impl Run {
             }
         }
 
-        // Spec 4 makes the register a projection of the two declarations, and
+        // The assurance model (docs/spec/assurance-model.md) makes the register a projection of the two declarations, and
         // the coverage report — "what fraction of obligations are verified, by
         // severity, with the gap list" — generated from it. This is that.
         out.push_str(&self.register.render());

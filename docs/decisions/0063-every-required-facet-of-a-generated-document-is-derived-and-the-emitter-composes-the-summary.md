@@ -45,7 +45,7 @@ Nothing reported those nine. The reason is a gap between two mechanisms rather t
 | `scent` | composed by the emitter, which is the one value here that nothing derives |
 | no role | a facet that the shelf's `layout` names, read back out of the output path |
 
-**The owner ruled on 2026-09-11 that the emitter composes the summary.** An asymmetry decided it. A generated document's body is already prose that its emitter wrote and that no rule reads. A summary beside that body is no more ungoverned than the body. So a refusal of the summary alone rests on nothing that spec 6 states.
+**The owner ruled on 2026-09-11 that the emitter composes the summary.** An asymmetry decided it. A generated document's body is already prose that its emitter wrote and that no rule reads. A summary beside that body is no more ungoverned than the body. So a refusal of the summary alone rests on nothing that [the engine architecture](../spec/engine-architecture.md) states.
 
 **No value comes from a clock.** The [`headwater generate` contract](../interfaces/headwater-generate.md#the-generated-file-marker) rules that no generated file states when it was generated. A timestamp makes every run differ from the last over a corpus that nobody touched. A date folded from the dates the inputs already carry is not a statement about the run. So the rule stands untouched and the regeneration gate holds these bytes like every other byte of the file.
 

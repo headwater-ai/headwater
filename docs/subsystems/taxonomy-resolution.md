@@ -55,7 +55,7 @@ The public Rust API of the crates is not in this spec ([HW-DR-0098](../decisions
 
 The loader refuses a duplicate key, an anchor, an alias, a merge key and an explicit tag. A `$`-reference is the one reuse mechanism, and an overlay cannot address an alias. `value.rs` has no `Null`, `Bool` or `Int` variant. A scalar keeps its text and its style, because the meta-schema and not the YAML resolver decides a type. `core_schema.rs` gives that type only where a declared type asks for it. So `no` stays the string `no`.
 
-`span.rs` writes each position in the coordinates of an editor: lines and columns from one, and byte offsets into the source. Spec 12 anchors each finding to a line, and this is where that line comes from. `json.rs` holds a JSON writer that crates outside this subsystem import. Its reader is the loader, because JSON is a subset of the YAML 1.2 core schema.
+`span.rs` writes each position in the coordinates of an editor: lines and columns from one, and byte offsets into the source. [The check layer](../spec/check-layer.md) anchors each finding to a line, and this is where that line comes from. `json.rs` holds a JSON writer that crates outside this subsystem import. Its reader is the loader, because JSON is a subset of the YAML 1.2 core schema.
 
 ### The `$`-reference sublanguage and the overlay address
 
@@ -113,7 +113,7 @@ Two `add` operations commute when no leaf that one writes is a prefix of a leaf 
 
 ### Validation of the result
 
-`rules.rs` runs the checks of `headwater taxonomy validate` that read a resolved tree. `RULES` lists every item of the list in spec 2 and where it runs. `Ran::Partly` marks a rule that this code decides in part, because the other part needs a declaration that the language does not have. A finding here names an address and no line. A merged tree does not know which source declared a node, and an overlay writes the same address. `Resolution::validate` in `lib.rs` holds the operations, so it adds the source back in two places. A refused shelf path names the source that wrote it. A name that a `remove` orphaned is reported at that `remove`, with its source and its line. An orphan that no `remove` covers keeps the address of the declaration that reads it.
+`rules.rs` runs the checks of `headwater taxonomy validate` that read a resolved tree. `RULES` lists every item of the list in [the taxonomy model](../spec/taxonomy-model.md) and where it runs. `Ran::Partly` marks a rule that this code decides in part, because the other part needs a declaration that the language does not have. A finding here names an address and no line. A merged tree does not know which source declared a node, and an overlay writes the same address. `Resolution::validate` in `lib.rs` holds the operations, so it adds the source back in two places. A refused shelf path names the source that wrote it. A name that a `remove` orphaned is reported at that `remove`, with its source and its line. An orphan that no `remove` covers keeps the address of the declaration that reads it.
 
 ### Selection, assembly and templates
 

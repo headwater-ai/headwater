@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Spec 7's *An assembly has two consumption forms* section, held against the
+//! [Distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s *An assembly has two consumption forms* section, held against the
 //! starter recipe this repository ships.
 //!
 //! # Why this file exists
@@ -14,12 +14,12 @@
 //! passage had fixed it once before and it went stale again.
 //!
 //! A bump now moves this file's source of truth, `assembly.yml`, and this case
-//! fails until spec 7 moves with it. That is the first route HW-OBL-0162
+//! fails until [distribution and federation](../../../../docs/spec/distribution-and-federation.md) moves with it. That is the first route HW-OBL-0162
 //! names: a check that reads a fenced example against its source.
 //!
 //! # The model
 //!
-//! `spec_seven_subjects.rs` binds another passage of spec 7 to the engine, and
+//! `spec_seven_subjects.rs` binds another passage of [distribution and federation](../../../../docs/spec/distribution-and-federation.md) to the engine, and
 //! this file takes its shape. The case compares identifiers and values, never
 //! prose, and it reads both sides from their files rather than from a copy
 //! written here.
@@ -121,7 +121,7 @@ fn recipe(root: &Spanned<Value>, what: &str) -> Vec<(String, String)> {
     ]
 }
 
-/// Spec 7 prints the starter recipe that this repository ships, and the text
+/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) prints the starter recipe that this repository ships, and the text
 /// diagram below it starts from the same pinned package.
 #[test]
 fn the_recipe_spec_seven_prints_is_the_recipe_this_repository_ships() {

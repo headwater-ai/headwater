@@ -17,7 +17,7 @@ relations:
 
 ## Context
 
-Spec 13 holds a finding that has no reader outside this repository. Run `20261122-0114` wrote intake lines 105, 131, 158 and 161. The product owner ruled each one RECORD into the group that its end-of-run report calls S6, edges and Invariants that the engine changes left out. That group held eight lines. A record that bundles gaps is split when it passes five, so this record holds the edges. This record read each front matter again on `0cdd96298`.
+[The register of open obligations](../spec/open-obligations.md) holds a finding that has no reader outside this repository. Run `20261122-0114` wrote intake lines 105, 131, 158 and 161. The product owner ruled each one RECORD into the group that its end-of-run report calls S6, edges and Invariants that the engine changes left out. That group held eight lines. A record that bundles gaps is split when it passes five, so this record holds the edges. This record read each front matter again on `0cdd96298`.
 
 ## Obligation
 

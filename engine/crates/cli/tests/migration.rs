@@ -14,7 +14,7 @@
 //!
 //! # Why the accounting is the case that matters
 //!
-//! A step declares which of spec 2's six dimensions it remedies by the subject
+//! A step declares which of [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s six dimensions it remedies by the subject
 //! it names, and a claim of that shape is worth nothing until something
 //! measures it. So the first case publishes a candidate that moves three
 //! lifecycle values, runs `taxonomy diff` over a corpus that carries all three,
@@ -181,7 +181,7 @@ fn register_payload(target: &str) -> String {
 ///
 /// No step of the migration vocabulary reaches this. `Subject` names a facet
 /// value, a kind and an overlay address, and a facet that became required has
-/// no old value for a `facet_value` step to move. Spec 7 (*The migration
+/// no old value for a `facet_value` step to move. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) (*The migration
 /// payload*) states that absence and names what an adopter does instead, which
 /// is what [`an_apply_leaves_an_adoption_block_that_infer_can_add_to`]
 /// measures.
@@ -240,7 +240,7 @@ fn inert_payload() -> String {
 /// ships. `docs/taxonomies/standards-spec/bundle.yml` declares
 /// `add.kinds.standard`, and an `add` over a key the base declares is refused at
 /// merge, so a base that renamed `specification` to `standard` would be a
-/// package no consumer of that bundle could resolve. Spec 7 makes every subset
+/// package no consumer of that bundle could resolve. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) makes every subset
 /// resolvable a property of the release, so the refusal is right and the
 /// candidate was quietly wrong while nothing read a bundle here.
 fn address() -> Vec<(&'static [&'static str], &'static [&'static str])> {
@@ -805,7 +805,7 @@ fn a_document_no_step_names_is_named() {
 
 /// A closed choice with nothing that settles it stops the publish.
 ///
-/// Spec 2 emits the judgment half "as a task list with the affected documents
+/// [The taxonomy model](../../../../docs/spec/taxonomy-model.md) emits the judgment half "as a task list with the affected documents
 /// attached". A step that leaves a choice and names no task is a question that
 /// list would never carry.
 #[test]
@@ -1033,7 +1033,7 @@ fn a_target_no_bundle_declares_stops_the_publish() {
 /// "renames something that did not move" means, and it is the only reading of it
 /// a publisher can certify. A value only a bundle declares moved for the
 /// consumers who selected that bundle and for no other, and a payload step
-/// states no condition. Widening this half would refuse the migration spec 7
+/// states no condition. Widening this half would refuse the migration [distribution and federation](../../../../docs/spec/distribution-and-federation.md)
 /// most expects instead: content moving out of the base and into a bundle, told
 /// to base-only consumers as a re-statement.
 ///
@@ -1391,7 +1391,7 @@ fn apply_with_no_pinned_digest_writes_no_migration_state() {
 
 /// The lock `--apply` leaves is one `headwater infer --write` can add to.
 ///
-/// Spec 7 makes `taxonomy migrate` the first verb of an upgrade and `infer` the
+/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) makes `taxonomy migrate` the first verb of an upgrade and `infer` the
 /// verb that records what the upgrade broke as debt. Between them stands
 /// [`merged`](../src/main.rs), which refuses an adoption block that declares no
 /// `tasks` key, because a payload written over an authored block would discard
@@ -1551,11 +1551,11 @@ fn apply_carries_a_standing_task_list_through() {
 
 /// The closing sentence of a diff names a route the adopter can take.
 ///
-/// "Spec 2 makes a major version ship one" is true of every break a step can
+/// "[The taxonomy model](../../../../docs/spec/taxonomy-model.md) makes a major version ship one" is true of every break a step can
 /// express, and it is an instruction to write a file the format cannot hold
 /// where the break is a facet that became required. So the sentence forks on
 /// what broke: a break every rule of which is `facet.required.missing` names
-/// `infer --write`, and every other break keeps the sentence spec 2 states.
+/// `infer --write`, and every other break keeps the sentence [the taxonomy model](../../../../docs/spec/taxonomy-model.md) states.
 #[test]
 fn a_break_no_step_reaches_names_infer_rather_than_a_payload() {
     let root = Root::new("no-step-reaches-it");

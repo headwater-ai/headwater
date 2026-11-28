@@ -31,7 +31,7 @@ relations:
 - No kind of this taxonomy types a probe result, so a result document has nothing to be.
 - `headwater generate --check` regenerates three documents, and each is a shelf index or a shelf section.
 
-So the artifact that spec 5 calls a probe result exists as terminal output and as nothing else.
+So the artifact that [AI integration](../spec/ai-integration.md) calls a probe result exists as terminal output and as nothing else.
 
 **The second and the third of those three are false, and the first is true.** `probe_result` is a kind of this taxonomy, `docs/probe-results/**` is a shelf that holds it, and `probe_result` is the ninth declarable projection kind. The generator reads every committed transcript, grades it against the selection that `headwater probe plan` composes, and writes one document for each. It writes nothing at all when the plan refuses. A plan that gives up part way through holds the probes it read and none of the rest. A result over that part would report a rate over a denominator no document declares. The run names the probe that stopped the plan in the place a result would be. A recorded fixture tree holds the pair and asserts the three directions of the gate. The committed pair is green. An unrelated edit leaves it green, and an edit to one event of the transcript turns it red.
 
@@ -39,13 +39,13 @@ This corpus wrote no result while the first fact held, and `headwater generate` 
 
 ## Obligation
 
-**The corpus owes a probe result as corpus content, and the debt is one link in a chain.** A result is a function of a transcript, and a recorder that observes a session from outside it writes that transcript. No verb of this engine writes one, and spec 5 refuses a transcript that an agent wrote about its own session. The chain is the recorder, then a committed transcript, then a kind for a result, then a generator over it, and only then the test.
+**The corpus owes a probe result as corpus content, and the debt is one link in a chain.** A result is a function of a transcript, and a recorder that observes a session from outside it writes that transcript. No verb of this engine writes one, and [AI integration](../spec/ai-integration.md) refuses a transcript that an agent wrote about its own session. The chain is the recorder, then a committed transcript, then a kind for a result, then a generator over it, and only then the test.
 
 Two consequences follow while the chain is unbuilt, and each is a claim this corpus cannot make yet.
 
 **The standing test of a correctness root is half absent.** A recomputed number is what makes a result citable, and the recomputation is what catches a result that disagrees with its own transcript. The recorded fixture set of `headwater-probe` holds the grader against three transcripts and catches a defect in the engine. It says nothing about a number in a document, because no document holds one.
 
-**A published rate would carry the `asserted` warrant.** [Authoring and lifecycle](../spec/authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two) refuses an asserted document as evidence for anything. A rate written into this corpus today therefore discharges no evidence obligation. That is the failure the placement table in spec 5 exists to prevent, reached through the layer the table describes.
+**A published rate would carry the `asserted` warrant.** [Authoring and lifecycle](../spec/authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two) refuses an asserted document as evidence for anything. A rate written into this corpus today therefore discharges no evidence obligation. That is the failure the placement table in [AI integration](../spec/ai-integration.md) exists to prevent, reached through the layer the table describes.
 
 ## Discharge
 

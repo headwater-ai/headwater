@@ -8,4 +8,4 @@ provenance:
 
 # The record this engine wrote
 
-Spec 3 derives the warrant of this file from the marker and never from a declaration, so the stray value decides nothing.
+[Authoring and lifecycle](../../../../../docs/spec/authoring-and-lifecycle.md) derives the warrant of this file from the marker and never from a declaration, so the stray value decides nothing.

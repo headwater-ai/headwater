@@ -8,7 +8,7 @@ summary: The failing fixture that the prose rules need, with one defect of each 
 
 # Prose defects
 
-Every defect below is deliberate, and each one is the failing half of the pair that spec 12 requires. Read this file beside `00-both-halves.md`, which is the passing half for the same rules.
+Every defect below is deliberate, and each one is the failing half of the pair that [the check layer](../../../../../../docs/spec/check-layer.md) requires. Read this file beside `00-both-halves.md`, which is the passing half for the same rules.
 
 ## Voice
 

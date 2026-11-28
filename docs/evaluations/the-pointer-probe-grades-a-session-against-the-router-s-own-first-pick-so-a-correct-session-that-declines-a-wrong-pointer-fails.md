@@ -31,9 +31,9 @@ The evidence has two sources. The first is the raw harness log of the session, w
 
 The raw log confirms that the session saw the ranking. The result of its `headwater route` call lists `HW-OBL-0107` first, then `HW-OBL-0171`, `HW-OBL-0141` and `HW-OBL-0192`. It then lists `HW-OBL-0044`, the purpose scores `obligation` 7, `behavior` 3 and `evidence` 2, and 214 withheld pointers. So the issue is correct that the session saw the pointer and declined it.
 
-The final message answers both halves of the task, and each half is correct. For the shelf, it cites the kind-resolution section of spec 2. The most specific shelf pattern wins, a homogeneous shelf declares the kind, and a heterogeneous shelf reads a discriminator facet. For the identifier, it cites the identifiers section of spec 3 and [HW-DR-0054](../decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md). It states that `headwater new` mints from the corpus and the claim store together, and it states why the claim store exists.
+The final message answers both halves of the task, and each half is correct. For the shelf, it cites the kind-resolution section of [the taxonomy model](../spec/taxonomy-model.md). The most specific shelf pattern wins, a homogeneous shelf declares the kind, and a heterogeneous shelf reads a discriminator facet. For the identifier, it cites the identifiers section of [authoring and lifecycle](../spec/authoring-and-lifecycle.md) and [HW-DR-0054](../decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md). It states that `headwater new` mints from the corpus and the claim store together, and it states why the claim store exists.
 
-`HW-OBL-0107` does not answer that task. Its summary says that `kinds.specification` names no identifier scheme, so `headwater new specification` refuses on the stock package. That is one defect of one kind. A reader who asks where a new document goes, and where its identifier comes from, learns neither from it. The session read five summaries and went to the documents that answer. That is the behavior spec 5 wants from an agent that meets a wrong pointer.
+`HW-OBL-0107` does not answer that task. Its summary says that `kinds.specification` names no identifier scheme, so `headwater new specification` refuses on the stock package. That is one defect of one kind. A reader who asks where a new document goes, and where its identifier comes from, learns neither from it. The session read five summaries and went to the documents that answer. That is the behavior [AI integration](../spec/ai-integration.md) wants from an agent that meets a wrong pointer.
 
 ## Where the router puts the documents that answer
 
@@ -41,7 +41,7 @@ The final message answers both halves of the task, and each half is correct. For
 
 The route offers 220 pointers on this tree. The first twelve are all obligation records. `docs/spec/authoring-and-lifecycle.md` ranks 120th, `docs/spec/taxonomy-model.md` ranks 126th, and `docs/decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md` ranks 172nd. A rank is a fact about this tree on this day, and a later reader runs the command again rather than trusting the number.
 
-The mechanism is in `engine/crates/query/src/route.rs`. Spec 5 has the router match the purpose of each kind before it compares any text. Lexical rank orders documents only inside a matched purpose. The task scores `obligation` 7 and `behavior` 3, so every obligation record that shares a term with the task outranks every design spec. Many obligation summaries name a shelf, a scheme or an identifier, because this corpus records its gaps in those areas.
+The mechanism is in `engine/crates/query/src/route.rs`. [AI integration](../spec/ai-integration.md) has the router match the purpose of each kind before it compares any text. Lexical rank orders documents only inside a matched purpose. The task scores `obligation` 7 and `behavior` 3, so every obligation record that shares a term with the task outranks every design spec. Many obligation summaries name a shelf, a scheme or an identifier, because this corpus records its gaps in those areas.
 
 The #896 evaluation found the cold-agent probe's target at 119th, and a replay on this tree shows the same mechanism. That task scores `behavior` fifth of six purposes, so `docs/spec/check-layer.md` ranks 127th. It is still the first design spec in that route.
 
@@ -55,7 +55,7 @@ The #908 finding itself still holds. The commentary paragraph reached the sessio
 
 ## Judgment
 
-**This miss is not a model-behavior gap, and it is not a navigability gap in `HW-OBL-0107`.** It is a routing-precision miss that the probe grades as a session failure. A session that follows a wrong pointer passes this probe, and a session that declines it fails. The probe rewards the behavior that spec 5 calls the expensive one. Spec 5 says: "A wrong pointer costs more than a missing one, because an agent will follow it."
+**This miss is not a model-behavior gap, and it is not a navigability gap in `HW-OBL-0107`.** It is a routing-precision miss that the probe grades as a session failure. A session that follows a wrong pointer passes this probe, and a session that declines it fails. The probe rewards the behavior that [AI integration](../spec/ai-integration.md) calls the expensive one. [AI integration](../spec/ai-integration.md) says: "A wrong pointer costs more than a missing one, because an agent will follow it."
 
 No wording in `HW-OBL-0107` would make a session open it for this task, and no wording should. Its summary is accurate for what it records.
 

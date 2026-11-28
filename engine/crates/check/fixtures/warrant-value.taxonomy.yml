@@ -2,7 +2,7 @@
 #
 # The taxonomy the warrant-value tree is checked against. Nothing here declares
 # a warrant or an acceptor, because nothing can: the provenance block belongs to
-# the engine, and spec 3 closes its warrant set at four values that no taxonomy
+# the engine, and authoring and lifecycle (docs/spec/authoring-and-lifecycle.md) closes its warrant set at four values that no taxonomy
 # extends. `warrant.value.not_permitted` and `warrant.acceptance.unpaired` read
 # both members through `headwater_doc` and never through a declaration.
 #

@@ -46,7 +46,7 @@ Phase B of the additive campaign measured how often a session completes each of 
 - Change taxonomy has no comparison, because a session cannot do it with the documents alone.
 - Of the four tuned layers, only the engine showed a gain, and those figures are tuned.
 
-**What it does not show.** Every session ran one model on this repository, and the code sessions had no compiler. [Limits](#limits) lists each caveat. This record does not discharge an open claim of spec 13. HW-OBL-0012, HW-OBL-0013, HW-OBL-0014 and HW-OBL-0016 each ask about a property that none of the eleven actions measures, so all four stay open.
+**What it does not show.** Every session ran one model on this repository, and the code sessions had no compiler. [Limits](#limits) lists each caveat. This record does not discharge an open claim of [the register of open obligations](../spec/open-obligations.md). HW-OBL-0012, HW-OBL-0013, HW-OBL-0014 and HW-OBL-0016 each ask about a property that none of the eleven actions measures, so all four stay open.
 
 ## The method
 
