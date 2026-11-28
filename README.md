@@ -6,18 +6,18 @@
 
 ![The first seven steps of the Headwater tutorial in a terminal: init, taxonomy vendor, taxonomy resolve and check](.github/assets/headwater-demo.gif)
 
-*Recorded on 2026-11-28 with engine 0.8.2. This is a frozen recording, so the output of a later engine can differ from it. `.github/assets/headwater-demo.tape` records it again.*
+*Recorded on 2026-11-28 with engine 0.8.3. This is a frozen recording, so the output of a later engine can differ from it. `.github/assets/headwater-demo.tape` records it again.*
 
 **Start here: [Your first governed corpus](https://headwater.tools/tutorials/your-first-governed-corpus/)** ([source in this repository](docs/tutorials/your-first-governed-corpus.md)). Sixteen steps from an empty directory to a passing check, and it teaches the model rather than the commands. Every step states what you should now see. In CI, `HEADWATER_TUTORIAL_RELEASE=1 sh .claude/tutorial/fixtures.sh` runs the page against the release it installs. So no output block on it can go stale quietly. That page, and the rest of the `docs/` tree, is rendered at <https://headwater.tools/>. The specification itself is indexed at [`docs/spec/README.md`](docs/spec/README.md), which `headwater generate` writes from the documents themselves in the reading order this corpus derives from its own relations.
 
 ## Obtaining a named version
 
-**Download the binary. You need no Rust toolchain.** Every engine release carries a static Linux x86_64 archive and a macOS arm64 archive. The block below installs `v0.8.2` on Linux into `~/.local/bin`. On macOS on Apple silicon, put `aarch64-apple-darwin` where the block says `x86_64-unknown-linux-musl`.
+**Download the binary. You need no Rust toolchain.** Every engine release carries a static Linux x86_64 archive and a macOS arm64 archive. The block below installs `v0.8.3` on Linux into `~/.local/bin`. On macOS on Apple silicon, put `aarch64-apple-darwin` where the block says `x86_64-unknown-linux-musl`.
 
 ```
 mkdir -p ~/.local/bin
-curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.8.2/headwater-v0.8.2-x86_64-unknown-linux-musl.tar.gz
-tar -xzf headwater-v0.8.2-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater
+curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.8.3/headwater-v0.8.3-x86_64-unknown-linux-musl.tar.gz
+tar -xzf headwater-v0.8.3-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater
 ```
 
 Each archive has a `.sha256` file beside it on the release, which `sha256sum -c` reads, and `shasum -a 256 -c` on macOS. The archive holds the `headwater` binary and the license, and nothing else. It does not get you `taxonomy-source`, and the taxonomy paragraphs below say how to fetch it.
@@ -45,12 +45,12 @@ cargo install headwater-cli --locked
 
 The command needs nothing this repository ships: no clone, no toolchain floor beyond what `cargo` itself resolves from the crate's declared `rust-version`. It gets you the `headwater` binary alone, at whatever the newest published version is. `--locked` builds it with the dependency versions that the release was published and tested with. A later release or a yank of a dependency then cannot break the install, and a yanked version only prints a warning.
 
-**A fixed version built from source, with the taxonomy package beside it.** `v0.8.2` is the newest tagged release, and the block below builds it from source. It needs a Rust toolchain at **1.91 or later**, a floor `engine/README.md` explains and `engine/Cargo.toml` declares.
+**A fixed version built from source, with the taxonomy package beside it.** `v0.8.3` is the newest tagged release, and the block below builds it from source. It needs a Rust toolchain at **1.91 or later**, a floor `engine/README.md` explains and `engine/Cargo.toml` declares.
 
 ```
 git clone https://github.com/headwater-ai/headwater.git
 cd headwater
-git checkout v0.8.2
+git checkout v0.8.3
 cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locked
 ```
 

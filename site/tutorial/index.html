@@ -246,13 +246,13 @@
       <div>
         <p>Install the engine once. The block below downloads the release archive for Linux on x86_64 and puts the <code>headwater</code> binary in <code>~/.local/bin</code>. The archive holds a static build, so it needs no particular C library.</p>
         <pre class="cmd verbatim">mkdir -p ~/.local/bin
-curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.8.2/headwater-v0.8.2-x86_64-unknown-linux-musl.tar.gz
-tar -xzf headwater-v0.8.2-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater</pre>
-        <p>On macOS on Apple silicon, the archive is <code>headwater-v0.8.2-aarch64-apple-darwin.tar.gz</code>. Use that name in the <code>curl</code> line and in the <code>tar</code> line.</p>
+curl -fsSLO https://github.com/headwater-ai/headwater/releases/download/v0.8.3/headwater-v0.8.3-x86_64-unknown-linux-musl.tar.gz
+tar -xzf headwater-v0.8.3-x86_64-unknown-linux-musl.tar.gz -C ~/.local/bin headwater</pre>
+        <p>On macOS on Apple silicon, the archive is <code>headwater-v0.8.3-aarch64-apple-darwin.tar.gz</code>. Use that name in the <code>curl</code> line and in the <code>tar</code> line.</p>
         <p>Each archive has a checksum file beside it on the release page. The name of the checksum file is the name of the archive with <code>.sha256</code> added. To verify the archive, download that file too and give it to <code>sha256sum -c</code>, or to <code>shasum -a 256 -c</code> on macOS.</p>
         <p class="check"><span class="checkword">Check</span> <span><code>headwater --version</code> prints a number.</span></p>
         <p>Many Linux distributions put <code>~/.local/bin</code> on your <code>PATH</code> when the directory exists at login. macOS does not. If your shell cannot find <code>headwater</code>, add <code>~/.local/bin</code> to your <code>PATH</code> in the startup file of your shell. Then open a new shell. You can also run the binary as <code>~/.local/bin/headwater</code>.</p>
-        <p>This installs version 0.8.2 of the engine. It does not install <code>taxonomy-source</code>, and step 3 fetches that. If you have a Rust toolchain, <code>cargo install headwater-cli --locked</code> is an alternative route, and the README's <em>Obtaining a named version</em> section describes it.</p>
+        <p>This installs version 0.8.3 of the engine. It does not install <code>taxonomy-source</code>, and step 3 fetches that. If you have a Rust toolchain, <code>cargo install headwater-cli --locked</code> is an alternative route, and the README's <em>Obtaining a named version</em> section describes it.</p>
       </div>
     </div>
   </div>
@@ -448,7 +448,6 @@ taxonomy.yml</pre>
     <div class="stepgrid">
       <div>
         <h2><span class="n">07</span>Check a corpus that nobody has typed</h2>
-        <p class="prose">The four warnings name the package and not your file. This release's engine predates two checks the package names, and the next engine release carries them. They are two <code>control.mechanism.unimplemented</code> and two <code>obligation.disposition.not_one</code>, on <code>CT-FACET-4</code> and <code>CT-SECT-2</code>, and they appear on every run until you install that release.</p>
         <p class="prose"><strong>The most important state in the tutorial.</strong> The run is green, and it is green because it checked nothing: one file seen, none classified, none checked. A green run over an untyped corpus measures your taxonomy rather than your documents. Read the census before the verdict, on every run, forever.</p>
         <p class="check"><span class="checkword">Check</span> <span><code>headwater check --strict &gt; /dev/null 2&gt;&amp;1; echo $?</code> prints <code>0</code>.</span></p>
       </div>
@@ -464,9 +463,7 @@ taxonomy.yml</pre>
       `decisions` shelf, which types every file `decision`. Run `headwater new
       decision --title "&lt;title&gt;"` instead</pre>
           <pre class="out verbatim">  1 seen, 0 classified, 0 checked, 10 check instances</pre>
-          <p class="blocklabel">what that prints</p>
-          <pre class="out verbatim">  4 findings
-        4 ▲ warn</pre>
+          <pre class="out verbatim">  0 findings</pre>
           <p class="trimnote">Output trimmed to the lines that matter — the full run prints more.</p>
       </div>
     </div>
@@ -547,7 +544,7 @@ TODO write this section.</pre>
     <div class="stepgrid">
       <div>
         <h2><span class="n">09</span>Check again, and read the difference</h2>
-        <p class="prose">The corpus did not grow. The count of checks that ran went from 10 to 26, because a typed document is a document that rules can reach. That is the whole trade this system asks for: type a document, and sixteen more questions become answerable about it.</p>
+        <p class="prose">The corpus did not grow. The count of checks that ran went from 10 to 28, because a typed document is a document that rules can reach. That is the whole trade this system asks for: type a document, and eighteen more questions become answerable about it.</p>
         <p class="check"><span class="checkword">Check</span> <span><code>headwater check 2&gt;/dev/null | grep 'check instances'</code> prints the second block above.</span></p>
       </div>
       <div>
@@ -557,7 +554,7 @@ TODO write this section.</pre>
   1 files under the corpus root
         1 typed
         1 typed decision</pre>
-          <pre class="out verbatim">  1 seen, 1 classified, 1 checked, 26 check instances</pre>
+          <pre class="out verbatim">  1 seen, 1 classified, 1 checked, 28 check instances</pre>
           <p class="trimnote">Output trimmed to the lines that matter — the full run prints more.</p>
       </div>
     </div>
@@ -632,9 +629,9 @@ git commit -m "A first governed corpus"</pre>
         <h2><span class="n">12</span>Promote the new decision, and read the finding</h2>
         <p class="prose">Open <code>docs/decisions/0002-deliver-at-least-once.md</code>. Change <code>status: draft</code> to <code>status: current</code>. A document states the state it will hold once your change lands, so a decision you propose as settled is <code>current</code>.</p>
         <p class="prose">The new decision is live now, so the far half is owed. One edge has one end.</p>
+        <p class="prose">The six warnings are <code>scaffold.placeholder.unwritten</code>. <code>headwater new</code> wrote the prompt <code>TODO write this section.</code> into the three sections of each decision, and each warning asks you to replace one prompt with your text. A warning does not fail a strict run, so this tutorial leaves the prompts in place. Write those sections before you commit a real decision.</p>
         <p class="prose">Read the identifier in parentheses. An <strong>obligation</strong> is a claim this system makes about itself, with the rule that verifies it named beside it. <code>OB-REL-1</code> is the obligation that this rule discharges, and every finding names the one it serves.</p>
         <p class="prose"><strong>One of those readings is about the package and one is about your run.</strong> The obligations and their severities come from <code>headwater/standard</code>. They read the same on your first day and on your thousandth. The last line comes from the rules of the run in front of you. It says that each rule this engine carries serves an obligation, which is what makes the identifier in your finding worth reading.</p>
-        <p class="prose">The two obligations with no disposition are the ones that step 7's warnings named. Their controls name the two checks that this release's engine does not carry, so nothing verifies them yet. The next engine release carries both checks, and the row then reads <code>59 verified</code>.</p>
         <p class="prose"><strong>Your corpus will not show you a gap, and the reason is worth knowing.</strong> A <code>gap</code> is a disposition that a package author writes, with an owner, for an obligation that no mechanism verifies. The base package declares none, so this row reads <code>0 gap</code> on every run of yours and no step here moves it. Headwater's own corpus takes a bundle that declares obligations that no mechanism verifies. The same block there shows <code>gap</code> and <code>unverifiable</code> counts above zero, and it names the owner of each gap. To read the current counts, run <code>headwater check 2&gt;/dev/null | grep 'obligations:'</code> in a clone of Headwater. The number worth watching is the one that is not <code>verified</code>.</p>
         <p class="prose">The word <code>mechanical</code> on the fix line is the second thing to read. A rule is an error when the repair takes no judgment, and advisory when the repair is a rewrite. This one takes no judgment, so the next step is a command rather than an edit.</p>
         <p class="check"><span class="checkword">Check</span> <span><code>headwater check --strict &gt; /dev/null 2&gt;&amp;1; echo $?</code> prints <code>1</code>. <code>headwater check 2&gt;/dev/null | grep 'obligations:'</code> prints the <code>59 obligations:</code> line of the register block above, and nothing else.</span></p>
@@ -642,9 +639,9 @@ git commit -m "A first governed corpus"</pre>
       <div>
           <pre class="cmd verbatim">headwater check</pre>
           <p class="blocklabel">what that prints</p>
-          <pre class="out verbatim">  5 findings
+          <pre class="out verbatim">  7 findings
         1 ✗ error
-        4 ▲ warn
+        6 ▲ warn
 
   docs/decisions/0002-deliver-at-least-once.md:11:7 ✗ error
     relation.reciprocity.missing (OB-REL-1): `ACME-DR-0002` declares
@@ -654,9 +651,9 @@ git commit -m "A first governed corpus"</pre>
       docs/decisions/0001-store-attempts-in-postgres.md</pre>
           <p class="blocklabel">what that prints</p>
           <pre class="out verbatim">  register
-    59 obligations: 57 verified, 0 gap, 0 unverifiable, 2 with no disposition
-       18 high, 17 verified
-       35 medium, 34 verified
+    59 obligations: 59 verified, 0 gap, 0 unverifiable, 0 with no disposition
+       18 high, 18 verified
+       35 medium, 35 verified
         6 low, 6 verified</pre>
           <pre class="out verbatim">    every rule this engine carries reaches one obligation</pre>
           <p class="trimnote">Output trimmed to the lines that matter — the full run prints more.</p>
