@@ -149,7 +149,7 @@
 
   <h2>v0.8.3</h2>
 
-  <p><a href="https://github.com/headwater-ai/headwater/releases/tag/v0.8.3">A patch release</a>, written on 2026-11-28, adds two rules and one report line, and it comes with <code>headwater/standard</code> 4.31.0.</p>
+  <p><a href="https://github.com/headwater-ai/headwater/releases/tag/v0.8.3">A patch release</a>, written on 2026-11-28, adds two rules and one report line, makes one taxonomy refusal name the line you wrote, and it comes with <code>headwater/standard</code> 4.31.0.</p>
 
   <p>The new error rule <code>facet.value.not_of_type</code> reads each document facet that its declaration types as <code>date</code>, <code>integer</code>, <code>boolean</code> or <code>duration</code>. Before, any value passed: <code>2026-02-30</code>, the word <code>yesterday</code> or a nested list. A <code>date</code> value must now be a real calendar date in the form <code>YYYY-MM-DD</code>. A null, a sequence or a mapping on a typed facet is also reported. A facet of <code>type: string</code> stays with <code>facet.value.blank</code>, so one value gets one finding. <code>headwater taxonomy validate</code> and the rule now use the same type test and the same calendar, so a taxonomy value of <code>2026-02-30</code> is now refused there too.</p>
 
@@ -158,6 +158,8 @@
   <p>In <code>headwater/standard</code> 4.31.0, the control <code>CT-FACET-4</code> binds <code>facet.value.not_of_type</code>, <code>CT-SECT-2</code> binds <code>scaffold.placeholder.unwritten</code>, and <code>CT-COV-4</code> binds <code>shelf.discriminator.unresolved</code>. All three stay advisory. Every rule that the engine ships is now bound to a control of the standard package.</p>
 
   <p>The text report of <code>headwater check</code> now prints one line for each lexical pattern set that a bound regime reads: how many of its entries produced a finding, against how many it declares. A set where no entry produced a finding gets a warning, because a zero there can mean a clean corpus or a list that nobody writes. The <code>markdown</code>, <code>json</code> and <code>sarif</code> reports do not change, and the check JSON shape stays at 1.9.</p>
+
+  <p>An overlay can remove a name that another declaration still reads, for example <code>remove: - kinds.decision</code> while a shelf still has <code>kind: decision</code>. <code>headwater taxonomy validate</code> refused that before, but it blamed <code>the resolved taxonomy</code> at the shelf, a line you never edited. It now reports the refusal at the <code>remove</code> in your overlay, with its file, address and line, and names what the removal left without a declaration. A refusal that no <code>remove</code> caused, such as a typo, is unchanged.</p>
 
   <p>When the engine is outside the range that <code>.headwater/taxonomy.yml</code> asks for, it already wrote one line about it on standard error. The intent hook that <code>headwater init --harness</code> installs now prints that line first, and before it discarded it. The VS Code extension writes it once a session to its <em>Headwater</em> output channel. Run <code>headwater init --harness</code> again to install the new intent hook.</p>
 
