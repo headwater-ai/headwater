@@ -4,7 +4,7 @@ capture-cost store
 
 assisted fraction over every reading
   2 of 3 — front matter 2/3, sections 0/0, identifier 0/0, edge halves 0/0
-  It counts a section heading and never its prose, which is the convention spec 3 fixes and this aggregate inherits
+  It counts a section heading and never its prose, which is the convention authoring and lifecycle fixes and this aggregate inherits
   every reading was taken under sha256:f7b59451cdd1886258a459d887aad5bfda131ebe2fb7747321712eecdbcb8b51, so they share a denominator
 
 by kind
@@ -21,7 +21,7 @@ reach of the authoring verb
   no reading names a document this corpus does not classify
 
 what this store does not hold, and why
-  no person and no agent. Spec 3 aims the remedy for a falling fraction at the taxonomy rather than at the author, and a per-author number is a performance measure
+  no person and no agent. Authoring and lifecycle aims the remedy for a falling fraction at the taxonomy rather than at the author, and a per-author number is a performance measure
   no wall-clock time. A duration is not reproducible under `--now`
   no run that refused. A refusal wrote no document, so there is nothing to attribute a reading to
-  nothing a hook or a skill did. Spec 5 says a hook binds nothing, so a disabled hook and a hook that stayed silent would be one reading
+  nothing a hook or a skill did. AI integration says a hook binds nothing, so a disabled hook and a hook that stayed silent would be one reading

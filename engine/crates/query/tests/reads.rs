@@ -1010,7 +1010,7 @@ fn three_sentence_queries_miss_by_the_purpose_gate_and_not_by_the_name_step() {
     let surface = built.surface();
     let misses: [(&str, &str); 3] = [
         (NAMED[1].0, "docs/decisions/0102-"),
-        (NAMED[1].0, "docs/spec/06-"),
+        (NAMED[1].0, "docs/spec/engine-architecture.md"),
         (NAMED[2].0, "docs/interfaces/headwater-generate.md"),
     ];
     for (task, target) in misses {

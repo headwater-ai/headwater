@@ -2763,7 +2763,7 @@ mod label_tests {
     /// neither, and the file name is what is left.
     #[test]
     fn a_document_with_neither_falls_through_to_its_file_name() {
-        assert_eq!(label(&pointer(None, None)), "00-vision-and-scope.md");
+        assert_eq!(label(&pointer(None, None)), "vision-and-scope.md");
     }
 
     /// The precedence, asserted on its own. An identifier beside a name never

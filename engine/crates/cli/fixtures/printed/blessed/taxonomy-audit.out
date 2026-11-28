@@ -22,7 +22,7 @@ relations, by the creator each one declares
   hook — no relation declares it
   agent — no relation declares it
   import — no relation declares it
-  6 of the 6 creators spec 2 declares have no relation in this taxonomy: author, scaffold, generator, hook, agent, import.
+  6 of the 6 creators the taxonomy model declares have no relation in this taxonomy: author, scaffold, generator, hook, agent, import.
   A comparison against any of them has one arm over this corpus, and the missing
   arm is a property of the taxonomy rather than of the authoring. No number below
   stands in for one.
@@ -57,7 +57,7 @@ dwell in the current state
   no reading. It needs a facet in the `state` role and one in `state_entered`,
   and this taxonomy declares fewer than both.
 
-warrants, over the closed set spec 3 declares
+warrants, over the closed set authoring and lifecycle declares
   A warrant states what stands behind a document, and promotion is the act that
   moves one from `asserted` to `accepted`. The set is closed, so every value has a
   row whether a document of this corpus states it or not.
@@ -65,7 +65,7 @@ warrants, over the closed set spec 3 declares
       0 regenerated   the engine reads this off the generated-file marker
       0 transcribed   the engine reads this off the generated-file marker
       0 asserted      no document of this corpus states it
-  Stated on 0 of 2, and absent on 2. Spec 3 makes the value required, so the
+  Stated on 0 of 2, and absent on 2. Authoring and lifecycle makes the value required, so the
   second figure is a population and never a default. The census reported 0 of these rows
   as generated, and the engine reads the warrant of a generated document off the marker
   rather than out of a declaration.
@@ -94,8 +94,8 @@ what this verb does not measure, and what each one waits on
   transition continuity — waits
     a record of the state a document left
       nothing declares it — no facet of this taxonomy takes the `state_left`
-        role, and spec 2's closed role registry holds no such role, so one entry
-        into a state cannot be told from a second
+        role, and the taxonomy model's closed role registry holds no such role,
+        so one entry into a state cannot be told from a second
   scent quality — waits
     a cue authored on an edge instance
       nothing authored one — no half of the 0 this corpus declares carries a

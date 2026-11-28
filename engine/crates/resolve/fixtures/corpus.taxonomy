@@ -372,6 +372,42 @@ regimes:
           reason: "it stands in for use or apply"
         - term: robust
           reason: "it stands in for the failure the thing survives"
+        - term: "spec 0"
+          reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+        - term: "spec 1"
+          reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+        - term: "spec 2"
+          reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+        - term: "spec 3"
+          reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+        - term: "spec 4"
+          reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+        - term: "spec 5"
+          reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+        - term: "spec 6"
+          reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+        - term: "spec 7"
+          reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+        - term: "spec 8"
+          reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+        - term: "spec 9"
+          reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+        - term: "spec 10"
+          reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+        - term: "spec 11"
+          reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+        - term: "spec 12"
+          reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+        - term: "spec 13"
+          reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+        - term: "spec 14"
+          reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+        - term: "spec 15"
+          reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+        - term: "spec 16"
+          reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+        - term: "spec 17"
+          reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
       source_form: one_line_per_block
       tag: en-US
 anchors:
@@ -1282,7 +1318,7 @@ projections:
   - kind: shelf_sections
     for:
       - decisions
-    output: docs/spec/09-open-questions.md
+    output: docs/spec/open-questions.md
     identity:
       id: HW-REG-open-questions
       kind: decision_register
@@ -1301,6 +1337,8 @@ projections:
     output: docs/interfaces/consumer-surface.md
   - kind: site_nav
     output: ".headwater/nav.yml"
+    precedence:
+      - spec_series
     sections:
       - title: Reference
         groups:

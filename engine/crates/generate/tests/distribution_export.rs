@@ -446,7 +446,7 @@ const NO_VIEW_PRESENTS_AS_TOTAL: Rule = Rule {
                 `sealed` a reader still knows to stop drawing conclusions from absence, which \
                 is the harm that the rule exists to prevent. An agent that traverses a \
                 filtered graph, finds nothing, and reports absence is the failure that \
-                [spec 5](ai-integration.md) names at its start. Here our own filter causes \
+                [AI integration](ai-integration.md) names at its start. Here our own filter causes \
                 it.",
     subsection: "### An export profile carries a filter",
     forms: &[
@@ -520,7 +520,7 @@ const A_WITHHOLDING_RULE_NEVER_SHIPS_ADVISORY: Rule = Rule {
     rule: "**A withholding rule never ships advisory.**",
     paragraph: "**A withholding rule never ships advisory.** Its two error classes are not \
                 both recoverable, so the promotion machinery measures the wrong one \
-                ([spec 4](assurance-model.md#promotion-advisory-to-blocking)). It is not \
+                ([the assurance model](assurance-model.md#promotion-advisory-to-blocking)). It is not \
                 suppressible and [it is not waivable](#waivers).",
     subsection: "### An export profile carries a filter",
     forms: &[

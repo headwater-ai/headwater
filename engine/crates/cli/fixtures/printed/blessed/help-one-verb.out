@@ -8,8 +8,8 @@ Options:
       --strict
           exit non-zero when a finding is an error, or when a control declared
           `posture: blocking` discharges a finding of any severity. Without it
-          the run is advisory and always exits 0, which is the default spec 6
-          fixes
+          the run is advisory and always exits 0, which is the default the
+          engine architecture fixes
       --fix
           write the patch that rides with a finding, in this working tree. A
           finding carries one only when the fix is mechanical and total, and a
@@ -60,10 +60,10 @@ Options:
           posture `--no-color` already takes for a flag that changes nothing
           there
       --now <date>
-          the date to evaluate against, as `YYYY-MM-DD`. Defaults to today. Spec
-          12 makes the clock an injected value rather than a syscall inside a
-          check, and this flag is where it is injected: same corpus, same lock,
-          same date, same bytes
+          the date to evaluate against, as `YYYY-MM-DD`. Defaults to today. The
+          check layer makes the clock an injected value rather than a syscall
+          inside a check, and this flag is where it is injected: same corpus,
+          same lock, same date, same bytes
       --change <manifest>
           the manifest of a change, which the rules that read a transition use.
           It does not narrow the documents that the run checks. The first line
@@ -76,43 +76,43 @@ Options:
           transition needs, and without it every instance of such a rule is
           reported as skipped rather than passed. This engine walks no history:
           the caller anchors the prior version to the state on the branch where
-          the change lands, which spec 12 fixes as the merge base of a proposed
-          change and the committed `HEAD` of a working-tree hook. Every path is
-          held against the corpus this run walks, and one that reaches no row of
-          it is counted and named in the report rather than absorbed. Each path
-          is written from the git top level, as `headwater change` writes it,
-          and the run strips the root's own prefix below that top level. A path
-          outside the root reaches no rule and is named in the report. No other
-          path is normalized, so `./docs/a.md` reaches no row. What this engine
-          cannot check is whether the manifest tells the truth: a line that says
-          `added` for a document that already stood, and a document the change
-          carried and the manifest omits, are both invisible without the history
-          that spec 12 rules out as an input
+          the change lands, which the check layer fixes as the merge base of a
+          proposed change and the committed `HEAD` of a working-tree hook. Every
+          path is held against the corpus this run walks, and one that reaches
+          no row of it is counted and named in the report rather than absorbed.
+          Each path is written from the git top level, as `headwater change`
+          writes it, and the run strips the root's own prefix below that top
+          level. A path outside the root reaches no rule and is named in the
+          report. No other path is normalized, so `./docs/a.md` reaches no row.
+          What this engine cannot check is whether the manifest tells the truth:
+          a line that says `added` for a document that already stood, and a
+          document the change carried and the manifest omits, are both invisible
+          without the history that the check layer rules out as an input
       --read-set <path>
           write the read set of this run to a file. The report carries it too,
           under `--verbose`. The artifact is what decides whether a verdict
           survives a merge without running the checks again, and `headwater
           gate` is what reads it
       --register <path>
-          write the register of this run to a file as well as to the report.
-          Spec 4 makes it a projection of the `obligations` and `controls`
-          declarations, generated and never authored: every obligation with its
-          disposition, every control with its health, and what escaped under
-          each
+          write the register of this run to a file as well as to the report. The
+          assurance model makes it a projection of the `obligations` and
+          `controls` declarations, generated and never authored: every
+          obligation with its disposition, every control with its health, and
+          what escaped under each
       --format <text|json|sarif|markdown>
           which vocabulary to write the run in. `text` is the report a person
           reads and the default. `sarif` is what a forge ingests as a check run,
           `markdown` is a job summary or a review comment, and `json` is the
-          finding shape spec 4 declares, for an adapter nobody here wrote.
-          `sarif` writes its own loss set into the artifact. `markdown` declares
-          one in the source and not in the artifact, because nothing it writes
-          is machine-readable. `text` declares two drops there too, the routing
-          of each skip and, without `--verbose`, the scope of each rule and the
-          read set, and carries the census and the graph that no other format
-          holds. `json` declares one there as well, the per-document account of
-          coverage, and writes no loss set of its own. A run that refuses writes
-          nothing here: the account is one English sentence on standard error
-          and the status is 1
+          finding shape the assurance model declares, for an adapter nobody here
+          wrote. `sarif` writes its own loss set into the artifact. `markdown`
+          declares one in the source and not in the artifact, because nothing it
+          writes is machine-readable. `text` declares two drops there too, the
+          routing of each skip and, without `--verbose`, the scope of each rule
+          and the read set, and carries the census and the graph that no other
+          format holds. `json` declares one there as well, the per-document
+          account of coverage, and writes no loss set of its own. A run that
+          refuses writes nothing here: the account is one English sentence on
+          standard error and the status is 1
       --json
           write this run as one JSON document on standard output. It is the
           artifact `--format json` writes, byte for byte. A run that states both
