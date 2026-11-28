@@ -65,7 +65,7 @@ On 2026-11-27 the owner ruled on [#2137](https://github.com/headwater-ai/headwat
 
 **The sidebar lists the specification series in relation order.** This record amends [HW-DR-0108](0108-the-site-sidebar-lists-a-shelf-in-path-order-and-the-shelf-index-keeps-the-reading-order.md) for that shelf and no other. A shelf whose files carry a minted number keeps path order, which is numeric order there, for the reason HW-DR-0108 gives.
 
-**The `{seq:04d}-{slug}.md` shelves and the Q-numbers are out of scope.** The decisions, obligations, process records and requirement-verification shelves take their number from an identifier that the run mints and that the claim store holds distinct ([HW-DR-0054](0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md)). Two branches cannot take one value there without an `add/add` conflict, so HW-OBL-0175 does not reach them.
+**The `{seq:04d}-{slug}.md` shelves and the Q-numbers are out of scope.** The seven shelves of decisions, obligations, process records, acceptance criteria and requirement verification take their number from an identifier that the run mints and that the claim store holds distinct ([HW-DR-0054](0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md)). Two branches cannot take one value there without an `add/add` conflict, so HW-OBL-0175 does not reach them.
 
 ## Consequences
 
