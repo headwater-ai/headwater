@@ -1,4 +1,4 @@
-headwater/standard 4.31.0
+headwater/standard 5.0.0
 
 sources, in application order
   .headwater/packages/headwater-standard/taxonomy.yml
@@ -15,7 +15,6 @@ operations
   add.kinds.evaluation (.headwater/packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml)
   add.shelves.evaluations (.headwater/packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml)
   add.facets.doc_type (.headwater/packages/headwater-standard/bundles/design-spec/bundle.yml)
-  add.facets.sequence (.headwater/packages/headwater-standard/bundles/design-spec/bundle.yml)
   add.kinds.design_spec (.headwater/packages/headwater-standard/bundles/design-spec/bundle.yml)
   add.kinds.decision_register (.headwater/packages/headwater-standard/bundles/design-spec/bundle.yml)
   add.kinds.obligation_register (.headwater/packages/headwater-standard/bundles/design-spec/bundle.yml)
@@ -24,6 +23,7 @@ operations
   add.relations.cites_evidence (.headwater/packages/headwater-standard/bundles/design-spec/bundle.yml)
   add.relations.applied_in (.headwater/packages/headwater-standard/bundles/design-spec/bundle.yml)
   add.relations.assesses (.headwater/packages/headwater-standard/bundles/design-spec/bundle.yml)
+  add.relations.builds_on (.headwater/packages/headwater-standard/bundles/design-spec/bundle.yml)
   add.shelves.spec_series (.headwater/packages/headwater-standard/bundles/design-spec/bundle.yml)
   add.shelves.reviews (.headwater/packages/headwater-standard/bundles/design-spec/bundle.yml)
   add.facets.waiting_on (.headwater/packages/headwater-standard/bundles/decision-record/bundle.yml)
@@ -141,14 +141,14 @@ operations
 
 declarations, by member count
   taxonomy: headwater/standard
-  version: 4.31.0
+  version: 5.0.0
   purposes: 6 members
   vocabularies: 1 member
-  facets: 19 members
+  facets: 18 members
   regimes: 3 members
   anchors: 3 members
   kinds: 28 members
-  relations: 15 members
+  relations: 16 members
   shelves: 24 members
   identifier_schemes: 20 members
   core: 1 member

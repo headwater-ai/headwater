@@ -181,6 +181,10 @@ fn a_new_part_is_named_by_its_slug_and_carries_no_sequence() {
         "the part declares no sequence:\n{text}"
     );
     assert!(
+        !made.err.contains("sequence") && !made.out.contains("sequence"),
+        "and the verb's report names no sequence facet to fill:\n{made:?}"
+    );
+    assert!(
         text.lines().any(|line| line == "# Harness support"),
         "the first heading is the title alone:\n{text}"
     );
@@ -241,5 +245,59 @@ fn a_part_left_numbered_by_4_x_raises_nothing_about_its_sequence() {
         !ran.out.contains("`sequence`"),
         "and nothing names the left-over key:\n{}",
         ran.out
+    );
+}
+
+/// The series keeps a reading order with no number: `builds_on` is a relation
+/// the package declares, so an edge an author types is read at both ends.
+///
+/// Without the declaration the key under `relations` names nothing, and the
+/// edge appears at neither end. So deleting `relations.builds_on` from the
+/// design-spec bundle reddens this case.
+#[test]
+fn a_part_that_builds_on_another_is_read_at_both_ends() {
+    let root = Root::new("builds-on");
+    root.write("docs/spec/model.md", &part("model", "The model", ""));
+    root.write(
+        "docs/spec/checks.md",
+        &part(
+            "checks",
+            "The checks",
+            "relations:\n  builds_on:\n    - ACME-SPEC-model\n",
+        ),
+    );
+    let near = root.run(&["explain", "docs/spec/checks.md"]);
+    assert_eq!(near.code, Some(0), "the part explains\n{near:?}");
+    assert!(
+        near.out.contains("to ACME-SPEC-model builds_on"),
+        "the part names the part it builds on:\n{}",
+        near.out
+    );
+    let far = root.run(&["explain", "docs/spec/model.md"]);
+    assert!(
+        far.out.contains("from docs/spec/checks.md builds_on"),
+        "and the part built on names the part that builds on it:\n{}",
+        far.out
+    );
+    // The nucleus is the part built on, so it governs the reading, and
+    // `by_precedence` puts it first. A nucleus at `from` inverts both lines.
+    assert!(
+        near.out.contains("[that document governs the reading]"),
+        "the part built on governs the reading:\n{}",
+        near.out
+    );
+    assert!(
+        far.out.contains("[this document governs the reading]"),
+        "seen from the part built on as well:\n{}",
+        far.out
+    );
+    let wrong: Vec<String> = root
+        .findings()
+        .into_iter()
+        .filter(|rule| rule.starts_with("relation."))
+        .collect();
+    assert!(
+        wrong.is_empty(),
+        "and the edge raises no relation finding: {wrong:?}"
     );
 }
