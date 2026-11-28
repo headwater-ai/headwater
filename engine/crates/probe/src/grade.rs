@@ -1107,12 +1107,49 @@ fn names(argument: &str, target: &Examined) -> bool {
 /// census row, which is the same comparison against a different source of the
 /// path. It reads this function rather than a copy of it, because two copies of
 /// a boundary rule are two places for the boundary to go missing.
+///
+/// A file name with no leading number also answers to the same name with a
+/// two-digit `NN-` prefix in the same directory. That is the name the
+/// specification series gave a part under headwater/standard 4.x, whose
+/// layout was `{sequence:02d}-{slug}.md`, and 5.0.0 lays the shelf out as
+/// `{slug}.md`
+/// ([HW-DR-0117](../../../../docs/decisions/0117-the-specification-series-names-a-part-by-its-slug-and-carries-no-sequence.md)).
+/// A transcript is a record of a moment: one recorded before a corpus renamed
+/// its parts names `docs/spec/12-check-layer.md` for the part that is now
+/// `docs/spec/check-layer.md`, and without this arm every regrade of that
+/// transcript would turn a read into a miss. A target whose file name opens
+/// with a digit, such as `0087-….md` on an identifier shelf, takes no such arm.
 pub(crate) fn names_path(argument: &str, path: &str) -> bool {
     let argument = argument.replace('\\', "/");
+    ends_at(&argument, path)
+        || without_sequence(&argument).is_some_and(|argument| {
+            !file_name(path).starts_with(|c: char| c.is_ascii_digit()) && ends_at(&argument, path)
+        })
+}
+
+/// Equality, or `argument` ending in `path` at a `/` boundary.
+fn ends_at(argument: &str, path: &str) -> bool {
     argument == path
         || (argument.len() > path.len()
             && argument.ends_with(path)
             && argument[..argument.len() - path.len()].ends_with('/'))
+}
+
+/// The last segment of a `/`-separated path.
+fn file_name(path: &str) -> &str {
+    path.rsplit('/').next().unwrap_or(path)
+}
+
+/// `argument` with a leading `NN-` taken off its file name, or `None` when the
+/// file name does not open with two digits and a hyphen.
+fn without_sequence(argument: &str) -> Option<String> {
+    let name = file_name(argument);
+    let bytes = name.as_bytes();
+    let numbered = bytes.len() > 3
+        && bytes[0].is_ascii_digit()
+        && bytes[1].is_ascii_digit()
+        && bytes[2] == b'-';
+    numbered.then(|| format!("{}{}", &argument[..argument.len() - name.len()], &name[3..]))
 }
 
 /// Whether a Bash call's argument runs a command that names an examined target.
@@ -1650,7 +1687,7 @@ mod tests {
         let want = target(Some("HW-SPEC-05"), "docs/spec/ai-integration.md");
         assert!(names("docs/spec/ai-integration.md", &want));
         assert!(names("/home/a/repo/docs/spec/ai-integration.md", &want));
-        assert!(names("C:\\repo\\docs\\spec\\05-ai-integration.md", &want));
+        assert!(names("C:\\repo\\docs\\spec\\ai-integration.md", &want));
         assert!(
             !names("docs/spec/ai-integration.md.bak", &want),
             "a copy is not the document"
@@ -1659,6 +1696,38 @@ mod tests {
             !names("otherdocs/spec/ai-integration.md", &want),
             "the boundary is what stops a suffix from matching a different tree"
         );
+    }
+
+    /// A transcript recorded before the specification series dropped its
+    /// numbers names a part by its `NN-` name (HW-DR-0117). A regrade of that
+    /// transcript against the renamed target still counts the read. The arm is
+    /// for a target that carries no number of its own: a numbered target on an
+    /// identifier shelf matches only its own name, and another directory or
+    /// another slug never matches.
+    #[test]
+    fn a_tool_call_names_a_renamed_part_by_the_numbered_name_it_had() {
+        let want = target(Some("HW-SPEC-check-layer"), "docs/spec/check-layer.md");
+        assert!(names("docs/spec/12-check-layer.md", &want));
+        assert!(names("/mnt/ws/r1/docs/spec/12-check-layer.md", &want));
+        assert!(
+            !names("docs/spec/12-check-layer.md.bak", &want),
+            "a copy is still not the document"
+        );
+        assert!(
+            !names("docs/other/12-check-layer.md", &want),
+            "the number comes off the file name and not off the directory"
+        );
+        assert!(
+            !names("docs/spec/123-check-layer.md", &want),
+            "the 4.x layout wrote two digits"
+        );
+        assert!(!names("docs/spec/12-glossary.md", &want));
+        let record = target(Some("HW-DR-0087"), "docs/decisions/0087-a-rule.md");
+        assert!(
+            !names("docs/decisions/00-0087-a-rule.md", &record),
+            "a target whose name opens with a digit takes no such arm"
+        );
+        assert!(names("docs/decisions/0087-a-rule.md", &record));
     }
 
     fn call(tool: &str, argument: &str) -> crate::intake::Call {
