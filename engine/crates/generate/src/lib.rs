@@ -1752,9 +1752,9 @@ fn graph_export(
 /// report of every run: [`engine_defined`] reads the register's reason from
 /// here rather than holding a second copy, [`undeclared`] carries the reason of
 /// a declarable kind no declaration named, and the `other =>` arm of [`plan`]
-/// carries the reason of one a declaration did name. `spec_six_projections.rs`
+/// carries the reason of one a declaration did name. `engine_architecture_projections.rs`
 /// holds the whole set against one run, and
-/// `engine/crates/generate/tests/spec_six_projections.rs` holds [the engine architecture](../../../../docs/spec/engine-architecture.md)'s
+/// `engine/crates/generate/tests/engine_architecture_projections.rs` holds [the engine architecture](../../../../docs/spec/engine-architecture.md)'s
 /// projection-kinds block against it. The `match` is exhaustive, so a
 /// fourteenth variant is `E0004` here before it is anything else.
 pub fn unbuilt(kind: Kind) -> Option<&'static str> {

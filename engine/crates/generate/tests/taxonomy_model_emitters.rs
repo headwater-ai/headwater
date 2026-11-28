@@ -6,7 +6,7 @@
 //! [R1](https://github.com/headwater-ai/headwater/issues/421)'s bar is that no
 //! specification part states as built an `export` target or a projection kind
 //! that this engine reports as unbuilt. The bar has two halves. The
-//! projection-kind half is held by `spec_six_projections.rs`. The export-target
+//! projection-kind half is held by `engine_architecture_projections.rs`. The export-target
 //! half was corrected by hand in `docs/spec/taxonomy-model.md` and nothing
 //! read it afterwards, so a reword of the refusal, an emptied fenced block, or
 //! the day someone builds `skos` all leave the paragraph false with the suite
@@ -45,7 +45,7 @@
 //! corpus to do it.
 //!
 //! The extractor below is deliberately a copy of the one in
-//! `spec_six_projections.rs` rather than a shared helper. Two branches were in
+//! `engine_architecture_projections.rs` rather than a shared helper. Two branches were in
 //! flight over these files when it was written, and twenty duplicated lines
 //! cost less than the merge they would otherwise collide on.
 

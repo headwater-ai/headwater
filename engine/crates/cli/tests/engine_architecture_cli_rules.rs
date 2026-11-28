@@ -388,7 +388,7 @@ fn no_comment_quotes_moved_cli_text_as_spec_6() {
     let mut credited = Vec::new();
     let mut read = 0;
     for file in files {
-        if file.file_name().and_then(|n| n.to_str()) == Some("spec_six_cli_rules.rs") {
+        if file.file_name().and_then(|n| n.to_str()) == Some("engine_architecture_cli_rules.rs") {
             continue;
         }
         let text = std::fs::read_to_string(&file).expect("read an engine source");

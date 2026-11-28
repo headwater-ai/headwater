@@ -124,7 +124,7 @@ waits
   coverage_report
 ```
 
-[Projections and export](../subsystems/projections-and-export.md#thirteen-kinds-two-value-sets-and-the-unbuilt-set) says what each kind carries, why a waiting kind writes nothing, and why one run can take several passes. `engine/crates/generate/tests/spec_six_projections.rs` holds the block above against the engine. The coverage report is the one waiting kind that no taxonomy can declare, and [the register of open obligations](open-obligations.md) carries it:
+[Projections and export](../subsystems/projections-and-export.md#thirteen-kinds-two-value-sets-and-the-unbuilt-set) says what each kind carries, why a waiting kind writes nothing, and why one run can take several passes. `engine/crates/generate/tests/engine_architecture_projections.rs` holds the block above against the engine. The coverage report is the one waiting kind that no taxonomy can declare, and [the register of open obligations](open-obligations.md) carries it:
 
 ```
 coverage_report the register

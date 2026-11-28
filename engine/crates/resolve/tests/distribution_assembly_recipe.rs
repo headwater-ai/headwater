@@ -19,7 +19,7 @@
 //!
 //! # The model
 //!
-//! `spec_seven_subjects.rs` binds another passage of [distribution and federation](../../../../docs/spec/distribution-and-federation.md) to the engine, and
+//! `distribution_migration_subjects.rs` binds another passage of [distribution and federation](../../../../docs/spec/distribution-and-federation.md) to the engine, and
 //! this file takes its shape. The case compares identifiers and values, never
 //! prose, and it reads both sides from their files rather than from a copy
 //! written here.

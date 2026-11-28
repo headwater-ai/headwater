@@ -14,8 +14,8 @@
 //!
 //! # The model
 //!
-//! `engine/crates/resolve/tests/spec_seven_subjects.rs` and
-//! `engine/crates/generate/tests/spec_six_projections.rs` hold a specification
+//! `engine/crates/resolve/tests/distribution_migration_subjects.rs` and
+//! `engine/crates/generate/tests/engine_architecture_projections.rs` hold a specification
 //! block against an engine list the same way. The block carries engine
 //! identifiers, so no prose-to-identifier mapping can drift, and the comparison
 //! runs in both directions, so neither an emptied block nor an unnamed flag

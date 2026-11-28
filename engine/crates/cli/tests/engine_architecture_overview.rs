@@ -9,7 +9,7 @@
 //! the cycle of passes to the projections subsystem. Every other removed
 //! paragraph already had a home that stated it.
 //!
-//! `spec_six_cli_rules.rs` holds the CLI section, and `spec_six_projections.rs`
+//! `engine_architecture_cli_rules.rs` holds the CLI section, and `engine_architecture_projections.rs`
 //! holds the projection-kinds block. This file holds the rest.
 
 use std::collections::BTreeSet;
@@ -98,7 +98,7 @@ fn prose_word_count(text: &str) -> usize {
 }
 
 /// [The engine architecture](../../../../docs/spec/engine-architecture.md)'s prose with its `### CLI` section left out, which
-/// `spec_six_cli_rules.rs` holds against the verb contracts.
+/// `engine_architecture_cli_rules.rs` holds against the verb contracts.
 fn prose_outside_cli(text: &str) -> String {
     let mut out = String::new();
     let mut in_cli = false;
@@ -341,7 +341,7 @@ fn runs(text: &str) -> BTreeSet<Vec<String>> {
 }
 
 /// [The engine architecture](../../../../docs/spec/engine-architecture.md) points at a home rather than repeating it, so the two share no run
-/// of eight words. The CLI section is left to `spec_six_cli_rules.rs`.
+/// of eight words. The CLI section is left to `engine_architecture_cli_rules.rs`.
 #[test]
 fn spec_6_shares_no_run_of_eight_words_with_a_home() {
     let six = runs(&prose_outside_cli(&spec_six()));

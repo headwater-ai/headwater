@@ -23,7 +23,7 @@
 //!
 //! # The model
 //!
-//! `engine/crates/generate/tests/spec_six_projections.rs` holds [the engine architecture](../../../../docs/spec/engine-architecture.md)'s
+//! `engine/crates/generate/tests/engine_architecture_projections.rs` holds [the engine architecture](../../../../docs/spec/engine-architecture.md)'s
 //! projection-kinds block against `Kind::ALL` the same way, and the two design
 //! points are taken from it. First, the block carries **engine identifiers**
 //! rather than the prose the paragraph uses, so there is no prose-to-identifier

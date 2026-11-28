@@ -1619,7 +1619,7 @@ fn the_schema_export_carries_constraints_and_accounts_for_every_instance() {
 /// The first two assertions below are substrings, so they hold that the refusal
 /// happens and names its emitter, and hold nothing about the wording.
 /// `docs/spec/taxonomy-model.md` quotes that wording verbatim, and
-/// `tests/spec_two_emitters.rs` is what compares the two byte for byte. Reword
+/// `tests/taxonomy_model_emitters.rs` is what compares the two byte for byte. Reword
 /// the message and this case stays green; that one reddens.
 ///
 /// The third assertion is the one that fires on a change to this engine rather

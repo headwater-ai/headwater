@@ -209,7 +209,7 @@ impl Refusal {
 /// # Why this is counted rather than typed
 ///
 /// The sentence [`Refusal::reason`] returns is quoted verbatim in
-/// `docs/spec/taxonomy-model.md`, and `tests/spec_two_emitters.rs` compares
+/// `docs/spec/taxonomy-model.md`, and `tests/taxonomy_model_emitters.rs` compares
 /// the two. A hardcoded "six" makes that comparison worthless: the day a third
 /// emitter ships, the document and the literal are false in the same words, the
 /// test compares one false thing to another, and it stays green. Counted off

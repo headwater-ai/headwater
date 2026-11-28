@@ -233,7 +233,7 @@ pub enum Grain {
     ///
     /// [The check layer](../../../../docs/spec/check-layer.md#scope--the-declaration-everything-else-rests-on)
     /// names this grain beside the four drawn over the corpus, and
-    /// `tests/spec_twelve_scope.rs` holds its list to this enum. A rule that
+    /// `tests/check_layer_scope.rs` holds its list to this enum. A rule that
     /// reads the taxonomy rather than the corpus fits none of the four, and
     /// [`crate::register`] holds two: an obligation that carries no disposition
     /// and a control whose mechanism this engine does not implement are both
@@ -384,7 +384,7 @@ impl Scope {
     ///
     /// The body destructures `Scope` with no `..`, so an eighth field does not
     /// compile (E0027) until its author names it here. The list is then held
-    /// against [the check layer](../../../../docs/spec/check-layer.md) by `tests/spec_twelve_scope.rs`, which fails until the
+    /// against [the check layer](../../../../docs/spec/check-layer.md) by `tests/check_layer_scope.rs`, which fails until the
     /// specification names the new flag. The compiler's help offers
     /// `needs_x: _` and `..`, which compile, so the same file also reads the
     /// fields of this struct from source and holds this list to them. That
