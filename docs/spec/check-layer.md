@@ -14,6 +14,7 @@ provenance:
   accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
+  builds_on: [HW-REG-decisions]
   governs:
     - engine/crates/check/src/voice.rs
     - engine/crates/check/src/link_identifier.rs

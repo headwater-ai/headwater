@@ -14,6 +14,7 @@ provenance:
   accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
+  builds_on: [HW-SPEC-design-departures]
   governs:
     - tools/repo/decision-register-fixtures.sh
   cites_evidence:

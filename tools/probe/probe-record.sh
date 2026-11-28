@@ -4,7 +4,7 @@
 #
 # [HW-DR-0059] admits a recorder built as a driver and a transform, on one
 # condition, and this script is where that condition is either met or lost.
-# [Spec 15] §"A recorder is a driver and a transform" states it: **the log has
+# The recorder contract (docs/spec/the-recorder-contract.md) §"A recorder is a driver and a transform" states it: **the log has
 # to reach the transform through a channel the model has no handle on.**
 #
 #     sh tools/probe/probe-record.sh --probe PROBE-X --session one \
@@ -57,7 +57,7 @@
 #
 # ## What this half derives, and what the transform derives
 #
-# [Spec 15] §"The values a session log omits" splits the derivations between
+# The recorder contract (docs/spec/the-recorder-contract.md) §"The values a session log omits" splits the derivations between
 # the two halves. The transform owns the four that read an artifact, and this
 # script owns the two that need the plan and the provider metadata:
 #
@@ -78,7 +78,7 @@
 #
 # ## Why `answer` is read here and why it is read so narrowly
 #
-# [Spec 15] rules that `answer: null` and an absent `answer` key are two facts:
+# The recorder contract (docs/spec/the-recorder-contract.md) rules that `answer: null` and an absent `answer` key are two facts:
 # `null` says the recorder watched and saw no final answer. This script wrote
 # `null` for every session it ever drove, because it called the transform with
 # no `--answer` and the transform defaults it empty. One session of 2026-09-11
@@ -414,7 +414,7 @@ command -v jq >/dev/null 2>&1 || {
 # Taking it would write an alias into `served_version`, which is the one member
 # of the identity that says which weights answered. So the served version is
 # the key that carries a dated suffix where the provider exposes one, and the
-# name as a name where none is exposed, which is what [spec 15] asks for.
+# name as a name where none is exposed, which is what the recorder contract (docs/spec/the-recorder-contract.md) asks for.
 #
 # **A dated key is not this session's dated key.** Measured on 2026-09-17,
 # driving `claude-sonnet-5`: `modelUsage` also carried `claude-haiku-4-5-20251001`

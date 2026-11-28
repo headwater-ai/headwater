@@ -14,6 +14,7 @@ provenance:
   accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
+  builds_on: [HW-SPEC-taxonomy-model]
   governs:
     - .githooks/change-manifest
   cites_evidence:

@@ -430,6 +430,10 @@ add:
   # term is retired. None of them names a replacement, and that is the whole of
   # the judgment: a stock metaphor is repaired by naming the thing it stands in
   # for, and no substitution does that ([the taxonomy model](../docs/spec/taxonomy-model.md)).
+  # The list also retires "spec 0" to "spec 17", the citation by number that
+  # the specification series dropped (HW-DR-0117). No entry names a
+  # replacement there either, because the phrase that replaces a number is the
+  # title of the part the sentence means, and only the author knows which.
 
   regimes.language.ste_house:
     tag: en-US
@@ -473,6 +477,42 @@ add:
         reason: it stands in for use or apply
       - term: robust
         reason: it stands in for the failure the thing survives
+      - term: spec 0
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 1
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 2
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 3
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 4
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 5
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 6
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 7
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 8
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 9
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 10
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 11
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 12
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 13
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 14
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 15
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 16
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 17
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
     # The front-door prose outside the corpus root, which HW-DR-0084 lets this
     # regime hold. Three rules read these paths and no other rule does, so
     # none of them owes front matter, and none joins the census. The four are
@@ -1533,6 +1573,12 @@ add_to:
     # shelf cannot vanish from the site.
     - kind: site_nav
       output: .headwater/nav.yml
+      # The specification series carries no number in a file name, so path
+      # order is alphabetical there and tells a reader nothing. The sidebar
+      # lists it in the reading order its `builds_on` edges derive, as its
+      # shelf index does, and every other shelf keeps path order (HW-DR-0117,
+      # which amends HW-DR-0108 for this shelf alone).
+      precedence: [spec_series]
       sections:
         - title: Reference
           groups:

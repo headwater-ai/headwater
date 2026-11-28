@@ -13,6 +13,8 @@ provenance:
   activity: draft+revise
   accepted_by: j.baxter
   evidence_basis: unevidenced
+relations:
+  builds_on: [HW-SPEC-distribution-and-federation]
 ---
 
 # Design departures

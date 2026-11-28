@@ -1001,7 +1001,7 @@ fn the_adoption_ledger_is_filled_once_and_no_word_stands_alone() {
 
     // At `--wide` in a 120-column terminal the unread line is laid out at 120
     // columns, not at 80: its first line runs past 80 and holds the whole
-    // phrase `migration state. Spec 7 gives one`.
+    // phrase `migration state. Distribution and federation gives one`.
     let wide = root.run_at(&["check", "--wide"], Some("120"));
     assert_eq!(wide.code, Some(0), "{}{}", wide.out, wide.err);
     let block = adoption_block(&wide.out);

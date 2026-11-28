@@ -14,6 +14,7 @@ provenance:
   accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
+  builds_on: [HW-SPEC-authoring-and-lifecycle]
   cites_evidence:
     - HW-EVAL-adjacent-work
     - HW-EVAL-first-contact

@@ -13,6 +13,7 @@ provenance:
   activity: draft
   evidence_basis: evidenced
 relations:
+  builds_on: [HW-SPEC-glossary]
   governs:
     - tools/probe/probe-record.sh
     - tools/probe/egress-proxy.py

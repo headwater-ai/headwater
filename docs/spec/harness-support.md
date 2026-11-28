@@ -14,6 +14,7 @@ provenance:
   accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
+  builds_on: [HW-SPEC-the-recorder-contract]
   traces_to:
     - HW-SPEC-ai-integration
   governs:

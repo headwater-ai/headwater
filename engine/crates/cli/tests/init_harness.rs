@@ -790,7 +790,7 @@ fn the_first_stop_rule_of_the_authoring_skill_counts_a_ruling_stated_in_the_conv
         ),
         (
             "docs/spec/ai-integration.md",
-            "1. **No decision record without evidence.** A ruling that the person states in the conversation is evidence for the record. The assistant records who ruled and when, in the provenance or the rationale as the kind's facets and sections allow, and continues. It halts and asks only when neither the conversation nor any work item, commit, discussion, or measurement supports the decision. If the human confirms that none exists, record the document as `unevidenced` ([spec 3](03-authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two)). Never invent rationale — a fabricated *why* is worse than an admitted absence, because someone will cite it.",
+            "1. **No decision record without evidence.** A ruling that the person states in the conversation is evidence for the record. The assistant records who ruled and when, in the provenance or the rationale as the kind's facets and sections allow, and continues. It halts and asks only when neither the conversation nor any work item, commit, discussion, or measurement supports the decision. If the human confirms that none exists, record the document as `unevidenced` ([authoring and lifecycle](authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two)). Never invent rationale — a fabricated *why* is worse than an admitted absence, because someone will cite it.",
         ),
     ] {
         assert_eq!(

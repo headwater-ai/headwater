@@ -1392,11 +1392,11 @@ for pair in '118 sessions name such a path|118 of 658' \
     source_phrase=${pair%%|*}
     copy_phrase=${pair#*|}
     grep -qF -e "$source_phrase" "$evaluation" || leak_missing="$leak_missing [evaluation: $source_phrase]"
-    grep -qF -e "$copy_phrase" "$scratch/spec15.section" || leak_missing="$leak_missing [spec 15: $copy_phrase]"
+    grep -qF -e "$copy_phrase" "$scratch/spec15.section" || leak_missing="$leak_missing [the recorder contract: $copy_phrase]"
     grep -qF -e "$copy_phrase" "$driver" || leak_missing="$leak_missing [driver: $copy_phrase]"
 done
 for stale in '51 of 658' '16 of 658'; do
-    grep -qF -e "$stale" "$scratch/spec15.section" && leak_missing="$leak_missing [spec 15 still: $stale]"
+    grep -qF -e "$stale" "$scratch/spec15.section" && leak_missing="$leak_missing [the recorder contract still: $stale]"
     grep -qF -e "$stale" "$driver" && leak_missing="$leak_missing [driver still: $stale]"
 done
 if [ -z "$leak_missing" ]; then

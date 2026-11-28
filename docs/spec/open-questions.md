@@ -234,7 +234,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 ## 41 — Whether Vale becomes a declared regime backend
 
-[HW-DR-0041](../decisions/0041-q41-whether-vale-becomes-a-declared-regime-backend.md) — Vale does not become a declared regime backend, and its findings are not translated into this engine's Finding shape. It stays where spec 00 already puts it, composable alongside, because four structural mismatches answer Q24's reopening condition a second time.
+[HW-DR-0041](../decisions/0041-q41-whether-vale-becomes-a-declared-regime-backend.md) — Vale does not become a declared regime backend, and its findings are not translated into this engine's Finding shape. It stays where the vision and scope already puts it, composable alongside, because four structural mismatches answer Q24's reopening condition a second time.
 
 ## 42 — What "one screen" means for the first help screen
 
@@ -358,7 +358,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 ## 71 — A route offers a document and never a heading inside it
 
-[HW-DR-0071](../decisions/0071-a-route-offers-a-document-and-never-a-heading-inside-it.md) — A route does not read headings and offers no anchor inside a document. A measured heading surface never reached spec 02 or spec 03 for the task that raised the question. At every threshold, function words reached wrong anchors.
+[HW-DR-0071](../decisions/0071-a-route-offers-a-document-and-never-a-heading-inside-it.md) — A route does not read headings and offers no anchor inside a document. A measured heading surface never reached the taxonomy model or authoring and lifecycle for the task that raised the question. At every threshold, function words reached wrong anchors.
 
 ## 72 — The binary is the only interface an adopter must run, and every integration point outside it is declared
 
@@ -412,9 +412,9 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 [HW-DR-0091](../decisions/0091-the-runner-image-of-the-engine-release-build-is-written-in-the-workflow-because-it-sets-the-glibc-floor.md) — release.yml names each runner image and never reads CI_RUNNER, because the image sets the glibc floor that README.md states. The build is --locked. (asserted, and no human has accepted it)
 
-## 92 — The citation comment of spec 5 is for an adopter's corpus, and this repository does not practice it on its own code
+## 92 — The citation comment of AI integration is for an adopter's corpus, and this repository does not practice it on its own code
 
-[HW-DR-0092](../decisions/0092-the-citation-comment-of-spec-5-is-for-an-adopter-s-corpus-and-this-repository-does-not-practice-it-on-its-own-code.md) — The per-identifier citation comment of spec 5 is a convention for an adopter's corpus. By the owner's ruling, the code of this repository carries none. Its comments that name an identifier are prose, and the checker does not read them. (asserted, and no human has accepted it)
+[HW-DR-0092](../decisions/0092-the-citation-comment-of-spec-5-is-for-an-adopter-s-corpus-and-this-repository-does-not-practice-it-on-its-own-code.md) — The per-identifier citation comment of AI integration is a convention for an adopter's corpus. By the owner's ruling, the code of this repository carries none. Its comments that name an identifier are prose, and the checker does not read them. (asserted, and no human has accepted it)
 
 ## 93 — The live account of a domain is its own kind, split on the product and process line, and it draws on the records it cites
 

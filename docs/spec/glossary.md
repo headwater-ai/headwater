@@ -14,6 +14,7 @@ provenance:
   accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
+  builds_on: [HW-REG-open-obligations]
   cites_evidence:
     - HW-EVAL-default-taxonomy-first-run
     - HW-EVAL-graph-export-and-federation

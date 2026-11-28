@@ -14,6 +14,7 @@ provenance:
   accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
+  builds_on: [HW-SPEC-check-layer]
   governs:
     - tools/repo/obligation-register-fixtures.sh
   supersedes:

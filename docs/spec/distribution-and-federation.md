@@ -14,6 +14,7 @@ provenance:
   accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
+  builds_on: [HW-SPEC-engine-architecture]
   governs:
     - [taxonomy-source/headwater-standard, .headwater/packages/headwater-standard]
     - taxonomy-source/headwater-standard/package.yml

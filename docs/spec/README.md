@@ -14,9 +14,9 @@ The documents on this shelf, in the reading order this corpus derives.
 - [Distribution and federation](distribution-and-federation.md) — How a publisher ships a taxonomy, how a consumer overlays it, and what the invariant core requires of the result.
 - [Design departures](design-departures.md) — The ideas that this design adopts, and the eight recurrent failure modes of documentation tooling that it designs against.
 - [The decision register](decisions.md) — An index of the twenty-one design decisions and the ones that the build raised. For each one, it names where the record lives and the evidence that closed it.
-- [Open obligations](open-obligations.md) — The work that the closed decisions left behind, which is unmeasured claims, items that wait on an adopter, and unblocked design work.
-- [Open questions, closed and redirected](open-questions.md) (superseded) — One heading for each document on the `decisions` shelf, so that a citation naming one of them resolves in this file.
 - [The check layer](check-layer.md) — What a check is, how a scope constrains it, where it comes from, and what the check layer owes the engine.
+- [Open obligations](open-obligations.md) — The work that the closed decisions left behind, which is unmeasured claims, items that wait on an adopter, and unblocked design work.
+- [Glossary](glossary.md) — One line for every named concept in the specification, with a link to the section that defines it.
 - [The recorder contract](the-recorder-contract.md) — Everything an external recorder writes into a transcript, and the closed key sets that refuse a file. This part also names the one member of the run identity this engine compares, and the period a result stays citable. (asserted, and no human has accepted it)
 - [Harness support](harness-support.md) — The eleven capabilities a harness supplies at the four moments, stated once for every harness, and the recorded support of Claude Code, GitHub Copilot and OpenAI Codex.
-- [Glossary](glossary.md) — One line for every named concept in the specification, with a link to the section that defines it.
+- [Open questions, closed and redirected](open-questions.md) (superseded) — One heading for each document on the `decisions` shelf, so that a citation naming one of them resolves in this file.

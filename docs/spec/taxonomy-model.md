@@ -14,6 +14,7 @@ provenance:
   accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
+  builds_on: [HW-SPEC-conceptual-model]
   governs:
     - engine/crates/check/src/self_target.rs
   cites_evidence:
