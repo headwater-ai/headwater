@@ -1397,11 +1397,13 @@ fn read_promotion(id: &str, map: &Mapping) -> Result<Option<Promotion>, Declarat
         });
     };
     if let Some(criteria) = record.get("criteria").and_then(|node| node.value.as_map()) {
-        let missing = |member: &str| DeclarationError {
+        let missing = |member: &str| {
+            DeclarationError {
             message: format!(
                 "the promotion criteria of control `{id}` state no {member}, and the assurance model names it"
             ),
             span: node.span,
+        }
         };
         return Ok(Some(Promotion::Criteria {
             window: scalar(criteria, "window").ok_or_else(|| missing("observation window"))?,

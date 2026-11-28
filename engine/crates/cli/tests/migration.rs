@@ -1581,7 +1581,8 @@ fn a_break_no_step_reaches_names_infer_rather_than_a_payload() {
         "and it names the route that is reachable: {ran:?}"
     );
     assert!(
-        !ran.out.contains("The taxonomy model makes a major version ship one"),
+        !ran.out
+            .contains("The taxonomy model makes a major version ship one"),
         "and it does not also ask for the file it just said cannot be written: {ran:?}"
     );
 }
@@ -1601,7 +1602,8 @@ fn a_break_a_step_reaches_still_asks_for_a_payload() {
     let ran = root.diff("2.0.0");
     assert_eq!(ran.code, Some(0), "{ran:?}");
     assert!(
-        ran.out.contains("The taxonomy model makes a major version ship one"),
+        ran.out
+            .contains("The taxonomy model makes a major version ship one"),
         "a break the vocabulary reaches is a payload the publisher owes: {ran:?}"
     );
     assert!(
@@ -2128,7 +2130,8 @@ fn a_lock_already_on_the_artifacts_version_is_refused() {
             "and says what that leaves this run nothing to do: {ran:?}"
         );
         assert!(
-            !ran.err.contains("The taxonomy model makes a major version ship one"),
+            !ran.err
+                .contains("The taxonomy model makes a major version ship one"),
             "the publisher shipped a sound artifact: {ran:?}"
         );
         assert!(
@@ -2240,8 +2243,8 @@ fn the_shipped_four_to_five_payload_migrates_to_the_five_line_alone() {
         let text = std::fs::read_to_string(&path).expect("the shipped payload reads");
         let payload = headwater_resolve::migration::read(&text, "migrations/4-to-5.yml")
             .unwrap_or_else(|refused| panic!("{at}: the payload reads: {refused:?}"));
-        let manifest = std::fs::read_to_string(root.join(at).join("package.yml"))
-            .expect("the manifest reads");
+        let manifest =
+            std::fs::read_to_string(root.join(at).join("package.yml")).expect("the manifest reads");
         let version = manifest
             .lines()
             .find_map(|line| line.strip_prefix("version: "))
@@ -2249,13 +2252,22 @@ fn the_shipped_four_to_five_payload_migrates_to_the_five_line_alone() {
             .trim()
             .to_string();
         let admits = |range: &str, v: &str| satisfies(range, v).expect("the range reads");
-        assert!(admits(&payload.to, &version), "{at}: `to` admits the version it ships with, {version}");
-        assert!(!admits(&payload.from, &version), "{at}: `from` does not admit {version}");
+        assert!(
+            admits(&payload.to, &version),
+            "{at}: `to` admits the version it ships with, {version}"
+        );
+        assert!(
+            !admits(&payload.from, &version),
+            "{at}: `from` does not admit {version}"
+        );
         for v in ["5.0.0", "5.9.9"] {
             assert!(admits(&payload.to, v), "{at}: `to` admits {v}");
         }
         for v in ["4.9.9", "6.0.0", "7.1.0"] {
-            assert!(!admits(&payload.to, v), "{at}: `to` admits no {v}, which this payload does not reach");
+            assert!(
+                !admits(&payload.to, v),
+                "{at}: `to` admits no {v}, which this payload does not reach"
+            );
         }
         for v in ["4.0.0", "4.9.9"] {
             assert!(admits(&payload.from, v), "{at}: `from` admits {v}");
@@ -2265,5 +2277,8 @@ fn the_shipped_four_to_five_payload_migrates_to_the_five_line_alone() {
         }
         seen.push((payload.from, payload.to));
     }
-    assert_eq!(seen[0], seen[1], "the vendored copy states the source's ranges");
+    assert_eq!(
+        seen[0], seen[1],
+        "the vendored copy states the source's ranges"
+    );
 }

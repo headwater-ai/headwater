@@ -270,9 +270,14 @@ const SPEC_SIX_WORDS: [&str; 2] = ["engine architecture", "spec 6"];
 fn credits_spec_six(sentence: &str) -> bool {
     let lower = sentence.to_lowercase();
     if SPEC_SIX_WORDS.iter().any(|name| {
-        ["according to ", "according to the ", "according to [", "according to [the "]
-            .iter()
-            .any(|lead| lower.contains(&format!("{lead}{name}")))
+        [
+            "according to ",
+            "according to the ",
+            "according to [",
+            "according to [the ",
+        ]
+        .iter()
+        .any(|lead| lower.contains(&format!("{lead}{name}")))
     }) {
         return true;
     }
@@ -569,7 +574,10 @@ fn a_present_tense_credit_to_a_moved_rule_is_flagged_and_history_is_not() {
     assert_eq!(moved_credits(decision, per), vec![(1, "placeholder")]);
     let linked_title =
         "[The engine architecture](../spec/engine-architecture.md#cli) puts the probe budget outside it.\n";
-    assert_eq!(moved_credits(decision, linked_title), vec![(1, "probe budget")]);
+    assert_eq!(
+        moved_credits(decision, linked_title),
+        vec![(1, "probe budget")]
+    );
     let said_title = "The engine architecture said that a placeholder sat there.\n";
     assert!(moved_credits(decision, said_title).is_empty());
 

@@ -74,9 +74,9 @@ fn fence(section: &str, info: &str) -> String {
     let (_, after) = section
         .split_once(&opener)
         .unwrap_or_else(|| panic!("distribution and federation `{SECTION}`: no ```{info} block"));
-    let (body, _) = after
-        .split_once("\n```")
-        .unwrap_or_else(|| panic!("distribution and federation `{SECTION}`: the ```{info} block is not closed"));
+    let (body, _) = after.split_once("\n```").unwrap_or_else(|| {
+        panic!("distribution and federation `{SECTION}`: the ```{info} block is not closed")
+    });
     body.to_string()
 }
 

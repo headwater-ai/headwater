@@ -399,7 +399,10 @@ fn spec_6_shares_no_run_of_eight_words_with_the_adapter_sections_of_checks_and_c
 /// heading.
 fn ci_adapters(six: &str) -> Vec<&str> {
     let mut lines = six.lines().skip_while(|l| *l != "### CI adapters");
-    assert!(lines.next().is_some(), "the engine architecture has no `### CI adapters`");
+    assert!(
+        lines.next().is_some(),
+        "the engine architecture has no `### CI adapters`"
+    );
     lines.take_while(|l| !l.starts_with('#')).collect()
 }
 
@@ -540,7 +543,10 @@ fn no_comment_quotes_moved_adapter_text_as_spec_6() {
                     && joined.contains("#ci-adapters")
                     && !kept.contains(quote)
                 {
-                    credited.push(format!("{rel}:{}: {quote:?} (not in the engine architecture)", i + 1));
+                    credited.push(format!(
+                        "{rel}:{}: {quote:?} (not in the engine architecture)",
+                        i + 1
+                    ));
                     continue;
                 }
             }
@@ -550,7 +556,10 @@ fn no_comment_quotes_moved_adapter_text_as_spec_6() {
             }
         }
     }
-    assert!(read > 0, "no engine comment names the engine architecture at all");
+    assert!(
+        read > 0,
+        "no engine comment names the engine architecture at all"
+    );
     assert!(
         credited.is_empty(),
         "these comments credit the engine architecture with a rule that docs/subsystems/checks-and-cache.md now \
