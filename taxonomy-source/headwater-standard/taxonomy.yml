@@ -149,6 +149,22 @@ taxonomy: headwater/standard
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
 #
+# 4.31.0 adds two obligations, `OB-FACET-4` and `OB-SECT-2`, and three controls. `CT-FACET-4`
+# names the rule `facet.value.not_of_type`: a document facet value is of the
+# type its declaration states, so a date that no calendar has, a word in a date
+# field or a mapping where the declaration says `date` is an error that names
+# the value and the type (HW-OBL-0171, #1492). `CT-COV-4` binds
+# `shelf.discriminator.unresolved`, which #1491 added, to `OB-COV-1`, because a
+# document on a heterogeneous shelf whose discriminator names no kind is a file
+# the census did not classify. `CT-SECT-2` binds `scaffold.placeholder.unwritten`,
+# which #1491 added, to `OB-SECT-2`: a document still holds a prompt that the
+# scaffolder wrote for a person to replace (HW-OBL-0113). The three controls
+# are advisory with promotion criteria. Nothing is removed, so it is a minor. Migration: a document whose
+# date facet holds a value such as `2026-02-30`, or whose typed facet holds a
+# null, a list or a mapping, passed a strict run before this release and fails
+# one now. Write the value that the declaration states, or remove the key where
+# the kind does not require it.
+#
 # 4.30.0 adds one obligation, `OB-PLACE-2`, and one control, `CT-PLACE-2`,
 # which names the rule `shelf.bound_facet.disagrees`: a shelf path can bind a
 # facet to a whole segment, as in `docs/contexts/{context}/contracts/**`, and a
@@ -419,7 +435,7 @@ taxonomy: headwater/standard
 # each carries a recipe rather than a bare instruction. One package version
 # covers every content file it publishes, this one included, so the number
 # here moves with a change to either.
-version: 4.30.0
+version: 4.31.0
 
 purposes:
   rationale:
@@ -858,6 +874,13 @@ obligations:
     prevents: content.incomplete
     severity: high
 
+  OB-SECT-2:
+    statement: A document carries no prompt that the scaffolder wrote for a person to replace
+    rationale: The scaffolder writes every required heading and a value in every facet, so a document that still holds its prompts passes every rule that reads for a missing heading or a missing value, and a reader gets a page that answers nothing
+    class: cohesion
+    prevents: content.incomplete
+    severity: medium
+
   OB-LINK-1:
     statement: A fragment of a prose link names a heading of the document that the link points at
     rationale: A link that lands nowhere costs the reader the paragraph it was written to reach, and an anchor rots silently when the heading beside it is edited. The target is another document as often as it is the citing one, and a rename in the target touches no byte of the document that cited it
@@ -979,6 +1002,13 @@ obligations:
     rationale: A key written with nothing after it passes the rule that reads for an absent key and the rule that reads a closed set, so the blank reaches a rendered index as the parser's null and every reader of the page sees a document with no name
     class: cohesion
     prevents: content.incomplete
+    severity: high
+
+  OB-FACET-4:
+    statement: A facet value that a document declares is of the type its declaration states
+    rationale: A date that no calendar has, or a mapping where the declaration says date, passes every rule that reads for an absent key, a closed set or a blank, and each rule that computes with the date then reads a date nobody wrote
+    class: cohesion
+    prevents: content.inconsistent
     severity: high
 
   OB-WARRANT-3:
@@ -1174,6 +1204,18 @@ controls:
     promotion:
       produces_facts:
         reasoning: The coverage account is the denominator every other number in the report is read against, and a denominator has no false-positive rate. It is right or it is wrong, and the fixture tree is what says which
+
+  CT-COV-4:
+    mechanism: check:shelf.discriminator.unresolved
+    discharges: [OB-COV-1]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      criteria:
+        window: one release of the taxonomy over an adopting corpus
+        threshold: no false positive, because the rule reports only the three stops of kind resolution on a heterogeneous shelf that spec 2 names as a finding, a missing discriminator, a value the shelf does not admit and a value that is not a scalar, and derives nothing else
+        sample: every finding of one run over the adopting corpus, adjudicated once
 
   CT-REG-1:
     mechanism: check:obligation.disposition.not_one
@@ -1477,6 +1519,18 @@ controls:
     posture: advisory
     acts: detective
 
+  CT-SECT-2:
+    mechanism: check:scaffold.placeholder.unwritten
+    discharges: [OB-SECT-2]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      criteria:
+        window: one release of the taxonomy over an adopting corpus
+        threshold: no false positive, because the rule matches the exact text of the three prompts that the scaffolder writes, in the places it writes them, and reads no quotation of a prompt
+        sample: every finding of one run over the adopting corpus, adjudicated once
+
   CT-LINK-1:
     mechanism: check:link.fragment.unresolved
     discharges: [OB-LINK-1]
@@ -1520,6 +1574,18 @@ controls:
       criteria:
         window: one release of the taxonomy over an adopting corpus
         threshold: no false positive, because the rule reads the core schema's own null resolver and an empty scalar rather than deciding what blank means
+        sample: every finding of one run over the adopting corpus, adjudicated once
+
+  CT-FACET-4:
+    mechanism: check:facet.value.not_of_type
+    discharges: [OB-FACET-4]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      criteria:
+        window: one release of the taxonomy over an adopting corpus
+        threshold: no false positive, because the rule applies the one type predicate that the meta-schema applies to a taxonomy value, and reads the proleptic Gregorian calendar for a date rather than a digit pattern
         sample: every finding of one run over the adopting corpus, adjudicated once
 
   CT-WARRANT-3:

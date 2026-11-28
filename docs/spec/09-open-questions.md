@@ -476,3 +476,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 ## 115 — An agent rules file is a budgeted pointer at the Copilot instructions path
 
 [HW-DR-0115](../decisions/0115-an-agent-rules-file-is-a-budgeted-pointer-at-the-copilot-instructions-path.md) — An agent_rules file is one Copilot .instructions.md file for each source document with a governs edge. Its applyTo is the governs patterns, its marker is in its front matter, and its body points at the source. The projection declares a byte budget for one file and for all of them (asserted, and no human has accepted it)
+
+## 116 — A document facet value is read against its declared type by one rule and one predicate
+
+[HW-DR-0116](../decisions/0116-a-document-facet-value-is-read-against-its-declared-type-by-one-rule-and-one-predicate.md) — One rule, facet.value.not_of_type, reads a document facet declared date, integer, boolean or duration against its type. It uses the meta-schema's own predicate, which now reads a date against the calendar, so 2026-02-30 fails both gates (asserted, and no human has accepted it)

@@ -29,6 +29,11 @@ use std::process::Command;
 
 const RULE: &str = "shelf.discriminator.unresolved";
 
+/// The obligation that `CT-COV-4` of `headwater/standard` 4.31.0 binds the
+/// rule to (#1492). A finding names it beside the rule, so a control that stops
+/// naming the rule changes the text every refusal below reads.
+const OBLIGATION: &str = "OB-COV-1";
+
 fn repository() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../..")
@@ -140,7 +145,7 @@ impl Ran {
     /// the message and the fix with their wrapped lines joined by one space.
     fn of_rule(&self) -> Vec<String> {
         let lines: Vec<&str> = self.out.lines().map(str::trim).collect();
-        let opens = format!("{RULE}: ");
+        let opens = format!("{RULE} ({OBLIGATION}): ");
         (1..lines.len())
             .filter(|at| lines[*at].starts_with(&opens))
             .map(|at| {

@@ -35,11 +35,10 @@
 //!
 //! `title: []` and `title: {}` are **not a scalar at all**, where the
 //! declaration says `string`. [`crate::facet_value`] declines that shape and
-//! says so, because a value the meta-schema owns is not the check layer's to
-//! type. It is reported here for the one facet family this rule already reads,
-//! and the general question — whether `type:` binds a document facet value at
-//! all — is a wider debt that
-//! [spec 13](../../../../docs/spec/13-open-obligations.md) carries.
+//! says so. It is reported here because this rule is the string half of the
+//! answer to whether `type:` binds a document facet value. The other half is
+//! [`crate::facet_type`], which reads every other type the engine parses, so a
+//! facet is in the population of one of the two rules and never both.
 //!
 //! # Where the finding reports, and why it offers no fix
 //!
