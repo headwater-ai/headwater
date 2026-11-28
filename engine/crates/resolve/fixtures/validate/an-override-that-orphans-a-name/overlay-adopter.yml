@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# An `override` that empties `identifier_schemes` orphans `decision_id`, and its
+# address covers `identifier_schemes.decision_id` as a `remove` of the block
+# would. Only a `remove` is blamed for an orphan (HW-OBL-0032): an `override`
+# states what the block holds, not that a name goes away. So the refusal keeps
+# the line it has with no blame at all, at the declaration that reads the name.
+
+extends: acme/fixture@1.0.0
+
+override:
+  identifier_schemes: {}

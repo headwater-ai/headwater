@@ -280,6 +280,47 @@ impl Resolution {
                 }
             }
         }
+        // A bare name that a `remove` orphaned is reported against the removal,
+        // as a `$`-reference it orphaned is in `resolve` (HW-OBL-0032). The rule
+        // finds the orphan over the result and cannot see the operations, so
+        // the blame is added here. "Covers" is decided by the block that would
+        // declare the name, never by the name alone, and a refusal that no
+        // `remove` covers keeps its line byte for byte.
+        let orphans = rules::dangling(&self.taxonomy);
+        for refusal in &mut refusals {
+            let error::ResolveErrorKind::Invalid {
+                rule: rule @ "referential integrity",
+                message,
+            } = &refusal.kind
+            else {
+                continue;
+            };
+            let Some(found) = orphans
+                .iter()
+                .find(|found| found.at == refusal.at && found.message() == *message)
+            else {
+                continue;
+            };
+            let Some(operation) = found
+                .declarations()
+                .iter()
+                .find_map(|path| culprit(&self.operations, path))
+            else {
+                continue;
+            };
+            let removed = operation.address.to_string();
+            *refusal = ResolveError::new(
+                error::ResolveErrorKind::Invalid {
+                    rule,
+                    message: found.blamed(&removed),
+                },
+                self.sources
+                    .get(operation.source)
+                    .map_or("", String::as_str),
+                &operation.at(),
+                operation.span,
+            );
+        }
         refusals
     }
 
@@ -459,7 +500,8 @@ pub fn resolve(sources: &[Source]) -> Result<Resolution, Vec<ResolveError>> {
     let merged = merge::canonical(Some(&start), &applied);
 
     // A `remove` that left a reference reading nothing is reported against the
-    // removal, because that is the edit a reader has to reconsider.
+    // removal, because that is the edit a reader has to reconsider. This is the
+    // `$`-reference half. The bare-name half is in `Resolution::validate`.
     let broken: Vec<ResolveError> = references::dangling(&merged, &schema)
         .into_iter()
         .map(|found| match culprit(&operations, &found.wanted) {

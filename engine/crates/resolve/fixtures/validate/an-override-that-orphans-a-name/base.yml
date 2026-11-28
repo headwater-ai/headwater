@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The base of the case where an `override`, and not a `remove`, takes out the
+# declaration of a name. It is valid on its own: `kinds.decision` names the
+# scheme `decision_id`, and the scheme is declared.
+
+taxonomy: acme/fixture
+version: 1.0.0
+
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+
+facets:
+  status:
+    role: state
+    values: [draft, current]
+    required: true
+    volatility: mutable
+    guidance: {draft: it is being argued over, current: it states what holds now}
+
+identifier_schemes:
+  decision_id: {pattern: "{namespace}-DR-{seq:04d}", namespace: ACME, allocation: reconcile-first}
+
+kinds:
+  decision:
+    purpose: rationale
+    identifier: {scheme: decision_id}
+    facets: {require: [status]}
+
+shelves:
+  decisions: {path: "docs/decisions/**", homogeneous: true, kind: decision}
+
+core:
+  requires:
+    - facet_role: state

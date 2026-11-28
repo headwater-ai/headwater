@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The base of the case that tells a name a `remove` orphaned from a name nobody
+# declared at all. `kinds.decision` is declared and read by one shelf. The other
+# shelf binds a facet `decision` in its path, and no facet of that name is
+# declared: a base may dangle, because referential integrity runs only on the
+# result. That read shares the name with the kind and not the block.
+
+taxonomy: acme/fixture
+version: 1.0.0
+
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+
+facets:
+  status:
+    role: state
+    values: [draft, current]
+    required: true
+    volatility: mutable
+    guidance: {draft: it is being argued over, current: it states what holds now}
+
+kinds:
+  decision:
+    purpose: rationale
+    facets: {require: [status]}
+  note:
+    purpose: rationale
+    facets: {require: [status]}
+
+shelves:
+  decisions: {path: "docs/decisions/**", homogeneous: true, kind: decision}
+  by-decision: {path: "docs/notes/{decision}/**", homogeneous: true, kind: note}
+
+core:
+  requires:
+    - facet_role: state

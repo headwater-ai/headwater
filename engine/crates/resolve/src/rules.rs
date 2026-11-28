@@ -108,8 +108,9 @@ pub const RULES: [(&str, Ran); 23] = [
         "referential integrity",
         Ran::Resolved(
             "every name a declaration reads is declared, every relation endpoint is a kind or an \
-             anchor kind, and every control discharges a declared obligation. The `$`-reference \
-             half runs at merge time, because a reference that reads nothing stops the merge",
+             anchor kind, and every control discharges a declared obligation. A name that a \
+             `remove` orphaned is reported against that `remove`. The `$`-reference half runs at \
+             merge time, because a reference that reads nothing stops the merge",
         ),
     ),
     (
@@ -267,16 +268,11 @@ pub const RULES: [(&str, Ran); 23] = [
     ),
 ];
 
-/// What no phase decides yet, and why. One item, and it is a sub-rule rather
-/// than an item of the list above.
-pub const WAITING: [(&str, &str); 1] = [(
-    "the blame half of a dependent-key `remove`",
-    "spec 2 fails a `remove` when a surviving declaration still references the removed key. \
-     Referential integrity over the result now catches every such orphan, including the bare \
-     strings that no reference names, so the rule holds. What is missing is the message: the \
-     finding names the declaration that reads a name nobody declares, and not the operation that \
-     removed it. Spec 13 carries it",
-)];
+/// What no phase decides yet, and why. Empty: the last item, the blame half of
+/// a dependent-key `remove`, is decided by [`crate::Resolution::validate`],
+/// which names the `remove` that orphaned a bare name (HW-OBL-0032). The list
+/// keeps its type and its counted heading, so an item that returns has a place.
+pub const WAITING: [(&str, &str); 0] = [];
 
 /// The accounting as a report: every rule, where it ran, and what it did not
 /// decide.
@@ -730,6 +726,11 @@ impl<'a> View<'a> {
 /// reader gets, and which other declaration would have supplied the name — so
 /// there is no second reading of the resolved taxonomy to drift against this
 /// one. See [`crate::selection`], which asks the second question.
+///
+/// This rule finds the orphan over the result, and the result does not say
+/// which operation made it. [`crate::Resolution::validate`] has the operations,
+/// so it is what reports a refusal against the `remove` that took out the
+/// declaration, with [`Dangling::declarations`] and [`Dangling::blamed`].
 fn referential_integrity(view: &View, out: &mut Vec<ResolveError>) {
     const RULE: &str = "referential integrity";
     for found in dangling_names(view) {
@@ -774,6 +775,47 @@ impl Dangling {
             );
         }
         sentence
+    }
+
+    /// The sentence when a `remove` took out the declaration of the name.
+    ///
+    /// It names both ends, because the author fixes one of them: the removed
+    /// address, or the declaration that still reads the name.
+    pub fn blamed(&self, removed: &str) -> String {
+        format!(
+            "removing `{removed}` leaves `{}` reading `{}`, and no {} of that name is declared",
+            self.at, self.name, self.what
+        )
+    }
+
+    /// Every address that would declare the name, as segments.
+    ///
+    /// This is read off `what`, the sort the position types the name as, and
+    /// never off the name alone: a kind and a facet can share a name, and a
+    /// `remove` of the kind did not orphan the facet. A declared inverse has no
+    /// key of its own, so `relation or declared inverse` offers the relation
+    /// key only, and an orphaned inverse keeps the unblamed sentence.
+    pub fn declarations(&self) -> Vec<Vec<String>> {
+        let under = |block: &str| vec![block.to_string(), self.name.clone()];
+        match self.what.as_str() {
+            "kind" => vec![under("kinds")],
+            "anchor kind" => vec![under("anchors")],
+            "kind or anchor kind" => vec![under("kinds"), under("anchors")],
+            "facet" => vec![under("facets")],
+            "purpose" => vec![under("purposes")],
+            "identifier scheme" => vec![under("identifier_schemes")],
+            "shelf" => vec![under("shelves")],
+            "relation" | "relation or declared inverse" => vec![under("relations")],
+            "obligation" => vec![under("obligations")],
+            what => match what.strip_suffix(" regime") {
+                Some(family) => vec![vec![
+                    "regimes".to_string(),
+                    family.to_string(),
+                    self.name.clone(),
+                ]],
+                None => Vec::new(),
+            },
+        }
     }
 }
 

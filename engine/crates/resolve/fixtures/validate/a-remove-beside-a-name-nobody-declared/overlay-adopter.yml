@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Three orphans, and the `remove` is the cause of one of them.
+#
+# `shelves.decisions.kind` read `decision` before this overlay removed the kind,
+# so that refusal names the `remove`. `shelves.drafts.kind` reads `decsion`, a
+# typo that nothing ever declared, so a `remove` beside it is not its cause.
+# `shelves.by-decision.path` reads the facet `decision`: the name is the one the
+# `remove` took out, and the block is not, so that refusal does not name it
+# either. Each of the last two keeps the line it has with no overlay at all.
+
+extends: acme/fixture@1.0.0
+
+remove:
+  - kinds.decision
+
+add:
+  shelves.drafts: {path: "docs/drafts/**", homogeneous: true, kind: decsion}
