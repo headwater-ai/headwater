@@ -1770,7 +1770,7 @@ pub fn unbuilt(kind: Kind) -> Option<&'static str> {
         Kind::CoverageReport => Some(
             "its content is a function of the clock as well as of the corpus and the lock, \
              because a migration task lapses and a suppression expires on a date. A committed \
-             copy would fail this check on a morning when nothing changed. Spec 13 carries it",
+             copy would fail this check on a morning when nothing changed. The register of open obligations carries it",
         ),
         Kind::AgentRules
         | Kind::ShelfIndex

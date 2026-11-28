@@ -314,7 +314,7 @@ mod transitions {
             "where the version it moved from survives: {why}"
         );
         assert!(
-            !why.contains("Spec 2 makes a major version ship one"),
+            !why.contains("The taxonomy model makes a major version ship one"),
             "the publisher shipped a sound artifact: {why}"
         );
         assert!(

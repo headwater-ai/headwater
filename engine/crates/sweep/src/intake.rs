@@ -866,7 +866,7 @@ impl Report {
             .count();
         let _ = writeln!(
             out,
-            "{} an edge, which is the outcome spec 4 asks a sweep for. Nothing here writes one: a \
+            "{} an edge, which is the outcome the assurance model asks a sweep for. Nothing here writes one: a \
              person accepts a proposal, and the engine never accepts its own.",
             match proposals {
                 1 => "One carried finding proposes".to_string(),

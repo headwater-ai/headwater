@@ -340,7 +340,7 @@ impl Audit {
         if !absent.is_empty() {
             let _ = writeln!(
                 out,
-                "  {} of the 6 creators spec 2 declares have no relation in this taxonomy: {}.",
+                "  {} of the 6 creators the taxonomy model declares have no relation in this taxonomy: {}.",
                 absent.len(),
                 absent.join(", ")
             );
@@ -606,7 +606,7 @@ impl Audit {
             "\n{}",
             paint(
                 Role::Heading,
-                "warrants, over the closed set spec 3 declares",
+                "warrants, over the closed set authoring and lifecycle declares",
                 mode
             )
         );
@@ -629,7 +629,7 @@ impl Audit {
         }
         let _ = writeln!(
             out,
-            "  Stated on {} of {}, and absent on {}. Spec 3 makes the value required, so the\n  second figure is a population and never a default. The census reported {} of these rows\n  as generated, and the engine reads the warrant of a generated document off the marker\n  rather than out of a declaration.",
+            "  Stated on {} of {}, and absent on {}. Authoring and lifecycle makes the value required, so the\n  second figure is a population and never a default. The census reported {} of these rows\n  as generated, and the engine reads the warrant of a generated document off the marker\n  rather than out of a declaration.",
             warrants.stated(),
             self.documents,
             warrants.unstated,

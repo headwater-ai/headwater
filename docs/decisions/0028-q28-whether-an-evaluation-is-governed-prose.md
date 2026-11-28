@@ -43,7 +43,7 @@ The measurement that separates every group in this corpus is whether a lexical r
 |---|---|---|---|---|---|
 | `docs/spec/` | 18 | 119,133 | 9 | 0.1 | yes, throughout |
 | `docs/obligations/` | 127 | 34,511 | 0 | 0.0 | yes, carried through the conversion |
-| `docs/decisions/` 0001–0021 | 21 | 16,161 | 4 | 0.2 | yes, as prose of spec 9 |
+| `docs/decisions/` 0001–0021 | 21 | 16,161 | 4 | 0.2 | yes, as prose of [the decision register](../spec/decisions.md) |
 | `docs/decisions/` 0027 | 1 | 1,462 | 0 | 0.0 | yes, written under Q27 |
 | `docs/decisions/` 0022–0026 | 5 | 5,872 | 60 | 10.2 | no |
 | `docs/evaluations/` | 15 | 68,266 | 432 | 6.3 | no |

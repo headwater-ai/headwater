@@ -433,7 +433,7 @@ fn a_declaration_that_breaks_a_document_names_that_document() {
     );
     assert!(
         ran.out.contains("this change requires a major version"),
-        "spec 2: any dimension broken forces a major: {ran:?}"
+        "the taxonomy model: any dimension broken forces a major: {ran:?}"
     );
     // The dimensions this change is not about stay quiet, which is what makes
     // the two above a measurement rather than an alarm.

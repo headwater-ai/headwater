@@ -282,7 +282,7 @@ pub fn collisions(errors: &[ResolveError]) -> String {
     }
 
     let mut out = format!(
-        "\n{} `add` collision{}. Spec 2 makes a collision a task for a person, and no run \
+        "\n{} `add` collision{}. The taxonomy model makes a collision a task for a person, and no run \
          settles one\n",
         found.len(),
         if found.len() == 1 { "" } else { "s" }

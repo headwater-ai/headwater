@@ -567,7 +567,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
         // grammar `fail` would point at lists it and repeats the sentence
         // above.
         Verb::Query { .. } => refuse(
-            "`query <expression>` is listed in spec 6 and no document states what an expression \
+            "`query <expression>` is listed in the engine architecture and no document states what an expression \
              is, so this engine implements none. See `docs/spec/open-obligations.md`. \
              `headwater route` and `headwater explain` are the reads that exist",
         ),
@@ -2908,7 +2908,7 @@ fn migrate(
             // diff` — which has measured — says which of the two sentences
             // applies to this artifact.
             return refuse(&format!(
-                "the artifact ships no migration payload for {from} to {to}. Spec 2 makes a major \
+                "the artifact ships no migration payload for {from} to {to}. The taxonomy model makes a major \
                  version ship one, and this verb applies a payload rather than deriving one. \
                  `headwater taxonomy diff {}` reports what moved. Where every break is a facet \
                  that became required, no payload can cover it — that is a break no subject of \
@@ -3788,14 +3788,14 @@ fn payload(
             true => println!(
                 "\nthe artifact ships no migration payload for {from} to {to}, and {documents} \
                  stopped validating. No step can express this break: a facet that became \
-                 required is none of the three subjects spec 7 declares, and there is no old \
+                 required is none of the three subjects distribution and federation declares, and there is no old \
                  value for a `facet_value` step to move. `headwater infer --owner <name> \
                  --write` records the breakage as adoption debt, and `headwater check` then \
                  reports it as migration-pending"
             ),
             false => println!(
                 "\nthe artifact ships no migration payload for {from} to {to}, and {documents} \
-                 stopped validating. Spec 2 makes a major version ship one"
+                 stopped validating. The taxonomy model makes a major version ship one"
             ),
         }
     }
@@ -4899,7 +4899,7 @@ fn capture(root: &Path, format: Option<String>) -> ExitCode {
             total.edge_halves.1,
         );
         println!(
-            "  It counts a section heading and never its prose, which is the convention spec 3 \
+            "  It counts a section heading and never its prose, which is the convention authoring and lifecycle \
              fixes and this aggregate inherits"
         );
         match locks.len() {
@@ -5007,7 +5007,7 @@ fn capture(root: &Path, format: Option<String>) -> ExitCode {
 
     println!("\nwhat this store does not hold, and why");
     println!(
-        "  no person and no agent. Spec 3 aims the remedy for a falling fraction at the taxonomy \
+        "  no person and no agent. Authoring and lifecycle aims the remedy for a falling fraction at the taxonomy \
          rather than at the author, and a per-author number is a performance measure"
     );
     println!("  no wall-clock time. A duration is not reproducible under `--now`");
@@ -5016,7 +5016,7 @@ fn capture(root: &Path, format: Option<String>) -> ExitCode {
          reading to"
     );
     println!(
-        "  nothing a hook or a skill did. Spec 5 says a hook binds nothing, so a disabled hook \
+        "  nothing a hook or a skill did. AI integration says a hook binds nothing, so a disabled hook \
          and a hook that stayed silent would be one reading"
     );
     ExitCode::SUCCESS
@@ -5964,7 +5964,7 @@ fn export(
 
     let Some(emitter) = headwater_generate::Emitter::parse(&target) else {
         return fail(&format!(
-            "`{target}` is not an emitter target. Spec 6 names {}",
+            "`{target}` is not an emitter target. The engine architecture names {}",
             headwater_generate::Emitter::ALL
                 .iter()
                 .map(|one| format!("`{}`", one.name()))
@@ -5995,7 +5995,7 @@ fn export(
         [] => {
             return refuse(
                 "this taxonomy declares no projection, so it declares no export profile. \
-                 Spec 7 makes a profile an entry under `projections`",
+                 Distribution and federation makes a profile an entry under `projections`",
             )
         }
         several => {
@@ -6964,7 +6964,7 @@ fn infer(
             // migration state above a suppression for, and an owner this engine
             // invented would rank it above nothing.
             (None, true) => return fail(
-                "--write needs --owner. An owner is the field spec 4 ranks declared debt above a \
+                "--write needs --owner. An owner is the field the assurance model ranks declared debt above a \
                  suppression for, and this engine will not invent one",
             ),
             (None, false) => "TODO name a person or a team".to_string(),

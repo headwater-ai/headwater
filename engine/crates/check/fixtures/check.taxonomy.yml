@@ -290,7 +290,7 @@ obligations:
     severity: medium
   OB-FIX-29:
     statement: No relation instance outside the association family names the document that declares it as its target
-    rationale: An edge from a document to itself asserts nothing, or it asserts a contradiction, and spec 2 lets only an association relation point at its own document
+    rationale: An edge from a document to itself asserts nothing, or it asserts a contradiction, and the taxonomy model lets only an association relation point at its own document
     class: cohesion
     prevents: content.inconsistent
     severity: medium
@@ -336,7 +336,7 @@ obligations:
     disposition:
       gap:
         owner: the fixture tree
-        target: a reader feedback loop, which spec 4 lists as usually absent
+        target: a reader feedback loop, which the assurance model lists as usually absent
 
   # Unverifiable: no mechanism can exist, and the reasoning is recorded.
   OB-FIX-15:
@@ -347,7 +347,7 @@ obligations:
     severity: high
     disposition:
       unverifiable:
-        reasoning: The question is semantic, so spec 4 sends it to the accuracy audit and no check reaches it
+        reasoning: The question is semantic, so the assurance model sends it to the accuracy audit and no check reaches it
 
   # The state the assurance model (docs/spec/assurance-model.md) forbids: no control, and no statement either. This is the
   # failing fixture of `obligation.disposition.not_one`.

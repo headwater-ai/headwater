@@ -72,7 +72,7 @@ the harness reaches it only through a tunnel, so it is refused, and a session
 cannot refresh its credential. Telemetry and the update check need no host,
 because the driver sets `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1`. Change a
 rule here only with the measurement that shows the harness needs it, and say
-so in spec 15.
+so in the recorder contract.
 """
 
 import json

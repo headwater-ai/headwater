@@ -28,7 +28,7 @@ The design so far was derived from practice. This document tests it against the 
 
 Each entry states what the theory claims, what it gives us, and what changes as a result. Entries that change nothing still have value: they tell us which decisions are defensible, not only ours.
 
-> **Status.** All twenty changes were applied to the specification — the five structural ones first, then the additive remainder. The table in [§G](#g-summary-of-changes-this-document-proposes) records where each landed. This document is now a record of *why* the design is shaped as it is, not a list of pending work. It was specification 10 of the numbered series until 2026-08-25, when it moved to the evaluations shelf.
+> **Status.** All twenty changes were applied to the specification — the five structural ones first, then the additive remainder. The table in [§G](#g-summary-of-changes-this-document-proposes) records where each landed. This document is now a record of *why* the design is shaped as it is, not a list of pending work. It was a part of the numbered series until 2026-08-25, when it moved to the evaluations shelf.
 
 ---
 

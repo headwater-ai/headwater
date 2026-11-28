@@ -929,7 +929,7 @@ fn the_base_relations_a_session_proposes_are_read_under_agent_and_keep_their_cap
             .by_creator
             .iter()
             .find(|(creator, _)| creator == "agent")
-            .expect("spec 2's closed set has an agent row");
+            .expect("the taxonomy model's closed set has an agent row");
         let reading = agent
             .iter()
             .find(|reading| reading.name == relation)
@@ -972,7 +972,7 @@ fn no_relation_of_this_repository_names_a_hook_and_the_bundle_relations_are_read
         .by_creator
         .iter()
         .find(|(creator, _)| creator == "author")
-        .expect("spec 2's closed set has an author row");
+        .expect("the taxonomy model's closed set has an author row");
     let evidence = author
         .iter()
         .find(|reading| reading.name == "cites_evidence")
@@ -1245,7 +1245,7 @@ fn the_warrant_the_engine_derives_is_named_derived_and_is_inside_the_closed_set(
     );
     assert!(
         WARRANTS.contains(&derived),
-        "`{derived}` is outside spec 3's closed set: {WARRANTS:?}"
+        "`{derived}` is outside authoring and lifecycle's closed set: {WARRANTS:?}"
     );
 
     // And the same reader still answers the declared half for a document this
@@ -1584,7 +1584,7 @@ const AUDIT_HEADINGS: [&str; 12] = [
     "shelves that hold several kinds",
     "file names, against the layout each shelf declares",
     "dwell in the current state",
-    "warrants, over the closed set spec 3 declares",
+    "warrants, over the closed set authoring and lifecycle declares",
     "adoption payload decay",
     "what this verb does not measure, and what each one waits on",
 ];

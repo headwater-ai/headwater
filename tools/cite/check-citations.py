@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Check the citation comments in a code tree against the corpus that licensed them.
 
-Spec 5 asks generated code to carry a comment naming the document that licensed
+AI integration asks generated code to carry a comment naming the document that licensed
 the line above it:
 
     # per HW-DR-0049 (docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md)
@@ -44,7 +44,7 @@ true.
 
 `citation.warrant.asserted` — the cited document's warrant is `asserted` rather
 than `accepted`, so nobody has accepted what the code says it followed. It is
-advisory and it never moves the exit status, for the reason spec 5 gives for
+advisory and it never moves the exit status, for the reason AI integration gives for
 impact detection being advisory: a checker whose advisory class fails a build is
 a checker an adopter turns off.
 

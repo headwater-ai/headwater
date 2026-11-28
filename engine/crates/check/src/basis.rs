@@ -305,7 +305,7 @@ impl EdgeCheck for Basis<'_> {
             (false, false) => (
                 format!(
                     "`{}` claims `{CLAIMED}` and declares `{}` to `{}`, whose warrant is \
-                     `{warrant}`, which is not a value of spec 3's closed set: it says nothing \
+                     `{warrant}`, which is not a value of authoring and lifecycle's closed set: it says nothing \
                      about who read the target, so a pointer at it does not support the claim",
                     claimant.id, relation.name, evidence.id
                 ),
@@ -332,7 +332,7 @@ impl EdgeCheck for Basis<'_> {
             (true, false) => (
                 format!(
                     "`{}` claims `{CLAIMED}`, and `{}`, which `{}` makes its evidence, has the \
-                     warrant `{warrant}`, which is not a value of spec 3's closed set: it says \
+                     warrant `{warrant}`, which is not a value of authoring and lifecycle's closed set: it says \
                      nothing about who read the evidence, so the edge does not support the claim",
                     claimant.id, evidence.id, relation.name
                 ),

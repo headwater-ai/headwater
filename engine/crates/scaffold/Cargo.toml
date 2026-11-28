@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 [package]
 name = "headwater-scaffold"
-description = "What headwater new <kind> proposes and what it refuses, which spec 12 names a correctness root because nobody reviews a scaffolded edge on its own"
+description = "What headwater new <kind> proposes and what it refuses, which the check layer names a correctness root because nobody reviews a scaffolded edge on its own"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true

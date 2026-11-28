@@ -1411,7 +1411,7 @@ impl std::fmt::Display for Unreadable {
             ),
             Unreadable::AblationUndeclared { tier } => write!(
                 f,
-                "the `{tier}` tier runs the `absent` arm and declares no `ablation`. Spec 5: the \
+                "the `{tier}` tier runs the `absent` arm and declares no `ablation`. AI integration: the \
                  absent arm names a declared ablation, or the claim it measures is whatever a \
                  script removed"
             ),

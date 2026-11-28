@@ -220,7 +220,7 @@ fn a_run_without_a_change_skips_the_rule() {
     match &instance(&run).outcome {
         Outcome::Skipped(reason) => assert!(
             reason.starts_with("change-scoped-only"),
-            "the reason spec 12 fixes: {reason}"
+            "the reason the check layer fixes: {reason}"
         ),
         other => panic!("a run with no change skips the rule, and it was {other:?}"),
     }

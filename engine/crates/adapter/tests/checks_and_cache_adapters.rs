@@ -383,14 +383,14 @@ fn spec_6_shares_no_run_of_eight_words_with_the_adapter_sections_of_checks_and_c
     }
     assert!(
         runs.is_empty(),
-        "spec 6 shares these runs of {RUN_WORDS} words with the adapter sections of \
+        "the engine architecture shares these runs of {RUN_WORDS} words with the adapter sections of \
          checks-and-cache: {runs:#?}"
     );
     let plain_six = plain(&six);
     for sentence in MOVED_SENTENCES {
         assert!(
             !plain_six.contains(&plain(sentence)),
-            "spec 6 still states {sentence:?}, which checks-and-cache states"
+            "the engine architecture still states {sentence:?}, which checks-and-cache states"
         );
     }
 }
@@ -399,7 +399,7 @@ fn spec_6_shares_no_run_of_eight_words_with_the_adapter_sections_of_checks_and_c
 /// heading.
 fn ci_adapters(six: &str) -> Vec<&str> {
     let mut lines = six.lines().skip_while(|l| *l != "### CI adapters");
-    assert!(lines.next().is_some(), "spec 6 has no `### CI adapters`");
+    assert!(lines.next().is_some(), "the engine architecture has no `### CI adapters`");
     lines.take_while(|l| !l.starts_with('#')).collect()
 }
 
@@ -417,11 +417,11 @@ fn spec_6_keeps_a_short_ci_adapters_section_that_points_at_checks_and_cache() {
     let count = body.split_whitespace().count();
     assert!(
         count <= 120,
-        "spec 6's `### CI adapters` is {count} words, and the bar is 120"
+        "the engine architecture's `### CI adapters` is {count} words, and the bar is 120"
     );
     assert!(
         body.contains("../subsystems/checks-and-cache.md#"),
-        "spec 6's `### CI adapters` does not link checks-and-cache"
+        "the engine architecture's `### CI adapters` does not link checks-and-cache"
     );
 }
 
@@ -540,7 +540,7 @@ fn no_comment_quotes_moved_adapter_text_as_spec_6() {
                     && joined.contains("#ci-adapters")
                     && !kept.contains(quote)
                 {
-                    credited.push(format!("{rel}:{}: {quote:?} (not in spec 6)", i + 1));
+                    credited.push(format!("{rel}:{}: {quote:?} (not in the engine architecture)", i + 1));
                     continue;
                 }
             }
@@ -550,10 +550,10 @@ fn no_comment_quotes_moved_adapter_text_as_spec_6() {
             }
         }
     }
-    assert!(read > 0, "no engine comment names spec 6 at all");
+    assert!(read > 0, "no engine comment names the engine architecture at all");
     assert!(
         credited.is_empty(),
-        "these comments credit spec 6 with a rule that docs/subsystems/checks-and-cache.md now \
+        "these comments credit the engine architecture with a rule that docs/subsystems/checks-and-cache.md now \
          states: {credited:#?}"
     );
 }

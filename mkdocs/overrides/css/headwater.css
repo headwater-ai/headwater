@@ -162,7 +162,7 @@ table th { font-family: var(--sans); font-size: 0.85rem; text-align: left; }
 .hw-side .nav-link { font-family: var(--sans); font-size: 0.8rem; color: var(--muted) !important; padding: 0.2rem 0; }
 .hw-side .nav-link:hover, .hw-side .nav-link.active { color: var(--accent) !important; }
 
-/* THE PROVENANCE BAND. Spec 7: a projection says what it is a projection of. */
+/* THE PROVENANCE BAND. Distribution and federation: a projection says what it is a projection of. */
 .hw-provenance {
   font-family: var(--sans); font-size: 0.78rem; color: var(--muted);
   background: var(--code-bg); border-left: 3px solid var(--accent);

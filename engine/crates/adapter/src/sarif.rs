@@ -180,7 +180,7 @@ pub const LOSS: &[Loss] = &[
     },
     Loss {
         field: "the escape class",
-        reason: "`suppression.kind` has two values and spec 4 fixes three escape classes. A \
+        reason: "`suppression.kind` has two values and the assurance model fixes three escape classes. A \
                  directive is `inSource`; a task of the adoption payload is `external`, and a \
                  waiver would be `external` too",
         carrier: Carrier::PerFinding {

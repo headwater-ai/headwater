@@ -202,7 +202,7 @@ membership_judge() {
     LC_ALL=C comm -23 "$1" "$2" | sed 's/^/a current record with no bullet line: /'
     LC_ALL=C comm -13 "$1" "$2" >"$scratch/mj-extra"
     LC_ALL=C comm -12 "$scratch/mj-extra" "$mj_process" |
-        sed 's/^/spec 13 lists a process obligation: /'
+        sed 's/^/the register of open obligations lists a process obligation: /'
     LC_ALL=C comm -23 "$scratch/mj-extra" "$mj_process" |
         sed 's/^/a bulleted line naming no current record: /'
 }
@@ -282,9 +282,9 @@ same "no discharged record has a bullet line" \
 #     stopped parsing; the equality restates 1c's process arm directly.
 more_than "the process register holds records" 0 \
     "$(wc -l <"$scratch/process" | tr -d ' ')"
-same "no process obligation has a bullet line in spec 13" \
+same "no process obligation has a bullet line in the register of open obligations" \
     "" "$(LC_ALL=C comm -12 "$scratch/process" "$scratch/bulleted" |
-          sed 's/^/spec 13 lists a process obligation: /' | tr '\n' '|')"
+          sed 's/^/the register of open obligations lists a process obligation: /' | tr '\n' '|')"
 
 echo
 echo "the judges, provoked over scratch trees"
@@ -371,7 +371,7 @@ printf '# 13 — Open obligations\n\n## A heading\n\n- [HW-OBL-0001](../obligati
     >"$scratch/reg-process.md"
 bulleted_ids "$scratch/reg-process.md" | LC_ALL=C sort -u >"$scratch/s-bulleted-process"
 same "bulleting a process obligation reddens the judge, naming it as a process record" \
-    "spec 13 lists a process obligation: HW-OBL-0004|" \
+    "the register of open obligations lists a process obligation: HW-OBL-0004|" \
     "$(membership_judge "$scratch/s-current" "$scratch/s-bulleted-process" "$scratch/s-process" | tr '\n' '|')"
 
 # 2g. A process record at a status other than `current`, here `draft`, is
@@ -380,7 +380,7 @@ printf '# 13 — Open obligations\n\n## A heading\n\n- [HW-OBL-0001](../obligati
     >"$scratch/reg-process-draft.md"
 bulleted_ids "$scratch/reg-process-draft.md" | LC_ALL=C sort -u >"$scratch/s-bulleted-process-draft"
 same "bulleting a draft process obligation names it as a process record" \
-    "spec 13 lists a process obligation: HW-OBL-0005|" \
+    "the register of open obligations lists a process obligation: HW-OBL-0005|" \
     "$(membership_judge "$scratch/s-current" "$scratch/s-bulleted-process-draft" "$scratch/s-process" | tr '\n' '|')"
 
 # 2h. A discharged process record is a process record too. `current_ids`
@@ -392,13 +392,13 @@ printf '# 13 — Open obligations\n\n## A heading\n\n- [HW-OBL-0001](../obligati
     >"$scratch/reg-process-discharged.md"
 bulleted_ids "$scratch/reg-process-discharged.md" | LC_ALL=C sort -u >"$scratch/s-bulleted-process-discharged"
 same "bulleting a discharged process obligation names it as a process record" \
-    "spec 13 lists a process obligation: HW-OBL-0006|" \
+    "the register of open obligations lists a process obligation: HW-OBL-0006|" \
     "$(membership_judge "$scratch/s-current" "$scratch/s-bulleted-process-discharged" "$scratch/s-process" | tr '\n' '|')"
 
 # 2f. The reverse direction: a current process record that the register of open obligations (docs/spec/open-obligations.md) does not
 #     bullet is owed nothing, so the clean register stays green with the
 #     process shelf in view.
-same "a current process obligation is not owed a bullet in spec 13" \
+same "a current process obligation is not owed a bullet in the register of open obligations" \
     "" "$(membership_judge "$scratch/s-current" "$scratch/s-bulleted-clean" "$scratch/s-process" | tr '\n' '|')"
 
 echo

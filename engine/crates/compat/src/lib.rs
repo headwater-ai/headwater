@@ -875,7 +875,7 @@ impl Caveat {
                 // dimension would otherwise read as that dimension's line.
                 lines.extend(paths.iter().map(|path| format!("moved  {path}")));
                 lines.push(
-                    "That is the reading spec 6 asks for, because the lock is the one thing \
+                    "That is the reading the engine architecture asks for, because the lock is the one thing \
                      downstream takes. It is stated here and gated on nowhere."
                         .to_string(),
                 );

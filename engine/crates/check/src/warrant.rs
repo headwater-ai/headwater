@@ -140,7 +140,7 @@ impl DocumentCheck for Closed {
             line,
             column,
             message: format!(
-                "the warrant is {quoted}, and spec 3 closes the warrant at {}: a value outside \
+                "the warrant is {quoted}, and authoring and lifecycle closes the warrant at {}: a value outside \
                  the set says nothing about who read this document",
                 listed()
             ),
@@ -174,7 +174,7 @@ impl DocumentCheck for Pairing {
             Declared::Outside(..) => {
                 return Outcome::Skipped(format!(
                     "the warrant is outside the closed set, which `{VALUE}` reports, so there is \
-                     no row of spec 3's table to pair `{ACCEPTED_BY}` against"
+                     no row of authoring and lifecycle's table to pair `{ACCEPTED_BY}` against"
                 ))
             }
             Declared::Member(warrant) => warrant,
@@ -215,7 +215,7 @@ impl DocumentCheck for Pairing {
             (true, false, _) => Outcome::failed_with(finding(
                 acceptor.unwrap_or(warrant_entry),
                 format!(
-                    "the warrant is `{ACCEPTED}`, and `{ACCEPTED_BY}` names nobody: spec 3 \
+                    "the warrant is `{ACCEPTED}`, and `{ACCEPTED_BY}` names nobody: authoring and lifecycle \
                      requires an accepted document to say who accepted it"
                 ),
                 format!(
@@ -228,7 +228,7 @@ impl DocumentCheck for Pairing {
                 entry,
                 format!(
                     "the warrant is `{warrant}`, and the document also names `{ACCEPTED_BY}`: \
-                     spec 3 forbids an acceptor at `{warrant}`, because a document that names one \
+                     authoring and lifecycle forbids an acceptor at `{warrant}`, because a document that names one \
                      is `{ACCEPTED}`"
                 ),
                 format!(

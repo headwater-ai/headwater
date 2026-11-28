@@ -253,7 +253,7 @@ pub fn read(block: &Mapping, rules: &[&'static str]) -> Declared {
 /// typo.
 fn unread(key: &str) -> String {
     match key {
-        "from" | "to" => "it names a migration state. Spec 7 gives one a from-version and a \
+        "from" | "to" => "it names a migration state. Distribution and federation gives one a from-version and a \
              to-version, and no verb of this engine writes either into this block"
             .to_string(),
         "severity" => "a pending finding keeps the severity its rule gave it, and this format \
@@ -284,7 +284,7 @@ fn task(map: Option<&Mapping>, rules: &[&'static str]) -> Result<Task, String> {
     // owner and a task list where a suppression carries one author's judgment.
     // A task with no owner is a suppression with more syntax.
     let owner = scalar(map, "owner").ok_or(
-        "it names no `owner`, which is the field spec 4 ranks this above a suppression for",
+        "it names no `owner`, which is the field the assurance model ranks this above a suppression for",
     )?;
     let until = scalar(map, "until")
         .ok_or("it states no `until`, and debt with no expiry is a permanent exemption")?;
@@ -463,11 +463,11 @@ pub fn expired(declared: &Declared, source: &str, now: Date) -> Vec<Finding> {
             line: 0,
             column: 0,
             message: format!(
-                "{} lapsed on {}, and spec 7 makes that a finding against the owner, {}: {}",
+                "{} lapsed on {}, and distribution and federation makes that a finding against the owner, {}: {}",
                 task.id, task.until, task.owner, task.statement
             ),
             remediation: format!(
-                "move `until` on {} to a new date, which is the paper trail spec 7 asks a \
+                "move `until` on {} to a new date, which is the paper trail distribution and federation asks a \
                  renewal to carry, or close every pair it names and delete the task",
                 task.id
             ),
@@ -709,7 +709,7 @@ tasks:
         let plain = ledger.render(crate::paint::ColorMode::Plain);
         assert_eq!(
             plain,
-            "adoption\n  1 pairs open, 0 closed, holding 1 finding, in 1 task\n  AD-1 1 open, 0 closed, holding 1 finding, owner the docs guild, until 2027-01-01\n    the corpus states no summary\n  AD-2 holds nothing: it declares no pair, so it accounts for nothing\n  the block declares `to`, which nothing here reads: it names a migration state. Spec 7 gives one a from-version and a to-version, and no verb of this engine writes either into this block\n",
+            "adoption\n  1 pairs open, 0 closed, holding 1 finding, in 1 task\n  AD-1 1 open, 0 closed, holding 1 finding, owner the docs guild, until 2027-01-01\n    the corpus states no summary\n  AD-2 holds nothing: it declares no pair, so it accounts for nothing\n  the block declares `to`, which nothing here reads: it names a migration state. Distribution and federation gives one a from-version and a to-version, and no verb of this engine writes either into this block\n",
             "each ledger line stands on its own line, one logical line per entry and unfilled: the report fills it once, at the width its caller states"
         );
 

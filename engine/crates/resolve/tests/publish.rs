@@ -4615,7 +4615,7 @@ fn the_corrected_spec_seven_example_publishes_and_its_bundle_reaches_a_consumer(
         consumer_root
             .join(".headwater/packages/acme-headwater-taxonomy/doctrine/doctrine.md")
             .is_file(),
-        "the prose spec 7's example says is vendored to consumers did not reach one"
+        "the prose distribution and federation's example says is vendored to consumers did not reach one"
     );
 }
 

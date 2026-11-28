@@ -436,7 +436,7 @@ tasks:
     );
     assert!(
         !laden.has_errors(),
-        "declared debt failed a strict run, which spec 7 says it never does"
+        "declared debt failed a strict run, which distribution and federation says it never does"
     );
     // The two numbers, and they are different numbers. A pair is what an
     // adopter closes; a finding is what a reader would have seen. The cell

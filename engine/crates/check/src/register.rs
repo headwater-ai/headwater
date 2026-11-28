@@ -1221,7 +1221,7 @@ impl Projection {
         let pending: usize = self.obligations.iter().map(|o| o.pending).sum();
         let _ = writeln!(
             out,
-            "  escaped findings, in the precedence spec 4 fixes: no waiver reaches a check \
+            "  escaped findings, in the precedence the assurance model fixes: no waiver reaches a check \
              finding, {pending} migration-pending, {escaped} suppressed"
         );
 
@@ -1344,7 +1344,7 @@ fn read_disposition(id: &str, map: &Mapping) -> Result<Option<Stated>, Declarati
     if let Some(gap) = stated.get("gap").and_then(|node| node.value.as_map()) {
         let owner = scalar(gap, "owner").ok_or_else(|| DeclarationError {
             message: format!(
-                "the gap of obligation `{id}` names no owner, and spec 4 tracks a gap with one"
+                "the gap of obligation `{id}` names no owner, and the assurance model tracks a gap with one"
             ),
             span: node.span,
         })?;
@@ -1360,7 +1360,7 @@ fn read_disposition(id: &str, map: &Mapping) -> Result<Option<Stated>, Declarati
         let reasoning = scalar(accepted, "reasoning").ok_or_else(|| DeclarationError {
             message: format!(
                 "obligation `{id}` is accepted as unverifiable and records no reasoning, which \
-                 is the half of that disposition spec 4 asks for"
+                 is the half of that disposition the assurance model asks for"
             ),
             span: node.span,
         })?;
@@ -1399,7 +1399,7 @@ fn read_promotion(id: &str, map: &Mapping) -> Result<Option<Promotion>, Declarat
     if let Some(criteria) = record.get("criteria").and_then(|node| node.value.as_map()) {
         let missing = |member: &str| DeclarationError {
             message: format!(
-                "the promotion criteria of control `{id}` state no {member}, and spec 4 names it"
+                "the promotion criteria of control `{id}` state no {member}, and the assurance model names it"
             ),
             span: node.span,
         };
@@ -1427,7 +1427,7 @@ fn read_promotion(id: &str, map: &Mapping) -> Result<Option<Promotion>, Declarat
         let reasoning = scalar(exemption, "reasoning").ok_or_else(|| DeclarationError {
             message: format!(
                 "control `{id}` is off the promotion path under `{key}` and records no \
-                 reasoning, which leaves the assertion of taste that spec 4 refuses"
+                 reasoning, which leaves the assertion of taste that the assurance model refuses"
             ),
             span: node.span,
         })?;

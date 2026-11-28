@@ -1327,13 +1327,13 @@ sed -n 's/^- `\([A-Za-z_][A-Za-z0-9_]*\)`.*/\1/p' "$scratch/spec15.env" | LC_ALL
 env_unlisted=$(LC_ALL=C comm -23 "$scratch/env.driver" "$scratch/env.spec" | tr '\n' ' ')
 env_unset=$(LC_ALL=C comm -13 "$scratch/env.driver" "$scratch/env.spec" | tr '\n' ' ')
 if [ ! -s "$scratch/env.driver" ]; then
-    fail "spec 15 lists every variable the driver sets in the session, and no other" \
+    fail "the recorder contract lists every variable the driver sets in the session, and no other" \
         "no \`--setenv\` was read off the driver, so this case reads the wrong file"
 elif [ -n "$env_unlisted" ] || [ -n "$env_unset" ]; then
-    fail "spec 15 lists every variable the driver sets in the session, and no other" \
-        "set by the driver and not in spec 15: ${env_unlisted:-none}; in spec 15 and not set by the driver: ${env_unset:-none}"
+    fail "the recorder contract lists every variable the driver sets in the session, and no other" \
+        "set by the driver and not in the recorder contract: ${env_unlisted:-none}; in the recorder contract and not set by the driver: ${env_unset:-none}"
 else
-    pass "spec 15 lists every variable the driver sets in the session, and no other"
+    pass "the recorder contract lists every variable the driver sets in the session, and no other"
 fi
 
 # The binds. Each source the driver binds, or the destination of a symlink,
@@ -1372,13 +1372,13 @@ while IFS='	' read -r src phrase; do
     grep -qxF -e "$src" "$scratch/binds.driver" || binds_unbound="$binds_unbound $src"
 done < "$scratch/binds.table"
 if [ ! -s "$scratch/binds.driver" ]; then
-    fail "spec 15 lists every bind of the session's file system, and no other" \
+    fail "the recorder contract lists every bind of the session's file system, and no other" \
         "no bind was read off the driver, so this case reads the wrong file"
 elif [ -n "$binds_unlisted$binds_lost$binds_unbound" ]; then
-    fail "spec 15 lists every bind of the session's file system, and no other" \
-        "a bind spec 15 does not list:${binds_unlisted:- none}; an item spec 15 lost:${binds_lost:- none}; a row the driver no longer binds:${binds_unbound:- none}"
+    fail "the recorder contract lists every bind of the session's file system, and no other" \
+        "a bind the recorder contract does not list:${binds_unlisted:- none}; an item the recorder contract lost:${binds_lost:- none}; a row the driver no longer binds:${binds_unbound:- none}"
 else
-    pass "spec 15 lists every bind of the session's file system, and no other"
+    pass "the recorder contract lists every bind of the session's file system, and no other"
 fi
 
 # The leak figure: the evaluation's three numbers, each in the recorder contract (docs/spec/the-recorder-contract.md) and in the
@@ -1400,9 +1400,9 @@ for stale in '51 of 658' '16 of 658'; do
     grep -qF -e "$stale" "$driver" && leak_missing="$leak_missing [driver still: $stale]"
 done
 if [ -z "$leak_missing" ]; then
-    pass "spec 15 and the driver state the evaluation's leak figures, 118, 58 and 17 of 58"
+    pass "the recorder contract and the driver state the evaluation's leak figures, 118, 58 and 17 of 58"
 else
-    fail "spec 15 and the driver state the evaluation's leak figures, 118, 58 and 17 of 58" \
+    fail "the recorder contract and the driver state the evaluation's leak figures, 118, 58 and 17 of 58" \
         "missing or stale:$leak_missing"
 fi
 

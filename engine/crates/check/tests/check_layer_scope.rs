@@ -309,7 +309,7 @@ fn scope_flags_names_every_needs_field_of_scope() {
     assert!(
         unlisted.is_empty() && unknown.is_empty(),
         "`Scope` in engine/crates/check/src/scope.rs and `Scope::flags` disagree. The struct \
-         declares {unlisted:?} and `flags` does not list them, so spec 12 is never held to them. \
+         declares {unlisted:?} and `flags` does not list them, so the check layer is never held to them. \
          `flags` lists {unknown:?} and the struct has no such field"
     );
 }

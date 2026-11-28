@@ -703,7 +703,7 @@ mod tests {
         assert_eq!(
             first(
                 intent,
-                "Spec 2 names orthogonality over two facets that are near-perfectly correlated: the redundant one does no work and will eventually disagree with the other.\n"
+                "The taxonomy model names orthogonality over two facets that are near-perfectly correlated: the redundant one does no work and will eventually disagree with the other.\n"
             ),
             Some("will eventually"),
             "the one `future_intent` finding of 2026-09-27 stopped matching, and the census records it as a false positive that does"
@@ -751,7 +751,7 @@ mod tests {
             !matches(
                 "The judgment \"we no longer describe it that way\" existed only as prose and a diff, so no mechanism could inherit it.\n"
             ),
-            "an inline quotation reached a voice pattern, which spec 3 puts outside every voice rule"
+            "an inline quotation reached a voice pattern, which authoring and lifecycle puts outside every voice rule"
         );
         assert!(
             matches("The corpus no longer describes it that way, and that is the change.\n"),

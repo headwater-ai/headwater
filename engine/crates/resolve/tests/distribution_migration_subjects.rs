@@ -497,7 +497,7 @@ fn the_package_record_of_the_facet_required_absence_follows_the_spec_7_ruling() 
             "{}: the 4.0.0 paragraph does not carry the ruling that \
              docs/spec/distribution-and-federation.md states, so the record says what the \
              absence means in its own words rather than in the words of the part that ruled it. \
-             Spec 7 says:\n\n{ruling}\n\nThe paragraph says:\n\n{paragraph}",
+             Distribution and federation says:\n\n{ruling}\n\nThe paragraph says:\n\n{paragraph}",
             path.display()
         );
 
@@ -519,7 +519,7 @@ fn the_package_record_of_the_facet_required_absence_follows_the_spec_7_ruling() 
             assert!(
                 paragraph.contains(route),
                 "{}: the 4.0.0 paragraph does not name `{route}`, which is what `headwater \
-                 taxonomy diff` and spec 7 both send a publisher whose whole break is \
+                 taxonomy diff` and distribution and federation both send a publisher whose whole break is \
                  `facet.required.missing` to. The paragraph is:\n\n{paragraph}",
                 path.display()
             );

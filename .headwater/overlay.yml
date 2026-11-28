@@ -641,7 +641,7 @@ add:
   # for that resolution would mean writing the on-ramp as an untyped file,
   # which is the fourth clause of #102 unmet. So the kind below is this
   # repository's own, in this repository's own overlay, on the reading that
-  # spec 10 already settled: Diátaxis classifies by reader mode and Headwater
+  # the theoretical foundations (docs/evaluations/theoretical-foundations.md) already settled: Diátaxis classifies by reader mode and Headwater
   # organizes by authority and lifecycle, so a reader mode is not a kind here
   # even when its name matches one. If #6 later ships the kind set, a document
   # of that kind is a different thing from this one and the two do not collide.

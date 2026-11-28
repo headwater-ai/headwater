@@ -1452,7 +1452,7 @@ fn an_apply_leaves_an_adoption_block_that_infer_can_add_to() {
     assert_eq!(
         inferred.code,
         Some(0),
-        "the verb spec 7 names next can add to the block --apply left: {inferred:?}"
+        "the verb distribution and federation names next can add to the block --apply left: {inferred:?}"
     );
     let lock = root.read(".headwater/taxonomy.lock");
     assert!(
@@ -1581,7 +1581,7 @@ fn a_break_no_step_reaches_names_infer_rather_than_a_payload() {
         "and it names the route that is reachable: {ran:?}"
     );
     assert!(
-        !ran.out.contains("Spec 2 makes a major version ship one"),
+        !ran.out.contains("The taxonomy model makes a major version ship one"),
         "and it does not also ask for the file it just said cannot be written: {ran:?}"
     );
 }
@@ -1601,7 +1601,7 @@ fn a_break_a_step_reaches_still_asks_for_a_payload() {
     let ran = root.diff("2.0.0");
     assert_eq!(ran.code, Some(0), "{ran:?}");
     assert!(
-        ran.out.contains("Spec 2 makes a major version ship one"),
+        ran.out.contains("The taxonomy model makes a major version ship one"),
         "a break the vocabulary reaches is a payload the publisher owes: {ran:?}"
     );
     assert!(
@@ -1647,7 +1647,7 @@ fn a_classification_only_break_still_asks_for_a_payload() {
     assert!(
         ran.out.contains(
             "the artifact ships no migration payload for 1.0.0 to 2.0.0, and 3 documents \
-             stopped validating. Spec 2 makes a major version ship one"
+             stopped validating. The taxonomy model makes a major version ship one"
         ),
         "a kind step reaches this break, so the publisher owes the file: {ran:?}"
     );
@@ -1728,7 +1728,7 @@ fn an_add_over_a_path_the_new_base_dropped_is_named_with_the_entry_that_makes_it
     }
     assert!(
         ran.out.contains("this change requires a major version"),
-        "spec 2: any dimension broken forces a major: {ran:?}"
+        "the taxonomy model: any dimension broken forces a major: {ran:?}"
     );
 }
 
@@ -2128,7 +2128,7 @@ fn a_lock_already_on_the_artifacts_version_is_refused() {
             "and says what that leaves this run nothing to do: {ran:?}"
         );
         assert!(
-            !ran.err.contains("Spec 2 makes a major version ship one"),
+            !ran.err.contains("The taxonomy model makes a major version ship one"),
             "the publisher shipped a sound artifact: {ran:?}"
         );
         assert!(

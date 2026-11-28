@@ -823,7 +823,7 @@ fn waiting(classified: &[&Row], graph: &Graph, shape: &Shape) -> Vec<Waiting> {
                 needs: "a record of the state a document left",
                 supply: match shape.facet_in_role(STATE_LEFT) {
                     None => Supply::Undeclared(format!(
-                        "no facet of this taxonomy takes the `{STATE_LEFT}` role, and spec 2's \
+                        "no facet of this taxonomy takes the `{STATE_LEFT}` role, and the taxonomy model's \
                          closed role registry holds no such role, so one entry into a state \
                          cannot be told from a second"
                     )),

@@ -310,7 +310,7 @@ echo "what this repository itself carries"
 # directory, and HW-DR-0092 rules that it stays so: the convention is for an
 # adopter's corpus, and this repository does not practice it on its own code.
 status=$(run sarif docs/spec/ai-integration.md)
-same "spec 5 carries exactly one line of the shape" 1 \
+same "AI integration carries exactly one line of the shape" 1 \
     "$(field . 'd["runs"][0]["properties"]["headwater"]["citations"]')"
 # The line is read from the page rather than pinned, because a paragraph
 # added above it moved the pin three times (285, 293, 295).
@@ -330,7 +330,7 @@ same "  so a run over this repository's own prose fails" 1 "$status"
 awk '/^### Generated artifacts cite what licensed them$/ { on = 1; next }
      on && /^##/ { exit }
      on { print }' "$root/docs/spec/ai-integration.md" >"$scratch/spec5-cite"
-holds "spec 5 says whose corpus the convention is for" \
+holds "AI integration says whose corpus the convention is for" \
     "The convention is for an adopter's corpus." "$scratch/spec5-cite"
 holds "  and that this repository does not practice it on its own code" \
     "This repository does not practice it on its own code" "$scratch/spec5-cite"

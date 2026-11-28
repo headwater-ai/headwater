@@ -26,7 +26,7 @@ relations:
 
 # Adjacent work and tooling
 
-> **Status.** This document was specification 11 of the numbered series until 2026-08-25, when it moved to the evaluations shelf.
+> **Status.** This document was a part of the numbered specification series until 2026-08-25, when it moved to the evaluations shelf.
 
 [HW-EVAL-theoretical-foundations](theoretical-foundations.md) tested the design against the research literature. This document does the same against **practitioner work and existing tooling**. These are projects that solve adjacent problems, and standards that may already implement parts of what [the taxonomy model](../spec/taxonomy-model.md) describes.
 

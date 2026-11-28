@@ -1510,7 +1510,7 @@ impl Plan {
         let _ = writeln!(out);
         let _ = writeln!(
             out,
-            "**A transcript that an agent wrote about its own session is a self-report, and spec 5 \
+            "**A transcript that an agent wrote about its own session is a self-report, and AI integration \
              refuses one.** The events have to be observed from outside the session by the process \
              that drove it. That process reaches the network and it is not in this repository, so \
              no verb here writes a transcript and there is no flag that makes one."

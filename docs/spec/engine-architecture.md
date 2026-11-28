@@ -128,7 +128,7 @@ waits
 
 ```
 coverage_report the register
-  its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
+  its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. The register of open obligations carries it
 ```
 
 **Eleven of the thirteen are declarable, and two are not.** For a declarable kind, a taxonomy names the output path, and [principle 1](vision-and-scope.md#design-principles) makes that path a schema decision. [The assurance model](assurance-model.md#every-obligation-has-exactly-one-disposition) fixes the coverage report, and [Q20](decisions.md#q20--where-scent-lives) fixes the corpus descriptor at `.headwater/corpus.json`.

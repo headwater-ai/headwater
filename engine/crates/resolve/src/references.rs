@@ -42,7 +42,7 @@ use headwater_yaml::{Mapping, Scalar, Span, Spanned, Value};
 /// mistake.
 const PACKAGE_ROOT_GAP: &str = "the `package` root reads the publisher's library of defined but \
                                 unenabled declarations, and no package file gives that library a \
-                                shape. Spec 2 leaves it open and spec 13 carries the gap";
+                                shape. The taxonomy model leaves it open and the register of open obligations carries the gap";
 
 /// Resolve every reference in the merged tree.
 pub fn resolve(tree: &Mapping, schema: &MetaSchema) -> Result<Mapping, Vec<ResolveError>> {

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 [package]
 name = "headwater-compat"
-description = "Compares two taxonomies over one corpus on the dimensions spec 2 fixes, so the required version bump follows the measurement rather than a publisher's guess"
+description = "Compares two taxonomies over one corpus on the dimensions the taxonomy model fixes, so the required version bump follows the measurement rather than a publisher's guess"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true

@@ -435,7 +435,7 @@ impl Claim {
                 "What the documents change. The treated arm is the `campaign` absent arm and the \
                  control is the `documentation` absent arm. Both removed the governance, and \
                  only the control removed `docs/`, so this is the effect of the documents alone \
-                 (spec 5)."
+                 (AI integration)."
             }
             Claim::Both => {
                 "What the documents and the governance change together. The treated arm is a \
@@ -444,23 +444,23 @@ impl Claim {
             Claim::Component(Arm::NoHook) => {
                 "What the intent hook changes. The treated arm is the `campaign` present arm and \
                  the control is the `campaign` `no-hook` arm, which removed the paths the \
-                 `no-hook` component's delta names. The documents are in both arms (spec 5)."
+                 `no-hook` component's delta names. The documents are in both arms (AI integration)."
             }
             Claim::Component(Arm::NoSkills) => {
                 "What the skills change. The treated arm is the `campaign` present arm and the \
                  control is the `campaign` `no-skills` arm, which removed the paths the \
-                 `no-skills` component's delta names. The documents are in both arms (spec 5)."
+                 `no-skills` component's delta names. The documents are in both arms (AI integration)."
             }
             Claim::Component(Arm::NoClaudeMd) => {
                 "What `CLAUDE.md` changes. The treated arm is the `campaign` present arm and the \
                  control is the `campaign` `no-claude-md` arm, which removed the paths the \
                  `no-claude-md` component's delta names. The documents are in both arms \
-                 (spec 5)."
+                 (AI integration)."
             }
             Claim::Component(Arm::Mcp) => {
                 "What the MCP server adds. The treated arm is the `campaign` `mcp` arm, which \
                  added the paths the `mcp` component's delta names, and the control is the \
-                 `campaign` present arm. The documents are in both arms (spec 5)."
+                 `campaign` present arm. The documents are in both arms (AI integration)."
             }
             Claim::Component(Arm::Present | Arm::Absent | Arm::Scenario(_)) => {
                 unreachable!("the present, absent and scenario arms are not components")

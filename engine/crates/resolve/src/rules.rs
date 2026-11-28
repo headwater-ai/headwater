@@ -178,7 +178,7 @@ pub const RULES: [(&str, Ran); 23] = [
                       stand in",
             waits: "\"a family's default is not contradicted without explicit override\" states \
                     no rule that a validator can fail. A declared nuclearity is the explicit \
-                    override, and spec 2 gives the count to `taxonomy audit`",
+                    override, and the taxonomy model gives the count to `taxonomy audit`",
         },
     ),
     (
@@ -196,9 +196,9 @@ pub const RULES: [(&str, Ran); 23] = [
     (
         "facet canons",
         Ran::Partly {
-            decides: "relevance, ascertainability and permanence, which spec 2 states are \
+            decides: "relevance, ascertainability and permanence, which the taxonomy model states are \
                       decidable from the schema alone",
-            waits: "differentiation and orthogonality need a corpus, and spec 2 gives both to \
+            waits: "differentiation and orthogonality need a corpus, and the taxonomy model gives both to \
                     `taxonomy audit`",
         },
     ),

@@ -134,7 +134,7 @@ impl DocumentCheck for Promoted {
                 "the warrant moved from `{FROM}` to `{TO}` in this change, which is a promotion"
             ),
             remediation:
-                ("nothing, for one. Spec 3 makes promotion one human, one document, one diff, and \
+                ("nothing, for one. Authoring and lifecycle makes promotion one human, one document, one diff, and \
                  the reading is the count of this rule over the change rather than any one line \
                  of it. Nothing declares how many promotions in one change is too many, which \
                  HW-OBL-0119 holds")

@@ -992,7 +992,7 @@ fn the_adoption_ledger_is_filled_once_and_no_word_stands_alone() {
         .join(" ");
     assert!(
         joined.contains(
-            "it names a migration state. Spec 7 gives one a from-version and a to-version, \
+            "it names a migration state. Distribution and federation gives one a from-version and a to-version, \
              and no verb of this engine writes either into this block"
         ),
         "the fill lost or reordered a word of the unread line:\n{}",
@@ -1010,7 +1010,7 @@ fn the_adoption_ledger_is_filled_once_and_no_word_stands_alone() {
         .find(|line| line.contains("`to`"))
         .unwrap_or_else(|| panic!("no unread line:\n{}", wide.out));
     assert!(
-        first.chars().count() > 80 && first.contains("migration state. Spec 7 gives one"),
+        first.chars().count() > 80 && first.contains("migration state. Distribution and federation gives one"),
         "`--wide` does not reach the ledger: {first:?}\n{}",
         wide.out
     );

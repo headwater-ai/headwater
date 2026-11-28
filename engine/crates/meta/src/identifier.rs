@@ -478,7 +478,7 @@ fn read_placeholder(name: &str, pattern: &str) -> Result<Segment, Unreadable> {
         }
     }
     Err(Unreadable(format!(
-        "the pattern `{pattern}` writes the placeholder `{{{name}}}`, and spec 2 states `{{namespace}}`, `{{slug}}` and `{{seq:0Nd}}`"
+        "the pattern `{pattern}` writes the placeholder `{{{name}}}`, and the taxonomy model states `{{namespace}}`, `{{slug}}` and `{{seq:0Nd}}`"
     )))
 }
 

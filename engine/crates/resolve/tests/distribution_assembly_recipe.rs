@@ -53,7 +53,7 @@ fn section() -> String {
     let text = read("docs/spec/distribution-and-federation.md");
     let (_, after) = text
         .split_once(SECTION)
-        .unwrap_or_else(|| panic!("spec 7: no `{SECTION}` heading"));
+        .unwrap_or_else(|| panic!("distribution and federation: no `{SECTION}` heading"));
     let mut lines = Vec::new();
     let mut in_fence = false;
     for line in after.lines().skip(1) {
@@ -73,10 +73,10 @@ fn fence(section: &str, info: &str) -> String {
     let opener = format!("```{info}\n");
     let (_, after) = section
         .split_once(&opener)
-        .unwrap_or_else(|| panic!("spec 7 `{SECTION}`: no ```{info} block"));
+        .unwrap_or_else(|| panic!("distribution and federation `{SECTION}`: no ```{info} block"));
     let (body, _) = after
         .split_once("\n```")
-        .unwrap_or_else(|| panic!("spec 7 `{SECTION}`: the ```{info} block is not closed"));
+        .unwrap_or_else(|| panic!("distribution and federation `{SECTION}`: the ```{info} block is not closed"));
     body.to_string()
 }
 
@@ -133,12 +133,12 @@ fn the_recipe_spec_seven_prints_is_the_recipe_this_repository_ships() {
     let section = section();
     let block = fence(&section, "yaml");
     let printed = headwater_yaml::load(&block)
-        .unwrap_or_else(|e| panic!("spec 7 `{SECTION}` yaml block: {e:?}"));
-    let printed = recipe(&printed, "spec 7 yaml block");
+        .unwrap_or_else(|e| panic!("distribution and federation `{SECTION}` yaml block: {e:?}"));
+    let printed = recipe(&printed, "distribution and federation yaml block");
 
     assert_eq!(
         printed, shipped,
-        "spec 7 `{SECTION}` prints a recipe that differs from {source_path}. The section says \
+        "distribution and federation `{SECTION}` prints a recipe that differs from {source_path}. The section says \
          the block is the recipe this repository ships, so move the block to the file"
     );
 
@@ -147,7 +147,7 @@ fn the_recipe_spec_seven_prints_is_the_recipe_this_repository_ships() {
     let first = diagram.lines().next().unwrap_or_default().trim();
     assert_eq!(
         first, pin,
-        "spec 7 `{SECTION}`: the text diagram starts from `{first}`, but {source_path} pins \
+        "distribution and federation `{SECTION}`: the text diagram starts from `{first}`, but {source_path} pins \
          `from.package: {pin}`"
     );
 }

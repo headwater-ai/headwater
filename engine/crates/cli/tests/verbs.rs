@@ -347,7 +347,7 @@ fn the_second_words_of_spec_6s_grammar_lines_are_the_second_words_verbs_carries(
             .collect();
         assert_eq!(
             declared, grammar,
-            "`{}`'s spec 6 grammar line names different second words from the ones \
+            "`{}`'s the engine architecture grammar line names different second words from the ones \
              `headwater_verbs::VERBS` carries for it",
             verb.name
         );
