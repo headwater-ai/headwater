@@ -191,7 +191,7 @@ add:
   # movement between tiers as a bridge. The Pragmatic lineage says the product
   # document translates the why into the how. Both describe one movement, and
   # doctrine.md carries the exact wording of each source.
-  # `derives_from` was refused: spec 2 uses that string as a generic example
+  # `derives_from` was refused: the taxonomy model (docs/spec/taxonomy-model.md) uses that string as a generic example
   # spelling for the whole derivation family, and an entry that claims the most
   # general name in a family closes it to every later entry.
   #
@@ -267,7 +267,7 @@ add:
   # --- obligations ----------------------------------------------------------
   # The three invariants this tradition exists to hold, and no control discharges
   # any of them. Each one carries a disposition rather than silence, which is
-  # what spec 4 asks of an obligation that nothing discharges.
+  # what the assurance model (docs/spec/assurance-model.md) asks of an obligation that nothing discharges.
   #
   # Two of the three are held back by one thing: a requirement has no identity.
   # Both cited traditions define traceability at the level of one requirement,
@@ -301,4 +301,4 @@ add:
     severity: high
     disposition:
       unverifiable:
-        reasoning: To decide that a sentence states a measure is to reason about what prose asserts, which spec 1 forswears. The heading is structural and the measure is prose
+        reasoning: To decide that a sentence states a measure is to reason about what prose asserts, which the conceptual model (docs/spec/conceptual-model.md) forswears. The heading is structural and the measure is prose

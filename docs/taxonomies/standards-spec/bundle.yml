@@ -19,7 +19,7 @@
 # design-spec, decision-record or diataxis writes, so an adopter may select any
 # subset of the four.
 #
-# It spells its governance edge from the standard and never toward it. Spec 2
+# It spells its governance edge from the standard and never toward it. The taxonomy model (docs/spec/taxonomy-model.md)
 # derives reading precedence for the governance family as "the source governs",
 # so an edge spelled specification -> standard would make the specification
 # govern the reading of the standard that binds it. doctrine.md carries the
@@ -35,7 +35,8 @@ add:
   # The base declares rationale and behavior. This tradition serves one more
   # reader intent, and `kinds.standard` below is the kind that serves it.
   #
-  # `constraint` is the word spec 2's own worked example uses for this purpose
+  # `constraint` is the word that the worked example of the taxonomy model
+  # (docs/spec/taxonomy-model.md) uses for this purpose
   # in its product-suite column, and no entry and no package declares it. The
   # base's core does not require it, and the issue framing that said it did was
   # wrong: `core.requires` names `rationale` and `behavior` and no third purpose.
@@ -87,10 +88,10 @@ add:
   # add-only.
   #
   # The names are the plain words the tradition uses. `standard` is unreserved,
-  # and spec 2's rigidity rule refuses a kind named with a bare phase adjective
+  # and the rigidity rule of the taxonomy model refuses a kind named with a bare phase adjective
   # and says nothing against a plain noun, so `governing_standard` would be this
   # entry hedging against the tradition it models. `functional_spec` and
-  # `technical_spec` are Spolsky's terms and the two halves of spec 2's own
+  # `technical_spec` are Spolsky's terms and the two halves of the taxonomy model's own
   # contract-sidecar layout. `srs` or `sdd` would name one standards body rather
   # than the convergence of several.
 
@@ -121,7 +122,7 @@ add:
 
   # `behavior` and not a purpose of its own. The reader intent is the base's:
   # what does this component do, and what may I rely on. Two kinds serving one
-  # purpose is legal, and spec 2 refuses only a kind that serves two unrelated
+  # purpose is legal, and the taxonomy model (docs/spec/taxonomy-model.md) refuses only a kind that serves two unrelated
   # purposes. The design-spec entry set the precedent when it gave `review_prompt`
   # and `review_record` the one `evidence` purpose and split them because a
   # relation runs between them. `realizes` runs between these two.
@@ -167,7 +168,7 @@ add:
   # proposer of each edge.
 
   # Standard -> specification, and the direction is forced rather than chosen.
-  # Spec 2 derives reading precedence for the governance family as "the source
+  # The taxonomy model (docs/spec/taxonomy-model.md) derives reading precedence for the governance family as "the source
   # governs". An edge spelled the other way would derive the precedence
   # backwards. The name avoids the base's `governs`, whose target is a
   # `code_path`, and the base's `constrains`, whose endpoints are decisions.
@@ -271,7 +272,7 @@ add:
   # --- obligations ----------------------------------------------------------
   # The three invariants this tradition exists to hold, and no control
   # discharges any of them. Each one carries a disposition rather than silence,
-  # which is what spec 4 asks of an obligation that nothing discharges.
+  # which is what the assurance model (docs/spec/assurance-model.md) asks of an obligation that nothing discharges.
 
   obligations.OB-SS-1:
     statement: A technical specification meets every requirement of the standards that regulate its functional specification
@@ -281,7 +282,7 @@ add:
     severity: high
     disposition:
       unverifiable:
-        reasoning: To decide that one document meets a requirement of another is to reason about what the prose of both asserts, which spec 1 forswears. The edges say which standard reaches which specification and no rule reads the requirement under the heading
+        reasoning: To decide that one document meets a requirement of another is to reason about what the prose of both asserts, which the conceptual model (docs/spec/conceptual-model.md) forswears. The edges say which standard reaches which specification and no rule reads the requirement under the heading
   obligations.OB-SS-2:
     statement: Every requirement of a standard is traceable to the specification that meets it
     rationale: A requirement that no specification answers is either unmet or met somewhere nobody can find, and the two look the same from the standard. Traceability is the property every cited source in this tradition asks for by name
@@ -301,4 +302,4 @@ add:
     disposition:
       gap:
         owner: the standards-spec entry
-        target: the `does_not_comply_with` relation, which spec 2 names as package content under `$package.optional` and the package holds nothing there. The address is reserved, so this entry may not declare it
+        target: the `does_not_comply_with` relation, which the taxonomy model (docs/spec/taxonomy-model.md) names as package content under `$package.optional` and the package holds nothing there. The address is reserved, so this entry may not declare it

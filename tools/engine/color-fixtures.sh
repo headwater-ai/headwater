@@ -312,22 +312,24 @@ fi
 # `taxonomy migrate` and the payload branch of `taxonomy diff` need an artifact
 # at a later major version that ships a payload covering the lock's version.
 # The candidate is this repository's own source with both version fields moved
-# to 5.0.0, `contents.bundles` pointed back at the library inside this tree
+# to 6.0.0, `contents.bundles` pointed back at the library inside this tree
 # (publishing refuses a bundle library outside the tree it reads), and one
-# payload of one step. The step names a kind no document carries, so it is a
+# payload of one step in place of the `4-to-5.yml` the source ships, which
+# answers to 5.x and not to the candidate (HW-DR-0117). The step names a kind no document carries, so it is a
 # no-op here and `migrate` without `--apply` reports it and writes nothing.
 # The payload has to have a step, because `publish` refuses an empty one.
 payload_source="$scratch/payload-source"
 cp -R taxonomy-source/headwater-standard "$payload_source"
-sed -i -e 's/^version: .*/version: 5.0.0/' \
+rm -rf "$payload_source/migrations"
+sed -i -e '/^  migrations: migrations\/$/d' -e 's/^version: .*/version: 6.0.0/' \
     -e "s|^  bundles: ../../docs/taxonomies\$|  bundles: $root/docs/taxonomies\\
   migrations: migrations|" "$payload_source/package.yml"
-sed -i -e 's/^version: .*/version: 5.0.0/' "$payload_source/taxonomy.yml"
+sed -i -e 's/^version: .*/version: 6.0.0/' "$payload_source/taxonomy.yml"
 mkdir "$payload_source/migrations"
-printf '%s\n' 'migration:' '  format: 1' '  from: ">=4 <5"' '  to: ">=5 <6"' '' 'steps:' \
+printf '%s\n' 'migration:' '  format: 1' '  from: ">=5 <6"' '  to: ">=6 <7"' '' 'steps:' \
     '  - subject: kind' '    from: a_kind_no_document_carries' '    to: [decision]' \
     '    because: >-' '      A color fixture needs a payload with one step in it.' \
-    >"$payload_source/migrations/4-to-5.yml"
+    >"$payload_source/migrations/5-to-6.yml"
 if "$engine" taxonomy publish --from "$payload_source" \
     --out "$scratch/payload" --root . >/dev/null 2>&1; then
     senses_its_terminal 'taxonomy migrate' "$engine taxonomy migrate $scratch/payload --root ."
@@ -353,10 +355,11 @@ fi
 # are about that call site alone.
 unresolved_source="$scratch/unresolved-source"
 cp -R taxonomy-source/headwater-standard "$unresolved_source"
-sed -i -e 's/^version: .*/version: 4.99.0/' \
+rm -rf "$unresolved_source/migrations"
+sed -i -e '/^  migrations: migrations\/$/d' -e 's/^version: .*/version: 5.99.0/' \
     -e "s|^  bundles: ../../docs/taxonomies\$|  bundles: $root/docs/taxonomies|" \
     "$unresolved_source/package.yml"
-sed -i -e 's/^version: .*/version: 4.99.0/' \
+sed -i -e 's/^version: .*/version: 5.99.0/' \
     -e 's|^identifier_schemes:$|&\
   spec_id: {pattern: "{namespace}-SPEC-{slug}", allocation: minted-once}|' \
     "$unresolved_source/taxonomy.yml"

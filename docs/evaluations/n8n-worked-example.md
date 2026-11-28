@@ -63,21 +63,22 @@ The kind is right on its two declared grounds. The purpose of `design_spec` is `
 
 The entry assumed that a design specification belongs to a numbered series. A monorepo that keeps one architecture document per package is a corpus where the assumption is simply false. That is the finding, and criterion 4 exists to produce it.
 
+**headwater/standard 5.0.0 acted on the finding.** It deletes the `sequence` facet and names a part by its slug ([HW-DR-0117](../decisions/0117-the-specification-series-names-a-part-by-its-slug-and-carries-no-sequence.md)). The four findings went, and the counts below are the counts at 5.0.0.
+
 ## What the run reported
 
 The [fixture README](https://github.com/headwater-ai/headwater/blob/main/docs/taxonomies/design-spec/fixtures/n8n/README.md#what-a-run-reports) carries the run in full, with the assembly that reproduces it. The summary:
 
-**4 files under the corpus root, 4 typed, 0 excluded, 4 checked, 13 findings, all 13 of them errors.** `headwater check --strict` exits 1. This page does not give the count of check instances, because each rule that a release adds changes it. The fixture README states that count, and the n8n fixture job compares it with each run. The first and third read 42 and 38 until [HW-DR-0067](../decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md). The 38 were the vendored taxonomy package, which sat inside this corpus root and had to be excluded from it.
+**4 files under the corpus root, 4 typed, 0 excluded, 4 checked, 9 findings, all 9 of them errors.** `headwater check --strict` exits 1. This page does not give the count of check instances, because each rule that a release adds changes it. The fixture README states that count, and the n8n fixture job compares it with each run. The first and third read 42 and 38 until [HW-DR-0067](../decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md). The 38 were the vendored taxonomy package, which sat inside this corpus root and had to be excluded from it.
 
-Three findings per document, and the same three on each one.
+Two findings per document, and the same two on each one.
 
 | Document | Rule | Severity |
 |---|---|---|
-| all four | `facet.required.missing` (`OB-FACET-1`), `sequence` not declared | error |
 | all four | `facet.required.missing` (`OB-FACET-1`), `title` not declared | error |
 | all four | `identifier.unusable` (`OB-ID-2`), a typed `design_spec` that declares no identifier | error |
 
-The run reported 8 findings until headwater/standard 4.0.0, which requires `title` on `design_spec`. None of these four upstream files declares one. This repository will not write four titles into somebody else's documents to make the number go down.
+The run reported 8 findings until headwater/standard 4.0.0, which requires `title` on `design_spec`, 13 from 4.3.0, and 9 from 5.0.0, which requires no `sequence`. None of these four upstream files declares one. This repository will not write four titles into somebody else's documents to make the number go down.
 
 `identifier.unusable` is a third finding about the entry rather than about n8n. The design-spec entry declares five kinds and no identifier scheme for any of them. This repository mints `spec_id` in its own overlay, and an overlay is not an admitted library entry. So a corpus that takes the entry alone gets documents that can stand at neither end of a relation. The [diataxis fixture](https://github.com/headwater-ai/headwater/blob/main/docs/taxonomies/diataxis/fixtures/README.md) reported the same rule six times for the same reason.
 
@@ -117,9 +118,9 @@ Three properties, and each one was measured rather than assumed.
 
 | The shelf, and the front matter | Findings |
 |---|---|
-| `homogeneous: true`, with `doc_type: design_spec` | 17, adding `shelf.placement_is_primary` on all four |
-| `homogeneous: true`, with `doc_type` removed | 17, adding `facet.required.missing` for `doc_type` on all four |
-| `homogeneous: false`, `discriminator: doc_type`, `kinds: [design_spec]` | 13 |
+| `homogeneous: true`, with `doc_type: design_spec` | 13, adding `shelf.placement_is_primary` on all four |
+| `homogeneous: true`, with `doc_type` removed | 13, adding `facet.required.missing` for `doc_type` on all four |
+| `homogeneous: false`, `discriminator: doc_type`, `kinds: [design_spec]` | 9 |
 
 The third row is what the fixture commits. A one-kind heterogeneous shelf makes the discriminator carry no information at all. Every document writes the one value the shelf admits, and the key exists to satisfy a facet requirement rather than to tell two kinds apart.
 
@@ -137,7 +138,7 @@ The issue states that `lefthook.yml` runs `prettier --write` on every staged `.m
 
 That was verified rather than reasoned. A scratch directory with a `.prettierignore` of `**/*.md` and one badly formatted Markdown file: `prettier --check` reports `All matched files use Prettier code style` and exits 0. Remove the ignore file and change nothing else, and the same command reports a style issue on the same file.
 
-**So prettier catches 0 of the 13 findings, and 0 of anything else in these four files.**
+**So prettier catches 0 of the 9 findings, and 0 of anything else in these four files.**
 
 The counterfactual is worth one line, because it bounds the overlap. Run prettier over the four files with the ignore lifted and it rewrites three of them. Every change is blank lines around fenced blocks, table column alignment, and indentation inside a fenced block. None of it touches a heading, a facet, a link, a spelling or a sentence. **Even with the ignore lifted the overlap would be zero.**
 
@@ -155,18 +156,18 @@ The counterfactual is worth one line, because it bounds the overlap. Run prettie
 
 Not one pattern reaches `packages/@n8n/instance-ai/`, `packages/@n8n/expression-runtime/` or `packages/@n8n/local-gateway/`. Two further facts point the same way. Cubic reviews only the lines a pull request adds or modifies, and its `custom_instructions` block states the bar in terms of code rather than prose.
 
-**So cubic catches 0 of the 13.**
+**So cubic catches 0 of the 9.**
 
 ### The count itself
 
 | | Under the entry alone |
 |---|---|
-| Findings raised | 13 |
+| Findings raised | 9 |
 | Already caught by `prettier` | 0 |
 | Already caught by `cubic` | 0 |
-| Caught by neither | 13 |
+| Caught by neither | 9 |
 | Of those, written by `headwater check --fix` | 0 |
-| Of those, needing a declaration change or a human edit upstream | 13 |
+| Of those, needing a declaration change or a human edit upstream | 9 |
 
 The n8n fixture job holds the rows `Findings raised`, `Caught by neither` and the last row against the [fixture README](https://github.com/headwater-ai/headwater/blob/main/docs/taxonomies/design-spec/fixtures/n8n/README.md#what-a-run-reports), and it holds the README against a run. The README states nothing about `prettier`, `cubic` or `--fix`. So the job holds those three rows by two sums. Raised less the two tools is neither. The `--fix` row plus the last row is raised.
 
@@ -184,7 +185,7 @@ This page states no count for the probe. The probe reads this repository's own h
 
 **Exactly one finding that the probe adds is mechanically fixable.** `headwater check --fix` writes a British spelling, a contraction whose expansion is one word, a retired term that names a replacement, and a missing reciprocal link. One contraction, `doesn't`, is the whole of the intersection, and the report marks it as the only `fix (mechanical)` line. The hard wraps are mechanical to a reader and carry no patch, and `engine/crates/check/src/source_form.rs` states why in its own comment. `headwater check --fix` was never run over this corpus.
 
-**What the count says.** Under the canonical library alone the honest total is 13. Twelve of the 13 are about a declaration rather than about n8n. The thirteenth is the broken link in `expression-runtime/ARCHITECTURE.md`, which is a real defect in n8n. All 13 are invisible to both of n8n's tools. Under a house language regime the total grows, almost all of it from one editor's line-wrapping habit, and one added finding is mechanically fixable. So Headwater found one problem in n8n's four documents under the entry alone. The other 12 findings are what a taxonomy learns about itself by meeting a corpus it did not author.
+**What the count says.** Under the canonical library alone the honest total is 9. Eight of the 9 are about a declaration rather than about n8n. The ninth is the broken link in `expression-runtime/ARCHITECTURE.md`, which is a real defect in n8n. All 9 are invisible to both of n8n's tools. Under a house language regime the total grows, almost all of it from one editor's line-wrapping habit, and one added finding is mechanically fixable. So Headwater found one problem in n8n's four documents under the entry alone. The other 8 findings are what a taxonomy learns about itself by meeting a corpus it did not author.
 
 ## The review rules, a second corpus of the same repository
 
@@ -427,7 +428,7 @@ The two runs and the sweep put 38 findings and facts into this document. This is
 
 The past run under this repository's own house regime, which reported 143 findings, stays out of the denominator on purpose. A house regime is not an admitted library entry. Holding somebody else's corpus to this repository's line breaks and contractions produces nothing that n8n would call a defect.
 
-**1 of the 3 genuine defects is reported by a `headwater check` rule, and 0 of them were when this evaluation was recorded.** [The broken link](#the-broken-link-that-no-rule-reported-until-430) reached the 4.0.0 run as a fact in the graph section and never as a finding, and `link.path.unresolved` reports it from 4.3.0. One [reaches no run at all](#what-this-taxonomy-would-report-and-what-it-does-not), because no admitted entry declares a procedure-shaped kind and no run reads `.agents/skills/`. One came out of `headwater sweep`, which is a sampler and not a check. That inversion was the sharpest result here, and it is one third smaller than it was. The library, pointed at eleven real governing documents, raised 33 errors that say nothing n8n would act on. It stays silent on 2 of the 3 things n8n would fix.
+**1 of the 3 genuine defects is reported by a `headwater check` rule, and 0 of them were when this evaluation was recorded.** [The broken link](#the-broken-link-that-no-rule-reported-until-430) reached the 4.0.0 run as a fact in the graph section and never as a finding, and `link.path.unresolved` reports it from 4.3.0. One [reaches no run at all](#what-this-taxonomy-would-report-and-what-it-does-not), because no admitted entry declares a procedure-shaped kind and no run reads `.agents/skills/`. One came out of `headwater sweep`, which is a sampler and not a check. That inversion was the sharpest result here, and it is one third smaller than it was. The counts in this section are of the runs at headwater/standard 4.x. From 5.0.0 the design-spec corpus reports 9 and not 13, because the four `sequence` findings went, so the artifact bucket is 4 smaller and the library acted on part of the distance it measured. The library, pointed at eleven real governing documents, raised 33 errors that say nothing n8n would act on. It stays silent on 2 of the 3 things n8n would fix.
 
 The 2 contestable findings are the coverage-policy duplication reading and the undefined term "level of reach", [both recorded above](#whether-the-three-level-reach-model-holds). Neither is fixed and neither goes upstream. They are counted here rather than dropped, because a partition that quietly loses its awkward members is not a partition.
 

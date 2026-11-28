@@ -137,7 +137,7 @@ const KIND: [(&[&str], &[&str]); 2] = [
 /// whether every name it reads is declared. The rule that now asks is what
 /// found this, over a fixture whose doc comment already claimed the rename was
 /// complete.
-const BUNDLE_KIND: [(&str, &str); 3] = [
+const BUNDLE_KIND: [(&str, &str); 5] = [
     ("  kinds.decision_register:", "  kinds.ruling_register:"),
     (
         "    kinds: [design_spec, decision_register, obligation_register]",
@@ -146,6 +146,15 @@ const BUNDLE_KIND: [(&str, &str); 3] = [
     (
         "    from: [design_spec, decision_register, obligation_register]",
         "    from: [design_spec, ruling_register, obligation_register]",
+    ),
+    // `relations.builds_on` (5.0.0, HW-DR-0117) names the kind at both ends.
+    (
+        "    from: [design_spec, decision_register, obligation_register]",
+        "    from: [design_spec, ruling_register, obligation_register]",
+    ),
+    (
+        "    to:   [design_spec, decision_register, obligation_register]",
+        "    to:   [design_spec, ruling_register, obligation_register]",
     ),
 ];
 

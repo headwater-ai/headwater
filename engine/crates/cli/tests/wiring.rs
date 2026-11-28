@@ -1883,7 +1883,7 @@ fn a_discriminator_stated_on_the_command_line_refuses_and_writes_nothing() {
         wrote.out,
         wrote.err
     );
-    let written = root.path("docs/spec/01-a-part-the-caller-renamed.md");
+    let written = root.path("docs/spec/a-part-the-caller-renamed.md");
     let text = std::fs::read_to_string(&written).expect("the document reads");
     assert!(
         text.contains("doc_type: design_spec"),

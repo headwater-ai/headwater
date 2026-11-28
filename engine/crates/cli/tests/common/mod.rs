@@ -386,6 +386,25 @@ pub(crate) fn pin(at: &Path, version: &str) {
         let to = format!("\n{indent}version: {version}\n");
         std::fs::write(&path, text.replacen(&from, &to, 1)).expect("the source writes");
     }
+    without_payload(&at.join(".headwater/packages/headwater-standard"));
+}
+
+/// Drop the migration payloads the package source ships from a scratch copy.
+///
+/// headwater/standard 5.0.0 ships `migrations/4-to-5.yml` (HW-DR-0117), and
+/// `taxonomy publish` refuses a payload whose `to` range the artifact's own
+/// version does not answer to. A scratch package pinned to another version,
+/// such as 1.0.0, would carry a payload no consumer of it could select, so the
+/// copy carries none. A case that measures a payload writes its own.
+pub(crate) fn without_payload(package: &Path) {
+    let _ = std::fs::remove_dir_all(package.join("migrations"));
+    let manifest = package.join("package.yml");
+    let text = std::fs::read_to_string(&manifest).expect("the manifest reads");
+    let kept: Vec<&str> = text
+        .lines()
+        .filter(|line| line.trim_start() != "migrations: migrations/")
+        .collect();
+    std::fs::write(&manifest, kept.join("\n") + "\n").expect("the manifest writes");
 }
 
 /// Repoint `contents.bundles` in a scratch copy of the authored manifest.

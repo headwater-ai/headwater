@@ -8,12 +8,14 @@ No runner reads these files. There is no engine, so the expected findings below 
 
 ## What each document exercises
 
+**The parts keep the numbered names and the `sequence:` lines of headwater/standard 4.x, on purpose.** 5.0.0 deletes the facet and lays the shelf out as `{slug}.md` ([HW-DR-0117](../../../decisions/0117-the-specification-series-names-a-part-by-its-slug-and-carries-no-sequence.md)). Beacon is now the corpus that an adopter holds the day after the upgrade. A numbered name and a left-over `sequence:` line are inert, because no rule reads a layout after birth and no rule reads a key that the taxonomy does not declare. Two parts here would also take one slug, `transport`, so a rename has a naming choice to make that this fixture does not make for an adopter. The reading order is the `builds_on` edges.
+
 | Document | Kind | What it is here for |
 |---|---|---|
-| `docs/spec/00-motivation.md` | `design_spec` | The head of the series. Sequence zero, and a scope section that states a refusal |
-| `docs/spec/01-model.md` | `design_spec` | The core-model stage, and the target of the review record below |
+| `docs/spec/00-motivation.md` | `design_spec` | The head of the series, and a scope section that states a refusal |
+| `docs/spec/01-model.md` | `design_spec` | The core-model stage, the target of the review record below, and a `builds_on` edge to the head of the series |
 | `docs/spec/02-transport.md` | `design_spec` | The tombstone convention: a retained `superseded` document whose body is a redirect map |
-| `docs/spec/04-transport.md` | `design_spec` | The successor. A gap at 3 shows that the series is ordered and not contiguous |
+| `docs/spec/04-transport.md` | `design_spec` | The successor, with a `builds_on` edge to the model |
 | `docs/spec/09-decisions.md` | `decision_register` | The `rationale` kind on the same shelf, and one `cites_evidence` edge |
 | `docs/spec/13-obligations.md` | `obligation_register` | The `obligation` purpose, and a claim that names its instrument |
 | `docs/evaluations/queue-durability.md` | `evaluation` | Evidence that a register cites, with both halves of the reciprocal edge present |

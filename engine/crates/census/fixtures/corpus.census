@@ -244,6 +244,8 @@ docs/decisions/0115-an-agent-rules-file-is-a-budgeted-pointer-at-the-copilot-ins
   typed: decision
 docs/decisions/0116-a-document-facet-value-is-read-against-its-declared-type-by-one-rule-and-one-predicate.md
   typed: decision
+docs/decisions/0117-the-specification-series-names-a-part-by-its-slug-and-carries-no-sequence.md
+  typed: decision
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md

@@ -713,13 +713,12 @@ add:
   # it owns by one pattern. Its behavior stays where it is already written: the
   # spec parts, the interface contracts and the requirements.
   #
-  # **Why a kind of its own rather than `design_spec`.** The design-spec bundle
-  # requires `sequence` on the kind, not on the `spec_series` shelf, because a
-  # design spec there is a numbered part of one series. A subsystem spec is not
-  # a part of that series and nothing reads an order among them. Dropping
-  # `sequence` from `design_spec` here would leave the series layout
-  # `{sequence:02d}-{slug}.md` with a hole for every new part. So this is a
-  # second kind that requires no sequence.
+  # **Why a kind of its own rather than `design_spec`.** A design spec is a
+  # part of one series, and the design-spec bundle places it on the
+  # `spec_series` shelf with a `doc_type` discriminator. A subsystem spec is not
+  # a part of that series, and nothing reads an order among them. Through
+  # headwater/standard 4.x the series also required a `sequence`, which 5.0.0
+  # deleted (HW-DR-0117). The separation stands on the series alone.
   #
   # **Why `behavior`, and why `spec_id`.** The purpose states what the system
   # does as it is now, which a subsystem spec does at a smaller scale. The
@@ -1038,8 +1037,10 @@ add:
   # (HW-OBL-0031), so that edge is now the base `traces_to`, which reaches any
   # governed document and is in the same evidence family.
   #
-  # **`process_spec` drops `doc_type` and `sequence`.** Both place a document
-  # in the numbered series, and a process specification is not a part of it.
+  # **`process_spec` drops `doc_type`.** It places a document in the
+  # specification series, and a process specification is not a part of it.
+  # Through headwater/standard 4.x it also dropped `sequence`, which 5.0.0
+  # deleted from the series (HW-DR-0117).
 
   kinds.process_spec:
     is_a: governed_document

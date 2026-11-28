@@ -2,7 +2,7 @@
 #
 # The conformance rule set of this package, and the levels over it.
 #
-# Spec 7 (Conformance) gives this file its job. `headwater conformance` reads it
+# Distribution and federation (docs/spec/distribution-and-federation.md, Conformance) gives this file its job. `headwater conformance` reads it
 # through `contents.conformance` in the manifest, evaluates each rule against
 # the repository, and reports the level that the passing rules reach.
 #
@@ -107,7 +107,7 @@ conformance:
         `headwater generate --check` in continuous integration to hold it there.
 
     # The three below are undecidable from a tree, so each one names an
-    # attestation. Spec 7: "These rules degrade to a recorded attestation with an
+    # attestation. Distribution and federation (docs/spec/distribution-and-federation.md): "These rules degrade to a recorded attestation with an
     # owner and a date. They are not silently dropped." No attestation record
     # exists yet, so no level names one of these rules and the report says why.
 

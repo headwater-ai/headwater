@@ -4,7 +4,6 @@ status_since: "{{today}}"
 last_verified: "{{today}}"
 summary: "{{what this register holds, and what it refuses}}"
 doc_type: decision_register
-sequence: "{{number in the series}}"
 provenance:
   warrant: accepted
   agency: "{{human | agent | mixed}}"
@@ -12,7 +11,7 @@ provenance:
   evidence_basis: evidenced
 ---
 
-# {{sequence}} — The decision register
+# {{title}}
 
 {{What this file is: the record of decisions that the design has settled, with
 the argument that settled each one. State here what it refuses, because a

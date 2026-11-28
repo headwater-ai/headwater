@@ -83,7 +83,9 @@ add:
   # --- identifier schemes ---------------------------------------------------
   # `{seq:04d}` and `reconcile-first`, the shape of the decision and the
   # obligation record. 29148 treats a requirement as an identified object, and
-  # spec 3's allocation rule never renumbers, so a citation stays stable.
+  # the allocation rule of authoring and lifecycle
+  # (docs/spec/authoring-and-lifecycle.md) never renumbers, so a citation stays
+  # stable.
   # HW-DR-0073 gives a verification an identity of its own rather than the
   # path a rename breaks.
   #

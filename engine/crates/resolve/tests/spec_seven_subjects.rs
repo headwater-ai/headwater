@@ -526,8 +526,10 @@ fn the_package_record_of_the_facet_required_absence_follows_the_spec_7_ruling() 
             );
         }
 
+        // Since headwater/standard 5.0.0 a package member names a part by its
+        // file, which carries no number (HW-DR-0117).
         assert!(
-            lowered.contains("spec 7"),
+            lowered.contains("spec 7") || lowered.contains("distribution-and-federation.md"),
             "{}: the 4.0.0 paragraph names no specification part for the absence it states, so a \
              reader cannot reach the ruling it obeys. The paragraph is:\n\n{paragraph}",
             path.display()

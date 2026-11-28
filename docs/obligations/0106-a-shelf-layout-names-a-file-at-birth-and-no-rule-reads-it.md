@@ -4,7 +4,7 @@ title: "A shelf layout names a file at birth and no rule reads it"
 status: current
 status_since: 2026-08-14
 waiting_on: ruling
-last_verified: 2026-08-15
+last_verified: 2026-11-28
 summary: "A shelf layout is read by the scaffolder and by nothing else, and a rule that read it would report every document that a person renamed or typed by hand."
 provenance:
   warrant: accepted
@@ -35,9 +35,9 @@ The declaration fixes a name at the moment of birth, and nothing holds the name 
 
 `taxonomy audit` takes the measurement, one row for each shelf that declares a layout. It renders each name again through the function that `headwater new` writes one with, and it reports how many files carry the name that comes back. A shelf that no declaration lets it measure is held apart from the count, and the row states where the absence lives. This record holds no figure, because a figure here is one that nothing re-derives.
 
-Three causes hold the three shelves apart, and each one blocks a rule for a different reason.
+Two causes hold the remaining shelves apart, and each one blocks a rule for a different reason.
 
-No kind on the specification shelf requires a facet in the `name` role. So a check has no source for `{slug}` there, and that shelf is the arm the reading holds apart.
+The specification shelf was a third cause through headwater/standard 4.x, because its layout read the `sequence` facet. [HW-DR-0117](../decisions/0117-the-specification-series-names-a-part-by-its-slug-and-carries-no-sequence.md) lays it out as `{slug}.md` in 5.0.0, and the audit now measures it like every other shelf.
 
 Every obligation record that disagrees carries a name truncated from its title, and no declaration states a width.
 
@@ -45,7 +45,7 @@ A decision title opens with the token `Q<n>`, and a file name that a person type
 
 ## Discharge
 
-A rule that reads a layout needs three declarations that this taxonomy does not carry. It needs a facet in the `name` role on every kind of a layout-bearing shelf. It needs a stated width for a slug, or the ruling that a name is never truncated. It needs a ruling on the second numbering vocabulary that a decision title carries.
+A rule that reads a layout needs two declarations that this taxonomy does not carry. It needs a stated width for a slug, or the ruling that a name is never truncated. It needs a ruling on the second numbering vocabulary that a decision title carries.
 
 The other answer is the ruling that a layout binds the scaffolder alone. [Spec 3](../spec/03-authoring-and-lifecycle.md#templates-and-scaffolding) states that answer, and a rename after birth is then a fact outside the declaration.
 

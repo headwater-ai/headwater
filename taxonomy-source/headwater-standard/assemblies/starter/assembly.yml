@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # The doctrine starter kit, as a publisher recipe over `headwater/standard`.
-# Spec 0 deliverable 6 promises an opinionated default taxonomy, and spec 7
+# The vision and scope (docs/spec/vision-and-scope.md) deliverable 6 promises an opinionated default taxonomy, and distribution and federation (docs/spec/distribution-and-federation.md)
 # rules that the promise is kept by an assembly rather than by a second base
 # package. This file is that assembly.
 #
@@ -29,7 +29,7 @@ package: headwater/starter
 # from. 0.1.0 matches the first installable release of this engine.
 version: 0.1.0
 from:
-  package: headwater/standard@4.31.0
+  package: headwater/standard@5.0.0
   # This is the selection `.headwater/taxonomy.yml` of this repository already
   # runs on its own corpus. HW-OBL-0018 records that the bundle set is a guess
   # that no adopter has revised, and `doctrine/starter.md` says so to the

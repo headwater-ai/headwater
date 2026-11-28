@@ -74,35 +74,35 @@ It holds the fourteen figures of *What a run reports* on all three n8n corpora, 
 
 | The shelf, and the front matter | Findings |
 |---|---|
-| `homogeneous: true`, `doc_type: design_spec` declared | 17: `shelf.placement_is_primary` on all four, plus the thirteen below |
-| `homogeneous: true`, `doc_type` removed | 17: `facet.required.missing` for `doc_type` on all four, plus the thirteen below |
-| `homogeneous: false`, `discriminator: doc_type`, `kinds: [design_spec]` | 13 |
+| `homogeneous: true`, `doc_type: design_spec` declared | 13: `shelf.placement_is_primary` on all four, plus the nine below |
+| `homogeneous: true`, `doc_type` removed | 13: `facet.required.missing` for `doc_type` on all four, plus the nine below |
+| `homogeneous: false`, `discriminator: doc_type`, `kinds: [design_spec]` | 9 |
 
 The third row is what this fixture commits. A one-kind heterogeneous shelf makes the discriminator carry no information: every document writes the one value the shelf admits, and the front-matter key exists to satisfy a facet requirement rather than to tell two kinds apart.
 
 ## What a run reports
 
-`headwater taxonomy resolve` then `headwater check --no-cache --now 2026-09-01` over the assembled root, with the committed `.headwater/`: **4 files under the corpus root, 4 typed, 0 excluded, 4 checked, 74 check instances, 13 findings, all 13 of them errors.** The census reads 4 `design_spec`. The graph reads 0 nodes, 0 declared edge halves, and 1 prose link that did not resolve. `headwater check --strict` exits 1.
+`headwater taxonomy resolve` then `headwater check --no-cache --now 2026-09-01` over the assembled root, with the committed `.headwater/`: **4 files under the corpus root, 4 typed, 0 excluded, 4 checked, 74 check instances, 9 findings, all 9 of them errors.** The census reads 4 `design_spec`. The graph reads 0 nodes, 0 declared edge halves, and 1 prose link that did not resolve. `headwater check --strict` exits 1.
 
 **Nothing is excluded now, and the zero is this fixture's own finding closing.** The corpus root is `packages` and the vendored taxonomy package used to sit under `packages/` too, so this run had to be told that the package it resolves is not corpus content. The excluded count was the size of that package rather than anything about n8n: 101 files at `headwater/standard` 4.0.0, and 38 at 4.3.0. [HW-DR-0067](../../../../decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md) moved the package root to `.headwater/packages/`, which no corpus root an adopter can name reaches, so the exclusion is gone and the files under the corpus root are the four this page is about. The other counts move only when this corpus moves.
 
-**This run reported 8 findings until headwater/standard 4.0.0 and 12 from it, and it reports 13 at 4.3.0. Each move is the fixture doing its job.** That release requires the facet `title` on `design_spec`, and none of these four upstream files declares one. Giving them titles would falsify the corpus, because the value of this fixture is that nobody here wrote a word of it, so the four errors stand and the number moved.
+**This run reported 8 findings until headwater/standard 4.0.0 and 12 from it, 13 at 4.3.0, and 9 at 5.0.0. Each move is the fixture doing its job.** 4.0.0 requires the facet `title` on `design_spec`, and none of these four upstream files declares one. Giving them titles would falsify the corpus, because the value of this fixture is that nobody here wrote a word of it, so the four errors stand and the number moved. 5.0.0 deletes the `sequence` facet ([HW-DR-0117](../../../../decisions/0117-the-specification-series-names-a-part-by-its-slug-and-carries-no-sequence.md)), so the four findings that named it went.
 
-Three findings on every document, and a fourth on one of them.
+Two findings on every document, and a third on one of them.
 
-**Finding 1, four times.** `facet.required.missing`, an error, under `OB-FACET-1`:
+**The finding that 5.0.0 removed, four times until then.** `facet.required.missing`, an error, under `OB-FACET-1`:
 
     `design_spec` requires the facet `sequence`, and it is not declared
 
-`sequence` is an integer, and this entry's shelf layout is `{sequence:02d}-{slug}.md`. It is the numbering of a specification series: RFC 2119 comes after RFC 2118. n8n's architecture documents are one per package, and a package is not a position in a series. There is no number to write. **This is the finding, not a problem to design around**, and no fixture here invents a value to make the run pass. What the entry assumed is that a design specification belongs to a numbered series. A monorepo that keeps one architecture document per package is a corpus where that assumption is simply false, and criterion 4 exists to produce exactly this.
+`sequence` was an integer, and the shelf layout through 4.x was `{sequence:02d}-{slug}.md`. n8n's architecture documents are one per package, and a package is not a position in a series. There was no number to write, and no fixture here invented one to make the run pass. The entry assumed that a design specification belongs to a numbered series, and this corpus was the first measurement that the assumption is false. 5.0.0 removed the requirement, and `headwater taxonomy diff` over this assembly reports the move as `consequence` BROKEN, 4 failed, because each of the four documents fails one requirement fewer.
 
-**Finding 2, four times.** `facet.required.missing`, an error, under `OB-FACET-1`:
+**Finding 1, four times.** `facet.required.missing`, an error, under `OB-FACET-1`:
 
     `design_spec` requires the facet `title`, and it is not declared
 
 `title` carries the `name` role, and headwater/standard requires it on this kind from 4.0.0. Every one of these four files opens with a first heading, and a heading is body text that no facet reads. The four documents were copied in byte for byte and no front-matter key was added to them beyond the block the modification notice names, so the requirement meets a corpus that answers it nowhere. **The remedy here would be to write four titles, and writing them would end the property that makes this fixture worth keeping.** A worked instance is evidence about somebody else's corpus, and a corpus that this repository edits until it passes is evidence about this repository.
 
-**Finding 3, four times.** `identifier.unusable`, an error, under `OB-ID-2`:
+**Finding 2, four times.** `identifier.unusable`, an error, under `OB-ID-2`:
 
     a typed `design_spec` that declares no identifier, so no edge can name it
 
@@ -124,7 +124,7 @@ The design-spec entry declares five kinds and no identifier scheme for any of th
 
 **Not one finding is about n8n's writing.** The base package declares `language: default: {tag: en-US, controlled: none}`, so no admitted entry of this library holds prose to a controlled language, a source form, a sentence length or a retired term. `voice.forbidden_construction` ran four instances and reported nothing: no sentence in these four documents states a future intent, narrates a change, or announces a phase. `section.required.missing` never instantiated, because this entry's `design_spec` declares no required sections.
 
-Twelve of the thirteen findings are about the metadata the typing added and the metadata it could not add, and the thirteenth is the broken link below. That is worth stating plainly, because a large finding count over somebody else's corpus is easy to mistake for a result.
+Eight of the nine findings are about the metadata the typing added and the metadata it could not add, and the ninth is the broken link below. Through 4.x the counts in this table were 17, 17 and 13, and the four `sequence` findings were the difference. That is worth stating plainly, because a large finding count over somebody else's corpus is easy to mistake for a result.
 
 ## What this repository's own house regime would have reported
 
@@ -155,4 +155,4 @@ This page states no count for this probe. The probe reads this repository's own 
 
 **The excluded count used to move with the vendored package, and there is none to move.** It was 101 at 4.0.0 and 38 at 4.3.0, and every one of those files was the package rather than anything this corpus describes. The move of the package root took the whole count to 0, and the four typed rows are now the whole census.
 
-**Three of the four findings are about declarations rather than about documents.** `facet.required.missing` on `sequence` stops the day the entry stops requiring it or the day somebody writes a number, and neither is a change to n8n. The same rule on `title` stops on the same two conditions, and the second of them is the one this fixture refuses. `identifier.unusable` stops the day the entry mints a scheme. All three are recorded in [the evaluation](../../../../evaluations/n8n-worked-example.md) as findings against the library. The fourth, `link.path.unresolved`, is about the document and moves the day somebody fixes the link upstream.
+**Two of the three findings are about declarations rather than about documents.** `facet.required.missing` on `sequence` stopped at 5.0.0, the day the entry stopped requiring it, and that was no change to n8n. The same rule on `title` stops the day the entry stops requiring it or the day somebody writes a title, and the second is the one this fixture refuses. `identifier.unusable` stops the day the entry mints a scheme. All of them are recorded in [the evaluation](../../../../evaluations/n8n-worked-example.md) as findings against the library. The third, `link.path.unresolved`, is about the document and moves the day somebody fixes the link upstream.

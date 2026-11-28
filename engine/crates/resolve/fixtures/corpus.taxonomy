@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 4.31.0
+version: 5.0.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -178,7 +178,7 @@ facets:
   doc_type:
     guidance:
       decision_register: "the one document that records settled decisions and the argument that settled each"
-      design_spec: "a numbered document in the series, which states what the system is"
+      design_spec: "a part of the series, which states what the system is"
       obligation_register: "the one document that records what the corpus still owes"
       review_prompt: "the instrument that commissions a review, committed before the review runs"
       review_record: "the findings that one application of one instrument produced"
@@ -247,10 +247,6 @@ facets:
       - tuning
       - final
       - none
-    volatility: stable
-  sequence:
-    required: false
-    type: integer
     volatility: stable
   tier:
     guidance:
@@ -464,7 +460,6 @@ kinds:
     facets:
       require:
         - doc_type
-        - sequence
         - title
     identifier:
       scheme: register_id
@@ -478,7 +473,6 @@ kinds:
     facets:
       require:
         - doc_type
-        - sequence
         - title
     identifier:
       scheme: spec_id
@@ -587,7 +581,6 @@ kinds:
     facets:
       require:
         - doc_type
-        - sequence
         - title
     identifier:
       scheme: register_id
@@ -928,6 +921,20 @@ relations:
       - review_record
     to:
       - governed_document
+  builds_on:
+    cardinality: many
+    created_by: author
+    family: derivation
+    from:
+      - design_spec
+      - decision_register
+      - obligation_register
+    nuclearity: nucleus-satellite
+    nucleus: to
+    to:
+      - design_spec
+      - decision_register
+      - obligation_register
   cited_in:
     cardinality: many
     created_by: agent
@@ -1120,7 +1127,7 @@ shelves:
       - design_spec
       - decision_register
       - obligation_register
-    layout: "{sequence:02d}-{slug}.md"
+    layout: "{slug}.md"
     path: "docs/spec/**"
     title: "The specification series"
   subsystems:
@@ -1408,7 +1415,7 @@ obligations:
     severity: medium
   OB-REL-7:
     statement: "No relation instance outside the association family names the document that declares it as its target"
-    rationale: "Spec 2 keeps self-reference invalid in every family except association. An edge from a document to itself asserts nothing, as a document that draws on, governs, constrains or traces to itself does, or it asserts a contradiction, as a document that supersedes itself does. The target resolved and both kinds are admitted, so no other rule reports it, and the graph keeps an edge whose two ends are one node"
+    rationale: "The taxonomy model (docs/spec/taxonomy-model.md) keeps self-reference invalid in every family except association. An edge from a document to itself asserts nothing, as a document that draws on, governs, constrains or traces to itself does, or it asserts a contradiction, as a document that supersedes itself does. The target resolved and both kinds are admitted, so no other rule reports it, and the graph keeps an edge whose two ends are one node"
     class: cohesion
     prevents: content.inconsistent
     severity: medium
@@ -1510,7 +1517,7 @@ obligations:
     severity: medium
   OB-WARRANT-2:
     statement: "A document that claims `evidence_basis: evidenced` does not rest that claim on a document whose warrant is `asserted`"
-    rationale: "Spec 3 rules that a pointer to an `asserted` document does not support `evidenced`, because such a document is neither external nor auditable. A fabricated reason with a file name beside it reads from outside exactly like a reason somebody can check, and the corpus that carries it reports the same three honest states as a corpus where every pointer resolves to real evidence. The claim is at one end of the pointer and the reading that would support it is at the other, so no document-grained reading can see the pair at all"
+    rationale: "Authoring and lifecycle (docs/spec/authoring-and-lifecycle.md) rules that a pointer to an `asserted` document does not support `evidenced`, because such a document is neither external nor auditable. A fabricated reason with a file name beside it reads from outside exactly like a reason somebody can check, and the corpus that carries it reports the same three honest states as a corpus where every pointer resolves to real evidence. The claim is at one end of the pointer and the reading that would support it is at the other, so no document-grained reading can see the pair at all"
     class: cohesion
     prevents: content.inconsistent
     severity: medium
@@ -1581,7 +1588,7 @@ obligations:
     prevents: content.inconsistent
     severity: high
   OB-WARRANT-3:
-    statement: "The warrant of a document carries one of the values of the closed set that spec 3 declares"
+    statement: "The warrant of a document carries one of the values of the closed set that authoring and lifecycle (docs/spec/authoring-and-lifecycle.md) declares"
     rationale: "A misspelled warrant is a fifth state that no reader and no rule knows, and a reader that tests for one value alone serves the misspelling as a document somebody vouched for"
     class: cohesion
     prevents: content.inconsistent
@@ -1618,7 +1625,7 @@ obligations:
     severity: medium
   OB-REL-9:
     statement: "Two documents that a relation joins do not both meet the condition that the relation declares as invalid at both ends"
-    rationale: "Spec 2 declares two current decisions joined by `conflicts_with` an incoherent state. Where both stay current, a reader who meets either one acts on a ruling that the other contradicts, and nothing tells either author that the disagreement is still open"
+    rationale: "The taxonomy model (docs/spec/taxonomy-model.md) declares two current decisions joined by `conflicts_with` an incoherent state. Where both stay current, a reader who meets either one acts on a ruling that the other contradicts, and nothing tells either author that the disagreement is still open"
     class: cohesion
     prevents: content.inconsistent
     severity: medium
@@ -1693,7 +1700,7 @@ obligations:
     disposition:
       gap:
         owner: "the decision-record entry"
-        target: "a change-scoped rule that reads the prior version, which spec 12 already supplies as `needs_prior`"
+        target: "a change-scoped rule that reads the prior version, which the check layer (docs/spec/check-layer.md) already supplies as `needs_prior`"
     prevents: content.inconsistent
     rationale: "A record that changed after the decision was taken cannot be cited, because the reader of the citation and the writer of it read two different texts. Every later document that names the decision inherits the drift silently"
     severity: high
@@ -1712,7 +1719,7 @@ obligations:
     class: coherence
     disposition:
       unverifiable:
-        reasoning: "To count the decisions in a document is to reason about what the prose asserts, which spec 1 forswears. The shelf is homogeneous and the section contract requires one `Decision` heading, and a second decision under that heading is invisible to both"
+        reasoning: "To count the decisions in a document is to reason about what the prose asserts, which the conceptual model (docs/spec/conceptual-model.md) forswears. The shelf is homogeneous and the section contract requires one `Decision` heading, and a second decision under that heading is invisible to both"
     prevents: content.unclear
     rationale: "Two decisions in one record cannot be superseded apart, so the first of them to fall takes the second with it or keeps it alive under a heading nobody reads"
     severity: medium
@@ -1727,7 +1734,7 @@ controls:
     acts: detective
     promotion:
       produces_facts:
-        reasoning: "The census produces the classification that every check rests on, and a wrong row makes every check over it return a correct verdict about a wrong corpus. Spec 12 holds it as a correctness root and its instrument is a fixture set"
+        reasoning: "The census produces the classification that every check rests on, and a wrong row makes every check over it return a correct verdict about a wrong corpus. The check layer (docs/spec/check-layer.md) holds it as a correctness root and its instrument is a fixture set"
   CT-COV-2:
     mechanism: "check:coverage.document_unchecked"
     discharges:
@@ -1755,7 +1762,7 @@ controls:
     promotion:
       criteria:
         window: "one release of the taxonomy over an adopting corpus"
-        threshold: "no false positive, because the rule reports only the three stops of kind resolution on a heterogeneous shelf that spec 2 names as a finding, a missing discriminator, a value the shelf does not admit and a value that is not a scalar, and derives nothing else"
+        threshold: "no false positive, because the rule reports only the three stops of kind resolution on a heterogeneous shelf that the taxonomy model (docs/spec/taxonomy-model.md) names as a finding, a missing discriminator, a value the shelf does not admit and a value that is not a scalar, and derives nothing else"
         sample: "every finding of one run over the adopting corpus, adjudicated once"
   CT-REG-1:
     mechanism: "check:obligation.disposition.not_one"
@@ -1912,7 +1919,7 @@ controls:
     promotion:
       criteria:
         window: "one release of the taxonomy over an adopting corpus"
-        threshold: "no false positive. The rule reads a claim whose path the corpus no longer holds, and it counts the typed documents of a kind that mints under the claim's scheme and hold the identifier. With none, the document was deleted and keeps its claim, and the rule reports nothing. With exactly one, the claim names a path that is not the path of its one holding document, which follows a rename or a claim edited by hand, and the rule reports one warning that names both paths. With two or more, the rule reports nothing and identifier.claimed_twice reports the pair. The one false positive left is a document that takes the identifier of a deleted document by hand, which the never-reuse rule of spec 3 forbids"
+        threshold: "no false positive. The rule reads a claim whose path the corpus no longer holds, and it counts the typed documents of a kind that mints under the claim's scheme and hold the identifier. With none, the document was deleted and keeps its claim, and the rule reports nothing. With exactly one, the claim names a path that is not the path of its one holding document, which follows a rename or a claim edited by hand, and the rule reports one warning that names both paths. With two or more, the rule reports nothing and identifier.claimed_twice reports the pair. The one false positive left is a document that takes the identifier of a deleted document by hand, which the never-reuse rule of authoring and lifecycle (docs/spec/authoring-and-lifecycle.md) forbids"
         sample: "every finding of one run over the adopting corpus, adjudicated once"
   CT-REL-2:
     mechanism: "check:relation.endpoint.not_permitted"
@@ -1937,7 +1944,7 @@ controls:
     acts: detective
     promotion:
       permanently_advisory:
-        reasoning: "Spec 3 rules that posture per voice category comes from fixability and never from precision, and that a category whose remediation is a rewrite stays advisory whatever its false-positive rate. To block on it makes a judgment about meaning into a gate, and the author who meets it at a red build reaches for the escape hatch"
+        reasoning: "Authoring and lifecycle (docs/spec/authoring-and-lifecycle.md) rules that posture per voice category comes from fixability and never from precision, and that a category whose remediation is a rewrite stays advisory whatever its false-positive rate. To block on it makes a judgment about meaning into a gate, and the author who meets it at a red build reaches for the escape hatch"
   CT-WARRANT-1:
     mechanism: "check:warrant.promoted"
     discharges:
@@ -1947,7 +1954,7 @@ controls:
     acts: detective
     promotion:
       permanently_advisory:
-        reasoning: "Spec 3 rules the posture directly. \"Forty in one change is a finding about the review rather than about the documents. The posture is advisory permanently, for the reason that the shift ratio is advisory permanently. A threshold teaches people to promote in smaller batches, and nothing declares one.\" A promotion is a legitimate act, so the rule reports a count and never a defect, and there is nothing for a gate to block on until a taxonomy states how many is too many"
+        reasoning: "Authoring and lifecycle (docs/spec/authoring-and-lifecycle.md) rules the posture directly. \"Forty in one change is a finding about the review rather than about the documents. The posture is advisory permanently, for the reason that the shift ratio is advisory permanently. A threshold teaches people to promote in smaller batches, and nothing declares one.\" A promotion is a legitimate act, so the rule reports a count and never a defect, and there is nothing for a gate to block on until a taxonomy states how many is too many"
   CT-WARRANT-2:
     mechanism: "check:warrant.evidence.unsupported"
     discharges:
@@ -1967,7 +1974,7 @@ controls:
     acts: detective
     promotion:
       final_posture:
-        reasoning: "The promotion path collects evidence about a rule that can be wrong about the text it reads, and this one reads two declared values and one declared edge. A movement it refuses is refused by the taxonomy that the corpus itself resolved, so an advisory period would measure a false-positive rate that the construction fixes at zero, and it would collect that reading while illegal movements landed. Spec 3 states the posture in one sentence, which is that the engine rejects a transition that is not in the declared machine when it lands"
+        reasoning: "The promotion path collects evidence about a rule that can be wrong about the text it reads, and this one reads two declared values and one declared edge. A movement it refuses is refused by the taxonomy that the corpus itself resolved, so an advisory period would measure a false-positive rate that the construction fixes at zero, and it would collect that reading while illegal movements landed. Authoring and lifecycle (docs/spec/authoring-and-lifecycle.md) states the posture in one sentence, which is that the engine rejects a transition that is not in the declared machine when it lands"
   CT-LIFE-2:
     mechanism: "check:lifecycle.state.not_admitted"
     discharges:
@@ -2027,7 +2034,7 @@ controls:
     acts: detective
     promotion:
       permanently_advisory:
-        reasoning: "The same rule spec 4 states in general. A sentence past the word limit is shortened by deciding which clause carries the meaning, and no mechanical rewrite makes that decision"
+        reasoning: "The same rule the assurance model (docs/spec/assurance-model.md) states in general. A sentence past the word limit is shortened by deciding which clause carries the meaning, and no mechanical rewrite makes that decision"
   CT-LANG-2:
     mechanism: "check:language.source_form.not_met"
     discharges:
@@ -2150,7 +2157,7 @@ controls:
     promotion:
       criteria:
         window: "one release of the taxonomy over an adopting corpus"
-        threshold: "no false positive, because the rule reads two members of one provenance block and the pairing that spec 3 states between them"
+        threshold: "no false positive, because the rule reads two members of one provenance block and the pairing that authoring and lifecycle (docs/spec/authoring-and-lifecycle.md) states between them"
         sample: "every finding of one run over the adopting corpus, adjudicated once"
   CT-WARRANT-5:
     mechanism: "check:warrant.acceptance.at_initial"

@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 #
-# The design-spec taxonomy: the numbered specification series that IETF RFCs,
-# academic papers and software design documents converge on.
+# The design-spec taxonomy: the specification series that IETF RFCs, academic
+# papers and software design documents converge on. From 5.0.0 a part of the
+# series is named by its slug and carries no number (HW-DR-0117).
 #
 # An add-only overlay over the base package. Every operation below is an `add`
 # at a key that headwater/standard does not declare. doctrine.md states what the
@@ -11,9 +12,9 @@
 # HW-DR-0044 moved `evaluation`, and the `evidence`/`obligation` purposes it
 # shares with what stayed here, into a new `evidence-and-obligation` entry.
 # `obligation_register`, `review_prompt` and `review_record` stayed: each
-# needs `doc_type` or `sequence`, both of which stay here too, and moving them
-# would have needed a `requires` edge back onto the entry that now requires
-# this one. doctrine.md carries the finding.
+# needed `doc_type`, which stays here too, and moving them would have needed a
+# `requires` edge back onto the entry that now requires this one. doctrine.md
+# carries the finding.
 
 bundle: design-spec
 extends: headwater/standard@1.0.0
@@ -22,43 +23,42 @@ requires: [evidence-and-obligation]
 add:
 
   # --- facets ---------------------------------------------------------------
-  # Both facets are required by the kinds that need them rather than globally,
-  # because a homogeneous shelf forbids the discriminator (spec 2, Placement is
-  # primary).
+  # The facet is required by the kinds that need it rather than globally,
+  # because a homogeneous shelf forbids the discriminator (the taxonomy model,
+  # docs/spec/taxonomy-model.md, Placement is primary).
+  #
+  # 5.0.0 deletes `facets.sequence`. It was an integer that the shelf layout
+  # `{sequence:02d}-{slug}.md` read at birth and that no rule read after it, so
+  # two parts could take one value and nothing said so (HW-OBL-0175).
+  # HW-DR-0117 records the removal, and `migrations/4-to-5.yml` in the package
+  # names an adopter's overlay entry under the key.
 
   facets.doc_type:
     values: [design_spec, decision_register, obligation_register, review_prompt, review_record]
     required: false
     volatility: stable
     guidance:
-      design_spec: a numbered document in the series, which states what the system is
+      design_spec: a part of the series, which states what the system is
       decision_register: the one document that records settled decisions and the argument that settled each
       obligation_register: the one document that records what the corpus still owes
       review_prompt: the instrument that commissions a review, committed before the review runs
       review_record: the findings that one application of one instrument produced
-
-  facets.sequence:
-    type: integer
-    required: false
-    volatility: stable
 
   # --- kinds ----------------------------------------------------------------
   # Every kind inherits the five core-bearing facets and the base relations
   # from governed_document, which is what keeps this bundle add-only.
   #
   # Every kind here requires `title`, which headwater/standard declares in the
-  # `name` role from 4.0.0. A numbered series is the tradition that most needs
-  # it: the number is what orders the series and it is no name, so a rendered
-  # list of parts that reads the identifier reads `HW-SPEC-vision-and-scope`
-  # where "Vision and scope" belongs (#123, #427). The facet stood in the
-  # decision-record entry until 4.0.0 and could not reach here, and that entry's
-  # doctrine carried the reason as its finding 4.
+  # `name` role from 4.0.0. A series is the tradition that most needs it: a
+  # rendered list of parts that reads the identifier reads
+  # `HW-SPEC-vision-and-scope` where "Vision and scope" belongs (#123, #427).
+  # The facet stood in the decision-record entry until 4.0.0 and could not
+  # reach here, and that entry's doctrine carried the reason as its finding 4.
   #
-  # `title` is not the first heading of the body, and the two are allowed to
-  # differ. On this shelf they do: a part opens `# 0 — Vision and scope`,
-  # because a reader of the file wants the number, and its title is "Vision and
-  # scope", because `sequence` already carries the number and spec 2 refuses a
-  # second copy of a value the front matter holds.
+  # From 5.0.0 the title also names the file, because the shelf layout is
+  # `{slug}.md`, and the templates open the body with `# {{title}}`. A part
+  # that was born under 4.x keeps its numbered name and its first heading, and
+  # no rule reads either.
 
   kinds.design_spec:
     is_a: governed_document
@@ -67,7 +67,7 @@ add:
     voice: declarative
     lifecycle: standard
     facets:
-      require: [doc_type, sequence, title]
+      require: [doc_type, title]
 
   kinds.decision_register:
     is_a: governed_document
@@ -76,7 +76,7 @@ add:
     voice: declarative
     lifecycle: standard
     facets:
-      require: [doc_type, sequence, title]
+      require: [doc_type, title]
 
   kinds.obligation_register:
     is_a: governed_document
@@ -85,7 +85,7 @@ add:
     voice: declarative
     lifecycle: standard
     facets:
-      require: [doc_type, sequence, title]
+      require: [doc_type, title]
 
   # `evaluation` moved to evidence-and-obligation with HW-DR-0044.
   # `cites_evidence` below still names it, and this bundle now requires the
@@ -120,9 +120,9 @@ add:
       require: [doc_type, title]
 
   # --- relations ------------------------------------------------------------
-  # cites_evidence is created_by author: a person types the line and no agent
-  # or verb proposes it. The other two have a mechanical proposer, the review
-  # scaffold, and doctrine.md names it.
+  # cites_evidence and builds_on are created_by author: a person types the line
+  # and no agent or verb proposes it. applied_in and assesses have a mechanical
+  # proposer, the review scaffold, and doctrine.md names it.
 
   relations.cites_evidence:
     family: evidence
@@ -148,6 +148,24 @@ add:
     cardinality: many
     created_by: scaffold
 
+  # `builds_on` is the reading order of the series, added in 5.0.0 when the
+  # number went (HW-DR-0117). A part names the parts that a reader must have
+  # read first. The family is `derivation` and the nucleus is `to`, so the
+  # part built on governs the reading: `by_precedence` puts it before the part
+  # that builds on it, in a routing result, in a shelf index and in any
+  # projection that orders by precedence. The shape is the one
+  # `relations.elaborates` has in the brd-prd entry, with no inverse and no
+  # reciprocity, because the part built on owes nothing to the parts that
+  # follow it. A person types each edge, so the creator is the author.
+  relations.builds_on:
+    family: derivation
+    from: [design_spec, decision_register, obligation_register]
+    to:   [design_spec, decision_register, obligation_register]
+    nuclearity: nucleus-satellite
+    nucleus: to
+    cardinality: many
+    created_by: author
+
   # --- shelves --------------------------------------------------------------
 
   shelves.spec_series:
@@ -156,7 +174,9 @@ add:
     homogeneous: false
     discriminator: doc_type
     kinds: [design_spec, decision_register, obligation_register]
-    layout: "{sequence:02d}-{slug}.md"
+    # `{slug}` takes the slug of the title. Through 4.x the layout was
+    # `{sequence:02d}-{slug}.md`, and HW-DR-0117 records why it went.
+    layout: "{slug}.md"
 
   # `shelves.evaluations` moved to evidence-and-obligation with `evaluation`.
 

@@ -4,7 +4,6 @@ status_since: "{{today}}"
 last_verified: "{{today}}"
 summary: "{{what this register owes, in one sentence}}"
 doc_type: obligation_register
-sequence: "{{number in the series}}"
 provenance:
   warrant: accepted
   agency: "{{human | agent | mixed}}"
@@ -12,7 +11,7 @@ provenance:
   evidence_basis: evidenced
 ---
 
-# {{sequence}} — Open obligations
+# {{title}}
 
 {{What this file is: the work that settled decisions left behind. Each item
 waits on something nameable — an implementation, an adopter, or a measurement.}}

@@ -4,7 +4,6 @@ status_since: "{{today}}"
 last_verified: "{{today}}"
 summary: "{{one sentence, for the index and for routing}}"
 doc_type: design_spec
-sequence: "{{next number in the series}}"
 provenance:
   warrant: accepted
   agency: "{{human | agent | mixed}}"
@@ -12,7 +11,7 @@ provenance:
   evidence_basis: "{{evidenced | reconstructed | unevidenced}}"
 ---
 
-# {{sequence}} — {{title}}
+# {{title}}
 
 {{The problem this part of the series solves, in one paragraph. A reader who
 stops here should know why the document exists and what would break without it.}}
@@ -21,7 +20,7 @@ stops here should know why the document exists and what would break without it.}
 
 The tradition converges on an order, and the order is what a reader relies on.
 Delete the headings that this document does not need, and keep the ones it does
-in this sequence.
+in this order.
 
 - **Motivation.** What is wrong today, stated before any solution appears.
 - **Vocabulary.** The terms this document uses in a way the reader may not expect.

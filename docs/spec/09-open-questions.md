@@ -7,7 +7,6 @@ status: superseded
 status_since: 2026-08-11
 summary: "One heading for each document on the `decisions` shelf, so that a citation naming one of them resolves in this file."
 last_verified: 2026-08-11
-sequence: 9
 relations:
   superseded_by:
     - HW-REG-open-obligations
@@ -212,6 +211,10 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 ## 35 — Whether one requirement kind holds an imported requirement and an authored one
 
 [HW-DR-0035](../decisions/0035-q35-whether-one-requirement-kind-holds-an-imported-requirement-and-an-authored-one.md) — The `requirement` and `acceptance_criterion` kinds serve the authored population alone. A transcribed requirement is a marked file that answers no contract, so a separate kind with an empty contract carries the imported case.
+
+## 117 — The specification series names a part by its slug and carries no sequence
+
+[HW-DR-0117](../decisions/0117-the-specification-series-names-a-part-by-its-slug-and-carries-no-sequence.md) — headwater/standard 5.0.0 deletes the sequence facet. A part of the specification series is named by its slug, a citation names a part by a title link, and the sidebar lists the series in the reading order that builds_on gives. The four-digit identifier shelves keep their numbers. (asserted, and no human has accepted it)
 
 ## 108 — The site sidebar lists a shelf in path order, and the shelf index keeps the reading order
 
