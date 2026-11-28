@@ -1,0 +1,6 @@
+---
+status: superseded
+summary: "this quote never closes either
+---
+
+A text file is no Markdown document, whatever its first lines say.
