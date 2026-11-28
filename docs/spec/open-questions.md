@@ -218,7 +218,7 @@ The documents on this shelf, in the reading order this corpus derives. Each head
 
 ## 108 — The site sidebar lists a shelf in path order, and the shelf index keeps the reading order
 
-[HW-DR-0108](../decisions/0108-the-site-sidebar-lists-a-shelf-in-path-order-and-the-shelf-index-keeps-the-reading-order.md) — The site sidebar lists the documents of a shelf in path order, which is numeric order on a numbered shelf. The shelf index keeps the derived reading order. (asserted, and no human has accepted it)
+[HW-DR-0108](../decisions/0108-the-site-sidebar-lists-a-shelf-in-path-order-and-the-shelf-index-keeps-the-reading-order.md) — The site sidebar lists the documents of a shelf in path order, which is numeric order on a numbered shelf. A shelf that the site_nav precedence key names keeps the reading order. The shelf index keeps the derived reading order. (asserted, and no human has accepted it)
 
 ## 36 — Which of MkDocs, Docusaurus, or Astro this corpus emits navigation for, and why
 
