@@ -73,8 +73,8 @@
 //! The two name one set over every taxonomy the resolver accepts. `lifecycle
 //! soundness` refuses a regime that reaches a state with no exit and no such
 //! role, and it refuses a regime that reaches a role-terminal state and gives
-//! it an exit. [Spec
-//! 3](../../../../docs/spec/authoring-and-lifecycle.md#lifecycle) states the
+//! it an exit.
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#lifecycle) states the
 //! pair, and `regimes.lifecycle` declares no `terminal` member for a third way
 //! to say it.
 //!

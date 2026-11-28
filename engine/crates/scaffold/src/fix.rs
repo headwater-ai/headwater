@@ -22,7 +22,7 @@
 //! because it parses its own result and looks for the half it wrote. A patch
 //! over prose needs the same shape of promise against
 //! [`headwater_doc::sentences`], which
-//! [The check layer](../../../../docs/spec/check-layer.md#the-correctness-roots) holds
+//! [the check layer](../../../../docs/spec/check-layer.md#the-correctness-roots) holds
 //! as a correctness root: a rewrite at a wrong span **corrupts a document**
 //! rather than reporting a wrong line.
 //!

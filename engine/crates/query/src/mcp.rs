@@ -52,8 +52,8 @@
 //!    the run *after* the write, so a patch that produced a document the checks
 //!    reject reports it in the same answer.
 //! 4. **No write tool accepts a document.** `headwater new` writes no
-//!    `accepted_by` and no warrant of `accepted`, so neither does this. [Spec
-//!    3's stop rule 5](../../../../docs/spec/authoring-and-lifecycle.md#provenance-is-recorded-not-assumed)
+//!    `accepted_by` and no warrant of `accepted`, so neither does this.
+//!    [Authoring and lifecycle's stop rule 5](../../../../docs/spec/authoring-and-lifecycle.md#provenance-is-recorded-not-assumed)
 //!    forbids an agent from stamping its own output, and
 //!    [HW-OBL-0108](../../../../docs/obligations/0108-an-agent-writes-the-acceptance-stamp-of-every-document-in-this-corpus.md)
 //!    measures how often an agent does it anyway. What this surface adds to
@@ -1118,8 +1118,8 @@ fn fresh_check(server: &Server<'_>, format: &str) -> Result<String, Failure> {
     let cmd = command(server);
     let machine = format == "text" || format == "json";
     let wanted = if machine { "json" } else { format };
-    // The date the server fixed when it started, and not the host's date: spec
-    // 5 fixes the clock for the life of the server (#1880, PR #1943).
+    // The date the server fixed when it started, and not the host's date:
+    // AI integration (docs/spec/ai-integration.md) fixes the clock for the life of the server (#1880, PR #1943).
     let now = server.now.now().render();
     let stdout = match server.rerun {
         Rerun::InProcess => check(server, wanted)?,

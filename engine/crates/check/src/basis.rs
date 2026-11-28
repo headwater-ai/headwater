@@ -19,7 +19,7 @@
 //! # What it reads, and why neither value comes from a declaration
 //!
 //! Both values live in the provenance block, which
-//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#provenance-is-recorded-not-assumed)
+//! [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#provenance-is-recorded-not-assumed)
 //! makes the engine's rather than a taxonomy's: "The provenance block is the
 //! exception, and its shape belongs to the engine." So no taxonomy declares a
 //! warrant and none declares an evidence basis, and this rule reads both

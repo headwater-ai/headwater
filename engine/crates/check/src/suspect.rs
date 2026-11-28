@@ -918,8 +918,8 @@ fn unwritable(edge: &Edge) -> &'static str {
 }
 
 /// The clause that says why `--fix` writes no stamp onto an edge whose
-/// relation declares no `verified_revision`, after the relation's name. Spec
-/// 2 makes an attribute the relation does not declare a finding, so a fix
+/// relation declares no `verified_revision`, after the relation's name.
+/// [The taxonomy model](../../../../docs/spec/taxonomy-model.md) makes an attribute the relation does not declare a finding, so a fix
 /// must not write one (#1674).
 const UNDECLARED: &str =
     " declares no `verified_revision`, so `headwater check --fix` cannot write it here";

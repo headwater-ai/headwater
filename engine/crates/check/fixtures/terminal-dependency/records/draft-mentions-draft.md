@@ -11,4 +11,4 @@ summary: a draft that mentions another draft
 # The draft resting on a draft
 
 Two documents that are still argued over. Neither is live, so neither is
-[Authoring and lifecycle](../../../../../../docs/spec/authoring-and-lifecycle.md)'s finding.
+spec 3's finding.

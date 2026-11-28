@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! [Distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s *An assembly has two consumption forms* section, held against the
+//! [distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s *An assembly has two consumption forms* section, held against the
 //! starter recipe this repository ships.
 //!
 //! # Why this file exists

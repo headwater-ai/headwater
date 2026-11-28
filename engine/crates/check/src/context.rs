@@ -200,7 +200,7 @@ impl Date {
     ///
     /// A value this cannot read returns `None` rather than a guess. The caller
     /// then reports that it could not evaluate, which is the visible skip
-    /// [The assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+    /// [the assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
     /// asks for, and never a comparison against a date nobody wrote.
     ///
     /// The calendar is [`headwater_meta::shape::calendar_date`], the one that

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 #
-# The package that the taxonomy model's (docs/spec/taxonomy-model.md) worked overlay is written against, cut down to the
+# The package that spec 2's worked overlay is written against, cut down to the
 # declarations that overlay touches.
 
 taxonomy: headwater/standard

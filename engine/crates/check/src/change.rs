@@ -39,7 +39,7 @@
 //! what to do about a version it cannot see, and every wrong answer to that
 //! question is green. So the runner skips the instance with the reason, which
 //! is the visible skip
-//! [The assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+//! [the assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
 //! asks for, and the check is never handed one.
 //!
 //! # A manifest this reader cannot parse is refused whole

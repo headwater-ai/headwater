@@ -47,7 +47,7 @@
 //!
 //! [Q5](../../../../docs/spec/decisions.md#q5--voice-checking-depth) closed on
 //! a measurement of three ASD-STE100 structural rules, used as proxies, and
-//! [The register of open obligations](../../../../docs/spec/open-obligations.md) records what stayed
+//! [the register of open obligations](../../../../docs/spec/open-obligations.md) records what stayed
 //! unmeasured: nobody has measured `future_intent`, `change_narration` or
 //! `phased_rollout`, "because no implementation of them exists". This file is
 //! that implementation. The other half is a human campaign, and no code

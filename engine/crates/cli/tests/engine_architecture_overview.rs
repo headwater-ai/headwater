@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! [The engine architecture](../../../../docs/spec/engine-architecture.md) is an overview of the engine, and each rule it once stated alone now
+//! [the engine architecture](../../../../docs/spec/engine-architecture.md) is an overview of the engine, and each rule it once stated alone now
 //! lives in one home that it points at (#1572, slice 4b).
 //!
 //! The file keeps all 18 of its headings, because inbound links name them.
@@ -117,7 +117,7 @@ fn prose_outside_cli(text: &str) -> String {
 /// Each heading line of [the engine architecture](../../../../docs/spec/engine-architecture.md) at `1b12d20c`, which inbound links name: the
 /// title and the 18 section headings the adjudication counted.
 const HEADINGS: [&str; 19] = [
-    "# 6 — Engine architecture",
+    "# Engine architecture",
     "## Why one engine",
     "## Pipeline",
     "### Subsystems",
@@ -676,7 +676,14 @@ fn engine_stale_quotes(rel: &str, name: &str) -> (Vec<String>, usize) {
 /// held it is history, and it passes.
 #[test]
 fn no_engine_comment_quotes_text_spec_6_does_not_hold() {
-    let (stale, read_count) = engine_stale_quotes(SPEC_SIX, "spec 6");
+    // The title is the citation form since HW-DR-0117, and a comment written
+    // before it names the number, so the scan reads both names.
+    let (mut stale, mut read_count) = engine_stale_quotes(SPEC_SIX, "spec 6");
+    let (titled, titled_count) = engine_stale_quotes(SPEC_SIX, "engine architecture");
+    stale.extend(titled);
+    stale.sort();
+    stale.dedup();
+    read_count += titled_count;
     assert!(read_count > 0, "no engine comment quotes spec 6 at all");
     assert!(
         stale.is_empty(),
@@ -694,7 +701,7 @@ fn the_quote_scan_fires_on_a_stale_credit_and_on_nothing_else() {
          the base taxonomy and overlays.",
     );
     let stale = |source: &str| -> Vec<usize> {
-        stale_quotes(source, false, "spec 6", "06-engine-architecture", &doc)
+        stale_quotes(source, false, "spec 6", "engine-architecture", &doc)
             .into_iter()
             .map(|(line, _)| line)
             .collect()

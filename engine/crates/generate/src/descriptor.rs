@@ -22,7 +22,7 @@
 //! without stating its form. Two rules already settled supply it between them.
 //! [The conceptual model](../../../../docs/spec/conceptual-model.md#projections) says a
 //! machine reads the descriptor to learn "where to start", and
-//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#reading-precedence-is-derived)
+//! [the taxonomy model](../../../../docs/spec/taxonomy-model.md#reading-precedence-is-derived)
 //! derives reading precedence from the relation family and the nucleus, naming
 //! "reading order in generated indexes" as one of its three consumers. So a
 //! shelf's entry point is the document its derived reading order puts first,

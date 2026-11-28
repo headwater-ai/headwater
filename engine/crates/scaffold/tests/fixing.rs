@@ -4,7 +4,7 @@
 //! The claim [#71](https://github.com/headwater-ai/headwater/issues/71) is
 //! about: a patch over prose anchors at an offset, the offsets come from
 //! [`headwater_doc::sentences`], and
-//! [The check layer](../../../../docs/spec/check-layer.md#the-correctness-roots) holds
+//! [the check layer](../../../../docs/spec/check-layer.md#the-correctness-roots) holds
 //! that splitter as a correctness root. A rewrite at a wrong offset **corrupts
 //! a document** rather than reporting a wrong line, so a green run over the
 //! result is not enough on its own and this file records four things.

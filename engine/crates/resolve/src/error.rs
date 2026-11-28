@@ -255,7 +255,7 @@ impl std::fmt::Display for ResolveError {
 }
 
 /// Every `add` collision of one refused resolution, as the judgment task
-/// [The taxonomy model](../../../../docs/spec/taxonomy-model.md#customization-by-composition)
+/// [the taxonomy model](../../../../docs/spec/taxonomy-model.md#customization-by-composition)
 /// owes a consumer: both declarations, both files, the address, and the two
 /// operations that settle it.
 ///

@@ -13,7 +13,7 @@
 //! A file with no front-matter block is an **untyped document**. It is an
 //! ordinary state of a corpus: somebody has written a file that nobody has typed
 //! yet, and the whole first-contact story of
-//! [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#first-contact-adoption-is-a-migration-from-no-taxonomy)
+//! [distribution and federation](../../../../docs/spec/distribution-and-federation.md#first-contact-adoption-is-a-migration-from-no-taxonomy)
 //! is about a corpus in that state.
 //!
 //! A file whose block will not load is a file the engine **could not read**.
@@ -176,7 +176,7 @@ pub struct Row {
     /// The digest of the bytes this row read, and `None` where it read none.
     ///
     /// This is the content hash that
-    /// [The check layer](../../../../docs/spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
+    /// [the check layer](../../../../docs/spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
     /// puts in a cache key and in the read set of a run: "the content hash of
     /// every document and edge that an instance read". It is taken here, of
     /// the bytes this walk read, for the reason the row carries the document

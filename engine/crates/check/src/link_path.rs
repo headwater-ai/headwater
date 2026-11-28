@@ -103,7 +103,7 @@ const NO_LINKS: &str = "the view carries no bound prose links for this corpus";
 /// The check. It reads no declaration of its own, on [`crate::fragment`]'s
 /// terms: no member of the taxonomy language turns prose-link resolution on or
 /// off, because
-/// [The conceptual model](../../../../docs/spec/conceptual-model.md#prose-links-are-not-relations)
+/// [the conceptual model](../../../../docs/spec/conceptual-model.md#prose-links-are-not-relations)
 /// makes it a property of a corpus rather than of a kind.
 pub struct Paths;
 

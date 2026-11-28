@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! [The engine architecture](../../../../docs/spec/engine-architecture.md)'s `### CLI` keeps the grammar and the three rules that no verb
+//! [the engine architecture](../../../../docs/spec/engine-architecture.md)'s `### CLI` keeps the grammar and the three rules that no verb
 //! contract states, and each verb's own rules live in its contract under
 //! `docs/interfaces/` (#1572, slice 4a).
 //!
@@ -359,10 +359,10 @@ const MOVED_CLAIMS: [&str; 6] = [
     "the recorder is a separate process",
 ];
 
-/// Where `text`, in lower case, first names [the engine architecture](../../../../docs/spec/engine-architecture.md): the words `spec 6`, or a
-/// link into its file, whatever the link text says.
+/// Where `text`, in lower case, first names [the engine architecture](../../../../docs/spec/engine-architecture.md): the words `spec 6`, its title,
+/// or a link into its file, whatever the link text says.
 fn spec_six_mention(text: &str) -> Option<usize> {
-    ["spec 6", "engine-architecture.md"]
+    ["spec 6", "engine architecture", "engine-architecture.md"]
         .iter()
         .filter_map(|m| text.find(m))
         .min()

@@ -14,7 +14,7 @@
 //! in part here and in part nowhere, because the part that is missing needs a
 //! declaration that the language does not have. A validator that reported those
 //! as passes would be the silent pass that
-//! [The assurance model](../../../../docs/spec/assurance-model.md) exists to remove, and
+//! [the assurance model](../../../../docs/spec/assurance-model.md) exists to remove, and
 //! one that reported them as failures would refuse every taxonomy there is.
 //! So each one states what it decided and what it did not, and
 //! `headwater taxonomy validate` prints the statement.
@@ -279,7 +279,7 @@ pub const WAITING: [(&str, &str); 0] = [];
 ///
 /// `headwater taxonomy validate` prints this beside its verdict, because a
 /// verdict with no statement of what was checked is the pass that
-/// [The assurance model](../../../../docs/spec/assurance-model.md) refuses.
+/// [the assurance model](../../../../docs/spec/assurance-model.md) refuses.
 pub fn render(mode: ColorMode) -> String {
     let mut out = String::new();
     for (rule, ran) in RULES {
@@ -369,8 +369,8 @@ pub fn display_names(taxonomy: &Mapping, mode: ColorMode) -> String {
 /// family with no default has a blank cell there, and it is absent here.
 ///
 /// It is public because `taxonomy audit` reports every relation that
-/// contradicts the default its family gives ([spec
-/// 2](../../../../docs/spec/taxonomy-model.md#nuclearity)), and that
+/// contradicts the default its family gives (
+/// [the taxonomy model](../../../../docs/spec/taxonomy-model.md#nuclearity)), and that
 /// reading is the same table read from the other side. A second copy of it in
 /// the audit crate could disagree with the one a validator runs, and the two
 /// would then name different relations as overrides.

@@ -52,7 +52,7 @@
 //! neither refuses it nor certifies it and `taxonomy diff` is where it is
 //! reported ([#388](https://github.com/headwater-ai/headwater/issues/388)).
 //! Widening the source half as well would refuse the migration
-//! [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#the-migration-payload)
+//! [distribution and federation](../../../../docs/spec/distribution-and-federation.md#the-migration-payload)
 //! most expects: content moving out of the base and into a bundle, stated to
 //! base-only consumers as a re-statement.
 //!

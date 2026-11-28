@@ -312,7 +312,7 @@ impl<'a> Surface<'a> {
     /// So a shelf index is the set of *documents*, and never the set of
     /// documents that a human typed. Which verb writes a file is a fact about
     /// its maintenance, and
-    /// [The engine architecture](../../../../docs/spec/engine-architecture.md#projections)
+    /// [the engine architecture](../../../../docs/spec/engine-architecture.md#projections)
     /// spends that fact on excusing the file from checks. It is not a fact
     /// about whether the corpus holds the document, and no reader of an index
     /// asks the first question.

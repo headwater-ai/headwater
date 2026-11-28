@@ -12,7 +12,7 @@
 //! `cites_evidence` permits `evaluation` at its target end, and `traces_to`
 //! permits `governed_document`. A document's kind is `design_spec` or
 //! `review_record`, never `governed_document`, because
-//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#abstract-kinds) says no
+//! [the taxonomy model](../../../../docs/spec/taxonomy-model.md#abstract-kinds) says no
 //! document is an abstract kind. So an endpoint is permitted when the kind at
 //! that end **descends from** a kind the relation names, and a comparison of
 //! the two strings would report every inherited endpoint in a corpus as a

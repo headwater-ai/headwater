@@ -408,7 +408,7 @@ impl Warrants {
 /// A fourth arm stood here and is gone. `Unbuilt` said that an input this
 /// engine designs is not implemented, and one wait ever reached it: the
 /// promotion count, which needed the `needs_prior` input of
-/// [The check layer](../../../../docs/spec/check-layer.md#temporal-inputs-the-clock-and-the-prior-version).
+/// [the check layer](../../../../docs/spec/check-layer.md#temporal-inputs-the-clock-and-the-prior-version).
 /// `headwater_check::promotion` declares that input now, and the reading left
 /// this verb rather than starting to run in it: a rate whose numerator is
 /// change-scoped is not a wait of a verb that reads one working tree. So the

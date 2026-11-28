@@ -20,8 +20,8 @@
 //! --now <date>` is deterministic over them, so any reading of any past day
 //! could be retaken from the tree of that day.
 //!
-//! The reason this store exists is [spec
-//! 12](../../../../docs/spec/check-layer.md)'s instead: **a change reaches
+//! The reason this store exists is
+//! [the check layer](../../../../docs/spec/check-layer.md)'s instead: **a change reaches
 //! this engine as a named set of inputs, and never as a second tree**. No crate
 //! here walks git history and none opens a socket. So the tree of a past day is
 //! an input no run of this engine has, and the only way it can hold a series is
@@ -65,8 +65,8 @@
 //!
 //! **No owner.** The lock names the owner and the check report prints it beside
 //! every task, so a reader joins on the task identifier. A per-owner series over
-//! time is a performance measure, and [spec
-//! 3](../../../../docs/spec/authoring-and-lifecycle.md#what-the-capture-cost-store-records-and-what-it-refuses-to)'s
+//! time is a performance measure, and
+//! [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#what-the-capture-cost-store-records-and-what-it-refuses-to)'s
 //! argument against a per-author capture-cost figure applies here unchanged.
 //!
 //! **No key of the block that nothing read.** Such a key holds nothing and

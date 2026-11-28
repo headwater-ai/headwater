@@ -81,7 +81,7 @@ regimes:
         - {term: robust, reason: it stands in for the failure the thing survives}
     ste_strict: {tag: en-US, controlled: ASD-STE100, profile: strict}
 
-# Three schemes, because the taxonomy model (docs/spec/taxonomy-model.md) writes two forms of local part and each one is a
+# Three schemes, because spec 2 writes two forms of local part and each one is a
 # different matcher: `{slug}` is a free token and `{seq:04d}` is a fixed-width
 # integer. The namespace is `FIX` in all three, which is the part of a pattern
 # that the invariant core does not let an overlay change.
@@ -290,7 +290,7 @@ obligations:
     severity: medium
   OB-FIX-29:
     statement: No relation instance outside the association family names the document that declares it as its target
-    rationale: An edge from a document to itself asserts nothing, or it asserts a contradiction, and the taxonomy model lets only an association relation point at its own document
+    rationale: An edge from a document to itself asserts nothing, or it asserts a contradiction, and spec 2 lets only an association relation point at its own document
     class: cohesion
     prevents: content.inconsistent
     severity: medium
@@ -336,7 +336,7 @@ obligations:
     disposition:
       gap:
         owner: the fixture tree
-        target: a reader feedback loop, which the assurance model lists as usually absent
+        target: a reader feedback loop, which spec 4 lists as usually absent
 
   # Unverifiable: no mechanism can exist, and the reasoning is recorded.
   OB-FIX-15:
@@ -347,9 +347,9 @@ obligations:
     severity: high
     disposition:
       unverifiable:
-        reasoning: The question is semantic, so the assurance model sends it to the accuracy audit and no check reaches it
+        reasoning: The question is semantic, so spec 4 sends it to the accuracy audit and no check reaches it
 
-  # The state the assurance model (docs/spec/assurance-model.md) forbids: no control, and no statement either. This is the
+  # The state spec 4 forbids: no control, and no statement either. This is the
   # failing fixture of `obligation.disposition.not_one`.
   OB-FIX-16:
     statement: A heading says what the section under it is about
@@ -382,7 +382,7 @@ obligations:
     prevents: content.outdated
     severity: medium
 
-  # Discharged by a mechanism outside this engine, which the assurance model (docs/spec/assurance-model.md) declares and
+  # Discharged by a mechanism outside this engine, which spec 4 declares and
   # which is not an error. The passing fixture of the same rule.
   OB-FIX-19:
     statement: A document that nothing has verified for six months is swept
@@ -514,7 +514,7 @@ controls:
   # This corpus declares no relation with `created_by: import`, so the rule
   # this control names reaches zero instances here and reports nothing. The
   # pair is declared all the same: a rule with no control emits findings that
-  # name no obligation, which the assurance model (docs/spec/assurance-model.md) forbids, and the register would report the
+  # name no obligation, which spec 4 forbids, and the register would report the
   # rule as reaching none on every run over this tree.
   CT-FIX-24:
     mechanism: check:relation.target.suspect
@@ -572,7 +572,7 @@ controls:
     posture: blocking
     acts: preventive
 
-  # A mechanism outside this engine. The assurance model (docs/spec/assurance-model.md) declares these, and the register
+  # A mechanism outside this engine. Spec 4 declares these, and the register
   # says only that this run did not observe it.
   CT-FIX-16:
     mechanism: scheduled:staleness-sweep

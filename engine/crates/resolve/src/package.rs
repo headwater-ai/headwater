@@ -752,8 +752,8 @@ pub(crate) fn bundle_names(
 /// [`shipped`] builds the source list and this resolves it. One resolution per
 /// publish, held by [`publish_at`] and read by both [`crate::template::holds`]
 /// and [`migrations`]. It is what
-/// [#387](https://github.com/headwater-ai/headwater/issues/387) asked for: spec
-/// 7 states the confluence guarantee for every release, so a package whose
+/// [#387](https://github.com/headwater-ai/headwater/issues/387) asked for:
+/// [distribution and federation](../../../../docs/spec/distribution-and-federation.md) states the confluence guarantee for every release, so a package whose
 /// bundles collide is refused whether or not it carries a migration payload.
 ///
 /// The prefix on a refusal says which question reached it, because the only
@@ -894,7 +894,7 @@ pub fn maximal(root: &Path, directory: &Path) -> Result<crate::Resolution, Vec<R
 ///
 /// A migration rewrites the addresses of the file this repository owns. A
 /// bundle is package content, and
-/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#waivers)
+/// [distribution and federation](../../../../docs/spec/distribution-and-federation.md#waivers)
 /// gives the reason a local edit to package content does not survive:
 /// `headwater taxonomy vendor` replaces a vendored package directory whole. An
 /// address rewritten inside a bundle is lost at the next upgrade, and the
@@ -3639,7 +3639,7 @@ fn put(out: &Path, staged: &[Staged]) -> Result<(), String> {
 /// of that set. The base alone is the least any consumer resolves, because a
 /// consumer may select no bundle. [`shipped`] is the most: the base with every
 /// bundle, which
-/// [The taxonomy model](../../../../docs/spec/taxonomy-model.md#customization-by-composition)
+/// [the taxonomy model](../../../../docs/spec/taxonomy-model.md#customization-by-composition)
 /// makes a taxonomy that resolves because a bundle is add-only and any subset of
 /// them commutes. `crate::migration::Scope` carries the two and
 /// `crate::migration::holds` argues which half reads which. The adopter overlay
@@ -4544,7 +4544,7 @@ fn holds_the_same_package(
 /// bytes under its name, with the verb exiting 0.
 ///
 /// **This is not a new rule, and no digest moves.**
-/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#publishing)
+/// [distribution and federation](../../../../docs/spec/distribution-and-federation.md#publishing)
 /// already says "every consumer-facing reader takes the name from the manifest:
 /// the lookup under `.headwater/packages/`, the release record, the vendor target directory
 /// and the corpus descriptor", and the vendor target was the one reader in that

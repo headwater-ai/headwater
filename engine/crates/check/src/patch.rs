@@ -181,7 +181,7 @@ impl Patch {
 /// against the bytes before it moves one.
 ///
 /// A code span and a quoted run are skipped for the reason
-/// [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#what-a-lexical-rule-gets-wrong-and-where-posture-comes-from)
+/// [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#what-a-lexical-rule-gets-wrong-and-where-posture-comes-from)
 /// gives: neither is this author's prose, and a patch into one would rewrite
 /// somebody else's words or a file name.
 ///

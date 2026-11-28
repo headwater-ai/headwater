@@ -1278,8 +1278,15 @@ fn check_strict_is_non_zero_when_a_declared_task_has_lapsed() {
         "the finding names the task:\n{}",
         checked.out
     );
+    // The report wraps its text, so the phrase is read with the line breaks
+    // taken out: a longer citation before it moved "a" to the line above.
     assert!(
-        checked.out.contains("a person"),
+        checked
+            .out
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ")
+            .contains("a person"),
         "and the owner PAYLOAD declares:\n{}",
         checked.out
     );

@@ -13,7 +13,7 @@
 //! the bytes they were computed from. None of them is a signature.
 //!
 //! One is not like the others. The package digest that
-//! [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#publishing)
+//! [distribution and federation](../../../../docs/spec/distribution-and-federation.md#publishing)
 //! puts on a release is a check on an artifact fetched from elsewhere, and
 //! `headwater_resolve::release` computes it with this function.
 //! [Q22](../../../../docs/spec/decisions.md#q22--the-integrity-posture-of-a-published-package)

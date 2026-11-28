@@ -71,8 +71,8 @@
 //! version four lines above. A second copy could disagree with the first, and
 //! nothing could say which of the two the run honored.
 //!
-//! **A severity.** A pending finding keeps the severity its rule gave it. Spec
-//! 12 puts severity on the check and [the assurance model](../../../../docs/spec/assurance-model.md) on the obligation, and a payload is
+//! **A severity.** A pending finding keeps the severity its rule gave it.
+//! [The check layer](../../../../docs/spec/check-layer.md) puts severity on the check and [the assurance model](../../../../docs/spec/assurance-model.md) on the obligation, and a payload is
 //! neither. An adopter who wants a finding quieter is asking for a different
 //! taxonomy, not for a different accounting of the same one.
 //!
@@ -366,8 +366,8 @@ fn scalar_of(node: &headwater_yaml::Spanned<Value>) -> Option<&str> {
 
 /// Hold every finding a task accounts for, and report what remains.
 ///
-/// This runs before [`crate::suppression::apply`], which is the precedence spec
-/// 4 fixes. A finding held here never reaches a directive, so the two
+/// This runs before [`crate::suppression::apply`], which is the precedence
+/// [the assurance model](../../../../docs/spec/assurance-model.md) fixes. A finding held here never reaches a directive, so the two
 /// inventories partition by construction.
 pub fn apply(findings: Vec<Finding>, declared: Declared, now: Date) -> (Vec<Finding>, Ledger) {
     let Declared {

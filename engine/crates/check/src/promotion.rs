@@ -40,7 +40,7 @@
 //! identical to this one in a report over a corpus where every acceptance was a
 //! promotion. `tests/promotion.rs` is the corpus that separates them, and it is
 //! the failing fixture
-//! [The check layer](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
+//! [the check layer](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
 //! requires.
 //!
 //! # The severity is `info`, and no bar exists to raise it
@@ -76,7 +76,7 @@ pub const RULE: &str = "warrant.promoted";
 /// The warrant a promotion moves from, and the one it moves to.
 ///
 /// Both are values of the closed set that
-/// [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires)
+/// [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires)
 /// declares. They are written here rather than read from a declaration because
 /// the promotion act is [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s rather than a taxonomy's: no member of the
 /// language names a warrant, and `taxonomy audit` writes the same closed set out

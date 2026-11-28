@@ -793,7 +793,7 @@ pub fn pinned(dir: Option<&Path>, pinned: &str) -> Pinned {
 /// Whether this engine is inside the range a package declares.
 ///
 /// A package that declares no range is taken, and the absence is what
-/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#publishing)
+/// [distribution and federation](../../../../docs/spec/distribution-and-federation.md#publishing)
 /// means by a publisher that states no floor. A range that this engine cannot
 /// read is refused rather than ignored: an unreadable range read as no range is
 /// a claim the publisher made and the consumer dropped.

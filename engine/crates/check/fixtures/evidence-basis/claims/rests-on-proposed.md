@@ -2,7 +2,7 @@
 id: NOTE-FIX-rests-on-proposed
 status: current
 status_since: 2026-08-02
-summary: an evidenced claim onto a warrant outside authoring and lifecycle's closed set
+summary: an evidenced claim onto a warrant outside spec 3's closed set
 provenance:
   warrant: accepted
   agency: human

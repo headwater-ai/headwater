@@ -251,7 +251,7 @@ use headwater_graph::{Declarations, Graph};
 /// taxonomy decides.
 ///
 /// The order is the five origins of
-/// [The check layer](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check),
+/// [the check layer](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
 pub const RULES: [&str; 60] = [
     facet_required::RULE,
@@ -422,7 +422,7 @@ pub struct Run {
     pub instances: Vec<Instance>,
     pub coverage: Coverage,
     /// Every finding a reader sees, in the one order
-    /// [The check layer](../../../../docs/spec/check-layer.md#determinism-concretely)
+    /// [the check layer](../../../../docs/spec/check-layer.md#determinism-concretely)
     /// fixes. A finding an author suppressed is not here, and it is in
     /// [`Run::suppressions`] instead.
     pub findings: Vec<Finding>,

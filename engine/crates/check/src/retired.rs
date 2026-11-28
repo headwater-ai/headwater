@@ -41,7 +41,7 @@
 //! [`headwater_doc::Sentence::authored`] and nothing else, which is the text
 //! the parser says this author wrote as prose. A term inside a code span or a
 //! block quote is somebody else's word, and
-//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#what-a-lexical-rule-gets-wrong-and-where-posture-comes-from)
+//! [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#what-a-lexical-rule-gets-wrong-and-where-posture-comes-from)
 //! puts both outside a lexical rule by construction.
 
 use crate::finding::{Finding, Severity};

@@ -5,7 +5,7 @@
 #
 # `kinds.decision` is named by `shelves.decisions.kind` and by both ends of
 # `relations.supersedes`, and every one of those names is a bare string that the
-# meta-schema types as a string. The taxonomy model (docs/spec/taxonomy-model.md) fails a `remove` when a declaration that
+# meta-schema types as a string. Spec 2 fails a `remove` when a declaration that
 # survives still references the removed key, and the resolver could decide only
 # the half that a `$`-reference names. This is the other half, and it is decided
 # over the result rather than over the operation.

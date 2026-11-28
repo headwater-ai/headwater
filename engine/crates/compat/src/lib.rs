@@ -780,7 +780,7 @@ pub struct Report {
     /// What became of the base.
     ///
     /// This is the "what changed in the base" line of
-    /// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#upgrading),
+    /// [distribution and federation](../../../../docs/spec/distribution-and-federation.md#upgrading),
     /// and it is reported and never gated on. Two publishes of one package
     /// resolve identically and two that differ in a description do not, and
     /// neither fact decides a dimension. See the module comment.

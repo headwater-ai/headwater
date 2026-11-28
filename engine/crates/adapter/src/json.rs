@@ -11,7 +11,7 @@
 //! # This is not an adapter, and the distinction is the point of the crate
 //!
 //! No platform reads this. It is the neutral surface that
-//! [The design departures](../../../../docs/spec/design-departures.md) leaves for an
+//! [the design departures](../../../../docs/spec/design-departures.md) leaves for an
 //! adapter that this repository did not write: a forge, a tracker or a cloud
 //! that nobody here privileged, whose author reads bytes rather than links a
 //! Rust library. The two adapters beside it — [`crate::sarif`] and

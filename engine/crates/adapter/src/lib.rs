@@ -41,7 +41,7 @@
 //! definition.
 //!
 //! [`Format::Json`] is not an adapter. It is the finding shape
-//! [The assurance model](../../../../docs/spec/assurance-model.md#findings) already
+//! [the assurance model](../../../../docs/spec/assurance-model.md#findings) already
 //! declares, written out, for an adapter that this repository did not write.
 //! Being nobody else's vocabulary bought it an empty loss set for a year and it
 //! does not any more: see [`json::LOSS`].
@@ -311,7 +311,7 @@ impl Carrier {
 }
 
 /// Which escape mechanism holds a finding back, in the precedence
-/// [The assurance model](../../../../docs/spec/assurance-model.md#suppression) fixes:
+/// [the assurance model](../../../../docs/spec/assurance-model.md#suppression) fixes:
 /// waiver, then migration-pending, then suppression.
 ///
 /// Two variants rather than three, because this engine has no waiver mechanism
@@ -422,7 +422,7 @@ pub fn reported(run: &Run) -> Vec<Reported<'_>> {
 /// What a format carried, and what its loss set accounted for.
 ///
 /// The audit of the claim a loss set makes, in the shape
-/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped)
+/// [distribution and federation](../../../../docs/spec/distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped)
 /// fixes for the graph emitters: "Every node and every edge in the graph is
 /// either present in the output, or accounted for by a declared loss reason."
 /// Here the denominator is every finding of the run rather than every node of

@@ -45,7 +45,7 @@
 //!
 //! Every reading this check declines is a skip with a reason rather than a
 //! pass, which is what
-//! [The assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+//! [the assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
 //! asks of an instance that decided nothing.
 //!
 //! # No movement is not a transition

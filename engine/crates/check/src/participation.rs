@@ -48,7 +48,7 @@
 //! unknown severity, a window that is not a number of days, an origin no facet
 //! carries, or a document whose origin date will not parse. Every one of those
 //! is a fact about the taxonomy or the document rather than a verdict, and
-//! [The assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+//! [the assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
 //! wants it visible rather than counted as a pass.
 
 use crate::context::Date;

@@ -238,18 +238,27 @@ fn spec_six_names(sentence: &str) -> Vec<usize> {
     // The plain words, with a space, a comma or a possessive after them, so
     // that a link's text ("[Spec 6]") is read once, as the link.
     let lower = sentence.to_lowercase();
-    let mut from = 0;
-    while let Some(at) = lower[from..].find("spec 6") {
-        let end = from + at + "spec 6".len();
-        let rest = &lower[end..];
-        if rest.starts_with([' ', ',']) || rest.starts_with("'s ") || rest.starts_with("\u{2019}s ")
-        {
-            ends.push(end);
+    for name in SPEC_SIX_WORDS {
+        let mut from = 0;
+        while let Some(at) = lower[from..].find(name) {
+            let end = from + at + name.len();
+            let rest = &lower[end..];
+            if rest.starts_with([' ', ','])
+                || rest.starts_with("'s ")
+                || rest.starts_with("\u{2019}s ")
+            {
+                ends.push(end);
+            }
+            from = end;
         }
-        from = end;
     }
     ends
 }
+
+/// The plain words that name the engine architecture: its title, which
+/// HW-DR-0117 made the citation form, and the number it carried under 4.x,
+/// which a sentence written before that ruling still uses.
+const SPEC_SIX_WORDS: [&str; 2] = ["engine architecture", "spec 6"];
 
 /// True when `sentence` credits [the engine architecture](../../../../docs/spec/engine-architecture.md) in the present tense. That is so when
 /// the sentence opens its claim with `according to` and the name, or when the
@@ -260,7 +269,11 @@ fn spec_six_names(sentence: &str) -> Vec<usize> {
 /// `NEGATORS` follows it at once or is the last word of its clause.
 fn credits_spec_six(sentence: &str) -> bool {
     let lower = sentence.to_lowercase();
-    if lower.contains("according to spec 6") || lower.contains("according to [spec 6]") {
+    if SPEC_SIX_WORDS.iter().any(|name| {
+        ["according to ", "according to the ", "according to [", "according to [the "]
+            .iter()
+            .any(|lead| lower.contains(&format!("{lead}{name}")))
+    }) {
         return true;
     }
     spec_six_names(sentence).into_iter().any(|end| {
@@ -548,6 +561,17 @@ fn a_present_tense_credit_to_a_moved_rule_is_flagged_and_history_is_not() {
     assert_eq!(moved_credits(decision, plain), vec![(1, "placeholder")]);
     let lower = "It is not the placeholder that spec 6 describes.\n";
     assert_eq!(moved_credits(decision, lower), vec![(1, "placeholder")]);
+    // The title is the citation form since HW-DR-0117, so it is a name too, in
+    // the plain words, after "according to" and as a link's text.
+    let titled = "The engine architecture says that under counted a placeholder sits there.\n";
+    assert_eq!(moved_credits(decision, titled), vec![(1, "placeholder")]);
+    let per = "According to the engine architecture, a placeholder sits where each node was.\n";
+    assert_eq!(moved_credits(decision, per), vec![(1, "placeholder")]);
+    let linked_title =
+        "[The engine architecture](../spec/engine-architecture.md#cli) puts the probe budget outside it.\n";
+    assert_eq!(moved_credits(decision, linked_title), vec![(1, "probe budget")]);
+    let said_title = "The engine architecture said that a placeholder sat there.\n";
+    assert!(moved_credits(decision, said_title).is_empty());
 
     // A credit is read with the sentence after it, and not the one after that.
     let next = "[Spec 6](../spec/engine-architecture.md#cli) states two things. No crate opens a socket.\n";

@@ -38,7 +38,7 @@
 //! This rule reads every row of the census, so its grain is `Corpus` and a
 //! report says so. What it is not is a corpus-scoped *check*: it is the
 //! runner's accounting over the instance record, which is where
-//! [The check layer](../../../../docs/spec/check-layer.md#instances-and-why-coverage-needs-them)
+//! [the check layer](../../../../docs/spec/check-layer.md#instances-and-why-coverage-needs-them)
 //! puts it — "coverage accounting then comes directly from this, with no added
 //! mechanism". It states [`SCOPE`] for a reader and receives no view, so the
 //! enforcement question does not arise for it.
@@ -272,7 +272,7 @@ impl Coverage {
     /// generated file is never classified and never checked, so it would
     /// otherwise be a gap between two numbers that a reader has to guess the
     /// composition of, and
-    /// [The assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+    /// [the assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
     /// asks OB-COV-3 for the reasons as well as the counts.
     ///
     /// It is not an escape from OB-COV-2. That obligation is over classified
@@ -307,7 +307,7 @@ impl Coverage {
     /// Instances that reached no verdict.
     ///
     /// A run states this in every format it writes, because
-    /// [The assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+    /// [the assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
     /// asks OB-COV-3 for the skips as well as the three counts, and an artifact
     /// that carried the instance total alone would report a run that decided
     /// nothing as a run that decided everything.

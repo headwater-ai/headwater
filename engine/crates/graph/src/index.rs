@@ -101,7 +101,7 @@ pub enum Defect {
     NotAScalar,
     /// Two documents claim one identifier. Both are in the index and neither is
     /// reachable: a target that names it resolves to two documents, and
-    /// [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#identifiers)
+    /// [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#identifiers)
     /// says an identifier is never reused.
     ///
     /// The report carries the **other** claimant whole: its path, and the span

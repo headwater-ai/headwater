@@ -9,7 +9,7 @@
 //! was admitted before the verb was decided, so a flag belonging to another
 //! verb was accepted and did nothing: `headwater check --level L0` exited 0 and
 //! wrote the report that `headwater check` writes. Two interface contracts and
-//! [The check layer](../../../../docs/spec/check-layer.md) stated that as a promise.
+//! [the check layer](../../../../docs/spec/check-layer.md) stated that as a promise.
 //! The decision record withdraws it. A flag belongs to the verb that reads it,
 //! and a verb refuses a flag it does not.
 //!

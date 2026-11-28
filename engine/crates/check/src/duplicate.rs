@@ -32,7 +32,7 @@
 //! and no edge runs between them.
 //!
 //! `Shelf` is declared in
-//! [The check layer](../../../../docs/spec/check-layer.md#what-this-leaves-open) and
+//! [the check layer](../../../../docs/spec/check-layer.md#what-this-leaves-open) and
 //! implemented nowhere, and it cannot hold this rule whatever it becomes. An
 //! identifier scheme is declared per kind, several kinds sit on one shelf, and
 //! one kind sits on several. So two claimants of one identifier need not share
@@ -78,7 +78,7 @@
 //!
 //! No fix. To choose which of the two documents keeps the identifier is a
 //! judgment, and to mint the replacement is an allocation, which is the part of
-//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md) that no rule in this
+//! [the taxonomy model](../../../../docs/spec/taxonomy-model.md) that no rule in this
 //! engine implements.
 
 use crate::finding::{at, Finding, Severity};
@@ -94,7 +94,7 @@ const NO_REPORT: &str = "the view carries no phase-A report for this corpus";
 
 /// The check. It reads no declaration of its own, on [`crate::fragment`]'s
 /// terms: no member of the language turns identifier uniqueness on or off, and
-/// [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#identifiers)
+/// [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#identifiers)
 /// states it of every corpus.
 pub struct Duplicate {
     /// The front-matter key an identifier is read from. The same parameter

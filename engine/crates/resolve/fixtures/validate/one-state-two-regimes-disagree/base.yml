@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # One state that one regime ends and another lets move on, which is the shape
-# [Authoring and lifecycle](../../../../../../docs/spec/authoring-and-lifecycle.md#lifecycle)
+# [spec 3](../../../../../../docs/spec/03-authoring-and-lifecycle.md#lifecycle)
 # says is refused rather than read two ways.
 #
 # `ends` reaches `superseded` and gives it no exit, which agrees with the
@@ -16,7 +16,7 @@
 #
 # What a taxonomy does instead is rename. `superseded` under one regime and a
 # second value under the other are two states with two roles, and the worked
-# overlay of the taxonomy model (docs/spec/taxonomy-model.md) is what says a vocabulary may be renamed freely.
+# overlay of spec 2 is what says a vocabulary may be renamed freely.
 
 taxonomy: acme/fixture
 version: 1.0.0

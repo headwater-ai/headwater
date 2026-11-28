@@ -11,5 +11,5 @@ provenance:
 
 # The asserted record
 
-Nobody read this and nobody named themselves. [Authoring and lifecycle](../../../../../../docs/spec/authoring-and-lifecycle.md) rules that a pointer at it
+Nobody read this and nobody named themselves. Spec 3 rules that a pointer at it
 does not support `evidenced`, and every finding of this tree ends here.

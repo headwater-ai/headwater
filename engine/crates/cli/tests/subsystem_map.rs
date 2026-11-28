@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! [The engine architecture](../../../../docs/spec/engine-architecture.md)'s subsystem map names every engine crate once, and a subsystem spec
+//! [the engine architecture](../../../../docs/spec/engine-architecture.md)'s subsystem map names every engine crate once, and a subsystem spec
 //! it links governs the crates of its row.
 //!
 //! [HW-DR-0098](../../../../docs/decisions/0098-an-engine-subsystem-is-described-by-a-technical-design-spec-on-a-shelf-of-its-own-and-its-behavior-stays-where-it-is-already-written.md)

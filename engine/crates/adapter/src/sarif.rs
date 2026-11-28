@@ -544,7 +544,7 @@ fn result(entry: &Reported<'_>, rules: &[&'static str], run: &Run, grading: Grad
 /// keeps for one.
 ///
 /// `text` is the finding. `markdown` adds the remedy, because
-/// [The assurance model](../../../../docs/spec/assurance-model.md#findings) asks for "one
+/// [the assurance model](../../../../docs/spec/assurance-model.md#findings) asks for "one
 /// path from finding to fix" and a consumer that renders Markdown is the one
 /// place in this vocabulary where the path can be shown rather than stored.
 fn message(entry: &Reported<'_>) -> Json {

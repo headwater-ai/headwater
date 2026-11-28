@@ -402,8 +402,8 @@ fn read_one(named: &str, at: &Path, taxonomy: &Mapping, out: &mut Vec<Refused>) 
         Ok(document) => document,
         // A Markdown file with no `---` block at all is not a document
         // skeleton, so it is not a template and this reader says nothing about
-        // it — UNLESS its own stem states a kind this package declares. Spec
-        // 7's own example manifest ships `templates/note.md` as "prose for a
+        // it — UNLESS its own stem states a kind this package declares.
+        // Distribution and federation's (docs/spec/distribution-and-federation.md) own example manifest ships `templates/note.md` as "prose for a
         // publisher's own authors", and `note` names no kind, so it is skipped
         // on that ground alone. A file named `technical_spec.md` is a
         // template's own claim to teach that kind, and this reader cannot
@@ -506,7 +506,7 @@ fn read_one(named: &str, at: &Path, taxonomy: &Mapping, out: &mut Vec<Refused>) 
 /// A scalar an author has not filled in yet.
 ///
 /// The rule is stated in
-/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#publishing)
+/// [distribution and federation](../../../../docs/spec/distribution-and-federation.md#publishing)
 /// and it is what keeps this reader off `status_since: "{{today}}"`, whose facet
 /// declares `type: date`.
 fn is_placeholder(text: &str) -> bool {

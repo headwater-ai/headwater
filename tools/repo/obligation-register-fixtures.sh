@@ -360,8 +360,8 @@ same "an annotated bullet for a discharged record still counts as bulleted" \
 #     repository's own tooling (#1286), and they keep their `HW-OBL-`
 #     identifiers, so a bullet for one looks like any other. When the register of open obligations (docs/spec/open-obligations.md)
 #     bullets one, the judge names it as a process record rather than as a
-#     generic stray bullet, because the remedy differs: the bullet leaves spec
-#     13, and the record stays where it is.
+#     generic stray bullet, because the remedy differs: the bullet leaves
+#     the register of open obligations (docs/spec/open-obligations.md), and the record stays where it is.
 mkdir -p "$scratch/proc"
 printf -- '---\nid: HW-OBL-0004\nstatus: current\n---\n\n# Four\n' >"$scratch/proc/0004-four.md"
 printf -- '---\nid: HW-OBL-0005\nstatus: draft\n---\n\n# Five\n' >"$scratch/proc/0005-five.md"

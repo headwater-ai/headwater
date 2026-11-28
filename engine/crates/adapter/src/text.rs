@@ -13,7 +13,7 @@
 //!
 //! `headwater check` prints this, and the MCP `check` tool returns it. Two
 //! compositions of one report is the drift
-//! [The engine architecture](../../../../docs/spec/engine-architecture.md#library) rules
+//! [the engine architecture](../../../../docs/spec/engine-architecture.md#library) rules
 //! against by making the CLI "a thin shell over a library API": a terminal and
 //! an agent that read different text are reading about different corpora as
 //! far as either can tell.

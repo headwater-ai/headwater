@@ -8,7 +8,7 @@
 # The relation declares an inverse, so that a document can also write the
 # inverse half onto itself, and the rule has to read either half.
 #
-# `relates_to` is in the association family, the one family the taxonomy model (docs/spec/taxonomy-model.md) lets point
+# `relates_to` is in the association family, the one family spec 2 lets point
 # at its own document, so a self-edge on it is no instance of the rule.
 #
 # `leans_on` declares no family at all. Only a declared `association` is

@@ -41,7 +41,7 @@
 //! stands behind its document, so [`settle`] keeps it and says so (#2041).
 //! Only a run that dies between the two writes still leaves a claim with no
 //! document, and
-//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#identifiers)
+//! [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#identifiers)
 //! declares that state legitimate: "**Never reused.** … A deleted document
 //! does not free its number." The other order can leave a document with no
 //! claim, which is exactly the defect `identifier.claim.missing` exists to

@@ -85,7 +85,7 @@
 //!
 //! They hold for different artifacts, which is what settles it. **The time is
 //! injected and never read**, exactly as
-//! [The check layer](../../../../docs/spec/check-layer.md#determinism-concretely)
+//! [the check layer](../../../../docs/spec/check-layer.md#determinism-concretely)
 //! injects the clock into a check rather than let one call a syscall. A
 //! committed export is held to regeneration and gets no time, so `plan` passes
 //! none. An export that leaves the repository is the artifact [distribution and federation](../../../../docs/spec/distribution-and-federation.md) is talking
@@ -942,7 +942,7 @@ pub struct Output {
 ///
 /// Reported rather than dropped. A generator that silently emitted nothing for
 /// half its declarations is the silent pass that
-/// [The assurance model](../../../../docs/spec/assurance-model.md) removes everywhere
+/// [the assurance model](../../../../docs/spec/assurance-model.md) removes everywhere
 /// else, and the reason is the part a reader acts on.
 #[derive(Clone, Debug)]
 pub struct Unwritten {

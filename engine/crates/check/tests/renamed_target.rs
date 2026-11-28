@@ -25,7 +25,7 @@
 //! run over it has errors before anything moves. The first run here collects
 //! every `(document, rule)` cell that carries one and declares all of them as
 //! adoption debt, which
-//! [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states) says never
+//! [distribution and federation](../../../../docs/spec/distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states) says never
 //! blocks. That is the same instrument `fixtures.rs` uses, and it leaves a copy
 //! of this tree passing a strict run. The rename is then the only thing between
 //! a green verdict and a red one.

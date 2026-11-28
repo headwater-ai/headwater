@@ -23,7 +23,7 @@
 //!
 //! **Both arms are shapes a taxonomy can declare.** `to_kind` became optional
 //! in `engine/crates/meta/meta-schema.yml` on 2026-09-11, and
-//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#participation-expectations)
+//! [the taxonomy model](../../../../docs/spec/taxonomy-model.md#participation-expectations)
 //! states what the absence means: any target document the relation admits
 //! satisfies the expectation.
 //! [HW-OBL-0039](../../../../docs/obligations/0039-a-participation-expectation-names-one-target-kind.md)

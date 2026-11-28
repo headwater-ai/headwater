@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! [The check layer](../../../../docs/spec/check-layer.md)'s `Scope` block, held against [`headwater_check::scope::Scope`].
+//! [the check layer](../../../../docs/spec/check-layer.md)'s `Scope` block, held against [`headwater_check::scope::Scope`].
 //!
 //! # Why this file exists
 //!

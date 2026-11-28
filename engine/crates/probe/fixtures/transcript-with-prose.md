@@ -9,7 +9,7 @@ arm: present
 
 # One run, with the model's own account of it added
 
-The `reasoning` key below is the whole of this fixture. [AI integration](../../../../docs/spec/ai-integration.md) says the transcript holds no model prose and that the omission is the enforcement. An omission that nothing tests is a claim, so this file is what tests it.
+The `reasoning` key below is the whole of this fixture. Spec 5 says the transcript holds no model prose and that the omission is the enforcement. An omission that nothing tests is a claim, so this file is what tests it.
 
 ## Run identity
 

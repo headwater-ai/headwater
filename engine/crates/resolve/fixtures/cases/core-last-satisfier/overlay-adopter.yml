@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 #
-# An overlay that takes the last facet carrying the `scent` role. The taxonomy model (docs/spec/taxonomy-model.md) asks
+# An overlay that takes the last facet carrying the `scent` role. Spec 2 asks
 # for two things from the message this produces: the requirement, and the
 # operation that removed its last satisfier. Neither one alone tells an author
 # what to reconsider.

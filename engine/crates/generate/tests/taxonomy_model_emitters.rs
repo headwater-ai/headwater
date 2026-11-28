@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md)'s staged-emitter block, held against [`headwater_generate::export`].
+//! [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s staged-emitter block, held against [`headwater_generate::export`].
 //!
 //! # Why this file exists
 //!

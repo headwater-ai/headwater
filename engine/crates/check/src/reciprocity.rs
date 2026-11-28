@@ -50,7 +50,7 @@
 //! cases, and only the relation name changes.
 //!
 //! The fix is mechanical and total, which is the bar
-//! [The check layer](../../../../docs/spec/check-layer.md#fixability) sets: the
+//! [the check layer](../../../../docs/spec/check-layer.md#fixability) sets: the
 //! missing half is derivable from the half that exists, with no judgment.
 //!
 //! A half that names its own document gets no fix. The far end is then the

@@ -37,7 +37,7 @@
 //! # Resolving and validating are two operations, and the lock is what joins them
 //!
 //! [`resolve`] is the five steps above, which is what
-//! [The engine architecture](../../../../docs/spec/engine-architecture.md#pipeline) gives the
+//! [the engine architecture](../../../../docs/spec/engine-architecture.md#pipeline) gives the
 //! verb: "merges the base taxonomy and overlays, validates against the
 //! meta-schema, and writes a content-hashed lock". [`Resolution::validate`] is
 //! the rest of [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s list — the rules that read the result and report on it

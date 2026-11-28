@@ -41,7 +41,7 @@
 //!
 //! `check` keeps a cache at `.headwater/cache/checks`, keyed on the lock
 //! digest among the components
-//! [The check layer](../../../../docs/spec/check-layer.md#determinism-concretely)
+//! [the check layer](../../../../docs/spec/check-layer.md#determinism-concretely)
 //! names. It holds no corpus content: every entry is recomputable from the
 //! tree it was written over. The directory carries its own `.gitignore`,
 //! written beside the cache file, so a repository never needs one of its own
@@ -1010,7 +1010,7 @@ fn no_such_second_word(verb: &str, words: &[String]) -> ExitCode {
 ///
 /// It prints what it ran as well as what it found. A verdict with no statement
 /// of what was checked is the silent pass that
-/// [The assurance model](../../../../docs/spec/assurance-model.md) exists to remove, and
+/// [the assurance model](../../../../docs/spec/assurance-model.md) exists to remove, and
 /// eight of the rules on [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s list decide only part of what that list says.
 fn validate(root: &Path) -> ExitCode {
     let mode = headwater_cli::paint::stdout_color();
@@ -1744,7 +1744,7 @@ fn audit(root: &Path, now: Option<Date>, record: bool, json: bool) -> ExitCode {
 ///
 /// Whether this repository wired the method, rather than only copied it. The
 /// rules come from the package and the readings come from this engine, and
-/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#conformance)
+/// [distribution and federation](../../../../docs/spec/distribution-and-federation.md#conformance)
 /// argues both halves.
 ///
 /// **Three refusals, and each one keeps a report from claiming more than it
@@ -6945,8 +6945,8 @@ fn infer(
     // coverage report already counts by.
     //
     // `run.findings` is what a reader of the report sees, so a finding an
-    // author already suppressed does not enter the payload. The precedence spec
-    // 4 fixes runs in one direction only when it is applied once, and a pair in
+    // author already suppressed does not enter the payload. The precedence
+    // the assurance model (docs/spec/assurance-model.md) fixes runs in one direction only when it is applied once, and a pair in
     // both inventories would be the double count that precedence exists to
     // prevent.
     let mut tasks: Vec<(&'static str, Vec<&headwater_check::Finding>)> = Vec::new();
@@ -7446,8 +7446,8 @@ fn merged(
 /// unconditionally, this run states what is true now, and it does not need a
 /// declared shape to add to. Every other entry — `tasks` above all — is
 /// carried exactly as it was loaded, so a key this engine does not know about
-/// survives. `from` and `to` are placed first, which is the order [spec
-/// 7](../../../../docs/spec/distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)
+/// survives. `from` and `to` are placed first, which is the order
+/// [distribution and federation](../../../../docs/spec/distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)
 /// states them in.
 ///
 /// # The one entry this adds rather than carries

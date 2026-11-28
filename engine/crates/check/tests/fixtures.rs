@@ -44,7 +44,7 @@ use std::path::{Path, PathBuf};
 /// The date every recorded report is evaluated at.
 ///
 /// A recorded report is a function of its inputs, and
-/// [The check layer](../../../../docs/spec/check-layer.md#determinism-concretely)
+/// [the check layer](../../../../docs/spec/check-layer.md#determinism-concretely)
 /// makes the clock one of them: "same corpus, same lock, same injected clock,
 /// byte-identical output". A test that read today's date would record a file
 /// that a windowed rule rewrites as the calendar moves, which is a fixture

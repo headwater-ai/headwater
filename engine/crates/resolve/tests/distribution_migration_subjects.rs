@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! [Distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s *The migration payload* section, held against
+//! [distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s *The migration payload* section, held against
 //! [`headwater_resolve::migration::Subject`].
 //!
 //! # Why this file exists

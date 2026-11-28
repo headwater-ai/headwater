@@ -93,7 +93,7 @@ The industry does not agree, and the disagreement belongs in view. CodeQL ships 
 
 ## Checks
 
-A check is a pure function from a **scoped view** of the graph to findings, and it sees only what its scope declares. [The check layer](check-layer.md) is the design of the check layer, from the origin of a check to its export.
+A check is a pure function from a **scoped view** of the graph to findings, and it sees only what its scope declares. [The check layer](check-layer.md) holds its design, from the origin of a check to its export.
 
 ## Projections
 
@@ -260,9 +260,9 @@ Hooks and agent-facing queries must be fast enough to be invisible. A pre-commit
 
 ## Implementation constraints
 
-- **Single binary or single runtime.** Installation of the engine must not require a toolchain per check. A mix of Python, Node, and shell — each with its own container fallback — is a cost that we do not accept.
+- **Single binary or single runtime.** Installation of the engine must not require a toolchain per check. A mix of Python, Node, and shell — each with its own container fallback — is a cost we refuse.
 - **Offline.** No network at check time.
-- **Deterministic.** Same corpus, same lock, same output, byte for byte. This is what makes `--check` on projections meaningful.
+- **Deterministic.** Same corpus, same lock, same output, byte for byte. That makes `--check` on projections meaningful.
 - **Embeddable.** The library runs in process for the MCP server and any Rust caller, and an editor is a client of `headwater mcp` ([HW-DR-0102](../decisions/0102-an-editor-integration-starts-headwater-mcp-for-each-query-and-does-not-embed-the-library.md)).
 
-These constraints made most of the choice. The language is Rust, and the embeddable requirement above is the argument that decided it ([Q1](decisions.md#q1--implementation-language)).
+These constraints made most of the choice. The language is Rust, and the embeddable requirement above decided it ([Q1](decisions.md#q1--implementation-language)).

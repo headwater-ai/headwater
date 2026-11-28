@@ -2217,3 +2217,53 @@ fn bundles_line() -> String {
     let up = "../".repeat(headwater_resolve::package::PACKAGES.split('/').count() + 1);
     format!("  bundles: {up}docs/taxonomies")
 }
+
+/// The payload headwater/standard ships for the 4.x to 5.x upgrade, in the
+/// authored source and in the vendored copy, migrates to the 5.x line and from
+/// the 4.x line, and to nothing wider (HW-DR-0117).
+///
+/// `taxonomy publish` refuses a `to` range that the artifact's own version does
+/// not answer to, so a range moved to `>=6 <7` is refused at the next publish.
+/// A range widened to `>=5` publishes and is wrong: a consumer on a 6.x release
+/// would select a 4-to-5 payload for an upgrade it does not describe. Nothing
+/// held that half until this case, and the version check alone cannot.
+#[test]
+fn the_shipped_four_to_five_payload_migrates_to_the_five_line_alone() {
+    use headwater_resolve::release::satisfies;
+    let root = repository();
+    let mut seen = Vec::new();
+    for at in [
+        "taxonomy-source/headwater-standard",
+        ".headwater/packages/headwater-standard",
+    ] {
+        let path = root.join(at).join("migrations/4-to-5.yml");
+        let text = std::fs::read_to_string(&path).expect("the shipped payload reads");
+        let payload = headwater_resolve::migration::read(&text, "migrations/4-to-5.yml")
+            .unwrap_or_else(|refused| panic!("{at}: the payload reads: {refused:?}"));
+        let manifest = std::fs::read_to_string(root.join(at).join("package.yml"))
+            .expect("the manifest reads");
+        let version = manifest
+            .lines()
+            .find_map(|line| line.strip_prefix("version: "))
+            .expect("the manifest states a version")
+            .trim()
+            .to_string();
+        let admits = |range: &str, v: &str| satisfies(range, v).expect("the range reads");
+        assert!(admits(&payload.to, &version), "{at}: `to` admits the version it ships with, {version}");
+        assert!(!admits(&payload.from, &version), "{at}: `from` does not admit {version}");
+        for v in ["5.0.0", "5.9.9"] {
+            assert!(admits(&payload.to, v), "{at}: `to` admits {v}");
+        }
+        for v in ["4.9.9", "6.0.0", "7.1.0"] {
+            assert!(!admits(&payload.to, v), "{at}: `to` admits no {v}, which this payload does not reach");
+        }
+        for v in ["4.0.0", "4.9.9"] {
+            assert!(admits(&payload.from, v), "{at}: `from` admits {v}");
+        }
+        for v in ["3.9.9", "5.0.0"] {
+            assert!(!admits(&payload.from, v), "{at}: `from` admits no {v}");
+        }
+        seen.push((payload.from, payload.to));
+    }
+    assert_eq!(seen[0], seen[1], "the vendored copy states the source's ranges");
+}

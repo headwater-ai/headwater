@@ -15,5 +15,5 @@ relations:
 
 # The unevidenced claim resting on an asserted record
 
-[Authoring and lifecycle](../../../../../../docs/spec/authoring-and-lifecycle.md)'s sentence is about `evidenced` and about nothing else. A document that
+Spec 3's sentence is about `evidenced` and about nothing else. A document that
 says no evidence exists makes no claim this rule can refuse.

@@ -409,7 +409,7 @@ pub struct Kind {
 /// rather than dropped. A dropped expectation is an instance that never
 /// existed, and a coverage report cannot say why. A kept one is an instance
 /// that skips with a reason, which is what
-/// [The assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+/// [the assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
 /// asks for.
 #[derive(Clone, Debug)]
 pub struct Expectation {
@@ -614,7 +614,7 @@ impl Shape {
     ///
     /// A kind that binds none, and whose ancestors bind none, answers to no
     /// voice rule. That is the narrative case of
-    /// [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#voice), and
+    /// [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#voice), and
     /// it is an absence rather than a regime that permits everything.
     pub fn voice_of(&self, kind: &str) -> Option<&VoiceRegime> {
         let name = self

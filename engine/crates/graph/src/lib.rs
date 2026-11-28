@@ -24,7 +24,7 @@
 //! It decides identity: which document an identifier names, which node two
 //! spellings of an anchor are, and which relation an authored name is. Each one
 //! is a **correctness root** in the sense of
-//! [The check layer](../../../../docs/spec/check-layer.md#the-correctness-roots):
+//! [the check layer](../../../../docs/spec/check-layer.md#the-correctness-roots):
 //! wrong, it produces no error anywhere, and every check over it passes on the
 //! wrong graph.
 //!

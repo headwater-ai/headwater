@@ -174,7 +174,7 @@
 //! with the reason [`CHANGE_SCOPED_ONLY`], because a check that quietly
 //! contributes nothing in the mode a repository actually runs is the silent
 //! pass
-//! [The assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+//! [the assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
 //! exists to prevent.
 //!
 //! The view carries the front matter of the same document at an earlier state,
@@ -467,7 +467,7 @@ impl Scope {
     /// reaches an instance through this flag and through nothing else. A flag
     /// that changed what an instance read and did not reach the key is the
     /// correctness bug
-    /// [The check layer](../../../../docs/spec/check-layer.md#determinism-concretely)
+    /// [the check layer](../../../../docs/spec/check-layer.md#determinism-concretely)
     /// names.
     pub fn needs_claims(&self) -> bool {
         self.needs_claims
@@ -483,7 +483,7 @@ impl Scope {
     /// instance through this flag and through nothing else, on
     /// [`Scope::needs_claims`]'s own terms. A flag that changed what an
     /// instance read and did not reach the key is the correctness bug
-    /// [The check layer](../../../../docs/spec/check-layer.md#determinism-concretely)
+    /// [the check layer](../../../../docs/spec/check-layer.md#determinism-concretely)
     /// names, and it is the bug [#937](https://github.com/headwater-ai/headwater/issues/937)
     /// found live: a rule reading [`crate::observation::Observations`]
     /// straight from its own struct field, with no input in its read set to
@@ -657,7 +657,7 @@ pub trait DocumentCheck {
 /// What one edge-scoped instance is created over.
 ///
 /// Both members are one relation instance, which is the grain
-/// [The check layer](../../../../docs/spec/check-layer.md#scope--the-declaration-everything-else-rests-on) fixes for
+/// [the check layer](../../../../docs/spec/check-layer.md#scope--the-declaration-everything-else-rests-on) fixes for
 /// this trait. They differ over what counts as one, and the difference is
 /// whether the target resolved.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -730,7 +730,7 @@ pub trait EdgeCheck {
 /// here generates one instance per target out of a declaration, and this one
 /// has a single target that no declaration selects. So the count of the
 /// barriers is the count of the corpus-scoped rules, which is the number
-/// [The check layer](../../../../docs/spec/check-layer.md#scope--the-declaration-everything-else-rests-on)
+/// [the check layer](../../../../docs/spec/check-layer.md#scope--the-declaration-everything-else-rests-on)
 /// asks a reader to be able to read rather than discover under load.
 ///
 /// A rule belongs here when its subject is a relation between two documents

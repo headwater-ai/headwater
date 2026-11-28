@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! [The engine architecture](../../../../docs/spec/engine-architecture.md)'s projection-kinds block, held against [`headwater_generate::unbuilt`].
+//! [the engine architecture](../../../../docs/spec/engine-architecture.md)'s projection-kinds block, held against [`headwater_generate::unbuilt`].
 //!
 //! # Why this file exists
 //!

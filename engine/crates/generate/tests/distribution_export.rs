@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! [Distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s export section, held against [`headwater_generate::Grain`], and
+//! [distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s export section, held against [`headwater_generate::Grain`], and
 //! held as the one home of the export rules.
 //!
 //! # Why this file exists
@@ -746,6 +746,16 @@ fn quote_after(text: &str, at: usize) -> Option<&str> {
     Some(&body[..close])
 }
 
+/// The earliest place a lower-cased line names the engine architecture: by
+/// the number it carried under 4.x ("spec 6"), which older comments keep, or by
+/// its title or file, which HW-DR-0117 made the only names.
+fn names_six(lower: &str) -> Option<usize> {
+    ["spec 6", "engine architecture", "engine-architecture.md"]
+        .iter()
+        .filter_map(|name| lower.find(name))
+        .min()
+}
+
 /// A comment that quotes a sentence of [distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s export section and credits it
 /// to [the engine architecture](../../../../docs/spec/engine-architecture.md) points a reader at a part that no longer holds it. This reads
 /// every comment that names [the engine architecture](../../../../docs/spec/engine-architecture.md) and then opens a quote, and fails when the
@@ -769,7 +779,7 @@ fn no_comment_quotes_spec_7_export_text_as_spec_6() {
             .replace('\\', "/");
         let lines: Vec<&str> = text.lines().collect();
         for (i, line) in lines.iter().enumerate() {
-            let Some(at) = line.to_lowercase().find("spec 6") else {
+            let Some(at) = names_six(&line.to_lowercase()) else {
                 continue;
             };
             // Only comments credit a sentence. A string literal that names
@@ -784,7 +794,7 @@ fn no_comment_quotes_spec_7_export_text_as_spec_6() {
                 .collect::<Vec<_>>()
                 .join(" ");
             let at = at - (line.len() - line.trim().len()).min(at);
-            let at = joined.to_lowercase().find("spec 6").unwrap_or(at);
+            let at = names_six(&joined.to_lowercase()).unwrap_or(at);
             let Some(quote) = quote_after(&joined, at) else {
                 continue;
             };

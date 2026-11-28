@@ -12,7 +12,7 @@ relations:
 # Gamma
 
 The shelf is homogeneous, so placement already carries the kind `evaluation`,
-and this document restates it in front matter. That is the second truth [the taxonomy model](../../../../../../docs/spec/taxonomy-model.md)
+and this document restates it in front matter. That is the second truth spec 2
 forbids, and the finding anchors at the `doc_type` key because that is the line
 to delete.
 

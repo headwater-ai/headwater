@@ -10,6 +10,6 @@ summary: a retired document resting on another retired document
 
 # The retired document resting on a retired one
 
-[Authoring and lifecycle](../../../../../../docs/spec/authoring-and-lifecycle.md) states the rule about a live document and says nothing about this. The
+Spec 3 states the rule about a live document and says nothing about this. The
 citations of a retired document are part of the record it was retired with, and
 re-pointing them would rewrite what it said when it stood.

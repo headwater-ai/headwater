@@ -9,7 +9,7 @@
 //! # The obligation is optional here, and it says what a taxonomy declared
 //!
 //! [The assurance model](../../../../docs/spec/assurance-model.md) says every finding names the obligation it serves, and
-//! [The check layer](../../../../docs/spec/check-layer.md#the-plugin-interface)
+//! [the check layer](../../../../docs/spec/check-layer.md#the-plugin-interface)
 //! makes `obligation()` required so that the check surface does not become the
 //! place where a rule escapes the "every rule earns its place" discipline. An
 //! obligation is **data**: a taxonomy declares `obligations` and `controls`,
@@ -37,7 +37,7 @@
 //! # Fixability is the patch, and it stopped being a field
 //!
 //! [The assurance model](../../../../docs/spec/assurance-model.md) lists fixability among the members and
-//! [The check layer](../../../../docs/spec/check-layer.md#fixability) says what may
+//! [the check layer](../../../../docs/spec/check-layer.md#fixability) says what may
 //! carry it: "A check may return a patch alongside a finding." Until `--fix`
 //! there was no patch, so a `fixable: bool` stood in for one, and three files
 //! said in a comment that a flag with nothing behind it claims a capability the

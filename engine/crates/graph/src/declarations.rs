@@ -43,7 +43,7 @@
 //! families a core requirement marks are one join, and two crates that each did
 //! it their own way would answer one question twice. A relation is sensitive
 //! when either reading marks it, which HW-DR-0065 rules, and
-//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#lifecycle) is
+//! [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#lifecycle) is
 //! the rule that reads the answer.
 //!
 //! **`sets_target_state`** is `on_target.set_state`, the one declaration in the
@@ -115,8 +115,8 @@ pub struct Relation {
     /// `headwater_check::basis` is the reader, through
     /// [`Relation::evidence_at_source`].
     pub evidence_at: Option<String>,
-    /// The actor the taxonomy expects to pay for edges of this type, from spec
-    /// 2's closed set: `author`, `scaffold`, `generator`, `hook`, `agent`,
+    /// The actor the taxonomy expects to pay for edges of this type, from
+    /// [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s closed set: `author`, `scaffold`, `generator`, `hook`, `agent`,
     /// `import`. The meta-schema requires it and closes the set, so a relation
     /// that reaches here with none is a relation `taxonomy validate` already
     /// refused. It is read as written, and nothing here supplies a default.

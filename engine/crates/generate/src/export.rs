@@ -23,7 +23,7 @@
 //!
 //! So the loss set is a claim and the census is the audit of it, and neither
 //! alone is worth much. That is the coverage doctrine of
-//! [The assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+//! [the assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
 //! applied one layer out, which is what [distribution and federation](../../../../docs/spec/distribution-and-federation.md) says it is.
 //!
 //! # The denominator is the corpus, not the identifier index
@@ -932,7 +932,7 @@ fn constraint(shape: &headwater_check::Shape, kind: &str, name: &str) -> Json {
 /// instance over a kind that forbids the facet, which is the whole of what the
 /// prohibition does natively. A schema keyword that rejected it would report an
 /// error the engine does not, and
-/// [The check layer](../../../../docs/spec/check-layer.md#exportable_as-is-a-set-with-a-partition-rule)
+/// [the check layer](../../../../docs/spec/check-layer.md#exportable_as-is-a-set-with-a-partition-rule)
 /// rules that an emitter omits a construct whose meaning inverts. The loss set
 /// records the drop, which is a different statement: less coverage, not a
 /// wrong answer.

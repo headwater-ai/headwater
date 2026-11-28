@@ -998,8 +998,8 @@ impl Surface<'_> {
     /// Every anchor this document's edges reach, as one string.
     ///
     /// This is the surface that makes "add rate limiting to the ingest API"
-    /// reach the standard that governs `src/ingest/`, which is the example spec
-    /// 5 opens with. It is a read of the graph rather than of the document.
+    /// reach the standard that governs `src/ingest/`, which is the example
+    /// [AI integration](../../../../docs/spec/ai-integration.md) opens with. It is a read of the graph rather than of the document.
     fn anchor_text(&self, document: &Document<'_>) -> String {
         let mut text = String::new();
         for edge in &self.graph.edges {
@@ -1072,8 +1072,8 @@ impl Surface<'_> {
 
 /// The task terms that separate one document of the corpus from the others.
 ///
-/// The same rule the purposes are matched on, at the surface below them. Spec
-/// 5: "Grade a cue against the alternatives that it competes with at the moment
+/// The same rule the purposes are matched on, at the surface below them.
+/// [AI integration](../../../../docs/spec/ai-integration.md): "Grade a cue against the alternatives that it competes with at the moment
 /// a reader reads it", and its own measure of a summary is distinctiveness
 /// against the siblings — "a summary that shares no discriminating term with
 /// its siblings cannot separate them". A term that most of the corpus carries

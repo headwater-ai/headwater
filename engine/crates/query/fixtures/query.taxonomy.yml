@@ -5,7 +5,7 @@
 # term which separates one from the others is distinguishable from a term that
 # separates none; one kind per purpose; a succession pair, a nucleus–satellite
 # pair, and a governance edge onto a code path, so that all three clauses of
-# the taxonomy model's (docs/spec/taxonomy-model.md) derived reading precedence are exercised; and one document whose
+# spec 2's derived reading precedence are exercised; and one document whose
 # warrant is `asserted`, which a pointer has to state out loud.
 #
 # It is not a resolved package, for the reason the check tree's is not: a
@@ -72,7 +72,7 @@ kinds:
           since: state_entered
           severity: warn
           rationale: a specification that refines nothing and that nothing refines states a behavior at one grain only
-  # The purpose arrives by inheritance here, which is the case the taxonomy model (docs/spec/taxonomy-model.md) permits
+  # The purpose arrives by inheritance here, which is the case spec 2 permits
   # and which `purpose_of` has to walk the chain to answer.
   operations_document:
     is_a: governed_document
@@ -123,7 +123,7 @@ relations:
     from: [governed_document]
     to:   [code_path]
 
-  # Association, which the taxonomy model's (docs/spec/taxonomy-model.md) fourth clause leaves with no reading order.
+  # Association, which spec 2's fourth clause leaves with no reading order.
   is_alternative_to:
     family: association
     from: [decision]

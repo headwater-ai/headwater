@@ -131,7 +131,7 @@ pub struct Identity {
 }
 
 /// The five things `headwater probe record` confirms, in the order
-/// [The recorder contract](../../../../docs/spec/the-recorder-contract.md#what-the-engine-confirms-and-what-it-records-without-confirming)
+/// [the recorder contract](../../../../docs/spec/the-recorder-contract.md#what-the-engine-confirms-and-what-it-records-without-confirming)
 /// numbers them.
 ///
 /// A closed array for the reason [`IDENTITY_KEYS`] is one: a report that names
