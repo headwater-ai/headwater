@@ -1,16 +1,16 @@
 ---
 id: HW-OBL-0127
-status: current
-status_since: 2026-09-06
+status: discharged
+status_since: 2026-11-29
 waiting_on: build
-summary: "A path a change named that no census row holds keeps its prior version only where that version parsed, so a deleted document with malformed front matter reaches no rule."
-last_verified: 2026-08-15
+summary: "The deletion of a governed document whose prior front matter did not parse reached no rule. The retention rule now skips its instance and names each such path, and it still refuses none."
+last_verified: 2026-11-29
 title: "A deletion is invisible where the version that stood there does not parse"
 provenance:
   warrant: asserted
   agency: agent
   drafted_by: claude-opus-5
-  activity: measure+draft
+  activity: measure+draft+revise
   evidence_basis: evidenced
 relations:
   traces_to:
@@ -21,24 +21,28 @@ relations:
 
 ## Context
 
-`lifecycle.deletion.not_permitted` refuses a change that deletes a document standing at a terminal state of a regime that retains. The only account of what stood there is the version the caller named. The working tree holds no file at the path, and the census holds no row.
+`lifecycle.deletion.not_permitted` refuses a change that deletes a document at a terminal state of a regime that retains. The only account of that document is the version that the caller names. The working tree holds no file at the path, and the census holds no row.
 
-`Unbound::bind` decides what is left of such a path. Where the caller named a `prior` line and the bytes parsed as a document, the version is held. `Change::departed` then carries it to the rule. Where the bytes did not parse, `read_prior` has already recorded a reason. The bind replaces that reason with the arm that says only that no row holds the path. The reason is dropped, and the report counts the path among the ones that matched nothing.
+`Unbound::bind` decides what is left of such a path. Where the caller names a `prior` line and the bytes parse as a document, the bind keeps the version. `Change::departed` then carries it to the rule. Where the bytes do not parse, `read_prior` records a reason. Until this change, the bind dropped that reason. The report counted the path among the paths that matched nothing, and no rule read it.
 
-That collapse is what makes the rule readable at all. Every source file a change edits reaches the same arm. A Rust file is named on a `prior` line, its bytes are no document, and it does not parse as one. A rule that skipped on an unreadable prior would skip on every real commit.
+The record said that this gap cost nothing. Its reason was this: "a document whose committed front matter does not parse fails the run that committed it". The engine repeated that sentence in the rustdoc of `Change::departed`. A measurement on 2026-11-28 showed that it is false. A document with an unterminated quoted scalar in its front matter, in the printed fixture tree of the CLI, passed `headwater check --strict` with exit status 0. The census counted it as unreadable, and no finding named it. No rule reads an unreadable census row. So a malformed document can reach `main` through a green gate, and no `--no-verify` is necessary. Its deletion then reached no rule.
 
 ## Obligation
 
-The corpus owes a reading that separates two files whose bytes did not parse. One is no document of any corpus. The other is a governed document whose committed front matter was malformed, and its deletion reaches no rule at all.
+The corpus owed a reading that separates two files whose bytes do not parse. One file is not a document of any corpus. The other file is a governed document whose front matter was malformed, and its deletion reached no rule.
 
-The engine states the trade in a doc comment on `Held::Unmatched`, and nowhere a reader of this corpus meets it. The argument there is that the case costs nothing. A document whose committed front matter does not parse fails the run that committed it. The argument is sound and it is not a measurement. It holds only where the commit that added the document ran the gate, and `git commit --no-verify` is one line.
-
-[The assurance model](../spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for) forbids a silent pass, and this one is silent in the strict sense. No instance is created over the path, so no skip is reported. The only line about it is a count of paths that matched nothing.
+[The assurance model](../spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for) forbids a silent pass, and this pass was silent. The instance passed, and the only line about the path was a count.
 
 ## Discharge
 
-A reading that holds the two apart discharges this. `Held::Unmatched` would keep the reason beside the absent version. `Change` would publish the departed paths whose prior version did not read. The rule would then report a skip that names each one.
+**`Change::unread` and version 2 of the retention rule discharge this record ([#1491](https://github.com/headwater-ai/headwater/issues/1491), the HW-OBL-0127 slice).**
 
-The cost is one arm and one report line. What that line would name today is every source file of a commit. So the discharge needs a second reading, which separates a document from a file, before the first one is worth writing.
+- The bind keeps the reason for each departed path whose prior version did not read. It also keeps a flag that says whether the bytes held no block of front matter at all. `Change::unread` carries each such path, with the reason, the flag and the digest of the bytes where they opened.
+- `Change::departed` does not change. Each entry there carries front matter, and `scope.ratchet` reads it.
+- A corpus-scoped check that declares `NEEDS_PRIOR` receives the unread departures. The bytes of each one that may be a document go into the read set. So a warm run does not serve the verdict from before the change.
+- The rule applies the second reading that this record asked for. A candidate passes three tests. It is a Markdown path by the census's own extension test. A shelf of the taxonomy claims it. Its bytes held a block of front matter. A source file fails the first test. A Markdown file outside every shelf fails the second. A shelf `README.md` with no front matter declares no state, so it fails the third.
+- When the change has a refusal, the instance fails with the refusal, because the refusal already blocks the change. When it has no refusal and a candidate, the instance is skipped. The reason names each candidate path and why its prior version did not read. Otherwise, the instance passes.
 
-What would not discharge it is a rule that refuses an unreadable prior. The engine reads the bytes a caller named, and it states no opinion about which of them are documents. A refusal there would make the honest wrapper the one thing this engine declines to accept.
+The residual stays on the terms of this record. A departure whose prior version does not read is reported as a skip, and it is never refused. The engine reads the bytes that the caller names and states no opinion about the state of a document that it cannot read. A refusal there would block a deletion that the regime permits.
+
+A document whose front matter does not load still passes a strict run while it stands in the corpus. That gap is a different defect, and this record does not close it.

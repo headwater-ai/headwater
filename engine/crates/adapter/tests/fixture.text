@@ -829,7 +829,7 @@ read set
   version warrant.value.not_permitted 1
   version warrant.acceptance.unpaired 1
   version warrant.acceptance.at_initial 1
-  version lifecycle.deletion.not_permitted 1
+  version lifecycle.deletion.not_permitted 2
   version relation.scope.ungoverned 2
   version coverage.document_unchecked 1
   version obligation.disposition.not_one 1

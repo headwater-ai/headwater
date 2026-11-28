@@ -232,7 +232,6 @@ The second said that a control declares one posture and that [the assurance mode
 - [HW-OBL-0123](../obligations/0123-a-facet-that-applies-to-one-value-of-another-facet-has-nowhere-to-say-so.md) — A facet that applies to one value of another facet has nowhere to say so
 - [HW-OBL-0125](../obligations/0125-nine-documents-state-a-warrant-outside-the-closed-set-and-only-a-person-can-set-the-value.md) — Nine documents state a warrant outside the closed set, and only a person can set the value
 - [HW-OBL-0126](../obligations/0126-every-asserted-document-carries-the-freshness-date-that-spec-3-says-it-cannot.md) — Every asserted document carries the freshness date that [authoring and lifecycle](authoring-and-lifecycle.md) says it cannot
-- [HW-OBL-0127](../obligations/0127-a-deletion-is-invisible-where-the-version-that-stood-there-does-not-parse.md) — A deletion is invisible where the version that stood there does not parse
 - [HW-OBL-0128](../obligations/0128-nothing-holds-a-crate-to-having-a-contract-under-a-root-that-excludes-it.md) — Nothing holds a crate to having a contract under a root that excludes it
 - [HW-OBL-0129](../obligations/0129-spec-12-calls-two-phase-a-outcomes-structural-findings-and-the-engine-emits-none.md) — [The check layer](check-layer.md) calls two Phase A outcomes structural findings, and the engine emits none
 - [HW-OBL-0187](../obligations/0187-the-registered-deviation-edge-of-the-compliance-tradition-cannot-be-declared.md) — The registered-deviation edge of the compliance tradition cannot be declared
@@ -256,6 +255,8 @@ The second said that a control declares one posture and that [the assurance mode
 [HW-OBL-0113](../obligations/0113-every-check-passes-a-document-that-is-still-the-scaffolder-s-placeholder.md) is discharged and it is not in the list above. A document that still held the prompts the scaffolder writes passed every check, and no finding named it. `scaffold.placeholder.unwritten` now names each such section and facet as a warning. It reads the exact strings that the scaffolder writes, from one copy that the two share.
 
 [HW-OBL-0032](../obligations/0032-a-remove-that-orphans-a-name-is-refused-and-the-message-names.md) is discharged and it is not in the list above. A `remove` that orphaned a bare name was refused, and the finding named the declaration that read the name and not the `remove`. `taxonomy validate` now reports that refusal at the `remove`, in the file and at the line that wrote it. The message also names the declaration that reads the name.
+
+[HW-OBL-0127](../obligations/0127-a-deletion-is-invisible-where-the-version-that-stood-there-does-not-parse.md) is discharged and it is not in the list above. A change that deleted a governed document whose prior front matter did not parse reached no rule, and the retention rule passed. `lifecycle.deletion.not_permitted` now skips its instance and names each such path that a shelf claims. It never refuses one, because it cannot read the state of the document that stood there.
 
 ## What else each decision left open
 

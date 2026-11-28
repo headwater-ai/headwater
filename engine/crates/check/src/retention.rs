@@ -41,6 +41,31 @@
 //! the honest failure. The alternative is an engine that walks history, which
 //! [the check layer](../../../../docs/spec/check-layer.md) rules out as an input.
 //!
+//! # A deletion this rule cannot read is a skip that names it
+//!
+//! A departed path whose prior version did not read carries no front matter,
+//! so this rule cannot say whether the document stood at a terminal state.
+//! Until version 2 such a path reached no rule at all, and the instance passed
+//! (HW-OBL-0127). A document whose front matter does not load passes a strict
+//! run while it stands, so nothing guarantees that the case does not occur.
+//!
+//! [`crate::change::Change::unread`] hands this rule every such path, and most
+//! of them are source files. Three tests separate a governed document from
+//! them, and each path that passes all three is named in the reason of a
+//! skip, with why its prior version did not read:
+//!
+//! - the path ends in `.md`, which is the census's own test,
+//! - the bytes held a block of front matter, because a file with none declared
+//!   no state,
+//! - a shelf of this taxonomy claims the path.
+//!
+//! It is a skip and never a refusal. A refusal of every unreadable prior would
+//! block a deletion that the regime permits, and a finding under this rule
+//! blocks a strict run at any severity, because the control it discharges is
+//! blocking. A refusal outranks the skip: a change that also deletes a
+//! readable terminal document fails with that refusal, and the skip arrives on
+//! the next run, once the refused document is back.
+//!
 //! # What it reads out of the declaration, and the three answers
 //!
 //! The kind comes from the path and the prior front matter, through the same
@@ -179,10 +204,12 @@ impl<'a> Retention<'a> {
 
 impl CorpusCheck for Retention<'_> {
     const RULE: &'static str = self::RULE;
-    /// The first edition of this rule.
+    /// The second edition of this rule. The first passed a change that
+    /// deleted a governed document whose prior front matter did not parse, and
+    /// this one skips it and names it (HW-OBL-0127).
     ///
     /// Raise the rule version when a rule's behavior changes.
-    const VERSION: u32 = 1;
+    const VERSION: u32 = 2;
     /// The paths the change named that this corpus holds no row at, which is
     /// the only reading of a departed document available to a check.
     const NEEDS_PRIOR: bool = true;
@@ -195,14 +222,49 @@ impl CorpusCheck for Retention<'_> {
         if self.facet.name.is_none() {
             return Outcome::Skipped(NO_STATE_FACET.to_string());
         }
-        Outcome::failed(
-            view.departed()
-                .iter()
-                .filter_map(|entry| self.finding(entry.path, entry.facets))
-                .collect(),
-        )
+        let refusals: Vec<Finding> = view
+            .departed()
+            .iter()
+            .filter_map(|entry| self.finding(entry.path, entry.facets))
+            .collect();
+        // A refusal outranks the skip below, because it already blocks the
+        // change. The skip arrives on the next run, once the refused document
+        // is back. See the module comment.
+        if !refusals.is_empty() {
+            return Outcome::failed(refusals);
+        }
+        let unread: Vec<String> = view
+            .unread()
+            .iter()
+            .filter(|entry| self.may_be_governed(entry))
+            .map(|entry| format!("`{}` ({})", entry.path, entry.why))
+            .collect();
+        if unread.is_empty() {
+            return Outcome::Passed;
+        }
+        Outcome::Skipped(format!("{UNREAD_PRIOR}: {}", unread.join("; ")))
     }
 }
+
+impl Retention<'_> {
+    /// Whether an unread departure may have been a governed document that
+    /// stood at a terminal state: it may have been a document at all, and a
+    /// shelf of this taxonomy claims its path. The second test is the one
+    /// [`crate::change::Unread::may_be_a_document`] cannot apply, because it
+    /// needs the taxonomy.
+    fn may_be_governed(&self, entry: &crate::change::Unread<'_>) -> bool {
+        entry.may_be_a_document()
+            && (self.taxonomy.shelves.iter()).any(|shelf| shelf.pattern.matches(entry.path))
+    }
+}
+
+/// The opening of the reason an instance carries when the change deleted a
+/// governed document whose prior version did not read. See
+/// [`Retention::evaluate`].
+pub const UNREAD_PRIOR: &str =
+    "this change leaves no document at a path a shelf claims, and the version that stood there \
+     did not read, so this rule could not read whether it stood at a terminal state. To let it \
+     decide, restore the file, repair its front matter in one change, and delete it in the next";
 
 /// The reason a corpus with no state facet carries. See [`Retention::evaluate`].
 const NO_STATE_FACET: &str =

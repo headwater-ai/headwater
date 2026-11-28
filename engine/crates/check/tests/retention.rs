@@ -425,3 +425,160 @@ fn the_departed_version_is_an_input_of_the_instance() {
         ["retention/kept/gone-superseded.md"]
     );
 }
+
+/// Six departures whose prior versions this rule cannot refuse, and one of
+/// them a document it could not read (HW-OBL-0127).
+///
+/// One manifest, for the reason [`every_departure`] gives. Each line but the
+/// first is written to be named by a rule that applied one test less than this
+/// one does: the shelf `README.md` by a rule that read every unparsed prior as
+/// a document, the text file by one that ignored the extension, the path
+/// outside every shelf by one that ignored the shelves, the source file by one
+/// that read every unmatched path, and the released document by one that
+/// named every departure.
+fn unread_departures() -> String {
+    [
+        departure(
+            "retention/kept/gone-malformed.md",
+            "malformed-front-matter.md",
+        ),
+        departure("retention/kept/README.md", "no-front-matter.md"),
+        departure("retention/kept/diagram.txt", "not-markdown.txt"),
+        departure("elsewhere/gone-malformed.md", "malformed-front-matter.md"),
+        departure("engine/crates/check/src/change.rs", "not-a-document.rs"),
+        departure(
+            "retention/released/gone-superseded.md",
+            "released-superseded.md",
+        ),
+    ]
+    .concat()
+}
+
+/// The path of each departure in [`unread_departures`] that the skip must not
+/// name.
+const NOT_NAMED: [&str; 5] = [
+    "retention/kept/README.md",
+    "retention/kept/diagram.txt",
+    "elsewhere/gone-malformed.md",
+    "engine/crates/check/src/change.rs",
+    "retention/released/gone-superseded.md",
+];
+
+/// A deletion of a governed document whose prior front matter did not parse
+/// is reported as a skip that names it, and never as a pass (HW-OBL-0127).
+///
+/// The decisive case. Before it, the instance passed: the departure reached no
+/// rule, and the one line about it was a count among the paths that matched
+/// nothing. It is a skip and not a refusal, because the rule cannot read
+/// whether the document stood at a terminal state, and a refusal of every
+/// unreadable prior would block a deletion the regime permits.
+#[test]
+fn a_departure_whose_prior_did_not_parse_skips_the_instance_and_names_only_that_path() {
+    let run = over(&unread_departures());
+    assert_eq!(refusals(&run), Vec::<&str>::new());
+    let Outcome::Skipped(why) = &instance(&run).outcome else {
+        panic!(
+            "a departure this rule could not read passed: {:?}",
+            instance(&run).outcome
+        );
+    };
+    assert!(why.contains("retention/kept/gone-malformed.md"), "{why}");
+    for path in NOT_NAMED {
+        assert!(!why.contains(path), "the skip names `{path}`: {why}");
+    }
+}
+
+/// A prior version that did not open, and one that is not UTF-8, are unread
+/// departures too, and the skip names both.
+///
+/// Neither reached the parser, so neither can say that the bytes held no front
+/// matter. A rule that read either one as a file with no block would pass the
+/// deletion in silence, which is the defect this skip closes. The prior that
+/// did not open has no digest, so the instance goes unkeyed rather than keyed
+/// on nothing.
+#[test]
+fn a_prior_that_did_not_open_or_decode_is_named_in_the_skip() {
+    let run = over(
+        &[
+            departure("retention/kept/gone-missing.md", "missing-prior.md"),
+            departure("retention/kept/gone-latin.md", "not-utf-8.md"),
+        ]
+        .concat(),
+    );
+    let Outcome::Skipped(why) = &instance(&run).outcome else {
+        panic!(
+            "a departure whose prior did not open or decode passed: {:?}",
+            instance(&run).outcome
+        );
+    };
+    assert!(why.contains("retention/kept/gone-missing.md"), "{why}");
+    assert!(why.contains("retention/kept/gone-latin.md"), "{why}");
+    let digest = |path: &str| {
+        instance(&run)
+            .reads
+            .iter()
+            .find(|input| input.path == path)
+            .map(|input| input.digest.is_some())
+    };
+    assert_eq!(digest("retention/kept/gone-missing.md"), Some(false));
+    assert_eq!(digest("retention/kept/gone-latin.md"), Some(true));
+}
+
+/// A refusal outranks the skip, because it already blocks the change.
+///
+/// The skip arrives on the next run, once the refused document is back. A rule
+/// that reported the skip first would let a run that read one terminal
+/// deletion say only that it could not read another.
+#[test]
+fn a_refusal_outranks_an_unread_departure() {
+    let lines = [
+        unread_departures(),
+        departure(
+            "retention/kept/gone-superseded.md",
+            "terminal-superseded.md",
+        ),
+    ]
+    .concat();
+    let run = over(&lines);
+    assert!(
+        matches!(instance(&run).outcome, Outcome::Failed(_)),
+        "{:?}",
+        instance(&run).outcome
+    );
+    assert_eq!(refusals(&run), ["retention/kept/gone-superseded.md"]);
+}
+
+/// The bytes of an unread departure are an input of the instance, so they are
+/// in the key.
+///
+/// Without them a warm run would serve the pass from before the change, and
+/// the skip would never reach a reader. A source file in the same change is
+/// not an input, because no edit to its bytes can make it a document, and a
+/// change that edits source would otherwise list every file it touched as read
+/// outside the census.
+#[test]
+fn an_unread_departure_is_an_input_of_the_instance() {
+    let run = over(
+        &[
+            departure(
+                "retention/kept/gone-malformed.md",
+                "malformed-front-matter.md",
+            ),
+            departure("engine/crates/check/src/change.rs", "not-a-document.rs"),
+        ]
+        .concat(),
+    );
+    let unread = instance(&run)
+        .reads
+        .iter()
+        .find(|input| input.path == "retention/kept/gone-malformed.md")
+        .expect("the unread departure is an input");
+    assert!(
+        unread.digest.is_some(),
+        "an input with no digest leaves the instance unkeyed forever"
+    );
+    assert_eq!(
+        run.coverage.unaccounted,
+        ["retention/kept/gone-malformed.md"]
+    );
+}
