@@ -3,7 +3,7 @@
 //!
 //! # The identity of an edge
 //!
-//! [Q4](../../../../docs/spec/09-decisions.md#q4--relation-storage) fixes it:
+//! [Q4](../../../../docs/spec/decisions.md#q4--relation-storage) fixes it:
 //! the source identifier, the relation name, and the normalized target. Two
 //! consequences follow from that sentence and both are enforced here. List
 //! order carries no meaning, so nothing downstream may read it. A repeated
@@ -14,7 +14,7 @@
 //!
 //! An entry is a target reference, or a mapping with `to:` and instance
 //! attributes. The scalar is sugar for the mapping, and both produce the same
-//! edge ([spec 1](../../../../docs/spec/01-conceptual-model.md#the-authored-form)).
+//! edge ([the conceptual model](../../../../docs/spec/conceptual-model.md#the-authored-form)).
 //! A single entry and a sequence of one are also the same thing: `supersedes:
 //! DR-0031` and `supersedes: [DR-0031]` differ in YAML and not in the corpus.
 //!
@@ -30,13 +30,13 @@
 //!
 //! # What decides whether a target is a document or an anchor
 //!
-//! The declaration does. [Spec 1](../../../../docs/spec/01-conceptual-model.md#external-anchor)
+//! The declaration does. [The conceptual model](../../../../docs/spec/conceptual-model.md#external-anchor)
 //! says a relation endpoint is a declared kind or a declared anchor kind and
 //! never a bare string, so the endpoint set at the authored target end says
 //! which. Where that set holds both — `traces_to` declares `to: [governed_document,
 //! code_path]` — the index is consulted first and the resolvers after it. That
 //! order is an engine decision and no document states it, so
-//! [13 — Open obligations](../../../../docs/spec/13-open-obligations.md)
+//! [Open obligations](../../../../docs/spec/open-obligations.md)
 //! carries it. The index matches an identifier and never a path, so a path
 //! reaches the resolvers. Where the `source-tree` resolver binds it as one
 //! literal pattern, and that pattern is the path of a typed document with an
@@ -112,7 +112,7 @@ pub const CUE: &str = "cue";
 /// The instance attribute that carries the pinned revision an imported edge was
 /// checked against.
 ///
-/// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#instance-attributes-and-which-end-owns-each-one)
+/// [The taxonomy model](../../../../docs/spec/taxonomy-model.md#instance-attributes-and-which-end-owns-each-one)
 /// declares it by this name, owned by the edge. It is here beside [`CUE`] for
 /// the reason [`CUE`] is here: two crates read it and neither may depend on the
 /// other. `headwater_import::write` writes it, `headwater_check::suspect`
@@ -233,7 +233,7 @@ pub enum Unbound {
         detail: String,
     },
     /// The anchor kind is declared, and its resolver is not one this run has.
-    /// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#behavior-at-the-limits):
+    /// [The taxonomy model](../../../../docs/spec/taxonomy-model.md#behavior-at-the-limits):
     /// an anchor that no resolver claims is a finding.
     NoResolver {
         anchor_kind: String,
@@ -369,7 +369,7 @@ impl Edge {
 
     /// The target after the thing that owns its identity normalized it.
     ///
-    /// An identifier is its own normal form: spec 3 mints it once and never
+    /// An identifier is its own normal form: [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) mints it once and never
     /// reuses it. An anchor string is whatever its resolver made of it. The
     /// path of a document, which binds to nothing (#1410), keeps the normalized
     /// path the resolver made of it, so that two spellings of one path are
@@ -438,7 +438,7 @@ impl Target {
     /// the file and one not, produce one identity and two verdicts.
     ///
     /// A cache key needs the second value rather than the first.
-    /// [Spec 12](../../../../docs/spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
+    /// [The check layer](../../../../docs/spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
     /// puts "the content hash of every document **and edge** that an instance
     /// read" in a read set, and a read set is a list of corpus paths. An anchor
     /// names something outside the corpus, so no path in that list moves when
@@ -447,7 +447,7 @@ impl Target {
     ///
     /// **It is the derived `Debug`, and that is the point.** The value has to
     /// be total over the type: a variant or a field that this rendering omits
-    /// is an input that a key omits, which is the correctness bug spec 12 names
+    /// is an input that a key omits, which is the correctness bug [the check layer](../../../../docs/spec/check-layer.md) names
     /// and the one this method exists for. A hand-written arm per variant is a
     /// second statement of the shape of [`Target`], and the next variant added
     /// beside it would key nothing new while compiling clean. The compiler
@@ -456,7 +456,7 @@ impl Target {
     /// The format is not a stable one, and it does not need to be. Nothing
     /// reads this back: it is hashed into a key, and a rustc that renders it
     /// differently costs one uncached run, which is the direction
-    /// [`headwater_check`'s cache](../../../../docs/spec/12-check-layer.md#determinism-concretely)
+    /// [`headwater_check`'s cache](../../../../docs/spec/check-layer.md#determinism-concretely)
     /// resolves every doubtful case in.
     pub fn resolution(&self) -> String {
         format!("{self:?}")
@@ -1199,7 +1199,7 @@ fn target_of(map: &Mapping, anchor_only: bool) -> Option<(Vec<String>, Span)> {
 ///
 /// Nothing here decides whether the relation type permits the attribute. That
 /// is a Graph check, and an undeclared attribute is its finding
-/// ([Q4](../../../../docs/spec/09-decisions.md#q4--relation-storage)).
+/// ([Q4](../../../../docs/spec/decisions.md#q4--relation-storage)).
 fn instance_attributes(map: &Mapping) -> Vec<Entry> {
     map.iter()
         .filter(|entry| entry.key.value != "to")
@@ -1215,7 +1215,7 @@ mod tests {
         Edge {
             source: Source {
                 id: "HW-SPEC-ai-integration".to_string(),
-                path: "docs/spec/05-ai-integration.md".to_string(),
+                path: "docs/spec/ai-integration.md".to_string(),
                 kind: "design_spec".to_string(),
                 kind_span: None,
             },
@@ -1339,7 +1339,7 @@ mod tests {
             }),
             Target::Document {
                 id: "HW-SPEC-check-layer".to_string(),
-                path: "docs/spec/12-check-layer.md".to_string(),
+                path: "docs/spec/check-layer.md".to_string(),
                 kind: "design_spec".to_string(),
             },
         ];

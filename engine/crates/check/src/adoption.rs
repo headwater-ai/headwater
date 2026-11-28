@@ -2,7 +2,7 @@
 //! The adoption payload: the debt a corpus declared when a taxonomy first
 //! reached it.
 //!
-//! [Q12](../../../../docs/spec/09-decisions.md#q12--migration-path-for-an-existing-corpus)
+//! [Q12](../../../../docs/spec/decisions.md#q12--migration-path-for-an-existing-corpus)
 //! rules that adoption is a migration from no taxonomy. Before the first
 //! `headwater init` a corpus is governed by nothing, so every document in it is
 //! trivially valid, and the findings that the first taxonomy raises are that
@@ -12,7 +12,7 @@
 //!
 //! # The grain is a pair, and the reason is arithmetic
 //!
-//! A task holds `(document, rule)` pairs. [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)
+//! A task holds `(document, rule)` pairs. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)
 //! says why the coarser grain fails: "A label by document alone would blanket
 //! every finding on a named document for the whole migration. Defects
 //! introduced yesterday would then read as expected breakage." So a pair is
@@ -24,7 +24,7 @@
 //! **A pair is a cell, not a finding, and that is the one thing it buys an
 //! adopter for free.** A pair holds every finding of its rule on its document,
 //! including a finding raised after the payload was written. So the sentence
-//! spec 7 uses for the pair grain — "the pair grain keeps yesterday's
+//! [distribution and federation](../../../../docs/spec/distribution-and-federation.md) uses for the pair grain — "the pair grain keeps yesterday's
 //! regression loud while the declared debt stays patient" — holds across
 //! documents and across rules, and does not hold inside one cell. A second
 //! violation of a declared rule in a declared document is absorbed. The finer
@@ -45,7 +45,7 @@
 //! # A held finding is reclassified rather than hidden
 //!
 //! This is the difference from [`crate::suppression`], and it is the whole of
-//! why the two are separate modules. Spec 7: `migration-pending` findings are
+//! why the two are separate modules. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md): `migration-pending` findings are
 //! "counted, visible in coverage, never blocking, and never suppressed
 //! individually". A suppressed finding is one a reader does not see. A pending
 //! finding is one a reader sees, with the task, the owner and the expiry beside
@@ -53,7 +53,7 @@
 //!
 //! # Precedence, and how the partition holds
 //!
-//! [Spec 4](../../../../docs/spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+//! [The assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
 //! fixes waiver, then migration-pending, then suppression, "so the three
 //! inventories partition the escaped findings, and no finding is counted three
 //! times". This runs before suppression, so a finding a task holds never
@@ -64,15 +64,15 @@
 //!
 //! # What a task deliberately does not carry
 //!
-//! **A to-version.** Spec 7 gives a migration state a from-version and a
+//! **A to-version.** [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) gives a migration state a from-version and a
 //! to-version. The from-version is absent at first contact, which is Q12's one
 //! field. The to-version is the taxonomy this payload was written against, and
 //! the payload sits inside that taxonomy's lock, which declares its package and
 //! version four lines above. A second copy could disagree with the first, and
 //! nothing could say which of the two the run honored.
 //!
-//! **A severity.** A pending finding keeps the severity its rule gave it. Spec
-//! 12 puts severity on the check and spec 4 on the obligation, and a payload is
+//! **A severity.** A pending finding keeps the severity its rule gave it.
+//! [The check layer](../../../../docs/spec/check-layer.md) puts severity on the check and [the assurance model](../../../../docs/spec/assurance-model.md) on the obligation, and a payload is
 //! neither. An adopter who wants a finding quieter is asking for a different
 //! taxonomy, not for a different accounting of the same one.
 //!
@@ -89,7 +89,7 @@
 //! refused and every finding it named is reported ([`Refused`]).
 //!
 //! `from` and `to` are named rather than lumped in, because they are the two
-//! fields spec 7 gives a migration state and the two that
+//! fields [distribution and federation](../../../../docs/spec/distribution-and-federation.md) gives a migration state and the two that
 //! [#78](https://github.com/headwater-ai/headwater/issues/78) exists to add. No
 //! verb writes either one today. An adopter who writes one by hand used to get
 //! a green run and a false belief, which is the state this naming ends.
@@ -99,7 +99,7 @@ use crate::finding::{Finding, Severity};
 use crate::scope::Scope;
 use headwater_yaml::{Mapping, Value};
 
-/// Spec 7: "A migration state past its expiry is a finding against the
+/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md): "A migration state past its expiry is a finding against the
 /// owner." [`expired`] is the rule.
 pub const RULE: &str = "adoption.task.expired";
 
@@ -137,7 +137,7 @@ pub enum State {
     Expired,
 }
 
-/// One declared unit of debt, with the name and the date that spec 4 ranks a
+/// One declared unit of debt, with the name and the date that [the assurance model](../../../../docs/spec/assurance-model.md) ranks a
 /// migration state above a suppression for.
 #[derive(Clone, Debug)]
 pub struct Task {
@@ -247,13 +247,13 @@ pub fn read(block: &Mapping, rules: &[&'static str]) -> Declared {
 /// Why a key nothing reads is worth saying out loud.
 ///
 /// The two named cases are the ones an adopter has a reason to write. `from`
-/// and `to` are spec 7's two fields of a migration state, and `severity` is the
+/// and `to` are [distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s two fields of a migration state, and `severity` is the
 /// one this module's own header says the format deliberately has no place for.
 /// A message that said only "unknown key" would leave all three sounding like a
 /// typo.
 fn unread(key: &str) -> String {
     match key {
-        "from" | "to" => "it names a migration state. Spec 7 gives one a from-version and a \
+        "from" | "to" => "it names a migration state. Distribution and federation gives one a from-version and a \
              to-version, and no verb of this engine writes either into this block"
             .to_string(),
         "severity" => "a pending finding keeps the severity its rule gave it, and this format \
@@ -280,11 +280,11 @@ fn task(map: Option<&Mapping>, rules: &[&'static str]) -> Result<Task, String> {
         .ok_or("it names no `id`, and a task a report cannot name is one nobody can close")?;
     let statement = scalar(map, "statement")
         .ok_or("it states no `statement`, so nothing in it says what the debt is")?;
-    // Spec 4 ranks a migration state above a suppression because it carries an
+    // The assurance model (docs/spec/assurance-model.md) ranks a migration state above a suppression because it carries an
     // owner and a task list where a suppression carries one author's judgment.
     // A task with no owner is a suppression with more syntax.
     let owner = scalar(map, "owner").ok_or(
-        "it names no `owner`, which is the field spec 4 ranks this above a suppression for",
+        "it names no `owner`, which is the field the assurance model ranks this above a suppression for",
     )?;
     let until = scalar(map, "until")
         .ok_or("it states no `until`, and debt with no expiry is a permanent exemption")?;
@@ -316,7 +316,7 @@ fn task(map: Option<&Mapping>, rules: &[&'static str]) -> Result<Task, String> {
             .get("rule")
             .and_then(scalar_of)
             .ok_or("a pair names no `rule`")?;
-        // Spec 7: a label by document alone blankets every finding on that
+        // Distribution and federation (docs/spec/distribution-and-federation.md): a label by document alone blankets every finding on that
         // document. A glob is that label with a pair's syntax.
         if path.contains('*') {
             return Err(format!(
@@ -366,8 +366,8 @@ fn scalar_of(node: &headwater_yaml::Spanned<Value>) -> Option<&str> {
 
 /// Hold every finding a task accounts for, and report what remains.
 ///
-/// This runs before [`crate::suppression::apply`], which is the precedence spec
-/// 4 fixes. A finding held here never reaches a directive, so the two
+/// This runs before [`crate::suppression::apply`], which is the precedence
+/// [the assurance model](../../../../docs/spec/assurance-model.md) fixes. A finding held here never reaches a directive, so the two
 /// inventories partition by construction.
 pub fn apply(findings: Vec<Finding>, declared: Declared, now: Date) -> (Vec<Finding>, Ledger) {
     let Declared {
@@ -439,7 +439,7 @@ pub fn apply(findings: Vec<Finding>, declared: Declared, now: Date) -> (Vec<Find
 
 /// Findings against the owner of a task past its expiry.
 ///
-/// Spec 7: "A migration state past its expiry is a finding against the
+/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md): "A migration state past its expiry is a finding against the
 /// owner." One finding per lapsed task, about the lock rather than about a
 /// document — the same grain [`crate::register`]'s two findings about the
 /// taxonomy use, and for the same reason: neither creates an instance, and
@@ -463,11 +463,11 @@ pub fn expired(declared: &Declared, source: &str, now: Date) -> Vec<Finding> {
             line: 0,
             column: 0,
             message: format!(
-                "{} lapsed on {}, and spec 7 makes that a finding against the owner, {}: {}",
+                "{} lapsed on {}, and distribution and federation makes that a finding against the owner, {}: {}",
                 task.id, task.until, task.owner, task.statement
             ),
             remediation: format!(
-                "move `until` on {} to a new date, which is the paper trail spec 7 asks a \
+                "move `until` on {} to a new date, which is the paper trail distribution and federation asks a \
                  renewal to carry, or close every pair it names and delete the task",
                 task.id
             ),
@@ -482,7 +482,7 @@ impl Ledger {
         self.tasks.is_empty() && self.refused.is_empty() && self.unread.is_empty()
     }
 
-    /// Pairs still failing. This is the number spec 7 puts beside coverage:
+    /// Pairs still failing. This is the number [distribution and federation](../../../../docs/spec/distribution-and-federation.md) puts beside coverage:
     /// "a payload that does not move is then visible from the second run rather
     /// than from the expiry".
     ///
@@ -529,7 +529,7 @@ impl Ledger {
 
     /// The ledger as text, for the report.
     ///
-    /// The first line is the count that spec 7 requires on every run. The task
+    /// The first line is the count that [distribution and federation](../../../../docs/spec/distribution-and-federation.md) requires on every run. The task
     /// lines carry the owner and the expiry, because a number with no name
     /// beside it is a number nobody works.
     ///
@@ -542,7 +542,7 @@ impl Ledger {
         use std::fmt::Write;
         let mut out = String::new();
         // No early return when the ledger is empty: a run with no `adoption`
-        // block still states `0 pairs open`, because spec 7 asks for the count
+        // block still states `0 pairs open`, because distribution and federation (docs/spec/distribution-and-federation.md) asks for the count
         // on every run (HW-OBL-0152).
         //
         // Every line below is one logical line that ends in its own `\n`. A
@@ -650,7 +650,7 @@ fn verb(count: usize, singular: &'static str, plural: &'static str) -> &'static 
 mod tests {
     use super::*;
 
-    /// HW-OBL-0152: spec 7 requires the count on every run, and a run with no
+    /// HW-OBL-0152: [distribution and federation](../../../../docs/spec/distribution-and-federation.md) requires the count on every run, and a run with no
     /// `adoption` block is a run. A render that returns nothing at zero hides
     /// the count from every adopter on the first run.
     #[test]
@@ -709,7 +709,7 @@ tasks:
         let plain = ledger.render(crate::paint::ColorMode::Plain);
         assert_eq!(
             plain,
-            "adoption\n  1 pairs open, 0 closed, holding 1 finding, in 1 task\n  AD-1 1 open, 0 closed, holding 1 finding, owner the docs guild, until 2027-01-01\n    the corpus states no summary\n  AD-2 holds nothing: it declares no pair, so it accounts for nothing\n  the block declares `to`, which nothing here reads: it names a migration state. Spec 7 gives one a from-version and a to-version, and no verb of this engine writes either into this block\n",
+            "adoption\n  1 pairs open, 0 closed, holding 1 finding, in 1 task\n  AD-1 1 open, 0 closed, holding 1 finding, owner the docs guild, until 2027-01-01\n    the corpus states no summary\n  AD-2 holds nothing: it declares no pair, so it accounts for nothing\n  the block declares `to`, which nothing here reads: it names a migration state. Distribution and federation gives one a from-version and a to-version, and no verb of this engine writes either into this block\n",
             "each ledger line stands on its own line, one logical line per entry and unfilled: the report fills it once, at the width its caller states"
         );
 
@@ -841,7 +841,7 @@ tasks:
 
     /// The pair grain, which is the whole mechanism.
     ///
-    /// Spec 7 refuses the document grain by name: "a label by document alone
+    /// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) refuses the document grain by name: "a label by document alone
     /// would blanket every finding on a named document for the whole
     /// migration. Defects introduced yesterday would then read as expected
     /// breakage." So a task that names one rule on one document holds that and
@@ -870,7 +870,7 @@ tasks:
 
     /// A declared pair that stops failing is reported as closed.
     ///
-    /// Spec 7 wants a payload that does not move to be visible "from the second
+    /// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) wants a payload that does not move to be visible "from the second
     /// run rather than from the expiry", and a count of what is still open only
     /// says that with the number that closed beside it.
     #[test]
@@ -927,7 +927,7 @@ tasks:
         );
     }
 
-    /// The field spec 4 ranks a migration state above a suppression for.
+    /// The field [the assurance model](../../../../docs/spec/assurance-model.md) ranks a migration state above a suppression for.
     #[test]
     fn a_task_with_no_owner_is_refused() {
         let block = payload(
@@ -1166,7 +1166,7 @@ tasks:
         assert_eq!(ledger.tasks[1].closed.len(), 1);
     }
 
-    /// Spec 7: "A migration state past its expiry is a finding against the
+    /// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md): "A migration state past its expiry is a finding against the
     /// owner." One finding, naming the task and the owner.
     #[test]
     fn an_expired_task_raises_a_finding_naming_it_and_its_owner() {

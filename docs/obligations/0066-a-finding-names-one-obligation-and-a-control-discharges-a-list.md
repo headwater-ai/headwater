@@ -23,11 +23,11 @@ relations:
 
 ## Context
 
-The [finding](../spec/04-assurance-model.md#findings) shape carries one identifier, and `discharges` is a sequence. Several controls may also name one rule, because a rule can run at more than one trigger. Nothing says which obligation the finding of such a rule names.
+The [finding](../spec/assurance-model.md#findings) shape carries one identifier, and `discharges` is a sequence. Several controls may also name one rule, because a rule can run at more than one trigger. Nothing says which obligation the finding of such a rule names.
 
 ## Obligation
 
-[Spec 4](../spec/04-assurance-model.md#findings) and [spec 12](../spec/12-check-layer.md#the-plugin-interface) owe a rule for the many-to-one case.
+[The assurance model](../spec/assurance-model.md#findings) and [the check layer](../spec/check-layer.md#the-plugin-interface) owe a rule for the many-to-one case.
 
 ## Discharge
 

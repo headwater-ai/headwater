@@ -28,7 +28,7 @@ relations:
 
 **[#601](https://github.com/headwater-ai/headwater/issues/601) asks what holds a recorded terminal demonstration true, before anybody records one.** A cast of `headwater check` is attractive on a README, because it shows the tool working rather than describing it. It is also a picture of numbers, and this corpus already rules on a picture of numbers.
 
-**Principle 11 of [spec 0](../spec/00-vision-and-scope.md#design-principles) forbids a published number that no run produced, and [spec 4](../spec/04-assurance-model.md) extends it to the public surface.** A hand-written figure on the site is a finding there, in the way that a hand-edited shelf index is. [HW-DR-0039](0039-q39-how-a-figure-reaches-a-hand-built-page.md) is the clause that carries it into practice. A script writes every figure on a hand-built page from a run. A figure that no run produces stays off the page.
+**Principle 11 of [the vision and scope](../spec/vision-and-scope.md#design-principles) forbids a published number that no run produced, and [the assurance model](../spec/assurance-model.md) extends it to the public surface.** A hand-written figure on the site is a finding there, in the way that a hand-edited shelf index is. [HW-DR-0039](0039-q39-how-a-figure-reaches-a-hand-built-page.md) is the clause that carries it into practice. A script writes every figure on a hand-built page from a run. A figure that no run produces stays off the page.
 
 **A recording is a figure that no script can refresh.** `tools/site/refresh-figures.sh` writes a number into a `data-figure` element of a text file, and it compares what it wrote against the tree. It cannot reach inside a GIF or a cast file. A recorded number is frozen at the moment of capture, and no check reads it again.
 
@@ -50,7 +50,7 @@ relations:
 
 ## Consequences
 
-**Done-when bars 3 and 4 of #601 stay open.** No committed recording lands from this record, and no blocking step for one exists. `tools/site/refresh-figures.sh` structurally cannot refresh a committed binary asset, which [spec 13](../spec/13-open-obligations.md) now records.
+**Done-when bars 3 and 4 of #601 stay open.** No committed recording lands from this record, and no blocking step for one exists. `tools/site/refresh-figures.sh` structurally cannot refresh a committed binary asset, which [the register of open obligations](../spec/open-obligations.md) now records.
 
 **A recording of the tutorial inherits an existing gate rather than needing a new one.** The drive script already holds each printed output against a run. What it does not do is compare the recording against the tutorial. A cast that falls behind the document is invisible to every check. Whoever lands a recording owes that comparison, and a tape file is what makes one possible.
 

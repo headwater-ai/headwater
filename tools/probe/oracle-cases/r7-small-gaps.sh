@@ -79,7 +79,7 @@ wrong() {
 # not read that form, and the engine's link rule does, so a reader of lines
 # passes it and the engine does not.
 r7_old=docs/obligations/0208-four-small-test-and-wording-gaps-from-run-20260923-0733-filed-together.md
-r7_carrier=docs/spec/12-check-layer.md
+r7_carrier=docs/spec/check-layer.md
 stale_reference() {
     reference || return 1
     [ -f "$r7_carrier" ] || return 1

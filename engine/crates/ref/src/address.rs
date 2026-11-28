@@ -84,7 +84,7 @@ impl Address {
     /// This is the predicate the confluence check runs. Two `add` operations at
     /// disjoint addresses commute, so a resolver that can decide this can prove
     /// that every subset of an add-only bundle set resolves
-    /// ([spec 7](../../../../docs/spec/07-distribution-and-federation.md)).
+    /// ([distribution and federation](../../../../docs/spec/distribution-and-federation.md)).
     pub fn is_disjoint_from(&self, other: &Address) -> bool {
         !self.is_prefix_of(other) && !other.is_prefix_of(self)
     }
@@ -102,12 +102,12 @@ impl std::fmt::Display for Address {
 /// permanent: a key with a dot in it would make an address ambiguous, so the
 /// meta-schema refuses to declare one.
 ///
-/// `-` was excluded and is not. Spec 2 called that refusal provisional and said
+/// `-` was excluded and is not. [The taxonomy model](../../../../docs/spec/taxonomy-model.md) called that refusal provisional and said
 /// what would end it, and
 /// [#52](https://github.com/headwater-ai/headwater/issues/52) is what needed it:
 /// `obligations` and `controls` are keyed by the identifier, and every
-/// identifier that spec 4 writes holds a hyphen. Relaxing the rule is the free
-/// direction that [Q2](../../../../docs/spec/09-decisions.md#q2--schema-format)
+/// identifier that [the assurance model](../../../../docs/spec/assurance-model.md) writes holds a hyphen. Relaxing the rule is the free
+/// direction that [Q2](../../../../docs/spec/decisions.md#q2--schema-format)
 /// settles. Adding one later would be a finding against every source that had
 /// already used the form.
 fn is_segment_character(found: char) -> bool {

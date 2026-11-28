@@ -119,28 +119,28 @@ What the documents and the governance change together. The treated arm is a pres
 
 The difference is +61.7 points, in a 95% Newcombe interval of +47.7 points to +72.9 points. The interval is above zero, so the treated arm satisfied more often at the 5% level.
 
-What the intent hook changes. The treated arm is the `campaign` present arm and the control is the `campaign` `no-hook` arm, which removed the paths the `no-hook` component's delta names. The documents are in both arms (spec 5).
+What the intent hook changes. The treated arm is the `campaign` present arm and the control is the `campaign` `no-hook` arm, which removed the paths the `no-hook` component's delta names. The documents are in both arms (AI integration).
 
 - treated, `docs/probe-runs/campaign-of-2026-10-03-campaign-tier-present-arm-sufficiency-leak-kept-probes.md`: 60 of 60 graded sessions satisfied their expectation, 100.0%, in a 95% interval of 94.0% to 100.0%. 0 sessions refused by the session itself.
 - control, `docs/probe-runs/campaign-of-2026-10-03-campaign-tier-no-hook-arm-sufficiency-leak-kept-probes.md`: 37 of 60 graded sessions satisfied their expectation, 61.7%, in a 95% interval of 49.0% to 72.9%. 0 sessions refused by the session itself.
 
 The difference is +38.3 points, in a 95% Newcombe interval of +25.6 points to +51.0 points. The interval is above zero, so the treated arm satisfied more often at the 5% level.
 
-What the skills change. The treated arm is the `campaign` present arm and the control is the `campaign` `no-skills` arm, which removed the paths the `no-skills` component's delta names. The documents are in both arms (spec 5).
+What the skills change. The treated arm is the `campaign` present arm and the control is the `campaign` `no-skills` arm, which removed the paths the `no-skills` component's delta names. The documents are in both arms (AI integration).
 
 - treated, `docs/probe-runs/campaign-of-2026-10-03-campaign-tier-present-arm-sufficiency-leak-kept-probes.md`: 60 of 60 graded sessions satisfied their expectation, 100.0%, in a 95% interval of 94.0% to 100.0%. 0 sessions refused by the session itself.
 - control, `docs/probe-runs/campaign-of-2026-10-03-campaign-tier-no-skills-arm-sufficiency-leak-kept-probes.md`: 60 of 60 graded sessions satisfied their expectation, 100.0%, in a 95% interval of 94.0% to 100.0%. 0 sessions refused by the session itself.
 
 The difference is +0.0 points, in a 95% Newcombe interval of -6.0 points to +6.0 points. The interval contains zero, so this run does not separate the two arms at the 5% level.
 
-What `CLAUDE.md` changes. The treated arm is the `campaign` present arm and the control is the `campaign` `no-claude-md` arm, which removed the paths the `no-claude-md` component's delta names. The documents are in both arms (spec 5).
+What `CLAUDE.md` changes. The treated arm is the `campaign` present arm and the control is the `campaign` `no-claude-md` arm, which removed the paths the `no-claude-md` component's delta names. The documents are in both arms (AI integration).
 
 - treated, `docs/probe-runs/campaign-of-2026-10-03-campaign-tier-present-arm-sufficiency-leak-kept-probes.md`: 60 of 60 graded sessions satisfied their expectation, 100.0%, in a 95% interval of 94.0% to 100.0%. 0 sessions refused by the session itself.
 - control, `docs/probe-runs/campaign-of-2026-10-03-campaign-tier-no-claude-md-arm-sufficiency-leak-kept-probes.md`: 60 of 60 graded sessions satisfied their expectation, 100.0%, in a 95% interval of 94.0% to 100.0%. 0 sessions refused by the session itself.
 
 The difference is +0.0 points, in a 95% Newcombe interval of -6.0 points to +6.0 points. The interval contains zero, so this run does not separate the two arms at the 5% level.
 
-What the MCP server adds. The treated arm is the `campaign` `mcp` arm, which added the paths the `mcp` component's delta names, and the control is the `campaign` present arm. The documents are in both arms (spec 5).
+What the MCP server adds. The treated arm is the `campaign` `mcp` arm, which added the paths the `mcp` component's delta names, and the control is the `campaign` present arm. The documents are in both arms (AI integration).
 
 - treated, `docs/probe-runs/campaign-of-2026-10-03-campaign-tier-mcp-arm-sufficiency-leak-kept-probes.md`: 60 of 60 graded sessions satisfied their expectation, 100.0%, in a 95% interval of 94.0% to 100.0%. 0 sessions refused by the session itself.
 - control, `docs/probe-runs/campaign-of-2026-10-03-campaign-tier-present-arm-sufficiency-leak-kept-probes.md`: 60 of 60 graded sessions satisfied their expectation, 100.0%, in a 95% interval of 94.0% to 100.0%. 0 sessions refused by the session itself.

@@ -12,7 +12,7 @@ waiting_on: build
 
 ## Context
 
-The builds and verifies of #1288 slices (d) and (e) in run `20261001-1107` found eight comments that state facts the code no longer holds. Each was checked on `d309e914`. None has a reader outside this repository, because each is a comment that a contributor reads, and #1563 already carries six other stale crate comments at its clause cap. This is the third spec 13 record of the run, so it lists the rest together, as `hw-run-policy` asks.
+The builds and verifies of #1288 slices (d) and (e) in run `20261001-1107` found eight comments that state facts the code no longer holds. Each was checked on `d309e914`. None has a reader outside this repository, because each is a comment that a contributor reads, and #1563 already carries six other stale crate comments at its clause cap. This is the third [the register of open obligations](../spec/open-obligations.md) record of the run, so it lists the rest together, as `hw-run-policy` asks.
 
 ## Obligation
 

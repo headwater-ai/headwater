@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The read set: the union of the in-scope inputs behind one run.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
+//! [The check layer](../../../../docs/spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
 //! fixes what it is and what it is for. "The **read set** of a run is the union
 //! of the in-scope inputs that produced its results. That is the content hash of
 //! every document and edge that an instance read. It also holds the taxonomy
@@ -15,14 +15,14 @@
 //!
 //! # What the union is for, and the one test it supports
 //!
-//! [Q21](../../../../docs/spec/09-decisions.md#q21--terminological-succession-and-validity-under-merge)
+//! [Q21](../../../../docs/spec/decisions.md#q21--terminological-succession-and-validity-under-merge)
 //! rules that validity is not preserved under merge: "two changes that are each
 //! valid against the merge base can produce an invalid corpus, and no run
 //! against either branch tip reports it". That is write skew, and a read set is
 //! what a serializable database detects it with. Git holds none, which is why
 //! it merges two such changes without a conflict.
 //!
-//! Spec 12 rules what a gate reads, and the ruling is one test:
+//! [The check layer](../../../../docs/spec/check-layer.md) rules what a gate reads, and the ruling is one test:
 //! [`crate::gate`] holds the published set against a later tree, and it reads
 //! **nothing that the set does not list**. That is what makes the answer cheap,
 //! and it is also the limit of what the answer is worth. An input whose hash
@@ -48,7 +48,7 @@
 //!
 //! **An input with no content hash.** [`crate::cache`] refuses to key an
 //! instance whose input carries no digest, because a key over a hash that does
-//! not exist is the correctness bug spec 12 names. A read set cannot take the
+//! not exist is the correctness bug [the check layer](../../../../docs/spec/check-layer.md) names. A read set cannot take the
 //! same way out: an input this run read has to appear, or the union is not the
 //! union. So it appears with no hash, it is counted apart, and a gate that
 //! meets one cannot decide that the verdict survives.
@@ -65,7 +65,7 @@
 //!
 //! Q21's open half asks whether publishing this is free. The measurement is one
 //! subtraction and it is in
-//! [13 — Open obligations](../../../../docs/spec/13-open-obligations.md): the
+//! [Open obligations](../../../../docs/spec/open-obligations.md): the
 //! artifact is one line per document, against a corpus whose documents average
 //! four orders of magnitude more than that. It is free at this corpus's scale
 //! and the number that would decide an adopter's is not this repository's.
@@ -283,7 +283,7 @@ impl ReadSet {
 ///
 /// An artifact written before this spelling that lists a path with a literal
 /// backslash reads back as a different path. That path is not in the tree, so
-/// the gate reads it as gone and the verdict voids. Spec 12 sends a doubtful
+/// the gate reads it as gone and the verdict voids. [The check layer](../../../../docs/spec/check-layer.md) sends a doubtful
 /// case to invalidation, so this is the safe direction.
 #[must_use]
 pub fn spell(path: &str) -> String {
@@ -404,7 +404,7 @@ mod tests {
         assert!(set.summary().contains("1 of them with no content hash"));
     }
 
-    /// The artifact carries the lock, the clock and the versions that spec 12
+    /// The artifact carries the lock, the clock and the versions that [the check layer](../../../../docs/spec/check-layer.md)
     /// names, beside the documents.
     #[test]
     fn the_artifact_carries_the_lock_the_clock_and_the_versions() {

@@ -23,11 +23,11 @@ relations:
 
 ## Context
 
-A payload holds findings. A [route](../spec/05-ai-integration.md#intent-time-routing) ranks on the facet in the `scent` role, so a document with no summary is reachable by its path and its anchors alone. Where a facet contract requires a summary, the missing one is a finding and a payload can hold it. Where no contract requires one, there is no finding, and the corpus is unsearchable with nothing to declare.
+A payload holds findings. A [route](../spec/ai-integration.md#intent-time-routing) ranks on the facet in the `scent` role, so a document with no summary is reachable by its path and its anchors alone. Where a facet contract requires a summary, the missing one is a finding and a payload can hold it. Where no contract requires one, there is no finding, and the corpus is unsearchable with nothing to declare.
 
 ## Obligation
 
-This is the clearest case of debt that is not a rule violation, and [first contact](../spec/07-distribution-and-federation.md#first-contact-adoption-is-a-migration-from-no-taxonomy) creates it. No document says whether the base package should require a summary of every concrete kind.
+This is the clearest case of debt that is not a rule violation, and [first contact](../spec/distribution-and-federation.md#first-contact-adoption-is-a-migration-from-no-taxonomy) creates it. No document says whether the base package should require a summary of every concrete kind.
 
 ## Discharge
 

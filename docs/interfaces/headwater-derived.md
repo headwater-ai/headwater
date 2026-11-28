@@ -46,7 +46,7 @@ The verb asks about a literal path of the root file without its leading `/`, bec
 
 **Outside a git repository, the verb reads the root `.gitattributes` alone.** It reads that file as a list of literal paths. A leading `/` of a line anchors the pattern to the root and is not part of the path, so this reader also removes it. The reader does not expand a pattern, and the report names each pattern that carries a merge attribute. The reader does not read a nested `.gitattributes`. The report names each nested file that the walk finds, under its own heading, and the verb exits 1. A nested file can set or unset a merge attribute. A report that passed over it would state agreement for a layout that the verb did not read. No merge reads the attributes of such a tree, so this reader is for a tree that is not a repository yet.
 
-The verb is not on the check-evaluation path. [Spec 12](../spec/12-check-layer.md) keeps version control commands off that path, and `headwater check` does not call this verb.
+The verb is not on the check-evaluation path. [The check layer](../spec/check-layer.md) keeps version control commands off that path, and `headwater check` does not call this verb.
 
 ### The shape of a record, and the treatment that shape takes
 
@@ -89,7 +89,7 @@ Three rules give the shape, and they are read in this order:
 
 **Outside a git repository, a merge attribute that this verb cannot read is reported too.** The root-file reader reads `.gitattributes` as a list of paths. A pattern that carries a merge attribute and a glob character reaches files this reader cannot enumerate. The verb names such a line rather than passing over it. A nested `.gitattributes` is also a declaration that this reader does not read, and the report names it under a second heading. Both are disagreements. Inside a repository, git expands every pattern and reads every nested file, and neither finding occurs.
 
-**The check layer does not carry this rule, and the reason is the grain.** A check of this repository runs at the grain of a document or of the corpus. [Spec 12](../spec/12-check-layer.md) gives a finding a document to hang on. Most paths here are not documents: a lock, a site page, a record of a test run, and a store of readings. A rule whose subject is a path that no shelf claims has no document grain to run at. So it lives in the verb that already computes the population.
+**The check layer does not carry this rule, and the reason is the grain.** A check of this repository runs at the grain of a document or of the corpus. [The check layer](../spec/check-layer.md) gives a finding a document to hang on. Most paths here are not documents: a lock, a site page, a record of a test run, and a store of readings. A rule whose subject is a path that no shelf claims has no document grain to run at. So it lives in the verb that already computes the population.
 
 **The report renders the palette [HW-DR-0045](../decisions/0045-coloring-the-cli-and-where-the-banner-goes.md) rules on, when standard output is a terminal.** The opening count is a heading. Each producer command carries the verb color, because it is the command a reader retypes. Every path carries the path color, on both sides of the answer. The two headings that report a disagreement carry the error color, and their agreement counterparts stay plain. The verb exits non-zero on exactly those two conditions, so the color says what the exit status says.
 
@@ -142,4 +142,4 @@ The verb writes no file. It changes no artifact and no cache.
 
 [*What a check can know*](../evaluations/what-a-check-can-know.md#the-shapes-a-record-takes) is where the five shapes and their treatments are stated. This verb reads that table and does not restate it.
 
-[Spec 6](../spec/06-engine-architecture.md#cli) lists the command line.
+[The engine architecture](../spec/engine-architecture.md#cli) lists the command line.

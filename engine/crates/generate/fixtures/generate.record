@@ -830,7 +830,7 @@ what this verb does not write, and why
   transcription no declaration names one
     a transcription needs a resolver that reads text from a pinned snapshot, and Q19 leaves whether it ships at all to the first adopter who asks
   coverage_report the register
-    its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
+    its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. The register of open obligations carries it
 fails the run: false
 
 --- write again over the first ---
@@ -864,7 +864,7 @@ what this verb does not write, and why
   transcription no declaration names one
     a transcription needs a resolver that reads text from a pinned snapshot, and Q19 leaves whether it ships at all to the first adopter who asks
   coverage_report the register
-    its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
+    its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. The register of open obligations carries it
 fails the run: false
 
 --- check over a hand-edited generated file ---
@@ -898,7 +898,7 @@ what this verb does not write, and why
   transcription no declaration names one
     a transcription needs a resolver that reads text from a pinned snapshot, and Q19 leaves whether it ships at all to the first adopter who asks
   coverage_report the register
-    its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
+    its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. The register of open obligations carries it
 fails the run: true
 
 --- write over a hand-edited generated file ---
@@ -932,7 +932,7 @@ what this verb does not write, and why
   transcription no declaration names one
     a transcription needs a resolver that reads text from a pinned snapshot, and Q19 leaves whether it ships at all to the first adopter who asks
   coverage_report the register
-    its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
+    its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. The register of open obligations carries it
 fails the run: false
 
 --- check over what was written ---
@@ -966,7 +966,7 @@ what this verb does not write, and why
   transcription no declaration names one
     a transcription needs a resolver that reads text from a pinned snapshot, and Q19 leaves whether it ships at all to the first adopter who asks
   coverage_report the register
-    its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
+    its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. The register of open obligations carries it
 fails the run: false
 
 --- check over an empty tree ---
@@ -1000,7 +1000,7 @@ what this verb does not write, and why
   transcription no declaration names one
     a transcription needs a resolver that reads text from a pinned snapshot, and Q19 leaves whether it ships at all to the first adopter who asks
   coverage_report the register
-    its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
+    its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. The register of open obligations carries it
 fails the run: true
 
 --- write where an authored file is ---
@@ -1034,5 +1034,5 @@ what this verb does not write, and why
   transcription no declaration names one
     a transcription needs a resolver that reads text from a pinned snapshot, and Q19 leaves whether it ships at all to the first adopter who asks
   coverage_report the register
-    its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
+    its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. The register of open obligations carries it
 fails the run: true

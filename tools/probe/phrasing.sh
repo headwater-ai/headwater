@@ -28,7 +28,7 @@
 # With `<n>`, it prints the body of `### Phrasing <n>` alone, without its
 # heading, up to the next heading of level three or above, so no other
 # phrasing reaches it. That body
-# is the prompt (spec 15). It prints nothing for a probe that no document
+# is the prompt (the recorder contract (docs/spec/the-recorder-contract.md)). It prints nothing for a probe that no document
 # declares, and nothing for a phrasing the task does not hold.
 #
 # `files` writes the task files of the probe under `<dir>`, as

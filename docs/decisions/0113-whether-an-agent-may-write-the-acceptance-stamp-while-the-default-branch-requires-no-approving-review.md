@@ -34,7 +34,7 @@ The question is real for every record that an agent drafts in this repository. T
 
 **Proposed: while the default branch requires no approving review, an agent writes no acceptance stamp.** An agent writes `warrant: asserted` on each document that it drafts, and it writes no `accepted_by`. This holds when the agent expects a named human to read the pull request. A review that the branch does not require leaves no record that it occurred, so the stamp states a fact that nothing can show.
 
-**Proposed: a person writes the stamp after the merge.** A person reads the merged record, sets `warrant: accepted` and names themselves. That is the promotion that [spec 3](../spec/03-authoring-and-lifecycle.md#promotion-is-one-human-one-document-one-diff) already states, and HW-DR-0034 keeps it.
+**Proposed: a person writes the stamp after the merge.** A person reads the merged record, sets `warrant: accepted` and names themselves. That is the promotion that [authoring and lifecycle](../spec/authoring-and-lifecycle.md#promotion-is-one-human-one-document-one-diff) already states, and HW-DR-0034 keeps it.
 
 **This disagrees with HW-DR-0034, and the front matter says so.** HW-DR-0034 lets an agent write the stamp at draft time where a named human reviews the request. This record removes that permission for as long as the required count is zero. The two records cannot both be in force, so this record declares `conflicts_with: HW-DR-0034`.
 

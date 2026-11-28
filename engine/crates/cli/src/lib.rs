@@ -9,7 +9,7 @@
 //! was admitted before the verb was decided, so a flag belonging to another
 //! verb was accepted and did nothing: `headwater check --level L0` exited 0 and
 //! wrote the report that `headwater check` writes. Two interface contracts and
-//! [spec 12](../../../../docs/spec/12-check-layer.md) stated that as a promise.
+//! [the check layer](../../../../docs/spec/check-layer.md) stated that as a promise.
 //! The decision record withdraws it. A flag belongs to the verb that reads it,
 //! and a verb refuses a flag it does not.
 //!
@@ -375,7 +375,7 @@ pub enum Verb {
             long,
             help = "exit non-zero when a finding is an error, or when a control declared \
                     `posture: blocking` discharges a finding of any severity. Without it the run \
-                    is advisory and always exits 0, which is the default spec 6 fixes"
+                    is advisory and always exits 0, which is the default the engine architecture fixes"
         )]
         strict: bool,
         #[arg(
@@ -410,7 +410,7 @@ pub enum Verb {
             long,
             value_name = "date",
             value_parser = a_date,
-            help = "the date to evaluate against, as `YYYY-MM-DD`. Defaults to today. Spec 12 \
+            help = "the date to evaluate against, as `YYYY-MM-DD`. Defaults to today. The check layer \
                     makes the clock an injected value rather than a syscall inside a check, and \
                     this flag is where it is injected: same corpus, same lock, same date, same \
                     bytes"
@@ -429,7 +429,7 @@ pub enum Verb {
                     rule that reads a transition needs, and without it every instance of such a \
                     rule is reported as skipped rather than passed. This engine walks no history: \
                     the caller anchors the prior version to the state on the branch where the \
-                    change lands, which spec 12 fixes as the merge base of a proposed change and \
+                    change lands, which the check layer fixes as the merge base of a proposed change and \
                     the committed `HEAD` of a working-tree hook. Every path is held against the \
                     corpus this run walks, and one that reaches no row of it is counted and named \
                     in the report rather than absorbed. Each path is written from the git top \
@@ -439,7 +439,7 @@ pub enum Verb {
                     no row. What this engine cannot check is whether the manifest tells \
                     the truth: a line that says `added` for a document that already stood, and a \
                     document the change carried and the manifest omits, are both invisible without \
-                    the history that spec 12 rules out as an input"
+                    the history that the check layer rules out as an input"
         )]
         change: Option<PathBuf>,
         #[arg(
@@ -453,7 +453,7 @@ pub enum Verb {
         #[arg(
             long,
             value_name = "path",
-            help = "write the register of this run to a file as well as to the report. Spec 4 \
+            help = "write the register of this run to a file as well as to the report. The assurance model \
                     makes it a projection of the `obligations` and `controls` declarations, \
                     generated and never authored: every obligation with its disposition, every \
                     control with its health, and what escaped under each"
@@ -465,7 +465,7 @@ pub enum Verb {
             help = concat!(
                 "which vocabulary to write the run in. `text` is the report a person reads and \
                  the default. `sarif` is what a forge ingests as a check run, `markdown` is a \
-                 job summary or a review comment, and `json` is the finding shape spec 4 \
+                 job summary or a review comment, and `json` is the finding shape the assurance model \
                  declares, for an adapter nobody here wrote. `sarif` writes its own loss set \
                  into the artifact. `markdown` declares one in the source and not in the \
                  artifact, because nothing it writes is machine-readable. `text` declares two \
@@ -504,11 +504,11 @@ pub enum Verb {
     Change {
         // Optional here and required by the verb, on the terms `gate` already
         // states for `--read-set`: the refusal names what a base revision is
-        // and points at the two anchors spec 12 fixes, which a
+        // and points at the two anchors the check layer (docs/spec/check-layer.md) fixes, which a
         // missing-argument message from the parser cannot.
         #[arg(
             value_name = "base-rev",
-            help = "the revision to compare the working tree against. Spec 12 fixes two: the \
+            help = "the revision to compare the working tree against. The check layer fixes two: the \
                     committed `HEAD` for a working-tree hook, and the merge base of a proposed \
                     change for a CI job. This verb runs no history walk beyond `git diff` and \
                     `git show` against this one revision"
@@ -759,7 +759,7 @@ pub enum Verb {
         now: Option<Date>,
         #[arg(
             long,
-            help = "register the working-tree write class, which is `new` and `fix`. Spec 5 keeps \
+            help = "register the working-tree write class, which is `new` and `fix`. AI integration keeps \
                     it off by default, because a client may connect to a checkout that the user \
                     did not intend to change, so the consent is a word somebody typed rather than \
                     a setting a tree carries. A tool that lands a change is registered by no \
@@ -910,7 +910,7 @@ pub enum Verb {
             value_name = "json|jsonschema",
             help = concat!(
                 "the emitter target. `json` is the native property graph with no loss and \
-                 `jsonschema` constrains front matter. The other five targets of spec 6 parse \
+                 `jsonschema` constrains front matter. The other five targets of the engine architecture parse \
                  and report the consumer each one waits on. With this flag the artifact goes to \
                  standard output and no declared output path is touched. ",
                 a_refusal_is_not_an_artifact!()
@@ -924,7 +924,7 @@ pub enum Verb {
             conflicts_with = "check",
             help = "the generation time the artifact states, as `YYYY-MM-DD`. Absent by default, \
                     because an artifact that `--check` compares by byte cannot carry a clock \
-                    reading. Spec 7 asks a filtered export that leaves the repository to state \
+                    reading. Distribution and federation asks a filtered export that leaves the repository to state \
                     one, and this is where it is injected: into the output of `--format`, and \
                     into a declared export that states `committed: false`. A run that selects a \
                     committed export is refused"
@@ -1053,7 +1053,7 @@ pub enum Verb {
 /// # Four, where `clap_complete` offers five
 ///
 /// `clap_complete::Shell` carries `Elvish` as well. It is not here, and the
-/// reason is spec 6's own rule about the CLI grammar block: a name that block
+/// reason is [the engine architecture](../../../../docs/spec/engine-architecture.md)'s own rule about the CLI grammar block: a name that block
 /// declares either runs or states its wait. Clause 8 of
 /// [#321](https://github.com/headwater-ai/headwater/issues/321) names four
 /// shells, the grammar block names the same four, and each of the four is a
@@ -1154,7 +1154,7 @@ pub enum SweepWord {
             value_name = "text|json",
             help = concat!(
                 "`text` is the report a person reads and the default, and `json` is the finding \
-                 shape spec 4 declares with the provenance and the evidence a sweep adds. ",
+                 shape the assurance model declares with the provenance and the evidence a sweep adds. ",
                 a_refusal_is_not_an_artifact!()
             )
         )]
@@ -1308,13 +1308,13 @@ pub enum ProbeWord {
         // It is a member of the run identity and not an input to the selection.
         // `crates/probe/src/plan.rs` records it and prints it, and the selection
         // is every declared probe, narrowed by category and sorted by
-        // identifier. Spec 5 asks for deterministic rotation and this engine
+        // identifier. AI integration (docs/spec/ai-integration.md) asks for deterministic rotation and this engine
         // implements none, so the help says that rather than implying a draw.
         #[arg(
             long,
             value_name = "n",
             default_value_t = 0,
-            help = "the rotation seed, which is a member of the run identity spec 5 declares. It \
+            help = "the rotation seed, which is a member of the run identity AI integration declares. It \
                     is the caller's number: a run that states none states zero, and it is \
                     recorded as stated. No selection is drawn from it — every declared probe is \
                     selected — so it identifies a run rather than choosing one"

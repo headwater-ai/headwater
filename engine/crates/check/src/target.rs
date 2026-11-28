@@ -3,7 +3,7 @@
 //!
 //! # The gap this closes
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#two-phases-and-why-the-order-matters)
+//! [The check layer](../../../../docs/spec/check-layer.md#two-phases-and-why-the-order-matters)
 //! lists "a dangling edge" among the structural findings of phase A, beside an
 //! unparseable file, an unclassifiable path and an ambiguous shelf match. The
 //! graph detected one and printed it under its own heading, and it reached no
@@ -120,7 +120,7 @@ impl EdgeCheck for Targets<'_> {
 
         // Three of the four bound targets are a resolution that succeeded. The
         // fourth is `Withheld`, which an export filter produced deliberately,
-        // and spec 7 rules that it is never a defect and never counted as one.
+        // and distribution and federation (docs/spec/distribution-and-federation.md) rules that it is never a defect and never counted as one.
         let Target::Unbound(unbound) = &edge.target else {
             return Outcome::Passed;
         };
@@ -138,7 +138,7 @@ impl EdgeCheck for Targets<'_> {
                 edge.source.id, edge.name, edge.raw_target
             ),
             remediation: remediation(unbound, &edge.name, &edge.raw_target),
-            // No fix, and the reason is spec 12's own bar rather than a
+            // No fix, and the reason is the check layer's (docs/spec/check-layer.md) own bar rather than a
             // judgment about effort. A target that names nothing has no one
             // correct outcome: the repair is another identifier, a new
             // document, a kind on a document that has none, or the deletion of

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 //! `$`-references, resolved over the merged tree and never before it.
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#the--reference-sublanguage):
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#the--reference-sublanguage):
 //! "A reference resolves last, over the merged tree… The order is thus: apply
 //! every overlay, resolve every reference, validate the result." The reason is
-//! spec 2's own worked overlay. It overrides `vocabularies.lifecycle_state`,
+//! [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s own worked overlay. It overrides `vocabularies.lifecycle_state`,
 //! and the facet that reads `$vocabularies.lifecycle_state` is expected to
 //! follow it. An early resolution freezes the base list before any overlay is
 //! read, and the override then changes nothing that a check can see.
@@ -32,17 +32,17 @@ use headwater_yaml::{Mapping, Scalar, Span, Spanned, Value};
 
 /// What `$package` would read, and why nothing can supply it yet.
 ///
-/// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#the--reference-sublanguage)
+/// [The taxonomy model](../../../../docs/spec/taxonomy-model.md#the--reference-sublanguage)
 /// says outright that what `optional` means under the `package` root "is not
-/// fixed here", that spec 7 declares no such block in the package manifest, and
-/// that [13 — Open obligations](../../../../docs/spec/13-open-obligations.md)
+/// fixed here", that [distribution and federation](../../../../docs/spec/distribution-and-federation.md) declares no such block in the package manifest, and
+/// that [Open obligations](../../../../docs/spec/open-obligations.md)
 /// carries the gap. So the root parses, the resolver knows the name, and there
 /// is nothing for it to read. A refusal that says that is better than a
 /// dangling-reference message that sends an author to look for a typing
 /// mistake.
 const PACKAGE_ROOT_GAP: &str = "the `package` root reads the publisher's library of defined but \
                                 unenabled declarations, and no package file gives that library a \
-                                shape. Spec 2 leaves it open and spec 13 carries the gap";
+                                shape. The taxonomy model leaves it open and the register of open obligations carries the gap";
 
 /// Resolve every reference in the merged tree.
 pub fn resolve(tree: &Mapping, schema: &MetaSchema) -> Result<Mapping, Vec<ResolveError>> {
@@ -79,7 +79,7 @@ pub fn resolve(tree: &Mapping, schema: &MetaSchema) -> Result<Mapping, Vec<Resol
 ///
 /// A `remove` "deletes a key and everything that depends on it — and the
 /// resolver **fails** if a declaration that survives still references the
-/// removed key" ([spec 2](../../../../docs/spec/02-taxonomy-model.md#customization-by-composition)).
+/// removed key" ([the taxonomy model](../../../../docs/spec/taxonomy-model.md#customization-by-composition)).
 /// This is the half of that rule the language can decide: a `$`-reference names
 /// the node it reads, so a reader knows what it lost. The other half is a
 /// declaration that names another by a bare string, and [`crate::WAITING`]

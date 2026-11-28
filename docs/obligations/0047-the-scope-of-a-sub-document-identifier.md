@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-Acceptance criteria are one of the five artifacts that receive a stable identifier, and a [contract sidecar](../spec/02-taxonomy-model.md#contract-sidecars-the-specification-as-oracle) gives them one. Nothing says what scopes that identifier. Allocation is reconcile-first over the corpus, which is the wrong denominator if a criterion numbers within its requirement.
+Acceptance criteria are one of the five artifacts that receive a stable identifier, and a [contract sidecar](../spec/taxonomy-model.md#contract-sidecars-the-specification-as-oracle) gives them one. Nothing says what scopes that identifier. Allocation is reconcile-first over the corpus, which is the wrong denominator if a criterion numbers within its requirement.
 
 ## Obligation
 

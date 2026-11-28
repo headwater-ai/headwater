@@ -526,7 +526,7 @@ fn the_run_carries_all_three_classes() {
 
 /// Every finding of the run reaches every format, or the format said why not.
 ///
-/// The audit of the loss-set claim, in the shape spec 7 fixes for the graph
+/// The audit of the loss-set claim, in the shape [distribution and federation](../../../../docs/spec/distribution-and-federation.md) fixes for the graph
 /// emitters. It reads the rendered bytes rather than the emitter. All four
 /// formats are held to it at the same denominator: every finding the run
 /// reported, escaped ones included. `text` used to be held to the live subset
@@ -1965,7 +1965,7 @@ fn count(block: &Value, key: &str) -> usize {
 /// Every format states how many of the run's instances reached no verdict, and
 /// under which class.
 ///
-/// [Spec 4](../../../../docs/spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+/// [The assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
 /// asks OB-COV-3 for the skips with their reasons, and three of the four formats
 /// carried the instance total and nothing else. A consumer read `266 instances`
 /// off a run where 66 of them decided nothing.
@@ -2991,7 +2991,7 @@ fn oracle(artifact: &str) -> Option<Vec<String>> {
 
 // A reader for the artifacts, which is the YAML loader: JSON is a subset of the
 // YAML 1.2 core schema this engine already implements, and a second parser is
-// the drift spec 4 names.
+// the drift the assurance model (docs/spec/assurance-model.md) names.
 
 use headwater_yaml::Value;
 

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
-//! A document that still governs does not credit spec 6 for a rule that moved
+//! A document that still governs does not credit [the engine architecture](../../../../docs/spec/engine-architecture.md) for a rule that moved
 //! out of it (#1572, slice 4c, HW-DR-0106).
 //!
-//! Seven sections of spec 6 now state only a pointer to the home of their
+//! Seven sections of [the engine architecture](../../../../docs/spec/engine-architecture.md) now state only a pointer to the home of their
 //! rule. A governing document that links one of them for the rule itself is
 //! repointed to the home, and nothing it claims changes. A record of a moment
 //! (an evaluation, a review, a probe run, a probe result, a superseded
@@ -10,7 +10,7 @@
 //! count of each link that a record keeps to one of the seven sections.
 //!
 //! A second walk reads credits in prose (#1572 clause 9). A sentence that
-//! names spec 6, as a link to `06-engine-architecture.md` with or without an
+//! names [the engine architecture](../../../../docs/spec/engine-architecture.md), as a link to `engine-architecture.md` with or without an
 //! anchor or as the plain words, and puts a verb of `CREDIT_VERBS` after the
 //! name, past at most two `RELATIVES`, two `ADVERBS` and, after a possessive,
 //! the owned noun, credits that part with what follows. So does a sentence
@@ -39,10 +39,10 @@ fn read(rel: &str) -> String {
     std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()))
 }
 
-const SPEC_SIX_FILE: &str = "06-engine-architecture.md";
-const SPEC_SIX: &str = "docs/spec/06-engine-architecture.md";
+const SPEC_SIX_FILE: &str = "engine-architecture.md";
+const SPEC_SIX: &str = "docs/spec/engine-architecture.md";
 
-/// The sections of spec 6 that state only a pointer to the home of a rule.
+/// The sections of [the engine architecture](../../../../docs/spec/engine-architecture.md) that state only a pointer to the home of a rule.
 const POINTER_ONLY: &[&str] = &[
     "an-export-is-a-projection-and-it-declares-what-it-dropped",
     "an-export-profile-carries-a-filter",
@@ -62,13 +62,13 @@ const RECORDS_OF_A_MOMENT: &[&str] = &[
     "docs/probe-results/",
 ];
 
-/// Links whose sentence credits spec 6 for what the pointer section still
+/// Links whose sentence credits [the engine architecture](../../../../docs/spec/engine-architecture.md) for what the pointer section still
 /// says. Each row is `(path, anchor, reason)`.
 const ALLOWED: &[(&str, &str, &str)] = &[
     (
-        "docs/spec/07-distribution-and-federation.md",
+        "docs/spec/distribution-and-federation.md",
         "an-export-is-a-projection-and-it-declares-what-it-dropped",
-        // "spec 6 places the export among the other projections": the pointer
+        // "the engine architecture (docs/spec/engine-architecture.md) places the export among the other projections": the pointer
         // section still does that, under ## Projections.
         "places the export among the other projections",
     ),
@@ -76,23 +76,23 @@ const ALLOWED: &[(&str, &str, &str)] = &[
         "docs/subsystems/queries-and-explain.md",
         "mcp-server",
         // "its MCP server section states the promise of the server" and
-        // "mcp.rs is the server of spec 6": the section still names the server
+        // "mcp.rs is the server of the engine architecture (docs/spec/engine-architecture.md)": the section still names the server
         // as the surface of the library that an agent reads.
         "the server of spec 6",
     ),
 ];
 
-/// The rules and counts that spec 6 stated once and states no more, each with
+/// The rules and counts that [the engine architecture](../../../../docs/spec/engine-architecture.md) stated once and states no more, each with
 /// its home now. Each row is `(term, home, held)`: `term` is the wording of a
 /// credit to the old rule, lower case, and `held` is the wording at `home`
 /// that holds the rule now.
 const MOVED_CREDITS: &[(&str, &str, &str)] = &[
-    // The probe budget sits outside the root. Spec 5 states the three
+    // The probe budget sits outside the root. AI integration (docs/spec/ai-integration.md) states the three
     // consequences, and the measurement subsystem states that nothing
     // recomputes a budget.
     (
         "probe budget",
-        "docs/spec/05-ai-integration.md",
+        "docs/spec/ai-integration.md",
         "no taxonomy rule reads it, no language regime binds it, and no shelf classifies it",
     ),
     (
@@ -117,14 +117,14 @@ const MOVED_CREDITS: &[(&str, &str, &str)] = &[
     // The `counted` grain of an export profile.
     (
         "placeholder",
-        "docs/spec/07-distribution-and-federation.md",
+        "docs/spec/distribution-and-federation.md",
         "a placeholder sits where each withheld node or edge would have been",
     ),
     // What a tombstone gives a reader: the rule identifier, and under
     // `counted` the digests that HW-DR-0100 added.
     (
         "all that a reader gets",
-        "docs/spec/07-distribution-and-federation.md",
+        "docs/spec/distribution-and-federation.md",
         "the rule identifier is what a reader needs to ask for access, and it is all that they get",
     ),
     // The generated-file marker and the closed identity block.
@@ -157,7 +157,7 @@ const MOVED_CREDITS: &[(&str, &str, &str)] = &[
         "docs/subsystems/checks-and-cache.md",
         "the corpus tree is a gap",
     ),
-    // A count: spec 6 still lists the projection kinds, and the count moved.
+    // A count: the engine architecture (docs/spec/engine-architecture.md) still lists the projection kinds, and the count moved.
     (
         "ten declarable",
         SPEC_SIX,
@@ -165,7 +165,7 @@ const MOVED_CREDITS: &[(&str, &str, &str)] = &[
     ),
 ];
 
-/// The verbs that make a sentence a present-tense credit to spec 6 when one
+/// The verbs that make a sentence a present-tense credit to [the engine architecture](../../../../docs/spec/engine-architecture.md) when one
 /// of them is the first word after the name.
 const CREDIT_VERBS: &[&str] = &[
     "says",
@@ -194,7 +194,7 @@ const ADVERBS: &[&str] = &["then", "also", "still", "now", "already", "only"];
 /// a name followed by `which`, `that` or `where it`.
 const RELATIVES: &[&str] = &["which", "that", "where", "it"];
 
-/// The words that, right after the verb, make the sentence say what spec 6
+/// The words that, right after the verb, make the sentence say what [the engine architecture](../../../../docs/spec/engine-architecture.md)
 /// does not hold, which is true of a moved rule and so is not a credit.
 const NEGATORS: &[&str] = &[
     "no", "nothing", "none", "neither", "nowhere", "not", "never",
@@ -223,7 +223,7 @@ fn sentences(line: &str) -> Vec<&str> {
     out
 }
 
-/// The byte offset just after each place that `sentence` names spec 6.
+/// The byte offset just after each place that `sentence` names [the engine architecture](../../../../docs/spec/engine-architecture.md).
 fn spec_six_names(sentence: &str) -> Vec<usize> {
     let mut ends = Vec::new();
     // A link: the name ends at the `)` that closes its target.
@@ -238,20 +238,29 @@ fn spec_six_names(sentence: &str) -> Vec<usize> {
     // The plain words, with a space, a comma or a possessive after them, so
     // that a link's text ("[Spec 6]") is read once, as the link.
     let lower = sentence.to_lowercase();
-    let mut from = 0;
-    while let Some(at) = lower[from..].find("spec 6") {
-        let end = from + at + "spec 6".len();
-        let rest = &lower[end..];
-        if rest.starts_with([' ', ',']) || rest.starts_with("'s ") || rest.starts_with("\u{2019}s ")
-        {
-            ends.push(end);
+    for name in SPEC_SIX_WORDS {
+        let mut from = 0;
+        while let Some(at) = lower[from..].find(name) {
+            let end = from + at + name.len();
+            let rest = &lower[end..];
+            if rest.starts_with([' ', ','])
+                || rest.starts_with("'s ")
+                || rest.starts_with("\u{2019}s ")
+            {
+                ends.push(end);
+            }
+            from = end;
         }
-        from = end;
     }
     ends
 }
 
-/// True when `sentence` credits spec 6 in the present tense. That is so when
+/// The plain words that name the engine architecture: its title, which
+/// HW-DR-0117 made the citation form, and the number it carried under 4.x,
+/// which a sentence written before that ruling still uses.
+const SPEC_SIX_WORDS: [&str; 2] = ["engine architecture", "spec 6"];
+
+/// True when `sentence` credits [the engine architecture](../../../../docs/spec/engine-architecture.md) in the present tense. That is so when
 /// the sentence opens its claim with `according to` and the name, or when the
 /// first word after the name is a credit verb. Between the name and the verb
 /// there may stand up to two words of `RELATIVES`, and then up to two words
@@ -260,7 +269,16 @@ fn spec_six_names(sentence: &str) -> Vec<usize> {
 /// `NEGATORS` follows it at once or is the last word of its clause.
 fn credits_spec_six(sentence: &str) -> bool {
     let lower = sentence.to_lowercase();
-    if lower.contains("according to spec 6") || lower.contains("according to [spec 6]") {
+    if SPEC_SIX_WORDS.iter().any(|name| {
+        [
+            "according to ",
+            "according to the ",
+            "according to [",
+            "according to [the ",
+        ]
+        .iter()
+        .any(|lead| lower.contains(&format!("{lead}{name}")))
+    }) {
         return true;
     }
     spec_six_names(sentence).into_iter().any(|end| {
@@ -321,7 +339,7 @@ fn verb_follows(words: &[Word]) -> bool {
         return false;
     }
     // A negator right after the verb ("holds no"), or as the last word of the
-    // verb's clause ("names it nowhere"), says what spec 6 does not hold.
+    // verb's clause ("names it nowhere"), says what the engine architecture (docs/spec/engine-architecture.md) does not hold.
     if is(at + 1, NEGATORS) {
         return false;
     }
@@ -332,7 +350,7 @@ fn verb_follows(words: &[Word]) -> bool {
     !(last > at && is(last, NEGATORS))
 }
 
-/// Every `(line, term)` in `text` where a present-tense credit to spec 6,
+/// Every `(line, term)` in `text` where a present-tense credit to [the engine architecture](../../../../docs/spec/engine-architecture.md),
 /// read with the sentence after it, holds a term of `MOVED_CREDITS`, for a
 /// governing `rel`. A line is reported once for each term.
 fn moved_credits(rel: &str, text: &str) -> Vec<(usize, &'static str)> {
@@ -342,7 +360,7 @@ fn moved_credits(rel: &str, text: &str) -> Vec<(usize, &'static str)> {
     credit_lines(text)
 }
 
-/// Every `(line, term)` in `text` where a present-tense credit to spec 6,
+/// Every `(line, term)` in `text` where a present-tense credit to [the engine architecture](../../../../docs/spec/engine-architecture.md),
 /// read with the sentence after it, holds a term of `MOVED_CREDITS`, whatever
 /// document holds it.
 fn credit_lines(text: &str) -> Vec<(usize, &'static str)> {
@@ -389,7 +407,7 @@ fn governs(rel: &str, text: &str) -> bool {
 }
 
 /// Every `(line, anchor)` in `text` that links a pointer-only section of
-/// spec 6, whatever document holds it.
+/// [the engine architecture](../../../../docs/spec/engine-architecture.md), whatever document holds it.
 fn pointer_links(text: &str) -> Vec<(usize, String)> {
     let mut out = Vec::new();
     let needle = format!("{SPEC_SIX_FILE}#");
@@ -409,7 +427,7 @@ fn pointer_links(text: &str) -> Vec<(usize, String)> {
 }
 
 /// Every `(line, anchor)` in `text` that links a pointer-only section of
-/// spec 6 and that the allow table does not hold, for a governing `rel`.
+/// [the engine architecture](../../../../docs/spec/engine-architecture.md) and that the allow table does not hold, for a governing `rel`.
 fn offending(rel: &str, text: &str) -> Vec<(usize, String)> {
     if !governs(rel, text) {
         return Vec::new();
@@ -523,13 +541,12 @@ fn each_moved_term_is_gone_from_spec_6_and_held_at_its_home() {
 #[test]
 fn a_present_tense_credit_to_a_moved_rule_is_flagged_and_history_is_not() {
     let decision = "docs/decisions/0500-a-decision.md";
-    let budget =
-        "[Spec 6](../spec/06-engine-architecture.md#cli) puts the probe budget outside it.\n";
+    let budget = "[Spec 6](../spec/engine-architecture.md#cli) puts the probe budget outside it.\n";
     assert_eq!(moved_credits(decision, budget), vec![(1, "probe budget")]);
 
     // An adverb may stand between the name and the verb, and a bare link is a
     // name.
-    let then = "[Spec 6](../spec/06-engine-architecture.md) then puts the probe budget there.\n";
+    let then = "[Spec 6](../spec/engine-architecture.md) then puts the probe budget there.\n";
     assert_eq!(moved_credits(decision, then).len(), 1);
 
     // The same line in a record of a moment is not flagged.
@@ -549,23 +566,38 @@ fn a_present_tense_credit_to_a_moved_rule_is_flagged_and_history_is_not() {
     assert_eq!(moved_credits(decision, plain), vec![(1, "placeholder")]);
     let lower = "It is not the placeholder that spec 6 describes.\n";
     assert_eq!(moved_credits(decision, lower), vec![(1, "placeholder")]);
+    // The title is the citation form since HW-DR-0117, so it is a name too, in
+    // the plain words, after "according to" and as a link's text.
+    let titled = "The engine architecture says that under counted a placeholder sits there.\n";
+    assert_eq!(moved_credits(decision, titled), vec![(1, "placeholder")]);
+    let per = "According to the engine architecture, a placeholder sits where each node was.\n";
+    assert_eq!(moved_credits(decision, per), vec![(1, "placeholder")]);
+    let linked_title =
+        "[The engine architecture](../spec/engine-architecture.md#cli) puts the probe budget outside it.\n";
+    assert_eq!(
+        moved_credits(decision, linked_title),
+        vec![(1, "probe budget")]
+    );
+    let said_title = "The engine architecture said that a placeholder sat there.\n";
+    assert!(moved_credits(decision, said_title).is_empty());
 
     // A credit is read with the sentence after it, and not the one after that.
-    let next = "[Spec 6](../spec/06-engine-architecture.md#cli) states two things. No crate opens a socket.\n";
+    let next = "[Spec 6](../spec/engine-architecture.md#cli) states two things. No crate opens a socket.\n";
     assert_eq!(moved_credits(decision, next), vec![(1, "socket")]);
     let far = "Spec 6 states one thing. It is a shell. No crate opens a socket.\n";
     assert!(moved_credits(decision, far).is_empty());
 
-    // A credit to a rule that spec 6 still states is not flagged.
-    let kept = "[Spec 6](../spec/06-engine-architecture.md#library) states that the CLI is a thin shell.\n";
+    // A credit to a rule that the engine architecture (docs/spec/engine-architecture.md) still states is not flagged.
+    let kept =
+        "[Spec 6](../spec/engine-architecture.md#library) states that the CLI is a thin shell.\n";
     assert!(moved_credits(decision, kept).is_empty());
 
-    // A present-tense credit to another part is not a credit to spec 6.
-    let other = "[Spec 5](../spec/05-ai-integration.md) puts the probe budget outside it.\n";
+    // A present-tense credit to another part is not a credit to the engine architecture (docs/spec/engine-architecture.md).
+    let other = "[Spec 5](../spec/ai-integration.md) puts the probe budget outside it.\n";
     assert!(moved_credits(decision, other).is_empty());
 
     // A relative clause may stand between the name and the verb, after the
-    // plain words and after a link (HW-DR-0100 wrote "spec 6, which says").
+    // plain words and after a link (HW-DR-0100 wrote "the engine architecture (docs/spec/engine-architecture.md), which says").
     let which = "It amends one sentence of spec 6, which says that the rule identifier is all that a reader gets.\n";
     assert_eq!(
         moved_credits(decision, which),
@@ -573,7 +605,7 @@ fn a_present_tense_credit_to_a_moved_rule_is_flagged_and_history_is_not() {
     );
     let still = "It is the placeholder of spec 6, which still states it.\n";
     assert_eq!(moved_credits(decision, still), vec![(1, "placeholder")]);
-    let linked = "It amends [spec 6](../spec/06-engine-architecture.md#cli), which says what a placeholder is.\n";
+    let linked = "It amends [spec 6](../spec/engine-architecture.md#cli), which says what a placeholder is.\n";
     assert_eq!(moved_credits(decision, linked), vec![(1, "placeholder")]);
 
     // A relative clause that credits nothing is not a credit, and neither is a
@@ -629,7 +661,8 @@ fn a_present_tense_credit_to_a_moved_rule_is_flagged_and_history_is_not() {
     );
     let curly = "Spec 6\u{2019}s table says that a placeholder sits there.\n";
     assert_eq!(moved_credits(decision, curly), vec![(1, "placeholder")]);
-    let linked_possessive = "[Spec 6](../spec/06-engine-architecture.md#cli)'s rule says where the probe budget sits.\n";
+    let linked_possessive =
+        "[Spec 6](../spec/engine-architecture.md#cli)'s rule says where the probe budget sits.\n";
     assert_eq!(
         moved_credits(decision, linked_possessive),
         vec![(1, "probe budget")]
@@ -641,7 +674,7 @@ fn a_present_tense_credit_to_a_moved_rule_is_flagged_and_history_is_not() {
     let according = "According to spec 6, a placeholder sits where each node was.\n";
     assert_eq!(moved_credits(decision, according), vec![(1, "placeholder")]);
     let according_link =
-        "According to [spec 6](../spec/06-engine-architecture.md), a placeholder sits there.\n";
+        "According to [spec 6](../spec/engine-architecture.md), a placeholder sits there.\n";
     assert_eq!(
         moved_credits(decision, according_link),
         vec![(1, "placeholder")]
@@ -657,7 +690,7 @@ fn a_present_tense_credit_to_a_moved_rule_is_flagged_and_history_is_not() {
         vec![(1, "placeholder")]
     );
 
-    // A negator right after the verb makes the sentence say what spec 6 does
+    // A negator right after the verb makes the sentence say what the engine architecture (docs/spec/engine-architecture.md) does
     // not hold, and that is true of a moved rule, so it is not a credit.
     for negative in [
         "Spec 6 holds no socket rule, and HW-REQ-0001 holds it.\n",
@@ -737,7 +770,7 @@ fn every_allowed_link_is_still_in_its_document() {
 }
 
 /// The links that the records of a moment hold to a pointer-only section of
-/// spec 6, with the count of each, measured on 2026-10-03. A record of a
+/// [the engine architecture](../../../../docs/spec/engine-architecture.md), with the count of each, measured on 2026-10-03. A record of a
 /// moment stays as written (HW-DR-0106), so a repoint inside one lowers a
 /// count and a new link raises one, and the test compares the whole table.
 /// Each row is `(path, anchor, count)`.
@@ -897,7 +930,7 @@ fn a_record_of_a_moment_keeps_its_credits_to_spec_6() {
 
 #[test]
 fn each_of_the_seven_pointer_sections_is_flagged() {
-    // The seven sections of spec 6 that state only a pointer, as #1572
+    // The seven sections of the engine architecture (docs/spec/engine-architecture.md) that state only a pointer, as #1572
     // slice 4c names them. Dropping one from POINTER_ONLY fails here.
     for anchor in [
         "an-export-is-a-projection-and-it-declares-what-it-dropped",
@@ -908,7 +941,7 @@ fn each_of_the_seven_pointer_sections_is_flagged() {
         "ci-adapters",
         "checks",
     ] {
-        let line = format!("[s](../spec/06-engine-architecture.md#{anchor})\n");
+        let line = format!("[s](../spec/engine-architecture.md#{anchor})\n");
         assert_eq!(
             offending("docs/decisions/0500-a-decision.md", &line),
             vec![(1, anchor.to_owned())],
@@ -919,8 +952,7 @@ fn each_of_the_seven_pointer_sections_is_flagged() {
 
 #[test]
 fn the_walk_skips_a_record_of_a_moment_and_flags_a_governing_document() {
-    let line =
-        "See [spec 6](../spec/06-engine-architecture.md#an-export-profile-carries-a-filter).\n";
+    let line = "See [spec 6](../spec/engine-architecture.md#an-export-profile-carries-a-filter).\n";
 
     // A governing document with a pointer-only link is flagged.
     let hit = offending("docs/decisions/0500-a-decision.md", line);
@@ -945,20 +977,19 @@ fn the_walk_skips_a_record_of_a_moment_and_flags_a_governing_document() {
     );
 
     // A link to a section that still states its rule is not.
-    let pipeline = "See [spec 6](../spec/06-engine-architecture.md#pipeline).\n";
+    let pipeline = "See [spec 6](../spec/engine-architecture.md#pipeline).\n";
     assert!(offending("docs/decisions/0500-a-decision.md", pipeline).is_empty());
 
-    // Spec 6 itself is not.
-    let own = "[x](06-engine-architecture.md#ci-adapters)\n";
+    // The engine architecture (docs/spec/engine-architecture.md) itself is not.
+    let own = "[x](engine-architecture.md#ci-adapters)\n";
     assert!(offending(SPEC_SIX, own).is_empty());
 
     // An allowed row is not, and the same anchor elsewhere is.
-    let mcp = "[s](../spec/06-engine-architecture.md#mcp-server)\n";
+    let mcp = "[s](../spec/engine-architecture.md#mcp-server)\n";
     assert!(offending("docs/subsystems/queries-and-explain.md", mcp).is_empty());
     assert_eq!(offending("docs/interfaces/headwater-mcp.md", mcp).len(), 1);
 
     // Two links on one line are two hits.
-    let two =
-        "[a](06-engine-architecture.md#checks) and [b](06-engine-architecture.md#mcp-server)\n";
-    assert_eq!(offending("docs/spec/04-assurance-model.md", two).len(), 2);
+    let two = "[a](engine-architecture.md#checks) and [b](engine-architecture.md#mcp-server)\n";
+    assert_eq!(offending("docs/spec/assurance-model.md", two).len(), 2);
 }

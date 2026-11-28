@@ -4,7 +4,7 @@
 #
 # [HW-DR-0059] admits a recorder built as a driver and a transform. The driver
 # starts the session and reads what the harness emits; the transform filters
-# that stream into a transcript. [Spec 15] states the condition the pair rests
+# that stream into a transcript. The recorder contract (docs/spec/the-recorder-contract.md) states the condition the pair rests
 # on: the log has to reach the transform through a channel the model holds no
 # handle on. `tools/probe/probe-record.sh` is the driver and owns that condition.
 # This script reads a stream and reaches nothing, so it can be run over a
@@ -33,7 +33,7 @@
 #
 # ## The six derivation steps, each named
 #
-# A harness log carries the calls and not the rest of the contract. [Spec 15]
+# A harness log carries the calls and not the rest of the contract. The recorder contract (docs/spec/the-recorder-contract.md)
 # §"The values a session log omits" names the step behind each value, and each
 # one below is a function of this script with that name:
 #
@@ -51,7 +51,7 @@
 #                         `.headwater/probe.yml` declares (`step_run_oracles`)
 #
 # `step_derive_cites` and `step_derive_findings` are computed the same way for
-# every probe and neither reads a probe, which is the boundary [spec 15]
+# every probe and neither reads a probe, which is the boundary the recorder contract (docs/spec/the-recorder-contract.md)
 # §"Two produced keys carry a derivation" draws between a recorder and a
 # grader. A command oracle (#1834) runs when a produced artifact matches its
 # pattern. Its findings go on every produced artifact inside the base, and an
@@ -86,7 +86,7 @@
 # `test:<name>` is among the findings of every produced artifact inside the
 # base. The record reads no probe, so it holds every declared oracle and not
 # only the one a probe names: a recorder that wrote only the oracle a probe
-# grades against would be a grader ([spec 15]). Which line is a probe's pass
+# grades against would be a grader (the recorder contract (docs/spec/the-recorder-contract.md)). Which line is a probe's pass
 # is the reader's choice, and `tools/probe/try.sh result` makes it.
 #
 # The record is written whole, to a temporary file renamed onto <file>, after
@@ -247,7 +247,7 @@ base_abs=$(cd "$base" 2>/dev/null && pwd) || base_abs=$base
 # are still read off the file.
 #
 # **A path inside the base that holds no file at the end of the session is not
-# in `produced` (#1659).** Spec 15 gives `path` as "where the artifact landed",
+# in `produced` (#1659).** The recorder contract (docs/spec/the-recorder-contract.md) gives `path` as "where the artifact landed",
 # and a write the harness refused landed nothing. Neither did a file the session
 # wrote and then removed. Four sessions of the 2026-10-03 campaign met the
 # workspace's write hook. Each named a path in a refused `Write`, and the old
@@ -256,7 +256,7 @@ base_abs=$(cd "$base" 2>/dev/null && pwd) || base_abs=$base
 # the grader scores as a clean pass. So the fold below drops a relative entry
 # whose file is absent, whether the log or `--produced` named it. A session
 # whose only write was refused records `produced: []`, the scored failure. An
-# absolute path is outside the base and stays as it is. Spec 15's sentence "The
+# absolute path is outside the base and stays as it is. The recorder contract's (docs/spec/the-recorder-contract.md) sentence "The
 # transform adds each of those paths to `produced` once" is owed this
 # narrowing, and it lands after the campaign that this recorder serves.
 #

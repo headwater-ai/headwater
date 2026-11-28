@@ -7,7 +7,7 @@
 //! measurement. The `match verb.as_slice()` arms of the binary were the truth.
 //! The message a caller reads on an unknown verb listed fifteen names where the
 //! arms carried seventeen, and it omitted `probe` and `query`. The `USAGE`
-//! synopsis that `--help` printed omitted `query` and `taxonomy migrate`. Spec 6
+//! synopsis that `--help` printed omitted `query` and `taxonomy migrate`. [The engine architecture](../../../../docs/spec/engine-architecture.md)
 //! kept a fourth copy as the CLI grammar.
 //!
 //! The one that costs the most is `query`. `headwater query "anything"` exits 1
@@ -156,7 +156,7 @@ pub const VERBS: &[Verb] = &[
         name: "change",
         group: "Checking a corpus",
         summary: "write the manifest that `check --change` reads",
-        description: "Write the manifest that `check --change` reads, anchored at a base revision and the working tree in front of it. It is the git plumbing spec 12 rules out of the check-evaluation path, carried into a verb rather than left to a hook a corpus this repository does not own could never reach. It runs `git diff`, `git show` and `git ls-files` against the base revision, and nothing else in this binary runs a version control command. The manifest and the prior versions it names are written under the directory given, and the manifest's own path is printed on standard output. It refuses a base revision this clone does not hold, and a path a manifest line cannot carry without corrupting it.",
+        description: "Write the manifest that `check --change` reads, anchored at a base revision and the working tree in front of it. It is the git plumbing the check layer rules out of the check-evaluation path, carried into a verb rather than left to a hook a corpus this repository does not own could never reach. It runs `git diff`, `git show` and `git ls-files` against the base revision, and nothing else in this binary runs a version control command. The manifest and the prior versions it names are written under the directory given, and the manifest's own path is printed on standard output. It refuses a base revision this clone does not hold, and a path a manifest line cannot carry without corrupting it.",
         words: &[],
     },
     Verb {
@@ -195,7 +195,7 @@ pub const VERBS: &[Verb] = &[
         words: &[],
     },
     // The one verb git calls rather than a person. HW-DR-0077 rules that merge
-    // safety ships as a verb of the binary and gives the reason spec 5's "no
+    // safety ships as a verb of the binary and gives the reason AI integration's (docs/spec/ai-integration.md) "no
     // hook introduces a verb" does not forbid it: that rule forbids a second
     // entry point to `route` or `check`, and this answers a question no verb
     // answers, which is what a merge does with a derived fold.
@@ -234,15 +234,15 @@ pub const VERBS: &[Verb] = &[
         description: "Print the bytes of one document exactly as they are on disk, found by its path or by the identifier it declares. It finds the document the way `explain` does, and it refuses a target that `explain` refuses in the same sentence.",
         words: &[],
     },
-    // Listed in spec 6, and no document states what an expression is. The verb
+    // Listed in the engine architecture (docs/spec/engine-architecture.md), and no document states what an expression is. The verb
     // states that wait when a caller types it, which is what #146 requires of a
     // declared name. It is a verb of this surface for exactly that reason: a
     // wait a caller cannot discover is a wait nobody reads.
     Verb {
         name: "query",
         group: "Reading a corpus",
-        summary: "listed in spec 6, and no document says what an expression is",
-        description: "Listed in spec 6, and no document states what an expression is, so this engine implements none. It states that wait and exits non-zero. It is here because a wait a caller cannot discover is a wait nobody reads. `route` and `explain` are the reads that exist.",
+        summary: "listed in the engine architecture, and no document says what an expression is",
+        description: "Listed in the engine architecture, and no document states what an expression is, so this engine implements none. It states that wait and exits non-zero. It is here because a wait a caller cannot discover is a wait nobody reads. `route` and `explain` are the reads that exist.",
         words: &[],
     },
     Verb {
@@ -256,7 +256,7 @@ pub const VERBS: &[Verb] = &[
         name: "mcp",
         group: "Reading a corpus",
         summary: "serve the reads and one run of the checks to an agent",
-        description: "Serve the reads of this binary, and one run of the checks, to an agent over the Model Context Protocol, on standard input and output. It registers spec 5's query class, and with `--write` the working-tree write class beside it. The corpus is walked once before it starts and the clock is read once, so every call answers about the same tree at the same date, and the `check` tool returns the bytes `check --format` returns. A call that moves a byte of that tree ends the server rather than answering from a walk it made stale.",
+        description: "Serve the reads of this binary, and one run of the checks, to an agent over the Model Context Protocol, on standard input and output. It registers AI integration's query class, and with `--write` the working-tree write class beside it. The corpus is walked once before it starts and the clock is read once, so every call answers about the same tree at the same date, and the `check` tool returns the bytes `check --format` returns. A call that moves a byte of that tree ends the server rather than answering from a walk it made stale.",
         words: &[],
     },
     Verb {
@@ -316,7 +316,7 @@ pub const VERBS: &[Verb] = &[
         name: "probe",
         group: "Sampling, which never gates",
         summary: "the five parts of the probe harness",
-        description: "The five deterministic parts of the probe harness, which is a sampler and never a check. Nothing here reaches a model and nothing here writes a transcript. A transcript that an agent wrote about its own session is a self-report, which spec 5 refuses, so the recorder observes a session from outside it and is not in this repository.",
+        description: "The five deterministic parts of the probe harness, which is a sampler and never a check. Nothing here reaches a model and nothing here writes a transcript. A transcript that an agent wrote about its own session is a self-report, which AI integration refuses, so the recorder observes a session from outside it and is not in this repository.",
         words: &[
             Word {
                 name: "plan",
@@ -360,8 +360,8 @@ pub const VERBS: &[Verb] = &[
         words: &[
             Word {
                 name: "validate",
-                summary: "resolve the sources and report every rule of spec 2",
-                description: "Resolve the sources and report every rule of spec 2's list, and what each one did not decide. Writes nothing.",
+                summary: "resolve the sources and report every rule of the taxonomy model",
+                description: "Resolve the sources and report every rule of the taxonomy model's list, and what each one did not decide. Writes nothing.",
             },
             Word {
                 name: "resolve",
@@ -386,7 +386,7 @@ pub const VERBS: &[Verb] = &[
             Word {
                 name: "diff",
                 summary: "measure what a published artifact would do to this corpus",
-                description: "Measure what a published artifact would do to this corpus, across the six compatibility dimensions of spec 2. It resolves the artifact under this repository's own overlays and runs every phase twice over one tree, so a difference is attributable to the schema rather than to two publishes of one package differing in trivia. Where the artifact ships a migration payload for the move, it reports what each step reaches in this corpus and every document that stopped validating under no step. It writes nothing, and it fails only when it could not measure.",
+                description: "Measure what a published artifact would do to this corpus, across the six compatibility dimensions of the taxonomy model. It resolves the artifact under this repository's own overlays and runs every phase twice over one tree, so a difference is attributable to the schema rather than to two publishes of one package differing in trivia. Where the artifact ships a migration payload for the move, it reports what each step reaches in this corpus and every document that stopped validating under no step. It writes nothing, and it fails only when it could not measure.",
             },
             Word {
                 name: "migrate",
@@ -416,7 +416,7 @@ pub const VERBS: &[Verb] = &[
     // position could not read its re-entry guard, and it re-blocked the same
     // turn with no way out.
     //
-    // The [hook contract](../../../../docs/spec/05-ai-integration.md#the-hook-contract-and-what-a-hook-cannot-bind)
+    // The [hook contract](../../../../docs/spec/ai-integration.md#the-hook-contract-and-what-a-hook-cannot-bind)
     // forbids a `headwater hook <moment>` verb, and the reason it gives is
     // drift: two entry points to one answer are two answers. This verb is
     // outside that reason rather than inside an exception to it. It answers

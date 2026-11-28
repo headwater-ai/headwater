@@ -449,7 +449,7 @@ fn an_output_with_no_name_placeholder_is_refused_and_writes_nothing() {
     );
 }
 
-/// Spec 5: a pointer to a document that nobody accepted says so beside the
+/// [AI integration](../../../../docs/spec/ai-integration.md): a pointer to a document that nobody accepted says so beside the
 /// summary, because an agent that follows it must know before it reads.
 #[test]
 fn a_rule_file_for_an_unaccepted_source_says_that_nobody_accepted_it() {

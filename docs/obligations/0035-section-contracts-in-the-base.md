@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-The base `specification` kind requires the sections `Scope` and `Behavior`. That is a lexical commitment inside a package whose [core](../spec/07-distribution-and-federation.md#the-invariant-core) is semantic and never lexical.
+The base `specification` kind requires the sections `Scope` and `Behavior`. That is a lexical commitment inside a package whose [core](../spec/distribution-and-federation.md#the-invariant-core) is semantic and never lexical.
 
 ## Obligation
 

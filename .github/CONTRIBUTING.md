@@ -1,6 +1,6 @@
 # Contributing to Headwater
 
-Headwater is in its design phase. The specification under [`docs/spec/`](../docs/spec/) is the current product, and [`docs/spec/09-decisions.md`](../docs/spec/09-decisions.md) is the register of what the design has settled and why. [`docs/spec/13-open-obligations.md`](../docs/spec/13-open-obligations.md) carries what it still owes.
+Headwater is in its design phase. The specification under [`docs/spec/`](../docs/spec/) is the current product, and [`docs/spec/decisions.md`](../docs/spec/decisions.md) is the register of what the design has settled and why. [`docs/spec/open-obligations.md`](../docs/spec/open-obligations.md) carries what it still owes.
 
 ## The terms
 

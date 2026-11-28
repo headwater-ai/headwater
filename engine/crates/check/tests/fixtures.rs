@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The check fixture tree, and this repository's own run.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
+//! [The check layer](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
 //! sets the floor: "every check ships with at least one fixture that it fails
 //! and one that it passes." The tree under `fixtures/check/` carries both for
 //! each rule, and `check.report` records every instance and every finding it
@@ -44,7 +44,7 @@ use std::path::{Path, PathBuf};
 /// The date every recorded report is evaluated at.
 ///
 /// A recorded report is a function of its inputs, and
-/// [spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
+/// [the check layer](../../../../docs/spec/check-layer.md#determinism-concretely)
 /// makes the clock one of them: "same corpus, same lock, same injected clock,
 /// byte-identical output". A test that read today's date would record a file
 /// that a windowed rule rewrites as the calendar moves, which is a fixture
@@ -85,14 +85,14 @@ fn compare(recorded: &Path, actual: &str) {
     );
 }
 
-/// One run over one corpus: the whole pipeline, in the order spec 6 draws it.
+/// One run over one corpus: the whole pipeline, in the order [the engine architecture](../../../../docs/spec/engine-architecture.md) draws it.
 fn run_over(corpus: &Corpus, root: &Mapping, lock: &str, source: &str, cache: &mut Cache) -> Run {
     run_at(corpus, root, lock, source, &pinned(), cache, None)
 }
 
 /// Where the fixture tree's taxonomy lives, as a reader would open it.
 ///
-/// A run of the verb passes `.headwater/taxonomy.lock`, which spec 6 fixes.
+/// A run of the verb passes `.headwater/taxonomy.lock`, which [the engine architecture](../../../../docs/spec/engine-architecture.md) fixes.
 /// This tree has no lock, and the source stands in for one exactly as its
 /// digest stands in for a lock digest.
 const FIXTURE_SOURCE: &str = "engine/crates/check/fixtures/check.taxonomy.yml";
@@ -295,9 +295,9 @@ fn corpus_of(root: &Path, resolved: &headwater_resolve::Repository) -> Corpus {
     )
 }
 
-/// The precedence spec 4 fixes, over one tree that exercises both mechanisms.
+/// The precedence [the assurance model](../../../../docs/spec/assurance-model.md) fixes, over one tree that exercises both mechanisms.
 ///
-/// Spec 4 orders waiver, then migration-pending, then suppression, "so the
+/// [The assurance model](../../../../docs/spec/assurance-model.md) orders waiver, then migration-pending, then suppression, "so the
 /// three inventories partition the escaped findings, and no finding is counted
 /// three times". The fixture tree carries a directive that hides a real
 /// finding. This declares a task over the same `(document, rule)` pair and
@@ -372,7 +372,7 @@ tasks:
 
 /// A pending finding does not fail a `--strict` run.
 ///
-/// Spec 7: migration-pending findings are "counted, visible in coverage, never
+/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md): migration-pending findings are "counted, visible in coverage, never
 /// blocking". `has_errors` is what `--strict` reads, so this is the property
 /// stated in the coordinate the flag uses.
 #[test]
@@ -395,7 +395,7 @@ fn a_pending_finding_never_blocks() {
 
     // A pair is a `(document, rule)` cell, so it holds every finding of that
     // rule on that document rather than the one that prompted it. That is the
-    // grain spec 7 fixes, and the expected count follows from it rather than
+    // grain distribution and federation (docs/spec/distribution-and-federation.md) fixes, and the expected count follows from it rather than
     // from the number of pairs written below.
     let expected = bare
         .findings
@@ -436,7 +436,7 @@ tasks:
     );
     assert!(
         !laden.has_errors(),
-        "declared debt failed a strict run, which spec 7 says it never does"
+        "declared debt failed a strict run, which distribution and federation says it never does"
     );
     // The two numbers, and they are different numbers. A pair is what an
     // adopter closes; a finding is what a reader would have seen. The cell
@@ -864,7 +864,7 @@ fn a_target_that_binds_to_nothing_is_a_finding_that_names_which_defect_it_is() {
         "{findings:#?}"
     );
     // And none of them offers a fix. A target that names nothing has no one
-    // derivable outcome, which is spec 12's bar for offering one.
+    // derivable outcome, which is the check layer's (docs/spec/check-layer.md) bar for offering one.
     assert!(
         !findings.iter().any(|finding| finding.fixable()),
         "{findings:#?}"
@@ -1279,7 +1279,7 @@ fn the_graph_fixture_corpus_routes_every_phase_a_defect_of_a_relation() {
     }
 
     // One instance, whatever the size of the corpus. That is the barrier count
-    // spec 12 asks a reader to be able to read, and it is what separates this
+    // the check layer (docs/spec/check-layer.md) asks a reader to be able to read, and it is what separates this
     // grain from a document-scoped rule with a wide read set.
     let instances: Vec<&headwater_check::Instance> = run
         .instances
@@ -1512,7 +1512,7 @@ fn either_missing_half_is_found_and_the_remediation_names_the_other_document() {
 /// Every finding of one verdict is reported, and not the first of them.
 ///
 /// A document can omit several facets its kind requires, and each omission is a
-/// separate line for its author to write. Spec 12 gives a check the signature
+/// separate line for its author to write. [The check layer](../../../../docs/spec/check-layer.md) gives a check the signature
 /// `-> [Finding]` for this, and a verdict that named the first omission would
 /// make the rest cost one run each to find.
 #[test]
@@ -1992,7 +1992,7 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             // is the same grain for the reason the two above it are: the
             // defect survives in one document.
             Grain::Document,
-            // The warrant against spec 3's closed set, and the acceptor against
+            // The warrant against authoring and lifecycle's (docs/spec/authoring-and-lifecycle.md) closed set, and the acceptor against
             // the warrant: both are one document's provenance block (#1438,
             // #1437).
             Grain::Document,

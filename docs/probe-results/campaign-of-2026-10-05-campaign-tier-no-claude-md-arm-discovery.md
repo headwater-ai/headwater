@@ -400,7 +400,7 @@ An interval that overlaps the previous run's is variance and one that does not i
 
 ## The comparisons this arm takes part in
 
-What `CLAUDE.md` changes. The treated arm is the `campaign` present arm and the control is the `campaign` `no-claude-md` arm, which removed the paths the `no-claude-md` component's delta names. The documents are in both arms (spec 5).
+What `CLAUDE.md` changes. The treated arm is the `campaign` present arm and the control is the `campaign` `no-claude-md` arm, which removed the paths the `no-claude-md` component's delta names. The documents are in both arms (AI integration).
 
 - treated, `docs/probe-runs/campaign-of-2026-10-05-campaign-tier-present-arm-discovery.md`: 137 of 354 graded sessions satisfied their expectation, 38.7%, in a 95% interval of 33.8% to 43.9%. 0 sessions refused by the session itself.
 - control, `docs/probe-runs/campaign-of-2026-10-05-campaign-tier-no-claude-md-arm-discovery.md`: 132 of 354 graded sessions satisfied their expectation, 37.3%, in a 95% interval of 32.4% to 42.4%. 0 sessions refused by the session itself.

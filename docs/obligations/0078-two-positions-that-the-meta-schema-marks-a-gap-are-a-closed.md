@@ -23,7 +23,7 @@ relations:
 
 ## Context
 
-[`voice_regime.forbid`](../spec/03-authoring-and-lifecycle.md#voice) names categories and states no set of them. `language_regime.controlled` names a controlled language and states no set either. A check needs a pattern set for each category and a rule set for each profile, and [the language](../spec/02-taxonomy-model.md#the-thirteen-declarations) holds neither.
+[`voice_regime.forbid`](../spec/authoring-and-lifecycle.md#voice) names categories and states no set of them. `language_regime.controlled` names a controlled language and states no set either. A check needs a pattern set for each category and a rule set for each profile, and [the language](../spec/taxonomy-model.md#the-thirteen-declarations) holds neither.
 
 ## Obligation
 

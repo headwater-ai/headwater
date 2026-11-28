@@ -4,7 +4,7 @@
 //!
 //! # The gap this closes
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md) states what a relation
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md) states what a relation
 //! that declares `on_target: {set_state: superseded}` does: it "sets the
 //! target's state-entry date in the same operation. A state change with no
 //! stamp is a defect regardless of what caused the change." The engine wrote
@@ -64,7 +64,7 @@
 //! state the edge declares, and write the state-entry date beside it. The
 //! date is the successor's own `state_entered` value, which is the date the
 //! supersession landed. It is read from the corpus and not from a clock, so
-//! the fix derives it rather than inventing it, which is what spec 2 requires
+//! the fix derives it rather than inventing it, which is what [the taxonomy model](../../../../docs/spec/taxonomy-model.md) requires
 //! of `--fix`. Both writes ride in one [`Patch::Facets`], so the state never
 //! lands without its stamp.
 //!

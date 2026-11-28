@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! An edge that was verified against a revision the snapshot no longer pins.
 //!
-//! [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#upstream-awareness)
+//! [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#upstream-awareness)
 //! states the rule this file holds: "A snapshot pin reports drift on each
 //! affected edge, and not only on the pin. … Every edge into a changed item is
 //! then a finding until a person re-verifies it." `relation.target.suspect` is
@@ -17,7 +17,7 @@
 //! already runs `headwater_check::run` over it. What it did not have is a real
 //! cache, and the case below is the reason to want one.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md) puts the bar at a failing
+//! [The check layer](../../../../docs/spec/check-layer.md) puts the bar at a failing
 //! fixture rather than at a directory, and `engine/crates/scaffold/tests/`
 //! cites the same bar from outside the check crate.
 

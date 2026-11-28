@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # The meta-schema of the taxonomy language, expressed in the dialect it
-# describes. Spec 2 (The meta-schema) is the prose; this file is that prose as
+# describes. The taxonomy model (docs/spec/taxonomy-model.md) (The meta-schema) is the prose; this file is that prose as
 # data, and `headwater-meta` is the reader of this file.
 #
 # It is YAML 1.2 on the Q2 loader rulings, exactly as a taxonomy source is: the
@@ -28,7 +28,7 @@
 #   reference: allowed   a `$`-reference may stand here (the default refuses one)
 #
 # `free` is the honest form of a gap. Every use carries the reason, so a reader
-# can count what the specification has not yet given a shape, and spec 13
+# can count what the specification has not yet given a shape, and the register of open obligations (docs/spec/open-obligations.md)
 # carries each one.
 #
 # ## Two markers in the comments
@@ -77,7 +77,7 @@ meta_schema: headwater/taxonomy
 # rule, because a source that wrote no scope declares none.
 #
 # 0.8.0 adds `projection.committed`, an optional boolean that says whether the
-# tree holds a projection's output (#1261). Spec 7 makes whether an export is
+# tree holds a projection's output (#1261). Distribution and federation (docs/spec/distribution-and-federation.md) makes whether an export is
 # committed a schema decision, and until this member no schema could state it,
 # so a declared `graph_export` had to be committed and current. It is a minor,
 # because a source that wrote none declares the default, which is committed.
@@ -104,22 +104,27 @@ meta_schema: headwater/taxonomy
 # because a source that wrote none declares none, and the nav it writes is the
 # flat list it wrote before. HW-DR-0107 records why.
 #
+# 0.12.0 adds `projection.precedence`, the shelves a `site_nav` lists in the
+# derived reading order (#2137). It is a minor, because a source that wrote
+# none declares none, and every shelf then keeps the path order it had.
+# HW-DR-0117 records why.
+#
 # No consumer compares this value against anything. `fixtures/schema.record`
 # carries it, so a bump shows up in a diff, and nothing refuses a source for
 # the version it was written against. So the position of a digit here is a
 # statement to a reader and never a gate: the removal above is refused at the
 # member and never at the version.
-version: 0.11.0
+version: 0.12.0
 
 # --- the root of a taxonomy source ------------------------------------------
 #
-# The root set is closed (spec 2, The `$`-reference sublanguage). Thirteen of
+# The root set is closed (the taxonomy model (docs/spec/taxonomy-model.md), The `$`-reference sublanguage). Thirteen of
 # these are the thirteen declarations. `vocabularies` is authoring syntax that
 # facets reference, and the three above it name the taxonomy and what it
 # extends.
 #
 # `package` is absent deliberately. It is a reserved reference root, and no
-# taxonomy may declare a block with that name. A package *manifest* (spec 7,
+# taxonomy may declare a block with that name. A package *manifest* (distribution and federation (docs/spec/distribution-and-federation.md),
 # Publishing) is a different file with a different root set, and it is that
 # file which names the package.
 
@@ -149,13 +154,13 @@ declarations:
   mappings: {seq: {block: mapping}}
   projections: {seq: {block: projection}}
 
-  # The two roots that spec 4 writes and spec 2 had no room for. Both are keyed
-  # by the identifier, where spec 4's own examples wrote the identifier as an
+  # The two roots that the assurance model (docs/spec/assurance-model.md) writes and the taxonomy model (docs/spec/taxonomy-model.md) had no room for. Both are keyed
+  # by the identifier, where the assurance model's (docs/spec/assurance-model.md) own examples wrote the identifier as an
   # `id` member of a list item. The key is the identifier because a bundle has
   # to reach these blocks: an overlay writes an address, an address never
   # reaches inside a list, and a bundle that adds a kind adds the obligations
   # that the kind's rules serve. Two bundles that add two obligations then write
-  # two disjoint addresses, which is what the confluence rule of spec 7 needs.
+  # two disjoint addresses, which is what the confluence rule of distribution and federation (docs/spec/distribution-and-federation.md) needs.
   obligations: {map: {block: obligation}}
   controls: {map: {block: control}}
 
@@ -170,8 +175,8 @@ declarations:
 # --- the root of an overlay source ------------------------------------------
 #
 # An overlay is a taxonomy source of a second shape: operations at addresses
-# rather than declarations (spec 2, Customization by composition). A bundle is
-# an overlay that a publisher ships and that holds `add` alone (spec 7).
+# rather than declarations (the taxonomy model (docs/spec/taxonomy-model.md), Customization by composition). A bundle is
+# an overlay that a publisher ships and that holds `add` alone (distribution and federation (docs/spec/distribution-and-federation.md)).
 #
 # The value of an operation is validated against the shape at the address it
 # names, which is what makes one meta-schema serve both roots.
@@ -214,7 +219,7 @@ definitions:
   vocabulary_value:
     members:
       value: {scalar: string, required: true}
-      # guess: spec 2 uses initial, live and terminal-retained, and states no set.
+      # guess: the taxonomy model (docs/spec/taxonomy-model.md) uses initial, live and terminal-retained, and states no set.
       role: {enum: [initial, live, terminal-retained]}
 
   # --- purposes -------------------------------------------------------------
@@ -228,7 +233,7 @@ definitions:
 
   facet:
     members:
-      # The role registry is closed and spec 2 states it here rather than
+      # The role registry is closed and the taxonomy model (docs/spec/taxonomy-model.md) states it here rather than
       # anywhere else. A role outside this line is a validation error, and to
       # add one is a meta-schema change.
       #
@@ -250,8 +255,8 @@ definitions:
       # guess: the types the base package and the first bundle write.
       type: {enum: [string, integer, boolean, date, duration]}
       required: {scalar: boolean}
-      # guess: the three values a check reports (spec 12). The obligation
-      # severities of spec 4 are a different surface.
+      # guess: the three values a check reports (the check layer (docs/spec/check-layer.md)). The obligation
+      # severities of the assurance model (docs/spec/assurance-model.md) are a different surface.
       severity: {enum: [error, warn, info]}
       stale_after_days: {scalar: integer}
       # guess: the permanence canon names `mutable` and implies its complement.
@@ -273,7 +278,7 @@ definitions:
 
   voice_regime:
     members:
-      # gap: spec 3 names the forbidden constructions in prose and no value set
+      # gap: authoring and lifecycle (docs/spec/authoring-and-lifecycle.md) names the forbidden constructions in prose and no value set
       # states them.
       forbid: {seq: {scalar: string}}
 
@@ -291,7 +296,7 @@ definitions:
   language_regime:
     members:
       tag: {scalar: string, required: true}
-      # gap: spec 2 names `none`, `ste-house` and `ste-strict`, and this
+      # gap: the taxonomy model (docs/spec/taxonomy-model.md) names `none`, `ste-house` and `ste-strict`, and this
       # repository's own overlay writes `ASD-STE100` with a separate `profile`.
       # A closed set here would refuse a committed source.
       controlled: {scalar: string}
@@ -348,7 +353,7 @@ definitions:
       from: {seq: {scalar: string}, required: true}
       to: {seq: {scalar: string}, required: true}
       inverse: {scalar: string}
-      # guess: spec 2 writes `required` and `symmetric`, and a relation with
+      # guess: the taxonomy model (docs/spec/taxonomy-model.md) writes `required` and `symmetric`, and a relation with
       # neither is what `optional` names.
       reciprocal: {enum: [required, symmetric, optional]}
       nuclearity: {enum: [multinuclear, nucleus-satellite]}
@@ -356,13 +361,13 @@ definitions:
       # Which end of an `evidence` relation is the evidence. Absent is `to`,
       # the reading of every evidence relation before 0.9.0. The family cannot
       # supply it for the reason it cannot supply `nucleus`: the direction of a
-      # relation is its author's choice (spec 2, Nuclearity).
+      # relation is its author's choice (the taxonomy model (docs/spec/taxonomy-model.md), Nuclearity).
       evidence_at: {enum: [from, to]}
       inherits: {seq: {scalar: string}}
-      # guess: spec 2 writes `many` and states no default. This corpus refutes
+      # guess: the taxonomy model (docs/spec/taxonomy-model.md) writes `many` and states no default. This corpus refutes
       # `one`, because `applied_in` declares no cardinality and one review
       # prompt names three targets under it. The value set stays closed on what
-      # spec 2 writes, and spec 13 carries the default and the question of
+      # the taxonomy model (docs/spec/taxonomy-model.md) writes, and the register of open obligations (docs/spec/open-obligations.md) carries the default and the question of
       # whether a declaration binds the inverse relation name.
       cardinality: {enum: [one, many]}
       created_by: {enum: [author, scaffold, generator, hook, agent, import], required: true}
@@ -387,7 +392,7 @@ definitions:
 
   invalid_when:
     members:
-      # gap: spec 2 shows `both` and states no other form of the condition.
+      # gap: the taxonomy model (docs/spec/taxonomy-model.md) shows `both` and states no other form of the condition.
       both: {map: {scalar: string}}
 
   # --- anchors --------------------------------------------------------------
@@ -489,7 +494,7 @@ definitions:
       id: {scalar: string, required: true}
       relation: {scalar: string, required: true}
       # Optional. An expectation that names no target kind is satisfied by any
-      # kind the relation admits at its target end, which spec 2 states and
+      # kind the relation admits at its target end, which the taxonomy model (docs/spec/taxonomy-model.md) states and
       # `Participation::satisfied` has always implemented (HW-OBL-0039).
       to_kind: {scalar: string}
       when: {map: {scalar: string}}
@@ -502,7 +507,7 @@ definitions:
 
   identifier_scheme:
     members:
-      # The template, in the three placeholder forms spec 2 writes.
+      # The template, in the three placeholder forms the taxonomy model (docs/spec/taxonomy-model.md) writes.
       # `headwater_meta::identifier` is the one reader of it. `taxonomy
       # validate` decides disjointness out of the segments it produces, and
       # `identifier.pattern.not_met` holds a document to the same segments.
@@ -522,7 +527,7 @@ definitions:
       # the empty string get two messages, because one is a package leaving the
       # choice open and the other is a consumer answering it with nothing.
       namespace: {scalar: string}
-      # gap: spec 2 writes `reconcile-first` and this repository's overlay
+      # gap: the taxonomy model (docs/spec/taxonomy-model.md) writes `reconcile-first` and this repository's overlay
       # writes `minted-once`. No set is stated.
       allocation: {scalar: string, required: true}
 
@@ -549,11 +554,11 @@ definitions:
       to: {scalar: string, required: true}
       kinds: {map: {block: skos_mapping}}
       # The key is a facet and one of its values, written `status.current`, so
-      # it holds a dot and no address can name it. Spec 2 states both halves of
+      # it holds a dot and no address can name it. The taxonomy model (docs/spec/taxonomy-model.md) states both halves of
       # that collision and reconciles neither: a mapping key is written this way
       # in its own worked example, and the sublanguage says the meta-schema
       # refuses to declare a key that holds a dot. The reading here is that no
-      # overlay reaches inside `facet_values`, and spec 13 carries the finding.
+      # overlay reaches inside `facet_values`, and the register of open obligations (docs/spec/open-obligations.md) carries the finding.
       facet_values: {map: {block: skos_mapping}, addressable: false}
 
   skos_mapping:
@@ -565,14 +570,14 @@ definitions:
 
   projection:
     members:
-      # The projection kinds a taxonomy may declare. Spec 6 (Projections) names
+      # The projection kinds a taxonomy may declare. The engine architecture (docs/spec/engine-architecture.md) (Projections) names
       # the set the engine implements, and Q19 adds `transcription` to it. This
       # position was marked as a gap until the generator arrived, and building
       # the generator showed it was one question that hides two.
       #
       # The kinds do not form one value set. They form two, and only this one
       # belongs on a declaration. Two kinds are engine-defined: the register of
-      # spec 4 (Every obligation has exactly one disposition) and the corpus
+      # the assurance model (docs/spec/assurance-model.md) (Every obligation has exactly one disposition) and the corpus
       # descriptor of Q14. Neither takes its output path from a declaration, and
       # a taxonomy that named either here would put a second copy of one
       # artifact at a path the engine did not fix. So the enum below is the
@@ -619,7 +624,7 @@ definitions:
       identity: {block: projection_identity}
       # Whether the tree holds the output. `false` says that `headwater export`
       # builds the file at publish time, so `generate` does not write it and
-      # `--check` does not compare it (#1261). Spec 7 makes whether an export
+      # `--check` does not compare it (#1261). Distribution and federation (docs/spec/distribution-and-federation.md) makes whether an export
       # is committed a schema decision, and this is where a schema states it.
       # The engine takes `false` on a `graph_export` alone, because every other
       # kind is read in the tree.
@@ -633,6 +638,12 @@ definitions:
       # `nav:` for that template to read. The engine takes `sections` on a
       # `site_nav` alone, and refuses a shelf named twice.
       sections: {seq: {block: site_nav_section}}
+      # The shelves a `site_nav` lists in the derived reading order rather than
+      # in path order (#2137). Every shelf it does not name keeps path order,
+      # which is numeric order on a shelf of minted numbers (HW-DR-0108). The
+      # engine takes `precedence` on a `site_nav` alone, and refuses a name
+      # that is not a declared shelf. HW-DR-0117 records why.
+      precedence: {seq: {scalar: string}}
       # The byte budget of an agent-facing projection (HW-DR-0115): what one
       # written file may hold, and what every file of the declaration may hold
       # together. The engine takes `budget` on an `agent_rules` alone, because
@@ -677,7 +688,7 @@ definitions:
   # it is what the document is called, and the taxonomy already demands one from
   # any generated document whose kind requires the facet in the `name` role.
   # `decision_register` requires `title`, and the tombstone at
-  # `docs/spec/09-open-questions.md` is a `decision_register` that had no way to
+  # `docs/spec/open-questions.md` is a `decision_register` that had no way to
   # supply it, so every emitter that labels a document fell through to its
   # identifier and a reader met `HW-REG-open-questions` in the sidebar, the
   # browser tab and the shelf's own index (#627).
@@ -703,7 +714,7 @@ definitions:
   # `kind` names a kind and never a facet. The engine reads the shelf that claims
   # the output path and writes whatever that shelf needs to resolve the kind: the
   # discriminator on a heterogeneous shelf, and nothing at all on a homogeneous
-  # one, where spec 2 (Placement is primary) forbids restating it.
+  # one, where the taxonomy model (docs/spec/taxonomy-model.md) (Placement is primary) forbids restating it.
   #
   # Nothing here declares an edge. Q4 rules that front matter is the one place an
   # edge is authored, and a taxonomy source is not front matter. A generated
@@ -718,7 +729,7 @@ definitions:
   # a heterogeneous shelf, and the facet in the `name` role. A required facet in
   # that set that the declaration does not state is named and the declaration
   # writes no file. Before this refusal existed, `decision_register` required
-  # `title` and the tombstone at `docs/spec/09-open-questions.md` went without
+  # `title` and the tombstone at `docs/spec/open-questions.md` went without
   # one for the whole life of the projection with nothing anywhere reporting it
   # (#780): the census exempts a generated document from `facet.required.missing`
   # on the ground that `generate --check` holds it instead, and `generate --check`
@@ -727,7 +738,7 @@ definitions:
   #
   # The refusal reads the facets this block answers for and not every facet the
   # kind requires. A generated document is excused from `status`, `summary` and
-  # every other facet an author supplies, by the position spec 6 states; a
+  # every other facet an author supplies, by the position the engine architecture (docs/spec/engine-architecture.md) states; a
   # refusal over the whole required set would refuse every identity declaration
   # this repository makes. Which of those exemptions is right is a question about
   # the census exemption rather than about this block, and #780 holds it.
@@ -748,7 +759,7 @@ definitions:
 
   # --- obligations and controls ---------------------------------------------
   #
-  # Spec 4 (Obligations are data, Controls are data) writes both blocks, and
+  # The assurance model (docs/spec/assurance-model.md) (Obligations are data, Controls are data) writes both blocks, and
   # every member below is a member it writes. Two of its members are gone: the
   # `id` of each entry is the key, for the reason the declaration carries.
   #
@@ -756,7 +767,7 @@ definitions:
   # required is needed for these two blocks. An entry is written whole or not at
   # all: a source that omits a member is refused where it is written, an overlay
   # operation's value is read against this shape, and a `remove` of a required
-  # member is refused at merge time. The facet case that spec 13 records is a
+  # member is refused at merge time. The facet case that the register of open obligations (docs/spec/open-obligations.md) records is a
   # different one, because a base declares a facet and an overlay refines it. No
   # adopter completes a publisher's obligation. An adopter that holds a
   # different invariant declares an obligation of their own.
@@ -765,28 +776,28 @@ definitions:
     members:
       statement: {scalar: string, required: true}
       rationale: {scalar: string, required: true}
-      # guess: spec 4 gives the two classes a section and a table, and it states
+      # guess: the assurance model (docs/spec/assurance-model.md) gives the two classes a section and a table, and it states
       # no set. The line between them moves when a judgment becomes data, and
       # that moves an obligation from one of these values to the other.
       class: {enum: [cohesion, coherence], required: true}
       # gap: `prevents` names a class of a documentation-defect taxonomy that
-      # spec 4 derives empirically and no declaration here holds. Spec 4 walks
+      # the assurance model (docs/spec/assurance-model.md) derives empirically and no declaration here holds. The assurance model (docs/spec/assurance-model.md) walks
       # nine classes in prose, and an adopter with their own defect taxonomy
       # writes a class this file never saw. A closed set would refuse them.
       prevents: {scalar: string, required: true}
-      # guess: spec 4 writes `high` and `medium` on its own obligations, and
+      # guess: the assurance model (docs/spec/assurance-model.md) writes `high` and `medium` on its own obligations, and
       # `low` is the third that a register with two severities does not need to
-      # write. This is not the severity a check reports: spec 12 rules that
-      # severity is the check's, and the finding of spec 4's own example carries
+      # write. This is not the severity a check reports: the check layer (docs/spec/check-layer.md) rules that
+      # severity is the check's, and the finding of the assurance model's (docs/spec/assurance-model.md) own example carries
       # `error` against an obligation that carries `medium`.
       severity: {enum: [high, medium, low], required: true}
-      # Spec 4 gives every obligation exactly one disposition and admits no
+      # The assurance model (docs/spec/assurance-model.md) gives every obligation exactly one disposition and admits no
       # silence. `verified` follows from a control and is never written here,
       # because the binding lives on the control and a second place to write it
-      # is the drift spec 4 kills. The other two follow from nothing a control
+      # is the drift the assurance model (docs/spec/assurance-model.md) kills. The other two follow from nothing a control
       # carries, so this member is where they are stated. It is optional, and an
       # obligation that no control discharges and that omits it is the silence
-      # spec 4 forbids: `obligation.disposition.missing` reports it.
+      # the assurance model (docs/spec/assurance-model.md) forbids: `obligation.disposition.missing` reports it.
       #
       # `one_of` over two closed mappings is what makes "exactly one" the shape
       # rather than a rule. Both keys together accept neither alternative, and
@@ -798,19 +809,19 @@ definitions:
 
   disposition_gap:
     members:
-      # Spec 4: "No control yet. Wanted, and tracked with an owner and, ideally,
+      # The assurance model (docs/spec/assurance-model.md): "No control yet. Wanted, and tracked with an owner and, ideally,
       # a target." The owner is required and the target is the "ideally".
       owner: {scalar: string, required: true}
       target: {scalar: string}
 
   disposition_unverifiable:
     members:
-      # Spec 4: "No mechanism can exist. Accepted, with the reasoning recorded."
+      # The assurance model (docs/spec/assurance-model.md): "No mechanism can exist. Accepted, with the reasoning recorded."
       reasoning: {scalar: string, required: true}
 
   control:
     members:
-      # Spec 4 writes `check:relation-reciprocity` and
+      # The assurance model (docs/spec/assurance-model.md) writes `check:relation-reciprocity` and
       # `scheduled:staleness-sweep`, and states no grammar for the prefix or for
       # what follows it. The engine reads two prefixes. `check:` names a rule id,
       # and that is what binds a finding to the obligation it serves. `phase:`
@@ -821,19 +832,19 @@ definitions:
       # the register says that this run did not observe it.
       mechanism: {scalar: string, required: true}
       discharges: {seq: {scalar: string}, required: true}
-      # gap: spec 4 writes `pull_request` and `weekly`, which are an event and a
+      # gap: the assurance model (docs/spec/assurance-model.md) writes `pull_request` and `weekly`, which are an event and a
       # cadence. Nothing states either set or how the two live in one member.
       trigger: {scalar: string, required: true}
-      # Spec 4 wrote `blocking` on one control and `detective` on the other, so
+      # The assurance model (docs/spec/assurance-model.md) wrote `blocking` on one control and `detective` on the other, so
       # one member held values from two vocabularies and control health could
       # not be reported off it. They are two members here.
       #
-      # `posture` is the promotion path, and it is spec 12's sense: "severity is
+      # `posture` is the promotion path, and it is the check layer's (docs/spec/check-layer.md) sense: "severity is
       # the check's, posture is the control's", where the question is whether a
       # finding blocks a gate. A new control starts advisory and evidence
       # promotes it.
       posture: {enum: [advisory, blocking], required: true}
-      # Spec 12 gives the gate to the control, so an exemption from the gate is
+      # The check layer (docs/spec/check-layer.md) gives the gate to the control, so an exemption from the gate is
       # the control's too. `white_space` leaves out of a blocking gate a
       # finding whose change touched only line endings, trailing white space
       # and blank lines, where the prior bytes rebuild the recorded stamp
@@ -841,16 +852,16 @@ definitions:
       # posture says. A package never declares it on a control it ships: an
       # adopter adds it with an overlay `add`, which requires the key absent.
       spares: {seq: {enum: [white_space]}}
-      # `acts` is spec 4's other vocabulary: the four control classes of its
+      # `acts` is the assurance model's (docs/spec/assurance-model.md) other vocabulary: the four control classes of its
       # opening table, which say *when* a control acts rather than how loudly.
-      # It is required because spec 4 gives every control one of the four, and
+      # It is required because the assurance model (docs/spec/assurance-model.md) gives every control one of the four, and
       # because the register reporting the distribution is what stops a system
       # building the first two classes and claiming the set.
       acts: {enum: [preventive, detective, corrective, adaptive], required: true}
-      # Spec 4 writes one value, `task-per-finding`, and the member is optional
+      # The assurance model (docs/spec/assurance-model.md) writes one value, `task-per-finding`, and the member is optional
       # because a control that reports in place hands off to nobody.
       handoff: {scalar: string}
-      # Spec 4 (Promotion) says the promotion criteria "are recorded with the
+      # The assurance model (docs/spec/assurance-model.md) (Promotion) says the promotion criteria "are recorded with the
       # control", and it names three of them. Its next three subsections each
       # take a class of control off that path. So the record holds one of four
       # things, one per subsection, and `one_of` again makes "exactly one" the
@@ -879,22 +890,22 @@ definitions:
 
   promotion_criteria:
     members:
-      # The three spec 4 names: "a stated observation window", "a false-positive
+      # The three the assurance model (docs/spec/assurance-model.md) names: "a stated observation window", "a false-positive
       # rate under a declared threshold", and the adjudicated sample without
       # which "a check whose sample was never adjudicated did not finish its
       # observation window".
       #
-      # gap: each is prose here. Spec 4 states no unit for the window, no scale
+      # gap: each is prose here. The assurance model (docs/spec/assurance-model.md) states no unit for the window, no scale
       # for the threshold, and no shape for the sample. A duration, a ratio and
       # a reference to an evidence record are the three shapes those want, and
-      # the specification names none of them. Spec 13 carries it.
+      # the specification names none of them. The register of open obligations (docs/spec/open-obligations.md) carries it.
       window: {scalar: string, required: true}
       threshold: {scalar: string, required: true}
       sample: {scalar: string, required: true}
 
   promotion_exemption:
     members:
-      # Spec 4 asks for the reasoning in both cases: a control off the promotion
+      # The assurance model (docs/spec/assurance-model.md) asks for the reasoning in both cases: a control off the promotion
       # path with no stated reason is the assertion of taste that the whole
       # section exists to refuse.
       reasoning: {scalar: string, required: true}

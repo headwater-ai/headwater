@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! A Document-origin check: the controlled language a kind declares.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check)
+//! [The check layer](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check)
 //! lists normative language among the Document-origin examples, and a language
 //! regime is where a taxonomy says which prose rules its documents obey.
 //!
@@ -16,7 +16,7 @@
 //! # A profile the engine does not know skips, and says which one
 //!
 //! `language_regime` marks `controlled` a gap in the meta-schema, for a stated
-//! reason: spec 2 names `none`, `ste-house` and `ste-strict`, this repository
+//! reason: [the taxonomy model](../../../../docs/spec/taxonomy-model.md) names `none`, `ste-house` and `ste-strict`, this repository
 //! writes `ASD-STE100` with a separate `profile`, and a closed set in the
 //! language would refuse a committed source. So the engine matches the pairs it
 //! knows, and an instance that meets any other pair **skips with a reason that
@@ -31,10 +31,10 @@
 //!
 //! - **Sentence length**, ASD-STE100 writing rule 6.3 for descriptive text.
 //!   Advisory: the remediation is a rewrite, and
-//!   [spec 4](../../../../docs/spec/04-assurance-model.md#where-promotion-cannot-finish)
+//!   [The assurance model](../../../../docs/spec/assurance-model.md#where-promotion-cannot-finish)
 //!   makes that permanently advisory whatever the precision turns out to be.
 //! - **No contraction.** An error, because the expansion is mechanical and
-//!   total, which is the bar [spec 12](../../../../docs/spec/12-check-layer.md#fixability)
+//!   total, which is the bar [the check layer](../../../../docs/spec/check-layer.md#fixability)
 //!   sets. A patch rides along for the endings whose expansion is one word.
 //!   [`EXPANSIONS`] is that table, and the paragraph below says which endings
 //!   are not in it.
@@ -45,7 +45,7 @@
 //!   semicolon separates items rather than joins clauses.
 //! - **The spelling variant the tag declares.** An error on the same terms. The
 //!   tag is data and the word list is not, which is the same split as the voice
-//!   patterns and is recorded in spec 13 as one gap rather than two.
+//!   patterns and is recorded in [the register of open obligations](../../../../docs/spec/open-obligations.md) as one gap rather than two.
 //!
 //! # Not every contraction has one expansion, and the split is per finding
 //!
@@ -53,7 +53,7 @@
 //! `he'd` is `he had` or `he would`. Only a reader of the sentence decides
 //! those, so they fail the mechanical-and-total bar that the two above meet.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#fixability) puts the bar on
+//! [The check layer](../../../../docs/spec/check-layer.md#fixability) puts the bar on
 //! the **fix** rather than on the rule, and [`crate::Finding`] carries the patch
 //! per finding, so the split needs no second rule and no second severity. A
 //! contraction in [`EXPANSIONS`] carries a patch. One outside it carries the
@@ -79,7 +79,7 @@ const MAX_WORDS: usize = 25;
 
 /// The controlled language and profile pairs this engine has rules for.
 ///
-/// Two spellings of one thing: spec 2 writes the profile into `controlled`,
+/// Two spellings of one thing: [the taxonomy model](../../../../docs/spec/taxonomy-model.md) writes the profile into `controlled`,
 /// and this repository's overlay separates the two. Both name the house
 /// profile, and neither is more correct than the other while the meta-schema
 /// leaves the position a gap.
@@ -90,7 +90,7 @@ const HOUSE: [(&str, Option<&str>); 2] = [("ASD-STE100", Some("house")), ("ste-h
 /// The list is the one `CLAUDE.md` states, moved to where a check reads it.
 /// A closed table of exact words rather than a suffix rule, because a suffix
 /// rule reports `enterprise` and `precise`, and
-/// [Q5](../../../../docs/spec/09-decisions.md#q5--voice-checking-depth) measured
+/// [Q5](../../../../docs/spec/decisions.md#q5--voice-checking-depth) measured
 /// that a lexicon of exact strings is the highest-precision shape a lexical
 /// rule takes.
 const SPELLINGS: [(&str, &str); 24] = [
@@ -396,7 +396,7 @@ impl DocumentCheck for Language {
             // A substitution this rule can place. The two rules below that name
             // a replacement reach it, and the two that ask for a rewrite do
             // not: a sentence past the word limit and a semicolon both have a
-            // rewrite for a remediation, and spec 4 keeps that category
+            // rewrite for a remediation, and the assurance model (docs/spec/assurance-model.md) keeps that category
             // advisory whatever a lexicon could do to it.
             //
             // A sentence of front matter reaches none of them. The patch shape

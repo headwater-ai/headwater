@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The run as a job summary or a review comment.
 //!
-//! The second vocabulary [spec 6](../../../../docs/spec/06-engine-architecture.md#ci-adapters)
+//! The second vocabulary [the engine architecture](../../../../docs/spec/engine-architecture.md#ci-adapters)
 //! names — "annotations, check runs, job summaries, review comments" — and the
-//! second adapter that [spec 8](../../../../docs/spec/08-design-departures.md)
+//! second adapter that [the design departures](../../../../docs/spec/design-departures.md)
 //! requires from the start. It exists beside SARIF rather than after it,
 //! because one adapter cannot show where the adapter boundary is.
 //!
@@ -137,7 +137,7 @@ pub fn render(run: &Run, subject: &Subject<'_>) -> String {
 
     // The escaped findings, marked as escaped. A surface that showed them
     // beside the live ones would report debt as a regression, and one that
-    // dropped them would report a suppression nobody can count, which spec 12
+    // dropped them would report a suppression nobody can count, which the check layer (docs/spec/check-layer.md)
     // says is indistinguishable from a rule that never fires.
     if !escaped.is_empty() {
         let _ = writeln!(
@@ -367,7 +367,7 @@ fn headline(live: &[&Reported<'_>]) -> String {
     }
 }
 
-/// How the escaped set divides, in the precedence spec 4 fixes.
+/// How the escaped set divides, in the precedence [the assurance model](../../../../docs/spec/assurance-model.md) fixes.
 fn partition(escaped: &[&Reported<'_>]) -> String {
     let count = |escape: Escape| {
         escaped

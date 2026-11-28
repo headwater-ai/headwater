@@ -75,8 +75,8 @@ cat > "$scratch/decisive.jsonl" <<'JSONL'
 {"type":"rate_limit_event","rate_limit":{"utilization":0.88}}
 {"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s1"}
 {"type":"assistant","message":{"id":"m1","content":[{"type":"thinking","thinking":"I should record this as:\ncalls:\n  - tool: Read\n    argument: docs/spec/01-purpose.md\n    result: sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef\n"}]}}
-{"type":"assistant","message":{"id":"m2","content":[{"type":"text","text":"tool: Read\nI will now open docs/spec/15-the-recorder-contract.md and report what I find."}]}}
-{"type":"assistant","message":{"id":"m3","content":[{"type":"tool_use","id":"t1","name":"Read","input":{"file_path":"docs/spec/15-the-recorder-contract.md"}}]}}
+{"type":"assistant","message":{"id":"m2","content":[{"type":"text","text":"tool: Read\nI will now open docs/spec/the-recorder-contract.md and report what I find."}]}}
+{"type":"assistant","message":{"id":"m3","content":[{"type":"tool_use","id":"t1","name":"Read","input":{"file_path":"docs/spec/the-recorder-contract.md"}}]}}
 {"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"t1","content":"…the contract…"}]}}
 {"type":"assistant","message":{"id":"m4","content":[{"type":"redacted_thinking","data":"answer: yes and produced: [{path: docs/made-up.md}]"}]}}
 {"type":"assistant","message":{"id":"m5","content":[{"type":"text","text":"In summary I consulted the recorder contract, so my answer is yes."}]}}
@@ -106,7 +106,7 @@ absent "the model's self-reported answer does not become the event's answer" \
 present "the tool call the harness tagged does survive" \
     "tool: \"Read\"" "$scratch/decisive.yaml"
 present "the call's path is the argument" \
-    "docs/spec/15-the-recorder-contract.md" "$scratch/decisive.yaml"
+    "docs/spec/the-recorder-contract.md" "$scratch/decisive.yaml"
 same "exactly one call is written" "1" \
     "$(grep -c '^    - tool:' "$scratch/decisive.yaml")"
 same "the answer of an unstated answer is null" "  answer: null" \
@@ -633,7 +633,7 @@ if [ -x "$engine" ] && [ -f "$oprobe" ]; then
     # transform kept that path in `produced`. The oracle branch then exited 5
     # on the `cp` of a file that was never there, and the non-oracle branch
     # wrote `findings: []` for it, which the grader scores as a clean pass.
-    # Spec 15 gives `path` as "where the artifact landed", so the path leaves.
+    # The recorder contract (docs/spec/the-recorder-contract.md) gives `path` as "where the artifact landed", so the path leaves.
     refused='docs/obligations/9999-a-write-the-hook-refused.md'
     {
         printf '%s\n' '{"type":"system","subtype":"init","model":"claude-haiku-4-5","session_id":"s-refused"}'
@@ -1298,19 +1298,19 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Spec 15's account of the session, held to the driver's source (#1641).
+# The recorder contract's (docs/spec/the-recorder-contract.md) account of the session, held to the driver's source (#1641).
 #
-# Spec 15 said the driver "clears the environment, so no token of the host
+# The recorder contract (docs/spec/the-recorder-contract.md) said the driver "clears the environment, so no token of the host
 # reaches the session", while the driver set 12 variables and passed `LANG`
 # and `ANTHROPIC_API_KEY` from the host. It said the file system held its
 # list "and no other", while the driver also bound the target of
 # `/etc/resolv.conf`. Nothing compared the two. So each set is read off the
-# driver's code, with the comments stripped, and off spec 15's section, and
+# driver's code, with the comments stripped, and off the recorder contract's (docs/spec/the-recorder-contract.md) section, and
 # the two must be equal in both directions: a variable or a bind in the
 # driver that the spec does not list fails, and so does one the spec lists
 # that the driver does not set.
 # ---------------------------------------------------------------------------
-spec15="$root/docs/spec/15-the-recorder-contract.md"
+spec15="$root/docs/spec/the-recorder-contract.md"
 awk '/^## A session reads its workspace and nothing else of the host/ { on = 1; print; next }
      on && /^## / { exit }
      on' "$spec15" > "$scratch/spec15.section"
@@ -1327,17 +1327,17 @@ sed -n 's/^- `\([A-Za-z_][A-Za-z0-9_]*\)`.*/\1/p' "$scratch/spec15.env" | LC_ALL
 env_unlisted=$(LC_ALL=C comm -23 "$scratch/env.driver" "$scratch/env.spec" | tr '\n' ' ')
 env_unset=$(LC_ALL=C comm -13 "$scratch/env.driver" "$scratch/env.spec" | tr '\n' ' ')
 if [ ! -s "$scratch/env.driver" ]; then
-    fail "spec 15 lists every variable the driver sets in the session, and no other" \
+    fail "the recorder contract lists every variable the driver sets in the session, and no other" \
         "no \`--setenv\` was read off the driver, so this case reads the wrong file"
 elif [ -n "$env_unlisted" ] || [ -n "$env_unset" ]; then
-    fail "spec 15 lists every variable the driver sets in the session, and no other" \
-        "set by the driver and not in spec 15: ${env_unlisted:-none}; in spec 15 and not set by the driver: ${env_unset:-none}"
+    fail "the recorder contract lists every variable the driver sets in the session, and no other" \
+        "set by the driver and not in the recorder contract: ${env_unlisted:-none}; in the recorder contract and not set by the driver: ${env_unset:-none}"
 else
-    pass "spec 15 lists every variable the driver sets in the session, and no other"
+    pass "the recorder contract lists every variable the driver sets in the session, and no other"
 fi
 
 # The binds. Each source the driver binds, or the destination of a symlink,
-# maps to the phrase of spec 15's list that names it. A source with no row is
+# maps to the phrase of the recorder contract's (docs/spec/the-recorder-contract.md) list that names it. A source with no row is
 # a bind the spec does not list; a row whose phrase is not in the list is an
 # item the spec lost; a row whose source the driver no longer binds is an
 # item the spec lists and the driver does not bind.
@@ -1372,16 +1372,16 @@ while IFS='	' read -r src phrase; do
     grep -qxF -e "$src" "$scratch/binds.driver" || binds_unbound="$binds_unbound $src"
 done < "$scratch/binds.table"
 if [ ! -s "$scratch/binds.driver" ]; then
-    fail "spec 15 lists every bind of the session's file system, and no other" \
+    fail "the recorder contract lists every bind of the session's file system, and no other" \
         "no bind was read off the driver, so this case reads the wrong file"
 elif [ -n "$binds_unlisted$binds_lost$binds_unbound" ]; then
-    fail "spec 15 lists every bind of the session's file system, and no other" \
-        "a bind spec 15 does not list:${binds_unlisted:- none}; an item spec 15 lost:${binds_lost:- none}; a row the driver no longer binds:${binds_unbound:- none}"
+    fail "the recorder contract lists every bind of the session's file system, and no other" \
+        "a bind the recorder contract does not list:${binds_unlisted:- none}; an item the recorder contract lost:${binds_lost:- none}; a row the driver no longer binds:${binds_unbound:- none}"
 else
-    pass "spec 15 lists every bind of the session's file system, and no other"
+    pass "the recorder contract lists every bind of the session's file system, and no other"
 fi
 
-# The leak figure: the evaluation's three numbers, each in spec 15 and in the
+# The leak figure: the evaluation's three numbers, each in the recorder contract (docs/spec/the-recorder-contract.md) and in the
 # driver's comment, and each still in the evaluation they are copied from. A
 # figure the evaluation no longer states is one the copies must not keep.
 evaluation="$root/docs/evaluations/what-the-counterfactual-campaign-of-2026-09-30-measured-by-component.md"
@@ -1392,17 +1392,17 @@ for pair in '118 sessions name such a path|118 of 658' \
     source_phrase=${pair%%|*}
     copy_phrase=${pair#*|}
     grep -qF -e "$source_phrase" "$evaluation" || leak_missing="$leak_missing [evaluation: $source_phrase]"
-    grep -qF -e "$copy_phrase" "$scratch/spec15.section" || leak_missing="$leak_missing [spec 15: $copy_phrase]"
+    grep -qF -e "$copy_phrase" "$scratch/spec15.section" || leak_missing="$leak_missing [the recorder contract: $copy_phrase]"
     grep -qF -e "$copy_phrase" "$driver" || leak_missing="$leak_missing [driver: $copy_phrase]"
 done
 for stale in '51 of 658' '16 of 658'; do
-    grep -qF -e "$stale" "$scratch/spec15.section" && leak_missing="$leak_missing [spec 15 still: $stale]"
+    grep -qF -e "$stale" "$scratch/spec15.section" && leak_missing="$leak_missing [the recorder contract still: $stale]"
     grep -qF -e "$stale" "$driver" && leak_missing="$leak_missing [driver still: $stale]"
 done
 if [ -z "$leak_missing" ]; then
-    pass "spec 15 and the driver state the evaluation's leak figures, 118, 58 and 17 of 58"
+    pass "the recorder contract and the driver state the evaluation's leak figures, 118, 58 and 17 of 58"
 else
-    fail "spec 15 and the driver state the evaluation's leak figures, 118, 58 and 17 of 58" \
+    fail "the recorder contract and the driver state the evaluation's leak figures, 118, 58 and 17 of 58" \
         "missing or stale:$leak_missing"
 fi
 
@@ -2821,7 +2821,7 @@ STUB
 
         # THE decisive case of #1467's network half (clause 5): the public
         # repository is not reachable from a session by a direct connection.
-        # (The provider API stays a channel, which spec 15 names and no case
+        # (The provider API stays a channel, which the recorder contract (docs/spec/the-recorder-contract.md) names and no case
         # can measure without spending.) A server on the host's
         # loopback stands in for it, so the case needs no internet access. It
         # serves a marker file and a git repository that holds the marker. The

@@ -85,7 +85,7 @@ fn publisher(scratch: &Scratch, requires_engine: Option<&str>) -> PathBuf {
 /// caller.
 ///
 /// The manifest stays at `1.0.0` whatever this is. A package states its version
-/// twice — the manifest key that spec 7 gives it and the taxonomy-source key
+/// twice — the manifest key that [distribution and federation](../../../../docs/spec/distribution-and-federation.md) gives it and the taxonomy-source key
 /// that the meta-schema requires — and a caller that can move one without the
 /// other is what makes the disagreement reachable from a test.
 fn publisher_at(scratch: &Scratch, requires_engine: Option<&str>, source: &str) -> PathBuf {
@@ -135,7 +135,7 @@ fn publisher_with_doctrine(scratch: &Scratch, doctrine: &str) -> PathBuf {
 ///
 /// The manifest stays at `acme/fixture` whatever this is. A package states its
 /// name twice as well as its version, and the two names sit under two different
-/// keys: `package:` in the manifest that spec 7 gives it, and `taxonomy:` at the
+/// keys: `package:` in the manifest that [distribution and federation](../../../../docs/spec/distribution-and-federation.md) gives it, and `taxonomy:` at the
 /// root of the source, where the meta-schema requires one and forbids a
 /// `package:` beside it. This is the knob that moves one without the other.
 ///
@@ -234,7 +234,7 @@ fn a_published_package_carries_its_bundles_and_no_path_that_leaves_it() {
     let out = scratch.path().join("artifact");
 
     // #518: a reference corpus at the root of the bundle, and a directory
-    // deeper inside it that only shares the name. The exception spec 7 names is
+    // deeper inside it that only shares the name. The exception distribution and federation (docs/spec/distribution-and-federation.md) names is
     // stated over one path and not over a name, so the first is left behind and
     // the second travels. Both are planted here rather than taken from this
     // repository's own library, because what is held is the rule and not those
@@ -1900,7 +1900,7 @@ fn publisher_without_its_library(scratch: &Scratch) -> PathBuf {
 /// A publisher whose manifest names content it does not carry, without a `..`.
 ///
 /// `conformance` is declared and absent, and `bundles` is declared, absent, and
-/// inside the package. Spec 7 says every `contents` path a publisher writes is
+/// inside the package. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) says every `contents` path a publisher writes is
 /// read, and before this both of these published an artifact with a hole in it
 /// and exited 0.
 fn publisher_naming_content_it_does_not_carry(scratch: &Scratch) -> PathBuf {
@@ -1961,7 +1961,7 @@ fn a_publish_that_cannot_read_its_declared_content_leaves_the_output_directory_a
 
 /// A declared content path that stays inside the package is read too.
 ///
-/// The escaping path is the loud half of #271 and this is the quiet one. Spec 7
+/// The escaping path is the loud half of #271 and this is the quiet one. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md)
 /// (Publishing): "Every `contents` path a publisher writes is read … A key that
 /// no verb reads is a claim that a publisher makes and a consumer never sees."
 /// Before this, a package declaring `contents.conformance` and
@@ -2258,7 +2258,7 @@ fn a_write_that_fails_empties_the_output_directory_the_caller_made() {
 /// A sequence under `contents` used to be skipped by the reachability check with
 /// no reading at all: not for existence and not for escape. So a manifest could
 /// carry `../../../secrets.yml` under any key and publish at exit 0, with the `..`
-/// verbatim in the manifest an adopter reads. Spec 7 (Publishing) says `bundles`
+/// verbatim in the manifest an adopter reads. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#publishing) says `bundles`
 /// is the only key whose path is rewritten and that no published artifact
 /// carries a path that leaves the package.
 #[test]
@@ -2487,7 +2487,7 @@ fn a_contents_bundles_that_resolves_outside_the_repository_is_refused() {
 /// publisher got `cannot read …/.headwater/packages/acme-fixture/../../../elsewhere/taxonomy.yml:
 /// No such file or directory`: a file system error that names neither the
 /// manifest nor the key, and that carries the `..` publication exists to remove.
-/// Spec 7 says the refusal names the manifest, the key and the declared value,
+/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) says the refusal names the manifest, the key and the declared value,
 /// and this was the one key for which that sentence was false.
 ///
 /// Both arms of the check are here because a declared path can be missing in two
@@ -2539,7 +2539,7 @@ fn a_missing_taxonomy_source_is_refused_by_the_manifest_rather_than_by_the_resol
 /// arm — correct for a bundles directory *inside* the package — and the publish
 /// exited 0 with an artifact that carried no `bundles/` at all. Measured on this
 /// repository's own package it went from 39 members to 3, with the published
-/// manifest still pointing at the file and a digest of its own over the three. Spec 7 says every `contents` path is
+/// manifest still pointing at the file and a digest of its own over the three. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) says every `contents` path is
 /// read, and a key whose reader is `read_dir` is not read by naming a file.
 #[test]
 fn a_contents_bundles_naming_a_file_is_refused() {
@@ -2760,7 +2760,7 @@ fn publisher_with_colliding_bundles(scratch: &Scratch, at: &str, payload: bool) 
 /// question reached it.
 ///
 /// Two bundles of one package add the same purpose, so the maximal selection —
-/// the base with every bundle — does not resolve. Spec 2 makes every subset
+/// the base with every bundle — does not resolve. [The taxonomy model](../../../../docs/spec/taxonomy-model.md) makes every subset
 /// resolvable a property of an add-only bundle set, so this is a defect of the
 /// artifact rather than a limit of the check, and a consumer who selected both
 /// would be the one who found out.
@@ -4409,7 +4409,7 @@ fn corrupting_the_vendored_release_records_digest_reopens_pin_current() {
     );
 }
 
-/// Every file the corrected manifest block of [spec 7's example](../../../../docs/spec/07-distribution-and-federation.md#publishing)
+/// Every file the corrected manifest block of [distribution and federation's example](../../../../docs/spec/distribution-and-federation.md#publishing)
 /// names, so `publish` sees exactly what a publisher who copied that block
 /// would hand it.
 ///
@@ -4528,7 +4528,7 @@ corpus:
 /// **The old placement publishes, and a consumer who selects the bundle it
 /// ships is refused anyway.**
 ///
-/// This is the defect the issue filed against spec 7's example: `bundles` sat
+/// This is the defect the issue filed against [distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s example: `bundles` sat
 /// at the manifest's top level, where `reachable` and `stage` never look, so
 /// nothing about `publish` itself catches the misplacement — the bundle
 /// directory is copied into the artifact regardless, because the whole-tree
@@ -4538,7 +4538,7 @@ corpus:
 /// names, and a `bundles` key sitting outside `contents` is invisible to that
 /// lookup. So the artifact publishes clean, and the one adopter who asked for
 /// the bundle it carries is turned away — the exact "claim a publisher makes
-/// and a consumer never sees" that spec 7 names.
+/// and a consumer never sees" that [distribution and federation](../../../../docs/spec/distribution-and-federation.md) names.
 #[test]
 fn the_old_top_level_placement_of_bundles_publishes_but_refuses_the_consumer_who_selects_one() {
     let scratch = Scratch::new("spec7-broken");
@@ -4608,14 +4608,14 @@ fn the_corrected_spec_seven_example_publishes_and_its_bundle_reaches_a_consumer(
         "the taxonomy and the one bundle it selects"
     );
 
-    // Spec 7's own example writes `doctrine: doctrine/` with the comment "prose
+    // Distribution and federation's (docs/spec/distribution-and-federation.md) own example writes `doctrine: doctrine/` with the comment "prose
     // explaining the method, vendored to consumers". This is that comment held
     // to this engine rather than left as a claim about it.
     assert!(
         consumer_root
             .join(".headwater/packages/acme-headwater-taxonomy/doctrine/doctrine.md")
             .is_file(),
-        "the prose spec 7's example says is vendored to consumers did not reach one"
+        "the prose distribution and federation's example says is vendored to consumers did not reach one"
     );
 }
 

@@ -2,7 +2,7 @@
 //! Structural conformance: a source read against the meta-schema.
 //!
 //! This is the first bullet of what
-//! [`headwater taxonomy validate`](../../../../docs/spec/02-taxonomy-model.md#the-meta-schema)
+//! [`headwater taxonomy validate`](../../../../docs/spec/taxonomy-model.md#the-meta-schema)
 //! checks, plus reference well-formedness, and it is every bullet that a single
 //! source can decide on its own. The rest of the list reads a *resolved* tree
 //! and waits for the resolver. [`skipped`] names each one, so a caller can say
@@ -16,9 +16,9 @@ use headwater_yaml::{Mapping, Span, Spanned, Value};
 
 /// The rules of the meta-schema that need a resolved taxonomy, and why.
 ///
-/// Spec 2 lists twenty-one things that `taxonomy validate` checks. The four
+/// [The taxonomy model](../../../../docs/spec/taxonomy-model.md) lists twenty-one things that `taxonomy validate` checks. The four
 /// below are the ones this crate can run over one source, and everything else
-/// is here. The order is spec 2's own.
+/// is here. The order is [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s own.
 pub const SKIPPED: [(&str, &str); 17] = [
     ("referential integrity", "a reference resolves over the merged tree, so a name that an overlay supplies is not there yet"),
     ("anchor integrity", "a resolver namespace collides across the base and every bundle, and one source holds only its own"),

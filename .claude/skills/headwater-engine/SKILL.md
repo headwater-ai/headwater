@@ -48,7 +48,7 @@ The workspace, from `engine/`. CI runs it with no filter, so the workspace is th
 
 **`cargo test` from the repository root.** There is no manifest there. The workspace is under `engine/`, and the error names a missing `Cargo.toml` rather than the directory you are in.
 
-**`--no-cache` on every run.** The cache is a correctness root: spec 12 requires that `headwater check` and `headwater check --no-cache` write the same bytes, and three test suites hold that equality. So the flag buys nothing during authoring. Reach for it when the question is whether the cache itself is wrong, and let CI carry it the rest of the time.
+**`--no-cache` on every run.** The cache is a correctness root: [The check layer](../../../docs/spec/check-layer.md) requires that `headwater check` and `headwater check --no-cache` write the same bytes, and three test suites hold that equality. So the flag buys nothing during authoring. Reach for it when the question is whether the cache itself is wrong, and let CI carry it the rest of the time.
 
 **Reading the corpus to answer a question about one document.** `headwater explain` prints the kind, the purpose, the summary, the warrant, the required facets and every edge in and out. That is the orientation, and [headwater-orient](../headwater-orient/SKILL.md) is the skill for it.
 

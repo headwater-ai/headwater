@@ -14,7 +14,7 @@ provenance:
 
 ## Context
 
-Spec 13 holds a finding that has no reader outside this repository. Run `20261122-0114` wrote intake line 29, from the builder of #1967. The product owner ruled it RECORD into the group that its end-of-run report calls S4. This record found the three functions again on `0cdd96298`.
+[The register of open obligations](../spec/open-obligations.md) holds a finding that has no reader outside this repository. Run `20261122-0114` wrote intake line 29, from the builder of #1967. The product owner ruled it RECORD into the group that its end-of-run report calls S4. This record found the three functions again on `0cdd96298`.
 
 ## Obligation
 

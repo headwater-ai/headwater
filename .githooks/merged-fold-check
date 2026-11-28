@@ -102,7 +102,7 @@ $(printf '%s\n' "$out" | sed 's/^/    /')
 }
 
 # `headwater generate` writes `.headwater/corpus.json`,
-# `.headwater/nav.yml`, the eleven shelf indexes and `docs/spec/09-open-questions.md`.
+# `.headwater/nav.yml`, the eleven shelf indexes and `docs/spec/open-questions.md`.
 run_producer "headwater generate --check" "$engine" generate --check --root "$root"
 
 # `headwater taxonomy resolve` writes `.headwater/taxonomy.lock`.

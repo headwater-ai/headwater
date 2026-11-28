@@ -39,7 +39,7 @@
 //! # A passage that says so
 //!
 //! The record lets a page cite this repository's way of doing a thing. The
-//! marker for that passage is the suppression directive of spec 4, with
+//! marker for that passage is the suppression directive of [the assurance model](../../../../docs/spec/assurance-model.md), with
 //! `reason=accepted_deviation`, because it already carries an expiry and a
 //! reason from a closed set and the runner already counts it. A second marker
 //! would be a second hatch with neither.

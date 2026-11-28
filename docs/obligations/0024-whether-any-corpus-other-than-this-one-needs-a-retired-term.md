@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Q21](../spec/09-decisions.md#q21--terminological-succession-and-validity-under-merge) rules terminological succession and supplies a retired-term lexicon.
+[Q21](../spec/decisions.md#q21--terminological-succession-and-validity-under-merge) rules terminological succession and supplies a retired-term lexicon.
 
 ## Obligation
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Kind resolution, and the derivation it records.
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#kind-resolution) states
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#kind-resolution) states
 //! four steps, and `headwater explain <path>` prints the derivation: "which
 //! shelf matched, which rule fired, and the kind's declared purpose.
 //! Classification is never a black box, for a human or an agent." So the
@@ -17,14 +17,14 @@
 //! cannot implement a step whose input has no form, and inventing one here would
 //! make the engine the authority on a declaration the taxonomy owns. The step is
 //! therefore absent rather than approximated, and
-//! [13 — Open obligations](../../../../docs/spec/13-open-obligations.md) carries
+//! [Open obligations](../../../../docs/spec/open-obligations.md) carries
 //! the finding.
 //!
 //! # Why an unresolved kind is not an error
 //!
 //! Resolution returns an [`Outcome`], never a `Result`. A document that no shelf
 //! claims and a document whose discriminator is missing are both ordinary states
-//! of a corpus, and [spec 4](../../../../docs/spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+//! of a corpus, and [the assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
 //! requires that they be counted rather than dropped. A `Result` would invite a
 //! caller to use `?`, and the file would leave the denominator at that line.
 
@@ -45,7 +45,7 @@ pub enum Outcome {
 pub enum Untyped {
     /// Step 1 found nothing. The path is outside every declared shelf.
     NoShelf,
-    /// Step 1 found two shelves of equal specificity. Spec 2 calls this a
+    /// Step 1 found two shelves of equal specificity. [The taxonomy model](../../../../docs/spec/taxonomy-model.md) calls this a
     /// schema-validation error rather than a runtime coin-flip, and the
     /// validation is [M2](https://github.com/headwater-ai/headwater/milestone/2).
     /// Until it exists, resolution reports the tie and picks neither.
@@ -60,7 +60,7 @@ pub enum Untyped {
     },
     /// The discriminator is a sequence or a mapping, and a kind name is a word.
     DiscriminatorNotAScalar { facet: String },
-    /// Spec 2: no document resolves to an abstract kind. A shelf that declares
+    /// [The taxonomy model](../../../../docs/spec/taxonomy-model.md): no document resolves to an abstract kind. A shelf that declares
     /// one, or a discriminator value that names one, is a taxonomy defect that
     /// shows up here first because this is the layer that has a document.
     AbstractKind { kind: String },
@@ -254,7 +254,7 @@ pub fn resolve(path: &str, facets: &Mapping, taxonomy: &Taxonomy) -> Resolution 
         }
     };
 
-    // Spec 2 forbids an abstract kind here whichever step produced it: an
+    // The taxonomy model (docs/spec/taxonomy-model.md) forbids an abstract kind here whichever step produced it: an
     // abstract kind may never be "a shelf's declared kind, and never a
     // discriminator value".
     if taxonomy.kind(&kind).is_some_and(|k| k.is_abstract) {
@@ -406,7 +406,7 @@ shelves:
     #[test]
     fn a_discriminator_carries_the_kind_on_a_heterogeneous_shelf() {
         let resolved = resolve(
-            "docs/spec/12-check-layer.md",
+            "docs/spec/check-layer.md",
             &facets("doc_type: design_spec\n"),
             &taxonomy(TAXONOMY),
         );
@@ -417,7 +417,7 @@ shelves:
     #[test]
     fn a_missing_discriminator_stops_at_step_three_and_says_so() {
         let resolved = resolve(
-            "docs/spec/12-check-layer.md",
+            "docs/spec/check-layer.md",
             &facets("id: HW-SPEC-check-layer\n"),
             &taxonomy(TAXONOMY),
         );
@@ -436,7 +436,7 @@ shelves:
     #[test]
     fn a_discriminator_the_shelf_does_not_admit_names_the_ones_it_does() {
         let resolved = resolve(
-            "docs/spec/12-check-layer.md",
+            "docs/spec/check-layer.md",
             &facets("doc_type: reference\n"),
             &taxonomy(TAXONOMY),
         );
@@ -480,7 +480,7 @@ shelves:
     fn the_most_specific_shelf_wins_and_the_derivation_names_the_loser() {
         let source = format!("{TAXONOMY}  everything:\n    path: docs/**\n    homogeneous: true\n    kind: evaluation\n");
         let resolved = resolve(
-            "docs/spec/12-check-layer.md",
+            "docs/spec/check-layer.md",
             &facets("doc_type: design_spec\n"),
             &taxonomy(&source),
         );
@@ -498,7 +498,7 @@ shelves:
             "{TAXONOMY}  second_series:\n    path: docs/spec/**\n    homogeneous: true\n    kind: evaluation\n"
         );
         let resolved = resolve(
-            "docs/spec/12-check-layer.md",
+            "docs/spec/check-layer.md",
             &facets("doc_type: design_spec\n"),
             &taxonomy(&source),
         );

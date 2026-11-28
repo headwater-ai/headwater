@@ -2,7 +2,7 @@
 //! `harvest.pin.unread`: a pinned corpus export that did not read, as an error
 //! that names the pin.
 //!
-//! [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#the-tier-above-a-corpus-harvests-it)
+//! [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#the-tier-above-a-corpus-harvests-it)
 //! says "a pinned export that the tier cannot read is a **finding that names
 //! the pin**". Before this rule, the reason reached a reader only through an
 //! anchor: `relation.target.unresolved` names the pin when an edge into it did

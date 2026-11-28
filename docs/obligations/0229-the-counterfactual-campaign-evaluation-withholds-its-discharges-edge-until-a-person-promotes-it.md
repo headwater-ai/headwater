@@ -12,7 +12,7 @@ waiting_on: ruling
 
 ## Context
 
-#1511 changed the evidence direction of `discharges`, and HW-DR-0103 records the change. The build of #1511 in run `20261001-1107` found that `docs/evaluations/what-the-counterfactual-campaign-of-2026-09-30-measured-by-component.md` still declares no `discharges` edge onto HW-OBL-0223 or HW-OBL-0197, although its *What the documents alone change* rows measure what HW-OBL-0223 asks for. Its `provenance` declares `warrant: asserted` on `d309e914`. Spec 1 says that an asserted document does not discharge an evidence obligation. So the edge, if it is added now, is reported and does not discharge.
+#1511 changed the evidence direction of `discharges`, and HW-DR-0103 records the change. The build of #1511 in run `20261001-1107` found that `docs/evaluations/what-the-counterfactual-campaign-of-2026-09-30-measured-by-component.md` still declares no `discharges` edge onto HW-OBL-0223 or HW-OBL-0197, although its *What the documents alone change* rows measure what HW-OBL-0223 asks for. Its `provenance` declares `warrant: asserted` on `d309e914`. The conceptual model says that an asserted document does not discharge an evidence obligation. So the edge, if it is added now, is reported and does not discharge.
 
 ## Obligation
 

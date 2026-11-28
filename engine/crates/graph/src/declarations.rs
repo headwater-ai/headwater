@@ -8,7 +8,7 @@
 //!
 //! # What edge resolution needs, and why each field is here
 //!
-//! **`to`** decides what a target *is*. [Spec 1](../../../../docs/spec/01-conceptual-model.md#external-anchor)
+//! **`to`** decides what a target *is*. [The conceptual model](../../../../docs/spec/conceptual-model.md#external-anchor)
 //! says a relation endpoint is a declared kind or a declared anchor kind and
 //! never a bare string, so the declared target set is what tells the resolver
 //! whether to look in the identifier index or to hand the string to an anchor
@@ -30,7 +30,7 @@
 //! **`reciprocal`** is carried and never read here either, for the reason that
 //! makes it worth carrying. A reciprocity check is *generated* from the
 //! relation declaration rather than written
-//! ([spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check)),
+//! ([the check layer](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check)),
 //! so the declared value is the whole input to it. Resolution never consults
 //! it, because a half that nobody wrote is a missing edge rather than a
 //! mis-resolved one.
@@ -43,7 +43,7 @@
 //! families a core requirement marks are one join, and two crates that each did
 //! it their own way would answer one question twice. A relation is sensitive
 //! when either reading marks it, which HW-DR-0065 rules, and
-//! [spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#lifecycle) is
+//! [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#lifecycle) is
 //! the rule that reads the answer.
 //!
 //! **`sets_target_state`** is `on_target.set_state`, the one declaration in the
@@ -72,7 +72,7 @@ pub struct Relation {
     pub inverse: Option<String>,
     /// What the relation says about the half nobody wrote.
     pub reciprocal: Reciprocal,
-    /// The relation family, which is one of spec 2's six. Read as written: the
+    /// The relation family, which is one of [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s six. Read as written: the
     /// meta-schema owns the value set, and a family this engine does not know
     /// derives no reading order rather than an invented one.
     pub family: Option<String>,
@@ -96,7 +96,7 @@ pub struct Relation {
     /// from `invalid_when.both`: each `(facet, value)` pair must hold at both
     /// ends, in declaration order.
     ///
-    /// [Spec 2](../../../../docs/spec/02-taxonomy-model.md) declares
+    /// [The taxonomy model](../../../../docs/spec/taxonomy-model.md) declares
     /// `invalid_when: {both: {status: current}}` on `conflicts_with`, and the
     /// meta-schema admits `both` alone. Empty where the relation declares no
     /// condition. `headwater_check::invalid_pair` is the reader.
@@ -108,15 +108,15 @@ pub struct Relation {
     /// evidence, `from` or `to`, as written. Absent means `to`, which is the
     /// reading every evidence relation had before the member existed.
     ///
-    /// Spec 2 leaves the direction of a relation to its author, so the family
+    /// [The taxonomy model](../../../../docs/spec/taxonomy-model.md) leaves the direction of a relation to its author, so the family
     /// cannot say which end substantiates the other. `discharges` points from
     /// the evaluation that is the evidence to the obligation it substantiates,
     /// and `traces_to` points from the claim to its evidence (#1511).
     /// `headwater_check::basis` is the reader, through
     /// [`Relation::evidence_at_source`].
     pub evidence_at: Option<String>,
-    /// The actor the taxonomy expects to pay for edges of this type, from spec
-    /// 2's closed set: `author`, `scaffold`, `generator`, `hook`, `agent`,
+    /// The actor the taxonomy expects to pay for edges of this type, from
+    /// [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s closed set: `author`, `scaffold`, `generator`, `hook`, `agent`,
     /// `import`. The meta-schema requires it and closes the set, so a relation
     /// that reaches here with none is a relation `taxonomy validate` already
     /// refused. It is read as written, and nothing here supplies a default.
@@ -129,7 +129,7 @@ pub struct Relation {
     /// The names of the instance attributes the relation declares under
     /// `attributes:`, in declaration order.
     ///
-    /// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#instance-attributes-and-which-end-owns-each-one)
+    /// [The taxonomy model](../../../../docs/spec/taxonomy-model.md#instance-attributes-and-which-end-owns-each-one)
     /// says an attribute the relation type does not declare is a finding. The
     /// one reader today is `headwater_check::suspect`, which offers to write
     /// `verified_revision` onto an edge only where the relation declares it,
@@ -151,7 +151,7 @@ impl Relation {
 
 /// Which end of an edge governs the reading of the pair.
 ///
-/// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#reading-precedence-is-derived):
+/// [The taxonomy model](../../../../docs/spec/taxonomy-model.md#reading-precedence-is-derived):
 /// "When two documents are linked, no declaration states which one governs the
 /// reading. Properties already declared entail it." So this is derived here and
 /// never read off a member, and the cut `dominance` field is the thing this
@@ -162,14 +162,14 @@ pub enum Governs {
     Source,
     /// The far end governs.
     Target,
-    /// Spec 2's fourth clause: "Everything else carries no reading order."
+    /// [The taxonomy model](../../../../docs/spec/taxonomy-model.md)'s fourth clause: "Everything else carries no reading order."
     Neither,
 }
 
 impl Relation {
     /// The end that governs the reading, from what this relation declares.
     ///
-    /// Spec 2's four clauses, in its own order, and they are total over the six
+    /// [The taxonomy model](../../../../docs/spec/taxonomy-model.md)'s four clauses, in its own order, and they are total over the six
     /// families. A nucleus–satellite relation that names no `nucleus` derives
     /// nothing: `taxonomy validate` refuses that declaration, and a reader that
     /// guessed an end would order a pair by a coin toss.
@@ -198,7 +198,7 @@ impl Relation {
 
 /// What a relation declares about its other half.
 ///
-/// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#behavior-at-the-limits)
+/// [The taxonomy model](../../../../docs/spec/taxonomy-model.md#behavior-at-the-limits)
 /// gives the vocabulary. The set is closed here, and a value outside it reads
 /// as [`Reciprocal::Unknown`] rather than as an error, because the meta-schema
 /// owns the value set and it is
@@ -224,7 +224,7 @@ pub enum Reciprocal {
 pub struct AnchorKind {
     pub name: String,
     /// The single component that owns identity for this anchor type
-    /// ([spec 2](../../../../docs/spec/02-taxonomy-model.md#behavior-at-the-limits)).
+    /// ([the taxonomy model](../../../../docs/spec/taxonomy-model.md#behavior-at-the-limits)).
     pub resolver: String,
     /// A configuration string the named resolver reads at its own discretion,
     /// and that this crate does not interpret. `comment-scan` is the first
@@ -474,7 +474,7 @@ fn read_anchor(name: &str, value: &Value, span: Span) -> Result<AnchorKind, Decl
         span,
     })?;
 
-    // Spec 2 requires exactly one resolver per anchor kind, and the requirement
+    // The taxonomy model (docs/spec/taxonomy-model.md) requires exactly one resolver per anchor kind, and the requirement
     // is about identity rather than about tidiness: the resolver is what
     // normalizes two spellings of one target into one node. An anchor kind with
     // no resolver has no identity, so it is refused here rather than carried.
@@ -710,7 +710,7 @@ anchors:
         );
     }
 
-    /// Spec 2's four clauses, one per relation, and the fourth is the one that
+    /// [The taxonomy model](../../../../docs/spec/taxonomy-model.md)'s four clauses, one per relation, and the fourth is the one that
     /// has to stay silent. A declaration that carried a reading order for
     /// `is_alternative_to` would misstate what the relation asserts.
     #[test]

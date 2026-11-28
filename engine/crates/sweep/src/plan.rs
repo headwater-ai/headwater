@@ -12,7 +12,7 @@
 //!
 //! # The declared half is in the plan so that it cannot be reported back
 //!
-//! Spec 4's fourth constraint: "It never re-derives what the graph declares.
+//! [The assurance model](../../../../docs/spec/assurance-model.md)'s fourth constraint: "It never re-derives what the graph declares.
 //! The sweep runs against the undeclared half by construction." The plan
 //! therefore lists every edge already declared among the members. An agent that
 //! reads the plan knows what is already known, and [`crate::intake`] refuses a

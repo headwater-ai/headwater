@@ -3,11 +3,11 @@
 //!
 //! # What this target is evidence of
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps)
+//! [The check layer](../../../../docs/spec/check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps)
 //! names four mechanisms that stop a sweep from gating, and one of them is the
 //! exit status: `sweep report` exits 0 with findings, exits 0 with every
 //! finding refused, and exits 0 when it refuses the whole file. That property
-//! is stated in spec 12, restated in spec 6, restated in the doc comment on
+//! is stated in [the check layer](../../../../docs/spec/check-layer.md), restated in [the engine architecture](../../../../docs/spec/engine-architecture.md), restated in the doc comment on
 //! `sweep_report`, and asserted nowhere.
 //!
 //! `engine/crates/sweep/tests/fixtures.rs` holds the refusals as a library. It
@@ -16,7 +16,7 @@
 //!
 //! # The third non-zero exit
 //!
-//! Spec 12 says "the two non-zero exits are the caller's" and names an
+//! [The check layer](../../../../docs/spec/check-layer.md) says "the two non-zero exits are the caller's" and names an
 //! unreadable path and a `--format` that names no target. There is a third: the
 //! lock. Both halves load the corpus through it, so a repository that never ran
 //! `headwater taxonomy resolve` gets a non-zero status out of either one.
@@ -216,7 +216,7 @@ fn the_briefing_exits_zero_over_a_slice_that_holds_nothing() {
 ///
 /// Three refusals, each decided by a different reading, and every one of them
 /// is a statement about what came back rather than about the corpus. That is
-/// the whole of the exit-status guarantee spec 12 leans on.
+/// the whole of the exit-status guarantee [the check layer](../../../../docs/spec/check-layer.md) leans on.
 #[test]
 fn every_refusal_of_a_returned_file_exits_zero() {
     let root = Root::new("refusals", true);
@@ -280,7 +280,7 @@ fn every_refusal_of_a_returned_file_exits_zero() {
     // And `--strict` is a flag of another verb. Until HW-DR-0033 this verb
     // accepted it and ignored it, because every flag of this binary was parsed
     // before the verb was decided, and this case asserted that: "`--strict`
-    // moves neither the status nor a byte of the report". Spec 12 says there is
+    // moves neither the status nor a byte of the report". The check layer (docs/spec/check-layer.md) says there is
     // no `--strict` here, which was true of what the verb would do and false of
     // what the parser admitted. The refusal below is what makes both halves of
     // that sentence true, and inverting an assertion is the strongest evidence
@@ -303,7 +303,7 @@ fn every_refusal_of_a_returned_file_exits_zero() {
     );
 }
 
-/// The two non-zero exits spec 12 names, and both are the caller's.
+/// The two non-zero exits [the check layer](../../../../docs/spec/check-layer.md) names, and both are the caller's.
 #[test]
 fn a_path_that_does_not_read_and_a_format_that_names_nothing_exit_one() {
     let root = Root::new("caller", true);
@@ -342,14 +342,14 @@ fn a_path_that_does_not_read_and_a_format_that_names_nothing_exit_one() {
     }
 }
 
-/// The third non-zero exit, which spec 12 does not name.
+/// The third non-zero exit, which [the check layer](../../../../docs/spec/check-layer.md) does not name.
 ///
 /// Both halves load the corpus through the lock, so a repository that never
 /// resolved gets 1 out of either one. It is a caller's error on the same
-/// reading as the two above, so the property spec 12 defends survives and its
+/// reading as the two above, so the property [the check layer](../../../../docs/spec/check-layer.md) defends survives and its
 /// count of two does not.
 ///
-/// The ordering claim does not survive either. Spec 12 says both non-zero exits
+/// The ordering claim does not survive either. [The check layer](../../../../docs/spec/check-layer.md) says both non-zero exits
 /// are "decided before any file is parsed". This one is decided after the
 /// return file has been read, which the second half of this case shows: the
 /// path is a real file and the status is still 1.

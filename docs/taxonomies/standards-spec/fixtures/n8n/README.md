@@ -99,7 +99,7 @@ Every count but one moves only when this corpus moves, and there is no excluded 
 
 ## The sweep
 
-**This is the first coherence sweep run and recorded anywhere in this repository.** There was no committed briefing, no return file and no report before this one. Two documents state the absence outright: [spec 4](../../../../spec/04-assurance-model.md) records that this register declares no coherence obligation, so a sweep discharges none, and [HW-OBL-0114](../../../../obligations/0114-a-control-that-names-a-sweep-marks-its-obligation-verified-with-nothing-run.md) says the same from the obligation's side. All three artifacts are committed under [`sweep/`](sweep/):
+**This is the first coherence sweep run and recorded anywhere in this repository.** There was no committed briefing, no return file and no report before this one. Two documents state the absence outright: [The assurance model](../../../../spec/assurance-model.md) records that this register declares no coherence obligation, so a sweep discharges none, and [HW-OBL-0114](../../../../obligations/0114-a-control-that-names-a-sweep-marks-its-obligation-verified-with-nothing-run.md) says the same from the obligation's side. All three artifacts are committed under [`sweep/`](sweep/):
 
 | File | What it is |
 |---|---|
@@ -135,7 +135,7 @@ So a sweep proposes an edge that the gate then refuses, and nothing between the 
 
 ### `class: coherence` gets its first member
 
-`obligations.OB-SS-1` of this entry carries `class: coherence`. Spec 4 and HW-OBL-0114 both record that this repository's own register has no coherence-class obligation, so a sweep here discharges nothing. Resolving this entry over this corpus gives that class its first member in any real corpus of this library. It still discharges nothing: OB-SS-1's disposition is `unverifiable`, and no control names a `sweep:` mechanism. The gap is now visible rather than hypothetical, and this fixture is where it is visible.
+`obligations.OB-SS-1` of this entry carries `class: coherence`. [The assurance model](../../../../spec/assurance-model.md) and HW-OBL-0114 both record that this repository's own register has no coherence-class obligation, so a sweep here discharges nothing. Resolving this entry over this corpus gives that class its first member in any real corpus of this library. It still discharges nothing: OB-SS-1's disposition is `unverifiable`, and no control names a `sweep:` mechanism. The gap is now visible rather than hypothetical, and this fixture is where it is visible.
 
 ## What this repository's own house regime would have reported
 

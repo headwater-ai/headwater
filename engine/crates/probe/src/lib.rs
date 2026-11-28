@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The probe harness: the parts of it that are deterministic.
 //!
-//! [Spec 5](../../../../docs/spec/05-ai-integration.md#measuring-whether-any-of-this-works)
+//! [AI integration](../../../../docs/spec/ai-integration.md#measuring-whether-any-of-this-works)
 //! declares the probe suite and
 //! [its contract](../../../../docs/interfaces/headwater-probe.md) says where it
 //! sits: outside `check`. The session between `plan` and `record` reaches a
@@ -27,7 +27,7 @@
 //! capture-cost store is not: nothing recomputes a fact about a run that ended,
 //! and a probe result is recomputed from the row above on every run of
 //! `generate --check`. A result whose transcript is not committed carries the
-//! `asserted` [warrant](../../../../docs/spec/03-authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two),
+//! `asserted` [warrant](../../../../docs/spec/authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two),
 //! and an asserted document discharges no evidence obligation, so a measurement
 //! layer that skipped the transcript would produce content this corpus refuses
 //! as evidence.
@@ -38,7 +38,7 @@
 //! `headwater_sweep` reaches a model in three parts:
 //! the engine writes a briefing, an agent reads it, and the engine reads back
 //! the file the agent wrote. The obvious move here was to copy all three. It
-//! does not work, and the reason is a rule spec 5 already states.
+//! does not work, and the reason is a rule [AI integration](../../../../docs/spec/ai-integration.md) already states.
 //!
 //! > A self-report is the agent's account of its own process, and no probe
 //! > accepts one.
@@ -66,7 +66,7 @@
 //!
 //! # Four things keep this out of every gate, and none of them is a promise
 //!
-//! The list is the one [spec 12](../../../../docs/spec/12-check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps)
+//! The list is the one [the check layer](../../../../docs/spec/check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps)
 //! fixes for the sampler path, applied here:
 //!
 //! 1. **A crate boundary the compiler holds.** This crate names
@@ -84,7 +84,7 @@
 //!    model answered every question wrongly writes a result that reports a low
 //!    rate, and the gate passes over it: the comparison is bytes against a
 //!    derivation of committed inputs. What fails it is a result that no longer
-//!    agrees with its own transcript, which spec 5 calls a defect in the
+//!    agrees with its own transcript, which [AI integration](../../../../docs/spec/ai-integration.md) calls a defect in the
 //!    grader, the parser or the committed inputs. No exit status of this engine
 //!    carries a model's behavior, which is what the four enforcements are for.
 //!
@@ -102,7 +102,7 @@
 //!
 //! # The harness fails closed, and a refusal is the cheaper error
 //!
-//! Spec 5: "The harness projects the cost of a run before it starts, and it
+//! [AI integration](../../../../docs/spec/ai-integration.md): "The harness projects the cost of a run before it starts, and it
 //! refuses to start a run that exceeds the budget." Five things stop a run
 //! here, and every one of them stops the whole run rather than dropping the
 //! probe that caused it:
@@ -134,7 +134,7 @@ pub use plan::Plan;
 
 headwater_check::enumerated! {
     /// What a probe asks, from the closed set
-    /// [spec 5](../../../../docs/spec/05-ai-integration.md#probe-categories)
+    /// [AI integration](../../../../docs/spec/ai-integration.md#probe-categories)
     /// declares.
     ///
     /// Four, and two earlier ones are deliberately absent. Fidelity is not a probe,
@@ -172,7 +172,7 @@ impl Category {
 
 headwater_check::enumerated! {
     /// The predicate a probe declares, from the closed set
-    /// [spec 5](../../../../docs/spec/05-ai-integration.md#a-probe-is-a-document-with-a-declared-expectation)
+    /// [AI integration](../../../../docs/spec/ai-integration.md#a-probe-is-a-document-with-a-declared-expectation)
     /// fixes.
     ///
     /// Closed because a grader evaluates it. A question whose answer needs a rubric
@@ -228,7 +228,7 @@ impl Expectation {
 headwater_check::enumerated! {
     /// Which run watches for a change and which estimates a difference.
     ///
-    /// Spec 5: cadence follows the purpose of the run and never the category.
+    /// [AI integration](../../../../docs/spec/ai-integration.md): cadence follows the purpose of the run and never the category.
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub enum Tier {
         /// A fixed scenario set, one arm, against a recorded baseline. It
@@ -291,7 +291,7 @@ headwater_check::enumerated! {
     /// Which tree a run had: the corpus present, the corpus absent, or the present
     /// tree with one component of the Headwater layer taken away or put in.
     ///
-    /// Spec 5 removed the counterfactual from the category list because it applies
+    /// [AI integration](../../../../docs/spec/ai-integration.md) removed the counterfactual from the category list because it applies
     /// to every category, and listing it beside them hid that the pair doubles the
     /// cost of whatever it measures.
     ///

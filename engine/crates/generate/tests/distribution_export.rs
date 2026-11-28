@@ -1,33 +1,33 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Spec 7's export section, held against [`headwater_generate::Grain`], and
+//! [distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s export section, held against [`headwater_generate::Grain`], and
 //! held as the one home of the export rules.
 //!
 //! # Why this file exists
 //!
-//! The export rules used to live in spec 6, and #1572 moved them to spec 7
-//! (`docs/spec/07-distribution-and-federation.md#what-leaves-a-corpus`).
+//! The export rules used to live in [the engine architecture](../../../../docs/spec/engine-architecture.md), and #1572 moved them to [distribution and federation](../../../../docs/spec/distribution-and-federation.md)
+//! (`docs/spec/distribution-and-federation.md#what-leaves-a-corpus`).
 //! A rule that two specification parts state drifts in one of them, which is
 //! the defect the move removed. So this file holds these things:
 //!
-//! - the tombstone grain table of spec 7 names exactly the grains the engine
+//! - the tombstone grain table of [distribution and federation](../../../../docs/spec/distribution-and-federation.md) names exactly the grains the engine
 //!   reads, in both directions, and each of its rows is held whole;
-//! - spec 6 states neither the grain table nor the filter rule list again,
-//!   shares no sentence of six words or more with spec 7's export section,
+//! - [the engine architecture](../../../../docs/spec/engine-architecture.md) states neither the grain table nor the filter rule list again,
+//!   shares no sentence of six words or more with [distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s export section,
 //!   and shares no run of eight words in a row with it;
-//! - spec 7 states the filter rules as a list of exactly six items, each held
+//! - [distribution and federation](../../../../docs/spec/distribution-and-federation.md) states the filter rules as a list of exactly six items, each held
 //!   whole;
-//! - spec 7 states each of seven moved rules once, as a whole paragraph under
+//! - [distribution and federation](../../../../docs/spec/distribution-and-federation.md) states each of seven moved rules once, as a whole paragraph under
 //!   the subsection that owns it (emitters never chain, no profile presents as
 //!   total, the warrant rule, the transcription pin, an exporter fails closed,
 //!   a withholding rule never ships advisory, and the claim), and no sentence
-//!   of spec 6 states one again, in its words or in a paraphrase the table of
+//!   of [the engine architecture](../../../../docs/spec/engine-architecture.md) states one again, in its words or in a paraphrase the table of
 //!   forms names;
 //! - a sentence that opens with a link and goes on "states that" is rule
 //!   text, and only a short pointer is dropped from the comparison;
-//! - no engine comment quotes a sentence of spec 7's export section and
-//!   credits it to spec 6;
+//! - no engine comment quotes a sentence of [distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s export section and
+//!   credits it to [the engine architecture](../../../../docs/spec/engine-architecture.md);
 //! - every current decision that counts the non-claims of a filtered export
-//!   counts the bullets that spec 7 lists under **Not claims**.
+//!   counts the bullets that [distribution and federation](../../../../docs/spec/distribution-and-federation.md) lists under **Not claims**.
 //!
 //! The private `_exhaustive` match makes a third `Grain` variant fail to
 //! compile until [`ENGINE_GRAINS`] and the table change with it.
@@ -37,16 +37,16 @@ use std::path::{Path, PathBuf};
 
 use headwater_generate::Grain;
 
-/// The lead sentence of the filter rule list in spec 7. The list that
+/// The lead sentence of the filter rule list in [distribution and federation](../../../../docs/spec/distribution-and-federation.md). The list that
 /// follows it is the list of the rules.
 const FILTER_RULES_LEAD: &str = "rules make the filter honest";
 
 /// The six filter rules, each list item whole and in order. A rule that is
-/// inverted, dropped, split or reworded in spec 7 goes red here until the
+/// inverted, dropped, split or reworded in [distribution and federation](../../../../docs/spec/distribution-and-federation.md) goes red here until the
 /// same edit is made in this file.
 const FILTER_RULES: [&str; 6] = [
     "- **Carried and withheld partition the corpus, and the engine generates both.** This is \
-     the [partition rule](12-check-layer.md#exportable_as-is-a-set-with-a-partition-rule) that \
+     the [partition rule](check-layer.md#exportable_as-is-a-set-with-a-partition-rule) that \
      `exportable_as` obeys, applied to documents instead of to checks. Neither list is \
      authored, so neither can drift from the other.",
     "- **A withholding is a loss reason.** The projection census already accounts for every \
@@ -85,7 +85,7 @@ const GRAIN_ROWS: [&str; 2] = [
 /// Every grain the engine reads, in declaration order.
 const ENGINE_GRAINS: [Grain; 2] = [Grain::Counted, Grain::Sealed];
 
-/// A third variant fails to compile here until [`ENGINE_GRAINS`] and spec 7's
+/// A third variant fails to compile here until [`ENGINE_GRAINS`] and [distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s
 /// table name it.
 fn _exhaustive(g: Grain) {
     match g {
@@ -100,11 +100,11 @@ fn spec(name: &str) -> PathBuf {
 }
 
 fn spec_six() -> String {
-    std::fs::read_to_string(spec("06-engine-architecture.md")).expect("read spec 6")
+    std::fs::read_to_string(spec("engine-architecture.md")).expect("read spec 6")
 }
 
 fn spec_seven() -> String {
-    std::fs::read_to_string(spec("07-distribution-and-federation.md")).expect("read spec 7")
+    std::fs::read_to_string(spec("distribution-and-federation.md")).expect("read spec 7")
 }
 
 /// The backticked first-column values of the `| Grain |` table.
@@ -205,7 +205,7 @@ fn spec_6_states_no_grain_table_and_no_filter_rule_list() {
     );
 }
 
-/// The heading of the spec 7 section that holds every export rule.
+/// The heading of the [distribution and federation](../../../../docs/spec/distribution-and-federation.md) section that holds every export rule.
 const EXPORT_SECTION: &str = "## What leaves a corpus";
 
 /// The fewest words a sentence fragment carries before a copy of it counts.
@@ -228,14 +228,14 @@ fn plain(text: &str) -> String {
     out.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
-/// The body of spec 7's export section, from its heading to the next `## `.
+/// The body of [distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s export section, from its heading to the next `## `.
 fn export_section(text: &str) -> Vec<&str> {
     let mut lines = text.lines().skip_while(|l| *l != EXPORT_SECTION);
     assert!(lines.next().is_some(), "spec 7 has no `{EXPORT_SECTION}`");
     lines.take_while(|l| !l.starts_with("## ")).collect()
 }
 
-/// The three subsections of spec 7's export section. Each must be inside it,
+/// The three subsections of [distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s export section. Each must be inside it,
 /// so that a stray `## ` heading cannot take one out of what the tests below
 /// read.
 const SUBSECTIONS: [&str; 3] = [
@@ -258,13 +258,13 @@ const POINTER_WORDS: usize = 25;
 
 /// A sentence that opens with a link and goes on "states" and a short list of
 /// what the linked document holds points at where something is stated, and
-/// states no rule itself. Spec 6 is right to carry the same kind of sentence.
+/// states no rule itself. [The engine architecture](../../../../docs/spec/engine-architecture.md) is right to carry the same kind of sentence.
 ///
 /// A sentence in the same shape that states a rule is rule text, and it is
 /// compared: "[Spec 4](…) states that every emitter reads the lock" says what
 /// every emitter does, and so does "[Spec 4](…) states the rule: …". Before
 /// #1572's slice 4d any sentence that opened with a link and went on "states "
-/// was dropped, so spec 6 could copy a rule in that shape with the suite
+/// was dropped, so [the engine architecture](../../../../docs/spec/engine-architecture.md) could copy a rule in that shape with the suite
 /// green.
 fn is_pointer(sentence: &str) -> bool {
     let s = sentence.trim();
@@ -285,7 +285,7 @@ fn is_pointer(sentence: &str) -> bool {
         && object.split_whitespace().count() <= POINTER_WORDS
 }
 
-/// The rule text of spec 7's export section: every line from the first
+/// The rule text of [distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s export section: every line from the first
 /// subsection on, headings and table separators left out, and each pointer
 /// sentence dropped. The opening paragraph above the first subsection says
 /// what the section holds and where the verb is stated, and it holds no rule.
@@ -345,7 +345,7 @@ fn spec_6_shares_no_sentence_with_the_export_section_of_spec_7() {
     );
 }
 
-/// The fewest words in a row that spec 6 may not share with spec 7's export
+/// The fewest words in a row that [the engine architecture](../../../../docs/spec/engine-architecture.md) may not share with [distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s export
 /// section. A whole-fragment match misses a copy that drops the last clause
 /// of a sentence. A run of this many words catches it.
 const RUN_WORDS: usize = 8;
@@ -364,7 +364,7 @@ fn words(text: &str) -> Vec<String> {
 fn shared_runs(six: &str, seven: &str) -> BTreeSet<String> {
     let six = format!(" {} ", words(six).join(" "));
     let mut runs = BTreeSet::new();
-    // Headings are left out: spec 6 keeps the three export headings on
+    // Headings are left out: the engine architecture (docs/spec/engine-architecture.md) keeps the three export headings on
     // purpose, so that their inbound links land. So are pointer sentences.
     for line in rule_lines(seven) {
         for cell in line.split('|') {
@@ -389,9 +389,9 @@ fn spec_6_shares_no_run_of_eight_words_with_the_export_section_of_spec_7() {
     );
 }
 
-/// One way spec 6 could state a moved rule again. A phrase is words in a row.
+/// One way [the engine architecture](../../../../docs/spec/engine-architecture.md) could state a moved rule again. A phrase is words in a row.
 /// A set of words held together is a paraphrase. "Emitters do not chain."
-/// holds "emitter" and "chain", so one sentence of spec 6 that holds every
+/// holds "emitter" and "chain", so one sentence of [the engine architecture](../../../../docs/spec/engine-architecture.md) that holds every
 /// word of the set states the rule in other words.
 #[derive(Clone, Copy, Debug)]
 enum Form {
@@ -410,12 +410,12 @@ impl Form {
 }
 
 /// A moved rule that no table or list holds: the bold sentence that states
-/// it, the whole paragraph that it opens, the spec 7 subsection that owns it,
-/// and the forms that name it, which spec 6 may not use at all. The paragraph
+/// it, the whole paragraph that it opens, the [distribution and federation](../../../../docs/spec/distribution-and-federation.md) subsection that owns it,
+/// and the forms that name it, which [the engine architecture](../../../../docs/spec/engine-architecture.md) may not use at all. The paragraph
 /// is held whole, so an edit that keeps the bold sentence and changes what the
 /// rule says goes red here until the edit is made in this file too.
 ///
-/// No form is a word that a pointer of spec 6 carries. Spec 6 says "why an
+/// No form is a word that a pointer of [the engine architecture](../../../../docs/spec/engine-architecture.md) carries. [The engine architecture](../../../../docs/spec/engine-architecture.md) says "why an
 /// exporter fails closed" and "states the claim", so neither "fails closed" nor
 /// "the claim" names a rule here.
 struct Rule {
@@ -431,7 +431,7 @@ const EMITTERS_NEVER_CHAIN: Rule = Rule {
                 directly. A pipeline that routes one standard format through another inherits \
                 every loss of every hop, and declares none of them. LinkML's own SHACL \
                 generator is the observed case, because it drops constructs that LinkML itself \
-                expresses ([Q13](09-decisions.md#q13--linkml-and-shacl-as-substrate)).",
+                expresses ([Q13](decisions.md#q13--linkml-and-shacl-as-substrate)).",
     subsection: "### An export is a projection, and it declares what it dropped",
     forms: &[
         Form::Phrase("never chain"),
@@ -446,7 +446,7 @@ const NO_VIEW_PRESENTS_AS_TOTAL: Rule = Rule {
                 `sealed` a reader still knows to stop drawing conclusions from absence, which \
                 is the harm that the rule exists to prevent. An agent that traverses a \
                 filtered graph, finds nothing, and reports absence is the failure that \
-                [spec 5](05-ai-integration.md) names at its start. Here our own filter causes \
+                [AI integration](ai-integration.md) names at its start. Here our own filter causes \
                 it.",
     subsection: "### An export profile carries a filter",
     forms: &[
@@ -460,7 +460,7 @@ const NO_VIEW_PRESENTS_AS_TOTAL: Rule = Rule {
 const NO_WARRANT_NO_CONTENT: Rule = Rule {
     rule: "**An emitter that cannot carry the warrant does not carry the content.**",
     paragraph: "**An emitter that cannot carry the warrant does not carry the content.** Every \
-                node carries a [warrant](01-conceptual-model.md#warrant), and the native export \
+                node carries a [warrant](conceptual-model.md#warrant), and the native export \
                 carries it with no loss. A target vocabulary that has no place for it produces \
                 an artifact in which unwarranted content is indistinguishable from accepted \
                 content. A loss-set entry reaches the consumer who reads the loss set and \
@@ -469,10 +469,10 @@ const NO_WARRANT_NO_CONTENT: Rule = Rule {
                 §P](../evaluations/adjacent-work.md#p--provenance-endorsement-and-the-record-of-a-judgment)). \
                 So such an emitter **withholds** every `asserted` and `transcribed` node, at \
                 the profile's declared tombstone grain, with its own inability to mark as the \
-                reason. That is [principle 7](00-vision-and-scope.md#design-principles) read \
+                reason. That is [principle 7](vision-and-scope.md#design-principles) read \
                 the way that a filtered exporter reads it. An unmarked assertion is \
                 unrecoverable, and a withholding is visible and cheap \
-                ([Q15](09-decisions.md#q15--a-synthesized-content-tier)).",
+                ([Q15](decisions.md#q15--a-synthesized-content-tier)).",
     subsection: "### An export is a projection, and it declares what it dropped",
     forms: &[
         Form::Phrase("cannot carry the warrant"),
@@ -498,9 +498,9 @@ const A_TRANSCRIPTION_CARRIES_ITS_PIN: Rule = Rule {
 /// G3 of #1572: an exporter fails closed.
 const AN_EXPORTER_FAILS_CLOSED: Rule = Rule {
     rule: "**An exporter fails closed, and that is [principle \
-           7](00-vision-and-scope.md#design-principles) read correctly.**",
+           7](vision-and-scope.md#design-principles) read correctly.**",
     paragraph: "**An exporter fails closed, and that is [principle \
-                7](00-vision-and-scope.md#design-principles) read correctly.** An exporter \
+                7](vision-and-scope.md#design-principles) read correctly.** An exporter \
                 that cannot evaluate its filter emits nothing and fails the run. It never \
                 emits an unfiltered artifact, and it never emits a partly filtered one. The \
                 principle says \"fail open at the edges\", and its own gloss gives the rule \
@@ -520,7 +520,7 @@ const A_WITHHOLDING_RULE_NEVER_SHIPS_ADVISORY: Rule = Rule {
     rule: "**A withholding rule never ships advisory.**",
     paragraph: "**A withholding rule never ships advisory.** Its two error classes are not \
                 both recoverable, so the promotion machinery measures the wrong one \
-                ([spec 4](04-assurance-model.md#promotion-advisory-to-blocking)). It is not \
+                ([the assurance model](assurance-model.md#promotion-advisory-to-blocking)). It is not \
                 suppressible and [it is not waivable](#waivers).",
     subsection: "### An export profile carries a filter",
     forms: &[
@@ -542,7 +542,7 @@ const THE_CLAIM: Rule = Rule {
     ],
 };
 
-/// Every rule of spec 7's export section that a one-home test holds.
+/// Every rule of [distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s export section that a one-home test holds.
 const RULES: [&Rule; 7] = [
     &EMITTERS_NEVER_CHAIN,
     &NO_VIEW_PRESENTS_AS_TOTAL,
@@ -568,9 +568,9 @@ fn plain_sentences(text: &str) -> Vec<String> {
         .collect()
 }
 
-/// What breaks the one home of `r`, given the text of spec 6 and of spec 7:
-/// spec 7 must state the rule once, as one whole paragraph under the
-/// subsection that owns it, and no sentence of spec 6 may state any of its
+/// What breaks the one home of `r`, given the text of [the engine architecture](../../../../docs/spec/engine-architecture.md) and of [distribution and federation](../../../../docs/spec/distribution-and-federation.md):
+/// [distribution and federation](../../../../docs/spec/distribution-and-federation.md) must state the rule once, as one whole paragraph under the
+/// subsection that owns it, and no sentence of [the engine architecture](../../../../docs/spec/engine-architecture.md) may state any of its
 /// forms. Nothing found is an empty list.
 fn one_home_findings(r: &Rule, six: &str, seven: &str) -> Vec<String> {
     let mut found = Vec::new();
@@ -621,7 +621,7 @@ fn paragraph_line(rule: &Rule) -> String {
     format!("{}\n", rule.paragraph)
 }
 
-/// Each mutation of spec 6 or spec 7 that the one-home tests must turn red,
+/// Each mutation of [the engine architecture](../../../../docs/spec/engine-architecture.md) or [distribution and federation](../../../../docs/spec/distribution-and-federation.md) that the one-home tests must turn red,
 /// over the real text with one edit applied. The paraphrases are the bar of
 /// #1572's slice 4d: the two named in the issue and one for each of G1 to
 /// G5. A paraphrase this table does not hold is advisory, not a defect of
@@ -672,9 +672,9 @@ fn each_mutation_of_a_moved_export_rule_turns_a_one_home_test_red() {
             rule.rule
         );
     }
-    // A rule in the shape of a pointer is rule text: copied into spec 6, it
+    // A rule in the shape of a pointer is rule text: copied into the engine architecture (docs/spec/engine-architecture.md), it
     // turns the fragment test and the run test red.
-    let rule_as_pointer = "[Spec 4](04-assurance-model.md) states that an emitter reads \
+    let rule_as_pointer = "[Spec 4](assurance-model.md) states that an emitter reads \
                            the resolved lock and the graph of the corpus directly.";
     let anchor = paragraph_line(&A_TRANSCRIPTION_CARRIES_ITS_PIN);
     let seven = seven.replacen(&anchor, &format!("{anchor}\n{rule_as_pointer}\n"), 1);
@@ -689,7 +689,7 @@ fn each_mutation_of_a_moved_export_rule_turns_a_one_home_test_red() {
     );
 }
 
-/// The pointer sentences of spec 7's export section drop, and a sentence in
+/// The pointer sentences of [distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s export section drop, and a sentence in
 /// the same shape that states a rule does not.
 #[test]
 fn a_pointer_drops_and_a_rule_in_pointer_shape_does_not() {
@@ -709,9 +709,9 @@ fn a_pointer_drops_and_a_rule_in_pointer_shape_does_not() {
         assert!(is_pointer(p), "a pointer of spec 7 does not drop: {p:?}");
     }
     for rule in [
-        "[Spec 4](04-assurance-model.md) states that every emitter reads the lock directly",
-        "[Spec 4](04-assurance-model.md) states the rule: every emitter reads the lock",
-        "[Spec 4](04-assurance-model.md) states the rule that every emitter reads the \
+        "[Spec 4](assurance-model.md) states that every emitter reads the lock directly",
+        "[Spec 4](assurance-model.md) states the rule: every emitter reads the lock",
+        "[Spec 4](assurance-model.md) states the rule that every emitter reads the \
          resolved lock and the graph directly, because a pipeline that routes one format \
          through another inherits every loss of every hop and declares none of them",
     ] {
@@ -746,10 +746,34 @@ fn quote_after(text: &str, at: usize) -> Option<&str> {
     Some(&body[..close])
 }
 
-/// A comment that quotes a sentence of spec 7's export section and credits it
-/// to spec 6 points a reader at a part that no longer holds it. This reads
-/// every comment that names spec 6 and then opens a quote, and fails when the
-/// quote is text of that section. A quote of text spec 6 keeps is not this
+/// The earliest place a lower-cased line names the engine architecture: by
+/// the number it carried under 4.x ("spec 6"), which older comments keep, or by
+/// its title or file, which HW-DR-0117 made the only names.
+fn names_six(lower: &str) -> Option<usize> {
+    ["spec 6", "engine architecture", "engine-architecture.md"]
+        .iter()
+        .filter_map(|name| lower.find(name))
+        .min()
+}
+
+/// The scan above reads a comment by any of the three names, and the earliest
+/// one wins. A comment written after HW-DR-0117 names the part by its title or
+/// its file, and a scan that read only the number would see none of them.
+#[test]
+fn the_quote_scan_reads_the_part_by_its_title_its_file_and_its_old_number() {
+    assert_eq!(names_six("the engine architecture says \"x\""), Some(4));
+    assert_eq!(
+        names_six("see (docs/spec/engine-architecture.md): \"x\""),
+        Some(15)
+    );
+    assert_eq!(names_six("spec 6: \"x\""), Some(0));
+    assert_eq!(names_six("the check layer says \"x\""), None);
+}
+
+/// A comment that quotes a sentence of [distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s export section and credits it
+/// to [the engine architecture](../../../../docs/spec/engine-architecture.md) points a reader at a part that no longer holds it. This reads
+/// every comment that names [the engine architecture](../../../../docs/spec/engine-architecture.md) and then opens a quote, and fails when the
+/// quote is text of that section. A quote of text [the engine architecture](../../../../docs/spec/engine-architecture.md) keeps is not this
 /// test's business.
 #[test]
 fn no_comment_quotes_spec_7_export_text_as_spec_6() {
@@ -769,11 +793,11 @@ fn no_comment_quotes_spec_7_export_text_as_spec_6() {
             .replace('\\', "/");
         let lines: Vec<&str> = text.lines().collect();
         for (i, line) in lines.iter().enumerate() {
-            let Some(at) = line.to_lowercase().find("spec 6") else {
+            let Some(at) = names_six(&line.to_lowercase()) else {
                 continue;
             };
             // Only comments credit a sentence. A string literal that names
-            // spec 6 is a message or a test input.
+            // the engine architecture (docs/spec/engine-architecture.md) is a message or a test input.
             let trimmed = line.trim_start();
             if !(trimmed.starts_with("//") || trimmed.starts_with('#')) {
                 continue;
@@ -784,7 +808,7 @@ fn no_comment_quotes_spec_7_export_text_as_spec_6() {
                 .collect::<Vec<_>>()
                 .join(" ");
             let at = at - (line.len() - line.trim().len()).min(at);
-            let at = joined.to_lowercase().find("spec 6").unwrap_or(at);
+            let at = names_six(&joined.to_lowercase()).unwrap_or(at);
             let Some(quote) = quote_after(&joined, at) else {
                 continue;
             };
@@ -825,7 +849,7 @@ fn spec_7_states_six_filter_rules() {
     }
 }
 
-/// The line that opens spec 7's list of what a filtered export does not claim.
+/// The line that opens [distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s list of what a filtered export does not claim.
 const NON_CLAIMS_LEAD: &str = "**Not claims,";
 
 /// The number words a decision may count the non-claims with.
@@ -833,7 +857,7 @@ const NUMBER_WORDS: [&str; 10] = [
     "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
 ];
 
-/// The top-level list items that follow spec 7's `**Not claims,` lead.
+/// The top-level list items that follow [distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s `**Not claims,` lead.
 fn non_claims(text: &str) -> Vec<String> {
     let mut lines = text.lines().skip_while(|l| !l.starts_with(NON_CLAIMS_LEAD));
     assert!(

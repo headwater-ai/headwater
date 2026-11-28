@@ -34,13 +34,13 @@ The collection period closed on 2026-10-02 at 500 joined person prompts. [The ev
 
 ## Decision
 
-**Proposed: the embedding path does not become the silence-only fallback tier.** The tier would fire on every silent prompt, because the path is never silent. That includes a prompt with no term at all, such as the one-letter prompt `b` in the log. The log holds no evidence that the documents it would offer are the ones a session goes on to read. Spec 5 permits embeddings as a fallback for a fuzzy lookup, and never as the authority. A fallback with no evidence of value fails the first half of that sentence.
+**Proposed: the embedding path does not become the silence-only fallback tier.** The tier would fire on every silent prompt, because the path is never silent. That includes a prompt with no term at all, such as the one-letter prompt `b` in the log. The log holds no evidence that the documents it would offer are the ones a session goes on to read. [AI integration](../spec/ai-integration.md) permits embeddings as a fallback for a fuzzy lookup, and never as the authority. A fallback with no evidence of value fails the first half of that sentence.
 
 **Proposed: the collection keeps writing, and nobody mines it again until a reading can grade recall.** The hook writes one line a prompt, and that line is the only record of when and why the route is silent. The embedding column stays, because a second reading needs it. A second reading is worth running only when it can attribute the reads of an agent thread to the person prompt that dispatched the agent. The main thread reads too little to grade either path.
 
 ## Consequences
 
-**Spec 5's fallback sentence stands as written, and `route.rs` gains no tier.** This is the state that HW-DR-0064 left, so the proposal changes no code.
+**[AI integration](../spec/ai-integration.md)'s fallback sentence stands as written, and `route.rs` gains no tier.** This is the state that HW-DR-0064 left, so the proposal changes no code.
 
 **The question opens again on one condition.** That condition is a reading of at least 58 silent person prompts, each followed by a read of a corpus document. The read can be on any thread of the session. Until then, a ruling for the tier rests on no measurement. The blind grade of #1670 measures usefulness and not reads, so it does not meet this condition, and it leaves the proposal standing.
 

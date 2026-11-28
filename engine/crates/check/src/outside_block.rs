@@ -3,7 +3,7 @@
 //! declares: a relation written as a top-level front-matter key, outside the
 //! block the graph reads edges from.
 //!
-//! [Spec 9, Q4](../../../../docs/spec/09-decisions.md) puts every edge half
+//! [The decision register, Q4](../../../../docs/spec/decisions.md) puts every edge half
 //! under one key of the front matter, `relations:` unless the taxonomy
 //! configures another, and the graph reads that key and no other. So a
 //! document that writes `conflicts_with: [X]` at the top level declares no

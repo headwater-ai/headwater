@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The scaffolder: what `headwater new <kind>` proposes, and what it refuses.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots)
+//! [The check layer](../../../../docs/spec/check-layer.md#the-correctness-roots)
 //! names this a correctness root: "Edges marked `created_by: scaffold` are
 //! corpus facts that nobody reviews individually. A scaffolder bug manufactures
 //! wrong edges at exactly the scale that the assisted-fraction metric
@@ -10,7 +10,7 @@
 //!
 //! # 1. The template comes from the taxonomy, and it is not a file
 //!
-//! [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#templates-and-scaffolding):
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#templates-and-scaffolding):
 //! "Each kind declares a template. The template is not a suggestion file for
 //! humans to copy. It is generated from the kind declaration." So nothing here
 //! reads a template file, and nothing here carries prose of its own beyond a
@@ -53,7 +53,7 @@
 //! | a missing required section | `section.required.missing` | none needed: the headings are written |
 //! | a section or a facet still holding the prompt | `scaffold.placeholder.unwritten` | none: the prompt is for a person, and the finding is a warning |
 //!
-//! The refusals are a closed set for the reason spec 12 gives every closed set
+//! The refusals are a closed set for the reason [the check layer](../../../../docs/spec/check-layer.md) gives every closed set
 //! in this engine. A test is written against a name, so an invariant that lived
 //! in an anonymous arm would be invisible to the suite.
 //!
@@ -87,13 +87,13 @@
 //! as a live document that depends on a draft
 //! ([HW-DR-0101](../../../../docs/decisions/0101-new-writes-no-far-half-of-a-symmetric-relation-and-no-state-on-a-supersedes-target.md)).
 //!
-//! **Allocation sees the corpus and never the history.** Spec 3 says a deleted
+//! **Allocation sees the corpus and never the history.** [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) says a deleted
 //! document does not free its number. This engine reads a tree, so the highest
 //! spent value it can find is the highest one still on disk. [`Minting`]
 //! carries that limit beside every identifier it issues.
 //!
 //! **The assisted fraction is a fact about this run.** [`Assisted`] counts what
-//! this invocation supplied against what spec 3 names as the denominator. It is
+//! this invocation supplied against what [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) names as the denominator. It is
 //! not a property of the corpus, and it cannot become one:
 //! [Q4](../../../../docs/decisions/0004-relation-storage.md) keeps `created_by`
 //! on the relation type rather than on the edge, so no reader of a committed
@@ -320,7 +320,7 @@ pub struct Half {
     pub members: Option<Vec<String>>,
     /// Instance attributes the half carries, in the order they are written.
     ///
-    /// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#instance-attributes-and-which-end-owns-each-one)
+    /// [The taxonomy model](../../../../docs/spec/taxonomy-model.md#instance-attributes-and-which-end-owns-each-one)
     /// lets a relation type declare attributes its instances may take, and an
     /// entry that carries one is a mapping with `to` rather than a bare
     /// identifier. An empty list writes the bare form, which is what every half
@@ -350,7 +350,7 @@ pub struct Minting {
     /// nothing where it declares none.
     pub allocation: Option<String>,
     /// The highest value this run found already spent, for a scheme whose
-    /// pattern carries a sequence. It is a reading of the tree, and spec 3 asks
+    /// pattern carries a sequence. It is a reading of the tree, and [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) asks
     /// for a reading of every value ever allocated. A document that was deleted
     /// is not on the tree, so this number can only be a lower bound and the
     /// report says so.
@@ -378,7 +378,7 @@ pub struct Expected {
     pub created_by: String,
 }
 
-/// What this run supplied, against what spec 3 names as the denominator.
+/// What this run supplied, against what [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) names as the denominator.
 ///
 /// "Of the required front matter, sections, identifiers, and relations, how
 /// much was scaffolded, derived, or agent-drafted, and how much was
@@ -442,7 +442,7 @@ pub struct LanguageHint {
 }
 
 impl Plan {
-    /// The count spec 3 asks for, derived from the plan rather than tracked
+    /// The count [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) asks for, derived from the plan rather than tracked
     /// beside it. A field that changed origin changes this number with it.
     pub fn assisted(&self) -> Assisted {
         let scaffolded = self
@@ -1537,7 +1537,7 @@ fn front_matter(
                 // Through the typed reader, which has carried both members
                 // since a rule started reading the machine. An untyped
                 // second path to one declaration is the drift that
-                // [principle 2](../../../../docs/spec/00-vision-and-scope.md#design-principles)
+                // [principle 2](../../../../docs/spec/vision-and-scope.md#design-principles)
                 // rules against, and the empty string is what an absent
                 // `initial` reads as there, so it is refused here rather
                 // than written into a document.
@@ -1785,7 +1785,7 @@ fn mint(
         .iter()
         .any(|need| matches!(need, Needs::Sequence { .. }));
     // The claim store is the second half of the bound. A tree holds no history,
-    // which spec 3 states, and it holds no concurrency either: every branch cut
+    // which authoring and lifecycle (docs/spec/authoring-and-lifecycle.md) states, and it holds no concurrency either: every branch cut
     // from one `main` reads the same corpus, so *n* branches minting at once all
     // mint the same value. The store carries what other branches have already
     // taken, and one grammar reads both — the same `sequence_of` call over the
@@ -1849,7 +1849,7 @@ fn mint(
 ///
 /// An endpoint that names an abstract parent admits every kind under it, which
 /// is what makes the base relations reach a bundle's kinds with no edit
-/// ([spec 2](../../../../docs/spec/02-taxonomy-model.md#abstract-kinds)).
+/// ([the taxonomy model](../../../../docs/spec/taxonomy-model.md#abstract-kinds)).
 fn admits(sources: &Sources<'_>, endpoints: &[String], kind: &str) -> bool {
     endpoints
         .iter()
@@ -2254,10 +2254,10 @@ fn interpreter(line: &str) -> Option<&str> {
 
 /// The relations a document of this kind may declare and this run did not.
 ///
-/// Spec 3: `new` "also prints the relations that the new document is expected
+/// [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md): `new` "also prints the relations that the new document is expected
 /// to declare". Printed and never written: a target is a fact about the world,
 /// and a scaffolder that guessed one would be manufacturing the edge that
-/// spec 12 warns about.
+/// [the check layer](../../../../docs/spec/check-layer.md) warns about.
 fn expected_relations(sources: &Sources<'_>, kind: &str, written: &[Proposed]) -> Vec<Expected> {
     sources
         .relations
@@ -2361,7 +2361,7 @@ pub fn render_layout(
 /// A title, as the token a file name and an identifier carry.
 ///
 /// Lower case, ASCII alphanumerics kept, every run of anything else collapsed
-/// to one hyphen. The alphabet is this crate's, because spec 2 states nothing
+/// to one hyphen. The alphabet is this crate's, because [the taxonomy model](../../../../docs/spec/taxonomy-model.md) states nothing
 /// about a slug beyond that it is a free token, and a file name has to survive
 /// a filesystem that the specification does not describe.
 pub fn slugify(title: &str) -> String {

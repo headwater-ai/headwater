@@ -30,7 +30,7 @@ An adopter installs this engine to govern a corpus that is not this one. What th
 
 **The front door instructs a script.** `README.md` and step 3 of [the tutorial](../tutorials/your-first-governed-corpus.md) both name `tools/headwater-bootstrap.sh`, and the tutorial states that the script is not a part of this engine. Here the binary already reaches the same result, because `headwater taxonomy vendor` takes the path of a fetched artifact and an expected digest.
 
-No document states the boundary. The eleven principles in [spec 0](../spec/00-vision-and-scope.md#design-principles) do not name it. Principle 8 says that the system governs itself, which is why this repository carries scripts at all, and it draws no line for an adopter. [The command surface](../interfaces/README.md) indexes the verbs and never claims that they are the whole surface. So the rule was a shared assumption, and an assumption that nothing holds is one that prose drifts past.
+No document states the boundary. The eleven principles in [the vision and scope](../spec/vision-and-scope.md#design-principles) do not name it. Principle 8 says that the system governs itself, which is why this repository carries scripts at all, and it draws no line for an adopter. [The command surface](../interfaces/README.md) indexes the verbs and never claims that they are the whole surface. So the rule was a shared assumption, and an assumption that nothing holds is one that prose drifts past.
 
 ## Decision
 
@@ -44,7 +44,7 @@ No document states the boundary. The eleven principles in [spec 0](../spec/00-vi
 
 **The test for the edge is necessity and never convenience.** An integration point is legal here only where the binary cannot do the work without the loss of a property the corpus depends on. Git plumbing meets the test, because consent of the clone is not a property this engine can grant itself. A point that fails this test is a defect, and a missing verb is a gap to file rather than an exception to grant.
 
-**The change manifest is inside the binary.** `headwater change` writes the manifest that `headwater check --change` reads, from the two anchors that spec 12 fixes. So the manifest is not an integration point outside the binary, and it has no entry in this list. [#929](https://github.com/headwater-ai/headwater/issues/929) is the issue that built the verb.
+**The change manifest is inside the binary.** `headwater change` writes the manifest that `headwater check --change` reads, from the two anchors that [the check layer](../spec/check-layer.md) fixes. So the manifest is not an integration point outside the binary, and it has no entry in this list. [#929](https://github.com/headwater-ai/headwater/issues/929) is the issue that built the verb.
 
 **This list grows by a decision record and never by a script.** A contributor who reaches for a script in adopter-facing prose either finds the verb or files the gap.
 

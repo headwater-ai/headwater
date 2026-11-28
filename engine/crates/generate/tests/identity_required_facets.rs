@@ -15,7 +15,7 @@
 //!
 //! So the exemption assumes a second reader that does not exist for this class
 //! of finding. `decision_register` requires `title`, the tombstone at
-//! `docs/spec/09-open-questions.md` is a `decision_register` written by the
+//! `docs/spec/open-questions.md` is a `decision_register` written by the
 //! `shelf_sections` projection, and until [#627](https://github.com/headwater-ai/headwater/issues/627)
 //! the `identity` block held no member that could write a `name`-role facet at
 //! all. The requirement was unmet for the whole life of the projection and
@@ -356,7 +356,7 @@ fn every_identity_this_repository_declares_supplies_what_this_refusal_reads() {
     assert!(
         declared >= 2,
         "this repository declares {declared} `identity` blocks, and it declares at least two: the \
-         tombstone at `docs/spec/09-open-questions.md` and the probe result. The reader of the \
+         tombstone at `docs/spec/open-questions.md` and the probe result. The reader of the \
          declarations is looking at the wrong field."
     );
 

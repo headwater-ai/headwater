@@ -31,7 +31,7 @@ A **lifecycle regime** names a subset of the state vocabulary, and a kind binds 
 
 A **shelf discriminator** narrows a value set per kind, at census time rather than at check time. `doc_type` is the discriminator of `spec_series` and of `reviews`, and kind resolution refuses a value the shelf does not admit. The discriminator needs a bijection, because the value *is* the kind. It cannot say that one kind takes two of five values.
 
-**`facets.forbid`** removes the whole facet from a kind. [Spec 2](../spec/02-taxonomy-model.md) already states that it takes away and adds nothing. It has no subset form.
+**`facets.forbid`** removes the whole facet from a kind. [The taxonomy model](../spec/taxonomy-model.md) already states that it takes away and adds nothing. It has no subset form.
 
 So subset narrowing, on a facet with no machine and no shelf that discriminates on it, is expressible by nothing. Eight of the fourteen facets in this repository's resolved taxonomy declare a closed value set. One of the eight is the state facet and one is `doc_type`. Each of the other six is required by exactly one kind, so **a per-kind value set changes no verdict in this corpus**. The reader is an adopter who writes a taxonomy, and [#222](https://github.com/headwater-ai/headwater/issues/222) names that reader.
 
@@ -41,7 +41,7 @@ So subset narrowing, on a facet with no machine and no shelf that discriminates 
 
 **The shape is a member on the kind and not a `regimes.<facet>` family.** A lifecycle regime reaches a kind through a named scalar member, `kinds.<name>.lifecycle`, and `kind.members` is a closed set. A general regime family would therefore need one new member on `kind` for each enumerated facet an adopter declares. That is not a general mechanism at all. Binding the family under `facets:` as a map gives the shape this record takes, with one more indirection and one more declaration to read.
 
-**A narrowing takes values away and it adds none, down the whole chain.** The set a kind admits is the facet's declared list, intersected with the narrowing on the kind. It is also intersected with the narrowing on each kind above it. A child that names a value an ancestor excluded is refused. Spec 2 rules that a child may not un-require what a parent requires, because that voids the parent's contract for a reader who trusts it. A wider value set voids the same contract in the same way.
+**A narrowing takes values away and it adds none, down the whole chain.** The set a kind admits is the facet's declared list, intersected with the narrowing on the kind. It is also intersected with the narrowing on each kind above it. A child that names a value an ancestor excluded is refused. [The taxonomy model](../spec/taxonomy-model.md) rules that a child may not un-require what a parent requires, because that voids the parent's contract for a reader who trusts it. A wider value set voids the same contract in the same way.
 
 **An overlay reaches a narrowing at `kinds.<name>.facets.values.<facet>`, under `add`, `set` and `remove`, as it reaches every other address.** Core satisfaction is a property of the resolved result. So an overlay that widens a set past what a kind above admits is refused on the result and not on the operation.
 

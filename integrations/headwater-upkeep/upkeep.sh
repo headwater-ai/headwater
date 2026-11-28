@@ -9,7 +9,7 @@
 # Usage: HEADWATER_BIN=<engine> sh upkeep.sh <root> <base-rev> <work-dir> <report-path>
 #
 # <root> is the corpus, inside a git checkout. <base-rev> is the revision the
-# change is measured from: the merge base of a pull request, per spec 12.
+# change is measured from: the merge base of a pull request, per the check layer (docs/spec/check-layer.md).
 # <work-dir> must be outside the checkout. This script writes only there and
 # at <report-path>, and it runs every engine verb with `--no-cache`, because
 # `headwater check` otherwise writes `.headwater/cache/` inside the checkout.

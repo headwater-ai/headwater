@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Q13](../spec/09-decisions.md#q13--linkml-and-shacl-as-substrate) stages six emitters and rules that they never chain. Emitters 3 through 6 have no named consumer.
+[Q13](../spec/decisions.md#q13--linkml-and-shacl-as-substrate) stages six emitters and rules that they never chain. Emitters 3 through 6 have no named consumer.
 
 ## Obligation
 

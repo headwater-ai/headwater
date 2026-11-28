@@ -18,7 +18,7 @@ headwater-census = { workspace = true }
 headwater-graph = { workspace = true }
 
 # `Shape` is the reader of kind, facet and purpose declarations. A second
-# reader of the same declarations is the drift spec 4 names, so this crate
+# reader of the same declarations is the drift the assurance model (docs/spec/assurance-model.md) names, so this crate
 # depends on the one that exists rather than writing another.
 headwater-check = { workspace = true }
 

@@ -5,7 +5,7 @@ status: current
 status_since: 2026-08-13
 waiting_on: ruling
 last_verified: 2026-08-13
-summary: "Spec 6 lists the verb `headwater query <expression>`, and no document states what an expression is."
+summary: "The engine architecture lists the verb `headwater query <expression>`, and no document states what an expression is."
 provenance:
   warrant: accepted
   agency: mixed
@@ -23,7 +23,7 @@ relations:
 
 ## Context
 
-[Spec 6](../spec/06-engine-architecture.md#cli) lists the verb `headwater query <expression>`. No document states what an expression is: not a grammar, not an example, and not the set of things it selects over.
+[The engine architecture](../spec/engine-architecture.md#cli) lists the verb `headwater query <expression>`. No document states what an expression is: not a grammar, not an example, and not the set of things it selects over.
 
 This is the sixth surface that has a required declaration and no stated form.
 
@@ -33,4 +33,4 @@ The corpus owes the grammar of an expression and the set of things it selects ov
 
 ## Discharge
 
-The agent surface does not wait on it, because [spec 5](../spec/05-ai-integration.md#agent-surfaces) names six tools in the query class and `query` is not one of them. The engine implements no expression. `headwater query` reports this gap and names the two reads that exist, which is the posture the resolver takes over a `$package` reference.
+The agent surface does not wait on it, because [AI integration](../spec/ai-integration.md#agent-surfaces) names six tools in the query class and `query` is not one of them. The engine implements no expression. `headwater query` reports this gap and names the two reads that exist, which is the posture the resolver takes over a `$package` reference.

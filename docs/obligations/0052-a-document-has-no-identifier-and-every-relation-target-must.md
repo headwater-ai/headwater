@@ -5,7 +5,7 @@ status: current
 status_since: 2026-08-12
 waiting_on: ruling
 last_verified: 2026-08-13
-summary: "Spec 3 reserves identifiers for five artifacts and a document is none of them, so every adopter mints a scheme before declaring one edge."
+summary: "Authoring and lifecycle reserves identifiers for five artifacts and a document is none of them, so every adopter mints a scheme before declaring one edge."
 provenance:
   warrant: accepted
   agency: mixed
@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Spec 3](../spec/03-authoring-and-lifecycle.md#identifiers) reserves identifiers for decisions, requirements, acceptance criteria, controls and obligations. A document is none of those, so neither the base package nor the design-spec entry gives one to a document. [Q4](../spec/09-decisions.md#q4--relation-storage) rules that a relation target is an identifier and never a path.
+[Authoring and lifecycle](../spec/authoring-and-lifecycle.md#identifiers) reserves identifiers for decisions, requirements, acceptance criteria, controls and obligations. A document is none of those, so neither the base package nor the design-spec entry gives one to a document. [Q4](../spec/decisions.md#q4--relation-storage) rules that a relation target is an identifier and never a path.
 
 ## Obligation
 

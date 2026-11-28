@@ -2,7 +2,7 @@
 //! Two rules over the provenance block: a warrant outside the closed set, and
 //! an acceptor the warrant does not pair with.
 //!
-//! [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires)
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires)
 //! states both in one paragraph. The warrant's "value set is closed", and
 //! "each value requires a different part of the block, and the engine checks
 //! the pairing". Before these rules no check read either half. A document at
@@ -21,7 +21,7 @@
 //!
 //! # Absent is not a bad value, and this rule skips it
 //!
-//! Spec 3 also says "an absent value is a finding rather than a default". That
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) also says "an absent value is a finding rather than a default". That
 //! is a separate defect with a separate remedy, and 134 documents of this
 //! repository declare no warrant on the day these rules landed.
 //! [HW-OBL-0125](../../../../docs/obligations/0125-nine-documents-state-a-warrant-outside-the-closed-set-and-only-a-person-can-set-the-value.md)
@@ -31,7 +31,7 @@
 //!
 //! # A generated document is not read
 //!
-//! Spec 3 derives `regenerated` from the marker "and never from a
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) derives `regenerated` from the marker "and never from a
 //! declaration". [`crate::scope::over_documents`] creates no document instance
 //! over a generated file, so a stray `warrant:` that a hand edit put into one
 //! is judged by neither rule, which is what [`headwater_doc::warrant_of`]
@@ -64,7 +64,7 @@ use headwater_doc::{ACCEPTED, ACCEPTED_BY, WARRANT, WARRANTS};
 use headwater_yaml::core_schema::as_null;
 use headwater_yaml::{Entry, Mapping, Value};
 
-/// A warrant outside spec 3's closed set.
+/// A warrant outside [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s closed set.
 pub const VALUE: &str = "warrant.value.not_permitted";
 
 /// An acceptor where the warrant forbids one, or none where it requires one.
@@ -140,7 +140,7 @@ impl DocumentCheck for Closed {
             line,
             column,
             message: format!(
-                "the warrant is {quoted}, and spec 3 closes the warrant at {}: a value outside \
+                "the warrant is {quoted}, and authoring and lifecycle closes the warrant at {}: a value outside \
                  the set says nothing about who read this document",
                 listed()
             ),
@@ -174,7 +174,7 @@ impl DocumentCheck for Pairing {
             Declared::Outside(..) => {
                 return Outcome::Skipped(format!(
                     "the warrant is outside the closed set, which `{VALUE}` reports, so there is \
-                     no row of spec 3's table to pair `{ACCEPTED_BY}` against"
+                     no row of authoring and lifecycle's table to pair `{ACCEPTED_BY}` against"
                 ))
             }
             Declared::Member(warrant) => warrant,
@@ -215,7 +215,7 @@ impl DocumentCheck for Pairing {
             (true, false, _) => Outcome::failed_with(finding(
                 acceptor.unwrap_or(warrant_entry),
                 format!(
-                    "the warrant is `{ACCEPTED}`, and `{ACCEPTED_BY}` names nobody: spec 3 \
+                    "the warrant is `{ACCEPTED}`, and `{ACCEPTED_BY}` names nobody: authoring and lifecycle \
                      requires an accepted document to say who accepted it"
                 ),
                 format!(
@@ -228,7 +228,7 @@ impl DocumentCheck for Pairing {
                 entry,
                 format!(
                     "the warrant is `{warrant}`, and the document also names `{ACCEPTED_BY}`: \
-                     spec 3 forbids an acceptor at `{warrant}`, because a document that names one \
+                     authoring and lifecycle forbids an acceptor at `{warrant}`, because a document that names one \
                      is `{ACCEPTED}`"
                 ),
                 format!(

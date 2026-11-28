@@ -11,7 +11,7 @@ use std::collections::BTreeMap;
 /// The meta-schema, as this crate ships it.
 ///
 /// It is one file, published with the engine and versioned with it
-/// ([spec 2](../../../../docs/spec/02-taxonomy-model.md#the-meta-schema)). The
+/// ([the taxonomy model](../../../../docs/spec/taxonomy-model.md#the-meta-schema)). The
 /// text is compiled in rather than read from disk, because a validator that
 /// looks for its own schema on a path has a second failure mode that says
 /// nothing useful to an adopter.
@@ -115,7 +115,7 @@ impl MetaSchema {
     /// This is the half of the resolver's work that needs no tree. An address
     /// either lands on a declared position or it does not, and whether it
     /// reaches into a list is decided here rather than by reading a merged
-    /// tree. [Spec 2](../../../../docs/spec/02-taxonomy-model.md#the--reference-sublanguage)
+    /// tree. [The taxonomy model](../../../../docs/spec/taxonomy-model.md#the--reference-sublanguage)
     /// puts the list refusal outside the grammar because `0` is a legal key
     /// name, and this is where the refusal lands instead.
     pub fn at(&self, address: &Address) -> Position<'_> {

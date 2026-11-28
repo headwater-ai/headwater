@@ -26,13 +26,13 @@ relations:
 
 **The owner ruled on scope before the spike ran.** The ruling of 2026-09-27 is posted on #1013, and it reads:
 
-> the vision's exclusion of grammar (spec 00, line 70) was made because no tool like Harper existed, not as a principle. It is not a constraint on this decision.
+> the vision's exclusion of grammar ([the vision and scope](../spec/vision-and-scope.md), line 70) was made because no tool like Harper existed, not as a principle. It is not a constraint on this decision.
 
-So this record weighs Harper on what it measured, and not on what [spec 00](../spec/00-vision-and-scope.md#what-we-do-not-build) excludes.
+So this record weighs Harper on what it measured, and not on what [the vision and scope](../spec/vision-and-scope.md#what-we-do-not-build) excludes.
 
 ## Decision
 
-**The engine does not link `harper-core` now.** No Harper rule becomes a control, and no regime names Harper as a backend. Spec 00 keeps its line about grammar, because the ruling licensed a change to it only for a record that integrates Harper.
+**The engine does not link `harper-core` now.** No Harper rule becomes a control, and no regime names Harper as a backend. [The vision and scope](../spec/vision-and-scope.md) keeps its line about grammar, because the ruling licensed a change to it only for a record that integrates Harper.
 
 **Q41 stands unchanged.** Nothing in this spike shows a capability that Vale gives and the engine lacks.
 
@@ -50,13 +50,13 @@ So this record weighs Harper on what it measured, and not on what [spec 00](../s
 1. **Plugin shape: answered.** Harper is a library. A pure `DocumentCheck` over the parsed body is possible, and the spike is one.
 2. **Closed control registry: open.** Harper compiles its rule set in, so the set is closed at a pinned version. But the engine would have to name each Harper rule it does not own, or map a Harper category to a control. The spike did not need to choose, and this record does not.
 3. **Scoping: answered, with a correction.** The spike feeds Harper one sentence, masks what the author did not write, and maps each finding to file bytes. The decisive fixture holds. But `Sentence::authored` is the wrong input for grammar: it removes code spans, and the removal added a net 602 findings on the sample. Under 17 rules it added 607, and under 2 rules it took away 5. A grammar rule needs the words a reader sees, with the foreign runs masked.
-4. **Determinism: answered.** Two runs were byte-identical. The crate version pins the dictionary, and the dialect and rule set are code. So the four inputs of spec 12 hold if the Harper version counts as part of the check version.
+4. **Determinism: answered.** Two runs were byte-identical. The crate version pins the dictionary, and the dialect and rule set are code. So the four inputs of [the check layer](../spec/check-layer.md) hold if the Harper version counts as part of the check version.
 
 **The answer that fails is yield, which Q41 did not ask about.** Harper's shape fits this engine better than Vale's. Its output on this corpus does not.
 
 **[HW-DR-0005](0005-voice-checking-depth.md) and [HW-DR-0024](0024-q24-readability-and-what-a-sweep-can-be-asked-about.md) are unchanged.** Harper has no voice rule and no readability score that reaches this corpus. Its `LongSentences` rule fired once in the raw mode and never on the authored text.
 
-**An adopter can still run Harper alongside.** It can run as a separate step, and nothing in this engine stops it. That is the same place spec 00 puts Vale.
+**An adopter can still run Harper alongside.** It can run as a separate step, and nothing in this engine stops it. That is the same place [the vision and scope](../spec/vision-and-scope.md) puts Vale.
 
 **What would reopen this.** Either of two things reopens it, and `tools/engine/harper-spike/build.sh` measures the first again:
 

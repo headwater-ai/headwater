@@ -5,7 +5,7 @@ status: current
 status_since: 2026-08-12
 waiting_on: build
 last_verified: 2026-09-30
-summary: "Spec 2 requires that anchor strings normalize before comparison, and it states no rule that does it."
+summary: "The taxonomy model requires that anchor strings normalize before comparison, and it states no rule that does it."
 provenance:
   warrant: accepted
   agency: mixed
@@ -23,7 +23,7 @@ relations:
 
 ## Context
 
-[Spec 2](../spec/02-taxonomy-model.md#behavior-at-the-limits) requires that anchor strings normalize before comparison, so that two spellings of one target are one node. It states no rule that does it. [Spec 12](../spec/12-check-layer.md#the-correctness-roots) then names the resolver a correctness root, because a resolver that mis-normalizes makes `governs` edges miss with no error anywhere.
+[The taxonomy model](../spec/taxonomy-model.md#behavior-at-the-limits) requires that anchor strings normalize before comparison, so that two spellings of one target are one node. It states no rule that does it. [The check layer](../spec/check-layer.md#the-correctness-roots) then names the resolver a correctness root, because a resolver that mis-normalizes makes `governs` edges miss with no error anywhere.
 
 ## Obligation
 

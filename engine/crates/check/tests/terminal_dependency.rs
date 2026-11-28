@@ -2,7 +2,7 @@
 //! A live document resting on a terminal one, and the four ways a rule about it
 //! is easy to get wrong.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
+//! [The check layer](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
 //! sets the floor: "every check ships with at least one fixture that it fails
 //! and one that it passes." The tree under `fixtures/terminal-dependency/` goes
 //! past the floor, because the pass has to be the *same edge* as the fail.
@@ -337,7 +337,7 @@ fn a_target_standing_outside_its_own_machine_is_left_to_the_rule_that_owns_it() 
     );
 }
 
-/// A source that is not live is not what spec 3's sentence is about, in both of
+/// A source that is not live is not what [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s sentence is about, in both of
 /// the two ways a source can fail to be live.
 ///
 /// `draft` carries the role `initial`, and a document being argued over rests

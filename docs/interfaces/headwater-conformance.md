@@ -89,8 +89,8 @@ The verb writes no file.
 
 ## See also
 
-[`headwater taxonomy vendor`](../spec/06-engine-architecture.md#cli) installs the package whose conformance rules this verb reads.
+[`headwater taxonomy vendor`](../spec/engine-architecture.md#cli) installs the package whose conformance rules this verb reads.
 
-[Spec 7](../spec/07-distribution-and-federation.md#conformance) defines conformance as wired adoption rather than a copied taxonomy.
+[Distribution and federation](../spec/distribution-and-federation.md#conformance) defines conformance as wired adoption rather than a copied taxonomy.
 
 [`headwater check`](headwater-check.md) reports findings over the corpus. Its `--strict` option is a separate check gate.

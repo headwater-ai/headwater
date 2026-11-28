@@ -182,7 +182,7 @@
 #   the batch planned and copies that plan's identity.
 # - assembly names the line `L<i>-additive-scenario-<n>-<round>` and writes
 #   `<stem>.round`, which states the round and its set. The identity block is
-#   the closed key set of spec 15, so the set reaches it as the `selection`
+#   the closed key set of the recorder contract (docs/spec/the-recorder-contract.md), so the set reaches it as the `selection`
 #   digest and not as a key.
 #
 # The batch writes the recorder's arguments of each session to
@@ -294,7 +294,7 @@
 #
 # **A session reads one phrasing of its probe's task (#1875).** A probe's
 # `## Task` holds two or three `### Phrasing <n>` subsections (HW-DR-0112),
-# and the prompt is the body of one of them (spec 15). The batch keeps each
+# and the prompt is the body of one of them (the recorder contract (docs/spec/the-recorder-contract.md)). The batch keeps each
 # phrasing in `<out>/tasks/<probe>.<n>.md`, the count in
 # `<out>/tasks/<probe>.phrasings`, and a task with no phrasing in
 # `<out>/tasks/<probe>.md`, as `tools/probe/phrasing.sh files` writes them.
@@ -963,7 +963,7 @@ if [ "$assemble" = 1 ]; then
         printf 'campaign: %s: %s' "$stem" "$(cat "$out/assembled/$stem.summary")" >&2
         printf '\n' >&2
         # An additive line names its round in place of a category, and runs
-        # the round's set (#1775). The identity block is spec 15's closed key
+        # the round's set (#1775). The identity block is the recorder contract's (docs/spec/the-recorder-contract.md) closed key
         # set, where the set is the `selection` digest, so the round and the
         # set are stated beside it.
         if [ -s "$out/plans/L$index.set" ]; then
@@ -1052,7 +1052,7 @@ plan_line() {
 # `<dir>/<probe>.phrasings`, its count of phrasings, as
 # `tools/probe/phrasing.sh files` writes them. The prompt of a session is the
 # body of the probe's `## Task`, or of the one `### Phrasing <n>` it draws,
-# without the heading (spec 15, HW-DR-0112). It names the first file that is
+# without the heading (the recorder contract (docs/spec/the-recorder-contract.md), HW-DR-0112). It names the first file that is
 # empty, and prints nothing when each one holds a body.
 extract_tasks() {
     sh "$root/tools/probe/phrasing.sh" files "$root" "$1" "$2"
@@ -1454,7 +1454,7 @@ while IFS= read -r line; do
 done < "$out/lines"
 sort -u "$out/pairs.tmp" > "$out/pairs" && rm -f "$out/pairs.tmp"
 
-# The task of each probe: the body of `## Task` and nothing else (spec 15),
+# The task of each probe: the body of `## Task` and nothing else (the recorder contract (docs/spec/the-recorder-contract.md)),
 # or of each `### Phrasing <n>` in a file of its own (HW-DR-0112).
 for probe in $probes; do
     empty=$(extract_tasks "$probe" "$out/tasks")

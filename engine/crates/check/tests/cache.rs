@@ -2,7 +2,7 @@
 //! The standing test of a correctness root: a cache that cannot change a
 //! verdict.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots):
+//! [The check layer](../../../../docs/spec/check-layer.md#the-correctness-roots):
 //! "a cache that can change a verdict is a store under another name.
 //! `headwater check --no-cache` and `headwater check` produce byte-identical
 //! output, and that comparison is a fixture rather than an assumption."
@@ -94,7 +94,7 @@ fn run_at(root: &Path, ctx: &Context, cache: &mut Cache) -> Run {
     // The fixture tree has no lock, so the digest of the taxonomy source is the
     // stand-in for one. It is the same fact — the bytes every result rests on —
     // and a read set that carried nothing there would be missing a component
-    // that spec 12 names.
+    // that the check layer (docs/spec/check-layer.md) names.
     let lock = headwater_hash::hex(source.as_bytes());
 
     let corpus = Corpus::new(root, "check");
@@ -264,7 +264,7 @@ fn an_edited_document_is_evaluated_again() {
 /// A document-grained rule fails here and passes every other test in this file.
 /// Its key would name one file, that file's bytes are identical across the two
 /// runs, and the cache would serve the failure it stored — a stale verdict that
-/// spec 12 calls a correctness bug rather than a performance one. The read set
+/// [the check layer](../../../../docs/spec/check-layer.md) calls a correctness bug rather than a performance one. The read set
 /// of a corpus-scoped instance holds both claimants, so the repair moves the
 /// key.
 #[test]
@@ -458,7 +458,7 @@ fn rewrite(path: &Path, from: &str, to: &str) {
 
 /// A day that passed is not served from the entry written before it.
 ///
-/// This is the hole [spec 13](../../../../docs/spec/13-open-obligations.md)
+/// This is the hole [the register of open obligations](../../../../docs/spec/open-obligations.md)
 /// recorded against the key, closed and then held closed. `zeta.md` is inside
 /// its participation window on the first date and outside it on the second, so
 /// the two runs reach two verdicts over a corpus whose bytes never moved.
@@ -555,7 +555,7 @@ fn an_engine_upgrade_that_drops_a_rule_serves_nothing() {
 
 /// A cache file this engine cannot read is an empty cache and never a refusal.
 ///
-/// Spec 12 decides every doubtful case toward re-running: a false invalidation
+/// [The check layer](../../../../docs/spec/check-layer.md) decides every doubtful case toward re-running: a false invalidation
 /// costs one run, and a false survival ships an invalid corpus with a green
 /// report.
 #[test]

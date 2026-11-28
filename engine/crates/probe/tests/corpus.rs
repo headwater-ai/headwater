@@ -940,14 +940,14 @@ const HARDER: &[Harder] = &[
     Harder {
         id: "HW-PROBE-a-session-answers-from-the-register-when-the-task-names-the-list-it-replaced",
         shape: Shape::SupersessionTrap,
-        examines: &[("HW-REG-open-questions", "docs/spec/09-open-questions.md")],
+        examines: &[("HW-REG-open-questions", "docs/spec/open-questions.md")],
         words: &["open questions, closed and redirected"],
         absent: &[],
-        statuses: &[("docs/spec/09-open-questions.md", "superseded")],
+        statuses: &[("docs/spec/open-questions.md", "superseded")],
         // The task uses the title of the superseded list, so a name search
         // opens that list first.
         shallow: Session::Read(&[
-            "docs/spec/09-open-questions.md",
+            "docs/spec/open-questions.md",
             "docs/decisions/0020-where-scent-lives.md",
         ]),
         sound: Session::Read(&["docs/decisions/0020-where-scent-lives.md"]),
@@ -959,10 +959,10 @@ const HARDER: &[Harder] = &[
             "HW-DR-0087",
             "docs/decisions/0087-no-paragraph-limit-joins-the-language-rule-because-most-paragraphs-past-six-sentences-hold-one-topic.md",
         )],
-        words: &["09-open-questions.md#69--a-paragraph-limit"],
+        words: &["open-questions.md#69--a-paragraph-limit"],
         absent: &[],
         statuses: &[
-            ("docs/spec/09-open-questions.md", "superseded"),
+            ("docs/spec/open-questions.md", "superseded"),
             (
                 "docs/decisions/0069-a-paragraph-limit-counts-sentences-under-the-language-rule-and-never-words.md",
                 "superseded",
@@ -975,11 +975,11 @@ const HARDER: &[Harder] = &[
         // The strategy of the original's absent arm: follow the one link of
         // the tombstone's section and answer from the record it reaches.
         shallow: Session::Read(&[
-            "docs/spec/09-open-questions.md",
+            "docs/spec/open-questions.md",
             "docs/decisions/0069-a-paragraph-limit-counts-sentences-under-the-language-rule-and-never-words.md",
         ]),
         sound: Session::Read(&[
-            "docs/spec/09-open-questions.md",
+            "docs/spec/open-questions.md",
             "docs/decisions/0069-a-paragraph-limit-counts-sentences-under-the-language-rule-and-never-words.md",
             "docs/decisions/0087-no-paragraph-limit-joins-the-language-rule-because-most-paragraphs-past-six-sentences-hold-one-topic.md",
         ]),

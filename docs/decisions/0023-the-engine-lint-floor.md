@@ -23,7 +23,7 @@ title: "23 — The engine lint floor"
 
 Two published sets of Rust guidance were offered for installation as agent-facing skills. [actionbook/rust-skills](https://github.com/actionbook/rust-skills) is thirty-one skills over three layers with hooks and background agents. [The Microsoft pragmatic Rust guidelines](https://microsoft.github.io/rust-guidelines/agents/all.txt) is about fifteen thousand words of identified rules with a rationale under each one. Both name an agent as the reader, and the second states that the rules make an API easier for a model to use.
 
-**This repository already answers where a rule lives, and the answer is not a skill.** [Spec 5](../spec/05-ai-integration.md#how-a-skill-reaches-an-agent-and-what-nothing-does) states that a skill carries no rule of its own. Every mechanical statement in one is a call to a verb that ships. It also states that nothing makes a skill load, so the reach of a description is a measurement that no probe has taken. A guideline set installed as a skill would therefore be a rule with two defects at once. Nothing enforces it, and nothing says whether the agent read it.
+**This repository already answers where a rule lives, and the answer is not a skill.** [AI integration](../spec/ai-integration.md#how-a-skill-reaches-an-agent-and-what-nothing-does) states that a skill carries no rule of its own. Every mechanical statement in one is a call to a verb that ships. It also states that nothing makes a skill load, so the reach of a description is a measurement that no probe has taken. A guideline set installed as a skill would therefore be a rule with two defects at once. Nothing enforces it, and nothing says whether the agent read it.
 
 **The holding mechanism refuses it for a second reason.** `.claude/skills/fixtures.sh` drives every claim a skill makes against the engine, as a blocking job. A skill that describes an engine that moved under it produces a confident wrong answer. A skill of Rust guidance names no verb, so nothing could hold it. It would be the only skill here that decays without a signal.
 
@@ -33,7 +33,7 @@ Two published sets of Rust guidance were offered for installation as agent-facin
 
 ## Decision
 
-**A lint is declared once in `[workspace.lints]`, and every crate inherits it with `[lints] workspace = true`.** Twenty-two entries are declared for twenty-two crates. The alternative is the same rule copied into each manifest. That is the second-copy failure that [stop rule 4](../spec/05-ai-integration.md#the-stop-rules) names for prose and that a manifest does not escape.
+**A lint is declared once in `[workspace.lints]`, and every crate inherits it with `[lints] workspace = true`.** Twenty-two entries are declared for twenty-two crates. The alternative is the same rule copied into each manifest. That is the second-copy failure that [stop rule 4](../spec/ai-integration.md#the-stop-rules) names for prose and that a manifest does not escape.
 
 **The set is chosen by measurement, and never by adoption.** Each entry was at zero hits on the run that added it, or its hits were corrected in the same change. The reason is mechanical rather than stylistic. The continuous integration job reads `-D warnings`, so a lint named at any level in this file fails the build. A level of `warn` here is a level of `deny` there.
 

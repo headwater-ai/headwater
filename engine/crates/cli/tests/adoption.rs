@@ -77,7 +77,7 @@ const PAYLOAD: &str = concat!(
     "      owner: \"a person\"\n",
     "      until: 2027-06-30\n",
     "      pairs:\n",
-    "        - path: docs/spec/02-taxonomy-model.md\n",
+    "        - path: docs/spec/taxonomy-model.md\n",
     "          rule: language.retired_term.used\n",
 );
 
@@ -213,7 +213,7 @@ impl Root {
     /// The same block whose one pair names a `(path, rule)` the case chooses.
     ///
     /// Every helper above writes `PAYLOAD`'s own pair, which names
-    /// `docs/spec/02-taxonomy-model.md` — a path the scratch corpus does not
+    /// `docs/spec/taxonomy-model.md` — a path the scratch corpus does not
     /// hold. Such a pair matches no finding, so it reads as *closed* and every
     /// case above runs at `0 open`. A case that needs an open pair therefore
     /// builds the corpus first and names the document the scaffolder actually
@@ -227,7 +227,7 @@ impl Root {
         let payload = PAYLOAD
             .replace("AD-9", id)
             .replace("2027-06-30", until)
-            .replace("docs/spec/02-taxonomy-model.md", path)
+            .replace("docs/spec/taxonomy-model.md", path)
             .replace("language.retired_term.used", rule);
         self.write(&text.replacen("\nresolved:\n", &format!("{payload}\nresolved:\n"), 1));
     }
@@ -992,7 +992,7 @@ fn the_adoption_ledger_is_filled_once_and_no_word_stands_alone() {
         .join(" ");
     assert!(
         joined.contains(
-            "it names a migration state. Spec 7 gives one a from-version and a to-version, \
+            "it names a migration state. Distribution and federation gives one a from-version and a to-version, \
              and no verb of this engine writes either into this block"
         ),
         "the fill lost or reordered a word of the unread line:\n{}",
@@ -1001,7 +1001,7 @@ fn the_adoption_ledger_is_filled_once_and_no_word_stands_alone() {
 
     // At `--wide` in a 120-column terminal the unread line is laid out at 120
     // columns, not at 80: its first line runs past 80 and holds the whole
-    // phrase `migration state. Spec 7 gives one`.
+    // phrase `migration state. Distribution and federation gives one`.
     let wide = root.run_at(&["check", "--wide"], Some("120"));
     assert_eq!(wide.code, Some(0), "{}{}", wide.out, wide.err);
     let block = adoption_block(&wide.out);
@@ -1010,7 +1010,8 @@ fn the_adoption_ledger_is_filled_once_and_no_word_stands_alone() {
         .find(|line| line.contains("`to`"))
         .unwrap_or_else(|| panic!("no unread line:\n{}", wide.out));
     assert!(
-        first.chars().count() > 80 && first.contains("migration state. Spec 7 gives one"),
+        first.chars().count() > 80
+            && first.contains("migration state. Distribution and federation gives one"),
         "`--wide` does not reach the ledger: {first:?}\n{}",
         wide.out
     );
@@ -1251,7 +1252,7 @@ fn check_strict_exits_zero_with_no_adoption_task_declared() {
 /// The decisive arm: a task past its `until` fails `--strict`, and the
 /// finding names the task and its owner.
 ///
-/// Spec 7: "A migration state past its expiry is a finding against the
+/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md): "A migration state past its expiry is a finding against the
 /// owner." `2020-01-01` stays in the past for the life of this suite, so the
 /// case needs no `--now` flag the way none of this file's other cases do.
 #[test]
@@ -1278,8 +1279,15 @@ fn check_strict_is_non_zero_when_a_declared_task_has_lapsed() {
         "the finding names the task:\n{}",
         checked.out
     );
+    // The report wraps its text, so the phrase is read with the line breaks
+    // taken out: a longer citation before it moved "a" to the line above.
     assert!(
-        checked.out.contains("a person"),
+        checked
+            .out
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ")
+            .contains("a person"),
         "and the owner PAYLOAD declares:\n{}",
         checked.out
     );
@@ -1330,7 +1338,7 @@ const UNRAISED: &str = "language.retired_term.used";
 ///
 /// The corpus is built **before** the block is authored, because the pair has
 /// to name the document the scaffolder actually wrote. `PAYLOAD` names
-/// `docs/spec/02-taxonomy-model.md`, which this corpus does not hold, so every
+/// `docs/spec/taxonomy-model.md`, which this corpus does not hold, so every
 /// other case in this file runs at `0 open` and none of them could have caught
 /// a reading that reported zero whatever the corpus did.
 #[test]
@@ -1620,7 +1628,7 @@ fn a_corpus_with_no_declared_payload_records_a_reading_of_none() {
 /// And nothing held the `refused` member itself. Forcing `Reading::of` to
 /// report `refused: 0` and deleting the render branch outright left the whole
 /// suite green, because every series a case built stated zero and the one unit
-/// case round-tripped a hand-built value through the writer. Spec 7's words for
+/// case round-tripped a hand-built value through the writer. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s words for
 /// this member are that "a series that dropped it would report a payload
 /// shrinking when it went dark", which is exactly what that pair of mutations
 /// produced. This case runs a real refusal through `Reading::of` and out to

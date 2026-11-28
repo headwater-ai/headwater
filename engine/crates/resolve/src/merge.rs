@@ -2,7 +2,7 @@
 //! The merge itself: five operations over one tree, each asserting what it
 //! believes about the tree it is applied to.
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#customization-by-composition):
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#customization-by-composition):
 //! "Every operation asserts a precondition about the base, and a failed
 //! precondition is always an error. `override` needs the path to exist. `add`
 //! needs the key to be absent. `remove` needs the key to be present." The
@@ -11,7 +11,7 @@
 //!
 //! # An `add` asserts its precondition about the base, and writes leaf by leaf
 //!
-//! Spec 2 says "a precondition about the **base**", and the word is exact. An
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md) says "a precondition about the **base**", and the word is exact. An
 //! `add` at `kinds.design_spec` is refused when the *base package* declares
 //! that key, which is the collision an upstream release causes. It is not
 //! refused because another overlay of the same resolution already created the
@@ -24,7 +24,7 @@
 //! each leaf asserts its own absence. `add kinds.x: {a: 1}` and
 //! `add kinds.x.b: 2` produce one mapping with both members, whichever runs
 //! first, and `add kinds.x: {a: 1}` against a base that already declares
-//! `kinds.x.a` is still the collision spec 2 refuses.
+//! `kinds.x.a` is still the collision [the taxonomy model](../../../../docs/spec/taxonomy-model.md) refuses.
 //!
 //! # Nothing here mutates
 //!
@@ -68,7 +68,7 @@ pub fn graft_leaves(
 ///
 /// A mapping with entries is not a leaf. An empty mapping, a sequence and a
 /// scalar are. A sequence stops the walk because a list has no addressable
-/// interior: spec 2 refuses an address into a list, and `add_to` and
+/// interior: [the taxonomy model](../../../../docs/spec/taxonomy-model.md) refuses an address into a list, and `add_to` and
 /// `remove_from` are what a list takes instead, so two operations that reach
 /// one list reach one node.
 pub fn leaf_values(

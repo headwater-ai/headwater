@@ -37,7 +37,7 @@ use std::path::Path;
 
 /// The instance attribute an imported edge carries.
 ///
-/// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#instance-attributes-and-which-end-owns-each-one)
+/// [The taxonomy model](../../../../docs/spec/taxonomy-model.md#instance-attributes-and-which-end-owns-each-one)
 /// declares it by this name, owned by the edge: "the pinned revision this edge
 /// was checked against". It is what makes Q19's drift report per edge rather
 /// than per snapshot. When a later fetch advances the pin, the edges whose

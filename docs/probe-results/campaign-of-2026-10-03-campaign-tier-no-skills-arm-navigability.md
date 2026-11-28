@@ -197,7 +197,7 @@ An interval that overlaps the previous run's is variance and one that does not i
 
 ## The comparisons this arm takes part in
 
-What the skills change. The treated arm is the `campaign` present arm and the control is the `campaign` `no-skills` arm, which removed the paths the `no-skills` component's delta names. The documents are in both arms (spec 5).
+What the skills change. The treated arm is the `campaign` present arm and the control is the `campaign` `no-skills` arm, which removed the paths the `no-skills` component's delta names. The documents are in both arms (AI integration).
 
 - treated, `docs/probe-runs/campaign-of-2026-10-03-campaign-tier-present-arm-navigability.md`: 95 of 150 graded sessions satisfied their expectation, 63.3%, in a 95% interval of 55.4% to 70.6%. 0 sessions refused by the session itself.
 - control, `docs/probe-runs/campaign-of-2026-10-03-campaign-tier-no-skills-arm-navigability.md`: 100 of 149 graded sessions satisfied their expectation, 67.1%, in a 95% interval of 59.2% to 74.1%. 0 sessions refused by the session itself.

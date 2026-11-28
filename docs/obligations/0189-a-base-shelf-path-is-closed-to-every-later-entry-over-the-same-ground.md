@@ -20,7 +20,7 @@ provenance:
 
 The base package holds `shelves.specifications` at `docs/specifications/**`. Shelf determinism refuses a second pattern over the same ground, because a document that two shelves claim has no shelf.
 
-The [`standards-spec` entry](../taxonomies/standards-spec/doctrine.md#findings) models the tradition whose layout is spec 2's own contract-sidecar sketch, `specifications/<component>/functional.md`. It could not use that path. It declares `docs/component-specs/**` instead, which is a name the tradition does not use. The third finding at [line 156](https://github.com/headwater-ai/headwater/blob/5fb9518/docs/taxonomies/standards-spec/doctrine.md#L156) of the doctrine holds the argument. It is the `design-spec` entry's second finding seen from the shelf side rather than the section side.
+The [`standards-spec` entry](../taxonomies/standards-spec/doctrine.md#findings) models the tradition whose layout is [the taxonomy model](../spec/taxonomy-model.md)'s own contract-sidecar sketch, `specifications/<component>/functional.md`. It could not use that path. It declares `docs/component-specs/**` instead, which is a name the tradition does not use. The third finding at [line 156](https://github.com/headwater-ai/headwater/blob/5fb9518/docs/taxonomies/standards-spec/doctrine.md#L156) of the doctrine holds the argument. It is the `design-spec` entry's second finding seen from the shelf side rather than the section side.
 
 The same wall stands between two entries, and not only between the base and an entry. The [`brd-prd` entry](../taxonomies/brd-prd/doctrine.md) holds `docs/requirements/**`, so the [`requirement-verification` entry](../taxonomies/requirement-verification/doctrine.md#findings) declares `docs/verified-requirements/**`, a name that 29148 does not use (#2017). A consumer that selects no `brd-prd` moves the path back with an overlay `override`, and this repository does that.
 
@@ -30,4 +30,4 @@ An opinionated default in a minimal base costs every later entry over the same g
 
 ## Discharge
 
-This record discharges when spec 2 states which of the three holds, or when the base gives up the path. Until then each later entry over the specification territory pays the same cost. Each one renames its shelf for a reason that no adopter can see from the name.
+This record discharges when [the taxonomy model](../spec/taxonomy-model.md) states which of the three holds, or when the base gives up the path. Until then each later entry over the specification territory pays the same cost. Each one renames its shelf for a reason that no adopter can see from the name.

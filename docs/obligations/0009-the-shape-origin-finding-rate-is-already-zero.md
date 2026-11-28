@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Q13](../spec/09-decisions.md#q13--linkml-and-shacl-as-substrate) rules that Headwater owns the language and that emitters never chain. Emitted JSON Schema should lower the rate of invalid front matter that reaches a check.
+[Q13](../spec/decisions.md#q13--linkml-and-shacl-as-substrate) rules that Headwater owns the language and that emitters never chain. Emitted JSON Schema should lower the rate of invalid front matter that reaches a check.
 
 ## Obligation
 

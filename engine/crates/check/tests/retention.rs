@@ -2,7 +2,7 @@
 //! The deletion of a retained document, and the corpus that separates it from
 //! every other path a change names that no census row holds.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
+//! [The check layer](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
 //! sets the floor: "every check ships with at least one fixture that it fails
 //! and one that it passes." This rule is harder to hold to that bar than a
 //! defect in a document is, because its subject is a document that is not
@@ -349,7 +349,7 @@ fn a_renamed_document_at_a_terminal_state_is_not_a_departure() {
 /// A run that names no change reports the reason rather than a pass.
 ///
 /// A corpus-grained instance covers the whole change, so a pass here would say
-/// that a full-corpus run had cleared every deletion the history holds. Spec 4
+/// that a full-corpus run had cleared every deletion the history holds. [The assurance model](../../../../docs/spec/assurance-model.md)
 /// asks for the visible skip, and this is the corpus-grained half of the arm
 /// `promotion.rs` and `transition.rs` already hold at document grain.
 #[test]

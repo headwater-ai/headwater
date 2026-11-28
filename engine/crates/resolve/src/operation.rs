@@ -3,7 +3,7 @@
 //!
 //! # The write set is not the address, and this repository is why
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#customization-by-composition)
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#customization-by-composition)
 //! states the confluence rule as "two `add`s at disjoint paths commute", and
 //! [#48](https://github.com/headwater-ai/headwater/issues/48) handed over
 //! [`headwater_ref::Address::is_disjoint_from`] as the predicate that decides
@@ -40,7 +40,7 @@ use crate::error::{ResolveError, ResolveErrorKind};
 use headwater_ref::Address;
 use headwater_yaml::{Mapping, Span, Spanned, Value};
 
-/// The five merge operations of [spec 2](../../../../docs/spec/02-taxonomy-model.md#customization-by-composition).
+/// The five merge operations of [the taxonomy model](../../../../docs/spec/taxonomy-model.md#customization-by-composition).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum OpKind {
     Add,

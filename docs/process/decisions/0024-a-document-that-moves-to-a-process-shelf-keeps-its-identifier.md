@@ -3,7 +3,7 @@ id: HW-PD-0024
 status: current
 status_since: 2026-09-29
 summary: "A specification, an evaluation or an obligation record that moves from a product shelf to a process shelf keeps its identifier. Each process kind binds the scheme of the product kind it mirrors, and the move rewrites every relative link to the file."
-last_verified: 2026-09-30
+last_verified: 2026-11-28
 title: "A document that moves to a process shelf keeps its identifier"
 provenance:
   warrant: asserted
@@ -14,7 +14,7 @@ provenance:
 relations:
   governs:
     - to: tools/repo/obligation-register-fixtures.sh
-      verified_revision: sha256:150b3b88c08547ccddc09663dba4939181b0b7ca1c155f259626bba8aea59df1
+      verified_revision: sha256:e0062176b534ba3b47be86302927ec231d51892c5317e4e0a2657e6da7f682e4
   traces_to:
     - HW-OBL-0031
     - HW-OBL-0139
@@ -49,6 +49,6 @@ A mirror costs one change for each relation that names the product kind as an en
 
 One scheme that two kinds on two shelves share is a new instance of what [HW-OBL-0139](../../obligations/0139-an-identifier-scheme-glues-three-parts-into-one-string-so-nothing-can-decide-that-two-schemes-are-disjoint.md) records. The literal segment `OBL` does not tell a reader which register holds a record. The path does, and `headwater explain` does.
 
-`tools/repo/obligation-register-fixtures.sh` reads the process register too. It fails when spec 13 lists a process record, and it names that record as a process obligation. A process record at any status is in that set, and a discharged one is too. A current process record is not owed a line in spec 13. This record governs that suite. `engine/crates/cli/tests/process_shelves.rs` holds the identifier and the sections of `process_obligation` against the overlay.
+`tools/repo/obligation-register-fixtures.sh` reads the process register too. It fails when [the register of open obligations](../../spec/open-obligations.md) lists a process record, and it names that record as a process obligation. A process record at any status is in that set, and a discharged one is too. A current process record is not owed a line in [the register of open obligations](../../spec/open-obligations.md). This record governs that suite. `engine/crates/cli/tests/process_shelves.rs` holds the identifier and the sections of `process_obligation` against the overlay.
 
 This record reopens when the process has a reader who is not this repository. That is the condition in the overlay for a move of the process to its own corpus. A move to another repository changes the namespace of every identifier, and a decision of its own settles that.

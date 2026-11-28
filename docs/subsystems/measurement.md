@@ -35,7 +35,7 @@ relations:
 
 ## Scope
 
-This spec describes the inside of the measurement subsystem of [spec 6](../spec/06-engine-architecture.md#subsystems). Three crates under `engine/crates/` build it: `probe`, `conformance` and `sweep`.
+This spec describes the inside of the measurement subsystem of [the engine architecture](../spec/engine-architecture.md#subsystems). Three crates under `engine/crates/` build it: `probe`, `conformance` and `sweep`.
 
 Each crate measures a different thing:
 
@@ -43,15 +43,15 @@ Each crate measures a different thing:
 - `conformance` evaluates a consumer repository against the rule set that its taxonomy package ships, and reports the level that the met rules reach.
 - `sweep` writes the briefing for a coherence sweep and verifies the return file that an agent wrote.
 
-The verbs over these crates are `probe plan`, `probe record`, `probe grade`, `probe compare`, `probe stale`, `conformance`, `sweep plan` and `sweep report`. Their bodies are in the `cli` crate, which belongs to the Command surface row of spec 6. This spec describes the libraries that those bodies call.
+The verbs over these crates are `probe plan`, `probe record`, `probe grade`, `probe compare`, `probe stale`, `conformance`, `sweep plan` and `sweep report`. Their bodies are in the `cli` crate, which belongs to the Command surface row of [the engine architecture](../spec/engine-architecture.md). This spec describes the libraries that those bodies call.
 
 Other documents state what the subsystem does, and this spec does not repeat them:
 
-- [Spec 5](../spec/05-ai-integration.md#measuring-whether-any-of-this-works) states what a probe is, the run identity, the tiers, and what earns the grader its right to grade.
-- [Spec 15](../spec/15-the-recorder-contract.md) states the transcript that a recorder writes and the keys of each block.
-- [Spec 4](../spec/04-assurance-model.md#discharging-coherence-obligations-the-assisted-sweep) states the sweep, its four constraints and the [finding shape](../spec/04-assurance-model.md#findings).
-- [Spec 7](../spec/07-distribution-and-federation.md#conformance) states conformance, levels and waivers.
-- [Spec 12](../spec/12-check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps) states the four facts that stop a sampler from gating.
+- [AI integration](../spec/ai-integration.md#measuring-whether-any-of-this-works) states what a probe is, the run identity, the tiers, and what earns the grader its right to grade.
+- [The recorder contract](../spec/the-recorder-contract.md) states the transcript that a recorder writes and the keys of each block.
+- [The assurance model](../spec/assurance-model.md#discharging-coherence-obligations-the-assisted-sweep) states the sweep, its four constraints and the [finding shape](../spec/assurance-model.md#findings).
+- [Distribution and federation](../spec/distribution-and-federation.md#conformance) states conformance, levels and waivers.
+- [The check layer](../spec/check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps) states the four facts that stop a sampler from gating.
 - The contracts of [`headwater probe`](../interfaces/headwater-probe.md), [`headwater conformance`](../interfaces/headwater-conformance.md) and [`headwater sweep`](../interfaces/headwater-sweep.md) state the flags, the output and the exit status of each verb.
 - [HW-DR-0008](../decisions/0008-probe-cost-and-cadence.md) rules the cost and the cadence of probes. [HW-DR-0076](../decisions/0076-a-probe-budget-prices-a-run-identity-fixed-before-the-run-and-a-committed-transcript-and-a-sweep-has-neither.md) rules what a budget prices. [HW-DR-0024](../decisions/0024-q24-readability-and-what-a-sweep-can-be-asked-about.md) rules what a sweep can be asked.
 
@@ -84,7 +84,7 @@ None of the three links `headwater-fetch`, which is the crate that holds the HTT
 
 `plan.rs` takes a `Plan` over the census, the graph, the rule set, the budgets and the lock digest. `Plan::over` never fails. A run that does not happen gives a plan that holds a `Refusal` and the numbers that caused it. The reason is what the caller needs.
 
-The plan fixes the members of the run identity that exist before a run, which [spec 5](../spec/05-ai-integration.md#the-harness-confirms-five-things-and-one-component-after-it-grades) lists. Three of them are digests, and each digest has one function:
+The plan fixes the members of the run identity that exist before a run, which [AI integration](../spec/ai-integration.md#the-harness-confirms-five-things-and-one-component-after-it-grades) lists. Three of them are digests, and each digest has one function:
 
 - `selection_digest` takes the selected identifiers in order. A grade takes it again to find which part of a selection a transcript was planned over.
 - `tree_digest` takes the path and the content digest of every typed row of the census. It moves on every commit.
@@ -106,7 +106,7 @@ The file is outside the corpus root. No rule reads it and no kind classifies it,
 
 `intake.rs` reads a `probe_transcript` document into a `Record`. `Record::read` is a pure function of the transcript, the tree and this code. It confirms the five things that `CONFIRMATIONS` names: the taxonomy, a complete identity, the membership of every probe, no prose, and a recorded cost.
 
-The "no prose" confirmation is four closed key sets: `IDENTITY_KEYS`, `EVENT_KEYS`, `CALL_KEYS` and `PRODUCED_KEYS`. One key outside them refuses the file. `engine/crates/probe/tests/contract.rs` holds the four sets equal to the four tables of spec 15, so the contract and the code cannot drift.
+The "no prose" confirmation is four closed key sets: `IDENTITY_KEYS`, `EVENT_KEYS`, `CALL_KEYS` and `PRODUCED_KEYS`. One key outside them refuses the file. `engine/crates/probe/tests/contract.rs` holds the four sets equal to the four tables of [the recorder contract](../spec/the-recorder-contract.md), so the contract and the code cannot drift.
 
 A moved lock refuses a transcript only where the tree composes no read set over its probes. Where the tree composes one, the intake grades the transcript, and a moved read set keeps every verdict. `Record` notes a moved lock and a moved read set in `lock_moved` and `read_set_moved`. `Record::render` prints both for `headwater probe record`.
 
@@ -174,7 +174,7 @@ The waivers live in the consumer declaration and not in the package. `taxonomy v
 
 ### The sweep JSON is the finding shape with two more members
 
-`json.rs` writes one sweep in the finding shape of spec 4, with `provenance` and `evidence` on each finding. `headwater_adapter::json` writes the same finding shape for a run of the checks, without those two members. The two are separate functions over separate types, because `headwater-check` cannot name this crate and so a `Run` cannot hold a sweep finding. The `sample` member states in the artifact that the set is a sample, so a consumer that counts findings meets the warning.
+`json.rs` writes one sweep in the finding shape of [the assurance model](../spec/assurance-model.md), with `provenance` and `evidence` on each finding. `headwater_adapter::json` writes the same finding shape for a run of the checks, without those two members. The two are separate functions over separate types, because `headwater-check` cannot name this crate and so a `Run` cannot hold a sweep finding. The `sample` member states in the artifact that the set is a sample, so a consumer that counts findings meets the warning.
 
 ## Invariants
 
@@ -182,11 +182,11 @@ A change to these crates must keep each of these. A test holds each one that nam
 
 - **A plan, a record and a grade are each the same bytes twice** (`a_plan_a_record_and_a_grade_are_each_the_same_bytes_twice` in `engine/crates/probe/tests/fixtures.rs`). The sweep holds the same for a plan and a report (`a_plan_is_the_same_bytes_twice`, `a_report_is_the_same_bytes_twice` in `engine/crates/sweep/tests/fixtures.rs`).
 - **Every satisfied verdict carries a witness that a reader can check** (`every_satisfied_verdict_carries_a_witness_a_reader_can_check`). **A key that the recorder never wrote reaches a refusal and never a pass** (`a_key_the_recorder_never_wrote_reaches_a_refusal_and_never_a_pass`).
-- **A key outside the closed sets refuses the transcript** (`a_key_outside_the_closed_set_refuses_the_transcript`). The closed sets equal the tables of spec 15 (`the_four_tables_of_the_contract_are_the_four_closed_sets_of_the_intake` in `engine/crates/probe/tests/contract.rs`).
+- **A key outside the closed sets refuses the transcript** (`a_key_outside_the_closed_set_refuses_the_transcript`). The closed sets equal the tables of [the recorder contract](../spec/the-recorder-contract.md) (`the_four_tables_of_the_contract_are_the_four_closed_sets_of_the_intake` in `engine/crates/probe/tests/contract.rs`).
 - **The read set is not the corpus tree** (`the_read_set_of_the_fixture_selection_is_not_the_corpus_tree`). **An edit that the read set does not cover voids no result** (`an_edit_the_read_set_does_not_cover_voids_no_result`). **An absent `calls` key is not a session that opened nothing** (`an_absent_calls_key_is_not_a_session_that_opened_nothing`).
 - **A tree rule with no reading ends the run** (`a_tree_rule_this_engine_holds_no_reading_for_ends_the_run` in `engine/crates/conformance/tests/rules.rs`), and **a live waiver moves the gate and never the level** (`a_live_waiver_moves_the_gate_and_never_the_level`).
 - **A quotation that the document does not hold is refused** (`a_quotation_the_document_does_not_hold_is_refused`), **a paraphrase is not a quotation** (`a_paraphrase_is_not_a_quotation`), and **a restated edge is refused** (`a_finding_that_restates_a_declared_edge_is_refused`).
 - **No check names the placeholder document, and the sweep does** (`no_check_names_the_placeholder_document_and_the_sweep_does`). This pair holds that the sweep finds what the checks cannot.
 - **The recorded plans, records, grades and reports are the assertion.** Record them again with `HEADWATER_BLESS=1` and read the diff. Move `grade::VERSION` with any change that moves a verdict.
 
-The probe grader is a correctness root ([spec 12](../spec/12-check-layer.md#the-correctness-roots)). A grader that evaluates a predicate wrongly gives a systematically green rate, and no probe finds it. The recorded fixtures in `engine/crates/probe/tests/fixtures.rs` hold each verdict form and each refusal of the grader.
+The probe grader is a correctness root ([the check layer](../spec/check-layer.md#the-correctness-roots)). A grader that evaluates a predicate wrongly gives a systematically green rate, and no probe finds it. The recorded fixtures in `engine/crates/probe/tests/fixtures.rs` hold each verdict form and each refusal of the grader.

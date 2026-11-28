@@ -75,7 +75,7 @@ The base `decision` kind requires Context, Decision and Consequences. All ten re
 
 **`diataxis-site` had to refuse all 4 of its 4 external documents on the same rule**, which is 11 of its 16 errors. The difference is what the two traditions constrain. Nygard's three sections are a convention that ADR authors actually write, and Diátaxis constrains a reader's purpose rather than a writer's headings.
 
-That reading goes against the open finding in [13 — Open obligations](../spec/13-open-obligations.md) that a kind of a library entry cannot decline to state a section contract. **It does not close it.** That finding belongs to `diataxis-site`, and one counter-case from one tradition is not a ruling on the general question.
+That reading goes against the open finding in [Open obligations](../spec/open-obligations.md) that a kind of a library entry cannot decline to state a section contract. **It does not close it.** That finding belongs to `diataxis-site`, and one counter-case from one tradition is not a ruling on the general question.
 
 ## Four of the ten statuses say something the state vocabulary cannot
 
@@ -110,7 +110,7 @@ So nothing in their `ruff` / `mdformat` / `markdownlint` stack resolves a link, 
 
 **The engine reported 4 of those 8, and the other 4 are a defect.** The 4 it missed are the four `../internal/implementation-plans/…` links inside a blockquote, at line 7 of `0003`, `0005`, `0006` and `0007`. The 4 it reported stand in a paragraph or a list item. A probe run on 2026-09-11 confirms the rule rather than the coincidence. One document carries three broken relative links, one in a paragraph, one in a list item and one in a blockquote. The run reports 2 of the 3, and the blockquote is the one it does not read.
 
-**`link.path.unresolved` does not read a link inside a blockquote.** No fixture of this repository had ever put one there. A real corpus did on its first run, which is the whole argument for typing prose that was not written to pass. [13 — Open obligations](../spec/13-open-obligations.md) carries the finding.
+**`link.path.unresolved` does not read a link inside a blockquote.** No fixture of this repository had ever put one there. A real corpus did on its first run, which is the whole argument for typing prose that was not written to pass. [Open obligations](../spec/open-obligations.md) carries the finding.
 
 ## The cross-reference convention is mostly prose that no tool can follow
 

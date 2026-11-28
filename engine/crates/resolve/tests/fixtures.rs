@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The resolver's fixture corpus.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots)
+//! [The check layer](../../../../docs/spec/check-layer.md#the-correctness-roots)
 //! asks this component for two things by name: "The resolver carries its own
 //! round-trip and confluence fixtures." Both are here, and neither is an
 //! assertion in Rust that a later rewrite could quietly weaken.
@@ -15,7 +15,7 @@
 //!
 //! - **`expected.record`** — what the case resolves to, or why it does not.
 //! - **`confluence.record`** — every permutation of every case's overlay set,
-//!   resolved, and whether the results agree. This is the property that spec 2
+//!   resolved, and whether the results agree. This is the property that [the taxonomy model](../../../../docs/spec/taxonomy-model.md)
 //!   requires and that the static check claims to prove, tested by running it.
 //! - **`roundtrip.record`** — the resolved taxonomy written out, loaded again
 //!   as a package with no overlays, and resolved again. A resolver whose result
@@ -133,7 +133,7 @@ fn every_case_resolves_to_the_recorded_result() {
     }
 }
 
-/// The property spec 2 requires: "the application of a set of overlays in any
+/// The property [the taxonomy model](../../../../docs/spec/taxonomy-model.md) requires: "the application of a set of overlays in any
 /// legal order yields the same resolved taxonomy".
 ///
 /// Every permutation of every case's overlay set is resolved, and the results
@@ -259,7 +259,7 @@ fn a_resolved_taxonomy_resolves_to_itself() {
 
 /// The rules of `taxonomy validate` that read a resolved taxonomy.
 ///
-/// [Spec 12](../../../../docs/spec/12-check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship):
+/// [The check layer](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship):
 /// "every check ships with at least one fixture that it fails and one that it
 /// passes." `validate/valid/` is the passing side for every rule at once, and
 /// each other directory is a mutation of it that trips a named group.

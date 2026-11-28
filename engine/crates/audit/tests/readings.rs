@@ -231,7 +231,7 @@ fn the_fixture_tree_with_an_adoption_series_produces_the_recorded_audit() {
 
 /// An arm that cannot be measured has a location, and it is never a zero.
 ///
-/// This is the defect that the figure in spec 3 carried before this reading
+/// This is the defect that the figure in [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) carried before this reading
 /// existed. That sentence read `56 of 142`, and the denominator held 16
 /// documents of a kind that requires no facet in the `name` role. A rule of the
 /// shape it was arguing about could not have measured one of them, so counting
@@ -295,7 +295,7 @@ fn a_shelf_that_cannot_be_measured_is_located_rather_than_counted_at_zero() {
 /// Every shelf that declares a layout reports a population it could measure.
 ///
 /// Over this repository rather than over the tree written for it, and it is the
-/// arithmetic that spec 3 now cites: a document that was not measured is in no
+/// arithmetic that [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) now cites: a document that was not measured is in no
 /// numerator and in no denominator. A reading whose measured count exceeded its
 /// identified count would be counting a document twice, and one whose renders
 /// exceeded its measured count would be reporting a name it never rendered.
@@ -334,7 +334,7 @@ fn no_layout_reading_counts_more_than_it_measured() {
 
 /// The one finding class exists, and the declaration is what produces it.
 ///
-/// [Spec 12](../../../../docs/spec/12-check-layer.md) refuses a check with no
+/// [The check layer](../../../../docs/spec/check-layer.md) refuses a check with no
 /// failing fixture under it, and the same bar reaches a reading that carries a
 /// verdict. This is that fixture: on the recorded date two relations have a
 /// half on a document past the declared window, and on a date inside the window
@@ -849,7 +849,7 @@ fn an_undated_document_is_counted_apart_from_a_fresh_one() {
     assert_eq!(annotates.expired, 0);
 }
 
-/// Every creator of spec 2's closed set has a row, in use or not.
+/// Every creator of [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s closed set has a row, in use or not.
 ///
 /// This is the property the whole creator reading exists for. Q19 asks whether
 /// an imported edge decays faster than a scaffolded one, and the answer over a
@@ -929,7 +929,7 @@ fn the_base_relations_a_session_proposes_are_read_under_agent_and_keep_their_cap
             .by_creator
             .iter()
             .find(|(creator, _)| creator == "agent")
-            .expect("spec 2's closed set has an agent row");
+            .expect("the taxonomy model's closed set has an agent row");
         let reading = agent
             .iter()
             .find(|reading| reading.name == relation)
@@ -972,7 +972,7 @@ fn no_relation_of_this_repository_names_a_hook_and_the_bundle_relations_are_read
         .by_creator
         .iter()
         .find(|(creator, _)| creator == "author")
-        .expect("spec 2's closed set has an author row");
+        .expect("the taxonomy model's closed set has an author row");
     let evidence = author
         .iter()
         .find(|reading| reading.name == "cites_evidence")
@@ -985,7 +985,7 @@ fn no_relation_of_this_repository_names_a_hook_and_the_bundle_relations_are_read
 
 /// Two audits of one corpus at one date write one set of bytes.
 ///
-/// [Spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
+/// [The check layer](../../../../docs/spec/check-layer.md#determinism-concretely)
 /// binds a run to "same corpus, same lock, same injected clock, byte-identical
 /// output". Nothing gates on this verb, and it is held to that bar anyway,
 /// because a report a person cites has to be reproducible by the person who
@@ -1229,7 +1229,7 @@ fn a_reading_that_still_waits_says_where_the_absence_lives() {
 /// report does not name as derived would send a reader to the wrong row with
 /// no test anywhere reporting it.
 ///
-/// It also holds the derived value inside spec 3's closed set. A value outside
+/// It also holds the derived value inside [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s closed set. A value outside
 /// it is reported as one a corpus invented, and the engine's own answer must
 /// not be one of those.
 #[test]
@@ -1245,7 +1245,7 @@ fn the_warrant_the_engine_derives_is_named_derived_and_is_inside_the_closed_set(
     );
     assert!(
         WARRANTS.contains(&derived),
-        "`{derived}` is outside spec 3's closed set: {WARRANTS:?}"
+        "`{derived}` is outside authoring and lifecycle's closed set: {WARRANTS:?}"
     );
 
     // And the same reader still answers the declared half for a document this
@@ -1584,7 +1584,7 @@ const AUDIT_HEADINGS: [&str; 12] = [
     "shelves that hold several kinds",
     "file names, against the layout each shelf declares",
     "dwell in the current state",
-    "warrants, over the closed set spec 3 declares",
+    "warrants, over the closed set authoring and lifecycle declares",
     "adoption payload decay",
     "what this verb does not measure, and what each one waits on",
 ];

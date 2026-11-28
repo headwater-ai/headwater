@@ -6,7 +6,7 @@
 # #1260 asked what `headwater check` and `headwater explain --json` cost when
 # one document governs a glob that reaches thousands of files, and nothing had
 # measured it. This script is the recorded command. It prints one line per
-# figure, and spec 5 and the `headwater explain` interface page quote them.
+# figure, and AI integration (docs/spec/ai-integration.md) and the `headwater explain` interface page quote them.
 #
 # It builds a scratch corpus in a fresh temporary directory: the taxonomy lock,
 # the consumer declaration and the overlay of this repository, one interface
@@ -25,7 +25,7 @@
 #
 # Each figure is user plus system CPU time, as `time -p` reports it for the
 # process and every child it waited for. CPU time is the measure because the
-# load on a shared host does not change it, which is how spec 5 measured
+# load on a shared host does not change it, which is how AI integration (docs/spec/ai-integration.md) measured
 # `headwater route`. One sample is the mean of a batch of runs, 10 by default
 # and `HW_MEASURE_BATCH` otherwise, because `time -p` counts hundredths of a
 # second. It also prints the byte size of each explain document. The hook

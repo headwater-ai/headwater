@@ -186,11 +186,11 @@ Cells: the `absent` arm, which held the documents and none of the harness. Passi
 
 ### R3. What a failing cold agent loaded when it held the skills
 
-Cells: the `cold agent` probe in batch `b`. The `present` arm passed 17 of 118, the `no-skills` arm 33 of 118 and the `absent` arm 36 of 118. The probe passes when a session opens `docs/spec/12-check-layer.md`, and its task is to add a rule to the engine.
+Cells: the `cold agent` probe in batch `b`. The `present` arm passed 17 of 118, the `no-skills` arm 33 of 118 and the `absent` arm 36 of 118. The probe passes when a session opens `docs/spec/check-layer.md`, and its task is to add a rule to the engine.
 
-**Raw recording.** 86 of the 101 failing `present` sessions called the `Skill` tool, and 72 of them called `headwater-taxonomy`. The first skill was `headwater-taxonomy` in 45 sessions, `headwater-orient` in 32, `headwater-engine` in 7 and `hw-run-policy` in 2. In 61 of the 86, one of the next 3 calls named `.headwater/` or `taxonomy-source`. In 48 of the 86, one of the next 3 calls was another skill. In 3 of the 86, one of the next 3 calls named a path under `docs/`. Only 1 of the 101 failing sessions named spec 12 in a call, and all 17 passing sessions did.
+**Raw recording.** 86 of the 101 failing `present` sessions called the `Skill` tool, and 72 of them called `headwater-taxonomy`. The first skill was `headwater-taxonomy` in 45 sessions, `headwater-orient` in 32, `headwater-engine` in 7 and `hw-run-policy` in 2. In 61 of the 86, one of the next 3 calls named `.headwater/` or `taxonomy-source`. In 48 of the 86, one of the next 3 calls was another skill. In 3 of the 86, one of the next 3 calls named a path under `docs/`. Only 1 of the 101 failing sessions named [the check layer](../spec/check-layer.md) in a call, and all 17 passing sessions did.
 
-**Raw recording.** The other two arms fail in the same place. All 85 failing `no-skills` sessions and 77 of the 82 failing `absent` sessions named `.headwater/packages` or `taxonomy-source`, and none of them named spec 12. So a failing cold agent goes to the declaration of the rules and not to the document that governs them, with the skills or without them. The skills add one thing: the `headwater-taxonomy` description, "when a check must start or stop reading something", matches the task, and 72 of 101 failing `present` sessions followed it.
+**Raw recording.** The other two arms fail in the same place. All 85 failing `no-skills` sessions and 77 of the 82 failing `absent` sessions named `.headwater/packages` or `taxonomy-source`, and none of them named [the check layer](../spec/check-layer.md). So a failing cold agent goes to the declaration of the rules and not to the document that governs them, with the skills or without them. The skills add one thing: the `headwater-taxonomy` description, "when a check must start or stop reading something", matches the task, and 72 of 101 failing `present` sessions followed it.
 
 **Raw recording.** The `no-skills` arm did not hold the skills, and its listing did not name them. Yet 55 of its 118 cold-agent sessions called `Skill` with the name of a skill of this repository, which `CLAUDE.md` names in its table. The recordings do not show whether the harness loaded a skill for such a call, because the reader prints no tool result.
 
@@ -254,9 +254,9 @@ Each entry reads one registered comparison. The cells are the satisfied sessions
 
 +2.8 [-13.1, +18.4], no detectable effect. The cells moved 4 to 3, 11 to 8, 18 to 18 and 7 to 13.
 
-**The hypothesis.** Add one sentence to the description of `headwater-taxonomy` that sends a session which adds a rule to the check layer, spec 12, before the package source. The expected direction is up, on the `cold agent` probe.
+**The hypothesis.** Add one sentence to the description of `headwater-taxonomy` that sends a session which adds a rule to the check layer, [the check layer](../spec/check-layer.md), before the package source. The expected direction is up, on the `cold agent` probe.
 
-**Raw recording.** R3 shows that 72 of 101 failing `cold agent` sessions with the skills called `headwater-taxonomy`. Its description matches the task, and after it the sessions went to the package source and not to spec 12.
+**Raw recording.** R3 shows that 72 of 101 failing `cold agent` sessions with the skills called `headwater-taxonomy`. Its description matches the task, and after it the sessions went to the package source and not to [the check layer](../spec/check-layer.md).
 
 The expected effect is small. The best `cold agent` cell of the round is 8 of 18, so the change can add about 5 sessions to scenario 4, about 7 points on the pooled rate. That is well under the 25 points a tuning try separates. So a try of this change alone can rule out a large effect, and it cannot confirm this one. It is the only change to a layer that a reading names.
 
@@ -297,7 +297,7 @@ Each sentence below is the tuning note on the issue of its scenario. It agrees w
 | 0 | [#1780](https://github.com/headwater-ai/headwater/issues/1780) | Scenario 0 holds no layer, so nothing is tuned here, and it stays the floor of the round. |
 | 1 | [#1781](https://github.com/headwater-ai/headwater/issues/1781) | Leave the documents layer as it is, because it is the one gain of the round and no single document carries it (R2). |
 | 3 | [#1783](https://github.com/headwater-ai/headwater/issues/1783) | Leave the engine layer as it is, because no reading names a change to the engine and no cell moved by more than 4 sessions of 18. |
-| 4 | [#1784](https://github.com/headwater-ai/headwater/issues/1784) | Try one sentence in the description of `headwater-taxonomy` that sends a session which adds a rule to spec 12 first, expected to raise the `cold agent` probe by about 7 points pooled (R3). |
+| 4 | [#1784](https://github.com/headwater-ai/headwater/issues/1784) | Try one sentence in the description of `headwater-taxonomy` that sends a session which adds a rule to [the check layer](../spec/check-layer.md) first, expected to raise the `cold agent` probe by about 7 points pooled (R3). |
 | 5 | [#1785](https://github.com/headwater-ai/headwater/issues/1785) | Leave the hook layer as it is, because its gain in 2026-10-03 was the answer in a summary line, which is a leak and not a route (R5). |
 | 6 | [#1786](https://github.com/headwater-ai/headwater/issues/1786) | Leave the MCP layer as it is, because 29 of 72 sessions made no MCP call and no reading says which way the rate moves when they do. |
 | 11 | [#1791](https://github.com/headwater-ai/headwater/issues/1791) | Leave the standing-instructions layer as it is, because no sentence of `CLAUDE.md` carries a pass in the recordings (R7) and no cell moved by more than 2 sessions. |
@@ -320,5 +320,5 @@ Each sentence below is the tuning note on the issue of its scenario. It agrees w
 - A reading counts sessions and tests no difference. The counts are of one cell each, 30 sessions in batch `a` and 118 in batch `b`.
 - The reader prints calls and attachments, and never a tool result or the text of the model. So R6 cannot show what a session read in the output of `headwater check`, and R3 cannot show whether the harness loaded a skill that its listing did not name.
 - The workspaces of the recordings are gone. So a reading shows which path a session named, and not what the file at that path held.
-- R2 counts an open as a `Read`, or as a `Bash` call that runs `cat`, `sed`, `head`, `tail`, `less` or `awk` on a path under `docs/`. A `grep` that names a document is not an open in R2, although the grader counts a call that names the document. R3 counts any call that names spec 12, as the grader does.
+- R2 counts an open as a `Read`, or as a `Bash` call that runs `cat`, `sed`, `head`, `tail`, `less` or `awk` on a path under `docs/`. A `grep` that names a document is not an open in R2, although the grader counts a call that names the document. R3 counts any call that names [the check layer](../spec/check-layer.md), as the grader does.
 - **Raw recording.** R1 runs the classifier with the path of the run's own log directory unknown. Each path under `/tmp` is bound, so a log directory there changes no count, and each of the 120 counts equals its transcript.

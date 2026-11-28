@@ -67,7 +67,7 @@ patch -p1 --quiet <<'R2_REFERENCE'
  | `rules[].obligations` | Always | The identifiers of the obligations that the rule serves. The array is empty when the rule names none. |
  | `rules[].compared` | Only on the entries for `link.identifier.mismatch` and `link.fragment.unresolved` | The number of links that the rule compared, whether they pass or not. `"compared": 0` says that the rule examined nothing. It is not written on the entry of any other rule. |
 +| `counts` | Always | The entries of `findings`, counted by severity, as an object with `error`, `warn` and `info`. Each count is a number, and a severity with no finding counts `0`. |
- | `findings` | Always | One entry for each finding of the report, in the shape that spec 4 declares. |
+ | `findings` | Always | One entry for each finding of the report, in the shape that the assurance model declares. |
  | `read_set` | Always | Each input that the run read, with the digest of its content. An input with no digest carries an empty array in place of the digest. |
  
  ### Raising the version

@@ -2,7 +2,7 @@
 //! An authored document that an edge declares superseded, and that still reads
 //! as live.
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md) says that
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md) says that
 //! `on_target: {set_state: superseded}` sets the target's state-entry date in
 //! the same operation, and that a state change with no stamp is a defect
 //! whatever caused it. Before this rule, the engine wrote that state onto a
@@ -20,7 +20,7 @@
 //! `lifecycle.state.set_twice` and `generate --check` already own.
 //!
 //! **A fix that invented a date** writes a stamp where the successor declares
-//! none. Spec 2 says `--fix` never reconstructs a missing date after the fact,
+//! none. [The taxonomy model](../../../../docs/spec/taxonomy-model.md) says `--fix` never reconstructs a missing date after the fact,
 //! so that finding carries no patch.
 
 use headwater_census::census;

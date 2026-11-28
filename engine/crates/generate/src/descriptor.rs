@@ -2,10 +2,10 @@
 //! The corpus descriptor: what a machine reads when it arrives with a location
 //! and nothing else.
 //!
-//! [Q14](../../../../docs/spec/09-decisions.md#q14--discovery-surface) fixes it at
+//! [Q14](../../../../docs/spec/decisions.md#q14--discovery-surface) fixes it at
 //! `.headwater/corpus.json` and makes it engine-defined, for the reason that a
 //! reader who must consult the taxonomy to find it already knows what it says.
-//! [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#arriving-at-a-corpus-cold)
+//! [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#arriving-at-a-corpus-cold)
 //! names what it carries: the root path, the taxonomy identity and version, the
 //! lock hash, the entry points, and each declared export profile.
 //!
@@ -20,9 +20,9 @@
 //! **An entry point is derived, because nothing declares one.** No declaration
 //! in the language holds an entry point, and the specification names the field
 //! without stating its form. Two rules already settled supply it between them.
-//! [Spec 1](../../../../docs/spec/01-conceptual-model.md#projections) says a
+//! [The conceptual model](../../../../docs/spec/conceptual-model.md#projections) says a
 //! machine reads the descriptor to learn "where to start", and
-//! [spec 2](../../../../docs/spec/02-taxonomy-model.md#reading-precedence-is-derived)
+//! [the taxonomy model](../../../../docs/spec/taxonomy-model.md#reading-precedence-is-derived)
 //! derives reading precedence from the relation family and the nucleus, naming
 //! "reading order in generated indexes" as one of its three consumers. So a
 //! shelf's entry point is the document its derived reading order puts first,
@@ -47,13 +47,13 @@
 //! so `[]` states the first of those two and the block is gone.
 //!
 //! **A profile states its name, its target, its output and its grain, and never
-//! its filter.** [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#arriving-at-a-corpus-cold)
+//! its filter.** [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#arriving-at-a-corpus-cold)
 //! asks for "each declared export profile, with its output location and its
 //! tombstone grain", and it also rules that the descriptor is served and that a
 //! filter reaches it. A filter clause names facet values, which is one step
 //! closer to the content than the shape a descriptor is allowed to disclose. So
 //! a reader learns that a profile is filtered and at what grain, which is what
-//! spec 7 requires a filtered view to admit, and learns the clause from the
+//! [distribution and federation](../../../../docs/spec/distribution-and-federation.md) requires a filtered view to admit, and learns the clause from the
 //! export itself if the export reaches them.
 //!
 //! # Two things the five did not mention, and one of them is a correction
@@ -66,9 +66,9 @@
 //! and its reason are already required to be stated, and no artifact a cold
 //! reader can reach states them, so the descriptor carries both.
 //!
-//! **`corpora` is a list of one.** Spec 7 says a repository holds one or more
+//! **`corpora` is a list of one.** [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) says a repository holds one or more
 //! corpora and the engine reads one consumer declaration, so this engine
-//! produces exactly one entry. The list is the shape spec 7 fixes, and a second
+//! produces exactly one entry. The list is the shape [distribution and federation](../../../../docs/spec/distribution-and-federation.md) fixes, and a second
 //! root arrives into it rather than into a changed shape.
 //!
 //! # The marker is a member, not a comment
@@ -83,12 +83,12 @@
 //! reader Q14 is addressed to.
 //!
 //! The member also does a second job, and that is what settles the choice.
-//! Spec 7 rules that **absence must not read as presence**: a reader that
+//! [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) rules that **absence must not read as presence**: a reader that
 //! fetches the descriptor and receives a host's default page must conclude
 //! *absent* rather than *malformed*. That requires a self-identifying member
 //! whatever the marker rule decides. One member answers both, and two would be
 //! two copies of one fact
-//! ([principle 2](../../../../docs/spec/00-vision-and-scope.md#design-principles)).
+//! ([principle 2](../../../../docs/spec/vision-and-scope.md#design-principles)).
 
 use crate::profile::Grain;
 use crate::{Identity, Kind, Output, Plan, Projections};
@@ -100,7 +100,7 @@ pub const PATH: &str = ".headwater/corpus.json";
 
 /// The descriptor's own version, as `Major.Minor`.
 ///
-/// Spec 7 attaches a client behavior to it, which is what keeps it from being
+/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) attaches a client behavior to it, which is what keeps it from being
 /// a string that nobody reads. A major above what the reader understands is a
 /// hard failure with a message. A minor mismatch is a warning and the reader
 /// continues. So a member added later moves the minor, and a member removed or

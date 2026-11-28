@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The identifier claim store, and the two rules that hold it to the corpus.
 //!
-//! [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#identifiers):
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#identifiers):
 //! "Allocation reads a tree, and a tree holds no history… So the highest value
 //! that a run finds is a lower bound on every value ever allocated." A tree
 //! also holds no concurrency. Every branch cut from one `main` reads the same
@@ -52,7 +52,7 @@
 //! the corpus spends on a shelf the store covers with no file claiming it.
 //! [`takes_a_claim`] is the predicate that decides which those are. The
 //! correction is one file whose content is the document's own path, with no
-//! judgment in it, which is the [fixability](../../../../docs/spec/12-check-layer.md#fixability)
+//! judgment in it, which is the [fixability](../../../../docs/spec/check-layer.md#fixability)
 //! bar.
 //!
 //! `identifier.claim.stale` is advisory: a claim that does not name the
@@ -60,7 +60,7 @@
 //! moved is a rewrite, so no patch rides with it.
 //!
 //! **A claim naming an identifier the corpus no longer holds is correct, and no
-//! rule reports it.** Spec 3: "**Never reused.** … A deleted document does not
+//! rule reports it.** [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md): "**Never reused.** … A deleted document does not
 //! free its number." The store is the first artifact of this repository that
 //! can hold that fact at all, and a rule reporting it would report every
 //! legitimate deletion as a defect.
@@ -635,7 +635,7 @@ impl CorpusCheck for Stale<'_> {
             let Some(entry) = self.index.by_path(&claim.claimant) else {
                 // A claimant the corpus does not hold. Where no document holds
                 // the identifier either, the document was deleted and the
-                // claim is correct: spec 3 never reuses an identifier. Where
+                // claim is correct: authoring and lifecycle (docs/spec/authoring-and-lifecycle.md) never reuses an identifier. Where
                 // two or more hold it, `identifier.claimed_twice` reports the
                 // pair, and a finding here would pick a winner in silence, as
                 // `contended` says. Where exactly one holds it, the claim is

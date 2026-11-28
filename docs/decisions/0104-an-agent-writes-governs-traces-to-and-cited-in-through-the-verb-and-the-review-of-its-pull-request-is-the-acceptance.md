@@ -35,11 +35,11 @@ On 2026-10-01 the owner ruled on [#1315](https://github.com/headwater-ai/headwat
 
 On 2026-10-02 the owner widened [#1560](https://github.com/headwater-ai/headwater/issues/1560). The request: "We need to review HW-DR-0083 as I think we can allow agents to fill in these edges - they should be clear." The request came from [#1580](https://github.com/headwater-ai/headwater/issues/1580), where an agent drafts a requirement, a criterion and a verification. The verb wrote `verified_by` and `proven_by` of that chain, and it refused `governs`, `traces_to` and `cited_in`. The overlay declares `cited_in` with `created_by: agent`, from a verification to a `test_site` anchor.
 
-[Spec 3](../spec/03-authoring-and-lifecycle.md) says that a changed decision gets a successor and an error about the present gets an edit in place. Here the decision changed, and the title of HW-DR-0083 states the old rule. So this record supersedes it.
+[Authoring and lifecycle](../spec/authoring-and-lifecycle.md) says that a changed decision gets a successor and an error about the present gets an edit in place. Here the decision changed, and the title of HW-DR-0083 states the old rule. So this record supersedes it.
 
 ## Decision
 
-**The actor stays `agent` on all three relations.** [Spec 2](../spec/02-taxonomy-model.md#who-creates-each-edge) defines `created_by` as the actor that pays for the edge. For `governs`, `traces_to` and `cited_in`, that payment is a judgment about which file or which document. An agent still makes the judgment. The verb is the pen it writes with, and it decides no target. The value `scaffold` would claim that the taxonomy decides the edge, and it does not.
+**The actor stays `agent` on all three relations.** [The taxonomy model](../spec/taxonomy-model.md#who-creates-each-edge) defines `created_by` as the actor that pays for the edge. For `governs`, `traces_to` and `cited_in`, that payment is a judgment about which file or which document. An agent still makes the judgment. The verb is the pen it writes with, and it decides no target. The value `scaffold` would claim that the taxonomy decides the edge, and it does not.
 
 **Who writes each edge, and what accepts it:**
 

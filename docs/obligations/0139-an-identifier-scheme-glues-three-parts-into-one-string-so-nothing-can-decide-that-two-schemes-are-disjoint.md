@@ -19,7 +19,7 @@ waiting_on: adopter
 
 ## Context
 
-HW-OBL-0046 has asked for this since 2026-08-12. It traces to spec 2 and spec 3, which say a grammar with separate fields makes disjointness decidable by construction.
+HW-OBL-0046 has asked for this since 2026-08-12. It traces to [the taxonomy model](../spec/taxonomy-model.md) and [authoring and lifecycle](../spec/authoring-and-lifecycle.md), which say a grammar with separate fields makes disjointness decidable by construction.
 
 Pull request #207 moved the namespace to the front of every identifier pattern and expanded `literal_prefix` to expand the declared namespace before comparing. That left the underlying grammar untouched, and the obligation stayed open.
 
@@ -41,6 +41,6 @@ Discharge requires `identifier_scheme` to declare the prefix, the namespace, and
 
 The existing tests in `check/src/identifier.rs` must still pass, and `mint`, `admits`, `sequence_of`, `render`, and `needs` must keep their current behavior. `identifier_integrity` must decide disjointness from declared prefixes, `literal_prefix` must be gone, and `headwater taxonomy validate` must not print a not-decided clause.
 
-All nine schemes must declare the new members, `.headwater/taxonomy.lock` must regenerate, and every string `mint` produces must stay byte-identical to what it produces today. The taxonomy major version must bump, per the cost that HW-OBL-0046 states, and spec 2 and spec 3 must describe the new members.
+All nine schemes must declare the new members, `.headwater/taxonomy.lock` must regenerate, and every string `mint` produces must stay byte-identical to what it produces today. The taxonomy major version must bump, per the cost that HW-OBL-0046 states, and [the taxonomy model](../spec/taxonomy-model.md) and [authoring and lifecycle](../spec/authoring-and-lifecycle.md) must describe the new members.
 
 HW-OBL-0046 reaches a terminal state naming this obligation, and this obligation waits on the grammar change landing.

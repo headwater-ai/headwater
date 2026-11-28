@@ -6,7 +6,7 @@
 //! `kinds` tool. Both hand it the [`Shape`] and the census [`Taxonomy`] read
 //! out of one lock, so the verb and the tool answer the same bytes. A second
 //! renderer in the CLI would be the drift
-//! [principle 2](../../../../docs/spec/00-vision-and-scope.md#design-principles)
+//! [principle 2](../../../../docs/spec/vision-and-scope.md#design-principles)
 //! rules against.
 //!
 //! Every word of a report is the lock's, with one exception. A kind states
@@ -19,7 +19,7 @@
 //! taxonomy to an adopter whose taxonomy is a different one.
 //!
 //! An abstract kind is a kind no document ever is
-//! ([spec 2](../../../../docs/spec/02-taxonomy-model.md#abstract-kinds)), so it
+//! ([the taxonomy model](../../../../docs/spec/taxonomy-model.md#abstract-kinds)), so it
 //! gets no entry of its own. It appears as the `is_a` parent its children
 //! name, and what it requires appears in their inherited facets and
 //! sections. The header counts the abstract kinds it left out, so a reader

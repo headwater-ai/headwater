@@ -3,10 +3,10 @@
 #
 #     sh tools/measure/check-phases.sh [runs]
 #
-# Spec 6 promises a warm commit hook in 200 ms, and until #1450 nothing said
+# The engine architecture (docs/spec/engine-architecture.md) promises a warm commit hook in 200 ms, and until #1450 nothing said
 # which part of a warm run was spent where past Phase A. This script is that
 # command. It prints one line per stage of the run, the sum of the stages, and
-# two figures the stages are held against, and spec 6 quotes them.
+# two figures the stages are held against, and the engine architecture (docs/spec/engine-architecture.md) quotes them.
 #
 # The stages come from a measurement build of the engine, which writes one
 # `phase <name> <microseconds>` line to standard error for each stage of
@@ -104,7 +104,7 @@ median() {
 }
 
 warm_ms=$(median "$engine" check --strict --root "$repo")
-phase_ms=$(median "$engine" explain --json docs/spec/06-engine-architecture.md --root "$repo")
+phase_ms=$(median "$engine" explain --json docs/spec/engine-architecture.md --root "$repo")
 
 sum=$(awk '{ t += $2 } END { printf "%.0f\n", t }' "$scratch/stages")
 past=$(awk 'seen { t += $2 } $1 == "load" { seen = 1 } END { printf "%.0f\n", t }' "$scratch/stages")

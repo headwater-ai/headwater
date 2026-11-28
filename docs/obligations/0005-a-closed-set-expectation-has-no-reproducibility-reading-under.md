@@ -25,7 +25,7 @@ relations:
 
 ## Context
 
-[Q8](../spec/09-decisions.md#q8--probe-cost-and-cadence) rules that a probe is a document with a declared expectation. A closed-set expectation should make a probe verdict reproducible under grading.
+[Q8](../spec/decisions.md#q8--probe-cost-and-cadence) rules that a probe is a document with a declared expectation. A closed-set expectation should make a probe verdict reproducible under grading.
 
 ## Obligation
 

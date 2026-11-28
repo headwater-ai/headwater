@@ -2,18 +2,18 @@
 //! SARIF 2.1.0: the run as a forge ingests it.
 //!
 //! Static Analysis Results Interchange Format, OASIS Standard, version 2.1.0
-//! with errata 01. [Spec 6](../../../../docs/spec/06-engine-architecture.md#cli)
+//! with errata 01. [The engine architecture](../../../../docs/spec/engine-architecture.md#cli)
 //! names it as a `check --format` target and
 //! [the glossary](../../../../docs/spec/glossary.md) lists it among the
 //! standards this project adopts rather than invents.
 //!
 //! # Three severity scales meet here, and only one of them reaches `level`
 //!
-//! [Spec 4](../../../../docs/spec/04-assurance-model.md#obligations-are-data):
+//! [The assurance model](../../../../docs/spec/assurance-model.md#obligations-are-data):
 //! "Two scales share one word." An **obligation** carries `high`, `medium` or
 //! `low`, and it says how much the invariant matters. A **check** carries
 //! `error`, `warn` or `info`, and a finding reports the one that the check that
-//! produced it carries ([spec 12](../../../../docs/spec/12-check-layer.md#severity-is-the-checks-posture-is-the-controls)).
+//! produced it carries ([the check layer](../../../../docs/spec/check-layer.md#severity-is-the-checks-posture-is-the-controls)).
 //! A **control** carries a posture, `advisory` or `blocking`, and it says
 //! whether a finding stops a gate. SARIF adds a fourth: `level`, over `error`,
 //! `warning`, `note` and `none`.
@@ -28,7 +28,7 @@
 //! invariant rather than of the finding, so every finding of every rule that
 //! serves one obligation would carry one level, and two findings of one check
 //! would carry two. That is the control's judgment arriving inside the check's
-//! field, which is the confusion spec 12 exists to prevent.
+//! field, which is the confusion [the check layer](../../../../docs/spec/check-layer.md) exists to prevent.
 //!
 //! The posture cannot be the source either, and for a stronger reason.
 //! [Checks and cache](../../../../docs/subsystems/checks-and-cache.md#what-a-run-states-beside-its-findings)
@@ -49,7 +49,7 @@
 //! declares the level a rule fires at. This emitter writes no
 //! `defaultConfiguration` at all, because the engine has no such value to
 //! write. A generated check reads its severity out of the taxonomy
-//! ([spec 13](../../../../docs/spec/13-open-obligations.md)), so one rule
+//! ([the register of open obligations](../../../../docs/spec/open-obligations.md)), so one rule
 //! spans as many severities as there are declarations that generate it, and an
 //! adopter moves a finding from `warn` to `error` by editing data. A single
 //! declared level per rule would be a claim about the next run rather than a
@@ -63,7 +63,7 @@
 //! This is the half a naive adapter drops. `headwater check` reports a live
 //! finding, holds a `migration-pending` one under a task of the adoption
 //! payload, and hides a suppressed one behind a directive
-//! ([spec 4](../../../../docs/spec/04-assurance-model.md#suppression), in the
+//! ([the assurance model](../../../../docs/spec/assurance-model.md#suppression), in the
 //! precedence waiver, then migration-pending, then suppression). All three are
 //! in this artifact. The two escaped classes carry a SARIF `suppressions` array,
 //! which is the member a consumer reads to show a result as dismissed rather
@@ -81,7 +81,7 @@
 //! # What no member of this vocabulary can hold
 //!
 //! [`LOSS`] is the declaration and [`crate::census`] is the audit of it, in the
-//! shape spec 7 fixes for the graph emitters. A value that rides in a property
+//! shape [distribution and federation](../../../../docs/spec/distribution-and-federation.md) fixes for the graph emitters. A value that rides in a property
 //! bag is still a loss, because a property bag is not a member of the
 //! vocabulary and a consumer that reads SARIF alone does not find it.
 //!
@@ -111,7 +111,7 @@
 //! object", and `correlationGuid` beside it as a GUID. This engine mints no run
 //! identity: [`crate::text`] and every artifact here are a function of the
 //! corpus, the lock and the injected clock alone, so a value that varied per
-//! run would break the determinism spec 12 fixes, and a constant would identify
+//! run would break the determinism [the check layer](../../../../docs/spec/check-layer.md) fixes, and a constant would identify
 //! a class rather than a run. Writing either would be this emitter filling a
 //! uniqueness member with something that is not unique. The residue is real: a
 //! consumer that baselines still cannot tell the two runs apart from a member
@@ -180,7 +180,7 @@ pub const LOSS: &[Loss] = &[
     },
     Loss {
         field: "the escape class",
-        reason: "`suppression.kind` has two values and spec 4 fixes three escape classes. A \
+        reason: "`suppression.kind` has two values and the assurance model fixes three escape classes. A \
                  directive is `inSource`; a task of the adoption payload is `external`, and a \
                  waiver would be `external` too",
         carrier: Carrier::PerFinding {
@@ -481,7 +481,7 @@ fn descriptor(served: &headwater_check::Serves) -> Json {
 ///
 /// `analysisTarget` is the role, because every one of these is a file a check
 /// read. An input the run could not hash carries no `hashes` member rather than
-/// an empty one: spec 12 counts those apart, because a gate can decide nothing
+/// an empty one: [the check layer](../../../../docs/spec/check-layer.md) counts those apart, because a gate can decide nothing
 /// about a file whose content it cannot identify.
 fn artifacts(inputs: &[Input]) -> Vec<Json> {
     inputs
@@ -544,7 +544,7 @@ fn result(entry: &Reported<'_>, rules: &[&'static str], run: &Run, grading: Grad
 /// keeps for one.
 ///
 /// `text` is the finding. `markdown` adds the remedy, because
-/// [spec 4](../../../../docs/spec/04-assurance-model.md#findings) asks for "one
+/// [the assurance model](../../../../docs/spec/assurance-model.md#findings) asks for "one
 /// path from finding to fix" and a consumer that renders Markdown is the one
 /// place in this vocabulary where the path can be shown rather than stored.
 fn message(entry: &Reported<'_>) -> Json {
@@ -680,12 +680,12 @@ fn run_properties(run: &Run, subject: &Subject<'_>) -> Json {
         (
             "escaped",
             Json::object([
-                // In the precedence spec 4 fixes. The first is absent
+                // In the precedence the assurance model (docs/spec/assurance-model.md) fixes. The first is absent
                 // because no waiver reaches a check finding, and a reader
                 // who meets two counts should not have to work out whether
                 // the third is zero or missing. The mechanism does ship —
                 // `headwater conformance` reads a waiver over a conformance
-                // rule — and spec 7 states that the reader for the other
+                // rule — and distribution and federation (docs/spec/distribution-and-federation.md) states that the reader for the other
                 // population is what has not landed.
                 ("waived", Json::string("no waiver reaches a check finding")),
                 (

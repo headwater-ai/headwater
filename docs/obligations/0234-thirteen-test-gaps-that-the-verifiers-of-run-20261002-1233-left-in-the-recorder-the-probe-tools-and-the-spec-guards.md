@@ -14,7 +14,7 @@ provenance:
 
 ## Context
 
-The verifiers of run `20261002-1233` reported mutants that survive and branches that no case reaches. Each names a reader inside this repository: the next writer of a transcript, the next campaign, or the next change to a spec guard. So the product owner ruled each one RECORD and not an issue. Intake lines 33, 37, 39, 44, 50 and 121 were ruled during the run. Lines 79, 86, 97, 104, 108, 109 and 132 were ruled at the top of run `20261003-1026`. This is one of three spec 13 records for that run, as `hw-run-policy` caps them. Each item was checked on `a46bd95e` by the file and the symbol it names. A mutant was not re-run.
+The verifiers of run `20261002-1233` reported mutants that survive and branches that no case reaches. Each names a reader inside this repository: the next writer of a transcript, the next campaign, or the next change to a spec guard. So the product owner ruled each one RECORD and not an issue. Intake lines 33, 37, 39, 44, 50 and 121 were ruled during the run. Lines 79, 86, 97, 104, 108, 109 and 132 were ruled at the top of run `20261003-1026`. This is one of three [the register of open obligations](../spec/open-obligations.md) records for that run, as `hw-run-policy` caps them. Each item was checked on `a46bd95e` by the file and the symbol it names. A mutant was not re-run.
 
 ## Obligation
 
@@ -29,12 +29,12 @@ The verifiers of run `20261002-1233` reported mutants that survive and branches 
 - With a dirty tree, the staggered block of `tools/probe/probe-record-fixtures.sh` skips, and the suite still exits 0. So an uncommitted mutation reads as green.
 - The per-shape mutants S3 to S6 of #1552 come from its build note and were not re-run. A wiring case in `engine/crates/cli/tests/wiring.rs` and a case in `tools/probe/probe-record-fixtures.sh` still declare one probe.
 
-**The guard tests of spec 6, spec 7 and the check.**
+**The guard tests of [the engine architecture](../spec/engine-architecture.md), [distribution and federation](../spec/distribution-and-federation.md) and the check.**
 
-- `engine/crates/cli/tests/spec_six_inbound_links.rs` does not flag an uppercase anchor such as `#CI-adapters`, a bare link to spec 6 or a `#taxonomy-validate` link.
-- `no_comment_quotes_moved_cli_text_as_spec_6` in `engine/crates/cli/tests/spec_six_cli_rules.rs` misses a block comment, a credit by bare path, a quote in curly quotes, single quotes or backticks, "Section 6 of the spec says", and a credit after its quote.
-- `engine/crates/cli/tests/spec_six_overview.rs` passed three paraphrases after slice 4b of #1572. A wording that says the change-scoped mode is unimplemented passes the negation list. A reworded contradiction 5 that adds a claim passes. A reworded copy of the old Checks sentence is held by the word bar alone. Slice 4d added cases for G1 to G5 and two paraphrase shapes, and no verifier has re-run these three against it.
-- The non-claims count test in `engine/crates/generate/tests/spec_seven_export.rs` reads number words, from "one" to "ten", and not digits. So "5 non-claims" in a current decision passes.
+- `engine/crates/cli/tests/engine_architecture_inbound_links.rs` does not flag an uppercase anchor such as `#CI-adapters`, a bare link to [the engine architecture](../spec/engine-architecture.md) or a `#taxonomy-validate` link.
+- `no_comment_quotes_moved_cli_text_as_spec_6` in `engine/crates/cli/tests/engine_architecture_cli_rules.rs` misses a block comment, a credit by bare path, a quote in curly quotes, single quotes or backticks, "Section 6 of the spec says", and a credit after its quote.
+- `engine/crates/cli/tests/engine_architecture_overview.rs` passed three paraphrases after slice 4b of #1572. A wording that says the change-scoped mode is unimplemented passes the negation list. A reworded contradiction 5 that adds a claim passes. A reworded copy of the old Checks sentence is held by the word bar alone. Slice 4d added cases for G1 to G5 and two paraphrase shapes, and no verifier has re-run these three against it.
+- The non-claims count test in `engine/crates/generate/tests/distribution_export.rs` reads number words, from "one" to "ten", and not digits. So "5 non-claims" in a current decision passes.
 - After a Sonnet verify of #1631, no mutant reached the branches "another document declares" and "not a scalar" of `unwritable` in `engine/crates/check/src/suspect.rs`. The Markdown and SARIF render of the pairs that name no edge are untested, and only the CI `interface_page` test holds the JSON version bump from 1.5 to 1.6.
 
 ## Discharge

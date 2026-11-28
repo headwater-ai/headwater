@@ -8,7 +8,7 @@ Call `EnterWorktree` at the start of every session in this repository, before re
 
 ## The name is Headwater
 
-**Headwater** is the name of the system, not a working name (decided 2026-08-10, [Q10](docs/spec/09-decisions.md#q10--naming)). Capitalize it in prose, including compounds: Headwater's, Headwater-specific, Headwater-native.
+**Headwater** is the name of the system, not a working name (decided 2026-08-10, [Q10](docs/spec/decisions.md#q10--naming)). Capitalize it in prose, including compounds: Headwater's, Headwater-specific, Headwater-native.
 
 Write it as `headwater` in lower case only when it is an identifier: the CLI verb (`headwater check`), package names (`acme/headwater-taxonomy`), the `.headwater/` directory, the `headwater:` annotation prefix, and the `https://w3id.org/headwater/` namespace. Do not capitalize inside code spans or fenced code. Documents under `docs/reviews/` are point-in-time records and stay as written.
 
@@ -54,7 +54,7 @@ One harness hook you will meet: `.claude/hooks/write.sh` refuses a raw `Write` o
 
 ## The skills, and when each one loads
 
-Nothing makes a skill load ([spec 5](docs/spec/05-ai-integration.md#how-a-skill-reaches-an-agent-and-what-nothing-does)). This table is the one mechanism stronger than a description.
+Nothing makes a skill load ([AI integration](docs/spec/ai-integration.md#how-a-skill-reaches-an-agent-and-what-nothing-does)). This table is the one mechanism stronger than a description.
 
 | skill | invoke it before |
 |---|---|

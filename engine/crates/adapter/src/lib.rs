@@ -2,14 +2,14 @@
 //! The CI adapters: one run of the check layer, in a vocabulary a platform
 //! reads.
 //!
-//! [Spec 6](../../../../docs/spec/06-engine-architecture.md#ci-adapters): "The
+//! [The engine architecture](../../../../docs/spec/engine-architecture.md#ci-adapters): "The
 //! engine emits findings. Adapters translate them to the native vocabulary of a
 //! platform: annotations, check runs, job summaries, review comments. Adapters
 //! are thin and swappable so that no forge is privileged in the core."
 //!
 //! # Four formats, and one dispatcher over them
 //!
-//! Spec 6 fixes the set: `text`, `json`, `sarif`, `markdown`. [`render`] writes
+//! [The engine architecture](../../../../docs/spec/engine-architecture.md) fixes the set: `text`, `json`, `sarif`, `markdown`. [`render`] writes
 //! every one of them, and it is the only place any caller turns a run into
 //! bytes. [`text`] needs the census and the graph as well as the run, so
 //! [`render`] takes all three and the three translations ignore two of them.
@@ -22,8 +22,8 @@
 //!
 //! # Why this is a crate and not a module of `headwater-check`
 //!
-//! The dependency direction is the boundary spec 8 asks for.
-//! [Departure 6](../../../../docs/spec/08-design-departures.md): "a
+//! The dependency direction is the boundary [the design departures](../../../../docs/spec/design-departures.md) asks for.
+//! [Departure 6](../../../../docs/spec/design-departures.md): "a
 //! platform-neutral core with thin adapters. No forge, tracker, or cloud is
 //! privileged. More than one adapter exists from the start, and that enforces
 //! the adapter boundary." A module inside the runner could reach a check. A
@@ -34,21 +34,21 @@
 //! buys
 //!
 //! [`Format::Sarif`] and [`Format::Markdown`] translate into two platform
-//! vocabularies that spec 6 names: a check run, which a forge ingests as SARIF,
+//! vocabularies that [the engine architecture](../../../../docs/spec/engine-architecture.md) names: a check run, which a forge ingests as SARIF,
 //! and a job summary, which a forge renders as Markdown. They lose different
 //! things, and that is the point of shipping both. One adapter cannot show
 //! where the boundary is, because everything it needs is in the core by
 //! definition.
 //!
 //! [`Format::Json`] is not an adapter. It is the finding shape
-//! [spec 4](../../../../docs/spec/04-assurance-model.md#findings) already
+//! [the assurance model](../../../../docs/spec/assurance-model.md#findings) already
 //! declares, written out, for an adapter that this repository did not write.
 //! Being nobody else's vocabulary bought it an empty loss set for a year and it
 //! does not any more: see [`json::LOSS`].
 //!
 //! # Every format declares a loss set
 //!
-//! [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped)
+//! [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped)
 //! requires an emitter to declare "the node classes, edge classes, and
 //! attributes that its target cannot carry, each with a reason". A finding is
 //! not a node, so [`Loss`] here is about a *field of a run* rather than about a
@@ -66,7 +66,7 @@
 //! No output here carries a verdict about a merge. `--strict` decides an exit
 //! status and the artifact says the same thing whether or not the flag was
 //! given, because the posture is the control's
-//! ([spec 12](../../../../docs/spec/12-check-layer.md#severity-is-the-checks-posture-is-the-controls))
+//! ([the check layer](../../../../docs/spec/check-layer.md#severity-is-the-checks-posture-is-the-controls))
 //! and the landing order is the forge's.
 
 pub mod json;
@@ -92,7 +92,7 @@ pub const TOOL_URI: &str = "https://github.com/headwater-ai/headwater";
 headwater_check::enumerated! {
     /// One output format of `headwater check`.
     ///
-    /// The set is closed by [spec 6](../../../../docs/spec/06-engine-architecture.md#cli)
+    /// The set is closed by [the engine architecture](../../../../docs/spec/engine-architecture.md#cli)
     /// and this enum is that list. It is deliberately not
     /// `headwater_generate::Emitter`: `export --format` names a vocabulary for the
     /// *graph* and `check --format` names one for the *findings*, the two lists
@@ -103,16 +103,16 @@ headwater_check::enumerated! {
         /// The report a person reads in a terminal, in the engine's own words. See
         /// [`text`].
         Text,
-        /// The finding shape spec 4 declares. Not an adapter.
+        /// The finding shape [the assurance model](../../../../docs/spec/assurance-model.md) declares. Not an adapter.
         Json,
         /// Static Analysis Results Interchange Format 2.1.0 (OASIS), which is what
         /// a forge ingests as a check run.
         Sarif,
-        /// A job summary or a review comment, which is the other vocabulary spec 6
+        /// A job summary or a review comment, which is the other vocabulary [the engine architecture](../../../../docs/spec/engine-architecture.md)
         /// names.
         Markdown,
     }
-    /// Every format, in the order spec 6 lists them.
+    /// Every format, in the order [the engine architecture](../../../../docs/spec/engine-architecture.md) lists them.
     const ALL;
 }
 
@@ -311,7 +311,7 @@ impl Carrier {
 }
 
 /// Which escape mechanism holds a finding back, in the precedence
-/// [spec 4](../../../../docs/spec/04-assurance-model.md#suppression) fixes:
+/// [the assurance model](../../../../docs/spec/assurance-model.md#suppression) fixes:
 /// waiver, then migration-pending, then suppression.
 ///
 /// Two variants rather than three, because this engine has no waiver mechanism
@@ -321,7 +321,7 @@ impl Carrier {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Escape {
     /// A task of the adoption payload holds it: declared debt with an owner and
-    /// an expiry ([spec 7](../../../../docs/spec/07-distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)).
+    /// an expiry ([distribution and federation](../../../../docs/spec/distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)).
     MigrationPending,
     /// A directive in the source hides it: one author's local judgment.
     Suppression,
@@ -369,7 +369,7 @@ impl Reported<'_> {
     }
 }
 
-/// Every finding of a run, live and escaped, in the one order spec 12 fixes.
+/// Every finding of a run, live and escaped, in the one order [the check layer](../../../../docs/spec/check-layer.md) fixes.
 ///
 /// The three sources are disjoint by construction: the runner applies the
 /// adoption payload first and the directives second, so a held finding never
@@ -422,7 +422,7 @@ pub fn reported(run: &Run) -> Vec<Reported<'_>> {
 /// What a format carried, and what its loss set accounted for.
 ///
 /// The audit of the claim a loss set makes, in the shape
-/// [spec 7](../../../../docs/spec/07-distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped)
+/// [distribution and federation](../../../../docs/spec/distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped)
 /// fixes for the graph emitters: "Every node and every edge in the graph is
 /// either present in the output, or accounted for by a declared loss reason."
 /// Here the denominator is every finding of the run rather than every node of
@@ -927,7 +927,7 @@ fn opening(line: &str) -> &str {
 /// text report as the second line of an escaped finding's record. One sentence
 /// rather than two, because a reader who compares the two artifacts of one run
 /// is comparing the reason each gives, and two spellings of one reason is the
-/// drift spec 6 makes the library API the answer to.
+/// drift [the engine architecture](../../../../docs/spec/engine-architecture.md) makes the library API the answer to.
 pub(crate) fn held_by(entry: &Reported<'_>, escape: Escape) -> String {
     match escape {
         Escape::MigrationPending => match entry.task {

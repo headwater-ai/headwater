@@ -46,7 +46,7 @@ The `<issue>` is the ruling line's, so a `Refs` merge that closes nothing still 
 
 **A ruling can reach you while you are live.** When the parent rules a merge while you are in flight, it sends you that `pull request:` line by `SendMessage` rather than dispatching a second integrator. Take it as one more line of your dispatch: check it, enqueue it after the ones you hold, settle it in turn, and report once, at the end, with every pull request you handled.
 
-**Write back the rest, because it is the part that compounds.** Comment on the issue wherever the work found it wrong, with `sh tools/run/gh-issue.sh comment <N> <file>`. Route a finding that sharpens a closed decision to spec 13, never to spec 9, which accepts no new question.
+**Write back the rest, because it is the part that compounds.** Comment on the issue wherever the work found it wrong, with `sh tools/run/gh-issue.sh comment <N> <file>`. Route a finding that sharpens a closed decision to [the register of open obligations](../../docs/spec/open-obligations.md), never to [the decision register](../../docs/spec/decisions.md), which accepts no new question.
 
 **Delete no branch.** Name the merged branch in `LEFT` and leave it: the parent lists every branch a run leaves for the owner to delete, and `tools/repo/retire-worktree.sh --retire` reads every tree and every branch, so it is never yours to run.
 

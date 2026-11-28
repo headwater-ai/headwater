@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! A Document-origin check: the constructions a voice regime forbids.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check)
+//! [The check layer](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check)
 //! puts voice first among the Document-origin examples and says what separates
 //! that origin from the two generated ones: "Document checks are the ones that
 //! no graph standard can reach, because the body is not in the graph."
@@ -14,7 +14,7 @@
 //!
 //! The **patterns** are not data, and the meta-schema says why. `voice_regime`
 //! carries one member, `forbid: {seq: {scalar: string}}`, with a comment
-//! marking it a gap: "spec 3 names the forbidden constructions in prose and no
+//! marking it a gap: "[authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) names the forbidden constructions in prose and no
 //! value set states them." So the names are an open set in the language and a
 //! closed set in this engine, and the two disagree by construction.
 //!
@@ -25,7 +25,7 @@
 //!
 //! # The patterns read author-owned sentences and nothing else
 //!
-//! [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#what-a-lexical-rule-gets-wrong-and-where-posture-comes-from)
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#what-a-lexical-rule-gets-wrong-and-where-posture-comes-from)
 //! rules that "a quotation, a code span, a citation line, and a generated block
 //! are outside every voice rule by construction. This is not an exemption that
 //! a rule declares." Nothing below declares one:
@@ -35,24 +35,24 @@
 //! # Severity, and why no fix is offered
 //!
 //! Advisory, permanently, and the reason is fixability rather than precision.
-//! [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#voice) states it
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#voice) states it
 //! after Q5 measured the alternative: "a category may become blocking only when
 //! its remediation is mechanical and total ... A category whose remediation is
 //! a rewrite stays advisory permanently, whatever its false-positive rate turns
-//! out to be." Every category here is a rewrite. Spec 3 names phased-rollout
+//! out to be." Every category here is a rewrite. [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) names phased-rollout
 //! language as the most likely candidate for a mechanical fix, and adds that
 //! nobody has built one. That is still true.
 //!
 //! # This rule is half of Q5's instrument
 //!
-//! [Q5](../../../../docs/spec/09-decisions.md#q5--voice-checking-depth) closed on
+//! [Q5](../../../../docs/spec/decisions.md#q5--voice-checking-depth) closed on
 //! a measurement of three ASD-STE100 structural rules, used as proxies, and
-//! [spec 13](../../../../docs/spec/13-open-obligations.md) records what stayed
+//! [the register of open obligations](../../../../docs/spec/open-obligations.md) records what stayed
 //! unmeasured: nobody has measured `future_intent`, `change_narration` or
 //! `phased_rollout`, "because no implementation of them exists". This file is
 //! that implementation. The other half is a human campaign, and no code
 //! discharges it: an adjudicated sample of at least 50 findings per category,
-//! under the two labels spec 4 declares.
+//! under the two labels [the assurance model](../../../../docs/spec/assurance-model.md) declares.
 //!
 //! # Two of the three categories stand at saturation, and one reports a false positive
 //!
@@ -104,7 +104,7 @@ struct Category {
 /// why the two differ and what an instance does when it meets the difference.
 ///
 /// Each pattern set is curated rather than derived, which is
-/// [Q5](../../../../docs/spec/09-decisions.md#q5--voice-checking-depth)'s own
+/// [Q5](../../../../docs/spec/decisions.md#q5--voice-checking-depth)'s own
 /// ruling: "the curated pattern set, the per-category posture and the reasoned
 /// escape hatch all stand". The sets are small on purpose. Q5 measured where a
 /// lexical checker's errors come from, and the lexicon produced approximately
@@ -136,7 +136,7 @@ const CATEGORIES: [Category; 3] = [
         name: "change_narration",
         instead: "state the position that holds, and leave the change to the decision that made it",
         // Two tiers, and the tier is a record of curation rather than a
-        // severity. Spec 3 rules that "posture per category comes from
+        // severity. Authoring and lifecycle (docs/spec/authoring-and-lifecycle.md) rules that "posture per category comes from
         // fixability and never from precision", so a less precise pattern
         // reports at the same weight as a precise one or it does not ship.
         //
@@ -161,7 +161,7 @@ const CATEGORIES: [Category; 3] = [
         // permanently false it rises from 18 of 36 to 9 of 12. What does not
         // move is the yield, because 9 genuine findings go and no numerator
         // returns them. Q5 sets membership at a phrase that plainly means a
-        // change in general English, and this one meets it. Spec 3 rules that
+        // change in general English, and this one meets it. Authoring and lifecycle (docs/spec/authoring-and-lifecycle.md) rules that
         // posture comes from fixability and never from precision, this
         // category is advisory already, and nothing in the corpus states a
         // precision floor for membership. What reopens the ruling is the trend and not the
@@ -432,7 +432,7 @@ impl DocumentCheck for Voice {
     const NEEDS_BODY: bool = true;
 
     /// A kind whose chain binds no voice regime, or one that forbids nothing,
-    /// generates no instance. The narrative regime is the second case: spec 3
+    /// generates no instance. The narrative regime is the second case: [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)
     /// makes evidence documents "time-bound by nature, and exempt", and an
     /// instance over one would count it as checked by a rule with nothing to
     /// check.
@@ -639,7 +639,7 @@ mod tests {
     /// out of the check layer altogether: the parse marks a quotation inside a
     /// sentence as another author's, `Sentence::authored` drops it, and the
     /// pattern below never receives it. So the mode is excluded by
-    /// construction rather than curated here, which is what spec 3 asks for,
+    /// construction rather than curated here, which is what [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) asks for,
     /// and `an_inline_quotation_never_reaches_a_pattern` holds the property in
     /// its place. The other five modes are unchanged and stay curated.
     /// [HW-OBL-0002](../../../../docs/obligations/0002-declarative-voice-is-called-detectable-at-useful-precision.md)
@@ -703,7 +703,7 @@ mod tests {
         assert_eq!(
             first(
                 intent,
-                "Spec 2 names orthogonality over two facets that are near-perfectly correlated: the redundant one does no work and will eventually disagree with the other.\n"
+                "The taxonomy model names orthogonality over two facets that are near-perfectly correlated: the redundant one does no work and will eventually disagree with the other.\n"
             ),
             Some("will eventually"),
             "the one `future_intent` finding of 2026-09-27 stopped matching, and the census records it as a false positive that does"
@@ -751,7 +751,7 @@ mod tests {
             !matches(
                 "The judgment \"we no longer describe it that way\" existed only as prose and a diff, so no mechanism could inherit it.\n"
             ),
-            "an inline quotation reached a voice pattern, which spec 3 puts outside every voice rule"
+            "an inline quotation reached a voice pattern, which authoring and lifecycle puts outside every voice rule"
         );
         assert!(
             matches("The corpus no longer describes it that way, and that is the change.\n"),

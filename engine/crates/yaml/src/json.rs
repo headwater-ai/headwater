@@ -18,7 +18,7 @@
 //! sequences, double-quoted strings, and plain scalars for numbers. It refuses
 //! a duplicate key, which JSON permits and no protocol message needs, and it
 //! carries no `null` or boolean type of its own
-//! ([Q2](../../../../docs/spec/09-decisions.md#q2--schema-format)), so a caller
+//! ([Q2](../../../../docs/spec/decisions.md#q2--schema-format)), so a caller
 //! reads those through [`crate::core_schema`]. Both limits are stated
 //! here because they are the whole of the difference from a JSON library.
 
@@ -197,7 +197,7 @@ fn escape(text: &str, out: &mut String) {
 /// member cannot take (a key into an array, an index past its end, or any
 /// step into a scalar), a key is absent, the member is an array or an object,
 /// or it resolves to null. A hook treats all six as "the harness said nothing", and
-/// the [hook contract](../../../../docs/spec/05-ai-integration.md#the-hook-contract-and-what-a-hook-cannot-bind)
+/// the [hook contract](../../../../docs/spec/ai-integration.md#the-hook-contract-and-what-a-hook-cannot-bind)
 /// makes that silence an outcome rather than a failure.
 pub fn field(document: &str, path: &[String]) -> Option<String> {
     let scalar = walk(document, path)?.value.as_scalar()?.clone();
@@ -315,8 +315,8 @@ mod tests {
       "stop_hook_active": true,
       "prompt": "why is the hook reading JSON with an interpreter",
       "tool_input": {
-        "file_path": "/home/a/docs/spec/05-ai-integration.md",
-        "command": "*** Begin Patch\n*** Update File: docs/spec/05-ai-integration.md\n"
+        "file_path": "/home/a/docs/spec/ai-integration.md",
+        "command": "*** Begin Patch\n*** Update File: docs/spec/ai-integration.md\n"
       },
       "pointers": [],
       "matched": [{"purpose": "rationale"}],
@@ -335,7 +335,7 @@ mod tests {
         );
         assert_eq!(
             field(PAYLOAD, &path(&["tool_input", "file_path"])).as_deref(),
-            Some("/home/a/docs/spec/05-ai-integration.md")
+            Some("/home/a/docs/spec/ai-integration.md")
         );
     }
 
@@ -356,7 +356,7 @@ mod tests {
     fn an_escape_is_resolved_rather_than_handed_back() {
         let command = field(PAYLOAD, &path(&["tool_input", "command"])).expect("it reads");
         assert!(command.contains('\n'), "the newline is a newline");
-        assert!(command.contains("*** Update File: docs/spec/05-ai-integration.md"));
+        assert!(command.contains("*** Update File: docs/spec/ai-integration.md"));
     }
 
     /// The six ways a read reaches no scalar, which a caller treats alike.

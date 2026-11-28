@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Q13](../spec/09-decisions.md#q13--linkml-and-shacl-as-substrate) rules that emitters never chain and stages six of them. Whether the RDF emitter carries `owl:inverseOf` is open. The inverse infers the reciprocal half of every edge that `reciprocal: required` exists to report as missing.
+[Q13](../spec/decisions.md#q13--linkml-and-shacl-as-substrate) rules that emitters never chain and stages six of them. Whether the RDF emitter carries `owl:inverseOf` is open. The inverse infers the reciprocal half of every edge that `reciprocal: required` exists to report as missing.
 
 ## Obligation
 
@@ -30,4 +30,4 @@ Over this corpus the inverse manufactures 332 edges that no author declared, whi
 
 ## Discharge
 
-The [worked example](../evaluations/owl-skos-worked-example.md) argues to omit the inverse. That emitter met a second obstacle here, because 22 of this repository's 36 documents carried no discriminator on a heterogeneous shelf. The [typing pass](../spec/13-open-obligations.md#what-the-first-typing-of-this-corpus-found) removed it, so an instance export now reads each kind, identifier and edge rather than derives it.
+The [worked example](../evaluations/owl-skos-worked-example.md) argues to omit the inverse. That emitter met a second obstacle here, because 22 of this repository's 36 documents carried no discriminator on a heterogeneous shelf. The [typing pass](../spec/open-obligations.md#what-the-first-typing-of-this-corpus-found) removed it, so an instance export now reads each kind, identifier and edge rather than derives it.

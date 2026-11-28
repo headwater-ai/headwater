@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The deterministic query surface: reads of the graph a run already built.
 //!
-//! [Spec 6](../../../../docs/spec/06-engine-architecture.md#library) makes the
+//! [The engine architecture](../../../../docs/spec/engine-architecture.md#library) makes the
 //! CLI "a thin shell over a library API — load, graph, check, query, generate",
 //! and says that "The MCP server consumes the library in the same process."
 //! This crate is `query`. It adds no phase to a
@@ -9,9 +9,9 @@
 //! carries the edges and the identifier index, and every answer here is a
 //! projection of those two.
 //!
-//! # What ships, and why the list is spec 5's rather than spec 6's
+//! # What ships, and why the list is [AI integration](../../../../docs/spec/ai-integration.md)'s rather than [the engine architecture](../../../../docs/spec/engine-architecture.md)'s
 //!
-//! [Spec 5](../../../../docs/spec/05-ai-integration.md#agent-surfaces) names
+//! [AI integration](../../../../docs/spec/ai-integration.md#agent-surfaces) names
 //! the tools of the query class: `route`, `governing_docs_for_path`,
 //! `resolve_identifier`, `related`, `explain`, `check`, `kinds`. The first five
 //! are the reads of the graph here, and [`kinds`] is the one read of the
@@ -20,17 +20,17 @@
 //! clock, the declarations and the two structures the walk produced, all of
 //! them decided by whoever started the server.
 //!
-//! Spec 6's CLI list also holds `headwater query <expression>`, and no document
+//! [The engine architecture](../../../../docs/spec/engine-architecture.md)'s CLI list also holds `headwater query <expression>`, and no document
 //! of the specification states what an expression is. This crate therefore has
 //! no `query` function, and
-//! [13 — Open obligations](../../../../docs/spec/13-open-obligations.md)
+//! [Open obligations](../../../../docs/spec/open-obligations.md)
 //! carries the gap. The posture is the resolver's over a `$package` reference:
 //! name the gap rather than invent a form and have every later adopter live
 //! with it.
 //!
 //! # Determinism, concretely
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
+//! [The check layer](../../../../docs/spec/check-layer.md#determinism-concretely)
 //! binds the check layer to "same corpus, same lock, same injected clock,
 //! byte-identical output", and a read that an agent depends on is held to the
 //! same bar. Three rules carry it here.
@@ -45,7 +45,7 @@
 //!
 //! # A read never returns content
 //!
-//! Spec 5: "A task description resolves to a ranked set of **pointers**: a
+//! [AI integration](../../../../docs/spec/ai-integration.md): "A task description resolves to a ranked set of **pointers**: a
 //! path, the name the document declares, a one-line summary, and never
 //! content." So [`Pointer`]
 //! carries a path, a summary and the facts a reader needs to decide whether to
@@ -69,7 +69,7 @@ use headwater_graph::declarations::{Declarations, Direction, Governs};
 use headwater_graph::{Config, Edge, Graph, Target};
 use headwater_yaml::Mapping;
 
-/// The facet role that carries the routing cue, from spec 2's closed registry.
+/// The facet role that carries the routing cue, from [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s closed registry.
 const SCENT: &str = "scent";
 
 /// The facet role that carries what a document is called, from the same
@@ -77,7 +77,7 @@ const SCENT: &str = "scent";
 /// name: `title` means something in one taxonomy and nothing in the next.
 const NAME: &str = "name";
 
-/// The warrant value that spec 5 makes a pointer state out loud.
+/// The warrant value that [AI integration](../../../../docs/spec/ai-integration.md) makes a pointer state out loud.
 const ASSERTED: &str = headwater_doc::ASSERTED;
 
 /// The reads, over one census and the graph built from it.
@@ -151,11 +151,11 @@ pub struct Pointer {
     /// The `scent` facet: the cue a reader decides on.
     pub summary: Option<String>,
     /// Whether no acceptance is read from the document's warrant, which a
-    /// reader must be told. Spec 5: a pointer to an `asserted` document "states
+    /// reader must be told. [AI integration](../../../../docs/spec/ai-integration.md): a pointer to an `asserted` document "states
     /// that warrant beside the summary", because nobody accepted the document
     /// and an agent that follows the pointer has to know before it reads.
     ///
-    /// A declared warrant outside spec 3's closed set sets it too. Nothing in
+    /// A declared warrant outside [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s closed set sets it too. Nothing in
     /// `acepted` or `proposed` says a person read the document, and a pointer
     /// that served one as vouched is the defect #1438 found.
     pub unwarranted: bool,
@@ -197,7 +197,7 @@ pub struct Neighbour {
     /// inbound edge gives the path of the document that declared it. Never
     /// empty, and `target` is always these joined by `, `.
     pub targets: Vec<String>,
-    /// Spec 5: "`related` and `explain` serve the cue where one exists, and the
+    /// [AI integration](../../../../docs/spec/ai-integration.md): "`related` and `explain` serve the cue where one exists, and the
     /// target's summary otherwise."
     pub cue: Option<String>,
     /// Whether the cue came from the edge rather than from the target.
@@ -280,7 +280,7 @@ impl<'a> Surface<'a> {
     /// The graph this surface reads.
     ///
     /// Every other read here is a projection of the graph and hands back a
-    /// pointer or a neighbour, because spec 5 rules that "a read never returns
+    /// pointer or a neighbour, because [AI integration](../../../../docs/spec/ai-integration.md) rules that "a read never returns
     /// content". An export is the one caller that needs the graph itself: it
     /// carries the property graph rather than an answer computed from it, and a
     /// second traversal built out of [`Surface::related`] would be a second
@@ -303,7 +303,7 @@ impl<'a> Surface<'a> {
     /// the files that a projection took over.
     ///
     /// That disagreement was live, and nothing reported it. `docs/spec/README.md`
-    /// indexes the `spec_series` shelf; `docs/spec/09-open-questions.md` is a
+    /// indexes the `spec_series` shelf; `docs/spec/open-questions.md` is a
     /// document of that shelf, carrying an identifier that three edges and 136
     /// citations reach; and the index dropped the row on the day a projection
     /// took the path. The export called its own node set "every node the census
@@ -312,7 +312,7 @@ impl<'a> Surface<'a> {
     /// So a shelf index is the set of *documents*, and never the set of
     /// documents that a human typed. Which verb writes a file is a fact about
     /// its maintenance, and
-    /// [spec 6](../../../../docs/spec/06-engine-architecture.md#projections)
+    /// [the engine architecture](../../../../docs/spec/engine-architecture.md#projections)
     /// spends that fact on excusing the file from checks. It is not a fact
     /// about whether the corpus holds the document, and no reader of an index
     /// asks the first question.
@@ -345,7 +345,7 @@ impl<'a> Surface<'a> {
     /// The document at a path, or the one an identifier names.
     ///
     /// A path is tried first, because a path is what a reader has in hand when
-    /// they ask. Both are accepted at one argument because spec 6 writes the
+    /// they ask. Both are accepted at one argument because [the engine architecture](../../../../docs/spec/engine-architecture.md) writes the
     /// verb as `headwater explain <path|identifier>`.
     pub fn find(&self, target: &str) -> Option<Document<'a>> {
         if let Some(document) = self.census.rows.iter().find(|row| row.path == target) {
@@ -359,7 +359,7 @@ impl<'a> Surface<'a> {
             .and_then(|row| self.of(row))
     }
 
-    /// The identifier index, as a read: spec 5's `resolve_identifier`.
+    /// The identifier index, as a read: [AI integration](../../../../docs/spec/ai-integration.md)'s `resolve_identifier`.
     ///
     /// A miss that an untyped document declares verbatim reports that
     /// document's path rather than a bare "not found", because "fix this
@@ -387,7 +387,7 @@ impl<'a> Surface<'a> {
         }
     }
 
-    /// The documents that govern a path: spec 5's `governing_docs_for_path`.
+    /// The documents that govern a path: [AI integration](../../../../docs/spec/ai-integration.md)'s `governing_docs_for_path`.
     ///
     /// [HW-DR-0074](../../../../docs/decisions/0074-a-code-path-anchor-is-a-pattern-over-the-tree-and-it-binds-when-the-pattern-matches-at-least-one-entry.md):
     /// "a query about a path matches the path against every pattern of every
@@ -397,7 +397,7 @@ impl<'a> Surface<'a> {
     /// pattern (or list of patterns) admits `path`. A document target still
     /// answers by equality: a document's own identity is one identifier and
     /// never a pattern. The relation has to be one whose source governs, which
-    /// is spec 2's derivation and not a name this function knows: an adopter
+    /// is [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s derivation and not a name this function knows: an adopter
     /// who declares a governance relation of their own gets it for nothing.
     pub fn governing_docs_for_path(&self, path: &str) -> Vec<Pointer> {
         let mut pointers: Vec<Pointer> = Vec::new();
@@ -430,7 +430,7 @@ impl<'a> Surface<'a> {
         })
     }
 
-    /// Every edge that reaches this document or leaves it: spec 5's `related`.
+    /// Every edge that reaches this document or leaves it: [AI integration](../../../../docs/spec/ai-integration.md)'s `related`.
     ///
     /// Both directions, because a reader who holds a document is owed what
     /// points at it as much as what it points at. The order is the declaration
@@ -476,7 +476,7 @@ impl<'a> Surface<'a> {
             },
         };
         let pointer = far.as_ref().map(|document| self.pointer(document));
-        // Spec 5: the cue where one exists, and the target's summary otherwise.
+        // AI integration (docs/spec/ai-integration.md): the cue where one exists, and the target's summary otherwise.
         // The cue is an attribute the referring document wrote, so it stands on
         // the outbound reading of the edge and never on the inbound one: a
         // reader arriving from the far end did not read that text.
@@ -835,7 +835,7 @@ pub fn outside_text(target: &str) -> String {
 /// scale a corpus works at, and it costs a comparison against every declared
 /// purpose.
 ///
-/// This is deliberately not a tokenizer with a language model behind it. Spec 5
+/// This is deliberately not a tokenizer with a language model behind it. [AI integration](../../../../docs/spec/ai-integration.md)
 /// makes routing "a search over the corpus's intentional structure, not over
 /// its prose", so the words here are matched against declarations that an
 /// author wrote, and the engine holds no vocabulary of its own.

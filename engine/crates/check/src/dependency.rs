@@ -5,7 +5,7 @@
 //!
 //! # The gap this closes
 //!
-//! [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#lifecycle)
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#lifecycle)
 //! lists this among the rules the engine enforces from the declaration alone:
 //! "a live document may not depend on a terminal one through a relation
 //! declared `lifecycle_sensitive`". The declaration existed and no rule read
@@ -19,8 +19,8 @@
 //!
 //! The five states of the base vocabulary carry a `role`, and
 //! [`crate::lifecycle_state::StateFacet::standing`] is the one component that
-//! folds them into the two words spec 3 states its rule in. Nothing here holds
-//! a list of state names, so a taxonomy that renames every state — spec 2's own
+//! folds them into the two words [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) states its rule in. Nothing here holds
+//! a list of state names, so a taxonomy that renames every state — [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s own
 //! worked overlay does — is read by this rule unchanged.
 //!
 //! # What the relation itself declares, and the case that is not a dependency
@@ -30,7 +30,7 @@
 //! reaching a terminal one through a succession relation would report every
 //! correct supersession in the corpus, and the remedy would be to delete the
 //! lineage that the same core requirement exists to retain
-//! ([spec 2](../../../../docs/spec/02-taxonomy-model.md#the-immutable-core):
+//! ([the taxonomy model](../../../../docs/spec/taxonomy-model.md#the-immutable-core):
 //! dropping the `terminal-retained` role fails resolution "because succession
 //! could no longer retain lineage, which the core requires").
 //!
@@ -38,7 +38,7 @@
 //! beside the target's state. Where the two are equal, this edge is the cause
 //! of the state rather than a dependency on it, and there is nothing to report.
 //! Where they differ, a live document is resting on a document that some other
-//! history retired, and that is spec 3's finding. The distinction is read off
+//! history retired, and that is [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s finding. The distinction is read off
 //! two declarations and no exception is written into this engine.
 //!
 //! # Which rule owns which case
@@ -59,7 +59,7 @@
 //!
 //! # A terminal source is deliberately silent
 //!
-//! Spec 3's sentence is about a **live** document and says nothing about a
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s sentence is about a **live** document and says nothing about a
 //! terminal one. A retired document's citations are part of the record it was
 //! retired with: re-pointing them would rewrite what that document said when it
 //! stood, and there is no live claim resting on the target either way. So a
@@ -76,14 +76,14 @@
 //! The unit is [`EdgeUnit::Pair`], which is the Q4 triple: a source, a relation
 //! and a target document. Both endpoints are documents by construction there,
 //! which is what this rule needs and what [`crate::target`] could not use.
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#scope--the-declaration-everything-else-rests-on)
+//! [The check layer](../../../../docs/spec/check-layer.md#scope--the-declaration-everything-else-rests-on)
 //! fixes an edge-scoped read set at one relation instance and both endpoints,
 //! so the two states this rule reads are both in the read set that keys it. An
 //! edit to either end moves the key.
 //!
 //! # The severity is advisory, and the finding carries no patch
 //!
-//! The [fixability](../../../../docs/spec/12-check-layer.md#fixability) bar is
+//! The [fixability](../../../../docs/spec/check-layer.md#fixability) bar is
 //! whether the remediation is mechanical and total. It is neither here. The
 //! repair is a successor to point at, a retirement of the citing document, or a
 //! judgment that the citation stands anyway, and only an author knows which.
@@ -205,7 +205,7 @@ impl EdgeCheck for Dependency<'_> {
             }
         };
 
-        // A source that is not live is not what spec 3's sentence is about, and
+        // A source that is not live is not what authoring and lifecycle's (docs/spec/authoring-and-lifecycle.md) sentence is about, and
         // that is a pass rather than a skip: the rule looked at both ends and
         // found nothing to report.
         if self.facet.standing(source_state) != Standing::Live {

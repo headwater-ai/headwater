@@ -7,7 +7,7 @@
 //! corpus did not ask for passed or failed by accident, and nothing said which
 //! engine the corpus had been written for. The consumer declaration now carries
 //! one top-level line, `engine: "<range>"`, in the syntax of a package's
-//! `requires_engine` (spec 7, Consuming).
+//! `requires_engine` ([distribution and federation](../../../../docs/spec/distribution-and-federation.md), Consuming).
 //!
 //! # The cases
 //!

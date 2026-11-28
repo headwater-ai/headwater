@@ -14,7 +14,7 @@
 //!
 //! # Why the accounting is the case that matters
 //!
-//! A step declares which of spec 2's six dimensions it remedies by the subject
+//! A step declares which of [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s six dimensions it remedies by the subject
 //! it names, and a claim of that shape is worth nothing until something
 //! measures it. So the first case publishes a candidate that moves three
 //! lifecycle values, runs `taxonomy diff` over a corpus that carries all three,
@@ -181,7 +181,7 @@ fn register_payload(target: &str) -> String {
 ///
 /// No step of the migration vocabulary reaches this. `Subject` names a facet
 /// value, a kind and an overlay address, and a facet that became required has
-/// no old value for a `facet_value` step to move. Spec 7 (*The migration
+/// no old value for a `facet_value` step to move. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) (*The migration
 /// payload*) states that absence and names what an adopter does instead, which
 /// is what [`an_apply_leaves_an_adoption_block_that_infer_can_add_to`]
 /// measures.
@@ -240,7 +240,7 @@ fn inert_payload() -> String {
 /// ships. `docs/taxonomies/standards-spec/bundle.yml` declares
 /// `add.kinds.standard`, and an `add` over a key the base declares is refused at
 /// merge, so a base that renamed `specification` to `standard` would be a
-/// package no consumer of that bundle could resolve. Spec 7 makes every subset
+/// package no consumer of that bundle could resolve. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) makes every subset
 /// resolvable a property of the release, so the refusal is right and the
 /// candidate was quietly wrong while nothing read a bundle here.
 fn address() -> Vec<(&'static [&'static str], &'static [&'static str])> {
@@ -260,7 +260,7 @@ fn address() -> Vec<(&'static [&'static str], &'static [&'static str])> {
 ///
 /// This repository's own overlay addresses exactly one kind that the base
 /// declares. It is `kinds.decision.language`, which
-/// [Q27](../../../../docs/spec/09-decisions.md#q27--whether-a-decision-record-is-governed-prose)
+/// [Q27](../../../../docs/spec/decisions.md#q27--whether-a-decision-record-is-governed-prose)
 /// added, and `specification` is the base kind it does not reach. This section
 /// needs an entry over a base kind that the candidate renames, and the overlay's
 /// one entry is over the wrong member: [`Root::without`] explains that renaming
@@ -805,7 +805,7 @@ fn a_document_no_step_names_is_named() {
 
 /// A closed choice with nothing that settles it stops the publish.
 ///
-/// Spec 2 emits the judgment half "as a task list with the affected documents
+/// [The taxonomy model](../../../../docs/spec/taxonomy-model.md) emits the judgment half "as a task list with the affected documents
 /// attached". A step that leaves a choice and names no task is a question that
 /// list would never carry.
 #[test]
@@ -922,7 +922,7 @@ fn a_major_upgrade_with_no_payload_is_reported() {
 /// that reports a document. The accounting therefore comes from the
 /// classification half alone, which no other case reaches.
 ///
-/// The isolation is built rather than assumed. [Q27](../../../../docs/spec/09-decisions.md#q27--whether-a-decision-record-is-governed-prose)
+/// The isolation is built rather than assumed. [Q27](../../../../docs/spec/decisions.md#q27--whether-a-decision-record-is-governed-prose)
 /// binds the house language regime to `decision`, and that kind comes from the
 /// base, so the copied overlay is what takes three rules off three documents
 /// when the rename lands. [`Root::without`] removes the line first.
@@ -1028,12 +1028,12 @@ fn a_target_no_bundle_declares_stops_the_publish() {
 /// the source half is held against the base alone.
 ///
 /// The base alone is what a consumer who selects no bundle resolves, and a
-/// bundle is add-only ([spec 2](../../../../docs/spec/02-taxonomy-model.md#customization-by-composition)),
+/// bundle is add-only ([the taxonomy model](../../../../docs/spec/taxonomy-model.md#customization-by-composition)),
 /// so a value the base declares is declared under every selection. That is what
 /// "renames something that did not move" means, and it is the only reading of it
 /// a publisher can certify. A value only a bundle declares moved for the
 /// consumers who selected that bundle and for no other, and a payload step
-/// states no condition. Widening this half would refuse the migration spec 7
+/// states no condition. Widening this half would refuse the migration [distribution and federation](../../../../docs/spec/distribution-and-federation.md)
 /// most expects instead: content moving out of the base and into a bundle, told
 /// to base-only consumers as a re-statement.
 ///
@@ -1391,7 +1391,7 @@ fn apply_with_no_pinned_digest_writes_no_migration_state() {
 
 /// The lock `--apply` leaves is one `headwater infer --write` can add to.
 ///
-/// Spec 7 makes `taxonomy migrate` the first verb of an upgrade and `infer` the
+/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) makes `taxonomy migrate` the first verb of an upgrade and `infer` the
 /// verb that records what the upgrade broke as debt. Between them stands
 /// [`merged`](../src/main.rs), which refuses an adoption block that declares no
 /// `tasks` key, because a payload written over an authored block would discard
@@ -1452,7 +1452,7 @@ fn an_apply_leaves_an_adoption_block_that_infer_can_add_to() {
     assert_eq!(
         inferred.code,
         Some(0),
-        "the verb spec 7 names next can add to the block --apply left: {inferred:?}"
+        "the verb distribution and federation names next can add to the block --apply left: {inferred:?}"
     );
     let lock = root.read(".headwater/taxonomy.lock");
     assert!(
@@ -1551,11 +1551,11 @@ fn apply_carries_a_standing_task_list_through() {
 
 /// The closing sentence of a diff names a route the adopter can take.
 ///
-/// "Spec 2 makes a major version ship one" is true of every break a step can
+/// "[The taxonomy model](../../../../docs/spec/taxonomy-model.md) makes a major version ship one" is true of every break a step can
 /// express, and it is an instruction to write a file the format cannot hold
 /// where the break is a facet that became required. So the sentence forks on
 /// what broke: a break every rule of which is `facet.required.missing` names
-/// `infer --write`, and every other break keeps the sentence spec 2 states.
+/// `infer --write`, and every other break keeps the sentence [the taxonomy model](../../../../docs/spec/taxonomy-model.md) states.
 #[test]
 fn a_break_no_step_reaches_names_infer_rather_than_a_payload() {
     let root = Root::new("no-step-reaches-it");
@@ -1581,7 +1581,8 @@ fn a_break_no_step_reaches_names_infer_rather_than_a_payload() {
         "and it names the route that is reachable: {ran:?}"
     );
     assert!(
-        !ran.out.contains("Spec 2 makes a major version ship one"),
+        !ran.out
+            .contains("The taxonomy model makes a major version ship one"),
         "and it does not also ask for the file it just said cannot be written: {ran:?}"
     );
 }
@@ -1601,7 +1602,8 @@ fn a_break_a_step_reaches_still_asks_for_a_payload() {
     let ran = root.diff("2.0.0");
     assert_eq!(ran.code, Some(0), "{ran:?}");
     assert!(
-        ran.out.contains("Spec 2 makes a major version ship one"),
+        ran.out
+            .contains("The taxonomy model makes a major version ship one"),
         "a break the vocabulary reaches is a payload the publisher owes: {ran:?}"
     );
     assert!(
@@ -1647,7 +1649,7 @@ fn a_classification_only_break_still_asks_for_a_payload() {
     assert!(
         ran.out.contains(
             "the artifact ships no migration payload for 1.0.0 to 2.0.0, and 3 documents \
-             stopped validating. Spec 2 makes a major version ship one"
+             stopped validating. The taxonomy model makes a major version ship one"
         ),
         "a kind step reaches this break, so the publisher owes the file: {ran:?}"
     );
@@ -1728,7 +1730,7 @@ fn an_add_over_a_path_the_new_base_dropped_is_named_with_the_entry_that_makes_it
     }
     assert!(
         ran.out.contains("this change requires a major version"),
-        "spec 2: any dimension broken forces a major: {ran:?}"
+        "the taxonomy model: any dimension broken forces a major: {ran:?}"
     );
 }
 
@@ -2128,7 +2130,8 @@ fn a_lock_already_on_the_artifacts_version_is_refused() {
             "and says what that leaves this run nothing to do: {ran:?}"
         );
         assert!(
-            !ran.err.contains("Spec 2 makes a major version ship one"),
+            !ran.err
+                .contains("The taxonomy model makes a major version ship one"),
             "the publisher shipped a sound artifact: {ran:?}"
         );
         assert!(
@@ -2216,4 +2219,66 @@ fn repoint_bundles(package: &std::path::Path) {
 fn bundles_line() -> String {
     let up = "../".repeat(headwater_resolve::package::PACKAGES.split('/').count() + 1);
     format!("  bundles: {up}docs/taxonomies")
+}
+
+/// The payload headwater/standard ships for the 4.x to 5.x upgrade, in the
+/// authored source and in the vendored copy, migrates to the 5.x line and from
+/// the 4.x line, and to nothing wider (HW-DR-0117).
+///
+/// `taxonomy publish` refuses a `to` range that the artifact's own version does
+/// not answer to, so a range moved to `>=6 <7` is refused at the next publish.
+/// A range widened to `>=5` publishes and is wrong: a consumer on a 6.x release
+/// would select a 4-to-5 payload for an upgrade it does not describe. Nothing
+/// held that half until this case, and the version check alone cannot.
+#[test]
+fn the_shipped_four_to_five_payload_migrates_to_the_five_line_alone() {
+    use headwater_resolve::release::satisfies;
+    let root = repository();
+    let mut seen = Vec::new();
+    for at in [
+        "taxonomy-source/headwater-standard",
+        ".headwater/packages/headwater-standard",
+    ] {
+        let path = root.join(at).join("migrations/4-to-5.yml");
+        let text = std::fs::read_to_string(&path).expect("the shipped payload reads");
+        let payload = headwater_resolve::migration::read(&text, "migrations/4-to-5.yml")
+            .unwrap_or_else(|refused| panic!("{at}: the payload reads: {refused:?}"));
+        let manifest =
+            std::fs::read_to_string(root.join(at).join("package.yml")).expect("the manifest reads");
+        let version = manifest
+            .lines()
+            .find_map(|line| line.strip_prefix("version: "))
+            .expect("the manifest states a version")
+            .trim()
+            .to_string();
+        let admits = |range: &str, v: &str| satisfies(range, v).expect("the range reads");
+        assert!(
+            admits(&payload.to, &version),
+            "{at}: `to` admits the version it ships with, {version}"
+        );
+        assert!(
+            !admits(&payload.from, &version),
+            "{at}: `from` does not admit {version}"
+        );
+        for v in ["5.0.0", "5.9.9"] {
+            assert!(admits(&payload.to, v), "{at}: `to` admits {v}");
+        }
+        for v in ["4.9.9", "6.0.0", "7.1.0"] {
+            assert!(
+                !admits(&payload.to, v),
+                "{at}: `to` admits no {v}, which this payload does not reach"
+            );
+        }
+        for v in ["4.0.0", "4.9.9"] {
+            assert!(admits(&payload.from, v), "{at}: `from` admits {v}");
+        }
+        for v in ["3.9.9", "5.0.0"] {
+            assert!(!admits(&payload.from, v), "{at}: `from` admits no {v}");
+        }
+        seen.push((payload.from, payload.to));
+    }
+    assert_eq!(
+        seen[0], seen[1],
+        "the vendored copy states the source's ranges"
+    );
 }

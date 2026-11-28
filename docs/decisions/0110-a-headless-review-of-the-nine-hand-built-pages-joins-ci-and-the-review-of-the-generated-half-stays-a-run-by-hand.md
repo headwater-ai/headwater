@@ -42,7 +42,7 @@ The last run flagged 81 of the 623 pages. Each flag names a wide table that the 
 Three steps join the CI job that runs the console check, beside it:
 
 1. `python3 tools/site/review-site.py site`. It fails when a hand-built page scrolls sideways at either width, or when its first focusable element shows no focus indicator.
-2. `sh tools/site/site-review-fixtures.sh`. Spec 12 refuses a check that has no failing fixture. The decisive case is a page 1000 pixels wide, which the review must flag at 390 pixels and not at 1280.
+2. `sh tools/site/site-review-fixtures.sh`. [The check layer](../spec/check-layer.md) refuses a check that has no failing fixture. The decisive case is a page 1000 pixels wide, which the review must flag at 390 pixels and not at 1280.
 3. `sh tools/site/site-figures-fixtures.sh`. It fails when a hand-built page names a release, a Rust floor or a platform that disagrees with `README.md`, `engine/Cargo.toml` or `.github/workflows/release.yml`.
 
 The first two exit 3 when the runner has no browser. The step then writes a warning annotation and passes, as the console step does. The three add about 16 seconds to a run.

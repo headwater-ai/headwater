@@ -52,7 +52,7 @@ The list sits on the regime and not on a separate key, for two reasons. Each pat
 
 **2. Three kinds of entry are refused when the taxonomy resolves.** A pattern that matches a path inside the corpus root is refused. A path inside the root is placed, and placement is the one way it gets a kind. A pattern that leaves the repository, by `..` or by an absolute path, is refused. A path that two regimes list is refused, because it would then answer to two regimes. A pattern that matches no file is reported by name, on the terms HW-DR-0074 states for an anchor that matches nothing.
 
-**3. Such a path is not a document.** It is not a kind and not a member of the census. It owes no front matter, no identifier and no lifecycle state. It is a path that carries a language regime, and nothing more. This is the second route by which a rule reaches text. Spec 2 stated one route until this record.
+**3. Such a path is not a document.** It is not a kind and not a member of the census. It owes no front matter, no identifier and no lifecycle state. It is a path that carries a language regime, and nothing more. This is the second route by which a rule reaches text. [The taxonomy model](../spec/taxonomy-model.md) stated one route until this record.
 
 **4. Three rules reach such a path, and they are named here.** Each reads the regime that lists the path, on the same terms as for a document that a kind binds:
 
@@ -79,7 +79,7 @@ The list sits on the regime and not on a separate key, for two reasons. Each pat
 
 **HW-DR-0056 is amended and not superseded.** Its decision stands: the doctrine page of the starter kit carries the writing profile, and no package does. Its premise, that a regime reaches prose only through a kind, becomes one of two routes. The doctrine page names `outside_root` when the engine reads it.
 
-**Spec 2 states the second route** under [Language is declared, not assumed](../spec/02-taxonomy-model.md#language-is-declared-not-assumed), and it cites this record.
+**[The taxonomy model](../spec/taxonomy-model.md) states the second route** under [Language is declared, not assumed](../spec/taxonomy-model.md#language-is-declared-not-assumed), and it cites this record.
 
 **The overlay comment on `adopter_documents`** now says that the three language rules hold the root `README.md`, and that no surface rule does.
 

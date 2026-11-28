@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
-//! The run in the finding shape spec 4 already declares.
+//! The run in the finding shape [the assurance model](../../../../docs/spec/assurance-model.md) already declares.
 //!
-//! [Spec 4](../../../../docs/spec/04-assurance-model.md#findings) fixes it:
+//! [The assurance model](../../../../docs/spec/assurance-model.md#findings) fixes it:
 //! "Every finding, from every mechanism, has one shape", and the worked
 //! document there carries `rule`, `severity`, `obligation`, `path`, `line`,
 //! `message`, `remediation` and `fixable`. Those eight members are the members
@@ -11,7 +11,7 @@
 //! # This is not an adapter, and the distinction is the point of the crate
 //!
 //! No platform reads this. It is the neutral surface that
-//! [spec 8](../../../../docs/spec/08-design-departures.md) leaves for an
+//! [the design departures](../../../../docs/spec/design-departures.md) leaves for an
 //! adapter that this repository did not write: a forge, a tracker or a cloud
 //! that nobody here privileged, whose author reads bytes rather than links a
 //! Rust library. The two adapters beside it — [`crate::sarif`] and
@@ -236,7 +236,7 @@ pub fn change(scoped: &Scoped) -> Json {
 ///
 /// One shape with two readers, for the reason [`change`] is one. The four counts
 /// were the whole of it until #233: a consumer read `3498 instances` and could
-/// not see that 585 of them reached no verdict, which crosses spec 4's rule that
+/// not see that 585 of them reached no verdict, which crosses [the assurance model](../../../../docs/spec/assurance-model.md)'s rule that
 /// a skip is visible rather than silent.
 ///
 /// **Every member is written on every run, including a zero and an empty list.**

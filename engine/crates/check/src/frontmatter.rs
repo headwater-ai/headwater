@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The prose a document writes in its front matter, for the rules that read it.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check)
+//! [The check layer](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check)
 //! held the Document origin to the body for two editions, and a `summary` is
 //! prose that `headwater generate` publishes verbatim onto a shelf index. So the
 //! most-read line of a document answered to no rule.
@@ -15,7 +15,7 @@
 //!
 //! Every other role stays out. A facet in the `name` role is a title a reader
 //! scans, it holds no verb, and a sentence-length rule over one reports a defect
-//! whose only repair is a rename. Spec 12 states the whole ruling and the
+//! whose only repair is a rename. [The check layer](../../../../docs/spec/check-layer.md) states the whole ruling and the
 //! condition that reopens it.
 //!
 //! # Every position is the position of the value

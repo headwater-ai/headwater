@@ -5,7 +5,7 @@ status: current
 status_since: 2026-08-12
 waiting_on: build
 last_verified: 2026-08-13
-summary: "Spec 12 names two causes for a document with zero instances, and the one this corpus met is neither."
+summary: "The check layer names two causes for a document with zero instances, and the one this corpus met is neither."
 provenance:
   warrant: accepted
   agency: mixed
@@ -22,13 +22,13 @@ relations:
 
 ## Context
 
-[Spec 12](../spec/12-check-layer.md#instances-and-why-coverage-needs-them) rules that a document with zero instances is a finding. It names two causes: a shelf pattern that is wrong, or a file in the wrong place.
+[The check layer](../spec/check-layer.md#instances-and-why-coverage-needs-them) rules that a document with zero instances is a finding. It names two causes: a shelf pattern that is wrong, or a file in the wrong place.
 
 The runner reported three such documents in this repository when it landed, and neither cause held for any of them. Each one sat on the shelf that its author intended, and the taxonomy declared no rule that read its kind. That is the ordinary state of a young taxonomy rather than a defect in the corpus.
 
 ## Obligation
 
-Either spec 12 names the third cause, or the remediation prose says what a reader is to do about it.
+Either [the check layer](../spec/check-layer.md) names the third cause, or the remediation prose says what a reader is to do about it.
 
 ## Discharge
 

@@ -4,10 +4,10 @@
 //!
 //! # The gap this closes
 //!
-//! [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two)
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two)
 //! already rules it, and has since the table of three honest states was
 //! written: "A pointer to a document with the `asserted`
-//! [warrant](../../../../docs/spec/01-conceptual-model.md#warrant) does not
+//! [warrant](../../../../docs/spec/conceptual-model.md#warrant) does not
 //! support `evidenced`, because such a document is neither external nor
 //! auditable. A fabricated *why* with a file name is the failure that this
 //! table exists to prevent."
@@ -19,7 +19,7 @@
 //! # What it reads, and why neither value comes from a declaration
 //!
 //! Both values live in the provenance block, which
-//! [spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed)
+//! [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#provenance-is-recorded-not-assumed)
 //! makes the engine's rather than a taxonomy's: "The provenance block is the
 //! exception, and its shape belongs to the engine." So no taxonomy declares a
 //! warrant and none declares an evidence basis, and this rule reads both
@@ -29,7 +29,7 @@
 //!
 //! # The family is read, and never one relation name
 //!
-//! Spec 3 says *a pointer*, and the pointers that carry evidential weight are
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) says *a pointer*, and the pointers that carry evidential weight are
 //! the `evidence` family. That name is not this rule's invention: the
 //! meta-schema owns the closed set of six families, `evidence` is one of them,
 //! and `headwater_graph::declarations::Relation::family` reads it as written.
@@ -55,13 +55,13 @@
 //! and most claim `evidenced`.
 //!
 //! Which end is which is the relation's declaration, `evidence_at`, and never
-//! this rule's guess. Spec 2 leaves the direction of a relation to its author,
+//! this rule's guess. [The taxonomy model](../../../../docs/spec/taxonomy-model.md) leaves the direction of a relation to its author,
 //! so the family cannot supply it. For most relations the evidence is the
 //! **target**: `traces_to` points from the claim to what it rests on, and that
 //! is the reading when a relation declares `to` or nothing. `discharges`
 //! points the other way. The evaluation at the source end substantiates the
 //! obligation at the target end, so it declares `evidence_at: from`, and the
-//! rule reads the claim at the target and the warrant at the source. Spec 1
+//! rule reads the claim at the target and the warrant at the source. [The conceptual model](../../../../docs/spec/conceptual-model.md)
 //! says why: "An asserted document does not discharge an evidence obligation."
 //! An edition that read every relation one way reported an evidenced evaluation
 //! for discharging an asserted obligation, and passed an asserted evaluation
@@ -75,7 +75,7 @@
 //!
 //! # A value outside the closed set supports nothing
 //!
-//! `proposed` is a warrant this corpus writes and spec 3's closed set does not
+//! `proposed` is a warrant this corpus writes and [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s closed set does not
 //! name;
 //! [HW-OBL-0125](../../../../docs/obligations/0125-nine-documents-state-a-warrant-outside-the-closed-set-and-only-a-person-can-set-the-value.md)
 //! holds the nine documents that do. An earlier edition passed it, because it
@@ -92,7 +92,7 @@
 //!
 //! # A generated target declares no warrant and has one
 //!
-//! Spec 3 again: "The engine derives `regenerated` from the marker, and never
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) again: "The engine derives `regenerated` from the marker, and never
 //! from a declaration. A generated file that declares no front matter has no
 //! block in which to state a warrant. A generated document that declares an
 //! identity has one, and a declared warrant there would be a fact that a hand
@@ -131,14 +131,14 @@
 //! never groups such a half, so the protection is inherited rather than written
 //! here, and `tests/evidence_basis.rs` is the only thing that asserts it.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#scope--the-declaration-everything-else-rests-on)
+//! [The check layer](../../../../docs/spec/check-layer.md#scope--the-declaration-everything-else-rests-on)
 //! fixes an edge-scoped read set at one relation instance and both endpoints,
 //! so the two values this rule reads are both in the read set that keys it. An
 //! edit to either end moves the key.
 //!
 //! # The severity is advisory, and the finding carries no patch
 //!
-//! The [fixability](../../../../docs/spec/12-check-layer.md#fixability) bar is
+//! The [fixability](../../../../docs/spec/check-layer.md#fixability) bar is
 //! whether the remediation is mechanical and total. It is neither here. The
 //! repair is a pointer at an artifact somebody can audit, a promotion of the
 //! target by a person who reads it, or a demotion of the source's own claim to
@@ -160,7 +160,7 @@ pub const RULE: &str = "warrant.evidence.unsupported";
 /// families are the language's and no taxonomy names a new one.
 pub const FAMILY: &str = "evidence";
 
-/// The claim on the source side that spec 3's sentence is about.
+/// The claim on the source side that [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s sentence is about.
 pub const CLAIMED: &str = "evidenced";
 
 /// The warrant on the target side that does not support it. A value outside
@@ -305,7 +305,7 @@ impl EdgeCheck for Basis<'_> {
             (false, false) => (
                 format!(
                     "`{}` claims `{CLAIMED}` and declares `{}` to `{}`, whose warrant is \
-                     `{warrant}`, which is not a value of spec 3's closed set: it says nothing \
+                     `{warrant}`, which is not a value of authoring and lifecycle's closed set: it says nothing \
                      about who read the target, so a pointer at it does not support the claim",
                     claimant.id, relation.name, evidence.id
                 ),
@@ -332,7 +332,7 @@ impl EdgeCheck for Basis<'_> {
             (true, false) => (
                 format!(
                     "`{}` claims `{CLAIMED}`, and `{}`, which `{}` makes its evidence, has the \
-                     warrant `{warrant}`, which is not a value of spec 3's closed set: it says \
+                     warrant `{warrant}`, which is not a value of authoring and lifecycle's closed set: it says \
                      nothing about who read the evidence, so the edge does not support the claim",
                     claimant.id, evidence.id, relation.name
                 ),

@@ -33,15 +33,15 @@ relations:
 
 ## Scope
 
-This spec describes the inside of the resolve stage of [spec 6](../spec/06-engine-architecture.md#pipeline). Six crates under `engine/crates/` build that stage: `yaml`, `ref`, `meta`, `resolve`, `lock` and `hash`.
+This spec describes the inside of the resolve stage of [the engine architecture](../spec/engine-architecture.md#pipeline). Six crates under `engine/crates/` build that stage: `yaml`, `ref`, `meta`, `resolve`, `lock` and `hash`.
 
 The stage has two inputs. The first is the base package under `.headwater/packages/`, with the bundles that the consumer selects. The second is the adopter overlay, `.headwater/overlay.yml`. The stage gives a `Resolution`, and it writes that result as the content-hashed `Lock` in `.headwater/taxonomy.lock`. Every later stage reads the lock and never the sources.
 
 Other documents state what the stage does, and this spec does not repeat them:
 
-- [Spec 6](../spec/06-engine-architecture.md#pipeline) states the promise of the stage.
-- [Spec 2](../spec/02-taxonomy-model.md#customization-by-composition) states the overlay operations, their preconditions, confluence, the `$`-reference sublanguage and the immutable core.
-- [Spec 7](../spec/07-distribution-and-federation.md#publishing) states how a package is published, pinned, vendored and migrated.
+- [The engine architecture](../spec/engine-architecture.md#pipeline) states the promise of the stage.
+- [The taxonomy model](../spec/taxonomy-model.md#customization-by-composition) states the overlay operations, their preconditions, confluence, the `$`-reference sublanguage and the immutable core.
+- [Distribution and federation](../spec/distribution-and-federation.md#publishing) states how a package is published, pinned, vendored and migrated.
 - [Q2](../decisions/0002-schema-format.md) states the dialect of a taxonomy source, and [Q22](../decisions/0022-q22-the-integrity-posture-of-a-published-package.md) states the integrity posture of a published package.
 - The [`headwater taxonomy`](../interfaces/headwater-taxonomy.md) contract states what an author sees of each verb.
 
@@ -55,7 +55,7 @@ The public Rust API of the crates is not in this spec ([HW-DR-0098](../decisions
 
 The loader refuses a duplicate key, an anchor, an alias, a merge key and an explicit tag. A `$`-reference is the one reuse mechanism, and an overlay cannot address an alias. `value.rs` has no `Null`, `Bool` or `Int` variant. A scalar keeps its text and its style, because the meta-schema and not the YAML resolver decides a type. `core_schema.rs` gives that type only where a declared type asks for it. So `no` stays the string `no`.
 
-`span.rs` writes each position in the coordinates of an editor: lines and columns from one, and byte offsets into the source. Spec 12 anchors each finding to a line, and this is where that line comes from. `json.rs` holds a JSON writer that crates outside this subsystem import. Its reader is the loader, because JSON is a subset of the YAML 1.2 core schema.
+`span.rs` writes each position in the coordinates of an editor: lines and columns from one, and byte offsets into the source. [The check layer](../spec/check-layer.md) anchors each finding to a line, and this is where that line comes from. `json.rs` holds a JSON writer that crates outside this subsystem import. Its reader is the loader, because JSON is a subset of the YAML 1.2 core schema.
 
 ### The `$`-reference sublanguage and the overlay address
 
@@ -113,7 +113,7 @@ Two `add` operations commute when no leaf that one writes is a prefix of a leaf 
 
 ### Validation of the result
 
-`rules.rs` runs the checks of `headwater taxonomy validate` that read a resolved tree. `RULES` lists every item of the list in spec 2 and where it runs. `Ran::Partly` marks a rule that this code decides in part, because the other part needs a declaration that the language does not have. A finding here names an address and no line. A merged tree does not know which source declared a node, and an overlay writes the same address. `Resolution::validate` in `lib.rs` holds the operations, so it adds the source back in two places. A refused shelf path names the source that wrote it. A name that a `remove` orphaned is reported at that `remove`, with its source and its line. An orphan that no `remove` covers keeps the address of the declaration that reads it.
+`rules.rs` runs the checks of `headwater taxonomy validate` that read a resolved tree. `RULES` lists every item of the list in [the taxonomy model](../spec/taxonomy-model.md) and where it runs. `Ran::Partly` marks a rule that this code decides in part, because the other part needs a declaration that the language does not have. A finding here names an address and no line. A merged tree does not know which source declared a node, and an overlay writes the same address. `Resolution::validate` in `lib.rs` holds the operations, so it adds the source back in two places. A refused shelf path names the source that wrote it. A name that a `remove` orphaned is reported at that `remove`, with its source and its line. An orphan that no `remove` covers keeps the address of the declaration that reads it.
 
 ### Selection, assembly and templates
 
@@ -164,4 +164,4 @@ A change to these crates must keep each of these. Each item names the test that 
 - **A corpus range and a package range must have a version in common.** Two ranges overlap only when one version satisfies both (`two_ranges_overlap_when_one_version_is_in_both`). Each row of the range table is what `release::satisfies` answers (`every_row_of_the_range_table_is_what_the_engine_answers`).
 - **The SHA-256 is correct.** It matches the published vectors (`the_published_vectors`) and each length around a block boundary (`every_length_around_a_block_boundary`), and a second implementation agrees on every subject (`a_second_implementation_agrees_on_every_subject`). A digest that arrives in pieces is the digest of the whole at every split (`an_incremental_digest_agrees_with_one_call_at_every_split`).
 
-The overlay resolver and the lock are correctness roots ([spec 12](../spec/12-check-layer.md#the-correctness-roots)).
+The overlay resolver and the lock are correctness roots ([the check layer](../spec/check-layer.md#the-correctness-roots)).

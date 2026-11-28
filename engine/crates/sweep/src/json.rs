@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
-//! One sweep in the finding shape spec 4 declares, with the two members a
+//! One sweep in the finding shape [the assurance model](../../../../docs/spec/assurance-model.md) declares, with the two members a
 //! sweep adds.
 //!
-//! [Spec 4](../../../../docs/spec/04-assurance-model.md#findings): "Every
+//! [The assurance model](../../../../docs/spec/assurance-model.md#findings): "Every
 //! finding, from every mechanism, has one shape." This is that shape, written
 //! by the mechanism that is not a check. `headwater_adapter::json` writes the
 //! same members for a run of the checks, and the two are deliberately separate
@@ -13,7 +13,7 @@
 //!
 //! `provenance` is `agent` on every finding here and on none there, so it is a
 //! constant of the mechanism rather than a field of a finding. `evidence` is
-//! the part spec 4's third constraint requires of a sweep and of nothing else.
+//! the part [the assurance model](../../../../docs/spec/assurance-model.md)'s third constraint requires of a sweep and of nothing else.
 //! A consumer that merges the two documents reads both members, which is why
 //! they are written per finding rather than once at the top.
 //!

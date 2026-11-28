@@ -25,7 +25,7 @@ relations:
 
 ## Context
 
-[Q14](../spec/09-decisions.md#q14--discovery-surface) rules that the corpus descriptor is a generated projection at `.headwater/corpus.json`. A descriptor should let a cold agent reach a governing document that it otherwise misses.
+[Q14](../spec/decisions.md#q14--discovery-surface) rules that the corpus descriptor is a generated projection at `.headwater/corpus.json`. A descriptor should let a cold agent reach a governing document that it otherwise misses.
 
 ## Obligation
 
@@ -59,4 +59,4 @@ This record stood at `discharged` with an `accepted` warrant between 2026-08-13 
 
 ## The sealed batch of 2026-09-30
 
-The batch of 2026-09-30 graded the descriptor probe 30 times in each arm of the `campaign` tier, in sealed workspaces ([#1384](https://github.com/headwater-ai/headwater/issues/1384)). The present arm reached the governing document in 7 of 30 sessions (11.8% to 40.9% in a 95% Wilson interval). The absent arm reached it in 4 of 30 (5.3% to 29.7%). Some sessions reached this repository from outside their workspace, by the rule in [the Limits section of the evaluation](../evaluations/what-the-counterfactual-campaign-of-2026-09-30-measured-by-component.md#limits). Without them, the rates are 7 of 25 and 4 of 29. So the discharge now rests on a sealed reading as well. That reading does not show that the governance layer helps a cold session reach the document. The corpus was not frozen between the two arms' sessions. `docs/spec/12-check-layer.md` changed after the recording, so each verdict is graded over a moved read set. [The evaluation of that batch](../evaluations/what-the-counterfactual-campaign-of-2026-09-30-measured-by-component.md) states every limit and the cost. This record stays discharged.
+The batch of 2026-09-30 graded the descriptor probe 30 times in each arm of the `campaign` tier, in sealed workspaces ([#1384](https://github.com/headwater-ai/headwater/issues/1384)). The present arm reached the governing document in 7 of 30 sessions (11.8% to 40.9% in a 95% Wilson interval). The absent arm reached it in 4 of 30 (5.3% to 29.7%). Some sessions reached this repository from outside their workspace, by the rule in [the Limits section of the evaluation](../evaluations/what-the-counterfactual-campaign-of-2026-09-30-measured-by-component.md#limits). Without them, the rates are 7 of 25 and 4 of 29. So the discharge now rests on a sealed reading as well. That reading does not show that the governance layer helps a cold session reach the document. The corpus was not frozen between the two arms' sessions. `docs/spec/check-layer.md` changed after the recording, so each verdict is graded over a moved read set. [The evaluation of that batch](../evaluations/what-the-counterfactual-campaign-of-2026-09-30-measured-by-component.md) states every limit and the cost. This record stays discharged.

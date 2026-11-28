@@ -1,7 +1,7 @@
 #!/bin/sh
 # What holds `tools/site/check-site-canonical.py`.
 #
-# Spec 12 refuses a check that ships with no failing fixture, and the reason
+# The check layer (docs/spec/check-layer.md) refuses a check that ships with no failing fixture, and the reason
 # carries to a gate: a gate that has refused nothing is a gate nobody has seen
 # work. Every refusal below is provoked on purpose, and so is every pass,
 # because a gate that refuses everything is as useless as one that refuses
@@ -187,7 +187,7 @@ echo "over scratch pages"
 
 # 6. The passing shape, so the suite is not one that refuses everything.
 good="$scratch/good"
-page "$good" "spec/12-check-layer/index.html" "$origin/spec/12-check-layer/"
+page "$good" "spec/check-layer/index.html" "$origin/spec/check-layer/"
 page "$good" "index.html" "$origin/"
 status=$(run "$good")
 report "a directory URL and a root page both pass" 0 "$status" \
@@ -195,17 +195,17 @@ report "a directory URL and a root page both pass" 0 "$status" \
 
 # 7. A missing trailing slash is a different URL, and a presence grep passes it.
 slash="$scratch/slash"
-page "$slash" "spec/12-check-layer/index.html" "$origin/spec/12-check-layer"
+page "$slash" "spec/check-layer/index.html" "$origin/spec/check-layer"
 status=$(run "$slash")
 report "a canonical missing the trailing slash is refused" 1 "$status" \
     "1 naming another URL" "$scratch/out"
 
 # 8. A typo in `site_url` reaches every page as a wrong origin.
 typo="$scratch/typo"
-page "$typo" "spec/12-check-layer/index.html" "https://headwater.tool/spec/12-check-layer/"
+page "$typo" "spec/check-layer/index.html" "https://headwater.tool/spec/check-layer/"
 status=$(run "$typo")
 report "a canonical on the wrong origin is refused" 1 "$status" \
-    "https://headwater.tool/spec/12-check-layer/" "$scratch/err"
+    "https://headwater.tool/spec/check-layer/" "$scratch/err"
 
 # 9. Two canonicals on one page name two answers, which is no answer.
 two="$scratch/two"

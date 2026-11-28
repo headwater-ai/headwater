@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The parser's conformance corpus.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots) asks
+//! [The check layer](../../../../docs/spec/check-layer.md#the-correctness-roots) asks
 //! for this by name: "a parser conformance corpus is part of the engine's own
 //! test surface". The reason is the failure mode. A parser defect does not
 //! crash a run, it moves a span or loses a block, and every check downstream
@@ -90,7 +90,7 @@ fn accepted_documents_parse_to_the_recorded_shape() {
 /// not the 32 cases, so those cases were not preserved. The set is rebuilt
 /// from the three rules the module states and from each failure class its
 /// inline tests name. `corpus-excerpt.md` is real prose, verbatim:
-/// `docs/spec/01-conceptual-model.md` lines 171 and 172, then the `--fix`
+/// `docs/spec/conceptual-model.md` lines 171 and 172, then the `--fix`
 /// paragraph of `CLAUDE.md`.
 #[test]
 fn segmented_documents_produce_the_recorded_sentences() {

@@ -2,17 +2,17 @@
 //! The meta-schema of the taxonomy language, and what it decides over one
 //! source.
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#the-meta-schema) says that
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#the-meta-schema) says that
 //! the taxonomy language has a formal schema, published with the engine and
 //! versioned with it. `meta-schema.yml` is that schema
 //! and this crate is its reader.
 //!
 //! # Expressed in its own dialect
 //!
-//! The meta-schema is a YAML source on the [Q2](../../../../docs/spec/09-decisions.md#q2--schema-format)
+//! The meta-schema is a YAML source on the [Q2](../../../../docs/spec/decisions.md#q2--schema-format)
 //! loader rulings, read by `headwater-yaml` exactly as a taxonomy source is.
 //! That is not a stylistic choice. Q2 rules that JSON Schema is an emitted
-//! export and never the validator, and the reason is visible in spec 2 itself:
+//! export and never the validator, and the reason is visible in [the taxonomy model](../../../../docs/spec/taxonomy-model.md) itself:
 //! the language carries `$`-references, and no JSON Schema keyword resolves
 //! one. A second language for the schema would also be a second dialect to
 //! keep in step with the first, and the two would drift at the first ruling
@@ -20,7 +20,7 @@
 //!
 //! # What one source can decide, and what it cannot
 //!
-//! Spec 2 lists what `headwater taxonomy validate` checks. Four of those items
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md) lists what `headwater taxonomy validate` checks. Four of those items
 //! are decidable over a single source and the rest read a *resolved* taxonomy:
 //!
 //! - **structural conformance** — the thirteen declarations, their members, the
@@ -36,7 +36,7 @@
 //!
 //! [`validate::skipped`] names the rest, each with the reason it needs a
 //! resolved tree. A validator that reported a pass over rules it never ran would
-//! be the silent pass that [spec 4](../../../../docs/spec/04-assurance-model.md)
+//! be the silent pass that [the assurance model](../../../../docs/spec/assurance-model.md)
 //! exists to remove, so the list is data rather than a paragraph in a comment.
 //! `headwater_resolve::rules` runs those rules and holds the other half of the
 //! same accounting.
@@ -52,7 +52,7 @@
 //! written in, with the specificity order that decides which of two shelves
 //! claims a path. It came from `headwater-census`, which was the first code to
 //! read a shelf declaration, and it moved here when `taxonomy validate` needed
-//! to ask whether two shelf patterns can collide with no corpus in hand. Spec 13
+//! to ask whether two shelf patterns can collide with no corpus in hand. [The register of open obligations](../../../../docs/spec/open-obligations.md)
 //! already said that the decision belongs to the meta-schema.
 //!
 //! # Example

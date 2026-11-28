@@ -26,7 +26,7 @@ Of 332 linked document pairs, 144 run from one specification to another and 106 
 
 ## Obligation
 
-Under [Q4](../spec/09-decisions.md#q4--relation-storage) every one of those prose links is an advisory finding with no fix, because the author has nothing to declare. A rule that reports a fifth of a corpus and offers no remedy trains its readers to ignore it.
+Under [Q4](../spec/decisions.md#q4--relation-storage) every one of those prose links is an advisory finding with no fix, because the author has nothing to declare. A rule that reports a fifth of a corpus and offers no remedy trains its readers to ignore it.
 
 ## Discharge
 

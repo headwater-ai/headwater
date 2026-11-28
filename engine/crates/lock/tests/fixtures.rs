@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The lock's own fixtures.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots)
+//! [The check layer](../../../../docs/spec/check-layer.md#the-correctness-roots)
 //! names "the overlay resolver and the lock" one correctness-root entry, and it
 //! says of the lock that "a committed and diffable lock decreases the risk but
 //! does not test the resolver". The converse is what this file is for: the
@@ -9,7 +9,7 @@
 //! and they answer the two questions that are the lock's alone.
 //!
 //! - **`identity.record`** — does the identity that the lock uses agree with the
-//!   identity that spec 2 requires? Spec 2 says any legal order of an overlay
+//!   identity that [the taxonomy model](../../../../docs/spec/taxonomy-model.md) requires? [The taxonomy model](../../../../docs/spec/taxonomy-model.md) says any legal order of an overlay
 //!   set gives "the same resolved taxonomy", and the lock hashes text. So every
 //!   permutation of every case is resolved and hashed, and one digest per case is
 //!   the claim. This is `confluence.record` restated in the coordinate that

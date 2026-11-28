@@ -2,7 +2,7 @@
 id: HW-OBL-0163
 status: current
 status_since: 2026-09-06
-summary: "Ten decision records name a Q number in their file name that docs/spec/09-decisions.md has no section for, and nothing reads either side of the pair."
+summary: "Ten decision records name a Q number in their file name that docs/spec/decisions.md has no section for, and nothing reads either side of the pair."
 last_verified: 2026-10-01
 title: "Ten decision records claim a Q number the decision register does not carry"
 waiting_on: ruling
@@ -18,11 +18,11 @@ provenance:
 
 ## Context
 
-`docs/spec/09-decisions.md` is the decision register of this repository, and its sections are keyed on a question number. On 2026-09-06 it carried 36 of them, and they ran Q1 to Q32 and then Q40 to Q43.
+`docs/spec/decisions.md` is the decision register of this repository, and its sections are keyed on a question number. On 2026-09-06 it carried 36 of them, and they ran Q1 to Q32 and then Q40 to Q43.
 
 Ten decision records name a question number in their file name that the register has no section for. Enumerated on 2026-09-06 by taking the two sets and comparing them: `Q33 Q34 Q35 Q36 Q37 Q38 Q39 Q44 Q50 Q51`. The reading is a set difference rather than a sample:
 
-    comm -13 <(grep -oE '^## Q[0-9]+' docs/spec/09-decisions.md | sed 's/## //' | LC_ALL=C sort -u) \
+    comm -13 <(grep -oE '^## Q[0-9]+' docs/spec/decisions.md | sed 's/## //' | LC_ALL=C sort -u) \
              <(ls docs/decisions/ | grep -oE '^[0-9]{4}-q[0-9]+' | sed 's/^[0-9]*-q/Q/' | LC_ALL=C sort -u)
 
 **The gap grew by three between 2026-09-06 and 2026-10-01, and it is now 13 of 28.** The same set difference, run again on 2026-10-01, gives `Q33 Q34 Q35 Q36 Q37 Q38 Q39 Q44 Q50 Q51 Q61 Q64 Q66`. The file names under `docs/decisions/` name 28 distinct Q numbers, across 100 records. The register now carries 38 sections: Q1 to Q32, Q40 to Q43, Q65 and Q67. So the register gained two sections and the records gained three Q numbers that it does not carry. The title keeps "Ten", because the file name is the slug of the title at birth, and a rename is one of the answers below.

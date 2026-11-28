@@ -5,7 +5,7 @@
 //!
 //! [#321](https://github.com/headwater-ai/headwater/issues/321): "`headwater
 //! completions bash|zsh|fish|powershell` writes a script to stdout. The name is
-//! in `VERBS` and in spec 6's CLI grammar block, whose rule is that a name it
+//! in `VERBS` and in [the engine architecture](../../../../docs/spec/engine-architecture.md)'s CLI grammar block, whose rule is that a name it
 //! declares either runs or states its wait; this one runs. `headwater
 //! completions bash > f && . f && complete -p headwater` succeeds."
 //!

@@ -2,7 +2,7 @@
 //! The change: the documents one change carries, and the version of each that
 //! stood before it.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version)
+//! [The check layer](../../../../docs/spec/check-layer.md#temporal-inputs-the-clock-and-the-prior-version)
 //! rules that "a change reaches this engine as a named set of inputs, and never
 //! as a second tree. The prior version above is the one exception, and the
 //! change that supplies it also bounds its scope." This module is that named
@@ -24,7 +24,7 @@
 //!
 //! The caller is a hook or a CI job, which is where a repository's version
 //! control lives. `git show HEAD:<path>` and `git merge-base` are commands that
-//! belong to the caller, and spec 12 states what the caller must anchor "prior"
+//! belong to the caller, and [the check layer](../../../../docs/spec/check-layer.md) states what the caller must anchor "prior"
 //! to: the version on the branch where the change lands.
 //!
 //! # Three states, and the fourth that never reaches a check
@@ -39,7 +39,7 @@
 //! what to do about a version it cannot see, and every wrong answer to that
 //! question is green. So the runner skips the instance with the reason, which
 //! is the visible skip
-//! [spec 4](../../../../docs/spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+//! [the assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
 //! asks for, and the check is never handed one.
 //!
 //! # A manifest this reader cannot parse is refused whole
@@ -109,7 +109,7 @@
 //!
 //! A manifest that names `added` for a document that already stood, or that
 //! omits a document the change carried, is a manifest that lies. Neither is
-//! detectable without the history that spec 12 rules out as an input. That is
+//! detectable without the history that [the check layer](../../../../docs/spec/check-layer.md) rules out as an input. That is
 //! the trust boundary rather than a defect: the caller names the change, this
 //! engine reads what the names reach, and every reading here is worth what the
 //! caller's statement is worth.

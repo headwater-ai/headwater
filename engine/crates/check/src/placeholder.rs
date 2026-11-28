@@ -45,7 +45,7 @@
 //!
 //! # A warning, with no fix
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#fixability) makes a defect
+//! [The check layer](../../../../docs/spec/check-layer.md#fixability) makes a defect
 //! an error when its remedy is mechanical. The remedy here is to write the
 //! section or the summary, and that is a rewrite, so the finding is advisory.
 //! [`crate::sections`] reads the opposite way, and the difference is the

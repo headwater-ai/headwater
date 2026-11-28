@@ -383,7 +383,7 @@ fn a_lock_whose_founding_record_was_stripped_says_it_cannot_settle_the_answer() 
 ///
 /// A required facet added to the abstract kind that every governed document is
 /// a. Every document of the corpus stops validating, and the report names the
-/// document rather than the declaration: spec 7 asks the consumer's run to
+/// document rather than the declaration: [distribution and federation](../../../../docs/spec/distribution-and-federation.md) asks the consumer's run to
 /// report "which local documents violate the new schema".
 #[test]
 fn a_declaration_that_breaks_a_document_names_that_document() {
@@ -433,7 +433,7 @@ fn a_declaration_that_breaks_a_document_names_that_document() {
     );
     assert!(
         ran.out.contains("this change requires a major version"),
-        "spec 2: any dimension broken forces a major: {ran:?}"
+        "the taxonomy model: any dimension broken forces a major: {ran:?}"
     );
     // The dimensions this change is not about stay quiet, which is what makes
     // the two above a measurement rather than an alarm.

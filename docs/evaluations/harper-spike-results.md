@@ -53,7 +53,7 @@ relations:
 
 - Identifiers and domain terms that the dictionary does not hold: "Q19", "HW-", "SHACL", "fixability", "reachability". This is every drawn SpellCheck and SplitWords finding.
 - Correct grammar that a pattern reads wrong: "every one of them", "a ruling", "a finding", "whose effect it displaces", "one of the two".
-- List items and table cells, which are not sentences. This is 9 of the 10 drawn `SentenceCapitalization` findings. The tenth is a prose sentence in `docs/evaluations/adjacent-work.md`, at line 277, that opens with the link text "spec 2" in lower case.
+- List items and table cells, which are not sentences. This is 9 of the 10 drawn `SentenceCapitalization` findings. The tenth is a prose sentence in `docs/evaluations/adjacent-work.md`, at line 277, that opens with the link text "[the taxonomy model](../spec/taxonomy-model.md)" in lower case.
 - The text of a masked code span, which Harper still reads for context. A span that opens with a period, such as `` `.headwater/` ``, reads as the end of a sentence. The word "to" before a code span reads as "too".
 
 ## Misses, against a seeded set and against the engine
@@ -74,7 +74,7 @@ relations:
 
 ## The three classes
 
-**The bar for safe autofix is [spec 12](../spec/12-check-layer.md#fixability).** The remedy must be mechanical and total, and it must fit a `Patch::Text` whose `expect` bytes match the file.
+**The bar for safe autofix is [the check layer](../spec/check-layer.md#fixability).** The remedy must be mechanical and total, and it must fit a `Patch::Text` whose `expect` bytes match the file.
 
 - **Safe autofix: RepeatedWords only, and only as a candidate.** Its suggestion replaces the pair with one word, and the fixture shows that the range and the `expect` bytes match the file. It fired on no document of the sample.
 - **Advisory with a suggestion:** AnA, SpellCheck for a regional spelling, CompoundNouns, DisjointPrefixes, DiscourseMarkers, OxfordComma, Codebase, WouldNeverHave, and the three expansions ExpandTimeShorthands, ExpandMemoryShorthands and ExpandConfiguration. AnA is not safe, because it reads the letters of a code span and not the sound, so "an `<h2>`" is wrong to it.
@@ -109,13 +109,13 @@ The only category that Harper adds and the engine lacks is grammar: a doubled wo
 
 **Two numbers the issue asked for are not here.** The engine pins no toolchain, and it declares `rust-version = "1.91"` as its floor. To measure the engine binary with `harper-core` 2.11.0 linked, the whole engine must build on rustc 1.98.1 or a compiler near it. This spike built only itself in that image. A `wasm32-unknown-unknown` build was not tried, because the container has no such target installed. Harper ships a WebAssembly package of its own, but this page did not measure it.
 
-**For scale, the engine's whole budget for a change-scoped check is 200 ms** ([spec 6](../spec/06-engine-architecture.md#performance-targets)). One document through Harper takes more than that.
+**For scale, the engine's whole budget for a change-scoped check is 200 ms** ([the engine architecture](../spec/engine-architecture.md#performance-targets)). One document through Harper takes more than that.
 
 ## Determinism
 
 **Two runs over the sample wrote byte-identical output.** Both have the SHA-256 `fbd3460f4b2eb007e4f71c8c0af1d313659b6e6b70687947f89517de951b24eb`. In one process, the warm pass also matched the cold pass row for row.
 
-**Four things must be pinned for that to hold:** the crate version, the dictionary, the dialect and the rule set. The dictionary is compiled into the crate, so the version pins it. The dialect is `Dialect::American` in `src/lib.rs`, and the rule set is `LintGroup::new_curated`. The linter keeps a cache between documents, and the output did not depend on it. So the four inputs of spec 12 hold if the Harper version counts as part of the check version.
+**Four things must be pinned for that to hold:** the crate version, the dictionary, the dialect and the rule set. The dictionary is compiled into the crate, so the version pins it. The dialect is `Dialect::American` in `src/lib.rs`, and the rule set is `LintGroup::new_curated`. The linter keeps a cache between documents, and the output did not depend on it. So the four inputs of [the check layer](../spec/check-layer.md) hold if the Harper version counts as part of the check version.
 
 ## Configuration
 

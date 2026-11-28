@@ -24,7 +24,7 @@ relations:
 
 ## Context
 
-[Spec 12](../spec/12-check-layer.md#the-five-origins-of-a-check) lists cardinality among the Shape checks that a taxonomy generates. [Spec 1](../spec/01-conceptual-model.md#relation) says a cardinality states how many are legal and if one is required, and it names no default. Three relations in the resolved taxonomy declare `cardinality: many` and five declare nothing, so silence means exactly one, at most one, or any number.
+[The check layer](../spec/check-layer.md#the-five-origins-of-a-check) lists cardinality among the Shape checks that a taxonomy generates. [The conceptual model](../spec/conceptual-model.md#relation) says a cardinality states how many are legal and if one is required, and it names no default. Three relations in the resolved taxonomy declare `cardinality: many` and five declare nothing, so silence means exactly one, at most one, or any number.
 
 ## Obligation
 
@@ -34,6 +34,6 @@ A second axis is open beside it. A document writes an inverse relation name such
 
 ## Discharge
 
-So [spec 2](../spec/02-taxonomy-model.md) states the default, and it states whether a declaration binds the inverse name. The meta-schema then closes the value set on that statement rather than on the two values this corpus writes.
+So [the taxonomy model](../spec/taxonomy-model.md) states the default, and it states whether a declaration binds the inverse name. The meta-schema then closes the value set on that statement rather than on the two values this corpus writes.
 
 The rule that waits on it is a count per relation name per document, reported at the entry that passes the limit. It is document-scoped for the reason a participation expectation is: the finding is about a set of edges rather than about any one of them.

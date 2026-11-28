@@ -4,7 +4,7 @@
 //!
 //! # The gap this closes
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md) declares
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md) declares
 //! `invalid_when: {both: {status: current}}` on `conflicts_with`, and lists
 //! "two `current` decisions joined by `conflicts_with`" as an incoherent corpus
 //! state that a check reports. The declaration existed and no rule read it:
@@ -32,7 +32,7 @@
 //! `conflicts_with` that wrote their status as a list checked clean, which is
 //! the state HW-OBL-0042 discharged.
 //!
-//! The meta-schema admits `both` alone, with a `gap:` comment that spec 2
+//! The meta-schema admits `both` alone, with a `gap:` comment that [the taxonomy model](../../../../docs/spec/taxonomy-model.md)
 //! states no other form. This rule reads `both` alone and widens nothing.
 //!
 //! # One finding per declared entry
@@ -53,7 +53,7 @@
 //! # The severity is advisory, and the finding carries no patch
 //!
 //! The remedy is a judgment.
-//! [Q18](../../../../docs/spec/09-decisions.md#q18--recording-adjudicated-disagreements)
+//! [Q18](../../../../docs/spec/decisions.md#q18--recording-adjudicated-disagreements)
 //! rules that a human settles a live disagreement by writing a decision that
 //! `overrides` or `supersedes` one side, and which side loses is not a thing
 //! this engine can derive. A finding whose remedy is a rewrite is advisory in
@@ -67,7 +67,7 @@
 //!
 //! **Where the condition names the facet in the `state` role, the remedy moves
 //! that facet by supersession alone.** The facet is read by role, through
-//! [`StateFacet`], and not as the literal `status`. Spec 2's condition is
+//! [`StateFacet`], and not as the literal `status`. [The taxonomy model](../../../../docs/spec/taxonomy-model.md)'s condition is
 //! `status: current`, so the states left to move to are a terminal one and the
 //! initial one. The initial one is not an exit: a live document joined to a
 //! document at the initial state is `lifecycle.dependency.on_initial`'s
@@ -260,7 +260,7 @@ mod tests {
     use super::*;
 
     /// A taxonomy whose state facet is `phase`, not `status`, so a remedy that
-    /// knew the state facet by its name in spec 2 reads it as an ordinary facet
+    /// knew the state facet by its name in [the taxonomy model](../../../../docs/spec/taxonomy-model.md) reads it as an ordinary facet
     /// and offers to change it.
     const RENAMED: &str = "\
 facets:

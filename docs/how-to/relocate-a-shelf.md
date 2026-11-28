@@ -31,7 +31,7 @@ You need three things.
 
 **Two things move in a shelf relocation, and they move in different steps.** The taxonomy moves first, at the `override`. The directory moves second, by hand. Between the two, every document on the shelf reads as untyped. After the second, every relative link that named the old path reads as broken. Both states are expected, and this guide shows you both.
 
-This guide moves this repository's own `decisions` shelf, from `docs/decisions/**` to `docs/adr/**`. [Spec 2](../spec/02-taxonomy-model.md#the-immutable-core) names that exact move as its worked example of what an overlay may do without breaking the core. Every command below ran, for real, against a scratch copy of this repository, on 2026-09-16. Replace `decisions` and `docs/adr/**` with your own shelf's name and the path you want.
+This guide moves this repository's own `decisions` shelf, from `docs/decisions/**` to `docs/adr/**`. [The taxonomy model](../spec/taxonomy-model.md#the-immutable-core) names that exact move as its worked example of what an overlay may do without breaking the core. Every command below ran, for real, against a scratch copy of this repository, on 2026-09-16. Replace `decisions` and `docs/adr/**` with your own shelf's name and the path you want.
 
 ## Steps
 
@@ -105,7 +105,7 @@ headwater check --strict
 Every document types correctly again. The exit code is `1`, and every one of the 207 errors is the same rule, `link.path.unresolved (OB-LINK-2)`. A document's own placement moved with the directory. A link written in another document's prose did not.
 
 ```
-docs/spec/09-decisions.md:81:70 ✗ error
+docs/spec/decisions.md:81:70 ✗ error
   link.path.unresolved (OB-LINK-2):
     `../decisions/0007-scope-of-the-mcp-surface.md` names no file of this
     repository: nothing stands at
@@ -196,4 +196,4 @@ docs/adr/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a
     `decisions` is homogeneous, so placement carries the kind `decision`
 ```
 
-Three facts, together, say the relocation is complete. `headwater check --strict` exits `0`. The finding count reads the same as it did before you moved anything. `headwater explain` resolves the identifier you moved to its new path, under the shelf name you never changed. The core spec 2 names holds. You renamed a directory. Every identifier, edge, and rule that named a document by identifier, rather than by path, kept working through the move.
+Three facts, together, say the relocation is complete. `headwater check --strict` exits `0`. The finding count reads the same as it did before you moved anything. `headwater explain` resolves the identifier you moved to its new path, under the shelf name you never changed. The core [the taxonomy model](../spec/taxonomy-model.md) names holds. You renamed a directory. Every identifier, edge, and rule that named a document by identifier, rather than by path, kept working through the move.

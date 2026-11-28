@@ -23,7 +23,7 @@ relations:
 
 ## Context
 
-[Spec 5](../spec/05-ai-integration.md#a-run-produces-a-snapshot-and-a-document) says what a probe result is: "The **probe result** is a document, generated from the transcript, the expectations and the grader version. It carries the `regenerated` warrant, and `generate --check` proves it." [Spec 12](../spec/12-check-layer.md#the-correctness-roots) reads the same sentence as an instrument, because the grader is a correctness root and a root owes its own test.
+[AI integration](../spec/ai-integration.md#a-run-produces-a-snapshot-and-a-document) says what a probe result is: "The **probe result** is a document, generated from the transcript, the expectations and the grader version. It carries the `regenerated` warrant, and `generate --check` proves it." [The check layer](../spec/check-layer.md#the-correctness-roots) reads the same sentence as an instrument, because the grader is a correctness root and a root owes its own test.
 
 `headwater probe grade` now evaluates every expectation form and returns a verdict for each. It writes that report to standard output and it writes no document. Three facts were measured on this tree rather than argued:
 
@@ -31,7 +31,7 @@ relations:
 - No kind of this taxonomy types a probe result, so a result document has nothing to be.
 - `headwater generate --check` regenerates three documents, and each is a shelf index or a shelf section.
 
-So the artifact that spec 5 calls a probe result exists as terminal output and as nothing else.
+So the artifact that [AI integration](../spec/ai-integration.md) calls a probe result exists as terminal output and as nothing else.
 
 **The second and the third of those three are false, and the first is true.** `probe_result` is a kind of this taxonomy, `docs/probe-results/**` is a shelf that holds it, and `probe_result` is the ninth declarable projection kind. The generator reads every committed transcript, grades it against the selection that `headwater probe plan` composes, and writes one document for each. It writes nothing at all when the plan refuses. A plan that gives up part way through holds the probes it read and none of the rest. A result over that part would report a rate over a denominator no document declares. The run names the probe that stopped the plan in the place a result would be. A recorded fixture tree holds the pair and asserts the three directions of the gate. The committed pair is green. An unrelated edit leaves it green, and an edit to one event of the transcript turns it red.
 
@@ -39,13 +39,13 @@ This corpus wrote no result while the first fact held, and `headwater generate` 
 
 ## Obligation
 
-**The corpus owes a probe result as corpus content, and the debt is one link in a chain.** A result is a function of a transcript, and a recorder that observes a session from outside it writes that transcript. No verb of this engine writes one, and spec 5 refuses a transcript that an agent wrote about its own session. The chain is the recorder, then a committed transcript, then a kind for a result, then a generator over it, and only then the test.
+**The corpus owes a probe result as corpus content, and the debt is one link in a chain.** A result is a function of a transcript, and a recorder that observes a session from outside it writes that transcript. No verb of this engine writes one, and [AI integration](../spec/ai-integration.md) refuses a transcript that an agent wrote about its own session. The chain is the recorder, then a committed transcript, then a kind for a result, then a generator over it, and only then the test.
 
 Two consequences follow while the chain is unbuilt, and each is a claim this corpus cannot make yet.
 
 **The standing test of a correctness root is half absent.** A recomputed number is what makes a result citable, and the recomputation is what catches a result that disagrees with its own transcript. The recorded fixture set of `headwater-probe` holds the grader against three transcripts and catches a defect in the engine. It says nothing about a number in a document, because no document holds one.
 
-**A published rate would carry the `asserted` warrant.** [Spec 3](../spec/03-authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two) refuses an asserted document as evidence for anything. A rate written into this corpus today therefore discharges no evidence obligation. That is the failure the placement table in spec 5 exists to prevent, reached through the layer the table describes.
+**A published rate would carry the `asserted` warrant.** [Authoring and lifecycle](../spec/authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two) refuses an asserted document as evidence for anything. A rate written into this corpus today therefore discharges no evidence obligation. That is the failure the placement table in [AI integration](../spec/ai-integration.md) exists to prevent, reached through the layer the table describes.
 
 ## Discharge
 
@@ -53,7 +53,7 @@ The issue that lands a recorder and a committed transcript discharges the first 
 
 **The second of those two issues landed, and it did not have to wait.** A projection whose source does not exist writes no file, and it states the reason for a reader of the run. What the work needed was a source to test against. A fixture tree supplies one that no reader can mistake for evidence about this corpus. The first link then landed too: the recorder is `tools/probe/probe-record.sh` and the transcript it committed is on the shelf. The remaining debt is neither link. It is a recording that a confirmation does not refuse.
 
-**The contract that link satisfies is a document of this corpus.** [Spec 15](../spec/15-the-recorder-contract.md) states the twelve identity keys, the five event keys, the three tool-call keys, the four produced-artifact keys and the five confirmations. A test derives its four tables from the arrays the intake enforces. So a key this engine starts to refuse fails a test, rather than reaching a recorder as a refusal nobody wrote down. The process exists and it ran once. What the run met is the first confirmation of that contract.
+**The contract that link satisfies is a document of this corpus.** [The recorder contract](../spec/the-recorder-contract.md) states the twelve identity keys, the five event keys, the three tool-call keys, the four produced-artifact keys and the five confirmations. A test derives its four tables from the arrays the intake enforces. So a key this engine starts to refuse fails a test, rather than reaching a recorder as a refusal nobody wrote down. The process exists and it ran once. What the run met is the first confirmation of that contract.
 
 One thing is settled here and needs no further work. The grader is a pure function of its three inputs, and two runs over one transcript write one set of bytes. That is what made the projection possible when the source arrived, and it is tested in the crate and again over the verb. The source arrived on 2026-09-09 and the function graded it to nothing, because a transcript the first confirmation refuses reaches no grader. What is missing is a usable source rather than the function.
 

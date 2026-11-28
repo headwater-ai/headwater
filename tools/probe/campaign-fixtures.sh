@@ -2067,7 +2067,7 @@ same "declared.py tuning_set prints the tuning round's set, one member a line, i
 # `tools/probe/phrasing.sh` cuts a probe's task the one way the campaign and
 # the tuning round both read it (#1875, HW-DR-0112's form of a phrasing).
 # The prompt of a session is the body of the one phrasing it draws, without
-# the heading and without any other phrasing (spec 15).
+# the heading and without any other phrasing (the recorder contract (docs/spec/the-recorder-contract.md)).
 # ---------------------------------------------------------------------------
 phrasing=$root/tools/probe/phrasing.sh
 mkdir -p "$scratch/phr/docs/probes"

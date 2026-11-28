@@ -21,7 +21,7 @@ relations:
 [#2099](https://github.com/headwater-ai/headwater/issues/2099) added the rule `relation.scope.unmatched`. It reports each governed scope pattern that matches no entry of the tree, as an error. The rule and `headwater taxonomy validate` call one function, `Scope::coverage` in `engine/crates/graph/src/scope.rs`. The two verbs pass that function different sets of ignored paths.
 
 - `taxonomy validate` passes what git ignores. So an ignored build output or cache on one host is not an entry, which an owner ruled on 2026-09-25 for #951.
-- `headwater check` passes nothing. [Spec 12](../spec/12-check-layer.md) keeps every version control command off the check loop, so the check cannot ask git.
+- `headwater check` passes nothing. [The check layer](../spec/check-layer.md) keeps every version control command off the check loop, so the check cannot ask git.
 
 ## Obligation
 
@@ -34,4 +34,4 @@ The adopter case of #2099 is not affected. A pattern that opens with a wildcard 
 
 ## Discharge
 
-This record discharges when the two verbs give one answer for an ignored path. It also discharges when a ruling accepts the difference and the contract cites the ruling. One fix is a check input that names the ignored paths with no git command on the loop. A verb outside the loop can write that list. That way needs a ruling against the line spec 12 draws.
+This record discharges when the two verbs give one answer for an ignored path. It also discharges when a ruling accepts the difference and the contract cites the ruling. One fix is a check input that names the ignored paths with no git command on the loop. A verb outside the loop can write that list. That way needs a ruling against the line [the check layer](../spec/check-layer.md) draws.

@@ -9,7 +9,7 @@ license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
 
-# Spec 6: "The CLI is a thin shell over a library API." This crate is the
+# The engine architecture (docs/spec/engine-architecture.md): "The CLI is a thin shell over a library API." This crate is the
 # library that `headwater-cli` and an in-process caller both link. It names no
 # `clap`, so a caller does not parse a command line to load a corpus, and no
 # `headwater-fetch`, so a load opens no socket. `tests/network_boundary.rs` in

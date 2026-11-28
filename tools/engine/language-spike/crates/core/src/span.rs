@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Source positions, in file coordinates.
 //!
-//! Spec 12 requires that a finding anchor to a line, and that the parser retain
+//! [The check layer](../../../../../../docs/spec/check-layer.md) requires that a finding anchor to a line, and that the parser retain
 //! spans for front-matter keys, headings and links. Everything here exists to
 //! satisfy that, and item 1 of the spike is the test of whether it survives all
 //! the way to rendered output.

@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-A [directive](../spec/04-assurance-model.md#suppression) names a rule, and `language.controlled.not_met` reports the word limit, the contraction, the spelling variant and the semicolon.
+A [directive](../spec/assurance-model.md#suppression) names a rule, and `language.controlled.not_met` reports the word limit, the contraction, the spelling variant and the semicolon.
 
 ## Obligation
 

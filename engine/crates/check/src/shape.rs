@@ -40,9 +40,9 @@ pub struct Shape {
     /// In declaration order, because a report is read by a person.
     pub facets: Vec<Facet>,
     pub kinds: Vec<Kind>,
-    /// `purposes`, the reader intents the corpus serves. Spec 2 declares them
+    /// `purposes`, the reader intents the corpus serves. [The taxonomy model](../../../../docs/spec/taxonomy-model.md) declares them
     /// once at the taxonomy level and has kinds reference them, and
-    /// [spec 5](../../../../docs/spec/05-ai-integration.md#intent-time-routing)
+    /// [AI integration](../../../../docs/spec/ai-integration.md#intent-time-routing)
     /// routes a task description over them before it reads any prose.
     pub purposes: Vec<Purpose>,
     /// `regimes.voice`, which a Document check reads through the kind that
@@ -103,7 +103,7 @@ pub struct IdentifierScheme {
     /// as written rather than as parsed.
     pub pattern: String,
     /// The one part of the template that an overlay may not change
-    /// ([spec 2](../../../../docs/spec/02-taxonomy-model.md#the-immutable-core)).
+    /// ([the taxonomy model](../../../../docs/spec/taxonomy-model.md#the-immutable-core)).
     pub namespace: String,
     /// `minted-once` or `reconcile-first`, as declared, and nothing where the
     /// scheme declares neither. Held as written, because it is quoted back.
@@ -114,7 +114,7 @@ pub struct IdentifierScheme {
 /// A voice regime: the constructions its prose does not use.
 ///
 /// The member is a list of category names and never patterns.
-/// [Spec 13](../../../../docs/spec/13-open-obligations.md) records the meta-schema
+/// [The register of open obligations](../../../../docs/spec/open-obligations.md) records the meta-schema
 /// gap that no value set states the names, so the engine knows a closed set of
 /// them and an instance that meets a name outside it skips with a reason. A
 /// regime that forbids nothing is the narrative regime, and it generates no
@@ -223,7 +223,7 @@ impl LifecycleRegime {
 
 /// One term a corpus retired.
 ///
-/// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#the-language-regime-carries-the-terms-that-the-corpus-retired):
+/// [The taxonomy model](../../../../docs/spec/taxonomy-model.md#the-language-regime-carries-the-terms-that-the-corpus-retired):
 /// "Each entry carries the term, a required reason, and an optional
 /// replacement", and the replacement is what decides whether the fix is a
 /// substitution or a rewrite.
@@ -237,7 +237,7 @@ pub struct RetiredTerm {
 /// A language regime: the tag, and the controlled language the prose is held to.
 ///
 /// `controlled` and `profile` are two strings and the meta-schema marks both as
-/// a gap, for a reason it states: spec 2 names `none`, `ste-house` and
+/// a gap, for a reason it states: [the taxonomy model](../../../../docs/spec/taxonomy-model.md) names `none`, `ste-house` and
 /// `ste-strict`, and this repository's own overlay writes `ASD-STE100` with a
 /// separate `profile`. So the engine matches what it knows and skips the rest,
 /// which is the same posture as an unreadable participation window.
@@ -359,7 +359,7 @@ pub struct Purpose {
 pub struct Kind {
     pub name: String,
     pub is_a: Option<String>,
-    /// The reader intent this kind serves, as this kind declares it. Spec 2
+    /// The reader intent this kind serves, as this kind declares it. [The taxonomy model](../../../../docs/spec/taxonomy-model.md)
     /// permits a concrete kind to inherit one from an abstract parent, and
     /// [`Shape::purpose_of`] is the inherited answer.
     pub purpose: Option<String>,
@@ -398,7 +398,7 @@ pub struct Kind {
     pub identifier_scheme: Option<String>,
     pub sections: Vec<String>,
     /// `relations.expect`, which is where a windowed participation expectation
-    /// is declared ([spec 2](../../../../docs/spec/02-taxonomy-model.md#participation-expectations)).
+    /// is declared ([the taxonomy model](../../../../docs/spec/taxonomy-model.md#participation-expectations)).
     pub expectations: Vec<Expectation>,
     pub span: Span,
 }
@@ -409,7 +409,7 @@ pub struct Kind {
 /// rather than dropped. A dropped expectation is an instance that never
 /// existed, and a coverage report cannot say why. A kept one is an instance
 /// that skips with a reason, which is what
-/// [spec 4](../../../../docs/spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+/// [the assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
 /// asks for.
 #[derive(Clone, Debug)]
 pub struct Expectation {
@@ -614,7 +614,7 @@ impl Shape {
     ///
     /// A kind that binds none, and whose ancestors bind none, answers to no
     /// voice rule. That is the narrative case of
-    /// [spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#voice), and
+    /// [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#voice), and
     /// it is an absence rather than a regime that permits everything.
     pub fn voice_of(&self, kind: &str) -> Option<&VoiceRegime> {
         let name = self
@@ -716,7 +716,7 @@ impl Shape {
     /// The whole declared set for a facet that no kind in the chain narrows,
     /// and otherwise the intersection of every narrowing in the chain with it.
     /// Intersection rather than replacement, and it is the same ruling that
-    /// [`Shape::required_facets`] rests on: spec 2 gives a child no way to void
+    /// [`Shape::required_facets`] rests on: [the taxonomy model](../../../../docs/spec/taxonomy-model.md) gives a child no way to void
     /// a contract a reader of the parent trusts, and a child that admitted a
     /// value its parent excluded would void one exactly as an un-require would
     /// ([HW-DR-0066](../../../../docs/decisions/0066-a-kind-narrows-the-value-set-of-an-enumerated-facet-and-nothing-else-can.md)).
@@ -802,7 +802,7 @@ impl Shape {
 
     /// The purpose a kind serves, through the chain that declares it.
     ///
-    /// Spec 2: "Every concrete kind declares the reader intent that it serves,
+    /// [The taxonomy model](../../../../docs/spec/taxonomy-model.md): "Every concrete kind declares the reader intent that it serves,
     /// or inherits it from an abstract parent." So this walks the same chain
     /// [`Shape::voice_of`] walks, and a kind under a parent that declares one
     /// serves it. A name no `purposes` block declares reads as no purpose
@@ -1236,7 +1236,7 @@ identifier_schemes:
         assert!(shape.identifier_shaped("HW-DR-004"));
         assert!(shape.identifier_shaped("HW-DR-9999"));
         assert!(shape.identifier_shaped("HW-SPEC-glossary"));
-        assert!(!shape.identifier_shaped("docs/spec/09-decisions.md"));
+        assert!(!shape.identifier_shaped("docs/spec/decisions.md"));
         assert!(!shape.identifier_shaped(""));
     }
 

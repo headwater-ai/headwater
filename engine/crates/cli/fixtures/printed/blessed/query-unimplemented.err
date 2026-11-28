@@ -1,1 +1,1 @@
-headwater: `query <expression>` is listed in spec 6 and no document states what an expression is, so this engine implements none. See `docs/spec/13-open-obligations.md`. `headwater route` and `headwater explain` are the reads that exist
+headwater: `query <expression>` is listed in the engine architecture and no document states what an expression is, so this engine implements none. See `docs/spec/open-obligations.md`. `headwater route` and `headwater explain` are the reads that exist

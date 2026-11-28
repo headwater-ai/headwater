@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The content-addressed cache, and the key that makes it sound.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
+//! [The check layer](../../../../docs/spec/check-layer.md#determinism-concretely)
 //! states the key in one sentence: "the content hashes of the in-scope inputs,
 //! the taxonomy lock hash, the check version, and the injected values. A key
 //! that omits an input is a correctness bug, not a performance bug." It names
 //! the cache a
-//! [correctness root](../../../../docs/spec/12-check-layer.md#the-correctness-roots)
+//! [correctness root](../../../../docs/spec/check-layer.md#the-correctness-roots)
 //! as well: "a cache that can change a verdict is a store under another name."
 //!
 //! So the standing test is a differential rather than a benchmark.
@@ -16,7 +16,7 @@
 //!
 //! # A cache hit is not a fact about the corpus, so no report carries one
 //!
-//! Spec 12 asks a run to record, per document, "which instances were created,
+//! [The check layer](../../../../docs/spec/check-layer.md) asks a run to record, per document, "which instances were created,
 //! which ran, which were served from cache, and which were skipped with a
 //! reason". It also fixes the verdict: "same corpus, same lock, same injected
 //! clock, byte-identical output". A hit count in the report would satisfy the
@@ -46,7 +46,7 @@
 //! constant on the scope trait.
 //!
 //! **The injected values are the fourth component.**
-//! [13 — Open obligations](../../../../docs/spec/13-open-obligations.md)
+//! [Open obligations](../../../../docs/spec/open-obligations.md)
 //! carried the trap that a component with no instance leaves for whoever adds
 //! the first one. The clock is that first one. A windowed participation
 //! expectation reads `ctx.now`, and a key without it serves yesterday's verdict
@@ -62,7 +62,7 @@
 //! module follows: fail toward re-running.
 //!
 //! **The prior version is the second injected value**, and it arrives on the
-//! same terms. Spec 12: "the content hash of that version joins the cache key
+//! same terms. [The check layer](../../../../docs/spec/check-layer.md): "the content hash of that version joins the cache key
 //! like any other input." A key without it would serve the verdict of a run
 //! whose change carried a different version of the document. The `--no-cache`
 //! differential cannot see that either, because both sides of that comparison
@@ -70,7 +70,7 @@
 //! so an added document, an unchanged one and a modified one never share an
 //! entry.
 //!
-//! Two further components sit in the key that spec 12's sentence does not name,
+//! Two further components sit in the key that [the check layer](../../../../docs/spec/check-layer.md)'s sentence does not name,
 //! and both are identity rather than input. The **rule** and the **target**
 //! tell two instances apart that read the same documents. One pair of documents
 //! can carry two relations, so their read sets are equal and their results are
@@ -136,13 +136,13 @@
 //! # Why a skipped instance is never stored
 //!
 //! A cache holds verdicts. [`Outcome::Skipped`] is the statement that no
-//! verdict was reached, and spec 4 wants the reason visible on every run. So
+//! verdict was reached, and [the assurance model](../../../../docs/spec/assurance-model.md) wants the reason visible on every run. So
 //! the engine decides a skip again each time. That costs one evaluation, and it
 //! can never serve a stale reason from a disk.
 //!
 //! # Failing toward re-running
 //!
-//! Spec 12: "a false invalidation costs one run. A false survival ships an
+//! [The check layer](../../../../docs/spec/check-layer.md): "a false invalidation costs one run. A false survival ships an
 //! invalid corpus with a green report." Every doubtful case here takes the
 //! first cost. An input with no digest is not keyed. A record this engine
 //! cannot read is a miss. A cache file that will not parse is an empty cache.
@@ -427,7 +427,7 @@ impl Cache {
     ///
     /// The text below is what is hashed, and it is written out in full rather
     /// than folded into one string, so that a reader can see every component
-    /// spec 12 names and check that none is missing.
+    /// [the check layer](../../../../docs/spec/check-layer.md) names and check that none is missing.
     ///
     /// The lines down to `scope` name nothing about the instance, so they are
     /// hashed once for each rule, version and scope and the state is kept in
@@ -488,7 +488,7 @@ impl Cache {
         if scope.needs_clock() {
             let _ = writeln!(text, "clock {}", clock?.render());
         }
-        // The second injected value, on the first one's terms. Spec 12: "the
+        // The second injected value, on the first one's terms. The check layer (docs/spec/check-layer.md): "the
         // content hash of that version joins the cache key like any other
         // input". The three states of the input write three different lines,
         // and a scope that declares the input and was handed nothing is not
@@ -549,7 +549,7 @@ impl Cache {
         for input in reads {
             // An input the walk never read. The result cannot be keyed on a
             // hash that does not exist, and inventing one is the correctness
-            // bug spec 12 names. So this instance is evaluated on every run.
+            // bug the check layer (docs/spec/check-layer.md) names. So this instance is evaluated on every run.
             let digest = input.digest.as_ref()?;
             let _ = writeln!(text, "input {} {digest}", Escaped(&input.path));
         }
@@ -1089,13 +1089,13 @@ mod tests {
             rule: "test.rule",
             severity: Severity::Warn,
             obligation: None,
-            path: "docs/spec/12-check-layer.md".to_string(),
+            path: "docs/spec/check-layer.md".to_string(),
             line: 12,
             column: 3,
             message: "a message with a\ttab and a\nnewline and a \\ in it".to_string(),
             remediation: "do the thing".to_string(),
             patch: Some(Patch::Text {
-                path: "docs/spec/12-check-layer.md".to_string(),
+                path: "docs/spec/check-layer.md".to_string(),
                 start: 41,
                 end: 50,
                 expect: "behaviour".to_string(),
@@ -1441,7 +1441,7 @@ mod tests {
     /// scope once and keeps the state for every later instance with the same
     /// three (#1968). A memo keyed on less than all three would hand one
     /// instance the first lines of another, which is the key that omits an
-    /// input spec 12 calls a correctness bug. The case above builds a fresh
+    /// input [the check layer](../../../../docs/spec/check-layer.md) calls a correctness bug. The case above builds a fresh
     /// cache for every key, so it can never see a memo. This one uses one
     /// cache for the whole grid, so every row after the first meets a warm
     /// memo, and it holds each key against [`reference_text`] rather than
@@ -1665,7 +1665,7 @@ mod tests {
 
     /// The injected clock is a component of the key of a check that reads it.
     ///
-    /// This is the hole spec 13 recorded. A windowed participation expectation
+    /// This is the hole [the register of open obligations](../../../../docs/spec/open-obligations.md) recorded. A windowed participation expectation
     /// compares a declared date against `ctx.now`, so two days are two verdicts,
     /// and a key that held one of them would serve yesterday's answer today.
     /// The `--no-cache` differential cannot catch that: it holds one value of
@@ -1952,7 +1952,7 @@ mod tests {
 
     /// An input with no content hash produces no key, so its instance is
     /// evaluated on every run. The alternative is a key over a hash that does
-    /// not exist, which is the correctness bug spec 12 names.
+    /// not exist, which is the correctness bug [the check layer](../../../../docs/spec/check-layer.md) names.
     #[test]
     fn an_input_with_no_digest_is_not_keyed() {
         assert_eq!(

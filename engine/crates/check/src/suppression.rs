@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Suppression, and the inventory that makes it observable.
 //!
-//! [Spec 4](../../../../docs/spec/04-assurance-model.md#suppression) states the
+//! [The assurance model](../../../../docs/spec/assurance-model.md#suppression) states the
 //! whole mechanism in one sentence, and every clause of it is a constraint here.
 //! "Suppression is permitted, bounded, and observable. It is scoped to a file or
 //! block, it carries an expiry, and it states a reason from a closed set." The
@@ -10,16 +10,16 @@
 //!
 //! # Why the two reasons are not one field of prose
 //!
-//! [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#voice) gives the
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#voice) gives the
 //! reason: "a reason field that only holds prose collects no statistic at all".
-//! The promotion machinery of spec 4 runs on a false-positive rate, and a rate
+//! The promotion machinery of [the assurance model](../../../../docs/spec/assurance-model.md) runs on a false-positive rate, and a rate
 //! needs a numerator that says *wrong* rather than *tolerated*. So the reason is
 //! a value from a closed set, and the free prose sits beside it rather than
 //! instead of it.
 //!
 //! # This is the runner's, and a check never sees it
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#suppression-is-the-runners)
+//! [The check layer](../../../../docs/spec/check-layer.md#suppression-is-the-runners)
 //! puts the filter here: "checks know nothing about suppressions. The runner
 //! filters findings, records exactly what it filtered, and feeds the suppression
 //! inventory into the coverage report. A check that handled its own suppressions
@@ -66,7 +66,7 @@
 //! other without rewriting where its hatches sit.
 //!
 //! **Expiry.** An expired directive suppresses nothing. The findings come back
-//! and the inventory says which directive lapsed. Spec 4 made expiry mandatory
+//! and the inventory says which directive lapsed. [The assurance model](../../../../docs/spec/assurance-model.md) made expiry mandatory
 //! for a stated reason: the local mechanism, "the one that an individual author
 //! reaches for at a red check", was the leakier of the two against a waiver, and
 //! that is backwards.
@@ -79,17 +79,17 @@
 //! swept up or a directive that never worked. `refused` is a directive this
 //! engine could not read.
 //!
-//! Spec 3 asks for one report beyond the counts: "a shelf that collects
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) asks for one report beyond the counts: "a shelf that collects
 //! exemptions is a shelf whose kind assignment is wrong, and the engine reports
 //! that concentration". So the inventory groups by shelf as well as by rule.
 //!
-//! Spec 4 also says that "a rule with fifty suppressions is not a rule — it is a
+//! [The assurance model](../../../../docs/spec/assurance-model.md) also says that "a rule with fifty suppressions is not a rule — it is a
 //! finding about the taxonomy". No number is written here. The count per rule is
 //! the instrument, and the threshold is a judgment that no section states.
 //!
 //! # Two things that are declared and do not exist
 //!
-//! Spec 4 fixes a precedence — **waiver, then migration-pending, then
+//! [The assurance model](../../../../docs/spec/assurance-model.md) fixes a precedence — **waiver, then migration-pending, then
 //! suppression** — so that three inventories partition the escaped findings and
 //! none is counted twice. Neither of the other two mechanisms exists in this
 //! engine, so the precedence has nothing to order and no code states it. When a
@@ -106,12 +106,12 @@ use headwater_census::census::{Census, Outcome as Classification};
 use headwater_census::resolve::Step;
 use headwater_doc::body::{Block, BlockKind};
 
-/// Why a finding is suppressed. The closed set spec 4 declares, and nothing
+/// Why a finding is suppressed. The closed set [the assurance model](../../../../docs/spec/assurance-model.md) declares, and nothing
 /// else reaches this type.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Reason {
     /// The finding is wrong. This is the numerator of the false-positive rate
-    /// that spec 4's promotion machinery runs on.
+    /// that [the assurance model](../../../../docs/spec/assurance-model.md)'s promotion machinery runs on.
     FalsePositive,
     /// The finding is right, and tolerated for now.
     AcceptedDeviation,
@@ -185,7 +185,7 @@ pub struct Suppression {
     pub note: String,
     /// The findings this directive hid, in the order the runner met them.
     ///
-    /// The findings themselves rather than a count of them. Spec 12 asks the
+    /// The findings themselves rather than a count of them. [The check layer](../../../../docs/spec/check-layer.md) asks the
     /// runner to record "exactly what it filtered", and a count is not that:
     /// a reader of the report gets a number either way, and a
     /// [CI adapter](../../adapter/src/lib.rs) that has to show a suppressed
@@ -389,14 +389,14 @@ impl Inventory {
         self.grouped(|suppression| Some(suppression.rule.as_str()))
     }
 
-    /// Suppressed findings per shelf, which is the concentration spec 3 asks
+    /// Suppressed findings per shelf, which is the concentration [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) asks
     /// for: a shelf that collects exemptions is a shelf whose kind assignment
     /// is wrong.
     pub fn by_shelf(&self) -> Vec<(&str, usize)> {
         self.grouped(|suppression| suppression.shelf.as_deref())
     }
 
-    /// Suppressed findings per reason, in the order spec 4 lists them, and
+    /// Suppressed findings per reason, in the order [the assurance model](../../../../docs/spec/assurance-model.md) lists them, and
     /// only for a reason that has one. This is the count that the promotion
     /// machinery reads.
     pub fn by_reason(&self) -> Vec<(Reason, usize)> {

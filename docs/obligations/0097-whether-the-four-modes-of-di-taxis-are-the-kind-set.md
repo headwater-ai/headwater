@@ -23,7 +23,7 @@ relations:
 
 ## Context
 
-[Q16](../spec/09-decisions.md#q16--public-presence) settles the public presence of the project and leaves the kind set of a documentation-site bundle open.
+[Q16](../spec/decisions.md#q16--public-presence) settles the public presence of the project and leaves the kind set of a documentation-site bundle open.
 
 ## Obligation
 
@@ -31,4 +31,4 @@ The corpus owes a ruling on whether the four documentation modes of Diátaxis ar
 
 ## Discharge
 
-That is a [Q3](../spec/09-decisions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box) clustering question, and it is data in a package. An adopter revises it at the cost of a release.
+That is a [Q3](../spec/decisions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box) clustering question, and it is data in a package. An adopter revises it at the cost of a release.

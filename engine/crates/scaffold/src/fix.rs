@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Applying the patches a run produced: `headwater check --fix`.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#fixability) fixes what may
+//! [The check layer](../../../../docs/spec/check-layer.md#fixability) fixes what may
 //! be offered: "A fix is offered only when it is **mechanical and total** — one
 //! correct outcome, derivable without judgment." [`headwater_check::Patch`] is
 //! that offer, and this module is the only thing that acts on one.
@@ -22,7 +22,7 @@
 //! because it parses its own result and looks for the half it wrote. A patch
 //! over prose needs the same shape of promise against
 //! [`headwater_doc::sentences`], which
-//! [spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots) holds
+//! [the check layer](../../../../docs/spec/check-layer.md#the-correctness-roots) holds
 //! as a correctness root: a rewrite at a wrong span **corrupts a document**
 //! rather than reporting a wrong line.
 //!
@@ -963,7 +963,7 @@ mod tests {
         );
     }
 
-    /// The same for a quotation. Spec 3 puts another author's words outside
+    /// The same for a quotation. [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) puts another author's words outside
     /// every lexical rule, and this is that rule at the write end.
     #[test]
     fn an_offset_inside_a_block_quote_is_refused() {

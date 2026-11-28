@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Q19](../spec/09-decisions.md#q19--inbound-integration-an-external-system-of-record) rules how an external system of record feeds a corpus, and it describes a transcription projection.
+[Q19](../spec/decisions.md#q19--inbound-integration-an-external-system-of-record) rules how an external system of record feeds a corpus, and it describes a transcription projection.
 
 ## Obligation
 

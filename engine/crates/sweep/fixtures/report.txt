@@ -42,4 +42,4 @@ corpus/0005-a-run-records-nothing-about-what-it-read.md:17:1 · info
   finding 6 (line 86): `prose_quality` is not a class of this sweep. The classes are: undeclared_conflict, quiet_supersession, undefined_concept, audience_mismatch, unwritten_section
 
 3 carried, 4 refused, of 7 the file held. The engine confirmed the citation and the novelty of every carried finding, and it confirmed nothing about whether the claim is true.
-2 carried findings propose an edge, which is the outcome spec 4 asks a sweep for. Nothing here writes one: a person accepts a proposal, and the engine never accepts its own.
+2 carried findings propose an edge, which is the outcome the assurance model asks a sweep for. Nothing here writes one: a person accepts a proposal, and the engine never accepts its own.

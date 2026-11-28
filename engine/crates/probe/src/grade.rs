@@ -14,7 +14,7 @@
 //! **Its inputs carry no prose.** A transcript is an event log whose every key
 //! is a member of a closed set, and an expectation is one of five predicates
 //! that the taxonomy fixes. Nothing here reads a sentence, so nothing here
-//! needs a rubric, and [spec 5](../../../../docs/spec/05-ai-integration.md#a-probe-is-a-document-with-a-declared-expectation)
+//! needs a rubric, and [AI integration](../../../../docs/spec/ai-integration.md#a-probe-is-a-document-with-a-declared-expectation)
 //! sends a question that needs one to the sweep instead.
 //!
 //! **Every satisfied verdict carries a witness, and the type is what carries
@@ -40,7 +40,7 @@
 //! behavior under it is not. It is not what makes the result *right*: a grader
 //! that returned `Satisfied` for everything is perfectly deterministic. So the
 //! recorded fixture set is the instrument, and the property above is the design
-//! that gives the fixtures something to hold. Spec 12 asks a correctness root
+//! that gives the fixtures something to hold. [The check layer](../../../../docs/spec/check-layer.md) asks a correctness root
 //! for its own failing fixtures, and every verdict form and every refusal here
 //! has one.
 //!
@@ -488,7 +488,7 @@ impl Interval {
 
     /// The difference `self - other`, with a Newcombe hybrid score interval.
     ///
-    /// Spec 5 powers a campaign for a two-sample test: 0.50 against 0.75 at 80%
+    /// [AI integration](../../../../docs/spec/ai-integration.md) powers a campaign for a two-sample test: 0.50 against 0.75 at 80%
     /// power and a 5% two-sided level is about 58 sessions per arm. Reading the
     /// two arms' Wilson intervals for overlap is a much stricter test, with
     /// roughly half that power at the same count (#980). This interval is the
@@ -744,7 +744,7 @@ impl Results {
     /// The satisfied rate with its interval, and `None` where nothing was
     /// graded.
     ///
-    /// Spec 5: "a probe result reports an interval rather than a point. An
+    /// [AI integration](../../../../docs/spec/ai-integration.md): "a probe result reports an interval rather than a point. An
     /// interval that overlaps the previous one is variance. An interval that
     /// does not overlap is drift." It is a Wilson score interval, which stays
     /// inside zero and one at the session counts a regression tier runs, where
@@ -1016,7 +1016,7 @@ fn sessions_of<'a>(record: &'a Record, probe: &str) -> Vec<Vec<&'a Event>> {
 
 /// The finding the recorder puts on every produced artifact of a session
 /// whose tree `headwater check` refused (#1879). `tools/probe/probe-transform.sh`
-/// writes it, and spec 15 states it.
+/// writes it, and [the recorder contract](../../../../docs/spec/the-recorder-contract.md) states it.
 pub const CHECK_REFUSED: &str = "check:refused";
 
 /// The predicate, evaluated over one session.
@@ -1095,7 +1095,7 @@ fn read<'a>(examines: &[Examined], session: &[&'a Event]) -> Option<Found<'a>> {
 /// Equality, or the argument ending at a path boundary. The recorder writes the
 /// argument as the session passed it, and a session driven from another working
 /// directory passes an absolute path for the same file. A boundary is required
-/// so that `…/05-ai-integration.md.bak` does not match the document it was
+/// so that `…/ai-integration.md.bak` does not match the document it was
 /// copied from.
 fn names(argument: &str, target: &Examined) -> bool {
     names_path(argument, &target.path)
@@ -1107,12 +1107,49 @@ fn names(argument: &str, target: &Examined) -> bool {
 /// census row, which is the same comparison against a different source of the
 /// path. It reads this function rather than a copy of it, because two copies of
 /// a boundary rule are two places for the boundary to go missing.
+///
+/// A file name with no leading number also answers to the same name with a
+/// two-digit `NN-` prefix in the same directory. That is the name the
+/// specification series gave a part under headwater/standard 4.x, whose
+/// layout was `{sequence:02d}-{slug}.md`, and 5.0.0 lays the shelf out as
+/// `{slug}.md`
+/// ([HW-DR-0117](../../../../docs/decisions/0117-the-specification-series-names-a-part-by-its-slug-and-carries-no-sequence.md)).
+/// A transcript is a record of a moment: one recorded before a corpus renamed
+/// its parts names `docs/spec/12-check-layer.md` for the part that is now
+/// `docs/spec/check-layer.md`, and without this arm every regrade of that
+/// transcript would turn a read into a miss. A target whose file name opens
+/// with a digit, such as `0087-….md` on an identifier shelf, takes no such arm.
 pub(crate) fn names_path(argument: &str, path: &str) -> bool {
     let argument = argument.replace('\\', "/");
+    ends_at(&argument, path)
+        || without_sequence(&argument).is_some_and(|argument| {
+            !file_name(path).starts_with(|c: char| c.is_ascii_digit()) && ends_at(&argument, path)
+        })
+}
+
+/// Equality, or `argument` ending in `path` at a `/` boundary.
+fn ends_at(argument: &str, path: &str) -> bool {
     argument == path
         || (argument.len() > path.len()
             && argument.ends_with(path)
             && argument[..argument.len() - path.len()].ends_with('/'))
+}
+
+/// The last segment of a `/`-separated path.
+fn file_name(path: &str) -> &str {
+    path.rsplit('/').next().unwrap_or(path)
+}
+
+/// `argument` with a leading `NN-` taken off its file name, or `None` when the
+/// file name does not open with two digits and a hyphen.
+fn without_sequence(argument: &str) -> Option<String> {
+    let name = file_name(argument);
+    let bytes = name.as_bytes();
+    let numbered = bytes.len() > 3
+        && bytes[0].is_ascii_digit()
+        && bytes[1].is_ascii_digit()
+        && bytes[2] == b'-';
+    numbered.then(|| format!("{}{}", &argument[..argument.len() - name.len()], &name[3..]))
 }
 
 /// Whether a Bash call's argument runs a command that names an examined target.
@@ -1647,18 +1684,54 @@ mod tests {
 
     #[test]
     fn a_tool_call_names_a_document_by_equality_or_at_a_path_boundary() {
-        let want = target(Some("HW-SPEC-05"), "docs/spec/05-ai-integration.md");
-        assert!(names("docs/spec/05-ai-integration.md", &want));
-        assert!(names("/home/a/repo/docs/spec/05-ai-integration.md", &want));
-        assert!(names("C:\\repo\\docs\\spec\\05-ai-integration.md", &want));
+        let want = target(Some("HW-SPEC-05"), "docs/spec/ai-integration.md");
+        assert!(names("docs/spec/ai-integration.md", &want));
+        assert!(names("/home/a/repo/docs/spec/ai-integration.md", &want));
+        assert!(names("C:\\repo\\docs\\spec\\ai-integration.md", &want));
         assert!(
-            !names("docs/spec/05-ai-integration.md.bak", &want),
+            !names("docs/spec/ai-integration.md.bak", &want),
             "a copy is not the document"
         );
         assert!(
-            !names("otherdocs/spec/05-ai-integration.md", &want),
+            !names("otherdocs/spec/ai-integration.md", &want),
             "the boundary is what stops a suffix from matching a different tree"
         );
+    }
+
+    /// A transcript recorded before the specification series dropped its
+    /// numbers names a part by its `NN-` name (HW-DR-0117). A regrade of that
+    /// transcript against the renamed target still counts the read. The arm is
+    /// for a target that carries no number of its own: a numbered target on an
+    /// identifier shelf matches only its own name, and another directory or
+    /// another slug never matches.
+    #[test]
+    fn a_tool_call_names_a_renamed_part_by_the_numbered_name_it_had() {
+        let want = target(Some("HW-SPEC-check-layer"), "docs/spec/check-layer.md");
+        assert!(names("docs/spec/12-check-layer.md", &want));
+        assert!(names("/mnt/ws/r1/docs/spec/12-check-layer.md", &want));
+        assert!(
+            !names("docs/spec/12-check-layer.md.bak", &want),
+            "a copy is still not the document"
+        );
+        assert!(
+            !names("xdocs/spec/12-check-layer.md", &want),
+            "the numbered name still matches only at a `/` boundary"
+        );
+        assert!(
+            !names("docs/other/12-check-layer.md", &want),
+            "the number comes off the file name and not off the directory"
+        );
+        assert!(
+            !names("docs/spec/123-check-layer.md", &want),
+            "the 4.x layout wrote two digits"
+        );
+        assert!(!names("docs/spec/12-glossary.md", &want));
+        let record = target(Some("HW-DR-0087"), "docs/decisions/0087-a-rule.md");
+        assert!(
+            !names("docs/decisions/00-0087-a-rule.md", &record),
+            "a target whose name opens with a digit takes no such arm"
+        );
+        assert!(names("docs/decisions/0087-a-rule.md", &record));
     }
 
     fn call(tool: &str, argument: &str) -> crate::intake::Call {

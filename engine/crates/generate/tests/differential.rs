@@ -2,7 +2,7 @@
 //! The `exportable_as` differential: does the emitted schema catch exactly what
 //! the native check catches?
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#exportable_as-is-a-set-with-a-partition-rule)
+//! [The check layer](../../../../docs/spec/check-layer.md#exportable_as-is-a-set-with-a-partition-rule)
 //! lets a check name an emitter target only when the emitted constraint catches
 //! exactly what the native check catches. This file is the test that permits the
 //! two `jsonschema` values in the check registry, and it holds them to both
@@ -11,7 +11,7 @@
 //! # Two directions, and the second one is why this file exists
 //!
 //! A finding the engine reports and the validator misses is a partial
-//! translation. It is a coverage claim that is partly true, which spec 12 rules
+//! translation. It is a coverage claim that is partly true, which [the check layer](../../../../docs/spec/check-layer.md) rules
 //! worse than a claim of none.
 //!
 //! A finding the validator reports and the engine does not is worse, and no loss

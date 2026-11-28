@@ -20,7 +20,7 @@ relations:
 
 ## Context
 
-[Spec 3](../spec/03-authoring-and-lifecycle.md#identifiers) states that allocation reads a tree and that a tree holds no history. So the highest value a run finds is a lower bound on every value ever allocated. That sentence is about deletion, and it is correct about deletion. A tree holds no concurrency either, and nobody wrote that consequence down.
+[Authoring and lifecycle](../spec/authoring-and-lifecycle.md#identifiers) states that allocation reads a tree and that a tree holds no history. So the highest value a run finds is a lower bound on every value ever allocated. That sentence is about deletion, and it is correct about deletion. A tree holds no concurrency either, and nobody wrote that consequence down.
 
 Every branch cut from one state reads the same corpus. So two branches mint the same number. Each branch is internally consistent and passes a strict run, the two file names differ, and the merge is silent. The pair first exists after the second merge, when no run reads either change. This corpus met the failure three times in one working day on 2026-09-06. `0048` landed twice. Two claims on `0049` were caught by a person who read other branches by hand, which is not a mechanism.
 
@@ -44,7 +44,7 @@ A single claimant-bearing line **cannot express what a resolver needs**. One lin
 
 **`.headwater/ids/**` takes no merge attribute, ever.** `merge=union` on that path concatenates two claimants into one file and exits 0, which is the same loss by another route.
 
-**The claim comes first and the document second.** Nothing is written before the claim, so a claim that cannot be made refuses with an untouched tree. A document write that then fails leaves a spent number with no document, and spec 3 already declares that state legitimate.
+**The claim comes first and the document second.** Nothing is written before the claim, so a claim that cannot be made refuses with an untouched tree. A document write that then fails leaves a spent number with no document, and [authoring and lifecycle](../spec/authoring-and-lifecycle.md) already declares that state legitimate.
 
 **Two rules hold the store, and one direction of the pair is deliberately absent.** `identifier.claim.missing` is an error and it carries a patch, because the correction is one file whose content is the path of the document. `identifier.claim.stale` is advisory, because a decision about which of the two moved is a rewrite. A claim whose identifier no document of the corpus holds is **correct** under the rule that an identifier is never reused. No rule reports one. That warrant does not cover a rename, because a rename reuses nothing. Where one document holds the identifier at a path other than the claim's, `identifier.claim.stale` reports the claim and names the current path.
 

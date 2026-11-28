@@ -432,9 +432,9 @@ mod tests {
     /// A word wider than the fold is written past it rather than cut in half.
     #[test]
     fn a_word_longer_than_the_width_is_never_broken() {
-        let text = "see docs/spec/06-engine-architecture.md#the-command-line for it";
+        let text = "see docs/spec/engine-architecture.md#the-command-line for it";
         let folded = fold(text, 20);
-        assert!(folded.contains("docs/spec/06-engine-architecture.md#the-command-line"));
+        assert!(folded.contains("docs/spec/engine-architecture.md#the-command-line"));
         assert_eq!(folded.split('\n').next(), Some("see"));
     }
 

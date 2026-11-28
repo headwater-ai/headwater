@@ -14,7 +14,7 @@
 //! read it as an intersection and reported an answer, and the resolver would
 //! have refused the taxonomy that produced it. Two enforcement paths that
 //! disagree about one file is the defect a rule with no fixture always has, and
-//! [spec 12](../../../../docs/spec/12-check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
+//! [the check layer](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
 //! names it for the check layer.
 //!
 //! Every case below asserts the refusal's **text** and not only its count. A
@@ -233,7 +233,7 @@ fn a_narrowing_that_names_a_value_the_facet_does_not_declare_is_refused() {
 /// A child that names a value an ancestor's narrowing excluded is refused, and
 /// the refusal names the ancestor.
 ///
-/// The case the record turns on. Spec 2 rules that a child may not un-require
+/// The case the record turns on. [The taxonomy model](../../../../docs/spec/taxonomy-model.md) rules that a child may not un-require
 /// what a parent requires, because that voids the parent's contract for a
 /// reader who trusts it, and a wider value set voids the same contract the same
 /// way. `asserted` is a value of the facet, so the previous rule passes it and

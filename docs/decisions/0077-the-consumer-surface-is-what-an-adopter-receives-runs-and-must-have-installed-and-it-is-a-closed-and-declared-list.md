@@ -34,7 +34,7 @@ An audit of the tree on 2026-09-20 measured what that silence costs. [#892](http
 
 **The merge hazard ships and the protection does not.** `headwater generate` writes folds over the whole corpus into every adopter's tree. [HW-DR-0049](0049-a-corpus-wide-fold-is-derived-and-never-stored.md) names the hazard and says that an adopter inherits the rule rather than the artifacts. The hooks that protect this repository resolve an engine under `engine/target`, which no adopter has. Each `python3` call in them guards a check of this repository's own site and fails open. The general half of the merged-state check is already two verbs, `headwater generate --check` and `headwater taxonomy resolve --check`.
 
-**Two specification parts promise what no release carries.** [Spec 0](../spec/00-vision-and-scope.md) says that the skills and the hooks ship with the first release. [Spec 5](../spec/05-ai-integration.md) calls that machinery the adoption model. The release archive holds a binary and a license, and the package holds no harness file.
+**Two specification parts promise what no release carries.** [The vision and scope](../spec/vision-and-scope.md) says that the skills and the hooks ship with the first release. [AI integration](../spec/ai-integration.md) calls that machinery the adoption model. The release archive holds a binary and a license, and the package holds no harness file.
 
 The owner's statement for release 0.2 is that an adopter needs nothing but the `headwater` binary. No Rust toolchain, no Python and no script of this repository is part of it. The owner ruled on ten questions from the audit on 2026-09-20, and the comment of that date on #892 records each answer. This record is where those rulings live.
 
@@ -55,13 +55,13 @@ The owner's statement for release 0.2 is that an adopter needs nothing but the `
 
 **The binary prints the `git config` lines by default and runs them only under an explicit flag.** Git takes no executable from a repository without the consent of the clone, and a printed line keeps that consent with the adopter.
 
-**A merge-driver verb does not break the rule of spec 5 that no hook introduces a verb.** That rule forbids a second entry point to `route` or to `check`. The driver answers a question that no verb answers, which is what a merge does with a derived fold.
+**A merge-driver verb does not break the rule of [AI integration](../spec/ai-integration.md) that no hook introduces a verb.** That rule forbids a second entry point to `route` or to `check`. The driver answers a question that no verb answers, which is what a merge does with a derived fold.
 
 **The binary emits the skills and the harness hooks, and a hook configuration calls verbs only.** [HW-DR-0055](0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md) already requires the second half. [`headwater init --harness`](../interfaces/headwater-init.md#the-harness-step) writes the skills and the maintainer agent, and the first release after 0.5.0 carries it. Since [#1871](https://github.com/headwater-ai/headwater/issues/1871), the same step also writes the hooks of Claude Code as `sh` scripts, their configuration and the MCP server entry. The amendment of 2026-10-29 states why.
 
 **The supported platforms of 0.2 are a static Linux x86_64 build and a macOS arm64 build at the least.** `cargo install` is a labeled alternative and never the lead route.
 
-**Site publication through a static-site generator is a declared integration point and is outside the mandatory surface.** MkDocs needs Python, and that dependency belongs to the generator. Headwater builds no renderer, as spec 0 states.
+**Site publication through a static-site generator is a declared integration point and is outside the mandatory surface.** MkDocs needs Python, and that dependency belongs to the generator. Headwater builds no renderer, as [the vision and scope](../spec/vision-and-scope.md) states.
 
 **`tools/headwater-bootstrap.sh` leaves the surface when `headwater taxonomy vendor` takes a location.** [HW-DR-0075](0075-the-vendor-verb-may-take-a-location-and-the-fetch-lives-only-in-a-crate-the-checking-loop-never-links.md) rules that verb. A stub stays at the published URL for one release and names the verb to run.
 
@@ -73,7 +73,7 @@ The owner's statement for release 0.2 is that an adopter needs nothing but the `
 
 **The sentence of HW-DR-0049 about an adopter did not describe what ships.** An adopter inherits the rule and also the verbs that hold it. [#574](https://github.com/headwater-ai/headwater/issues/574) accepted HW-DR-0049 on 2026-09-23 and rewrote that sentence to say so.
 
-**Spec 0 and spec 5 stated a delivery that no release made.** Spec 0 said that release 0.1 carries the skills and the hooks, and no release carried them. [#1586](https://github.com/headwater-ai/headwater/pull/1586) closed the gap for the skills, and spec 0 now says that `headwater init --harness` writes them. [HW-OBL-0232](../obligations/0232-headwater-init-harness-ships-no-hook-and-no-hook-configuration-for-any-harness.md) holds the gap for the hooks.
+**[The vision and scope](../spec/vision-and-scope.md) and [AI integration](../spec/ai-integration.md) stated a delivery that no release made.** [The vision and scope](../spec/vision-and-scope.md) said that release 0.1 carries the skills and the hooks, and no release carried them. [#1586](https://github.com/headwater-ai/headwater/pull/1586) closed the gap for the skills, and [the vision and scope](../spec/vision-and-scope.md) now says that `headwater init --harness` writes them. [HW-OBL-0232](../obligations/0232-headwater-init-harness-ships-no-hook-and-no-hook-configuration-for-any-harness.md) holds the gap for the hooks.
 
 **Nothing checks this record.** The population of a file is stated here and in no declaration. [#976](https://github.com/headwater-ai/headwater/issues/976) declares the surface as a manifest, generates a page under `docs/interfaces/` from it, and reads every page for an adopter against it. [#933](https://github.com/headwater-ai/headwater/issues/933) rejected a wide rule because a list of one entry reports zero by construction. That reason does not hold here, because the audit counted at least 12 live findings under `docs/interfaces/` alone.
 

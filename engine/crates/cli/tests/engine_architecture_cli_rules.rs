@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Spec 6's `### CLI` keeps the grammar and the three rules that no verb
+//! [the engine architecture](../../../../docs/spec/engine-architecture.md)'s `### CLI` keeps the grammar and the three rules that no verb
 //! contract states, and each verb's own rules live in its contract under
 //! `docs/interfaces/` (#1572, slice 4a).
 //!
@@ -22,7 +22,7 @@ fn read(rel: &str) -> String {
 }
 
 fn spec_six() -> String {
-    read("docs/spec/06-engine-architecture.md")
+    read("docs/spec/engine-architecture.md")
 }
 
 /// Text with Markdown link targets, emphasis and code ticks removed, in lower
@@ -49,11 +49,11 @@ fn words(text: &str) -> Vec<String> {
         .collect()
 }
 
-/// The fewest words in a row that spec 6's CLI prose may not share with a
+/// The fewest words in a row that [the engine architecture](../../../../docs/spec/engine-architecture.md)'s CLI prose may not share with a
 /// verb contract.
 const RUN_WORDS: usize = 8;
 
-/// The prose paragraphs of spec 6's `### CLI`, from its heading to the next
+/// The prose paragraphs of [the engine architecture](../../../../docs/spec/engine-architecture.md)'s `### CLI`, from its heading to the next
 /// heading, with the fenced grammar block left out. Each paragraph is one
 /// logical line, because no Markdown source here is hard-wrapped.
 fn cli_paragraphs(six: &str) -> Vec<String> {
@@ -75,7 +75,7 @@ fn cli_paragraphs(six: &str) -> Vec<String> {
     out
 }
 
-/// The lead sentences of the three paragraphs spec 6 keeps, because no verb
+/// The lead sentences of the three paragraphs [the engine architecture](../../../../docs/spec/engine-architecture.md) keeps, because no verb
 /// contract states their rules.
 const KEPT_LEADS: [&str; 3] = [
     "This grammar is a statement of fact about the engine",
@@ -83,8 +83,8 @@ const KEPT_LEADS: [&str; 3] = [
     "No flag decides which findings count",
 ];
 
-/// The lead sentence of each of the 17 paragraphs that left spec 6, in the
-/// order spec 6 held them.
+/// The lead sentence of each of the 17 paragraphs that left [the engine architecture](../../../../docs/spec/engine-architecture.md), in the
+/// order [the engine architecture](../../../../docs/spec/engine-architecture.md) held them.
 const MOVED_LEADS: [&str; 17] = [
     "--fix writes the patch that rides with a finding",
     "new is the one verb that writes a document, and six flags carry its rules",
@@ -108,7 +108,7 @@ const MOVED_LEADS: [&str; 17] = [
 /// The longest pointer paragraph, in words.
 const POINTER_WORDS: usize = 80;
 
-/// Outside its fence, spec 6's `### CLI` holds the three kept paragraphs and
+/// Outside its fence, [the engine architecture](../../../../docs/spec/engine-architecture.md)'s `### CLI` holds the three kept paragraphs and
 /// one short pointer to the contracts, and none of the paragraphs that left.
 ///
 /// # Watched failing
@@ -164,9 +164,8 @@ fn spec_6_cli_keeps_only_the_grammar_and_the_three_rules_no_contract_states() {
             "the pointer paragraph of spec 6's `### CLI` does not link the interface index"
         );
         assert!(
-            pointer.contains(
-                "](09-decisions.md#q43--whether-a-refusal-under---json-is-a-json-document)"
-            ),
+            pointer
+                .contains("](decisions.md#q43--whether-a-refusal-under---json-is-a-json-document)"),
             "the pointer paragraph of spec 6's `### CLI` does not cite Q43, which rules a refusal"
         );
     }
@@ -257,8 +256,8 @@ const MOVED_RULES: [(&str, &str); 20] = [
     ),
 ];
 
-/// Each rule that left spec 6 is stated in the contract of its verb, and
-/// spec 6 no longer states it.
+/// Each rule that left [the engine architecture](../../../../docs/spec/engine-architecture.md) is stated in the contract of its verb, and
+/// [the engine architecture](../../../../docs/spec/engine-architecture.md) no longer states it.
 ///
 /// # Watched failing
 ///
@@ -287,7 +286,7 @@ fn every_moved_cli_rule_is_stated_in_its_verb_contract() {
     );
 }
 
-/// The eleven contracts that a paragraph of spec 6's `### CLI` stated a rule
+/// The eleven contracts that a paragraph of [the engine architecture](../../../../docs/spec/engine-architecture.md)'s `### CLI` stated a rule
 /// of.
 const CONTRACTS: [&str; 11] = [
     "docs/interfaces/headwater-check.md",
@@ -303,7 +302,7 @@ const CONTRACTS: [&str; 11] = [
     "docs/interfaces/headwater-gate.md",
 ];
 
-/// Spec 6's CLI prose shares no run of eight words with a verb contract, so
+/// [The engine architecture](../../../../docs/spec/engine-architecture.md)'s CLI prose shares no run of eight words with a verb contract, so
 /// that no rule is stated in both places. The grammar fence is left out,
 /// because the synopsis of a contract is meant to match it.
 ///
@@ -347,9 +346,9 @@ fn engine_sources(dir: &Path, out: &mut Vec<PathBuf>) {
     }
 }
 
-/// Clauses of the moved CLI rules that a comment can credit to spec 6. Each
+/// Clauses of the moved CLI rules that a comment can credit to [the engine architecture](../../../../docs/spec/engine-architecture.md). Each
 /// one is a clause of a rule, never a word such as "fix", "export" or
-/// "network", so a comment that names the verb and credits spec 6 with its
+/// "network", so a comment that names the verb and credits [the engine architecture](../../../../docs/spec/engine-architecture.md) with its
 /// grammar does not match.
 const MOVED_CLAIMS: [&str; 6] = [
     "asks for one format at a time",
@@ -360,19 +359,19 @@ const MOVED_CLAIMS: [&str; 6] = [
     "the recorder is a separate process",
 ];
 
-/// Where `text`, in lower case, first names spec 6: the words `spec 6`, or a
-/// link into its file, whatever the link text says.
+/// Where `text`, in lower case, first names [the engine architecture](../../../../docs/spec/engine-architecture.md): the words `spec 6`, its title,
+/// or a link into its file, whatever the link text says.
 fn spec_six_mention(text: &str) -> Option<usize> {
-    ["spec 6", "06-engine-architecture.md"]
+    ["spec 6", "engine architecture", "engine-architecture.md"]
         .iter()
         .filter_map(|m| text.find(m))
         .min()
 }
 
-/// A comment that credits spec 6 with a moved CLI rule points a reader at a
+/// A comment that credits [the engine architecture](../../../../docs/spec/engine-architecture.md) with a moved CLI rule points a reader at a
 /// part that no longer holds it.
 ///
-/// It reads every comment line that names spec 6, joined with the five lines
+/// It reads every comment line that names [the engine architecture](../../../../docs/spec/engine-architecture.md), joined with the five lines
 /// after it, and fails when the text from that mention on states one of
 /// [`MOVED_CLAIMS`] within 240 bytes. This file is skipped, because it names
 /// the claims it looks for.
@@ -389,7 +388,7 @@ fn no_comment_quotes_moved_cli_text_as_spec_6() {
     let mut credited = Vec::new();
     let mut read = 0;
     for file in files {
-        if file.file_name().and_then(|n| n.to_str()) == Some("spec_six_cli_rules.rs") {
+        if file.file_name().and_then(|n| n.to_str()) == Some("engine_architecture_cli_rules.rs") {
             continue;
         }
         let text = std::fs::read_to_string(&file).expect("read an engine source");
@@ -432,12 +431,12 @@ fn no_comment_quotes_moved_cli_text_as_spec_6() {
 /// The module comment of the probe harness does not say that `probe` reaches
 /// a model over the network, whatever it credits. The contract of the verb
 /// says that no subcommand opens a network connection, and the comment once
-/// said the opposite under a link to spec 6.
+/// said the opposite under a link to [the engine architecture](../../../../docs/spec/engine-architecture.md).
 ///
 /// # Watched failing
 ///
 /// With the sentence "`probe` reaches a model over the network." put back
-/// into `probe/src/lib.rs`, with no link to spec 6 beside it, this reddened,
+/// into `probe/src/lib.rs`, with no link to [the engine architecture](../../../../docs/spec/engine-architecture.md) beside it, this reddened,
 /// and `no_comment_quotes_moved_cli_text_as_spec_6` stayed green.
 #[test]
 fn the_probe_module_comment_does_not_say_probe_reaches_the_network() {

@@ -61,7 +61,7 @@ An interval that overlaps the previous run's is variance and one that does not i
 
 ## The comparisons this arm takes part in
 
-What the documents change. The treated arm is the `campaign` absent arm and the control is the `documentation` absent arm. Both removed the governance, and only the control removed `docs/`, so this is the effect of the documents alone (spec 5).
+What the documents change. The treated arm is the `campaign` absent arm and the control is the `documentation` absent arm. Both removed the governance, and only the control removed `docs/`, so this is the effect of the documents alone (AI integration).
 
 - treated, `docs/probe-runs/campaign-pilot-of-2026-09-28-campaign-tier-absent-arm-sufficiency.md`: 4 of 12 graded sessions satisfied their expectation, 33.3%, in a 95% interval of 13.8% to 60.9%. 0 sessions refused by the session itself.
 - control, `docs/probe-runs/campaign-pilot-of-2026-09-28-documentation-tier-absent-arm-sufficiency.md`: 1 of 12 graded sessions satisfied their expectation, 8.3%, in a 95% interval of 1.5% to 35.4%. 0 sessions refused by the session itself.

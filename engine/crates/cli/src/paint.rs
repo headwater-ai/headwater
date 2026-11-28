@@ -575,7 +575,7 @@ mod tests {
     /// every case there and lay the help out differently.
     #[test]
     fn the_fold_this_module_names_is_the_one_the_check_layer_owns() {
-        let text = "see docs/spec/06-engine-architecture.md#the-command-line for it";
+        let text = "see docs/spec/engine-architecture.md#the-command-line for it";
         assert_eq!(fold(text, 20), headwater_check::fill::fold(text, 20));
         assert_eq!(
             fold_at(text, 20, 6),

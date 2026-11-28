@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Prose links, bound to what they point at. None of them is an edge.
 //!
-//! [Q4](../../../../docs/spec/09-decisions.md#q4--relation-storage) cut the
-//! annotated prose link, and [spec 1](../../../../docs/spec/01-conceptual-model.md#prose-links-are-not-relations)
+//! [Q4](../../../../docs/spec/decisions.md#q4--relation-storage) cut the
+//! annotated prose link, and [the conceptual model](../../../../docs/spec/conceptual-model.md#prose-links-are-not-relations)
 //! states what is left: "The engine extracts every prose link and checks that
 //! it resolves. No syntax promotes one into a relation." So this module
 //! resolves, and it produces no edge whatever a link points at.
@@ -150,7 +150,7 @@ pub enum Binding {
     /// A fragment with no path: a link inside this document.
     SameDocument,
     /// A URL or a mail address. Reaching it is a network call, and a check
-    /// never makes one ([spec 0](../../../../docs/spec/00-vision-and-scope.md#non-negotiables)).
+    /// never makes one ([the vision and scope](../../../../docs/spec/vision-and-scope.md#non-negotiables)).
     External,
 }
 

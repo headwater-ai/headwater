@@ -1,7 +1,7 @@
 #!/bin/sh
 # What holds `tools/site/review-site.py`.
 #
-# Spec 12 refuses a check that ships with no failing fixture. The review tool
+# The check layer (docs/spec/check-layer.md) refuses a check that ships with no failing fixture. The review tool
 # reads what `tools/site/check-site-console.py` does not: the layout at phone
 # width, the dark theme, keyboard focus and the navigation a reader sees. Each
 # of those readings is an absence until it finds something, so each one is

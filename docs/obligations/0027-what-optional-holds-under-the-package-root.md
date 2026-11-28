@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-The grammar of `$package.optional.forbids` is settled and the shape of what it reads is not. [Spec 7](../spec/07-distribution-and-federation.md#publishing) declares no `optional` block in the package manifest.
+The grammar of `$package.optional.forbids` is settled and the shape of what it reads is not. [Distribution and federation](../spec/distribution-and-federation.md#publishing) declares no `optional` block in the package manifest.
 
 ## Obligation
 
@@ -32,4 +32,4 @@ This is the fifth surface that has a required declaration and no stated form.
 
 ## Discharge
 
-The resolver refuses a `$package` reference and names this gap as the reason, rather than report a node that does not exist. What closes this is a statement of the shape in spec 7, and nothing else reaches it.
+The resolver refuses a `$package` reference and names this gap as the reason, rather than report a node that does not exist. What closes this is a statement of the shape in [distribution and federation](../spec/distribution-and-federation.md), and nothing else reaches it.

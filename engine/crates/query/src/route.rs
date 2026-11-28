@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Intent-time routing: a task description to a ranked set of pointers.
 //!
-//! [Spec 5](../../../../docs/spec/05-ai-integration.md#intent-time-routing):
+//! [AI integration](../../../../docs/spec/ai-integration.md#intent-time-routing):
 //! "Routing matches the **declared purpose** of each kind against the intent of
 //! the task before it matches any text… Lexical ranking then orders results
 //! *within* the matched purpose, and derived reading precedence breaks ties."
@@ -21,7 +21,7 @@
 //!
 //! # Why a purpose is matched on the terms that separate it
 //!
-//! Spec 5 grades a cue "against the alternatives that it competes with at the
+//! [AI integration](../../../../docs/spec/ai-integration.md) grades a cue "against the alternatives that it competes with at the
 //! moment a reader reads it", and that rule is the whole of the weighting here.
 //! A task term that appears in the declaration of *every* purpose separates
 //! none of them, so it scores nothing. What is left is the terms that pick one
@@ -35,7 +35,7 @@
 //!
 //! # Why the gate is a term that reaches the document
 //!
-//! Spec 5: "Routing is **confidence-gated and fails open**: below the threshold
+//! [AI integration](../../../../docs/spec/ai-integration.md): "Routing is **confidence-gated and fails open**: below the threshold
 //! it says nothing. A wrong pointer costs more than a missing one, because an
 //! agent will follow it." The threshold here is stated rather than tuned: a
 //! pointer is offered only where a term of the task reaches the document as
@@ -45,7 +45,7 @@
 //!
 //! # What a route reads, and what it does not
 //!
-//! Spec 5 fixes the read set: "a deterministic projection over the graph —
+//! [AI integration](../../../../docs/spec/ai-integration.md) fixes the read set: "a deterministic projection over the graph —
 //! summaries, facets, relations, and code-path anchors — not a semantic
 //! search." So the lexical step reads the summary, the facet values, the path,
 //! and the anchors this document's edges reach. It never opens the body. A
@@ -57,7 +57,7 @@ use headwater_check::paint::{dim, paint, visible, ColorMode, Role};
 use headwater_graph::declarations::Governs;
 use headwater_graph::Target;
 
-/// How much of a route a ranking may fill, which spec 5 calls a budget.
+/// How much of a route a ranking may fill, which [AI integration](../../../../docs/spec/ai-integration.md) calls a budget.
 ///
 /// It bounds the ranked offer and nothing else. A document that declares
 /// `governs` over a path the task named was named rather than ranked, so it is
@@ -88,7 +88,7 @@ pub struct Matched {
     pub score: u32,
 }
 
-/// Why a route offered nothing. Spec 5 keeps the reasons apart because they are
+/// Why a route offered nothing. [AI integration](../../../../docs/spec/ai-integration.md) keeps the reasons apart because they are
 /// different facts about the corpus, and a caller that saw one silence for all
 /// of them could not tell a weak cue from an undeclared taxonomy.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -111,7 +111,7 @@ impl Silence {
     /// It is deliberately not [`Silence::name`]. That is a sentence written for
     /// a person and it is rewritten whenever the wording improves; this is a
     /// token, and a consumer of `headwater route --json` that switched on it
-    /// keeps working across such a rewrite. Spec 5 keeps the four reasons apart
+    /// keeps working across such a rewrite. [AI integration](../../../../docs/spec/ai-integration.md) keeps the four reasons apart
     /// because they are different facts about the corpus, and a machine reader
     /// that had to match on prose could not tell them apart at all.
     pub fn token(&self) -> &'static str {
@@ -162,7 +162,7 @@ pub struct Route {
     /// This is the answer to "were there more". A silent cut destroyed the
     /// difference between "there were three" and "there were fifteen and you
     /// were shown three", and a reader who cannot tell them apart stops
-    /// looking. Spec 5 already requires a document removed by an export filter
+    /// looking. [AI integration](../../../../docs/spec/ai-integration.md) already requires a document removed by an export filter
     /// to be reported, because nothing about the removal is uncertain, and a
     /// removal for cost is the same kind of fact.
     ///
@@ -212,7 +212,7 @@ pub enum Evidence {
         suspect: Vec<Suspect>,
     },
     /// The task wrote an identifier of the document, live or former. Nothing
-    /// was ranked (#2025). Spec 3 *Identifiers* states that a former
+    /// was ranked (#2025). [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) *Identifiers* states that a former
     /// identifier resolves to the document that lists it.
     Identified {
         /// The identifiers the task wrote, in task order, as [`readings`]
@@ -383,7 +383,7 @@ fn readings(word: &str) -> Vec<String> {
     found
 }
 
-/// The four surfaces spec 5 lets a route read, for one document.
+/// The four surfaces [AI integration](../../../../docs/spec/ai-integration.md) lets a route read, for one document.
 ///
 /// Held apart rather than joined, because each one weighs differently: a term
 /// in the cue an author wrote for this document is worth more than the same
@@ -410,7 +410,7 @@ impl Surfaces {
     /// this document at all.
     ///
     /// Two answers rather than one, because the two decide different things.
-    /// The score orders a list. The second decides membership, and spec 5 puts
+    /// The score orders a list. The second decides membership, and [AI integration](../../../../docs/spec/ai-integration.md) puts
     /// the cost there: "a wrong pointer costs more than a missing one". A
     /// document that the task reached only through a term most of the corpus
     /// carries was not distinguished from anything, and offering it is a guess
@@ -553,7 +553,7 @@ impl Surface<'_> {
         // The budget never reaches this set, on any of the three branches
         // below. An anchor is an identity and the budget caps the ranking, so
         // removing a document nobody ranked has no declared basis — which is
-        // the rule spec 5 applies to its other budget, where a bound engine
+        // the rule AI integration (docs/spec/ai-integration.md) applies to its other budget, where a bound engine
         // drops satellites before nuclei because nuclearity is declared.
         // `governing_docs_for_path` is a published tool that takes no budget,
         // and this is the step that answers the same question, so the two
@@ -690,7 +690,7 @@ impl Surface<'_> {
         candidates.truncate(ranked);
 
         // Step 3. Derived reading precedence, over the list the budget left.
-        // Spec 5: "Where two linked documents both match, routing offers a
+        // AI integration (docs/spec/ai-integration.md): "Where two linked documents both match, routing offers a
         // nucleus before its satellite." It runs after the cut rather than
         // before it, because precedence orders a list and does not decide
         // membership: a satellite that outscored its nucleus is still one of
@@ -699,7 +699,7 @@ impl Surface<'_> {
         // The two blocks are ordered apart. Precedence is an order over
         // documents that both match, and an anchor hit did not match — it was
         // named. To run one pass over the joined list would let a lexical guess
-        // displace an identity, which is the trade spec 5 makes in the other
+        // displace an identity, which is the trade AI integration (docs/spec/ai-integration.md) makes in the other
         // direction.
         let mut offered: Vec<Pointer> = candidates
             .into_iter()
@@ -998,8 +998,8 @@ impl Surface<'_> {
     /// Every anchor this document's edges reach, as one string.
     ///
     /// This is the surface that makes "add rate limiting to the ingest API"
-    /// reach the standard that governs `src/ingest/`, which is the example spec
-    /// 5 opens with. It is a read of the graph rather than of the document.
+    /// reach the standard that governs `src/ingest/`, which is the example
+    /// [AI integration](../../../../docs/spec/ai-integration.md) opens with. It is a read of the graph rather than of the document.
     fn anchor_text(&self, document: &Document<'_>) -> String {
         let mut text = String::new();
         for edge in &self.graph.edges {
@@ -1030,7 +1030,7 @@ impl Surface<'_> {
     /// is not guaranteed acyclic, and a cycle in it must reorder a list rather
     /// than hang a query an agent is waiting on.
     ///
-    /// Public because a shelf index is the third consumer spec 2 names for this
+    /// Public because a shelf index is the third consumer [the taxonomy model](../../../../docs/spec/taxonomy-model.md) names for this
     /// derivation, after a routing result and the document a conflict is
     /// reported against. `headwater generate` calls it. A generator that sorted
     /// its entries by any other rule would disagree with what `route` and
@@ -1072,8 +1072,8 @@ impl Surface<'_> {
 
 /// The task terms that separate one document of the corpus from the others.
 ///
-/// The same rule the purposes are matched on, at the surface below them. Spec
-/// 5: "Grade a cue against the alternatives that it competes with at the moment
+/// The same rule the purposes are matched on, at the surface below them.
+/// [AI integration](../../../../docs/spec/ai-integration.md): "Grade a cue against the alternatives that it competes with at the moment
 /// a reader reads it", and its own measure of a summary is distinctiveness
 /// against the siblings — "a summary that shares no discriminating term with
 /// its siblings cannot separate them". A term that most of the corpus carries
@@ -1203,7 +1203,7 @@ struct Weighted {
 /// Whether a text holds a term, as one of its terms.
 ///
 /// A substring match would make `api` reach `rapid`, and a route that offered a
-/// document for that reason is the wrong pointer spec 5 says costs more than a
+/// document for that reason is the wrong pointer [AI integration](../../../../docs/spec/ai-integration.md) says costs more than a
 /// missing one.
 fn holds(text: &str, term: &str) -> bool {
     terms(text).iter().any(|word| word == term)
@@ -1326,7 +1326,7 @@ impl Route {
 
     /// The route as text: what it matched, and what it offers.
     ///
-    /// A silent route prints why it is silent. Spec 5 makes silence a result,
+    /// A silent route prints why it is silent. [AI integration](../../../../docs/spec/ai-integration.md) makes silence a result,
     /// and a caller that could not tell "no purpose answers this" from "the
     /// corpus declares none" would debug the wrong file.
     ///

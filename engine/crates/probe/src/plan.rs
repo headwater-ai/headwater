@@ -3,7 +3,7 @@
 //!
 //! # The plan is the half of the run identity that exists before the run
 //!
-//! [Spec 5](../../../../docs/spec/05-ai-integration.md#a-run-produces-a-snapshot-and-a-document)
+//! [AI integration](../../../../docs/spec/ai-integration.md#a-run-produces-a-snapshot-and-a-document)
 //! fixes six members of a run identity before anything is called: the taxonomy
 //! lock hash, the corpus tree hash, the probe selection hash, the read-set
 //! hash, the rotation seed and the harness version. This is where they are
@@ -18,7 +18,7 @@
 //!
 //! # The seed is the caller's, and a derived one would be worse
 //!
-//! Spec 5 asks for deterministic rotation, so the seed is part of the run
+//! [AI integration](../../../../docs/spec/ai-integration.md) asks for deterministic rotation, so the seed is part of the run
 //! identity. It would be easy to derive one from the lock and the selection,
 //! and that would be a defect: the rotation would then change whenever the
 //! corpus changed, and a difference between two runs would carry a change in
@@ -334,7 +334,7 @@ pub enum Refusal {
     RepetitionsRaised { asked: u32, declared: u32 },
     /// The caller asked for no repetitions, which plans a run of nothing.
     RepetitionsZero,
-    /// The projected cost is above the tier's ceiling. Spec 5: a run that does
+    /// The projected cost is above the tier's ceiling. [AI integration](../../../../docs/spec/ai-integration.md): a run that does
     /// not happen is the cheaper error.
     OverBudget {
         sessions: u64,
@@ -655,7 +655,7 @@ pub struct Plan {
     /// Targets an `examines` edge names that are not documents of this corpus,
     /// in the text the resolver normalized.
     ///
-    /// [Spec 12](../../../../docs/spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
+    /// [The check layer](../../../../docs/spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
     /// rules that "an external anchor is in no read set", because a read set is
     /// a list of corpus paths and an anchor names a target that is not one.
     /// They are listed here so that the exclusion has a location rather than
@@ -1510,7 +1510,7 @@ impl Plan {
         let _ = writeln!(out);
         let _ = writeln!(
             out,
-            "**A transcript that an agent wrote about its own session is a self-report, and spec 5 \
+            "**A transcript that an agent wrote about its own session is a self-report, and AI integration \
              refuses one.** The events have to be observed from outside the session by the process \
              that drove it. That process reaches the network and it is not in this repository, so \
              no verb here writes a transcript and there is no flag that makes one."
@@ -1543,7 +1543,7 @@ pub fn read_set_over(selected: &[Selected], census: &Census) -> ReadSet {
     // A generated document is classified `generated` rather than `typed`,
     // and the census still carries the digest of the bytes it read. An
     // `examines` edge may name one, because such a document is a file a
-    // session can open: `docs/spec/09-open-questions.md` is a generated
+    // session can open: `docs/spec/open-questions.md` is a generated
     // shelf index that the decision register superseded, and a probe over
     // it asks whether a session opens the document that lost.
     //
@@ -1595,7 +1595,7 @@ pub fn read_set_over(selected: &[Selected], census: &Census) -> ReadSet {
             match examined.id {
                 // A document of this corpus, which the census hashes.
                 Some(_) => add(&examined.path, Because::Examined),
-                // An external anchor. Spec 12: it is in no read set.
+                // An external anchor. The check layer (docs/spec/check-layer.md): it is in no read set.
                 None => {
                     if !anchors.contains(&examined.path) {
                         anchors.push(examined.path.clone());

@@ -6,7 +6,7 @@
 //! rules that an author writes the state the document will hold once it
 //! merges, and that the initial state says the document is not proposed as
 //! finished. An `accepted` warrant says that a person read the document as
-//! finished ([spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires)).
+//! finished ([authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires)).
 //! A document that says both contradicts itself. Before this rule, nothing read
 //! the two facets together: [`crate::warrant`] reads the provenance block
 //! alone, and [`crate::lifecycle_state`] reads the state alone.

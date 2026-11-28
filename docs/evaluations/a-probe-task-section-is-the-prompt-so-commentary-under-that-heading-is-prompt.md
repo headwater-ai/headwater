@@ -25,7 +25,7 @@ relations:
 
 Each of the three is a defect in the probe document. None of the three is a reading of a model, and none is a routing-precision question. The evidence is the two committed transcripts of 2026-09-16 and 2026-09-17, and the raw harness logs behind them. It is also a replay of `headwater route` over the tree in front of this evaluation.
 
-**A recorder sends the body of a probe's `## Task` section as the whole of the session's first turn, and it sends nothing else.** That was true of `tools/probe/probe-record.sh` before this evaluation and no document said so. [Spec 15](../spec/15-the-recorder-contract.md#the-prompt-is-the-task-section-and-the-answer-is-the-final-line) now states it, with the rule by which the same recorder derives an answer. Both rules bound every probe already written, and two probes did not meet them.
+**A recorder sends the body of a probe's `## Task` section as the whole of the session's first turn, and it sends nothing else.** That was true of `tools/probe/probe-record.sh` before this evaluation and no document said so. [The recorder contract](../spec/the-recorder-contract.md#the-prompt-is-the-task-section-and-the-answer-is-the-final-line) now states it, with the rule by which the same recorder derives an answer. Both rules bound every probe already written, and two probes did not meet them.
 
 ## The pointer probe: the evaluation of #896 read the right router and the wrong text
 
@@ -53,9 +53,9 @@ The remedy is the paragraph's removal from `## Task` to `## Expectation`. It sta
 
 ## The adjudication probe: the target was the index rather than the record it points at
 
-This probe examined `HW-REG-decisions` alone, which is `docs/spec/09-decisions.md`, a generated index over the decisions shelf. Its Q8 row is one sentence that links [HW-DR-0008](../decisions/0008-probe-cost-and-cadence.md). That record is the adjudication for Q8. The index is a pointer at it and not a second destination.
+This probe examined `HW-REG-decisions` alone, which is `docs/spec/decisions.md`, a generated index over the decisions shelf. Its Q8 row is one sentence that links [HW-DR-0008](../decisions/0008-probe-cost-and-cadence.md). That record is the adjudication for Q8. The index is a pointer at it and not a second destination.
 
-Four sessions are recorded against this probe. Three of them, on 2026-09-09, 2026-09-16 and 2026-09-17, read `docs/spec/09-open-questions.md` and then read `docs/decisions/0008-probe-cost-and-cadence.md`. They followed the tombstone's one outgoing link to the answer, by the shortest route there is. The grader recorded `not satisfied`, because neither call named the index. The session of 2026-09-11 is the one that failed: it read the tombstone, made no second call, and answered from its heading text.
+Four sessions are recorded against this probe. Three of them, on 2026-09-09, 2026-09-16 and 2026-09-17, read `docs/spec/open-questions.md` and then read `docs/decisions/0008-probe-cost-and-cadence.md`. They followed the tombstone's one outgoing link to the answer, by the shortest route there is. The grader recorded `not satisfied`, because neither call named the index. The session of 2026-09-11 is the one that failed: it read the tombstone, made no second call, and answered from its heading text.
 
 [HW-OBL-0014](../obligations/0014-no-probe-tests-whether-an-agent-reaches-the-adjudication-from.md) carried a wrong account of this until now. It read the 2026-09-16 session as one that "read a losing document that names a different decision than the one it went looking for". `docs/decisions/0008-probe-cost-and-cadence.md` is Q8's own record and not a different decision.
 
@@ -75,7 +75,7 @@ The remedy is one added instruction under `## Task`, which states that the whole
 
 ## What the three share
 
-A probe is a document that a session never reads, and a document that a person reads carefully. The two audiences met under one heading, and nothing separated them. The commentary that helps a reviewer understand why a task is worded as it is becomes prompt the moment the recorder copies the section. Spec 15 held every other line of the boundary between a recorder and a session, and it held neither of these two.
+A probe is a document that a session never reads, and a document that a person reads carefully. The two audiences met under one heading, and nothing separated them. The commentary that helps a reviewer understand why a task is worded as it is becomes prompt the moment the recorder copies the section. [The recorder contract](../spec/the-recorder-contract.md) held every other line of the boundary between a recorder and a session, and it held neither of these two.
 
 The misses that followed are not cheap. Each of the two recordings graded eight sessions, at a realized cost of $1.66 and $3.90. Three of the eight in each ran against a probe that could not be passed as written. Each result reported 3 of 8 satisfied before this change, a rate of 37.5%.
 
@@ -85,7 +85,7 @@ The read-set digest of each of these three probes moves with this change, so [th
 
 **One of the three remedies re-grades the two recordings, and two of them cannot.** A probe result is a function of the transcript, the expectations and the grader version. So a corrected `examines` edge changes what the committed transcripts already say. `headwater generate` rewrites both results. The adjudication session of each run moves from `not satisfied` to `satisfied`, on a witness that names the call it came from. The reported rate of each moves from 3 of 8 to 4 of 8. Read the new number beside the staleness rather than instead of it. The other two remedies reach nothing recorded. A task text that never went to a session is outside what a re-grade can recover. So is an answer the recorder never wrote down. Each needs a fresh recording.
 
-No engine change follows from this evaluation. The grader already satisfies `opened` over any of several examined documents, and the recorder's answer rule is the one the design asks for. What was missing was a written contract, and spec 15 now carries it.
+No engine change follows from this evaluation. The grader already satisfies `opened` over any of several examined documents, and the recorder's answer rule is the one the design asks for. What was missing was a written contract, and [the recorder contract](../spec/the-recorder-contract.md) now carries it.
 
 Three things a later reader checks against a fresh recording of this tier:
 

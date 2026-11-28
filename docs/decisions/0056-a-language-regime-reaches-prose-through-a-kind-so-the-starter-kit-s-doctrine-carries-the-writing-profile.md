@@ -17,7 +17,7 @@ provenance:
 
 ## Context
 
-[Spec 2](../spec/02-taxonomy-model.md#language-is-declared-not-assumed) states that the doctrine starter kit declares `en-US` with the house profile as its default. [#578](https://github.com/headwater-ai/headwater/issues/578) asks which artifact keeps that promise. It offers three answers: `headwater init` writes the value, the doctrine page of the starter kit carries it, or spec 2 retires the promise.
+[The taxonomy model](../spec/taxonomy-model.md#language-is-declared-not-assumed) states that the doctrine starter kit declares `en-US` with the house profile as its default. [#578](https://github.com/headwater-ai/headwater/issues/578) asks which artifact keeps that promise. It offers three answers: `headwater init` writes the value, the doctrine page of the starter kit carries it, or [the taxonomy model](../spec/taxonomy-model.md) retires the promise.
 
 The issue states three facts, and all three re-measure true. An assembly overlay cannot write the value. `assembly::validate_glue` refuses an operation that restates a path the base package owns, and it reads the path rather than the value. `headwater init` reads one version scalar out of `package.yml` and opens no taxonomy. On the first-run path there is no package on the tree to read.
 
@@ -27,7 +27,7 @@ The issue states three facts, and all three re-measure true. An assembly overlay
 
 **So the remedy the first answer names writes a value that nothing reads.** An adopter who opens the file `headwater init` wrote would read `controlled: ste-house` and conclude that a controlled language holds over their corpus. It would not hold, and no finding would tell them. That is the defect [#276](https://github.com/headwater-ai/headwater/issues/276) already recorded against this verb, which wrote a route an adopter cannot take into the file the adopter commits.
 
-The form that would turn the profile on is a full regime declaration plus one `language` line for each kind. This repository writes exactly that in its own overlay: a regime named `ste_house`, eighteen retired terms each with a reason, and ten kind bindings. Six of the ten sit on kinds the package declares, and four sit inside kinds the overlay itself adds. The retired-term list is editorial judgment about one corpus. [Spec 7](../spec/07-distribution-and-federation.md#the-interview) rules that the interview is package data and not engine code. An engine that authored that list would breach the rule that defines the verb.
+The form that would turn the profile on is a full regime declaration plus one `language` line for each kind. This repository writes exactly that in its own overlay: a regime named `ste_house`, eighteen retired terms each with a reason, and ten kind bindings. Six of the ten sit on kinds the package declares, and four sit inside kinds the overlay itself adds. The retired-term list is editorial judgment about one corpus. [Distribution and federation](../spec/distribution-and-federation.md#the-interview) rules that the interview is package data and not engine code. An engine that authored that list would breach the rule that defines the verb.
 
 ## Decision
 
@@ -35,9 +35,9 @@ The form that would turn the profile on is a full regime declaration plus one `l
 
 **`headwater init` writes no language declaration.** That holds on a tree carrying the package under `.headwater/packages/` and on a tree carrying none. The verb reads one version scalar and asks its questions in the file it writes, and this ruling adds nothing to either half.
 
-**Spec 2 names the doctrine as the carrier.** Its paragraph on the two packages says where an adopter turns the profile on. The base package keeps `controlled: none` for the reason [Q3](../spec/09-decisions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box) gives.
+**[The taxonomy model](../spec/taxonomy-model.md) names the doctrine as the carrier.** Its paragraph on the two packages says where an adopter turns the profile on. The base package keeps `controlled: none` for the reason [Q3](../spec/decisions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box) gives.
 
-**This record rules nothing about the sentence of spec 2 that names a corpus default.** That sentence describes a fallback this engine does not implement. The repair is a change to the engine, or a change to the model the specification states. [HW-OBL-0166](../obligations/0166-spec-2-states-a-corpus-wide-default-language-regime-that-no-rule-of-this-engine-reads.md) holds that question for the owner.
+**This record rules nothing about the sentence of [the taxonomy model](../spec/taxonomy-model.md) that names a corpus default.** That sentence describes a fallback this engine does not implement. The repair is a change to the engine, or a change to the model the specification states. [HW-OBL-0166](../obligations/0166-spec-2-states-a-corpus-wide-default-language-regime-that-no-rule-of-this-engine-reads.md) holds that question for the owner.
 
 ## Consequences
 

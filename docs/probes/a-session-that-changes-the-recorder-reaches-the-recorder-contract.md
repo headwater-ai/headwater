@@ -29,7 +29,7 @@ Record, beside the tool calls of each session that `tools/probe/probe-record.sh`
 
 ## Target
 
-The session must open [the recorder contract](../spec/15-the-recorder-contract.md). It governs the recorder and the intake that reads its transcripts, and it rules this change out: a transcript holds no model prose, and a key outside the closed key sets refuses the whole file.
+The session must open [the recorder contract](../spec/the-recorder-contract.md). It governs the recorder and the intake that reads its transcripts, and it rules this change out: a transcript holds no model prose, and a key outside the closed key sets refuses the whole file.
 
 ## Key
 
@@ -37,8 +37,8 @@ The session must open [the recorder contract](../spec/15-the-recorder-contract.m
 
 **This probe was one of three that replaced two probes of the tuning set of the fourteen-scenario campaign (#1833).** [HW-DR-0111](../decisions/0111-the-additive-campaign-adds-six-layers-to-plain-code-in-fourteen-scenarios-and-registers-one-comparison-each.md) recorded that set and why the two probes left it. [HW-DR-0112](../decisions/0112-the-additive-campaign-measures-eleven-actions-by-five-layers-in-seven-scenarios.md) replaced that set, and #1874 builds the 44-probe set. Proposal 1, the first comment on #1833, is the design.
 
-**What this probe expects, stated before any paid run.** About 45 percent in scenario 3, with a range of 30 to 65 percent. The two scripts that the task leads to cite the contract as "spec 15" with no path, so a session must go to `docs/spec/` itself. The floor is the risk to watch, and not the ceiling.
+**What this probe expects, stated before any paid run.** About 45 percent in scenario 3, with a range of 30 to 65 percent. The two scripts that the task leads to cite the contract as "[the recorder contract](../spec/the-recorder-contract.md)" with no path, so a session must go to `docs/spec/` itself. The floor is the risk to watch, and not the ceiling.
 
 **One known false negative.** `engine/crates/probe/src/intake.rs` encodes the closed key sets, so a session can learn the refusal from the engine source and never open the contract. The key then reads a fail for a session that acted correctly. That lowers the rate in every scenario and does not raise it.
 
-**The task section is the prompt, and nothing else of this document reaches the session.** [Spec 15](../spec/15-the-recorder-contract.md#the-prompt-is-the-task-section-and-the-answer-is-the-final-line) fixes that.
+**The task section is the prompt, and nothing else of this document reaches the session.** [The recorder contract](../spec/the-recorder-contract.md#the-prompt-is-the-task-section-and-the-answer-is-the-final-line) fixes that.

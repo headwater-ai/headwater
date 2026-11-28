@@ -10,7 +10,7 @@
 //!
 //! # Why this is a correctness root
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots)
+//! [The check layer](../../../../docs/spec/check-layer.md#the-correctness-roots)
 //! puts an importer beside the scaffolder and gives the same reason: "Edges
 //! marked `created_by: import` arrive in bulk from a system that this corpus
 //! does not govern, and nobody reads them one at a time. A wrong imported edge
@@ -81,7 +81,7 @@
 //!
 //! # This crate never fetches
 //!
-//! [Spec 0](../../../../docs/spec/00-vision-and-scope.md#non-negotiables)
+//! [The vision and scope](../../../../docs/spec/vision-and-scope.md#non-negotiables)
 //! forbids a network dependency at check time and no crate the checking loop
 //! reaches depends on the network. This crate takes the path of a directory
 //! that the caller already fetched and committed, on the shape `taxonomy
@@ -104,7 +104,7 @@ use headwater_resolve::release;
 use std::path::Path;
 
 /// The creator value a relation declares when an importer is what pays for its
-/// edges. [Spec 2](../../../../docs/spec/02-taxonomy-model.md#who-creates-each-edge)
+/// edges. [The taxonomy model](../../../../docs/spec/taxonomy-model.md#who-creates-each-edge)
 /// closes the set this comes from.
 pub const IMPORT: &str = "import";
 
@@ -150,7 +150,7 @@ pub struct Proposed {
     pub relation: String,
     pub to: String,
     /// The upstream revision this edge was checked against, which the edge
-    /// carries as an instance attribute. Spec 2 declares the attribute on the
+    /// carries as an instance attribute. [The taxonomy model](../../../../docs/spec/taxonomy-model.md) declares the attribute on the
     /// relation type and this is the value that fills it.
     pub verified_revision: String,
     /// Whether the document already declares this edge at this revision, in
@@ -384,7 +384,7 @@ pub fn declared(root: &Path) -> Result<Vec<Declaration>, String> {
                 entry.key.value
             )
         })?;
-        // The snapshot is repository content (spec 2), and both the importer
+        // The snapshot is repository content (the taxonomy model (docs/spec/taxonomy-model.md)), and both the importer
         // and the resolver read `root.join(at)`, so a path that leaves the
         // root is refused here, before either reads it.
         if !contained(root, &at) {

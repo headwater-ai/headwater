@@ -2,7 +2,7 @@
 //! The state movements a declared lifecycle admits, and the corpus that
 //! separates them from the movements it refuses.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
+//! [The check layer](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
 //! sets the floor: "every check ships with at least one fixture that it fails
 //! and one that it passes." The tree under `fixtures/transition/` is written to
 //! be wrong under the mistake this rule exists to avoid: every record in it
@@ -266,7 +266,7 @@ fn a_state_the_vocabulary_does_not_hold_is_skipped_rather_than_read_as_a_movemen
 
 /// A run with no change reports every instance as skipped, and never as passed.
 ///
-/// [Spec 12](../../../../docs/spec/12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version):
+/// [The check layer](../../../../docs/spec/check-layer.md#temporal-inputs-the-clock-and-the-prior-version):
 /// "In a full-corpus run, instances of such a check are counted and reported as
 /// skipped, with the reason `change-scoped-only` — visible, never silent." This
 /// repository runs no change-scoped gate today, so this is the mode every one

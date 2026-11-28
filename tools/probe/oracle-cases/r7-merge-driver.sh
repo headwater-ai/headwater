@@ -79,7 +79,7 @@ wrong() {
 # not read that form, and the engine's link rule does, so a reader of lines
 # passes it and the engine does not.
 r7_old=docs/process/how-to/keep-derived-files-from-conflicting-in-parallel-pull-requests.md
-r7_carrier=docs/spec/12-check-layer.md
+r7_carrier=docs/spec/check-layer.md
 stale_reference() {
     reference || return 1
     [ -f "$r7_carrier" ] || return 1

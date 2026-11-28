@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Concrete checks, one per origin the spike exercises.
 //!
-//! These stand in for the generated shape and graph checks of spec 12. Each one
+//! These stand in for the generated shape and graph checks of [the check layer](../../../../../../docs/spec/check-layer.md). Each one
 //! is written to put a *span* on its finding, because item 1 is only retired if
 //! positions reach the output of a real check rather than a parser test.
 
@@ -211,7 +211,7 @@ impl EdgeCheck for Reciprocity {
                 to.path()
             ),
             // Mechanical and total: one correct outcome, derivable without
-            // judgment. Spec 12's rule for when a fix may be offered.
+            // judgment. The check layer's (docs/spec/check-layer.md) rule for when a fix may be offered.
             fix: Some(Fix {
                 description: format!("add reciprocal `{}` to {}", inverse.facet(), to.path()),
                 replacement: format!("{}: [{}]", inverse.facet(), view.from().id()),

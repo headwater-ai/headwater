@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Source positions, in file coordinates.
 //!
-//! Spec 12 requires that a finding anchor to a line. Everything here exists to
+//! [The check layer](../../../../docs/spec/check-layer.md) requires that a finding anchor to a line. Everything here exists to
 //! satisfy that, and every span this crate hands out is already in the
 //! coordinates a reader's editor uses: lines and columns from one, byte offsets
 //! into the source.

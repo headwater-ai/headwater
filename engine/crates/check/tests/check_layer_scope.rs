@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Spec 12's `Scope` block, held against [`headwater_check::scope::Scope`].
+//! [the check layer](../../../../docs/spec/check-layer.md)'s `Scope` block, held against [`headwater_check::scope::Scope`].
 //!
 //! # Why this file exists
 //!
 //! The inputs a check may declare are stated twice: once as the fields of
 //! `Scope`, which is what the runner hands an instance and keys its cache on,
 //! and once as the fenced block under *Scope — the declaration everything else
-//! rests on* in `docs/spec/12-check-layer.md`, which is what a rule author reads
+//! rests on* in `docs/spec/check-layer.md`, which is what a rule author reads
 //! before choosing one. Nothing held the two together, and by
 //! [#1407](https://github.com/headwater-ai/headwater/issues/1407) the block
 //! named five of the seven: `needs_claims` and `needs_observations` had landed
@@ -14,8 +14,8 @@
 //!
 //! # The model
 //!
-//! `engine/crates/resolve/tests/spec_seven_subjects.rs` and
-//! `engine/crates/generate/tests/spec_six_projections.rs` hold a specification
+//! `engine/crates/resolve/tests/distribution_migration_subjects.rs` and
+//! `engine/crates/generate/tests/engine_architecture_projections.rs` hold a specification
 //! block against an engine list the same way. The block carries engine
 //! identifiers, so no prose-to-identifier mapping can drift, and the comparison
 //! runs in both directions, so neither an emptied block nor an unnamed flag
@@ -23,7 +23,7 @@
 //!
 //! The engine's list is [`Scope::flags`], whose body destructures `Scope` with
 //! no `..`. A new field does not compile until `flags` names it, and this file
-//! then fails until spec 12 does. The compiler's help for that error offers
+//! then fails until [the check layer](../../../../docs/spec/check-layer.md) does. The compiler's help for that error offers
 //! `needs_x: _` and `..`, and either one compiles, so a second case reads the
 //! `needs_*` fields of `struct Scope` from its source and holds `flags` to
 //! them.
@@ -47,7 +47,7 @@ use std::path::{Path, PathBuf};
 const SECTION: &str = "## Scope — the declaration everything else rests on";
 
 fn spec_twelve() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../docs/spec/12-check-layer.md")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../docs/spec/check-layer.md")
 }
 
 /// Every flag name on a `+ needs_…:` line of the first fenced block after
@@ -80,14 +80,14 @@ fn spec_flags() -> Vec<String> {
     flags
 }
 
-/// The `Scope` block of spec 12 names every input flag `Scope` declares, and
+/// The `Scope` block of [the check layer](../../../../docs/spec/check-layer.md) names every input flag `Scope` declares, and
 /// no other.
 ///
 /// The decisive case for #1407.
 ///
 /// # Watched failing
 ///
-/// On `main` at `16eecca0`, with `Scope::flags` in place and spec 12 unedited,
+/// On `main` at `16eecca0`, with `Scope::flags` in place and [the check layer](../../../../docs/spec/check-layer.md) unedited,
 /// this reddened naming `needs_claims` and `needs_observations` as declared and
 /// unstated. Deleting one flag line from the block reddens it naming that flag.
 /// Adding `+ needs_bogus: bool` reddens it naming `needs_bogus` as extra.
@@ -105,7 +105,7 @@ fn the_scope_block_of_spec_12_names_every_flag_scope_declares() {
     let missing: Vec<&&str> = declared.difference(&named).collect();
     assert!(
         extra.is_empty() && missing.is_empty(),
-        "docs/spec/12-check-layer.md's `Scope` block and `Scope` in \
+        "docs/spec/check-layer.md's `Scope` block and `Scope` in \
          engine/crates/check/src/scope.rs disagree. `Scope` declares {missing:?} and the block \
          does not name them. The block names {extra:?} and `Scope` declares no such flag. The \
          block names {named:?}"
@@ -114,7 +114,7 @@ fn the_scope_block_of_spec_12_names_every_flag_scope_declares() {
     assert_eq!(
         rows.len(),
         named.len(),
-        "docs/spec/12-check-layer.md's `Scope` block names a flag twice: {rows:?}"
+        "docs/spec/check-layer.md's `Scope` block names a flag twice: {rows:?}"
     );
 }
 
@@ -177,7 +177,7 @@ fn _exhaustive(grain: headwater_check::scope::Grain) -> &'static str {
     }
 }
 
-/// The `Scope` block of spec 12 names every grain `Grain` has, and no other.
+/// The `Scope` block of [the check layer](../../../../docs/spec/check-layer.md) names every grain `Grain` has, and no other.
 ///
 /// The decisive case for slice 3 of #1572. It compares identifiers
 /// (`Neighbourhood`), not [`headwater_check::scope::Grain::name`]
@@ -185,7 +185,7 @@ fn _exhaustive(grain: headwater_check::scope::Grain) -> &'static str {
 ///
 /// # Watched failing
 ///
-/// On `main` at `a629c0be`, with spec 12 unedited, this reddened naming
+/// On `main` at `a629c0be`, with [the check layer](../../../../docs/spec/check-layer.md) unedited, this reddened naming
 /// `Taxonomy` as a grain the block does not name and `Shelf` as a grain no
 /// code has.
 #[test]
@@ -198,7 +198,7 @@ fn the_scope_block_of_spec_12_names_every_grain_the_engine_has() {
     let missing: Vec<&&str> = declared.difference(&named).collect();
     assert!(
         extra.is_empty() && missing.is_empty(),
-        "docs/spec/12-check-layer.md's `Scope` block and `enum Grain` in \
+        "docs/spec/check-layer.md's `Scope` block and `enum Grain` in \
          engine/crates/check/src/scope.rs disagree. `Grain` has {missing:?} and the block does \
          not name them. The block names {extra:?} and `Grain` has no such variant. The block \
          names {named:?}"
@@ -206,7 +206,7 @@ fn the_scope_block_of_spec_12_names_every_grain_the_engine_has() {
     assert_eq!(
         rows.len(),
         named.len(),
-        "docs/spec/12-check-layer.md's `Scope` block names a grain twice: {rows:?}"
+        "docs/spec/check-layer.md's `Scope` block names a grain twice: {rows:?}"
     );
 }
 
@@ -309,7 +309,7 @@ fn scope_flags_names_every_needs_field_of_scope() {
     assert!(
         unlisted.is_empty() && unknown.is_empty(),
         "`Scope` in engine/crates/check/src/scope.rs and `Scope::flags` disagree. The struct \
-         declares {unlisted:?} and `flags` does not list them, so spec 12 is never held to them. \
+         declares {unlisted:?} and `flags` does not list them, so the check layer is never held to them. \
          `flags` lists {unknown:?} and the struct has no such field"
     );
 }

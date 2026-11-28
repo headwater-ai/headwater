@@ -17,7 +17,7 @@ repository.workspace = true
 # a structural guarantee rather than a discipline somebody keeps, and it is the
 # same argument `headwater-adapter` makes one level up.
 [dependencies]
-# The finding shape, which spec 4 fixes for every mechanism and which a sweep
+# The finding shape, which the assurance model (docs/spec/assurance-model.md) fixes for every mechanism and which a sweep
 # shares with a check. It is shared rather than copied, because two shapes that
 # drift are two reports a reader has to learn separately.
 headwater-check = { workspace = true }
@@ -27,7 +27,7 @@ headwater-check = { workspace = true }
 # or a finding this crate refuses.
 headwater-census = { workspace = true }
 
-# The declared half. Spec 4 says a sweep never re-derives what the graph
+# The declared half. The assurance model (docs/spec/assurance-model.md) says a sweep never re-derives what the graph
 # declares, and this is what the refusal reads.
 headwater-graph = { workspace = true }
 

@@ -20,7 +20,7 @@
 //! claimant — which is the edit that settles it. Repair the first document and
 //! the second still carries a cached failure. Break the first document and the
 //! second still carries a cached pass.
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
+//! [The check layer](../../../../docs/spec/check-layer.md#determinism-concretely)
 //! calls a key that omits an input "a correctness bug, not a performance bug",
 //! and this is one: the omitted input is the other claimant.
 //!
@@ -32,7 +32,7 @@
 //! and no edge runs between them.
 //!
 //! `Shelf` is declared in
-//! [spec 12](../../../../docs/spec/12-check-layer.md#what-this-leaves-open) and
+//! [the check layer](../../../../docs/spec/check-layer.md#what-this-leaves-open) and
 //! implemented nowhere, and it cannot hold this rule whatever it becomes. An
 //! identifier scheme is declared per kind, several kinds sit on one shelf, and
 //! one kind sits on several. So two claimants of one identifier need not share
@@ -45,7 +45,7 @@
 //!
 //! # What the grain costs, and the thing it does not cost
 //!
-//! Spec 12 calls corpus-scoped checks the barriers: this instance reads every
+//! [The check layer](../../../../docs/spec/check-layer.md) calls corpus-scoped checks the barriers: this instance reads every
 //! document, so any change to any document invalidates it, and no incremental
 //! test rescues one. That is one instance re-evaluated per edit, and it is the
 //! whole of the cost.
@@ -78,7 +78,7 @@
 //!
 //! No fix. To choose which of the two documents keeps the identifier is a
 //! judgment, and to mint the replacement is an allocation, which is the part of
-//! [spec 2](../../../../docs/spec/02-taxonomy-model.md) that no rule in this
+//! [the taxonomy model](../../../../docs/spec/taxonomy-model.md) that no rule in this
 //! engine implements.
 
 use crate::finding::{at, Finding, Severity};
@@ -94,7 +94,7 @@ const NO_REPORT: &str = "the view carries no phase-A report for this corpus";
 
 /// The check. It reads no declaration of its own, on [`crate::fragment`]'s
 /// terms: no member of the language turns identifier uniqueness on or off, and
-/// [spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#identifiers)
+/// [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#identifiers)
 /// states it of every corpus.
 pub struct Duplicate {
     /// The front-matter key an identifier is read from. The same parameter

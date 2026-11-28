@@ -36,19 +36,19 @@ relations:
 
 ## Scope
 
-This spec describes the inside of the queries and explain stages of [spec 6](../spec/06-engine-architecture.md#pipeline). Two crates under `engine/crates/` build these stages: `query` and `embed`.
+This spec describes the inside of the queries and explain stages of [the engine architecture](../spec/engine-architecture.md#pipeline). Two crates under `engine/crates/` build these stages: `query` and `embed`.
 
 The stages have two inputs. The first is the census that [Parse and census](parse-and-census.md) takes. The second is the graph that [Graph build](graph-build.md) builds from that census. The stages give three outputs: pointers, explanations, and the answers of the MCP server. They add no phase to a run. Each answer is a projection of the census and the graph that the run already holds.
 
 The `embed` crate is the offline embedding path of [HW-DR-0064](../decisions/0064-q64-whether-intent-time-routing-gains-an-offline-embedding-path-in-shadow-mode.md). It runs in shadow mode, so no route reads a vector and no agent reads one.
 
-The bodies of the `route`, `neighbors`, `explain` and `show` verbs are in `engine/crates/cli/src/main.rs`. They belong to the Command surface row of spec 6. This spec describes the library that those verbs call.
+The bodies of the `route`, `neighbors`, `explain` and `show` verbs are in `engine/crates/cli/src/main.rs`. They belong to the Command surface row of [the engine architecture](../spec/engine-architecture.md). This spec describes the library that those verbs call.
 
 Other documents state what the stages do, and this spec does not repeat them:
 
-- [Spec 6](../spec/06-engine-architecture.md#library) states the library promise, and its [MCP server](../spec/06-engine-architecture.md#mcp-server) section states the promise of the server.
-- [Spec 5](../spec/05-ai-integration.md#intent-time-routing) states how routing behaves, and its [agent surfaces](../spec/05-ai-integration.md#agent-surfaces) section lists the tools of each class.
-- [Spec 2](../spec/02-taxonomy-model.md#kind-resolution) states what `explain` prints.
+- [The engine architecture](../spec/engine-architecture.md#library) states the library promise, and its [MCP server](../spec/engine-architecture.md#mcp-server) section states the promise of the server.
+- [AI integration](../spec/ai-integration.md#intent-time-routing) states how routing behaves, and its [agent surfaces](../spec/ai-integration.md#agent-surfaces) section lists the tools of each class.
+- [The taxonomy model](../spec/taxonomy-model.md#kind-resolution) states what `explain` prints.
 - The contracts of [`headwater route`](../interfaces/headwater-route.md), [`headwater explain`](../interfaces/headwater-explain.md), [`headwater show`](../interfaces/headwater-show.md), [`headwater mcp`](../interfaces/headwater-mcp.md), [`headwater neighbors`](../interfaces/headwater-neighbors.md) and [`headwater query`](../interfaces/headwater-query.md) state the behavior of each verb.
 
 The public Rust API of each crate is not in this spec ([HW-DR-0098](../decisions/0098-an-engine-subsystem-is-described-by-a-technical-design-spec-on-a-shelf-of-its-own-and-its-behavior-stays-where-it-is-already-written.md)). The doc comments of the crates state it.
@@ -59,19 +59,19 @@ The public Rust API of each crate is not in this spec ([HW-DR-0098](../decisions
 
 `Surface` borrows the census, the graph, the resolved taxonomy and the relation declarations. It does not own a copy of them. A surface that copied them could answer about a corpus that no run evaluated.
 
-Spec 5 names the tools of the query class: `route`, `governing_docs_for_path`, `resolve_identifier`, `related`, `explain`, `check` and `kinds`. The first five are reads in this crate. `check` is the runner of the check layer, and this crate calls the runner and does not implement it again. `kinds` reads the resolved taxonomy and not the graph. The `kinds` module holds its one renderer, and `headwater taxonomy kinds` calls the same renderer. So the tool and the verb give the same bytes for one lock.
+[AI integration](../spec/ai-integration.md) names the tools of the query class: `route`, `governing_docs_for_path`, `resolve_identifier`, `related`, `explain`, `check` and `kinds`. The first five are reads in this crate. `check` is the runner of the check layer, and this crate calls the runner and does not implement it again. `kinds` reads the resolved taxonomy and not the graph. The `kinds` module holds its one renderer, and `headwater taxonomy kinds` calls the same renderer. So the tool and the verb give the same bytes for one lock.
 
-Spec 6 also lists `headwater query <expression>`, and no document states what an expression is. Thus the crate has no `query` function. [HW-OBL-0029](../obligations/0029-what-headwater-query-takes.md) carries that gap, and the [`headwater query`](../interfaces/headwater-query.md) contract states the refusal.
+[The engine architecture](../spec/engine-architecture.md) also lists `headwater query <expression>`, and no document states what an expression is. Thus the crate has no `query` function. [HW-OBL-0029](../obligations/0029-what-headwater-query-takes.md) carries that gap, and the [`headwater query`](../interfaces/headwater-query.md) contract states the refusal.
 
 A read gives a `Pointer` and never a body. A pointer carries a path, an identifier, a kind, a name, a purpose, a summary and a warrant flag. The name comes from the facet in the `name` role, and the summary comes from the facet in the `scent` role. The crate reads a facet role and never a facet name, because `title` can mean something different in another taxonomy. A traversal gives a `Neighbour`: the far end of one edge and the cue at that end. Where the far end is an anchor, it also gives the reach of the anchor.
 
 ### Determinism
 
-The crate holds three rules so that a read is byte-identical across runs. Every score is an integer. Every order is total, and the last key is the path. No read uses a clock, an environment variable or a network. [Spec 12](../spec/12-check-layer.md#determinism-concretely) states the bar that these rules satisfy.
+The crate holds three rules so that a read is byte-identical across runs. Every score is an integer. Every order is total, and the last key is the path. No read uses a clock, an environment variable or a network. [The check layer](../spec/check-layer.md#determinism-concretely) states the bar that these rules satisfy.
 
 ### Route
 
-`route.rs` turns a task into a ranked set of pointers in the three steps that spec 5 states. First it matches the declared purpose of each kind against the task. Then it ranks the documents under each matched purpose by the terms of the task. Then reading precedence breaks ties.
+`route.rs` turns a task into a ranked set of pointers in the three steps that [AI integration](../spec/ai-integration.md) states. First it matches the declared purpose of each kind against the task. Then it ranks the documents under each matched purpose by the terms of the task. Then reading precedence breaks ties.
 
 A term scores only where it separates. `weights` gives each term the number of documents that it rules out. A term that every document carries weighs nothing, so the engine needs no word list for one language. A corpus that declares one purpose has no alternative to separate, so there every term counts.
 
@@ -87,7 +87,7 @@ The crate reads no file. The verb gives `route_in` a function that answers `Entr
 
 ### Explain
 
-`explain.rs` builds an `Explanation`. Its members hold the list that spec 2 gives for `headwater explain`: the derivation, the purpose, the required facets and sections, and the permitted relations. They also hold the summary, the warrant and the edges that the document already has. `Permitted` is one relation that the kind may declare, with the kinds that it may reach.
+`explain.rs` builds an `Explanation`. Its members hold the list that [the taxonomy model](../spec/taxonomy-model.md) gives for `headwater explain`: the derivation, the purpose, the required facets and sections, and the permitted relations. They also hold the summary, the warrant and the edges that the document already has. `Permitted` is one relation that the kind may declare, with the kinds that it may reach.
 
 The derivation is the one that the census recorded, and `explain` does not resolve the kind again. A second resolution could give a different answer from the one that the run used. An untyped document also has an explanation, in the same shape, with no kind and so no requirements. A reader needs that case explained more than any other.
 
@@ -101,13 +101,13 @@ The [`headwater show`](../interfaces/headwater-show.md) verb finds a document th
 - An absent value is an absent member, because the JSON writer has no `null`. A member that is ambiguous when absent is written on each run, and `pointers` is one of them.
 - Each function destructures its source completely. A field added to a source type and not to the document does not compile.
 
-`explain_bounded` cuts the `paths` list of each reach to a bound and never cuts a count. The edit hook passes that bound. [Spec 6](../spec/06-engine-architecture.md#performance-targets) states the performance target that the bound serves.
+`explain_bounded` cuts the `paths` list of each reach to a bound and never cuts a count. The edit hook passes that bound. [The engine architecture](../spec/engine-architecture.md#performance-targets) states the performance target that the bound serves.
 
 ### MCP
 
-`mcp.rs` is the server of [spec 6](../spec/06-engine-architecture.md#mcp-server). Its tools call the reads beside them and render with the functions of the CLI. Thus a client and a terminal read the same text.
+`mcp.rs` is the server of [the engine architecture](../spec/engine-architecture.md#mcp-server). Its tools call the reads beside them and render with the functions of the CLI. Thus a client and a terminal read the same text.
 
-`QUERY_CLASS` holds the six read tools, and `WRITE_CLASS` holds `new` and `fix`. `registered` decides which tools exist. A server with no write switch registers the six reads only, and no table holds a landed write. [Spec 5](../spec/05-ai-integration.md#what-the-server-may-do-and-the-axis-that-decides-it) states why the registration carries the property and the `readOnlyHint` annotation does not. [HW-OBL-0004](../obligations/0004-working-tree-write-tools-have-no-measured-effect.md) records that nobody has measured the effect of the write tools.
+`QUERY_CLASS` holds the six read tools, and `WRITE_CLASS` holds `new` and `fix`. `registered` decides which tools exist. A server with no write switch registers the six reads only, and no table holds a landed write. [AI integration](../spec/ai-integration.md#what-the-server-may-do-and-the-axis-that-decides-it) states why the registration carries the property and the `readOnlyHint` annotation does not. [HW-OBL-0004](../obligations/0004-working-tree-write-tools-have-no-measured-effect.md) records that nobody has measured the effect of the write tools.
 
 The server walks the corpus once, before it accepts a message, and each tool answers from that walk. `Server` does not change after it starts. `Session` holds the one bit that changes: whether a call moved a byte of the checkout. After such a call, `respond` refuses each later `tools/call` by name with the reason. A `fix` that wrote no patch, or a `new` that the scaffolder refused, is not a write, and the session stays open.
 

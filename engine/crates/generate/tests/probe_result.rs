@@ -1782,7 +1782,7 @@ fn a_documentation_absent_arm_is_compared_with_the_campaign_present_arm() {
     );
 }
 
-/// The two absent arms of one run are the documents claim, and spec 5 names
+/// The two absent arms of one run are the documents claim, and [AI integration](../../../../docs/spec/ai-integration.md) names
 /// that difference as its only reading (HW-OBL-0223).
 #[test]
 fn the_two_absent_arms_measure_the_documents() {
@@ -1837,7 +1837,7 @@ fn result_of<'a>(plan: &'a headwater_generate::Plan, path: &str) -> &'a str {
 }
 
 /// Each component arm of #1472 against the `campaign` present arm measures
-/// one part of the layer, and spec 5 names it as a claim. A `no-hook`
+/// one part of the layer, and [AI integration](../../../../docs/spec/ai-integration.md) names it as a claim. A `no-hook`
 /// transcript beside a present one is compared, and the comparison names the
 /// intent hook. Before the component arms had a role, the transcript was
 /// graded and compared with nothing.
@@ -2747,7 +2747,7 @@ fn a_plan_that_stopped_partway_hands_a_grading_caller_no_selection() {
 /// The defect this holds is the one `f615fb86` landed in the repository above:
 /// a transcript whose `lock` member names a taxonomy this tree no longer
 /// carries is refused whole by the first of the five confirmations
-/// [spec 15](../../../../docs/spec/15-the-recorder-contract.md#what-the-engine-confirms-and-what-it-records-without-confirming)
+/// [the recorder contract](../../../../docs/spec/the-recorder-contract.md#what-the-engine-confirms-and-what-it-records-without-confirming)
 /// states, the refusal text *is* the derived output, so `generate --check`
 /// regenerates it faithfully and stays green, and no check rule reads a probe
 /// result. The corpus then published three measurements taken off a result

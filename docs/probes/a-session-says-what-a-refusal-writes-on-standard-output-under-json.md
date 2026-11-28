@@ -48,7 +48,7 @@ expected: [nothing]
 
 **This is a deliberate case of the code set: plain code states the answer, and the documents state it better.** The macro and the test name state the rule, so a session in scenario 0 can find it. The documents state it with its reason, for every verb, where a search for the flag lands first. So this probe measures whether the documents make a stated convention reachable, against the prior of a general agent, which is the other answer because most tools write an error object under a JSON flag.
 
-**Which documents help, and why.** HW-DR-0043 is the ruling with its reason: `--json` names the shape of an artifact, and it moves no stream and no grammar. Every interface contract states it for its verb, [the `headwater explain` contract](../interfaces/headwater-explain.md) among them. [Spec 6](../spec/06-engine-architecture.md) says that a refusal is never a document in the target a caller named.
+**Which documents help, and why.** HW-DR-0043 is the ruling with its reason: `--json` names the shape of an artifact, and it moves no stream and no grammar. Every interface contract states it for its verb, [the `headwater explain` contract](../interfaces/headwater-explain.md) among them. [The engine architecture](../spec/engine-architecture.md) says that a refusal is never a document in the target a caller named.
 
 **Expected rates, from proposal 2 of #1835.** The guess floor is 50 percent. Scenario 0: 50 to 65 percent. Scenario 1: 80 to 90 percent. The difference is in range, and the power at 18 sessions is poor. Proposal 2 found it adequate for 25 points at 55, and the code round runs 44.
 

@@ -7,7 +7,7 @@
 //! taxonomy is a later milestone. This crate answers one question: what did the
 //! author write, and where.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots) names
+//! [The check layer](../../../../docs/spec/check-layer.md#the-correctness-roots) names
 //! the parser a correctness root, and the failure it names is a silent pass
 //! rather than a crash: a mis-parsed heading lets a section contract hold with
 //! no finding anywhere. That is why the body is a real CommonMark parse rather
@@ -56,7 +56,7 @@ pub struct Document {
 
 /// The front-matter block that states what stands behind a document.
 ///
-/// [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed):
+/// [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#provenance-is-recorded-not-assumed):
 /// "The provenance block is the exception, and its shape belongs to the
 /// engine." So the two names below are this crate's, like the split of front
 /// matter from body, and no taxonomy declares either.
@@ -66,14 +66,14 @@ pub const PROVENANCE: &str = "provenance";
 pub const WARRANT: &str = "warrant";
 
 /// The member of that block that states what kind of evidence the document
-/// rests on. Spec 3's three honest states are `evidenced`, `reconstructed` and
+/// rests on. [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s three honest states are `evidenced`, `reconstructed` and
 /// `unevidenced`, and the block that carries them is the engine's on the same
 /// terms as the warrant beside it.
 pub const EVIDENCE_BASIS: &str = "evidence_basis";
 
 /// The warrant this engine derives for a file it wrote itself.
 ///
-/// [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires):
+/// [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires):
 /// "The engine derives `regenerated` from the marker, and never from a
 /// declaration. A generated file that declares no front matter has no block in
 /// which to state a warrant. A generated document that declares an identity has
@@ -91,7 +91,7 @@ pub const ACCEPTED: &str = "accepted";
 /// The warrant of a document that nobody accepted, whoever wrote it.
 pub const ASSERTED: &str = "asserted";
 
-/// The closed warrant set of [spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires),
+/// The closed warrant set of [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires),
 /// in the order that document's table lists it.
 ///
 /// One spelling for the engine. `headwater_check::warrant` reports a value
@@ -103,11 +103,11 @@ pub const WARRANTS: [&str; 4] = [ACCEPTED, REGENERATED, "transcribed", ASSERTED]
 
 /// The member of the provenance block that names who accepted the document.
 ///
-/// Spec 3's table pairs it with the warrant: `accepted` requires it, and the
+/// [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s table pairs it with the warrant: `accepted` requires it, and the
 /// other three values forbid it.
 pub const ACCEPTED_BY: &str = "accepted_by";
 
-/// Whether a warrant is one of spec 3's four values, exactly as written.
+/// Whether a warrant is one of [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s four values, exactly as written.
 ///
 /// Case counts. `Accepted` is not `accepted`, for the reason a misspelling is
 /// not: a reader that folded the case would be guessing what the author meant.
@@ -161,7 +161,7 @@ pub fn warrant(facets: &Mapping) -> Option<&str> {
 /// this engine wrote.
 ///
 /// The derivation wins over a declaration, and that is the ruling rather than a
-/// precedence this function invented. Spec 3 derives the value from the marker
+/// precedence this function invented. [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) derives the value from the marker
 /// "and never from a declaration", so a generated document that also wrote a
 /// warrant into a provenance block wrote a fact a hand edit can falsify, and
 /// reading it would be reading the falsifiable half.

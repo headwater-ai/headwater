@@ -22,7 +22,7 @@
 
 lock:
   format: 3
-  digest: sha256:4de587896c51bd7f7291c76744f7e2fd8c297c295a6eccb1619d0878af000dc1
+  digest: sha256:c88139013bccca3d76b81d4576c51703684ab10622d276e7610d404be64a7575
   rules: 4
   package: headwater/standard
   version: 5.0.0
@@ -38,7 +38,7 @@ lock:
     - path: .headwater/packages/headwater-standard/bundles/requirement-verification/bundle.yml
       digest: sha256:98b356a5d6a01d434001dd3dbc8212f6fb71f0834b147a17076c42309d60cad9
     - path: .headwater/overlay.yml
-      digest: sha256:c4110ba5cb5a94d14aea5db621e2d8c9988b875be23df7c2867e6bbe0da60d44
+      digest: sha256:e9a771b039af09be6910419a6c4fc66d1cb406ef72a4c04b8b06dd7176a3715d
 
 # The adoption payload: the debt this corpus declared when the taxonomy first
 # reached it. Every other line of this file is generated and this block is not.
@@ -464,6 +464,42 @@ resolved:
             reason: "it stands in for use or apply"
           - term: robust
             reason: "it stands in for the failure the thing survives"
+          - term: "spec 0"
+            reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+          - term: "spec 1"
+            reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+          - term: "spec 2"
+            reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+          - term: "spec 3"
+            reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+          - term: "spec 4"
+            reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+          - term: "spec 5"
+            reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+          - term: "spec 6"
+            reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+          - term: "spec 7"
+            reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+          - term: "spec 8"
+            reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+          - term: "spec 9"
+            reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+          - term: "spec 10"
+            reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+          - term: "spec 11"
+            reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+          - term: "spec 12"
+            reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+          - term: "spec 13"
+            reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+          - term: "spec 14"
+            reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+          - term: "spec 15"
+            reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+          - term: "spec 16"
+            reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
+          - term: "spec 17"
+            reason: "the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)"
         source_form: one_line_per_block
         tag: en-US
   anchors:
@@ -1374,7 +1410,7 @@ resolved:
     - kind: shelf_sections
       for:
         - decisions
-      output: docs/spec/09-open-questions.md
+      output: docs/spec/open-questions.md
       identity:
         id: HW-REG-open-questions
         kind: decision_register
@@ -1393,6 +1429,8 @@ resolved:
       output: docs/interfaces/consumer-surface.md
     - kind: site_nav
       output: ".headwater/nav.yml"
+      precedence:
+        - spec_series
       sections:
         - title: Reference
           groups:

@@ -2,7 +2,7 @@
 //! A relation entry that names the document that declares it, and the ways a
 //! rule about it is easy to get wrong.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
+//! [The check layer](../../../../docs/spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
 //! sets the floor: "every check ships with at least one fixture that it fails
 //! and one that it passes." The tree under `fixtures/self-target/` is
 //! [#1232](https://github.com/headwater-ai/headwater/issues/1232).
@@ -21,7 +21,7 @@
 //! time. It names itself by path, and a target is an identifier and never a
 //! path, so the entry binds to nothing and `relation.target.unresolved` owns it.
 //!
-//! **A rule that read "no relation" where spec 2 reads "no family except
+//! **A rule that read "no relation" where [the taxonomy model](../../../../docs/spec/taxonomy-model.md) reads "no family except
 //! association"** reports `notes/e.md`, which relates to itself under an
 //! association relation.
 //!
@@ -191,7 +191,7 @@ fn a_relation_with_no_declared_family_that_points_at_its_own_document_is_reporte
     assert!(found[0].contains("NOTE-FIX-f"), "{}", found[0]);
 }
 
-/// Spec 2 lets an association relation point at its own document, so that
+/// [The taxonomy model](../../../../docs/spec/taxonomy-model.md) lets an association relation point at its own document, so that
 /// entry is no instance and no finding.
 #[test]
 fn an_association_relation_that_points_at_its_own_document_is_not_reported() {

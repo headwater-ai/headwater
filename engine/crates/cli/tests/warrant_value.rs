@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! What `check --strict` makes of a warrant outside spec 3's closed set.
+//! What `check --strict` makes of a warrant outside [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s closed set.
 //!
 //! [#1438](https://github.com/headwater-ai/headwater/issues/1438) measured a
 //! document at `warrant: acepted` passing a strict run at exit 0, and a pointer

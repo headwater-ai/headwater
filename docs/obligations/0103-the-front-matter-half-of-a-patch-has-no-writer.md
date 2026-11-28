@@ -23,7 +23,7 @@ relations:
 
 ## Context
 
-[Spec 12](../spec/12-check-layer.md#fixability) lists four mechanical corrections. Two of them are edits inside front matter: "to normalize front-matter key order, to correct the format of an identifier". [Spec 3](../spec/03-authoring-and-lifecycle.md#authoring-surfaces) names a third in its table of authoring surfaces, where `headwater check --fix` is to "format front matter". [Spec 2](../spec/02-taxonomy-model.md#participation-expectations) names a fourth: "`check --fix` stamps the date only when the transition sits in the same diff".
+[The check layer](../spec/check-layer.md#fixability) lists four mechanical corrections. Two of them are edits inside front matter: "to normalize front-matter key order, to correct the format of an identifier". [Authoring and lifecycle](../spec/authoring-and-lifecycle.md#authoring-surfaces) names a third in its table of authoring surfaces, where `headwater check --fix` is to "format front matter". [The taxonomy model](../spec/taxonomy-model.md#participation-expectations) names a fourth: "`check --fix` stamps the date only when the transition sits in the same diff".
 
 `headwater check --fix` now carries five patch shapes, and two of them write front matter. `Patch::Text` replaces a byte range of the body, under a read-back that compares the parse of the result against the parse of the source. `Patch::Half` declares one edge half, and `headwater_scaffold::write::splice` writes it under a read-back of its own. `Patch::Create` makes a file where none stands.
 
@@ -39,14 +39,14 @@ The read-back that ships compares every scalar of the front matter, as a key pat
 
 - **A deletion.** A writer for it now exists, and `relation.key.outside_block` uses it. `shelf.placement_is_primary` still reports an error whose remedy is to remove one key of one mapping, and it still reports that remedy as remediation prose with no patch.
 - **A normalization of key order.** It moves every key, so no entry stays at its source position.
-- **An added key.** Spec 2 stamps a date where the source holds no date key.
+- **An added key.** [The taxonomy model](../spec/taxonomy-model.md) stamps a date where the source holds no date key.
 
 One sentence states the expectation for a deletion: the scalar list of the source, minus each entry under the removed key path, in source order. `Patch::Relocate` holds that expectation, so the next act for a deletion is to connect `shelf.placement_is_primary` to a deletion patch. A re-order and an addition each still need an expectation that somebody states.
 
 Two more gaps stay inside this record.
 
 - **The grain.** [HW-OBL-0088](0088-correcting-an-identifier-is-mechanical-and-it-is-not-local.md) records that correcting an identifier is mechanical and reaches every document that cites it. A patch shape that names one file cannot express that repair.
-- **The `scent` facet.** [Spec 12](../spec/12-check-layer.md#the-five-origins-of-a-check) widens `language.controlled.not_met` and `language.retired_term.used` to the facet in the `scent` role. A contraction or a British spelling in a `summary` is a replacement of one value, which is the edit `Patch::Facets` already holds. The two rules still report it with remediation prose, and the test `a_lexical_rule_reads_the_facet_in_the_scent_role_and_no_other` over `engine/crates/check/fixtures/check/spec/21-summary-facet-prose.md` holds that absence.
+- **The `scent` facet.** [The check layer](../spec/check-layer.md#the-five-origins-of-a-check) widens `language.controlled.not_met` and `language.retired_term.used` to the facet in the `scent` role. A contraction or a British spelling in a `summary` is a replacement of one value, which is the edit `Patch::Facets` already holds. The two rules still report it with remediation prose, and the test `a_lexical_rule_reads_the_facet_in_the_scent_role_and_no_other` over `engine/crates/check/fixtures/check/spec/21-summary-facet-prose.md` holds that absence.
 
 Until each edit has a writer, a rule whose remedy is that edit reports remediation prose. `fixable` in a report stays the narrow reading that [HW-OBL-0087](0087-fixable-has-two-readings-inside-one-engine.md) settled.
 

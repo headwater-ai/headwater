@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! A Graph-origin check, generated from `reciprocal: required`.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check)
+//! [The check layer](../../../../docs/spec/check-layer.md#the-five-origins-of-a-check)
 //! puts reciprocity first among the Graph-origin examples and rules that Graph
 //! checks are "generated, not written": a new relation in the taxonomy produces
 //! its checks with no code. Nothing below names a relation. The instance set is
@@ -40,7 +40,7 @@
 //! # Where the finding reports, and where the fix goes
 //!
 //! Against the document that *did* write its half, at the line of the entry it
-//! wrote. [Spec 4](../../../../docs/spec/04-assurance-model.md#findings) gives
+//! wrote. [The assurance model](../../../../docs/spec/assurance-model.md#findings) gives
 //! that shape in its own worked example, and the reason is practical: the
 //! author who is looking at a file is the one who just declared the edge. The
 //! remediation names the other document and the line to add there.
@@ -50,7 +50,7 @@
 //! cases, and only the relation name changes.
 //!
 //! The fix is mechanical and total, which is the bar
-//! [spec 12](../../../../docs/spec/12-check-layer.md#fixability) sets: the
+//! [the check layer](../../../../docs/spec/check-layer.md#fixability) sets: the
 //! missing half is derivable from the half that exists, with no judgment.
 //!
 //! A half that names its own document gets no fix. The far end is then the

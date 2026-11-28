@@ -23,7 +23,7 @@ relations:
 
 ## Context
 
-[Spec 8](../spec/08-design-departures.md) calls declarative voice "mechanically detectable at useful precision". The measurement that closed [Q5](../spec/09-decisions.md#q5--voice-checking-depth) covered three ASD-STE100 structural rules, used as proxies, and none of the three survives. The passive, progressive and auxiliary detectors lived in `tools/ste-lint.py` and retired with it. Q5 measured their false-positive rates at 8%, 83% and 56%, and no rule blocked on any of the three.
+[The design departures](../spec/design-departures.md) calls declarative voice "mechanically detectable at useful precision". The measurement that closed [Q5](../spec/decisions.md#q5--voice-checking-depth) covered three ASD-STE100 structural rules, used as proxies, and none of the three survives. The passive, progressive and auxiliary detectors lived in `tools/ste-lint.py` and retired with it. Q5 measured their false-positive rates at 8%, 83% and 56%, and no rule blocked on any of the three.
 
 So the measurement that closed Q5 does not run here, and the instrument that produced it is recoverable rather than lost. `tools/ste-lint.py` stands intact at `a39e3fb^`, which is commit `9f0d1d8`. [The evaluation](../evaluations/what-a-check-can-know.md) records the method beside it. The seed is `20260811`, and the samples are 60 of 449 passive findings, 25 of 54 auxiliary, and all 12 progressive. So a reader can repeat that measurement.
 
@@ -41,7 +41,7 @@ The instrument is a run of the three categories over this corpus, with an adjudi
 
 **The reading of 2026-09-11, on commit `58f46a8d`.** `change_narration` reports 36 findings, and the other two categories report none. So no category reaches the bar of 50. Edition two of the `change_narration` set reported 60 findings on the day it landed. This record then carried that figure through two merged rewrites that removed most of them. Write a count here as a dated reading that names the commit. A bare count goes stale on the next rewrite, and nothing reports it.
 
-**All 36 findings were adjudicated one at a time, under the two labels spec 4 declares.** 13 are genuine. 5 stand in a section where the narration is the content a reader wants, such as the `## Context` of a decision record. 18 are false for good, and each one is a way that English states something other than a change. The five modes are a definition, a conditional inside a hypothetical, an inline quotation, another system's behavior, and a heading. The loosest pattern of the set carries 24 of the 36 findings, and 9 of those 24 are genuine. That pattern stays, and the argument is the absolute count rather than the rate. The rate moves in both directions. Over genuine findings alone it falls from 13 of 36 to 4 of 12. Over the findings that are not permanently false it rises from 18 of 36 to 9 of 12. The yield does not move, because 9 genuine findings go and no numerator returns them. `engine/crates/check/src/voice.rs` holds the ruling, one sentence for each of the five modes, and the trend that would retire the pattern. None of the 18 carries a `headwater allow` directive, because a directive requires an `until` and none of these sentences becomes wrong.
+**All 36 findings were adjudicated one at a time, under the two labels [the assurance model](../spec/assurance-model.md) declares.** 13 are genuine. 5 stand in a section where the narration is the content a reader wants, such as the `## Context` of a decision record. 18 are false for good, and each one is a way that English states something other than a change. The five modes are a definition, a conditional inside a hypothetical, an inline quotation, another system's behavior, and a heading. The loosest pattern of the set carries 24 of the 36 findings, and 9 of those 24 are genuine. That pattern stays, and the argument is the absolute count rather than the rate. The rate moves in both directions. Over genuine findings alone it falls from 13 of 36 to 4 of 12. Over the findings that are not permanently false it rises from 18 of 36 to 9 of 12. The yield does not move, because 9 genuine findings go and no numerator returns them. `engine/crates/check/src/voice.rs` holds the ruling, one sentence for each of the five modes, and the trend that would retire the pattern. None of the 18 carries a `headwater allow` directive, because a directive requires an `until` and none of these sentences becomes wrong.
 
 **The zero from the other two categories is saturation rather than a clean corpus.** On that same commit, of the patterns that `future_intent` declares, 0 of 14 occur in the 291 documents whose kind binds the declarative regime. `phased_rollout` stands at 0 of 13 over the 293 documents that bind the declarative or the prospective regime. Both denominators come from the kind-to-regime binding of the lock, applied to the 320 documents of the graph. The corpus holds one occurrence of `will become` and two of `in the first release`, and all three sit under `docs/reviews/` or `docs/evaluations/`, which bind `narrative` and forbid nothing. [HW-OBL-0168](0168-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md) states why a zero from a pattern set carries two readings rather than one.
 
@@ -51,7 +51,7 @@ So this claim is short for all three categories rather than for two, and the rea
 
 **All 23 findings were adjudicated one at a time.** 7 are genuine, and each one narrates a change to this repository. 4 stand where the narration is the content a reader wants: 3 in a `## Context` section and 1 in a dated measurement. 12 are false, and no rewrite repairs them. 11 of the 12 are `change_narration`, in the five modes above. The twelfth is the one `future_intent` finding, and it is a sixth mode: a general prediction that states a property of a thing. It is in `docs/taxonomies/diataxis/doctrine.md`. So the first finding that `future_intent` has reported on this corpus is not evidence that the set detects the fault.
 
-Each finding carries one label. `genuine` is a finding to repair. `accepted_deviation` and `false_positive` are the two labels that spec 4 declares, and this reading spends no directive on either.
+Each finding carries one label. `genuine` is a finding to repair. `accepted_deviation` and `false_positive` are the two labels that [the assurance model](../spec/assurance-model.md) declares, and this reading spends no directive on either.
 
 | document and line | pattern | label | reason |
 |---|---|---|---|
@@ -66,14 +66,14 @@ Each finding carries one label. `genuine` is a finding to repair. `accepted_devi
 | `docs/interfaces/headwater-probe.md:33` | `no longer` | `false_positive` | a definition |
 | `docs/obligations/0129-spec-12-calls-two-phase-a-outcomes-structural-findings-and-the-engine-emits-none.md:29` | `no longer` | `false_positive` | a definition, in the `## Context` section |
 | `docs/obligations/0130-the-publication-date-of-this-repository-is-unset-and-the-owner-alone-sets-it.md:28` | `there was no` | `accepted_deviation` | history in the `## Context` section |
-| `docs/spec/07-distribution-and-federation.md:159` | `no longer` | `false_positive` | a conditional inside a hypothetical |
+| `docs/spec/distribution-and-federation.md:159` | `no longer` | `false_positive` | a conditional inside a hypothetical |
 | `docs/spec/glossary.md:592` | `no longer` | `false_positive` | the definition of a retired term |
 | `docs/spec/glossary.md:811` | `used to` | `false_positive` | a heading |
 | `docs/taxonomies/README.md:225` | `used to` | genuine | tells what a fixture README said before |
 | `docs/taxonomies/README.md:233` | `has since` | genuine | tells the history of a milestone |
 | `docs/taxonomies/decision-record/doctrine.md:69` | `no longer` | genuine | tells a move of a facet to the base |
 | `docs/taxonomies/decision-record/doctrine.md:100` | `no longer` | `false_positive` | a table row that defines a state |
-| `docs/taxonomies/design-spec/doctrine.md:137` | `has since` | genuine | tells a change to spec 2 |
+| `docs/taxonomies/design-spec/doctrine.md:137` | `has since` | genuine | tells a change to [the taxonomy model](../spec/taxonomy-model.md) |
 | `docs/taxonomies/diataxis/doctrine.md:46` | `will eventually` | `false_positive` | a general prediction that states a property |
 | `docs/taxonomies/diataxis/doctrine.md:137` | `has since` | `false_positive` | a conditional inside a hypothetical |
 | `docs/taxonomies/diataxis/doctrine.md:141` | `has since` | genuine | tells that a demonstration ran |

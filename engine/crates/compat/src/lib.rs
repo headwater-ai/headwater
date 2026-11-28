@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Measured compatibility between two taxonomies, over one corpus.
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#versioning-by-measured-compatibility)
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#versioning-by-measured-compatibility)
 //! fixes six dimensions and states that the required version bump is a
 //! consequence of the result rather than a publisher's guess about it. This
 //! crate is the comparison and nothing else: every input arrives already built,
@@ -56,7 +56,7 @@ use std::collections::{BTreeMap, BTreeSet};
 pub mod migrate;
 pub mod payload;
 
-/// The six dimensions, in the order [spec 2](../../../../docs/spec/02-taxonomy-model.md#versioning-by-measured-compatibility)
+/// The six dimensions, in the order [the taxonomy model](../../../../docs/spec/taxonomy-model.md#versioning-by-measured-compatibility)
 /// tabulates them. The set belongs to the engine and no taxonomy may vary it.
 pub const DIMENSIONS: [&str; 6] = [
     "classification",
@@ -107,7 +107,7 @@ impl Outcome {
 
     /// Whether this dimension forces a major version.
     ///
-    /// Spec 2: "any dimension broken forces a major version". An unmeasured
+    /// [The taxonomy model](../../../../docs/spec/taxonomy-model.md): "any dimension broken forces a major version". An unmeasured
     /// dimension forces nothing and proves nothing, which is why
     /// [`Measured::complete`] is a separate question a reader must also ask.
     pub fn forces_major(&self) -> bool {
@@ -214,7 +214,7 @@ impl Measured {
 /// downstream — the census, the check runner, the generator — reads it and
 /// finds it there, so no other dimension can see it: `classification` reports
 /// the documents that moved kind and says nothing about the kind that came
-/// back. Spec 2 makes any broken dimension force a major version, and a base
+/// back. [The taxonomy model](../../../../docs/spec/taxonomy-model.md) makes any broken dimension force a major version, and a base
 /// that removed a declaration an adopter addresses is exactly that.
 ///
 /// The reading is quiet on a corpus that is right, and
@@ -767,7 +767,7 @@ fn verdict(outcome: &Verdict) -> String {
 /// One comparison, as a reader receives it.
 ///
 /// It carries the two identities beside the six dimensions because a dimension
-/// set with no versions against it is a measurement of nothing. Spec 7 asks the
+/// set with no versions against it is a measurement of nothing. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) asks the
 /// consumer's run to *verify* a publisher's claim, and a verification names
 /// what it verified.
 #[derive(Clone, Debug)]
@@ -780,7 +780,7 @@ pub struct Report {
     /// What became of the base.
     ///
     /// This is the "what changed in the base" line of
-    /// [spec 7](../../../../docs/spec/07-distribution-and-federation.md#upgrading),
+    /// [distribution and federation](../../../../docs/spec/distribution-and-federation.md#upgrading),
     /// and it is reported and never gated on. Two publishes of one package
     /// resolve identically and two that differ in a description do not, and
     /// neither fact decides a dimension. See the module comment.
@@ -875,7 +875,7 @@ impl Caveat {
                 // dimension would otherwise read as that dimension's line.
                 lines.extend(paths.iter().map(|path| format!("moved  {path}")));
                 lines.push(
-                    "That is the reading spec 6 asks for, because the lock is the one thing \
+                    "That is the reading the engine architecture asks for, because the lock is the one thing \
                      downstream takes. It is stated here and gated on nowhere."
                         .to_string(),
                 );
@@ -886,7 +886,7 @@ impl Caveat {
 }
 
 impl Report {
-    /// What spec 2 makes the version bump a consequence of.
+    /// What [the taxonomy model](../../../../docs/spec/taxonomy-model.md) makes the version bump a consequence of.
     ///
     /// Three answers rather than two. "No dimension forces a major" is a claim
     /// that a run in which five dimensions did not happen has not earned, and
@@ -1016,7 +1016,7 @@ impl Base {
 /// What the measurement requires of the version number.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Bump {
-    /// A dimension is broken, and spec 2 makes that a major version.
+    /// A dimension is broken, and [the taxonomy model](../../../../docs/spec/taxonomy-model.md) makes that a major version.
     Major,
     /// Every dimension ran and none is broken. This decides that no *major* is
     /// required and it decides nothing else: minor and patch are not

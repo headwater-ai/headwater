@@ -348,7 +348,7 @@ fn examine_a_generated_document(at: &Path) {
 /// verdict.
 ///
 /// No probe of this repository reached that path until one examined
-/// `docs/spec/09-open-questions.md`, which is a generated shelf index that the
+/// `docs/spec/open-questions.md`, which is a generated shelf index that the
 /// decision register superseded. Both assertions below are needed: the first
 /// says the member carries a digest at all, and the second says the digest is
 /// the one that moves, because a member carrying a constant would pass the
@@ -1049,7 +1049,7 @@ fn the_record_over_the_transcript_is_recorded() {
     );
 }
 
-/// Three recorded results, and the three are the fixture set that spec 12 asks
+/// Three recorded results, and the three are the fixture set that [the check layer](../../../../docs/spec/check-layer.md) asks
 /// a correctness root for. The first satisfies every predicate form, the second
 /// refutes every one, and the third refuses every one. A grader that returned
 /// one verdict for everything passes exactly one of the three.
@@ -2327,7 +2327,7 @@ fn an_action_that_is_a_list_stops_the_run() {
 
 // --- the refusals a transcript can provoke -----------------------------------
 
-/// The rule this fixture set exists for. Spec 5: the transcript "holds no model
+/// The rule this fixture set exists for. [AI integration](../../../../docs/spec/ai-integration.md): the transcript "holds no model
 /// prose. That omission is the enforcement." An omission nothing tests is a
 /// claim, so the failing arm is a transcript with one extra key.
 #[test]
@@ -3527,7 +3527,7 @@ fn refused_plans() -> Vec<Plan> {
     ]
 }
 
-/// The rule this enforces is the one spec 12 states about a correctness layer:
+/// The rule this enforces is the one [the check layer](../../../../docs/spec/check-layer.md) states about a correctness layer:
 /// a refusal with no fixture does not ship. It is the second instance of the
 /// scaffolder's `every_refusal_branch_has_a_case`, over the plan's refusals.
 #[test]

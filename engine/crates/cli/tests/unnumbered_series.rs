@@ -224,7 +224,7 @@ fn a_part_with_no_sequence_raises_no_missing_facet() {
 fn a_part_left_numbered_by_4_x_raises_nothing_about_its_sequence() {
     let root = Root::new("left-over");
     root.write(
-        "docs/spec/12-check-layer.md",
+        "docs/spec/check-layer.md",
         &part("check-layer", "The check layer", "sequence: 12\n"),
     );
     let findings = root.findings();

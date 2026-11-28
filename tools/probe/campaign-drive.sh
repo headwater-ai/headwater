@@ -59,7 +59,7 @@
 #   credentials from. When the token expires in less than 15 minutes, it
 #   waits, and reads the file again each minute, logging a line at least
 #   every 10 minutes. A missing file or field exits 3. The token must
-#   outlast the session (spec 15, "the recorder contract"), and a session
+#   outlast the session (the recorder contract (docs/spec/the-recorder-contract.md), "the recorder contract"), and a session
 #   cannot refresh it, because the confinement blocks platform.claude.com.
 #   **So the host must refresh the token.** Something outside this driver
 #   has to run `claude` on the host, such as a session a person keeps

@@ -246,7 +246,7 @@ tree=$(fresh link-file-name) && sed -i "/^  superseded_by:/,/^  [a-z]/s#^    - H
 grep -q "^    - ${new##*/}\$" "$tree/$old" || echo "oracle-fixtures: the superseded_by line of $old was not rewritten, so the next case reads nothing." >&2
 expect 1 "reciprocal-link fails an edge written as the other end's file name alone" "$tree" reciprocal-link.sh HW-DR-0112 HW-DR-0111
 expect 1 "reciprocal-link with --check-clean fails an error in one of its documents" "$elsewhere" reciprocal-link.sh --check-clean HW-DR-0112 HW-DR-0111
-tree=$(fresh link-error-elsewhere) && spoil "$tree" docs/spec/12-check-layer.md
+tree=$(fresh link-error-elsewhere) && spoil "$tree" docs/spec/check-layer.md
 expect 0 "reciprocal-link with --check-clean passes an error in a document it does not name" "$tree" reciprocal-link.sh --check-clean HW-DR-0112 HW-DR-0111
 printf '%s\n' '# the two documents' HW-DR-0112 HW-DR-0111 > "$work/link.args"
 expect 0 "reciprocal-link reads its arguments from --args" "$base" reciprocal-link.sh --check-clean --args "$work/link.args"
@@ -423,7 +423,7 @@ expect 1 "moved with --check-clean fails the same link" "$tree" moved.sh --check
 # link, still resolves to the old path in a file that links nothing else of
 # the move. The engine's link rule reads that form, so moved.sh fails it on
 # the engine's `link.path.unresolved` finding (round 4 of #1874.3).
-tree=$(fresh moved-reference-link) && rm -rf "$tree" && cp -a "$clean" "$tree" && printf '\nThe [moved record][moved-old] is named here by a reference.\n\n[moved-old]: ../decisions/%s\n' "${new##*/}" >> "$tree/docs/spec/12-check-layer.md"
+tree=$(fresh moved-reference-link) && rm -rf "$tree" && cp -a "$clean" "$tree" && printf '\nThe [moved record][moved-old] is named here by a reference.\n\n[moved-old]: ../decisions/%s\n' "${new##*/}" >> "$tree/docs/spec/check-layer.md"
 expect 1 "moved fails a reference-style link that still resolves to the old path" "$tree" moved.sh "$new" "$moved"
 expect 1 "moved with --check-clean fails the same link" "$tree" moved.sh --check-clean "$new" "$moved"
 
@@ -506,7 +506,7 @@ if [ "${suppressed:-0}" -eq 0 ]; then
     failures=$((failures + 1))
 fi
 expect 0 "lock-regenerated with --check-clean passes a bound file whose only errors a directive suppresses" "$base" lock-regenerated.sh --check-clean binds docs/how-to/publish-your-corpus-as-a-site.md load-bearing
-spoil "$retired" docs/spec/12-check-layer.md
+spoil "$retired" docs/spec/check-layer.md
 expect 0 "lock-regenerated with --check-clean passes an error in a file it does not name" "$retired" lock-regenerated.sh --check-clean retires "$carrier" game-changer
 expect 1 "lock-regenerated with --check-clean and no form fails the same error" "$retired" lock-regenerated.sh --check-clean
 tree=$(fresh lock-overlay-error) && rm -rf "$tree" && cp -a "$retired" "$tree" && spoil "$tree" "$carrier"
@@ -701,7 +701,7 @@ printf '%s\n' "$quiet" > "$logs/silent/subagents/agent.jsonl"
 printf '%s\n' "$quiet" > "$logs/spoken/session.jsonl"
 printf '%s\n' '{"type":"attachment","attachment":{"type":"hook_additional_context","hookName":"PreToolUse:Write","content":"this path is governed"}}' > "$logs/spoken/subagents/agent.jsonl"
 printf '%s\n%s\n' "$quiet" '{"type":"attachment","attachment":{"type":"hook_non_blocking_error","hookName":"Stop","stderr":"check found 2 errors"}}' > "$logs/error.jsonl"
-printf '%s\n%s\n' "$quiet" '{"type":"attachment","attachment":{"type":"hook_success","hookName":"UserPromptSubmit","content":"route: docs/spec/05-ai-integration.md"}}' > "$logs/intent.jsonl"
+printf '%s\n%s\n' "$quiet" '{"type":"attachment","attachment":{"type":"hook_success","hookName":"UserPromptSubmit","content":"route: docs/spec/ai-integration.md"}}' > "$logs/intent.jsonl"
 printf '%s\n%s\n' "$quiet" '{"type":"attachment","attachment":{"type":"hook_blocking_error","hookName":"PreToolUse:Write","stderr":"refused"}}' > "$logs/blocked.jsonl"
 : > "$logs/empty.jsonl"
 export HEADWATER_ORACLE_HARNESS_LOG="$logs/silent/session.jsonl" && expect 0 "no-hook-warning passes a log where a hook ran and said nothing" "$base" no-hook-warning.sh

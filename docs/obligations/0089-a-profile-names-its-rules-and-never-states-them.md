@@ -32,4 +32,4 @@ So an adopter who wants 20 words has no declaration to write. One who wants the 
 
 ## Discharge
 
-`source_form` and `retired_terms` went the other way in this milestone, and both are data. What is open is whether the remaining four rules of the profile should follow them. The cost is a value set per rule of a controlled language, and no specification states one. [Spec 2](../spec/02-taxonomy-model.md#language-is-declared-not-assumed) is where the statement belongs.
+`source_form` and `retired_terms` went the other way in this milestone, and both are data. What is open is whether the remaining four rules of the profile should follow them. The cost is a value set per rule of a controlled language, and no specification states one. [The taxonomy model](../spec/taxonomy-model.md#language-is-declared-not-assumed) is where the statement belongs.

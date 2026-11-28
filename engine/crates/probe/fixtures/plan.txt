@@ -68,4 +68,4 @@ A recorded result is stale when a document of this list moves, and it is not sta
 
 One `probe_transcript` document on `docs/probe-runs/`, then `headwater probe record <path>`. The transcript is the ordered tool-call events of each session, and it holds no model prose: the intake refuses a key outside the closed set, which is how the omission is enforced rather than asked for.
 
-**A transcript that an agent wrote about its own session is a self-report, and spec 5 refuses one.** The events have to be observed from outside the session by the process that drove it. That process reaches the network and it is not in this repository, so no verb here writes a transcript and there is no flag that makes one.
+**A transcript that an agent wrote about its own session is a self-report, and AI integration refuses one.** The events have to be observed from outside the session by the process that drove it. That process reaches the network and it is not in this repository, so no verb here writes a transcript and there is no flag that makes one.

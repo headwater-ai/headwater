@@ -23,9 +23,9 @@ relations:
 
 ## Context
 
-[Spec 4](../spec/04-assurance-model.md#discharging-coherence-obligations-the-assisted-sweep) says that the assisted sweep is how coherence obligations get discharged at all. This repository declares 25 obligations and every one of them carries `class: cohesion`. The class the sweep serves has no member, so the sweep discharges nothing here and the claim has never been tested against a declaration.
+[The assurance model](../spec/assurance-model.md#discharging-coherence-obligations-the-assisted-sweep) says that the assisted sweep is how coherence obligations get discharged at all. This repository declares 25 obligations and every one of them carries `class: cohesion`. The class the sweep serves has no member, so the sweep discharges nothing here and the claim has never been tested against a declaration.
 
-The binding a sweep would need is a control. A control names a mechanism and the obligations that mechanism discharges. The engine reads two prefixes, `check:` and `phase:`, and it names any other prefix external. Spec 4 admits an external control on purpose, because a corpus may declare a control that no check layer runs.
+The binding a sweep would need is a control. A control names a mechanism and the obligations that mechanism discharges. The engine reads two prefixes, `check:` and `phase:`, and it names any other prefix external. [The assurance model](../spec/assurance-model.md) admits an external control on purpose, because a corpus may declare a control that no check layer runs.
 
 ## Obligation
 
@@ -37,7 +37,7 @@ So the corpus owes one of three answers. The engine reads a `sweep:` prefix and 
 
 ## Discharge
 
-[#934](https://github.com/headwater-ai/headwater/issues/934) took the second of the three answers this record named. The register now separates an external control that leaves evidence from one that does not. `crate::observation::Observations` reads a committed snapshot at `.headwater/observations.yml`. Each entry names one control and the commit it ran against, on the same offline terms the identifier claim store already reads by. `Disposed::unobserved` (`engine/crates/check/src/register.rs`) is the subset of an obligation's controls that name an external mechanism and that the snapshot does not name. `Disposed::discharged` excludes such a control. [Spec 4](../spec/04-assurance-model.md#every-obligation-has-exactly-one-disposition) states the rule. A control that names a mechanism outside the engine discharges nothing unless a committed snapshot names it and the commit it ran against.
+[#934](https://github.com/headwater-ai/headwater/issues/934) took the second of the three answers this record named. The register now separates an external control that leaves evidence from one that does not. `crate::observation::Observations` reads a committed snapshot at `.headwater/observations.yml`. Each entry names one control and the commit it ran against, on the same offline terms the identifier claim store already reads by. `Disposed::unobserved` (`engine/crates/check/src/register.rs`) is the subset of an obligation's controls that name an external mechanism and that the snapshot does not name. `Disposed::discharged` excludes such a control. [The assurance model](../spec/assurance-model.md#every-obligation-has-exactly-one-disposition) states the rule. A control that names a mechanism outside the engine discharges nothing unless a committed snapshot names it and the commit it ran against.
 
 `engine/crates/sweep/fixtures/sweep.taxonomy.yml` still declares `OB-SWP-1` with `class: coherence` and one control, `CT-SWP-1`, whose mechanism is `sweep:undeclared_conflict`. No snapshot in that fixture tree names `CT-SWP-1`. So `a_control_that_names_a_sweep_discharges_nothing_with_no_observation` now asserts the corrected reading: the obligation is not discharged, and `CT-SWP-1` is in `unobserved` rather than in `unimplemented`. A `sweep:` name is external, not an unrecognized `check:`/`phase:` name, so the two lists stay disjoint.
 

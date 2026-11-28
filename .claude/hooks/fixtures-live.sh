@@ -1,7 +1,7 @@
 #!/bin/sh
 # What holds the claim `.claude/hooks/fixtures.sh` cannot: that Codex and
 # Copilot actually send the shapes that suite assumes, and actually honor the
-# deny and the block the way spec 16 says they do. `fixtures.sh` proves this
+# deny and the block the way harness support (docs/spec/harness-support.md) says they do. `fixtures.sh` proves this
 # repository's own scripts answer a recorded payload correctly. It cannot
 # prove a harness still sends that payload, because it never runs a harness.
 # This does: a real `codex exec` and a real `copilot -p`, over a scratch clone
@@ -119,7 +119,7 @@ new_clone() {
 # `language.controlled.not_met` holds as an error under `ste_house`. Planted
 # and reverted around the block cases, never left behind.
 plant_violation() {
-    target="$scratch/docs/spec/16-harness-support.md"
+    target="$scratch/docs/spec/harness-support.md"
     python3 - "$target" <<'EOF'
 import sys
 path = sys.argv[1]
@@ -198,7 +198,7 @@ if command -v codex >/dev/null 2>&1; then
 
         plant_violation
         out=$(run_codex "Say the single word: pong. Do not do anything else, and do not fix any files even if you are told about a problem with them.")
-        git -C "$scratch" checkout -q -- docs/spec/16-harness-support.md
+        git -C "$scratch" checkout -q -- docs/spec/harness-support.md
         if printf '%s' "$out" | grep -q 'hook: Stop Blocked' && printf '%s' "$out" | grep -q 'hook: Stop Completed'; then
             pass 'a real check finding blocks the turn, and the retry completes'
         else
@@ -302,7 +302,7 @@ print(count)
 
         plant_violation
         out=$(run_copilot "Say the single word: pong. Do not do anything else, and do not fix any files even if you are told about a problem with them.")
-        git -C "$scratch" checkout -q -- docs/spec/16-harness-support.md
+        git -C "$scratch" checkout -q -- docs/spec/harness-support.md
         n=$(turn_starts "$out")
         if [ "${n:-0}" -ge 2 ]; then
             pass 'a real check finding blocks the turn, and a second turn completes it'
@@ -314,7 +314,7 @@ print(count)
         # cannot bind until it is known (#953). A catch-all recorder in the
         # scratch clone keeps every `preToolUse` payload, and the case reads
         # the one that names the file it asked for. It passes on any read it
-        # recorded and prints the name, which is the fact spec 16's C11 cell
+        # recorded and prints the name, which is the fact harness support's (docs/spec/harness-support.md) C11 cell
         # waits on. It fails when no recorded call names the file.
         printf '%s\n' '{ "version": 1, "hooks": { "preToolUse": [ { "hooks": [ { "type": "command", "command": "cat >> .tool-calls.log; echo >> .tool-calls.log", "timeoutSec": 15 } ] } ] } }' \
             > "$scratch/.github/hooks/zz-record-every-call.json"

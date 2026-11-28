@@ -1,7 +1,7 @@
 #!/bin/sh
 # What holds `tools/site/check-site-console.py`.
 #
-# Spec 12 refuses a check that ships with no failing fixture, and the reason
+# The check layer (docs/spec/check-layer.md) refuses a check that ships with no failing fixture, and the reason
 # carries double weight here. This checker's whole verdict is an *absence* — no
 # console message — and an absence-of-errors check is the one assertion that
 # goes quiet the moment its own mechanism breaks. A wrong URL, a server that
@@ -151,13 +151,15 @@ report "  and a page that does not load \`js/base.js\` is not held to it" 0 "$st
 
 echo "#532 itself, over the real served bytes"
 
-# A four-page copy of the assembled site: one of the 13 pages that carried the
-# defect, one generated page that never did, one hand-built page, and the
+# A four-page copy of the assembled site: one page whose table of contents
+# links an anchor that starts with a digit, the defect #532 named (the decision
+# register carried one until HW-DR-0117 took the part numbers off its heading,
+# so a numbered decision stands in for it), one hand-built page, and the
 # shared `js/` and `css/` both halves link. All three real pages sit two
 # directories down, which is what their `../../js/base.js` resolves against.
 copy="$scratch/site"
 rm -rf "$copy"
-mkdir -p "$copy/spec/09-decisions" "$copy/tutorials/t"
+mkdir -p "$copy/decisions/0001-implementation-language" "$copy/tutorials/t"
 # Every directory the real pages *load* from, not merely link to. The checker
 # reports a subresource that fails to arrive, so a copy missing `search/` fails
 # these cases for a reason that is about this suite and not about the corpus.
@@ -165,7 +167,7 @@ mkdir -p "$copy/spec/09-decisions" "$copy/tutorials/t"
 for asset in js css search img; do
     [ -d "$deploy/$asset" ] && cp -R "$deploy/$asset" "$copy/$asset"
 done
-victim="$deploy/spec/09-decisions/index.html"
+victim="$deploy/decisions/0001-implementation-language/index.html"
 clean_page="$deploy/tutorials/your-first-governed-corpus/index.html"
 if [ ! -f "$victim" ] || [ ! -f "$clean_page" ]; then
     echo "  FAIL  the two fixture pages are not in the assembled site, so the" >&2
@@ -173,7 +175,7 @@ if [ ! -f "$victim" ] || [ ! -f "$clean_page" ]; then
     echo "        purpose: if the specification moves, this line is the notice." >&2
     exit 1
 fi
-cp "$victim" "$copy/spec/09-decisions/index.html"
+cp "$victim" "$copy/decisions/0001-implementation-language/index.html"
 cp "$clean_page" "$copy/tutorials/t/index.html"
 
 # 3. The corpus as it stands, on the page that carried the defect. This is the
@@ -212,12 +214,12 @@ report "  and the shadowed file is what holds them up" 0 "$status" \
 #    the fix in `mkdocs/overrides/` is what is holding the page up, rather than
 #    something else on the tree that happens to coincide with it.
 sed -i 's|<script src="../../js/leading-digit-anchor-shim.js"></script>||' \
-    "$copy/spec/09-decisions/index.html"
+    "$copy/decisions/0001-implementation-language/index.html"
 status=$(run "$copy")
 report "removing the shim brings #532 back" 1 "$status" \
     "is not a valid selector" "$scratch/out"
 report "  and it names the anchor that starts with a digit" 1 "$status" \
-    "#9--the-decision-register" "$scratch/out"
+    "#1--implementation-language" "$scratch/out"
 report "  and the second exception follows the first" 1 "$status" \
     "Cannot read properties of undefined (reading '191')" "$scratch/out"
 report "  and the positive marker fires on its own" 1 "$status" \

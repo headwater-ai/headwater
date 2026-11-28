@@ -48,4 +48,4 @@ The session must open [the ruling](../decisions/0049-a-corpus-wide-fold-is-deriv
 
 **The words of the task are not the words of the ruling, on purpose.** The ruling says "fold", "derived" and "stored". A person who meets the problem says "total", "merge" and "wrong". So this probe measures whether the layer helps a session cross that gap. The route of `headwater route` and the corpus descriptor are two ways the layer offers.
 
-[Spec 5](../spec/05-ai-integration.md) states the claim that the layer helps a session find the document that governs a task. This probe supplies an instrument for that claim and does not supply an observed result.
+[AI integration](../spec/ai-integration.md) states the claim that the layer helps a session find the document that governs a task. This probe supplies an instrument for that claim and does not supply an observed result.

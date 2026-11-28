@@ -2,9 +2,9 @@
 //! A Shape-origin check at corpus grain: a heterogeneous shelf reads a kind
 //! from every document it claims.
 //!
-//! # The finding spec 2 states and nothing raised
+//! # The finding [the taxonomy model](../../../../docs/spec/taxonomy-model.md) states and nothing raised
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#kind-resolution), step
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#kind-resolution), step
 //! 3: on a heterogeneous shelf the kind comes from the discriminator facet,
 //! and "a missing or unrecognized value is a finding". The census stops
 //! resolution there and counts the document as untyped, which is correct. But
@@ -17,7 +17,7 @@
 //!
 //! Three stops of step 3 are this finding: no discriminator, a value the shelf
 //! does not admit, and a value that is not a scalar. A sequence names no kind,
-//! so it is an unrecognized value in spec 2's words.
+//! so it is an unrecognized value in [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s words.
 //!
 //! The other stops are not this rule. A path that no shelf claims is an
 //! ordinary state of a corpus, and this repository carries two. A file with no
@@ -38,7 +38,7 @@
 //!
 //! # Severity, and the shelf that does not declare it
 //!
-//! Spec 2 says the shelf declares the severity of this finding. No shelf
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md) says the shelf declares the severity of this finding. No shelf
 //! schema gives that declaration a form, and this engine does not invent one,
 //! for the reason `headwater_census::resolve` gives about step 4. So the
 //! severity is fixed at error until a declaration gives it a form. Error is

@@ -33,7 +33,7 @@ pub enum MetaErrorKind {
     /// A root key that is not one of the closed root set.
     UnknownDeclaration(String),
     /// `package` at the root of a taxonomy source. It is a reserved reference
-    /// root, and spec 7's package manifest is a different file.
+    /// root, and [distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s package manifest is a different file.
     ReservedRoot,
     /// An overlay address whose first segment is `package`. The publisher's
     /// library is reached with a reference and never with an address.

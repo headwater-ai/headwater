@@ -2,12 +2,12 @@
 //! The overlay resolver: a base package and its overlays merged into one
 //! validated taxonomy.
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#customization-by-composition):
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#customization-by-composition):
 //! "A taxonomy is one logical document. The engine assembles it from a base
 //! package plus zero or more overlays, and it resolves to a single validated
 //! object." This crate is that assembly.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots) puts
+//! [The check layer](../../../../docs/spec/check-layer.md#the-correctness-roots) puts
 //! it first on the list of components that every check trusts silently: "A
 //! resolver bug corrupts every check, projection, and conformance claim at
 //! once. A committed and diffable lock decreases the risk but does not test the
@@ -37,13 +37,13 @@
 //! # Resolving and validating are two operations, and the lock is what joins them
 //!
 //! [`resolve`] is the five steps above, which is what
-//! [spec 6](../../../../docs/spec/06-engine-architecture.md#pipeline) gives the
+//! [the engine architecture](../../../../docs/spec/engine-architecture.md#pipeline) gives the
 //! verb: "merges the base taxonomy and overlays, validates against the
 //! meta-schema, and writes a content-hashed lock". [`Resolution::validate`] is
-//! the rest of spec 2's list — the rules that read the result and report on it
+//! the rest of [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s list — the rules that read the result and report on it
 //! rather than decide a merge. [`rules::RULES`] is the accounting of both.
 //!
-//! Spec 2 also rules that "the engine never applies a taxonomy that does not
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md) also rules that "the engine never applies a taxonomy that does not
 //! validate" and that there is no partial-load mode. That rule is enforced by
 //! the artifact rather than by the call graph: `headwater taxonomy resolve`
 //! writes a lock only when every rule passes, and everything downstream reads
@@ -129,7 +129,7 @@ pub struct Resolution {
 /// # Why it is a reading rather than a refusal
 ///
 /// The state it names is the one an upgrade produces and nothing reports.
-/// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#versioning-by-measured-compatibility)
+/// [The taxonomy model](../../../../docs/spec/taxonomy-model.md#versioning-by-measured-compatibility)
 /// measures `addressability` by whether the adopter's overlay still resolves,
 /// and this case resolves: a base that renames `decision` to `ruling` leaves
 /// the overlay addressing a path that now has no base under it, and the
@@ -148,7 +148,7 @@ pub struct Resolution {
 /// of the resolved taxonomy. Two overlays that write leaves nowhere near each
 /// other commute, and the one that reaches into a kind records a founding only
 /// in the orders where it runs before the one that declares it. A refusal would
-/// therefore refuse one legal order of a pair that spec 2's confluence rule
+/// therefore refuse one legal order of a pair that [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s confluence rule
 /// certifies as one resolution, and accept the other.
 /// `a_commuting_pair_records_a_founding_in_one_order_and_not_the_other` in
 /// `tests/founded.rs` is that reason as a case, over the committed

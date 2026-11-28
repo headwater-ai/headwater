@@ -26,7 +26,7 @@ relations:
 
 `created_by` is required on every relation, and its value names the actor that a taxonomy expects to pay for the edge. The base package gives two of its five relations the value `hook`. They are `governs`, which ends on a `code_path` anchor, and `traces_to`, which ends on a document or on an anchor.
 
-[Spec 2](../spec/02-taxonomy-model.md#the-decision-relation-vocabulary) states the expectation as a fact about the engine. Its sentence is that a hook proposes `traces_to` and `governs` from the change. The [first-run walkthrough](../evaluations/default-taxonomy-first-run.md) counts how many default relations lack a mechanical creator, reaches two, and names `conflicts_with` and `constrains`. It counts `governs` and `traces_to` on the other side of that line.
+[The taxonomy model](../spec/taxonomy-model.md#the-decision-relation-vocabulary) states the expectation as a fact about the engine. Its sentence is that a hook proposes `traces_to` and `governs` from the change. The [first-run walkthrough](../evaluations/default-taxonomy-first-run.md) counts how many default relations lack a mechanical creator, reaches two, and names `conflicts_with` and `constrains`. It counts `governs` and `traces_to` on the other side of that line.
 
 No verb of this engine writes either edge. `headwater new --relates` refuses a relation whose `created_by` is not `scaffold`. It then prints both relations in the block that names what a document may also declare and nobody did. `headwater check --fix` writes a reciprocal half of an edge that a document already declares, and it proposes none. The three harness hooks that [#72](https://github.com/headwater-ai/headwater/issues/72) shipped read the graph and write no front matter at all.
 
@@ -38,7 +38,7 @@ The corpus owes either the actor or the correction.
 
 The claim that these two relations have a mechanical creator carries weight that no reader can check. The walkthrough uses it to argue that the base taxonomy is a design rather than a bet on author diligence. [HW-EVAL-theoretical-foundations](../evaluations/theoretical-foundations.md#b5-traceability-information-models--our-idea-has-a-name-and-a-literature) says that author-maintained links decay because the payer is not the beneficiary. Under today's engine both relations sit on the decaying side, and one document says otherwise.
 
-Which document governs which code is a judgment. The [stop rules](../spec/05-ai-integration.md#the-stop-rules) forbid an agent that invents structure. So a deterministic hook cannot read a diff and decide that a specification governs a file. That is what makes this a ruling rather than a task, and the honest actor may be `agent` rather than `hook`. The closed set holds both.
+Which document governs which code is a judgment. The [stop rules](../spec/ai-integration.md#the-stop-rules) forbid an agent that invents structure. So a deterministic hook cannot read a diff and decide that a specification governs a file. That is what makes this a ruling rather than a task, and the honest actor may be `agent` rather than `hook`. The closed set holds both.
 
 `traces_to` is the easier half and it is not free either. A commit that cites an identifier supplies a candidate edge, and nothing reads a commit message today.
 
@@ -46,12 +46,12 @@ Since #953, the write-time hook covers one part of this. An edit to a path that 
 
 ## Discharge
 
-A verb that proposes these edges from a change, with the fixtures that hold what it refuses to propose. The proposal reaches a human, because [spec 3](../spec/03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed) makes acceptance a human act.
+A verb that proposes these edges from a change, with the fixtures that hold what it refuses to propose. The proposal reaches a human, because [authoring and lifecycle](../spec/authoring-and-lifecycle.md#provenance-is-recorded-not-assumed) makes acceptance a human act.
 
 Where no such verb is written, the base package owes a `created_by` value that is true, and the walkthrough owes the corrected count. `author` states the cost plainly, and `agent` states that the coherence sweep owns the proposal.
 
 [HW-OBL-0104](0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md) raises what either answer costs. A `governs` edge reaches one path, so an actor that proposes them proposes one for every governed file.
 
-**The correction half has landed (2026-09-26).** [HW-DR-0083](../decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md) rules that both relations are `created_by: agent`, and the base package declares that value from 4.7.0. Spec 2 and the walkthrough now count four of the five base relations with no mechanical creator. No verb writes either edge, so the correction discharges this record rather than the proposing verb.
+**The correction half has landed (2026-09-26).** [HW-DR-0083](../decisions/0083-governs-and-traces-to-are-created-by-an-agent-because-a-session-proposes-the-line-and-a-person-types-it.md) rules that both relations are `created_by: agent`, and the base package declares that value from 4.7.0. [The taxonomy model](../spec/taxonomy-model.md) and the walkthrough now count four of the five base relations with no mechanical creator. No verb writes either edge, so the correction discharges this record rather than the proposing verb.
 
 **The bundle half has landed, and this record is discharged (2026-09-26).** The bundle relations `discharges` and `cites_evidence` also declared `hook`, and nothing wrote them. From headwater-standard 4.8.0 both declare `created_by: author`, because a person types the line and no agent proposes it. The owner ruled the value and the move of this record to `discharged` in a [comment on #955](https://github.com/headwater-ai/headwater/issues/955#issuecomment-5844324178), and HW-DR-0083 records it. No relation of this repository now declares `hook`. A test in `engine/crates/audit/tests/readings.rs` holds that the audit finds no relation in the `hook` row.

@@ -99,7 +99,7 @@ Answer them in .headwater/overlay.yml, then run `headwater taxonomy resolve` and
 
 **Check.** `ls .headwater` prints `overlay.yml` and `taxonomy.yml`.
 
-The first heading names what a tree states about itself: the **corpus** is `docs`, because that directory holds the most Markdown. The second names what no tree states, and those three questions are the interview. The verb asks about your documents, and never about the model — the difference [spec 7](../spec/07-distribution-and-federation.md) draws.
+The first heading names what a tree states about itself: the **corpus** is `docs`, because that directory holds the most Markdown. The second names what no tree states, and those three questions are the interview. The verb asks about your documents, and never about the model — the difference [distribution and federation](../spec/distribution-and-federation.md) draws.
 
 ### Step 3 — Fetch the package into your tree
 

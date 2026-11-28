@@ -2,7 +2,7 @@
 //! A published package, and the check a consumer runs over one that arrived
 //! from somewhere else.
 //!
-//! [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#publishing):
+//! [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#publishing):
 //! "Publishing is a release: a semantic version, a changelog, an integrity
 //! digest, and a migration payload for any major bump. Distribution is over the
 //! registry or repository that the organization already uses. The engine
@@ -12,7 +12,7 @@
 //!
 //! # This crate never fetches, and that is a structural guarantee
 //!
-//! [Spec 0](../../../../docs/spec/00-vision-and-scope.md#non-negotiables)
+//! [The vision and scope](../../../../docs/spec/vision-and-scope.md#non-negotiables)
 //! forbids a network dependency at check time, and no crate the checking loop
 //! reaches depends on the network. This crate reads a directory. When
 //! `headwater taxonomy vendor` is given a location, `headwater-fetch` turns it
@@ -35,7 +35,7 @@
 //! **It does not prove that the record's own header is the publisher's.** The
 //! digest is over the member list and [`members`] skips the record itself, so
 //! the header lines above the digest — the format, the package, the version and
-//! the engine range — are covered by nothing. Spec 7 states that non-coverage as
+//! the engine range — are covered by nothing. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) states that non-coverage as
 //! the design and it cannot be otherwise while the digest field sits inside the
 //! file that would be hashed. What keeps that out of the vendor's way is that
 //! `package.yml` is inside the walk, so the artifact carries an authenticated
@@ -71,7 +71,7 @@
 //! `headwater_hash` states the limit of its own argument: every other digest
 //! this engine writes is an integrity mark inside a repository that already
 //! holds the bytes, and this one is a check on an artifact from elsewhere. The
-//! decision to reuse it anyway is [Q22](../../../../docs/spec/09-decisions.md#q22--the-integrity-posture-of-a-published-package),
+//! decision to reuse it anyway is [Q22](../../../../docs/spec/decisions.md#q22--the-integrity-posture-of-a-published-package),
 //! and it rests on what the two options actually buy.
 //!
 //! A vetted implementation buys a correct SHA-256. It does not buy
@@ -793,7 +793,7 @@ pub fn pinned(dir: Option<&Path>, pinned: &str) -> Pinned {
 /// Whether this engine is inside the range a package declares.
 ///
 /// A package that declares no range is taken, and the absence is what
-/// [spec 7](../../../../docs/spec/07-distribution-and-federation.md#publishing)
+/// [distribution and federation](../../../../docs/spec/distribution-and-federation.md#publishing)
 /// means by a publisher that states no floor. A range that this engine cannot
 /// read is refused rather than ignored: an unreadable range read as no range is
 /// a claim the publisher made and the consumer dropped.
@@ -815,7 +815,7 @@ pub fn engine_range(package: &str, range: Option<&str>) -> Result<(), ReleaseErr
 
 /// Whether a version satisfies a range.
 ///
-/// A range is a space-separated list of comparators, in the form spec 7 writes:
+/// A range is a space-separated list of comparators, in the form [distribution and federation](../../../../docs/spec/distribution-and-federation.md) writes:
 /// `">=1.4 <2"`. Every comparator must hold. A version is one, two or three
 /// numeric parts, and an absent part is zero, so `1.4` in a comparator means
 /// `1.4.0` and `<2` excludes every `2.x`.

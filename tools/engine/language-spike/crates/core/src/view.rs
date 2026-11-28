@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Scoped views.
 //!
-//! **Item 2 of the spike.** Spec 12: "The view exposes *only* what the scope
+//! **Item 2 of the spike.** [The check layer](../../../../../../docs/spec/check-layer.md): "The view exposes *only* what the scope
 //! declared. A `Document`-scoped check physically cannot read a sibling."
 //!
 //! Three properties are what make that true here, and the compile-fail tests in

@@ -5,7 +5,7 @@
 //! hand-kept copies of the verb list and found three of them wrong. The message
 //! a caller reads on an unknown verb listed fifteen names against seventeen
 //! arms, and it omitted `probe` and `query`. The `USAGE` synopsis omitted
-//! `query` and `taxonomy migrate`. Spec 6 kept a fourth copy as the CLI grammar.
+//! `query` and `taxonomy migrate`. [The engine architecture](../../../../docs/spec/engine-architecture.md) kept a fourth copy as the CLI grammar.
 //!
 //! [`headwater_verbs::VERBS`] ended the first of those. This file ends the
 //! second, in both directions: a name in the table that the parser does not
@@ -146,7 +146,7 @@ fn the_second_words_of_each_verb_are_the_second_words_the_parser_answers_to() {
     }
 }
 
-/// Spec 6's CLI grammar block, held against `VERBS` as a containment.
+/// [The engine architecture](../../../../docs/spec/engine-architecture.md)'s CLI grammar block, held against `VERBS` as a containment.
 ///
 /// The paragraph under the block states its own rule: a name there either
 /// runs or waits, so the block may carry a name `VERBS` does not (a wait) but
@@ -166,11 +166,11 @@ fn the_second_words_of_each_verb_are_the_second_words_the_parser_answers_to() {
 /// and the reason lives in the paragraph, not here.
 const GRAMMAR_MAY_WAIT: &[&str] = &["coverage"];
 
-/// Every first word after `headwater ` on a left-aligned line of spec 6's CLI
+/// Every first word after `headwater ` on a left-aligned line of [the engine architecture](../../../../docs/spec/engine-architecture.md)'s CLI
 /// grammar block.
 fn spec_six_grammar_verbs() -> BTreeSet<String> {
     let path =
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../docs/spec/06-engine-architecture.md");
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../docs/spec/engine-architecture.md");
     let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     let (_, after_heading) = text
         .split_once("### CLI")
@@ -214,7 +214,7 @@ fn the_cli_grammar_of_spec_6_names_every_verb_this_binary_ships() {
     let missing: Vec<&String> = shipped.difference(&grammar).collect();
     assert!(
         missing.is_empty(),
-        "docs/spec/06-engine-architecture.md's CLI grammar names no `headwater {missing:?}` \
+        "docs/spec/engine-architecture.md's CLI grammar names no `headwater {missing:?}` \
          line, and the paragraph under the block claims every shipped verb is above"
     );
 
@@ -228,12 +228,12 @@ fn the_cli_grammar_of_spec_6_names_every_verb_this_binary_ships() {
         .collect();
     assert!(
         unexplained.is_empty(),
-        "docs/spec/06-engine-architecture.md's CLI grammar names {unexplained:?}, which the \
+        "docs/spec/engine-architecture.md's CLI grammar names {unexplained:?}, which the \
          binary does not ship and GRAMMAR_MAY_WAIT does not explain as a deliberate wait"
     );
 }
 
-/// The lines of spec 6's CLI grammar block that belong to one verb: from its
+/// The lines of [the engine architecture](../../../../docs/spec/engine-architecture.md)'s CLI grammar block that belong to one verb: from its
 /// `headwater <verb>` line up to, but not including, the next line that opens
 /// with `headwater `.
 ///
@@ -242,7 +242,7 @@ fn the_cli_grammar_of_spec_6_names_every_verb_this_binary_ships() {
 /// block rather than a second read of the file.
 fn spec_six_grammar_block_for(verb: &str) -> String {
     let path =
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../docs/spec/06-engine-architecture.md");
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../docs/spec/engine-architecture.md");
     let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     let (_, after_heading) = text
         .split_once("### CLI")
@@ -317,7 +317,7 @@ fn spec_six_grammar_sub_words(verb: &str) -> BTreeSet<String> {
 /// The second words of every multi-word grammar line, held against the
 /// second words `VERBS` carries for the same verb.
 ///
-/// The case above holds spec 6's grammar block to the top-level verb names
+/// The case above holds [the engine architecture](../../../../docs/spec/engine-architecture.md)'s grammar block to the top-level verb names
 /// `VERBS` carries. It reads only the first word of each line, so a second
 /// word missing from a multi-word line — `probe`'s three-of-four before this
 /// case existed — passes it. This is the direct successor of that gap, over
@@ -347,7 +347,7 @@ fn the_second_words_of_spec_6s_grammar_lines_are_the_second_words_verbs_carries(
             .collect();
         assert_eq!(
             declared, grammar,
-            "`{}`'s spec 6 grammar line names different second words from the ones \
+            "`{}`'s the engine architecture grammar line names different second words from the ones \
              `headwater_verbs::VERBS` carries for it",
             verb.name
         );
@@ -386,19 +386,19 @@ fn the_verb_index_names_exactly_the_verbs_this_binary_dispatches() {
 /// The words an inline span of the specification may put after `headwater `
 /// although `VERBS` carries no verb of that name, as (file name, word).
 ///
-/// `hook` is the one entry. Spec 5's "**No hook introduces a verb.**"
+/// `hook` is the one entry. [AI integration](../../../../docs/spec/ai-integration.md)'s "**No hook introduces a verb.**"
 /// paragraph names a `headwater hook <moment>` verb so that it can rule that
 /// verb out: the span names the verb the paragraph refuses, not one it
 /// promises. Every other word is a verb this binary carries, or it is a
 /// stale name, which is what
 /// [#1559](https://github.com/headwater-ai/headwater/issues/1559) found in
-/// spec 2 (`headwater migrate`, where the verb is `headwater taxonomy
+/// [the taxonomy model](../../../../docs/spec/taxonomy-model.md) (`headwater migrate`, where the verb is `headwater taxonomy
 /// migrate`).
-const SPEC_MAY_NAME_A_NON_VERB: &[(&str, &str)] = &[("05-ai-integration.md", "hook")];
+const SPEC_MAY_NAME_A_NON_VERB: &[(&str, &str)] = &[("ai-integration.md", "hook")];
 
 /// Every inline code span of one Markdown text that opens with `headwater `,
 /// as (file name, line number, the word after `headwater ` up to the span's
-/// closing backtick). A line inside a fenced block is skipped: spec 6's
+/// closing backtick). A line inside a fenced block is skipped: [the engine architecture](../../../../docs/spec/engine-architecture.md)'s
 /// grammar block is held by
 /// `the_cli_grammar_of_spec_6_names_every_verb_this_binary_ships`.
 fn inline_headwater_words(file: &str, text: &str) -> Vec<(String, usize, String)> {
@@ -471,11 +471,11 @@ fn unexplained_spans(words: &[(String, usize, String)], allowed: &[(&str, &str)]
 ///
 /// # This case was watched failing three ways
 ///
-/// Before #1559 edited spec 2, it named `02-taxonomy-model.md:888 migrate`
-/// and `02-taxonomy-model.md:890 migrate`: the spec quoted a top-level
+/// Before #1559 edited [the taxonomy model](../../../../docs/spec/taxonomy-model.md), it named `taxonomy-model.md:888 migrate`
+/// and `taxonomy-model.md:890 migrate`: the spec quoted a top-level
 /// `headwater migrate` verb, and `migrate` is a second word of `taxonomy`
 /// only. Removing the `hook` entry from `SPEC_MAY_NAME_A_NON_VERB` names
-/// `05-ai-integration.md:139 hook`, which proves the first assertion reads
+/// `ai-integration.md:139 hook`, which proves the first assertion reads
 /// the list. Adding an entry that no span uses reddens the second assertion,
 /// naming that entry, so the list cannot go stale.
 #[test]
@@ -509,7 +509,7 @@ fn every_headwater_code_span_in_the_specification_names_a_verb_this_binary_carri
 /// word outside its file today, so the case above stays green when the fence
 /// skip or the file half of the list's match is removed. This case goes red
 /// for each of the two, and for a removed closing-backtick cut as well.
-/// Line 6 keeps the red run of #1559 after spec 2 was fixed: `migrate` is a
+/// Line 6 keeps the red run of #1559 after [the taxonomy model](../../../../docs/spec/taxonomy-model.md) was fixed: `migrate` is a
 /// second word of `taxonomy`, so a reader that took only the first span of a
 /// line, or that accepted a second word as a top-level name, would pass it.
 #[test]
@@ -527,7 +527,7 @@ fn the_spec_span_reader_cuts_at_the_backtick_skips_a_fence_and_scopes_the_list_t
         vec![(1, "check"), (5, "hook"), (6, "check"), (6, "migrate")]
     );
     assert_eq!(
-        unexplained_spans(&words, &[("05-ai-integration.md", "hook")]),
+        unexplained_spans(&words, &[("ai-integration.md", "hook")]),
         vec!["a.md:5 hook".to_string(), "a.md:6 migrate".to_string()]
     );
     assert_eq!(

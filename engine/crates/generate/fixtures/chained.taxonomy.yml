@@ -9,7 +9,7 @@
 # the `registers` shelf, and the `shelf_index` of that shelf prints the summary
 # of every document on it. So adding a decision moves a count in one output
 # that a second output reads, which is the chain this repository has between
-# `docs/spec/09-open-questions.md` and `docs/spec/README.md`.
+# `docs/spec/open-questions.md` and `docs/spec/README.md`.
 
 purposes:
   rationale:

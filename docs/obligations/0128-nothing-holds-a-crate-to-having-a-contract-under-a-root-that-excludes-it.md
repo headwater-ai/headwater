@@ -21,7 +21,7 @@ relations:
 
 ## Context
 
-[Q29](../spec/09-decisions.md#q29--whether-a-corpus-root-may-contain-code-and-what-an-interface-contract-may-reach) keeps the corpus root at `docs`, and it names the half of [HW-EVAL-specifying-the-engine](../evaluations/specifying-the-engine.md) finding 2 that the ruling leaves open. A document under the root reaches a crate by a `governs` edge onto a `code_path`. Nothing reaches back.
+[Q29](../spec/decisions.md#q29--whether-a-corpus-root-may-contain-code-and-what-an-interface-contract-may-reach) keeps the corpus root at `docs`, and it names the half of [HW-EVAL-specifying-the-engine](../evaluations/specifying-the-engine.md) finding 2 that the ruling leaves open. A document under the root reaches a crate by a `governs` edge onto a `code_path`. Nothing reaches back.
 
 **The mechanism that would state the requirement runs between two documents.** A windowed participation expectation on a relation reports a document that stands at one end of no instance. `SourceTree::resolve` in `engine/crates/graph/src/anchors.rs` binds an anchor by `Path::exists`. So the far end of a `governs` edge is a string that resolved, and never a node with a kind. An expectation over `governs` therefore reports a contract that governs nothing, and it cannot report a crate that no contract governs.
 
@@ -33,7 +33,7 @@ The corpus owes a mechanism that names an undescribed subject, rather than only 
 
 **What would discharge this.** A projection whose rows are derived from a path outside the corpus root, and whose empty cell is the finding. [The `headwater generate` contract](../interfaces/headwater-generate.md#what-a-projection-writes-and-why) states that a projection interpolates a path, a facet value and a declared identity, and nothing else. All three come from the graph, so no projection today reads a directory. A projection over the crate tree and the contracts that name it would write a row for every crate. A crate with no contract would be a blank cell that `generate --check` holds in a committed file.
 
-**What would not discharge this.** A check over the contracts alone. Every such check reads the documents that exist, and the defect here is a document that does not. [Spec 12](../spec/12-check-layer.md#two-phases-and-why-the-order-matters) already states the general form of that answer. The census exists to fix the denominator before a check runs, and no census row covers a crate.
+**What would not discharge this.** A check over the contracts alone. Every such check reads the documents that exist, and the defect here is a document that does not. [The check layer](../spec/check-layer.md#two-phases-and-why-the-order-matters) already states the general form of that answer. The census exists to fix the denominator before a check runs, and no census row covers a crate.
 
 **A rule that reads the bytes of an anchor target would also close this, and it costs more.** It would make an anchor a subject rather than a name, which is the second reopening condition Q29 records. That reading exists in this tree today as a test rather than as a rule. `engine/crates/check/src/fragment.rs` holds a `comment_links` module that walks the comments of every source file of the engine.
 

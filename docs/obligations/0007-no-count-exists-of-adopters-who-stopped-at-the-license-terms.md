@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Q11](../spec/09-decisions.md#q11--license-and-distribution-posture) settles Apache-2.0 for the engine, the library, the base package and the bundles. Permissive terms should remove a step before a trial.
+[Q11](../spec/decisions.md#q11--license-and-distribution-posture) settles Apache-2.0 for the engine, the library, the base package and the bundles. Permissive terms should remove a step before a trial.
 
 ## Obligation
 

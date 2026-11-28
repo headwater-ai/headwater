@@ -18,7 +18,7 @@ provenance:
 
 ## Context
 
-[Spec 2](../spec/02-taxonomy-model.md)'s worked example promises "normative keywords on standards" for the product-suite column, and "mandatory normative keyword usage" for the regulated one. A voice regime carries a `forbid` list and nothing else.
+[The taxonomy model](../spec/taxonomy-model.md)'s worked example promises "normative keywords on standards" for the product-suite column, and "mandatory normative keyword usage" for the regulated one. A voice regime carries a `forbid` list and nothing else.
 
 A rule that every normative sentence uses one of a fixed keyword set is the opposite shape. It is a requirement to use a word rather than a refusal to use one. The [`standards-spec` entry](../taxonomies/standards-spec/doctrine.md#findings) binds `declarative` on all three of its kinds and states the gap. Its fourth finding at [line 158](https://github.com/headwater-ai/headwater/blob/5fb9518/docs/taxonomies/standards-spec/doctrine.md#L158) holds the argument. A standard whose requirements avoid every normative keyword passes every rule that this language can write.
 
@@ -28,4 +28,4 @@ The owner owes a form for a positive lexical requirement, or a correction to the
 
 ## Discharge
 
-This record discharges when a voice regime carries a `require` list beside its `forbid` list, with a check behind it. It discharges the other way when spec 2 states that a positive keyword rule is out of scope. The worked example then drops the promise.
+This record discharges when a voice regime carries a `require` list beside its `forbid` list, with a check behind it. It discharges the other way when [the taxonomy model](../spec/taxonomy-model.md) states that a positive keyword rule is out of scope. The worked example then drops the promise.

@@ -5,7 +5,7 @@ status: current
 status_since: 2026-08-12
 waiting_on: ruling
 last_verified: 2026-10-01
-summary: "Spec 6 promises a run proportional to the change, and a warm run still walks the corpus and builds the whole graph."
+summary: "The engine architecture promises a run proportional to the change, and a warm run still walks the corpus and builds the whole graph."
 provenance:
   warrant: accepted
   agency: mixed
@@ -23,14 +23,14 @@ relations:
 
 ## Context
 
-[Spec 6](../spec/06-engine-architecture.md#pipeline) puts the cache after the graph build. It says the cache is "content-addressed per file plus taxonomy hash, so incremental runs are proportional to the change, not the corpus". The cache that landed keys a check instance rather than a file, and it holds a verdict rather than a parse.
+[The engine architecture](../spec/engine-architecture.md#pipeline) puts the cache after the graph build. It says the cache is "content-addressed per file plus taxonomy hash, so incremental runs are proportional to the change, not the corpus". The cache that landed keys a check instance rather than a file, and it holds a verdict rather than a parse.
 
 ## Obligation
 
 So a warm run serves every verdict it can and it still walks the corpus, parses every document and builds the whole graph. [HW-OBL-0080](0080-changed-only-is-the-content-addressed-cache-under-another-name.md) measures which of the two halves a run spends its time in. In 2026-08, at 158 documents, Phase A cost about 40 ms of a 57 ms warm run. The cache then served nearly all of check evaluation. On 2026-10-01, at 501 typed documents, Phase A cost 103 ms of a 193 ms warm run. A run with no cache cost 587 ms. So a warm run spends about 90 ms after Phase A that the cache does not remove. `sh tools/measure/check-phases.sh` states what that time is, stage by stage, and HW-OBL-0080 records the reading. The largest stage is the edge rules, which read the digest of every governed file for the cache key of each edge.
 
-The cache therefore makes the second half proportional to the change and leaves the first half proportional to the corpus. What spec 6 promises is the whole run.
+The cache therefore makes the second half proportional to the change and leaves the first half proportional to the corpus. What [the engine architecture](../spec/engine-architecture.md) promises is the whole run.
 
 ## Discharge
 
-Either a phase before the checks caches a parse per file, or spec 6 moves the cache in its diagram and says why.
+Either a phase before the checks caches a parse per file, or [the engine architecture](../spec/engine-architecture.md) moves the cache in its diagram and says why.

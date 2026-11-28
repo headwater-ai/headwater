@@ -397,7 +397,7 @@ fn publish_maintained_source_into(out: &Path) -> String {
 
 /// The declaration of a tree with no package under `.headwater/packages/`.
 ///
-/// This is the first-run state that spec 7 calls the surface `init` is for,
+/// This is the first-run state that [distribution and federation](../../../../docs/spec/distribution-and-federation.md) calls the surface `init` is for,
 /// and it is the state the tutorial runs its step 2 in. Every byte of it is a
 /// literal in the verb, so every byte of it is asserted.
 #[test]

@@ -3,7 +3,7 @@
 //!
 //! # Why the emitter is here and not in the CLI crate
 //!
-//! [Spec 6](../../../../docs/spec/06-engine-architecture.md) makes the CLI a
+//! [The engine architecture](../../../../docs/spec/engine-architecture.md) makes the CLI a
 //! shell that parses arguments and prints what a crate returned, and every
 //! other JSON emitter of this engine sits in the crate that owns the data it
 //! writes. This crate owns [`crate::reading`] — the store, the readings, the

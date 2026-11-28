@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
-//! The site navigation: one file, each shelf's documents in path order,
+//! The site navigation: one file, each shelf's documents in path order or,
+//! for a shelf the declaration names under `precedence`, in the reading order,
 //! written in the shape MkDocs's `nav:` key reads.
 //!
 //! # Path order, where a shelf index prints the reading order
@@ -15,6 +16,19 @@
 //! `by_precedence`, and
 //! [HW-DR-0108](../../../../docs/decisions/0108-the-site-sidebar-lists-a-shelf-in-path-order-and-the-shelf-index-keeps-the-reading-order.md)
 //! records the amendment.
+//!
+//! # Relation order, for a shelf the declaration names
+//!
+//! A shelf whose files carry no number gives a reader no lookup order, and
+//! alphabetical order by file name tells them nothing about what to read
+//! first. A `site_nav` that lists such a shelf under `precedence` prints its
+//! documents in the order [`headwater_query::Surface::by_precedence`] derives,
+//! which is the order its shelf index prints. Every other shelf keeps path
+//! order. The list is the taxonomy's, shelf by shelf, and never an inference
+//! from a layout, because a rule that read "a layout with no number" would
+//! reorder every unnumbered shelf and the ruling names one.
+//! [HW-DR-0117](../../../../docs/decisions/0117-the-specification-series-names-a-part-by-its-slug-and-carries-no-sequence.md)
+//! amends HW-DR-0108 for the specification series of this repository.
 //!
 //! [HW-DR-0036](../../../../docs/decisions/0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md)
 //! is why this emitter writes that shape and not Docusaurus's `sidebars.js` or
@@ -167,12 +181,17 @@ pub(crate) fn emit(
             return Ok(None);
         }
 
-        // Path order, and not `by_precedence`. A sidebar is a list a reader
-        // looks a document up in, and a shelf of numbered documents has to
-        // read 86 and then 101. The shelf index keeps the derived reading
-        // order. See the module comment.
+        // Path order, and not `by_precedence`, unless the declaration names
+        // this shelf under `precedence`. A sidebar is a list a reader looks a
+        // document up in, and a shelf of numbered documents has to read 86 and
+        // then 101. A shelf whose files carry no number has no lookup order
+        // to keep, and a taxonomy that names it reads it as the shelf index
+        // does. See the module comment.
         let mut ordered = pointers(surface, &on_shelf);
-        ordered.sort_by(|a, b| a.path.cmp(&b.path));
+        match declaration.precedence.iter().any(|shelf| shelf == name) {
+            true => surface.by_precedence(&mut ordered),
+            false => ordered.sort_by(|a, b| a.path.cmp(&b.path)),
+        }
         Ok(Some(Group {
             // The declared display name, through the one function three
             // emitters read. `Group::shelf` is a label and nothing addresses
@@ -195,6 +214,16 @@ pub(crate) fn emit(
     };
 
     let built = (|| -> Result<Vec<Entry>, String> {
+        // A shelf under `precedence` is held to the taxonomy as a shelf under
+        // `for` is, so a misspelled name is a refusal and not a shelf that
+        // silently keeps path order.
+        if let Some(name) = declaration
+            .precedence
+            .iter()
+            .find(|name| !taxonomy.shelves.iter().any(|shelf| &shelf.name == *name))
+        {
+            return Err(name.clone());
+        }
         // The shelves no section names come first, in the order they always
         // had, so a declaration with no `sections` writes the bytes it wrote
         // before the member existed.
@@ -334,7 +363,7 @@ fn prefix_of(pattern: &str, corpus_root: &str) -> String {
 /// against a different way of getting this wrong. **Directly in the shelf's
 /// own directory**, so a nested `README.md` under a deeper directory of the
 /// same shelf is not read as the shelf's index. **A file stem of `README` or
-/// `index`**, so a `shelf_sections` output such as `09-open-questions.md` is
+/// `index`**, so a `shelf_sections` output such as `open-questions.md` is
 /// not swept up and listed a second time under a group that already holds it
 /// as a node. **No document of the graph**, so a projection that declares an
 /// `identity` block and lands on `README.md` stays a node and is listed once,
@@ -473,7 +502,7 @@ fn render_entry(out: &mut String, entry: &Entry, pad: &str, corpus_root: &str) {
 /// One case per condition of [`index_of`], because the corpus this engine runs
 /// over exercises two of the four and no fixture tree reaches the rest.
 ///
-/// The repository's own `docs/spec/09-open-questions.md` is the live case for
+/// The repository's own `docs/spec/open-questions.md` is the live case for
 /// the stem, and `docs/interfaces/README.md` for the kind the rule does not
 /// read. Nothing committed anywhere reaches the nested-directory case or the
 /// case of an index that is also a document, so each of those conditions
@@ -514,11 +543,11 @@ mod index_tests {
         assert_eq!(index_of("docs/decisions/**", &plan, &[]), None);
     }
 
-    /// The stem condition. `docs/spec/09-open-questions.md` is the live case:
+    /// The stem condition. `docs/spec/open-questions.md` is the live case:
     /// a `shelf_sections` output on the shelf, which the group already lists.
     #[test]
     fn an_output_on_the_shelf_that_is_not_an_index_is_not_read_as_one() {
-        let plan = written(&["docs/spec/09-open-questions.md", "docs/spec/SECTIONS.md"]);
+        let plan = written(&["docs/spec/open-questions.md", "docs/spec/SECTIONS.md"]);
         assert_eq!(index_of("docs/spec/**", &plan, &[]), None);
     }
 

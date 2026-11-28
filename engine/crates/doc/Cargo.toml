@@ -15,7 +15,7 @@ repository.workspace = true
 headwater-yaml = { workspace = true }
 
 # A CommonMark parser with a byte range on every event. The range is the whole
-# reason for the dependency: spec 12 needs a finding to anchor to a line, and a
+# reason for the dependency: the check layer (docs/spec/check-layer.md) needs a finding to anchor to a line, and a
 # scan that recognized headings by regular expression would report a heading
 # inside a fenced code block.
 pulldown-cmark = { version = "0.13", default-features = false }

@@ -16,7 +16,7 @@ add:
   # --- identifier schemes ---------------------------------------------------
   # One scheme per kind group, each with a distinct literal segment after the
   # namespace, so that no two schemes in the namespace admit the same string
-  # (spec 2, identifier integrity). The namespace is `HW` and it opens every
+  # (the taxonomy model (docs/spec/taxonomy-model.md), identifier integrity). The namespace is `HW` and it opens every
   # identifier this corpus mints.
   #
   # The namespace is declared here and in no shipped source. The base package
@@ -70,7 +70,7 @@ add:
   kinds.review_record.identifier:       {scheme: review_id}
 
   # --- the measurement layer ------------------------------------------------
-  # Spec 5 (Measuring whether any of this works) says what a probe is: "a
+  # AI integration (docs/spec/ai-integration.md) (Measuring whether any of this works) says what a probe is: "a
   # document in the corpus, with a kind, a shelf, an identifier and an
   # acceptance", declaring a category, a task statement and an expectation from
   # a closed set. Nothing declared either kind until this block, so `headwater
@@ -174,7 +174,7 @@ add:
       names_file: the task names the file the agent has to read or change
       superseded_target: the target is superseded or contradicted, so a document that disagrees with a current one stands in the agent's way
 
-  # The closed predicate set of spec 5. It is closed for the reason the sweep's
+  # The closed predicate set of AI integration (docs/spec/ai-integration.md). It is closed for the reason the sweep's
   # class set is: a form nobody declared is a form no grader can evaluate and no
   # report can total.
   facets.expectation:
@@ -259,7 +259,7 @@ add:
       none: a transcript of any tier other than additive, which no round of the additive campaign spent for
 
   # The check a `patched` expectation grades a produced patch against, which
-  # spec 5 calls the oracle route.
+  # AI integration (docs/spec/ai-integration.md) calls the oracle route.
   #
   # **Every probe declares one, and four of the five expectation forms declare
   # `none`.** That reads as a field with a sentinel in it, and it is: the
@@ -320,12 +320,12 @@ add:
     sections:
       require: [Run identity, Events]
 
-  # What `headwater generate` writes over one transcript. Spec 5: "The probe
+  # What `headwater generate` writes over one transcript. AI integration (docs/spec/ai-integration.md): "The probe
   # result is a document, generated from the transcript, the expectations and the
   # grader version. It carries the `regenerated` warrant, and `generate --check`
   # proves it."
   #
-  # It requires no section of its own, and the reason is the one spec 6 gives for
+  # It requires no section of its own, and the reason is the one the engine architecture (docs/spec/engine-architecture.md) gives for
   # every projection: a generated file is excused from the document checks,
   # because its content is a function of the emitter rather than of an author. A
   # required section here would be a rule that nothing reads, and the emitter is
@@ -355,7 +355,7 @@ add:
   # carrying both would make every citation an expectation.
   #
   # `code_path` is the second end, and it is the end that makes one measurement
-  # possible at all. Spec 5 says the reach of a skill is a measurement rather
+  # possible at all. AI integration (docs/spec/ai-integration.md) says the reach of a skill is a measurement rather
   # than a property, and the `opened` expectation over a transcript is the
   # instrument. A skill file sits outside the corpus root, so a relation that
   # named only a governed document could not point at one and that measurement
@@ -377,7 +377,7 @@ add:
     created_by: author
 
   # `generator`, and the word is the whole argument of this layer. A transcript
-  # that a person or an agent typed is a self-report, and spec 5 refuses one.
+  # that a person or an agent typed is a self-report, and AI integration (docs/spec/ai-integration.md) refuses one.
   #
   # The transcript at the source end is the evidence for what the probe at the
   # target end claims, so the relation declares `evidence_at: from` (#1562,
@@ -407,7 +407,7 @@ add:
 
   # A third shelf and not a second kind on the one above it, because a
   # homogeneous shelf is what keeps the front matter of a generated document
-  # short. The shelf states the kind, spec 2 forbids a facet that restates it,
+  # short. The shelf states the kind, the taxonomy model (docs/spec/taxonomy-model.md) forbids a facet that restates it,
   # and the block the emitter writes is then an identifier and nothing else.
   shelves.probe_results:
     title: Probe results
@@ -429,7 +429,11 @@ add:
   # states in prose, moved to where a check reads it. Each entry states why the
   # term is retired. None of them names a replacement, and that is the whole of
   # the judgment: a stock metaphor is repaired by naming the thing it stands in
-  # for, and no substitution does that ([spec 2](../docs/spec/02-taxonomy-model.md)).
+  # for, and no substitution does that ([the taxonomy model](../docs/spec/taxonomy-model.md)).
+  # The list also retires "spec 0" to "spec 17", the citation by number that
+  # the specification series dropped (HW-DR-0117). No entry names a
+  # replacement there either, because the phrase that replaces a number is the
+  # title of the part the sentence means, and only the author knows which.
 
   regimes.language.ste_house:
     tag: en-US
@@ -473,6 +477,42 @@ add:
         reason: it stands in for use or apply
       - term: robust
         reason: it stands in for the failure the thing survives
+      - term: spec 0
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 1
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 2
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 3
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 4
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 5
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 6
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 7
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 8
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 9
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 10
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 11
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 12
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 13
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 14
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 15
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 16
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
+      - term: spec 17
+        reason: the specification series names a part by its title and carries no number, so cite the part by a title link (HW-DR-0117)
     # The front-door prose outside the corpus root, which HW-DR-0084 lets this
     # regime hold. Three rules read these paths and no other rule does, so
     # none of them owes front matter, and none joins the census. The four are
@@ -498,9 +538,9 @@ add:
   kinds.obligation_record.language:   ste_house
 
   # A decision record is a normative statement that this repository makes about
-  # itself. It stands to `docs/spec/09-decisions.md` as an obligation record
+  # itself. It stands to `docs/spec/decisions.md` as an obligation record
   # stands to its own register, and the register was bound where the record was
-  # not. No document stated why. [Q27](../docs/spec/09-decisions.md#q27--whether-a-decision-record-is-governed-prose)
+  # not. No document stated why. [Q27](../docs/spec/decisions.md#q27--whether-a-decision-record-is-governed-prose)
   # rules that a decision record is governed prose, and it states what this line
   # costs: 64 findings on the shelf when it was taken, every one of them
   # advisory, and one of them caused by an inline quotation. The kinds that stay
@@ -512,7 +552,7 @@ add:
   # it as evidence. 16 of the 17 records under `docs/evaluations/` declare
   # `cited_by` and no review record and no probe declares one, which is the line
   # between prose this repository wrote and text it recorded.
-  # [Q28](../docs/spec/09-decisions.md#q28--whether-an-evaluation-is-governed-prose)
+  # [Q28](../docs/spec/decisions.md#q28--whether-an-evaluation-is-governed-prose)
   # rules that an evaluation is governed prose, and it states what this line
   # costs: 432 findings on the shelf when it was taken, every one of them
   # advisory, 422 over the word limit and 10 on a semicolon. No adoption pair
@@ -559,7 +599,7 @@ add:
   #
   # **The section contract.** man-pages(7) fixes an order and makes NAME,
   # SYNOPSIS and DESCRIPTION mandatory. Seven of its headings are below. NAME is
-  # not one of them, because the `title` facet carries the name and spec 2
+  # not one of them, because the `title` facet carries the name and the taxonomy model (docs/spec/taxonomy-model.md)
   # refuses a second copy of a value the front matter already holds. That is
   # also why `title` is the one facet this kind adds to the four that
   # `governed_document` requires: a verb index has to print a name, and this
@@ -627,7 +667,7 @@ add:
   # the engine, which is why this declaration is in the adopter overlay and not
   # in a bundle. The two are different documents that share a name. A tutorial
   # for a *package* teaches the kinds that package declares, and a third-party
-  # publisher owes one for its own bundles as doctrine prose, which spec 7
+  # publisher owes one for its own bundles as doctrine prose, which distribution and federation (docs/spec/distribution-and-federation.md)
   # already provides for. A tutorial for the *engine* teaches `check`, `new`,
   # `explain` and the lock, and none of those is package data. This corpus
   # holds the second kind. When the base package gains one of the first kind,
@@ -641,15 +681,15 @@ add:
   # for that resolution would mean writing the on-ramp as an untyped file,
   # which is the fourth clause of #102 unmet. So the kind below is this
   # repository's own, in this repository's own overlay, on the reading that
-  # spec 10 already settled: Diátaxis classifies by reader mode and Headwater
+  # the theoretical foundations (docs/evaluations/theoretical-foundations.md) already settled: Diátaxis classifies by reader mode and Headwater
   # organizes by authority and lifecycle, so a reader mode is not a kind here
   # even when its name matches one. If #6 later ships the kind set, a document
   # of that kind is a different thing from this one and the two do not collide.
   #
   # **The purpose is `procedure`, and it is declared here rather than found.**
   # The base package declares `rationale` and `behavior`, the two the core
-  # requires. Neither answers "how do I start". Spec 2 names `procedure` in the
-  # derivation of the small-team column, and spec 7's interview names it as the
+  # requires. Neither answers "how do I start". The taxonomy model (docs/spec/taxonomy-model.md) names `procedure` in the
+  # derivation of the small-team column, and distribution and federation's (docs/spec/distribution-and-federation.md) interview names it as the
   # question an adopter is asked, so the word is this project's own rather than
   # a coinage. The `answers` phrases are what a newcomer types, because routing
   # matches them before it matches any text and a tutorial that no route
@@ -1009,9 +1049,9 @@ add:
   # Three kinds of document about how this repository is built still stood on
   # product shelves: the specification of the build order as part 17 of the
   # numbered series, three evaluations of the build order and of CI, and eleven
-  # obligation records about run tooling that spec 13 listed as the product's
+  # obligation records about run tooling that the register of open obligations (docs/spec/open-obligations.md) listed as the product's
   # open work. A reader who judged Headwater from the specification, the
-  # evaluations or spec 13 read them as product commitments (#1286).
+  # evaluations or the register of open obligations (docs/spec/open-obligations.md) read them as product commitments (#1286).
   #
   # **A moved record keeps its identifier.** HW-PD-0024 rules it. Each kind
   # below binds the scheme its product kind already binds, as
@@ -1217,7 +1257,7 @@ add:
   #
   # **In this overlay, and not in the package.** The doctrine is package
   # content for every adopter, who vendors it and never checks it. It is
-  # corpus content here alone, because only this repository writes it. Spec 13
+  # corpus content here alone, because only this repository writes it. The register of open obligations (docs/spec/open-obligations.md)
   # records that answer as this repository's local one, and the base question
   # of whether package content is corpus content stays open there.
   #
@@ -1350,9 +1390,9 @@ add:
 
 # --- projections ------------------------------------------------------------
 # `projections` is a list in the base, so an `add` cannot reach it, and this is
-# the one operation in this file that is not an `add`. Spec 13 records that
+# the one operation in this file that is not an `add`. The register of open obligations (docs/spec/open-obligations.md) records that
 # nothing states whether a *bundle* may use `add_to`. An adopter overlay is not
-# a bundle, and spec 2 supplies the operation for a list.
+# a bundle, and the taxonomy model (docs/spec/taxonomy-model.md) supplies the operation for a list.
 #
 # The base declares an index for the two shelves that it declares, `decisions`
 # and `specifications`. This corpus holds the first and not the second, so the
@@ -1404,7 +1444,7 @@ add_to:
       for: [spec_series, obligations, evaluations, verified_requirements, acceptance_criteria, verifications, probes, probe_results, probe_runs, reviews, tutorials, how_to, process_decisions, process_specs, process_evaluations, process_obligations, explanations, process_explanations, process_how_to, subsystems]
       output: "{shelf}/README.md"
 
-    # The redirect map. `docs/spec/09-open-questions.md` is a tombstone: the
+    # The redirect map. `docs/spec/open-questions.md` is a tombstone: the
     # twenty-one original questions all closed, each one is a document on the
     # decisions shelf now, and citations in this corpus name an anchor in this
     # file. An anchor exists because a heading does, so the file has to keep
@@ -1441,13 +1481,13 @@ add_to:
     # guard it a second time.
     - kind: shelf_sections
       for: [decisions]
-      output: docs/spec/09-open-questions.md
+      output: docs/spec/open-questions.md
       identity:
         id: HW-REG-open-questions
         kind: decision_register
         name: Open questions, closed and redirected
 
-    # The standing test of the grader, which spec 12 asks a correctness root for
+    # The standing test of the grader, which the check layer (docs/spec/check-layer.md) asks a correctness root for
     # and which nothing could run while a result was something a verb printed.
     # One transcript is one run and one result, so `{run}` is the transcript's
     # file stem and one declaration writes as many files as this corpus holds
@@ -1514,7 +1554,7 @@ add_to:
     # The site navigation. HW-DR-0036 picks MkDocs and states why: its `nav:`
     # is data and not code, its default `docs_dir` already matches this
     # corpus's root, and neither Docusaurus nor Astro has a plain-data format
-    # to emit into. Q16 and spec 2's own worked example both already name
+    # to emit into. Q16 and the taxonomy model's (docs/spec/taxonomy-model.md) own worked example both already name
     # `.headwater/nav.yml` as the illustrative output, so this path is not new
     # to this corpus. An empty `for` covers every shelf, the same reading a
     # `shelf_index` with no `for` gives it, and an empty shelf is left out of
@@ -1533,6 +1573,12 @@ add_to:
     # shelf cannot vanish from the site.
     - kind: site_nav
       output: .headwater/nav.yml
+      # The specification series carries no number in a file name, so path
+      # order is alphabetical there and tells a reader nothing. The sidebar
+      # lists it in the reading order its `builds_on` edges derive, as its
+      # shelf index does, and every other shelf keeps path order (HW-DR-0117,
+      # which amends HW-DR-0108 for this shelf alone).
+      precedence: [spec_series]
       sections:
         - title: Reference
           groups:

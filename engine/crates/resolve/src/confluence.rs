@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The static check that an overlay set commutes, run before anything merges.
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#customization-by-composition):
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#customization-by-composition):
 //! "Overlay application must be **confluent**: the application of a set of
 //! overlays in any legal order yields the same resolved taxonomy. The resolver
 //! checks this statically, before it applies anything." And: "the resolver
@@ -11,7 +11,7 @@
 //! Static is the whole value of it. A resolver that discovered a conflict
 //! while merging would report whichever conflict the order it happened to pick
 //! reached first, and a publisher could not prove ahead of a release that every
-//! subset of its bundles resolves ([spec 7](../../../../docs/spec/07-distribution-and-federation.md#bundles-are-publisher-overlays-in-the-other-direction)).
+//! subset of its bundles resolves ([distribution and federation](../../../../docs/spec/distribution-and-federation.md#bundles-are-publisher-overlays-in-the-other-direction)).
 //! The check here reads the operations and never the tree, so its answer does
 //! not depend on the base it is about to be run against.
 //!
@@ -24,7 +24,7 @@
 //! Every other pair owns its whole subtree. An `override` keeps the fields the
 //! consumer did not restate and a `remove` takes everything below the key, so
 //! two operations that reach one subtree with either of those in the pair leave
-//! the result to the order of application. That is the conflict spec 2 names,
+//! the result to the order of application. That is the conflict [the taxonomy model](../../../../docs/spec/taxonomy-model.md) names,
 //! and it is decided with [`headwater_ref::Address::is_disjoint_from`].
 //!
 //! Two pairs are ordered rather than tested. [HW-DR-0095] (Q67) lets a library
@@ -48,7 +48,7 @@
 //!
 //! # It runs between sources and not inside one
 //!
-//! Spec 2 asks for a message that "names both overlays". Two operations in one
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md) asks for a message that "names both overlays". Two operations in one
 //! file are ordered by the file, and where they genuinely collide the
 //! precondition that each operation asserts about the base reports it during
 //! the merge: an `add` under an `add` finds the key already there. So this

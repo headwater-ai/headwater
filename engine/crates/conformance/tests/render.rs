@@ -135,7 +135,7 @@ const EXPIRED_NOTE: &str =
 
 /// One report that reaches every line class the renderer writes.
 ///
-/// The clock is injected, so the block is the same on every day. Spec 12 makes
+/// The clock is injected, so the block is the same on every day. [The check layer](../../../../docs/spec/check-layer.md) makes
 /// the clock an input for this reason.
 fn subject() -> Report {
     Report {

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! `headwater generate`, and `--check` over what it wrote last time.
 //!
-//! [Spec 6](../../../../docs/spec/06-engine-architecture.md#projections) gives
+//! [The engine architecture](../../../../docs/spec/engine-architecture.md#projections) gives
 //! the contract in four lines. A projection is a generated artifact, the
 //! taxonomy declares each one, `generate` writes it, and `generate --check`
 //! fails when a committed output differs from what this corpus and this lock
@@ -9,16 +9,16 @@
 //!
 //! # The kinds are two value sets, not one
 //!
-//! Spec 6 names the kinds the engine implements,
-//! [Q19](../../../../docs/spec/09-decisions.md) adds `transcription`, and
-//! [spec 5](../../../../docs/spec/05-ai-integration.md#a-run-produces-a-snapshot-and-a-document)
+//! [The engine architecture](../../../../docs/spec/engine-architecture.md) names the kinds the engine implements,
+//! [Q19](../../../../docs/spec/decisions.md) adds `transcription`, and
+//! [AI integration](../../../../docs/spec/ai-integration.md#a-run-produces-a-snapshot-and-a-document)
 //! adds `probe_result`. Collecting them for the meta-schema showed that they do
 //! not form one set. Eleven are declarable: a taxonomy names the kind and the
 //! output path, and
-//! [principle 1](../../../../docs/spec/00-vision-and-scope.md#design-principles)
-//! makes the path a schema decision. Two are engine-defined. Spec 4 makes the
+//! [principle 1](../../../../docs/spec/vision-and-scope.md#design-principles)
+//! makes the path a schema decision. Two are engine-defined. [The assurance model](../../../../docs/spec/assurance-model.md) makes the
 //! register "engine-defined and non-optional", and
-//! [Q14](../../../../docs/spec/09-decisions.md#q14--discovery-surface) fixes the
+//! [Q14](../../../../docs/spec/decisions.md#q14--discovery-surface) fixes the
 //! corpus descriptor at `.headwater/corpus.json`. Both for the same reason: a
 //! reader who must consult the taxonomy to find an artifact already knows what
 //! the artifact would tell them. A declaration of either would put a second copy
@@ -41,7 +41,7 @@
 //! needs the engine to remember what it wrote. It does not need to. The marker in the file *is*
 //! the record, and a manifest beside the file would be a second statement of one
 //! fact, which is the drift
-//! [principle 2](../../../../docs/spec/00-vision-and-scope.md#design-principles)
+//! [principle 2](../../../../docs/spec/vision-and-scope.md#design-principles)
 //! rules against. So this engine reads one permission from the bytes on disk:
 //!
 //! - the path holds nothing — write it,
@@ -79,16 +79,16 @@
 //! `--check` compares bytes. A timestamp inside a generated file makes every run
 //! differ from the last one, so the gate reports drift on a corpus nobody
 //! touched. Every marker this module writes is therefore a function of the kind
-//! alone. Spec 7 asks a *filtered export* to state "when it was generated", and
+//! alone. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) asks a *filtered export* to state "when it was generated", and
 //! that sentence and this one cannot both hold for an artifact that `--check`
 //! covers.
 //!
 //! They hold for different artifacts, which is what settles it. **The time is
 //! injected and never read**, exactly as
-//! [spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
+//! [the check layer](../../../../docs/spec/check-layer.md#determinism-concretely)
 //! injects the clock into a check rather than let one call a syscall. A
 //! committed export is held to regeneration and gets no time, so `plan` passes
-//! none. An export that leaves the repository is the artifact spec 7 is talking
+//! none. An export that leaves the repository is the artifact [distribution and federation](../../../../docs/spec/distribution-and-federation.md) is talking
 //! about, and `headwater export --at <date>` supplies its time: to the output of
 //! `--format`, and to a declared export that states `committed: false`, which
 //! `headwater export` builds at publish time and no gate compares. Same corpus,
@@ -146,7 +146,7 @@ pub struct Identity {
 /// [`Identity`] is supplied: this module opens no file of its own.
 ///
 /// The two members are two of the three inputs
-/// [spec 5](../../../../docs/spec/05-ai-integration.md#a-probe-result-is-citable-because-each-of-its-three-inputs-is-a-committed-artifact)
+/// [AI integration](../../../../docs/spec/ai-integration.md#a-probe-result-is-citable-because-each-of-its-three-inputs-is-a-committed-artifact)
 /// makes a result a function of. The third is the grader version, which is the
 /// version of the crate that evaluates them and is nothing a caller passes.
 ///
@@ -253,7 +253,7 @@ headwater_check::enumerated! {
         GraphExport,
         Template,
         Transcription,
-        /// Spec 5: the verdicts the grader returned over one committed transcript,
+        /// [AI integration](../../../../docs/spec/ai-integration.md): the verdicts the grader returned over one committed transcript,
         /// written as a document of the corpus.
         ProbeResult,
         /// #257: every verb the binary dispatches, and the contract that describes
@@ -263,7 +263,7 @@ headwater_check::enumerated! {
         /// #1051: the consumer surface of HW-DR-0077, as a page an adopter reads.
         /// The rows are the `surface` block of the taxonomy and nothing else.
         ConsumerSurface,
-        /// Spec 4: the register, engine-defined and non-optional.
+        /// [The assurance model](../../../../docs/spec/assurance-model.md): the register, engine-defined and non-optional.
         CoverageReport,
         /// Q14: `.headwater/corpus.json`, engine-defined and non-optional.
         CorpusDescriptor,
@@ -383,7 +383,7 @@ pub struct Declaration {
     pub identity: Option<DeclaredIdentity>,
     /// Whether the tree holds the written file. `false` says that
     /// `headwater export` builds it at publish time, so `generate` does not
-    /// write it and `--check` does not compare it. Spec 7: "whether an export
+    /// write it and `--check` does not compare it. [Distribution and federation](../../../../docs/spec/distribution-and-federation.md): "whether an export
     /// is committed is a schema decision and not an engine default". Read on a
     /// `graph_export` alone, and `true` for a declaration that states nothing.
     pub committed: bool,
@@ -391,6 +391,14 @@ pub struct Declaration {
     /// for every other kind, and for a `site_nav` that states none, which then
     /// writes the flat list it wrote before the member existed (#1681).
     pub sections: Vec<NavSection>,
+    /// The shelves a `site_nav` lists in the reading order that
+    /// [`headwater_query::Surface::by_precedence`] derives, rather than in path
+    /// order. Empty for every other kind, and for a `site_nav` that states
+    /// none, which keeps path order on every shelf as
+    /// [HW-DR-0108](../../../../docs/decisions/0108-the-site-sidebar-lists-a-shelf-in-path-order-and-the-shelf-index-keeps-the-reading-order.md)
+    /// states. [HW-DR-0117](../../../../docs/decisions/0117-the-specification-series-names-a-part-by-its-slug-and-carries-no-sequence.md)
+    /// amends that record for a shelf whose files carry no number.
+    pub precedence: Vec<String>,
     /// The chain and the format of a `relation_view` (HW-DR-0114). `None` for
     /// every other kind, which [`relation_view::read`] refuses `relations` on.
     pub view: Option<relation_view::View>,
@@ -611,6 +619,16 @@ impl Projections {
                     continue;
                 }
             };
+            let precedence = match precedence(body, kind, index) {
+                Ok(precedence) => precedence,
+                Err(message) => {
+                    errors.push(DeclarationError {
+                        message,
+                        span: item.span,
+                    });
+                    continue;
+                }
+            };
             // A view's `format` is its own, `markdown`, `csv` or `json`, and
             // never an export emitter: `json` there would enroll the entry in
             // the emitter set of its profile, and `csv` would be refused as no
@@ -646,6 +664,7 @@ impl Projections {
                 identity,
                 committed,
                 sections,
+                precedence,
                 view,
                 budget,
             });
@@ -861,6 +880,35 @@ fn sections(
     Ok(out)
 }
 
+/// The `precedence` member of one projection, empty where it is absent
+/// (#2137).
+///
+/// Only a `site_nav` takes it. It lists the shelves whose documents the
+/// navigation prints in the derived reading order rather than in path order. A
+/// shelf of minted numbers keeps path order, which is numeric order there, so
+/// this is a list the taxonomy writes shelf by shelf and never an inference
+/// from a layout. Whether each name is a declared shelf is the emitter's
+/// reading, as it is for `for`.
+fn precedence(body: &Mapping, kind: Kind, index: usize) -> Result<Vec<String>, String> {
+    let Some(node) = body.get("precedence") else {
+        return Ok(Vec::new());
+    };
+    if kind != Kind::SiteNav {
+        return Err(format!(
+            "`projections.{index}` is a `{}` and states `precedence`, and only a `site_nav` \
+             takes `precedence`",
+            kind.name()
+        ));
+    }
+    let Value::Seq(_) = &node.value else {
+        return Err(format!(
+            "`projections.{index}.precedence` is {}, and it lists shelves",
+            node.value.kind_name()
+        ));
+    };
+    Ok(scalars(body, "precedence"))
+}
+
 fn text_of(map: &Mapping, key: &str) -> Option<String> {
     map.get(key)
         .and_then(|node| node.value.as_scalar())
@@ -894,7 +942,7 @@ pub struct Output {
 ///
 /// Reported rather than dropped. A generator that silently emitted nothing for
 /// half its declarations is the silent pass that
-/// [spec 4](../../../../docs/spec/04-assurance-model.md) removes everywhere
+/// [the assurance model](../../../../docs/spec/assurance-model.md) removes everywhere
 /// else, and the reason is the part a reader acts on.
 #[derive(Clone, Debug)]
 pub struct Unwritten {
@@ -1081,7 +1129,7 @@ impl RefusedTranscript {
 /// planned over and never ran is not reported by the result.
 ///
 /// **This never fails a run.** The staleness of a measurement is a fact about
-/// the measurement, and spec 15 rules that no exit status carries it. The run
+/// the measurement, and [the recorder contract](../../../../docs/spec/the-recorder-contract.md) rules that no exit status carries it. The run
 /// names the result so that the author of the move meets it.
 #[derive(Clone, Debug, Default)]
 pub struct MovedSinceRecording {
@@ -1210,7 +1258,7 @@ impl DefectiveArms {
 /// never reached [`DefectiveArms`] at all, and a run with a real
 /// defect in one of them could report none.
 ///
-/// Nothing in the run identity spec 5 fixes before a run names which present
+/// Nothing in the run identity [AI integration](../../../../docs/spec/ai-integration.md) fixes before a run names which present
 /// transcript pairs with which absent one beyond the selection, the model
 /// and the served version. So once either side of one key holds more than
 /// one transcript, there is no key left to pair by, and guessing is what
@@ -1374,7 +1422,7 @@ pub struct Plan {
 ///
 /// One of the two engine-defined kinds is emitted and one is not. The register
 /// is listed here with its reason, so that a run states the whole of what a
-/// projection layer owes rather than the part that is built. Spec 4 calls the
+/// projection layer owes rather than the part that is built. [The assurance model](../../../../docs/spec/assurance-model.md) calls the
 /// register "a projection like any other" and asks this verb to hold it to
 /// regeneration; building the rest of the verb is what showed why it cannot
 /// yet. The descriptor had the same entry until it acquired an emitter, and the
@@ -1629,7 +1677,7 @@ pub fn export_plan(
 
 /// One declared `graph_export`, written through the emitter its profile names.
 ///
-/// Spec 7: "A graph export is a projection like the others. The taxonomy
+/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md): "A graph export is a projection like the others. The taxonomy
 /// declares its output path, so whether an export is committed is a schema
 /// decision and not an engine default. A committed export is held to regeneration
 /// by `generate --check`, exactly as a shelf index is."
@@ -1704,9 +1752,9 @@ fn graph_export(
 /// report of every run: [`engine_defined`] reads the register's reason from
 /// here rather than holding a second copy, [`undeclared`] carries the reason of
 /// a declarable kind no declaration named, and the `other =>` arm of [`plan`]
-/// carries the reason of one a declaration did name. `spec_six_projections.rs`
+/// carries the reason of one a declaration did name. `engine_architecture_projections.rs`
 /// holds the whole set against one run, and
-/// `engine/crates/generate/tests/spec_six_projections.rs` holds spec 6's
+/// `engine/crates/generate/tests/engine_architecture_projections.rs` holds [the engine architecture](../../../../docs/spec/engine-architecture.md)'s
 /// projection-kinds block against it. The `match` is exhaustive, so a
 /// fourteenth variant is `E0004` here before it is anything else.
 pub fn unbuilt(kind: Kind) -> Option<&'static str> {
@@ -1722,7 +1770,7 @@ pub fn unbuilt(kind: Kind) -> Option<&'static str> {
         Kind::CoverageReport => Some(
             "its content is a function of the clock as well as of the corpus and the lock, \
              because a migration task lapses and a suppression expires on a date. A committed \
-             copy would fail this check on a morning when nothing changed. Spec 13 carries it",
+             copy would fail this check on a morning when nothing changed. The register of open obligations carries it",
         ),
         Kind::AgentRules
         | Kind::ShelfIndex
@@ -2572,7 +2620,7 @@ pub(crate) fn shelf_of<'a>(
 /// keyed by path, as ` (superseded)`.
 ///
 /// A row of an index that carried no mark listed a superseded decision exactly
-/// as it listed a current one (#1198). Spec 3 says a terminal document is kept
+/// as it listed a current one (#1198). [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) says a terminal document is kept
 /// as a record and that nothing new may rest on it, so an index that a reader
 /// picks a document from says which rows are records.
 ///
@@ -2618,7 +2666,7 @@ pub(crate) fn pointers(surface: &Surface<'_>, documents: &[Document<'_>]) -> Vec
 /// a caller of this function.
 ///
 /// The declared `name`-role facet first, because that is what the document
-/// calls itself and spec 2 puts a reader-facing name in a facet rather than in
+/// calls itself and [the taxonomy model](../../../../docs/spec/taxonomy-model.md) puts a reader-facing name in a facet rather than in
 /// body prose. The identifier next, for a kind that declares no name: it is
 /// stable and it is short, and it is a poor label rather than no label. The
 /// file name last, for the one shape that carries neither.
@@ -2653,7 +2701,7 @@ pub(crate) fn label(pointer: &Pointer) -> String {
 /// shelf twice, as a navigation group key and as the label of the index entry
 /// under it; `shelf_index` prints it as the `# heading` of the shelf's own
 /// index page; and `shelf_sections` prints it as the heading of
-/// `docs/spec/09-open-questions.md`. Those are four writes across three
+/// `docs/spec/open-questions.md`. Those are four writes across three
 /// modules, and until this function existed each of them took the key
 /// separately. That is the defect [`label`] was extracted for, one level up:
 /// a shelf renamed for a reader in one emitter and not in another leaves one
@@ -2677,7 +2725,7 @@ mod label_tests {
 
     fn pointer(id: Option<&str>, name: Option<&str>) -> Pointer {
         Pointer {
-            path: "docs/spec/00-vision-and-scope.md".into(),
+            path: "docs/spec/vision-and-scope.md".into(),
             id: id.map(Into::into),
             kind: "design_spec".into(),
             name: name.map(Into::into),
@@ -2715,7 +2763,7 @@ mod label_tests {
     /// neither, and the file name is what is left.
     #[test]
     fn a_document_with_neither_falls_through_to_its_file_name() {
-        assert_eq!(label(&pointer(None, None)), "00-vision-and-scope.md");
+        assert_eq!(label(&pointer(None, None)), "vision-and-scope.md");
     }
 
     /// The precedence, asserted on its own. An identifier beside a name never

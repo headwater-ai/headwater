@@ -2,7 +2,7 @@
 //! The second check that declares `needs_prior`: a state movement the declared
 //! lifecycle does not admit.
 //!
-//! [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#lifecycle)
+//! [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#lifecycle)
 //! states the rule and the reason a corpus run cannot reach it. "The engine
 //! rejects transitions that are not in the declared machine when they land. An
 //! illegal transition is only visible against the prior state, and the prior
@@ -45,7 +45,7 @@
 //!
 //! Every reading this check declines is a skip with a reason rather than a
 //! pass, which is what
-//! [spec 4](../../../../docs/spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+//! [the assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
 //! asks of an instance that decided nothing.
 //!
 //! # No movement is not a transition
@@ -64,7 +64,7 @@
 //! not mechanical is the remedy: a movement refused here is corrected either by
 //! putting the state back or by taking the document through the state that
 //! joins the two, and only the author knows which
-//! ([spec 12](../../../../docs/spec/12-check-layer.md#fixability)). So the
+//! ([the check layer](../../../../docs/spec/check-layer.md#fixability)). So the
 //! finding names the admitted exits and writes nothing.
 
 use crate::change::Prior;

@@ -24,7 +24,7 @@ relations:
 
 ## Context
 
-[Stop rule 5](../spec/05-ai-integration.md#the-stop-rules) states the bar. An agent never writes `accepted_by`, and it never moves a warrant to `accepted`. It drafts, and it marks what it drafted as `asserted` where no human read the result. [HW-EVAL-adjacent-work](../evaluations/adjacent-work.md#l5-onboarding-ships-the-synthesized-tier-and-marks-nothing) names the failure the rule prevents: a stamp that an agent applies to its own output, with a false name attached.
+[Stop rule 5](../spec/ai-integration.md#the-stop-rules) states the bar. An agent never writes `accepted_by`, and it never moves a warrant to `accepted`. It drafts, and it marks what it drafted as `asserted` where no human read the result. [HW-EVAL-adjacent-work](../evaluations/adjacent-work.md#l5-onboarding-ships-the-synthesized-tier-and-marks-nothing) names the failure the rule prevents: a stamp that an agent applies to its own output, with a false name attached.
 
 A count over the corpus root, excluding the package content that the descriptor excludes:
 
@@ -48,7 +48,7 @@ The corpus owes a ruling, and the two available answers differ in what they cost
 
 **The practice is right and the rule is worded wrong.** A pull request is the acceptance, the block is part of what the human reviews, and a merge is the act that `accepted_by` names. Under this reading the stamp is a proposal until the merge and a fact after it.
 
-The second reading is defensible and the bytes do not carry it. A document that a human merged and a document that an agent stamped and nobody read are the same file. So the corpus cannot answer the question that [spec 3](../spec/03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed) says provenance exists to make a query rather than an archaeology exercise.
+The second reading is defensible and the bytes do not carry it. A document that a human merged and a document that an agent stamped and nobody read are the same file. So the corpus cannot answer the question that [authoring and lifecycle](../spec/authoring-and-lifecycle.md#provenance-is-recorded-not-assumed) says provenance exists to make a query rather than an archaeology exercise.
 
 Nothing reports any of this. [HW-OBL-0030](0030-the-provenance-block-belongs-to-the-engine-and-nothing-states.md) records that no taxonomy declares the block, so no rule reads a field of it. A stop rule with no instrument is a preference. This is the measurement of what that preference costs over 161 documents.
 
@@ -68,4 +68,4 @@ Re-measured on 2026-08-14 over every Markdown document under `docs/`, outside `d
 
 So a second practice runs beside the one this record measures, and nothing declared it. An agent drafts, states the warrant it can state, and leaves the stamp to the reader of the proposal. That is what stop rule 5 asks for, and it is a shape rather than a ruling. The ruling this record waits on decides whether the six are the right answer or the start of a second gap.
 
-**A third practice runs beside both, and it is worse than either.** The warrant reading of `taxonomy audit` reports the documents that state `warrant: proposed`, which spec 3's closed set does not hold. Each of them also names an acceptor, so each states a stamp under a warrant that requires nothing. [HW-OBL-0125](0125-nine-documents-state-a-warrant-outside-the-closed-set-and-only-a-person-can-set-the-value.md) holds it. The ruling this record waits on now covers three practices rather than two.
+**A third practice runs beside both, and it is worse than either.** The warrant reading of `taxonomy audit` reports the documents that state `warrant: proposed`, which [authoring and lifecycle](../spec/authoring-and-lifecycle.md)'s closed set does not hold. Each of them also names an acceptor, so each states a stamp under a warrant that requires nothing. [HW-OBL-0125](0125-nine-documents-state-a-warrant-outside-the-closed-set-and-only-a-person-can-set-the-value.md) holds it. The ruling this record waits on now covers three practices rather than two.

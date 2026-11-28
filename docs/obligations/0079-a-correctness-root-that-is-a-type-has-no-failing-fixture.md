@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Spec 12](../spec/12-check-layer.md#the-correctness-roots) asks each correctness root for conformance fixtures of its own. The rule behind that ask is that [a check without a failing fixture does not ship](../spec/12-check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship).
+[The check layer](../spec/check-layer.md#the-correctness-roots) asks each correctness root for conformance fixtures of its own. The rule behind that ask is that [a check without a failing fixture does not ship](../spec/check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship).
 
 Scope enforcement is a type now, and a document-scoped check that reaches for a sibling is a program the compiler refuses. A build that passes is not a fixture that fails.
 
@@ -32,6 +32,6 @@ Nothing states what stands in for a failing fixture when the enforcement is a ty
 
 ## Discharge
 
-Discharged on 2026-11-20 by [#1961](https://github.com/headwater-ai/headwater/pull/1961), slice C of [#1494](https://github.com/headwater-ai/headwater/issues/1494). The module comment of `engine/crates/check/src/scope.rs` now holds two `compile_fail` doctests. In the first, a document-scoped check calls `view.edges()`, which only a corpus view has. In the second, code outside the crate mints a `Scope` with a wider grain. Each one has a compiling twin that differs only in the forbidden line. The twin is necessary because stable rustdoc does not check the error code of a `compile_fail` block. The CI suite runs doctests. [Spec 12](../spec/12-check-layer.md#the-correctness-roots) now states this fixture in its bullet for scope enforcement.
+Discharged on 2026-11-20 by [#1961](https://github.com/headwater-ai/headwater/pull/1961), slice C of [#1494](https://github.com/headwater-ai/headwater/issues/1494). The module comment of `engine/crates/check/src/scope.rs` now holds two `compile_fail` doctests. In the first, a document-scoped check calls `view.edges()`, which only a corpus view has. In the second, code outside the crate mints a `Scope` with a wider grain. Each one has a compiling twin that differs only in the forbidden line. The twin is necessary because stable rustdoc does not check the error code of a `compile_fail` block. The CI suite runs doctests. [The check layer](../spec/check-layer.md#the-correctness-roots) now states this fixture in its bullet for scope enforcement.
 
 The text below is the condition as it was recorded. The instrument that fits is a test which asserts that a program does not compile, and no part of this specification asks for one.

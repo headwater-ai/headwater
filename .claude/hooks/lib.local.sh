@@ -217,8 +217,8 @@ hw_local_intent() {
     _file="$_dir/$_session.jsonl"
 
     # The taxonomy lock's own digest, read off the file this repository
-    # already commits rather than asked of the engine to recompute — spec
-    # 15's own identity block reads the same field the same way. The corpus
+    # already commits rather than asked of the engine to recompute —
+    # the recorder contract's (docs/spec/the-recorder-contract.md) own identity block reads the same field the same way. The corpus
     # tree digest that goes beside it in that block has no such shortcut — it
     # is a census walk over every classified document, and step 2's
     # `neighbors` verb is where the issue's own build order puts that call,

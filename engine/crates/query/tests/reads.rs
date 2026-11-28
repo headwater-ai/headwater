@@ -251,7 +251,7 @@ fn the_fixture_tree_answers_the_recorded_reads() {
 
 /// Two surfaces over one corpus answer identically.
 ///
-/// [Spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
+/// [The check layer](../../../../docs/spec/check-layer.md#determinism-concretely)
 /// binds a run to "same corpus, same lock, same injected clock, byte-identical
 /// output", and a read an agent depends on is held to the same bar. This is
 /// that comparison, run over this repository rather than over the tree written
@@ -268,7 +268,7 @@ fn two_reads_of_one_corpus_are_byte_identical() {
             "{task}"
         );
     }
-    let target = "docs/spec/05-ai-integration.md";
+    let target = "docs/spec/ai-integration.md";
     assert_eq!(
         first
             .explain(target)
@@ -337,7 +337,7 @@ fn a_route_ranks_no_more_than_its_budget_and_never_cuts_an_anchor() {
 
 /// A pointer carries a path and a cue, and never content.
 ///
-/// Spec 5: "A task description resolves to a ranked set of pointers: a path,
+/// [AI integration](../../../../docs/spec/ai-integration.md): "A task description resolves to a ranked set of pointers: a path,
 /// the name the document declares, a one-line summary, and never content." The
 /// property that
 /// makes it checkable is that every string a pointer carries is one the
@@ -1000,7 +1000,7 @@ fn named_pointers_are_offered_in_reading_precedence() {
 /// the remedy, and #1470 records the cases rather than that change.
 ///
 /// Measured on this branch, budget 100,000: HW-DR-0102 was not offered,
-/// because `rationale` did not match; spec 6 stood 51st, rank 178 of 291; and
+/// because `rationale` did not match; [the engine architecture](../../../../docs/spec/engine-architecture.md) stood 51st, rank 178 of 291; and
 /// `headwater-generate.md` stood 9th, rank 174 of 373. The first sentence's
 /// target, `taxonomy-resolution.md`, and the third's `headwater-export.md` are
 /// now offered first by name.
@@ -1010,7 +1010,7 @@ fn three_sentence_queries_miss_by_the_purpose_gate_and_not_by_the_name_step() {
     let surface = built.surface();
     let misses: [(&str, &str); 3] = [
         (NAMED[1].0, "docs/decisions/0102-"),
-        (NAMED[1].0, "docs/spec/06-"),
+        (NAMED[1].0, "docs/spec/engine-architecture.md"),
         (NAMED[2].0, "docs/interfaces/headwater-generate.md"),
     ];
     for (task, target) in misses {
@@ -1062,7 +1062,7 @@ const ONE_WORD_TITLES: [&str; 1] = ["docs/decisions/0010-naming.md"];
 
 /// Derived reading precedence orders the list, and it outranks the score.
 ///
-/// Two pairs, and each one is a clause of spec 2's derivation. The satellite
+/// Two pairs, and each one is a clause of [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s derivation. The satellite
 /// outscores its nucleus on this task and the nucleus is still offered first,
 /// which is the property a sort by score alone cannot have. The successor is
 /// offered before the document it superseded, and that pair is the one that
@@ -1253,7 +1253,7 @@ fn a_task_that_names_an_anchor_is_answered_by_the_documents_that_govern_it() {
 
 /// A document that governs the named path is carried whatever the budget is.
 ///
-/// Spec 5 caps the ranking and not the identities. A document that declares
+/// [AI integration](../../../../docs/spec/ai-integration.md) caps the ranking and not the identities. A document that declares
 /// `governs` over the path was named rather than ranked, so the budget has no
 /// basis on which to remove it, and `governing_docs_for_path` already answers
 /// this question with no budget at all.
@@ -1399,7 +1399,7 @@ fn a_route_within_its_budget_renders_no_withheld_line() {
 /// A pointer to an unaccepted document says so, and one to an accepted document
 /// does not.
 ///
-/// Spec 5 reaches Q15 through this surface: "To offer such a pointer silently
+/// [AI integration](../../../../docs/spec/ai-integration.md) reaches Q15 through this surface: "To offer such a pointer silently
 /// is the failure that Q15 exists to prevent, reached through our own routing
 /// surface."
 #[test]

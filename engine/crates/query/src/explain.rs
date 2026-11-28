@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! `explain`: why the engine typed a document as it did, and what follows.
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#kind-resolution):
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#kind-resolution):
 //! "`headwater explain <path>` prints this derivation — which shelf matched,
 //! which rule fired, and the kind's declared purpose. It also prints which
 //! facets and sections are consequently required, and which relations are
@@ -178,7 +178,7 @@ impl Explanation {
         })
     }
 
-    /// The explanation as text, in spec 2's own order.
+    /// The explanation as text, in [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s own order.
     ///
     /// `mode` colors the path and dims the repeated structural labels —
     /// `purpose`, `summary`, `warrant`, and the rest — that this report prints

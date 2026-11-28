@@ -12,11 +12,11 @@
 #
 # # THE ONE CASE THE WHOLE TOOL IS FOR
 #
-# Case 3 plants a citation of spec 5 at `engine/crates/query/src/mcp.rs`. The
+# Case 3 plants a citation of AI integration (docs/spec/ai-integration.md) at `engine/crates/query/src/mcp.rs`. The
 # identifier resolves and the file is governed, so both halves a naive checker
 # looks at are clean; what is wrong is the pair, because the documents that
 # govern that file are `docs/interfaces/headwater-mcp.md` and
-# `docs/subsystems/queries-and-explain.md`, and not spec 5. That
+# `docs/subsystems/queries-and-explain.md`, and not AI integration (docs/spec/ai-integration.md). That
 # is a citation that was true and went stale, which is what issue #500 was
 # filed about. Case 6 is the assertion that matters beside it: the stale class
 # and the invented class are reported under different rule identifiers, so a
@@ -165,7 +165,7 @@ print(eval(sys.argv[2], {"d": d}))' "$scratch/out" "$2"
 
 echo "one citation at a time, each against the corpus that licensed it"
 
-# 1. A citation that is true. Spec 5 declares a `governs` edge onto exactly
+# 1. A citation that is true. AI integration (docs/spec/ai-integration.md) declares a `governs` edge onto exactly
 #    this path, and its warrant is `accepted`, so no class fires at all.
 status=$(run text .claude/hooks/write.sh)
 same "a true citation reports nothing" 0 "$status"
@@ -301,20 +301,20 @@ echo "what this repository itself carries"
 # fixtures instead of over this tree, and the reason is a measurement that can
 # go stale. So it is a case.
 #
-# `docs/spec/05-ai-integration.md` is copied into the scratch corpus unedited.
-# It carries one line of the shape, and that line is spec 5
+# `docs/spec/ai-integration.md` is copied into the scratch corpus unedited.
+# It carries one line of the shape, and that line is AI integration (docs/spec/ai-integration.md)
 # illustrating the convention with an identifier and a path from an imagined
 # corpus. The checker reports it as unresolved, which is right about what it
 # was asked and beside the point about what the line means. That is the whole
 # population of citation comments this repository carries outside this
 # directory, and HW-DR-0092 rules that it stays so: the convention is for an
 # adopter's corpus, and this repository does not practice it on its own code.
-status=$(run sarif docs/spec/05-ai-integration.md)
-same "spec 5 carries exactly one line of the shape" 1 \
+status=$(run sarif docs/spec/ai-integration.md)
+same "AI integration carries exactly one line of the shape" 1 \
     "$(field . 'd["runs"][0]["properties"]["headwater"]["citations"]')"
 # The line is read from the page rather than pinned, because a paragraph
 # added above it moved the pin three times (285, 293, 295).
-example_line=$(grep -n '^# per REQ-INGEST-014 ' docs/spec/05-ai-integration.md | cut -d: -f1)
+example_line=$(grep -n '^# per REQ-INGEST-014 ' docs/spec/ai-integration.md | cut -d: -f1)
 same "  at the line the page writes its worked example on" "$example_line" \
     "$(field . 'd["runs"][0]["results"][0]["locations"][0]["physicalLocation"]["region"]["startLine"]')"
 same "  and it does not resolve, because its corpus is imagined" \
@@ -325,12 +325,12 @@ same "  so a run over this repository's own prose fails" 1 "$status"
 # ruled on #844 that the convention is for an adopter's corpus and that this
 # repository does not practice it on its own code, and HW-DR-0092 records the
 # ruling. A rule stated for every corpus that in fact reaches none of this one
-# is the defect, so the section of the real spec 5, not the scratch copy, must
+# is the defect, so the section of the real AI integration (docs/spec/ai-integration.md), not the scratch copy, must
 # name the decision.
 awk '/^### Generated artifacts cite what licensed them$/ { on = 1; next }
      on && /^##/ { exit }
-     on { print }' "$root/docs/spec/05-ai-integration.md" >"$scratch/spec5-cite"
-holds "spec 5 says whose corpus the convention is for" \
+     on { print }' "$root/docs/spec/ai-integration.md" >"$scratch/spec5-cite"
+holds "AI integration says whose corpus the convention is for" \
     "The convention is for an adopter's corpus." "$scratch/spec5-cite"
 holds "  and that this repository does not practice it on its own code" \
     "This repository does not practice it on its own code" "$scratch/spec5-cite"

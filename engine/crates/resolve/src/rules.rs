@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! `taxonomy validate`, over a resolved taxonomy.
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#the-meta-schema) lists
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#the-meta-schema) lists
 //! what the verb checks. Two of those items are decidable over one source and
 //! `headwater-meta` runs them before anything merges. Three decide a merge and
 //! [`crate::resolve`] runs them as it merges. The rest read the *result*, and
@@ -9,12 +9,12 @@
 //!
 //! # The accounting is the deliverable, and not the rules alone
 //!
-//! [`RULES`] holds every item of spec 2's list with where it runs, and
+//! [`RULES`] holds every item of [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s list with where it runs, and
 //! [`Ran::Partly`] is the entry that earns the table. Several rules are decided
 //! in part here and in part nowhere, because the part that is missing needs a
 //! declaration that the language does not have. A validator that reported those
 //! as passes would be the silent pass that
-//! [spec 4](../../../../docs/spec/04-assurance-model.md) exists to remove, and
+//! [the assurance model](../../../../docs/spec/assurance-model.md) exists to remove, and
 //! one that reported them as failures would refuse every taxonomy there is.
 //! So each one states what it decided and what it did not, and
 //! `headwater taxonomy validate` prints the statement.
@@ -70,7 +70,7 @@ pub enum Ran {
 ///
 /// **Any edit to a function this array reaches, or to [`check`] itself, that
 /// changes what a taxonomy it accepted before now refuses, or the reverse,
-/// must increment this number.** That is every one of the 23 rules spec 2
+/// must increment this number.** That is every one of the 23 rules [the taxonomy model](../../../../docs/spec/taxonomy-model.md)
 /// lists: the 18 called from [`check`] below, plus the five that gate earlier
 /// in the pipeline and never reach this file — structural conformance and
 /// reference well-formedness at [`Source::validate`](crate::Source::validate),
@@ -87,11 +87,11 @@ pub enum Ran {
 /// `budget` (#2088).
 pub const RULE_SET: u32 = 4;
 
-/// Every rule that [spec 2](../../../../docs/spec/02-taxonomy-model.md#the-meta-schema)
-/// lists for `taxonomy validate`, in spec 2's own order, and where each runs.
+/// Every rule that [the taxonomy model](../../../../docs/spec/taxonomy-model.md#the-meta-schema)
+/// lists for `taxonomy validate`, in [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s own order, and where each runs.
 ///
 /// The list is data because a caller reports what it ran. It is also the answer
-/// to a question that cost this issue an afternoon: spec 2 lists twenty-three
+/// to a question that cost this issue an afternoon: [the taxonomy model](../../../../docs/spec/taxonomy-model.md) lists twenty-three
 /// items and the engine used to say twenty-one, because four of them appeared in
 /// neither the run list nor the waiting list. A rule in neither list is the
 /// exact silence these constants exist to prevent.
@@ -178,7 +178,7 @@ pub const RULES: [(&str, Ran); 23] = [
                       stand in",
             waits: "\"a family's default is not contradicted without explicit override\" states \
                     no rule that a validator can fail. A declared nuclearity is the explicit \
-                    override, and spec 2 gives the count to `taxonomy audit`",
+                    override, and the taxonomy model gives the count to `taxonomy audit`",
         },
     ),
     (
@@ -196,9 +196,9 @@ pub const RULES: [(&str, Ran); 23] = [
     (
         "facet canons",
         Ran::Partly {
-            decides: "relevance, ascertainability and permanence, which spec 2 states are \
+            decides: "relevance, ascertainability and permanence, which the taxonomy model states are \
                       decidable from the schema alone",
-            waits: "differentiation and orthogonality need a corpus, and spec 2 gives both to \
+            waits: "differentiation and orthogonality need a corpus, and the taxonomy model gives both to \
                     `taxonomy audit`",
         },
     ),
@@ -279,7 +279,7 @@ pub const WAITING: [(&str, &str); 0] = [];
 ///
 /// `headwater taxonomy validate` prints this beside its verdict, because a
 /// verdict with no statement of what was checked is the pass that
-/// [spec 4](../../../../docs/spec/04-assurance-model.md) refuses.
+/// [the assurance model](../../../../docs/spec/assurance-model.md) refuses.
 pub fn render(mode: ColorMode) -> String {
     let mut out = String::new();
     for (rule, ran) in RULES {
@@ -365,12 +365,12 @@ pub fn display_names(taxonomy: &Mapping, mode: ColorMode) -> String {
     out
 }
 
-/// The default nuclearity of each relation family, from spec 2's own table. A
+/// The default nuclearity of each relation family, from [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s own table. A
 /// family with no default has a blank cell there, and it is absent here.
 ///
 /// It is public because `taxonomy audit` reports every relation that
-/// contradicts the default its family gives ([spec
-/// 2](../../../../docs/spec/02-taxonomy-model.md#nuclearity)), and that
+/// contradicts the default its family gives (
+/// [the taxonomy model](../../../../docs/spec/taxonomy-model.md#nuclearity)), and that
 /// reading is the same table read from the other side. A second copy of it in
 /// the audit crate could disagree with the one a validator runs, and the two
 /// would then name different relations as overrides.
@@ -381,7 +381,7 @@ pub const FAMILY_NUCLEARITY: [(&str, &str); 4] = [
     ("association", "multinuclear"),
 ];
 
-/// The phase adjectives that no kind may be named with. Spec 2 states the list.
+/// The phase adjectives that no kind may be named with. [The taxonomy model](../../../../docs/spec/taxonomy-model.md) states the list.
 const PHASE_ADJECTIVES: [&str; 7] = [
     "draft",
     "pending",
@@ -392,7 +392,7 @@ const PHASE_ADJECTIVES: [&str; 7] = [
     "obsolete",
 ];
 
-/// The engine-significant facet roles. The registry is closed and spec 2 states
+/// The engine-significant facet roles. The registry is closed and [the taxonomy model](../../../../docs/spec/taxonomy-model.md) states
 /// it in the role-uniqueness rule itself.
 const ROLES: [&str; 7] = [
     "state",
@@ -442,7 +442,7 @@ pub fn check(taxonomy: &Mapping) -> Vec<ResolveError> {
 /// all six shipped bundles carries **zero** referential-integrity findings and
 /// **seven** identifier-integrity ones, and the shipped `starter` recipe's
 /// flattened output carries zero and two. So a publish that called [`check`]
-/// would refuse the release of `headwater/standard` and of the one recipe spec 7
+/// would refuse the release of `headwater/standard` and of the one recipe [distribution and federation](../../../../docs/spec/distribution-and-federation.md)
 /// points a first adopter at.
 ///
 /// The rendering is [`referential_integrity`]'s and not a second one, so the
@@ -1051,7 +1051,7 @@ fn anchor_integrity(view: &View, out: &mut Vec<ResolveError>) {
 /// schemes that admit one string.
 ///
 /// The disjointness half is [`Template::disjoint`], which is exact over the
-/// grammar spec 2 writes. It replaced a comparison of the text before each
+/// grammar [the taxonomy model](../../../../docs/spec/taxonomy-model.md) writes. It replaced a comparison of the text before each
 /// pattern's first placeholder, which was sound and incomplete: it refused
 /// `{namespace}-DR-{seq:04d}` beside `{namespace}-DR-{seq:06d}`, where no string
 /// is both exactly four digits and exactly six. The parse that decides it was
@@ -1266,7 +1266,7 @@ fn kind_inheritance(view: &View, out: &mut Vec<ResolveError>) {
 /// The four refusals are one rule because they are one mistake seen from four
 /// sides: a narrowing that says something the facet's own declaration does not
 /// hold. [HW-DR-0066](../../../../docs/decisions/0066-a-kind-narrows-the-value-set-of-an-enumerated-facet-and-nothing-else-can.md)
-/// rules the widening case, and it rules it the way spec 2 already rules an
+/// rules the widening case, and it rules it the way [the taxonomy model](../../../../docs/spec/taxonomy-model.md) already rules an
 /// un-require: a child may not void a contract that a reader of the parent
 /// trusts, and a wider value set voids one exactly as an un-require does.
 fn narrowed_value_sets(view: &View, out: &mut Vec<ResolveError>) {
@@ -1783,7 +1783,7 @@ fn relation_coherence(view: &View, out: &mut Vec<ResolveError>) {
         // A concrete kind that binds no lifecycle regime is skipped. It can
         // stand at no state at all, so a relation that writes one onto it is a
         // different defect with a different remedy, and this rule can pick
-        // neither. An anchor-adjacent kind is the common case, and spec 13
+        // neither. An anchor-adjacent kind is the common case, and the register of open obligations (docs/spec/open-obligations.md)
         // carries the finding.
         if let Some(state) = block(body, "on_target").and_then(|written| text(written, "set_state"))
         {
@@ -1939,7 +1939,7 @@ fn expectations(view: &View, out: &mut Vec<ResolveError>) {
     }
 }
 
-/// Relevance, ascertainability and permanence. Spec 2 states that the three are
+/// Relevance, ascertainability and permanence. [The taxonomy model](../../../../docs/spec/taxonomy-model.md) states that the three are
 /// decidable from the schema alone, and gives differentiation and orthogonality
 /// to `taxonomy audit`.
 fn facet_canons(view: &View, out: &mut Vec<ResolveError>) {

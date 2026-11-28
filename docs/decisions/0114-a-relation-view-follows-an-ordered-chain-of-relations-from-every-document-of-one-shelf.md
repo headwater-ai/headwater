@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-Spec 0 promises a traceability matrix as part of deliverable 3. The projection kind `relation_view` had a slot in the meta-schema and no emitter. Its reason in `unbuilt()` said that no document states which relations a view covers. [#2018](https://github.com/headwater-ai/headwater/issues/2018) is the issue.
+[The vision and scope](../spec/vision-and-scope.md) promises a traceability matrix as part of deliverable 3. The projection kind `relation_view` had a slot in the meta-schema and no emitter. Its reason in `unbuilt()` said that no document states which relations a view covers. [#2018](https://github.com/headwater-ai/headwater/issues/2018) is the issue.
 
 The owner ruled six points on 2026-11-22, after a review of two outside adoption trials. The ruling is in the body of #2018 and in a comment on it. The [requirement-verification entry](../taxonomies/requirement-verification/doctrine.md) of #2017 then gave the chain its kinds and its relations: `verified_by`, `proven_by` and `cited_in`.
 
@@ -66,10 +66,10 @@ The observation of a cell is the commit of the snapshot entry that names its doc
 
 ## Consequences
 
-`unbuilt()` returns `None` for `relation_view`, and spec 6 lists it under `runs`. When this record was written, nine of the thirteen projection kinds had an emitter, and four waited: `agent_rules`, `template`, `transcription` and `coverage_report`. #2089 gave `agent_rules` an emitter, so ten have one now. [The `headwater generate` contract](../interfaces/headwater-generate.md#a-relation-view) states the projection.
+`unbuilt()` returns `None` for `relation_view`, and [the engine architecture](../spec/engine-architecture.md) lists it under `runs`. When this record was written, nine of the thirteen projection kinds had an emitter, and four waited: `agent_rules`, `template`, `transcription` and `coverage_report`. #2089 gave `agent_rules` an emitter, so ten have one now. [The `headwater generate` contract](../interfaces/headwater-generate.md#a-relation-view) states the projection.
 
 The requirement-verification entry declares one view, from `verified_requirements` through `verified_by`, `proven_by` and `cited_in`. This repository generates it, and every verification cell here reads `declared` until a snapshot records one.
 
-Two open findings move. [HW-OBL-0049](../obligations/0049-the-meta-schema-closes-eight-value-sets-that-nothing-states.md) counts value sets that the meta-schema closes and nothing states. The value set of a view's `format` is stated here, so it does not add to that count. [HW-OBL-0172](../obligations/0172-nine-hand-kept-constants-enumerate-an-enum-and-nothing-holds-one-against-the-variants.md) counts hand-kept lists of an enum. `Kind::DECLARABLE` does not change, and `unbuilt()` and the spec 6 block move together, held by `spec_six_projections.rs`.
+Two open findings move. [HW-OBL-0049](../obligations/0049-the-meta-schema-closes-eight-value-sets-that-nothing-states.md) counts value sets that the meta-schema closes and nothing states. The value set of a view's `format` is stated here, so it does not add to that count. [HW-OBL-0172](../obligations/0172-nine-hand-kept-constants-enumerate-an-enum-and-nothing-holds-one-against-the-variants.md) counts hand-kept lists of an enum. `Kind::DECLARABLE` does not change, and `unbuilt()` and [the engine architecture](../spec/engine-architecture.md) block move together, held by `engine_architecture_projections.rs`.
 
 **What reopens this record.** A reader who needs one row for each start document, with the paths nested inside it, reopens choice 1. That reader is a consumer of the JSON format, and a nested shape would be a fourth format, not a change to these three. An owner ruling on point 4 that limits a code step to `traces_to` and `governs` reopens choice 2.

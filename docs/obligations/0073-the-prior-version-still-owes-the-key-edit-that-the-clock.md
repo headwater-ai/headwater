@@ -22,14 +22,14 @@ relations:
 
 ## Context
 
-A [key](../spec/12-check-layer.md#determinism-concretely) covers the in-scope input hashes, the taxonomy lock hash, the check version and the injected values. The fourth component had no instance until a windowed participation expectation read `ctx.now`, and it has one now. The key writes the clock where the scope declares it, so one declaration decides what a view carries and what the key covers.
+A [key](../spec/check-layer.md#determinism-concretely) covers the in-scope input hashes, the taxonomy lock hash, the check version and the injected values. The fourth component had no instance until a windowed participation expectation read `ctx.now`, and it has one now. The key writes the clock where the scope declares it, so one declaration decides what a view carries and what the key covers.
 
 ## Obligation
 
-The prior version is the other injected value spec 12 names, and nothing forces whoever adds it to write the matching branch of the key.
+The prior version is the other injected value [the check layer](../spec/check-layer.md) names, and nothing forces whoever adds it to write the matching branch of the key.
 
 ## Discharge
 
-The differential of `--no-cache` cannot catch that omission, because both sides of it hold one value of each injected input. So no test in this engine reaches the defect, and a sentence in spec 12 is what would.
+The differential of `--no-cache` cannot catch that omission, because both sides of it hold one value of each injected input. So no test in this engine reaches the defect, and a sentence in [the check layer](../spec/check-layer.md) is what would.
 
-**This record is discharged.** `engine/crates/check/src/cache.rs` puts the content hash of the prior version into the cache key. The test `two_prior_versions_are_two_keys_for_a_check_that_reads_one` holds that branch, and spec 12 states the rule under its heading on temporal inputs. The owner accepted the discharge on 2026-09-30, in the roadmap review of that day.
+**This record is discharged.** `engine/crates/check/src/cache.rs` puts the content hash of the prior version into the cache key. The test `two_prior_versions_are_two_keys_for_a_check_that_reads_one` holds that branch, and [the check layer](../spec/check-layer.md) states the rule under its heading on temporal inputs. The owner accepted the discharge on 2026-09-30, in the roadmap review of that day.

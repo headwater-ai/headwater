@@ -13,8 +13,8 @@
 //! the JSON export a different answer to the same question.
 //!
 //! That is the one stated exception to
-//! [spec 2, "Placement is primary"](../../../../docs/spec/02-taxonomy-model.md#placement-is-primary-metadata-fills-the-gap),
-//! which says a document does not restate what its placement states. Spec 2
+//! [The taxonomy model, "Placement is primary"](../../../../docs/spec/taxonomy-model.md#placement-is-primary-metadata-fills-the-gap),
+//! which says a document does not restate what its placement states. [The taxonomy model](../../../../docs/spec/taxonomy-model.md)
 //! gives the reason and the condition that retires the absent-value half.
 //!
 //! # What instantiates

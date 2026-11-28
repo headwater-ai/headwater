@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Q9](../spec/09-decisions.md#q9--multi-repository-corpora) rules that a repository holds one or more corpora and that the tier above harvests pinned exports.
+[Q9](../spec/decisions.md#q9--multi-repository-corpora) rules that a repository holds one or more corpora and that the tier above harvests pinned exports.
 
 ## Obligation
 

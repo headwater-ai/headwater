@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The immutable core, checked on the result and never on an operation.
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#the-immutable-core):
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#the-immutable-core):
 //! "Core satisfaction is checked **after** overlay resolution, against the
 //! resolved taxonomy. The check does not forbid particular operations. An
 //! overlay is rejected when the *result* fails to satisfy a core requirement.
@@ -16,17 +16,17 @@
 //!
 //! # The core is semantic, so a satisfier is a role and never a name
 //!
-//! Spec 2: "It constrains *roles and purposes*, never names or paths." So a
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md): "It constrains *roles and purposes*, never names or paths." So a
 //! `facet_role` requirement is satisfied by whichever facet carries the role,
 //! whatever it is called, and a `purpose` requirement is satisfied by whichever
 //! concrete kind serves it, through inheritance if that is how the kind gets
-//! it. Spec 2's own worked overlay renames every lifecycle state and stays
+//! it. [The taxonomy model](../../../../docs/spec/taxonomy-model.md)'s own worked overlay renames every lifecycle state and stays
 //! conformant, and only dropping the `terminal-retained` role would fail.
 //!
 //! # `lifecycle_sensitive` is read from either of two declarations
 //!
 //! The base writes `relation_family: succession` with `lifecycle_sensitive:
-//! true`. Spec 2 states the requirement in prose — "lineage remains
+//! true`. [The taxonomy model](../../../../docs/spec/taxonomy-model.md) states the requirement in prose — "lineage remains
 //! expressible and lifecycle-sensitive" — and names no field. A relation of
 //! the family satisfies it when it declares `lifecycle_sensitive: true` itself,
 //! or when it declares `on_target: {set_state: ...}`.
@@ -44,7 +44,7 @@
 
 /// Whether a role on a state value names a terminal state.
 ///
-/// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#the-immutable-core)
+/// [The taxonomy model](../../../../docs/spec/taxonomy-model.md#the-immutable-core)
 /// writes the role as `terminal-retained`, and the hyphen carries what happens
 /// to the document rather than whether the state ends the machine. So the
 /// prefix is the reading and the suffix is a taxonomy's business.

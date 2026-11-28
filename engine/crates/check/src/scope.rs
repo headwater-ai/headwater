@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Scope: what one check may read, carried by the type it receives.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#scope--the-declaration-everything-else-rests-on)
+//! [The check layer](../../../../docs/spec/check-layer.md#scope--the-declaration-everything-else-rests-on)
 //! states what the declaration buys: "the view exposes *only* what the scope
 //! declared. A `Document`-scoped check physically cannot read a sibling." It
 //! states the cost of the alternative too. A scope that nothing enforces "would
-//! silently corrupt every cache key derived from it", so spec 12 lists scope
+//! silently corrupt every cache key derived from it", so [the check layer](../../../../docs/spec/check-layer.md) lists scope
 //! enforcement as a
-//! [correctness root](../../../../docs/spec/12-check-layer.md#the-correctness-roots).
+//! [correctness root](../../../../docs/spec/check-layer.md#the-correctness-roots).
 //!
 //! # The declaration is a type, and this module is where that holds
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-declaration-is-a-type-not-a-returned-value)
+//! [The check layer](../../../../docs/spec/check-layer.md#the-declaration-is-a-type-not-a-returned-value)
 //! rules out a `scope()` method: "a scope that a check *returns* is a second
 //! fact beside the argument it receives. Nothing connects them, so a check can
 //! declare `Document` and still be handed a view that reads the corpus."
@@ -27,14 +27,14 @@
 //!    [`corpus_scope`], and each one reads only its own trait.
 //! 3. **The view owns the read set, and the check never does.** An instance
 //!    records what the view carried, so a check cannot under-report what it
-//!    read. Spec 12 uses that set for two things: the cache key, and the read
+//!    read. [The check layer](../../../../docs/spec/check-layer.md) uses that set for two things: the cache key, and the read
 //!    set that keeps a verdict honest under merge. Each read carries the census
 //!    digest of the file. A key over a path alone would survive every edit to
 //!    the document it names.
 //!
 //! # The failing fixture is a program that must not compile
 //!
-//! Spec 12 asks each correctness root for a fixture that fails. Where the
+//! [The check layer](../../../../docs/spec/check-layer.md) asks each correctness root for a fixture that fails. Where the
 //! enforcement is a type, that fixture is a program the compiler refuses: a
 //! `compile_fail` doctest. Stable rustdoc does not check the error code, so a
 //! block that fails for another reason, such as a missing import, also passes.
@@ -143,7 +143,7 @@
 //! three things: a change that no recorded corpus exercises, a rule with no
 //! instance on any of them (the test lists each one with the reason), and a
 //! change visible only against a warm cache that an older binary wrote. The last is the digest over the compiled rule that
-//! [13 — Open obligations](../../../../docs/spec/13-open-obligations.md)
+//! [Open obligations](../../../../docs/spec/open-obligations.md)
 //! still carries.
 //!
 //! # The clock is one declaration with two uses, and that is the point
@@ -154,7 +154,7 @@
 //! functions below bind the clock once and hand that binding to the view and to
 //! [`crate::cache`].
 //!
-//! That answers the hole spec 13 recorded against the key. A check that reads
+//! That answers the hole [the register of open obligations](../../../../docs/spec/open-obligations.md) recorded against the key. A check that reads
 //! the clock and does not key on it serves yesterday's verdict today. The
 //! `--no-cache` differential cannot see it, because both sides of that
 //! comparison hold one value of the clock.
@@ -167,14 +167,14 @@
 //! where the prior version differs therefore keys differently, and a cached
 //! verdict cannot survive a change to the version it was about.
 //!
-//! Spec 12 makes the prior version available **only in change-scoped
+//! [The check layer](../../../../docs/spec/check-layer.md) makes the prior version available **only in change-scoped
 //! evaluation**, and that is where the two declarations part. A run with no
 //! change cannot hand one over. It does not pass the instance either. The
 //! engine creates every instance of such a check and reports it as skipped,
 //! with the reason [`CHANGE_SCOPED_ONLY`], because a check that quietly
 //! contributes nothing in the mode a repository actually runs is the silent
 //! pass
-//! [spec 4](../../../../docs/spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+//! [the assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
 //! exists to prevent.
 //!
 //! The view carries the front matter of the same document at an earlier state,
@@ -219,7 +219,7 @@ pub enum Grain {
     Edge,
     /// One document and the documents one relation away from it.
     ///
-    /// [Spec 12](../../../../docs/spec/12-check-layer.md#what-this-leaves-open)
+    /// [The check layer](../../../../docs/spec/check-layer.md#what-this-leaves-open)
     /// leaves the depth open and suspects the grain is unnecessary: "if no real
     /// check needs depth > 1, the correct move is to cut it and to keep `Edge`
     /// as the only relational scope". The depth is fixed at 1 here for that
@@ -227,13 +227,13 @@ pub enum Grain {
     /// [`crate::participation`]: an `Edge` instance exists per edge, and a
     /// participation expectation is about an edge that nobody declared.
     Neighbourhood { depth: u8 },
-    /// Everything. Spec 12 calls these the barriers.
+    /// Everything. [The check layer](../../../../docs/spec/check-layer.md) calls these the barriers.
     Corpus,
     /// The resolved taxonomy, and no document at all.
     ///
-    /// [Spec 12](../../../../docs/spec/12-check-layer.md#scope--the-declaration-everything-else-rests-on)
+    /// [The check layer](../../../../docs/spec/check-layer.md#scope--the-declaration-everything-else-rests-on)
     /// names this grain beside the four drawn over the corpus, and
-    /// `tests/spec_twelve_scope.rs` holds its list to this enum. A rule that
+    /// `tests/check_layer_scope.rs` holds its list to this enum. A rule that
     /// reads the taxonomy rather than the corpus fits none of the four, and
     /// [`crate::register`] holds two: an obligation that carries no disposition
     /// and a control whose mechanism this engine does not implement are both
@@ -246,7 +246,7 @@ pub enum Grain {
     /// the second one corpus-grained would put a document in a read set that no
     /// document was ever read for.
     /// [HW-OBL-0067](../../../../docs/obligations/0067-a-rule-that-reads-the-taxonomy-has-no-grain-in-spec-12s-list.md)
-    /// recorded that spec 12's list once left this grain out.
+    /// recorded that [the check layer](../../../../docs/spec/check-layer.md)'s list once left this grain out.
     Taxonomy,
 }
 
@@ -265,7 +265,7 @@ impl Grain {
     /// Whether an instance of this grain is **routed** to the documents it
     /// reads, which is the question [`crate::coverage`] asks of it.
     ///
-    /// [Spec 4](../../../../docs/spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+    /// [The assurance model](../../../../docs/spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for)
     /// states OB-COV-2 as "every classified document is routed to at least one
     /// check", and routing is the generation step: a template, a declaration,
     /// and one instance per target. The three grains above route, and their
@@ -379,17 +379,17 @@ impl Scope {
         }
     }
 
-    /// Every input flag this scope declares, by the name spec 12's `Scope`
+    /// Every input flag this scope declares, by the name [the check layer](../../../../docs/spec/check-layer.md)'s `Scope`
     /// block gives it, with its value.
     ///
     /// The body destructures `Scope` with no `..`, so an eighth field does not
     /// compile (E0027) until its author names it here. The list is then held
-    /// against spec 12 by `tests/spec_twelve_scope.rs`, which fails until the
+    /// against [the check layer](../../../../docs/spec/check-layer.md) by `tests/check_layer_scope.rs`, which fails until the
     /// specification names the new flag. The compiler's help offers
     /// `needs_x: _` and `..`, which compile, so the same file also reads the
     /// fields of this struct from source and holds this list to them. That
     /// chain is what keeps the block in
-    /// spec 12 from falling behind this type, which it did by two flags before
+    /// [the check layer](../../../../docs/spec/check-layer.md) from falling behind this type, which it did by two flags before
     /// #1407.
     pub const fn flags(&self) -> [(&'static str, bool); 7] {
         let Scope {
@@ -467,7 +467,7 @@ impl Scope {
     /// reaches an instance through this flag and through nothing else. A flag
     /// that changed what an instance read and did not reach the key is the
     /// correctness bug
-    /// [spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
+    /// [the check layer](../../../../docs/spec/check-layer.md#determinism-concretely)
     /// names.
     pub fn needs_claims(&self) -> bool {
         self.needs_claims
@@ -483,7 +483,7 @@ impl Scope {
     /// instance through this flag and through nothing else, on
     /// [`Scope::needs_claims`]'s own terms. A flag that changed what an
     /// instance read and did not reach the key is the correctness bug
-    /// [spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
+    /// [the check layer](../../../../docs/spec/check-layer.md#determinism-concretely)
     /// names, and it is the bug [#937](https://github.com/headwater-ai/headwater/issues/937)
     /// found live: a rule reading [`crate::observation::Observations`]
     /// straight from its own struct field, with no input in its read set to
@@ -493,7 +493,7 @@ impl Scope {
         self.needs_observations
     }
 
-    /// The scope as one line of a report, in spec 12's own words for the
+    /// The scope as one line of a report, in [the check layer](../../../../docs/spec/check-layer.md)'s own words for the
     /// grain. A reader who counts the barriers reads them here.
     pub fn render(&self) -> String {
         let carries = match (self.grain, self.needs_body) {
@@ -519,7 +519,7 @@ impl Scope {
             (true, _) => ", and what phase A could not make of it",
         };
         // The clock is named because it is an input like any other, and because
-        // spec 12 puts it in the cache key. A reader who asks why a warm run
+        // the check layer (docs/spec/check-layer.md) puts it in the cache key. A reader who asks why a warm run
         // re-evaluated one rule and not another reads the answer here.
         let clock = match self.needs_clock {
             true => ", and the injected clock",
@@ -559,7 +559,7 @@ impl Scope {
             true => ", and the version of the declaring document that stood before the change, where the run carries one",
             false => "",
         };
-        // Spec 12 calls the corpus-scoped checks the barriers, and the word is
+        // The check layer (docs/spec/check-layer.md) calls the corpus-scoped checks the barriers, and the word is
         // last so that it reads as a statement about the scope rather than
         // about the inputs listed before it.
         let barrier = match self.grain {
@@ -576,7 +576,7 @@ impl Scope {
 /// The emitter targets a check exports to, and the empty set is the common
 /// value.
 ///
-/// [Spec 12](../../../../docs/spec/12-check-layer.md#exportable_as-is-a-set-with-a-partition-rule)
+/// [The check layer](../../../../docs/spec/check-layer.md#exportable_as-is-a-set-with-a-partition-rule)
 /// states the bar a name in this set has to clear: the emitted constraint
 /// catches exactly what the native check catches, in both directions. A
 /// construct that misses a document the check reports is a partial
@@ -623,7 +623,7 @@ pub trait DocumentCheck {
     const NEEDS_CLOCK: bool = false;
     /// Whether the view carries the version of this document that stood before
     /// the change, on the clock's terms and with one more consequence again:
-    /// spec 12 makes the input available only in change-scoped evaluation, so
+    /// [the check layer](../../../../docs/spec/check-layer.md) makes the input available only in change-scoped evaluation, so
     /// every instance of this check in a full-corpus run is reported as skipped.
     ///
     /// It is the input transition legality needs. One value of a facet cannot
@@ -657,13 +657,13 @@ pub trait DocumentCheck {
 /// What one edge-scoped instance is created over.
 ///
 /// Both members are one relation instance, which is the grain
-/// [spec 12](../../../../docs/spec/12-check-layer.md#scope--the-declaration-everything-else-rests-on) fixes for
+/// [the check layer](../../../../docs/spec/check-layer.md#scope--the-declaration-everything-else-rests-on) fixes for
 /// this trait. They differ over what counts as one, and the difference is
 /// whether the target resolved.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum EdgeUnit {
     /// The pair that
-    /// [Q4](../../../../docs/spec/09-decisions.md#q4--relation-storage)
+    /// [Q4](../../../../docs/spec/decisions.md#q4--relation-storage)
     /// identifies: a source identifier, a relation, and a target document. Two
     /// reciprocal halves are one instance of it, and an edge whose target is
     /// not a document is no instance at all, because there is no second
@@ -724,13 +724,13 @@ pub trait EdgeCheck {
     fn evaluate(&self, view: &EdgeView<'_>) -> Outcome;
 }
 
-/// A check over the whole corpus: spec 12's barrier.
+/// A check over the whole corpus: [the check layer](../../../../docs/spec/check-layer.md)'s barrier.
 ///
 /// There is no `instantiates`, and the absence is the grain. Every other trait
 /// here generates one instance per target out of a declaration, and this one
 /// has a single target that no declaration selects. So the count of the
 /// barriers is the count of the corpus-scoped rules, which is the number
-/// [spec 12](../../../../docs/spec/12-check-layer.md#scope--the-declaration-everything-else-rests-on)
+/// [the check layer](../../../../docs/spec/check-layer.md#scope--the-declaration-everything-else-rests-on)
 /// asks a reader to be able to read rather than discover under load.
 ///
 /// A rule belongs here when its subject is a relation between two documents
@@ -987,7 +987,7 @@ enum PriorFor<'a> {
     Skip(String),
 }
 
-/// The reason spec 12 fixes for an instance of a prior-reading check in a run
+/// The reason [the check layer](../../../../docs/spec/check-layer.md) fixes for an instance of a prior-reading check in a run
 /// that carries no change.
 ///
 /// The words are the specification's own, and a reader who greps a report for
@@ -1102,7 +1102,7 @@ impl<'a> DocumentView<'a> {
 /// One relation instance, both endpoints, and the halves that declared it.
 ///
 /// A pair is one target however many documents wrote it, which is
-/// [Q4](../../../../docs/spec/09-decisions.md#q4--relation-storage)'s identity
+/// [Q4](../../../../docs/spec/decisions.md#q4--relation-storage)'s identity
 /// for an edge: the source identifier, the relation name, and the normalized
 /// target. Position in a list is not part of it.
 pub struct EdgeView<'a> {
@@ -1185,7 +1185,7 @@ fn target_names(edge: &Edge) -> Vec<&str> {
 
 /// One end of a relation instance, in the direction the relation declares.
 ///
-/// [Spec 12](../../../../docs/spec/12-check-layer.md#scope--the-declaration-everything-else-rests-on)
+/// [The check layer](../../../../docs/spec/check-layer.md#scope--the-declaration-everything-else-rests-on)
 /// fixes an edge-scoped instance at "one relation instance **and both
 /// endpoints**", and the front matter here is that clause read literally. It is
 /// not the depth-1 boundary that [`Neighbour`] holds: a neighbourhood has as
@@ -1222,7 +1222,7 @@ impl<'a> EdgeEnd<'a> {
     /// could then disagree about one file.
     ///
     /// It rides beside [`EdgeEnd::facets`] because the two answer one question
-    /// together. Spec 3 gives a generated document a warrant the engine derives
+    /// together. [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) gives a generated document a warrant the engine derives
     /// and no declared one, so a rule holding the front matter alone reads an
     /// absence where there is an answer. [`headwater_doc::warrant_of`] is what
     /// takes the pair.
@@ -1447,7 +1447,7 @@ impl<'a> EdgeView<'a> {
         self.stated
     }
 
-    /// Both endpoints: spec 12 fixes an edge-scoped read set at "one relation
+    /// Both endpoints: [the check layer](../../../../docs/spec/check-layer.md) fixes an edge-scoped read set at "one relation
     /// instance **and both endpoints**", and coverage counts the instance
     /// against each of them.
     pub fn reads(&self) -> &[Input] {
@@ -1890,7 +1890,7 @@ fn read_at<'a>(census: &'a Census, path: &str) -> (Option<&'a Mapping>, bool, Op
 /// The graph is here for one reason. A check that declared `NEEDS_PHASE_A`
 /// receives what the build could not make of *its* document. A row the census
 /// classified as generated is not a typed row, so no instance is created over
-/// one and no phase-A report about one reaches a rule. That is spec 6's
+/// one and no phase-A report about one reaches a rule. That is [the engine architecture](../../../../docs/spec/engine-architecture.md)'s
 /// exemption holding at this grain, and not a second decision here: the
 /// content of a generated file is a function of its emitter, and
 /// `generate --check` holds it.
@@ -2202,7 +2202,7 @@ pub fn over_edges<C: EdgeCheck>(
             triple,
             &reads,
             clock,
-            // No prior version of the edge, for the reason spec 12 gives: a
+            // No prior version of the edge, for the reason the check layer (docs/spec/check-layer.md) gives: a
             // change names documents, and an edge is not one. What a change
             // says about the document that declared the edge is the one prior
             // an edge reads, and only where the check declared it. The key
@@ -2315,7 +2315,7 @@ const CORPUS: &str = "the corpus";
 
 /// Instantiate a corpus-scoped check over a census and a graph.
 ///
-/// One instance, whatever the corpus holds. That is the count spec 12 calls the
+/// One instance, whatever the corpus holds. That is the count [the check layer](../../../../docs/spec/check-layer.md) calls the
 /// barrier count, and it is the tell that separates this grain from a
 /// document-scoped rule with a wide read set: the instance count moves by one
 /// and the read set moves by the size of the corpus.

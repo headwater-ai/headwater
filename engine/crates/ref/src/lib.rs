@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The `$`-reference sublanguage of the taxonomy language.
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#the--reference-sublanguage)
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#the--reference-sublanguage)
 //! is the definition, and this crate is the definition made executable. Both
 //! close the obligation that
-//! [13 — Open obligations](../../../../docs/spec/13-open-obligations.md) carried:
+//! [Open obligations](../../../../docs/spec/open-obligations.md) carried:
 //! three uses, written three ways, and no grammar.
 //!
 //! # The grammar
@@ -41,7 +41,7 @@
 //! It does not resolve. [`Reference::parse`] says that a text is a well-formed
 //! reference, and says nothing about whether the node it names exists. That is
 //! the resolver's, and it runs late — after every overlay has been applied,
-//! over the merged tree. Spec 2's own worked overlay depends on the order: an
+//! over the merged tree. [The taxonomy model](../../../../docs/spec/taxonomy-model.md)'s own worked overlay depends on the order: an
 //! overlay that overrides `vocabularies.lifecycle_state` expects the facet that
 //! reads `$vocabularies.lifecycle_state` to follow it, and an early resolution
 //! would have frozen the base list before the overlay was read.

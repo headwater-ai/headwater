@@ -134,7 +134,7 @@ pub struct Graph {
     docs: Vec<Document>,
     edges: Vec<Edge>,
     by_id: HashMap<String, DocIdx>,
-    /// Edge indices touching each document, in *both* directions. Spec 12 makes
+    /// Edge indices touching each document, in *both* directions. [The check layer](../../../../../../docs/spec/check-layer.md) makes
     /// this the unit of change-scoped invalidation, so it is built once here
     /// rather than derived per run.
     incident: Vec<Vec<usize>>,
@@ -207,7 +207,7 @@ impl Graph {
     }
 
     /// Every edge incident to this document, in both directions. This is the
-    /// clause spec 12 calls the subgraph problem.
+    /// clause [the check layer](../../../../../../docs/spec/check-layer.md) calls the subgraph problem.
     pub fn incident_edges(&self, idx: DocIdx) -> &[usize] {
         &self.incident[idx]
     }

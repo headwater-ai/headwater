@@ -21,7 +21,7 @@ relations:
 
 ## Context
 
-The [key](../spec/12-check-layer.md#determinism-concretely) carries the version of the check that reached the verdict, and that version is what makes the entries of an earlier edition stale. Nothing derives the number. Two editions of one rule read the same documents and the same lock, and they differ only in code that no digest covers. So an author who changes what a rule decides and leaves the version alone reads the verdicts of the rule before the change.
+The [key](../spec/check-layer.md#determinism-concretely) carries the version of the check that reached the verdict, and that version is what makes the entries of an earlier edition stale. Nothing derives the number. Two editions of one rule read the same documents and the same lock, and they differ only in code that no digest covers. So an author who changes what a rule decides and leaves the version alone reads the verdicts of the rule before the change.
 
 **A verdict ledger now catches a version left alone, where a recorded corpus shows the change ([#1105](https://github.com/headwater-ai/headwater/issues/1105)).** The test `engine/crates/check/tests/editions.rs` keeps one row in `engine/crates/check/fixtures/editions.ledger` for each rule over each recorded corpus that it reaches. The row holds the version, a fingerprint of the corpus and a digest of every verdict that the cache would store. A digest that moves while the version and the corpus stay fails the test, and the test names the rule. `HEADWATER_BLESS` does not record that row again, so a bless cannot hide the defect.
 
@@ -53,4 +53,4 @@ The question for a person: **does the engine build a digest over the code of eac
 
 If the ruling is to build the digest, this record is discharged when the digest joins the key. A fixture then changes the code of one rule and leaves its version alone, and a warm cache from the older binary serves nothing.
 
-If the ruling is to accept the ledger, this record is discharged when spec 12 states the accepted gaps. The two instance rules above each gain a recorded corpus that reaches them, or the specification names them as accepted.
+If the ruling is to accept the ledger, this record is discharged when [the check layer](../spec/check-layer.md) states the accepted gaps. The two instance rules above each gain a recorded corpus that reaches them, or the specification names them as accepted.

@@ -12,7 +12,7 @@ repository.workspace = true
 [dependencies]
 # SHA-256. It used to be a module here, and it moved out when the census began
 # to hash the bytes of each document: a cache key and a lock digest that
-# disagreed about one byte string would be the correctness bug spec 12 names.
+# disagreed about one byte string would be the correctness bug the check layer (docs/spec/check-layer.md) names.
 headwater-hash = { workspace = true }
 
 # The lock is a YAML source on the same dialect every taxonomy source is on, so

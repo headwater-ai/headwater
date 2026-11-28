@@ -5,7 +5,7 @@
 //!
 //! A generated document's kind requires what every other document of that kind
 //! requires. Over this repository's own lock that is seven facets on
-//! `docs/spec/09-open-questions.md` and five on a probe result, and the
+//! `docs/spec/open-questions.md` and five on a probe result, and the
 //! `identity` block answers three of them: the identifier, the discriminator of
 //! a heterogeneous shelf, and the facet in the `name` role. The rest went
 //! unwritten and nothing reported it
@@ -80,7 +80,7 @@
 //! The one exception is not an exception to that rule. A facet that the shelf's
 //! `layout` names is found by that declaration rather than by a role, because a
 //! layout is where a taxonomy says which facet a file name carries. `sequence`
-//! has no role in the registry spec 2 closes at five members, and
+//! has no role in the registry [the taxonomy model](../../../../docs/spec/taxonomy-model.md) closes at five members, and
 //! `{sequence:02d}-{slug}.md` is how the numbered specification series says
 //! that the number is in the path.
 //!
@@ -627,7 +627,7 @@ fn values_of<'d>(
 /// path written from one can be read back for that facet. The tokenizer is
 /// [`headwater_scaffold::segments`], which is the same one that writes a name
 /// from a layout: a second copy of that grammar here would be the drift that
-/// [principle 2](../../../../docs/spec/00-vision-and-scope.md#design-principles)
+/// [principle 2](../../../../docs/spec/vision-and-scope.md#design-principles)
 /// rules against, and the two would disagree about a path this engine wrote
 /// itself.
 ///

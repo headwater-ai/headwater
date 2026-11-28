@@ -14,7 +14,7 @@
 //!
 //! Each one moves into its own typed reader on the day a check reads it. Until
 //! then a second reader would be the drift that
-//! [principle 2](../../../../docs/spec/00-vision-and-scope.md#design-principles)
+//! [principle 2](../../../../docs/spec/vision-and-scope.md#design-principles)
 //! rules against.
 //!
 //! `regimes.lifecycle.<name>.initial` was the fourth and it left on that day.
@@ -54,7 +54,7 @@ pub fn allocation<'a>(root: &'a Mapping, scheme: &str) -> Option<&'a str> {
     member(root, "identifier_schemes", scheme, "allocation")
 }
 
-/// `relations.<relation>.created_by`, from the closed set spec 2 declares:
+/// `relations.<relation>.created_by`, from the closed set [the taxonomy model](../../../../docs/spec/taxonomy-model.md) declares:
 /// `author`, `scaffold`, `generator`, `hook`, `agent`, `import`.
 pub fn created_by<'a>(root: &'a Mapping, relation: &str) -> Option<&'a str> {
     member(root, "relations", relation, "created_by")

@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 //! External-anchor resolution: normalize a target string, then bind it.
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots)
+//! [The check layer](../../../../docs/spec/check-layer.md#the-correctness-roots)
 //! names this a correctness root and says exactly how it fails: "a resolver
 //! that mis-normalizes makes `governs` edges silently miss". Nothing raises an
 //! error when it happens. Write-time impact detection fires on anchor identity
-//! ([spec 5](../../../../docs/spec/05-ai-integration.md)), so an anchor that
+//! ([AI integration](../../../../docs/spec/ai-integration.md)), so an anchor that
 //! normalizes to a second spelling of one target is a second node, and every
 //! document that governs the first one stops reaching the code that changed.
 //!
 //! # Three outcomes, and the third is never reported as the second
 //!
-//! [Spec 1](../../../../docs/spec/01-conceptual-model.md#external-anchor) fixes
+//! [The conceptual model](../../../../docs/spec/conceptual-model.md#external-anchor) fixes
 //! the set: an anchor resolves, or it fails to resolve, or its target sits
 //! behind a declared withholding. The third is [`Binding::Withheld`]. Its one
 //! producer is the resolver over a pinned export, `headwater_import::harvest`,
@@ -19,12 +19,12 @@
 //! lists ([HW-DR-0100](../../../../docs/decisions/0100-a-counted-tombstone-lists-a-digest-of-each-withheld-identifier-and-a-sealed-one-lists-nothing.md)).
 //! The variant is a member of a closed set, so the compiler lists every site
 //! that has to tell the two apart, which is
-//! [Q1](../../../../docs/spec/09-decisions.md#q1--implementation-language)'s
+//! [Q1](../../../../docs/spec/decisions.md#q1--implementation-language)'s
 //! argument for a closed set.
 //!
 //! # A resolver never reaches the network
 //!
-//! Spec 2 states the rule and gives both reasons: check time stays offline, and
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md) states the rule and gives both reasons: check time stays offline, and
 //! a resolution result stays reproducible. [`SourceTree`] reads the working
 //! tree under the corpus base. The second resolver this specification names, a
 //! committed snapshot of an external system of record, reads committed files by
@@ -96,7 +96,7 @@ pub enum Binding {
         ///
         /// Two components read it. `headwater_check::suspect` compares it
         /// against the `verified_revision` recorded on the edge, which is the
-        /// drift report [spec 7](../../../../docs/spec/07-distribution-and-federation.md#upstream-awareness)
+        /// drift report [distribution and federation](../../../../docs/spec/distribution-and-federation.md#upstream-awareness)
         /// asks for per edge, and which a `governs` edge now receives as
         /// well. And `Target::resolution` renders it into the
         /// cache key of every edge instance, so a verdict about an edge cannot
@@ -400,7 +400,7 @@ impl Resolvers {
 
     /// The resolvers a run over a repository has today: the source tree, and
     /// nothing else. Every other anchor kind the taxonomy declares reports that
-    /// no resolver claims it, which is the finding spec 2 asks for.
+    /// no resolver claims it, which is the finding [the taxonomy model](../../../../docs/spec/taxonomy-model.md) asks for.
     pub fn over(corpus: &Corpus) -> Self {
         Self::new(vec![Box::new(SourceTree::over(corpus))])
     }
@@ -408,7 +408,7 @@ impl Resolvers {
     /// Add one resolver that this crate cannot build, and refuse a second of
     /// one name.
     ///
-    /// Spec 2 rules that "every anchor kind names exactly one resolver, and no
+    /// [The taxonomy model](../../../../docs/spec/taxonomy-model.md) rules that "every anchor kind names exactly one resolver, and no
     /// two anchor kinds claim the same resolver namespace". Two entries of one
     /// name would leave [`Resolvers::get`] answering with whichever was pushed
     /// first, so one of the two would own an identity in silence. That is the
@@ -1356,7 +1356,7 @@ mod tests {
         assert!(resolvers.get("source-tree").is_none());
     }
 
-    /// Spec 2: exactly one component owns each anchor identity. A second entry
+    /// [The taxonomy model](../../../../docs/spec/taxonomy-model.md): exactly one component owns each anchor identity. A second entry
     /// of one name is refused rather than shadowed, because `get` would answer
     /// with the first one and nothing would say the second was ignored.
     #[test]

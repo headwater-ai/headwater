@@ -3,7 +3,7 @@
 //!
 //! # The order is not the file order
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#reading-precedence-is-derived) derives
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#reading-precedence-is-derived) derives
 //! reading precedence from the relation family and the nucleus, and names three
 //! consumers: a routing result, the document a conflict is reported against, and
 //! "reading order in generated indexes". This is the third one. It calls the
@@ -22,7 +22,7 @@
 //!
 //! That reading is the engine's, and the specification does not state it. It
 //! sits beside the meta-schema's open question about which glob constructs a
-//! shelf path admits, and [spec 13](../../../../docs/spec/13-open-obligations.md)
+//! shelf path admits, and [the register of open obligations](../../../../docs/spec/open-obligations.md)
 //! carries both.
 
 use crate::profile::Admission;
@@ -325,7 +325,7 @@ fn render(
         if let Some(summary) = &pointer.summary {
             out.push_str(&format!(" — {summary}"));
         }
-        // Spec 7 rules that an emitter which cannot carry the warrant does not
+        // Distribution and federation (docs/spec/distribution-and-federation.md) rules that an emitter which cannot carry the warrant does not
         // carry the content. Markdown can carry it, so this one says it rather
         // than withholding the row.
         match (&pointer.outside, pointer.unwarranted) {
@@ -395,7 +395,7 @@ mod tests {
     use super::{relative, render};
     use headwater_query::Pointer;
 
-    /// A warrant outside spec 3's closed set is stated as what it is, and is
+    /// A warrant outside [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s closed set is stated as what it is, and is
     /// not called `asserted` (#1438). An `asserted` one keeps its sentence.
     #[test]
     fn a_warrant_outside_the_closed_set_is_stated_and_not_called_asserted() {

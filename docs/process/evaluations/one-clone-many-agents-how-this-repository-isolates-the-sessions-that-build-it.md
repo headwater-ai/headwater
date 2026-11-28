@@ -34,7 +34,7 @@ relations:
 
 Fifteen agent sessions built this repository at the same time on 2026-09-11, and fourteen worktrees were live on the same host on 2026-09-18. Each rule that makes this work was written after a failure, and each one lives in the header of the file that implements it. No document states the arrangement as a whole, so no document states which lines hold up other files and which lines are free choices. This evaluation is that statement. The decision records named below carry the rulings, and this document carries the evidence and the failures.
 
-The reader outside this repository is an adopter who runs several agent sessions against one corpus of their own. Spec 16 states the hook contract that raises most of the questions below, and an adopter who binds a harness writes the hooks themselves. The last section separates the part that is portable from the part that belongs to this repository.
+The reader outside this repository is an adopter who runs several agent sessions against one corpus of their own. [Harness support](../../spec/harness-support.md) states the hook contract that raises most of the questions below, and an adopter who binds a harness writes the hooks themselves. The last section separates the part that is portable from the part that belongs to this repository.
 
 Two subjects sit next door and are not here. [The build order as a multi-agent system](the-build-order-as-a-multi-agent-system.md) carries what a dispatch costs and how a run is shaped. [HW-DR-0054](../../decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md) carries the committed identifier claim store, which is a different claim with a different lifetime.
 

@@ -27,8 +27,8 @@ The base package writes `output: "{shelf}/README.md"` and no document states wha
 
 ## Obligation
 
-The engine reads it as the shelf's directory. It takes that directory as the literal prefix of the shelf's `path` glob. The reading is the engine's, and [the specification](../spec/06-engine-architecture.md#projections) does not state it.
+The engine reads it as the shelf's directory. It takes that directory as the literal prefix of the shelf's `path` glob. The reading is the engine's, and [the specification](../spec/engine-architecture.md#projections) does not state it.
 
 ## Discharge
 
-It sits beside the open question about which glob constructs a shelf path admits. Both answers come from one string, and only one of them is written down. [Spec 2](../spec/02-taxonomy-model.md#the-thirteen-declarations) is where the statement belongs.
+It sits beside the open question about which glob constructs a shelf path admits. Both answers come from one string, and only one of them is written down. [The taxonomy model](../spec/taxonomy-model.md#the-thirteen-declarations) is where the statement belongs.

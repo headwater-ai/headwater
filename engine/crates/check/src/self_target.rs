@@ -11,7 +11,7 @@
 //!
 //! # Which relations may point at their own document: association alone
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#behavior-at-the-limits)
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md#behavior-at-the-limits)
 //! rules it: "Self-reference stays invalid in every family except
 //! association." So the rule is generated from every declared relation whose
 //! family is not `association`, as [`crate::target`] is generated from every
@@ -19,7 +19,7 @@
 //! no declared family, that points at its own document asserts nothing (a
 //! document that draws on, governs, constrains or traces to itself) or asserts
 //! a contradiction (a document that supersedes itself). An association edge is
-//! exempt because the family is the one spec 2 lets cycle, and a relation of
+//! exempt because the family is the one [the taxonomy model](../../../../docs/spec/taxonomy-model.md) lets cycle, and a relation of
 //! it has no instance here, so it is outside the denominator rather than a
 //! pass inside it.
 //!
@@ -49,7 +49,7 @@
 //! anchor: a `source-tree` anchor whose every pattern has no wildcard and is
 //! the declaring document's own path. A decision that writes `governs:` with
 //! its own path governs itself, and the owner ruled that this exact case is a
-//! self-reference under spec 2's rule (#1350, 2026-09-29: "Report it, exact
+//! self-reference under [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s rule (#1350, 2026-09-29: "Report it, exact
 //! own file"). Under a relation whose endpoint also admits a document, such as
 //! `traces_to`, the own path binds as a document named by its path and never
 //! as an anchor (#1410), and that is `relation.target.unresolved`'s finding.
@@ -101,7 +101,7 @@ pub const RULE: &str = "relation.target.is_source";
 /// Recorded rather than panicked on, as in [`crate::target`].
 const NO_HALF: &str = "the entry carries no declared half";
 
-/// The one family spec 2 lets point at its own document.
+/// The one family [the taxonomy model](../../../../docs/spec/taxonomy-model.md) lets point at its own document.
 pub(crate) const EXEMPT_FAMILY: &str = "association";
 
 /// The check, generated from the relation declarations.

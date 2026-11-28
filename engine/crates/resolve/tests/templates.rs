@@ -220,7 +220,7 @@ fn a_facet_value_outside_the_declared_set_is_refused_at_publish() {
 /// Skipping it would leave the reader with a documented bypass: a publisher who
 /// wants none of the checks above ships a template that does not parse and the
 /// verb reports a pass. Six of this repository's own thirteen templates were in
-/// this state when the reader landed, which spec 13 recorded as *No template
+/// this state when the reader landed, which [the register of open obligations](../../../../docs/spec/open-obligations.md) recorded as *No template
 /// parses*.
 #[test]
 fn front_matter_that_does_not_parse_is_refused_at_publish() {
@@ -262,7 +262,7 @@ fn a_template_whose_name_is_not_a_kind_is_refused_at_publish() {
     assert!(!out.exists(), "the refused publish wrote an artifact");
 }
 
-/// A file name that names an abstract kind is refused. Spec 2 says no document
+/// A file name that names an abstract kind is refused. [The taxonomy model](../../../../docs/spec/taxonomy-model.md) says no document
 /// is one, so a template teaching one teaches a document that resolves to
 /// nothing.
 #[test]
@@ -467,7 +467,7 @@ fn a_template_that_agrees_with_its_bundle_publishes() {
 /// A Markdown file that declares no front matter, and whose own stem names no
 /// kind, is prose beside the templates, and this reader says nothing about it.
 ///
-/// Spec 7's own example manifest ships `templates/note.md` and its comment calls
+/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s own example manifest ships `templates/note.md` and its comment calls
 /// it prose for a publisher's own authors. Every check here reads front matter,
 /// so a file that declares none takes no check away — which is what separates it
 /// from a block that opens and does not parse, where the declarations exist and

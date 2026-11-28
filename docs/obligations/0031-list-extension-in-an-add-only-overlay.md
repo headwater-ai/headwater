@@ -22,9 +22,9 @@ relations:
 
 ## Context
 
-A bundle holds no `override` and no `remove`, and [spec 2](../spec/02-taxonomy-model.md#customization-by-composition) supplies `add_to` for a list. Nothing states whether a bundle may use it.
+A bundle holds no `override` and no `remove`, and [the taxonomy model](../spec/taxonomy-model.md#customization-by-composition) supplies `add_to` for a list. Nothing states whether a bundle may use it.
 
-The confluence argument covers disjoint addresses only, and two `add_to` operations at one address are not disjoint. The wordings disagree as well. Spec 2, [spec 7](../spec/07-distribution-and-federation.md#bundles-are-publisher-overlays-in-the-other-direction) and the [glossary](../spec/glossary.md) permit whatever is not `override` or `remove`, and [Q3](../spec/09-decisions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box) says that a bundle only adds.
+The confluence argument covers disjoint addresses only, and two `add_to` operations at one address are not disjoint. The wordings disagree as well. [The taxonomy model](../spec/taxonomy-model.md), [distribution and federation](../spec/distribution-and-federation.md#bundles-are-publisher-overlays-in-the-other-direction) and the [glossary](../spec/glossary.md) permit whatever is not `override` or `remove`, and [Q3](../spec/decisions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box) says that a bundle only adds.
 
 ## Obligation
 
@@ -34,4 +34,4 @@ Until this closes, no bundle ships a lifecycle state or a projection, because th
 
 ## Discharge
 
-The resolver reads the wordings as they stand. It admits `add_to` in any overlay, and its confluence check refuses two list operations from two sources at one address. What closes this is a ruling in spec 2, and no code can supply it.
+The resolver reads the wordings as they stand. It admits `add_to` in any overlay, and its confluence check refuses two list operations from two sources at one address. What closes this is a ruling in [the taxonomy model](../spec/taxonomy-model.md), and no code can supply it.

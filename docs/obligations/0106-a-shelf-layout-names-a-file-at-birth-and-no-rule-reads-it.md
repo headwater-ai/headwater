@@ -47,6 +47,6 @@ A decision title opens with the token `Q<n>`, and a file name that a person type
 
 A rule that reads a layout needs two declarations that this taxonomy does not carry. It needs a stated width for a slug, or the ruling that a name is never truncated. It needs a ruling on the second numbering vocabulary that a decision title carries.
 
-The other answer is the ruling that a layout binds the scaffolder alone. [Spec 3](../spec/03-authoring-and-lifecycle.md#templates-and-scaffolding) states that answer, and a rename after birth is then a fact outside the declaration.
+The other answer is the ruling that a layout binds the scaffolder alone. [Authoring and lifecycle](../spec/authoring-and-lifecycle.md#templates-and-scaffolding) states that answer, and a rename after birth is then a fact outside the declaration.
 
-The verb takes the measurement under either answer. A rule of this shape reports every document that a person renamed or typed by hand, and it repairs none of them. [Spec 12](../spec/12-check-layer.md#fixability) puts a rename below the fixability bar, since a rename breaks every inbound link that names the old path.
+The verb takes the measurement under either answer. A rule of this shape reports every document that a person renamed or typed by hand, and it repairs none of them. [The check layer](../spec/check-layer.md#fixability) puts a rename below the fixability bar, since a rename breaks every inbound link that names the old path.

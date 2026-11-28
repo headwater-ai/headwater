@@ -28,7 +28,7 @@ It proposes the corpus root from the directory with the most Markdown files unle
 
 It writes questions that the tree cannot answer into the overlay. It does not resolve the taxonomy, fetch a package or write a lock.
 
-The declaration states the engines that the corpus asks for, on one top-level `engine` line. The value is the caret range of the engine that ran `init`. For engine 0.5.x the line is `engine: ">=0.5 <0.6"`, and for engine 1.4.x it is `engine: ">=1.4 <2"`. A later engine outside that range says so on every run, and `headwater check --strict` fails on it. Move the line when you take a newer engine on purpose. [Spec 7](../spec/07-distribution-and-federation.md#consuming) states the key.
+The declaration states the engines that the corpus asks for, on one top-level `engine` line. The value is the caret range of the engine that ran `init`. For engine 0.5.x the line is `engine: ">=0.5 <0.6"`, and for engine 1.4.x it is `engine: ">=1.4 <2"`. A later engine outside that range says so on every run, and `headwater check --strict` fails on it. Move the line when you take a newer engine on purpose. [Distribution and federation](../spec/distribution-and-federation.md#consuming) states the key.
 
 ### The git step
 

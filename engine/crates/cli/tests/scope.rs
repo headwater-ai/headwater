@@ -3,7 +3,7 @@
 //! not ignore (#951, owner ruling 2026-09-25: "local and CI must agree, and
 //! nobody governs a cache").
 //!
-//! The graph build counts the scope with nothing ignored, because spec 12
+//! The graph build counts the scope with nothing ignored, because [the check layer](../../../../docs/spec/check-layer.md)
 //! keeps git off the check loop, and the audit verb drops the ignored entries
 //! afterward. This target holds that second step through the binary, so a
 //! verb that stopped dropping them prints a different figure here.

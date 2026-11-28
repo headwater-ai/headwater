@@ -12,7 +12,7 @@
 //! 4. `--check` over an empty tree. Everything is missing, and the run fails.
 //! 5. A write into a tree where an authored file already holds one of the output
 //!    paths. That one is refused and the authored bytes are still there
-//!    afterwards, which is the property spec 6 gives the marker.
+//!    afterwards, which is the property [the engine architecture](../../../../docs/spec/engine-architecture.md) gives the marker.
 //!
 //!     HEADWATER_BLESS=1 cargo test -p headwater-generate --test fixtures
 //!
@@ -458,7 +458,7 @@ fn a_generated_file_is_censused_as_generated_and_orphaned_when_nothing_writes_it
 /// about a document that resolves one.
 ///
 /// Nothing reported the drop. `docs/spec/README.md` went from 16 rows to 15 the
-/// day a projection took `docs/spec/09-open-questions.md`, and the only
+/// day a projection took `docs/spec/open-questions.md`, and the only
 /// evidence was the byte diff of a generated file. This test is the evidence
 /// there was none of.
 ///
@@ -751,7 +751,7 @@ fn this_repository_generates_its_one_hundred_and_forty_six_artifacts_and_account
             "docs/process/explanations/README.md",
             "docs/process/how-to/README.md",
             "docs/subsystems/README.md",
-            "docs/spec/09-open-questions.md",
+            "docs/spec/open-questions.md",
             "docs/probe-results/additive-final-round-of-2026-11-09-batch-a-scenario-0.md",
             "docs/probe-results/additive-final-round-of-2026-11-09-batch-a-scenario-1.md",
             "docs/probe-results/additive-final-round-of-2026-11-09-batch-a-scenario-2.md",
@@ -942,7 +942,7 @@ fn this_repository_generates_its_one_hundred_and_forty_six_artifacts_and_account
 
 /// The redirect map, which is the artifact the `identity` block exists for.
 ///
-/// `docs/spec/09-open-questions.md` is a tombstone. All twenty-one questions
+/// `docs/spec/open-questions.md` is a tombstone. All twenty-one questions
 /// closed, each one is a document on the decisions shelf, and 136 citations in
 /// this corpus name an anchor in this file. So three properties have to hold at
 /// once, and each one fails differently.
@@ -990,11 +990,11 @@ fn the_redirect_map_keeps_every_anchor_that_this_corpus_cites_into_it() {
     let map = plan
         .outputs
         .iter()
-        .find(|output| output.path == "docs/spec/09-open-questions.md")
+        .find(|output| output.path == "docs/spec/open-questions.md")
         .map(|output| output.bytes.clone())
         .expect("the redirect map is planned");
     assert_eq!(
-        std::fs::read_to_string(root.join("docs/spec/09-open-questions.md"))
+        std::fs::read_to_string(root.join("docs/spec/open-questions.md"))
             .expect("the redirect map is committed"),
         map,
         "the committed redirect map is not what this corpus and this lock produce"
@@ -1002,7 +1002,7 @@ fn the_redirect_map_keeps_every_anchor_that_this_corpus_cites_into_it() {
 
     // 2 and 3: the block, read as the census reads it.
     assert!(
-        headwater_mark::carries_marker("docs/spec/09-open-questions.md", &map),
+        headwater_mark::carries_marker("docs/spec/open-questions.md", &map),
         "the redirect map carries no marker this engine can find"
     );
     assert!(
@@ -1029,7 +1029,7 @@ fn the_redirect_map_keeps_every_anchor_that_this_corpus_cites_into_it() {
         .collect();
     let mut cited = Vec::new();
     for path in ["docs", ".headwater", "README.md"] {
-        collect_citations(&root.join(path), "09-open-questions.md", &mut cited);
+        collect_citations(&root.join(path), "open-questions.md", &mut cited);
     }
     assert!(
         cited.len() > 100,
@@ -1159,7 +1159,7 @@ fn the_descriptor_path_obeys_the_marker_rule() {
 /// The native export carries the graph with no loss, and the round trip is what
 /// proves it.
 ///
-/// [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped):
+/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#an-export-is-a-projection-and-it-declares-what-it-dropped):
 /// "The native export keeps its round-trip test, because an empty loss set is
 /// exactly what a round trip proves." So this reads the emitted bytes back with
 /// the loader that reads every other file in this engine, and holds what it
@@ -1374,7 +1374,7 @@ fn the_native_export_carries_the_members_of_a_list_anchor() {
 
 /// A filter withholds a document whole, and every edge that names it.
 ///
-/// Spec 7's claim about a filtered export: it "contains no document that its
+/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md)'s claim about a filtered export: it "contains no document that its
 /// declared filter withholds, and no artifact inside the profile derives from
 /// one". An edge into a withheld document states that the document exists and
 /// what it is called, so it goes too.
@@ -1404,7 +1404,7 @@ fn a_filtered_profile_withholds_a_document_and_its_edges() {
         "the path of the withheld document reached the artifact"
     );
 
-    // The tombstone carries the rule identifier and never the document. Spec 7:
+    // The tombstone carries the rule identifier and never the document. Distribution and federation (docs/spec/distribution-and-federation.md):
     // "The rule identifier is what a reader needs to ask for access, and it is
     // all that they get."
     assert!(
@@ -1466,7 +1466,7 @@ fn a_sealed_grain_states_the_filtering_and_no_count() {
 
 /// The census fails a projector that dropped something with no reason.
 ///
-/// This is the failing fixture for the rule spec 7 states: "An omission that no
+/// This is the failing fixture for the rule [distribution and federation](../../../../docs/spec/distribution-and-federation.md) states: "An omission that no
 /// reason covers is a projector defect, and it fails the run." It runs the
 /// census against a projector that carried nothing and declared no loss, which
 /// is the emitter this whole apparatus exists to catch, and then against one
@@ -1503,7 +1503,7 @@ fn the_census_fails_a_projector_that_dropped_a_node_with_no_reason() {
 
 /// A JSON Schema carries constraints and no instance, and it says so.
 ///
-/// The two check families that clear spec 12's equivalence bar are here, and the
+/// The two check families that clear [the check layer](../../../../docs/spec/check-layer.md)'s equivalence bar are here, and the
 /// third construction that would not clear it is deliberately absent: the kind
 /// is selected by a discriminator under `if`/`then`, never by a root `oneOf`
 /// that reports an error where the native check has none.
@@ -1618,14 +1618,14 @@ fn the_schema_export_carries_constraints_and_accounts_for_every_instance() {
 ///
 /// The first two assertions below are substrings, so they hold that the refusal
 /// happens and names its emitter, and hold nothing about the wording.
-/// `docs/spec/02-taxonomy-model.md` quotes that wording verbatim, and
-/// `tests/spec_two_emitters.rs` is what compares the two byte for byte. Reword
+/// `docs/spec/taxonomy-model.md` quotes that wording verbatim, and
+/// `tests/taxonomy_model_emitters.rs` is what compares the two byte for byte. Reword
 /// the message and this case stays green; that one reddens.
 ///
 /// The third assertion is the one that fires on a change to this engine rather
 /// than to the document. The refusal names the emitters that ship, and a third
 /// emitter marked built and left out of that sentence makes the sentence false
-/// in the engine and in spec 2 at once — which is the state a comparison
+/// in the engine and in [the taxonomy model](../../../../docs/spec/taxonomy-model.md) at once — which is the state a comparison
 /// between the two cannot see, because both sides are wrong in the same words.
 #[test]
 fn an_unbuilt_emitter_refuses_and_says_what_it_waits_on() {
@@ -1653,7 +1653,7 @@ fn an_unbuilt_emitter_refuses_and_says_what_it_waits_on() {
                         reason.contains(&format!("`{}`", shipped.name())),
                         "the refusal for {} says which emitters ship and does not name {}, which \
                          this engine builds. The sentence is quoted in \
-                         docs/spec/02-taxonomy-model.md, so a list that goes stale takes that \
+                         docs/spec/taxonomy-model.md, so a list that goes stale takes that \
                          document with it:\n{reason}",
                         emitter.name(),
                         shipped.name()
@@ -1666,7 +1666,7 @@ fn an_unbuilt_emitter_refuses_and_says_what_it_waits_on() {
 
 /// An exporter that cannot evaluate its filter emits nothing.
 ///
-/// Spec 7, on principle 7 read for an exporter: "It never emits an unfiltered
+/// [Distribution and federation](../../../../docs/spec/distribution-and-federation.md), on principle 7 read for an exporter: "It never emits an unfiltered
 /// artifact, and it never emits a partly filtered one." A clause over a facet
 /// that the taxonomy does not declare withholds nothing at all, so the failure
 /// it produces is the one an export may not have.
@@ -2726,6 +2726,71 @@ fn top_level_block<'a>(bytes: &'a str, label: &str) -> Option<&'a str> {
         .min()
         .map_or(rest.len(), |at| at + 1);
     Some(&bytes[start..body + end])
+}
+
+/// A shelf that a `site_nav` names under `precedence` reads in the derived
+/// reading order, and every other shelf keeps path order (#2137, HW-DR-0117).
+///
+/// The fixture's `decisions` shelf holds the pair that tells the two orders
+/// apart: DR-FIX-0002 supersedes DR-FIX-0001, so precedence reads 0002 first
+/// and path order reads 0001 first. The shelf index of the same corpus prints
+/// 0002 first, and the sidebar of a shelf under `precedence` agrees with it.
+#[test]
+fn a_shelf_the_site_nav_names_under_precedence_reads_in_relation_order() {
+    let at = |bytes: &str, needle: &str| {
+        bytes
+            .find(needle)
+            .unwrap_or_else(|| panic!("`{needle}` is not in the nav:\n{bytes}"))
+    };
+
+    let path_order =
+        site_nav_bytes("  - kind: site_nav\n    output: nav.yml\n").expect("the plain nav writes");
+    assert!(
+        at(&path_order, "0001-store-the-graph.md") < at(&path_order, "0002-rebuild-the-graph.md"),
+        "with no `precedence` the decisions shelf reads in path order:\n{path_order}"
+    );
+
+    let relation_order =
+        site_nav_bytes("  - kind: site_nav\n    output: nav.yml\n    precedence: [decisions]\n")
+            .expect("a nav with `precedence` writes");
+    assert!(
+        at(&relation_order, "0002-rebuild-the-graph.md")
+            < at(&relation_order, "0001-store-the-graph.md"),
+        "a shelf under `precedence` puts the superseding document first:\n{relation_order}"
+    );
+    // A shelf that `precedence` does not name keeps path order.
+    assert!(
+        at(&relation_order, "guides/first-run.md") < at(&relation_order, "guides/recovery.md"),
+        "a shelf outside `precedence` keeps path order:\n{relation_order}"
+    );
+    // Only the order moves: the same entries, the same labels.
+    let mut a: Vec<&str> = path_order.lines().collect();
+    let mut b: Vec<&str> = relation_order.lines().collect();
+    a.sort_unstable();
+    b.sort_unstable();
+    assert_eq!(
+        a, b,
+        "`precedence` changed what the nav lists, not only its order"
+    );
+
+    // A name that is not a declared shelf is refused, as `for` refuses one.
+    let refused =
+        site_nav_bytes("  - kind: site_nav\n    output: nav.yml\n    precedence: [nowhere]\n")
+            .expect_err("an undeclared shelf under `precedence` is refused");
+    assert!(
+        refused.contains("nowhere"),
+        "the refusal names the shelf: {refused}"
+    );
+
+    // Only a `site_nav` takes the member.
+    let wrong_kind = site_nav_bytes(
+        "  - kind: shelf_index\n    for: [guides]\n    output: other.md\n    precedence: [guides]\n",
+    )
+    .expect_err("`precedence` on a shelf_index is refused");
+    assert!(
+        wrong_kind.contains("precedence"),
+        "the refusal names the member: {wrong_kind}"
+    );
 }
 
 /// A `site_nav` that declares `sections` nests each named shelf under one

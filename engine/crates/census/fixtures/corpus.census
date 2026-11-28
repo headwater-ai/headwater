@@ -1684,39 +1684,39 @@ docs/reviews/the-site-and-the-published-documentation-read-in-a-headless-browser
   typed: review_record
 docs/reviews/the-sixty-four-restored-help-strings-checked-against-the-binary.md
   typed: review_record
-docs/spec/00-vision-and-scope.md
-  typed: design_spec
-docs/spec/01-conceptual-model.md
-  typed: design_spec
-docs/spec/02-taxonomy-model.md
-  typed: design_spec
-docs/spec/03-authoring-and-lifecycle.md
-  typed: design_spec
-docs/spec/04-assurance-model.md
-  typed: design_spec
-docs/spec/05-ai-integration.md
-  typed: design_spec
-docs/spec/06-engine-architecture.md
-  typed: design_spec
-docs/spec/07-distribution-and-federation.md
-  typed: design_spec
-docs/spec/08-design-departures.md
-  typed: design_spec
-docs/spec/09-decisions.md
-  typed: decision_register
-docs/spec/09-open-questions.md
-  generated: `shelf_sections`, resolved as `decision_register`, and `headwater generate --check` holds it rather than this census
-docs/spec/12-check-layer.md
-  typed: design_spec
-docs/spec/13-open-obligations.md
-  typed: obligation_register
-docs/spec/15-the-recorder-contract.md
-  typed: design_spec
-docs/spec/16-harness-support.md
-  typed: design_spec
 docs/spec/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/spec/ai-integration.md
+  typed: design_spec
+docs/spec/assurance-model.md
+  typed: design_spec
+docs/spec/authoring-and-lifecycle.md
+  typed: design_spec
+docs/spec/check-layer.md
+  typed: design_spec
+docs/spec/conceptual-model.md
+  typed: design_spec
+docs/spec/decisions.md
+  typed: decision_register
+docs/spec/design-departures.md
+  typed: design_spec
+docs/spec/distribution-and-federation.md
+  typed: design_spec
+docs/spec/engine-architecture.md
+  typed: design_spec
 docs/spec/glossary.md
+  typed: design_spec
+docs/spec/harness-support.md
+  typed: design_spec
+docs/spec/open-obligations.md
+  typed: obligation_register
+docs/spec/open-questions.md
+  generated: `shelf_sections`, resolved as `decision_register`, and `headwater generate --check` holds it rather than this census
+docs/spec/taxonomy-model.md
+  typed: design_spec
+docs/spec/the-recorder-contract.md
+  typed: design_spec
+docs/spec/vision-and-scope.md
   typed: design_spec
 docs/subsystems/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census

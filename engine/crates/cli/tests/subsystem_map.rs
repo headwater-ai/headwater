@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Spec 6's subsystem map names every engine crate once, and a subsystem spec
+//! [the engine architecture](../../../../docs/spec/engine-architecture.md)'s subsystem map names every engine crate once, and a subsystem spec
 //! it links governs the crates of its row.
 //!
 //! [HW-DR-0098](../../../../docs/decisions/0098-an-engine-subsystem-is-described-by-a-technical-design-spec-on-a-shelf-of-its-own-and-its-behavior-stays-where-it-is-already-written.md)
 //! rules that every crate under `engine/crates/` belongs to exactly one
-//! subsystem, and that spec 6 keeps the map from each stage to its subsystem
+//! subsystem, and that [the engine architecture](../../../../docs/spec/engine-architecture.md) keeps the map from each stage to its subsystem
 //! spec. The map is a table of prose, so a crate added next month drifts from
 //! it with nothing to say so. These cases are that review, read off the
 //! directory listing, the table under `### Subsystems` in
-//! `docs/spec/06-engine-architecture.md`, and the front matter of each file
+//! `docs/spec/engine-architecture.md`, and the front matter of each file
 //! under `docs/subsystems/`. The shape follows `verbs.rs`, which holds the
 //! same part's CLI grammar block against `VERBS`.
 
@@ -72,11 +72,11 @@ fn cells(line: &str) -> Vec<String> {
         .collect()
 }
 
-/// The body rows of the one table under `### Subsystems` in spec 6. The
+/// The body rows of the one table under `### Subsystems` in [the engine architecture](../../../../docs/spec/engine-architecture.md). The
 /// columns are found by their header names `subsystem` and `crates`, so a
 /// column added later for the reason of a row moves nothing here.
 fn spec_six_rows() -> Vec<Row> {
-    let path = root().join("docs/spec/06-engine-architecture.md");
+    let path = root().join("docs/spec/engine-architecture.md");
     let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     let (_, after_heading) = text
         .split_once(&format!("\n{HEADING}\n"))
@@ -265,7 +265,7 @@ fn every_crate_is_in_exactly_one_row_of_spec_6s_subsystem_map() {
         .collect();
     assert!(
         twice.is_empty(),
-        "spec 6 '{HEADING}' writes a crate in more than one row: {}",
+        "the engine architecture '{HEADING}' writes a crate in more than one row: {}",
         twice.join("; ")
     );
     let mapped: BTreeSet<String> = rows_of.into_keys().collect();
@@ -273,12 +273,12 @@ fn every_crate_is_in_exactly_one_row_of_spec_6s_subsystem_map() {
     let missing: Vec<&String> = crates.difference(&mapped).collect();
     assert!(
         missing.is_empty(),
-        "engine/crates/ has a crate that no row of spec 6 '{HEADING}' names: {missing:?}"
+        "engine/crates/ has a crate that no row of the engine architecture '{HEADING}' names: {missing:?}"
     );
     let unknown: Vec<&String> = mapped.difference(&crates).collect();
     assert!(
         unknown.is_empty(),
-        "spec 6 '{HEADING}' names a crate that engine/crates/ does not have: {unknown:?}"
+        "the engine architecture '{HEADING}' names a crate that engine/crates/ does not have: {unknown:?}"
     );
 }
 
@@ -317,7 +317,7 @@ fn a_row_that_links_a_subsystem_spec_is_governed_by_it() {
         let path = spec_six.join(&link);
         assert!(
             path.is_file(),
-            "spec 6 '{HEADING}' row {} links {link}, which does not exist",
+            "the engine architecture '{HEADING}' row {} links {link}, which does not exist",
             row.subsystem
         );
         let governed = governed_patterns(&path);
@@ -331,7 +331,7 @@ fn a_row_that_links_a_subsystem_spec_is_governed_by_it() {
             .collect();
         assert!(
             foreign.is_empty(),
-            "{link} governs a crate that its row of spec 6 '{HEADING}' does not name: {}",
+            "{link} governs a crate that its row of the engine architecture '{HEADING}' does not name: {}",
             foreign.join("; ")
         );
         for krate in &row.crates {
@@ -352,7 +352,7 @@ fn a_row_that_links_a_subsystem_spec_is_governed_by_it() {
         let extra: Vec<&String> = governed.difference(&expected).collect();
         assert!(
             extra.is_empty(),
-            "{link} governs more than `engine/crates/<crate>/src/**` for the crates of its row of spec 6 '{HEADING}': {extra:?}"
+            "{link} governs more than `engine/crates/<crate>/src/**` for the crates of its row of the engine architecture '{HEADING}': {extra:?}"
         );
     }
     let unlinked: Vec<String> = spec_six_rows()
@@ -362,11 +362,11 @@ fn a_row_that_links_a_subsystem_spec_is_governed_by_it() {
         .collect();
     assert!(
         unlinked.is_empty(),
-        "every row of spec 6 '{HEADING}' links its subsystem spec, and these do not: {unlinked:?}"
+        "every row of the engine architecture '{HEADING}' links its subsystem spec, and these do not: {unlinked:?}"
     );
     assert!(
         linked > 0,
-        "no row of spec 6 '{HEADING}' links a subsystem spec"
+        "no row of the engine architecture '{HEADING}' links a subsystem spec"
     );
 }
 
@@ -593,7 +593,7 @@ fn a_subsystem_spec_is_named_by_a_row() {
         let count = linked.get(spec).copied().unwrap_or(0);
         assert_eq!(
             count, 1,
-            "docs/subsystems/{spec} is linked from {count} rows of spec 6 '{HEADING}', not one"
+            "docs/subsystems/{spec} is linked from {count} rows of the engine architecture '{HEADING}', not one"
         );
     }
 }

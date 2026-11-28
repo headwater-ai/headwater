@@ -6,7 +6,7 @@
 //! # The edge the author meant
 //!
 //! "This follows from HW-DR-0089" in the body of an obligation is a citation a
-//! reader follows, and it is not an edge: spec 1 says no syntax promotes prose
+//! reader follows, and it is not an edge: [the conceptual model](../../../../docs/spec/conceptual-model.md) says no syntax promotes prose
 //! into a relation. When the front matter declares no `traces_to`, the graph
 //! never learns that the obligation rests on the decision, and nothing that
 //! reads the graph sees it. The phase B forensics of #1881 found three of four

@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-The base package declares `traces_to` with both `governed_document` and [`code_path`](../spec/01-conceptual-model.md#external-anchor) at the target end. One target string can reach the identifier index and an anchor resolver, and nothing says which answer wins. [Q4](../spec/09-decisions.md#q4--relation-storage) rules that a target is an identifier and leaves the anchor case unordered.
+The base package declares `traces_to` with both `governed_document` and [`code_path`](../spec/conceptual-model.md#external-anchor) at the target end. One target string can reach the identifier index and an anchor resolver, and nothing says which answer wins. [Q4](../spec/decisions.md#q4--relation-storage) rules that a target is an identifier and leaves the anchor case unordered.
 
 ## Obligation
 
@@ -30,4 +30,4 @@ The corpus owes a stated order, so that a target which both resolvers claim has 
 
 ## Discharge
 
-The engine reads the index first, then each anchor kind in declaration order. Where two anchor kinds claim one string, it reports a tie and binds neither. [Spec 2](../spec/02-taxonomy-model.md#kind-resolution) sets that precedent for two shelves of equal specificity. The index matches an identifier and never a path. A path to a typed document with an identifier binds to nothing, and the engine names the identifier to write (#1410). A path that reaches such a document through a symbolic link binds to nothing as well, and the engine names the same remedy (#1417).
+The engine reads the index first, then each anchor kind in declaration order. Where two anchor kinds claim one string, it reports a tie and binds neither. [The taxonomy model](../spec/taxonomy-model.md#kind-resolution) sets that precedent for two shelves of equal specificity. The index matches an identifier and never a path. A path to a typed document with an identifier binds to nothing, and the engine names the identifier to write (#1410). A path that reaches such a document through a symbolic link binds to nothing as well, and the engine names the same remedy (#1417).

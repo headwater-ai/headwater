@@ -9,7 +9,7 @@
 //!
 //! # What a finding needs, and where the binding lives
 //!
-//! [Spec 4](../../../../docs/spec/04-assurance-model.md#findings): "Every
+//! [The assurance model](../../../../docs/spec/assurance-model.md#findings): "Every
 //! finding names the obligation that it serves." An obligation is data, and so
 //! is the binding. A control names a mechanism and the obligations that
 //! mechanism discharges, and the base package writes
@@ -24,7 +24,7 @@
 //! so it binds no finding and it still verifies its obligation. A mechanism
 //! with any other prefix names something outside this engine — a schedule, a
 //! hook, a pipeline. Such a control binds nothing here, and it is not an error:
-//! spec 4 declares controls that no check layer runs.
+//! [the assurance model](../../../../docs/spec/assurance-model.md) declares controls that no check layer runs.
 //!
 //! # The second prefix is what the two coverage obligations needed
 //!
@@ -39,24 +39,24 @@
 //!
 //! # The projection, and the one rule it enforces about itself
 //!
-//! [Spec 4](../../../../docs/spec/04-assurance-model.md#every-obligation-has-exactly-one-disposition)
+//! [The assurance model](../../../../docs/spec/assurance-model.md#every-obligation-has-exactly-one-disposition)
 //! makes the register "generated, never authored": coverage by obligation, the
 //! disposition of each, control health and the escaped findings are a
 //! projection of the two declarations and of one run over them. [`Projection`]
 //! is that view, and [`Projection::render`] is the artifact.
 //!
-//! Spec 4 admits no silence: "an obligation with no disposition is itself a
+//! [The assurance model](../../../../docs/spec/assurance-model.md) admits no silence: "an obligation with no disposition is itself a
 //! finding". `verified` follows from a control, and the other two follow from a
 //! member of the obligation. So an obligation that no control discharges and
-//! that declares neither is the fourth state spec 4 forbids, and so is one that
+//! that declares neither is the fourth state [the assurance model](../../../../docs/spec/assurance-model.md) forbids, and so is one that
 //! declares a disposition *and* has a control. [`DISPOSITION`] reports both,
-//! and [`MECHANISM`] reports spec 4's other sentence about the register: "a
+//! and [`MECHANISM`] reports [the assurance model](../../../../docs/spec/assurance-model.md)'s other sentence about the register: "a
 //! control that names a mechanism that the engine does not implement, or a
 //! pipeline that does not exist, is a finding".
 //!
 //! # A control the engine cannot run, or has not seen run, discharges nothing
 //!
-//! Spec 4 reads `verified` as "one or more controls discharge it", and a
+//! [The assurance model](../../../../docs/spec/assurance-model.md) reads `verified` as "one or more controls discharge it", and a
 //! control whose mechanism this engine does not implement discharges nothing:
 //! [`MECHANISM`]'s own message says so. An earlier edition still counted such
 //! an obligation as verified, so a taxonomy could move its whole register to
@@ -95,7 +95,7 @@
 //! So [`Disposed::disposition`] reads what this run can run, and the obligation
 //! falls to the disposition it states for itself. Where it states none, that is
 //! [`Disposition::Undeclared`], and the engine invents neither of the other
-//! two: spec 4's `gap` carries an owner and its `unverifiable` carries
+//! two: [the assurance model](../../../../docs/spec/assurance-model.md)'s `gap` carries an owner and its `unverifiable` carries
 //! reasoning, and neither is a value the engine is in a position to supply.
 //! [`Disposed::contradicted`] keeps reading the declaration, and its comment
 //! says why the two differ.
@@ -103,20 +103,20 @@
 //! Neither rule creates an instance, and [`crate::coverage`] is the precedent:
 //! a rule whose subject is not a document accounts nothing against the census.
 //! Their grain is [`Grain::Taxonomy`](crate::Grain::Taxonomy), which is a fifth
-//! grain that spec 12's list does not hold.
+//! grain that [the check layer](../../../../docs/spec/check-layer.md)'s list does not hold.
 //!
-//! # Where this differs from spec 12, and it is worth stating
+//! # Where this differs from [the check layer](../../../../docs/spec/check-layer.md), and it is worth stating
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-plugin-interface)
+//! [The check layer](../../../../docs/spec/check-layer.md#the-plugin-interface)
 //! writes `obligation() -> ObligationId` as a method that a check implements.
-//! That would be a second place where the binding lives, and spec 4 rules on
+//! That would be a second place where the binding lives, and [the assurance model](../../../../docs/spec/assurance-model.md) rules on
 //! the general form of that mistake: "Two sources of truth for one binding is
 //! exactly the drift that this system exists to kill." A check that named its
 //! own obligation could name one that no register holds, and an adopter could
 //! not rebind it without an edit to code they do not own. So the check declares
 //! its id, the taxonomy binds the id to an obligation, and the runner stamps
 //! the finding.
-//! [13 — Open obligations](../../../../docs/spec/13-open-obligations.md)
+//! [Open obligations](../../../../docs/spec/open-obligations.md)
 //! carries the disagreement.
 
 use crate::finding::{Finding, Severity};
@@ -139,11 +139,11 @@ const PHASE: &str = "phase:";
 /// enumerate cannot produce one.
 pub const PHASES: [&str; 2] = ["census.classification", "runner.coverage_report"];
 
-/// Spec 4: an obligation carries exactly one disposition, and this reports the
+/// [The assurance model](../../../../docs/spec/assurance-model.md): an obligation carries exactly one disposition, and this reports the
 /// two ways a taxonomy fails that.
 pub const DISPOSITION: &str = "obligation.disposition.not_one";
 
-/// Spec 4: "A control that names a mechanism that the engine does not
+/// [The assurance model](../../../../docs/spec/assurance-model.md): "A control that names a mechanism that the engine does not
 /// implement, or a pipeline that does not exist, is a finding."
 pub const MECHANISM: &str = "control.mechanism.unimplemented";
 
@@ -196,7 +196,7 @@ pub struct Register {
 /// An obligation, read down to what a report needs.
 ///
 /// The severity here is the obligation's, and it is not the severity a finding
-/// carries. Spec 12 rules that severity is the check's, and spec 4's own
+/// carries. [The check layer](../../../../docs/spec/check-layer.md) rules that severity is the check's, and [the assurance model](../../../../docs/spec/assurance-model.md)'s own
 /// example carries `error` on a finding against an obligation that carries
 /// `medium`. The two scales measure different things: how much the invariant
 /// matters, and how loudly one breach of it is reported.
@@ -208,7 +208,7 @@ pub struct Obligation {
     /// The disposition this obligation states for itself, and `None` where it
     /// states none. `verified` is not a value here and never will be: it
     /// follows from a control, and a second place to write it is the drift
-    /// spec 4 exists to kill.
+    /// [the assurance model](../../../../docs/spec/assurance-model.md) exists to kill.
     pub disposition: Option<Stated>,
     pub span: Span,
 }
@@ -217,13 +217,13 @@ pub struct Obligation {
 /// can supply.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Stated {
-    /// Spec 4: "No control yet. Wanted, and tracked with an owner and, ideally,
+    /// [The assurance model](../../../../docs/spec/assurance-model.md): "No control yet. Wanted, and tracked with an owner and, ideally,
     /// a target."
     Gap {
         owner: String,
         target: Option<String>,
     },
-    /// Spec 4: "No mechanism can exist. Accepted, with the reasoning recorded."
+    /// [The assurance model](../../../../docs/spec/assurance-model.md): "No mechanism can exist. Accepted, with the reasoning recorded."
     Unverifiable { reasoning: String },
 }
 
@@ -233,19 +233,19 @@ pub struct Control {
     pub id: String,
     pub mechanism: String,
     pub discharges: Vec<String>,
-    /// Whether a finding of this control blocks a gate, which is spec 12's
-    /// sense of the word. Spec 4 wrote one member holding this and the class
+    /// Whether a finding of this control blocks a gate, which is [the check layer](../../../../docs/spec/check-layer.md)'s
+    /// sense of the word. [The assurance model](../../../../docs/spec/assurance-model.md) wrote one member holding this and the class
     /// below, and control health cannot be read off a member holding two
     /// vocabularies. `None` where the control declares none, which blocks
     /// nothing.
     pub posture: Option<Posture>,
-    /// When this control acts: one of spec 4's four control classes.
+    /// When this control acts: one of [the assurance model](../../../../docs/spec/assurance-model.md)'s four control classes.
     pub acts: Option<String>,
-    /// What spec 4 asks to be "recorded with the control", and `None` where a
+    /// What [the assurance model](../../../../docs/spec/assurance-model.md) asks to be "recorded with the control", and `None` where a
     /// control records nothing.
     pub promotion: Option<Promotion>,
     /// The classes of change whose finding this control does not block, and
-    /// empty where it spares none. Spec 12 gives the gate to the control, so
+    /// empty where it spares none. [The check layer](../../../../docs/spec/check-layer.md) gives the gate to the control, so
     /// an exemption from the gate is the control's too (#2100).
     pub spares: Vec<Spare>,
     pub span: Span,
@@ -281,8 +281,8 @@ impl Spare {
     }
 }
 
-/// Whether a finding of a control blocks a gate: spec 12's sense of the word,
-/// and a closed set of two (spec 13).
+/// Whether a finding of a control blocks a gate: [the check layer](../../../../docs/spec/check-layer.md)'s sense of the word,
+/// and a closed set of two ([the register of open obligations](../../../../docs/spec/open-obligations.md)).
 ///
 /// The adopter sets it, with an overlay `override` (owner ruling on #2015,
 /// 2026-11-22), and [`crate::Run::fails_strict`] is what reads it. A value
@@ -314,7 +314,7 @@ impl Posture {
     }
 }
 
-/// The promotion record: one key per subsection of spec 4's promotion section.
+/// The promotion record: one key per subsection of [the assurance model](../../../../docs/spec/assurance-model.md)'s promotion section.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Promotion {
     /// The control is on the promotion path, and these are the criteria that
@@ -354,10 +354,10 @@ pub enum Mechanism {
     Rule(String),
     /// A phase of this engine, from [`PHASES`].
     Phase(String),
-    /// A `check:` or `phase:` name this engine does not implement. Spec 4 calls
+    /// A `check:` or `phase:` name this engine does not implement. [The assurance model](../../../../docs/spec/assurance-model.md) calls
     /// this a finding, and [`MECHANISM`] is that finding.
     Unimplemented(String),
-    /// A prefix this engine does not read. Not an error: spec 4 declares
+    /// A prefix this engine does not read. Not an error: [the assurance model](../../../../docs/spec/assurance-model.md) declares
     /// controls that no check layer runs, and the register says only that this
     /// run did not observe it.
     External(String),
@@ -369,10 +369,10 @@ pub enum Bound {
     /// One obligation, which is the one a finding names.
     To(String),
     /// No control names this rule, so a finding from it names no obligation.
-    /// Spec 4 calls such a rule one that did not earn its place, and the run
+    /// [The assurance model](../../../../docs/spec/assurance-model.md) calls such a rule one that did not earn its place, and the run
     /// says so rather than inventing an identifier no register would recognize.
     Unnamed,
-    /// The controls that name this rule reach more than one obligation. Spec 4
+    /// The controls that name this rule reach more than one obligation. [The assurance model](../../../../docs/spec/assurance-model.md)
     /// gives a finding one field, so the engine binds none and names them all.
     Several(Vec<String>),
 }
@@ -492,7 +492,7 @@ pub enum Disposition {
     Gap,
     /// Nothing discharges it, and the obligation is accepted as unverifiable.
     Unverifiable,
-    /// Nothing discharges it and it states nothing. The state spec 4 forbids.
+    /// Nothing discharges it and it states nothing. The state [the assurance model](../../../../docs/spec/assurance-model.md) forbids.
     Undeclared,
 }
 
@@ -550,7 +550,7 @@ pub struct Disposed {
     /// Findings against this obligation that the adoption payload holds.
     ///
     /// A separate counter from [`Disposed::escaped`] rather than a shared one.
-    /// Spec 4 fixes the precedence over three inventories so that they
+    /// [The assurance model](../../../../docs/spec/assurance-model.md) fixes the precedence over three inventories so that they
     /// partition the escaped findings and no finding is counted twice, and one
     /// counter serving two buckets is that double count with the evidence
     /// thrown away. It does not move the disposition either: declared debt is
@@ -630,7 +630,7 @@ impl Disposed {
 
     /// Whether this obligation carries two dispositions rather than one: a
     /// control claims to discharge it and it also states a gap or an
-    /// acceptance. Spec 4 gives it exactly one, so this is the second thing
+    /// acceptance. [The assurance model](../../../../docs/spec/assurance-model.md) gives it exactly one, so this is the second thing
     /// [`DISPOSITION`] reports.
     ///
     /// This reads the declaration and not the run, which is the opposite of
@@ -664,14 +664,14 @@ pub struct Health {
     pub spares: Vec<Spare>,
 }
 
-/// The register as spec 4 asks for it: coverage by obligation, the disposition
+/// The register as [the assurance model](../../../../docs/spec/assurance-model.md) asks for it: coverage by obligation, the disposition
 /// of each, control health, and the findings that escaped under each.
 #[derive(Clone, Debug, Default)]
 pub struct Projection {
     /// In declaration order, because a report is read by a person.
     pub obligations: Vec<Disposed>,
     pub controls: Vec<Health>,
-    /// Rules that reach no obligation, or more than one. Spec 4: "a check that
+    /// Rules that reach no obligation, or more than one. [The assurance model](../../../../docs/spec/assurance-model.md): "a check that
     /// cannot say which invariant it protects did not earn its place."
     pub unbound: Vec<(&'static str, Bound)>,
     /// [`crate::observation::Observations::problems`], carried through so
@@ -811,7 +811,7 @@ impl Projection {
     /// Attribute pending findings to the obligations their rules serve.
     ///
     /// Counted apart from [`Projection::escaped_from`] rather than into it. The
-    /// precedence spec 4 fixes exists so that three inventories partition the
+    /// precedence [the assurance model](../../../../docs/spec/assurance-model.md) fixes exists so that three inventories partition the
     /// escaped findings, and one counter for two buckets is the double count it
     /// forbids.
     pub fn pending_from(&mut self, register: &Register, ledger: &crate::adoption::Ledger) {
@@ -836,7 +836,7 @@ impl Projection {
         }
     }
 
-    /// The two findings spec 4 asks the register to make about itself.
+    /// The two findings [the assurance model](../../../../docs/spec/assurance-model.md) asks the register to make about itself.
     ///
     /// The path is the taxonomy this run read rather than a document, because
     /// neither defect is in the corpus. See [`crate::coverage`] for the
@@ -878,7 +878,7 @@ impl Projection {
             let Some(message) = message else { continue };
             findings.push(Finding {
                 rule: DISPOSITION,
-                // Advisory, like every other rule this engine ships. Spec 4
+                // Advisory, like every other rule this engine ships. The assurance model (docs/spec/assurance-model.md)
                 // writes "the register is complete by construction, or the
                 // build fails", and principle 4 rules that a new check ships
                 // advisory whatever it will end at. The control is what
@@ -1015,7 +1015,7 @@ impl Projection {
             .filter(move |o| o.disposition() == disposition)
     }
 
-    /// The severities an obligation of this register carries, in spec 4's own
+    /// The severities an obligation of this register carries, in [the assurance model](../../../../docs/spec/assurance-model.md)'s own
     /// order, with the count at each and the number of those verified.
     ///
     /// An obligation that declares no severity is counted under `-`, so the
@@ -1029,7 +1029,7 @@ impl Projection {
             let severity = obligation.severity.as_deref().unwrap_or("-");
             let row = match rows.iter_mut().find(|(known, _, _)| *known == severity) {
                 Some(row) => row,
-                // A severity outside spec 4's set. The meta-schema refuses one,
+                // A severity outside the assurance model's (docs/spec/assurance-model.md) set. The meta-schema refuses one,
                 // and this reader refuses nothing, so it is counted where a
                 // reader will see it rather than dropped.
                 None => {
@@ -1077,7 +1077,7 @@ impl Projection {
             let _ = writeln!(out, "  {count:5} {severity}, {verified} verified");
         }
 
-        // The gap list spec 4 asks the coverage report to carry, and the two
+        // The gap list the assurance model (docs/spec/assurance-model.md) asks the coverage report to carry, and the two
         // states beside it. A verified obligation is not listed: the control
         // block below names what discharges each one, and a list of every
         // obligation is a list nobody finishes.
@@ -1169,7 +1169,7 @@ impl Projection {
             let _ = writeln!(out, "  {count:5} {mechanism}");
         }
 
-        // The promotion record. Spec 4 asks that the criteria be recorded with
+        // The promotion record. The assurance model (docs/spec/assurance-model.md) asks that the criteria be recorded with
         // the control, so a control with no record is the row that matters and
         // it is printed first.
         let bare = self
@@ -1199,7 +1199,7 @@ impl Projection {
             }
         }
 
-        // Spec 4 fixes a precedence over three inventories "so the three
+        // The assurance model (docs/spec/assurance-model.md) fixes a precedence over three inventories "so the three
         // inventories partition the escaped findings, and no finding is counted
         // three times". Two of the three reach a finding. The one that does not
         // is printed as absent rather than left out, because a partition with a
@@ -1207,7 +1207,7 @@ impl Projection {
         //
         // The waiver mechanism itself ships: `headwater conformance` reads the
         // waivers a consumer declares and honors a live one. What no reader has
-        // is the other population. Spec 7 gives one mechanism two populations —
+        // is the other population. Distribution and federation (docs/spec/distribution-and-federation.md) gives one mechanism two populations —
         // a waiver may name a conformance rule or a check rule — and only the
         // first reader exists. So the line names the reader rather than the
         // mechanism, because "no waiver mechanism exists" stopped being true the
@@ -1221,7 +1221,7 @@ impl Projection {
         let pending: usize = self.obligations.iter().map(|o| o.pending).sum();
         let _ = writeln!(
             out,
-            "  escaped findings, in the precedence spec 4 fixes: no waiver reaches a check \
+            "  escaped findings, in the precedence the assurance model fixes: no waiver reaches a check \
              finding, {pending} migration-pending, {escaped} suppressed"
         );
 
@@ -1344,7 +1344,7 @@ fn read_disposition(id: &str, map: &Mapping) -> Result<Option<Stated>, Declarati
     if let Some(gap) = stated.get("gap").and_then(|node| node.value.as_map()) {
         let owner = scalar(gap, "owner").ok_or_else(|| DeclarationError {
             message: format!(
-                "the gap of obligation `{id}` names no owner, and spec 4 tracks a gap with one"
+                "the gap of obligation `{id}` names no owner, and the assurance model tracks a gap with one"
             ),
             span: node.span,
         })?;
@@ -1360,7 +1360,7 @@ fn read_disposition(id: &str, map: &Mapping) -> Result<Option<Stated>, Declarati
         let reasoning = scalar(accepted, "reasoning").ok_or_else(|| DeclarationError {
             message: format!(
                 "obligation `{id}` is accepted as unverifiable and records no reasoning, which \
-                 is the half of that disposition spec 4 asks for"
+                 is the half of that disposition the assurance model asks for"
             ),
             span: node.span,
         })?;
@@ -1397,11 +1397,13 @@ fn read_promotion(id: &str, map: &Mapping) -> Result<Option<Promotion>, Declarat
         });
     };
     if let Some(criteria) = record.get("criteria").and_then(|node| node.value.as_map()) {
-        let missing = |member: &str| DeclarationError {
+        let missing = |member: &str| {
+            DeclarationError {
             message: format!(
-                "the promotion criteria of control `{id}` state no {member}, and spec 4 names it"
+                "the promotion criteria of control `{id}` state no {member}, and the assurance model names it"
             ),
             span: node.span,
+        }
         };
         return Ok(Some(Promotion::Criteria {
             window: scalar(criteria, "window").ok_or_else(|| missing("observation window"))?,
@@ -1427,7 +1429,7 @@ fn read_promotion(id: &str, map: &Mapping) -> Result<Option<Promotion>, Declarat
         let reasoning = scalar(exemption, "reasoning").ok_or_else(|| DeclarationError {
             message: format!(
                 "control `{id}` is off the promotion path under `{key}` and records no \
-                 reasoning, which leaves the assertion of taste that spec 4 refuses"
+                 reasoning, which leaves the assertion of taste that the assurance model refuses"
             ),
             span: node.span,
         })?;
@@ -1564,7 +1566,7 @@ controls:
         );
     }
 
-    /// A rule that no control names is the gap spec 4 describes, and it reads
+    /// A rule that no control names is the gap [the assurance model](../../../../docs/spec/assurance-model.md) describes, and it reads
     /// as one rather than as a rule bound to nothing in particular.
     #[test]
     fn a_rule_that_no_control_names_is_unnamed() {
@@ -1575,7 +1577,7 @@ controls:
     }
 
     /// A mechanism that names no rule of this engine binds nothing, and it is
-    /// not an error: spec 4 declares scheduled and hook mechanisms too.
+    /// not an error: [the assurance model](../../../../docs/spec/assurance-model.md) declares scheduled and hook mechanisms too.
     #[test]
     fn a_mechanism_that_is_not_a_check_binds_nothing() {
         let register = register(
@@ -1584,7 +1586,7 @@ controls:
         assert_eq!(register.bound("staleness-sweep"), Bound::Unnamed);
     }
 
-    /// Spec 4 gives a finding one obligation field. Two are not one, so the
+    /// [The assurance model](../../../../docs/spec/assurance-model.md) gives a finding one obligation field. Two are not one, so the
     /// engine names both and binds neither, which is what it does when two
     /// anchor kinds claim one string.
     #[test]
@@ -1632,7 +1634,7 @@ controls:
         assert!(refused.contains("declares itself verified"), "{refused}");
     }
 
-    /// A gap with no owner is not the gap spec 4 describes, and an acceptance
+    /// A gap with no owner is not the gap [the assurance model](../../../../docs/spec/assurance-model.md) describes, and an acceptance
     /// with no reasoning is not the acceptance it describes either.
     #[test]
     fn each_disposition_carries_the_half_spec_4_asks_for() {
@@ -1671,7 +1673,7 @@ controls:
 
     /// The two ways a taxonomy gives an obligation something other than one
     /// disposition, and the one way a control names a mechanism that nothing
-    /// implements. Spec 4 calls all three findings.
+    /// implements. [The assurance model](../../../../docs/spec/assurance-model.md) calls all three findings.
     #[test]
     fn the_register_reports_what_spec_4_calls_a_finding_about_itself() {
         let register = register(
@@ -1784,7 +1786,7 @@ controls:
     }
 
     /// A mechanism under a prefix this engine does not read is not the
-    /// MECHANISM finding. Spec 4 declares scheduled and hook mechanisms, and
+    /// MECHANISM finding. [The assurance model](../../../../docs/spec/assurance-model.md) declares scheduled and hook mechanisms, and
     /// naming one is legitimate. It is not, on its own, verified either: the
     /// obligation here states a gap so the one finding this test is about is
     /// isolated from the DISPOSITION finding an unobserved, undeclared
@@ -1991,7 +1993,7 @@ controls:
         assert_eq!(disposed.disposition(), Disposition::Verified);
     }
 
-    /// A promotion record holds exactly one of spec 4's four cases, and an
+    /// A promotion record holds exactly one of [the assurance model](../../../../docs/spec/assurance-model.md)'s four cases, and an
     /// exemption with no reasoning is the assertion of taste it refuses.
     #[test]
     fn a_promotion_record_holds_one_case_and_states_its_reason() {

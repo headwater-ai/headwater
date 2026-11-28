@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The finding, and the one order it is ever written in.
 //!
-//! [Spec 4](../../../../docs/spec/04-assurance-model.md#findings) fixes the
+//! [The assurance model](../../../../docs/spec/assurance-model.md#findings) fixes the
 //! shape: a rule, a severity, an obligation, a path, a line, a message, a
 //! remediation, and whether a fix is mechanical. Every field below is that
 //! field, and one of them is an `Option` for a reason the next paragraph gives.
 //!
 //! # The obligation is optional here, and it says what a taxonomy declared
 //!
-//! Spec 4 says every finding names the obligation it serves, and
-//! [spec 12](../../../../docs/spec/12-check-layer.md#the-plugin-interface)
+//! [The assurance model](../../../../docs/spec/assurance-model.md) says every finding names the obligation it serves, and
+//! [the check layer](../../../../docs/spec/check-layer.md#the-plugin-interface)
 //! makes `obligation()` required so that the check surface does not become the
 //! place where a rule escapes the "every rule earns its place" discipline. An
 //! obligation is **data**: a taxonomy declares `obligations` and `controls`,
@@ -24,20 +24,20 @@
 //!
 //! Two scales share one word, and reading them as one is the mistake this
 //! paragraph exists to prevent.
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#severity-is-the-checks-posture-is-the-controls)
+//! [The check layer](../../../../docs/spec/check-layer.md#severity-is-the-checks-posture-is-the-controls)
 //! rules that a check reports severity and that whether it blocks is the
 //! control's business. That is the field below, and its values are `error`,
 //! `warn` and `info`. An obligation also declares a severity, on the scale
 //! `high`, `medium`, `low`, and that one says how much the invariant matters.
-//! The coverage report reads it, because spec 4 asks what fraction of
-//! obligations are verified *by severity*. Spec 4's own worked finding carries
+//! The coverage report reads it, because [the assurance model](../../../../docs/spec/assurance-model.md) asks what fraction of
+//! obligations are verified *by severity*. [The assurance model](../../../../docs/spec/assurance-model.md)'s own worked finding carries
 //! `error` against `OB-014`, which carries `medium`, so the two were never one
 //! field.
 //!
 //! # Fixability is the patch, and it stopped being a field
 //!
-//! Spec 4 lists fixability among the members and
-//! [spec 12](../../../../docs/spec/12-check-layer.md#fixability) says what may
+//! [The assurance model](../../../../docs/spec/assurance-model.md) lists fixability among the members and
+//! [the check layer](../../../../docs/spec/check-layer.md#fixability) says what may
 //! carry it: "A check may return a patch alongside a finding." Until `--fix`
 //! there was no patch, so a `fixable: bool` stood in for one, and three files
 //! said in a comment that a flag with nothing behind it claims a capability the
@@ -54,7 +54,7 @@
 use crate::paint::{visible, ColorMode, Role};
 
 /// What a check says about a finding. Whether it blocks is the control's
-/// business ([spec 12](../../../../docs/spec/12-check-layer.md#severity-is-the-checks-posture-is-the-controls)).
+/// business ([the check layer](../../../../docs/spec/check-layer.md#severity-is-the-checks-posture-is-the-controls)).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Severity {
     Error,
@@ -75,7 +75,7 @@ impl std::fmt::Display for Severity {
 /// One finding, from any origin.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Finding {
-    /// The rule that produced it, in the dotted form spec 4 writes.
+    /// The rule that produced it, in the dotted form [the assurance model](../../../../docs/spec/assurance-model.md) writes.
     pub rule: &'static str,
     pub severity: Severity,
     /// The obligation this rule serves, and `None` when no control names the
@@ -91,7 +91,7 @@ pub struct Finding {
     pub remediation: String,
     /// The correction this engine will write under `check --fix`, and nothing
     /// where it will write none
-    /// ([spec 12](../../../../docs/spec/12-check-layer.md#fixability)).
+    /// ([the check layer](../../../../docs/spec/check-layer.md#fixability)).
     pub patch: Option<crate::Patch>,
 }
 
@@ -102,7 +102,7 @@ impl Finding {
         self.patch.is_some()
     }
 
-    /// The sort key [spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
+    /// The sort key [the check layer](../../../../docs/spec/check-layer.md#determinism-concretely)
     /// fixes: path, line, check id, message.
     ///
     /// The column joins it after the line, because two findings on one line are
@@ -135,7 +135,7 @@ impl Finding {
             crate::paint::severity_word(self.severity, mode)
         );
         // The obligation rides beside the rule, because "why am I being made to
-        // do this?" is the question spec 4 gives every rule an answer to, and a
+        // do this?" is the question the assurance model (docs/spec/assurance-model.md) gives every rule an answer to, and a
         // reader who has to look the rule up in a register does not ask it.
         let _ = match &self.obligation {
             Some(obligation) => writeln!(
@@ -177,7 +177,7 @@ pub fn at(span: Option<headwater_yaml::Span>) -> (usize, usize) {
     }
 }
 
-/// Every finding of a run, in the one order spec 12 fixes.
+/// Every finding of a run, in the one order [the check layer](../../../../docs/spec/check-layer.md) fixes.
 pub fn sorted(mut findings: Vec<Finding>) -> Vec<Finding> {
     findings.sort_by(|a, b| a.order().cmp(&b.order()));
     findings

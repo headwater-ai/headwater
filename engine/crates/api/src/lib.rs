@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The library under the `headwater` binary: one load of a corpus, as a value.
 //!
-//! [Spec 6](../../../../docs/spec/06-engine-architecture.md) says the CLI is a
+//! [The engine architecture](../../../../docs/spec/engine-architecture.md) says the CLI is a
 //! thin shell over a library API. This crate is the first piece of that API
 //! which the shell and an in-process caller (`lsp`, `hook`, `mcp`) share. It
 //! has no `clap` and no `headwater-fetch`, so a caller that links it parses no
@@ -57,7 +57,7 @@ pub fn plan_of(
 
 /// The taxonomy one load runs against, and where it came from.
 ///
-/// Every verb but one takes this from `.headwater/taxonomy.lock`, which spec 6
+/// Every verb but one takes this from `.headwater/taxonomy.lock`, which [the engine architecture](../../../../docs/spec/engine-architecture.md)
 /// fixes as the one thing downstream reads. `taxonomy diff` takes a second one
 /// out of a published artifact, so that the same phases run twice over one tree
 /// and a difference is attributable to the schema. The type exists so that the
@@ -327,7 +327,7 @@ impl Session {
     /// The taxonomy comes from the lock and the corpus block comes from the
     /// consumer declaration. The two are different questions: the lock says what
     /// the schema is, and `corpus:` says what to walk.
-    /// [Spec 4](../../../../docs/spec/04-assurance-model.md#a-verdict-is-about-one-state-of-the-corpus)
+    /// [The assurance model](../../../../docs/spec/assurance-model.md#a-verdict-is-about-one-state-of-the-corpus)
     /// keeps them apart too, because a run reports "The corpus tree, the taxonomy
     /// lock hash" as two facts.
     ///
@@ -444,7 +444,7 @@ impl Session {
         // sources are the paths the lock records, which are the paths the
         // resolution read. A package manifest at the root that does not read
         // names no directory here, because `taxonomy validate` refuses it.
-        // Nothing is ignored, because spec 12 keeps every version control
+        // Nothing is ignored, because the check layer (docs/spec/check-layer.md) keeps every version control
         // command off the check loop.
         let scope_coverage = bound.lock.as_ref().map(|lock| {
             let sources: Vec<String> = lock

@@ -33,7 +33,7 @@ provenance:
 
 **The rule carries three sub-verdicts and one message for each.** A plain scalar that `core_schema::as_null` resolves reports that the facet is declared with no value. A scalar whose text trims to nothing reports empty text. A value that is not a scalar at all reports the sequence or the mapping against the type the declaration states.
 
-**The severity is error and the rule offers no patch.** [Spec 12](../spec/12-check-layer.md#fixability) makes a fix mechanical only where one correct outcome follows without judgment. The value of a blank `title` is a name a person writes. `facet.required.missing` holds the same pair of properties. The two states have to carry one severity, or the asymmetry the issue names survives the answer. The remediation names both repairs where the kind does not require the facet: write a value, or remove the key.
+**The severity is error and the rule offers no patch.** [The check layer](../spec/check-layer.md#fixability) makes a fix mechanical only where one correct outcome follows without judgment. The value of a blank `title` is a name a person writes. `facet.required.missing` holds the same pair of properties. The two states have to carry one severity, or the asymmetry the issue names survives the answer. The remediation names both repairs where the kind does not require the facet: write a value, or remove the key.
 
 ## Consequences
 

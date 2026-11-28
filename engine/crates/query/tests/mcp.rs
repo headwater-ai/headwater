@@ -469,9 +469,9 @@ fn serverinfo_version_names_the_engine_constant() {
 /// A server with no switch registers the query class and nothing else.
 ///
 /// This is the whole of the property the write class replaced, held for the
-/// default shape. Spec 5 fixes the mechanism: "Where a class of tool is off,
+/// default shape. [AI integration](../../../../docs/spec/ai-integration.md) fixes the mechanism: "Where a class of tool is off,
 /// the server does not register it, so no handler exists to call." So this
-/// asserts the closed list, and then asserts that each write tool spec 5 names
+/// asserts the closed list, and then asserts that each write tool [AI integration](../../../../docs/spec/ai-integration.md) names
 /// reaches an error that says the server registers no tool that writes.
 #[test]
 fn no_tool_outside_the_query_class_is_registered_without_the_switch() {
@@ -492,7 +492,7 @@ fn no_tool_outside_the_query_class_is_registered_without_the_switch() {
     let built = fixture_tree();
     let server = built.server(RECORDED_AT);
     assert!(mcp::registered(&server).iter().all(|tool| !tool.writes));
-    // The working-tree write class of spec 5, and the landed write class it
+    // The working-tree write class of AI integration (docs/spec/ai-integration.md), and the landed write class it
     // refuses outright. `fix` is the one that has to stay refused, because a
     // fix tool is the check tool and a write.
     for tool in ["new", "fix", "commit", "push", "merge"] {
@@ -516,7 +516,7 @@ fn no_tool_outside_the_query_class_is_registered_without_the_switch() {
 
 /// The switch registers the working-tree write class and reaches no further.
 ///
-/// Spec 5's third row is a refusal rather than a deferral, and no argument of
+/// [AI integration](../../../../docs/spec/ai-integration.md)'s third row is a refusal rather than a deferral, and no argument of
 /// this engine turns it into anything. So a commit, a push and a merge are
 /// refused by the server that can write, on a different sentence from the one
 /// the server that cannot write gives.
@@ -667,7 +667,7 @@ fn a_call_that_moved_a_byte_ends_the_session() {
 /// A write tool answers with two content blocks, and the second is the
 /// artifact.
 ///
-/// Spec 5 fixes two streams for every verb of this engine. A protocol call has
+/// [AI integration](../../../../docs/spec/ai-integration.md) fixes two streams for every verb of this engine. A protocol call has
 /// one result, so the account and the artifact arrive as two blocks and keep
 /// their separation. A client that read only the last block reads what a
 /// terminal reads on standard output.
@@ -876,7 +876,7 @@ fn a_verdict_moves_with_the_clock_the_server_holds() {
 /// A format nobody declared is refused, and the refusal names the closed set.
 ///
 /// The tool takes no default. A caller that named nothing, or named something
-/// outside spec 6's four, gets the list rather than a report in a vocabulary
+/// outside [the engine architecture](../../../../docs/spec/engine-architecture.md)'s four, gets the list rather than a report in a vocabulary
 /// this engine picked for it.
 #[test]
 fn the_check_tool_takes_a_format_and_defaults_to_none() {

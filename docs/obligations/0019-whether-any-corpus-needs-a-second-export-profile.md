@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Q17](../spec/09-decisions.md#q17--governed-access-and-the-solution-layer) rules how governed access works and admits an export profile per audience. Whether any corpus ever needs a second one is open.
+[Q17](../spec/decisions.md#q17--governed-access-and-the-solution-layer) rules how governed access works and admits an export profile per audience. Whether any corpus ever needs a second one is open.
 
 ## Obligation
 

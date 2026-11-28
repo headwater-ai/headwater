@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 //! **Item 4 of the spike.** A warm change-scoped run over a 1,000-document
-//! corpus, against the 200 ms hook budget from spec 6.
+//! corpus, against the 200 ms hook budget from [the engine architecture](../../../../../../docs/spec/engine-architecture.md).
 //!
 //! The number that matters is not the total. It is the breakdown, because the
 //! breakdown says which part would grow with the corpus. Run with:
@@ -69,7 +69,7 @@ fn main() {
         std::hint::black_box(report.findings.len());
     }
 
-    println!("cold full run (spec 6 budget: 5 s)");
+    println!("cold full run (the engine architecture budget: 5 s)");
     println!("  parse + classify + graph : {:7.2} ms", ms(median(cold_parse)));
     println!("  graph rebuild alone      : {:7.2} ms", ms(median(cold_build)));
     println!("  all checks               : {:7.2} ms", ms(median(cold_check)));
@@ -130,7 +130,7 @@ fn main() {
         std::hint::black_box(report.findings.len());
     }
 
-    println!("warm change-scoped run, one document edited (spec 6 budget: 200 ms)");
+    println!("warm change-scoped run, one document edited (the engine architecture budget: 200 ms)");
     println!("  re-parse the one file    : {:7.3} ms", ms(median(reparse)));
     println!("  rebuild graph + index    : {:7.3} ms", ms(median(rebuild)));
     println!("  invalidated checks       : {:7.3} ms", ms(median(checks)));

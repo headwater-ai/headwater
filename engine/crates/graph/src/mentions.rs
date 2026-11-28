@@ -2,7 +2,7 @@
 //! Prose mentions of an identifier, bound to the document that carries it.
 //! None of them is an edge.
 //!
-//! [Spec 1](../../../../docs/spec/01-conceptual-model.md#prose-links-are-not-relations)
+//! [The conceptual model](../../../../docs/spec/conceptual-model.md#prose-links-are-not-relations)
 //! says no syntax promotes prose into a relation, and this module keeps that:
 //! it records where a document's own prose names another document, and an edge
 //! is still only what a `relations:` block declares. What the record is for is

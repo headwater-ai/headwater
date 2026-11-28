@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-The fourth step of [kind resolution](../spec/02-taxonomy-model.md#kind-resolution) applies "any path-pattern refinement that the shelf declares". Nothing gives that declaration a form. Spec 2 illustrates the step in prose, the base package declares no refinement, and the design-spec bundle declares none either.
+The fourth step of [kind resolution](../spec/taxonomy-model.md#kind-resolution) applies "any path-pattern refinement that the shelf declares". Nothing gives that declaration a form. [The taxonomy model](../spec/taxonomy-model.md) illustrates the step in prose, the base package declares no refinement, and the design-spec bundle declares none either.
 
 ## Obligation
 
@@ -30,4 +30,4 @@ The census walker therefore runs three steps and omits the fourth, because an en
 
 ## Discharge
 
-Either the meta-schema gives the refinement a form, or kind resolution has three steps and spec 2 says so.
+Either the meta-schema gives the refinement a form, or kind resolution has three steps and [the taxonomy model](../spec/taxonomy-model.md) says so.

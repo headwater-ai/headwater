@@ -5,7 +5,7 @@ status: discharged
 status_since: 2026-08-15
 waiting_on: ruling
 last_verified: 2026-08-14
-summary: "Spec 12 voids a verdict by a tree diff, and the engine voids it by a hash comparison that no added document reaches."
+summary: "The check layer voids a verdict by a tree diff, and the engine voids it by a hash comparison that no added document reaches."
 provenance:
   warrant: accepted
   agency: mixed
@@ -23,7 +23,7 @@ relations:
 
 ## Context
 
-[Spec 12](../spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) rules that a merge is an ordinary change. It takes the merge result and the tree that a run evaluated, then it derives the invalidated instances as it derives them from any diff. [Spec 4](../spec/04-assurance-model.md#a-verdict-is-about-one-state-of-the-corpus) states the same rule in the same words.
+[The check layer](../spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) rules that a merge is an ordinary change. It takes the merge result and the tree that a run evaluated, then it derives the invalidated instances as it derives them from any diff. [The assurance model](../spec/assurance-model.md#a-verdict-is-about-one-state-of-the-corpus) states the same rule in the same words.
 
 `engine/crates/check/src/readset.rs` states a different rule. A gate compares each input of the published read set against the tree that it now holds. An input whose hash moved invalidates the instances that read it.
 
@@ -35,7 +35,7 @@ The corpus owes one statement of what voids a verdict, and that statement must r
 
 Three consequences follow from the disagreement, and no document records any of them.
 
-The first is a sentence that the published test falsifies. Spec 12 rules that a corpus-scoped instance reads everything, so any concurrent change voids it. Under a comparison over listed inputs, a merge that only adds documents moves no listed hash, and the instance survives.
+The first is a sentence that the published test falsifies. [The check layer](../spec/check-layer.md) rules that a corpus-scoped instance reads everything, so any concurrent change voids it. Under a comparison over listed inputs, a merge that only adds documents moves no listed hash, and the instance survives.
 
 The second is that the reading of [HW-OBL-0017](0017-publishing-the-read-set-skips-a-re-run-on-two-of-the-eighteen.md) points the gate at the merges it cannot inspect. Two Shape rules generate over every kind, so an edit to any classified document voids almost every instance. The merges that a gate could carry are therefore the ones that add rather than edit. That is the class that a comparison over listed inputs cannot see.
 
@@ -47,7 +47,7 @@ The cache and the gate read one artifact by two procedures, and that is why one 
 
 ## Discharge
 
-**This record is discharged.** [Spec 12](../spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) carries one statement of what a gate reads. A gate reads the published read set and the tree in front of it, and nothing else. `headwater gate --read-set <path>` is that statement as a verb, and the statement decides the three things above.
+**This record is discharged.** [The check layer](../spec/check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) carries one statement of what a gate reads. A gate reads the published read set and the tree in front of it, and nothing else. `headwater gate --read-set <path>` is that statement as a verb, and the statement decides the three things above.
 
 **The test is a comparison over listed inputs.** A gate hashes the file at each listed path and holds it against the hash the run recorded. [HW-OBL-0028](0028-a-run-cannot-report-the-corpus-tree-because-nothing-computes.md) holds the other reading, and this ruling settles the dependency rather than waits on it. A comparison over listed inputs needs no tree, so a run that computes none blocks nothing here. That record stands on [Checks and cache](../subsystems/checks-and-cache.md#what-a-run-states-beside-its-findings), which asks a run for a tree for reasons of its own.
 

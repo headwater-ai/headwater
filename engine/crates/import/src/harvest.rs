@@ -2,17 +2,17 @@
 //! The pinned-export anchor resolver: a document identity that another
 //! repository's committed export holds.
 //!
-//! [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#the-tier-above-a-corpus-harvests-it)
+//! [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#the-tier-above-a-corpus-harvests-it)
 //! says how a tier above a corpus reaches the corpora below it. It declares an
 //! anchor kind, exactly one resolver owns that kind, and "that resolver reads
 //! pinned corpus exports, in the way that the `code_path` resolver reads a
-//! source tree". Spec 2 names three classes of resolver: the source tree, a
+//! source tree". [The taxonomy model](../../../../docs/spec/taxonomy-model.md) names three classes of resolver: the source tree, a
 //! committed snapshot, and a pinned corpus export. This module is the third
 //! ([#1233](https://github.com/headwater-ai/headwater/issues/1233)).
 //!
 //! # One pattern, the third instance
 //!
-//! Spec 7 also says that "a taxonomy pin, a requirements snapshot pin, and a
+//! [Distribution and federation](../../../../docs/spec/distribution-and-federation.md) also says that "a taxonomy pin, a requirements snapshot pin, and a
 //! source-export pin all work the same way". So this module copies
 //! [`crate::anchors`] and adds no mechanism of its own:
 //!
@@ -34,7 +34,7 @@
 //!
 //! # A missing export is never a narrower answer
 //!
-//! Spec 7: "a pinned export that the tier cannot read is a **finding that
+//! [Distribution and federation](../../../../docs/spec/distribution-and-federation.md): "a pinned export that the tier cannot read is a **finding that
 //! names the pin**. It is never a narrower answer, delivered quietly." Each pin
 //! supplies its own resolver, named in its own declaration, and each anchor
 //! kind names one resolver. So an anchor into one repository is looked up in
@@ -52,7 +52,7 @@
 //!
 //! # A withheld document, and a typo
 //!
-//! A filtered export can withhold a document, and spec 7 says that an anchor
+//! A filtered export can withhold a document, and [distribution and federation](../../../../docs/spec/distribution-and-federation.md) says that an anchor
 //! into a withheld document resolves to `withheld` rather than to a dangling
 //! reference. [HW-DR-0100](../../../../docs/decisions/0100-a-counted-tombstone-lists-a-digest-of-each-withheld-identifier-and-a-sealed-one-lists-nothing.md)
 //! states what the export says for this. Under the `counted` grain each
@@ -424,7 +424,7 @@ pub fn declared(root: &Path) -> Result<Vec<Pin>, String> {
                 "`harvests.{name}` names no `at`, so nothing says where the committed export is"
             )
         })?;
-        // A resolver reads repository content and nothing else (spec 2), so a
+        // A resolver reads repository content and nothing else (the taxonomy model (docs/spec/taxonomy-model.md)), so a
         // path that leaves the repository root is refused rather than read.
         if !crate::contained(root, &at) {
             return Err(format!(

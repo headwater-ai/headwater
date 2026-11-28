@@ -2,7 +2,7 @@
 //! Two documents joined by a relation whose declared `invalid_when` condition
 //! holds at both ends.
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md) declares
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md) declares
 //! `invalid_when: {both: {status: current}}` on `conflicts_with` and names two
 //! `current` decisions joined by it "an incoherent corpus state". Before this
 //! rule, the engine read the declaration only to count the facet as read, and a

@@ -45,7 +45,7 @@ use std::path::Path;
 /// arrives as one entry ending in `/`. Empty where the tree is not in a git
 /// repository, because no ignore rule binds a tree git does not see.
 ///
-/// Only a verb that is not the check, the gate or the probe reads this: spec 12
+/// Only a verb that is not the check, the gate or the probe reads this: [the check layer](../../../../docs/spec/check-layer.md)
 /// keeps every version control command off that loop, so `Graph::build`
 /// counts the scope with nothing ignored and `taxonomy audit` drops the
 /// ignored entries afterward with [`Reach::retain_unignored`].
@@ -216,7 +216,7 @@ impl Scope {
     /// directories of a package manifest at the root, as
     /// [`tree_directories`] takes them. `ignored` is what the count leaves
     /// out: `validate` passes what git ignores, and the check passes
-    /// [`Ignored::default`], because spec 12 keeps every version control
+    /// [`Ignored::default`], because [the check layer](../../../../docs/spec/check-layer.md) keeps every version control
     /// command off that loop. That is the one way the two answers can differ,
     /// and the `headwater check` contract states it.
     ///
@@ -339,7 +339,7 @@ pub fn tree_directories(
 /// scope entry governed by it, and `relation.scope.ungoverned` refuses an
 /// added entry that it does not hold, so the figure and the rule cannot
 /// disagree about one path (#1573). The family is the test rather than a
-/// relation name, because spec 2 closes the family set and a taxonomy names
+/// relation name, because [the taxonomy model](../../../../docs/spec/taxonomy-model.md) closes the family set and a taxonomy names
 /// its relations.
 pub fn governed<'a>(
     edges: &'a [crate::Edge],

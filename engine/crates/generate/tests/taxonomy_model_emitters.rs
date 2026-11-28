@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Spec 2's staged-emitter block, held against [`headwater_generate::export`].
+//! [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s staged-emitter block, held against [`headwater_generate::export`].
 //!
 //! # Why this file exists
 //!
 //! [R1](https://github.com/headwater-ai/headwater/issues/421)'s bar is that no
 //! specification part states as built an `export` target or a projection kind
 //! that this engine reports as unbuilt. The bar has two halves. The
-//! projection-kind half is held by `spec_six_projections.rs`. The export-target
-//! half was corrected by hand in `docs/spec/02-taxonomy-model.md` and nothing
+//! projection-kind half is held by `engine_architecture_projections.rs`. The export-target
+//! half was corrected by hand in `docs/spec/taxonomy-model.md` and nothing
 //! read it afterwards, so a reword of the refusal, an emptied fenced block, or
 //! the day someone builds `skos` all leave the paragraph false with the suite
 //! green. This file is the missing half.
@@ -17,7 +17,7 @@
 //! `fixtures.rs`, in `an_unbuilt_emitter_refuses_and_says_what_it_waits_on`,
 //! runs every `Emitter::ALL` through `export::emit` and asserts of an unbuilt
 //! one only that its reason contains the emitter name and the word `consumer`.
-//! That is a substring assertion over the exact message spec 2 quotes, so every
+//! That is a substring assertion over the exact message [the taxonomy model](../../../../docs/spec/taxonomy-model.md) quotes, so every
 //! reword of the message passes it. This file compares the block byte for byte
 //! instead, which is why the two are not the same test.
 //!
@@ -32,7 +32,7 @@
 //! carries. The reason is read out of the engine rather than copied here, so
 //! there is no third copy of the sentence to drift.
 //!
-//! Third, in reverse, every `--format <name>` occurrence anywhere in spec 2
+//! Third, in reverse, every `--format <name>` occurrence anywhere in [the taxonomy model](../../../../docs/spec/taxonomy-model.md)
 //! must name a built emitter or lie inside this one block. Without it an
 //! emptied block passes, and a second `--format shacl` example added elsewhere
 //! later passes too.
@@ -45,7 +45,7 @@
 //! corpus to do it.
 //!
 //! The extractor below is deliberately a copy of the one in
-//! `spec_six_projections.rs` rather than a shared helper. Two branches were in
+//! `engine_architecture_projections.rs` rather than a shared helper. Two branches were in
 //! flight over these files when it was written, and twenty duplicated lines
 //! cost less than the merge they would otherwise collide on.
 
@@ -77,7 +77,7 @@ const REFUSAL_HEADER: &str = "headwater: nothing was exported";
 const REASON_INDENT: &str = "  ";
 
 fn spec_two() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../docs/spec/02-taxonomy-model.md")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../docs/spec/taxonomy-model.md")
 }
 
 fn spec_two_text() -> String {
@@ -85,7 +85,7 @@ fn spec_two_text() -> String {
     std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()))
 }
 
-/// The staged-emitter block of spec 2, and where it sits in the file.
+/// The staged-emitter block of [the taxonomy model](../../../../docs/spec/taxonomy-model.md), and where it sits in the file.
 ///
 /// Returns the block's lines with the blank lines the fence contributes
 /// removed, and the byte range the block occupies, which the reverse direction
@@ -155,9 +155,9 @@ fn format_argument(line: &str) -> Option<&str> {
     after.split_whitespace().next()
 }
 
-/// The emitter spec 2 quotes is one this engine does not build.
+/// The emitter [the taxonomy model](../../../../docs/spec/taxonomy-model.md) quotes is one this engine does not build.
 ///
-/// The direction that fires the day `skos` is built. Spec 2 calls the target
+/// The direction that fires the day `skos` is built. [The taxonomy model](../../../../docs/spec/taxonomy-model.md) calls the target
 /// "staged and unbuilt" and quotes a refusal underneath the sentence, so an
 /// emitter that ships makes both false at once, and neither the compiler nor
 /// any other test in this suite reads the paragraph.
@@ -173,14 +173,14 @@ fn the_emitter_spec_2_calls_staged_is_one_this_engine_does_not_build() {
     let emitter = quoted_emitter(&lines[0]);
     assert!(
         !emitter.is_built(),
-        "docs/spec/02-taxonomy-model.md calls the `{}` projection staged and unbuilt and quotes a \
+        "docs/spec/taxonomy-model.md calls the `{}` projection staged and unbuilt and quotes a \
          refusal for it, and this engine builds that emitter. The paragraph at '{ANCHOR}' has to \
          move with the code",
         emitter.name()
     );
 }
 
-/// The output spec 2 quotes is the refusal this engine returns, byte for byte.
+/// The output [the taxonomy model](../../../../docs/spec/taxonomy-model.md) quotes is the refusal this engine returns, byte for byte.
 ///
 /// The whole reason this file is not the case table in `fixtures.rs`, which
 /// asserts two substrings of this same message and so passes under any reword
@@ -204,7 +204,7 @@ fn the_output_spec_2_quotes_is_the_refusal_this_engine_returns() {
     assert_eq!(
         quoted,
         expected,
-        "docs/spec/02-taxonomy-model.md's staged-emitter block does not quote what `headwater \
+        "docs/spec/taxonomy-model.md's staged-emitter block does not quote what `headwater \
          export --format {}` prints on stderr.\n\nthe document:\n{}\n\nthe engine:\n{}",
         emitter.name(),
         quoted.join("\n"),
@@ -212,7 +212,7 @@ fn the_output_spec_2_quotes_is_the_refusal_this_engine_returns() {
     );
 }
 
-/// Every `--format` spec 2 writes names a built emitter, or sits in that block.
+/// Every `--format` [the taxonomy model](../../../../docs/spec/taxonomy-model.md) writes names a built emitter, or sits in that block.
 ///
 /// The reverse direction. Without it an emptied fenced block leaves both cases
 /// above passing over nothing, and a second unbuilt-emitter example added to
@@ -221,7 +221,7 @@ fn the_output_spec_2_quotes_is_the_refusal_this_engine_returns() {
 /// # Watched failing
 ///
 /// Deleting the block's command line reddens the extractor rather than this
-/// case, naming the file. Adding `--format shacl` to any other line of spec 2
+/// case, naming the file. Adding `--format shacl` to any other line of [the taxonomy model](../../../../docs/spec/taxonomy-model.md)
 /// reddens this, naming `shacl` and the line it sits on.
 #[test]
 fn no_other_format_in_spec_2_names_an_emitter_this_engine_does_not_build() {
@@ -247,7 +247,7 @@ fn no_other_format_in_spec_2_names_an_emitter_this_engine_does_not_build() {
 
     assert!(
         stray.is_empty(),
-        "docs/spec/02-taxonomy-model.md names an emitter this engine does not build outside the \
+        "docs/spec/taxonomy-model.md names an emitter this engine does not build outside the \
          staged block at '{ANCHOR}', where the refusal is quoted beside it: {stray:#?}"
     );
 }

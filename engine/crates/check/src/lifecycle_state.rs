@@ -47,7 +47,7 @@
 //!
 //! # Document-scoped, and that is the whole point
 //!
-//! [Spec 12](../../../../docs/spec/12-check-layer.md#scope--the-declaration-everything-else-rests-on)
+//! [The check layer](../../../../docs/spec/check-layer.md#scope--the-declaration-everything-else-rests-on)
 //! fixes scope by what one instance is over. A wrong state survives in the
 //! document, so the document is the unit, and no prior version is read. That is
 //! what reaches the case the transition rule cannot: a document **authored** at
@@ -63,7 +63,7 @@
 //! not stand in is a defect the taxonomy decides in full, so the report is an
 //! error; which of the admitted states is the right one is a statement about the
 //! document that only its author can make, so nothing is written
-//! ([spec 12](../../../../docs/spec/12-check-layer.md#fixability)).
+//! ([the check layer](../../../../docs/spec/check-layer.md#fixability)).
 
 use crate::finding::{at, Finding, Severity};
 use crate::instance::Outcome;
@@ -108,25 +108,25 @@ pub struct StateFacet {
     pub(crate) values: Vec<FacetValue>,
 }
 
-/// What spec 3 asks of a state, which is neither the value nor the machine.
+/// What [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) asks of a state, which is neither the value nor the machine.
 ///
-/// [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#lifecycle):
+/// [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md#lifecycle):
 /// "a live document may not depend on a terminal one". The sentence needs the
 /// five values of this repository's vocabulary folded into two answers, and
 /// the fold is a reading of the `role` beside each value rather than a list of
 /// state names in this engine. A taxonomy that renames every state keeps the
-/// roles, and this reading moves with it — which is spec 2's worked overlay
+/// roles, and this reading moves with it — which is [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s worked overlay
 /// holding at the check layer.
 ///
 /// Four arms, and the last two are what keeps the rule honest. `draft` carries
 /// the role `initial`: a document being argued over is not live, so nothing it
-/// points at is spec 3's finding, and it is not terminal either. A role this
+/// points at is [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s finding, and it is not terminal either. A role this
 /// engine does not know is the fourth, and deciding nothing about it is the
 /// same posture the rest of the check layer takes toward a value the
 /// meta-schema owns.
 ///
 /// **`Initial` and `Neither` are two facts, and a reader outside this crate
-/// needs both.** Spec 3's rule reads each of them as "not live", so the rules
+/// needs both.** [Authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s rule reads each of them as "not live", so the rules
 /// here could fold the pair. `headwater-generate` cannot: it decides whether a
 /// refused recording fails a run, and its answers for the two are opposite. A
 /// document at the initial state is one somebody is still working on, and a
@@ -164,7 +164,7 @@ impl StateFacet {
         }
     }
 
-    /// What one state is, in the two terms spec 3 states its rule in.
+    /// What one state is, in the two terms [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md) states its rule in.
     ///
     /// The one reader of the role, so that no rule holds a second list of
     /// which states end a lifecycle. `terminal` is [`headwater_resolve::core::role_is_terminal`],
@@ -404,7 +404,7 @@ mod tests {
         assert!(!check.instantiates("note"));
     }
 
-    /// The fold spec 3's rule needs, and the two arms that are neither live nor
+    /// The fold [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)'s rule needs, and the two arms that are neither live nor
     /// terminal. They are separate because `headwater-generate` releases a
     /// refused recording at the initial state and holds one whose role it
     /// cannot read.
@@ -422,7 +422,7 @@ mod tests {
     }
 
     /// A taxonomy may rename every state, and the roles are what survives. This
-    /// is spec 2's worked overlay, read at the check layer.
+    /// is [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s worked overlay, read at the check layer.
     #[test]
     fn a_renamed_vocabulary_that_keeps_its_roles_reads_the_same() {
         let source = load(concat!(

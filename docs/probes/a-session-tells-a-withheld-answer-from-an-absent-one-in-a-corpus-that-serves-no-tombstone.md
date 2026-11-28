@@ -49,7 +49,7 @@ Give one of three words as your entire final message, with no other text: `prese
 
 ## Target
 
-The answer turns on [the export profile](../spec/07-distribution-and-federation.md#an-export-profile-carries-a-filter). Only a profile that filters a document serves a counted tombstone, and this corpus declares none.
+The answer turns on [the export profile](../spec/distribution-and-federation.md#an-export-profile-carries-a-filter). Only a profile that filters a document serves a counted tombstone, and this corpus declares none.
 
 ## Key
 
@@ -62,8 +62,8 @@ expected: [absent]
 
 **It supersedes the counted-tombstone probe of 2026-09-06 with the same task in three phrasings** ([HW-DR-0112](../decisions/0112-the-additive-campaign-measures-eleven-actions-by-five-layers-in-seven-scenarios.md), "The form of a phrasing"). The superseded probe stays on the shelf as the record that its committed runs cite. The answer and the reason are the same. This corpus declares no export profile that filters a document, so it serves no counted tombstone, and in a sealed workspace no document states the recovery word. A session that answers `withheld` has taken the mechanism the task names for the state of this corpus.
 
-**The axes.** The task names the directory and no file, so the probe does not carry `names_file`. No superseded or contradicted document stands between the session and spec 7, so it does not carry `superseded_target`.
+**The axes.** The task names the directory and no file, so the probe does not carry `names_file`. No superseded or contradicted document stands between the session and [distribution and federation](../spec/distribution-and-federation.md), so it does not carry `superseded_target`.
 
-**The output contract in each phrasing is what makes the answer reachable.** [Spec 15](../spec/15-the-recorder-contract.md#the-prompt-is-the-task-section-and-the-answer-is-the-final-line) takes a value only where the whole of the trimmed final message equals one declared answer.
+**The output contract in each phrasing is what makes the answer reachable.** [The recorder contract](../spec/the-recorder-contract.md#the-prompt-is-the-task-section-and-the-answer-is-the-final-line) takes a value only where the whole of the trimmed final message equals one declared answer.
 
 [HW-OBL-0013](../obligations/0013-no-probe-tests-whether-a-counted-tombstone-stops-a-confident.md) records the unmeasured claim. This probe is its instrument for a corpus that serves no tombstone, and it supplies no observed result.

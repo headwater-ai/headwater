@@ -2,7 +2,7 @@
 id: HW-OBL-0198
 status: discharged
 status_since: 2026-10-01
-summary: "Every session loads standing instructions before any task begins. The #1384 batch measured this repository's share at a median of 7,225 tokens, and spec 5 states it."
+summary: "Every session loads standing instructions before any task begins. The #1384 batch measured this repository's share at a median of 7,225 tokens, and AI integration states it."
 last_verified: 2026-10-01
 title: "Nothing states how much of a session's budget the standing instructions consume before work starts"
 waiting_on: measurement
@@ -41,7 +41,7 @@ In either case, the document must be retrievable from this obligations register 
 
 ### How the first path paid this record
 
-The change for #1473 took the first path. [Spec 5](../spec/05-ai-integration.md) states the figure and its conditions, and this record reaches it through its `traces_to` relation.
+The change for #1473 took the first path. [AI integration](../spec/ai-integration.md) states the figure and its conditions, and this record reaches it through its `traces_to` relation.
 
 The source is the batch of #1384, recorded in PR #1465. It ran on 2026-09-30 at the pin `109abba7`, with `claude-sonnet-5`, seed 980 and a turn cap of 80, on one host. The batch has one log for each of its 660 sessions. The table below uses the 540 logs of the `campaign` tier.
 

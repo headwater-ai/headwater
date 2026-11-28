@@ -21,7 +21,7 @@ relations:
 
 # The taxonomy in OWL and SKOS — a worked example
 
-The third of the substrate worked examples, after [LinkML](linkml-worked-example.md) and [SHACL](shacl-worked-example.md). Those two asked whether an external language could hold the Headwater schema and the Headwater checks. This one asks the question that [Q13](../spec/09-decisions.md#q13--linkml-and-shacl-as-substrate) staged fourth. What happens when the taxonomy is emitted as an ontology, and the corpus as instance triples, and a reasoner is pointed at the result?
+The third of the substrate worked examples, after [LinkML](linkml-worked-example.md) and [SHACL](shacl-worked-example.md). Those two asked whether an external language could hold the Headwater schema and the Headwater checks. This one asks the question that [Q13](../spec/decisions.md#q13--linkml-and-shacl-as-substrate) staged fourth. What happens when the taxonomy is emitted as an ontology, and the corpus as instance triples, and a reasoner is pointed at the result?
 
 **Nothing here reopens Q13.** The staging order stands. RDF and SKOS are emitter 4, and they ship when a named external consumer asks. This document is evidence about what that emitter will owe when it is written, gathered by writing a throwaway version of it now.
 
@@ -32,14 +32,14 @@ The two earlier examples were written by hand. This one was run. The emitter is 
 The emitter resolves the taxonomy the way the resolver will: the base package `headwater/standard` plus the [design-spec bundle](https://github.com/headwater-ai/headwater/blob/main/docs/taxonomies/design-spec/bundle.yml) applied as add-only operations at dotted addresses. It then emits three graphs.
 
 - **`taxonomy.ttl`** — the TBox. A kind becomes an `owl:Class`, `is_a` becomes `rdfs:subClassOf`, and a facet becomes an `owl:DatatypeProperty` or `owl:ObjectProperty`. A controlled vocabulary becomes a `skos:ConceptScheme`, and a relation becomes an `owl:ObjectProperty` with domain and range.
-- **`corpus.ttl`** — the ABox. Kind resolution is by placement, which is what [spec 2](../spec/02-taxonomy-model.md#placement-is-primary-metadata-fills-the-gap) says is primary. Every Markdown link between two corpus documents becomes an edge.
+- **`corpus.ttl`** — the ABox. Kind resolution is by placement, which is what [the taxonomy model](../spec/taxonomy-model.md#placement-is-primary-metadata-fills-the-gap) says is primary. Every Markdown link between two corpus documents becomes an edge.
 - **`shapes.ttl`** — the same required-facet constraints written as SHACL, so that the two languages can be pointed at one graph and compared.
 
 Three checks then run: OWL-RL closure over the combined graph, SHACL validation of the ABox against the shapes, and a serialize-parse round trip. The reasoner is `owlrl`, the validator is `pyshacl`, and both run offline.
 
 **One thing had to be scraped rather than read.** The base package has no machine-readable home in this repository. Its only committed copy is a fenced YAML block inside [the first-run walkthrough](default-taxonomy-first-run.md#the-base-derived-rather-than-chosen), so the emitter parses it out of the Markdown. That is a finding in its own right and it is listed at the end.
 
-**One thing the emitter invents rather than reads.** No document in this corpus carries a declared identifier, so the emitter mints an IRI for each one from its repository path. `docs/spec/09-decisions.md` becomes `https://w3id.org/headwater/corpus/docs/spec/09-decisions.md`. That IRI holds only while the file stays where it is, and a rename breaks every reference to it. [13 — Open obligations](../spec/13-open-obligations.md) records the remedy under the identifier scheme grammar, which declares the prefix, the namespace and the local part as separate fields.
+**One thing the emitter invents rather than reads.** No document in this corpus carries a declared identifier, so the emitter mints an IRI for each one from its repository path. `docs/spec/decisions.md` becomes `https://w3id.org/headwater/corpus/docs/spec/decisions.md`. That IRI holds only while the file stays where it is, and a rename breaks every reference to it. [Open obligations](../spec/open-obligations.md) records the remedy under the identifier scheme grammar, which declares the prefix, the namespace and the local part as separate fields.
 
 ## What the run reports
 
@@ -74,17 +74,17 @@ The reasoner has concluded that the document **has** all four required facets. I
 
 `owl:minCardinality` looks like a requirement and behaves as an entailment. Emit it and a consumer reads a constraint that the reasoner will satisfy by inventing the value rather than by reporting its absence.
 
-[Spec 4](../spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for) fixes the denominator before any check runs, and requires that every document is either checked or accounted for by a declared reason. An OWL reasoner cannot participate in that doctrine at all. It is not that it does the census badly. It computes the opposite quantity: what must be true given what is stated, rather than what is missing from what is stated.
+[The assurance model](../spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for) fixes the denominator before any check runs, and requires that every document is either checked or accounted for by a declared reason. An OWL reasoner cannot participate in that doctrine at all. It is not that it does the census badly. It computes the opposite quantity: what must be true given what is stated, rather than what is missing from what is stated.
 
-This is the sharpest form of the objection that [Q13](../spec/09-decisions.md#q13--linkml-and-shacl-as-substrate) already records against SHACL. SHACL "defines conformance as no validation results and has no notion of completeness". SHACL is merely silent about the denominator. OWL argues against it.
+This is the sharpest form of the objection that [Q13](../spec/decisions.md#q13--linkml-and-shacl-as-substrate) already records against SHACL. SHACL "defines conformance as no validation results and has no notion of completeness". SHACL is merely silent about the denominator. OWL argues against it.
 
 ## Finding 2 — an endpoint declaration becomes a retyping rule
 
 This one was not predicted anywhere in the specification, and it is the reason the exercise was worth running.
 
-[Spec 2](../spec/02-taxonomy-model.md#endpoints-are-the-only-permission) titles a section "Endpoints are the only permission". A relation declares `from` and `to`, and an edge whose endpoint is not of a declared kind is a finding. The natural RDF spelling of `from` and `to` is `rdfs:domain` and `rdfs:range`. Both are inference rules. Neither is a permission.
+[The taxonomy model](../spec/taxonomy-model.md#endpoints-are-the-only-permission) titles a section "Endpoints are the only permission". A relation declares `from` and `to`, and an edge whose endpoint is not of a declared kind is a finding. The natural RDF spelling of `from` and `to` is `rdfs:domain` and `rdfs:range`. Both are inference rules. Neither is a permission.
 
-`docs/spec/09-decisions.md` is the decision register. It sits on a heterogeneous shelf, so its kind resolves through the `doc_type` discriminator, which lives in front matter that this corpus does not have. It therefore enters the ABox with no type at all. After OWL-RL closure it has one:
+`docs/spec/decisions.md` is the decision register. It sits on a heterogeneous shelf, so its kind resolves through the `doc_type` discriminator, which lives in front matter that this corpus does not have. It therefore enters the ABox with no type at all. After OWL-RL closure it has one:
 
     hw:Evaluation
 
@@ -96,7 +96,7 @@ That is a genuine impedance mismatch rather than an emitter defect, and no spell
 
 ## Finding 3 — `owl:inverseOf` manufactures the half that reciprocity wants reported
 
-`cites_evidence` declares `inverse: cited_by` and `reciprocal: required`. Reciprocity in Headwater means the missing half is a finding. [Spec 2](../spec/02-taxonomy-model.md#behavior-at-the-limits) says that inverses which disagree are reported as a pair, and the corpus stays incoherent until an author resolves it.
+`cites_evidence` declares `inverse: cited_by` and `reciprocal: required`. Reciprocity in Headwater means the missing half is a finding. [The taxonomy model](../spec/taxonomy-model.md#behavior-at-the-limits) says that inverses which disagree are reported as a pair, and the corpus stays incoherent until an author resolves it.
 
 The run entails **332 `hw:cited_by` triples**, exactly one per asserted `cites_evidence` edge. Not one of them was declared by any author. `owl:inverseOf` closes the gap that `reciprocal: required` exists to open.
 
@@ -112,7 +112,7 @@ Turn RDFS inference on and the count becomes **140**, which is 35 documents time
 
 The true figure is 36 documents times four required facets, which is 144. Neither run reaches it. One under-reports because the untyped documents are invisible, and the other under-reports differently while attributing the violations to the wrong kinds.
 
-So the answer to "is this corpus conformant" depends on a reasoner setting, and no setting gives the right denominator. This is the silent-pass failure that [spec 4](../spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for) forbids, reproduced mechanically. The census has to be computed by the engine, before the export, and carried in the export as data. It cannot be recovered by a consumer who validates the export.
+So the answer to "is this corpus conformant" depends on a reasoner setting, and no setting gives the right denominator. This is the silent-pass failure that [the assurance model](../spec/assurance-model.md#no-silent-passes-every-document-is-accounted-for) forbids, reproduced mechanically. The census has to be computed by the engine, before the export, and carried in the export as data. It cannot be recovered by a consumer who validates the export.
 
 ## Finding 5 — what the two languages carry without loss
 
@@ -120,9 +120,9 @@ The exercise is not one-sided. Six things map cleanly and would cost an emitter 
 
 - **Kind inheritance.** `is_a` to `rdfs:subClassOf` works, and the SHACL example already noted that `sh:targetClass` follows it, so a shape on the abstract kind reaches every concrete one.
 - **Controlled vocabularies.** A vocabulary is a `skos:ConceptScheme` and each value a `skos:Concept`, with `skos:prefLabel` and `skos:inScheme`. This is what SKOS is for, and the fit is exact.
-- **Purpose prose.** `intent` becomes `skos:definition` and each entry in `answers` becomes a `skos:scopeNote`. The reader intent that spec 2 requires a purpose to declare survives intact.
+- **Purpose prose.** `intent` becomes `skos:definition` and each entry in `answers` becomes a `skos:scopeNote`. The reader intent that [the taxonomy model](../spec/taxonomy-model.md) requires a purpose to declare survives intact.
 - **Facet guidance.** Per-value guidance becomes `skos:scopeNote` on the value concept.
-- **Lineage.** `supersedes` emits as `rdfs:subPropertyOf prov:wasRevisionOf`, which is the alignment [spec 2](../spec/02-taxonomy-model.md#lineage-aligns-with-prov) already declared. It costs one triple and it is the single place where an external standard says what Headwater means.
+- **Lineage.** `supersedes` emits as `rdfs:subPropertyOf prov:wasRevisionOf`, which is the alignment [the taxonomy model](../spec/taxonomy-model.md#lineage-aligns-with-prov) already declared. It costs one triple and it is the single place where an external standard says what Headwater means.
 - **Symmetry.** `reciprocal: symmetric` on `conflicts_with` emits as `owl:SymmetricProperty` and means the same thing on both sides.
 
 The pattern is the one both earlier examples found, from a third direction. The **vocabulary** layer exports well. The **constraint** layer exports as something that looks like a constraint and behaves as an inference. The **governance** layer does not export at all.
@@ -171,7 +171,7 @@ Three entries deserve naming, because each one is a whole capability rather than
 
 The serialize-parse round trip is isomorphic. Two hundred and ninety-three triples out, 293 back, structurally identical.
 
-That result is worth recording precisely because it is worthless. [Q6](../spec/09-decisions.md#q6--where-the-corpus-graph-lives-at-rest) says an empty loss set is what a round trip proves. The converse also holds: a round trip over an already-lossy projection proves only that Turtle serialization is deterministic. The 91 dropped declarations never entered the graph, so no round trip over the graph can detect them.
+That result is worth recording precisely because it is worthless. [Q6](../spec/decisions.md#q6--where-the-corpus-graph-lives-at-rest) says an empty loss set is what a round trip proves. The converse also holds: a round trip over an already-lossy projection proves only that Turtle serialization is deterministic. The 91 dropped declarations never entered the graph, so no round trip over the graph can detect them.
 
 An emitter that reports a clean round trip as evidence of fidelity is reporting on the wrong artifact. The measurement that means something is the projection census, taken against the source graph, before serialization.
 
@@ -183,15 +183,15 @@ RDF and SKOS at position 4 is right, and the consumer named there — knowledge-
 
 **One sharpening.** Q13 records that emitters never chain, and the reason given is that a chained pipeline inherits every loss of every hop and declares none. Findings 1 and 2 add a second reason that is stronger for this emitter. The RDF export does not merely lose the constraint layer. It re-expresses it as inference. So a consumer who reads `owl:minCardinality` or `rdfs:range` as a check receives an answer that is confidently wrong rather than absent. A loss set covers what is missing. It does not cover a construct that survives the trip with its meaning inverted.
 
-That suggests a rule the specification does not yet have. **A target language may have a construct that looks like a Headwater constraint and behaves as an entailment. Where it does, the emitter either omits the construct or emits it beside an explicit statement that it is not a check.** Omission is cheaper, and it is what `exportable_as` already implies. [Spec 12](../spec/12-check-layer.md#exportable_as-is-a-set-with-a-partition-rule) admits a target only when the emitted constraint catches exactly what the native check catches. `owl:minCardinality` fails that bar and would therefore never have been emitted by a conformant emitter. The bar works. It just has not been read as forbidding this case, and the case is not obvious until a reasoner runs.
+That suggests a rule the specification does not yet have. **A target language may have a construct that looks like a Headwater constraint and behaves as an entailment. Where it does, the emitter either omits the construct or emits it beside an explicit statement that it is not a check.** Omission is cheaper, and it is what `exportable_as` already implies. [The check layer](../spec/check-layer.md#exportable_as-is-a-set-with-a-partition-rule) admits a target only when the emitted constraint catches exactly what the native check catches. `owl:minCardinality` fails that bar and would therefore never have been emitted by a conformant emitter. The bar works. It just has not been read as forbidding this case, and the case is not obvious until a reasoner runs.
 
 ## Findings for 13 — Open obligations
 
-Four items, and [the register](../spec/13-open-obligations.md) now carries all of them. The first two became entries under design work that nothing blocks. The last two joined one Q13 entry under what each decision left open. Both wait on emitter 4, rather than on a design choice that anybody can take today.
+Four items, and [the register](../spec/open-obligations.md) now carries all of them. The first two became entries under design work that nothing blocks. The last two joined one Q13 entry under what each decision left open. Both wait on emitter 4, rather than on a design choice that anybody can take today.
 
 **The base package has no machine-readable home.** Its only committed copy is a fenced YAML block in an evaluation. Any tool that wants to resolve the taxonomy has to parse Markdown to find it. That includes this emitter, the confluence check that admission criterion 6 requires, and the engine when it exists. The design-spec bundle has a real file at `docs/taxonomies/design-spec/bundle.yml` and extends a base that does not.
 
-**`exportable_as` should be read as forbidding entailment-shaped constraints.** Spec 12's equivalence bar already excludes `owl:minCardinality` and `rdfs:range`, and nothing states the general case. One sentence would close it.
+**`exportable_as` should be read as forbidding entailment-shaped constraints.** [The check layer](../spec/check-layer.md)'s equivalence bar already excludes `owl:minCardinality` and `rdfs:range`, and nothing states the general case. One sentence would close it.
 
 **`owl:inverseOf` conflicts with `created_by` measurement.** Emitting the inverse fabricates 332 unauthored edges in this corpus alone. Whether the RDF emitter omits inverses is a decision that emitter 4 will have to take, and finding 3 is the argument for omitting them.
 

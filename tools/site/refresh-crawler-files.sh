@@ -20,7 +20,7 @@
 #
 # WHAT `llms.txt`, `robots.txt` AND `sitemap.xml` ARE FOR HERE
 #
-#   Q16 (docs/spec/09-decisions.md#q16) disposes of the first two in one
+#   Q16 (docs/spec/decisions.md#q16) disposes of the first two in one
 #   line: ship them, and count them as nothing. Neither is referenced by, or
 #   relied on by, any claim elsewhere on the site. `robots.txt` is a global
 #   allow-all: every crawler, AI crawlers included, may read this corpus.

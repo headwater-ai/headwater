@@ -22,9 +22,9 @@ relations:
 
 ## Context
 
-The meta-schema has one notion of a required member, and it holds a single source to it. Two of the [facet acceptance tests](../spec/02-taxonomy-model.md#facet-acceptance-tests) need a second notion. A facet declares `volatility`, and every value of an enum carries guidance, and an overlay may supply either one at `facets.status.volatility`. So a base package that omits one is not yet wrong, and the resolved taxonomy that omits it is.
+The meta-schema has one notion of a required member, and it holds a single source to it. Two of the [facet acceptance tests](../spec/taxonomy-model.md#facet-acceptance-tests) need a second notion. A facet declares `volatility`, and every value of an enum carries guidance, and an overlay may supply either one at `facets.status.volatility`. So a base package that omits one is not yet wrong, and the resolved taxonomy that omits it is.
 
-The engine runs both under `taxonomy validate` over the result, which is where spec 2 lists them.
+The engine runs both under `taxonomy validate` over the result, which is where [the taxonomy model](../spec/taxonomy-model.md) lists them.
 
 ## Obligation
 

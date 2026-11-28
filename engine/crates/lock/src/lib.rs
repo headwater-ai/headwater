@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The content-hashed lock: one resolution, written down, with a digest over it.
 //!
-//! [Spec 6](../../../../docs/spec/06-engine-architecture.md#pipeline): "Resolve
+//! [The engine architecture](../../../../docs/spec/engine-architecture.md#pipeline): "Resolve
 //! merges the base taxonomy and overlays, validates against the meta-schema, and
 //! writes a content-hashed lock. Everything downstream reads the lock, never the
 //! sources. Thus a check result depends on a hash that a reviewer can see in a
-//! diff." [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#consuming)
+//! diff." [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#consuming)
 //! adds the posture: "The lock is committed. Thus the corpus is checked against a
 //! resolved, reviewable, reproducible taxonomy, and CI needs no network to check
 //! anything."
 //!
 //! # What makes two resolutions the same result
 //!
-//! [13 — Open obligations](../../../../docs/spec/13-open-obligations.md) filed this
+//! [Open obligations](../../../../docs/spec/open-obligations.md) filed this
 //! question against the lock, and it is the one decision this crate makes rather
-//! than implements. Spec 2 requires that any legal order of an overlay set gives
+//! than implements. [The taxonomy model](../../../../docs/spec/taxonomy-model.md) requires that any legal order of an overlay set gives
 //! "the same resolved taxonomy", and it writes the result to a lock with a
 //! content hash over it. A mapping records the order its entries arrived in, so
 //! two orders that agree on every declaration can disagree on the text, and a
@@ -39,12 +39,12 @@
 //!
 //! The claim that makes the two coincide is testable, and `fixtures/` tests it:
 //! over every case the resolver holds, every permutation of the overlay set
-//! produces one digest. That is spec 2's confluence requirement stated in the
+//! produces one digest. That is [the taxonomy model](../../../../docs/spec/taxonomy-model.md)'s confluence requirement stated in the
 //! coordinate the lock actually uses.
 //!
 //! # The lock is where "no partial load" is enforced
 //!
-//! Spec 2 rules that the engine never applies a taxonomy that does not validate.
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md) rules that the engine never applies a taxonomy that does not validate.
 //! [`write`](fn@write) runs every rule of `taxonomy validate` and returns the findings
 //! rather than a lock when any of them fires. So a lock is by construction a
 //! validated taxonomy, and everything downstream reads a lock. The rule is
@@ -52,9 +52,9 @@
 //!
 //! # The adoption payload rides here, and it is the one authored part
 //!
-//! [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)
+//! [Distribution and federation](../../../../docs/spec/distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)
 //! puts the migration state in the lock: from-version, to-version, an owner, an
-//! expiry and the open task list. [Q12](../../../../docs/spec/09-decisions.md#q12--migration-path-for-an-existing-corpus)
+//! expiry and the open task list. [Q12](../../../../docs/spec/decisions.md#q12--migration-path-for-an-existing-corpus)
 //! makes first contact the same state with the from-version absent, and it says
 //! where the payload lives in as many words: "the payload is large on a large
 //! corpus, and it sits in the lock, which is committed and reviewed".
@@ -91,7 +91,7 @@
 //!
 //! # What this still does not carry
 //!
-//! Spec 2 says the lock "records the taxonomy version and the measured
+//! [The taxonomy model](../../../../docs/spec/taxonomy-model.md) says the lock "records the taxonomy version and the measured
 //! compatibility result that each corpus was validated against". That is not
 //! here. Compatibility is measured by `taxonomy diff`, which is
 //! [#78](https://github.com/headwater-ai/headwater/issues/78), and a field
@@ -1546,7 +1546,7 @@ tasks:
     /// rather than invented fresh: `leaves` carries the `terminal-retained`
     /// role and the machine gives it an exit to `sealed`, and `sealed` gets no
     /// exit and no role names it terminal either. `lifecycle_soundness` refuses
-    /// both readings, for the same reason spec 2 states it: a state is
+    /// both readings, for the same reason [the taxonomy model](../../../../docs/spec/taxonomy-model.md) states it: a state is
     /// terminal to the role and to the machine, or to neither.
     #[test]
     fn a_lock_current_against_its_sources_but_validated_under_a_stale_rule_set_is_refused() {

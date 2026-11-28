@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Q9](../spec/09-decisions.md#q9--multi-repository-corpora) rules that the tier above harvests pinned exports and that no merged graph exists. Harvest should keep a solution-tier route query inside the same 100 ms budget.
+[Q9](../spec/decisions.md#q9--multi-repository-corpora) rules that the tier above harvests pinned exports and that no merged graph exists. Harvest should keep a solution-tier route query inside the same 100 ms budget.
 
 ## Obligation
 

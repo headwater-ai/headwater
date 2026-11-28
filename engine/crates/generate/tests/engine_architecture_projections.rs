@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Spec 6's projection-kinds block, held against [`headwater_generate::unbuilt`].
+//! [the engine architecture](../../../../docs/spec/engine-architecture.md)'s projection-kinds block, held against [`headwater_generate::unbuilt`].
 //!
 //! # Why this file exists
 //!
-//! `docs/spec/06-engine-architecture.md` stated eight projection kinds as
+//! `docs/spec/engine-architecture.md` stated eight projection kinds as
 //! implemented, four of which this engine does not emit
 //! ([#576](https://github.com/headwater-ai/headwater/issues/576)). The check a
 //! reader could run by hand — `headwater generate --check` beside a `grep` of
@@ -15,7 +15,7 @@
 //!
 //! # The model, and where this is stronger than it
 //!
-//! `engine/crates/cli/tests/verbs.rs` holds spec 6's CLI grammar block against
+//! `engine/crates/cli/tests/verbs.rs` holds [the engine architecture](../../../../docs/spec/engine-architecture.md)'s CLI grammar block against
 //! `headwater_verbs::VERBS` the same way, and the two design points are taken
 //! from it. First, the block carries **engine identifiers** rather than the
 //! prose the paragraph uses, so there is no prose-to-identifier mapping to
@@ -33,7 +33,7 @@
 //!
 //! The *wording* of a reason is held for `coverage_report` alone, in
 //! [`the_coverage_report_reason_of_spec_6_is_the_reason_the_verb_prints`].
-//! That is the one reason spec 6 quotes in full, and the other four remain a
+//! That is the one reason [the engine architecture](../../../../docs/spec/engine-architecture.md) quotes in full, and the other four remain a
 //! hand copy in prose. Since
 //! [#596](https://github.com/headwater-ai/headwater/issues/596) a run over any
 //! corpus prints all five, which
@@ -68,10 +68,10 @@ const RUNS: &str = "runs";
 const WAITS: &str = "waits";
 
 fn spec_six() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../docs/spec/06-engine-architecture.md")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../docs/spec/engine-architecture.md")
 }
 
-/// The `runs` and `waits` groups of spec 6's projection-kinds block.
+/// The `runs` and `waits` groups of [the engine architecture](../../../../docs/spec/engine-architecture.md)'s projection-kinds block.
 ///
 /// The block is a fenced code block. A left-aligned line names a group and an
 /// indented line names a kind, so the shape a reader sees is the shape this
@@ -150,14 +150,14 @@ fn the_projection_kinds_block_of_spec_6_names_the_thirteen_kinds_this_engine_dec
         .collect();
     assert!(
         unknown.is_empty(),
-        "docs/spec/06-engine-architecture.md's projection-kinds block names {unknown:?}, which is \
+        "docs/spec/engine-architecture.md's projection-kinds block names {unknown:?}, which is \
          no projection kind this engine carries"
     );
 
     assert_eq!(
         named.len(),
         Kind::ALL.len(),
-        "docs/spec/06-engine-architecture.md's projection-kinds block names {} kinds and this \
+        "docs/spec/engine-architecture.md's projection-kinds block names {} kinds and this \
          engine carries {}. The block is {:?} under `{RUNS}` and {:?} under `{WAITS}`",
         named.len(),
         Kind::ALL.len(),
@@ -168,7 +168,7 @@ fn the_projection_kinds_block_of_spec_6_names_the_thirteen_kinds_this_engine_dec
     let overlap: Vec<&String> = runs.intersection(&waits).collect();
     assert!(
         overlap.is_empty(),
-        "docs/spec/06-engine-architecture.md's projection-kinds block names {overlap:?} under both \
+        "docs/spec/engine-architecture.md's projection-kinds block names {overlap:?} under both \
          `{RUNS}` and `{WAITS}`"
     );
 }
@@ -212,7 +212,7 @@ fn the_runs_group_of_spec_6_is_exactly_the_projection_kinds_this_engine_emits() 
         .collect();
     assert!(
         stated_built_but_waiting.is_empty(),
-        "docs/spec/06-engine-architecture.md's projection-kinds block puts {:?} under `{RUNS}`, \
+        "docs/spec/engine-architecture.md's projection-kinds block puts {:?} under `{RUNS}`, \
          and `headwater_generate::unbuilt` gives each one a reason it writes nothing: {:#?}",
         stated_built_but_waiting
             .iter()
@@ -230,12 +230,12 @@ fn the_runs_group_of_spec_6_is_exactly_the_projection_kinds_this_engine_emits() 
     assert!(
         emitted_but_not_stated.is_empty(),
         "this engine emits {emitted_but_not_stated:?} and \
-         docs/spec/06-engine-architecture.md's projection-kinds block does not name them under \
+         docs/spec/engine-architecture.md's projection-kinds block does not name them under \
          `{RUNS}`. The block is {runs:?} under `{RUNS}` and {waits:?} under `{WAITS}`"
     );
 }
 
-/// The reason spec 6 quotes for `coverage_report` is the reason the verb prints.
+/// The reason [the engine architecture](../../../../docs/spec/engine-architecture.md) quotes for `coverage_report` is the reason the verb prints.
 ///
 /// #576's second clause. Every waiting kind reaches a run over any corpus
 /// since #596, and `coverage_report` is the one of them a specification part
@@ -255,13 +255,13 @@ fn the_coverage_report_reason_of_spec_6_is_the_reason_the_verb_prints() {
     );
     assert!(
         text.contains(reason),
-        "docs/spec/06-engine-architecture.md does not quote the reason \
+        "docs/spec/engine-architecture.md does not quote the reason \
          `headwater generate --check` prints for `coverage_report`:\n\n{reason}"
     );
 }
 
 /// The `headwater generate` contract, which carries the projection rules that
-/// spec 6 moved to it under #1572.
+/// [the engine architecture](../../../../docs/spec/engine-architecture.md) moved to it under #1572.
 fn generate_contract() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../docs/interfaces/headwater-generate.md")
 }
@@ -319,21 +319,21 @@ fn declarable_counts(text: &str) -> Vec<(usize, usize)> {
     counts
 }
 
-/// The declarable count that spec 6 and the `headwater generate` contract
+/// The declarable count that [the engine architecture](../../../../docs/spec/engine-architecture.md) and the `headwater generate` contract
 /// state is the count this engine declares.
 ///
-/// Spec 6 at `bdf2761f` stated "Ten of the twelve are declarable" after
+/// [The engine architecture](../../../../docs/spec/engine-architecture.md) at `bdf2761f` stated "Ten of the twelve are declarable" after
 /// `verb_index` and `consumer_surface` had made the sets eleven and thirteen
 /// ([#1572](https://github.com/headwater-ai/headwater/issues/1572)). Nothing
 /// read the sentence, so the hand count drifted twice and every suite stayed
 /// green. This reads every sentence of that form in both documents and holds
-/// each to [`Kind::DECLARABLE`] and [`Kind::ALL`]. Spec 6 must state the count
+/// each to [`Kind::DECLARABLE`] and [`Kind::ALL`]. [The engine architecture](../../../../docs/spec/engine-architecture.md) must state the count
 /// at least once, so an emptied statement does not pass. The contract need not
 /// state one, and where it does it is held the same way.
 ///
 /// # Watched failing
 ///
-/// Against spec 6 as it stood at `bdf2761f`, this failed on `(10, 12)`.
+/// Against [the engine architecture](../../../../docs/spec/engine-architecture.md) as it stood at `bdf2761f`, this failed on `(10, 12)`.
 #[test]
 fn the_declarable_count_spec_6_and_the_generate_contract_state_is_the_count_the_engine_declares() {
     let expected = (Kind::DECLARABLE.len(), Kind::ALL.len());

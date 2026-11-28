@@ -7,7 +7,7 @@
 //! shape that names no form or more than one.
 //!
 //! The form set is small on purpose. Every form here is one the thirteen
-//! declarations of [spec 2](../../../../docs/spec/02-taxonomy-model.md#the-thirteen-declarations)
+//! declarations of [the taxonomy model](../../../../docs/spec/taxonomy-model.md#the-thirteen-declarations)
 //! actually use, and a form nothing uses would be a shape language feature that
 //! no taxonomy could exercise.
 
@@ -78,7 +78,7 @@ impl ScalarType {
 /// `YYYY-MM-DD` read as a real date of the proleptic Gregorian calendar, which
 /// is what YAML 1.2 and ISO 8601 both mean by a date, as `(year, month, day)`.
 ///
-/// It is the one form [spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md)
+/// It is the one form [authoring and lifecycle](../../../../docs/spec/authoring-and-lifecycle.md)
 /// writes. Until HW-OBL-0171 this crate read the digit positions only, so it
 /// admitted `2026-02-30` and `0000-00-00`, which the check layer's date reader
 /// refused. The check layer's `Date::parse` now calls this function, so a date
@@ -163,7 +163,7 @@ pub enum Form {
     Block(String),
     OneOf(Vec<Shape>),
     /// A node the meta-schema does not constrain, and the reason it does not.
-    /// Every use is a gap that [13 — Open obligations](../../../../docs/spec/13-open-obligations.md)
+    /// Every use is a gap that [Open obligations](../../../../docs/spec/open-obligations.md)
     /// carries, and holding the reason here is what lets the crate count them.
     Free(String),
 }

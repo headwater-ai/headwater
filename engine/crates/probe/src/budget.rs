@@ -8,7 +8,7 @@
 //! and no rule reads it — which is the test [#74](https://github.com/headwater-ai/headwater/issues/74)
 //! applied to the capture-cost store and reached the same answer for. It is not
 //! in `.headwater/taxonomy.yml` either, because that file is the consumer
-//! declaration of spec 7 and a taxonomy is not what decides how much a run may
+//! declaration of [distribution and federation](../../../../docs/spec/distribution-and-federation.md) and a taxonomy is not what decides how much a run may
 //! cost. So it is `.headwater/probe.yml`, beside the lock and beside the cache.
 //!
 //! [HW-DR-0076](../../../../docs/decisions/0076-a-probe-budget-prices-a-run-identity-fixed-before-the-run-and-a-committed-transcript-and-a-sweep-has-neither.md)
@@ -48,7 +48,7 @@ pub struct Envelope {
     /// What one session is believed to cost. See the module comment: this is a
     /// declared number and not a measured one.
     pub session_cost: Cents,
-    /// How many sessions of each probe in each arm. Spec 5 takes this from
+    /// How many sessions of each probe in each arm. [AI integration](../../../../docs/spec/ai-integration.md) takes this from
     /// statistical power for a campaign, and a regression tier watches one arm
     /// once.
     pub repetitions: u32,
@@ -56,7 +56,7 @@ pub struct Envelope {
     /// nothing.
     pub arms: Vec<Arm>,
     /// The paths, relative to the repository root, that the absent arm
-    /// removes. Spec 5: the absent arm names a declared ablation. Empty for a
+    /// removes. [AI integration](../../../../docs/spec/ai-integration.md): the absent arm names a declared ablation. Empty for a
     /// tier that runs no absent arm, and refused as empty for one that does.
     pub ablation: Vec<String>,
     /// The turn cap each session of this tier runs under, where the tier
@@ -726,7 +726,7 @@ fn envelope(tier: Tier, fields: &Mapping) -> Result<Envelope, Unreadable> {
     {
         return Err(Unreadable::ArmOutsideItsTier { tier: name, arm });
     }
-    // Spec 5: "A campaign runs as one batch, or it is not one measurement", and
+    // AI integration (docs/spec/ai-integration.md): "A campaign runs as one batch, or it is not one measurement", and
     // the pair is what an efficacy claim rests on. A campaign declaring one arm
     // is a campaign that estimates nothing, which is the regression tier under
     // a name that would let a published claim cite it.
@@ -741,7 +741,7 @@ fn envelope(tier: Tier, fields: &Mapping) -> Result<Envelope, Unreadable> {
         return Err(Unreadable::PairWithoutPresent { tier: name });
     }
 
-    // Spec 5: the absent arm names a declared ablation. An absent arm with
+    // AI integration (docs/spec/ai-integration.md): the absent arm names a declared ablation. An absent arm with
     // none is whatever a script happens to remove, and an ablation with no
     // absent arm is declared and never applied.
     let ablation = match fields.get("ablation") {
@@ -1411,7 +1411,7 @@ impl std::fmt::Display for Unreadable {
             ),
             Unreadable::AblationUndeclared { tier } => write!(
                 f,
-                "the `{tier}` tier runs the `absent` arm and declares no `ablation`. Spec 5: the \
+                "the `{tier}` tier runs the `absent` arm and declares no `ablation`. AI integration: the \
                  absent arm names a declared ablation, or the claim it measures is whatever a \
                  script removed"
             ),
@@ -2086,7 +2086,7 @@ tiers:
 
     #[test]
     fn an_absent_arm_with_no_ablation_is_refused() {
-        // Spec 5: the absent arm names a declared ablation. Without one, the
+        // AI integration (docs/spec/ai-integration.md): the absent arm names a declared ablation. Without one, the
         // absent tree is whatever a script removes, and no claim names it.
         let source = GOOD.replace(
             "    ablation: [CLAUDE.md, .claude, .githooks, .headwater]\n",
