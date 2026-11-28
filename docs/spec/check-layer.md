@@ -5,7 +5,6 @@ status_since: 2026-08-02
 last_verified: 2026-11-26
 summary: What a check is, how a scope constrains it, where it comes from, and what the check layer owes the engine.
 doc_type: design_spec
-sequence: 12
 title: "The check layer"
 provenance:
   warrant: accepted
@@ -32,7 +31,7 @@ relations:
     - HW-EVAL-what-a-check-can-know
 ---
 
-# 12 — The check layer
+# The check layer
 
 [Spec 6](06-engine-architecture.md) says that checks are pure functions over the corpus graph. That was sufficient at that level of detail. The LinkML and SHACL evaluations then found where the standards stop. Everything past that line lands here. Thus the check layer needs a design, not only a description.
 

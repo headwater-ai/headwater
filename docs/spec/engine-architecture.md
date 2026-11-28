@@ -5,7 +5,6 @@ status_since: 2026-08-01
 last_verified: 2026-11-23
 summary: One parse, one typed graph, and many consumers, with the pipeline, the library boundary, and the performance targets.
 doc_type: design_spec
-sequence: 6
 title: "Engine architecture"
 provenance:
   warrant: accepted
@@ -26,7 +25,7 @@ relations:
     - HW-EVAL-what-a-check-can-know
 ---
 
-# 6 — Engine architecture
+# Engine architecture
 
 One parse, one graph, many consumers.
 

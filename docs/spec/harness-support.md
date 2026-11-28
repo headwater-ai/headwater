@@ -5,7 +5,6 @@ status_since: 2026-09-06
 summary: The eleven capabilities a harness supplies at the four moments, stated once for every harness, and the recorded support of Claude Code, GitHub Copilot and OpenAI Codex.
 last_verified: 2026-09-09
 doc_type: design_spec
-sequence: 16
 title: "Harness support"
 provenance:
   warrant: accepted

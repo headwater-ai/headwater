@@ -5,7 +5,6 @@ status_since: 2026-08-01
 last_verified: 2026-08-11
 summary: The vocabulary that the rest of the specification uses, from corpus and shelf to warrant, projection, and the TBox and ABox split.
 doc_type: design_spec
-sequence: 1
 title: "Conceptual model"
 provenance:
   warrant: accepted
@@ -23,7 +22,7 @@ relations:
     - HW-EVAL-warrant-and-adjudication
 ---
 
-# 1 — Conceptual model
+# Conceptual model
 
 This document gives the vocabulary that the rest of the specification uses. Each term is a named concept in the schema and in the engine. Where they differ, this document says so.
 

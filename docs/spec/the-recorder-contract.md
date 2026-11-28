@@ -5,7 +5,6 @@ status_since: 2026-09-06
 summary: Everything an external recorder writes into a transcript, and the closed key sets that refuse a file. This part also names the one member of the run identity this engine compares, and the period a result stays citable.
 last_verified: 2026-09-07
 doc_type: design_spec
-sequence: 15
 title: "The recorder contract"
 provenance:
   warrant: asserted

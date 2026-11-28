@@ -5,7 +5,6 @@ status_since: 2026-08-01
 last_verified: 2026-08-11
 summary: The assurance model, which holds the control postures, obligations, coverage without silent passes, and the places where efficacy is unmeasured.
 doc_type: design_spec
-sequence: 4
 title: "Assurance model"
 provenance:
   warrant: accepted
@@ -27,7 +26,7 @@ relations:
     - HW-EVAL-what-a-check-can-know
 ---
 
-# 4 — Assurance model
+# Assurance model
 
 How the system knows that it works, and admits where it does not.
 

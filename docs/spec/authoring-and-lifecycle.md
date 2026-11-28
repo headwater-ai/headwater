@@ -5,7 +5,6 @@ status_since: 2026-08-01
 last_verified: 2026-08-11
 summary: How a document starts, declares itself in front matter, records its provenance, and dies without loss of its lineage.
 doc_type: design_spec
-sequence: 3
 title: "Authoring and lifecycle"
 provenance:
   warrant: accepted
@@ -23,7 +22,7 @@ relations:
     - HW-EVAL-what-a-check-can-know
 ---
 
-# 3 — Authoring and lifecycle
+# Authoring and lifecycle
 
 This section tells how a document starts and how it declares what it is. It also tells how the document stays trustworthy, and how it dies without loss of its history.
 

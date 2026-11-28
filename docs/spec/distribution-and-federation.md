@@ -5,7 +5,6 @@ status_since: 2026-08-01
 last_verified: 2026-08-17
 summary: How a publisher ships a taxonomy, how a consumer overlays it, and what the invariant core requires of the result.
 doc_type: design_spec
-sequence: 7
 title: "Distribution and federation"
 provenance:
   warrant: accepted
@@ -29,7 +28,7 @@ relations:
     - HW-EVAL-warrant-and-adjudication
 ---
 
-# 7 — Distribution and federation
+# Distribution and federation
 
 One organization defines a documentation method. Many repositories adopt it. It evolves. Everyone must be able to take the evolution without loss of what they customized. Also, the publisher must be able to tell who actually did.
 

@@ -5,7 +5,6 @@ status_since: 2026-08-01
 last_verified: 2026-08-11
 summary: How the corpus serves an agent at four moments, and how a probe measures whether any of it works.
 doc_type: design_spec
-sequence: 5
 title: "AI integration"
 provenance:
   warrant: accepted
@@ -27,7 +26,7 @@ relations:
     - .claude/agents/headwater-maintainer.md
 ---
 
-# 5 — AI integration
+# AI integration
 
 Agents now read documentation more often than people do. The failure mode of an agent is not that it skims. When context is missing, an agent invents, and it invents with confidence. The corpus is designed for that reader.
 

@@ -5,7 +5,6 @@ status_since: 2026-08-11
 last_verified: 2026-08-13
 summary: An index of the twenty-one design decisions and the ones that the build raised. For each one, it names where the record lives and the evidence that closed it.
 doc_type: decision_register
-sequence: 9
 title: "The decision register"
 provenance:
   warrant: accepted
@@ -34,7 +33,7 @@ relations:
     - HW-EVAL-what-a-check-can-know
 ---
 
-# 9 — The decision register
+# The decision register
 
 This file began as a list of decisions that the design phase deferred, with the options and a leaning for each one. Every entry is now argued, and all twenty-one are closed. The last one to close was [Q11](#q11--license-and-distribution-posture). No argument from the design could close it, because a license states what the owner intends for the project. The owner ratified it on 2026-08-11.
 

@@ -5,7 +5,6 @@ status_since: 2026-08-01
 last_verified: 2026-11-26
 summary: The central design, which declares kinds, facets, relations, regimes, the immutable core, and customization by overlay.
 doc_type: design_spec
-sequence: 2
 title: "The taxonomy model"
 provenance:
   warrant: accepted
@@ -29,7 +28,7 @@ relations:
     - HW-EVAL-what-a-check-can-know
 ---
 
-# 2 — The taxonomy model
+# The taxonomy model
 
 **This is the central design of the system.** Everything else is downstream of it.
 

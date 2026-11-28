@@ -5,7 +5,6 @@ status_since: 2026-08-11
 last_verified: 2026-08-13
 summary: The work that the closed decisions left behind, which is unmeasured claims, items that wait on an adopter, and unblocked design work.
 doc_type: obligation_register
-sequence: 13
 title: "Open obligations"
 provenance:
   warrant: accepted
@@ -24,7 +23,7 @@ relations:
     - HW-EVAL-owl-skos-worked-example
 ---
 
-# 13 — Open obligations
+# Open obligations
 
 Every decision in [9 — The decision register](09-decisions.md) is closed, and each one left work behind. This file gathers that work in one place. Nothing here blocks a decision. Most items wait on an engine that nobody has built, on a corpus that nobody has adopted, or on a measurement that nobody has run. An item stays here after its measurement runs, with the number, until the claim it was filed against is settled.
 
