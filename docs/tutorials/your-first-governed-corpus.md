@@ -103,19 +103,19 @@ The first heading names what a tree states about itself: the **corpus** is `docs
 
 ### Step 3 — Fetch the package into your tree
 
-`headwater taxonomy vendor` is the vendor route that step 2 named. Give it the `https://` location of a published zip and the digest that its publisher printed. It fetches the zip, checks every file against the digest, and installs the result. The command below fetches version 4.31.0 of `headwater/standard` from its release page.
+`headwater taxonomy vendor` is the vendor route that step 2 named. Give it the `https://` location of a published zip and the digest that its publisher printed. It fetches the zip, checks every file against the digest, and installs the result. The command below fetches version 5.0.0 of `headwater/standard` from its release page.
 
 ```sh
-headwater taxonomy vendor https://github.com/headwater-ai/headwater/releases/download/taxonomy/headwater-standard/v4.31.0/headwater-standard-4.31.0.zip --expect sha256:a15faef6c5f4f22eee470a56a4ff432fba39ff5b0d3e4858625eb52f71aa0136
+headwater taxonomy vendor https://github.com/headwater-ai/headwater/releases/download/taxonomy/headwater-standard/v5.0.0/headwater-standard-5.0.0.zip --expect sha256:4d78daa54d361c284c46e014b0767c3802063831afbc635c581631d5afcffd21
 ```
 
 Trimmed to the account of what `vendor` fetched and installed.
 
 ```
-vendored headwater/standard 4.31.0
-  from https://github.com/headwater-ai/headwater/releases/download/taxonomy/headwater-standard/v4.31.0/headwater-standard-4.31.0.zip
-  42 files, all of them the pinned bytes
-  digest sha256:a15faef6c5f4f22eee470a56a4ff432fba39ff5b0d3e4858625eb52f71aa0136
+vendored headwater/standard 5.0.0
+  from https://github.com/headwater-ai/headwater/releases/download/taxonomy/headwater-standard/v5.0.0/headwater-standard-5.0.0.zip
+  43 files, all of them the pinned bytes
+  digest sha256:4d78daa54d361c284c46e014b0767c3802063831afbc635c581631d5afcffd21
   doctrine at .headwater/packages/headwater-standard/doctrine/
   pinned taxonomy.digest in .headwater/taxonomy.yml
 ```
@@ -124,25 +124,26 @@ The last line says that `vendor` wrote the digest you passed into `.headwater/ta
 
 The `from` line is the location that `vendor` fetched. The `digest` line says that the files are the bytes the publisher pinned. `.headwater/packages/headwater-standard` is where `vendor` installed the package in your tree ([HW-DR-0067](../decisions/0067-the-vendored-package-root-moves-under-headwater-and-the-old-root-is-named-in-a-refusal.md)).
 
-**Check.** `ls .headwater/packages/headwater-standard` prints seven lines:
+**Check.** `ls .headwater/packages/headwater-standard` prints eight lines:
 
 ```
 assemblies
 bundles
 conformance.yml
 doctrine
+migrations
 package.yml
 release.yml
 taxonomy.yml
 ```
 
-A **package** carries a taxonomy: the kinds, the facets, the shelves and the rules. `headwater/standard` is the base package, and the taxonomy it declares is deliberately small. Four of the seven entries are not taxonomy at all. `assemblies/` holds the publisher recipes this package ships. `bundles/` holds optional traditions nothing here selects. `doctrine/` holds the prose that explains them to a person. `release.yml` is the publish record that carries the digest this fetch just checked. Nothing you run in this tutorial reads any of the four.
+A **package** carries a taxonomy: the kinds, the facets, the shelves and the rules. `headwater/standard` is the base package, and the taxonomy it declares is deliberately small. Five of the eight entries are not taxonomy at all. `assemblies/` holds the publisher recipes this package ships. `bundles/` holds optional traditions nothing here selects. `doctrine/` holds the prose that explains them to a person. `migrations/` holds the edits that carry a corpus from version 4 of this package to version 5. `release.yml` is the publish record that carries the digest this fetch just checked. Nothing you run in this tutorial reads any of the five.
 
 Step 2 named two routes, and this step took the second. `headwater taxonomy vendor` installs a **published artifact**, which is what `headwater taxonomy publish` writes. This fetch just checked it, file by file, against the digest you passed. `vendor` fetched the zip itself, and after the install this is the one command in this tutorial that uses the network. Your organization can refuse a tool that reaches the network. Then get the zip by a means it allows, such as a mirror or an air-gapped copy. Unpack it, and give `vendor` that directory in place of the location. The digest check is the same for the two forms.
 
 `taxonomy/headwater-standard/v<version>` is the taxonomy-only route. It publishes `headwater/standard` alone, with no engine release. A release workflow of this repository cuts a tag of this form whenever the package authors choose to. It needs no new engine version.
 
-A second route pins a fixed version of the engine and of this package. The README's *Obtaining a named version* section names both. This step already pinned the digest, and step 5 pins the version this pulled, `4.31.0`. Step 16 reads back what the second pin buys.
+A second route pins a fixed version of the engine and of this package. The README's *Obtaining a named version* section names both. This step already pinned the digest, and step 5 pins the version this pulled, `5.0.0`. Step 16 reads back what the second pin buys.
 
 ### Step 4 — Meet the first refusal
 
@@ -152,7 +153,7 @@ headwater taxonomy resolve
 
 ```
 headwater: the taxonomy did not resolve, so no lock is possible
-  .headwater/taxonomy.yml: this takes headwater/standard 0.0.0, and the package here is 4.31.0
+  .headwater/taxonomy.yml: this takes headwater/standard 0.0.0, and the package here is 5.0.0
 ```
 
 **Check.** `echo $?` prints `1`.
@@ -161,13 +162,13 @@ A refusal here is the design and not a fault. A **lock** is a validated taxonomy
 
 ### Step 5 — Pin the version, and meet the second refusal
 
-Open `.headwater/taxonomy.yml`. Change `  version: 0.0.0` to `  version: 4.31.0`. The `digest` line above it is the one step 3 wrote.
+Open `.headwater/taxonomy.yml`. Change `  version: 0.0.0` to `  version: 5.0.0`. The `digest` line above it is the one step 3 wrote.
 
 **Check.** `grep -E 'digest:|version:' .headwater/taxonomy.yml` prints two lines:
 
 ```
-  digest: sha256:a15faef6c5f4f22eee470a56a4ff432fba39ff5b0d3e4858625eb52f71aa0136
-  version: 4.31.0
+  digest: sha256:4d78daa54d361c284c46e014b0767c3802063831afbc635c581631d5afcffd21
+  version: 5.0.0
 ```
 
 Now resolve again.
@@ -524,13 +525,13 @@ levels
   L2 Regenerated — not reached, 3 of 4 rules met
     1 gap, 0 of them waived
 
-L1 reached, against headwater/standard 4.31.0
+L1 reached, against headwater/standard 5.0.0
   a level states what this repository wired up. It measures nothing about the
   corpus, no key declares one, and a waiver moves the exit status and never the
   level.
 ```
 
-**Check.** The last line of the levels block reads `L1 reached, against headwater/standard 4.31.0`.
+**Check.** The last line of the levels block reads `L1 reached, against headwater/standard 5.0.0`.
 
 Your corpus already stands on the first two rungs, which a package copied by hand never reaches. `pin.current` is what carried you there. It reads the digest step 3 pinned against the record `.headwater/packages/headwater-standard/release.yml` carries, and step 3 already gave you both. A package you copy from a source directory has no digest to pin, because nobody has published it. That route never reaches this rung: it stays off the ladder for the whole life of a corpus built that way. One gap is left, and it closes with a command:
 
@@ -539,7 +540,7 @@ headwater generate
 headwater conformance
 ```
 
-**Check.** `headwater conformance 2>/dev/null | grep 'L2'` prints `  L2 Regenerated — reached, 4 of 4 rules met` and, further down, `L2 reached, against headwater/standard 4.31.0`.
+**Check.** `headwater conformance 2>/dev/null | grep 'L2'` prints `  L2 Regenerated — reached, 4 of 4 rules met` and, further down, `L2 reached, against headwater/standard 5.0.0`.
 
 `headwater generate` wrote the two projections that were missing, `docs/decisions/README.md` and `.headwater/corpus.json`, and that closed `projections.current`, the last rule L2 asks for. Every rung this ladder has is reached. A level still measures what you wired up rather than what your documents say. Climbing it here took one pin and two commands, not a better decision record.
 
