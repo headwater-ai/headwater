@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The migration payload from headwater/standard 4.x to 5.x, and the first
+# payload this package ships. The form is the one that distribution and
+# federation states (docs/spec/distribution-and-federation.md, The migration
+# payload), and `headwater_resolve::migration` reads it.
+#
+# 5.0.0 deletes `facets.sequence` from the design-spec bundle, drops it from
+# the three kinds that required it, and lays out the `spec_series` shelf as
+# `{slug}.md` (HW-DR-0117). One step reaches what an adopter declared under the
+# deleted key. Nothing replaces the facet, so the target list is empty and the
+# step carries a task: the author deletes the entry, and no run applies it.
+#
+# No step names the layout. A `sequence:` line left in a part and a numbered
+# file name left on disk are both inert under 5.0.0, because no rule reads a
+# front-matter key the taxonomy does not declare and no rule reads a layout
+# after birth. An overlay that overrides the layout with a `{sequence...}`
+# placeholder is refused by `taxonomy validate` as a placeholder that nothing
+# fills, and the design-spec doctrine names that case for the adopter.
+
+migration:
+  format: 1
+  from: ">=4 <5"
+  to: ">=5 <6"
+
+steps:
+  - subject: overlay_address
+    from: facets.sequence
+    to: []
+    task: >-
+      Delete this entry. 5.0.0 declares no `sequence` facet, so an entry at or
+      under `facets.sequence` adds back a facet that no kind requires and no
+      rule reads.
+    because: >-
+      The number ordered nothing that a rule read, two parts could take one
+      value, and the owner ruled on #2137 that a part of the series is named
+      by its slug and carries no number.

@@ -7,6 +7,8 @@ doc_type: design_spec
 sequence: 4
 supersedes:
   - docs/spec/02-transport.md
+builds_on:
+  - docs/spec/01-model.md
 provenance:
   warrant: accepted
   agency: mixed

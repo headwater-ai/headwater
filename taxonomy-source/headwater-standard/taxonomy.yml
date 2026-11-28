@@ -13,7 +13,7 @@
 # derivation and not a source. This file is the source.
 #
 # One key differs from the block. It opened `package: headwater/standard`, which
-# is the manifest key of spec 7 standing in front of eleven taxonomy
+# is the manifest key of distribution and federation (docs/spec/distribution-and-federation.md) standing in front of eleven taxonomy
 # declarations. `package` is a reserved reference root, so a taxonomy source may
 # not declare it. The manifest is `package.yml` beside this file, and a taxonomy
 # source names itself with `taxonomy:`.
@@ -41,7 +41,7 @@ taxonomy: headwater/standard
 # the same reasoning 3.3.0 gives for `verified_revision` below.
 #
 # 4.0.0 adds `facets.title`, in the `name` role, and this file declares it on no
-# kind. The facet-role registry of spec 2 is closed at five members and four of
+# kind. The facet-role registry of the taxonomy model (docs/spec/taxonomy-model.md) is closed at five members and four of
 # them had a facet here; this is the fifth. The decision-record entry declared
 # `title` until now, and its doctrine recorded that an entry cannot reach the
 # kinds of another entry, so the numbered specification series stayed unnamed.
@@ -55,31 +55,31 @@ taxonomy: headwater/standard
 # `headwater taxonomy diff` measured it against the corpus of this repository
 # before the bump: `instance_validity` BROKEN, 41 failed, `consequence` BROKEN,
 # 41 of them, and the run printed "a dimension is broken, so this change
-# requires a major version". Spec 2 (Versioning by measured compatibility) is
+# requires a major version". The taxonomy model (docs/spec/taxonomy-model.md, Versioning by measured compatibility) is
 # what that sentence reads, and the number here obeys the measurement rather
 # than the shape of the edit. Read the two paragraphs together: a facet that
 # reaches no kind is additive, and a package that ships a bundle requiring it is
 # not, and only the second is what a consumer fetches.
 #
 # The artifact ships no migration payload, and `taxonomy diff` says so on every
-# run of this transition. Spec 7 (The migration payload) gives a step three
+# run of this transition. Distribution and federation (docs/spec/distribution-and-federation.md, The migration payload) gives a step three
 # subjects, `facet_value`, `kind` and `overlay_address`, and a facet that became
 # required is none of the three: there is no old value for a `facet_value` step
-# to move. So the payload vocabulary cannot state this move at all. Spec 7 rules
+# to move. So the payload vocabulary cannot state this move at all. Distribution and federation (docs/spec/distribution-and-federation.md) rules
 # what that means, in its own words: "The vocabulary holds no fourth subject for
 # this class, and that is a ruling rather than an omission." A consumer of 4.0.0
 # therefore waits for no fourth subject, and no later release of this package
 # supplies one. `headwater infer --owner <name> --write` records the pair set as
 # adoption debt, and `headwater check` then reports each pair as
 # `migration-pending` until an author supplies the value under an open task. Two
-# measurements reopen the ruling, and spec 7 holds both.
+# measurements reopen the ruling, and distribution and federation (docs/spec/distribution-and-federation.md) holds both.
 #
 # 3.4.0 adds `OB-MIG-1` and `CT-MIG-1`, which are the obligation and the
 # control behind `adoption.task.expired`. Nothing is removed and nothing
 # already declared changes meaning, so it is a minor. What a consumer meets is
 # a rule that reads a member the adoption block has carried since Q12's
 # migration payload shipped: a task's own `until`, compared against the
-# injected clock. Spec 7 already said a migration state past its expiry is a
+# injected clock. Distribution and federation (docs/spec/distribution-and-federation.md) already said a migration state past its expiry is a
 # finding against the owner, and until now nothing raised it.
 #
 # 3.3.0 adds `OB-REL-6` and `CT-REL-6`, which are the obligation and the
@@ -102,7 +102,7 @@ taxonomy: headwater/standard
 # control behind `warrant.evidence.unsupported`. Nothing is removed and nothing
 # already declared changes meaning, so it is a minor. What a consumer meets is a
 # rule that reads two members of the provenance block this package has never
-# declared and never could: the block belongs to the engine, and spec 3 has
+# declared and never could: the block belongs to the engine, and authoring and lifecycle (docs/spec/authoring-and-lifecycle.md) has
 # ruled since it was written that a pointer at an `asserted` document does not
 # support `evidenced`. Until now nothing held a corpus to that sentence. The
 # rule reads the `evidence` relation family, so a consumer that declares no
@@ -149,6 +149,24 @@ taxonomy: headwater/standard
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
 #
+# 5.0.0 changes the design-spec bundle and nothing in this file. It deletes
+# `facets.sequence`, drops it from the `require` lists of `design_spec`,
+# `decision_register` and `obligation_register`, and lays out `spec_series` as
+# `{slug}.md` where it was `{sequence:02d}-{slug}.md`. It adds `builds_on`, a
+# `derivation` relation whose nucleus is the part built on, so the series keeps
+# a reading order with no number (HW-DR-0117, #2137). The owner ruled a major
+# with a deletion and no deprecation, and the measurement agrees. `headwater
+# taxonomy diff` over the n8n fixture reports `instance_validity` BROKEN and
+# `consequence` BROKEN, 4 failed each: each of the four documents fails one
+# requirement fewer, which is a check that changed what it decides. Over this
+# repository it reports `projection` BROKEN, 1 of them, the generated register
+# that loses its `sequence:` line. The package ships its first migration
+# payload, `migrations/4-to-5.yml`, with one `overlay_address` step from
+# `facets.sequence` to nothing. Migration: run `taxonomy migrate --apply`,
+# delete each overlay entry under `facets.sequence`, and replace a layout
+# override that names `{sequence...}`. A numbered file name and a `sequence:`
+# line left on disk raise no finding.
+#
 # 4.31.0 adds two obligations, `OB-FACET-4` and `OB-SECT-2`, and three controls. `CT-FACET-4`
 # names the rule `facet.value.not_of_type`: a document facet value is of the
 # type its declaration states, so a date that no calendar has, a word in a date
@@ -170,7 +188,7 @@ taxonomy: headwater/standard
 # facet to a whole segment, as in `docs/contexts/{context}/contracts/**`, and a
 # document on that shelf whose value for the facet is absent or differs from
 # its folder is an error that names both values. It is the one stated
-# exception to `OB-PLACE-1`, and spec 2 says why. The control is advisory with
+# exception to `OB-PLACE-1`, and the taxonomy model (docs/spec/taxonomy-model.md) says why. The control is advisory with
 # promotion criteria, because the remedy is a judgment between moving the file
 # and editing the value. Nothing is removed, so it is a minor (#2101).
 # Migration: a shelf path segment that is exactly `{name}` was a literal folder
@@ -319,7 +337,7 @@ taxonomy: headwater/standard
 # control behind `relation.target.is_source`. Nothing is removed and nothing
 # already declared changes meaning, so it is a minor. What a consumer meets is
 # a new finding: a relation entry that names the document that declares it,
-# in any family except `association`, which spec 2 lets point at its own
+# in any family except `association`, which the taxonomy model (docs/spec/taxonomy-model.md) lets point at its own
 # document (#1232). It follows 4.11.0.
 #
 # 4.11.0 adds `OB-LINK-3` and `CT-LINK-3`: a prose link whose text is exactly
@@ -435,7 +453,7 @@ taxonomy: headwater/standard
 # each carries a recipe rather than a bare instruction. One package version
 # covers every content file it publishes, this one included, so the number
 # here moves with a change to either.
-version: 4.31.0
+version: 5.0.0
 
 purposes:
   rationale:
@@ -469,12 +487,12 @@ vocabularies:
     - {value: discharged, role: terminal-retained}
 
 # Every facet declares `volatility`, and every enum value carries guidance. Both
-# are facet acceptance tests of spec 2 (Facet acceptance tests), and `taxonomy
+# are facet acceptance tests of the taxonomy model (docs/spec/taxonomy-model.md, Facet acceptance tests), and `taxonomy
 # validate` fails a facet that omits either. Four of the five facets here are
 # `mutable`, which is what keeps a value of any of them out of an identifier, a
 # path and a shelf pattern. `title` is the fifth and it is `stable`.
 #
-# The facet-role registry of spec 2 is closed at five members, and this block
+# The facet-role registry of the taxonomy model (docs/spec/taxonomy-model.md) is closed at five members, and this block
 # now declares one facet for each of them. `title` is the last of the five to
 # arrive here. The decision-record entry declared it first, because a log that
 # reads `HW-DR-0007` is not a log anybody reads, and its doctrine recorded that
@@ -535,7 +553,7 @@ facets:
     type: string
     required: false
     volatility: stable
-  # The identifiers a document carried before its current one (#2025). Spec 3
+  # The identifiers a document carried before its current one (#2025). Authoring and lifecycle (docs/spec/authoring-and-lifecycle.md)
   # says an identifier resolves without its document and is never reused, and a
   # document whose identifier changed would otherwise break every edge, link
   # and prompt that still names the old value. The index finds this facet by
@@ -700,15 +718,15 @@ core:
 projections:
   - {kind: shelf_index, for: [decisions, specifications], output: "{shelf}/README.md"}
 
-# Spec 4 (Obligations are data) rules that every finding names the obligation it
-# serves, and spec 12 makes that a required method on a check. An obligation is
+# The assurance model (docs/spec/assurance-model.md, Obligations are data) rules that every finding names the obligation it
+# serves, and the check layer (docs/spec/check-layer.md) makes that a required method on a check. An obligation is
 # data, so it is declared here or it is nowhere. The set below is derived the
 # way the rest of this file is: one obligation for each check that these
-# declarations generate, and the three coverage obligations that spec 4 states
+# declarations generate, and the three coverage obligations that the assurance model (docs/spec/assurance-model.md) states
 # for every corpus.
 #
 # The key is the identifier. `prevents` names a class of the documentation
-# defect taxonomy that spec 4 walks, and no declaration in the language holds
+# defect taxonomy that the assurance model (docs/spec/assurance-model.md) walks, and no declaration in the language holds
 # that taxonomy yet.
 
 obligations:
@@ -799,7 +817,7 @@ obligations:
 
   OB-REL-7:
     statement: No relation instance outside the association family names the document that declares it as its target
-    rationale: Spec 2 keeps self-reference invalid in every family except association. An edge from a document to itself asserts nothing, as a document that draws on, governs, constrains or traces to itself does, or it asserts a contradiction, as a document that supersedes itself does. The target resolved and both kinds are admitted, so no other rule reports it, and the graph keeps an edge whose two ends are one node
+    rationale: The taxonomy model (docs/spec/taxonomy-model.md) keeps self-reference invalid in every family except association. An edge from a document to itself asserts nothing, as a document that draws on, governs, constrains or traces to itself does, or it asserts a contradiction, as a document that supersedes itself does. The target resolved and both kinds are admitted, so no other rule reports it, and the graph keeps an edge whose two ends are one node
     class: cohesion
     prevents: content.inconsistent
     severity: medium
@@ -918,7 +936,7 @@ obligations:
 
   OB-WARRANT-2:
     statement: "A document that claims `evidence_basis: evidenced` does not rest that claim on a document whose warrant is `asserted`"
-    rationale: Spec 3 rules that a pointer to an `asserted` document does not support `evidenced`, because such a document is neither external nor auditable. A fabricated reason with a file name beside it reads from outside exactly like a reason somebody can check, and the corpus that carries it reports the same three honest states as a corpus where every pointer resolves to real evidence. The claim is at one end of the pointer and the reading that would support it is at the other, so no document-grained reading can see the pair at all
+    rationale: Authoring and lifecycle (docs/spec/authoring-and-lifecycle.md) rules that a pointer to an `asserted` document does not support `evidenced`, because such a document is neither external nor auditable. A fabricated reason with a file name beside it reads from outside exactly like a reason somebody can check, and the corpus that carries it reports the same three honest states as a corpus where every pointer resolves to real evidence. The claim is at one end of the pointer and the reading that would support it is at the other, so no document-grained reading can see the pair at all
     class: cohesion
     prevents: content.inconsistent
     severity: medium
@@ -1012,7 +1030,7 @@ obligations:
     severity: high
 
   OB-WARRANT-3:
-    statement: The warrant of a document carries one of the values of the closed set that spec 3 declares
+    statement: The warrant of a document carries one of the values of the closed set that authoring and lifecycle (docs/spec/authoring-and-lifecycle.md) declares
     rationale: A misspelled warrant is a fifth state that no reader and no rule knows, and a reader that tests for one value alone serves the misspelling as a document somebody vouched for
     class: cohesion
     prevents: content.inconsistent
@@ -1055,7 +1073,7 @@ obligations:
 
   OB-REL-9:
     statement: Two documents that a relation joins do not both meet the condition that the relation declares as invalid at both ends
-    rationale: Spec 2 declares two current decisions joined by `conflicts_with` an incoherent state. Where both stay current, a reader who meets either one acts on a ruling that the other contradicts, and nothing tells either author that the disagreement is still open
+    rationale: The taxonomy model (docs/spec/taxonomy-model.md) declares two current decisions joined by `conflicts_with` an incoherent state. Where both stay current, a reader who meets either one acts on a ruling that the other contradicts, and nothing tells either author that the disagreement is still open
     class: cohesion
     prevents: content.inconsistent
     severity: medium
@@ -1171,7 +1189,7 @@ obligations:
 # any other value. `headwater check --strict` fails on a live finding that is
 # an error, and on a live finding of any severity whose rule a `blocking`
 # control discharges. Severity stays the check's and posture the control's
-# (spec 12), so an adopter promotes a rule with one overlay line, such as
+# (the check layer (docs/spec/check-layer.md)), so an adopter promotes a rule with one overlay line, such as
 # `override: {controls.CT-REL-6.posture: blocking}`, and changes no check. The
 # adoption block and a suppression still hold such a finding, because the gate
 # reads live findings only. The owner ruled on 2026-11-22, on #2015, that the
@@ -1186,7 +1204,7 @@ controls:
     acts: detective
     promotion:
       produces_facts:
-        reasoning: The census produces the classification that every check rests on, and a wrong row makes every check over it return a correct verdict about a wrong corpus. Spec 12 holds it as a correctness root and its instrument is a fixture set
+        reasoning: The census produces the classification that every check rests on, and a wrong row makes every check over it return a correct verdict about a wrong corpus. The check layer (docs/spec/check-layer.md) holds it as a correctness root and its instrument is a fixture set
 
   CT-COV-2:
     mechanism: check:coverage.document_unchecked
@@ -1214,7 +1232,7 @@ controls:
     promotion:
       criteria:
         window: one release of the taxonomy over an adopting corpus
-        threshold: no false positive, because the rule reports only the three stops of kind resolution on a heterogeneous shelf that spec 2 names as a finding, a missing discriminator, a value the shelf does not admit and a value that is not a scalar, and derives nothing else
+        threshold: no false positive, because the rule reports only the three stops of kind resolution on a heterogeneous shelf that the taxonomy model (docs/spec/taxonomy-model.md) names as a finding, a missing discriminator, a value the shelf does not admit and a value that is not a scalar, and derives nothing else
         sample: every finding of one run over the adopting corpus, adjudicated once
 
   CT-REG-1:
@@ -1371,7 +1389,7 @@ controls:
     promotion:
       criteria:
         window: one release of the taxonomy over an adopting corpus
-        threshold: no false positive. The rule reads a claim whose path the corpus no longer holds, and it counts the typed documents of a kind that mints under the claim's scheme and hold the identifier. With none, the document was deleted and keeps its claim, and the rule reports nothing. With exactly one, the claim names a path that is not the path of its one holding document, which follows a rename or a claim edited by hand, and the rule reports one warning that names both paths. With two or more, the rule reports nothing and identifier.claimed_twice reports the pair. The one false positive left is a document that takes the identifier of a deleted document by hand, which the never-reuse rule of spec 3 forbids
+        threshold: no false positive. The rule reads a claim whose path the corpus no longer holds, and it counts the typed documents of a kind that mints under the claim's scheme and hold the identifier. With none, the document was deleted and keeps its claim, and the rule reports nothing. With exactly one, the claim names a path that is not the path of its one holding document, which follows a rename or a claim edited by hand, and the rule reports one warning that names both paths. With two or more, the rule reports nothing and identifier.claimed_twice reports the pair. The one false positive left is a document that takes the identifier of a deleted document by hand, which the never-reuse rule of authoring and lifecycle (docs/spec/authoring-and-lifecycle.md) forbids
         sample: every finding of one run over the adopting corpus, adjudicated once
 
   CT-REL-2:
@@ -1396,7 +1414,7 @@ controls:
     acts: detective
     promotion:
       permanently_advisory:
-        reasoning: Spec 3 rules that posture per voice category comes from fixability and never from precision, and that a category whose remediation is a rewrite stays advisory whatever its false-positive rate. To block on it makes a judgment about meaning into a gate, and the author who meets it at a red build reaches for the escape hatch
+        reasoning: Authoring and lifecycle (docs/spec/authoring-and-lifecycle.md) rules that posture per voice category comes from fixability and never from precision, and that a category whose remediation is a rewrite stays advisory whatever its false-positive rate. To block on it makes a judgment about meaning into a gate, and the author who meets it at a red build reaches for the escape hatch
 
   CT-WARRANT-1:
     mechanism: check:warrant.promoted
@@ -1406,7 +1424,7 @@ controls:
     acts: detective
     promotion:
       permanently_advisory:
-        reasoning: Spec 3 rules the posture directly. "Forty in one change is a finding about the review rather than about the documents. The posture is advisory permanently, for the reason that the shift ratio is advisory permanently. A threshold teaches people to promote in smaller batches, and nothing declares one." A promotion is a legitimate act, so the rule reports a count and never a defect, and there is nothing for a gate to block on until a taxonomy states how many is too many
+        reasoning: Authoring and lifecycle (docs/spec/authoring-and-lifecycle.md) rules the posture directly. "Forty in one change is a finding about the review rather than about the documents. The posture is advisory permanently, for the reason that the shift ratio is advisory permanently. A threshold teaches people to promote in smaller batches, and nothing declares one." A promotion is a legitimate act, so the rule reports a count and never a defect, and there is nothing for a gate to block on until a taxonomy states how many is too many
 
   CT-WARRANT-2:
     mechanism: check:warrant.evidence.unsupported
@@ -1426,7 +1444,7 @@ controls:
     acts: detective
     promotion:
       final_posture:
-        reasoning: The promotion path collects evidence about a rule that can be wrong about the text it reads, and this one reads two declared values and one declared edge. A movement it refuses is refused by the taxonomy that the corpus itself resolved, so an advisory period would measure a false-positive rate that the construction fixes at zero, and it would collect that reading while illegal movements landed. Spec 3 states the posture in one sentence, which is that the engine rejects a transition that is not in the declared machine when it lands
+        reasoning: The promotion path collects evidence about a rule that can be wrong about the text it reads, and this one reads two declared values and one declared edge. A movement it refuses is refused by the taxonomy that the corpus itself resolved, so an advisory period would measure a false-positive rate that the construction fixes at zero, and it would collect that reading while illegal movements landed. Authoring and lifecycle (docs/spec/authoring-and-lifecycle.md) states the posture in one sentence, which is that the engine rejects a transition that is not in the declared machine when it lands
 
   CT-LIFE-2:
     mechanism: check:lifecycle.state.not_admitted
@@ -1486,7 +1504,7 @@ controls:
     acts: detective
     promotion:
       permanently_advisory:
-        reasoning: The same rule spec 4 states in general. A sentence past the word limit is shortened by deciding which clause carries the meaning, and no mechanical rewrite makes that decision
+        reasoning: The same rule the assurance model (docs/spec/assurance-model.md) states in general. A sentence past the word limit is shortened by deciding which clause carries the meaning, and no mechanical rewrite makes that decision
 
   CT-LANG-2:
     mechanism: check:language.source_form.not_met
@@ -1609,7 +1627,7 @@ controls:
     promotion:
       criteria:
         window: one release of the taxonomy over an adopting corpus
-        threshold: no false positive, because the rule reads two members of one provenance block and the pairing that spec 3 states between them
+        threshold: no false positive, because the rule reads two members of one provenance block and the pairing that authoring and lifecycle (docs/spec/authoring-and-lifecycle.md) states between them
         sample: every finding of one run over the adopting corpus, adjudicated once
 
   CT-WARRANT-5:

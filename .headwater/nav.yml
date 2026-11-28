@@ -228,6 +228,7 @@ nav:
               - "114 — A relation view follows an ordered chain of relations from every document of one shelf": "decisions/0114-a-relation-view-follows-an-ordered-chain-of-relations-from-every-document-of-one-shelf.md"
               - "115 — An agent rules file is a budgeted pointer at the Copilot instructions path": "decisions/0115-an-agent-rules-file-is-a-budgeted-pointer-at-the-copilot-instructions-path.md"
               - "116 — A document facet value is read against its declared type by one rule and one predicate": "decisions/0116-a-document-facet-value-is-read-against-its-declared-type-by-one-rule-and-one-predicate.md"
+              - "117 — The specification series names a part by its slug and carries no sequence": "decisions/0117-the-specification-series-names-a-part-by-its-slug-and-carries-no-sequence.md"
           - "Evaluations":
               - "Evaluations": "evaluations/README.md"
               - "A probe task section is the prompt, so commentary under that heading is prompt": "evaluations/a-probe-task-section-is-the-prompt-so-commentary-under-that-heading-is-prompt.md"

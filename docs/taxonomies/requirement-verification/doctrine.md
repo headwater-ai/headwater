@@ -31,7 +31,7 @@ Three kinds and the edges between them. A requirement states what must hold befo
 
 A requirement requires the sections `Context`, `Requirement` and `Verification`. An acceptance criterion requires `Fit criterion` and `Method`, and the facet `verification_method`. A verification requires `Approach` and `What this does not cover`. Each kind requires `title`, which the base declares in the `name` role.
 
-**Three homogeneous shelves, and not one heterogeneous shelf with a discriminator.** The shelf states the kind, so the front matter stays short, and spec 2 refuses a facet that restates placement. The `standards-spec` entry measured what a heterogeneous shelf costs. A discriminator value that the shelf does not admit stops kind resolution, and no rule then reads the document. The three paths are disjoint from each other and from every shelf of the base and of every admitted entry.
+**Three homogeneous shelves, and not one heterogeneous shelf with a discriminator.** The shelf states the kind, so the front matter stays short, and [the taxonomy model](https://github.com/headwater-ai/headwater/blob/main/docs/spec/taxonomy-model.md) refuses a facet that restates placement. The `standards-spec` entry measured what a heterogeneous shelf costs. A discriminator value that the shelf does not admit stops kind resolution, and no rule then reads the document. The three paths are disjoint from each other and from every shelf of the base and of every admitted entry.
 
 **A verification serves `evidence` and takes the base's `declarative` voice.** It reports what was checked rather than what must hold. `evidence-and-obligation` declares that purpose, and this entry requires that bundle for it.
 
@@ -81,7 +81,7 @@ No kind of this entry binds a language regime. A language regime is a house rule
 
 ## The identifier schemes
 
-`{seq:04d}` and `reconcile-first`, the shape that the decision and the obligation record take. 29148 treats a requirement as an identified object, and spec 3's allocation rule never renumbers, so a citation stays stable. `brd-prd` chose `minted-once` with a slug, on the argument that a business document is cited outside the corpus. That argument does not carry here, because a numbered requirement is cited by its number.
+`{seq:04d}` and `reconcile-first`, the shape that the decision and the obligation record take. 29148 treats a requirement as an identified object, and the allocation rule of [authoring and lifecycle](https://github.com/headwater-ai/headwater/blob/main/docs/spec/authoring-and-lifecycle.md) never renumbers, so a citation stays stable. `brd-prd` chose `minted-once` with a slug, on the argument that a business document is cited outside the corpus. That argument does not carry here, because a numbered requirement is cited by its number.
 
 **No scheme carries a namespace.** A bundle ships to adopters, and a constant written here would be minted by all of them at once. `taxonomy validate` refuses a resolved scheme with no namespace, so the consumer declares one.
 

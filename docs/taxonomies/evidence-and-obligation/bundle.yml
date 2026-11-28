@@ -50,7 +50,7 @@ add:
 
   # --- regimes --------------------------------------------------------------
   # Evidence documents are time-bound by nature, so they are exempt from the
-  # declarative regime that the base declares (spec 3, Voice). design-spec's
+  # declarative regime that the base declares (authoring and lifecycle (docs/spec/authoring-and-lifecycle.md), Voice). design-spec's
   # `review_record` binds this same regime and reaches it through `requires`,
   # for the reason `purposes.obligation` above gives.
 

@@ -5,6 +5,8 @@ last_verified: 2026-07-01
 summary: "The core model: a message, an attempt, and a terminal outcome per destination."
 doc_type: design_spec
 sequence: 1
+builds_on:
+  - docs/spec/00-motivation.md
 provenance:
   warrant: accepted
   agency: mixed

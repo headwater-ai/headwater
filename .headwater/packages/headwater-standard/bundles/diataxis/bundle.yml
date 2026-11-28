@@ -104,7 +104,7 @@ add:
   # this entry names no entry there, so that an adopter can select it alone.
   #
   # **What this line does in the engine, exactly.** It satisfies the relevance
-  # canon of [spec 2](https://github.com/headwater-ai/headwater/blob/main/docs/spec/02-taxonomy-model.md#facet-acceptance-tests),
+  # canon of [the taxonomy model](https://github.com/headwater-ai/headwater/blob/main/docs/spec/taxonomy-model.md#facet-acceptance-tests),
   # which `headwater taxonomy validate` refuses a facet without: a facet that no
   # kind requires *or lists as optional*, that no shelf discriminates on, that
   # no expectation reads and that carries no role, is refused as unread. It does
@@ -124,7 +124,7 @@ add:
   # states why. The closed value set catches a document that names a fifth mode.
   # It cannot catch a document that names one mode truthfully and then serves
   # two, because to find that is to reason about what the prose asserts, and
-  # spec 1 draws the boundary that puts that outside the engine.
+  # the conceptual model (docs/spec/conceptual-model.md) draws the boundary that puts that outside the engine.
   obligations.OB-DX-1:
     statement: A document is in one reader mode
     rationale: A page that serves two modes serves neither, and the reader who came for one of them reads past the other. That is the method's central claim, and a corpus that adopts the four modes and keeps mixed pages has taken the labels without the separation that makes them worth anything
@@ -133,4 +133,4 @@ add:
     severity: medium
     disposition:
       unverifiable:
-        reasoning: To decide that a page holds two modes is to reason about what the prose asserts, which spec 1 forswears. The value set catches a fifth name and no rule catches a truthful name over prose that serves two readers
+        reasoning: To decide that a page holds two modes is to reason about what the prose asserts, which the conceptual model (docs/spec/conceptual-model.md) forswears. The value set catches a fifth name and no rule catches a truthful name over prose that serves two readers

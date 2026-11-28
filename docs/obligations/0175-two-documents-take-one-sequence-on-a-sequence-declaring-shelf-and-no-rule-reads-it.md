@@ -1,9 +1,9 @@
 ---
 id: HW-OBL-0175
-status: current
-status_since: 2026-09-07
+status: discharged
+status_since: 2026-11-28
 summary: "Two design specs declaring sequence 16, whose file names both open with 16-, give check --strict exit 0 and the same finding count as the tree without them."
-last_verified: 2026-09-07
+last_verified: 2026-11-28
 title: "Two documents take one sequence on a sequence-declaring shelf and no rule reads it"
 waiting_on: ruling
 provenance:
@@ -16,6 +16,7 @@ relations:
   traces_to:
     - HW-OBL-0106
     - HW-SPEC-taxonomy-model
+    - HW-DR-0117
 ---
 
 # Two documents take one sequence on a sequence-declaring shelf and no rule reads it
@@ -43,3 +44,5 @@ The corpus owes a reading of the sequence facet across a shelf. It also owes the
 A rule that groups the documents of a shelf by the facet its layout reads discharges the measurement half. It reports a value that two documents hold. It needs no new declaration where the layout already names the facet, and `.headwater/taxonomy.lock` names it on all five shelves.
 
 The ruling half asks whether a shared sequence is a defect at all. A shelf may number for sort order alone, where two documents at one value sort adjacently and nothing else follows. Where the number is an address that a citation carries, a duplicate is a broken address. The two readings need different remedies, and neither one is chosen here.
+
+**This record is discharged.** The owner ruled the ruling half on [#2137](https://github.com/headwater-ai/headwater/issues/2137) on 2026-11-27: the specification series drops the number. [HW-DR-0117](../decisions/0117-the-specification-series-names-a-part-by-its-slug-and-carries-no-sequence.md) records it, and headwater/standard 5.0.0 deletes the `sequence` facet and lays out the shelf as `{slug}.md`. No shelf now reads a sequence facet in its layout. The four shelves that keep a number take it from an identifier that the claim store holds distinct, so two branches that take one value meet an `add/add` conflict. The measurement half has nothing left to measure.

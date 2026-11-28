@@ -149,7 +149,7 @@ add:
 
   # --- identifier schemes ---------------------------------------------------
   # `reconcile-first` over the corpus is the right denominator here, because an
-  # obligation record is a document and the corpus is what numbers it. Spec 13
+  # obligation record is a document and the corpus is what numbers it. The register of open obligations (docs/spec/open-obligations.md)
   # draws that line between this remedy and the contract-sidecar one, where a
   # criterion numbers within its requirement instead.
 
@@ -163,7 +163,7 @@ add:
 
   # --- obligations ----------------------------------------------------------
   # The two invariants this tradition exists to hold, and neither one has a
-  # check. Both are `gap` dispositions rather than silence, which is what spec 4
+  # check. Both are `gap` dispositions rather than silence, which is what the assurance model (docs/spec/assurance-model.md)
   # asks of an obligation that no control discharges.
   #
   # Both are about content and state over time. A participation expectation
@@ -180,7 +180,7 @@ add:
     disposition:
       gap:
         owner: the decision-record entry
-        target: a change-scoped rule that reads the prior version, which spec 12 already supplies as `needs_prior`
+        target: a change-scoped rule that reads the prior version, which the check layer (docs/spec/check-layer.md) already supplies as `needs_prior`
 
   obligations.OB-DR-2:
     statement: A proposed decision record reaches acceptance or rejection
@@ -201,4 +201,4 @@ add:
     severity: medium
     disposition:
       unverifiable:
-        reasoning: To count the decisions in a document is to reason about what the prose asserts, which spec 1 forswears. The shelf is homogeneous and the section contract requires one `Decision` heading, and a second decision under that heading is invisible to both
+        reasoning: To count the decisions in a document is to reason about what the prose asserts, which the conceptual model (docs/spec/conceptual-model.md) forswears. The shelf is homogeneous and the section contract requires one `Decision` heading, and a second decision under that heading is invisible to both
