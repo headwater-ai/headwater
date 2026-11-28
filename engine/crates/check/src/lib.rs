@@ -158,6 +158,7 @@ pub mod endpoint;
 pub mod enumerated;
 pub mod facet_blank;
 pub mod facet_required;
+pub mod facet_type;
 pub mod facet_value;
 pub mod fill;
 pub mod filter;
@@ -252,10 +253,11 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 59] = [
+pub const RULES: [&str; 60] = [
     facet_required::RULE,
     facet_value::RULE,
     facet_blank::RULE,
+    facet_type::RULE,
     identifier::RULE,
     placement::RULE,
     bound_facet::RULE,
@@ -526,6 +528,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::document_scope::<facet_blank::Blank>(),
             scope::document_version::<facet_blank::Blank>(),
             scope::document_exports::<facet_blank::Blank>(),
+        ),
+        (
+            facet_type::RULE,
+            scope::document_scope::<facet_type::NotOfType>(),
+            scope::document_version::<facet_type::NotOfType>(),
+            scope::document_exports::<facet_type::NotOfType>(),
         ),
         (
             identifier::RULE,
@@ -914,6 +922,9 @@ pub fn run(
     // The state between the two rules above: the key is declared, and it
     // carries no content. See [`facet_blank`].
     let blank = facet_blank::Blank::over(declared.shape);
+    // A value of every other declared type, against that type. See
+    // [`facet_type`].
+    let not_of_type = facet_type::NotOfType::over(declared.shape);
     // The provenance block's warrant against spec 3's closed set, and its
     // acceptor against the warrant. The set is the engine's, so these two carry
     // no declaration. See [`warrant`].
@@ -1066,6 +1077,13 @@ pub fn run(
     let mut instances = scope::over_documents(&required, census, graph, ctx, cache);
     instances.extend(scope::over_documents(&values, census, graph, ctx, cache));
     instances.extend(scope::over_documents(&blank, census, graph, ctx, cache));
+    instances.extend(scope::over_documents(
+        &not_of_type,
+        census,
+        graph,
+        ctx,
+        cache,
+    ));
     instances.extend(scope::over_documents(&closed, census, graph, ctx, cache));
     instances.extend(scope::over_documents(&pairing, census, graph, ctx, cache));
     instances.extend(scope::over_documents(

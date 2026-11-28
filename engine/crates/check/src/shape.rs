@@ -276,8 +276,9 @@ pub struct Facet {
     ///
     /// Read as written, on the same terms as [`FacetValue::role`]. The
     /// meta-schema owns the set of type names, so a name this engine has no
-    /// rule for decides nothing rather than something invented, and the one
-    /// reader is [`crate::facet_blank`].
+    /// rule for decides nothing rather than something invented. Two rules read
+    /// it, and their populations do not overlap: [`crate::facet_blank`] reads
+    /// `string`, and [`crate::facet_type`] reads every other type it can parse.
     pub value_type: Option<String>,
     /// Whether every document declares it, whatever its kind.
     pub required: bool,

@@ -202,18 +202,12 @@ impl Date {
     /// then reports that it could not evaluate, which is the visible skip
     /// [spec 4](../../../../docs/spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)
     /// asks for, and never a comparison against a date nobody wrote.
+    ///
+    /// The calendar is [`headwater_meta::shape::calendar_date`], the one that
+    /// `facet.value.not_of_type` and the meta-schema read, so a value this
+    /// refuses is the value that rule reports.
     pub fn parse(text: &str) -> Option<Self> {
-        let text = text.trim();
-        let bytes = text.as_bytes();
-        if bytes.len() != 10 || bytes[4] != b'-' || bytes[7] != b'-' {
-            return None;
-        }
-        let year: i64 = text[0..4].parse().ok()?;
-        let month: u32 = text[5..7].parse().ok()?;
-        let day: u32 = text[8..10].parse().ok()?;
-        if !(1..=12).contains(&month) || day < 1 || day > days_in_month(year, month) {
-            return None;
-        }
+        let (year, month, day) = headwater_meta::shape::calendar_date(text.trim())?;
         Some(Date {
             days: days_from_civil(year, month, day),
         })
@@ -290,17 +284,6 @@ fn civil_from_days(days: i64) -> (i64, u32, u32) {
     )
 }
 
-fn days_in_month(year: i64, month: u32) -> u32 {
-    match month {
-        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
-        4 | 6 | 9 | 11 => 30,
-        _ => match (year % 4 == 0 && year % 100 != 0) || year % 400 == 0 {
-            true => 29,
-            false => 28,
-        },
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -347,6 +330,38 @@ mod tests {
             "yesterday",
         ] {
             assert_eq!(Date::parse(text), None, "{text} read as a date");
+        }
+    }
+
+    /// The date this layer computes with and the date `facet.value.not_of_type`
+    /// and the meta-schema admit are one decision (HW-OBL-0171). Before it, the
+    /// meta-schema read digit positions and admitted `2026-02-30`, which this
+    /// reader refused, so a value passed one gate and was skipped by the next.
+    #[test]
+    fn the_type_test_and_the_date_reader_agree() {
+        for text in [
+            "2026-02-30",
+            "0000-00-00",
+            "99999-99-99",
+            "4294967296-01-01",
+            "2024-02-29",
+            "2025-02-29",
+            "2026-12-31",
+            "2026-8-12",
+        ] {
+            let scalar = headwater_yaml::Scalar {
+                text: text.to_string(),
+                style: headwater_yaml::Style::Plain,
+            };
+            assert_eq!(
+                headwater_meta::ScalarType::Date.admits(&scalar),
+                Date::parse(text).is_some(),
+                "the two readers disagree on {text}"
+            );
+        }
+        let admitted = ["2024-02-29", "2026-12-31"];
+        for text in admitted {
+            assert!(Date::parse(text).is_some(), "{text} is a date");
         }
     }
 }

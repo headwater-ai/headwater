@@ -1,11 +1,11 @@
 ---
 id: HW-OBL-0171
-status: current
-status_since: 2026-09-07
+status: discharged
+status_since: 2026-11-27
 summary: "A facet declares `type: date`, `type: integer` or `type: string`, and no check reads a document's value against that declaration. A mapping where a date belongs reaches a strict run at exit 0."
-last_verified: 2026-09-07
+last_verified: 2026-11-27
 title: "No rule reads a document facet value against the type its declaration states"
-waiting_on: ruling
+waiting_on: build
 provenance:
   warrant: asserted
   agency: agent
@@ -40,3 +40,7 @@ A ruling settles which one holds, and it also settles what an unknown type name 
 ## Discharge
 
 A decision record states which component reads a document facet value against its declared type, and the reasoning behind the choice. Where the answer is a rule of this engine, the rule ships with a fixture it fails and a fixture it passes. That is the bar [spec 12](../spec/12-check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship) sets.
+
+**[#1492](https://github.com/headwater-ai/headwater/issues/1492) met that condition in [PR #2142](https://github.com/headwater-ai/headwater/pull/2142), and this record is discharged.** [HW-DR-0116](../decisions/0116-a-document-facet-value-is-read-against-its-declared-type-by-one-rule-and-one-predicate.md) states the component and the reasoning. The second answer above holds, as one rule with one predicate for each type. `facet.value.not_of_type` reads every document facet that declares `date`, `integer`, `boolean` or `duration`. `facet.value.blank` keeps `type: string`. The meta-schema applies the same predicate to a taxonomy value. Its date arm now reads the calendar, so `2026-02-30` fails both gates. An unknown type name decides nothing, because the meta-schema refuses it before it reaches a lock. [The contract of the verb](../interfaces/headwater-check.md#description) states what each type admits. `headwater/standard` 4.31.0 binds the rule to `OB-FACET-4`.
+
+The fixture that the rule fails and the fixture that it passes are in `engine/crates/cli/tests/facet_type.rs`. Eight values in a date field stop a strict run, and `2024-02-29` passes. The reading over this corpus on 2026-11-27 is 740 instances of the rule, one for each typed document, and 0 findings.

@@ -2,7 +2,7 @@ touched corpus/spec/04-a-scaffolded-fourth-part.md
 touched corpus/decisions/a-scaffolded-successor.md
 touched corpus/decisions/a-second-successor.md
 
-14 seen, 9 classified, 9 checked, 180 check instances
+14 seen, 9 classified, 9 checked, 189 check instances
      12 skipped: this document declares no warrant, and an absent warrant is not a value outside the closed set
       6 skipped: this document declares no warrant, so there is no acceptance to read beside the state
       4 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
@@ -13,6 +13,7 @@ adoption
       9 instances of facet.required.missing
       9 instances of facet.value.not_permitted
       9 instances of facet.value.blank
+      9 instances of facet.value.not_of_type
       8 instances of identifier.pattern.not_met
       9 instances of shelf.placement_is_primary
       9 instances of relation.key.outside_block
@@ -51,6 +52,8 @@ rules, and for each the scope that binds it
   facet.value.not_permitted
     document scope, one document and its front matter
   facet.value.blank
+    document scope, one document and its front matter
+  facet.value.not_of_type
     document scope, one document and its front matter
   identifier.pattern.not_met
     document scope, one document and its front matter
@@ -178,6 +181,7 @@ register
   facet.required.missing reaches no obligation, so it names none
   facet.value.not_permitted reaches no obligation, so it names none
   facet.value.blank reaches no obligation, so it names none
+  facet.value.not_of_type reaches no obligation, so it names none
   identifier.pattern.not_met reaches no obligation, so it names none
   shelf.placement_is_primary reaches no obligation, so it names none
   shelf.bound_facet.disagrees reaches no obligation, so it names none
@@ -294,6 +298,24 @@ instances
   facet.value.blank corpus/spec/04-a-scaffolded-fourth-part.md
     passed
   facet.value.blank corpus/standards/a-standard.md
+    passed
+  facet.value.not_of_type corpus/decisions/a-scaffolded-successor.md
+    passed
+  facet.value.not_of_type corpus/decisions/a-second-successor.md
+    passed
+  facet.value.not_of_type corpus/decisions/an-earlier-decision.md
+    passed
+  facet.value.not_of_type corpus/exhausted/the-last-one.md
+    passed
+  facet.value.not_of_type corpus/spec/01-the-first-part.md
+    passed
+  facet.value.not_of_type corpus/spec/02-the-second-part.md
+    passed
+  facet.value.not_of_type corpus/spec/03-the-third-part.md
+    passed
+  facet.value.not_of_type corpus/spec/04-a-scaffolded-fourth-part.md
+    passed
+  facet.value.not_of_type corpus/standards/a-standard.md
     passed
   warrant.value.not_permitted corpus/decisions/a-scaffolded-successor.md
     passed

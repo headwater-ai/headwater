@@ -279,6 +279,8 @@ anchors
     cited by HW-OBL-0170
   code_path `engine/crates/check/src/facet_blank.rs` via source-tree
     cited by HW-OBL-0171
+  code_path `engine/crates/check/src/facet_type.rs` via source-tree
+    cited by HW-DR-0116
   code_path `engine/crates/check/src/facet_value.rs` via source-tree
     cited by HW-DR-0066
   code_path `engine/crates/check/src/filter.rs` via source-tree

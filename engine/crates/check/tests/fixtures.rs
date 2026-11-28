@@ -1898,6 +1898,9 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             Grain::Document,
             Grain::Document,
             Grain::Document,
+            // `facet.value.not_of_type`: one document's value against the
+            // type its kind declares (#1492, HW-OBL-0171).
+            Grain::Document,
             Grain::Document,
             Grain::Document,
             // `shelf.bound_facet.disagrees`: one document's value against the
@@ -2087,11 +2090,17 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
     assert!(!run.served[2].scope.needs_body());
     assert_eq!(run.served[2].rule, headwater_check::facet_blank::RULE);
 
+    // The type rule sits fourth and completes the set: a value that is there
+    // and is not of its declared type (#1492, HW-OBL-0171). A type is a fact
+    // about the front matter, so it reads no body either.
+    assert!(!run.served[3].scope.needs_body());
+    assert_eq!(run.served[3].rule, headwater_check::facet_type::RULE);
+
     // The identifier rule is the same, and it is worth stating: an identifier
     // is front matter, so a rule that read the body to find one would be
     // reading a mention of an identifier rather than the document's own.
-    assert!(!run.served[3].scope.needs_body());
-    assert_eq!(run.served[3].rule, headwater_check::identifier::RULE);
+    assert!(!run.served[4].scope.needs_body());
+    assert_eq!(run.served[4].rule, headwater_check::identifier::RULE);
 
     // The eleven edge-grained Graph-origin rules are consecutive, and the target
     // rule is the first of them. Whether a target resolved is prior to every
@@ -2101,7 +2110,6 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
     // that bound to nothing has neither an identity nor a revision.
     assert_eq!(
         [
-            run.served[7].rule,
             run.served[8].rule,
             run.served[9].rule,
             run.served[10].rule,
@@ -2111,7 +2119,8 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             run.served[14].rule,
             run.served[15].rule,
             run.served[16].rule,
-            run.served[17].rule
+            run.served[17].rule,
+            run.served[18].rule
         ],
         [
             target::RULE,
@@ -2180,15 +2189,15 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
         )
     );
     assert_eq!(
-        run.served[20].scope.render(),
+        run.served[21].scope.render(),
         "document scope, one document and its front matter, and what phase A could not make of it"
     );
     // The same declaration at the other grain, and the sentence says what the
     // difference is: one document's news against the identity of every
     // document. A reader counting the barriers finds the word here.
-    assert_eq!(run.served[22].rule, duplicate::RULE);
+    assert_eq!(run.served[23].rule, duplicate::RULE);
     assert_eq!(
-        run.served[22].scope.render(),
+        run.served[23].scope.render(),
         "corpus scope, every row of the census, and what phase A could not make of each \
          document's identity, and it is a barrier"
     );
@@ -2212,9 +2221,9 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
         .map(|served| served.rule)
         .collect();
     assert_eq!(restated, [headwater_check::suspect::RULE]);
-    assert_eq!(run.served[18].rule, participation::RULE);
+    assert_eq!(run.served[19].rule, participation::RULE);
     assert_eq!(
-        run.served[18].scope.render(),
+        run.served[19].scope.render(),
         "neighbourhood scope, one document and the documents one relation away from it, \
          and the injected clock"
     );
