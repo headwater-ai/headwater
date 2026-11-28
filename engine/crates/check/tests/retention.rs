@@ -516,13 +516,22 @@ fn a_refusal_outranks_an_unread_departure() {
 /// in the key.
 ///
 /// Without them a warm run would serve the pass from before the change, and
-/// the skip would never reach a reader.
+/// the skip would never reach a reader. A source file in the same change is
+/// not an input, because no edit to its bytes can make it a document, and a
+/// change that edits source would otherwise list every file it touched as read
+/// outside the census.
 #[test]
 fn an_unread_departure_is_an_input_of_the_instance() {
-    let run = over(&departure(
-        "retention/kept/gone-malformed.md",
-        "malformed-front-matter.md",
-    ));
+    let run = over(
+        &[
+            departure(
+                "retention/kept/gone-malformed.md",
+                "malformed-front-matter.md",
+            ),
+            departure("engine/crates/check/src/change.rs", "not-a-document.rs"),
+        ]
+        .concat(),
+    );
     let unread = instance(&run)
         .reads
         .iter()
