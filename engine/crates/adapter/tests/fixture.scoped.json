@@ -887,7 +887,7 @@
     {
       "rule": "lifecycle.deletion.not_permitted",
       "scope": "corpus",
-      "version": 1,
+      "version": 2,
       "obligations": []
     },
     {
