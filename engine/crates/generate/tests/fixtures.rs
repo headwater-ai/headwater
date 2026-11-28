@@ -2728,6 +2728,67 @@ fn top_level_block<'a>(bytes: &'a str, label: &str) -> Option<&'a str> {
     Some(&bytes[start..body + end])
 }
 
+/// A shelf that a `site_nav` names under `precedence` reads in the derived
+/// reading order, and every other shelf keeps path order (#2137, HW-DR-0117).
+///
+/// The fixture's `decisions` shelf holds the pair that tells the two orders
+/// apart: DR-FIX-0002 supersedes DR-FIX-0001, so precedence reads 0002 first
+/// and path order reads 0001 first. The shelf index of the same corpus prints
+/// 0002 first, and the sidebar of a shelf under `precedence` agrees with it.
+#[test]
+fn a_shelf_the_site_nav_names_under_precedence_reads_in_relation_order() {
+    let at = |bytes: &str, needle: &str| {
+        bytes
+            .find(needle)
+            .unwrap_or_else(|| panic!("`{needle}` is not in the nav:\n{bytes}"))
+    };
+
+    let path_order =
+        site_nav_bytes("  - kind: site_nav\n    output: nav.yml\n").expect("the plain nav writes");
+    assert!(
+        at(&path_order, "0001-store-the-graph.md") < at(&path_order, "0002-rebuild-the-graph.md"),
+        "with no `precedence` the decisions shelf reads in path order:\n{path_order}"
+    );
+
+    let relation_order = site_nav_bytes(
+        "  - kind: site_nav\n    output: nav.yml\n    precedence: [decisions]\n",
+    )
+    .expect("a nav with `precedence` writes");
+    assert!(
+        at(&relation_order, "0002-rebuild-the-graph.md")
+            < at(&relation_order, "0001-store-the-graph.md"),
+        "a shelf under `precedence` puts the superseding document first:\n{relation_order}"
+    );
+    // A shelf that `precedence` does not name keeps path order.
+    assert!(
+        at(&relation_order, "guides/first-run.md") < at(&relation_order, "guides/recovery.md"),
+        "a shelf outside `precedence` keeps path order:\n{relation_order}"
+    );
+    // Only the order moves: the same entries, the same labels.
+    let mut a: Vec<&str> = path_order.lines().collect();
+    let mut b: Vec<&str> = relation_order.lines().collect();
+    a.sort_unstable();
+    b.sort_unstable();
+    assert_eq!(a, b, "`precedence` changed what the nav lists, not only its order");
+
+    // A name that is not a declared shelf is refused, as `for` refuses one.
+    let refused = site_nav_bytes(
+        "  - kind: site_nav\n    output: nav.yml\n    precedence: [nowhere]\n",
+    )
+    .expect_err("an undeclared shelf under `precedence` is refused");
+    assert!(refused.contains("nowhere"), "the refusal names the shelf: {refused}");
+
+    // Only a `site_nav` takes the member.
+    let wrong_kind = site_nav_bytes(
+        "  - kind: shelf_index\n    for: [guides]\n    output: other.md\n    precedence: [guides]\n",
+    )
+    .expect_err("`precedence` on a shelf_index is refused");
+    assert!(
+        wrong_kind.contains("precedence"),
+        "the refusal names the member: {wrong_kind}"
+    );
+}
+
 /// A `site_nav` that declares `sections` nests each named shelf under one
 /// labeled top-level entry, and leaves every other shelf where it was (#1681).
 ///
